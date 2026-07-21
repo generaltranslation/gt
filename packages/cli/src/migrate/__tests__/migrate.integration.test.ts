@@ -665,7 +665,7 @@ describe('handleMigrateCommand integration', () => {
 
   it('converts a root-level i18n/ directory and still tears down safely', async () => {
     const cwd = makeApp();
-    // Move the i18n config dir out of src/ — the shape from the field report
+    // Move the i18n config dir out of src/; the shape from the field report
     // that the old defaults never scanned.
     fs.mkdirSync(path.join(cwd, 'i18n'));
     for (const file of ['routing.ts', 'request.ts', 'navigation.ts']) {
@@ -883,7 +883,7 @@ describe('handleMigrateCommand integration', () => {
       }),
       // next-intl hoisted into the workspace-root node_modules. The exports map
       // mirrors real next-intl (ESM, no ./package.json export), which defeats
-      // require.resolve — so a directory probe must find it.
+      // require.resolve; so a directory probe must find it.
       'node_modules/next-intl/package.json': JSON.stringify({
         name: 'next-intl',
         version: '4.1.0',
@@ -1020,7 +1020,7 @@ describe('handleMigrateCommand integration', () => {
   it('treats a JSX-less layout.ts as a layout and degrades gracefully', async () => {
     // A pure-TS layout.ts (no JSX). It must go through the layout pass (which
     // agrees with emitGtFiles that layout.ts is a layout), so its locale guard
-    // is handled instead of tripping the generic pass into a hasLocale skip —
+    // is handled instead of tripping the generic pass into a hasLocale skip;
     // and the layout pass must never emit JSX into a .ts file.
     const cwd = makeApp({
       'src/app/[locale]/layout.ts': [

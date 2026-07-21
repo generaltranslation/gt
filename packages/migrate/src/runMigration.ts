@@ -201,7 +201,7 @@ export async function runMigration(
       catalogs = await resolveCatalogsInteractively(cwd, routing, io);
     }
   } catch (error) {
-    // e.g. a malformed locale JSON — nothing has been written yet.
+    // e.g. a malformed locale JSON; nothing has been written yet.
     io.fatal(error instanceof Error ? error.message : String(error));
   }
   if (!catalogs) {
@@ -239,7 +239,7 @@ export async function runMigration(
   if (catalogs.reportTodos) ctx.todos.push(...catalogs.reportTodos);
 
   // Files owned by the config lane (pass 3 / emitGtFiles) must not go
-  // through the generic source pass — they'd register as skips. The candidate
+  // through the generic source pass; they'd register as skips. The candidate
   // filenames come from the adapter, so a source with no Next.js config lane
   // contributes none.
   const configLaneFiles = new Set(
@@ -254,8 +254,8 @@ export async function runMigration(
   );
 
   // Pass 1: regular source files (layouts and NextIntlClientProvider-bearing
-  // files deferred — they need the final skip set to decide provider retention).
-  // Default scope covers the conventional i18n config directory too — the
+  // files deferred; they need the final skip set to decide provider retention).
+  // Default scope covers the conventional i18n config directory too; the
   // shared defaults miss a root-level i18n/ (navigation.ts lives there), and
   // wherever the routing/request files actually sit.
   const defaultPatterns = [
@@ -276,7 +276,7 @@ export async function runMigration(
     ...new Set(matchFiles(cwd, options.src ?? defaultPatterns)),
   ];
   ctx.sourceFiles = sourceFiles;
-  // The whole project, independent of scope — teardown and still-imported
+  // The whole project, independent of scope; teardown and still-imported
   // checks must never be blind to files the scan skipped.
   const projectFiles = matchFiles(cwd, [
     '**/*.{js,jsx,ts,tsx}',
@@ -293,7 +293,7 @@ export async function runMigration(
   // provider-retention decision hinges on the final skip set (a partial
   // migration must keep the provider so skipped files still have a next-intl
   // context), so they are deferred until every other file's skip status is
-  // known — see the deferred passes below.
+  // known; see the deferred passes below.
   const providerFiles: string[] = [];
   for (const file of sourceFiles) {
     if (configLaneFiles.has(file)) continue;
@@ -343,7 +343,7 @@ export async function runMigration(
     }
     if (adapter.projectUsagePattern.test(content)) {
       ctx.skippedFiles.set(file, [
-        `uses ${adapter.displayName} but was not scanned (outside the --src scope or the default globs) — include it or convert it manually`,
+        `uses ${adapter.displayName} but was not scanned (outside the --src scope or the default globs); include it or convert it manually`,
       ]);
     }
   }
@@ -457,7 +457,7 @@ export async function runMigration(
           ctx.todos.push({
             file: configFile,
             reason:
-              'this config loads as native ESM, where gt-next/config (<= 11.0.9) fails with "require is not defined" — rename it to next.config.ts (Next.js compiles it to CJS) until gt-next ships an ESM-safe config entry',
+              'this config loads as native ESM, where gt-next/config (<= 11.0.9) fails with "require is not defined"; rename it to next.config.ts (Next.js compiles it to CJS) until gt-next ships an ESM-safe config entry',
           });
         }
       } catch (error) {
@@ -485,7 +485,7 @@ export async function runMigration(
   }
 
   // Partial migrations keep the source library's request config alive for
-  // skipped files, but gt-next's middleware no longer feeds it a locale —
+  // skipped files, but gt-next's middleware no longer feeds it a locale;
   // rewire its fallback to getLocale() so skipped files render the page locale
   // instead of the default one.
   const transformRequestConfig = adapter.transformRequestConfig;
@@ -507,7 +507,7 @@ export async function runMigration(
     }
   }
 
-  // Next.js ignores root-level middleware when the app lives in src/ —
+  // Next.js ignores root-level middleware when the app lives in src/;
   // locale routing would silently not run (true for next-intl too, but
   // worth surfacing while we're here).
   const rootMiddleware = findRootFiles(cwd, ['middleware.ts', 'middleware.js']);
@@ -519,7 +519,7 @@ export async function runMigration(
     ctx.todos.push({
       file: rootMiddleware[0],
       reason:
-        'middleware file is at the project root but the app lives in src/ — Next.js ignores it there; move it to src/ or locale routing will not run',
+        'middleware file is at the project root but the app lives in src/; Next.js ignores it there; move it to src/ or locale routing will not run',
     });
   }
 
@@ -613,7 +613,7 @@ function recordTransformError(
 ): void {
   const message = error instanceof Error ? error.message : String(error);
   ctx.skippedFiles.set(file, [
-    `internal transform error on ${path.relative(ctx.cwd, file)}: ${message} — file left untouched`,
+    `internal transform error on ${path.relative(ctx.cwd, file)}: ${message}; file left untouched`,
   ]);
 }
 
@@ -679,7 +679,7 @@ function isDeclaredInPackageJson(cwd: string, names: Set<string>): boolean {
 /**
  * True when any of `names` is physically installed in the node_modules chain
  * reachable from `cwd` (cwd/node_modules, then each parent up to the filesystem
- * root) — exactly the directories Node's resolver searches. A hoisted monorepo
+ * root); exactly the directories Node's resolver searches. A hoisted monorepo
  * leaf resolves a dependency declared only in a parent this way.
  *
  * A directory probe is used rather than require.resolve on purpose: modern ESM

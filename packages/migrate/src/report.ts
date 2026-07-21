@@ -18,7 +18,7 @@ export function buildReport(
     path.isAbsolute(file) ? path.relative(ctx.cwd, file) : file;
 
   lines.push(
-    `# gt migrate report${dryRun ? ' (dry run — nothing written)' : ''}`
+    `# gt migrate report${dryRun ? ' (dry run; nothing written)' : ''}`
   );
   lines.push('');
   lines.push(
@@ -80,7 +80,7 @@ export function buildReport(
   lines.push('');
   lines.push(
     `Existing translations preserved: catalogs in ${relative(ctx.catalogs.dir)}/ ` +
-      'now load through loadDictionary.ts — no re-translation needed.'
+      'now load through loadDictionary.ts; no re-translation needed.'
   );
   lines.push('');
 
@@ -97,12 +97,12 @@ export function buildReport(
       edit.kind === 'write' && path.basename(edit.path) === 'getRegion.ts'
   );
   if (emittedGetLocale && emittedGetRegion) {
-    // Both resolvers emitted — gt-next resolves the locale from next/root-params.
+    // Both resolvers emitted; gt-next resolves the locale from next/root-params.
     lines.push(
       'Static rendering preserved: emitted ' +
         `${relative(emittedGetLocale.path)} and ${relative(emittedGetRegion.path)} ` +
         'so gt-next resolves the locale from next/root-params (the [locale] ' +
-        'route param) instead of request-scoped headers/cookies — routes that ' +
+        'route param) instead of request-scoped headers/cookies; routes that ' +
         'were statically rendered (SSG) stay static (ƒ dynamic otherwise).'
     );
     lines.push('');
@@ -112,22 +112,22 @@ export function buildReport(
       'Static rendering preserved: emitted ' +
         `${relative(emittedGetLocale.path)} so gt-next resolves the locale from ` +
         'next/root-params (the [locale] route param) instead of request-scoped ' +
-        'headers/cookies — routes that were statically rendered (SSG) stay static ' +
+        'headers/cookies; routes that were statically rendered (SSG) stay static ' +
         '(ƒ dynamic otherwise). A getRegion file already existed and was left ' +
-        'untouched — verify it does not read cookies()/headers(), which would ' +
+        'untouched; verify it does not read cookies()/headers(), which would ' +
         'force dynamic rendering (see TODOs).'
     );
     lines.push('');
   } else if (emittedGetRegion) {
     // Only getRegion was emitted; the locale resolver (getLocale) already
     // existed and was left untouched. getRegion returns undefined, so it does
-    // not resolve the locale — static rendering hinges on that pre-existing
+    // not resolve the locale; static rendering hinges on that pre-existing
     // getLocale, which the TODOs flag for verification.
     lines.push(
       'Static rendering: emitted ' +
         `${relative(emittedGetRegion.path)} (it returns undefined, so no ` +
         'request-scoped region read forces dynamic rendering). The locale ' +
-        'resolver getLocale already existed and was left untouched — routes that ' +
+        'resolver getLocale already existed and was left untouched; routes that ' +
         'were statically rendered (SSG) stay static only if that file resolves ' +
         'the locale from next/root-params rather than request-scoped ' +
         'headers/cookies; verify it (see TODOs).'
@@ -214,7 +214,7 @@ export function buildReport(
       const location = todo.line
         ? `${relative(todo.file)}:${todo.line}`
         : relative(todo.file);
-      lines.push(`- ${location} — ${todo.reason}`);
+      lines.push(`- ${location}; ${todo.reason}`);
     }
     lines.push('');
   }
@@ -234,7 +234,7 @@ export function buildReport(
   const steps: string[] = [];
   if (gtNextMissing) {
     steps.push(
-      'Install gt-next — the converted files import it: `npm install gt-next` ' +
+      'Install gt-next; the converted files import it: `npm install gt-next` ' +
         "(or your package manager's equivalent). A non-dry run installs it " +
         'automatically when it can detect your package manager.'
     );
@@ -242,7 +242,7 @@ export function buildReport(
   // #1909: a migrated app (next-intl, react-intl, or react-i18next alike) does
   // not `next build` on published gt-next until the internal loadDictionary
   // alias fix ships (the default webpack build cannot resolve the generated
-  // gt/dictionaries), so steer verification to Turbopack meanwhile — said here
+  // gt/dictionaries), so steer verification to Turbopack meanwhile; said here
   // at the point of use, not just in a doc the user never opens (the F3 finding).
   steps.push(
     'A migrated app (next-intl, react-intl, or react-i18next alike) will not ' +

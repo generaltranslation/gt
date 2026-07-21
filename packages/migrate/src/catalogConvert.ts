@@ -19,7 +19,7 @@ const ALL_CATEGORIES = new Set<string>(CATEGORY_ORDER);
 const MECHANICAL_FORMATTERS = new Set(['number', 'currency']);
 
 export type Separators = {
-  /** '.' by default; `false` means flat keys (dots are literal) — unsupported. */
+  /** '.' by default; `false` means flat keys (dots are literal); unsupported. */
   keySeparator: string | false;
   /** ':' by default; separates namespace from key in a `t('ns:key')` call. */
   nsSeparator: string | false;
@@ -37,7 +37,7 @@ export const DEFAULT_SEPARATORS: Separators = {
 };
 
 export type ConversionReport = {
-  /** `{locale}/{ns}:{keypath}` — the exact catalog location that was reported. */
+  /** `{locale}/{ns}:{keypath}`; the exact catalog location that was reported. */
   key: string;
   reason: string;
 };
@@ -137,9 +137,9 @@ type LeafContext = {
 /**
  * Builds the ICU fraction-digit skeleton part (`.00#`) from an option bag's
  * min/max. Returns '' when neither is set and null when a value is not a valid
- * digit count. `maxWhenMinOnly` supplies the max when only min is given — Intl's
+ * digit count. `maxWhenMinOnly` supplies the max when only min is given; Intl's
  * decimal default is 3 (`.00#`), so a min-only option must not cap the max at
- * the min (that forced `.00` and dropped real precision — the m6 finding).
+ * the min (that forced `.00` and dropped real precision; the m6 finding).
  */
 function fractionSkeleton(
   options: Record<string, string>,
@@ -207,14 +207,14 @@ function convertPlaceholder(inner: string, ctx: LeafContext): string {
     // ICU arg names cannot express (`$` is not a legal ICU argument name even
     // though i18next interpolates it): keep the raw text (escaped) and report.
     ctx.addReport(
-      `interpolation \`{{${inner.trim()}}}\` uses a variable name ICU cannot express (e.g. a nested path); left as literal text — rewrite the key manually`
+      `interpolation \`{{${inner.trim()}}}\` uses a variable name ICU cannot express (e.g. a nested path); left as literal text; rewrite the key manually`
     );
     return escapeIcuText(`{{${inner}}}`);
   }
 
   if (unescaped) {
     ctx.addReport(
-      `\`{{- ${name}}}\` renders raw HTML in react-i18next; gt renders dictionary values as text, so the markup is shown literally — move it into a <T> component if HTML is intended`
+      `\`{{- ${name}}}\` renders raw HTML in react-i18next; gt renders dictionary values as text, so the markup is shown literally; move it into a <T> component if HTML is intended`
     );
   }
 
@@ -237,7 +237,7 @@ function convertFormatter(
   // A top-level comma outside parentheses means a chain.
   if (hasTopLevelComma(spec)) {
     ctx.addReport(
-      `chained formatters in \`{{${inner.trim()}}}\` have no ICU equivalent; value renders unformatted — use <T> or a custom renderer`
+      `chained formatters in \`{{${inner.trim()}}}\` have no ICU equivalent; value renders unformatted; use <T> or a custom renderer`
     );
     return `{${name}}`;
   }
@@ -282,7 +282,7 @@ function convertFormatter(
       const fraction = fractionSkeleton(options, (minN) => minN);
       if (fraction === null) {
         ctx.addReport(
-          `currency fraction-digit options in \`{{${inner.trim()}}}\` are not valid digit counts; dropped — the currency's default precision is used`
+          `currency fraction-digit options in \`{{${inner.trim()}}}\` are not valid digit counts; dropped; the currency's default precision is used`
         );
       } else if (fraction !== '') {
         suffix = ` ${fraction}`;
@@ -294,7 +294,7 @@ function convertFormatter(
   if (fmt === 'datetime') {
     if (args !== undefined && args.trim() !== '') {
       ctx.addReport(
-        `datetime options in \`{{${inner.trim()}}}\` do not map to ICU date/time styles; approximated as \`date, medium\` — verify formatting`
+        `datetime options in \`{{${inner.trim()}}}\` do not map to ICU date/time styles; approximated as \`date, medium\`; verify formatting`
       );
     } else {
       ctx.addReport(
@@ -307,7 +307,7 @@ function convertFormatter(
   // relativetime, list, custom names: not representable. Keep the variable
   // (so the key still renders) and report the lost formatting.
   ctx.addReport(
-    `formatter \`${fmt}\` in \`{{${inner.trim()}}}\` has no ICU equivalent; value renders unformatted — use <T> or a custom renderer for locale-aware formatting`
+    `formatter \`${fmt}\` in \`{{${inner.trim()}}}\` has no ICU equivalent; value renders unformatted; use <T> or a custom renderer for locale-aware formatting`
   );
   return `{${name}}`;
 }
@@ -374,19 +374,19 @@ function inlineNesting(
     const ref = stripQuotes(match[1].trim());
     if (match[2]) {
       ctx.addReport(
-        `nesting \`${match[0]}\` passes options; ICU cannot compose messages at runtime — inline the value or use <T>`
+        `nesting \`${match[0]}\` passes options; ICU cannot compose messages at runtime; inline the value or use <T>`
       );
       out += ctx.isIcu ? match[0] : escapeIcuText(match[0]);
     } else if (ctx.stack.includes(ref)) {
       ctx.addReport(
-        `nesting cycle detected at \`$t(${ref})\`; left unresolved — break the cycle manually`
+        `nesting cycle detected at \`$t(${ref})\`; left unresolved; break the cycle manually`
       );
       cyclic = true;
     } else {
       const resolved = ctx.resolveNested(ref, [...ctx.stack, ref]);
       if (resolved === null) {
         ctx.addReport(
-          `nested key \`$t(${ref})\` could not be resolved to a static value; left literal — inline it manually`
+          `nested key \`$t(${ref})\` could not be resolved to a static value; left literal; inline it manually`
         );
         out += ctx.isIcu ? match[0] : escapeIcuText(match[0]);
       } else {
@@ -448,7 +448,7 @@ type Grouped = {
   ordinal: Map<string, Map<string, string>>;
   /** base -> context -> raw value (pure context). */
   context: Map<string, Map<string, string>>;
-  /** bases that combine context and plural (context+plural) — skip+report. */
+  /** bases that combine context and plural (context+plural); skip+report. */
   combined: Set<string>;
   /** plain keys left as-is (leaf or nested object). */
   plain: Map<string, unknown>;
@@ -482,7 +482,7 @@ function groupKeys(
     (k) => typeof tree[k] === 'string'
   );
 
-  // Pass A: ordinal (most specific — `base_ordinal_cat`). Detection uses the
+  // Pass A: ordinal (most specific; `base_ordinal_cat`). Detection uses the
   // universal CLDR category names; per-locale validity is checked in
   // convertTree so an out-of-set category forces the whole set literal.
   for (const key of stringKeys) {
@@ -551,7 +551,7 @@ function groupKeys(
   }
 
   // A bare base key that anchors a group is folded into that group (the
-  // context `other` clause, or superseded by the ICU plural) — consume it so
+  // context `other` clause, or superseded by the ICU plural); consume it so
   // it is not also emitted as a plain key colliding with the grouped result.
   for (const base of cardinal.keys()) if (base in tree) consumed.add(base);
   for (const base of ordinal.keys()) if (base in tree) consumed.add(base);
@@ -670,11 +670,11 @@ function convertTree(
       // {context, select} is not possible when a context value is literally
       // `other` (i18next's context-less base and the `_other` variant are two
       // distinct strings that ICU's single `other` clause cannot both hold), so
-      // it is left literal — but name the context possibility so the user is not
+      // it is left literal; but name the context possibility so the user is not
       // misled by a plural-only report (the m5 finding). The base value itself is
       // preserved by the base-key pass below.
       const contextNote = isContextBase(base, tc, keypath)
-        ? ` (a call site passed { context } for \`${fullKey(base)}\`, so these may be a context selector whose values collide with CLDR category names — give the context distinct values or use <T>)`
+        ? ` (a call site passed { context } for \`${fullKey(base)}\`, so these may be a context selector whose values collide with CLDR category names; give the context distinct values or use <T>)`
         : '';
       tc.addReport(
         fullKey(base),
@@ -717,7 +717,7 @@ function convertTree(
     ) {
       tc.addReport(
         fullKey(base),
-        `ordinal \`${base}${tc.separators.pluralSeparator}ordinal${tc.separators.pluralSeparator}*\` collides with the cardinal plural on the same key; cardinal converted, ordinal left literal — give the ordinal a distinct key or use <T>`
+        `ordinal \`${base}${tc.separators.pluralSeparator}ordinal${tc.separators.pluralSeparator}*\` collides with the cardinal plural on the same key; cardinal converted, ordinal left literal; give the ordinal a distinct key or use <T>`
       );
       writeOrdinalAsLiteral(
         result,
@@ -773,7 +773,7 @@ function convertTree(
       if (baseValue === '') {
         tc.addReport(
           fullKey(base),
-          `context selector \`${base}\` has no base (context-less) value; synthesized an empty \`other\` clause — add a fallback`
+          `context selector \`${base}\` has no base (context-less) value; synthesized an empty \`other\` clause; add a fallback`
         );
       }
     }
@@ -784,7 +784,7 @@ function convertTree(
   for (const base of grouped.combined) {
     tc.addReport(
       fullKey(base),
-      `combined context+plural on \`${base}\` is not converted in v1 (2-D key space); left as literal keys — split into separate keys or use <T>`
+      `combined context+plural on \`${base}\` is not converted in v1 (2-D key space); left as literal keys; split into separate keys or use <T>`
     );
   }
   // The combined raw keys stay in `plain` only if not consumed; groupKeys
@@ -828,7 +828,7 @@ function convertTree(
     } else if (Array.isArray(value)) {
       tc.addReport(
         fullKey(key),
-        `array value / \`returnObjects\` has no gt dictionary equivalent (leaves are strings); left as-is — convert to <T> or discrete keys`
+        `array value / \`returnObjects\` has no gt dictionary equivalent (leaves are strings); left as-is; convert to <T> or discrete keys`
       );
       result[key] = value;
     } else if (value !== null && typeof value === 'object') {
@@ -887,12 +887,12 @@ function writeOrdinalAsLiteral(
 /**
  * ICU-quotes a literal `#` so it is not read as the formatted count. `#` is only
  * special inside a `plural`/`selectordinal` sub-message, so this is applied to
- * branch values ONLY — quoting it in ordinary text would render a literal `'#'`
+ * branch values ONLY; quoting it in ordinary text would render a literal `'#'`
  * (gt's formatter does not strip the quotes outside a plural).
  *
  * Only `#` in text context (brace depth 0) is quoted. A `#` inside a `{...}`
- * argument node is part of ICU syntax — a number/currency skeleton such as
- * `{price, number, ::.00##}`, or a nested plural's own count — and must be left
+ * argument node is part of ICU syntax; a number/currency skeleton such as
+ * `{price, number, ::.00##}`, or a nested plural's own count; and must be left
  * untouched; quoting it would corrupt the skeleton (ICU number skeletons have no
  * `'` quoting) and break the format.
  */
@@ -956,7 +956,7 @@ export function convertCatalogs(input: ConvertInput): ConvertResult {
 
   if (separators.keySeparator === false) {
     // Flat keys with literal dots cannot map onto gt-next's dotted-path
-    // dictionary resolution — refuse rather than silently mis-nest.
+    // dictionary resolution; refuse rather than silently mis-nest.
     throw new CatalogConversionError(
       'i18next `keySeparator: false` (flat keys) is not supported: gt-next resolves dictionary keys by dotted path, so flat keys containing dots would be mis-nested. Convert the catalog to nested keys or migrate those keys manually.'
     );
@@ -1039,7 +1039,7 @@ export function convertCatalogs(input: ConvertInput): ConvertResult {
   }
 
   // Synthesize entries for call-site literal defaultValues whose keys are
-  // absent from every catalog (only for the default locale — other locales
+  // absent from every catalog (only for the default locale; other locales
   // fall back through gt's own resolution).
   // Non-default namespaces nest under their namespace key, so a synthesized
   // entry's path must be namespace + in-namespace key. Join them with the SAME
@@ -1073,7 +1073,7 @@ export function convertCatalogs(input: ConvertInput): ConvertResult {
         key: `${input.defaultLocale}/${def.ns}:${def.key}`,
         reason: written
           ? `synthesized dictionary entry from a call-site defaultValue (key was absent from the catalog)`
-          : `a call-site defaultValue for \`${def.key}\` collides with an existing non-object value on its path; kept the existing translation and did not synthesize — reconcile the key manually`,
+          : `a call-site defaultValue for \`${def.key}\` collides with an existing non-object value on its path; kept the existing translation and did not synthesize; reconcile the key manually`,
       });
     }
   }

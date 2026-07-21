@@ -39,7 +39,7 @@ const OUTPUT_DIR_CANDIDATES = [
  * interpolation, `$t()` nesting), merges the namespaces into one dictionary per
  * locale (defaultNS at root, others nested), and returns them pointed at a NEW
  * output directory. The user's original catalogs are never read for mutation and
- * never written to — only new files under `gt/dictionaries/` are produced (by
+ * never written to; only new files under `gt/dictionaries/` are produced (by
  * emitReactI18nextCatalogs during the write phase).
  *
  * Throws CatalogConversionError when the app uses an i18next option gt migrate
@@ -177,7 +177,7 @@ function chooseOutputDir(cwd: string): string {
     const full = path.join(cwd, candidate);
     if (!fs.existsSync(full)) return full;
   }
-  // Every candidate already exists (a re-run): reuse the primary — it is our
+  // Every candidate already exists (a re-run): reuse the primary; it is our
   // own generated dir, never a user catalog dir.
   return path.join(cwd, OUTPUT_DIR_CANDIDATES[0]);
 }

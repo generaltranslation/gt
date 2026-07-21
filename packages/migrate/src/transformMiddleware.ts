@@ -174,7 +174,7 @@ export function transformMiddlewareFile(
     todos.push({
       file,
       reason:
-        'localePrefix.prefixes (per-locale URL prefix overrides) has no gt-next equivalent — the custom prefixes were dropped; restore them manually if the app relied on them.',
+        'localePrefix.prefixes (per-locale URL prefix overrides) has no gt-next equivalent; the custom prefixes were dropped; restore them manually if the app relied on them.',
     });
   }
 

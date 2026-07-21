@@ -9,8 +9,8 @@ const NEXT_ROOT_PARAMS_MIN_VERSION = '15.5.0';
 /**
  * Lower bound for the version gate. The `-0` prerelease tag is deliberate: it
  * lets 15.5.0 prereleases (canaries, rcs) satisfy the gate. Without it semver
- * ranks `15.5.0-canary.3` *below* `15.5.0`, so an installed 15.5 canary/rc — a
- * healthy app that already has next/root-params — would be wrongly gated out and
+ * ranks `15.5.0-canary.3` *below* `15.5.0`, so an installed 15.5 canary/rc; a
+ * healthy app that already has next/root-params; would be wrongly gated out and
  * told to upgrade to >= 15.5.
  */
 const NEXT_ROOT_PARAMS_MIN_GATE = `${NEXT_ROOT_PARAMS_MIN_VERSION}-0`;
@@ -33,7 +33,7 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
     edits.push(...ctx.catalogs.filesToEmit);
   }
 
-  // gt.config.json — honor the resolved --config path when the driver set it,
+  // gt.config.json; honor the resolved --config path when the driver set it,
   // otherwise the project root. This one path drives both the merge-read and
   // the write edit below.
   const configPath = ctx.configFile ?? path.join(ctx.cwd, 'gt.config.json');
@@ -68,7 +68,7 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
     content: JSON.stringify(config, null, 2) + '\n',
   });
 
-  // loadDictionary.ts — serves the preserved next-intl catalogs per locale.
+  // loadDictionary.ts; serves the preserved next-intl catalogs per locale.
   const loaderExists = [
     'loadDictionary.ts',
     'loadDictionary.js',
@@ -79,11 +79,11 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
     ctx.todos.push({
       file: path.join(ctx.cwd, 'loadDictionary.ts'),
       reason:
-        'a loadDictionary file already exists — verify it serves the migrated catalogs',
+        'a loadDictionary file already exists; verify it serves the migrated catalogs',
     });
   } else {
     // Place inside src/ when the app uses one (matches Next's compilation
-    // scope — a root-level loader is detected by gt-next but its webpack
+    // scope; a root-level loader is detected by gt-next but its webpack
     // alias can fail to compile) and import relative to the file itself.
     const useSrc = fs.existsSync(path.join(ctx.cwd, 'src'));
     const loaderPath = path.join(
@@ -115,7 +115,7 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
     });
   }
 
-  // getLocale.ts / getRegion.ts — restore static (SSG) rendering. The
+  // getLocale.ts / getRegion.ts; restore static (SSG) rendering. The
   // transformed layout resolves the locale from the [locale] route param, but
   // gt-next's server helpers and GTProvider otherwise fall back to
   // request-scoped headers()/cookies(), which forces every route dynamic (ƒ).
@@ -227,12 +227,12 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
     }
 
     for (const { file: configFile, importer } of retained) {
-      // Deleting a module that something still imports breaks the build —
+      // Deleting a module that something still imports breaks the build;
       // keep it and say so instead.
       ctx.todos.push({
         file: configFile,
         reason: importer.exact
-          ? `kept because ${path.relative(ctx.cwd, importer.file)} still imports it — migrate that reference off ${adapter.displayName}, then delete this file`
+          ? `kept because ${path.relative(ctx.cwd, importer.file)} still imports it; migrate that reference off ${adapter.displayName}, then delete this file`
           : `kept because ${path.relative(ctx.cwd, importer.file)} appears to import it through a path alias; if that specifier is really a third-party package, delete this file yourself`,
       });
     }
@@ -251,9 +251,9 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
  * report TODO so the report never claims static rendering it did not restore:
  *  - the app must localize on a `[locale]` route segment (a differently-named
  *    segment like `[lang]` gets a rename TODO; no dynamic segment at all is a
- *    silent no-op — there is nothing to restore);
+ *    silent no-op; there is nothing to restore);
  *  - the target project's Next must be >= 15.5, since `next/root-params` only
- *    exists there — emitting the import on older Next breaks `next build`;
+ *    exists there; emitting the import on older Next breaks `next build`;
  *  - the `[locale]` layout must be the root layout, since next/root-params only
  *    exposes `locale` then (a separate root layout above it gets a merge TODO).
  */
@@ -263,7 +263,7 @@ function emitStaticLocaleResolvers(
 ): void {
   const localeLayout = findLocaleLayout(ctx);
   if (localeLayout.kind === 'none') {
-    // No localized route segment to anchor next/root-params on — nothing to
+    // No localized route segment to anchor next/root-params on; nothing to
     // restore, so stay silent.
     return;
   }
@@ -322,7 +322,7 @@ function emitStaticLocaleResolvers(
       file: localeLayout.file,
       reason:
         'static rendering not restored: the [locale] layout needs manual ' +
-        'migration first (see its skip reason above) — it never receives ' +
+        'migration first (see its skip reason above); it never receives ' +
         'GTProvider, so getLocale.ts/getRegion.ts would be dead weight. After ' +
         'converting the layout to gt-next, re-run gt migrate to add the ' +
         'resolvers so the locale resolves statically (SSG) from next/root-params.',
@@ -387,7 +387,7 @@ function emitStaticLocaleResolvers(
       '}',
       '',
     ].join('\n'),
-    'verify it does not read cookies()/headers() — a request-scoped region read forces dynamic rendering'
+    'verify it does not read cookies()/headers(); a request-scoped region read forces dynamic rendering'
   );
 }
 
@@ -413,7 +413,7 @@ function emitResolverFile(
   if (existing) {
     ctx.todos.push({
       file: path.join(ctx.cwd, existing),
-      reason: `a ${base} file already exists — left untouched; ${existingNote}`,
+      reason: `a ${base} file already exists; left untouched; ${existingNote}`,
     });
     return;
   }
@@ -424,10 +424,10 @@ function emitResolverFile(
 /**
  * Result of locating the layout that anchors the localized route segment:
  *  - `locale`: a `[locale]` layout exists (with whether a root layout sits
- *    above it — next/root-params only exposes `locale` when it does not);
+ *    above it; next/root-params only exposes `locale` when it does not);
  *  - `other-segment`: a dynamic-segment layout exists but is not named
  *    `[locale]` (e.g. `[lang]`), which next/root-params cannot resolve;
- *  - `none`: no dynamic-segment layout at all — nothing to restore.
+ *  - `none`: no dynamic-segment layout at all; nothing to restore.
  */
 type LocaleLayout =
   | { kind: 'locale'; file: string; hasRootLayoutAbove: boolean }
@@ -446,7 +446,7 @@ function findLocaleLayout(ctx: MigrationContext): LocaleLayout {
   const files = ctx.projectFiles ?? ctx.sourceFiles ?? [];
   const layouts = files.filter(isLayoutFileName);
   // The `[locale]` layout is the one that sits directly in the [locale]
-  // segment (…/[locale]/layout.tsx) — not a deeper nested layout under it.
+  // segment (…/[locale]/layout.tsx); not a deeper nested layout under it.
   const localeLayout = layouts.find(
     (file) => path.basename(path.dirname(file)) === '[locale]'
   );
@@ -460,7 +460,7 @@ function findLocaleLayout(ctx: MigrationContext): LocaleLayout {
     return { kind: 'locale', file: localeLayout, hasRootLayoutAbove };
   }
   // No `[locale]` layout, but a differently-named dynamic segment (e.g.
-  // `[lang]`) still means the app localizes on a route param — flag it so the
+  // `[lang]`) still means the app localizes on a route param; flag it so the
   // report explains why static rendering was not restored.
   const otherSegment = layouts.find((file) =>
     isDynamicSegmentDir(path.basename(path.dirname(file)))
@@ -486,7 +486,7 @@ function isLayoutFileName(file: string): boolean {
 }
 
 /**
- * A single dynamic route segment like `[lang]` or `[locale]` — not a catch-all
+ * A single dynamic route segment like `[lang]` or `[locale]`; not a catch-all
  * (`[...slug]`) or optional catch-all (`[[...slug]]`), neither of which is ever
  * a locale segment.
  */
@@ -510,8 +510,8 @@ function supportsRootParams(cwd: string): boolean {
 
 /**
  * The exact Next version installed for the project, or null. Resolves
- * `next/package.json` the way Node does — walking node_modules from the project
- * root up through its parents — so a next hoisted to a monorepo/workspace root
+ * `next/package.json` the way Node does; walking node_modules from the project
+ * root up through its parents; so a next hoisted to a monorepo/workspace root
  * (npm/yarn/pnpm) is still found. A plain `<cwd>/node_modules/next` read would
  * miss it and fall through to the declared range, which fails closed on a
  * healthy hoisted app.

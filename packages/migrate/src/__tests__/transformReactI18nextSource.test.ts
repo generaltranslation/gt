@@ -714,7 +714,7 @@ describe('provider swap', () => {
   it('adds the gt-next import when one combined import retains the provider and migrates the hook', () => {
     // A single `{ useTranslation, I18nextProvider }` declaration under
     // retainProvider: the provider specifier is kept but the hook is migrated
-    // to useTranslations(), so the gt-next import must still be added — the
+    // to useTranslations(), so the gt-next import must still be added; the
     // retained-import branch used to `continue` past the insertion site.
     const { code } = transform(
       [

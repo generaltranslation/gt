@@ -147,7 +147,7 @@ function collectParamLocaleBindings(
 }
 
 /**
- * The layout's default-exported component function — the function Next.js
+ * The layout's default-exported component function; the function Next.js
  * awaits when it renders the route. Handles both the inline form
  * (`export default function Layout() {}` / `export default () => {}`) and the
  * by-reference form (`const Layout = () => {}; export default Layout;`).
@@ -370,7 +370,7 @@ export function transformLayoutFile(
           file,
           line: path.node.loc?.start.line,
           reason:
-            'locale validation removed — gt-next middleware owns locale resolution; re-add a guard only if this route must 404 on unknown locales',
+            'locale validation removed; gt-next middleware owns locale resolution; re-add a guard only if this route must 404 on unknown locales',
         });
         path.remove();
         droppedGuardArrays.push(...localArrayBindings);
@@ -463,7 +463,7 @@ export function transformLayoutFile(
   }
 
   // 4. A retained NextIntlClientProvider inherits its locale from the request
-  //    config, which gt-next's middleware no longer populates — pass the
+  //    config, which gt-next's middleware no longer populates; pass the
   //    resolved locale explicitly so skipped client components stay on the
   //    page's locale. Prefer the static route-param `locale` binding: it keeps
   //    SSG (no request-scoped read) and is typed to the augmented `Locale`
@@ -471,8 +471,8 @@ export function transformLayoutFile(
   //    getLocale() only when no param locale is in scope (e.g. a root layout),
   //    and only when it is safe to make the enclosing function async: the
   //    function is already async, or it is the layout's default-exported
-  //    component (which Next.js awaits). Inside any other shape — a nested sync
-  //    helper, a callback, a class method — marking the function async would
+  //    component (which Next.js awaits). Inside any other shape; a nested sync
+  //    helper, a callback, a class method; marking the function async would
   //    leave its unchanged synchronous call site rendering a pending Promise
   //    (an invalid React child), so skip the layout instead. Partial mode keeps
   //    next-intl installed, so the skipped layout keeps working on it and the

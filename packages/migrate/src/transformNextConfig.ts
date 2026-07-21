@@ -19,7 +19,7 @@ const PLUGIN_MODULE = 'next-intl/plugin';
  * Replaces the createNextIntlPlugin wrapper in next.config.* with
  * withGTConfig, pointing gt-next's dictionary at the default-locale catalog.
  * While skipped files remain, the next-intl plugin is kept composed around
- * withGTConfig — the retained NextIntlClientProvider needs it to find the
+ * withGTConfig; the retained NextIntlClientProvider needs it to find the
  * request config at build time.
  */
 export function transformNextConfigFile(

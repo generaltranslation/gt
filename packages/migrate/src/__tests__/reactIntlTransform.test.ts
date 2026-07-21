@@ -123,7 +123,7 @@ describe('reactIntl: useIntl().formatMessage (client)', () => {
   it('emits a dotted id and resolves it against the re-nested catalog', () => {
     // Discovery re-nests dotted flat keys, so the migrate-time presence check
     // walks 'Home.title' through { Home: { title } } exactly as gt-next's
-    // runtime resolver (id.split('.')) does — check and runtime never disagree.
+    // runtime resolver (id.split('.')) does; check and runtime never disagree.
     const r = transform(
       lines(
         "'use client';",
@@ -988,7 +988,7 @@ describe('reactIntl: destructured useIntl and the import-survivor guard (B3)', (
 
   it('skips (never emits broken code) when a react-intl import reference survives conversion', () => {
     // useIntl captured as a value (not a recognized `const x = useIntl()`
-    // binding), so nothing consumes the import — stripping it would leave a
+    // binding), so nothing consumes the import; stripping it would leave a
     // dangling reference. The general guard forces a whole-file skip.
     const r = transform(
       lines(
@@ -1046,7 +1046,7 @@ describe('reactIntl: JSX-element values are rich (m1)', () => {
     expect(r.code).toBeNull();
     const reason = r.skipReasons.join(' ');
     expect(reason).toMatch(/convert manually/);
-    // The trigger is a JSX-element value, not a rich-text tag in the message —
+    // The trigger is a JSX-element value, not a rich-text tag in the message;
     // the wording must name what actually fired.
     expect(reason).toMatch(/JSX-element|element value|chunk-function/i);
     expect(reason).not.toMatch(/rich-text tags/);
@@ -1102,7 +1102,7 @@ describe('reactIntl: IntlProvider extra props are skipped (B4)', () => {
   });
 
   it('unwraps a provider carrying React reserved key/ref plus the config props', () => {
-    // key/ref are React reserved props, not react-intl config — unwrapping drops
+    // key/ref are React reserved props, not react-intl config; unwrapping drops
     // them harmlessly, so the provider must still convert cleanly (not skip).
     const r = transform(
       lines(
@@ -1272,7 +1272,7 @@ describe('reactIntl: createIntl swap prunes orphaned arg bindings (FB1)', () => 
     expect(r.skipReasons).toEqual([]);
     expect(r.code).not.toBeNull();
     expect(r.code).toMatch(/const intl = await getTranslations\(\)/);
-    // The swap dropped createIntl's arguments, so `locale` is now unreferenced —
+    // The swap dropped createIntl's arguments, so `locale` is now unreferenced;
     // its declaration must be gone (no migration-introduced unused local).
     expect(r.code).not.toMatch(/const\s+locale\b\s*=/);
   });
@@ -1361,7 +1361,7 @@ describe('reactIntl: createIntl swap prunes orphaned arg bindings (FB1)', () => 
   it('keeps locale on the real page fixture shape (data-locale still reads it)', () => {
     // The committed reactIntl.integration fixture page reads `locale` again in
     // `data-locale={locale}`, so dropping the createIntl arguments must NOT strand
-    // the destructure — only a truly unreferenced binding goes.
+    // the destructure; only a truly unreferenced binding goes.
     const r = transform(
       lines(
         "import { createIntl } from 'react-intl';",
@@ -1479,7 +1479,7 @@ describe('reactIntl: provider unwrap prunes orphaned destructured props (FB2)', 
   });
 
   it('splices the real IntlProviderWrapper fixture, leaving its type annotation intact', () => {
-    // The committed reactIntl.integration fixture provider — the exact live-e2e
+    // The committed reactIntl.integration fixture provider; the exact live-e2e
     // shape whose (4,3)/(5,3) unused `locale`/`messages` this fix removes.
     const r = transform(
       lines(

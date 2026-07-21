@@ -162,7 +162,7 @@ describe('transformMiddlewareFile prefixDefaultLocale mapping', () => {
     // A genuine re-run: the first migration already swapped the import to
     // gt-next/middleware and wrote createNextMiddleware with its options. The
     // file no longer contains 'next-intl/middleware', so the module-string
-    // guard bails before any transform runs — no second migration, no duplicate
+    // guard bails before any transform runs; no second migration, no duplicate
     // options. (next-intl's createMiddleware never carries a gt-next options
     // object itself, so this is the only shape a re-run can take.)
     const migrated = [

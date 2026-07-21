@@ -156,7 +156,7 @@ export async function discoverReactIntlCatalogs(
       reason:
         `no ${defaultLocale}.json existed; synthesized the source catalog ` +
         `(${synthesizedIds.length} entr${synthesizedIds.length === 1 ? 'y' : 'ies'}) from inline ` +
-        'defaultMessages so gt-next has a source entry per id — verify the text',
+        'defaultMessages so gt-next has a source entry per id; verify the text',
     });
   } else if (defaultAugmented) {
     reportTodos.push({
@@ -165,7 +165,7 @@ export async function discoverReactIntlCatalogs(
         `the ${defaultLocale} catalog was missing ${synthesizedIds.length} id(s) used in code ` +
         `(${synthesizedIds.slice(0, 10).join(', ')}${synthesizedIds.length > 10 ? ', …' : ''}); ` +
         'synthesized them from inline defaultMessages into a new file (the ' +
-        'original catalog is left untouched) — verify the text',
+        'original catalog is left untouched); verify the text',
     });
   }
   for (const [id, variants] of conflicts) {
@@ -175,7 +175,7 @@ export async function discoverReactIntlCatalogs(
         `'${id}' has multiple inline defaultMessage variants across the source ` +
         `[${[...variants].map((v) => JSON.stringify(v)).join(' | ')}]; ` +
         `used ${JSON.stringify(harvested[id])} (first by file order) in the ` +
-        'synthesized catalog — reconcile them so the source text is unambiguous',
+        'synthesized catalog; reconcile them so the source text is unambiguous',
       file: path.join(catalogDir, `${defaultLocale}.json`),
     });
   }
@@ -183,7 +183,7 @@ export async function discoverReactIntlCatalogs(
     warnings.push(
       'These catalog keys appear both as a value and as a namespace prefix ' +
         "(e.g. 'a' and 'a.b'), which gt-next's nested dictionary cannot " +
-        `represent — files using them are skipped, so rename one: ${[...collisions].sort().join(', ')}`
+        `represent; files using them are skipped, so rename one: ${[...collisions].sort().join(', ')}`
     );
   }
 

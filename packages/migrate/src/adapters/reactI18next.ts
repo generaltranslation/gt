@@ -129,7 +129,7 @@ export const reactI18nextAdapter: SourceAdapter = {
   emitCatalogs: emitReactI18nextCatalogs,
 
   // react-i18next has no navigation wrapper, no standard middleware, and no
-  // next-intl-style request config — those lanes are simply absent.
+  // next-intl-style request config; those lanes are simply absent.
   nextConfigCandidates: ['next.config.ts', 'next.config.js', 'next.config.mjs'],
   middlewareCandidates: [],
 

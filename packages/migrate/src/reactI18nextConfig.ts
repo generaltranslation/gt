@@ -74,7 +74,7 @@ const cache = new Map<string, I18nextConfig>();
 /**
  * Reads the app's i18next init config to recover the facts the converter and
  * transforms need: locales, default locale, default namespace, namespace list,
- * and any separator overrides. Memoized per cwd. Never throws — an unreadable
+ * and any separator overrides. Memoized per cwd. Never throws; an unreadable
  * config yields sensible defaults (the filesystem is the ground truth for the
  * locale/namespace *set*; this only supplies defaultNS and separators reliably).
  */
@@ -119,7 +119,7 @@ function parseConfig(cwd: string): I18nextConfig {
     if (!options) continue;
     config.configFile = config.configFile ?? file;
     applyOptions(config, options);
-    // Once we have both locales and (implicitly) defaultNS, we can stop — but
+    // Once we have both locales and (implicitly) defaultNS, we can stop; but
     // keep scanning if locales are still unknown.
     if (config.locales && config.locales.length > 0) break;
   }

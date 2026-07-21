@@ -82,7 +82,7 @@ export function transformReactIntlNextConfig(
     todos.push({
       file,
       reason:
-        'FormatJS build plugin kept because some files still use react-intl — re-run `gt migrate` once they are converted to remove it',
+        'FormatJS build plugin kept because some files still use react-intl; re-run `gt migrate` once they are converted to remove it',
     });
   }
 

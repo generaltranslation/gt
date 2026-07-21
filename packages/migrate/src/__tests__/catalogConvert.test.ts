@@ -208,7 +208,7 @@ describe('cardinal plurals per-locale CLDR', () => {
     expect(render(icu, 'ar', { count: 2 })).toBe('عنصران');
   });
 
-  it('gates on {{count}} evidence — coincidental _one/_other named keys are NOT grouped without count', () => {
+  it('gates on {{count}} evidence; coincidental _one/_other named keys are NOT grouped without count', () => {
     // A real key pair that merely ends in category names, with no count usage.
     const { dict, reports } = convert(
       { status_one: 'Primary', status_other: 'Secondary' },

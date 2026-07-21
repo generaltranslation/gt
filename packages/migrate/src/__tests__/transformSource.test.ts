@@ -349,7 +349,7 @@ describe('transformSourceFile: skip conditions', () => {
 });
 
 describe('transformSourceFile: t.rich', () => {
-  it('always skips t.rich — conversion would discard existing translations', () => {
+  it('always skips t.rich; conversion would discard existing translations', () => {
     const result = transform(
       [
         "import { useTranslations } from 'next-intl';",
@@ -561,7 +561,7 @@ describe('transformSourceFile: orphaned param-locale cleanup', () => {
   it('leaves a surviving sibling param and its type member untouched', () => {
     // Multi-property param: `params` is spliced from the pattern but its type
     // member stays (an unused type member does not lint), so the annotation is
-    // untouched — the "types never touched" contract.
+    // untouched; the "types never touched" contract.
     const result = transform(
       [
         "import { use } from 'react';",

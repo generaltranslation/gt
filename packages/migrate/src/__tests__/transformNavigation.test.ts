@@ -72,7 +72,7 @@ describe('transformNavigationFile', () => {
       makeContext()
     );
     expect(result.skipReasons).toEqual([]);
-    // not a raw re-export — next/navigation's includes the prefix
+    // not a raw re-export; next/navigation's includes the prefix
     expect(result.code).not.toMatch(
       /export \{[^}]*usePathname[^}]*\} from ["']next\/navigation["']/
     );

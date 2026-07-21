@@ -14,7 +14,7 @@ const generate: typeof generateModule =
 
 /**
  * Partial migrations keep next-intl's request config alive for the skipped
- * files, but gt-next's middleware no longer populates `requestLocale` — so
+ * files, but gt-next's middleware no longer populates `requestLocale`; so
  * the config's fallback branch runs on every request and every skipped file
  * renders default-locale messages. Shadow-wrap the `requestLocale` promise
  * so its empty case resolves through gt-next's getLocale() instead. This is
@@ -116,7 +116,7 @@ export function transformRequestConfigFile(
         {
           file,
           reason:
-            'request config shape not recognized — with gt-next owning the middleware, its requestLocale fallback runs on every request; wire the fallback to gt-next/server getLocale() so skipped files render the page locale',
+            'request config shape not recognized; with gt-next owning the middleware, its requestLocale fallback runs on every request; wire the fallback to gt-next/server getLocale() so skipped files render the page locale',
         },
       ],
     };

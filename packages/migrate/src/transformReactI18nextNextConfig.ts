@@ -16,8 +16,8 @@ const generate: typeof generateModule =
 /**
  * Wraps an existing next.config's exported config in `withGTConfig`, pointing
  * gt-next's dictionary at the converted default-locale catalog. Unlike next-intl
- * there is no i18n plugin to swap out — a raw react-i18next app has a plain
- * next.config — so this ADDS withGTConfig around whatever the app exports.
+ * there is no i18n plugin to swap out; a raw react-i18next app has a plain
+ * next.config; so this ADDS withGTConfig around whatever the app exports.
  * Handles both ESM (`export default ...`) and CJS (`module.exports = ...`);
  * anything else is left untouched with an actionable TODO rather than a guess.
  */
@@ -102,7 +102,7 @@ export function transformReactI18nextNextConfig(
         {
           file,
           reason:
-            "could not find a default export / module.exports to wrap — add `withGTConfig(yourConfig, { dictionary: '" +
+            "could not find a default export / module.exports to wrap; add `withGTConfig(yourConfig, { dictionary: '" +
             dictionaryPath +
             "' })` from gt-next/config to next.config manually (gt-next needs it to load the dictionary and run its compiler plugin)",
         },

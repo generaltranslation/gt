@@ -16,7 +16,7 @@ const NEXT_NAVIGATION_EXPORTS = new Set([
  * compiling: Link becomes gt-next's locale-aware Link, usePathname becomes a
  * locale-stripping wrapper (next-intl's returns the pathname WITHOUT the
  * prefix), the rest re-export from next/navigation. Anything beyond that
- * shape — including localized `pathnames` routing — is left for manual work.
+ * shape; including localized `pathnames` routing; is left for manual work.
  */
 export function transformNavigationFile(
   file: string,
@@ -59,7 +59,7 @@ export function transformNavigationFile(
     return {
       ...none,
       skipReasons: [
-        'routing config defines localized pathnames, which gt-next navigation does not support — keep next-intl navigation for these routes (manual conversion)',
+        'routing config defines localized pathnames, which gt-next navigation does not support; keep next-intl navigation for these routes (manual conversion)',
       ],
     };
   }
@@ -192,11 +192,11 @@ export function transformNavigationFile(
   if (passthrough.length > 0) {
     todos.push({
       file,
-      reason: `${passthrough.join('/')} calls are no longer locale-prefixed automatically — gt-next localizes <Link> hrefs; prefix programmatic navigation manually where a locale path is required`,
+      reason: `${passthrough.join('/')} calls are no longer locale-prefixed automatically; gt-next localizes <Link> hrefs; prefix programmatic navigation manually where a locale path is required`,
     });
     lines.push('');
     lines.push(
-      `// TODO(gt-migrate): ${passthrough.join('/')} are plain next/navigation now —`
+      `// TODO(gt-migrate): ${passthrough.join('/')} are plain next/navigation now.`
     );
     lines.push(
       '// gt-next localizes <Link> hrefs, but programmatic navigation is not auto-prefixed.'

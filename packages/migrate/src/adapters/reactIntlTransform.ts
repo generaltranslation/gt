@@ -133,7 +133,7 @@ export function transformReactIntlSource(
     }
     hasReactIntlReexport = true;
     skipReasons.push(
-      `re-export from '${source}' would break once react-intl is removed — convert the re-export manually`
+      `re-export from '${source}' would break once react-intl is removed; convert the re-export manually`
     );
   };
   traverse(ast, {
@@ -161,7 +161,7 @@ export function transformReactIntlSource(
         // @formatjs/* deep imports are advanced runtime wiring with no v1 map.
         if (source.startsWith('@formatjs/')) {
           skipReasons.push(
-            `unsupported react-intl API: ${imported} (from '${source}') — advanced @formatjs usage has no v1 gt-next mapping`
+            `unsupported react-intl API: ${imported} (from '${source}'); advanced @formatjs usage has no v1 gt-next mapping`
           );
         } else if (!SUPPORTED_IMPORTS.has(imported)) {
           skipReasons.push(reasonForUnsupported(imported, source));
@@ -248,7 +248,7 @@ export function transformReactIntlSource(
           planUseIntlDestructure(path, id);
         } else {
           skipReasons.push(
-            'const … = useIntl() uses an unsupported binding form (array/other pattern) — convert manually'
+            'const … = useIntl() uses an unsupported binding form (array/other pattern); convert manually'
           );
         }
       } else if (createIntlLocals.has(callee) && t.isIdentifier(id)) {
@@ -265,7 +265,7 @@ export function transformReactIntlSource(
           defineMessagesDecls.push(path);
         } else {
           skipReasons.push(
-            `defineMessages('${id.name}') has non-literal descriptors (id must be a string literal) — convert manually`
+            `defineMessages('${id.name}') has non-literal descriptors (id must be a string literal); convert manually`
           );
         }
       }
@@ -280,7 +280,7 @@ export function transformReactIntlSource(
 
   // A client intl binding (useIntl-derived) declared at module scope is invalid
   // react-intl: hooks run only inside components. Rewriting it to a module-scope
-  // useTranslations() — and reusing it inside components — would carry that
+  // useTranslations(); and reusing it inside components; would carry that
   // rules-of-hooks violation straight into the output, so skip+report instead of
   // silently propagating it (a null enclosing function means module scope; every
   // client binding records its enclosing function, so this never false-fires on
@@ -288,7 +288,7 @@ export function transformReactIntlSource(
   for (const [name, kind] of intlBindings) {
     if (kind === 'client' && (intlBindingFns.get(name) ?? null) === null) {
       skipReasons.push(
-        `useIntl() is called at module scope (bound to '${name}'), which violates React's rules of hooks — move it inside the component, then re-run gt migrate`
+        `useIntl() is called at module scope (bound to '${name}'), which violates React's rules of hooks; move it inside the component, then re-run gt migrate`
       );
     }
   }
@@ -350,7 +350,7 @@ export function transformReactIntlSource(
         const method = callee.property.name;
         if (method !== 'formatMessage') {
           skipReasons.push(
-            `${objectName}.${method}() has no bare gt-next hook — use the matching gt-next component in JSX, or convert manually`
+            `${objectName}.${method}() has no bare gt-next hook; use the matching gt-next component in JSX, or convert manually`
           );
           return;
         }
@@ -416,7 +416,7 @@ export function transformReactIntlSource(
         !t.isIdentifier(property.value)
       ) {
         skipReasons.push(
-          'const { … } = useIntl() uses an unsupported destructuring form (rest/default/computed member) — convert manually'
+          'const { … } = useIntl() uses an unsupported destructuring form (rest/default/computed member); convert manually'
         );
         ok = false;
         continue;
@@ -425,7 +425,7 @@ export function transformReactIntlSource(
         formatMessageLocal = property.value;
       } else {
         skipReasons.push(
-          `const { ${property.key.name} } = useIntl() destructures '${property.key.name}', which has no bare gt-next hook — use the matching gt-next component/hook or convert manually`
+          `const { ${property.key.name} } = useIntl() destructures '${property.key.name}', which has no bare gt-next hook; use the matching gt-next component/hook or convert manually`
         );
         ok = false;
       }
@@ -456,11 +456,11 @@ export function transformReactIntlSource(
       if (isAutoIdDescriptor(descriptorArg)) {
         autoIdSeen = true;
         skipReasons.push(
-          `${binding}.formatMessage(...) has no literal id: FormatJS auto-generates ids at build time (overrideIdFn/idInterpolationPattern); gt-next needs a literal id — add an explicit id or convert manually`
+          `${binding}.formatMessage(...) has no literal id: FormatJS auto-generates ids at build time (overrideIdFn/idInterpolationPattern); gt-next needs a literal id; add an explicit id or convert manually`
         );
       } else {
         skipReasons.push(
-          `${binding}.formatMessage(...) uses a dynamic descriptor/id — it cannot map to a dictionary key (and unknown keys throw in gt-next); convert manually`
+          `${binding}.formatMessage(...) uses a dynamic descriptor/id; it cannot map to a dictionary key (and unknown keys throw in gt-next); convert manually`
         );
       }
       return;
@@ -472,13 +472,13 @@ export function transformReactIntlSource(
     const message = catalogMessage(id, ctx);
     if (message === null) {
       skipReasons.push(
-        `${binding}.formatMessage('${id}') has no source entry in the '${ctx.catalogs.defaultLocale}' catalog — gt-next's dictionary t() throws on unknown keys, so add '${id}' to it (or give the call a literal defaultMessage so a missing default-locale catalog can be synthesized) or convert manually`
+        `${binding}.formatMessage('${id}') has no source entry in the '${ctx.catalogs.defaultLocale}' catalog; gt-next's dictionary t() throws on unknown keys, so add '${id}' to it (or give the call a literal defaultMessage so a missing default-locale catalog can be synthesized) or convert manually`
       );
       return;
     }
     if (isRichOrHasFunctionValues(message, valuesArg)) {
       skipReasons.push(
-        `${binding}.formatMessage('${id}') has rich-text tags/chunk functions/element values gt-next's dictionary t() cannot render (t returns a string) — convert manually`
+        `${binding}.formatMessage('${id}') has rich-text tags/chunk functions/element values gt-next's dictionary t() cannot render (t returns a string); convert manually`
       );
       return;
     }
@@ -499,11 +499,11 @@ export function transformReactIntlSource(
       if (dmAttr && stringAttrValue(dmAttr) !== null) {
         autoIdSeen = true;
         skipReasons.push(
-          '<FormattedMessage> has no literal id: FormatJS auto-generates ids at build time (overrideIdFn/idInterpolationPattern); gt-next needs a literal id — add an explicit id or convert manually'
+          '<FormattedMessage> has no literal id: FormatJS auto-generates ids at build time (overrideIdFn/idInterpolationPattern); gt-next needs a literal id; add an explicit id or convert manually'
         );
       } else {
         skipReasons.push(
-          '<FormattedMessage> with a dynamic or missing id cannot map to a dictionary key — convert manually'
+          '<FormattedMessage> with a dynamic or missing id cannot map to a dictionary key; convert manually'
         );
       }
       return;
@@ -517,7 +517,7 @@ export function transformReactIntlSource(
     );
     if (renderProp) {
       skipReasons.push(
-        `<FormattedMessage>{(chunks) => …}</FormattedMessage> render-prop children have no gt-next equivalent — convert manually`
+        `<FormattedMessage>{(chunks) => …}</FormattedMessage> render-prop children have no gt-next equivalent; convert manually`
       );
       return;
     }
@@ -528,7 +528,7 @@ export function transformReactIntlSource(
     const message = catalogMessage(id, ctx);
     if (message === null) {
       skipReasons.push(
-        `<FormattedMessage id="${id}"> has no source entry in the '${ctx.catalogs.defaultLocale}' catalog — gt-next's dictionary t() throws on unknown keys, so add '${id}' to it (or give it a literal defaultMessage so a missing default-locale catalog can be synthesized) or convert manually`
+        `<FormattedMessage id="${id}"> has no source entry in the '${ctx.catalogs.defaultLocale}' catalog; gt-next's dictionary t() throws on unknown keys, so add '${id}' to it (or give it a literal defaultMessage so a missing default-locale catalog can be synthesized) or convert manually`
       );
       return;
     }
@@ -550,7 +550,7 @@ export function transformReactIntlSource(
           ? 'has rich-text tags'
           : 'has a JSX-element or chunk-function `values` entry';
       skipReasons.push(
-        `<FormattedMessage id="${id}"> ${trigger} gt-next's dictionary t() cannot render — convert manually`
+        `<FormattedMessage id="${id}"> ${trigger} gt-next's dictionary t() cannot render; convert manually`
       );
       return;
     }
@@ -593,7 +593,7 @@ export function transformReactIntlSource(
   // Bindings the mutations below strand: locals the removed createIntl(...)
   // arguments read, and destructured component props the unwrapped <IntlProvider>
   // read. Recorded here, then pruned (only where left unreferenced) as the final
-  // AST mutation, so migrated code passes strict unused-variable linting — the
+  // AST mutation, so migrated code passes strict unused-variable linting; the
   // react-intl analogue of transformSource step 5 / transformLayout step 7.
   const orphanedArgBindings = new Set<t.Node>();
   const orphanedPropBindings = new Set<t.Node>();
@@ -607,7 +607,7 @@ export function transformReactIntlSource(
         code: null,
         todos: [],
         skipReasons: [
-          'createIntl(...) is not inside an async Server Component — convert it to `await getTranslations()` inside an async component manually',
+          'createIntl(...) is not inside an async Server Component; convert it to `await getTranslations()` inside an async component manually',
         ],
       };
     }
@@ -677,14 +677,14 @@ export function transformReactIntlSource(
     if (bindingName.injected) {
       // An injected useTranslations() hook needs an enclosing function to live
       // in. At module scope (no component) there is nowhere to call it, so
-      // emitting the bare call would leave the binding undeclared — skip the
+      // emitting the bare call would leave the binding undeclared; skip the
       // whole file rather than write broken code.
       if (!fn) {
         return {
           code: null,
           todos: [],
           skipReasons: [
-            `<FormattedMessage id="${id}"> renders at module scope, outside any component, where gt-next's useTranslations() hook cannot be called — move it inside a component or convert manually`,
+            `<FormattedMessage id="${id}"> renders at module scope, outside any component, where gt-next's useTranslations() hook cannot be called; move it inside a component or convert manually`,
           ],
         };
       }
@@ -785,7 +785,7 @@ export function transformReactIntlSource(
         code: null,
         todos: [],
         skipReasons: [
-          `react-intl's '${survivor}' is still referenced after conversion (an unsupported usage form) — stripping its import would break the file, so it is left untouched; convert manually`,
+          `react-intl's '${survivor}' is still referenced after conversion (an unsupported usage form); stripping its import would break the file, so it is left untouched; convert manually`,
         ],
       };
     }
@@ -854,18 +854,18 @@ export function transformReactIntlSource(
 function reasonForUnsupported(imported: string, source: string): string {
   switch (imported) {
     case 'injectIntl':
-      return 'injectIntl (class-component HOC) has no gt-next equivalent — convert the class to a function component using useTranslations, or keep it on react-intl';
+      return 'injectIntl (class-component HOC) has no gt-next equivalent; convert the class to a function component using useTranslations, or keep it on react-intl';
     case 'RawIntlProvider':
-      return 'RawIntlProvider has no gt-next equivalent — gt-next resolves its provider context server-side; wrap your [locale] layout in <GTProvider> instead';
+      return 'RawIntlProvider has no gt-next equivalent; gt-next resolves its provider context server-side; wrap your [locale] layout in <GTProvider> instead';
     case 'FormattedList':
     case 'FormattedListParts':
-      return 'FormattedList/formatList has no gt-next component in v1 (gt.formatList exists only on the core runtime) — convert manually';
+      return 'FormattedList/formatList has no gt-next component in v1 (gt.formatList exists only on the core runtime); convert manually';
     case 'FormattedDisplayName':
-      return 'FormattedDisplayName/formatDisplayName has no gt-next component in v1 — use getLocaleProperties or convert manually';
+      return 'FormattedDisplayName/formatDisplayName has no gt-next component in v1; use getLocaleProperties or convert manually';
     case 'FormattedNumberParts':
     case 'FormattedDateParts':
     case 'FormattedTimeParts':
-      return `${imported} (…ToParts) has no gt-next equivalent — convert manually`;
+      return `${imported} (…ToParts) has no gt-next equivalent; convert manually`;
     default:
       return `unsupported react-intl API: ${imported} (from '${source}')`;
   }
@@ -950,7 +950,7 @@ function catalogMessage(id: string, ctx: MigrationContext): string | null {
 }
 
 function collisionSkipReason(id: string): string {
-  return `'${id}' collides with another catalog key (present both as a value and as a namespace prefix, e.g. 'a' and 'a.b'), which gt-next's nested dictionary cannot represent — rename one of them and re-run gt migrate, or convert manually`;
+  return `'${id}' collides with another catalog key (present both as a value and as a namespace prefix, e.g. 'a' and 'a.b'), which gt-next's nested dictionary cannot represent; rename one of them and re-run gt migrate, or convert manually`;
 }
 
 /** True for the FormatJS auto-generated-id shape: a descriptor with a literal
@@ -1017,7 +1017,7 @@ function providerDropReasons(opening: t.JSXOpeningElement): string[] {
   for (const attr of opening.attributes) {
     if (t.isJSXSpreadAttribute(attr)) {
       reasons.push(
-        '<IntlProvider> uses spread props ({...props}) that cannot be inspected — it may carry timeZone/onError/textComponent/formats that gt-next handles differently; convert this provider manually'
+        '<IntlProvider> uses spread props ({...props}) that cannot be inspected; it may carry timeZone/onError/textComponent/formats that gt-next handles differently; convert this provider manually'
       );
       continue;
     }
@@ -1026,14 +1026,14 @@ function providerDropReasons(opening: t.JSXOpeningElement): string[] {
     if (PROVIDER_SAFE_PROPS.has(name)) continue;
     if (name === 'timeZone') {
       reasons.push(
-        '<IntlProvider> sets `timeZone` — gt-next resolves timezone differently, and dropping it changes every <FormattedDate>/<FormattedTime> render (server/visitor zone instead of the pinned one). Set the timezone in your gt config and verify date output, then remove it and re-run gt migrate; converting this file now would drop it silently'
+        '<IntlProvider> sets `timeZone`; gt-next resolves timezone differently, and dropping it changes every <FormattedDate>/<FormattedTime> render (server/visitor zone instead of the pinned one). Set the timezone in your gt config and verify date output, then remove it and re-run gt migrate; converting this file now would drop it silently'
       );
       continue;
     }
     const note = PROVIDER_PROP_NOTES[name];
     const detail = note ? ` (it ${note})` : '';
     reasons.push(
-      `<IntlProvider> sets \`${name}\`, which has no gt-next <GTProvider> equivalent and would be dropped silently${detail} — convert this provider manually`
+      `<IntlProvider> sets \`${name}\`, which has no gt-next <GTProvider> equivalent and would be dropped silently${detail}; convert this provider manually`
     );
   }
   return reasons;
@@ -1103,7 +1103,7 @@ function convertFormatter(
   const opening = element.node.openingElement;
   if (opening.attributes.some((attr) => t.isJSXSpreadAttribute(attr))) {
     return {
-      skip: `<${kind}> uses spread props that cannot be mapped to gt-next options — convert manually`,
+      skip: `<${kind}> uses spread props that cannot be mapped to gt-next options; convert manually`,
     };
   }
 
@@ -1111,7 +1111,7 @@ function convertFormatter(
     const value = jsxAttr(opening, 'value');
     if (!value || !t.isJSXExpressionContainer(value.value)) {
       return {
-        skip: '<FormattedPlural> needs a `value={…}` expression — convert manually',
+        skip: '<FormattedPlural> needs a `value={…}` expression; convert manually',
       };
     }
     const kept: t.JSXAttribute[] = [];
@@ -1126,7 +1126,7 @@ function convertFormatter(
         todos.push({
           file,
           line: opening.loc?.start.line,
-          reason: `<Plural>: dropped <FormattedPlural> prop \`${name}\` (no gt-next equivalent) — verify output`,
+          reason: `<Plural>: dropped <FormattedPlural> prop \`${name}\` (no gt-next equivalent); verify output`,
         });
       }
     }
@@ -1147,7 +1147,7 @@ function convertFormatter(
           file,
           line: opening.loc?.start.line,
           reason:
-            '<RelativeTime>: react-intl auto-updated (updateIntervalInSeconds); gt-next renders a static value — add your own timer if a live tick is required',
+            '<RelativeTime>: react-intl auto-updated (updateIntervalInSeconds); gt-next renders a static value; add your own timer if a live tick is required',
         });
       } else {
         const prop = attrToObjectProp(attr);
@@ -1170,13 +1170,13 @@ function convertFormatter(
   const value = jsxAttr(opening, 'value');
   if (!value || !t.isJSXExpressionContainer(value.value)) {
     return {
-      skip: `<${kind}> needs a \`value={…}\` expression — convert manually`,
+      skip: `<${kind}> needs a \`value={…}\` expression; convert manually`,
     };
   }
   const valueExpr = value.value.expression;
   if (!t.isExpression(valueExpr)) {
     return {
-      skip: `<${kind}> has an unsupported \`value\` — convert manually`,
+      skip: `<${kind}> has an unsupported \`value\`; convert manually`,
     };
   }
   const options: t.ObjectProperty[] = [];
@@ -1193,7 +1193,7 @@ function convertFormatter(
     const prop = attrToObjectProp(attr);
     if (!prop) {
       return {
-        skip: `<${kind}> prop \`${attr.name.name}\` cannot be mapped to gt-next options — convert manually`,
+        skip: `<${kind}> prop \`${attr.name.name}\` cannot be mapped to gt-next options; convert manually`,
       };
     }
     // Later (explicit) props override the defaults.
@@ -1417,7 +1417,7 @@ function translationBindingFor(
 /** Inserts `const <name> = useTranslations();` at the top of a function body.
  *  An implicit-body arrow (`() => <expr>`) is first converted to a block
  *  (`() => { const <name> = useTranslations(); return <expr>; }`), so the hook
- *  the caller already emitted as `<name>(...)` always has its declaration —
+ *  the caller already emitted as `<name>(...)` always has its declaration;
  *  emitting the call without it would leave `<name>` undeclared (TS2304 at
  *  typecheck, ReferenceError at render). Only arrows can have a non-block body. */
 function insertHookDeclaration(fn: t.Function, name: string): void {
@@ -1486,7 +1486,7 @@ function removeDeclarator(path: NodePath<t.VariableDeclarator>): void {
  * Prunes local bindings the removed createIntl(...) arguments object was the sole
  * consumer of, so the getTranslations() swap leaves no unused-variable defect. A
  * `const { locale } = …` object pattern is property-spliced (a RestElement sibling
- * aborts it — the rest would absorb the key); a plain declarator goes whole only
+ * aborts it; the rest would absorb the key); a plain declarator goes whole only
  * when unreferenced. Function parameters and types are never touched. Recrawls
  * each pass and loops to a fixpoint so a chain (`messages` → `locale`) unwinds.
  */
@@ -1568,7 +1568,7 @@ function pruneOrphanedArgBindings(ast: t.File, targets: Set<t.Node>): void {
  * consumer of (`function W({ locale, messages, children })` → `{ children }`).
  * Same safety rules as transformLayout step 7: a RestElement sibling aborts the
  * splice, the TypeScript annotation is left untouched, and the recrawled binding
- * of the function's own scope decides — a prop still read elsewhere survives.
+ * of the function's own scope decides; a prop still read elsewhere survives.
  */
 function pruneOrphanedProps(ast: t.File, targets: Set<t.Node>): void {
   traverse(ast, {

@@ -90,7 +90,7 @@ export function transformReactI18nextSource(
       const source = path.node.source.value;
       if (source === 'i18next' || source.startsWith('i18next/')) {
         skipReasons.push(
-          `imports from 'i18next' directly (bespoke setup) — gt migrate does not rewrite hand-rolled i18next server/config code; migrate it manually to gt-next/server (getTranslations) and gt-next/config`
+          `imports from 'i18next' directly (bespoke setup); gt migrate does not rewrite hand-rolled i18next server/config code; migrate it manually to gt-next/server (getTranslations) and gt-next/config`
         );
         return;
       }
@@ -100,7 +100,7 @@ export function transformReactI18nextSource(
       // harmless and needs no migration (the N2 nit). A whole
       // `import type { … } from 'react-i18next'` declaration, or an import whose
       // specifiers are all inline `type` (`import { type TFunction }`), is left
-      // untouched and never reported as an unsupported API — so a file whose only
+      // untouched and never reported as an unsupported API; so a file whose only
       // react-i18next surface is type-only imports passes straight through. Only
       // value specifiers drive the transform; a residual inline `type` specifier
       // on an otherwise-migrated declaration is preserved by applyImportSurgery.
@@ -123,7 +123,7 @@ export function transformReactI18nextSource(
           : specifier.imported.value;
         if (!SUPPORTED_RI18N.has(imported)) {
           skipReasons.push(
-            `unsupported react-i18next API: ${imported} (from '${source}') — convert manually (see the gt-next docs)`
+            `unsupported react-i18next API: ${imported} (from '${source}'); convert manually (see the gt-next docs)`
           );
           continue;
         }
@@ -212,7 +212,7 @@ export function transformReactI18nextSource(
             !t.isIdentifier(property.key)
           ) {
             skipReasons.push(
-              'useTranslation() is destructured in a shape gt migrate does not recognize — convert manually'
+              'useTranslation() is destructured in a shape gt migrate does not recognize; convert manually'
             );
             continue;
           }
@@ -222,7 +222,7 @@ export function transformReactI18nextSource(
             : null;
           if (!localName) {
             skipReasons.push(
-              'useTranslation() destructure value is not a plain identifier — convert manually'
+              'useTranslation() destructure value is not a plain identifier; convert manually'
             );
             continue;
           }
@@ -237,11 +237,11 @@ export function transformReactI18nextSource(
           } else if (keyName === 'ready') {
             // ready flag has no gt equivalent (gt suspends/streams instead).
             skipReasons.push(
-              "useTranslation()'s `ready` flag has no gt-next equivalent (gt handles loading via streaming) — remove it manually"
+              "useTranslation()'s `ready` flag has no gt-next equivalent (gt handles loading via streaming); remove it manually"
             );
           } else {
             skipReasons.push(
-              `useTranslation() destructures \`${keyName}\`, which gt migrate does not support — convert manually`
+              `useTranslation() destructures \`${keyName}\`, which gt migrate does not support; convert manually`
             );
           }
         }
@@ -256,7 +256,7 @@ export function transformReactI18nextSource(
           });
       } else {
         skipReasons.push(
-          'useTranslation() is assigned to a non-destructured binding — convert manually'
+          'useTranslation() is assigned to a non-destructured binding; convert manually'
         );
       }
     },
@@ -346,7 +346,7 @@ export function transformReactI18nextSource(
       for (const key of keys) {
         if (mapKey(key, binding, config) === null) {
           skipReasons.push(
-            `a scoped useTranslation('${binding.i18nextNs}') call reads another namespace via '${key}' — gt-next scoped hooks resolve only within their namespace; use a root useTranslations() or split the call`
+            `a scoped useTranslation('${binding.i18nextNs}') call reads another namespace via '${key}'; gt-next scoped hooks resolve only within their namespace; use a root useTranslations() or split the call`
           );
         }
       }
@@ -689,7 +689,7 @@ function remapTCalls(
         todos.push({
           file,
           line: path.node.loc?.start.line,
-          reason: `dropped the inline defaultValue for '${keyArg.value}' — the migrated catalog entry is authoritative`,
+          reason: `dropped the inline defaultValue for '${keyArg.value}'; the migrated catalog entry is authoritative`,
         });
       }
     },
@@ -728,7 +728,7 @@ function mapKey(
   }
   // Scoped gt hook (useTranslations('ns')): key is relative to that namespace.
   if (callNs === binding.i18nextNs) return keyPath;
-  // A cross-namespace key from a scoped hook cannot be expressed — signal by
+  // A cross-namespace key from a scoped hook cannot be expressed; signal by
   // returning null so the caller leaves it (the file was already skipped if
   // this mattered; this is a defensive no-op).
   return null;
@@ -772,7 +772,7 @@ function analyzeTrans(
   ctx: MigrationContext
 ): t.CallExpression | string {
   const actionable =
-    'a <Trans> with element children is not mechanically convertible — rewrite it with the gt-next <T> component (its children are translated in place)';
+    'a <Trans> with element children is not mechanically convertible; rewrite it with the gt-next <T> component (its children are translated in place)';
   const opening = path.node.openingElement;
 
   let i18nKey: string | null = null;
@@ -814,7 +814,7 @@ function analyzeTrans(
     } else if (attrName === 'i18nKey' || attrName === 'ns') {
       return actionable; // dynamic key/ns
     }
-    // other attrs (tOptions, shouldUnescape, parent) — ignore benign ones
+    // other attrs (tOptions, shouldUnescape, parent); ignore benign ones
   }
 
   if (hasComponents) return actionable;
@@ -823,7 +823,7 @@ function analyzeTrans(
     if (t.isJSXElement(child) || t.isJSXFragment(child)) return actionable;
   }
   if (!i18nKey) {
-    return 'a <Trans> without a static i18nKey cannot be converted automatically — give it an i18nKey or use the gt-next <T> component';
+    return 'a <Trans> without a static i18nKey cannot be converted automatically; give it an i18nKey or use the gt-next <T> component';
   }
 
   // Choose a t binding: an explicit t={...} attr, else the sole binding.
@@ -837,7 +837,7 @@ function analyzeTrans(
     binding = [...tBindings.values()][0];
   }
   if (!binding || !tName) {
-    return 'a <Trans> has no translation function in scope to convert to a dictionary call — use the gt-next <T> component instead';
+    return 'a <Trans> has no translation function in scope to convert to a dictionary call; use the gt-next <T> component instead';
   }
 
   const rawKey =
@@ -846,7 +846,7 @@ function analyzeTrans(
       : i18nKey;
   const mapped = mapKey(rawKey, binding, config);
   if (mapped === null) {
-    return `a <Trans i18nKey="${i18nKey}"> references a namespace outside its scoped hook — convert manually or use <T>`;
+    return `a <Trans i18nKey="${i18nKey}"> references a namespace outside its scoped hook; convert manually or use <T>`;
   }
 
   const args: t.Expression[] = [t.stringLiteral(mapped)];

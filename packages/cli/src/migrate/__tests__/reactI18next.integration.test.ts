@@ -300,7 +300,7 @@ describe('react-i18next full migration', () => {
     // Another file uses an unsupported react-i18next API and is skipped, which
     // makes the run a partial migration (retainProvider). The provider file must
     // keep <I18nextProvider> AND still gain the gt-next import for its migrated
-    // useTranslations() hook — the retained-import branch used to skip it.
+    // useTranslations() hook; the retained-import branch used to skip it.
     const cwd = makeApp({
       'app/[locale]/Providers.tsx': [
         "'use client';",

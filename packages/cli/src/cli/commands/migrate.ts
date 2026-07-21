@@ -85,7 +85,7 @@ export async function handleMigrateCommand(
     );
     logger.message(report);
     echoWarnings(ctx);
-    logger.endCommand('Dry run complete — nothing was written.');
+    logger.endCommand('Dry run complete; nothing was written.');
     return;
   }
 
@@ -125,7 +125,7 @@ export async function handleMigrateCommand(
     );
   }
 
-  // The rewritten files import gt-next — install it so the app builds.
+  // The rewritten files import gt-next; install it so the app builds.
   let gtNextMissing = !(await isGtNextInstalled(cwd));
   if (gtNextMissing) {
     // When detection fails (no lockfile), getPackageManager falls back to an
@@ -167,7 +167,7 @@ export async function handleMigrateCommand(
     );
   } catch {
     logger.warn(
-      'Post-migration formatting failed — run your formatter over the changed files.'
+      'Post-migration formatting failed; run your formatter over the changed files.'
     );
   }
 
@@ -226,7 +226,7 @@ function guardGitState(cwd: string, options: MigrateOptions): void {
     }
   } catch {
     logger.warn(
-      'Not a git repository — proceeding without a safety checkpoint.'
+      'Not a git repository; proceeding without a safety checkpoint.'
     );
   }
 }

@@ -12,7 +12,7 @@ const generate: typeof generateModule =
   (generateModule as { default?: typeof generateModule }).default ||
   generateModule;
 
-// gt-next TARGET modules — constant across every source adapter, so they stay
+// gt-next TARGET modules; constant across every source adapter, so they stay
 // in the core transform. Every next-intl-specific symbol table (client/server
 // swaps, removals, provider name, the `Locale` type, messages hooks) now lives
 // on the adapter, read through ctx.adapter below.
@@ -415,7 +415,7 @@ export function transformSourceFile(
         file,
         line: rewrite.line,
         reason:
-          'getTranslations locale override dropped — gt-next resolves the request locale itself; use options.$locale on individual calls if a fixed locale was intended',
+          'getTranslations locale override dropped; gt-next resolves the request locale itself; use options.$locale on individual calls if a fixed locale was intended',
       });
     }
   }
@@ -858,7 +858,7 @@ function getObjectProp(
  * True when `bindingName` was passed as a provider prop AND has no other
  * reference in the file. The provider swap removes both the prop and the
  * declaration, so any surviving reference (`<Child messages={messages} />`)
- * would dangle — those files must be skipped instead.
+ * would dangle; those files must be skipped instead.
  */
 function isProviderOnlyBinding(
   bindingName: string,

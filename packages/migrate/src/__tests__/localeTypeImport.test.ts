@@ -250,7 +250,7 @@ describe('transformSourceFile: next-intl Locale type', () => {
 
   it('drops a retained Locale import when no reference survives', () => {
     // The only Locale reference is an `as Locale` cast inside a getTranslations
-    // object arg, which the transform rewrites away — so even in retain mode the
+    // object arg, which the transform rewrites away; so even in retain mode the
     // now-unreferenced Locale specifier must be pruned (no dead import).
     const result = transform(
       [

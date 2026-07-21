@@ -18,7 +18,7 @@ const generate: typeof generateModule =
  * sure a <GTProvider> wraps the layout's <body> children so client components
  * using useTranslations resolve their dictionary. Unlike next-intl there is no
  * hasLocale guard, no `routing` object, and no NextIntlClientProvider retention
- * to unwind — react-i18next layouts render `<html lang={param}>` and children,
+ * to unwind; react-i18next layouts render `<html lang={param}>` and children,
  * and the [locale]/[lng] static-rendering handling is done by emitGtFiles.
  */
 export function transformReactI18nextLayout(

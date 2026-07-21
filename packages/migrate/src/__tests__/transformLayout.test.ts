@@ -315,7 +315,7 @@ describe('transformLayoutFile', () => {
     // messages loading must survive for the retained provider
     expect(result.code).toContain('getMessages');
     // gt-next middleware no longer feeds next-intl's request config, so the
-    // retained provider gets the resolved locale explicitly — via the static
+    // retained provider gets the resolved locale explicitly; via the static
     // route-param binding (SSG-safe), never a request-scoped getLocale()
     expect(result.code).toMatch(
       /<NextIntlClientProvider[^>]*locale=\{locale\}/
@@ -490,7 +490,7 @@ describe('transformLayoutFile', () => {
 
   it('does not inject an out-of-scope param locale from generateMetadata (uses the getLocale fallback)', () => {
     // generateMetadata destructures the param locale, but the default-exported
-    // component does not — so `locale` is NOT in scope at the provider inside
+    // component does not; so `locale` is NOT in scope at the provider inside
     // the component. The file-wide binding must not leak in as `locale={locale}`
     // (an undefined reference); the component is async, so the request-scoped
     // fallback applies instead.

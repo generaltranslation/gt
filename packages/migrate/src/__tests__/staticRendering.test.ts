@@ -257,7 +257,7 @@ describe('emitGtFiles static-locale resolvers', () => {
 
   it('uses the installed Next version (node_modules) over the declared range', () => {
     // Declares a wide floor (>=13) but the actually-installed Next is new, so
-    // the resolvers should still emit — the installed version wins.
+    // the resolvers should still emit; the installed version wins.
     const ctx = makeProject({
       'package.json': JSON.stringify({
         name: 'app',
@@ -372,7 +372,7 @@ describe('emitGtFiles static-locale resolvers', () => {
 
   it('does NOT emit when the installed Next is < 15.5 and files a version TODO', () => {
     // A generous declared range would allow newer, but the installed Next is
-    // old — the installed version wins and the import would break the build.
+    // old; the installed version wins and the import would break the build.
     const ctx = makeProject({
       'package.json': JSON.stringify({
         name: 'app',
@@ -433,7 +433,7 @@ describe('emitGtFiles static-locale resolvers', () => {
 
   it('treats a wide declared range conservatively (>=13 does not emit)', () => {
     // Without an installed Next to pin the version, the lower bound (13.0.0)
-    // governs — below the floor, so nothing is emitted.
+    // governs; below the floor, so nothing is emitted.
     const ctx = makeProject({
       'package.json': JSON.stringify({
         name: 'app',
@@ -516,11 +516,11 @@ describe('emitGtFiles static-locale resolvers', () => {
       'messages/en.json': '{}',
     });
     // The [locale] layout hit an unsupported API and was left untouched, so it
-    // never receives GTProvider — the resolvers would be dead weight and the
+    // never receives GTProvider; the resolvers would be dead weight and the
     // "static rendering preserved" claim would be false.
     const layout = path.join(ctx.cwd, 'src/app/[locale]/layout.tsx');
     ctx.skippedFiles.set(layout, [
-      'uses an unsupported next-intl API — left untouched',
+      'uses an unsupported next-intl API; left untouched',
     ]);
     ctx.edits.push(...emitGtFiles(ctx));
 
