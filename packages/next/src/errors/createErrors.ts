@@ -201,6 +201,13 @@ export const createGTCompilerUnresolvedWarning = (type: 'babel' | 'swc') =>
     }),
   });
 
+export const autoJsxInjectionCompilerWarning = createGtNextPluginDiagnostic({
+  severity: 'Warning',
+  whatHappened: 'Automatic JSX injection requires the GT webpack compiler',
+  wayOut: 'Automatic JSX injection will be skipped',
+  fix: "Set experimentalCompilerOptions.type to 'babel' in withGTConfig() and build with webpack",
+});
+
 export const customGetLocaleUnresolvedWarning = createGtNextDiagnostic({
   whatHappened: 'Custom getLocale() could not be resolved',
   wayOut: 'gt-next will fall back to default locale detection',

@@ -1,4 +1,6 @@
 import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { esbuild as gtCompiler } from '@generaltranslation/compiler';
 import { context } from 'esbuild';
 
@@ -7,6 +9,7 @@ const serve = args.has('--serve');
 const production = args.has('--production') || !serve;
 const portArg = process.argv[process.argv.indexOf('--port') + 1];
 const port = Number(portArg || 5178);
+const appDir = path.dirname(fileURLToPath(import.meta.url));
 
 async function writeHtml() {
   const html = await fs.readFile(
@@ -28,6 +31,10 @@ async function writeHtml() {
 await writeHtml();
 
 const ctx = await context({
+  alias: {
+    react: path.join(appDir, 'node_modules/react'),
+    'react-dom': path.join(appDir, 'node_modules/react-dom'),
+  },
   entryPoints: ['src/index.ts'],
   bundle: true,
   outdir: 'dist/assets',

@@ -42,7 +42,10 @@ export type {
   RenderVariable,
 } from './utils/types';
 
-export { internalInitializeGTSRA } from './setup/initializeGTSRA';
+export {
+  internalInitializeGTSRA,
+  type ReactInitializeGTParams,
+} from './setup/initializeGTSRA';
 
 export {
   ReactI18nCache,

@@ -9,6 +9,7 @@ import { getGtReactImportSource } from '../../utils/constants/gt/helpers';
  */
 export function injectJsxInsertionImport(
   path: NodePath<t.Program>,
+  autoJsxImportSource: string | undefined,
   legacyGtReactImportSource: boolean
 ): void {
   const tName = GT_COMPONENT_TYPES.GtInternalTranslateJsx;
@@ -19,7 +20,9 @@ export function injectJsxInsertionImport(
       t.importSpecifier(t.identifier(tName), t.identifier(tName)),
       t.importSpecifier(t.identifier(varName), t.identifier(varName)),
     ],
-    t.stringLiteral(getGtReactImportSource(legacyGtReactImportSource))
+    t.stringLiteral(
+      autoJsxImportSource ?? getGtReactImportSource(legacyGtReactImportSource)
+    )
   );
 
   path.unshiftContainer('body', importDecl);

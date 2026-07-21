@@ -1,0 +1,17 @@
+{
+  "name": "gt-test-apps-e2e",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:e2e": "node run.mjs",
+    "test:e2e:install": "playwright install chromium-headless-shell",
+    "lint": "oxlint --config ../../../.oxlintrc.json .",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^20",
+    "typescript": "^5"
+  }
+}

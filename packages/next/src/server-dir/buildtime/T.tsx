@@ -20,6 +20,16 @@ type TProps = {
  * Build-time translation component that renders its children in the user's given locale.
  */
 export async function T(props: TProps): Promise<ReactNode> {
+  return renderT(props);
+}
+
+export async function GtInternalTranslateJsx(
+  props: TProps
+): Promise<ReactNode> {
+  return renderT(props);
+}
+
+async function renderT(props: TProps): Promise<ReactNode> {
   const conditions = await getRequestConditions();
   return RscT({
     ...props,
@@ -30,3 +40,4 @@ export async function T(props: TProps): Promise<ReactNode> {
 
 /** @internal _gtt - The GT transformation for the component. */
 T._gtt = 'translate-server';
+GtInternalTranslateJsx._gtt = 'translate-server-automatic';
