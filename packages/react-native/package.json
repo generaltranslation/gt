@@ -1,6 +1,6 @@
 {
   "name": "gt-react-native",
-  "version": "11.0.11",
+  "version": "11.0.12",
   "description": "An i18n package for React Native",
   "main": "./dist/commonjs/index.js",
   "module": "./dist/module/index.js",
