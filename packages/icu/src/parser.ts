@@ -361,7 +361,13 @@ class IcuParser {
 
     while (selector || (argumentType !== 'select' && this.current() === '=')) {
       if (!selector && this.consume('=')) {
-        selector = `=${this.readInteger('EXPECT_PLURAL_ARGUMENT_SELECTOR')}`;
+        // Exact plural selectors compare against the raw input value before
+        // numeric coercion. Preserve the source token so `=01`, `=+1`, and
+        // `=-0` remain observably distinct from their canonical spellings,
+        // matching FormatJS parsing and runtime behavior.
+        selector = `=${this.readIntegerToken(
+          'EXPECT_PLURAL_ARGUMENT_SELECTOR'
+        )}`;
       }
       if (seen.has(selector)) {
         this.fail(
@@ -428,14 +434,19 @@ class IcuParser {
   }
 
   private readInteger(errorCode: string): number {
+    return Number(this.readIntegerToken(errorCode));
+  }
+
+  private readIntegerToken(errorCode: string): string {
     const start = this.index;
     if (this.current() === '+' || this.current() === '-') this.index += 1;
     const digitStart = this.index;
     while (/\d/u.test(this.current())) this.index += 1;
     if (digitStart === this.index) this.fail(errorCode, start);
-    const value = Number(this.message.slice(start, this.index));
+    const token = this.message.slice(start, this.index);
+    const value = Number(token);
     if (!Number.isSafeInteger(value)) this.fail('INVALID_NUMBER', start);
-    return value;
+    return token;
   }
 
   private readIdentifier(): string {

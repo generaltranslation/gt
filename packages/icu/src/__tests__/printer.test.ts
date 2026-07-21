@@ -114,6 +114,10 @@ describe('printAST', () => {
       '{count,plural,offset:2 =0{none} one{# item} other{# items}}',
     ],
     [
+      '{count, plural, =1 {canonical} =01 {leading} =+1 {positive} =-0 {negative zero} =-01 {negative leading} other {other}}',
+      '{count,plural,=1{canonical} =01{leading} =+1{positive} =-0{negative zero} =-01{negative leading} other{other}}',
+    ],
+    [
       '{place, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}',
       '{place,selectordinal,one{#st} two{#nd} few{#rd} other{#th}}',
     ],
@@ -139,6 +143,7 @@ describe('printAST', () => {
     '{a}{b}{c}',
     '{status, select, yes {{name} accepted} other {none}}',
     '{count, plural, one {<b># item</b>} other {<b># items</b>}}',
+    '{count, plural, =1 {canonical} =01 {leading} =+1 {positive} =-0 {negative zero} =-01 {negative leading} other {other}}',
     "{count, plural, other {'##' and '{#}'}}",
     "{count, plural, other {<b>'##'</b>}}",
     '{count, plural, one {{status, select, yes {{name}} other {none}}} other {No}}',

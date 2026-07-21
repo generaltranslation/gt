@@ -133,6 +133,23 @@ describe('_formatMessageICU', () => {
     }
   );
 
+  it.each([
+    [1, 'canonical'],
+    ['1', 'canonical'],
+    ['01', 'leading'],
+    ['+1', 'positive'],
+  ])(
+    'preserves exact selector spelling through the public package for %j',
+    (count, expected) => {
+      expect(
+        publicFormatMessage(
+          '{count, plural, =1 {canonical} =01 {leading} =+1 {positive} other {other}}',
+          { locales: 'en-US', variables: { count } }
+        )
+      ).toBe(expected);
+    }
+  );
+
   it('preserves boolean interpolation serialization from the previous runtime', () => {
     const result = publicFormatMessage('before {value} after', {
       variables: { value: true },

@@ -86,6 +86,11 @@ describe('condenseVars printer regression', () => {
       '{count,plural,offset:2 =0{none} =1{one} other{# left}} {_gt_1}',
     ],
     [
+      'plural with lexically distinct exact matches',
+      '{count, plural, =1 {canonical} =01 {leading} =+1 {positive} other {other}} {_gt_1, select, other {}}',
+      '{count,plural,=1{canonical} =01{leading} =+1{positive} other{other}} {_gt_1}',
+    ],
+    [
       'selectordinal with pound',
       '{place, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} {_gt_1, select, other {}}',
       '{place,selectordinal,one{#st} two{#nd} few{#rd} other{#th}} {_gt_1}',
