@@ -6,6 +6,7 @@ import type {
   RoutingInfo,
 } from '../types.js';
 import { nextIntlAdapter } from '../adapters/nextIntl.js';
+import { reactIntlAdapter } from '../adapters/reactIntl.js';
 
 const routing: RoutingInfo = {
   locales: ['en', 'es'],
@@ -137,6 +138,86 @@ describe('transformLayoutFile', () => {
     expect(result.skipReasons).toEqual([]);
     expect(result.code).not.toContain('SUPPORTED_LOCALES.includes');
     expect(result.code).not.toContain('notFound()');
+  });
+
+  it('keeps a subset launch gate tested against the locale param', () => {
+    const withSubsetGate = localeLayout.replace(
+      '  setRequestLocale(locale);',
+      [
+        "  const LAUNCHED = ['en'];",
+        '  if (!LAUNCHED.includes(locale)) {',
+        '    notFound();',
+        '  }',
+        '  setRequestLocale(locale);',
+      ].join('\n')
+    );
+    const result = transformLayoutFile(
+      'src/app/[locale]/layout.tsx',
+      withSubsetGate,
+      makeContext()
+    );
+    expect(result.skipReasons).toEqual([]);
+    // the full-set hasLocale guard goes, the deliberate subset gate stays
+    expect(result.code).not.toContain('hasLocale');
+    expect(result.code).toContain('LAUNCHED.includes(locale)');
+    expect(result.code).toContain('notFound()');
+    expect(
+      result.todos.some((todo) => todo.reason.includes('locale guard kept'))
+    ).toBe(true);
+  });
+
+  it('removes a shuffled full-set const guard and prunes the dead array', () => {
+    const withFullSetGuard = localeLayout
+      .replace(
+        'if (!hasLocale(routing.locales, locale)) {',
+        'if (!ORDERED.includes(locale)) {'
+      )
+      .replace(
+        "import { hasLocale } from 'next-intl';",
+        "const ORDERED = ['es', 'en'];"
+      );
+    const result = transformLayoutFile(
+      'src/app/[locale]/layout.tsx',
+      withFullSetGuard,
+      makeContext()
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).not.toContain('ORDERED.includes');
+    // the guard was the array's only consumer, so the array goes with it
+    expect(result.code).not.toContain('const ORDERED');
+    expect(result.code).not.toContain('notFound()');
+  });
+
+  it('names the retained provider for the adapter in a client layout', () => {
+    const clientIntlLayout = [
+      "'use client';",
+      "import { IntlProvider } from 'react-intl';",
+      'export default function SectionLayout({',
+      '  children,',
+      '}: {',
+      '  children: React.ReactNode;',
+      '}) {',
+      '  return (',
+      '    <IntlProvider locale="en" messages={{}}>',
+      '      <section>{children}</section>',
+      '    </IntlProvider>',
+      '  );',
+      '}',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/[locale]/section/layout.tsx',
+      clientIntlLayout,
+      {
+        ...makeContext(['src/components/Skipped.tsx']),
+        adapter: reactIntlAdapter,
+      }
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(
+      result.todos.some((todo) =>
+        todo.reason.includes('client-component layout keeps IntlProvider')
+      )
+    ).toBe(true);
   });
 
   it('keeps the params destructure while locale is still referenced', () => {

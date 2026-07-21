@@ -333,6 +333,35 @@ describe('context selectors (call-site gated)', () => {
       true
     );
   });
+
+  it('keeps an independent plural whose stem shares a prefix with a context base', () => {
+    const { dict, reports } = convert(
+      {
+        friend: 'a friend',
+        friend_male: 'his friend',
+        friend_female: 'her friend',
+        friend_request_one: '{{count}} friend request',
+        friend_request_other: '{{count}} friend requests',
+      },
+      {
+        contextKeys: new Set(['translation:friend']),
+        countKeys: new Set(['translation:friend_request']),
+      }
+    );
+    // `friend` is a genuine context select.
+    expect(dict.friend).toBe(
+      '{context, select, female {her friend} male {his friend} other {a friend}}'
+    );
+    // `friend_request` has call-site count evidence on the full head, so it is a
+    // real plural, not a `friend`+context variant, and must convert to ICU.
+    expect(dict.friend_request).toBe(
+      '{count, plural, one {{count} friend request} other {{count} friend requests}}'
+    );
+    // No combined-skip report should fire (and none should name `friend`).
+    expect(reports.some((r) => /combined context\+plural/.test(r.reason))).toBe(
+      false
+    );
+  });
 });
 
 describe('nesting, arrays, defaults', () => {

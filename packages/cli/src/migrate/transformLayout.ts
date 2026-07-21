@@ -1,5 +1,5 @@
 import { parse } from '@babel/parser';
-import traverseModule from '@babel/traverse';
+import traverseModule, { type NodePath } from '@babel/traverse';
 import generateModule from '@babel/generator';
 import * as t from '@babel/types';
 import { ensureNamedImports, removeUnusedNamedImports } from './importUtils.js';
@@ -18,20 +18,24 @@ const generate = generateModule.default || generateModule;
  * decides whether NextIntlClientProvider is retained).
  */
 /**
- * True only for tests that validate a locale: a `hasLocale(...)` call, or an
- * `<array>.includes(<arg>)` call where the array expression mentions locales
- * or the argument is a bare `locale` identifier. Anything else (slug/origin
- * allowlists, feature checks) is application logic and must survive.
+ * Locale-related material in a guard test: a `hasLocale(...)` call, and the
+ * array expression of every `<array>.includes(<arg>)` call where the array
+ * expression mentions locales or the argument is a bare `locale` identifier.
+ * Anything else (slug/origin allowlists, feature checks) is application logic
+ * and never registers here. Whether a registered guard may be REMOVED is a
+ * separate decision made at the call site: only a guard proven to validate the
+ * full configured-locale set goes; a subset gate or blocklist stays.
  */
-function isLocaleGuardTest(
+function scanLocaleGuardTest(
   test: t.Node,
   localeValidators: Set<string>
-): boolean {
-  let guardsLocale = false;
+): { hasValidatorCall: boolean; includesArrays: t.Node[] } {
+  let hasValidatorCall = false;
+  const includesArrays: t.Node[] = [];
   t.traverseFast(test, (node) => {
     if (!t.isCallExpression(node)) return;
     if (t.isIdentifier(node.callee) && localeValidators.has(node.callee.name)) {
-      guardsLocale = true;
+      hasValidatorCall = true;
       return;
     }
     if (
@@ -48,11 +52,59 @@ function isLocaleGuardTest(
           t.isIdentifier(argument.property) &&
           /^locale$/i.test(argument.property.name));
       if (/locales/i.test(arraySource) || argumentIsLocale) {
-        guardsLocale = true;
+        includesArrays.push(node.callee.object);
       }
     }
   });
-  return guardsLocale;
+  return { hasValidatorCall, includesArrays };
+}
+
+/** Unwraps TS `as` / `satisfies` / non-null wrappers around an expression. */
+function unwrapTsExpression(node: t.Node): t.Node {
+  let current = node;
+  while (
+    t.isTSAsExpression(current) ||
+    t.isTSSatisfiesExpression(current) ||
+    t.isTSNonNullExpression(current)
+  ) {
+    current = current.expression;
+  }
+  return current;
+}
+
+/**
+ * The literal string elements of a guard's tested array, resolved through an
+ * in-file const binding when the guard names one. `values` is null when the
+ * contents cannot be proven from this file (imported, computed, reassigned, or
+ * holding non-literal elements); `bindingName` names the local const that held
+ * the array so a removed guard can take a now-unused array with it.
+ */
+function resolveGuardArray(
+  arrayNode: t.Node,
+  scope: NodePath['scope']
+): { values: string[] | null; bindingName: string | null } {
+  let node = unwrapTsExpression(arrayNode);
+  let bindingName: string | null = null;
+  if (t.isIdentifier(node)) {
+    const binding = scope.getBinding(node.name);
+    if (
+      !binding ||
+      binding.constantViolations.length > 0 ||
+      !t.isVariableDeclarator(binding.path.node) ||
+      !binding.path.node.init
+    ) {
+      return { values: null, bindingName: null };
+    }
+    bindingName = node.name;
+    node = unwrapTsExpression(binding.path.node.init);
+  }
+  if (!t.isArrayExpression(node)) return { values: null, bindingName };
+  const values: string[] = [];
+  for (const element of node.elements) {
+    if (!t.isStringLiteral(element)) return { values: null, bindingName };
+    values.push(element.value);
+  }
+  return { values, bindingName };
 }
 
 /**
@@ -220,11 +272,14 @@ export function transformLayoutFile(
     (directive) => directive.value.value === 'use client'
   );
   if (isClientLayout) {
-    if (retainProvider && working.includes('NextIntlClientProvider')) {
+    if (
+      retainProvider &&
+      adapter.providerName !== null &&
+      working.includes(adapter.providerName)
+    ) {
       todos.push({
         file,
-        reason:
-          'client-component layout keeps NextIntlClientProvider: pass its locale from a server parent (await getLocale()); the automatic injection only applies to server layouts',
+        reason: `client-component layout keeps ${adapter.providerName}: pass its locale from a server parent (await getLocale()); the automatic injection only applies to server layouts`,
       });
     }
     if (working.includes('<body')) {
@@ -245,11 +300,24 @@ export function transformLayoutFile(
   //    `Locale` union that the retained NextIntlClientProvider expects, so it
   //    is left in place.
   if (!retainProvider) {
+    const configuredLocales = ctx.routing.locales ?? ctx.catalogs.locales;
+    const matchesConfigured = (values: string[]): boolean => {
+      const configured = new Set(configuredLocales);
+      const tested = new Set(values);
+      if (configured.size === 0 || tested.size !== configured.size) {
+        return false;
+      }
+      for (const value of tested) if (!configured.has(value)) return false;
+      return true;
+    };
+    const droppedGuardArrays: string[] = [];
     traverse(ast, {
       IfStatement(path) {
-        if (!isLocaleGuardTest(path.node.test, adapter.localeValidators)) {
-          return;
-        }
+        const scan = scanLocaleGuardTest(
+          path.node.test,
+          adapter.localeValidators
+        );
+        if (!scan.hasValidatorCall && scan.includesArrays.length === 0) return;
         let callsNotFound = false;
         path.traverse({
           CallExpression(inner) {
@@ -258,18 +326,86 @@ export function transformLayoutFile(
             }
           },
         });
-        if (callsNotFound) {
+        if (!callsNotFound) return;
+        // hasLocale() always validates the configured routing locales, so it
+        // is safe to drop. An `<arr>.includes(locale)` arm only proves the
+        // same when the array IS the configured set: a resolvable literal
+        // must match it exactly, and an unresolvable array is trusted only
+        // when its source mentions locales (the `routing.locales` shape whose
+        // config file a full migration deletes). Anything else may be a
+        // deliberate subset gate or blocklist; gt-next serves every
+        // configured locale, so removing such a guard would change routing
+        // behavior and it stays in place instead.
+        let removable = true;
+        const localArrayBindings: string[] = [];
+        for (const arrayNode of scan.includesArrays) {
+          const resolved = resolveGuardArray(arrayNode, path.scope);
+          if (resolved.values !== null) {
+            if (!matchesConfigured(resolved.values)) {
+              removable = false;
+              break;
+            }
+            if (resolved.bindingName) {
+              localArrayBindings.push(resolved.bindingName);
+            }
+          } else if (!/locales/i.test(generate(arrayNode).code)) {
+            removable = false;
+            break;
+          }
+        }
+        if (!removable) {
           todos.push({
             file,
             line: path.node.loc?.start.line,
             reason:
-              'locale validation removed — gt-next middleware owns locale resolution; re-add a guard only if this route must 404 on unknown locales',
+              'locale guard kept: it checks the locale against a list that differs from the configured locales, so it may deliberately restrict this route; gt-next serves every configured locale, so remove the guard yourself if it only validated known locales',
           });
-          path.remove();
-          mutated = true;
+          return;
         }
+        todos.push({
+          file,
+          line: path.node.loc?.start.line,
+          reason:
+            'locale validation removed — gt-next middleware owns locale resolution; re-add a guard only if this route must 404 on unknown locales',
+        });
+        path.remove();
+        droppedGuardArrays.push(...localArrayBindings);
+        mutated = true;
       },
     });
+    // Dropping a guard can strand the const array it tested; take the array
+    // with it when the guard was its only consumer, so the emitted layout
+    // passes no-unused-vars.
+    if (droppedGuardArrays.length > 0) {
+      const pruneNames = new Set(droppedGuardArrays);
+      traverse(ast, {
+        Program(path) {
+          // The guard removal above changed reference counts; recrawl so the
+          // binding checks below see them.
+          path.scope.crawl();
+        },
+        VariableDeclarator(path) {
+          if (
+            !t.isIdentifier(path.node.id) ||
+            !pruneNames.has(path.node.id.name)
+          ) {
+            return;
+          }
+          const binding = path.scope.getBinding(path.node.id.name);
+          if (!binding || binding.referenced) return;
+          const declaration = path.parentPath;
+          if (
+            t.isVariableDeclaration(declaration.node) &&
+            declaration.node.declarations.length === 1
+          ) {
+            declaration.remove();
+          } else {
+            path.remove();
+          }
+          mutated = true;
+        },
+      });
+    }
   }
 
   // 2. Keep `<html lang={locale}>` on the [locale] route param. Rewriting it

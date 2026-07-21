@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { handleMigrateCommand } from '../../cli/commands/migrate.js';
 import { logger } from '../../console/logger.js';
 import { installPackage } from '../../utils/installPackage.js';
+import { getPackageManager } from '../../utils/packageManager.js';
 
 vi.mock('../../hooks/postProcess.js', () => ({
   formatFiles: vi.fn(async () => {}),
@@ -473,6 +474,81 @@ describe('handleMigrateCommand integration', () => {
     expect(fs.existsSync(path.join(cwd, 'src/i18n/request.ts'))).toBe(true);
     // report lists the layout skip
     expect(read(cwd, 'gt-migrate-report.md')).toContain('shop/layout.tsx');
+  });
+
+  it('keeps the provider and plugin when the middleware is the only skip', async () => {
+    // The config lane runs after retention used to be decided, so a
+    // middleware-only skip landed too late: the provider got full-migration
+    // treatment and the next-intl plugin was torn down while teardown kept
+    // the package for the skipped middleware. The config-lane
+    // pre-classification must feed the skip into the retention decision.
+    const cwd = makeApp({
+      'middleware.ts': [
+        "import createMiddleware from 'next-intl/middleware';",
+        "import { routing } from './src/i18n/routing';",
+        'const intlMiddleware = createMiddleware(routing);',
+        'export default function middleware(request: Request) {',
+        '  return intlMiddleware(request);',
+        '}',
+        "export const config = { matcher: ['/((?!_next|api).*)'] };",
+      ].join('\n'),
+    });
+    await handleMigrateCommand(
+      {
+        config: 'gt.config.json',
+        from: 'next-intl',
+        dryRun: false,
+        yes: true,
+        allowDirty: true,
+      },
+      'next-intl',
+      cwd
+    );
+
+    // skipped middleware untouched
+    expect(read(cwd, 'middleware.ts')).toContain('intlMiddleware(request)');
+    // partial treatment everywhere: provider retained in the root layout...
+    const layout = read(cwd, 'src/app/[locale]/layout.tsx');
+    expect(layout).toContain('GTProvider');
+    expect(layout).toMatch(/<NextIntlClientProvider[^>]*locale=\{locale\}/);
+    // ...the next-intl plugin stays composed in next.config...
+    expect(read(cwd, 'next.config.ts')).toContain('createNextIntlPlugin');
+    // ...and teardown agrees: the package survives
+    const pkg = JSON.parse(read(cwd, 'package.json'));
+    expect(pkg.dependencies['next-intl']).toBeDefined();
+    expect(read(cwd, 'gt-migrate-report.md')).toContain('middleware.ts');
+  });
+
+  it('finishes with a report when no package manager can be detected non-interactively', async () => {
+    // No lockfile and no TTY: getPackageManager cannot detect and must not
+    // prompt (stdin EOF used to end the run after the edits were written but
+    // before the report existed); detection failure falls through to the
+    // report's manual-install step instead.
+    const warn = vi.spyOn(logger, 'warn');
+    vi.mocked(installPackage).mockClear();
+    vi.mocked(getPackageManager).mockRejectedValueOnce(
+      new Error('No package manager found')
+    );
+    const cwd = makeApp();
+    await handleMigrateCommand(
+      {
+        config: 'gt.config.json',
+        from: 'next-intl',
+        dryRun: false,
+        yes: true,
+        allowDirty: true,
+      },
+      'next-intl',
+      cwd
+    );
+    expect(vi.mocked(installPackage)).not.toHaveBeenCalled();
+    expect(
+      warn.mock.calls.some(([message]) =>
+        String(message).includes('Could not detect the package manager')
+      )
+    ).toBe(true);
+    expect(read(cwd, 'gt-migrate-report.md')).toContain('Install gt-next');
+    warn.mockRestore();
   });
 
   it('dry run writes nothing', async () => {

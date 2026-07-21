@@ -1255,3 +1255,264 @@ describe('reactIntl: R2 module-scope useIntl() binding', () => {
     expect(r.code).toContain('useTranslations()');
   });
 });
+
+describe('reactIntl: createIntl swap prunes orphaned arg bindings (FB1)', () => {
+  it('drops a plain locale binding that only fed the createIntl arguments', () => {
+    const r = transform(
+      lines(
+        "import { createIntl } from 'react-intl';",
+        'export default async function Page() {',
+        "  const locale = 'en';",
+        '  const intl = createIntl({ locale, messages: {} });',
+        "  return <h1>{intl.formatMessage({ id: 'title' })}</h1>;",
+        '}'
+      ),
+      { title: 'Welcome' }
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).not.toBeNull();
+    expect(r.code).toMatch(/const intl = await getTranslations\(\)/);
+    // The swap dropped createIntl's arguments, so `locale` is now unreferenced —
+    // its declaration must be gone (no migration-introduced unused local).
+    expect(r.code).not.toMatch(/const\s+locale\b\s*=/);
+  });
+
+  it('property-splices an object-pattern locale that only fed the arguments', () => {
+    const r = transform(
+      lines(
+        "import { createIntl } from 'react-intl';",
+        'export default async function Page({ params }: { params: Promise<{ locale: string }> }) {',
+        '  const { locale } = await params;',
+        '  const intl = createIntl({ locale, messages: {} });',
+        "  return <h1>{intl.formatMessage({ id: 'title' })}</h1>;",
+        '}'
+      ),
+      { title: 'Welcome' }
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).not.toBeNull();
+    // The `const { locale } = await params` destructure is emptied and
+    // dropped, and the `params` parameter it stranded goes with it (the same
+    // no-unused-vars treatment the layout and next-intl page cleanups apply);
+    // the parameter's annotation leaves with the parameter.
+    expect(r.code).not.toMatch(/const\s*\{\s*locale\s*\}\s*=/);
+    expect(r.code).not.toMatch(/\bparams\b/);
+    expect(r.code).toMatch(/function Page\(\)/);
+  });
+
+  it('keeps the params parameter while something else still reads it', () => {
+    const r = transform(
+      lines(
+        "import { createIntl } from 'react-intl';",
+        'export default async function Page({ params }: { params: Promise<{ locale: string }> }) {',
+        '  const { locale } = await params;',
+        '  const intl = createIntl({ locale, messages: {} });',
+        '  console.log(await params);',
+        "  return <h1>{intl.formatMessage({ id: 'title' })}</h1>;",
+        '}'
+      ),
+      { title: 'Welcome' }
+    );
+    expect(r.skipReasons).toEqual([]);
+    // `params` is still read, so the parameter and its annotation survive.
+    expect(r.code).toMatch(/\{\s*params\s*\}/);
+    expect(r.code).toMatch(/locale:\s*string/);
+    expect(r.code).toMatch(/console\.log\(await params\)/);
+  });
+
+  it('unwinds a chain (messages -> locale) both fed only by the arguments', () => {
+    const r = transform(
+      lines(
+        "import { createIntl } from 'react-intl';",
+        'export default async function Page() {',
+        "  const locale = 'en';",
+        '  const messages = { extra: locale };',
+        '  const intl = createIntl({ locale, messages });',
+        "  return <h1>{intl.formatMessage({ id: 'title' })}</h1>;",
+        '}'
+      ),
+      { title: 'Welcome' }
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).not.toBeNull();
+    expect(r.code).not.toMatch(/const\s+messages\b\s*=/);
+    expect(r.code).not.toMatch(/const\s+locale\b\s*=/);
+  });
+
+  it('keeps a locale binding that is still referenced elsewhere (control)', () => {
+    const r = transform(
+      lines(
+        "import { createIntl } from 'react-intl';",
+        'export default async function Page() {',
+        "  const locale = 'en';",
+        '  const intl = createIntl({ locale, messages: {} });',
+        "  return <html lang={locale}>{intl.formatMessage({ id: 'title' })}</html>;",
+        '}'
+      ),
+      { title: 'Welcome' }
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).not.toBeNull();
+    // Still consumed by <html lang={locale}>, so the binding stays.
+    expect(r.code).toMatch(/const\s+locale\b\s*=/);
+    expect(r.code).toMatch(/lang=\{locale\}/);
+  });
+
+  it('keeps locale on the real page fixture shape (data-locale still reads it)', () => {
+    // The committed reactIntl.integration fixture page reads `locale` again in
+    // `data-locale={locale}`, so dropping the createIntl arguments must NOT strand
+    // the destructure — only a truly unreferenced binding goes.
+    const r = transform(
+      lines(
+        "import { createIntl } from 'react-intl';",
+        'export default async function Page({',
+        '  params,',
+        '}: {',
+        '  params: Promise<{ locale: string }>;',
+        '}) {',
+        '  const { locale } = await params;',
+        '  const intl = createIntl({',
+        '    locale,',
+        '    messages: (await import(`../../../messages/${locale}.json`)).default,',
+        '  });',
+        '  return (',
+        '    <main>',
+        "      <h1>{intl.formatMessage({ id: 'title' })}</h1>",
+        "      <p data-locale={locale}>{intl.formatMessage({ id: 'greeting' }, { name: 'Ada' })}</p>",
+        '    </main>',
+        '  );',
+        '}'
+      ),
+      { title: 'Welcome to demo', greeting: 'Hello, {name}!' }
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).not.toBeNull();
+    expect(r.code).toMatch(/const intl = await getTranslations\(\)/);
+    expect(r.code).toMatch(/const\s*\{\s*locale\s*\}\s*=\s*await params/);
+    expect(r.code).toMatch(/data-locale=\{locale\}/);
+  });
+});
+
+describe('reactIntl: provider unwrap prunes orphaned destructured props (FB2)', () => {
+  it('drops props left unreferenced by the unwrap, keeping children', () => {
+    const r = transform(
+      lines(
+        "'use client';",
+        "import { IntlProvider } from 'react-intl';",
+        'export function Wrapper({ locale, messages, children }: any) {',
+        '  return (',
+        '    <IntlProvider locale={locale} messages={messages}>',
+        '      {children}',
+        '    </IntlProvider>',
+        '  );',
+        '}'
+      )
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).not.toBeNull();
+    expect(r.code).not.toContain('IntlProvider');
+    // locale/messages fed only the unwrapped provider -> spliced out of the param.
+    expect(r.code).toMatch(/Wrapper\(\s*\{\s*children\s*\}/);
+    expect(r.code).not.toMatch(/\blocale\b/);
+    expect(r.code).not.toMatch(/\bmessages\b/);
+    expect(r.code).toMatch(/<>[\s\S]*\{\s*children\s*\}[\s\S]*<\/>/);
+  });
+
+  it('handles the arrow-component equivalent', () => {
+    const r = transform(
+      lines(
+        "'use client';",
+        "import { IntlProvider } from 'react-intl';",
+        'export const Wrapper = ({ locale, messages, children }: any) => (',
+        '  <IntlProvider locale={locale} messages={messages}>{children}</IntlProvider>',
+        ');'
+      )
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).not.toBeNull();
+    expect(r.code).not.toContain('IntlProvider');
+    expect(r.code).toMatch(/\(\s*\{\s*children\s*\}/);
+    expect(r.code).not.toMatch(/\blocale\b/);
+    expect(r.code).not.toMatch(/\bmessages\b/);
+  });
+
+  it('leaves the param untouched when a rest sibling would absorb the key (control)', () => {
+    const r = transform(
+      lines(
+        "'use client';",
+        "import { IntlProvider } from 'react-intl';",
+        'export function Wrapper({ locale, messages, children, ...rest }: any) {',
+        '  return <IntlProvider locale={locale} messages={messages}>{children}</IntlProvider>;',
+        '}'
+      )
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).not.toBeNull();
+    expect(r.code).not.toContain('IntlProvider');
+    // A rest element would gain the removed keys at runtime, so nothing is spliced.
+    expect(r.code).toMatch(/\.\.\.rest/);
+    expect(r.code).toMatch(/\blocale\b/);
+    expect(r.code).toMatch(/\bmessages\b/);
+  });
+
+  it('keeps a prop that is still referenced after the unwrap (control)', () => {
+    const r = transform(
+      lines(
+        "'use client';",
+        "import { IntlProvider } from 'react-intl';",
+        'export function Wrapper({ locale, messages, children }: any) {',
+        '  return (',
+        '    <div data-locale={locale}>',
+        '      <IntlProvider locale={locale} messages={messages}>{children}</IntlProvider>',
+        '    </div>',
+        '  );',
+        '}'
+      )
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).not.toBeNull();
+    expect(r.code).not.toContain('IntlProvider');
+    // locale is still read by <div data-locale={locale}>, so it stays; messages
+    // fed only the provider and is spliced.
+    expect(r.code).toMatch(/\blocale\b/);
+    expect(r.code).not.toMatch(/\bmessages\b/);
+  });
+
+  it('splices the real IntlProviderWrapper fixture, leaving its type annotation intact', () => {
+    // The committed reactIntl.integration fixture provider — the exact live-e2e
+    // shape whose (4,3)/(5,3) unused `locale`/`messages` this fix removes.
+    const r = transform(
+      lines(
+        "'use client';",
+        "import { IntlProvider } from 'react-intl';",
+        'export function IntlProviderWrapper({',
+        '  locale,',
+        '  messages,',
+        '  children,',
+        '}: {',
+        '  locale: string;',
+        '  messages: Record<string, string>;',
+        '  children: React.ReactNode;',
+        '}) {',
+        '  return (',
+        '    <IntlProvider locale={locale} defaultLocale="en" messages={messages}>',
+        '      {children}',
+        '    </IntlProvider>',
+        '  );',
+        '}'
+      )
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).not.toBeNull();
+    // The provider element and the react-intl import are gone; the component name
+    // IntlProviderWrapper legitimately survives (so match the element, not it).
+    expect(r.code).not.toMatch(/<IntlProvider[\s>]/);
+    expect(r.code).not.toContain('react-intl');
+    // Runtime param reduced to { children } (no unused locale/messages binding)...
+    expect(r.code).toMatch(/IntlProviderWrapper\(\s*\{\s*children\s*\}/);
+    // ...while the TypeScript annotation is left fully untouched (types never lint).
+    expect(r.code).toMatch(/locale:\s*string/);
+    expect(r.code).toMatch(/messages:\s*Record<string, string>/);
+    expect(r.code).toMatch(/children:\s*React\.ReactNode/);
+  });
+});

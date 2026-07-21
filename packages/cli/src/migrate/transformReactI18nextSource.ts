@@ -638,9 +638,15 @@ function remapTCalls(
       }
 
       // String defaultValue: t('k', 'Default') -> t('k') (catalog wins; a
-      // synthesized entry covers a missing key). Drop the positional default.
+      // synthesized entry covers a missing key). Drop the positional default but
+      // preserve any trailing options: i18next's 3-arg form is
+      // t(key, defaultValue, options) and gt-next's is t(key, options), so
+      // dropping only position 1 keeps { count }/{ context } at runtime.
       if (t.isStringLiteral(secondArg)) {
-        path.node.arguments = [path.node.arguments[0]];
+        path.node.arguments = [
+          path.node.arguments[0],
+          ...path.node.arguments.slice(2),
+        ];
         todos.push({
           file,
           line: path.node.loc?.start.line,

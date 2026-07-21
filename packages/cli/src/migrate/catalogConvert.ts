@@ -514,10 +514,20 @@ function groupKeys(
     const headParsed = splitSuffix(head, sep);
     if (headParsed && headParsed.last === 'ordinal') continue;
     // Context+plural: head is `{ctxBase}{csep}{ctxValue}` where ctxBase was
-    // called with context. Detect and route to skip+report.
+    // called with context. Detect and route to skip+report, unless the FULL
+    // head has its own call-site count evidence, which means it is a genuine
+    // plural whose stem merely shares a prefix with a context base. Values of a
+    // real context variant can also embed `{{count}}`, so only call-site
+    // evidence separates `friend_request` (the plural) from `colleague_male`
+    // (the context variant); when the full head was called with { count }, keep
+    // the cardinal grouping.
     if (csep === sep) {
       const ctxSplit = splitSuffix(head, csep);
-      if (ctxSplit && isContextBase(ctxSplit.head, tc, keypathPrefix)) {
+      if (
+        ctxSplit &&
+        isContextBase(ctxSplit.head, tc, keypathPrefix) &&
+        !isCountBase(head, tc, keypathPrefix)
+      ) {
         combined.add(ctxSplit.head);
         consumed.add(key);
         continue;
@@ -564,6 +574,15 @@ function isContextBase(
 ): boolean {
   const full = keypathPrefix ? `${keypathPrefix}.${base}` : base;
   return tc.contextKeys.has(`${tc.ns}:${full}`);
+}
+
+function isCountBase(
+  base: string,
+  tc: TreeContext,
+  keypathPrefix: string
+): boolean {
+  const full = keypathPrefix ? `${keypathPrefix}.${base}` : base;
+  return tc.countKeys.has(`${tc.ns}:${full}`);
 }
 
 function splitSuffix(

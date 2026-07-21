@@ -5,6 +5,7 @@ import * as t from '@babel/types';
 import { classifyMessage } from '../classifyMessage.js';
 import { ensureNamedImports } from '../importUtils.js';
 import type { TransformOptions } from '../transformSource.js';
+import { isParamsInit, removeParamsParameter } from '../transformSource.js';
 import type { MigrationContext, SourceResult, TodoEntry } from '../types.js';
 
 const traverse = traverseModule.default || traverseModule;
@@ -585,6 +586,14 @@ export function transformReactIntlSource(
 
   // ---- mutation ------------------------------------------------------------
 
+  // Bindings the mutations below strand: locals the removed createIntl(...)
+  // arguments read, and destructured component props the unwrapped <IntlProvider>
+  // read. Recorded here, then pruned (only where left unreferenced) as the final
+  // AST mutation, so migrated code passes strict unused-variable linting — the
+  // react-intl analogue of transformSource step 5 / transformLayout step 7.
+  const orphanedArgBindings = new Set<t.Node>();
+  const orphanedPropBindings = new Set<t.Node>();
+
   // 1. createIntl(...) -> await getTranslations(); make the enclosing function
   //    async when it is safe (the awaited component or an already-async fn).
   for (const { declarator, fn } of createIntlDecls) {
@@ -599,6 +608,17 @@ export function transformReactIntlSource(
       };
     }
     if (!fn.async) fn.async = true;
+    // Record the local bindings this createIntl(...) call reads before dropping
+    // its arguments object; any left unreferenced by the swap is pruned below.
+    // (Imports resolve to a module binding, params to a 'param' binding; both are
+    // skipped by the pruner's declarator/prop-only scope, so recording them is
+    // harmless.)
+    declarator.get('init').traverse({
+      ReferencedIdentifier(refPath) {
+        const refBinding = refPath.scope.getBinding(refPath.node.name);
+        if (refBinding) orphanedArgBindings.add(refBinding.identifier);
+      },
+    });
     declarator.node.init = t.awaitExpression(
       t.callExpression(t.identifier('getTranslations'), [])
     );
@@ -717,6 +737,18 @@ export function transformReactIntlSource(
   // 7. provider unwrap: <IntlProvider ...>children</IntlProvider> -> <>children</>
   //    (the layout pass inserts the server GTProvider).
   for (const providerPath of providerUnwraps) {
+    // Record the destructured props the provider's attributes read (locale,
+    // messages, …) before dropping them; any left unreferenced by the unwrap is
+    // spliced from the component's own parameter below. children lives in the
+    // preserved fragment, so it stays referenced and is never a candidate.
+    providerPath.get('openingElement').traverse({
+      ReferencedIdentifier(refPath) {
+        const refBinding = refPath.scope.getBinding(refPath.node.name);
+        if (refBinding && refBinding.kind === 'param') {
+          orphanedPropBindings.add(refBinding.identifier);
+        }
+      },
+    });
     const children = providerPath.node.children;
     providerPath.replaceWith(
       t.jsxFragment(t.jsxOpeningFragment(), t.jsxClosingFragment(), children)
@@ -784,6 +816,16 @@ export function transformReactIntlSource(
     ensureNamedImports(ast, GT_MODULE, clientImports);
   if (needsServerT) {
     ensureNamedImports(ast, GT_SERVER_MODULE, ['getTranslations']);
+  }
+
+  // Prune the bindings the createIntl swap / provider unwrap left unreferenced.
+  // Runs last, after every reference-adding step above, and recrawls so binding
+  // reference counts are true; only codemod-stranded bindings are touched.
+  if (orphanedArgBindings.size > 0) {
+    pruneOrphanedArgBindings(ast, orphanedArgBindings);
+  }
+  if (orphanedPropBindings.size > 0) {
+    pruneOrphanedProps(ast, orphanedPropBindings);
   }
 
   const output = generate(
@@ -1419,4 +1461,140 @@ function findDefaultExportFunction(ast: t.File): t.Function | null {
     },
   });
   return result;
+}
+
+/** Removes a variable declarator, dropping the whole declaration when it is the
+ *  only one (an empty `const;` is invalid). Mirrors the createIntlCache /
+ *  defineMessages cleanups. */
+function removeDeclarator(path: NodePath<t.VariableDeclarator>): void {
+  const declaration = path.parentPath;
+  if (
+    declaration.isVariableDeclaration() &&
+    declaration.node.declarations.length === 1
+  ) {
+    declaration.remove();
+  } else {
+    path.remove();
+  }
+}
+
+/**
+ * Prunes local bindings the removed createIntl(...) arguments object was the sole
+ * consumer of, so the getTranslations() swap leaves no unused-variable defect. A
+ * `const { locale } = …` object pattern is property-spliced (a RestElement sibling
+ * aborts it — the rest would absorb the key); a plain declarator goes whole only
+ * when unreferenced. Function parameters and types are never touched. Recrawls
+ * each pass and loops to a fixpoint so a chain (`messages` → `locale`) unwinds.
+ */
+function pruneOrphanedArgBindings(ast: t.File, targets: Set<t.Node>): void {
+  // Functions whose route-param destructure (`const { locale } = await
+  // params`) was removed whole: the enclosing `params` parameter is then
+  // judged by its own recrawled binding below and dropped when nothing else
+  // reads it, so the emitted file passes no-unused-vars (same treatment the
+  // layout and next-intl page cleanups apply).
+  const paramsCleanupTargets = new Set<t.Function>();
+  let removedAny = true;
+  while (removedAny) {
+    removedAny = false;
+    traverse(ast, {
+      Program(path) {
+        // Recrawl so bindings reflect every mutation (and prior pass) above.
+        path.scope.crawl();
+      },
+      VariableDeclarator(path) {
+        const id = path.node.id;
+        if (t.isIdentifier(id)) {
+          if (!targets.has(id)) return;
+          const binding = path.scope.getBinding(id.name);
+          if (!binding || binding.referenced) return;
+          removeDeclarator(path);
+          removedAny = true;
+          return;
+        }
+        if (!t.isObjectPattern(id)) return;
+        // A rest sibling would absorb the removed key at runtime; leave it be.
+        if (id.properties.some((property) => t.isRestElement(property))) return;
+        const remove = new Set<t.Node>();
+        for (const property of id.properties) {
+          if (
+            !t.isObjectProperty(property) ||
+            property.computed ||
+            !t.isIdentifier(property.value) ||
+            !targets.has(property.value)
+          ) {
+            continue;
+          }
+          const binding = path.scope.getBinding(property.value.name);
+          if (binding && !binding.referenced) remove.add(property);
+        }
+        if (remove.size === 0) return;
+        id.properties = id.properties.filter(
+          (property) => !remove.has(property)
+        );
+        removedAny = true;
+        // An emptied pattern (`const {} = …`) is invalid; drop the declarator.
+        if (id.properties.length === 0) {
+          if (isParamsInit(path.node.init)) {
+            const fn = path.getFunctionParent();
+            if (fn) paramsCleanupTargets.add(fn.node);
+          }
+          removeDeclarator(path);
+        }
+      },
+    });
+  }
+  if (paramsCleanupTargets.size === 0) return;
+  traverse(ast, {
+    Program(path) {
+      // The destructure removals above stranded `params`; recrawl before
+      // judging its binding.
+      path.scope.crawl();
+    },
+    Function(path) {
+      if (!paramsCleanupTargets.has(path.node)) return;
+      const binding = path.scope.getBinding('params');
+      if (!binding || binding.kind !== 'param' || binding.referenced) return;
+      removeParamsParameter(path.node);
+    },
+  });
+}
+
+/**
+ * Prunes destructured component props the unwrapped <IntlProvider> was the sole
+ * consumer of (`function W({ locale, messages, children })` → `{ children }`).
+ * Same safety rules as transformLayout step 7: a RestElement sibling aborts the
+ * splice, the TypeScript annotation is left untouched, and the recrawled binding
+ * of the function's own scope decides — a prop still read elsewhere survives.
+ */
+function pruneOrphanedProps(ast: t.File, targets: Set<t.Node>): void {
+  traverse(ast, {
+    Program(path) {
+      path.scope.crawl();
+    },
+    Function(path) {
+      for (const param of path.node.params) {
+        if (!t.isObjectPattern(param)) continue;
+        if (param.properties.some((property) => t.isRestElement(property))) {
+          continue;
+        }
+        const remove = new Set<t.Node>();
+        for (const property of param.properties) {
+          if (
+            !t.isObjectProperty(property) ||
+            property.computed ||
+            !t.isIdentifier(property.value) ||
+            !targets.has(property.value)
+          ) {
+            continue;
+          }
+          const binding = path.scope.getBinding(property.value.name);
+          if (binding && !binding.referenced) remove.add(property);
+        }
+        if (remove.size === 0) continue;
+        param.properties = param.properties.filter(
+          (property) => !remove.has(property)
+        );
+      }
+    },
+  });
 }

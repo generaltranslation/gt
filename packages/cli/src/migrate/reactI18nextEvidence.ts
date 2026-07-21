@@ -126,13 +126,17 @@ export function collectCallSiteEvidence(
         const evidenceKey = `${ns}:${key}`;
 
         const secondArg = path.node.arguments[1];
-        // Positional string default: t('key', 'Default').
+        // Positional string default: t('key', 'Default'[, { count/context }]).
+        // Record the default, then keep reading. The 3-arg form still carries
+        // its options object in position 2, so a `return` here would drop the
+        // count/context evidence (t.isObjectExpression is false for undefined).
+        let optionsArg = secondArg;
         if (t.isStringLiteral(secondArg)) {
           defaults.push({ ns, key, value: secondArg.value });
-          return;
+          optionsArg = path.node.arguments[2];
         }
-        if (!t.isObjectExpression(secondArg)) return;
-        for (const property of secondArg.properties) {
+        if (!t.isObjectExpression(optionsArg)) return;
+        for (const property of optionsArg.properties) {
           if (t.isObjectProperty(property) && t.isIdentifier(property.key)) {
             if (property.key.name === 'count') countKeys.add(evidenceKey);
             else if (property.key.name === 'context') {
@@ -159,9 +163,20 @@ function splitNs(
   separators: Separators
 ): { ns: string; key: string } {
   const nsSep = separators.nsSeparator;
+  let ns = bindingNs;
+  let key = rawKey;
   if (nsSep && rawKey.includes(nsSep)) {
     const idx = rawKey.indexOf(nsSep);
-    return { ns: rawKey.slice(0, idx), key: rawKey.slice(idx + nsSep.length) };
+    ns = rawKey.slice(0, idx);
+    key = rawKey.slice(idx + nsSep.length);
   }
-  return { ns: bindingNs, key: rawKey };
+  // The converter's keypaths are '.'-joined, so evidence must normalize a custom
+  // keySeparator (e.g. '|') to the same convention or nested-key context/plural
+  // evidence never matches. keySeparator can be false (flat keys), so leave the
+  // key untouched then.
+  const keySep = separators.keySeparator;
+  if (typeof keySep === 'string' && keySep !== '' && keySep !== '.') {
+    key = key.split(keySep).join('.');
+  }
+  return { ns, key };
 }

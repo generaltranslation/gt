@@ -805,7 +805,7 @@ export function isParamsInit(node: t.Expression | null | undefined): boolean {
  * that shape. TypeScript annotations are left untouched: an unused type member
  * does not lint.
  */
-function removeParamsParameter(fn: t.Function): void {
+export function removeParamsParameter(fn: t.Function): void {
   const params = fn.params;
   for (let index = 0; index < params.length; index++) {
     const param = params[index];

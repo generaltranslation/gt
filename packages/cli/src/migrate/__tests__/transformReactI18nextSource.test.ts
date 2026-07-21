@@ -369,6 +369,24 @@ describe('t() call normalization', () => {
     expect(todos.some((todo) => /defaultValue/.test(todo.reason))).toBe(true);
   });
 
+  it('drops a positional default but preserves a trailing options object', () => {
+    const { code, todos } = transform(
+      [
+        "import { useTranslation } from 'react-i18next';",
+        'export function C() {',
+        '  const { t } = useTranslation();',
+        "  return <p>{t('items', 'fallback', { count: n })}</p>;",
+        '}',
+      ].join('\n')
+    );
+    // The default is dropped, but the third-argument options survive as the
+    // gt-next t(key, options) second argument.
+    const compact = (code ?? '').replace(/\s+/g, ' ');
+    expect(compact).toContain("t('items', { count: n })");
+    expect(code).not.toContain('fallback');
+    expect(todos.some((todo) => /defaultValue/.test(todo.reason))).toBe(true);
+  });
+
   it('resolves a key fallback array to the first present key', () => {
     const { code, todos } = transform(
       [

@@ -138,9 +138,24 @@ export function buildReport(
   if (ctx.skippedFiles.size > 0) {
     lines.push('## Needs manual migration (files left untouched)');
     lines.push('');
+    // Claim the retained provider only when a written edit actually renders
+    // it: a project that never rendered one (a bespoke server-side setup)
+    // keeps working through the retained package alone, and naming a provider
+    // there would be false. Conservative by design; a provider living only in
+    // a skipped (unwritten) file just goes unmentioned.
+    const providerRetained =
+      adapter.providerName !== null &&
+      ctx.edits.some(
+        (edit) =>
+          edit.kind === 'write' &&
+          (edit.content ?? '').includes(`<${adapter.providerName}`)
+      );
     lines.push(
-      `${adapter.displayName} is still installed and ${adapter.providerName ?? 'its provider'} still renders ` +
-        '(nested inside GTProvider) so these keep working. Re-run ' +
+      `${adapter.displayName} is still installed` +
+        (providerRetained
+          ? ` and ${adapter.providerName} still renders (nested inside GTProvider)`
+          : '') +
+        ' so these keep working. Re-run ' +
         `\`gt migrate --from ${adapter.id}\` after converting them to finish ` +
         'the teardown.'
     );
@@ -220,7 +235,8 @@ export function buildReport(
   if (gtNextMissing) {
     steps.push(
       'Install gt-next — the converted files import it: `npm install gt-next` ' +
-        "(or your package manager's equivalent). A non-dry run installs it automatically."
+        "(or your package manager's equivalent). A non-dry run installs it " +
+        'automatically when it can detect your package manager.'
     );
   }
   // #1909: a migrated app (next-intl, react-intl, or react-i18next alike) does
