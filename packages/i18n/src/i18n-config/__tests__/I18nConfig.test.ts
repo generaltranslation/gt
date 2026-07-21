@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { I18nConfig } from '../I18nConfig';
 
 describe('I18nConfig', () => {
@@ -8,6 +9,13 @@ describe('I18nConfig', () => {
 
   afterEach(() => {
     vi.unstubAllEnvs();
+  });
+
+  it('defaults missing locale settings', () => {
+    const config = new I18nConfig();
+
+    expect(config.getDefaultLocale()).toBe(libraryDefaultLocale);
+    expect(config.getLocales()).toEqual([libraryDefaultLocale]);
   });
 
   it('defaults locales to the resolved default locale', () => {

@@ -19,8 +19,7 @@ describe('createFileMapping', () => {
     expect(mapping.es[TEMPLATE_FILE_NAME]).toBe('public/gt/es.json');
   });
 
-  // TODO: Re-enable when the API supports POT -> PO file format transforms.
-  it.skip('uses the transformation format extension for mapped output files', () => {
+  it('uses the transformation format extension for mapped output files', () => {
     const sourcePath = path.resolve('locales/en/messages.pot');
     const placeholderPath = path.resolve('locales/[locale]/messages.pot');
 

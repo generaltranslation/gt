@@ -28,7 +28,11 @@ export function jsxInsertionPass(state: TransformState): TraverseOptions {
   };
 
   return {
-    ImportDeclaration: processImportDeclaration(onImportFound, calleeInfo),
+    ImportDeclaration: processImportDeclaration(
+      onImportFound,
+      calleeInfo,
+      state.settings.autoJsxImportSource
+    ),
     CallExpression: processCallExpression(state, calleeInfo),
     Program: processProgram({
       state,

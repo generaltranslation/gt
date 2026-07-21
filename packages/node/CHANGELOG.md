@@ -1,5 +1,21 @@
 # gt-node
 
+## 1.0.8
+
+### Patch Changes
+
+- [#1923](https://github.com/generaltranslation/gt/pull/1923) [`1ae3e65`](https://github.com/generaltranslation/gt/commit/1ae3e657f6e72f6fffa9bd5118c4c6aab2439846) Thanks [@JoshKappler](https://github.com/JoshKappler)! - `initializeGT()` now reads `GT_PROJECT_ID`, `GT_API_KEY`, and `GT_DEV_API_KEY` from the environment as a fallback when they are not passed explicitly, matching the gt-node quickstart which sets these in `.env`. Explicit params still take precedence.
+
+## 1.0.7
+
+### Patch Changes
+
+- [#1916](https://github.com/generaltranslation/gt/pull/1916) [`c658e7e`](https://github.com/generaltranslation/gt/commit/c658e7e1f6929965e3752a6828e3658dd8c527a8) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Unify `gt.config.json` types so complete config objects can be spread into compiler plugins and runtime initializers while file settings remain optional.
+
+- Updated dependencies [[`c658e7e`](https://github.com/generaltranslation/gt/commit/c658e7e1f6929965e3752a6828e3658dd8c527a8)]:
+  - generaltranslation@9.0.3
+  - gt-i18n@1.0.7
+
 ## 1.0.6
 
 ### Patch Changes

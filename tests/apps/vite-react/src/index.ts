@@ -3,8 +3,7 @@ import gtConfig from '../gt.config.json';
 import loadTranslations from './loadTranslations';
 
 await initializeGTSPA({
-  defaultLocale: gtConfig.defaultLocale,
-  locales: gtConfig.locales,
+  ...gtConfig,
   loadTranslations,
 });
 
