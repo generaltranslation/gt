@@ -1625,4 +1625,52 @@ describe('withGTConfig', () => {
       expect(result).toHaveProperty('experimental');
     });
   });
+
+  // ==============================
+  // 18. Function-form next config
+  // ==============================
+  describe('18. Function-form next config', () => {
+    it('calls a sync config function and layers GT on the result', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const built = withGTConfig(
+        (_phase: string): NextConfig => ({
+          reactStrictMode: true,
+        })
+      );
+
+      expect(typeof built).toBe('function');
+      const resolved = (
+        built as unknown as (
+          phase: string,
+          context: { defaultConfig: NextConfig }
+        ) => NextConfig
+      )('phase-production-build', { defaultConfig: {} });
+
+      expect(resolved.reactStrictMode).toBe(true);
+      expect(resolved).toHaveProperty('env');
+      expect(typeof resolved.webpack).toBe('function');
+      expect(resolved.transpilePackages).toContain('gt-next');
+    });
+
+    it('awaits an async config function and layers GT on the result', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const built = withGTConfig(
+        async (_phase: string): Promise<NextConfig> => ({
+          reactStrictMode: true,
+        })
+      );
+
+      const resolved = await (
+        built as unknown as (
+          phase: string,
+          context: { defaultConfig: NextConfig }
+        ) => Promise<NextConfig>
+      )('phase-production-build', { defaultConfig: {} });
+
+      expect(resolved.reactStrictMode).toBe(true);
+      expect(resolved).toHaveProperty('env');
+      expect(typeof resolved.webpack).toBe('function');
+      expect(resolved.transpilePackages).toContain('gt-next');
+    });
+  });
 });
