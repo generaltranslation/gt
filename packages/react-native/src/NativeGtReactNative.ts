@@ -9,10 +9,12 @@ export interface Spec extends TurboModule {
 
 // On web (react-native-web / Expo web) the native module is never registered, so
 // calling getEnforcing at module load throws and crashes the whole bundle before
-// any Platform.OS guard in the sibling utilities can run. Resolve to null on web
-// and let those guards handle the null path, matching how they already branch on
-// Platform.OS === 'web'. On native platforms getEnforcing is kept unchanged, so a
-// misconfigured native build still fails loudly at import as before.
+// any Platform.OS guard in the sibling utilities can run. Resolve to null on web:
+// its only importers, utils/getNativeLocales.ts and utils/nativeStore.ts, never
+// reach it there, because each serves its web fallback (navigator.languages,
+// localStorage) behind its own Platform.OS === 'web' branch first. On native
+// platforms getEnforcing is kept unchanged, so a misconfigured native build
+// still fails loudly at import as before.
 export const GtReactNative: Spec | null =
   Platform.OS === 'web'
     ? null

@@ -97,6 +97,7 @@ describe('native utilities degrade on web without the native module', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
     // @ts-expect-error remove the localStorage shim injected by a test
     delete globalThis.localStorage;
   });
@@ -106,6 +107,17 @@ describe('native utilities degrade on web without the native module', () => {
 
     expect(() => getNativeLocales()).not.toThrow();
     expect(Array.isArray(getNativeLocales())).toBe(true);
+  });
+
+  it('getNativeLocales returns navigator.languages on web', async () => {
+    vi.stubGlobal('navigator', {
+      languages: ['fr-FR', 'fr'],
+      language: 'fr-FR',
+    });
+
+    const { getNativeLocales } = await import('../utils/getNativeLocales');
+
+    expect(getNativeLocales()).toEqual(['fr-FR', 'fr']);
   });
 
   it('nativeStore reads and writes through localStorage on web', async () => {
