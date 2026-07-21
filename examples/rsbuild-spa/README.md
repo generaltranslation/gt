@@ -25,8 +25,10 @@ A multilingual single-page React app built with [Rsbuild](https://rsbuild.rs) (w
 ```bash
 git clone https://github.com/generaltranslation/gt.git
 cd gt/examples/rsbuild-spa
-pnpm install
+corepack pnpm install
 ```
+
+The `gt`, `gt-react`, and `@generaltranslation/compiler` dependencies are pinned to `workspace:*`, a pnpm-only protocol that resolves against the monorepo, so a plain `npm install` inside this directory fails. To run the example on its own, copy this directory out of the monorepo and replace those three `workspace:*` pins with their published versions, after which `npm install` works.
 
 ### Run development server
 
