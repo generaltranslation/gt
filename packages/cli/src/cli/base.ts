@@ -73,6 +73,10 @@ import { splitMintlifyLanguageRefs } from '../utils/splitMintlifyLanguageRefs.js
 import { runMergeDriver, type MergeDriverName } from '../git/mergeDrivers.js';
 import { setupGitMergeDrivers } from '../git/setupMergeDrivers.js';
 import { warnReactPackageCompatibility } from '../utils/reactPackageCompatibility.js';
+import {
+  getReactSetupGuidance,
+  LOAD_TRANSLATIONS_SETUP_GUIDANCE,
+} from '../setup/guidance.js';
 
 const ID_COMPATIBILITY_WARNING_COMMANDS = new Set([
   'download',
@@ -583,13 +587,13 @@ export class BaseCLI {
           );
         } else {
           // Get framework display info for the defaults message
-          const frameworkDisplayName =
+          const reactSetup =
             framework.type === 'react'
-              ? getFrameworkDisplayName(framework)
-              : null;
-          const library =
-            framework.type === 'react'
-              ? getReactFrameworkLibrary(framework)
+              ? {
+                  frameworkDisplayName: getFrameworkDisplayName(framework),
+                  library: getReactFrameworkLibrary(framework),
+                  guidance: getReactSetupGuidance(framework),
+                }
               : null;
 
           // Build defaults description based on detected framework
@@ -598,10 +602,9 @@ export class BaseCLI {
               ? DEFAULT_VITE_TRANSLATIONS_DIR
               : DEFAULT_TRANSLATIONS_DIR;
 
-          const defaultsDescription =
-            framework.type === 'react'
-              ? `${library} & GTProvider, ${frameworkDisplayName}, Files saved locally in ${defaultTranslationsDir}`
-              : `Files saved locally in ${defaultTranslationsDir}`;
+          const defaultsDescription = reactSetup
+            ? `${reactSetup.library}, ${reactSetup.frameworkDisplayName}, ${reactSetup.guidance.defaultsDescription}, Files saved locally in ${defaultTranslationsDir}`
+            : `Files saved locally in ${defaultTranslationsDir}`;
 
           // Ask if user wants to use defaults
           const useDefaults = await promptConfirm({
@@ -612,11 +615,11 @@ export class BaseCLI {
           let ranReactSetup = false;
 
           // so that people can run init in non-js projects
-          if (framework.type === 'react') {
+          if (framework.type === 'react' && reactSetup) {
             const wrap = useDefaults
               ? true
               : await promptConfirm({
-                  message: `Would you like to install ${library} and add the GTProvider? See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`,
+                  message: `Would you like to install ${reactSetup.library} and ${reactSetup.guidance.promptAction}? See the docs for more information: ${reactSetup.guidance.docsUrl}`,
                   defaultValue: true,
                 });
 
@@ -627,7 +630,7 @@ export class BaseCLI {
               await handleSetupReactCommand(options, framework, useDefaults);
               logger.endCommand(
                 `Done! Since this wizard is experimental, please review the changes and make modifications as needed.
-\nNext step: start internationalizing! See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`
+\n${reactSetup.guidance.completion} See the docs for more information: ${reactSetup.guidance.docsUrl}`
               );
               ranReactSetup = true;
             }
@@ -744,8 +747,7 @@ export class BaseCLI {
       );
       logger.message(
         `Created ${chalk.cyan('loadTranslations.js')} file for local translations.
-Make sure to add this function to your app configuration.
-See https://generaltranslation.com/en/docs/next/guides/local-tx`
+${LOAD_TRANSLATIONS_SETUP_GUIDANCE}`
       );
     }
 

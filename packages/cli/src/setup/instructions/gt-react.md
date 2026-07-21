@@ -4,7 +4,55 @@ This project is using the `gt-react` internationalization library.
 
 ## gt-react setup
 
-- `GTProvider` must wrap the app in the root layout to provide translation context.
+Choose the setup that matches how the app renders:
+
+- Single-page apps (SPAs), including client-rendered Vite apps, call
+  `initializeGTSPA()` once before rendering. Pass the app configuration and
+  `loadTranslations` to it. SPAs do not need a `GTProvider`.
+- Server-rendered React apps call `initializeGT()` once at module scope. During
+  server rendering, resolve the request locale, load its translations with
+  `getTranslationsSnapshot()`, and hydrate `GTProvider` with both the `locale`
+  and `translations`.
+
+```js
+// SPA entry point
+import { initializeGTSPA } from 'gt-react';
+import config from '../gt.config.json'; // Adjust the relative path as needed.
+import loadTranslations from './loadTranslations';
+
+await initializeGTSPA({ ...config, loadTranslations });
+await import('./main');
+```
+
+```jsx
+// Server-rendered root
+import {
+  GTProvider,
+  getTranslationsSnapshot,
+  initializeGT,
+  parseLocale,
+} from 'gt-react';
+import config from '../gt.config.json'; // Adjust the relative path as needed.
+import loadTranslations from './loadTranslations';
+
+initializeGT({ ...config, loadTranslations });
+
+export async function loadRoot(request) {
+  const locale = parseLocale(request);
+  return {
+    locale,
+    translations: await getTranslationsSnapshot(locale),
+  };
+}
+
+export function Root({ locale, translations }) {
+  return (
+    <GTProvider locale={locale} translations={translations}>
+      <App />
+    </GTProvider>
+  );
+}
+```
 
 ## Translating JSX
 
@@ -95,4 +143,8 @@ const locale = useLocale(); // "en-US"
 
 ## Quickstart
 
-See <https://generaltranslation.com/docs/react.md>
+- SPAs: <https://generaltranslation.com/docs/react/react-spa-quickstart>
+- Server-rendered React:
+  <https://generaltranslation.com/docs/react/react-quickstart>
+- Full configuration guide:
+  <https://generaltranslation.com/docs/react/guides/configuring>

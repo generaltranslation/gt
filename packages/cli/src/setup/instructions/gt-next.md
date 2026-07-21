@@ -104,4 +104,4 @@ const locale = useLocale(); // "en-US"
 
 ## Quickstart
 
-See <https://generaltranslation.com/docs/next.md>
+See <https://generaltranslation.com/docs/react/nextjs-quickstart>
