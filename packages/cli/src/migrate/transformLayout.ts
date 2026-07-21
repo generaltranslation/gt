@@ -12,8 +12,10 @@ const generate = generateModule.default || generateModule;
 /**
  * Layout files get the regular source transform plus layout-specific work:
  * locale-validation removal, `lang` -> getLocale(), and GTProvider
- * insertion/nesting. Runs after every other file so the final skip set is
- * known (it decides whether NextIntlClientProvider is retained).
+ * insertion/nesting. The driver runs layouts after every other file and
+ * classifies them all to a fixed point before applying any edits, so
+ * ctx.skippedFiles is final by the time a layout's output is written (it
+ * decides whether NextIntlClientProvider is retained).
  */
 /**
  * True only for tests that validate a locale: a `hasLocale(...)` call, or an
@@ -131,6 +133,46 @@ function findDefaultExportFunction(ast: t.File): t.Function | null {
   return result;
 }
 
+/**
+ * Drop the `params` parameter from a function whose only use of it was an
+ * orphaned `const { ... } = await params` that step 7 just removed. The usual
+ * shape is an ObjectPattern parameter (`{ children, params }`): remove just the
+ * `params` property, which never changes arity. If that would empty the pattern,
+ * remove the whole parameter only when it is last (an empty `{}` trips
+ * no-empty-pattern, and dropping a non-last positional param shifts the others).
+ * TypeScript annotations are left untouched: an unused type member does not lint.
+ */
+function removeParamsParameter(fn: t.Function): void {
+  const params = fn.params;
+  for (let index = 0; index < params.length; index++) {
+    const param = params[index];
+    if (t.isIdentifier(param, { name: 'params' })) {
+      if (index === params.length - 1) params.splice(index, 1);
+      return;
+    }
+    if (!t.isObjectPattern(param)) continue;
+    const propertyIndex = param.properties.findIndex(
+      (property) =>
+        t.isObjectProperty(property) &&
+        !property.computed &&
+        t.isIdentifier(property.value, { name: 'params' })
+    );
+    if (propertyIndex === -1) continue;
+    // A rest sibling would absorb the removed key at runtime (`...rest` gains
+    // `params`), so keep the parameter in that shape; the lint warning is the
+    // lesser evil to a behavior change.
+    if (param.properties.some((property) => t.isRestElement(property))) {
+      return;
+    }
+    if (param.properties.length === 1) {
+      if (index === params.length - 1) params.splice(index, 1);
+      return;
+    }
+    param.properties.splice(propertyIndex, 1);
+    return;
+  }
+}
+
 export function transformLayoutFile(
   file: string,
   code: string,
@@ -140,6 +182,12 @@ export function transformLayoutFile(
   const base = transformSourceFile(file, code, ctx, {
     retainNextIntlProvider: retainProvider,
     dropLocaleValidation: true,
+    // Opt out of the base pass's orphaned param-locale cleanup: step 4 below can
+    // inject `locale={locale}` into a retained NextIntlClientProvider, which
+    // references the param destructure that looks dead at base-pass time.
+    // Cleaning it here would demote SSG to a request-scoped getLocale(); layouts
+    // run their own step-7 cleanup after that injection instead.
+    dropOrphanedParamLocale: false,
   });
   if (base.skipReasons.length > 0) return base;
 
@@ -415,10 +463,15 @@ export function transformLayoutFile(
     removeUnusedNamedImports(ast, ['notFound', 'hasLocale', 'routing']);
   }
 
-  // 7. Guard removal can orphan `const { locale } = await params` — drop the
+  // 7. Guard removal can orphan `const { locale } = await params`: drop the
   //    declaration when nothing references its bindings anymore (it would
-  //    trip no-unused-vars in user projects).
+  //    trip no-unused-vars in user projects), then drop the now-unused `params`
+  //    parameter from the same function so the cleanup does not just move the
+  //    unused-variable warning from the destructure to the signature.
   if (mutated) {
+    // Functions whose orphaned `const { ... } = await params` was removed here;
+    // each one's `params` parameter may now be unreferenced and need dropping.
+    const paramsCleanupTargets = new Set<t.Function>();
     traverse(ast, {
       Program(path) {
         // Recrawl so bindings reflect the removals above.
@@ -447,9 +500,32 @@ export function transformLayoutFile(
           const binding = path.scope.getBinding(property.value.name);
           if (!binding || binding.referenced) return;
         }
+        const fn = path.getFunctionParent();
+        if (fn) paramsCleanupTargets.add(fn.node);
         path.remove();
       },
     });
+
+    // Now drop any `params` parameter left unreferenced by those removals. A
+    // fresh crawl is required so the removed `await params` no longer counts as
+    // a reference; then each cleaned function's own `params` binding decides.
+    // Only that function's params is touched: a sibling generateMetadata that
+    // still reads its own params keeps its own, separately-scoped binding.
+    if (paramsCleanupTargets.size > 0) {
+      traverse(ast, {
+        Program(path) {
+          path.scope.crawl();
+        },
+        Function(path) {
+          if (!paramsCleanupTargets.has(path.node)) return;
+          const binding = path.scope.getBinding('params');
+          if (!binding || binding.kind !== 'param' || binding.referenced) {
+            return;
+          }
+          removeParamsParameter(path.node);
+        },
+      });
+    }
   }
 
   if (!mutated && base.code === null) {

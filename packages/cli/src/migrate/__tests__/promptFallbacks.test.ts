@@ -20,6 +20,7 @@ import {
   promptLocaleList,
   promptText,
 } from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 
 const emptyRouting: RoutingInfo = {
   locales: null,
@@ -87,6 +88,12 @@ describe('resolveCatalogsInteractively', () => {
     expect(result!.locales.sort()).toEqual(['en', 'es']);
     expect(result!.byLocale.en).toEqual({ Home: { title: 'Hello' } });
     expect(result!.byLocale.es).toEqual({ Home: { title: 'Hola' } });
+    // The lead-in goes through the standard diagnostic messaging system.
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'Could not automatically locate your next-intl message catalogs'
+      )
+    );
   });
 
   it('returns null when the chosen default locale is not in the locales list', async () => {
@@ -100,6 +107,11 @@ describe('resolveCatalogsInteractively', () => {
 
     const result = await resolveCatalogsInteractively(cwd, emptyRouting);
     expect(result).toBeNull();
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "Default locale 'de' is not one of the selected locales [en, es]"
+      )
+    );
   });
 
   it('returns null when a chosen locale has no catalog file', async () => {
@@ -112,5 +124,8 @@ describe('resolveCatalogsInteractively', () => {
 
     const result = await resolveCatalogsInteractively(cwd, emptyRouting);
     expect(result).toBeNull();
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.stringContaining("No catalog file found for 'fr'")
+    );
   });
 });

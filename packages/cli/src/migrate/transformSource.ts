@@ -2,6 +2,7 @@ import { parse } from '@babel/parser';
 import traverseModule, { type NodePath } from '@babel/traverse';
 import generateModule from '@babel/generator';
 import * as t from '@babel/types';
+import { removeUnusedNamedImports } from './importUtils.js';
 import type { MigrationContext, SourceResult, TodoEntry } from './types.js';
 
 const traverse = traverseModule.default || traverseModule;
@@ -36,6 +37,15 @@ type TransformOptions = {
    * instead of skipping the file.
    */
   dropLocaleValidation?: boolean;
+  /**
+   * After removing setRequestLocale, drop a `const { locale } = use(params)` /
+   * `= await params` destructure that its removal just orphaned, plus the
+   * now-unused `params` parameter and `use` import. Default true. Layouts opt
+   * OUT: their step 4 injects `locale={locale}` into a retained
+   * NextIntlClientProvider AFTER this pass, reviving a destructure that looks
+   * dead here, so they run their own step-7 cleanup instead.
+   */
+  dropOrphanedParamLocale?: boolean;
 };
 
 type ImportedSymbol = {
@@ -349,7 +359,11 @@ export function transformSourceFile(
     });
   }
 
-  // 1. setRequestLocale call statements.
+  // 1. setRequestLocale call statements. Record the bare-identifier arguments
+  //    (usually `locale`) so the orphaned-destructure cleanup below only touches
+  //    a `const { locale } = use(params)` that this removal actually made dead.
+  const removedSetRequestLocaleArgs = new Set<string>();
+  let setRequestLocaleRemoved = false;
   traverse(ast, {
     ExpressionStatement(path) {
       const expression = unwrapAwait(path.node.expression);
@@ -359,7 +373,13 @@ export function transformSourceFile(
         t.isIdentifier(expression.callee) &&
         removalLocals.has(expression.callee.name)
       ) {
+        for (const argument of expression.arguments) {
+          if (t.isIdentifier(argument)) {
+            removedSetRequestLocaleArgs.add(argument.name);
+          }
+        }
         path.remove();
+        setRequestLocaleRemoved = true;
       }
     },
   });
@@ -538,6 +558,84 @@ export function transformSourceFile(
     }
   }
 
+  // 5. Orphaned param-locale cleanup. Runs LAST, after every reference-adding
+  //    step, so the recrawl below sees true reference counts. setRequestLocale
+  //    removal can strand a `const { locale } = use(params)` (or `= await
+  //    params`), which then trips no-unused-vars / TS6133; drop it, the now-dead
+  //    `params` parameter, and the `use` import to match how layouts (step 7)
+  //    leave their own path lint-clean. Layouts opt out (dropOrphanedParamLocale
+  //    false): they revive that destructure by injecting `locale={locale}` into
+  //    a retained provider after this pass.
+  if (options.dropOrphanedParamLocale !== false && setRequestLocaleRemoved) {
+    // Functions whose orphaned params destructure was removed here; each one's
+    // `params` parameter may now be unreferenced and need dropping.
+    const paramsCleanupTargets = new Set<t.Function>();
+    let removedOrphan = false;
+    traverse(ast, {
+      Program(path) {
+        // Recrawl so bindings reflect every mutation above.
+        path.scope.crawl();
+      },
+      VariableDeclaration(path) {
+        if (path.node.declarations.length !== 1) return;
+        const declarator = path.node.declarations[0];
+        if (!t.isObjectPattern(declarator.id)) return;
+        if (!isParamsInit(declarator.init)) return;
+        // All-or-nothing: keep the declaration unless EVERY name it binds is
+        // now unreferenced AND at least one was a removed setRequestLocale
+        // argument (so we only clean orphans this codemod created, never the
+        // author's own pre-existing dead code).
+        let boundToRemovedArg = false;
+        for (const property of declarator.id.properties) {
+          if (
+            !t.isObjectProperty(property) ||
+            !t.isIdentifier(property.value)
+          ) {
+            return;
+          }
+          if (removedSetRequestLocaleArgs.has(property.value.name)) {
+            boundToRemovedArg = true;
+          }
+          const binding = path.scope.getBinding(property.value.name);
+          if (!binding || binding.referenced) return;
+        }
+        if (!boundToRemovedArg) return;
+        const fn = path.getFunctionParent();
+        if (fn) paramsCleanupTargets.add(fn.node);
+        path.remove();
+        removedOrphan = true;
+      },
+    });
+
+    // Drop the `params` parameter left unreferenced by those removals. A fresh
+    // crawl is required so the removed destructure no longer counts as a
+    // reference; then each cleaned function's own `params` binding decides.
+    // Only that function's params is touched (a sibling generateMetadata keeps
+    // its own, separately-scoped binding).
+    if (paramsCleanupTargets.size > 0) {
+      traverse(ast, {
+        Program(path) {
+          path.scope.crawl();
+        },
+        Function(path) {
+          if (!paramsCleanupTargets.has(path.node)) return;
+          const binding = path.scope.getBinding('params');
+          if (!binding || binding.kind !== 'param' || binding.referenced) {
+            return;
+          }
+          removeParamsParameter(path.node);
+        },
+      });
+    }
+
+    // The removed destructure was the last reference to a `use` import; prune
+    // it (the helper only drops unreferenced names, so a still-used `use` or a
+    // `React.use` namespace stays).
+    if (removedOrphan) {
+      removeUnusedNamedImports(ast, ['use']);
+    }
+  }
+
   const output = generate(
     ast,
     {
@@ -637,6 +735,80 @@ function unwrapAwait(node: t.Node | null | undefined): t.Expression | null {
     }
   }
   return t.isExpression(current) ? current : null;
+}
+
+/**
+ * True when a destructure init reads the route `params`: `params`,
+ * `await params`, `use(params)`, or `React.use(params)` (React's `use` unwraps
+ * the params promise in a page/segment). Other sources (`props.params`, an
+ * arbitrary call) are ignored so only genuine route-param destructures qualify.
+ */
+function isParamsInit(node: t.Expression | null | undefined): boolean {
+  if (!node) return false;
+  if (t.isIdentifier(node, { name: 'params' })) return true;
+  if (
+    t.isAwaitExpression(node) &&
+    t.isIdentifier(node.argument, { name: 'params' })
+  ) {
+    return true;
+  }
+  if (
+    t.isCallExpression(node) &&
+    node.arguments.length === 1 &&
+    t.isIdentifier(node.arguments[0], { name: 'params' })
+  ) {
+    const callee = node.callee;
+    if (t.isIdentifier(callee, { name: 'use' })) return true;
+    if (
+      t.isMemberExpression(callee) &&
+      !callee.computed &&
+      t.isIdentifier(callee.object, { name: 'React' }) &&
+      t.isIdentifier(callee.property, { name: 'use' })
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Drop the `params` parameter from a function whose only use of it was an
+ * orphaned params destructure the cleanup above just removed. Mirrors
+ * transformLayout's step-7 rule exactly: the usual shape is an ObjectPattern
+ * parameter (`{ params }`), so remove just the `params` property, which never
+ * changes arity. If that would empty the pattern, remove the whole parameter
+ * only when it is last (an empty `{}` trips no-empty-pattern, and dropping a
+ * non-last positional param shifts the others). A rest sibling would absorb the
+ * removed key at runtime (`...rest` gains `params`), so the parameter is left in
+ * that shape. TypeScript annotations are left untouched: an unused type member
+ * does not lint.
+ */
+function removeParamsParameter(fn: t.Function): void {
+  const params = fn.params;
+  for (let index = 0; index < params.length; index++) {
+    const param = params[index];
+    if (t.isIdentifier(param, { name: 'params' })) {
+      if (index === params.length - 1) params.splice(index, 1);
+      return;
+    }
+    if (!t.isObjectPattern(param)) continue;
+    const propertyIndex = param.properties.findIndex(
+      (property) =>
+        t.isObjectProperty(property) &&
+        !property.computed &&
+        t.isIdentifier(property.value, { name: 'params' })
+    );
+    if (propertyIndex === -1) continue;
+    if (param.properties.some((property) => t.isRestElement(property))) {
+      return;
+    }
+    if (param.properties.length === 1) {
+      if (index === params.length - 1) params.splice(index, 1);
+      return;
+    }
+    param.properties.splice(propertyIndex, 1);
+    return;
+  }
 }
 
 function getObjectProp(

@@ -1,8 +1,14 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
+
+vi.mock('../../console/logger.js', () => ({
+  logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
+}));
+
+import { logger } from '../../console/logger.js';
 import { discoverCatalogs } from '../discover.js';
 import type { RoutingInfo } from '../types.js';
 
@@ -27,6 +33,10 @@ function makeProject(files: Record<string, string>): string {
   }
   return dir;
 }
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 afterEach(() => {
   while (tmpDirs.length) {
@@ -138,5 +148,64 @@ describe('discoverCatalogs', () => {
       'messages/de.json': '{}',
     });
     expect(await discoverCatalogs(cwd, emptyRouting)).toBeNull();
+  });
+
+  it('returns null and warns naming the missing locale when a routing locale has no catalog', async () => {
+    const cwd = makeProject({
+      'messages/en.json': '{}',
+      'messages/es.json': '{}',
+    });
+    const routing: RoutingInfo = {
+      ...emptyRouting,
+      locales: ['en', 'es', 'fr'],
+      defaultLocale: 'en',
+    };
+    expect(await discoverCatalogs(cwd, routing)).toBeNull();
+    expect(logger.warn).toHaveBeenCalledTimes(1);
+    const message = vi.mocked(logger.warn).mock.calls[0][0];
+    expect(message).toMatch(/fr/);
+    expect(message).toContain(path.join(cwd, 'messages'));
+  });
+
+  it('keeps stem-driven behavior and does not warn when routing locales are null', async () => {
+    const cwd = makeProject({
+      'messages/en.json': '{}',
+      'messages/es.json': '{}',
+    });
+    const result = await discoverCatalogs(cwd, emptyRouting);
+    expect(result!.locales.sort()).toEqual(['en', 'es']);
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  it('does not warn when every routing locale has a catalog', async () => {
+    const cwd = makeProject({
+      'messages/en.json': '{}',
+      'messages/fr.json': '{}',
+    });
+    const routing: RoutingInfo = {
+      ...emptyRouting,
+      locales: ['en', 'fr'],
+      defaultLocale: 'en',
+    };
+    const result = await discoverCatalogs(cwd, routing);
+    expect(result!.locales.sort()).toEqual(['en', 'fr']);
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  it('carries the parse error under Details rather than inline in whatHappened', async () => {
+    const cwd = makeProject({
+      'messages/en.json': JSON.stringify({ a: 'A' }),
+      'messages/es.json': '{ "a": "b", }', // trailing comma
+    });
+    let message = '';
+    try {
+      await discoverCatalogs(cwd, emptyRouting);
+    } catch (error) {
+      message = String(error);
+    }
+    expect(message).toMatch(/Details:/);
+    // The raw parser error lives under Details, not inline after the filename.
+    const beforeDetails = message.split('Details:')[0];
+    expect(beforeDetails).not.toMatch(/SyntaxError/);
   });
 });

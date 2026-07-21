@@ -73,9 +73,10 @@ import { getPackageManager } from '../../utils/packageManager.js';
  * segments.
  *
  * Pipeline ordering below is load-bearing in one place: `transformLayout`
- * runs after the source pass, once the skip set is final, and before the
- * config lane and `emitGtFiles` (it inlines `routing.locales` before the
- * routing file can be deleted). All transforms are babel
+ * runs after the source pass and layouts are classified to a fixed point
+ * before any is applied (a layout's own skip flips provider retention for
+ * its siblings), all before the config lane and `emitGtFiles` (it inlines
+ * `routing.locales` before the routing file can be deleted). All transforms are babel
  * parse/traverse/generate (`retainLines`) like the existing wizard
  * codemods; `--dry-run` prints the report without writing.
  *
@@ -126,9 +127,11 @@ export async function handleMigrateCommand(
   try {
     catalogs = await discoverCatalogs(cwd, routing);
     if (!catalogs) {
-      // Detection came up empty: ask the user directly (same building blocks
-      // as `gt setup`) instead of guessing. Returns null when the session is
-      // non-interactive, which falls through to the hard error below.
+      // Detection came up empty, or found catalogs but not one per configured
+      // locale (discover warns with the specifics first): ask the user
+      // directly (same building blocks as `gt setup`) instead of guessing.
+      // Returns null when the session is non-interactive, which falls through
+      // to the hard error below.
       catalogs = await resolveCatalogsInteractively(cwd, routing);
     }
   } catch (error) {
@@ -290,9 +293,33 @@ export async function handleMigrateCommand(
     }
   }
 
-  // Pass 2b: layouts, with full skip knowledge.
-  for (const file of layouts) {
-    const code = fs.readFileSync(file, 'utf8');
+  // Pass 2b: layouts. A layout's own skip flips provider retention for every
+  // other layout (transformLayoutFile reads ctx.skippedFiles live), and a
+  // flip to retention can itself skip another layout (the unsafe-async
+  // fallback only exists while a provider is retained), so classify all
+  // layouts to a fixed point before applying any of them. Otherwise a root
+  // layout processed first drops NextIntlClientProvider that a later-skipped
+  // nested layout still needs. Skips only accumulate (retention never flips
+  // back off), so each round either adds a skip or ends the loop.
+  const layoutSources = new Map(
+    layouts.map((file) => [file, fs.readFileSync(file, 'utf8')] as const)
+  );
+  for (;;) {
+    let newSkips = false;
+    for (const [file, code] of layoutSources) {
+      if (ctx.skippedFiles.has(file)) continue;
+      const classified = transformLayoutFile(file, code, ctx);
+      if (classified.skipReasons.length > 0) {
+        ctx.skippedFiles.set(file, classified.skipReasons);
+        newSkips = true;
+      }
+    }
+    if (!newSkips) break;
+  }
+  // Apply with the final skip set. The last classification round ran against
+  // this exact state and found no new skips, so these results are settled.
+  for (const [file, code] of layoutSources) {
+    if (ctx.skippedFiles.has(file)) continue;
     collect(ctx, file, transformLayoutFile(file, code, ctx));
   }
 

@@ -400,6 +400,55 @@ describe('handleMigrateCommand integration', () => {
     expect(read(cwd, 'gt-migrate-report.md')).toContain('Price.tsx');
   });
 
+  it('keeps the root provider when a later layout is the only skip', async () => {
+    // The only skip in the whole app is a nested layout that globs AFTER the
+    // root layout. Single-pass sequential processing converts the root layout
+    // (skip set still empty, provider dropped) before the nested layout's
+    // skip lands, leaving the skipped subtree with no NextIntlClientProvider;
+    // the fixed-point classification pass must retain it.
+    const cwd = makeApp({
+      'src/app/[locale]/shop/layout.tsx': [
+        "'use client';",
+        "import { useFormatter } from 'next-intl';",
+        'export default function ShopLayout({',
+        '  children,',
+        '}: {',
+        '  children: React.ReactNode;',
+        '}) {',
+        '  const format = useFormatter();',
+        '  return <section title={format.number(1)}>{children}</section>;',
+        '}',
+      ].join('\n'),
+    });
+    await handleMigrateCommand(
+      {
+        config: 'gt.config.json',
+        from: 'next-intl',
+        dryRun: false,
+        yes: true,
+        allowDirty: true,
+      },
+      'next-intl',
+      cwd
+    );
+
+    // skipped nested layout untouched
+    expect(read(cwd, 'src/app/[locale]/shop/layout.tsx')).toContain(
+      'useFormatter'
+    );
+    // root layout keeps the provider (nested inside GTProvider, explicit
+    // locale) so the skipped subtree still has a next-intl context
+    const layout = read(cwd, 'src/app/[locale]/layout.tsx');
+    expect(layout).toContain('GTProvider');
+    expect(layout).toMatch(/<NextIntlClientProvider[^>]*locale=\{locale\}/);
+    // partial migration: dep and request config survive
+    const pkg = JSON.parse(read(cwd, 'package.json'));
+    expect(pkg.dependencies['next-intl']).toBeDefined();
+    expect(fs.existsSync(path.join(cwd, 'src/i18n/request.ts'))).toBe(true);
+    // report lists the layout skip
+    expect(read(cwd, 'gt-migrate-report.md')).toContain('shop/layout.tsx');
+  });
+
   it('dry run writes nothing', async () => {
     const cwd = makeApp();
     const before = read(cwd, 'src/app/[locale]/page.tsx');

@@ -1,6 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import {
+  createDiagnosticMessage,
+  libraryDefaultLocale,
+} from 'generaltranslation/internal';
 import {
   promptLocale,
   promptLocaleList,
@@ -31,8 +34,11 @@ export async function resolveCatalogsInteractively(
   if (!process.stdin.isTTY) return null;
 
   logger.warn(
-    'Could not automatically locate your next-intl message catalogs. ' +
-      'Answer a few questions and we will pick them up from there.'
+    createDiagnosticMessage({
+      whatHappened:
+        'Could not automatically locate your next-intl message catalogs',
+      fix: 'Answer a few questions and we will pick them up from there.',
+    })
   );
 
   const validateDir = catalogDirValidator(cwd);
@@ -72,8 +78,10 @@ export async function resolveCatalogsInteractively(
 
   if (!locales.includes(defaultLocale)) {
     logger.error(
-      `Default locale '${defaultLocale}' is not one of the selected locales ` +
-        `[${locales.join(', ')}].`
+      createDiagnosticMessage({
+        whatHappened: `Default locale '${defaultLocale}' is not one of the selected locales [${locales.join(', ')}]`,
+        fix: 'Pick a default locale that is in the selected list and re-run.',
+      })
     );
     return null;
   }
@@ -81,7 +89,12 @@ export async function resolveCatalogsInteractively(
   for (const locale of locales) {
     const file = path.join(dir, `${locale}.json`);
     if (!fs.existsSync(file)) {
-      logger.error(`No catalog file found for '${locale}' (expected ${file}).`);
+      logger.error(
+        createDiagnosticMessage({
+          whatHappened: `No catalog file found for '${locale}', expected ${file}`,
+          fix: `Add that file, or remove '${locale}' from the selected locales, then re-run.`,
+        })
+      );
       return null;
     }
   }

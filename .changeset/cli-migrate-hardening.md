@@ -24,3 +24,11 @@ Review-response round:
 - When catalog detection comes up empty in an interactive session, the command asks for the messages directory, supported locales, and default locale (the same prompts `gt setup` uses) instead of failing outright; non-interactive runs keep the hard error.
 - The `--inline` opt-in pass was removed to keep the first version small; `t.rich` files now always skip with a report entry pointing at manual conversion. Inline conversion returns as a follow-up PR.
 - Catalog discovery uses `libraryDefaultLocale` instead of a hardcoded 'en' and reports malformed catalogs through the standard diagnostic message format.
+
+Fourth review round:
+
+- Layouts are classified to a fixed point before any is rewritten, so a nested layout that must be skipped keeps `NextIntlClientProvider` in the already-converted root layout above it (previously a later layout skip could arrive after the root layout had dropped the provider).
+- Catalog discovery fails loudly when the routing config lists a locale with no catalog file (warning names the missing locales, then the interactive prompts or the hard error take over) instead of silently writing a gt.config.json without it.
+- Removing an orphaned `const { locale } = await params` also removes the now-unused `params` parameter binding, so migrated layouts with a static `<html lang>` pass no-unused-vars linting.
+- The catalog-fallback warnings and errors go through `createDiagnosticMessage`, with caught parse errors carried in the details slot.
+- Pages get the same orphan hygiene as layouts: removing `setRequestLocale(locale)` now also removes a `const { locale } = use(params)` (or `await params`) destructure it stranded, the unused `params` parameter, and a dangling react `use` import, so migrated pages pass strict unused-variable linting too. Layouts keep their own cleanup (their param binding can be re-referenced by retained-provider wiring).
