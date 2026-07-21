@@ -91,15 +91,37 @@ describe('resolveMigrationSource', () => {
     expect(result.kind).toBe('error');
   });
 
-  it('passes concrete sources (next-intl, react-i18next) straight through', () => {
-    const cwd = makeApp({}, []);
-    expect(resolveMigrationSource('next-intl', cwd)).toEqual({
+  it('resolves concrete sources when the project has an App Router', () => {
+    const appCwd = makeApp({}, ['app']);
+    expect(resolveMigrationSource('next-intl', appCwd)).toEqual({
       kind: 'resolved',
       id: 'next-intl',
     });
-    expect(resolveMigrationSource('react-i18next', cwd)).toEqual({
+    const srcAppCwd = makeApp({}, ['src/app']);
+    expect(resolveMigrationSource('react-i18next', srcAppCwd)).toEqual({
       kind: 'resolved',
       id: 'react-i18next',
+    });
+  });
+
+  it('refuses every known source on a Pages Router project (adversary R2 P2-2)', () => {
+    // Previously only the ambiguous i18next path was gated; an explicit
+    // --from next-intl or react-intl on a Pages Router app was mis-migrated
+    // (gt-next scaffolded into an app that cannot use it) instead of refused.
+    for (const id of ['next-intl', 'react-intl', 'react-i18next']) {
+      const cwd = makeApp({}, ['pages']);
+      const result = resolveMigrationSource(id, cwd);
+      expect(result.kind).toBe('error');
+      expect(result.kind === 'error' && result.message).toMatch(/App Router/);
+      expect(result.kind === 'error' && result.message).toContain(id);
+    }
+  });
+
+  it('still passes an unknown --from through for the registry to name', () => {
+    const cwd = makeApp({}, []);
+    expect(resolveMigrationSource('polyglot', cwd)).toEqual({
+      kind: 'resolved',
+      id: 'polyglot',
     });
   });
 });

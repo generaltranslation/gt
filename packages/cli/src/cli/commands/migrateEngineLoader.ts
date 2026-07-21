@@ -20,14 +20,14 @@ type Engine = typeof MigrateEngine;
  * directory is keyed on this range, so a CLI upgrade that moves the line
  * re-fetches instead of reusing a stale engine.
  */
-const ENGINE_RANGE = '^0.1.0';
+export const ENGINE_RANGE = '^0.1.0';
 
 /**
  * The engine interface version this CLI is built against. It must equal the
  * engine's exported MIGRATE_INTERFACE_VERSION; a mismatch is a hard error that
  * names both versions and tells the user to update gt.
  */
-const EXPECTED_INTERFACE_VERSION = 1;
+export const EXPECTED_INTERFACE_VERSION = 1;
 
 const PACKAGE_NAME = '@generaltranslation/migrate';
 
@@ -103,7 +103,7 @@ export async function loadMigrateEngine(
               whatHappened: `Could not load or install the gt migrate engine (${PACKAGE_NAME})`,
               fix: `Add ${PACKAGE_NAME} as a devDependency with your package manager (for example \`npm install --save-dev ${PACKAGE_NAME}\`) and re-run \`gt migrate\`.`,
               wayOut:
-                'This usually means the machine is offline or npm is unavailable; installing the engine yourself avoids the on-demand fetch.',
+                'This usually means the machine is offline or npm is unavailable; installing the engine yourself avoids the on-demand fetch. The on-demand copy lives under ~/.gt/migrate-engine and is safe to delete.',
               details: formatDiagnosticErrorDetails(error),
             })
           );
@@ -169,51 +169,95 @@ function cacheDir(): string {
   return path.join(os.homedir(), '.gt', 'migrate-engine', key);
 }
 
-async function installAndImport(): Promise<unknown> {
+/**
+ * Written into the cache dir only after npm exits 0, so an interrupted fetch
+ * leaves no marker and the next run reinstalls instead of trusting a partial
+ * tree (which can resolve yet fail to import).
+ */
+const INSTALL_MARKER = '.install-complete';
+
+/** @internal exported for the cache-internals unit tests */
+export async function installAndImport(): Promise<unknown> {
   const dir = cacheDir();
   // Reuse an already-fetched engine (the range key means a stale one only
   // survives while the range is unchanged).
-  let resolved = resolveInCache(dir);
+  const resolved = resolveInCache(dir);
   if (!resolved) {
     // One plain line before the (silent, piped) npm call so the first run does
     // not appear to hang.
     logger.message(`Fetching ${PACKAGE_NAME} (first run only)...`);
-    fs.mkdirSync(dir, { recursive: true });
-    // npm ships with node, so it is used even when the project uses
-    // pnpm/yarn/bun: this is a tool cache, not a mutation of the user's
-    // project. Fully non-interactive with output piped, never inherited.
-    const result = spawnSync(
-      'npm',
-      [
-        'install',
-        `${PACKAGE_NAME}@${ENGINE_RANGE}`,
-        '--prefix',
-        dir,
-        '--no-save',
-        '--no-audit',
-        '--no-fund',
-        '--loglevel=error',
-      ],
-      { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' }
-    );
-    if (result.error) throw result.error;
-    if (result.status !== 0) {
-      throw new Error(
-        (result.stderr || result.stdout || '').trim() ||
-          `npm install exited with code ${String(result.status)}`
-      );
-    }
-    resolved = resolveInCache(dir);
+    return importFresh(freshInstall(dir));
   }
+  try {
+    return await importFresh(resolved);
+  } catch {
+    // A cache that resolves but cannot be imported is corrupt (an interrupted
+    // install predating the marker, or two first runs interleaving their
+    // writes). Wipe it and reinstall once; a second failure propagates to the
+    // standard diagnostic.
+    logger.message(
+      `Reinstalling ${PACKAGE_NAME} (the cached copy was broken)...`
+    );
+    return importFresh(freshInstall(dir));
+  }
+}
+
+/**
+ * Clears the cache dir, installs the engine into it, and marks the install
+ * complete. Wiping first means an interleaved or interrupted earlier install
+ * can never contribute files to the tree npm builds now. Returns the resolved
+ * engine entry.
+ */
+function freshInstall(dir: string): string {
+  fs.rmSync(dir, { recursive: true, force: true });
+  fs.mkdirSync(dir, { recursive: true });
+  // npm ships with node, so it is used even when the project uses
+  // pnpm/yarn/bun: this is a tool cache, not a mutation of the user's
+  // project. Fully non-interactive with output piped, never inherited.
+  const result = spawnSync(
+    'npm',
+    [
+      'install',
+      `${PACKAGE_NAME}@${ENGINE_RANGE}`,
+      '--prefix',
+      dir,
+      '--no-save',
+      '--no-audit',
+      '--no-fund',
+      '--loglevel=error',
+    ],
+    { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' }
+  );
+  if (result.error) throw result.error;
+  if (result.status !== 0) {
+    throw new Error(
+      (result.stderr || result.stdout || '').trim() ||
+        `npm install exited with code ${String(result.status)}`
+    );
+  }
+  fs.writeFileSync(path.join(dir, INSTALL_MARKER), '');
+  const resolved = resolveInCache(dir);
   if (!resolved) {
     throw new Error(`${PACKAGE_NAME} was not found in ${dir} after install`);
   }
-  return import(pathToFileURL(resolved).href);
+  return resolved;
+}
+
+/**
+ * Imports the engine under a unique URL. A failed import is cached as errored
+ * for the process lifetime under its exact URL, so a healed cache must be
+ * imported under a fresh one; the query string is inert for resolution.
+ */
+function importFresh(resolved: string): Promise<unknown> {
+  return import(`${pathToFileURL(resolved).href}?installed=${Date.now()}`);
 }
 
 /** Resolves the engine's entry inside the tool-cache dir, or null when absent. */
 function resolveInCache(dir: string): string | null {
   try {
+    // An unmarked tree is a partial install; do not trust it (see
+    // INSTALL_MARKER).
+    if (!fs.existsSync(path.join(dir, INSTALL_MARKER))) return null;
     // createRequire's base file need not exist; only its directory is used as
     // the resolution root, so `<dir>/node_modules` is searched.
     const require = createRequire(path.join(dir, 'noop.js'));

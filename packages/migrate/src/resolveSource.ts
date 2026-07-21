@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { getAdapter } from './adapters/index.js';
 
 /**
  * `determineLibrary` collapses every i18next-family dependency (react-i18next,
@@ -26,16 +27,19 @@ export function resolveMigrationSource(
   if (from === 'next-i18next') {
     return { kind: 'error', message: nextI18nextMessage() };
   }
-  // Anything that is not the ambiguous bare-i18next value passes through to the
-  // registry (next-intl, react-i18next, or an unknown --from that errors there).
+  // Anything that is not the ambiguous bare-i18next value passes through to
+  // the registry. A known source is still gated on the App Router (every
+  // adapter rewrites app/ layouts; running against a Pages Router project
+  // would scaffold gt-next into an app that cannot use it). An unknown --from
+  // passes through so the registry can name it in its own error.
   if (from !== 'i18next') {
+    if (getAdapter(from)) {
+      return requireAppRouter(from, cwd);
+    }
     return { kind: 'resolved', id: from };
   }
 
   const deps = readDeps(cwd);
-  const appRouter =
-    fs.existsSync(path.join(cwd, 'app')) ||
-    fs.existsSync(path.join(cwd, 'src/app'));
   const nextI18nextConfig =
     fs.existsSync(path.join(cwd, 'next-i18next.config.js')) ||
     fs.existsSync(path.join(cwd, 'next-i18next.config.ts'));
@@ -46,10 +50,22 @@ export function resolveMigrationSource(
   if (!deps['react-i18next']) {
     return { kind: 'error', message: bareI18nextMessage() };
   }
+  return requireAppRouter('react-i18next', cwd);
+}
+
+/**
+ * Every supported source migrates App Router wiring (layouts, providers,
+ * middleware under app/), so a project with no app/ directory is refused
+ * before anything runs rather than mis-migrated.
+ */
+function requireAppRouter(id: string, cwd: string): SourceResolution {
+  const appRouter =
+    fs.existsSync(path.join(cwd, 'app')) ||
+    fs.existsSync(path.join(cwd, 'src/app'));
   if (!appRouter) {
-    return { kind: 'error', message: pagesRouterMessage() };
+    return { kind: 'error', message: pagesRouterMessage(id) };
   }
-  return { kind: 'resolved', id: 'react-i18next' };
+  return { kind: 'resolved', id };
 }
 
 export function readDeps(cwd: string): Record<string, string> {
@@ -94,16 +110,15 @@ function bareI18nextMessage(): string {
   });
 }
 
-function pagesRouterMessage(): string {
+function pagesRouterMessage(id: string): string {
   return createDiagnosticMessage({
     source: 'gt',
     severity: 'Error',
-    whatHappened:
-      'gt migrate found react-i18next but no App Router (no app/ directory)',
+    whatHappened: `gt migrate found ${id} but no App Router (no app/ or src/app/ directory)`,
     why: 'gt-next targets the Next.js App Router; a Pages Router app has no gt-next equivalent for its i18n wiring',
     reassurance: 'Nothing was changed.',
     fix: 'move to the App Router first, or migrate manually following the gt-next quickstart',
     wayOut:
-      'or re-run with --from react-i18next if your app/ directory is in a non-standard location',
+      'if your App Router lives somewhere else, run gt migrate from the directory that contains app/',
   });
 }

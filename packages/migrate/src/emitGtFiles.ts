@@ -9,8 +9,8 @@ const NEXT_ROOT_PARAMS_MIN_VERSION = '15.5.0';
 /**
  * Lower bound for the version gate. The `-0` prerelease tag is deliberate: it
  * lets 15.5.0 prereleases (canaries, rcs) satisfy the gate. Without it semver
- * ranks `15.5.0-canary.3` *below* `15.5.0`, so an installed 15.5 canary/rc; a
- * healthy app that already has next/root-params; would be wrongly gated out and
+ * ranks `15.5.0-canary.3` *below* `15.5.0`, so an installed 15.5 canary/rc (a
+ * healthy app that already has next/root-params) would be wrongly gated out and
  * told to upgrade to >= 15.5.
  */
 const NEXT_ROOT_PARAMS_MIN_GATE = `${NEXT_ROOT_PARAMS_MIN_VERSION}-0`;
