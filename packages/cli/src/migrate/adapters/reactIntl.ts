@@ -85,8 +85,8 @@ function parseRoutingConfig(_cwd: string): RoutingInfo {
  * Adapter #2: react-intl (FormatJS) -> gt-next. Because react-intl's call model
  * (descriptor-object formatMessage and formatter components) does not fit the
  * shared next-intl engine, this adapter supplies its own `transformSource`; the
- * driver, layout pass, and --inline all still funnel through it. Dictionary-
- * compat by default (catalogs reused verbatim), inline <T> opt-in via --inline.
+ * driver and layout pass still funnel through it. Dictionary-compat
+ * (catalogs reused verbatim); rich text skips until the follow-up inline pass.
  */
 export const reactIntlAdapter: SourceAdapter = {
   id: 'react-intl',

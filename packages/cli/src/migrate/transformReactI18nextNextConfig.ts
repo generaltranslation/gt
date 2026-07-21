@@ -26,7 +26,6 @@ export function transformReactI18nextNextConfig(
     code: null,
     todos: [],
     skipReasons: [],
-    usedRich: false,
   };
 
   // Already migrated (idempotent re-run): leave it.
@@ -139,7 +138,7 @@ export function transformReactI18nextNextConfig(
     },
     code
   );
-  return { code: output.code, todos: [], skipReasons: [], usedRich: false };
+  return { code: output.code, todos: [], skipReasons: [] };
 }
 
 function relativeDictionaryPath(ctx: MigrationContext): string {

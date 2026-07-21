@@ -27,7 +27,6 @@ export function transformReactIntlNextConfig(
     code: null,
     todos: [],
     skipReasons: [],
-    usedRich: false,
   };
   const retainFormatjs = ctx.skippedFiles.size > 0;
 
@@ -141,7 +140,7 @@ export function transformReactIntlNextConfig(
     },
     code
   );
-  return { code: output.code, todos, skipReasons: [], usedRich: false };
+  return { code: output.code, todos, skipReasons: [] };
 }
 
 function isFormatjsPluginEntry(element: t.Node | null): boolean {

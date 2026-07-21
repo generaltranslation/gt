@@ -9,9 +9,10 @@ import { createDiagnosticMessage } from 'generaltranslation/internal';
  * that ambiguity from package.json + the project layout, returning the concrete
  * adapter id to use or an actionable error for the unsupported flavors.
  *
- * `--from react-i18next` (explicit) bypasses this entirely and is the documented
- * escape hatch — the driver only calls this for the `i18next`/`next-i18next`
- * family, never when the user names a concrete supported source.
+ * The driver passes every --from value through here; a concrete supported
+ * source (next-intl, react-intl, react-i18next) passes straight through, so
+ * `--from react-i18next` remains the documented escape hatch the refusal
+ * messages below point at.
  */
 export type SourceResolution =
   | { kind: 'resolved'; id: string }

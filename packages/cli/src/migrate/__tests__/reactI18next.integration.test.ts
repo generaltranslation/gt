@@ -197,7 +197,7 @@ const SETTINGS = [
 
 const OPTIONS = {
   config: 'gt.config.json',
-  inline: false,
+  from: 'react-i18next',
   dryRun: false,
   yes: true,
   allowDirty: true,
@@ -380,7 +380,7 @@ describe('react-i18next full migration', () => {
       });
 
     await expect(
-      handleMigrateCommand({ ...OPTIONS }, 'i18next', cwd)
+      handleMigrateCommand({ ...OPTIONS, from: 'i18next' }, 'i18next', cwd)
     ).rejects.toThrow('exit:1');
 
     exitSpy.mockRestore();
@@ -493,10 +493,10 @@ describe('react-i18next full migration', () => {
       throw new Error(`exit:${code}`);
     }) as never);
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    // next-intl auto-detected; it has no catalogs here so the run errors out,
-    // but the react-i18next notice must fire first.
+    // next-intl targeted via --from; it has no catalogs here so the run
+    // errors out, but the react-i18next notice must fire first.
     await expect(
-      handleMigrateCommand({ ...OPTIONS }, 'next-intl', cwd)
+      handleMigrateCommand({ ...OPTIONS, from: 'next-intl' }, 'next-intl', cwd)
     ).rejects.toThrow();
     expect(
       warns.some(
@@ -609,7 +609,7 @@ describe('react-i18next full migration', () => {
     });
 
     await expect(
-      handleMigrateCommand({ ...OPTIONS }, 'i18next', cwd)
+      handleMigrateCommand({ ...OPTIONS, from: 'i18next' }, 'i18next', cwd)
     ).rejects.toThrow('exit:1');
     expect(errors.join(' ')).toMatch(/mis-nest|keySeparator/);
     // Nothing was written.

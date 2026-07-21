@@ -3,13 +3,12 @@ import type { SourceAdapter } from './adapters/types.js';
 export type MigrateOptions = {
   src?: string[];
   config: string;
-  /** i18n library to migrate from (--from, required; 'next-intl' today) */
+  /** i18n library to migrate from (--from, required; validated against the
+   *  adapter registry: next-intl, react-intl, react-i18next) */
   from: string;
   dryRun: boolean;
   yes: boolean;
   allowDirty: boolean;
-  /** source i18n library to migrate from; defaults to auto-detection. */
-  from?: string;
 };
 
 export type FileEdit = {

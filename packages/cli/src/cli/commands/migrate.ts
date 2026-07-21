@@ -89,9 +89,10 @@ import { getPackageManager } from '../../utils/packageManager.js';
  * parse/traverse/generate (`retainLines`) like the existing wizard
  * codemods; `--dry-run` prints the report without writing.
  *
- * react-i18next is detected (`determineLibrary`) but not yet supported;
- * the required `--from` flag gates the run today, and another library
- * needs its own transform set behind the same flag.
+ * react-intl and react-i18next run through their adapters' own transform
+ * sets behind the same required `--from` flag; next-i18next, bare i18next,
+ * and Pages Router setups route out with a scoped message in
+ * `resolveMigrationSource`.
  *
  * Known upstream constraints (verified against a real app, 2026-07):
  * - native-ESM configs (`next.config.mjs`, or `.js` with `"type":
@@ -521,7 +522,7 @@ export async function handleMigrateCommand(
       : 'The gt-next scaffolding was still written';
     logger.warn(
       `Nothing to migrate: no files importing ${adapter.displayName} were found. ` +
-        `Is ${requestedFrom} really this project's i18n library? ` +
+        `Is ${options.from} really this project's i18n library? ` +
         `${scaffoldingClause}; re-run with --from <library> ` +
         'if you targeted the wrong source.'
     );

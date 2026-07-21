@@ -737,7 +737,6 @@ describe('handleMigrateCommand integration', () => {
         handleMigrateCommand(
           {
             config: 'gt.config.json',
-            inline: false,
             dryRun: false,
             yes: true,
             allowDirty: true,
@@ -746,7 +745,7 @@ describe('handleMigrateCommand integration', () => {
           'i18next',
           cwd
         )
-      ).rejects.toThrow('process.exit:1');
+      ).rejects.toThrow('was not found in this project');
     } finally {
       exitSpy.mockRestore();
     }
@@ -804,7 +803,6 @@ describe('handleMigrateCommand integration', () => {
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
-        inline: false,
         dryRun: false,
         yes: true,
         allowDirty: true,
@@ -846,7 +844,7 @@ describe('handleMigrateCommand integration', () => {
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
-        inline: false,
+        from: 'next-intl',
         dryRun: true,
         yes: true,
         allowDirty: true,
@@ -889,7 +887,7 @@ describe('handleMigrateCommand integration', () => {
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
-        inline: false,
+        from: 'next-intl',
         dryRun: false,
         yes: true,
         allowDirty: true,

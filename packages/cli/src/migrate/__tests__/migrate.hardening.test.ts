@@ -98,7 +98,7 @@ describe('handleMigrateCommand transform hardening', () => {
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
-        inline: false,
+        from: 'next-intl',
         dryRun: false,
         yes: true,
         allowDirty: true,

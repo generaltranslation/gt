@@ -60,7 +60,7 @@ export interface SourceAdapter {
    * Per-file source transform for a library whose call model does not fit the
    * shared next-intl engine (a hook that returns a `t('key')` function). When
    * present, transformSourceFile delegates to it wholesale (the single dispatch
-   * site), so the driver, the layout pass, and --inline stay adapter-agnostic.
+   * site), so the driver and the layout pass stay adapter-agnostic.
    * next-intl omits it and runs the built-in engine.
    *
    * react-intl supplies one: its descriptor-object calls

@@ -53,7 +53,6 @@ export function transformReactI18nextSource(
     code: null,
     todos: [],
     skipReasons: [],
-    usedRich: false,
   };
   if (!/['"](?:react-)?i18next(?:\/[^'"]*)?['"]/.test(code)) return none;
 
@@ -139,7 +138,6 @@ export function transformReactI18nextSource(
       code: null,
       todos: [],
       skipReasons: [...new Set(skipReasons)],
-      usedRich: false,
     };
   }
 
@@ -407,7 +405,7 @@ export function transformReactI18nextSource(
 
   const uniqueSkips = [...new Set(skipReasons)];
   if (uniqueSkips.length > 0) {
-    return { code: null, todos: [], skipReasons: uniqueSkips, usedRich: false };
+    return { code: null, todos: [], skipReasons: uniqueSkips };
   }
 
   // ---- mutation pass -------------------------------------------------------
@@ -573,7 +571,7 @@ export function transformReactI18nextSource(
     },
     code
   );
-  return { code: output.code, todos, skipReasons: [], usedRich: false };
+  return { code: output.code, todos, skipReasons: [] };
 }
 
 // ---- t() call remapping ----------------------------------------------------

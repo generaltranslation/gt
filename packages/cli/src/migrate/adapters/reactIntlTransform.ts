@@ -2,13 +2,6 @@ import { parse } from '@babel/parser';
 import traverseModule, { type NodePath } from '@babel/traverse';
 import generateModule from '@babel/generator';
 import * as t from '@babel/types';
-import {
-  isArgumentElement,
-  isLiteralElement,
-  isTagElement,
-  parse as parseIcu,
-  type MessageFormatElement,
-} from '@formatjs/icu-messageformat-parser';
 import { classifyMessage } from '../classifyMessage.js';
 import { ensureNamedImports } from '../importUtils.js';
 import type { TransformOptions } from '../transformSource.js';
@@ -66,17 +59,12 @@ const PLURAL_CATEGORIES = new Set([
   'other',
 ]);
 
-type PlannedRich = {
-  container: NodePath<t.JSXExpressionContainer> | NodePath<t.JSXElement>;
-  elements: MessageFormatElement[];
-  chunkMap: Map<string, t.JSXElement>;
-};
-
 /**
  * react-intl -> gt-next per-file transform. Dictionary-compat by default:
  * `intl.formatMessage({ id }, values)` -> `t(id, values)`, `<FormattedMessage
  * id />` -> `{t(id, values)}`, value formatters -> gt-next components, catalogs
- * reused verbatim. Rich-text tags only convert under --inline (lossy, reported);
+ * reused verbatim. Rich-text tags skip with a reason (the opt-in inline <T>
+ * conversion ships as a follow-up PR);
  * unsupported APIs skip the whole file and are reported. The provider is
  * unwrapped (gt-next's server GTProvider is inserted by the layout pass), or
  * retained untouched while skipped files remain.
@@ -91,7 +79,6 @@ export function transformReactIntlSource(
     code: null,
     todos: [],
     skipReasons: [],
-    usedRich: false,
   };
   if (!/['"](react-intl|@formatjs\/[^'"]*)['"]/.test(code)) return none;
 
@@ -328,7 +315,6 @@ export function transformReactIntlSource(
     values: t.Expression | null;
     fn: t.Function | null;
   }[] = [];
-  const richInline: PlannedRich[] = [];
   const formatterElements: {
     element: NodePath<t.JSXElement>;
     kind: string;
@@ -486,7 +472,7 @@ export function transformReactIntlSource(
     }
     if (isRichOrHasFunctionValues(message, valuesArg)) {
       skipReasons.push(
-        `${binding}.formatMessage('${id}') has rich-text tags/chunk functions/element values gt-next's dictionary t() cannot render (t returns a string) — re-run with --inline to convert to inline <T>, or convert manually`
+        `${binding}.formatMessage('${id}') has rich-text tags/chunk functions/element values gt-next's dictionary t() cannot render (t returns a string) — convert manually`
       );
       return;
     }
@@ -550,28 +536,16 @@ export function transformReactIntlSource(
 
     const rich = analyzeRich(message, valuesExpr);
     if (rich !== 'plain') {
-      if (!ctx.inlineMode) {
-        const trigger =
-          rich === 'tags'
-            ? 'has rich-text tags'
-            : 'has a JSX-element or chunk-function `values` entry';
-        skipReasons.push(
-          `<FormattedMessage id="${id}"> ${trigger} gt-next's dictionary t() cannot render — re-run with --inline to convert to inline <T>, or convert manually`
-        );
-        return;
-      }
-      const conversion = buildRichConversion(path, message, valuesExpr);
-      if (typeof conversion === 'string') {
-        skipReasons.push(conversion);
-        return;
-      }
-      richInline.push(conversion);
-      todos.push({
-        file,
-        line: path.node.loc?.start.line,
-        reason:
-          '<FormattedMessage> rich text converted to inline <T> — regenerate translations for this content (`npx gt translate`)',
-      });
+      // Rich content would need an inline <T> conversion, which embeds source
+      // text and orphans existing translations; that opt-in pass ships as a
+      // follow-up PR, so skip with the reason for now.
+      const trigger =
+        rich === 'tags'
+          ? 'has rich-text tags'
+          : 'has a JSX-element or chunk-function `values` entry';
+      skipReasons.push(
+        `<FormattedMessage id="${id}"> ${trigger} gt-next's dictionary t() cannot render — convert manually`
+      );
       return;
     }
 
@@ -593,7 +567,7 @@ export function transformReactIntlSource(
 
   const uniqueSkips = [...new Set(skipReasons)];
   if (uniqueSkips.length > 0) {
-    return { code: null, todos: [], skipReasons: uniqueSkips, usedRich: false };
+    return { code: null, todos: [], skipReasons: uniqueSkips };
   }
 
   // Nothing react-intl-shaped to do (only type imports, etc.) and nothing to
@@ -601,7 +575,6 @@ export function transformReactIntlSource(
   const hasWork =
     formatMessageCalls.length > 0 ||
     formattedMessages.length > 0 ||
-    richInline.length > 0 ||
     formatterElements.length > 0 ||
     createIntlDecls.length > 0 ||
     cacheDecls.length > 0 ||
@@ -622,7 +595,6 @@ export function transformReactIntlSource(
         skipReasons: [
           'createIntl(...) is not inside an async Server Component — convert it to `await getTranslations()` inside an async component manually',
         ],
-        usedRich: false,
       };
     }
     if (!fn.async) fn.async = true;
@@ -689,7 +661,6 @@ export function transformReactIntlSource(
           skipReasons: [
             `<FormattedMessage id="${id}"> renders at module scope, outside any component, where gt-next's useTranslations() hook cannot be called — move it inside a component or convert manually`,
           ],
-          usedRich: false,
         };
       }
       needsClientT = true;
@@ -724,25 +695,12 @@ export function transformReactIntlSource(
         code: null,
         todos: [],
         skipReasons: [result.skip],
-        usedRich: false,
       };
     }
     usedComponents.add(result.component);
   }
 
-  // 6. rich inline <T> conversions (--inline only).
-  for (const conversion of richInline) {
-    const children = icuToJsxChildren(conversion.elements, conversion.chunkMap);
-    const tElement = t.jsxElement(
-      t.jsxOpeningElement(t.jsxIdentifier('T'), []),
-      t.jsxClosingElement(t.jsxIdentifier('T')),
-      children
-    );
-    conversion.container.replaceWith(tElement);
-    usedComponents.add('T');
-  }
-
-  // 7. defineMessages tables become dead once their ids are inlined.
+  // 6. defineMessages tables become dead once their ids are inlined.
   for (const decl of defineMessagesDecls) {
     const declaration = decl.parentPath;
     if (
@@ -755,7 +713,7 @@ export function transformReactIntlSource(
     }
   }
 
-  // 8. provider unwrap: <IntlProvider ...>children</IntlProvider> -> <>children</>
+  // 7. provider unwrap: <IntlProvider ...>children</IntlProvider> -> <>children</>
   //    (the layout pass inserts the server GTProvider).
   for (const providerPath of providerUnwraps) {
     const children = providerPath.node.children;
@@ -792,12 +750,11 @@ export function transformReactIntlSource(
         skipReasons: [
           `react-intl's '${survivor}' is still referenced after conversion (an unsupported usage form) — stripping its import would break the file, so it is left untouched; convert manually`,
         ],
-        usedRich: false,
       };
     }
   }
 
-  // 9. import surgery.
+  // 8. import surgery.
   for (const importPath of reactIntlImports) {
     if (importPath.node.source.value.startsWith('@formatjs/')) {
       importPath.remove();
@@ -842,7 +799,6 @@ export function transformReactIntlSource(
     code: output.code,
     todos,
     skipReasons: [],
-    usedRich: richInline.length > 0,
   };
 }
 
@@ -1074,7 +1030,7 @@ function analyzeRich(
 
 /** A `values` entry whose value is a chunk wrapper function or a JSX
  *  element/fragment (both produce React nodes at runtime), so the message is
- *  rich (the dictionary path skips; --inline converts or safely skips). */
+ *  rich (the dictionary path skips with a reason). */
 function isRichValueProperty(property: t.ObjectProperty | t.Node): boolean {
   return (
     t.isObjectProperty(property) &&
@@ -1083,56 +1039,6 @@ function isRichValueProperty(property: t.ObjectProperty | t.Node): boolean {
       t.isJSXElement(property.value) ||
       t.isJSXFragment(property.value))
   );
-}
-
-/** Builds a trivial-chunk rich conversion for a <FormattedMessage> (mirrors
- *  #1910's t.rich handling), or a skip reason string. */
-function buildRichConversion(
-  element: NodePath<t.JSXElement>,
-  message: string | null,
-  valuesExpr: t.Expression | null
-): PlannedRich | string {
-  const manual =
-    '<FormattedMessage> rich text needs manual conversion (non-trivial tag wrappers or missing catalog entry)';
-  if (message === null) return manual;
-  const chunkMap = new Map<string, t.JSXElement>();
-  if (valuesExpr) {
-    if (!t.isObjectExpression(valuesExpr)) return manual;
-    for (const property of valuesExpr.properties) {
-      if (
-        !t.isObjectProperty(property) ||
-        property.computed ||
-        !t.isIdentifier(property.key)
-      ) {
-        return manual;
-      }
-      // Non-function values (plain args) are fine to ignore here; only chunk
-      // wrappers become tag templates.
-      if (
-        t.isArrowFunctionExpression(property.value) ||
-        t.isFunctionExpression(property.value)
-      ) {
-        const chunk = trivialChunkElement(property.value);
-        if (!chunk) return manual;
-        chunkMap.set(property.key.name, chunk);
-      } else if (
-        t.isJSXElement(property.value) ||
-        t.isJSXFragment(property.value)
-      ) {
-        // An element-valued argument placeholder (not a tag wrapper) has no
-        // faithful inline <T> mapping in v1; skip rather than mis-render it.
-        return manual;
-      }
-    }
-  }
-  let elements: MessageFormatElement[];
-  try {
-    elements = parseIcu(message);
-  } catch {
-    return manual;
-  }
-  if (!allTagsMapped(elements, chunkMap)) return manual;
-  return { container: element, elements, chunkMap };
 }
 
 /** The outcome of a value-formatter conversion: the gt-next component name it
@@ -1356,12 +1262,6 @@ function unwrapAwait(node: t.Node | null | undefined): t.Expression | null {
   return t.isExpression(current) ? current : null;
 }
 
-function unwrapParens(node: t.Node): t.Node {
-  let current = node;
-  while (t.isParenthesizedExpression(current)) current = current.expression;
-  return current;
-}
-
 function enclosingFunction(path: NodePath): t.Function | null {
   const fn = path.getFunctionParent();
   return fn ? fn.node : null;
@@ -1518,78 +1418,4 @@ function findDefaultExportFunction(ast: t.File): t.Function | null {
     },
   });
   return result;
-}
-
-// ---- rich-text helpers (mirrors transformSource.ts's t.rich machinery) -----
-
-function trivialChunkElement(node: t.Node): t.JSXElement | null {
-  const fn = unwrapParens(node);
-  if (!t.isArrowFunctionExpression(fn) || fn.params.length !== 1) return null;
-  const param = fn.params[0];
-  if (!t.isIdentifier(param)) return null;
-  const body = unwrapParens(fn.body);
-  if (!t.isJSXElement(body)) return null;
-  const children = body.children.filter(
-    (child) => !(t.isJSXText(child) && child.value.trim() === '')
-  );
-  if (children.length !== 1) return null;
-  const child = children[0];
-  if (
-    !t.isJSXExpressionContainer(child) ||
-    !t.isIdentifier(child.expression, { name: param.name })
-  ) {
-    return null;
-  }
-  return body;
-}
-
-function allTagsMapped(
-  elements: MessageFormatElement[],
-  chunkMap: Map<string, t.JSXElement>
-): boolean {
-  for (const element of elements) {
-    if (isTagElement(element)) {
-      if (!chunkMap.has(element.value)) return false;
-      if (!allTagsMapped(element.children, chunkMap)) return false;
-    }
-  }
-  return true;
-}
-
-function icuToJsxChildren(
-  elements: MessageFormatElement[],
-  chunkMap: Map<string, t.JSXElement>
-): (t.JSXText | t.JSXExpressionContainer | t.JSXElement)[] {
-  const children: (t.JSXText | t.JSXExpressionContainer | t.JSXElement)[] = [];
-  // Literal text either becomes JSXText or, when it carries characters JSX
-  // would misread ({ } < >), a string literal in an expression container.
-  const pushText = (text: string): void => {
-    if (/[{}<>]/.test(text)) {
-      children.push(t.jsxExpressionContainer(t.stringLiteral(text)));
-    } else {
-      children.push(t.jsxText(text));
-    }
-  };
-  for (const element of elements) {
-    if (isTagElement(element)) {
-      const template = chunkMap.get(element.value)!;
-      const clone = t.cloneNode(template, true);
-      clone.children = icuToJsxChildren(element.children, chunkMap);
-      children.push(clone);
-    } else if (isArgumentElement(element)) {
-      // A LiteralElement and an ArgumentElement both carry a string `value`
-      // (the literal text vs. the argument name), so they must be told apart
-      // by type. `{name}` is an interpolation, not text: emit a JSX expression
-      // wrapping the variable so <T> renders its value instead of the bare word.
-      children.push(t.jsxExpressionContainer(t.identifier(element.value)));
-    } else if (isLiteralElement(element)) {
-      pushText(element.value);
-    } else if ('value' in element && typeof element.value === 'string') {
-      // Formatter/branching elements (number/date/time/plural/select) reach
-      // this rich path only through the rare chunk-function `values` route;
-      // keep emitting their raw value as text rather than dropping content.
-      pushText(element.value);
-    }
-  }
-  return children;
 }

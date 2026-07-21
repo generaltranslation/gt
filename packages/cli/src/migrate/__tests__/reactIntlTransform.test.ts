@@ -1,4 +1,3 @@
-import { parse } from '@babel/parser';
 import { describe, expect, it } from 'vitest';
 import { reactIntlAdapter } from '../adapters/reactIntl.js';
 import { transformSourceFile } from '../transformSource.js';
@@ -18,10 +17,7 @@ const routing: RoutingInfo = {
   requestFile: null,
 };
 
-function makeContext(
-  messages: Record<string, unknown> = {},
-  opts: { inline?: boolean } = {}
-): MigrationContext {
+function makeContext(messages: Record<string, unknown> = {}): MigrationContext {
   const catalogs: MessageCatalogs = {
     defaultLocale: 'en',
     locales: ['en', 'fr'],
@@ -37,7 +33,6 @@ function makeContext(
     todos: [],
     skippedFiles: new Map(),
     stats: {},
-    inlineMode: opts.inline,
   };
 }
 
@@ -51,14 +46,6 @@ function transform(
     code,
     makeContext(messages),
     options
-  );
-}
-
-function transformInline(code: string, messages: Record<string, unknown> = {}) {
-  return transformSourceFile(
-    'src/app/[locale]/Client.tsx',
-    code,
-    makeContext(messages, { inline: true })
   );
 }
 
@@ -540,23 +527,14 @@ describe('reactIntl: rich text', () => {
     '}'
   );
 
-  it('skips rich text on the dictionary path (non-inline)', () => {
+  it('skips rich text on the dictionary path', () => {
     const r = transform(richFile, { terms: 'Accept the <b>terms</b>' });
     expect(r.code).toBeNull();
-    expect(r.skipReasons.join(' ')).toMatch(/--inline/);
+    expect(r.skipReasons.join(' ')).toMatch(/convert manually/);
   });
 
-  it('converts rich text to inline <T> under --inline', () => {
-    const r = transformInline(richFile, { terms: 'Accept the <b>terms</b>' });
-    expect(r.skipReasons).toEqual([]);
-    expect(r.code).toMatch(/<T>/);
-    expect(r.code).toMatch(/<b>/);
-    expect(r.code).not.toContain('FormattedMessage');
-    expect(r.todos.some((t) => /npx gt translate/.test(t.reason))).toBe(true);
-  });
-
-  it('skips a non-trivial rich chunk even under --inline', () => {
-    const r = transformInline(
+  it('skips a non-trivial rich chunk (element-producing values)', () => {
+    const r = transform(
       lines(
         "'use client';",
         "import { FormattedMessage } from 'react-intl';",
@@ -570,49 +548,6 @@ describe('reactIntl: rich text', () => {
     );
     expect(r.code).toBeNull();
     expect(r.skipReasons.length).toBeGreaterThan(0);
-  });
-
-  it('emits a plain argument in rich text as an interpolation, not literal text', () => {
-    // "Hello <b>bold</b> {name}" mixes a tag wrapper with a plain ICU argument.
-    // The argument must become {name} (a JSX expression), not the bare word
-    // "name": ICU LiteralElement and ArgumentElement both carry a string value.
-    const r = transformInline(
-      lines(
-        "'use client';",
-        "import { FormattedMessage } from 'react-intl';",
-        'export function C({ name }: { name: string }) {',
-        '  return (',
-        '    <p>',
-        '      <FormattedMessage id="greeting" values={{ name, b: (chunks) => <b>{chunks}</b> }} />',
-        '    </p>',
-        '  );',
-        '}'
-      ),
-      { greeting: 'Hello <b>bold</b> {name}' }
-    );
-    expect(r.skipReasons).toEqual([]);
-    expect(r.code).toMatch(/<T>/);
-    expect(r.code).toMatch(/<b>bold<\/b>/);
-    // The interpolation renders as an expression, and the literal word is gone.
-    expect(r.code).toMatch(/\{name\}/);
-    expect(r.code).not.toMatch(/<\/b>\s*name/);
-    expect(r.code).not.toContain('FormattedMessage');
-    // The migrated file must still parse as valid TS/JSX.
-    expect(() =>
-      parse(r.code!, {
-        sourceType: 'module',
-        plugins: ['jsx', 'typescript'],
-      })
-    ).not.toThrow();
-  });
-
-  it('leaves a pure-literal-plus-tag rich message as text and tags', () => {
-    // No arguments: the whole body is literal text wrapped in a tag, so nothing
-    // becomes an interpolation. Guards against the argument fix over-reaching.
-    const r = transformInline(richFile, { terms: 'Accept the <b>terms</b>' });
-    expect(r.skipReasons).toEqual([]);
-    expect(r.code).toMatch(/<T>Accept the <b>terms<\/b><\/T>/);
-    expect(r.code).not.toContain('FormattedMessage');
   });
 });
 
@@ -1092,17 +1027,11 @@ describe('reactIntl: JSX-element values are rich (m1)', () => {
     const r = transform(elementValueFile, { g: 'Hi {name} {icon}' });
     expect(r.code).toBeNull();
     const reason = r.skipReasons.join(' ');
-    expect(reason).toMatch(/--inline/);
+    expect(reason).toMatch(/convert manually/);
     // The trigger is a JSX-element value, not a rich-text tag in the message —
     // the wording must name what actually fired.
     expect(reason).toMatch(/JSX-element|element value|chunk-function/i);
     expect(reason).not.toMatch(/rich-text tags/);
-  });
-
-  it('does not mis-render a JSX-element value under --inline (safe skip)', () => {
-    const r = transformInline(elementValueFile, { g: 'Hi {name} {icon}' });
-    expect(r.code).toBeNull();
-    expect(r.skipReasons.length).toBeGreaterThan(0);
   });
 });
 

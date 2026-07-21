@@ -40,7 +40,6 @@ export function transformReactI18nextLayout(
       code: null,
       todos: [],
       skipReasons: [`layout could not be parsed: ${String(error)}`],
-      usedRich: false,
     };
   }
 
@@ -72,7 +71,7 @@ export function transformReactI18nextLayout(
 
   if (!mutated) {
     return base.code === null
-      ? { code: null, todos: base.todos, skipReasons: [], usedRich: false }
+      ? { code: null, todos: base.todos, skipReasons: [] }
       : base;
   }
 
@@ -90,6 +89,5 @@ export function transformReactI18nextLayout(
     code: output.code,
     todos: base.todos,
     skipReasons: [],
-    usedRich: false,
   };
 }

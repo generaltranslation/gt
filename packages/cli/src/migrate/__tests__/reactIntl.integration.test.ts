@@ -204,7 +204,7 @@ const run = (cwd: string, opts: Record<string, unknown> = {}) =>
   handleMigrateCommand(
     {
       config: 'gt.config.json',
-      inline: false,
+      from: 'react-intl',
       dryRun: false,
       yes: true,
       allowDirty: true,
@@ -285,27 +285,6 @@ describe('react-intl migration integration', () => {
     expect(report).not.toContain('## Needs manual migration');
     expect(report).toMatch(/Unknown dictionary keys throw in gt-next/);
     expect(report).toContain('react-intl');
-  });
-
-  it('auto-detects react-intl (no --from) identically', async () => {
-    const cwd = makeApp();
-    // Pass the auto-detected library through; --from is omitted.
-    await handleMigrateCommand(
-      {
-        config: 'gt.config.json',
-        inline: false,
-        dryRun: false,
-        yes: true,
-        allowDirty: true,
-      },
-      'react-intl',
-      cwd
-    );
-    expect(read(cwd, 'src/app/[locale]/Client.tsx')).toMatch(
-      /const intl = useTranslations\(\)/
-    );
-    const pkg = JSON.parse(read(cwd, 'package.json'));
-    expect(pkg.dependencies['react-intl']).toBeUndefined();
   });
 
   it('performs a partial migration when an unsupported API is present', async () => {
@@ -399,7 +378,7 @@ describe('react-intl migration integration', () => {
     );
   });
 
-  it('converts rich text to inline <T> under --inline and flags re-translation', async () => {
+  it('skips rich text with a report entry (inline <T> conversion is a follow-up)', async () => {
     const cwd = makeApp({
       'src/app/[locale]/Client.tsx': [
         "'use client';",
@@ -419,15 +398,16 @@ describe('react-intl migration integration', () => {
         terms: 'Accept the <b>terms</b>',
       }),
     });
-    await run(cwd, { inline: true });
+    await run(cwd);
 
+    // The rich site is skipped whole, never converted or half-rewritten.
     const client = read(cwd, 'src/app/[locale]/Client.tsx');
-    expect(client).toMatch(/<T>/);
-    expect(client).toMatch(/<b>/);
-    expect(client).not.toContain('FormattedMessage');
+    expect(client).toContain('FormattedMessage');
+    expect(client).not.toMatch(/<T>/);
 
     const report = read(cwd, 'gt-migrate-report.md');
-    expect(report).toMatch(/npx gt translate/);
+    expect(report).toContain('## Needs manual migration');
+    expect(report).toMatch(/rich-text tags/);
   });
 
   it('re-nests dotted catalog keys end to end so runtime resolution works (B1)', async () => {
@@ -536,7 +516,6 @@ describe('react-intl migration integration', () => {
       handleMigrateCommand(
         {
           config: 'gt.config.json',
-          inline: false,
           dryRun: false,
           yes: true,
           allowDirty: true,
