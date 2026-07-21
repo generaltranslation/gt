@@ -408,6 +408,26 @@ export function transformSourceFile(
   const removedProviderMessageBindings = new Set<string>();
   for (const providerPath of providerElements) {
     const opening = providerPath.node.openingElement;
+    // `messages` is absorbed by the dictionary pipeline and `locale` by
+    // gt-next's own resolution; any other prop (timeZone, formats, now,
+    // onError, ...) carried behavior GTProvider does not take, so name what
+    // was dropped instead of clearing it silently.
+    const droppedProps = opening.attributes
+      .map((attr) => {
+        if (t.isJSXSpreadAttribute(attr)) return '{...spread}';
+        return t.isJSXIdentifier(attr.name) ? attr.name.name : null;
+      })
+      .filter(
+        (name): name is string =>
+          name !== null && name !== 'messages' && name !== 'locale'
+      );
+    if (droppedProps.length > 0) {
+      todos.push({
+        file,
+        line: opening.loc?.start.line,
+        reason: `NextIntlClientProvider prop${droppedProps.length > 1 ? 's' : ''} ${droppedProps.join(', ')} dropped in the GTProvider swap; re-create the behavior through gt-next configuration if still needed (e.g. timeZone affects date formatting)`,
+      });
+    }
     opening.name = t.jsxIdentifier('GTProvider');
     opening.attributes = [];
     if (providerPath.node.closingElement) {
@@ -774,7 +794,7 @@ function unwrapAwait(node: t.Node | null | undefined): t.Expression | null {
  * the params promise in a page/segment). Other sources (`props.params`, an
  * arbitrary call) are ignored so only genuine route-param destructures qualify.
  */
-function isParamsInit(node: t.Expression | null | undefined): boolean {
+export function isParamsInit(node: t.Expression | null | undefined): boolean {
   if (!node) return false;
   if (t.isIdentifier(node, { name: 'params' })) return true;
   if (

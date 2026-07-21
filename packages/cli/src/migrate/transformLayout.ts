@@ -3,7 +3,7 @@ import traverseModule from '@babel/traverse';
 import generateModule from '@babel/generator';
 import * as t from '@babel/types';
 import { ensureNamedImports, removeUnusedNamedImports } from './importUtils.js';
-import { transformSourceFile } from './transformSource.js';
+import { isParamsInit, transformSourceFile } from './transformSource.js';
 import type { MigrationContext, SourceResult, TodoEntry } from './types.js';
 
 const traverse = traverseModule.default || traverseModule;
@@ -54,8 +54,8 @@ function isLocaleGuardTest(test: t.Node): boolean {
 
 /**
  * Every local binding of the route `locale` param in the file
- * (`const { locale } = await params` / `= params`, alias-aware), each paired
- * with the declarator node that introduced it. A retained
+ * (`const { locale } = await params` / `= params` / `= use(params)`,
+ * alias-aware), each paired with the declarator node that introduced it. A retained
  * NextIntlClientProvider reuses whichever of these is actually in scope at its
  * own injection site (a static, augmented-`Locale`-typed binding), which keeps
  * SSG and avoids a request-scoped getLocale(). Recording the declarator lets
@@ -71,12 +71,7 @@ function collectParamLocaleBindings(
   traverse(ast, {
     VariableDeclarator(path) {
       if (!t.isObjectPattern(path.node.id)) return;
-      const init = path.node.init;
-      const fromParams =
-        t.isIdentifier(init, { name: 'params' }) ||
-        (t.isAwaitExpression(init) &&
-          t.isIdentifier(init.argument, { name: 'params' }));
-      if (!fromParams) return;
+      if (!isParamsInit(path.node.init)) return;
       for (const property of path.node.id.properties) {
         if (
           t.isObjectProperty(property) &&
@@ -463,15 +458,17 @@ export function transformLayoutFile(
     removeUnusedNamedImports(ast, ['notFound', 'hasLocale', 'routing']);
   }
 
-  // 7. Guard removal can orphan `const { locale } = await params`: drop the
-  //    declaration when nothing references its bindings anymore (it would
-  //    trip no-unused-vars in user projects), then drop the now-unused `params`
-  //    parameter from the same function so the cleanup does not just move the
-  //    unused-variable warning from the destructure to the signature.
+  // 7. Guard removal can orphan `const { locale } = await params` (or the
+  //    React 19 `use(params)` form): drop the declaration when nothing
+  //    references its bindings anymore (it would trip no-unused-vars in user
+  //    projects), then drop the now-unused `params` parameter from the same
+  //    function so the cleanup does not just move the unused-variable warning
+  //    from the destructure to the signature.
   if (mutated) {
-    // Functions whose orphaned `const { ... } = await params` was removed here;
-    // each one's `params` parameter may now be unreferenced and need dropping.
+    // Functions whose orphaned params destructure was removed here; each one's
+    // `params` parameter may now be unreferenced and need dropping.
     const paramsCleanupTargets = new Set<t.Function>();
+    let removedParamsDestructure = false;
     traverse(ast, {
       Program(path) {
         // Recrawl so bindings reflect the removals above.
@@ -481,12 +478,7 @@ export function transformLayoutFile(
         if (path.node.declarations.length !== 1) return;
         const declarator = path.node.declarations[0];
         if (!t.isObjectPattern(declarator.id)) return;
-        const init = declarator.init;
-        const fromParams =
-          t.isIdentifier(init, { name: 'params' }) ||
-          (t.isAwaitExpression(init) &&
-            t.isIdentifier(init.argument, { name: 'params' }));
-        if (!fromParams) return;
+        if (!isParamsInit(declarator.init)) return;
         for (const property of declarator.id.properties) {
           if (
             !t.isObjectProperty(property) ||
@@ -503,6 +495,7 @@ export function transformLayoutFile(
         const fn = path.getFunctionParent();
         if (fn) paramsCleanupTargets.add(fn.node);
         path.remove();
+        removedParamsDestructure = true;
       },
     });
 
@@ -525,6 +518,12 @@ export function transformLayoutFile(
           removeParamsParameter(path.node);
         },
       });
+    }
+
+    // A removed `use(params)` destructure may have been the last reference to
+    // the react `use` import; the helper only drops unreferenced names.
+    if (removedParamsDestructure) {
+      removeUnusedNamedImports(ast, ['use']);
     }
   }
 

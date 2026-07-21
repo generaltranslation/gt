@@ -184,6 +184,34 @@ describe('transformSourceFile: provider', () => {
     expect(result.code).not.toContain('NextIntlClientProvider');
     expect(result.code).not.toContain('useMessages');
     expect(result.code).toMatch(/import \{ GTProvider \} from ["']gt-next["']/);
+    // messages and locale are absorbed by the swap; nothing else was dropped
+    expect(result.todos).toEqual([]);
+  });
+
+  it('records a TODO naming provider props the swap drops', () => {
+    const result = transform(
+      [
+        "import { NextIntlClientProvider, useMessages } from 'next-intl';",
+        'export function Providers({ children }: { children: React.ReactNode }) {',
+        '  const messages = useMessages();',
+        '  return (',
+        '    <NextIntlClientProvider',
+        '      messages={messages}',
+        '      timeZone="Europe/Vienna"',
+        '      onError={console.error}',
+        '    >',
+        '      {children}',
+        '    </NextIntlClientProvider>',
+        '  );',
+        '}',
+      ].join('\n')
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).toContain('<GTProvider>');
+    const reasons = result.todos.map((todo) => todo.reason).join(' ');
+    expect(reasons).toContain('timeZone');
+    expect(reasons).toContain('onError');
+    expect(reasons).toContain('GTProvider swap');
   });
 
   it('drops a getLocale binding that only fed the stripped provider locale', () => {
