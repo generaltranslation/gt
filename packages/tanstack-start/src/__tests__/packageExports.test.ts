@@ -1,11 +1,20 @@
 import { execFileSync } from 'node:child_process';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { beforeAll, describe, expect, it } from 'vitest';
 
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
+const builtArtifacts = [
+  'index.client.mjs',
+  'index.server.mjs',
+  'server.mjs',
+].map((artifact) => join(packageRoot, 'dist', artifact));
+
+function hasBuiltArtifacts(): boolean {
+  return builtArtifacts.every((artifact) => existsSync(artifact));
+}
 
 function buildPackage(): void {
   const command = process.env.npm_execpath ? process.execPath : 'pnpm';
@@ -25,8 +34,9 @@ function node(args: string[]): void {
 
 describe('gt-tanstack-start package exports', () => {
   beforeAll(() => {
+    if (hasBuiltArtifacts()) return;
     buildPackage();
-  });
+  }, 60_000);
 
   it('publishes ESM-only entrypoints', () => {
     const packageJson = JSON.parse(
