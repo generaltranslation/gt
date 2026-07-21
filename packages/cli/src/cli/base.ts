@@ -547,9 +547,9 @@ export class BaseCLI {
       .description(
         'Migrate an existing i18n setup to General Translation, preserving your translations'
       )
-      .option(
+      .requiredOption(
         '--from <library>',
-        'Source i18n library to migrate from (default: auto-detect from your dependencies)'
+        "i18n library to migrate from: 'next-intl', 'react-intl', or 'react-i18next'"
       )
       .option(
         '--src <paths...>',
@@ -559,11 +559,6 @@ export class BaseCLI {
         '-c, --config <path>',
         'Filepath to config file, by default gt.config.json',
         findFilepath(['gt.config.json'])
-      )
-      .option(
-        '--inline',
-        'Additionally convert simple static strings to inline <T> components',
-        false
       )
       .option('--dry-run', 'Print the migration report without writing', false)
       .option('--allow-dirty', 'Skip the clean-git-tree safety check', false)

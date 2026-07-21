@@ -27,20 +27,9 @@ export function transformNavigationFile(
     code: null,
     todos: [],
     skipReasons: [],
-    usedRich: false,
   };
+  // Cheap pre-filter only; correctness comes from the AST import check below.
   if (!code.includes('createNavigation')) return none;
-
-  // Localized pathnames (`/fr/a-propos`) have no gt-next equivalent —
-  // converting would silently de-localize every href.
-  if (ctx.routing.pathnames) {
-    return {
-      ...none,
-      skipReasons: [
-        'routing config defines localized pathnames, which gt-next navigation does not support — keep next-intl navigation for these routes (manual conversion)',
-      ],
-    };
-  }
 
   let ast: t.File;
   try {
@@ -52,6 +41,34 @@ export function transformNavigationFile(
     return {
       ...none,
       skipReasons: [`file could not be parsed: ${String(error)}`],
+    };
+  }
+
+  // The string 'createNavigation' is meaningless unless it is really imported
+  // from next-intl/navigation. Resolve the local binding (alias-aware) so an
+  // unrelated helper or a bare comment mention falls through to the generic
+  // source pass instead of being silently swallowed here.
+  const createNavLocal = findCreateNavigationLocal(ast);
+  if (createNavLocal === null) return none;
+
+  // Localized pathnames (`/fr/a-propos`) have no gt-next equivalent, so
+  // converting would silently de-localize every href. Treat an unresolved
+  // pathnames config (a variable or computed value) the same way rather than
+  // risk de-localizing routes we could not read.
+  if (ctx.routing.pathnames) {
+    return {
+      ...none,
+      skipReasons: [
+        'routing config defines localized pathnames, which gt-next navigation does not support — keep next-intl navigation for these routes (manual conversion)',
+      ],
+    };
+  }
+  if (ctx.routing.pathnamesUnresolved) {
+    return {
+      ...none,
+      skipReasons: [
+        'routing config pathnames could not be statically resolved, so they are treated as localized pathnames; keep next-intl navigation and convert this file manually',
+      ],
     };
   }
 
@@ -73,7 +90,7 @@ export function transformNavigationFile(
       if (
         init &&
         t.isCallExpression(init) &&
-        t.isIdentifier(init.callee, { name: 'createNavigation' }) &&
+        t.isIdentifier(init.callee, { name: createNavLocal }) &&
         t.isObjectPattern(declarator.id)
       ) {
         sawCreateNavigation = true;
@@ -97,7 +114,18 @@ export function transformNavigationFile(
     extraStatements = true;
   }
 
-  if (!sawCreateNavigation) return none;
+  if (!sawCreateNavigation) {
+    // The import is real but the wrapper is not the destructured shape we can
+    // rewrite (an identifier binding, a default-exported call, and so on).
+    // Skip so teardown is held back rather than uninstalling next-intl out
+    // from under a file that still imports next-intl/navigation.
+    return {
+      ...none,
+      skipReasons: [
+        'createNavigation wrapper has an unrecognized shape and was left on next-intl (manual conversion); this file holds back full teardown until converted',
+      ],
+    };
+  }
   if (extraStatements) {
     return {
       ...none,
@@ -118,6 +146,11 @@ export function transformNavigationFile(
     };
   }
 
+  // The generated module deliberately has no 'use client' directive, same
+  // as the next-intl createNavigation file it replaces: a shared module's
+  // hooks work when imported from client components, and a directive here
+  // would turn the Link re-export into a client reference for server
+  // importers.
   const lines: string[] = [];
   const wrapsPathname = destructured.includes('usePathname');
   const passthrough = destructured.filter(
@@ -174,6 +207,31 @@ export function transformNavigationFile(
     code: lines.join('\n') + '\n',
     todos,
     skipReasons: [],
-    usedRich: false,
   };
+}
+
+/**
+ * The local name `createNavigation` is bound to when imported from
+ * next-intl/navigation, honoring aliases (`import { createNavigation as x }`
+ * returns 'x'). Returns null when the file does not actually import it, so a
+ * stray comment or unrelated helper is not mistaken for the wrapper.
+ */
+function findCreateNavigationLocal(ast: t.File): string | null {
+  for (const statement of ast.program.body) {
+    if (
+      !t.isImportDeclaration(statement) ||
+      statement.source.value !== 'next-intl/navigation'
+    ) {
+      continue;
+    }
+    for (const specifier of statement.specifiers) {
+      if (
+        t.isImportSpecifier(specifier) &&
+        t.isIdentifier(specifier.imported, { name: 'createNavigation' })
+      ) {
+        return specifier.local.name;
+      }
+    }
+  }
+  return null;
 }

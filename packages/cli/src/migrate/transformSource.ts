@@ -2,11 +2,7 @@ import { parse } from '@babel/parser';
 import traverseModule, { type NodePath } from '@babel/traverse';
 import generateModule from '@babel/generator';
 import * as t from '@babel/types';
-import {
-  isTagElement,
-  parse as parseIcu,
-  type MessageFormatElement,
-} from '@formatjs/icu-messageformat-parser';
+import { removeUnusedNamedImports } from './importUtils.js';
 import type { MigrationContext, SourceResult, TodoEntry } from './types.js';
 
 const traverse = traverseModule.default || traverseModule;
@@ -32,6 +28,15 @@ export type TransformOptions = {
    * instead of skipping the file.
    */
   dropLocaleValidation?: boolean;
+  /**
+   * After removing setRequestLocale, drop a `const { locale } = use(params)` /
+   * `= await params` destructure that its removal just orphaned, plus the
+   * now-unused `params` parameter and `use` import. Default true. Layouts opt
+   * OUT: their step 4 injects `locale={locale}` into a retained
+   * NextIntlClientProvider AFTER this pass, reviving a destructure that looks
+   * dead here, so they run their own step-7 cleanup instead.
+   */
+  dropOrphanedParamLocale?: boolean;
 };
 
 type ImportedSymbol = {
@@ -61,7 +66,6 @@ export function transformSourceFile(
     code: null,
     todos: [],
     skipReasons: [],
-    usedRich: false,
   };
   if (!adapter.mentionedIn(code)) return none;
 
@@ -179,20 +183,15 @@ export function transformSourceFile(
   // ---- analysis pass -------------------------------------------------------
 
   const tBindings = new Map<string, { namespace: string | null }>();
-  const richConversions: {
-    container: NodePath<t.JSXExpressionContainer>;
-    elements: MessageFormatElement[];
-    chunkMap: Map<string, t.JSXElement>;
-  }[] = [];
   const objectArgRewrites: {
     call: t.CallExpression;
     namespace: string | null;
+    namespaceExpression: t.Expression | null;
     hadLocale: boolean;
     line?: number;
   }[] = [];
   const providerElements: NodePath<t.JSXElement>[] = [];
   const strippedAttrIdentifiers = new Set<string>();
-  let needsT = false;
 
   traverse(ast, {
     VariableDeclarator(path) {
@@ -213,15 +212,34 @@ export function transformSourceFile(
           t.isIdentifier(init.callee) &&
           getTranslationsLocals.has(init.callee.name)
         ) {
+          if (
+            first.properties.some((property) => t.isSpreadElement(property))
+          ) {
+            // A spread ({ ...opts }) may carry namespace or locale options that
+            // cannot be read statically; a partial rewrite would silently drop
+            // them, so skip the whole file and hold back teardown instead.
+            skipReasons.push(
+              'getTranslations({ ...spread }) cannot be converted statically, the spread may carry namespace or locale options; convert this call manually'
+            );
+            return;
+          }
           const namespaceProp = getObjectProp(first, 'namespace');
           const namespace =
             namespaceProp && t.isStringLiteral(namespaceProp)
               ? namespaceProp.value
               : null;
+          // A non-literal namespace (identifier, member, template, call) can't
+          // be resolved to a string here; keep the expression so the apply step
+          // passes it through positionally instead of dropping it to root.
+          const namespaceExpression =
+            namespaceProp && !t.isStringLiteral(namespaceProp)
+              ? namespaceProp
+              : null;
           const hadLocale = getObjectProp(first, 'locale') !== null;
           objectArgRewrites.push({
             call: init,
             namespace,
+            namespaceExpression,
             hadLocale,
             line: init.loc?.start.line,
           });
@@ -258,32 +276,13 @@ export function transformSourceFile(
       ) {
         const method = callee.property.name;
         if (method === 'rich') {
-          // Converting t.rich to inline <T> embeds the source-language
-          // message; the key's existing translations stop applying until
-          // regenerated. That trade is opt-in via --inline — the default
-          // mode's promise is zero translation loss.
-          if (!ctx.inlineMode) {
-            skipReasons.push(
-              't.rich(...) conversion discards existing translations for the key — re-run with --inline to opt in, or convert manually'
-            );
-          } else {
-            const conversion = analyzeRichCall(
-              path,
-              tBindings.get(callee.object.name)!.namespace,
-              ctx
-            );
-            if (typeof conversion === 'string') {
-              skipReasons.push(conversion);
-            } else {
-              richConversions.push(conversion);
-              needsT = true;
-              todos.push({
-                file,
-                line: path.node.loc?.start.line,
-                reason: `t.rich(...) converted to inline <T> — regenerate translations for this content (\`npx gt translate\`)`,
-              });
-            }
-          }
+          // Converting t.rich to inline <T> would embed the source-language
+          // message and stop the key's existing translations from applying
+          // until regenerated, so we never do it automatically; the file is
+          // left on the working dictionary path for a manual conversion.
+          skipReasons.push(
+            't.rich(...) conversion would discard existing translations for the key; convert it manually'
+          );
         } else if (['raw', 'markup', 'has'].includes(method)) {
           skipReasons.push(
             `t.${method}(...) has no gt-next equivalent yet (manual conversion)`
@@ -329,16 +328,9 @@ export function transformSourceFile(
     providerElements.length = 0;
   }
 
-  // Local identifier `T` that is not gt's would collide with rich conversion.
-  if (needsT && hasForeignTBinding(ast)) {
-    skipReasons.push(
-      "local identifier 'T' collides with gt-next's <T> (manual conversion)"
-    );
-  }
-
   const uniqueSkips = [...new Set(skipReasons)];
   if (uniqueSkips.length > 0) {
-    return { code: null, todos: [], skipReasons: uniqueSkips, usedRich: false };
+    return { code: null, todos: [], skipReasons: uniqueSkips };
   }
 
   // ---- mutation pass -------------------------------------------------------
@@ -379,7 +371,11 @@ export function transformSourceFile(
     });
   }
 
-  // 1. setRequestLocale call statements.
+  // 1. setRequestLocale call statements. Record the bare-identifier arguments
+  //    (usually `locale`) so the orphaned-destructure cleanup below only touches
+  //    a `const { locale } = use(params)` that this removal actually made dead.
+  const removedSetRequestLocaleArgs = new Set<string>();
+  let setRequestLocaleRemoved = false;
   traverse(ast, {
     ExpressionStatement(path) {
       const expression = unwrapAwait(path.node.expression);
@@ -389,16 +385,27 @@ export function transformSourceFile(
         t.isIdentifier(expression.callee) &&
         removalLocals.has(expression.callee.name)
       ) {
+        for (const argument of expression.arguments) {
+          if (t.isIdentifier(argument)) {
+            removedSetRequestLocaleArgs.add(argument.name);
+          }
+        }
         path.remove();
+        setRequestLocaleRemoved = true;
       }
     },
   });
 
   // 2. getTranslations({ locale, namespace }) -> getTranslations('namespace').
+  //    A dynamic namespace becomes the positional argument
+  //    getTranslations(expr) so its keys still resolve; a missing namespace
+  //    stays getTranslations().
   for (const rewrite of objectArgRewrites) {
     rewrite.call.arguments = rewrite.namespace
       ? [t.stringLiteral(rewrite.namespace)]
-      : [];
+      : rewrite.namespaceExpression
+        ? [rewrite.namespaceExpression]
+        : [];
     if (rewrite.hadLocale) {
       todos.push({
         file,
@@ -409,18 +416,7 @@ export function transformSourceFile(
     }
   }
 
-  // 3. t.rich conversions.
-  for (const conversion of richConversions) {
-    const children = icuToJsxChildren(conversion.elements, conversion.chunkMap);
-    const tElement = t.jsxElement(
-      t.jsxOpeningElement(t.jsxIdentifier('T'), []),
-      t.jsxClosingElement(t.jsxIdentifier('T')),
-      children
-    );
-    conversion.container.replaceWith(tElement);
-  }
-
-  // 4. Provider swap + linked messages cleanup.
+  // 3. Provider swap + linked messages cleanup.
   const removedProviderMessageBindings = new Set<string>();
   for (const providerPath of providerElements) {
     const opening = providerPath.node.openingElement;
@@ -452,7 +448,7 @@ export function transformSourceFile(
     });
   }
 
-  // 5. Import surgery.
+  // 4. Import surgery.
   const clientSpecifiers: t.ImportSpecifier[] = [];
   const serverSpecifiers: t.ImportSpecifier[] = [];
   for (const symbol of symbols) {
@@ -473,11 +469,6 @@ export function transformSourceFile(
       );
     }
     // removals and provider-linked messages hooks simply disappear.
-  }
-  if (needsT) {
-    clientSpecifiers.push(
-      t.importSpecifier(t.identifier('T'), t.identifier('T'))
-    );
   }
 
   const newDeclarations: t.ImportDeclaration[] = [];
@@ -589,6 +580,84 @@ export function transformSourceFile(
     }
   }
 
+  // 5. Orphaned param-locale cleanup. Runs LAST, after every reference-adding
+  //    step, so the recrawl below sees true reference counts. setRequestLocale
+  //    removal can strand a `const { locale } = use(params)` (or `= await
+  //    params`), which then trips no-unused-vars / TS6133; drop it, the now-dead
+  //    `params` parameter, and the `use` import to match how layouts (step 7)
+  //    leave their own path lint-clean. Layouts opt out (dropOrphanedParamLocale
+  //    false): they revive that destructure by injecting `locale={locale}` into
+  //    a retained provider after this pass.
+  if (options.dropOrphanedParamLocale !== false && setRequestLocaleRemoved) {
+    // Functions whose orphaned params destructure was removed here; each one's
+    // `params` parameter may now be unreferenced and need dropping.
+    const paramsCleanupTargets = new Set<t.Function>();
+    let removedOrphan = false;
+    traverse(ast, {
+      Program(path) {
+        // Recrawl so bindings reflect every mutation above.
+        path.scope.crawl();
+      },
+      VariableDeclaration(path) {
+        if (path.node.declarations.length !== 1) return;
+        const declarator = path.node.declarations[0];
+        if (!t.isObjectPattern(declarator.id)) return;
+        if (!isParamsInit(declarator.init)) return;
+        // All-or-nothing: keep the declaration unless EVERY name it binds is
+        // now unreferenced AND at least one was a removed setRequestLocale
+        // argument (so we only clean orphans this codemod created, never the
+        // author's own pre-existing dead code).
+        let boundToRemovedArg = false;
+        for (const property of declarator.id.properties) {
+          if (
+            !t.isObjectProperty(property) ||
+            !t.isIdentifier(property.value)
+          ) {
+            return;
+          }
+          if (removedSetRequestLocaleArgs.has(property.value.name)) {
+            boundToRemovedArg = true;
+          }
+          const binding = path.scope.getBinding(property.value.name);
+          if (!binding || binding.referenced) return;
+        }
+        if (!boundToRemovedArg) return;
+        const fn = path.getFunctionParent();
+        if (fn) paramsCleanupTargets.add(fn.node);
+        path.remove();
+        removedOrphan = true;
+      },
+    });
+
+    // Drop the `params` parameter left unreferenced by those removals. A fresh
+    // crawl is required so the removed destructure no longer counts as a
+    // reference; then each cleaned function's own `params` binding decides.
+    // Only that function's params is touched (a sibling generateMetadata keeps
+    // its own, separately-scoped binding).
+    if (paramsCleanupTargets.size > 0) {
+      traverse(ast, {
+        Program(path) {
+          path.scope.crawl();
+        },
+        Function(path) {
+          if (!paramsCleanupTargets.has(path.node)) return;
+          const binding = path.scope.getBinding('params');
+          if (!binding || binding.kind !== 'param' || binding.referenced) {
+            return;
+          }
+          removeParamsParameter(path.node);
+        },
+      });
+    }
+
+    // The removed destructure was the last reference to a `use` import; prune
+    // it (the helper only drops unreferenced names, so a still-used `use` or a
+    // `React.use` namespace stays).
+    if (removedOrphan) {
+      removeUnusedNamedImports(ast, ['use']);
+    }
+  }
+
   const output = generate(
     ast,
     {
@@ -604,7 +673,6 @@ export function transformSourceFile(
     code: output.code,
     todos,
     skipReasons: [],
-    usedRich: richConversions.length > 0,
   };
 }
 
@@ -640,12 +708,78 @@ function unwrapAwait(node: t.Node | null | undefined): t.Expression | null {
   return t.isExpression(current) ? current : null;
 }
 
-function unwrapParens(node: t.Node): t.Node {
-  let current = node;
-  while (t.isParenthesizedExpression(current)) {
-    current = current.expression;
+/**
+ * True when a destructure init reads the route `params`: `params`,
+ * `await params`, `use(params)`, or `React.use(params)` (React's `use` unwraps
+ * the params promise in a page/segment). Other sources (`props.params`, an
+ * arbitrary call) are ignored so only genuine route-param destructures qualify.
+ */
+function isParamsInit(node: t.Expression | null | undefined): boolean {
+  if (!node) return false;
+  if (t.isIdentifier(node, { name: 'params' })) return true;
+  if (
+    t.isAwaitExpression(node) &&
+    t.isIdentifier(node.argument, { name: 'params' })
+  ) {
+    return true;
   }
-  return current;
+  if (
+    t.isCallExpression(node) &&
+    node.arguments.length === 1 &&
+    t.isIdentifier(node.arguments[0], { name: 'params' })
+  ) {
+    const callee = node.callee;
+    if (t.isIdentifier(callee, { name: 'use' })) return true;
+    if (
+      t.isMemberExpression(callee) &&
+      !callee.computed &&
+      t.isIdentifier(callee.object, { name: 'React' }) &&
+      t.isIdentifier(callee.property, { name: 'use' })
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Drop the `params` parameter from a function whose only use of it was an
+ * orphaned params destructure the cleanup above just removed. Mirrors
+ * transformLayout's step-7 rule exactly: the usual shape is an ObjectPattern
+ * parameter (`{ params }`), so remove just the `params` property, which never
+ * changes arity. If that would empty the pattern, remove the whole parameter
+ * only when it is last (an empty `{}` trips no-empty-pattern, and dropping a
+ * non-last positional param shifts the others). A rest sibling would absorb the
+ * removed key at runtime (`...rest` gains `params`), so the parameter is left in
+ * that shape. TypeScript annotations are left untouched: an unused type member
+ * does not lint.
+ */
+function removeParamsParameter(fn: t.Function): void {
+  const params = fn.params;
+  for (let index = 0; index < params.length; index++) {
+    const param = params[index];
+    if (t.isIdentifier(param, { name: 'params' })) {
+      if (index === params.length - 1) params.splice(index, 1);
+      return;
+    }
+    if (!t.isObjectPattern(param)) continue;
+    const propertyIndex = param.properties.findIndex(
+      (property) =>
+        t.isObjectProperty(property) &&
+        !property.computed &&
+        t.isIdentifier(property.value, { name: 'params' })
+    );
+    if (propertyIndex === -1) continue;
+    if (param.properties.some((property) => t.isRestElement(property))) {
+      return;
+    }
+    if (param.properties.length === 1) {
+      if (index === params.length - 1) params.splice(index, 1);
+      return;
+    }
+    param.properties.splice(propertyIndex, 1);
+    return;
+  }
 }
 
 function getObjectProp(
@@ -663,152 +797,6 @@ function getObjectProp(
     }
   }
   return null;
-}
-
-/** Resolves a dotted path like 'Home.welcome' through a nested catalog. */
-function resolveMessage(
-  catalog: Record<string, unknown>,
-  namespace: string | null,
-  key: string
-): string | null {
-  const fullPath = namespace ? `${namespace}.${key}` : key;
-  let current: unknown = catalog;
-  for (const segment of fullPath.split('.')) {
-    if (
-      current === null ||
-      typeof current !== 'object' ||
-      !(segment in (current as Record<string, unknown>))
-    ) {
-      return null;
-    }
-    current = (current as Record<string, unknown>)[segment];
-  }
-  return typeof current === 'string' ? current : null;
-}
-
-/**
- * A t.rich call is convertible when the key is a string literal resolving to
- * a tags-only message and every value is a trivial chunk wrapper like
- * `(chunks) => <b>{chunks}</b>`.
- */
-function analyzeRichCall(
-  path: NodePath<t.CallExpression>,
-  namespace: string | null,
-  ctx: MigrationContext
-):
-  | string
-  | {
-      container: NodePath<t.JSXExpressionContainer>;
-      elements: MessageFormatElement[];
-      chunkMap: Map<string, t.JSXElement>;
-    } {
-  const manual = 't.rich(...) needs manual conversion';
-  const [keyArg, valuesArg] = path.node.arguments;
-  if (!t.isStringLiteral(keyArg)) return manual;
-
-  const message = resolveMessage(
-    ctx.catalogs.byLocale[ctx.catalogs.defaultLocale] ?? {},
-    namespace,
-    keyArg.value
-  );
-  if (!message) return `t.rich('${keyArg.value}') key not found in catalog`;
-  const classified = ctx.adapter.classifyMessage(message);
-  if (classified.kind !== 'tags' || classified.argNames.length > 0) {
-    return manual;
-  }
-
-  const chunkMap = new Map<string, t.JSXElement>();
-  if (valuesArg !== undefined) {
-    if (!t.isObjectExpression(valuesArg)) return manual;
-    for (const property of valuesArg.properties) {
-      if (
-        !t.isObjectProperty(property) ||
-        property.computed ||
-        !t.isIdentifier(property.key)
-      ) {
-        return manual;
-      }
-      const element = trivialChunkElement(property.value);
-      if (!element) return manual;
-      chunkMap.set(property.key.name, element);
-    }
-  }
-
-  let elements: MessageFormatElement[];
-  try {
-    elements = parseIcu(message);
-  } catch {
-    return manual;
-  }
-  if (!allTagsMapped(elements, chunkMap)) return manual;
-
-  const container = path.parentPath;
-  if (
-    !container.isJSXExpressionContainer() ||
-    !(t.isJSXElement(container.parent) || t.isJSXFragment(container.parent))
-  ) {
-    return manual;
-  }
-
-  return { container, elements, chunkMap };
-}
-
-/** Matches `(chunks) => <b ...>{chunks}</b>` (implicit return only). */
-function trivialChunkElement(node: t.Node): t.JSXElement | null {
-  const fn = unwrapParens(node);
-  if (!t.isArrowFunctionExpression(fn) || fn.params.length !== 1) return null;
-  const param = fn.params[0];
-  if (!t.isIdentifier(param)) return null;
-  const body = unwrapParens(fn.body);
-  if (!t.isJSXElement(body)) return null;
-  const children = body.children.filter(
-    (child) => !(t.isJSXText(child) && child.value.trim() === '')
-  );
-  if (children.length !== 1) return null;
-  const child = children[0];
-  if (
-    !t.isJSXExpressionContainer(child) ||
-    !t.isIdentifier(child.expression, { name: param.name })
-  ) {
-    return null;
-  }
-  return body;
-}
-
-function allTagsMapped(
-  elements: MessageFormatElement[],
-  chunkMap: Map<string, t.JSXElement>
-): boolean {
-  for (const element of elements) {
-    if (isTagElement(element)) {
-      if (!chunkMap.has(element.value)) return false;
-      if (!allTagsMapped(element.children, chunkMap)) return false;
-    }
-  }
-  return true;
-}
-
-function icuToJsxChildren(
-  elements: MessageFormatElement[],
-  chunkMap: Map<string, t.JSXElement>
-): (t.JSXText | t.JSXExpressionContainer | t.JSXElement)[] {
-  const children: (t.JSXText | t.JSXExpressionContainer | t.JSXElement)[] = [];
-  for (const element of elements) {
-    if (isTagElement(element)) {
-      const template = chunkMap.get(element.value)!;
-      const clone = t.cloneNode(template, true);
-      clone.children = icuToJsxChildren(element.children, chunkMap);
-      children.push(clone);
-    } else if ('value' in element && typeof element.value === 'string') {
-      const text = element.value;
-      if (/[{}<>]/.test(text)) {
-        children.push(t.jsxExpressionContainer(t.stringLiteral(text)));
-      } else {
-        children.push(t.jsxText(text));
-      }
-    }
-  }
-  return children;
 }
 
 /**
@@ -848,25 +836,6 @@ function isProviderOnlyBinding(
     },
   });
   return !referencedElsewhere;
-}
-
-function hasForeignTBinding(ast: t.File): boolean {
-  let foreign = false;
-  traverse(ast, {
-    ImportSpecifier(path) {
-      const declaration = path.parentPath.node as t.ImportDeclaration;
-      if (
-        path.node.local.name === 'T' &&
-        declaration.source.value !== GT_MODULE
-      ) {
-        foreign = true;
-      }
-    },
-    VariableDeclarator(path) {
-      if (t.isIdentifier(path.node.id, { name: 'T' })) foreign = true;
-    },
-  });
-  return foreign;
 }
 
 function dedupeSpecifiers(

@@ -11,13 +11,6 @@ const generate = generateModule.default || generateModule;
 
 const MIDDLEWARE_MODULE = 'next-intl/middleware';
 
-// Emitted above the converted `export default` when the source used
-// localePrefix 'never'. Injected into the printed output (rather than attached
-// to the AST) because babel's retainLines reflow strands a node-attached
-// comment as a trailing comment on the import line instead of above the export.
-const NEVER_MODE_TODO =
-  " TODO(gt migrate): next-intl used localePrefix 'never' (no locale segment in the URL). gt-next has no equivalent — createNextMiddleware below prefixes non-default locales. Remove this middleware or adjust routing if you need locale-free URLs. ";
-
 /**
  * Swaps a plain `export default createMiddleware(routing)` middleware for
  * gt-next's createNextMiddleware, preserving the user's matcher config.
@@ -32,9 +25,45 @@ export function transformMiddlewareFile(
     code: null,
     todos: [],
     skipReasons: [],
-    usedRich: false,
   };
   if (!code.includes(MIDDLEWARE_MODULE)) return none;
+
+  if (ctx.routing.localePrefix === 'never') {
+    // A skip, not a todo: the untouched file still imports
+    // next-intl/middleware, and only skippedFiles holds back the teardown
+    // that would uninstall next-intl out from under it.
+    return {
+      ...none,
+      skipReasons: [
+        "localePrefix 'never' needs no gt-next middleware (locale resolution runs on cookies and headers without one), but this file still imports next-intl/middleware and holds back full teardown; delete or rewrite the middleware, then rerun the migration",
+      ],
+    };
+  }
+
+  if (ctx.routing.localePrefixUnresolved) {
+    // A skip, not a todo, for the same reason as 'never' above: the untouched
+    // file still imports next-intl/middleware, and only skippedFiles holds back
+    // teardown. localePrefix is present but could not be statically resolved,
+    // so converting would guess whether the default locale is prefixed.
+    return {
+      ...none,
+      skipReasons: [
+        "localePrefix could not be statically resolved (it references a variable or computed value), so converting the middleware would guess the app's public URL structure; inline a literal localePrefix in defineRouting (or convert the middleware by hand) and rerun the migration. The retained file still imports next-intl/middleware and holds back full teardown",
+      ],
+    };
+  }
+
+  if (ctx.routing.pathnamesUnresolved) {
+    // A skip, not a todo, same rationale: pathConfig cannot be emitted from an
+    // unresolved pathnames, and converting would silently drop the app's
+    // localized pathnames.
+    return {
+      ...none,
+      skipReasons: [
+        'pathnames could not be statically resolved (it references a variable or computed value), so pathConfig cannot be emitted and converting would silently drop the localized pathnames; inline a literal pathnames in defineRouting (or convert the middleware by hand) and rerun the migration. The retained file still imports next-intl/middleware and holds back full teardown',
+      ],
+    };
+  }
 
   let ast: t.File;
   try {
@@ -116,8 +145,9 @@ export function transformMiddlewareFile(
   // `/` redirects to `/<defaultLocale>`. gt-next's createNextMiddleware does
   // NOT prefix the default locale by default, so absent/'always' must set
   // prefixDefaultLocale: true to preserve the app's public URL structure.
-  // 'as-needed' already matches gt-next's default (omit); 'never' has no
-  // gt-next equivalent (omit + TODO below).
+  // 'as-needed' already matches gt-next's default (omit); 'never' never
+  // reaches here (the early return above skips the file so the retained
+  // next-intl middleware holds back teardown).
   if (mode === null || mode === 'always') {
     optionProperties.push(
       t.objectProperty(
@@ -136,14 +166,6 @@ export function transformMiddlewareFile(
   }
 
   const todos: TodoEntry[] = [];
-  const neverMode = mode === 'never';
-  if (neverMode) {
-    todos.push({
-      file,
-      reason:
-        "localePrefix 'never' has no gt-next equivalent: next-intl kept locales out of the URL entirely, but createNextMiddleware still prefixes non-default locales. Review whether these routes should stay locale-free (resolve the locale from cookies/headers instead) and adjust or remove the middleware.",
-    });
-  }
   if (localePrefixHasCustomPrefixes(ctx.routing.routingFile)) {
     todos.push({
       file,
@@ -188,26 +210,5 @@ export function transformMiddlewareFile(
     },
     code
   );
-  const printed = neverMode
-    ? insertCommentAboveExport(output.code, NEVER_MODE_TODO)
-    : output.code;
-  return { code: printed, todos, skipReasons: [], usedRich: false };
-}
-
-/**
- * Splices a block comment onto its own line directly above the converted
- * `export default createNextMiddleware(...)` line, matching that line's
- * indentation. Deterministic: the transform always emits exactly one such
- * export. If the marker isn't found the output is returned unchanged.
- */
-function insertCommentAboveExport(code: string, comment: string): string {
-  const lines = code.split('\n');
-  const index = lines.findIndex((line) =>
-    line.trimStart().startsWith('export default createNextMiddleware')
-  );
-  if (index === -1) return code;
-  const line = lines[index];
-  const indent = line.slice(0, line.length - line.trimStart().length);
-  lines.splice(index, 0, `${indent}/*${comment}*/`);
-  return lines.join('\n');
+  return { code: output.code, todos, skipReasons: [] };
 }

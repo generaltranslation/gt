@@ -39,12 +39,6 @@ function transform(code: string, messages: Record<string, unknown> = {}) {
   return transformSourceFile('src/app/page.tsx', code, makeContext(messages));
 }
 
-function transformInline(code: string, messages: Record<string, unknown> = {}) {
-  const ctx = makeContext(messages);
-  ctx.inlineMode = true;
-  return transformSourceFile('src/app/page.tsx', code, ctx);
-}
-
 describe('transformSourceFile: imports and hooks', () => {
   it('returns unchanged for files without next-intl imports', () => {
     const result = transform(`export function x() { return 1; }`);
@@ -272,7 +266,7 @@ describe('transformSourceFile: skip conditions', () => {
 });
 
 describe('transformSourceFile: t.rich', () => {
-  it('skips t.rich by default — conversion would discard existing translations', () => {
+  it('always skips t.rich — conversion would discard existing translations', () => {
     const result = transform(
       [
         "import { useTranslations } from 'next-intl';",
@@ -283,51 +277,14 @@ describe('transformSourceFile: t.rich', () => {
       ].join('\n'),
       { Home: { welcome: 'Hi <b>friend</b>!' } }
     );
-    expect(result.skipReasons.join(' ')).toContain('--inline');
-  });
-
-  it('converts simple t.rich to inline <T> JSX', () => {
-    const result = transformInline(
-      [
-        "import { useTranslations } from 'next-intl';",
-        'export function Welcome() {',
-        "  const t = useTranslations('Home');",
-        '  return (',
-        '    <div>',
-        "      {t.rich('welcome', {",
-        '        b: (chunks) => <b className="bold">{chunks}</b>,',
-        '      })}',
-        '    </div>',
-        '  );',
-        '}',
-      ].join('\n'),
-      { Home: { welcome: 'Hi <b>friend</b>, welcome!' } }
-    );
-    expect(result.skipReasons).toEqual([]);
-    expect(result.usedRich).toBe(true);
-    expect(result.code).toContain('<T>');
-    expect(result.code).toContain('<b className="bold">friend</b>');
-    expect(result.code).not.toContain('t.rich');
-    expect(result.code).toMatch(/import \{.*T.*\} from ["']gt-next["']/);
-  });
-
-  it('skips complex t.rich (non-trivial chunk function)', () => {
-    const result = transformInline(
-      [
-        "import { useTranslations } from 'next-intl';",
-        'export function Welcome() {',
-        "  const t = useTranslations('Home');",
-        "  return <div>{t.rich('welcome', { b: (chunks) => wrap(chunks) })}</div>;",
-        '}',
-      ].join('\n'),
-      { Home: { welcome: 'Hi <b>friend</b>' } }
-    );
     expect(result.code).toBeNull();
-    expect(result.skipReasons.join(' ')).toContain('t.rich');
+    expect(result.skipReasons).toContain(
+      't.rich(...) conversion would discard existing translations for the key; convert it manually'
+    );
   });
 
-  it('skips t.rich whose message mixes tags and arguments', () => {
-    const result = transformInline(
+  it('skips t.rich even for a message that mixes tags and arguments', () => {
+    const result = transform(
       [
         "import { useTranslations } from 'next-intl';",
         'export function Welcome({ name }: { name: string }) {',
@@ -338,6 +295,7 @@ describe('transformSourceFile: t.rich', () => {
       { Home: { welcome: 'Hi <b>{name}</b>' } }
     );
     expect(result.code).toBeNull();
+    expect(result.skipReasons.join(' ')).toContain('convert it manually');
   });
 });
 
@@ -391,5 +349,295 @@ describe('re-exports from next-intl', () => {
     );
     expect(result.code).not.toBeNull();
     expect(result.skipReasons).toEqual([]);
+  });
+});
+
+describe('transformSourceFile: dynamic getTranslations namespace', () => {
+  it('preserves an identifier namespace as a positional argument', () => {
+    const result = transform(
+      [
+        "import { getTranslations } from 'next-intl/server';",
+        'export async function Page({ locale, ns }: { locale: string; ns: string }) {',
+        '  const t = await getTranslations({ locale, namespace: ns });',
+        "  return <h1>{t('title')}</h1>;",
+        '}',
+      ].join('\n')
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).toMatch(/await getTranslations\(ns\)/);
+    expect(result.todos.some((todo) => todo.reason.includes('locale'))).toBe(
+      true
+    );
+  });
+
+  it('preserves a call-expression namespace', () => {
+    const result = transform(
+      [
+        "import { getTranslations } from 'next-intl/server';",
+        'export async function Page() {',
+        '  const t = await getTranslations({ namespace: getNs() });',
+        "  return <h1>{t('title')}</h1>;",
+        '}',
+      ].join('\n')
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).toMatch(/await getTranslations\(getNs\(\)\)/);
+  });
+
+  it('preserves a template-literal namespace', () => {
+    const result = transform(
+      [
+        "import { getTranslations } from 'next-intl/server';",
+        'export async function Page({ section }: { section: string }) {',
+        '  const t = await getTranslations({ namespace: `Admin.${section}` });',
+        "  return <h1>{t('title')}</h1>;",
+        '}',
+      ].join('\n')
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).toContain('getTranslations(`Admin.${section}`)');
+  });
+
+  it('still drops a locale-only object arg to getTranslations()', () => {
+    const result = transform(
+      [
+        "import { getTranslations } from 'next-intl/server';",
+        'export async function Page() {',
+        "  const t = await getTranslations({ locale: 'en' });",
+        "  return <h1>{t('title')}</h1>;",
+        '}',
+      ].join('\n')
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).toContain('await getTranslations()');
+    expect(result.todos.some((todo) => todo.reason.includes('locale'))).toBe(
+      true
+    );
+  });
+
+  it('skips a spread-only object arg to getTranslations', () => {
+    const result = transform(
+      [
+        "import { getTranslations } from 'next-intl/server';",
+        'export async function Page() {',
+        '  const t = await getTranslations({ ...opts });',
+        "  return <h1>{t('title')}</h1>;",
+        '}',
+      ].join('\n')
+    );
+    // The spread may carry namespace/locale; converting would silently drop it.
+    expect(result.code).toBeNull();
+    expect(result.skipReasons.some((reason) => reason.includes('spread'))).toBe(
+      true
+    );
+  });
+
+  it('skips a spread + literal namespace instead of a silent partial rewrite', () => {
+    const result = transform(
+      [
+        "import { getTranslations } from 'next-intl/server';",
+        'export async function Page() {',
+        "  const t = await getTranslations({ ...base, namespace: 'Home' });",
+        "  return <h1>{t('title')}</h1>;",
+        '}',
+      ].join('\n')
+    );
+    expect(result.code).toBeNull();
+    expect(result.skipReasons.some((reason) => reason.includes('spread'))).toBe(
+      true
+    );
+  });
+});
+
+describe('transformSourceFile: orphaned param-locale cleanup', () => {
+  it('drops the destructure, params, and use import stranded by setRequestLocale removal', () => {
+    const result = transform(
+      [
+        "import { use } from 'react';",
+        "import { setRequestLocale } from 'next-intl/server';",
+        "import { useTranslations } from 'next-intl';",
+        'export default function AboutPage({ params }: { params: Promise<{ locale: string }> }) {',
+        '  const { locale } = use(params);',
+        '  setRequestLocale(locale);',
+        "  const t = useTranslations('AboutPage');",
+        "  return <h1>{t('title')}</h1>;",
+        '}',
+      ].join('\n')
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).not.toContain('setRequestLocale');
+    // orphaned destructure gone
+    expect(result.code).not.toContain('use(params)');
+    expect(result.code).not.toMatch(/const \{ locale \}/);
+    // sole `{ params }` param removed whole (its annotation goes with it)
+    expect(result.code).toMatch(/function AboutPage\(\)/);
+    // `use` import pruned once its last reference is gone
+    expect(result.code).not.toMatch(/from ["']react["']/);
+  });
+
+  it('leaves a surviving sibling param and its type member untouched', () => {
+    // Multi-property param: `params` is spliced from the pattern but its type
+    // member stays (an unused type member does not lint), so the annotation is
+    // untouched — the "types never touched" contract.
+    const result = transform(
+      [
+        "import { use } from 'react';",
+        "import { setRequestLocale } from 'next-intl/server';",
+        "import { useTranslations } from 'next-intl';",
+        'export default function Page({ params, searchParams }: {',
+        '  params: Promise<{ locale: string }>;',
+        '  searchParams: Promise<Record<string, string>>;',
+        '}) {',
+        '  const { locale } = use(params);',
+        '  setRequestLocale(locale);',
+        '  const sp = use(searchParams);',
+        "  const t = useTranslations('Home');",
+        "  return <h1>{sp.q}{t('title')}</h1>;",
+        '}',
+      ].join('\n')
+    );
+    expect(result.skipReasons).toEqual([]);
+    // runtime params destructure gone, searchParams destructure kept
+    expect(result.code).not.toMatch(/const \{ locale \}/);
+    expect(result.code).toContain('use(searchParams)');
+    // params property spliced from the pattern, searchParams retained
+    expect(result.code).toMatch(/\{\s*searchParams\s*\}/);
+    // `use` import kept, still referenced by use(searchParams)
+    expect(result.code).toMatch(/import \{ use \} from ["']react["']/);
+    // the params type member is left in place, not surgically edited
+    expect(result.code).toMatch(
+      /params:\s*Promise<\{\s*locale:\s*string;?\s*\}>/
+    );
+  });
+
+  it('cleans an `await params` destructure in an async page', () => {
+    const result = transform(
+      [
+        "import { getTranslations, setRequestLocale } from 'next-intl/server';",
+        'export default async function Page({ params }: { params: Promise<{ locale: string }> }) {',
+        '  const { locale } = await params;',
+        '  setRequestLocale(locale);',
+        "  const t = await getTranslations('Home');",
+        "  return <h1>{t('title')}</h1>;",
+        '}',
+      ].join('\n')
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).not.toContain('setRequestLocale');
+    expect(result.code).not.toContain('await params');
+    expect(result.code).not.toMatch(/const \{ locale \}/);
+    expect(result.code).toMatch(/async function Page\(\)/);
+    expect(result.code).toMatch(
+      /import \{ getTranslations \} from ["']gt-next\/server["']/
+    );
+  });
+
+  it('keeps everything when locale is still referenced elsewhere', () => {
+    const result = transform(
+      [
+        "import { use } from 'react';",
+        "import { setRequestLocale } from 'next-intl/server';",
+        "import { useTranslations } from 'next-intl';",
+        'export default function Page({ params }: { params: Promise<{ locale: string }> }) {',
+        '  const { locale } = use(params);',
+        '  setRequestLocale(locale);',
+        "  const t = useTranslations('Home');",
+        "  return <h1 lang={locale}>{t('title')}</h1>;",
+        '}',
+      ].join('\n')
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).not.toContain('setRequestLocale');
+    // locale is still read by <h1 lang={locale}>, so nothing is removed
+    expect(result.code).toContain('const { locale } = use(params)');
+    expect(result.code).toMatch(/Page\(\{ params \}/);
+    expect(result.code).toMatch(/import \{ use \} from ["']react["']/);
+  });
+
+  it('keeps a destructure whose second binding is still used', () => {
+    const result = transform(
+      [
+        "import { use } from 'react';",
+        "import { setRequestLocale } from 'next-intl/server';",
+        "import { useTranslations } from 'next-intl';",
+        'export default function Page({ params }: { params: Promise<{ locale: string; slug: string }> }) {',
+        '  const { locale, slug } = use(params);',
+        '  setRequestLocale(locale);',
+        "  const t = useTranslations('Home');",
+        "  return <article data-slug={slug}>{t('title')}</article>;",
+        '}',
+      ].join('\n')
+    );
+    expect(result.skipReasons).toEqual([]);
+    // slug is still used, so the whole declaration (and params) stay
+    expect(result.code).toContain('const { locale, slug } = use(params)');
+    expect(result.code).toMatch(/Page\(\{ params \}/);
+    expect(result.code).toMatch(/import \{ use \} from ["']react["']/);
+  });
+
+  it('keeps the params parameter when a rest sibling would absorb it', () => {
+    const result = transform(
+      [
+        "import { use } from 'react';",
+        "import { setRequestLocale } from 'next-intl/server';",
+        "import { useTranslations } from 'next-intl';",
+        'export default function Page({ params, ...rest }: { params: Promise<{ locale: string }> }) {',
+        '  const { locale } = use(params);',
+        '  setRequestLocale(locale);',
+        "  const t = useTranslations('Home');",
+        "  return <h1>{t('title')}</h1>;",
+        '}',
+      ].join('\n')
+    );
+    expect(result.skipReasons).toEqual([]);
+    // the orphaned destructure is still removed
+    expect(result.code).not.toContain('use(params)');
+    // but the params PARAMETER stays: a rest sibling would absorb the key
+    expect(result.code).toMatch(/params,\s*\.\.\.rest/);
+  });
+
+  it('leaves an already-dead destructure alone when no setRequestLocale ran', () => {
+    const result = transform(
+      [
+        "import { use } from 'react';",
+        "import { useTranslations } from 'next-intl';",
+        'export default function Page({ params }: { params: Promise<{ locale: string }> }) {',
+        '  const { locale } = use(params);',
+        "  const t = useTranslations('Home');",
+        "  return <h1>{t('title')}</h1>;",
+        '}',
+      ].join('\n')
+    );
+    expect(result.skipReasons).toEqual([]);
+    // no setRequestLocale removal ran, so the author's own dead code stays
+    expect(result.code).toContain('const { locale } = use(params)');
+    expect(result.code).toMatch(/Page\(\{ params \}/);
+    expect(result.code).toMatch(/import \{ use \} from ["']react["']/);
+  });
+
+  it('leaves the orphan alone when dropOrphanedParamLocale is false (layout contract)', () => {
+    const result = transformSourceFile(
+      'src/app/page.tsx',
+      [
+        "import { use } from 'react';",
+        "import { setRequestLocale } from 'next-intl/server';",
+        "import { useTranslations } from 'next-intl';",
+        'export default function Page({ params }: { params: Promise<{ locale: string }> }) {',
+        '  const { locale } = use(params);',
+        '  setRequestLocale(locale);',
+        "  const t = useTranslations('Home');",
+        "  return <h1>{t('title')}</h1>;",
+        '}',
+      ].join('\n'),
+      makeContext(),
+      { dropOrphanedParamLocale: false }
+    );
+    expect(result.skipReasons).toEqual([]);
+    // setRequestLocale is still removed regardless of the option
+    expect(result.code).not.toContain('setRequestLocale');
+    // but the orphaned destructure, params, and use import are all preserved
+    expect(result.code).toContain('const { locale } = use(params)');
+    expect(result.code).toMatch(/Page\(\{ params \}/);
+    expect(result.code).toMatch(/import \{ use \} from ["']react["']/);
   });
 });

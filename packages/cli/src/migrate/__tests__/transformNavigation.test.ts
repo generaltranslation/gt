@@ -15,13 +15,15 @@ const canonical = [
 ].join('\n');
 
 function makeContext(
-  pathnames: Record<string, unknown> | null = null
+  pathnames: Record<string, unknown> | null = null,
+  pathnamesUnresolved = false
 ): MigrationContext {
   const routing: RoutingInfo = {
     locales: ['en', 'es'],
     defaultLocale: 'en',
     localePrefix: null,
     pathnames,
+    pathnamesUnresolved,
     routingFile: null,
     requestFile: null,
   };
@@ -137,5 +139,82 @@ describe('transformNavigationFile', () => {
     );
     expect(result.code).toBeNull();
     expect(result.skipReasons.join(' ')).toContain('extra');
+  });
+
+  it('skips (not silently) when createNavigation is bound to an identifier', () => {
+    const identifierBinding = [
+      "import { createNavigation } from 'next-intl/navigation';",
+      "import { routing } from './routing';",
+      'const navigation = createNavigation(routing);',
+      'export default navigation;',
+    ].join('\n');
+    const result = transformNavigationFile(
+      'src/i18n/navigation.ts',
+      identifierBinding,
+      makeContext()
+    );
+    expect(result.code).toBeNull();
+    expect(result.skipReasons.length).toBeGreaterThan(0);
+    expect(result.skipReasons.join(' ')).toContain('unrecognized shape');
+  });
+
+  it('skips when createNavigation is default-exported directly', () => {
+    const defaultExport = [
+      "import { createNavigation } from 'next-intl/navigation';",
+      "import { routing } from './routing';",
+      'export default createNavigation(routing);',
+    ].join('\n');
+    const result = transformNavigationFile(
+      'src/i18n/navigation.ts',
+      defaultExport,
+      makeContext()
+    );
+    expect(result.code).toBeNull();
+    expect(result.skipReasons.length).toBeGreaterThan(0);
+  });
+
+  it('returns the none result when createNavigation is only a comment mention', () => {
+    const commentOnly = [
+      '// createNavigation from next-intl is not used in this file',
+      'export const x = 1;',
+    ].join('\n');
+    const result = transformNavigationFile(
+      'src/i18n/navigation.ts',
+      commentOnly,
+      makeContext()
+    );
+    expect(result.code).toBeNull();
+    expect(result.skipReasons).toEqual([]);
+  });
+
+  it('transforms an aliased createNavigation import', () => {
+    const aliased = [
+      "import { createNavigation as makeNav } from 'next-intl/navigation';",
+      "import { routing } from './routing';",
+      'export const { Link, redirect, usePathname, useRouter } =',
+      '  makeNav(routing);',
+    ].join('\n');
+    const result = transformNavigationFile(
+      'src/i18n/navigation.ts',
+      aliased,
+      makeContext()
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).toMatch(
+      /export \{ default as Link \} from ["']gt-next\/link["']/
+    );
+    expect(result.code).not.toContain('createNavigation');
+  });
+
+  it('skips when routing pathnames could not be statically resolved', () => {
+    const result = transformNavigationFile(
+      'src/i18n/navigation.ts',
+      canonical,
+      makeContext(null, true)
+    );
+    expect(result.code).toBeNull();
+    expect(result.skipReasons.join(' ')).toContain('pathnames');
+    expect(result.skipReasons.join(' ')).toContain('could not be');
+    expect(result.skipReasons.join(' ')).toContain('resolved');
   });
 });

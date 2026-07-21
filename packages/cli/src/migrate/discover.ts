@@ -1,5 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import {
+  createDiagnosticMessage,
+  formatDiagnosticErrorDetails,
+  libraryDefaultLocale,
+} from 'generaltranslation/internal';
+import { logger } from '../console/logger.js';
 import type { MessageCatalogs, RoutingInfo } from './types.js';
 
 const DEFAULT_CATALOG_DIRS = ['messages', 'src/messages', 'locales'];
@@ -32,6 +38,28 @@ export async function discoverCatalogs(
     .readdirSync(dir)
     .filter((file) => file.endsWith('.json'))
     .map((file) => path.basename(file, '.json'));
+  // A routing config that names locales with no catalog file here would
+  // silently migrate a narrower locale set than configured. Bail so the driver
+  // falls through to the interactive prompt instead of dropping them quietly.
+  if (routing.locales) {
+    const missing = routing.locales.filter((locale) => !stems.includes(locale));
+    if (missing.length > 0) {
+      logger.warn(
+        createDiagnosticMessage({
+          whatHappened: `Your next-intl routing config lists locales with no catalog file in ${dir}`,
+          details: `no catalog for ${missing.join(', ')}`,
+          fix: `Add the missing ${missing
+            .map((locale) => `${locale}.json`)
+            .join(
+              ', '
+            )} to ${dir}, or update the routing config's locales to match the catalogs present.`,
+          wayOut:
+            'In an interactive run, gt migrate asks for the directory and locales next.',
+        })
+      );
+      return null;
+    }
+  }
   const locales = routing.locales
     ? stems.filter((stem) => routing.locales!.includes(stem))
     : stems;
@@ -39,23 +67,43 @@ export async function discoverCatalogs(
 
   const defaultLocale =
     routing.defaultLocale ??
-    (locales.includes('en') ? 'en' : locales.length === 1 ? locales[0] : null);
+    (locales.includes(libraryDefaultLocale)
+      ? libraryDefaultLocale
+      : locales.length === 1
+        ? locales[0]
+        : null);
   if (!defaultLocale || !locales.includes(defaultLocale)) return null;
 
   const byLocale: Record<string, Record<string, unknown>> = {};
   for (const locale of locales) {
-    const file = path.join(dir, `${locale}.json`);
-    try {
-      byLocale[locale] = JSON.parse(fs.readFileSync(file, 'utf8'));
-    } catch (error) {
-      throw new Error(
-        `Could not parse message catalog ${file}: ${String(error)}. ` +
-          'Fix the JSON (no comments, trailing commas, or BOM) and re-run.'
-      );
-    }
+    byLocale[locale] = loadCatalog(dir, locale);
   }
 
   return { defaultLocale, locales, byLocale, dir };
+}
+
+/**
+ * Reads and parses a single locale catalog. Shared with the interactive
+ * fallback (promptFallbacks.ts) so both paths surface the identical
+ * diagnostic when a catalog is malformed. Throws (the migrate driver catches
+ * and exits before anything is written).
+ */
+export function loadCatalog(
+  dir: string,
+  locale: string
+): Record<string, unknown> {
+  const file = path.join(dir, `${locale}.json`);
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch (error) {
+    throw new Error(
+      createDiagnosticMessage({
+        whatHappened: `Could not parse message catalog ${file}`,
+        fix: 'Fix the JSON (no comments, trailing commas, or BOM) and re-run.',
+        details: formatDiagnosticErrorDetails(error),
+      })
+    );
+  }
 }
 
 /**

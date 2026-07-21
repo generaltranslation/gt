@@ -406,4 +406,577 @@ describe('transformLayoutFile', () => {
       'retained NextIntlClientProvider has no route `locale` param in scope and sits inside a synchronous helper that cannot be made async safely; pass its `locale` prop manually (the layout keeps working on next-intl until then)',
     ]);
   });
+
+  it('does not inject an out-of-scope param locale from generateMetadata (uses the getLocale fallback)', () => {
+    // generateMetadata destructures the param locale, but the default-exported
+    // component does not — so `locale` is NOT in scope at the provider inside
+    // the component. The file-wide binding must not leak in as `locale={locale}`
+    // (an undefined reference); the component is async, so the request-scoped
+    // fallback applies instead.
+    const metadataOnlyLocale = [
+      "import { NextIntlClientProvider } from 'next-intl';",
+      "import { getMessages } from 'next-intl/server';",
+      'export async function generateMetadata({',
+      '  params,',
+      '}: {',
+      '  params: Promise<{ locale: string }>;',
+      '}) {',
+      '  const { locale } = await params;',
+      '  return { title: locale };',
+      '}',
+      'export default async function RootLayout({',
+      '  children,',
+      '}: {',
+      '  children: React.ReactNode;',
+      '}) {',
+      '  const messages = await getMessages();',
+      '  return (',
+      '    <html lang="en">',
+      '      <body>',
+      '        <NextIntlClientProvider messages={messages}>',
+      '          {children}',
+      '        </NextIntlClientProvider>',
+      '      </body>',
+      '    </html>',
+      '  );',
+      '}',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/layout.tsx',
+      metadataOnlyLocale,
+      makeContext(['src/components/Price.tsx'])
+    );
+    expect(result.skipReasons).toEqual([]);
+    // the generateMetadata `locale` is out of scope here, so it is not injected
+    expect(result.code).not.toContain('locale={locale}');
+    // the component is async and default-exported, so getLocale() is safe
+    expect(result.code).toMatch(
+      /<NextIntlClientProvider[^>]*locale=\{await getLocale\(\)\}/
+    );
+    expect(result.code).toMatch(
+      /import \{[^}]*getLocale[^}]*\} from ["']gt-next\/server["']/
+    );
+  });
+
+  it('skips instead of injecting an out-of-scope param locale into a sync helper', () => {
+    // Same out-of-scope generateMetadata binding, but the provider now sits in
+    // a synchronous helper. The old file-wide lookup would inject the
+    // out-of-scope `locale`; the fix resolves scope, finds none, and (unable to
+    // make the sync helper async safely) degrades to a manual-wiring skip.
+    const metadataLocaleSyncHelper = [
+      "import { NextIntlClientProvider } from 'next-intl';",
+      "import { getMessages } from 'next-intl/server';",
+      'export async function generateMetadata({',
+      '  params,',
+      '}: {',
+      '  params: Promise<{ locale: string }>;',
+      '}) {',
+      '  const { locale } = await params;',
+      '  return { title: locale };',
+      '}',
+      'export default async function RootLayout({',
+      '  children,',
+      '}: {',
+      '  children: React.ReactNode;',
+      '}) {',
+      '  const messages = await getMessages();',
+      '  const render = () => (',
+      '    <NextIntlClientProvider messages={messages}>',
+      '      {children}',
+      '    </NextIntlClientProvider>',
+      '  );',
+      '  return (',
+      '    <html lang="en">',
+      '      <body>{render()}</body>',
+      '    </html>',
+      '  );',
+      '}',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/layout.tsx',
+      metadataLocaleSyncHelper,
+      makeContext(['src/components/Price.tsx'])
+    );
+    expect(result.code).toBeNull();
+    expect(result.skipReasons).toEqual([
+      'retained NextIntlClientProvider has no route `locale` param in scope and sits inside a synchronous helper that cannot be made async safely; pass its `locale` prop manually (the layout keeps working on next-intl until then)',
+    ]);
+  });
+
+  it('injects the param locale when the component itself destructures it (regression)', () => {
+    const componentLocaleLayout = [
+      "import { NextIntlClientProvider } from 'next-intl';",
+      "import { getMessages } from 'next-intl/server';",
+      'export default async function LocaleLayout({',
+      '  children,',
+      '  params,',
+      '}: {',
+      '  children: React.ReactNode;',
+      '  params: Promise<{ locale: string }>;',
+      '}) {',
+      '  const { locale } = await params;',
+      '  const messages = await getMessages();',
+      '  return (',
+      '    <html lang={locale}>',
+      '      <body>',
+      '        <NextIntlClientProvider messages={messages}>',
+      '          {children}',
+      '        </NextIntlClientProvider>',
+      '      </body>',
+      '    </html>',
+      '  );',
+      '}',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/[locale]/layout.tsx',
+      componentLocaleLayout,
+      makeContext(['src/components/Price.tsx'])
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).toMatch(
+      /<NextIntlClientProvider[^>]*locale=\{locale\}/
+    );
+    expect(result.code).not.toContain('getLocale()');
+  });
+
+  it('injects the aliased param locale when the component destructures it (regression)', () => {
+    const aliasLocaleLayout = [
+      "import { NextIntlClientProvider } from 'next-intl';",
+      "import { getMessages } from 'next-intl/server';",
+      'export default async function LocaleLayout({',
+      '  children,',
+      '  params,',
+      '}: {',
+      '  children: React.ReactNode;',
+      '  params: Promise<{ locale: string }>;',
+      '}) {',
+      '  const { locale: lng } = await params;',
+      '  const messages = await getMessages();',
+      '  return (',
+      '    <html lang={lng}>',
+      '      <body>',
+      '        <NextIntlClientProvider messages={messages}>',
+      '          {children}',
+      '        </NextIntlClientProvider>',
+      '      </body>',
+      '    </html>',
+      '  );',
+      '}',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/[locale]/layout.tsx',
+      aliasLocaleLayout,
+      makeContext(['src/components/Price.tsx'])
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).toMatch(/<NextIntlClientProvider[^>]*locale=\{lng\}/);
+    expect(result.code).not.toContain('getLocale()');
+  });
+
+  it('leaves client-component layouts alone and flags the retained provider', () => {
+    const clientLayout = [
+      "'use client';",
+      "import { NextIntlClientProvider } from 'next-intl';",
+      'export default function SectionLayout({',
+      '  children,',
+      '  messages,',
+      '}: {',
+      '  children: React.ReactNode;',
+      '  messages: Record<string, string>;',
+      '}) {',
+      '  return (',
+      '    <NextIntlClientProvider messages={messages}>',
+      '      {children}',
+      '    </NextIntlClientProvider>',
+      '  );',
+      '}',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/[locale]/section/layout.tsx',
+      clientLayout,
+      makeContext(['src/components/Skipped.tsx'])
+    );
+    expect(result.skipReasons).toEqual([]);
+    // server-only injections must not land in a client component
+    expect(result.code ?? clientLayout).not.toContain('await getLocale()');
+    expect(result.code ?? clientLayout).not.toContain('async function');
+    expect(
+      result.todos.some((todo) =>
+        todo.reason.includes('client-component layout')
+      )
+    ).toBe(true);
+  });
+
+  it('flags a client layout that renders body instead of editing it', () => {
+    const clientRootLayout = [
+      "'use client';",
+      'export default function LocaleLayout({',
+      '  children,',
+      '}: {',
+      '  children: React.ReactNode;',
+      '}) {',
+      '  return (',
+      '    <html lang="en">',
+      '      <body>{children}</body>',
+      '    </html>',
+      '  );',
+      '}',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/[locale]/layout.tsx',
+      clientRootLayout,
+      makeContext()
+    );
+    expect(result.code ?? clientRootLayout).not.toContain('GTProvider>');
+    expect(
+      result.todos.some((todo) =>
+        todo.reason.includes('client components are left alone')
+      )
+    ).toBe(true);
+  });
+
+  it('reports when GTProvider cannot be inserted in the root locale layout', () => {
+    const noBodyLayout = [
+      'export default function LocaleLayout({',
+      '  children,',
+      '}: {',
+      '  children: React.ReactNode;',
+      '}) {',
+      '  return <main>{children}</main>;',
+      '}',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/[locale]/layout.tsx',
+      noBodyLayout,
+      makeContext()
+    );
+    expect(
+      result.todos.some((todo) =>
+        todo.reason.includes('GTProvider was not added')
+      )
+    ).toBe(true);
+  });
+
+  it('stays quiet about GTProvider in nested layouts without a body', () => {
+    const nestedLayout = [
+      'export default function GroupLayout({',
+      '  children,',
+      '}: {',
+      '  children: React.ReactNode;',
+      '}) {',
+      '  return <section>{children}</section>;',
+      '}',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/[locale]/(shop)/layout.tsx',
+      nestedLayout,
+      makeContext()
+    );
+    expect(
+      result.todos.some((todo) =>
+        todo.reason.includes('GTProvider was not added')
+      )
+    ).toBe(false);
+  });
+
+  // The parameter destructure of a function `Name({ ... }: { ...types... })`
+  // sits between `Name({` and the first `}:`. Capturing it lets a test assert
+  // on the runtime bindings without matching the type members that follow.
+  function signatureBindings(code: string, fnName: string): string {
+    const match = code.match(new RegExp(`${fnName}\\(\\{([\\s\\S]*?)\\}:`));
+    expect(match).not.toBeNull();
+    return match![1];
+  }
+
+  it('drops the orphaned params parameter after removing a static-lang locale guard', () => {
+    const staticLangLayout = [
+      "import { notFound } from 'next/navigation';",
+      "import { hasLocale } from 'next-intl';",
+      "import { routing } from '@/i18n/routing';",
+      'export default async function LocaleLayout({',
+      '  children,',
+      '  params,',
+      '}: {',
+      '  children: React.ReactNode;',
+      '  params: Promise<{ locale: string }>;',
+      '}) {',
+      '  const { locale } = await params;',
+      '  if (!hasLocale(routing.locales, locale)) {',
+      '    notFound();',
+      '  }',
+      '  return (',
+      '    <html lang="en">',
+      '      <body>{children}</body>',
+      '    </html>',
+      '  );',
+      '}',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/[locale]/layout.tsx',
+      staticLangLayout,
+      makeContext()
+    );
+    expect(result.skipReasons).toEqual([]);
+    // the guard is gone, so the destructure that only fed it is removed ...
+    expect(result.code).not.toContain('await params');
+    expect(result.code).not.toContain('const { locale }');
+    // ... and the now-unreferenced params binding is gone from the signature
+    const bindings = signatureBindings(result.code!, 'LocaleLayout');
+    expect(bindings).toContain('children');
+    expect(bindings).not.toContain('params');
+    // the TypeScript annotation is intentionally left in place: an unused type
+    // member does not lint, and rewriting the type risks breaking it
+    expect(result.code).toMatch(
+      /params:\s*Promise<\{\s*locale:\s*string;?\s*\}>/
+    );
+  });
+
+  it('keeps params when a rest element shares the parameter pattern', () => {
+    // Removing the property would change what `...rest` absorbs at runtime
+    // (it would gain a `params` key), so the cleanup must leave it alone.
+    const restLayout = [
+      "import { notFound } from 'next/navigation';",
+      "import { hasLocale } from 'next-intl';",
+      "import { routing } from '@/i18n/routing';",
+      'export default async function LocaleLayout({',
+      '  children,',
+      '  params,',
+      '  ...rest',
+      '}: {',
+      '  children: React.ReactNode;',
+      '  params: Promise<{ locale: string }>;',
+      '}) {',
+      '  const { locale } = await params;',
+      '  if (!hasLocale(routing.locales, locale)) {',
+      '    notFound();',
+      '  }',
+      '  return (',
+      '    <html lang="en" {...rest}>',
+      '      <body>{children}</body>',
+      '    </html>',
+      '  );',
+      '}',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/[locale]/layout.tsx',
+      restLayout,
+      makeContext()
+    );
+    expect(result.skipReasons).toEqual([]);
+    // the orphaned destructure still goes ...
+    expect(result.code).not.toContain('await params');
+    // ... but params stays in the signature so rest keeps excluding it
+    const bindings = signatureBindings(result.code!, 'LocaleLayout');
+    expect(bindings).toContain('params');
+    expect(bindings).toContain('...rest');
+  });
+
+  it('keeps params in the signature when <html lang={locale}> still uses it', () => {
+    const result = transformLayoutFile(
+      'src/app/[locale]/layout.tsx',
+      localeLayout,
+      makeContext()
+    );
+    expect(result.skipReasons).toEqual([]);
+    // dynamic lang keeps the destructure, so the params binding must stay too
+    expect(result.code).toContain('const { locale } = await params');
+    expect(signatureBindings(result.code!, 'LocaleLayout')).toContain('params');
+  });
+
+  it('keeps params when a second destructure of it survives', () => {
+    const twoDestructures = [
+      "import { notFound } from 'next/navigation';",
+      "import { hasLocale } from 'next-intl';",
+      "import { routing } from '@/i18n/routing';",
+      'export default async function LocaleLayout({',
+      '  children,',
+      '  params,',
+      '}: {',
+      '  children: React.ReactNode;',
+      '  params: Promise<{ locale: string; slug: string }>;',
+      '}) {',
+      '  const { locale } = await params;',
+      '  const { slug } = await params;',
+      '  if (!hasLocale(routing.locales, locale)) {',
+      '    notFound();',
+      '  }',
+      '  return (',
+      '    <html lang="en" data-slug={slug}>',
+      '      <body>{children}</body>',
+      '    </html>',
+      '  );',
+      '}',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/[locale]/layout.tsx',
+      twoDestructures,
+      makeContext()
+    );
+    expect(result.skipReasons).toEqual([]);
+    // the locale guard is gone, so its destructure is removed ...
+    expect(result.code).not.toContain('const { locale }');
+    // ... but slug still reads params, so params stays bound
+    expect(result.code).toContain('const { slug } = await params');
+    expect(signatureBindings(result.code!, 'LocaleLayout')).toContain('params');
+  });
+
+  it('keeps params when it is still passed to a child', () => {
+    const passesParams = [
+      "import { notFound } from 'next/navigation';",
+      "import { hasLocale } from 'next-intl';",
+      "import { routing } from '@/i18n/routing';",
+      "import { Analytics } from './Analytics';",
+      'export default async function LocaleLayout({',
+      '  children,',
+      '  params,',
+      '}: {',
+      '  children: React.ReactNode;',
+      '  params: Promise<{ locale: string }>;',
+      '}) {',
+      '  const { locale } = await params;',
+      '  if (!hasLocale(routing.locales, locale)) {',
+      '    notFound();',
+      '  }',
+      '  return (',
+      '    <html lang="en">',
+      '      <body>',
+      '        <Analytics params={params} />',
+      '        {children}',
+      '      </body>',
+      '    </html>',
+      '  );',
+      '}',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/[locale]/layout.tsx',
+      passesParams,
+      makeContext()
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).not.toContain('const { locale }');
+    // params is still handed to the child, so it must stay bound
+    expect(result.code).toContain('params={params}');
+    expect(signatureBindings(result.code!, 'LocaleLayout')).toContain('params');
+  });
+
+  it('leaves a sibling generateMetadata params untouched while cleaning the component', () => {
+    const withMetadata = [
+      "import { notFound } from 'next/navigation';",
+      "import { hasLocale } from 'next-intl';",
+      "import { routing } from '@/i18n/routing';",
+      'export async function generateMetadata({',
+      '  params,',
+      '}: {',
+      '  params: Promise<{ locale: string }>;',
+      '}) {',
+      '  const { locale } = await params;',
+      '  return { title: locale };',
+      '}',
+      'export default async function LocaleLayout({',
+      '  children,',
+      '  params,',
+      '}: {',
+      '  children: React.ReactNode;',
+      '  params: Promise<{ locale: string }>;',
+      '}) {',
+      '  const { locale } = await params;',
+      '  if (!hasLocale(routing.locales, locale)) {',
+      '    notFound();',
+      '  }',
+      '  return (',
+      '    <html lang="en">',
+      '      <body>{children}</body>',
+      '    </html>',
+      '  );',
+      '}',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/[locale]/layout.tsx',
+      withMetadata,
+      makeContext()
+    );
+    expect(result.skipReasons).toEqual([]);
+    // generateMetadata still reads its own params, so both survive there
+    expect(result.code).toContain('return { title: locale }');
+    expect(signatureBindings(result.code!, 'generateMetadata')).toContain(
+      'params'
+    );
+    // the component's params, orphaned by guard removal, is dropped
+    expect(signatureBindings(result.code!, 'LocaleLayout')).not.toContain(
+      'params'
+    );
+  });
+
+  it('removes the whole parameter when params is the only destructured property', () => {
+    const onlyParams = [
+      "import { notFound } from 'next/navigation';",
+      "import { hasLocale } from 'next-intl';",
+      "import { routing } from '@/i18n/routing';",
+      'export default async function LocaleLayout({',
+      '  params,',
+      '}: {',
+      '  params: Promise<{ locale: string }>;',
+      '}) {',
+      '  const { locale } = await params;',
+      '  if (!hasLocale(routing.locales, locale)) {',
+      '    notFound();',
+      '  }',
+      '  return (',
+      '    <html lang="en">',
+      '      <body />',
+      '    </html>',
+      '  );',
+      '}',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/[locale]/layout.tsx',
+      onlyParams,
+      makeContext()
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).not.toContain('const { locale }');
+    expect(result.code).not.toContain('await params');
+    // removing the sole property would leave an empty destructure, so the whole
+    // last parameter is dropped: the signature takes no arguments
+    expect(result.code).toMatch(/LocaleLayout\(\s*\)/);
+  });
+
+  it('drops the orphaned params parameter from an arrow-function component', () => {
+    const arrowLayout = [
+      "import { notFound } from 'next/navigation';",
+      "import { hasLocale } from 'next-intl';",
+      "import { routing } from '@/i18n/routing';",
+      'const LocaleLayout = async ({',
+      '  children,',
+      '  params,',
+      '}: {',
+      '  children: React.ReactNode;',
+      '  params: Promise<{ locale: string }>;',
+      '}) => {',
+      '  const { locale } = await params;',
+      '  if (!hasLocale(routing.locales, locale)) {',
+      '    notFound();',
+      '  }',
+      '  return (',
+      '    <html lang="en">',
+      '      <body>{children}</body>',
+      '    </html>',
+      '  );',
+      '};',
+      'export default LocaleLayout;',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/[locale]/layout.tsx',
+      arrowLayout,
+      makeContext()
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).not.toContain('const { locale }');
+    expect(result.code).not.toContain('await params');
+    // the cleanup is function-shape agnostic: the arrow's params binding goes too
+    const bindings = result.code!.match(/async \(\{([\s\S]*?)\}:/);
+    expect(bindings).not.toBeNull();
+    expect(bindings![1]).toContain('children');
+    expect(bindings![1]).not.toContain('params');
+  });
 });

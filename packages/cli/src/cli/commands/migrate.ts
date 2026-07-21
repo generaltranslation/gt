@@ -2,6 +2,10 @@ import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import chalk from 'chalk';
+import {
+  createDiagnosticMessage,
+  formatDiagnosticErrorDetails,
+} from 'generaltranslation/internal';
 import { logger } from '../../console/logger.js';
 import { logErrorAndExit, promptConfirm } from '../../console/logging.js';
 import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
@@ -13,7 +17,7 @@ import {
   type SourceAdapter,
 } from '../../migrate/adapters/index.js';
 import { emitGtFiles } from '../../migrate/emitGtFiles.js';
-import { inlinePass } from '../../migrate/inline.js';
+import { resolveCatalogsInteractively } from '../../migrate/promptFallbacks.js';
 import { buildReport } from '../../migrate/report.js';
 import {
   hasDependency,
@@ -33,25 +37,84 @@ import { getPackageJson, isPackageInstalled } from '../../utils/packageJson.js';
 import { getPackageManager } from '../../utils/packageManager.js';
 
 /**
- * `gt migrate`: converts a next-intl project to gt-next. Dictionary-compat
- * by default (imports/config swapped, existing catalogs preserved through
- * loadDictionary); `--inline` additionally converts safe static strings to
- * inline <T> content.
+ * `gt migrate`: converts an existing i18n setup in a Next.js App Router
+ * project to gt-next. Sources are handled by pluggable adapters selected with
+ * the required `--from` flag (next-intl, react-intl, react-i18next today; the
+ * registry lives in ../migrate/adapters/). This doc describes the core
+ * next-intl engine; each adapter's module documents its own mapping and
+ * limits.
+ *
+ * Strategy: dictionary-compat by default. gt-next's `useTranslations` and
+ * `getTranslations` share next-intl's names, namespace resolution, and ICU
+ * interpolation, so most call sites survive an import swap. Existing
+ * per-locale catalogs keep working through a generated `loadDictionary.ts`
+ * (no re-translation). The command never embeds source text: transforms
+ * that would orphan existing translations (`t.rich` to `<T>`, static
+ * `t('key')` inlining) are out of scope and skip with a report entry; an
+ * opt-in inline-conversion pass is planned as a follow-up PR.
+ *
+ * Files using APIs with no gt-next equivalent (`useFormatter`, `t.raw`,
+ * ...) are skipped whole. While any exist, next-intl stays installed,
+ * `createNextIntlPlugin` stays composed around `withGTConfig`, the request
+ * config's `requestLocale` fallback is rewired through gt-next's
+ * `getLocale()` so skipped files (client and server) resolve the page
+ * locale instead of the default, and `NextIntlClientProvider` renders
+ * nested inside `GTProvider` with an explicit `locale`. The report
+ * (`gt-migrate-report.md`) lists every skip and TODO; nothing is dropped
+ * silently.
+ *
+ * Scope is decoupled from safety: the scan covers `src/`, `app/`, `pages/`,
+ * `components/`, plus `i18n/**` and wherever the routing/request config
+ * lives, but
+ * teardown decisions consult every source file in the project. Anything
+ * outside the scan (an explicit `--src`, an unconventional directory) that
+ * still imports next-intl counts as a skip and blocks the teardown. On a
+ * full migration the routing/request config files are deleted only when
+ * nothing still imports them (`routing.locales` in generateStaticParams is
+ * inlined first); gt-next is installed with the project's package manager
+ * when missing.
+ *
+ * Navigation wrappers: `Link` re-exports from `gt-next/link`; `usePathname`
+ * becomes a locale-prefix-stripping wrapper (next-intl's returns the
+ * pathname without the prefix); `redirect`/`useRouter` pass through
+ * `next/navigation` with a TODO. Routing configs with localized `pathnames`
+ * skip the navigation file whole, since gt-next does not localize path
+ * segments.
+ *
+ * Pipeline ordering below is load-bearing in one place: `transformLayout`
+ * runs after the source pass and layouts are classified to a fixed point
+ * before any is applied (a layout's own skip flips provider retention for
+ * its siblings), all before the config lane and `emitGtFiles` (it inlines
+ * `routing.locales` before the routing file can be deleted). All transforms are babel
+ * parse/traverse/generate (`retainLines`) like the existing wizard
+ * codemods; `--dry-run` prints the report without writing.
+ *
+ * react-i18next is detected (`determineLibrary`) but not yet supported;
+ * the required `--from` flag gates the run today, and another library
+ * needs its own transform set behind the same flag.
+ *
+ * Known upstream constraints (verified against a real app, 2026-07):
+ * - native-ESM configs (`next.config.mjs`, or `.js` with `"type":
+ *   "module"`) break at build time because gt-next/config's ESM bundle
+ *   calls bare `require`. The command emits a TODO advising a rename to
+ *   `next.config.ts`.
+ * - runtime `loadDictionary` resolution in webpack builds needs the
+ *   gt-next fix from #1909; with it, both migration modes build and serve
+ *   cleanly.
  */
 export async function handleMigrateCommand(
   options: MigrateOptions,
   library: SupportedLibraries,
   cwd: string = process.cwd()
 ): Promise<void> {
-  // Resolve the source-library adapter. --from overrides the auto-detected
-  // library; an unknown/unsupported source is a clean error listing what is
-  // supported (the list grows as adapters are added to the registry).
-  // determineLibrary collapses react-i18next / next-i18next / bare i18next all to
-  // 'i18next'; resolve the concrete flavor (or the scoped OUT message) before the
-  // registry lookup. A concrete --from (e.g. react-i18next) passes straight
-  // through and is the documented escape hatch.
-  const requestedFrom = options.from ?? library;
-  const resolution = resolveMigrationSource(requestedFrom, cwd);
+  // Resolve the source-library adapter from --from (required by the CLI). An
+  // unknown/unsupported source is a clean error listing what is supported (the
+  // list grows as adapters are added to the registry). determineLibrary
+  // collapses react-i18next / next-i18next / bare i18next all to 'i18next';
+  // resolveMigrationSource resolves the concrete flavor (or the scoped OUT
+  // message) before the registry lookup, so a concrete --from
+  // (e.g. react-i18next) passes straight through.
+  const resolution = resolveMigrationSource(options.from, cwd);
   if (resolution.kind === 'error') {
     logErrorAndExit(resolution.message);
   }
@@ -59,35 +122,39 @@ export async function handleMigrateCommand(
   if (!adapter) {
     logErrorAndExit(
       `gt migrate cannot migrate from '${resolution.id}'. ` +
-        `Supported sources: ${supportedSourceIds().join(', ')}. ` +
-        (options.from
-          ? 'Pass --from with a supported source, or omit it to auto-detect from your dependencies.'
-          : 'This was auto-detected from your dependencies — pass --from to override.')
+        `Supported sources: ${supportedSourceIds().join(', ')}.`
     );
   }
 
-  // Auto-detect only returns a library that determineLibrary found in
-  // package.json, so the source is guaranteed present. --from bypasses that, so
-  // confirm the requested library is actually reachable from cwd (declared here
-  // or hoisted into a shared node_modules); otherwise the run would "succeed"
-  // (write scaffolding) while leaving every source file untouched, since no
-  // import matches.
-  if (options.from && !isSourceLibraryInstalled(cwd, adapter)) {
+  // --from is user input, not detection, so confirm the requested library is
+  // actually reachable from cwd (declared here or hoisted into a shared
+  // node_modules); otherwise the run would "succeed" (write scaffolding) while
+  // leaving every source file untouched, since no import matches.
+  if (!isSourceLibraryInstalled(cwd, adapter)) {
     logErrorAndExit(
-      `--from ${requestedFrom} was passed, but ${adapter.displayName} was not ` +
+      `--from ${options.from} was passed, but ${adapter.displayName} was not ` +
         'found in this project (checked package.json and node_modules). Install ' +
         'it first, or correct the --from value, then re-run.'
     );
   }
 
-  // If next-intl was auto-detected but react-i18next is also installed, the
-  // user may have meant to target it; point them at the flag so a project does
-  // not get silently half-migrated (the m2 finding).
+  // Detection is advisory now that --from is explicit, but a mismatch is worth
+  // a note (the wrong --from on a mixed project would otherwise run to
+  // "nothing to migrate" with no hint).
   if (
-    !options.from &&
-    adapter.id === 'next-intl' &&
-    hasDependency(cwd, 'react-i18next')
+    library !== 'base' &&
+    library !== adapter.id &&
+    !(library === 'i18next' && adapter.id === 'react-i18next')
   ) {
+    logger.warn(
+      `Detected '${library}' in this project; migrating from ${adapter.displayName} per --from.`
+    );
+  }
+
+  // If next-intl is the target but react-i18next is also installed, the user
+  // may have meant the other surface; point them at the flag so a project does
+  // not get silently half-migrated (the m2 finding).
+  if (adapter.id === 'next-intl' && hasDependency(cwd, 'react-i18next')) {
     logger.warn(
       'Also detected react-i18next in your dependencies. This run migrates next-intl only; ' +
         're-run with --from react-i18next to target the react-i18next surface instead.'
@@ -110,6 +177,17 @@ export async function handleMigrateCommand(
   let catalogs: Awaited<ReturnType<typeof adapter.discoverCatalogs>>;
   try {
     catalogs = await adapter.discoverCatalogs(cwd, routing);
+    if (!catalogs && adapter.id === 'next-intl') {
+      // Detection came up empty, or found catalogs but not one per configured
+      // locale (discover warns with the specifics first): ask the user
+      // directly (same building blocks as `gt setup`) instead of guessing.
+      // Returns null when the session is non-interactive, which falls through
+      // to the hard error below. Gated to next-intl: the other adapters'
+      // discovery does re-nesting/ICU conversion that a raw directory prompt
+      // would bypass, so their misses stay hard errors until each grows its
+      // own prompt path.
+      catalogs = await resolveCatalogsInteractively(cwd, routing);
+    }
   } catch (error) {
     // e.g. a malformed locale JSON — nothing has been written yet.
     logErrorAndExit(error instanceof Error ? error.message : String(error));
@@ -136,7 +214,11 @@ export async function handleMigrateCommand(
     warnings: [],
     skippedFiles: new Map(),
     stats: {},
-    inlineMode: options.inline,
+    // -c/--config; commander's default resolves an existing root
+    // gt.config.json or '' when none exists yet.
+    configFile: options.config
+      ? path.resolve(cwd, options.config)
+      : path.join(cwd, 'gt.config.json'),
   };
   // Advisory notes and report TODOs the adapter raised during catalog discovery
   // (an assumed default locale, a synthesized/augmented source catalog,
@@ -210,22 +292,25 @@ export async function handleMigrateCommand(
         continue;
       }
       if (adapter.navigation?.isNavigationFile(code)) {
-        collect(
-          ctx,
+        const navigation = adapter.navigation.transformNavigation(
           file,
-          adapter.navigation.transformNavigation(file, code, ctx)
+          code,
+          ctx
         );
-        continue;
+        if (navigation.code !== null || navigation.skipReasons.length > 0) {
+          collect(ctx, file, navigation);
+          continue;
+        }
+        // The transform claimed nothing: the detection was a false match (a
+        // comment, an unrelated helper with the same name). Fall through to
+        // the generic source pass so real source-library usage in this file
+        // is still converted or registered as a skip.
       }
       if (adapter.hasProvider(code)) {
         providerFiles.push(file);
         continue;
       }
-      let result = runSourceTransform(file, code, ctx);
-      if (options.inline && result.skipReasons.length === 0) {
-        result = applyInline(file, result.code ?? code, ctx, result);
-      }
-      collect(ctx, file, result);
+      collect(ctx, file, runSourceTransform(file, code, ctx));
     } catch (error) {
       recordTransformError(ctx, file, error);
     }
@@ -272,14 +357,34 @@ export async function handleMigrateCommand(
     }
   }
 
-  // Pass 2b: layouts, with full skip knowledge.
-  for (const file of layouts) {
-    try {
-      const code = fs.readFileSync(file, 'utf8');
-      collect(ctx, file, runLayoutTransform(adapter, file, code, ctx));
-    } catch (error) {
-      recordTransformError(ctx, file, error);
+  // Pass 2b: layouts. A layout's own skip flips provider retention for every
+  // other layout (the layout transform reads ctx.skippedFiles live), and a
+  // flip to retention can itself skip another layout (the unsafe-async
+  // fallback only exists while a provider is retained), so classify all
+  // layouts to a fixed point before applying any of them. Otherwise a root
+  // layout processed first drops the retained client provider that a
+  // later-skipped nested layout still needs. Skips only accumulate (retention
+  // never flips back off), so each round either adds a skip or ends the loop.
+  const layoutSources = new Map(
+    layouts.map((file) => [file, fs.readFileSync(file, 'utf8')] as const)
+  );
+  for (;;) {
+    let newSkips = false;
+    for (const [file, code] of layoutSources) {
+      if (ctx.skippedFiles.has(file)) continue;
+      const classified = runLayoutTransform(adapter, file, code, ctx);
+      if (classified.skipReasons.length > 0) {
+        ctx.skippedFiles.set(file, classified.skipReasons);
+        newSkips = true;
+      }
     }
+    if (!newSkips) break;
+  }
+  // Apply with the final skip set. The last classification round ran against
+  // this exact state and found no new skips, so these results are settled.
+  for (const [file, code] of layoutSources) {
+    if (ctx.skippedFiles.has(file)) continue;
+    collect(ctx, file, runLayoutTransform(adapter, file, code, ctx));
   }
 
   // Pass 2c: apply the deferred provider files now that the skip set is final
@@ -291,11 +396,7 @@ export async function handleMigrateCommand(
   for (const file of providerFilesToApply) {
     try {
       const code = fs.readFileSync(file, 'utf8');
-      let result = runSourceTransform(file, code, ctx, retainProviders);
-      if (options.inline && result.skipReasons.length === 0) {
-        result = applyInline(file, result.code ?? code, ctx, result);
-      }
-      collect(ctx, file, result);
+      collect(ctx, file, runSourceTransform(file, code, ctx, retainProviders));
     } catch (error) {
       recordTransformError(ctx, file, error);
     }
@@ -435,14 +536,39 @@ export async function handleMigrateCommand(
   }
 
   const writtenFiles: string[] = [];
-  for (const edit of ctx.edits) {
-    if (edit.kind === 'delete') {
-      fs.rmSync(edit.path, { force: true });
-    } else {
-      fs.mkdirSync(path.dirname(edit.path), { recursive: true });
-      fs.writeFileSync(edit.path, edit.content ?? '');
-      writtenFiles.push(edit.path);
+  let applied = 0;
+  try {
+    for (const edit of ctx.edits) {
+      if (edit.kind === 'delete') {
+        fs.rmSync(edit.path, { force: true });
+      } else {
+        fs.mkdirSync(path.dirname(edit.path), { recursive: true });
+        fs.writeFileSync(edit.path, edit.content ?? '');
+        writtenFiles.push(edit.path);
+      }
+      applied += 1;
     }
+  } catch (error) {
+    // Buffering means nothing is touched until every transform succeeds, but
+    // a filesystem error mid-loop (permissions, disk full) still strands a
+    // partial write; name the damage and the way back instead of letting a
+    // raw stack trace surface.
+    if (writtenFiles.length > 0) {
+      logger.warn(
+        `Files already rewritten: ${writtenFiles
+          .map((file) => path.relative(cwd, file))
+          .join(', ')}`
+      );
+    }
+    logErrorAndExit(
+      createDiagnosticMessage({
+        whatHappened: `Applying the migration failed after ${applied} of ${ctx.edits.length} planned file changes, so the project is partially migrated`,
+        fix: 'Fix the underlying filesystem error and restore the pre-migration state with `git checkout .` (plus `git clean -fd` for newly created files) before re-running.',
+        wayOut:
+          'If you ran with --allow-dirty on a tree with uncommitted changes, restore those files from your own stash or backup instead.',
+        details: formatDiagnosticErrorDetails(error),
+      })
+    );
   }
 
   // The rewritten files import gt-next — install it so the app builds.
@@ -518,24 +644,6 @@ function runLayoutTransform(
   return adapter.transformLayout
     ? adapter.transformLayout(file, code, ctx)
     : transformLayoutFile(file, code, ctx);
-}
-
-function applyInline(
-  file: string,
-  code: string,
-  ctx: MigrationContext,
-  base: SourceResult
-): SourceResult {
-  const inlined = inlinePass(file, code, ctx);
-  if (inlined.skipReasons.length > 0 || inlined.code === null) {
-    return base;
-  }
-  return {
-    code: inlined.code,
-    todos: [...base.todos, ...inlined.todos],
-    skipReasons: [],
-    usedRich: base.usedRich || inlined.usedRich,
-  };
 }
 
 /**

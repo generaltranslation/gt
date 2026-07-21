@@ -3,7 +3,8 @@ import type { SourceAdapter } from './adapters/types.js';
 export type MigrateOptions = {
   src?: string[];
   config: string;
-  inline: boolean;
+  /** i18n library to migrate from (--from, required; 'next-intl' today) */
+  from: string;
   dryRun: boolean;
   yes: boolean;
   allowDirty: boolean;
@@ -74,7 +75,14 @@ export type RoutingInfo = {
   locales: string[] | null;
   defaultLocale: string | null;
   localePrefix: 'always' | 'as-needed' | 'never' | null;
+  /** localePrefix is present in the routing config but not statically
+   *  resolvable (a variable reference, a computed value). Consumers must not
+   *  read the null above as next-intl's default in that case. */
+  localePrefixUnresolved?: boolean;
   pathnames: Record<string, unknown> | null;
+  /** pathnames is present but not statically resolvable; treat as "localized
+   *  pathnames exist", never as absent. */
+  pathnamesUnresolved?: boolean;
   routingFile: string | null;
   requestFile: string | null;
 };
@@ -101,14 +109,14 @@ export type MigrationContext = {
   /** every source file in the project regardless of --src scope, so teardown
    *  decisions never rely on what happened to be scanned */
   projectFiles?: string[];
-  /** true when --inline was passed; gates transforms that embed
-   *  source-language text (and so require re-translation) */
-  inlineMode?: boolean;
   /** the source-library adapter driving this migration. Required: the driver
-   *  resolves it from the detected source library (or --from), and every
-   *  transform reads the library-specific tables and strings from it. Unit
-   *  tests that build a context by hand pass nextIntlAdapter explicitly. */
+   *  resolves it from the --from value, and every transform reads the
+   *  library-specific tables and strings from it. Unit tests that build a
+   *  context by hand pass nextIntlAdapter explicitly. */
   adapter: SourceAdapter;
+  /** resolved --config path; gt.config.json is read from and written to this
+   *  path (defaults to <cwd>/gt.config.json when the flag is absent) */
+  configFile?: string;
 };
 
 export type SourceResult = {
@@ -117,5 +125,4 @@ export type SourceResult = {
   todos: TodoEntry[];
   /** non-empty means the whole file must be left untouched */
   skipReasons: string[];
-  usedRich: boolean;
 };

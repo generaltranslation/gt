@@ -27,7 +27,14 @@ const REQUEST_CANDIDATES = [
  * Extracts locales/defaultLocale/localePrefix/pathnames from the project's
  * next-intl routing config. Only static literals are resolved; anything
  * dynamic yields null for that field so callers can record a TODO instead
- * of guessing.
+ * of guessing. When localePrefix or pathnames is present but not statically
+ * resolvable (a variable reference, a computed value), the matching
+ * *Unresolved flag is set so callers can tell "not configured" apart from
+ * "configured but unreadable" and never mistake the null for next-intl's
+ * default.
+ *
+ * A spread inside defineRouting ({ ...base }) hides properties entirely, so
+ * a value carried only by the spread reads as absent (no flag). Not solved.
  */
 export function parseRoutingConfig(cwd: string): RoutingInfo {
   const info: RoutingInfo = {
@@ -55,18 +62,31 @@ export function parseRoutingConfig(cwd: string): RoutingInfo {
   const defaultLocale = staticValue(getProperty(config, 'defaultLocale'));
   if (typeof defaultLocale === 'string') info.defaultLocale = defaultLocale;
 
-  const prefixMode = readLocalePrefixMode(getProperty(config, 'localePrefix'));
+  const localePrefixNode = getProperty(config, 'localePrefix');
+  const prefixMode = readLocalePrefixMode(localePrefixNode);
   if (
     prefixMode === 'always' ||
     prefixMode === 'as-needed' ||
     prefixMode === 'never'
   ) {
     info.localePrefix = prefixMode;
+  } else if (localePrefixNode) {
+    // Present but not one of the three literal modes (a shorthand variable
+    // reference, a computed value, an object with a dynamic `mode`). Flag it
+    // so callers do not read the null above as next-intl's default 'always'
+    // and silently rewrite the app's public URL structure.
+    info.localePrefixUnresolved = true;
   }
 
-  const pathnames = staticValue(getProperty(config, 'pathnames'));
+  const pathnamesNode = getProperty(config, 'pathnames');
+  const pathnames = staticValue(pathnamesNode);
   if (pathnames && typeof pathnames === 'object' && !Array.isArray(pathnames)) {
     info.pathnames = pathnames as Record<string, unknown>;
+  } else if (pathnamesNode) {
+    // Present but not a statically resolvable object (a variable reference, a
+    // function call). Flag it so localized-pathname handling is not silently
+    // dropped by reading the null as absent.
+    info.pathnamesUnresolved = true;
   }
 
   return info;
@@ -101,9 +121,13 @@ export function localePrefixHasCustomPrefixes(
   const prefixes = getProperty(unwrapped, 'prefixes');
   if (!prefixes) return false;
   const prefixesNode = unwrapAssertion(prefixes);
-  return (
-    t.isObjectExpression(prefixesNode) && prefixesNode.properties.length > 0
-  );
+  if (!t.isObjectExpression(prefixesNode)) {
+    // A dynamic prefixes value (a variable reference, a call) still means
+    // per-locale URL prefixes exist as far as we can tell statically, so the
+    // middleware drop-TODO must fire rather than silently convert them away.
+    return true;
+  }
+  return prefixesNode.properties.length > 0;
 }
 
 function findFirst(cwd: string, candidates: string[]): string | null {

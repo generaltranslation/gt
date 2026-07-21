@@ -242,9 +242,6 @@ export function buildReport(
   steps.push(
     '`npx gt generate` (no API key) or `npx gt translate` (with credentials) to translate new locales.'
   );
-  steps.push(
-    'Optionally re-run with `--inline` to convert simple strings to inline <T> components.'
-  );
   for (const [index, step] of steps.entries()) {
     lines.push(`${index + 1}. ${step}`);
   }

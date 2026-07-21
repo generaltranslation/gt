@@ -115,7 +115,7 @@ export const nextIntlAdapter: SourceAdapter = {
   ],
 
   projectUsagePattern:
-    /(?:from\s+|import\s*\(\s*|require\s*\(\s*)['"]next-intl(?:\/|['"])/,
+    /(?:from\s+|import\s*\(\s*|import\s*|require\s*\(\s*)['"]next-intl(?:\/|['"])/,
   teardownPackages: ['next-intl'],
   teardownConfigFiles: (routing: RoutingInfo) =>
     [routing.routingFile, routing.requestFile].filter(

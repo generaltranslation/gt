@@ -12,8 +12,10 @@ const generate = generateModule.default || generateModule;
 /**
  * Layout files get the regular source transform plus layout-specific work:
  * locale-validation removal, `lang` -> getLocale(), and GTProvider
- * insertion/nesting. Runs after every other file so the final skip set is
- * known (it decides whether NextIntlClientProvider is retained).
+ * insertion/nesting. The driver runs layouts after every other file and
+ * classifies them all to a fixed point before applying any edits, so
+ * ctx.skippedFiles is final by the time a layout's output is written (it
+ * decides whether NextIntlClientProvider is retained).
  */
 /**
  * True only for tests that validate a locale: a `hasLocale(...)` call, or an
@@ -54,17 +56,23 @@ function isLocaleGuardTest(
 }
 
 /**
- * Finds the local name bound to the route `locale` param
- * (`const { locale } = await params` / `= params`, alias-aware), or null when
- * the layout does not destructure it. A retained NextIntlClientProvider reuses
- * this static, augmented-`Locale`-typed binding instead of a request-scoped
- * getLocale(). `props.params` and other non-`params` sources are ignored.
+ * Every local binding of the route `locale` param in the file
+ * (`const { locale } = await params` / `= params`, alias-aware), each paired
+ * with the declarator node that introduced it. A retained
+ * NextIntlClientProvider reuses whichever of these is actually in scope at its
+ * own injection site (a static, augmented-`Locale`-typed binding), which keeps
+ * SSG and avoids a request-scoped getLocale(). Recording the declarator lets
+ * the injection site confirm scope via `scope.getBinding(name)` rather than
+ * trusting a name that may be bound in an unrelated function (e.g.
+ * generateMetadata). `props.params` and other non-`params` sources are ignored.
  */
-function findParamLocaleBinding(ast: t.File): string | null {
-  let binding: string | null = null;
+function collectParamLocaleBindings(
+  ast: t.File
+): Array<{ name: string; declarator: t.VariableDeclarator }> {
+  const bindings: Array<{ name: string; declarator: t.VariableDeclarator }> =
+    [];
   traverse(ast, {
     VariableDeclarator(path) {
-      if (binding) return;
       if (!t.isObjectPattern(path.node.id)) return;
       const init = path.node.init;
       const fromParams =
@@ -79,12 +87,12 @@ function findParamLocaleBinding(ast: t.File): string | null {
           t.isIdentifier(property.key, { name: 'locale' }) &&
           t.isIdentifier(property.value)
         ) {
-          binding = property.value.name;
+          bindings.push({ name: property.value.name, declarator: path.node });
         }
       }
     },
   });
-  return binding;
+  return bindings;
 }
 
 /**
@@ -128,6 +136,46 @@ function findDefaultExportFunction(ast: t.File): t.Function | null {
   return result;
 }
 
+/**
+ * Drop the `params` parameter from a function whose only use of it was an
+ * orphaned `const { ... } = await params` that step 7 just removed. The usual
+ * shape is an ObjectPattern parameter (`{ children, params }`): remove just the
+ * `params` property, which never changes arity. If that would empty the pattern,
+ * remove the whole parameter only when it is last (an empty `{}` trips
+ * no-empty-pattern, and dropping a non-last positional param shifts the others).
+ * TypeScript annotations are left untouched: an unused type member does not lint.
+ */
+function removeParamsParameter(fn: t.Function): void {
+  const params = fn.params;
+  for (let index = 0; index < params.length; index++) {
+    const param = params[index];
+    if (t.isIdentifier(param, { name: 'params' })) {
+      if (index === params.length - 1) params.splice(index, 1);
+      return;
+    }
+    if (!t.isObjectPattern(param)) continue;
+    const propertyIndex = param.properties.findIndex(
+      (property) =>
+        t.isObjectProperty(property) &&
+        !property.computed &&
+        t.isIdentifier(property.value, { name: 'params' })
+    );
+    if (propertyIndex === -1) continue;
+    // A rest sibling would absorb the removed key at runtime (`...rest` gains
+    // `params`), so keep the parameter in that shape; the lint warning is the
+    // lesser evil to a behavior change.
+    if (param.properties.some((property) => t.isRestElement(property))) {
+      return;
+    }
+    if (param.properties.length === 1) {
+      if (index === params.length - 1) params.splice(index, 1);
+      return;
+    }
+    param.properties.splice(propertyIndex, 1);
+    return;
+  }
+}
+
 export function transformLayoutFile(
   file: string,
   code: string,
@@ -138,6 +186,12 @@ export function transformLayoutFile(
   const base = transformSourceFile(file, code, ctx, {
     retainProvider,
     dropLocaleValidation: true,
+    // Opt out of the base pass's orphaned param-locale cleanup: step 4 below can
+    // inject `locale={locale}` into a retained NextIntlClientProvider, which
+    // references the param destructure that looks dead at base-pass time.
+    // Cleaning it here would demote SSG to a request-scoped getLocale(); layouts
+    // run their own step-7 cleanup after that injection instead.
+    dropOrphanedParamLocale: false,
   });
   if (base.skipReasons.length > 0) return base;
 
@@ -155,7 +209,6 @@ export function transformLayoutFile(
       code: null,
       todos: [],
       skipReasons: [`layout could not be parsed: ${String(error)}`],
-      usedRich: false,
     };
   }
 
@@ -163,6 +216,31 @@ export function transformLayoutFile(
   let mutated = false;
   let needsGetLocale = false;
   const isLocaleLayout = file.includes('[locale]');
+
+  // Client-component layouts can't take the server-side work below:
+  // `await getLocale()` is server-only, and forcing the component async
+  // would make it an invalid async client component. Keep the source
+  // transform's output as is and flag the provider for manual wiring.
+  const isClientLayout = ast.program.directives.some(
+    (directive) => directive.value.value === 'use client'
+  );
+  if (isClientLayout) {
+    if (retainProvider && working.includes('NextIntlClientProvider')) {
+      todos.push({
+        file,
+        reason:
+          'client-component layout keeps NextIntlClientProvider: pass its locale from a server parent (await getLocale()); the automatic injection only applies to server layouts',
+      });
+    }
+    if (working.includes('<body')) {
+      todos.push({
+        file,
+        reason:
+          'client-component layout renders <body>: GTProvider was not inserted automatically (client components are left alone); add it around the app children yourself',
+      });
+    }
+    return { ...base, todos };
+  }
 
   // 1. Drop locale-validation guards: `if (!hasLocale(...)) notFound()` and
   //    `if (!locales.includes(locale)) notFound()` shapes. Full conversion
@@ -265,10 +343,11 @@ export function transformLayoutFile(
   //    next-intl installed, so the skipped layout keeps working on it and the
   //    skip surfaces in the report for a manual fix.
   if (retainProvider) {
-    const paramLocaleBinding = findParamLocaleBinding(ast);
-    const componentFn = paramLocaleBinding
-      ? null
-      : findDefaultExportFunction(ast);
+    const paramLocaleBindings = collectParamLocaleBindings(ast);
+    // Any retained provider may need the getLocale() fallback (one whose scope
+    // has no param locale), so resolve the default-exported component up front
+    // rather than only when the file lacks a params destructure entirely.
+    const componentFn = findDefaultExportFunction(ast);
     let unsafeAsyncFallback = false;
     traverse(ast, {
       JSXOpeningElement(path) {
@@ -286,12 +365,21 @@ export function transformLayoutFile(
         );
         if (hasLocaleProp) return;
 
-        // Primary path: reuse the static route-param binding, no async needed.
-        if (paramLocaleBinding) {
+        // Primary path: reuse a static route-param binding, no async needed,
+        // but only one actually in scope at THIS provider. A binding found
+        // file-wide (e.g. destructured inside generateMetadata) is an
+        // undefined reference here, so resolve the name up the provider's own
+        // scope chain and accept it only when it maps back to a recorded
+        // params destructure.
+        const inScopeParamLocale = paramLocaleBindings.find(
+          ({ name, declarator }) =>
+            path.scope.getBinding(name)?.path.node === declarator
+        );
+        if (inScopeParamLocale) {
           path.node.attributes.push(
             t.jsxAttribute(
               t.jsxIdentifier('locale'),
-              t.jsxExpressionContainer(t.identifier(paramLocaleBinding))
+              t.jsxExpressionContainer(t.identifier(inScopeParamLocale.name))
             )
           );
           mutated = true;
@@ -330,7 +418,6 @@ export function transformLayoutFile(
         skipReasons: [
           `retained ${providerLabel} has no route \`locale\` param in scope and sits inside a synchronous helper that cannot be made async safely; pass its \`locale\` prop manually (the layout keeps working on ${adapter.displayName} until then)`,
         ],
-        usedRich: base.usedRich,
       };
     }
   }
@@ -362,6 +449,14 @@ export function transformLayoutFile(
     });
     if (inserted) {
       ensureNamedImports(ast, 'gt-next', ['GTProvider']);
+    } else if (/\[locale\][\\/]layout\.[^\\/]+$/.test(file)) {
+      // Only the root [locale] layout is expected to carry <body>; nested
+      // layouts without one are normal and stay quiet.
+      todos.push({
+        file,
+        reason:
+          'GTProvider was not added automatically (no <body> element found in this layout): wrap the layout children in <GTProvider> yourself',
+      });
     }
   }
 
@@ -379,10 +474,15 @@ export function transformLayoutFile(
     ]);
   }
 
-  // 7. Guard removal can orphan `const { locale } = await params` — drop the
+  // 7. Guard removal can orphan `const { locale } = await params`: drop the
   //    declaration when nothing references its bindings anymore (it would
-  //    trip no-unused-vars in user projects).
+  //    trip no-unused-vars in user projects), then drop the now-unused `params`
+  //    parameter from the same function so the cleanup does not just move the
+  //    unused-variable warning from the destructure to the signature.
   if (mutated) {
+    // Functions whose orphaned `const { ... } = await params` was removed here;
+    // each one's `params` parameter may now be unreferenced and need dropping.
+    const paramsCleanupTargets = new Set<t.Function>();
     traverse(ast, {
       Program(path) {
         // Recrawl so bindings reflect the removals above.
@@ -411,13 +511,36 @@ export function transformLayoutFile(
           const binding = path.scope.getBinding(property.value.name);
           if (!binding || binding.referenced) return;
         }
+        const fn = path.getFunctionParent();
+        if (fn) paramsCleanupTargets.add(fn.node);
         path.remove();
       },
     });
+
+    // Now drop any `params` parameter left unreferenced by those removals. A
+    // fresh crawl is required so the removed `await params` no longer counts as
+    // a reference; then each cleaned function's own `params` binding decides.
+    // Only that function's params is touched: a sibling generateMetadata that
+    // still reads its own params keeps its own, separately-scoped binding.
+    if (paramsCleanupTargets.size > 0) {
+      traverse(ast, {
+        Program(path) {
+          path.scope.crawl();
+        },
+        Function(path) {
+          if (!paramsCleanupTargets.has(path.node)) return;
+          const binding = path.scope.getBinding('params');
+          if (!binding || binding.kind !== 'param' || binding.referenced) {
+            return;
+          }
+          removeParamsParameter(path.node);
+        },
+      });
+    }
   }
 
   if (!mutated && base.code === null) {
-    return { code: null, todos, skipReasons: [], usedRich: base.usedRich };
+    return { code: null, todos, skipReasons: [] };
   }
   if (!mutated) {
     return { ...base, todos };
@@ -433,5 +556,5 @@ export function transformLayoutFile(
     },
     working
   );
-  return { code: output.code, todos, skipReasons: [], usedRich: base.usedRich };
+  return { code: output.code, todos, skipReasons: [] };
 }

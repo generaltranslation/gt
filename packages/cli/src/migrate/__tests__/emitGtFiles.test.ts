@@ -224,6 +224,60 @@ describe('emitGtFiles', () => {
     expect(byPath.has(ctx.routing.routingFile!)).toBe(false);
   });
 
+  it('keeps a routing file imported through a custom path alias', () => {
+    const ctx = makeProject({
+      'package.json': basePackageJson,
+      'src/i18n/routing.ts': '// routing',
+      'src/i18n/request.ts': '// request',
+      'src/lib/paths.ts': "import { routing } from '#app/i18n/routing';",
+      'messages/en.json': '{}',
+    });
+    ctx.sourceFiles = [path.join(ctx.cwd, 'src/lib/paths.ts')];
+    const edits = emitGtFiles(ctx);
+    const byPath = new Map(edits.map((edit) => [edit.path, edit]));
+    expect(byPath.has(ctx.routing.routingFile!)).toBe(false);
+    // heuristic keeps get their own wording (the match may be wrong)
+    expect(
+      ctx.todos.some(
+        (todo) =>
+          todo.file === ctx.routing.routingFile &&
+          todo.reason.includes('paths.ts') &&
+          todo.reason.includes('path alias')
+      )
+    ).toBe(true);
+    // the unreferenced request file is still deleted
+    expect(byPath.get(ctx.routing.requestFile!)!.kind).toBe('delete');
+  });
+
+  it('keeps a routing file imported through a baseUrl-style specifier', () => {
+    const ctx = makeProject({
+      'package.json': basePackageJson,
+      'src/i18n/routing.ts': '// routing',
+      'src/i18n/request.ts': '// request',
+      'src/lib/paths.ts': "import { routing } from 'i18n/routing';",
+      'messages/en.json': '{}',
+    });
+    ctx.sourceFiles = [path.join(ctx.cwd, 'src/lib/paths.ts')];
+    const edits = emitGtFiles(ctx);
+    const byPath = new Map(edits.map((edit) => [edit.path, edit]));
+    expect(byPath.has(ctx.routing.routingFile!)).toBe(false);
+  });
+
+  it('does not mistake installed package subpaths for alias importers', () => {
+    const ctx = makeProject({
+      'package.json': basePackageJson,
+      'src/i18n/routing.ts': '// routing',
+      'src/i18n/request.ts': '// request',
+      'src/lib/paths.ts': "import { helper } from 'some-pkg/i18n/routing';",
+      'node_modules/some-pkg/package.json': '{"name":"some-pkg"}',
+      'messages/en.json': '{}',
+    });
+    ctx.sourceFiles = [path.join(ctx.cwd, 'src/lib/paths.ts')];
+    const edits = emitGtFiles(ctx);
+    const byPath = new Map(edits.map((edit) => [edit.path, edit]));
+    expect(byPath.get(ctx.routing.routingFile!)!.kind).toBe('delete');
+  });
+
   it('places loadDictionary inside src/ when the app uses a src dir', () => {
     const ctx = makeProject({
       'package.json': basePackageJson,
@@ -264,5 +318,101 @@ describe('emitGtFiles', () => {
     expect(
       ctx.todos.some((todo) => todo.reason.includes('loadDictionary'))
     ).toBe(true);
+  });
+
+  it('keeps next-intl in package.json when a retained routing file still imports it', () => {
+    const ctx = makeProject({
+      'package.json': basePackageJson,
+      'src/i18n/routing.ts':
+        "import { defineRouting } from 'next-intl/routing';",
+      'src/i18n/request.ts': '// request',
+      'src/components/LocaleSwitcher.tsx':
+        "import { routing } from '@/i18n/routing';",
+      'messages/en.json': '{}',
+    });
+    ctx.projectFiles = [
+      path.join(ctx.cwd, 'src/components/LocaleSwitcher.tsx'),
+    ];
+    const edits = emitGtFiles(ctx);
+    const byPath = new Map(edits.map((edit) => [edit.path, edit]));
+
+    // the still-imported routing file is kept (no delete edit)…
+    expect(byPath.has(ctx.routing.routingFile!)).toBe(false);
+    // …and next-intl is not stripped: no package.json edit at all, or if one
+    // exists for other reasons it must still contain next-intl.
+    const pkgEdit = byPath.get(path.join(ctx.cwd, 'package.json'));
+    if (pkgEdit) {
+      const pkg = JSON.parse(pkgEdit.content!);
+      expect(pkg.dependencies['next-intl']).toBeDefined();
+    }
+    // a todo explains next-intl stays because the retained file imports it
+    expect(
+      ctx.todos.some(
+        (todo) =>
+          todo.file.endsWith('package.json') &&
+          todo.reason.includes('next-intl') &&
+          todo.reason.includes('routing')
+      )
+    ).toBe(true);
+    // the unreferenced request file is still deleted
+    expect(byPath.get(ctx.routing.requestFile!)!.kind).toBe('delete');
+  });
+
+  it('still removes next-intl and deletes config files when nothing imports them', () => {
+    const ctx = makeProject({
+      'package.json': basePackageJson,
+      'src/i18n/routing.ts':
+        "import { defineRouting } from 'next-intl/routing';",
+      'src/i18n/request.ts': '// request',
+      'messages/en.json': '{}',
+    });
+    ctx.projectFiles = [];
+    const edits = emitGtFiles(ctx);
+    const byPath = new Map(edits.map((edit) => [edit.path, edit]));
+
+    const pkg = JSON.parse(
+      byPath.get(path.join(ctx.cwd, 'package.json'))!.content!
+    );
+    expect(pkg.dependencies['next-intl']).toBeUndefined();
+    expect(byPath.get(ctx.routing.routingFile!)!.kind).toBe('delete');
+    expect(byPath.get(ctx.routing.requestFile!)!.kind).toBe('delete');
+  });
+
+  it('reads and writes gt.config.json at ctx.configFile when set', () => {
+    const ctx = makeProject({
+      'package.json': basePackageJson,
+      'config/gt.config.json': JSON.stringify({ projectId: 'xyz789' }),
+      'messages/en.json': '{}',
+    });
+    const configFile = path.join(ctx.cwd, 'config/gt.config.json');
+    ctx.configFile = configFile;
+    const edits = emitGtFiles(ctx);
+    const byPath = new Map(edits.map((edit) => [edit.path, edit]));
+
+    const configEdit = byPath.get(configFile)!;
+    expect(configEdit.kind).toBe('write');
+    const config = JSON.parse(configEdit.content!);
+    expect(config.projectId).toBe('xyz789');
+    expect(config.defaultLocale).toBe('en');
+    expect(config.locales).toEqual(['en', 'es']);
+
+    // nothing is written at the default root path
+    expect(byPath.has(path.join(ctx.cwd, 'gt.config.json'))).toBe(false);
+  });
+
+  it('defaults to root gt.config.json when ctx.configFile is unset', () => {
+    const ctx = makeProject({
+      'package.json': basePackageJson,
+      'gt.config.json': JSON.stringify({ projectId: 'root123' }),
+      'messages/en.json': '{}',
+    });
+    const edits = emitGtFiles(ctx);
+    const byPath = new Map(edits.map((edit) => [edit.path, edit]));
+
+    const configEdit = byPath.get(path.join(ctx.cwd, 'gt.config.json'))!;
+    expect(configEdit.kind).toBe('write');
+    const config = JSON.parse(configEdit.content!);
+    expect(config.projectId).toBe('root123');
+    expect(config.defaultLocale).toBe('en');
   });
 });

@@ -33,8 +33,10 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
     edits.push(...ctx.catalogs.filesToEmit);
   }
 
-  // gt.config.json
-  const configPath = path.join(ctx.cwd, 'gt.config.json');
+  // gt.config.json — honor the resolved --config path when the driver set it,
+  // otherwise the project root. This one path drives both the merge-read and
+  // the write edit below.
+  const configPath = ctx.configFile ?? path.join(ctx.cwd, 'gt.config.json');
   let existing: Record<string, unknown> = {};
   if (fs.existsSync(configPath)) {
     try {
@@ -124,8 +126,72 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
 
   // package.json + next-intl config teardown, only when fully migrated.
   if (fullyMigrated) {
+    // Decide config-file retention FIRST. Deleting a module that something
+    // still imports breaks the build, so a routing.ts/request.ts kept for a
+    // remaining importer also keeps its own `next-intl` import alive. Removing
+    // next-intl from package.json in that case would leave that import
+    // unresolvable, so the retention decision has to precede the package.json
+    // edit, not follow it.
+    const deletions = adapter
+      .teardownConfigFiles(ctx.routing)
+      .filter((file) => fs.existsSync(file));
+    // Retention-aware fixed point: a config file kept for a live importer is
+    // itself a live importer, so a routing file imported only by a retained
+    // request file must also be retained (deleting it would leave the surviving
+    // request file with a dangling ./routing import that fails the next build).
+    // Loop until stable, each pass ignoring only the candidates still slated for
+    // deletion so a just-retained candidate counts as an importer next pass.
+    // Two candidates converge in at most two passes; the loop generalizes it.
+    const retained: {
+      file: string;
+      importer: { file: string; exact: boolean };
+    }[] = [];
+    let deletable = [...deletions];
+    let settled = false;
+    while (!settled) {
+      settled = true;
+      // A retention reassigns `deletable` to a filtered copy, so the array this
+      // loop iterates (bound at pass start) is never mutated in place.
+      const pass = deletable;
+      for (const configFile of pass) {
+        const importer = findRemainingImporter(ctx, configFile, deletable);
+        if (importer) {
+          retained.push({ file: configFile, importer });
+          deletable = deletable.filter((file) => file !== configFile);
+          settled = false;
+        }
+      }
+    }
+
     const packageJsonPath = path.join(ctx.cwd, 'package.json');
-    if (fs.existsSync(packageJsonPath)) {
+    // Keep the source library only when a RETAINED file actually imports it. A
+    // retained routing/request file written as a plain object (no source-library
+    // import) must not pin the dependency, and a "still imports it" todo would
+    // be false. Use the same specifier regex the driver's out-of-scope scan
+    // uses (the adapter's projectUsagePattern), against the on-disk content
+    // (retained files are never rewritten by edits).
+    const sourceRetainers = retained.filter((entry) => {
+      try {
+        return adapter.projectUsagePattern.test(
+          fs.readFileSync(entry.file, 'utf8')
+        );
+      } catch {
+        // Unreadable retained file: keep the dependency rather than risk
+        // stripping one a surviving import still needs.
+        return true;
+      }
+    });
+    if (sourceRetainers.length > 0) {
+      // A retained config file still imports the source library, so leave the
+      // dependency in package.json and explain how to finish by hand.
+      const retainedList = sourceRetainers
+        .map((entry) => path.relative(ctx.cwd, entry.file))
+        .join(', ');
+      ctx.todos.push({
+        file: packageJsonPath,
+        reason: `${adapter.displayName} kept in package.json because ${retainedList} still imports it. After migrating that file off ${adapter.displayName}, remove the dependency by hand.`,
+      });
+    } else if (fs.existsSync(packageJsonPath)) {
       let pkg: Record<string, Record<string, string>> | null = null;
       try {
         pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
@@ -159,20 +225,18 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
         }
       }
     }
-    const deletions = adapter
-      .teardownConfigFiles(ctx.routing)
-      .filter((file) => fs.existsSync(file));
-    for (const configFile of deletions) {
+
+    for (const { file: configFile, importer } of retained) {
       // Deleting a module that something still imports breaks the build —
       // keep it and say so instead.
-      const importer = findRemainingImporter(ctx, configFile, deletions);
-      if (importer) {
-        ctx.todos.push({
-          file: configFile,
-          reason: `kept because ${path.relative(ctx.cwd, importer)} still imports it; migrate that reference off ${adapter.displayName}, then delete this file`,
-        });
-        continue;
-      }
+      ctx.todos.push({
+        file: configFile,
+        reason: importer.exact
+          ? `kept because ${path.relative(ctx.cwd, importer.file)} still imports it — migrate that reference off ${adapter.displayName}, then delete this file`
+          : `kept because ${path.relative(ctx.cwd, importer.file)} appears to import it through a path alias; if that specifier is really a third-party package, delete this file yourself`,
+      });
+    }
+    for (const configFile of deletable) {
       edits.push({ path: configFile, kind: 'delete' });
     }
   }
@@ -498,13 +562,15 @@ function isStrictAncestorDir(ancestor: string, descendant: string): boolean {
  * Finds a source file whose post-migration content still imports `target`.
  * Contents come from the pending edit when one exists, otherwise from disk.
  * Import specifiers resolve relative to the importer; `@/` and `~/` map to
- * src/ (or the project root when there is no src/).
+ * src/ (or the project root when there is no src/). Other non-package
+ * specifiers get a best-effort trailing-segment match (`exact: false`, see
+ * matchesAliasedTarget).
  */
 function findRemainingImporter(
   ctx: MigrationContext,
   target: string,
   ignoredFiles: string[]
-): string | null {
+): { file: string; exact: boolean } | null {
   const targetNoExt = stripExtension(target);
   const pendingEdits = new Map(
     ctx.edits
@@ -515,7 +581,10 @@ function findRemainingImporter(
     ? path.join(ctx.cwd, 'src')
     : ctx.cwd;
   const specifierPattern =
-    /(?:from\s+|import\s*\(\s*|require\s*\(\s*)['"]([^'"]+)['"]/g;
+    // The bare `import\s*` branch catches side-effect imports
+    // (`import './routing'`), which have no `from` and no paren but still
+    // break at build time if their target is deleted.
+    /(?:from\s+|import\s*\(\s*|import\s*|require\s*\(\s*)['"]([^'"]+)['"]/g;
 
   for (const file of ctx.projectFiles ?? ctx.sourceFiles ?? []) {
     if (ignoredFiles.includes(file)) continue;
@@ -529,17 +598,57 @@ function findRemainingImporter(
         resolved = path.resolve(path.dirname(file), specifier);
       } else if (specifier.startsWith('@/') || specifier.startsWith('~/')) {
         resolved = path.join(aliasRoot, specifier.slice(2));
+      } else if (matchesAliasedTarget(ctx, specifier, targetNoExt)) {
+        // Custom tsconfig path aliases (and baseUrl imports) can't be
+        // resolved without parsing tsconfig. Err toward keeping the file:
+        // a non-package specifier whose trailing path segments match the
+        // target counts as an importer. Aliases that don't mirror the file
+        // path (single-name or multi-segment scoped ones) are still
+        // missed, and those files are deleted with their aliased imports
+        // left dangling.
+        return { file, exact: false };
       }
       if (
         resolved !== null &&
         (stripExtension(resolved) === targetNoExt ||
           path.join(resolved, 'index') === targetNoExt)
       ) {
-        return file;
+        return { file, exact: true };
       }
     }
   }
   return null;
+}
+
+/**
+ * Best-effort match for import specifiers behind custom path aliases:
+ * `#app/i18n/routing` or baseUrl-style `i18n/routing` against a target like
+ * `<cwd>/src/i18n/routing.ts`. Installed packages never match (their
+ * specifiers are real imports, not aliases), and a candidate needs at least
+ * two path segments so bare module names can't collide.
+ */
+function matchesAliasedTarget(
+  ctx: MigrationContext,
+  specifier: string,
+  targetNoExt: string
+): boolean {
+  if (!specifier.includes('/')) return false;
+  const packageName = specifier.startsWith('@')
+    ? specifier.split('/').slice(0, 2).join('/')
+    : specifier.split('/')[0];
+  if (fs.existsSync(path.join(ctx.cwd, 'node_modules', packageName))) {
+    return false;
+  }
+  const relTarget = toPosix(path.relative(ctx.cwd, targetNoExt));
+  const full = stripExtension(specifier);
+  const tail = full.split('/').slice(1).join('/');
+  for (const candidate of [full, tail]) {
+    if (!candidate.includes('/')) continue;
+    if (relTarget === candidate || relTarget.endsWith(`/${candidate}`)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function stripExtension(file: string): string {

@@ -25,7 +25,6 @@ export function transformRequestConfigFile(
     code: null,
     todos: [],
     skipReasons: [],
-    usedRich: false,
   };
   if (!code.includes('getRequestConfig')) return none;
 
@@ -135,6 +134,5 @@ export function transformRequestConfigFile(
     code: output.code,
     todos: [],
     skipReasons: [],
-    usedRich: false,
   };
 }

@@ -11,6 +11,18 @@ vi.mock('../../hooks/postProcess.js', () => ({
   detectFormatter: vi.fn(async () => null),
 }));
 
+// logErrorAndExit would kill the vitest worker; throw a sentinel instead so
+// error-path tests can assert on the diagnostic it was called with.
+const logErrorAndExitMock = vi.hoisted(() =>
+  vi.fn((message: string): never => {
+    throw new Error(`exit: ${message}`);
+  })
+);
+vi.mock('../../console/logging.js', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  logErrorAndExit: logErrorAndExitMock,
+}));
+
 vi.mock('../../utils/installPackage.js', () => ({
   installPackage: vi.fn(async () => {}),
 }));
@@ -229,7 +241,7 @@ describe('handleMigrateCommand integration', () => {
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
-        inline: false,
+        from: 'next-intl',
         dryRun: false,
         yes: true,
         allowDirty: true,
@@ -307,13 +319,49 @@ describe('handleMigrateCommand integration', () => {
     expect(report).not.toContain('Install gt-next');
   });
 
+  it('retains a routing file reachable only through a retained request file', async () => {
+    // boot.ts (a plain app file, no next-intl API) imports request.ts, so
+    // request.ts is retained; request.ts imports './routing', so routing.ts
+    // must be retained too, since deleting it would leave the surviving
+    // request.ts with a dangling ./routing import that breaks the next build.
+    const cwd = makeApp({
+      'src/app/boot.ts': [
+        "import request from '@/i18n/request';",
+        'export const boot = request;',
+      ].join('\n'),
+    });
+    await handleMigrateCommand(
+      {
+        config: 'gt.config.json',
+        from: 'next-intl',
+        dryRun: false,
+        yes: true,
+        allowDirty: true,
+      },
+      'next-intl',
+      cwd
+    );
+
+    // request.ts survives because boot.ts still imports it
+    expect(fs.existsSync(path.join(cwd, 'src/i18n/request.ts'))).toBe(true);
+    // routing.ts ALSO survives (its only importer is the retained request.ts)
+    expect(fs.existsSync(path.join(cwd, 'src/i18n/routing.ts'))).toBe(true);
+    // both retained files still import next-intl, so the dependency stays
+    const pkg = JSON.parse(read(cwd, 'package.json'));
+    expect(pkg.dependencies['next-intl']).toBeDefined();
+    // the report names both retained files
+    const report = read(cwd, 'gt-migrate-report.md');
+    expect(report).toContain('src/i18n/request.ts');
+    expect(report).toContain('src/i18n/routing.ts');
+  });
+
   it('reports a manual install step when installing gt-next fails', async () => {
     const cwd = makeApp();
     vi.mocked(installPackage).mockRejectedValueOnce(new Error('offline'));
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
-        inline: false,
+        from: 'next-intl',
         dryRun: false,
         yes: true,
         allowDirty: true,
@@ -338,7 +386,7 @@ describe('handleMigrateCommand integration', () => {
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
-        inline: false,
+        from: 'next-intl',
         dryRun: false,
         yes: true,
         allowDirty: true,
@@ -378,13 +426,62 @@ describe('handleMigrateCommand integration', () => {
     expect(read(cwd, 'gt-migrate-report.md')).toContain('Price.tsx');
   });
 
+  it('keeps the root provider when a later layout is the only skip', async () => {
+    // The only skip in the whole app is a nested layout that globs AFTER the
+    // root layout. Single-pass sequential processing converts the root layout
+    // (skip set still empty, provider dropped) before the nested layout's
+    // skip lands, leaving the skipped subtree with no NextIntlClientProvider;
+    // the fixed-point classification pass must retain it.
+    const cwd = makeApp({
+      'src/app/[locale]/shop/layout.tsx': [
+        "'use client';",
+        "import { useFormatter } from 'next-intl';",
+        'export default function ShopLayout({',
+        '  children,',
+        '}: {',
+        '  children: React.ReactNode;',
+        '}) {',
+        '  const format = useFormatter();',
+        '  return <section title={format.number(1)}>{children}</section>;',
+        '}',
+      ].join('\n'),
+    });
+    await handleMigrateCommand(
+      {
+        config: 'gt.config.json',
+        from: 'next-intl',
+        dryRun: false,
+        yes: true,
+        allowDirty: true,
+      },
+      'next-intl',
+      cwd
+    );
+
+    // skipped nested layout untouched
+    expect(read(cwd, 'src/app/[locale]/shop/layout.tsx')).toContain(
+      'useFormatter'
+    );
+    // root layout keeps the provider (nested inside GTProvider, explicit
+    // locale) so the skipped subtree still has a next-intl context
+    const layout = read(cwd, 'src/app/[locale]/layout.tsx');
+    expect(layout).toContain('GTProvider');
+    expect(layout).toMatch(/<NextIntlClientProvider[^>]*locale=\{locale\}/);
+    // partial migration: dep and request config survive
+    const pkg = JSON.parse(read(cwd, 'package.json'));
+    expect(pkg.dependencies['next-intl']).toBeDefined();
+    expect(fs.existsSync(path.join(cwd, 'src/i18n/request.ts'))).toBe(true);
+    // report lists the layout skip
+    expect(read(cwd, 'gt-migrate-report.md')).toContain('shop/layout.tsx');
+  });
+
   it('dry run writes nothing', async () => {
     const cwd = makeApp();
     const before = read(cwd, 'src/app/[locale]/page.tsx');
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
-        inline: false,
+        from: 'next-intl',
         dryRun: true,
         yes: true,
         allowDirty: true,
@@ -397,47 +494,37 @@ describe('handleMigrateCommand integration', () => {
     expect(fs.existsSync(path.join(cwd, 'gt-migrate-report.md'))).toBe(false);
   });
 
-  it('--inline converts the pure-text title and simple t.rich', async () => {
-    const cwd = makeApp({
-      'src/app/[locale]/page.tsx': [
-        "import { useTranslations } from 'next-intl';",
-        'export default function Home() {',
-        "  const t = useTranslations('Home');",
-        '  return (',
-        '    <main>',
-        "      <h1>{t('title')}</h1>",
-        "      <p>{t('greeting', { name: 'Ada' })}</p>",
-        "      <p>{t.rich('terms', { b: (chunks) => <b>{chunks}</b> })}</p>",
-        "      <input placeholder={t('hint')} />",
-        '    </main>',
-        '  );',
-        '}',
-      ].join('\n'),
-    });
-    await handleMigrateCommand(
-      {
-        config: 'gt.config.json',
-        inline: true,
-        dryRun: false,
-        yes: true,
-        allowDirty: true,
-      },
-      'next-intl',
-      cwd
+  it('names the partial write and the recovery path when a write fails', async () => {
+    const cwd = makeApp();
+    // The layout is written after the page, so making it unwritable fails the
+    // write loop midway with the page already rewritten.
+    const layoutPath = path.join(cwd, 'src/app/[locale]/layout.tsx');
+    fs.chmodSync(layoutPath, 0o444);
+    await expect(
+      handleMigrateCommand(
+        {
+          config: 'gt.config.json',
+          from: 'next-intl',
+          dryRun: false,
+          yes: true,
+          allowDirty: true,
+        },
+        'next-intl',
+        cwd
+      )
+    ).rejects.toThrow(/partially migrated/);
+    fs.chmodSync(layoutPath, 0o644);
+    // the page landed before the failure; the layout kept its original source
+    expect(read(cwd, 'src/app/[locale]/page.tsx')).toContain('gt-next');
+    expect(read(cwd, 'src/app/[locale]/layout.tsx')).toContain(
+      'NextIntlClientProvider'
     );
-    const page = read(cwd, 'src/app/[locale]/page.tsx');
-    expect(page).toContain('Welcome to demo');
-    expect(page).not.toContain("t('title')");
-    expect(page).toContain('<b>terms</b>');
-    expect(page).not.toContain('t.rich');
-    // args/attribute stay on dictionary path
-    expect(page).toContain("t('greeting', { name: 'Ada' })");
-    expect(page).toContain("placeholder={t('hint')}");
-    // report warns that inlined content needs regeneration
-    expect(read(cwd, 'gt-migrate-report.md')).toContain('regenerate');
+    const exitMessage = logErrorAndExitMock.mock.calls.at(-1)?.[0] as string;
+    expect(exitMessage).toContain('git checkout .');
+    expect(exitMessage).toMatch(/Details:/);
   });
 
-  it('skips t.rich files in default mode instead of discarding translations', async () => {
+  it('skips t.rich files instead of discarding translations', async () => {
     const cwd = makeApp({
       'src/components/Terms.tsx': [
         "import { useTranslations } from 'next-intl';",
@@ -450,7 +537,7 @@ describe('handleMigrateCommand integration', () => {
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
-        inline: false,
+        from: 'next-intl',
         dryRun: false,
         yes: true,
         allowDirty: true,
@@ -458,11 +545,11 @@ describe('handleMigrateCommand integration', () => {
       'next-intl',
       cwd
     );
-    // file untouched, teardown blocked, reason points at --inline
+    // file untouched, teardown blocked, reason says to convert by hand
     expect(read(cwd, 'src/components/Terms.tsx')).toContain('t.rich');
     const pkg = JSON.parse(read(cwd, 'package.json'));
     expect(pkg.dependencies['next-intl']).toBeDefined();
-    expect(read(cwd, 'gt-migrate-report.md')).toContain('--inline');
+    expect(read(cwd, 'gt-migrate-report.md')).toContain('convert it manually');
   });
 
   it('converts a root-level i18n/ directory and still tears down safely', async () => {
@@ -496,7 +583,7 @@ describe('handleMigrateCommand integration', () => {
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
-        inline: false,
+        from: 'next-intl',
         dryRun: false,
         yes: true,
         allowDirty: true,
@@ -521,7 +608,7 @@ describe('handleMigrateCommand integration', () => {
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
-        inline: false,
+        from: 'next-intl',
         dryRun: false,
         yes: true,
         allowDirty: true,
@@ -555,7 +642,7 @@ describe('handleMigrateCommand integration', () => {
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
-        inline: false,
+        from: 'next-intl',
         dryRun: false,
         yes: true,
         allowDirty: true,
@@ -594,7 +681,7 @@ describe('handleMigrateCommand integration', () => {
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
-        inline: false,
+        from: 'next-intl',
         dryRun: false,
         yes: true,
         allowDirty: true,
@@ -853,7 +940,7 @@ describe('handleMigrateCommand integration', () => {
     await handleMigrateCommand(
       {
         config: 'gt.config.json',
-        inline: false,
+        from: 'next-intl',
         dryRun: false,
         yes: true,
         allowDirty: true,
@@ -879,5 +966,162 @@ describe('handleMigrateCommand integration', () => {
     expect(read(cwd, 'gt-migrate-report.md')).not.toMatch(
       /layout\.ts.*skipped|skipped.*layout\.ts/
     );
+  });
+
+  it('converts a file whose only createNavigation is in a comment', async () => {
+    // The driver picks the navigation transform by a string match. A false
+    // match (comment, unrelated helper) must fall through to the generic
+    // source pass instead of leaving real next-intl usage untouched and
+    // unskipped beneath a full teardown.
+    const cwd = makeApp({
+      'src/components/NavNote.tsx': [
+        '// revisit createNavigation once these routes localize',
+        "import { useTranslations } from 'next-intl';",
+        'export function NavNote() {',
+        "  const t = useTranslations('Home');",
+        "  return <p>{t('title')}</p>;",
+        '}',
+      ].join('\n'),
+    });
+    await handleMigrateCommand(
+      {
+        config: 'gt.config.json',
+        from: 'next-intl',
+        dryRun: false,
+        yes: true,
+        allowDirty: true,
+      },
+      'next-intl',
+      cwd
+    );
+    const navNote = read(cwd, 'src/components/NavNote.tsx');
+    expect(navNote).toMatch(/from ["']gt-next["']/);
+    expect(navNote).not.toMatch(/from ['"]next-intl['"]/);
+    // nothing was silently bypassed, so the full teardown is legitimate
+    const pkg = JSON.parse(read(cwd, 'package.json'));
+    expect(pkg.dependencies['next-intl']).toBeUndefined();
+  });
+
+  it('skips an unrecognized createNavigation shape and holds back teardown', async () => {
+    // `const navigation = createNavigation(routing)` is not the supported
+    // destructured wrapper. It must register as a skip (holding next-intl in
+    // package.json), never as an untouched non-skip beneath a full teardown.
+    const cwd = makeApp({
+      'src/i18n/navigation.ts': [
+        "import { createNavigation } from 'next-intl/navigation';",
+        "import { routing } from './routing';",
+        'const navigation = createNavigation(routing);',
+        'export default navigation;',
+      ].join('\n'),
+    });
+    await handleMigrateCommand(
+      {
+        config: 'gt.config.json',
+        from: 'next-intl',
+        dryRun: false,
+        yes: true,
+        allowDirty: true,
+      },
+      'next-intl',
+      cwd
+    );
+    // file untouched, dependency retained, skip surfaced in the report
+    expect(read(cwd, 'src/i18n/navigation.ts')).toContain(
+      'const navigation = createNavigation(routing);'
+    );
+    const pkg = JSON.parse(read(cwd, 'package.json'));
+    expect(pkg.dependencies['next-intl']).toBeDefined();
+    expect(read(cwd, 'gt-migrate-report.md')).toContain('navigation.ts');
+  });
+
+  it('keeps next-intl in package.json when a retained routing file still imports it', async () => {
+    // A locale switcher imports the routing file for its locale list but uses
+    // no next-intl API, so it is never a skip. The routing file must be kept
+    // (something imports it) AND next-intl must stay in package.json, or the
+    // retained file's next-intl/routing import breaks the build.
+    const cwd = makeApp({
+      'src/components/LocaleSwitcher.tsx': [
+        "import { routing } from '@/i18n/routing';",
+        'export function LocaleSwitcher() {',
+        '  return (',
+        '    <ul>',
+        '      {routing.locales.map((locale) => (',
+        '        <li key={locale}>{locale}</li>',
+        '      ))}',
+        '    </ul>',
+        '  );',
+        '}',
+      ].join('\n'),
+    });
+    await handleMigrateCommand(
+      {
+        config: 'gt.config.json',
+        from: 'next-intl',
+        dryRun: false,
+        yes: true,
+        allowDirty: true,
+      },
+      'next-intl',
+      cwd
+    );
+    // routing file kept for its importer
+    expect(fs.existsSync(path.join(cwd, 'src/i18n/routing.ts'))).toBe(true);
+    // and the dependency it imports survives with it
+    const pkg = JSON.parse(read(cwd, 'package.json'));
+    expect(pkg.dependencies['next-intl']).toBeDefined();
+    expect(read(cwd, 'gt-migrate-report.md')).toContain('routing');
+  });
+
+  it('keeps a routing file alive for a bare side-effect import', async () => {
+    // `import './i18n/routing';` has no `from` and no paren, but deleting its
+    // target still breaks the build. The importer detection must count it.
+    const cwd = makeApp({
+      'src/register.ts': [
+        "import './i18n/routing';",
+        'export const registered = true;',
+      ].join('\n'),
+    });
+    await handleMigrateCommand(
+      {
+        config: 'gt.config.json',
+        from: 'next-intl',
+        dryRun: false,
+        yes: true,
+        allowDirty: true,
+      },
+      'next-intl',
+      cwd
+    );
+    expect(fs.existsSync(path.join(cwd, 'src/i18n/routing.ts'))).toBe(true);
+    // the retained routing file imports next-intl/routing, so the dependency
+    // survives with it
+    const pkg = JSON.parse(read(cwd, 'package.json'));
+    expect(pkg.dependencies['next-intl']).toBeDefined();
+  });
+
+  it('honors --config for the gt.config.json read and write', async () => {
+    const cwd = makeApp();
+    fs.mkdirSync(path.join(cwd, 'config'));
+    fs.writeFileSync(
+      path.join(cwd, 'config/gt.config.json'),
+      JSON.stringify({ projectId: 'prj_demo' }, null, 2)
+    );
+    await handleMigrateCommand(
+      {
+        config: 'config/gt.config.json',
+        from: 'next-intl',
+        dryRun: false,
+        yes: true,
+        allowDirty: true,
+      },
+      'next-intl',
+      cwd
+    );
+    // merged in place at the flag's path, existing keys preserved
+    const gtConfig = JSON.parse(read(cwd, 'config/gt.config.json'));
+    expect(gtConfig.projectId).toBe('prj_demo');
+    expect(gtConfig.locales).toEqual(['en', 'es']);
+    // no second, shadowing config at the root
+    expect(fs.existsSync(path.join(cwd, 'gt.config.json'))).toBe(false);
   });
 });
