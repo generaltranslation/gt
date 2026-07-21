@@ -139,7 +139,8 @@ function findMatchingLiterals(relativePath, expectedValue) {
   function visit(node) {
     const isMatch =
       (typeof expectedValue === 'string' &&
-        ts.isStringLiteral(node) &&
+        (ts.isStringLiteral(node) ||
+          ts.isNoSubstitutionTemplateLiteral(node)) &&
         node.text === expectedValue) ||
       (typeof expectedValue === 'number' &&
         ts.isNumericLiteral(node) &&
