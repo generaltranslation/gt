@@ -16,14 +16,19 @@ import { loadConfig } from '../fs/config/loadConfig.js';
 import { addVitePlugin } from '../react/parse/addVitePlugin/index.js';
 import { exitSync } from '../console/logging.js';
 import { ReactFrameworkObject } from '../types/index.js';
-import { getFrameworkDisplayName } from './frameworkUtils.js';
+import {
+  getDefaultReactRenderingMode,
+  getFrameworkDisplayName,
+  type ReactRenderingMode,
+  type ReactSetupContext,
+} from './frameworkUtils.js';
 import { Libraries } from '../types/libraries.js';
 
 export async function handleSetupReactCommand(
   options: SetupOptions,
   frameworkObject: ReactFrameworkObject,
   useDefaults: boolean = false
-): Promise<void> {
+): Promise<ReactSetupContext> {
   const frameworkDisplayName = getFrameworkDisplayName(frameworkObject);
 
   // Ask user for confirmation using inquirer
@@ -69,6 +74,35 @@ Please let us know what you would like to see added at https://github.com/genera
     );
     exitSync(0);
   }
+
+  const selectedFramework = {
+    name: frameworkType,
+    type: 'react',
+  } satisfies ReactFrameworkObject;
+  const defaultRenderingMode =
+    getDefaultReactRenderingMode(selectedFramework) || 'spa';
+  const renderingMode =
+    frameworkType === 'next-app' || (useDefaults && frameworkType !== 'react')
+      ? defaultRenderingMode
+      : await promptSelect<ReactRenderingMode>({
+          message: 'How is your React app rendered?',
+          options: [
+            {
+              value: 'spa',
+              label: 'Single-page app (browser-rendered, no GTProvider)',
+            },
+            {
+              value: 'ssr',
+              label:
+                'Server-rendered app (GTProvider gets locale and translations)',
+            },
+          ],
+          defaultValue: defaultRenderingMode,
+        });
+  const setupContext: ReactSetupContext = {
+    framework: frameworkType,
+    renderingMode,
+  };
 
   // ----- Create a starter gt.config.json file -----
   await createOrUpdateConfig(options.config || 'gt.config.json', {
@@ -137,7 +171,7 @@ Please let us know what you would like to see added at https://github.com/genera
       disableIds: true,
       disableFormatting: true,
       skipTs: true,
-      addGTProvider: true,
+      addGTProvider: renderingMode === 'ssr',
     };
     const spinner = logger.createSpinner();
     spinner.start('Wrapping JSX content with <T> tags...');
@@ -196,7 +230,7 @@ Please let us know what you would like to see added at https://github.com/genera
   const formatter = await detectFormatter();
 
   if (!formatter || filesUpdated.length === 0) {
-    return;
+    return setupContext;
   }
 
   const applyFormatting = useDefaults
@@ -209,4 +243,6 @@ Please let us know what you would like to see added at https://github.com/genera
       });
   // Format updated files if formatters are available
   if (applyFormatting) await formatFiles(filesUpdated, formatter);
+
+  return setupContext;
 }

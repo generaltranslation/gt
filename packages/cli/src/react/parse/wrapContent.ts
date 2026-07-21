@@ -1,11 +1,9 @@
 import fs from 'node:fs';
-import path from 'node:path';
 import { SupportedFrameworks, WrapOptions } from '../../types/index.js';
 import * as t from '@babel/types';
 import { parse } from '@babel/parser';
 import traverseModule from '@babel/traverse';
 import generateModule from '@babel/generator';
-import { NodePath } from '@babel/traverse';
 
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
@@ -27,7 +25,6 @@ const IMPORT_MAP = {
   Var: { name: 'Var', source: Libraries.GT_REACT },
   GTT: { name: 'T', source: Libraries.GT_REACT },
   GTVar: { name: 'Var', source: Libraries.GT_REACT },
-  GTProvider: { name: 'GTProvider', source: Libraries.GT_REACT },
 };
 
 /**
@@ -40,7 +37,7 @@ const IMPORT_MAP = {
 export async function wrapContentReact(
   options: WrapOptions,
   pkg: `${typeof Libraries.GT_REACT}`,
-  framework: SupportedFrameworks,
+  _framework: SupportedFrameworks,
   errors: string[],
   warnings: string[]
 ): Promise<{ filesUpdated: string[] }> {
@@ -50,17 +47,6 @@ export async function wrapContentReact(
   const filesUpdated = [];
 
   for (const file of files) {
-    const baseFileName = path.basename(file);
-    const configPath = path.relative(
-      path.dirname(file),
-      path.resolve(process.cwd(), options.config)
-    );
-
-    // Ensure the path starts with ./ or ../
-    const normalizedConfigPath = configPath.startsWith('.')
-      ? configPath
-      : './' + configPath;
-
     const code = await fs.promises.readFile(file, 'utf8');
 
     // Create relative path from src directory and remove extension
@@ -92,68 +78,6 @@ export async function wrapContentReact(
     let globalId = 0;
     traverse(ast, {
       JSXElement(path) {
-        if (
-          framework === 'next-pages' &&
-          options.addGTProvider &&
-          (baseFileName === '_app.tsx' || baseFileName === '_app.jsx')
-        ) {
-          // Check if this is the Component element with pageProps
-          const isComponentWithPageProps =
-            t.isJSXElement(path.node) &&
-            t.isJSXIdentifier(path.node.openingElement.name) &&
-            path.node.openingElement.name.name === 'Component' &&
-            path.node.openingElement.attributes.some(
-              (attr) =>
-                t.isJSXSpreadAttribute(attr) &&
-                t.isIdentifier(attr.argument) &&
-                attr.argument.name === 'pageProps'
-            );
-
-          if (!isComponentWithPageProps) {
-            return;
-          }
-
-          // Check if GTProvider already exists in the ancestors
-          let hasGTProvider = false;
-          let currentPath: NodePath = path;
-
-          while (currentPath.parentPath) {
-            if (
-              t.isJSXElement(currentPath.node) &&
-              t.isJSXIdentifier(currentPath.node.openingElement.name) &&
-              currentPath.node.openingElement.name.name === 'GTProvider'
-            ) {
-              hasGTProvider = true;
-              break;
-            }
-            currentPath = currentPath.parentPath;
-          }
-
-          if (!hasGTProvider) {
-            // Wrap the Component element with GTProvider
-            const gtProviderJsx = t.jsxElement(
-              t.jsxOpeningElement(
-                t.jsxIdentifier('GTProvider'),
-                [t.jsxSpreadAttribute(t.identifier('gtConfig'))],
-                false
-              ),
-              t.jsxClosingElement(t.jsxIdentifier('GTProvider')),
-              [path.node]
-            );
-
-            path.replaceWith(gtProviderJsx);
-            usedImports.push('GTProvider');
-            usedImports.push({
-              local: 'gtConfig',
-              imported: 'default',
-              source: normalizedConfigPath,
-            });
-            modified = true;
-            path.skip();
-            return;
-          }
-        }
-
         // Check if this JSX element has any JSX element ancestors
         if (
           t.isJSXElement(path.parentPath?.node) ||

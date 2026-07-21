@@ -64,8 +64,12 @@ import processSharedStaticAssets, {
 import { setupLocadex } from '../locadex/setupFlow.js';
 import { detectFramework } from '../setup/detectFramework.js';
 import {
+  getDefaultReactRenderingMode,
   getFrameworkDisplayName,
+  getLoadTranslationsSetupInstruction,
   getReactFrameworkLibrary,
+  getReactSetupSummary,
+  type ReactSetupContext,
 } from '../setup/frameworkUtils.js';
 import { INLINE_LIBRARIES } from '../types/libraries.js';
 import { handleEnqueue } from './commands/enqueue.js';
@@ -587,10 +591,6 @@ export class BaseCLI {
             framework.type === 'react'
               ? getFrameworkDisplayName(framework)
               : null;
-          const library =
-            framework.type === 'react'
-              ? getReactFrameworkLibrary(framework)
-              : null;
 
           // Build defaults description based on detected framework
           const defaultTranslationsDir =
@@ -600,7 +600,7 @@ export class BaseCLI {
 
           const defaultsDescription =
             framework.type === 'react'
-              ? `${library} & GTProvider, ${frameworkDisplayName}, Files saved locally in ${defaultTranslationsDir}`
+              ? `${getReactSetupSummary(framework)}, ${frameworkDisplayName}, Files saved locally in ${defaultTranslationsDir}`
               : `Files saved locally in ${defaultTranslationsDir}`;
 
           // Ask if user wants to use defaults
@@ -610,13 +610,18 @@ export class BaseCLI {
           });
 
           let ranReactSetup = false;
+          let reactSetupContext: ReactSetupContext | undefined;
 
           // so that people can run init in non-js projects
           if (framework.type === 'react') {
+            const setupPromptDescription =
+              framework.name === 'next-app'
+                ? getReactSetupSummary(framework)
+                : `${getReactFrameworkLibrary(framework)} for React (choose SPA or server rendering next)`;
             const wrap = useDefaults
               ? true
               : await promptConfirm({
-                  message: `Would you like to install ${library} and add the GTProvider? See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`,
+                  message: `Would you like to configure ${setupPromptDescription}? See the docs for more information: https://generaltranslation.com/docs/react/guides/configuring`,
                   defaultValue: true,
                 });
 
@@ -624,7 +629,11 @@ export class BaseCLI {
               logger.info(
                 `${chalk.yellow('[EXPERIMENTAL]')} Configuring project...`
               );
-              await handleSetupReactCommand(options, framework, useDefaults);
+              reactSetupContext = await handleSetupReactCommand(
+                options,
+                framework,
+                useDefaults
+              );
               logger.endCommand(
                 `Done! Since this wizard is experimental, please review the changes and make modifications as needed.
 \nNext step: start internationalizing! See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`
@@ -640,7 +649,9 @@ export class BaseCLI {
           await this.handleInitCommand(
             ranReactSetup,
             useDefaults,
-            framework.name === 'vite'
+            reactSetupContext?.framework === 'vite' ||
+              framework.name === 'vite',
+            reactSetupContext
           );
 
           logger.endCommand(
@@ -665,7 +676,18 @@ export class BaseCLI {
 
         // Configure gt.config.json
         const framework = await detectFramework();
-        await this.handleInitCommand(false, false, framework.name === 'vite');
+        const renderingMode =
+          framework.type === 'react'
+            ? getDefaultReactRenderingMode(framework)
+            : undefined;
+        await this.handleInitCommand(
+          false,
+          false,
+          framework.name === 'vite',
+          framework.type === 'react' && renderingMode
+            ? { framework: framework.name, renderingMode }
+            : undefined
+        );
 
         logger.endCommand(
           'Done! Make sure you have an API key and project ID to use General Translation. Get them on the dashboard: https://generaltranslation.com/dashboard'
@@ -688,7 +710,8 @@ export class BaseCLI {
   protected async handleInitCommand(
     ranReactSetup: boolean,
     useDefaults: boolean = false,
-    isVite: boolean = false
+    isVite: boolean = false,
+    reactSetupContext?: ReactSetupContext
   ): Promise<void> {
     const { defaultLocale, locales } = await getDesiredLocales(); // Locales should still be asked for even if using defaults
 
@@ -744,8 +767,8 @@ export class BaseCLI {
       );
       logger.message(
         `Created ${chalk.cyan('loadTranslations.js')} file for local translations.
-Make sure to add this function to your app configuration.
-See https://generaltranslation.com/en/docs/next/guides/local-tx`
+${getLoadTranslationsSetupInstruction(reactSetupContext)}
+See https://generaltranslation.com/docs/react/guides/configuring`
       );
     }
 
