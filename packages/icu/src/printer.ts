@@ -98,7 +98,11 @@ function findBraceSyntaxEnd(message: string, index: number): number {
  * nested in plural tags. FormatJS 3.5.x later adopted the same syntax-run
  * strategy to make printer output round-trippable.
  */
-function escapeMessage(message: string, isInPlural = false): string {
+function escapeMessage(
+  message: string,
+  isInPlural = false,
+  escapeTags = true
+): string {
   let result = '';
   let literalStart = 0;
   let quotedStart = -1;
@@ -109,7 +113,8 @@ function escapeMessage(message: string, isInPlural = false): string {
 
     const literal = message.slice(literalStart, quotedStart);
     result += literal;
-    if (literal.endsWith("'")) result += "'";
+    const trailingApostrophes = literal.match(/'+$/u)?.[0].length ?? 0;
+    if (trailingApostrophes % 2 === 1) result += "'";
     result += quoteSyntaxToken(message.slice(quotedStart, quotedEnd));
     literalStart = quotedEnd;
     quotedStart = -1;
@@ -133,7 +138,7 @@ function escapeMessage(message: string, isInPlural = false): string {
       index = end - 1;
     } else if (character === '}') {
       quoteToken(index, index + 1);
-    } else if (isTagSyntaxStart(message, index)) {
+    } else if (escapeTags && isTagSyntaxStart(message, index)) {
       const end = findTagSyntaxEnd(message, index);
       quoteToken(index, end);
       index = end - 1;
@@ -185,7 +190,9 @@ function printNumberSkeletonToken(
 }
 
 function printStyle(style: SimpleFormatStyle): string {
-  if (typeof style === 'string') return escapeMessage(style);
+  // Tag syntax is only meaningful in message literals. Escaping `<a` inside a
+  // named style changes the style value on every parse/print cycle.
+  if (typeof style === 'string') return escapeMessage(style, false, false);
   if (style.type === SKELETON_TYPE.dateTime) return `::${style.pattern}`;
   return `::${style.tokens.map(printNumberSkeletonToken).join(' ')}`;
 }

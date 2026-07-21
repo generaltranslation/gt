@@ -6,7 +6,7 @@
 
 import { performance } from 'node:perf_hooks';
 import { describe, expect, it } from 'vitest';
-import { parse, SKELETON_TYPE, TYPE } from '../index';
+import { parse, SKELETON_TYPE, TYPE, type Location } from '../index';
 
 describe('parse', () => {
   it('parses literals, arguments, and exact source locations', () => {
@@ -101,6 +101,83 @@ describe('parse', () => {
     expect(
       Object.hasOwn((ast[0] as { options: object }).options, '__proto__')
     ).toBe(true);
+  });
+
+  it('does not require Object.fromEntries to build selector options', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(Object, 'fromEntries');
+    Object.defineProperty(Object, 'fromEntries', {
+      configurable: true,
+      value: undefined,
+    });
+
+    try {
+      const [element] = parse(
+        '{value, select, __proto__ {proto} other {fallback}}'
+      );
+      expect(element).toMatchObject({ type: TYPE.select });
+      if (element.type === TYPE.select) {
+        expect(Object.hasOwn(element.options, '__proto__')).toBe(true);
+      }
+    } finally {
+      if (descriptor) Object.defineProperty(Object, 'fromEntries', descriptor);
+    }
+  });
+
+  it('does not require the parser built-ins ponyfilled by FormatJS', () => {
+    const descriptors = {
+      codePointAt: Object.getOwnPropertyDescriptor(
+        String.prototype,
+        'codePointAt'
+      ),
+      fromCodePoint: Object.getOwnPropertyDescriptor(String, 'fromCodePoint'),
+      isSafeInteger: Object.getOwnPropertyDescriptor(Number, 'isSafeInteger'),
+      startsWith: Object.getOwnPropertyDescriptor(
+        String.prototype,
+        'startsWith'
+      ),
+      trimEnd: Object.getOwnPropertyDescriptor(String.prototype, 'trimEnd'),
+      trimStart: Object.getOwnPropertyDescriptor(String.prototype, 'trimStart'),
+    };
+    let ast: ReturnType<typeof parse> | undefined;
+
+    try {
+      for (const [owner, key] of [
+        [String.prototype, 'codePointAt'],
+        [String, 'fromCodePoint'],
+        [Number, 'isSafeInteger'],
+        [String.prototype, 'startsWith'],
+        [String.prototype, 'trimEnd'],
+        [String.prototype, 'trimStart'],
+      ] as const) {
+        Object.defineProperty(owner, key, {
+          configurable: true,
+          value: undefined,
+        });
+      }
+      ast = parse(
+        '😀 {n, plural, one {one} other {# items}} {d, time, ::j  }',
+        { locale: new Intl.Locale('en-US') }
+      );
+    } finally {
+      for (const [owner, key] of [
+        [String.prototype, 'codePointAt'],
+        [String, 'fromCodePoint'],
+        [Number, 'isSafeInteger'],
+        [String.prototype, 'startsWith'],
+        [String.prototype, 'trimEnd'],
+        [String.prototype, 'trimStart'],
+      ] as const) {
+        const descriptor = descriptors[key];
+        if (descriptor) Object.defineProperty(owner, key, descriptor);
+      }
+    }
+
+    expect(ast).toMatchObject([
+      { type: TYPE.literal, value: '😀 ' },
+      { type: TYPE.plural, value: 'n' },
+      { type: TYPE.literal, value: ' ' },
+      { type: TYPE.time, value: 'd' },
+    ]);
   });
 
   it('parses cardinal plurals, exact matches, offsets, and pound signs', () => {
@@ -320,6 +397,44 @@ describe('parse', () => {
     expect(() =>
       parse('{x, select, one {One}}', { requiresOtherClause: false })
     ).not.toThrow();
+  });
+
+  it.each([
+    ['00A0', '\u00A0'],
+    ['1680', '\u1680'],
+    ['2000', '\u2000'],
+    ['2007', '\u2007'],
+    ['202F', '\u202F'],
+    ['205F', '\u205F'],
+    ['3000', '\u3000'],
+  ])(
+    'does not consume Unicode space U+%s as ICU grammar whitespace',
+    (_codePoint, space) => {
+      const [element] = parse(`{n, number, ${space}percent}`);
+      expect(element).toMatchObject({
+        type: TYPE.number,
+        style: `${space}percent`,
+      });
+    }
+  );
+
+  it('preserves FormatJS SyntaxError metadata', () => {
+    expect.assertions(4);
+    try {
+      parse('{name');
+    } catch (error) {
+      const syntaxError = error as SyntaxError & {
+        location?: Location;
+        originalMessage?: string;
+      };
+      expect(syntaxError).toBeInstanceOf(SyntaxError);
+      expect(syntaxError.message).toBe('EXPECT_ARGUMENT_CLOSING_BRACE');
+      expect(syntaxError.location).toEqual({
+        start: { offset: 0, line: 1, column: 1 },
+        end: { offset: 5, line: 1, column: 6 },
+      });
+      expect(syntaxError.originalMessage).toBe('{name');
+    }
   });
 
   it.each([

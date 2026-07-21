@@ -10,7 +10,7 @@ const SIGNIFICANT_PRECISION = /^(@+)?(\+|#+)?[rs]?$/;
 const INTEGER_WIDTH = /^(?:(\*)(0+)|(#+)(0+)|(0+))$/;
 const NUMBER_SKELETON_WHITE_SPACE = /[\t-\r \x85\u200E\u200F\u2028\u2029]+/u;
 const DATE_TIME_FIELD =
-  /(?:[Eec]{1,6}|G{1,5}|[Qq]{1,5}|(?:[yYur]+|U{1,5})|[ML]{1,5}|d{1,2}|D{1,3}|F|[abB]{1,5}|[hHkKjJC]{1,2}|w{1,2}|W|m{1,2}|s{1,2}|[SA]+|[zZOvVxX]{1,4})(?=([^']*'[^']*')*[^']*$)/g;
+  /(?:[Eec]{1,6}|G{1,5}|[Qq]{1,5}|(?:[yYur]+|U{1,5})|[ML]{1,5}|d{1,2}|D{1,3}|F|[abB]{1,5}|[hHkK]{1,2}|w{1,2}|W|m{1,2}|s{1,2}|[zZOvVxX]{1,4})(?=([^']*'[^']*')*[^']*$)/g;
 
 type ModernNumberFormatOptions = ExtendedNumberFormatOptions & {
   roundingMode?:
@@ -142,11 +142,10 @@ export function parseNumberSkeletonOptions(
         result.currencyDisplay = 'symbol';
         continue;
       case 'scale':
-        requireOption(token);
-        result.scale = Number(option);
-        if (!Number.isFinite(result.scale)) {
-          throw new SyntaxError(`Invalid scale value: ${option}.`);
-        }
+        // intl-messageformat's pinned skeleton parser used parseFloat without
+        // validating the result. Preserve its handling of partial and absent
+        // scale options; falsy/NaN scales are treated as unscaled downstream.
+        result.scale = parseFloat(option ?? '');
         continue;
       case 'integer-width':
         requireOption(token);
@@ -233,7 +232,7 @@ function applyConciseScientific(
   result: ModernNumberFormatOptions,
   source: string
 ): boolean {
-  if (!source.startsWith('E')) return false;
+  if (source[0] !== 'E') return false;
   const match = /^(E{1,2})(\+!|\+\?)?(0+)$/u.exec(source);
   if (!match) {
     throw new SyntaxError('Malformed concise eng/scientific notation');
@@ -307,7 +306,7 @@ function parseSignificantPrecision(
 
   if (required) result.minimumSignificantDigits = required.length;
   if (optional === '+') return result;
-  if (optional.startsWith('#')) {
+  if (optional[0] === '#') {
     result.maximumSignificantDigits = required.length + optional.length;
   } else if (required) {
     result.maximumSignificantDigits = required.length;
@@ -417,29 +416,67 @@ export function resolveLocaleHourSkeleton(
 ): string {
   if (!locale || !/[jJ]/u.test(skeleton)) return skeleton;
 
-  const resolved = new Intl.DateTimeFormat(locale.toString(), {
-    hour: 'numeric',
-  }).resolvedOptions();
-  const localeHourSymbol =
-    resolved.hourCycle === 'h11'
-      ? 'K'
-      : resolved.hourCycle === 'h12'
-        ? 'h'
-        : resolved.hourCycle === 'h24'
-          ? 'k'
-          : 'H';
-  return skeleton.replace(/[jJ]+/gu, (field) => {
-    const hourLength = field.length % 2 === 0 ? 2 : 1;
-    if (field[0] === 'J') return 'H'.repeat(hourLength);
+  const localeHourSymbol = getLocaleHourSymbol(locale);
+  let resolvedSkeleton = '';
 
-    const hour = localeHourSymbol.repeat(hourLength);
-    if (localeHourSymbol !== 'h' && localeHourSymbol !== 'K') {
-      return hour;
+  // Ported from FormatJS's getBestPattern scanner. Its ordering is observable
+  // in the public AST and, for mixed j/J/hour runs, changes Intl options and
+  // rendered output. In particular, only identical j runs are coalesced and
+  // every J maps independently to H.
+  for (let index = 0; index < skeleton.length; index += 1) {
+    const character = skeleton[index];
+    if (character === 'j') {
+      let extraLength = 0;
+      while (skeleton[index + 1] === character) {
+        extraLength += 1;
+        index += 1;
+      }
+      let hourLength = 1 + (extraLength & 1);
+      let dayPeriodLength = extraLength < 2 ? 1 : 3 + (extraLength >> 1);
+      if (localeHourSymbol === 'H' || localeHourSymbol === 'k') {
+        dayPeriodLength = 0;
+      }
+      while (dayPeriodLength > 0) {
+        resolvedSkeleton += 'a';
+        dayPeriodLength -= 1;
+      }
+      while (hourLength > 0) {
+        resolvedSkeleton = localeHourSymbol + resolvedSkeleton;
+        hourLength -= 1;
+      }
+    } else if (character === 'J') {
+      resolvedSkeleton += 'H';
+    } else {
+      resolvedSkeleton += character;
     }
-    const dayPeriod =
-      field.length <= 2 ? 'a' : field.length <= 4 ? 'aaaa' : 'aaaaa';
-    return `${hour}${dayPeriod}`;
-  });
+  }
+
+  return resolvedSkeleton;
+}
+
+function getLocaleHourSymbol(locale: Intl.Locale): 'h' | 'H' | 'K' | 'k' {
+  const localeWithHourCycles = locale as Intl.Locale & {
+    hourCycle?: Intl.LocaleHourCycleKey;
+    hourCycles?: Intl.LocaleHourCycleKey[];
+  };
+  const resolvedHourCycle =
+    localeWithHourCycles.hourCycle ?? localeWithHourCycles.hourCycles?.[0];
+  const hourCycle =
+    resolvedHourCycle ??
+    new Intl.DateTimeFormat(locale.toString(), {
+      hour: 'numeric',
+    }).resolvedOptions().hourCycle;
+
+  switch (hourCycle) {
+    case 'h11':
+      return 'K';
+    case 'h12':
+      return 'h';
+    case 'h24':
+      return 'k';
+    default:
+      return 'H';
+  }
 }
 
 function unsupported(field: string, kind: string): RangeError {

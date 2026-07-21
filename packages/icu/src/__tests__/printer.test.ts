@@ -100,6 +100,8 @@ describe('printAST', () => {
     ['Hello {name}', 'Hello {name}'],
     ['{n, number}', '{n, number}'],
     ['{n, number, percent}', '{n, number, percent}'],
+    ['{n, number, custom<a}', '{n, number, custom<a}'],
+    ['{n, number, custom<a>}', '{n, number, custom<a>}'],
     [
       '{n, number, ::compact-short currency/GBP}',
       '{n, number, ::compact-short currency/GBP}',
@@ -148,10 +150,28 @@ describe('printAST', () => {
     "{count, plural, other {<b>'##'</b>}}",
     '{count, plural, one {{status, select, yes {{name}} other {none}}} other {No}}',
     "'{isn''t}'",
+    "{_gt_1,select,other{}}'''{}'#",
+    "{_gt_1,select,other{Ada}}''}}",
+    '{n, number, custom<a}',
+    '{n, number, custom<a>}',
   ])('preserves the AST through print and reparse for %j', (message) => {
     const original = parse(message);
     expect(parse(printAST(original))).toEqual(original);
   });
+
+  it.each(['custom<a', 'custom<a>', 'custom</a>'])(
+    'prints named style %j idempotently',
+    (style) => {
+      const original = parse(`{n, number, ${style}}`);
+      const once = printAST(original);
+      const twice = printAST(parse(once));
+      const threeTimes = printAST(parse(twice));
+
+      expect(twice).toBe(once);
+      expect(threeTimes).toBe(once);
+      expect(parse(once)).toEqual(original);
+    }
+  );
 
   it.each(GENERATED_ROUND_TRIP_MESSAGES)(
     'preserves the AST through print and reparse for %j',

@@ -49,6 +49,36 @@ describe('formatMessage', () => {
     );
   });
 
+  it('reads inherited and proxy-backed variables like intl-messageformat', () => {
+    const inherited = Object.create({
+      name: 'Ada',
+      count: '2',
+      kind: 'yes',
+    }) as Record<string, unknown>;
+
+    expect(formatMessage('Hello {name}', 'en', inherited)).toBe('Hello Ada');
+    expect(formatMessage('{count, number}', 'en', inherited)).toBe('2');
+    expect(
+      formatMessage(
+        '{count, plural, one {one} other {# items}}',
+        'en',
+        inherited
+      )
+    ).toBe('2 items');
+    expect(
+      formatMessage('{kind, select, yes {yes} other {other}}', 'en', inherited)
+    ).toBe('yes');
+
+    const proxy = new Proxy<Record<string, unknown>>(
+      {},
+      {
+        get: (_target, key) => (key === 'name' ? 'Grace' : undefined),
+        has: (_target, key) => key === 'name',
+      }
+    );
+    expect(formatMessage('Hello {name}', 'en', proxy)).toBe('Hello Grace');
+  });
+
   it('does not require the ES2022 Object.hasOwn API', () => {
     const descriptor = Object.getOwnPropertyDescriptor(Object, 'hasOwn');
     Object.defineProperty(Object, 'hasOwn', {
@@ -220,6 +250,16 @@ describe('formatMessage', () => {
     );
   });
 
+  it.each([
+    ['scale', 3, '3'],
+    ['scale/0x10', 3, '3'],
+    ['scale/2foo', 3, '6'],
+  ])('preserves FormatJS parsing of ::%s', (skeleton, value, expected) => {
+    expect(
+      formatMessage(`{n, number, ::${skeleton}}`, 'en-US', { n: value })
+    ).toBe(expected);
+  });
+
   it('formats minimum integer-width skeletons', () => {
     expect(
       formatMessage('{n, number, ::integer-width/*000}', 'en', { n: 7 })
@@ -303,6 +343,38 @@ describe('formatMessage', () => {
     );
   });
 
+  it.each([
+    ['en-US', 'Ch', '2 PM'],
+    ['en-US', 'hC', '2 PM'],
+    ['en-US', 'Cj', '2 PM'],
+    ['en-US', 'Jj', '02 PM'],
+    ['en-US', 'jJ', '2 PM'],
+    ['de-DE', 'hj', '14 Uhr'],
+  ])(
+    'preserves FormatJS hour skeleton ordering for %s ::%s',
+    (locale, skeleton, expected) => {
+      const value = new Date(2020, 4, 6, 14, 3, 2);
+      expect(
+        formatMessage(`{d, time, ::${skeleton}}`, locale, { d: value })
+      ).toBe(expected);
+    }
+  );
+
+  it('honors Unicode region overrides and sparse locale fallbacks', () => {
+    const value = new Date(2020, 4, 6, 7, 3, 2);
+    expect(
+      formatMessage('{d, time, ::j}', 'en-u-rg-gbzzzz', { d: value })
+    ).toBe('07');
+    expect(
+      formatMessage('{d, time, ::j}', 'en-GB-u-rg-uszzzz', { d: value })
+    ).toBe('7 am');
+
+    const locales: string[] = [];
+    locales[1] = 'fr-FR';
+    expect(formatMessage('{d, time, ::j}', locales, { d: value })).toBe('07 h');
+    expect(() => formatMessage('{d, time, ::j}', [], { d: value })).toThrow();
+  });
+
   it.each(['C', 'S', 'A'])(
     'preserves FormatJS handling of the %s date/time skeleton field',
     (field) => {
@@ -367,6 +439,36 @@ describe('formatMessage', () => {
         DateTimeFormat: { value: originalDateTimeFormat },
         PluralRules: { value: originalPluralRules },
       });
+    }
+  });
+
+  it('preserves the actionable missing-Intl.PluralRules error contract', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(Intl, 'PluralRules');
+    Object.defineProperty(Intl, 'PluralRules', {
+      configurable: true,
+      value: undefined,
+    });
+
+    try {
+      expect.assertions(4);
+      formatMessage('{count, plural, one {one} other {other}}', 'en', {
+        count: 2,
+      });
+    } catch (error) {
+      const formatError = error as Error & {
+        code?: string;
+        originalMessage?: string;
+      };
+      expect(formatError.message).toContain(
+        'Intl.PluralRules is not available'
+      );
+      expect(formatError.message).toContain('@formatjs/intl-pluralrules');
+      expect(formatError.code).toBe('MISSING_INTL_API');
+      expect(formatError.originalMessage).toBe(
+        '{count, plural, one {one} other {other}}'
+      );
+    } finally {
+      if (descriptor) Object.defineProperty(Intl, 'PluralRules', descriptor);
     }
   });
 

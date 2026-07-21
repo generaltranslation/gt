@@ -28,4 +28,10 @@ describe('formatMessage', () => {
       )
     ).toBe('leading');
   });
+
+  it('formats inherited variables instead of returning raw ICU', () => {
+    const variables = Object.create({ name: 'Ada' }) as Record<string, string>;
+
+    expect(formatMessage('Hello {name}', variables, 'en-US')).toBe('Hello Ada');
+  });
 });

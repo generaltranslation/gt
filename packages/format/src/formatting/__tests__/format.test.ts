@@ -84,6 +84,50 @@ describe('_formatMessageICU', () => {
     ).toBe('123,456,789,012,345,678,901,234,567,890');
   });
 
+  it('preserves inherited and proxy-backed variables through the public boundary', () => {
+    const inherited = Object.create({ name: 'Ada', count: '2' });
+    expect(
+      publicFormatMessage('Hello {name}: {count, plural, other {# items}}', {
+        locales: 'en',
+        variables: inherited,
+      })
+    ).toBe('Hello Ada: 2 items');
+
+    const proxy = new Proxy(
+      {},
+      {
+        get: (_target, key) => (key === 'name' ? 'Grace' : undefined),
+        has: (_target, key) => key === 'name',
+      }
+    );
+    expect(
+      publicFormatMessage('Hello {name}', {
+        locales: 'en',
+        variables: proxy,
+      })
+    ).toBe('Hello Grace');
+  });
+
+  it.each([
+    ['00A0', '\u00A0'],
+    ['1680', '\u1680'],
+    ['2000', '\u2000'],
+    ['2007', '\u2007'],
+    ['202F', '\u202F'],
+    ['205F', '\u205F'],
+    ['3000', '\u3000'],
+  ])(
+    'preserves FormatJS named-style behavior after Unicode space U+%s',
+    (_codePoint, space) => {
+      expect(
+        publicFormatMessage(`{n, number, ${space}percent}`, {
+          locales: 'en-US',
+          variables: { n: 2 },
+        })
+      ).toBe('2');
+    }
+  );
+
   it('passes date skeletons through the package boundary', () => {
     const value = new Date('2020-05-06T14:03:02Z');
     expect(
@@ -103,6 +147,49 @@ describe('_formatMessageICU', () => {
     }
   });
 
+  it.each([
+    ['en-US', 'Ch', '2 PM'],
+    ['en-US', 'Cj', '2 PM'],
+    ['en-US', 'Jj', '02 PM'],
+    ['de-DE', 'hj', '14 Uhr'],
+  ])(
+    'preserves FormatJS hour skeleton %s ::%s through the public boundary',
+    (locale, skeleton, expected) => {
+      const value = new Date(2020, 4, 6, 14, 3, 2);
+      expect(
+        publicFormatMessage(`{value, time, ::${skeleton}}`, {
+          locales: locale,
+          variables: { value },
+        })
+      ).toBe(expected);
+    }
+  );
+
+  it('preserves regional hour cycles and sparse locale fallbacks', () => {
+    const value = new Date(2020, 4, 6, 7, 3, 2);
+    expect(
+      publicFormatMessage('{value, time, ::j}', {
+        locales: 'en-u-rg-gbzzzz',
+        variables: { value },
+      })
+    ).toBe('07');
+
+    const locales: string[] = [];
+    locales[1] = 'fr-FR';
+    expect(
+      publicFormatMessage('{value, time, ::j}', {
+        locales,
+        variables: { value },
+      })
+    ).toBe('07 h');
+    expect(() =>
+      publicFormatMessage('{value, time, ::j}', {
+        locales: [],
+        variables: { value },
+      })
+    ).toThrow();
+  });
+
   it('preserves locale arrays through the package boundary', () => {
     expect(
       _formatMessageICU('{value, number}', ['de-DE', 'en-US'], {
@@ -115,6 +202,24 @@ describe('_formatMessageICU', () => {
     expect(() => _formatMessageICU('Hello {name}', 'en-US')).toThrow(
       'variable "name" was not provided'
     );
+  });
+
+  it('preserves FormatJS SyntaxError metadata through the public boundary', () => {
+    expect.assertions(3);
+    try {
+      publicFormatMessage('{name', { locales: 'en-US' });
+    } catch (error) {
+      const syntaxError = error as SyntaxError & {
+        location?: unknown;
+        originalMessage?: string;
+      };
+      expect(syntaxError.message).toBe('EXPECT_ARGUMENT_CLOSING_BRACE');
+      expect(syntaxError.location).toEqual({
+        start: { offset: 0, line: 1, column: 1 },
+        end: { offset: 5, line: 1, column: 6 },
+      });
+      expect(syntaxError.originalMessage).toBe('{name');
+    }
   });
 
   it.each([

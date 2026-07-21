@@ -141,6 +141,21 @@ describe('condenseVars printer regression', () => {
       "{_gt_1}''s book",
     ],
     [
+      'even apostrophe run before quoted braces',
+      "{_gt_1,select,other{}}'''{}'#",
+      "{_gt_1}'''{}'#",
+    ],
+    [
+      'even apostrophe run before closing braces',
+      "{_gt_1, select, other {Ada}}''}}",
+      "{_gt_1}'''}}'",
+    ],
+    [
+      'tag-like text in a named style',
+      '{_gt_1, select, other {Ada}} {n, number, custom<a>}',
+      '{_gt_1} {n, number, custom<a>}',
+    ],
+    [
       'escaped pound inside plural',
       "{count, plural, other {'#' # {_gt_1, select, other {}}}}",
       "{count,plural,other{'#' # {_gt_1}}}",
@@ -185,5 +200,14 @@ describe('condenseVars printer regression', () => {
     expect(formatMessage(condensed, 'en', { _gt_1: 'Ada', count: 7 })).toBe(
       'Ada ##'
     );
+  });
+
+  it.each([
+    ["{_gt_1,select,other{}}'''{}'#", "Ada'{}#"],
+    ["{_gt_1, select, other {Ada}}''}}", "Ada'}}"],
+  ])('preserves apostrophe-boundary rendering for %j', (message, expected) => {
+    const condensed = condenseVars(message);
+
+    expect(formatMessage(condensed, 'en', { _gt_1: 'Ada' })).toBe(expected);
   });
 });

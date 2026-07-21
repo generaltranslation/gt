@@ -4,6 +4,7 @@
  */
 
 import { parse } from './parser';
+import { libraryDefaultLocale } from './settings';
 import {
   SKELETON_TYPE,
   TYPE,
@@ -56,6 +57,7 @@ type FormattedPart = {
 };
 
 type FormatContext = {
+  message: string;
   locales: string | string[];
   variables: MessageVariables;
   numberFormats?: Map<string, Intl.NumberFormat>;
@@ -65,12 +67,12 @@ type FormatContext = {
 
 export function formatMessage(
   message: string,
-  locales: string | string[] = 'en',
+  locales: string | string[] = libraryDefaultLocale,
   variables: MessageVariables = {}
 ): unknown {
   const locale = resolveLocale(locales);
   const ast = parse(message, { locale });
-  return collapseParts(formatElements(ast, { locales, variables }));
+  return collapseParts(formatElements(ast, { message, locales, variables }));
 }
 
 function formatElements(
@@ -199,7 +201,11 @@ function hasOwn(object: object, key: PropertyKey): boolean {
 }
 
 function requireVariable(variables: MessageVariables, name: string): unknown {
-  if (!hasOwn(variables, name)) {
+  // intl-messageformat intentionally used `name in values`, so inherited and
+  // proxy-backed records are observable through the public formatting API.
+  // Selector option lookup remains own-property-only to avoid prototype
+  // collisions with values such as "constructor" and "toString".
+  if (!(name in variables)) {
     throw new Error(`The ICU message variable "${name}" was not provided.`);
   }
   return variables[name];
@@ -291,6 +297,15 @@ function getPluralRules(
   context: FormatContext,
   type: Intl.PluralRuleType
 ): Intl.PluralRules {
+  if (typeof Intl.PluralRules !== 'function') {
+    const error = new Error(
+      'Intl.PluralRules is not available in this environment.\n' +
+        'Try polyfilling it using "@formatjs/intl-pluralrules"\n'
+    ) as Error & { code: string; originalMessage: string };
+    error.code = 'MISSING_INTL_API';
+    error.originalMessage = context.message;
+    throw error;
+  }
   const cache = (context.pluralRules ??= new Map());
   return getCachedFormatter(cache, type, () => {
     return new Intl.PluralRules(context.locales, { type });
@@ -319,7 +334,14 @@ function subtractOffset(value: PluralValue, offset: number): PluralValue {
 
 function toPluralRulesNumber(value: PluralValue): number {
   const numberValue = Number(value);
-  if (typeof value === 'bigint' && !Number.isSafeInteger(numberValue)) {
+  if (
+    typeof value === 'bigint' &&
+    !(
+      Number.isFinite(numberValue) &&
+      Math.floor(numberValue) === numberValue &&
+      Math.abs(numberValue) <= 0x1fffffffffffff
+    )
+  ) {
     throw new RangeError(
       `Cannot select a plural category for bigint ${value} outside the safe integer range.`
     );
@@ -329,7 +351,7 @@ function toPluralRulesNumber(value: PluralValue): number {
 
 function hasPluralCategoryOption(options: Record<string, unknown>): boolean {
   return Object.keys(options).some(
-    (selector) => selector !== 'other' && !selector.startsWith('=')
+    (selector) => selector !== 'other' && selector[0] !== '='
   );
 }
 
@@ -349,9 +371,10 @@ function invalidSelection(
 
 function resolveLocale(locales: string | string[]): Intl.Locale | undefined {
   if (typeof Intl.Locale === 'undefined') return undefined;
+  const supported = Intl.NumberFormat.supportedLocalesOf(locales)[0];
   const requested = typeof locales === 'string' ? locales : locales[0];
-  if (!requested) return undefined;
-  const supported =
-    Intl.NumberFormat.supportedLocalesOf(locales)[0] ?? requested;
-  return new Intl.Locale(supported);
+  // Preserve intl-messageformat's behavior for empty locale lists: allowing
+  // Intl.Locale to reject an absent fallback avoids silently switching to the
+  // host locale. Resolving the full list first also supports sparse arrays.
+  return new Intl.Locale(supported ?? (requested as string));
 }

@@ -97,6 +97,58 @@ const DATE_RUNTIME_CASES = NUMBER_LOCALES.flatMap((locale) =>
   ].map((message) => ({ locale, message, value: DATE_VALUE }))
 );
 
+const HOUR_SKELETON_RUNTIME_CASES = [
+  ...['Ch', 'hC', 'Cj', 'Jj', 'jJ'].map((skeleton) => ({
+    locale: 'en-US',
+    skeleton,
+  })),
+  { locale: 'de-DE', skeleton: 'hj' },
+  { locale: 'en-u-rg-gbzzzz', skeleton: 'j' },
+  { locale: 'en-GB-u-rg-uszzzz', skeleton: 'j' },
+  { locale: 'und-GB', skeleton: 'j' },
+] as const;
+const HOUR_SKELETON_AST_CASES = [
+  ...HOUR_SKELETON_RUNTIME_CASES,
+  { locale: 'en-US', skeleton: 'JJJ' },
+  { locale: 'en-US', skeleton: 'Mj' },
+] as const;
+const HOUR_SKELETON_SYMBOLS = ['h', 'H', 'k', 'K', 'j', 'J', 'C'] as const;
+const GENERATED_HOUR_SKELETONS = [1, 2, 3].flatMap((length) =>
+  Array.from(
+    { length: HOUR_SKELETON_SYMBOLS.length ** length },
+    (_, combination) => {
+      let cursor = combination;
+      return Array.from({ length }, () => {
+        const symbol =
+          HOUR_SKELETON_SYMBOLS[cursor % HOUR_SKELETON_SYMBOLS.length];
+        cursor = Math.floor(cursor / HOUR_SKELETON_SYMBOLS.length);
+        return symbol;
+      }).join('');
+    }
+  )
+);
+const GENERATED_HOUR_SKELETON_CASES = [
+  'en-US',
+  'de-DE',
+  'ar-EG',
+  'ja-JP',
+  'en-u-rg-gbzzzz',
+  'en-GB-u-rg-uszzzz',
+  'und-GB',
+].flatMap((locale) =>
+  GENERATED_HOUR_SKELETONS.map((skeleton) => ({ locale, skeleton }))
+);
+
+const NON_GRAMMAR_SPACES = [
+  '\u00A0',
+  '\u1680',
+  '\u2000',
+  '\u2007',
+  '\u202F',
+  '\u205F',
+  '\u3000',
+] as const;
+
 const SIMPLE_RUNTIME_CASES = [
   {
     locale: 'en-US',
@@ -141,6 +193,8 @@ const PARSER_MESSAGES = [
   '{value, time, ::C}',
   '{value, time, ::S}',
   '{value, time, ::A}',
+  '{value, time, ::jh}',
+  '{value, time, ::hj}',
   ...Array.from(
     { length: 128 },
     (_, index) => `prefix ${index} {value${index}} suffix ${127 - index}`
@@ -173,10 +227,10 @@ const formatJsFormatters = new Map<string, IntlMessageFormat>();
 
 function formatWithFormatJs(
   message: string,
-  locale: string,
+  locale: string | string[],
   values: Record<string, unknown>
 ): unknown {
-  const key = `${locale}\u0000${message}`;
+  const key = `${JSON.stringify(locale)}\u0000${message}`;
   let formatter = formatJsFormatters.get(key);
   if (!formatter) {
     formatter = new IntlMessageFormat(message, locale);
@@ -216,6 +270,90 @@ describe('live FormatJS runtime compatibility', () => {
     }
   );
 
+  it.each(HOUR_SKELETON_RUNTIME_CASES)(
+    'matches locale-aware hour skeleton ::$skeleton for $locale',
+    ({ locale, skeleton }) => {
+      const message = `{value, time, ::${skeleton}}`;
+      const values = { value: new Date(2020, 4, 6, 14, 3, 2) };
+      expect(formatMessage(message, locale, values)).toEqual(
+        formatWithFormatJs(message, locale, values)
+      );
+    }
+  );
+
+  it.each(GENERATED_HOUR_SKELETON_CASES)(
+    'matches generated hour skeleton ::$skeleton for $locale',
+    ({ locale, skeleton }) => {
+      const message = `{value, time, ::${skeleton}}`;
+      const values = { value: new Date(2020, 4, 6, 19, 3, 2) };
+      expect(formatMessage(message, locale, values)).toEqual(
+        formatWithFormatJs(message, locale, values)
+      );
+
+      const localeObject = new Intl.Locale(locale);
+      expect(parse(message, { locale: localeObject })).toEqual(
+        formatJsParse(message, { locale: localeObject })
+      );
+    }
+  );
+
+  it.each(NON_GRAMMAR_SPACES)(
+    'matches named-style behavior after non-grammar space %j',
+    (space) => {
+      const message = `{value, number, ${space}percent}`;
+      const values = { value: 2 };
+      expect(formatMessage(message, 'en-US', values)).toEqual(
+        formatWithFormatJs(message, 'en-US', values)
+      );
+    }
+  );
+
+  it.each(['scale', 'scale/0x10', 'scale/2foo'])(
+    'matches FormatJS parsing of number skeleton ::%s',
+    (skeleton) => {
+      const message = `{value, number, ::${skeleton}}`;
+      const values = { value: 3 };
+      expect(formatMessage(message, 'en-US', values)).toEqual(
+        formatWithFormatJs(message, 'en-US', values)
+      );
+    }
+  );
+
+  it('matches inherited and proxy-backed variable lookup', () => {
+    const inherited = Object.create({ name: 'Ada', count: '2' }) as Record<
+      string,
+      unknown
+    >;
+    const message = 'Hello {name}: {count, plural, other {# items}}';
+    expect(formatMessage(message, 'en', inherited)).toEqual(
+      formatWithFormatJs(message, 'en', inherited)
+    );
+
+    const proxy = new Proxy<Record<string, unknown>>(
+      {},
+      {
+        get: (_target, key) => (key === 'name' ? 'Grace' : undefined),
+        has: (_target, key) => key === 'name',
+      }
+    );
+    expect(formatMessage('Hello {name}', 'en', proxy)).toEqual(
+      formatWithFormatJs('Hello {name}', 'en', proxy)
+    );
+  });
+
+  it('matches empty and sparse locale-list behavior', () => {
+    const message = '{value, time, ::j}';
+    const values = { value: new Date(2020, 4, 6, 7, 3, 2) };
+    const sparseLocales: string[] = [];
+    sparseLocales[1] = 'fr-FR';
+
+    expect(formatMessage(message, sparseLocales, values)).toEqual(
+      formatWithFormatJs(message, sparseLocales, values)
+    );
+    expect(() => formatMessage(message, [], values)).toThrow();
+    expect(() => formatWithFormatJs(message, [], values)).toThrow();
+  });
+
   it.each(SIMPLE_RUNTIME_CASES)(
     'matches argument/select behavior for $message',
     ({ locale, message, values }) => {
@@ -246,6 +384,42 @@ describe('live FormatJS parser compatibility', () => {
     (message) => {
       expect(() => parse(message)).toThrow();
       expect(() => formatJsParse(message)).toThrow();
+    }
+  );
+
+  it.each(HOUR_SKELETON_AST_CASES)(
+    'matches the locale-aware AST for ::$skeleton in $locale',
+    ({ locale, skeleton }) => {
+      const message = `{value, time, ::${skeleton}}`;
+      const localeObject = new Intl.Locale(locale);
+      expect(parse(message, { locale: localeObject })).toEqual(
+        formatJsParse(message, { locale: localeObject })
+      );
+    }
+  );
+
+  it.each(['{', '{name', '{value,}', '<b>unterminated'])(
+    'matches SyntaxError metadata for %j',
+    (message) => {
+      let formatJsError: unknown;
+      let replacementError: unknown;
+      try {
+        formatJsParse(message);
+      } catch (error) {
+        formatJsError = error;
+      }
+      try {
+        parse(message);
+      } catch (error) {
+        replacementError = error;
+      }
+
+      expect(replacementError).toMatchObject({
+        message: (formatJsError as Error).message,
+        location: (formatJsError as Error & { location: unknown }).location,
+        originalMessage: (formatJsError as Error & { originalMessage: string })
+          .originalMessage,
+      });
     }
   );
 });
