@@ -27,7 +27,7 @@ jobs:
           status=''
           # Read the token through stdin so it never appears in process arguments.
           if ! status="$(
-            curl --config - <<EOF
+            curl -q --config - <<EOF
           silent
           show-error
           proto = "=https"
