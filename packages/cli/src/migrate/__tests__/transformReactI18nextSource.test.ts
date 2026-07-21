@@ -541,6 +541,25 @@ describe('adversary M1: multi-element array namespaces', () => {
   });
 });
 
+describe('greptile: mixed static/dynamic key fallback arrays', () => {
+  it('skips a t() fallback array containing a dynamic element', () => {
+    // t(['key', dynamicVar]) cannot be remapped (the winning key is unknowable
+    // at build time) and gt-next's t() takes a single string key, so leaving
+    // the array call in the output emits code that breaks at the call site.
+    const { code, skipReasons } = transform(
+      [
+        "import { useTranslation } from 'react-i18next';",
+        'export function C({ k }: { k: string }) {',
+        '  const { t } = useTranslation();',
+        "  return <p>{t(['welcome', k])}</p>;",
+        '}',
+      ].join('\n')
+    );
+    expect(code).toBeNull();
+    expect(skipReasons.join(' ')).toMatch(/fallback array/i);
+  });
+});
+
 describe('adversary M2: bare i18n.changeLanguage references', () => {
   it('skips a bare i18n.changeLanguage reference (not a call)', () => {
     const { code, skipReasons } = transform(

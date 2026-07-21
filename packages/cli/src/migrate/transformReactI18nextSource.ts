@@ -379,6 +379,27 @@ export function transformReactI18nextSource(
     });
   }
 
+  // B3 (greptile round): a t() key fallback array with any non-literal element
+  // cannot be remapped. The winning key is unknowable at build time, and
+  // gt-next's t() takes a single string key, so leaving the array call in the
+  // output would emit code that breaks at the call site. All-literal arrays
+  // are resolved to their winning key by the mutation pass instead.
+  traverse(ast, {
+    CallExpression(path) {
+      const callee = path.node.callee;
+      if (!t.isIdentifier(callee) || !tBindings.has(callee.name)) return;
+      const keyArg = path.node.arguments[0];
+      if (
+        t.isArrayExpression(keyArg) &&
+        keyArg.elements.some((element) => !t.isStringLiteral(element))
+      ) {
+        skipReasons.push(
+          't() is called with a key fallback array containing a dynamic element; the winning key cannot be resolved at build time and gt-next t() takes a single string key, so convert this file manually'
+        );
+      }
+    },
+  });
+
   // B2: every reference to a react-i18next import local must be consumed by a
   // recognized conversion. A surviving reference (a thin wrapper hook
   // `return useTranslation(ns)`, a mixed file, a `const T = Trans`) would be
@@ -610,7 +631,9 @@ function remapTCalls(
         const keys = keyArg.elements.filter((e): e is t.StringLiteral =>
           t.isStringLiteral(e)
         );
-        if (keys.length !== keyArg.elements.length) return; // dynamic — leave it
+        // Arrays with a dynamic element never reach this pass: the B3 analysis
+        // scan skips the whole file (unreachable guard kept as defense).
+        if (keys.length !== keyArg.elements.length) return;
         const winner = keys.find((k) =>
           keyPresent(catalog, binding, k.value, config)
         );
@@ -622,7 +645,7 @@ function remapTCalls(
           todos.push({
             file,
             line: path.node.loc?.start.line,
-            reason: `key fallback array resolved to '${chosen.value}' at build time — verify that is the intended key`,
+            reason: `key fallback array resolved to '${chosen.value}' at build time; verify that is the intended key`,
           });
         }
         return;
