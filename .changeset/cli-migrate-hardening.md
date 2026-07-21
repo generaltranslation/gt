@@ -1,5 +1,6 @@
 ---
 'gt': patch
+'@generaltranslation/migrate': patch
 ---
 
 Harden `gt migrate` based on field testing against the official next-intl example app:

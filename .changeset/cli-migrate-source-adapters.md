@@ -1,5 +1,6 @@
 ---
 'gt': patch
+'@generaltranslation/migrate': patch
 ---
 
 `gt migrate` now supports `--from react-intl` and `--from react-i18next` in addition to `--from next-intl`, with sources handled by pluggable adapters (the value is validated against your installed dependencies).
