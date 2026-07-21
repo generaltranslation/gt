@@ -69,6 +69,15 @@ Turbo tasks: `build`, `test`, `lint`, `lint:fix`, `format`, `format:fix`, `trans
 - Do not use default exports.
 - Avoid `useEffect` in React code. Prefer derived state, event handlers, refs, or framework data-loading patterns; only use `useEffect` when synchronizing with an external system.
 
+## Canonical Library Defaults
+
+- Never repeat a library fallback as a literal in production source. Import the canonical constant so a default change propagates across every package. Before adding a fallback, search the owning package's settings and constants modules for an existing default.
+- The canonical locale is `libraryDefaultLocale`. Inside `packages/core`, import it from `src/settings/settings.ts`; inside `packages/format`, import its local copy from `src/settings/settings.ts` because core depends on format; everywhere else, import it from `generaltranslation/internal`.
+- Core's canonical request timeout is `defaultTimeout` in `packages/core/src/settings/settings.ts`. Its service endpoints are `defaultBaseUrl`, `defaultCacheUrl`, and `defaultRuntimeApiUrl` in `packages/core/src/settings/settingsUrls.ts`; other packages consume the endpoint defaults from `generaltranslation/internal`.
+- `packages/core` and `packages/format` intentionally define matching locale and timeout defaults to preserve their dependency direction. Keep the copies synchronized.
+- Tests, fixtures, examples, and documentation may use explicit values when the value itself matters to the scenario. Prefer canonical constants when testing default behavior.
+- Run `pnpm check:library-defaults` after changing a canonical default or adding fallback behavior. If a literal matches a canonical value but has a distinct meaning, add only a narrow, documented exception to `scripts/check-library-defaults.mjs`.
+
 ## Diagnostics and User-Facing Messages
 
 - Format new user-facing logs, warnings, errors, thrown error messages, and validation messages that report actionable problems with `createDiagnosticMessage()`. Import it from `generaltranslation/internal` outside `packages/core`; code inside `packages/core` can import the local implementation from `src/logging/diagnostics.ts`. Routine progress, status, and debug output does not need to be a diagnostic.
