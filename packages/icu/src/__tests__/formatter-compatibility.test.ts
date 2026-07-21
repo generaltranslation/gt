@@ -76,6 +76,8 @@ const NUMBER_SKELETONS: NumberCase[] = [
   { skeleton: 'scientific', options: { notation: 'scientific' } },
   { skeleton: 'engineering', options: { notation: 'engineering' } },
   { skeleton: 'notation-simple', options: { notation: 'standard' } },
+  // intl-messageformat treats a zero scale as absent.
+  { skeleton: 'scale/0', options: {}, scale: 1 },
   { skeleton: 'scale/0.01', options: {}, scale: 0.01 },
   { skeleton: 'scale/100', options: {}, scale: 100 },
   { skeleton: 'integer-width/*000', options: { minimumIntegerDigits: 3 } },
@@ -208,6 +210,11 @@ const DATE_SKELETONS: Array<{
   { skeleton: 'ss', options: { second: '2-digit' } },
   { skeleton: 'z', options: { timeZoneName: 'short' } },
   { skeleton: 'zzzz', options: { timeZoneName: 'long' } },
+  // The pinned FormatJS parser accepts these fields but omits them from the
+  // native options object.
+  { skeleton: 'C', options: {} },
+  { skeleton: 'S', options: {} },
+  { skeleton: 'A', options: {} },
   {
     skeleton: 'yyyyMMdd',
     options: { year: 'numeric', month: '2-digit', day: '2-digit' },

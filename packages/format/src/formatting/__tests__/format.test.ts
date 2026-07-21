@@ -68,6 +68,11 @@ describe('_formatMessageICU', () => {
         value: 1234.5,
       })
     ).toBe('$1,234.50');
+    expect(
+      _formatMessageICU('{value, number, ::scale/0}', 'en-US', {
+        value: 12.34,
+      })
+    ).toBe('12.34');
   });
 
   it('passes date skeletons through the package boundary', () => {
@@ -81,6 +86,12 @@ describe('_formatMessageICU', () => {
         day: '2-digit',
       }).format(value)
     );
+
+    for (const field of ['C', 'S', 'A']) {
+      expect(
+        _formatMessageICU(`{value, time, ::${field}}`, 'en-US', { value })
+      ).toBe(new Intl.DateTimeFormat('en-US').format(value));
+    }
   });
 
   it('preserves locale arrays through the package boundary', () => {

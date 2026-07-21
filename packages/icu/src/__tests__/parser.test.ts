@@ -167,6 +167,24 @@ describe('parse', () => {
     });
   });
 
+  it.each(['C', 'S', 'A'])(
+    'preserves FormatJS parsing of the %s date/time skeleton field',
+    (field) => {
+      expect(
+        parse(`{date, time, ::${field}}`, {
+          locale: new Intl.Locale('en-US'),
+        })[0]
+      ).toMatchObject({
+        type: TYPE.time,
+        style: {
+          type: SKELETON_TYPE.dateTime,
+          pattern: field,
+          parsedOptions: {},
+        },
+      });
+    }
+  );
+
   it('can skip skeleton option parsing while preserving tokens', () => {
     expect(
       parse('{amount, number, ::currency/USD}', {

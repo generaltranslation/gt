@@ -4,7 +4,7 @@
  * intl-messageformat is BSD-3-Clause licensed. See ../../THIRD_PARTY_NOTICES.md.
  */
 
-import { describe, expect, expectTypeOf, it } from 'vitest';
+import { describe, expect, expectTypeOf, it, vi } from 'vitest';
 import { formatMessage } from '../index';
 
 describe('formatMessage', () => {
@@ -163,6 +163,9 @@ describe('formatMessage', () => {
     expect(
       formatMessage('{n, number, ::percent scale/0.01}', 'en-US', { n: 12.3 })
     ).toBe('12%');
+    expect(formatMessage('{n, number, ::scale/0}', 'en-US', { n: 12.34 })).toBe(
+      '12.34'
+    );
   });
 
   it('formats minimum integer-width skeletons', () => {
@@ -246,6 +249,73 @@ describe('formatMessage', () => {
         second: '2-digit',
       }).format(value)
     );
+  });
+
+  it.each(['C', 'S', 'A'])(
+    'preserves FormatJS handling of the %s date/time skeleton field',
+    (field) => {
+      const value = new Date('2020-05-06T14:03:02Z');
+      expect(
+        formatMessage(`{d, time, ::${field}}`, 'en-US', { d: value })
+      ).toBe(new Intl.DateTimeFormat('en-US').format(value));
+    }
+  );
+
+  it('reuses equivalent Intl formatters within one message', () => {
+    const originalNumberFormat = Intl.NumberFormat;
+    const originalDateTimeFormat = Intl.DateTimeFormat;
+    const originalPluralRules = Intl.PluralRules;
+    const numberFormat = vi.fn();
+    const dateTimeFormat = vi.fn();
+    const pluralRules = vi.fn();
+
+    Object.defineProperties(Intl, {
+      NumberFormat: {
+        value: new Proxy(originalNumberFormat, {
+          construct(target, args) {
+            numberFormat();
+            return Reflect.construct(target, args);
+          },
+        }),
+      },
+      DateTimeFormat: {
+        value: new Proxy(originalDateTimeFormat, {
+          construct(target, args) {
+            dateTimeFormat();
+            return Reflect.construct(target, args);
+          },
+        }),
+      },
+      PluralRules: {
+        value: new Proxy(originalPluralRules, {
+          construct(target, args) {
+            pluralRules();
+            return Reflect.construct(target, args);
+          },
+        }),
+      },
+    });
+
+    try {
+      const value = new Date('2020-05-06T14:03:02Z');
+      formatMessage(
+        '{n, number} {n, number} {d, date, short} {d, date, short} ' +
+          '{n, plural, one {# item} other {# items}} ' +
+          '{n, plural, one {# item} other {# items}}',
+        'en-US',
+        { n: 2, d: value }
+      );
+
+      expect(numberFormat).toHaveBeenCalledTimes(1);
+      expect(dateTimeFormat).toHaveBeenCalledTimes(1);
+      expect(pluralRules).toHaveBeenCalledTimes(1);
+    } finally {
+      Object.defineProperties(Intl, {
+        NumberFormat: { value: originalNumberFormat },
+        DateTimeFormat: { value: originalDateTimeFormat },
+        PluralRules: { value: originalPluralRules },
+      });
+    }
   });
 
   it('applies ICU apostrophe escaping', () => {

@@ -380,8 +380,6 @@ export function parseDateTimeSkeletonOptions(
       case 'F':
       case 'b':
       case 'B':
-      case 'S':
-      case 'A':
       case 'Z':
       case 'O':
       case 'v':
@@ -389,6 +387,13 @@ export function parseDateTimeSkeletonOptions(
       case 'X':
       case 'x':
         throw unsupported(field, 'date/time');
+      case 'C':
+      case 'S':
+      case 'A':
+        // @formatjs/icu-messageformat-parser accepted these fields but omitted
+        // them from parsedOptions, causing Intl.DateTimeFormat to use its
+        // default date output when no other supported fields were present.
+        break;
     }
   }
 
@@ -399,7 +404,7 @@ export function resolveLocaleHourSkeleton(
   skeleton: string,
   locale?: Intl.Locale
 ): string {
-  if (!locale || !/[jJC]/u.test(skeleton)) return skeleton;
+  if (!locale || !/[jJ]/u.test(skeleton)) return skeleton;
 
   const resolved = new Intl.DateTimeFormat(locale.toString(), {
     hour: 'numeric',
@@ -412,15 +417,12 @@ export function resolveLocaleHourSkeleton(
         : resolved.hourCycle === 'h24'
           ? 'k'
           : 'H';
-  return skeleton.replace(/[jJC]+/gu, (field) => {
+  return skeleton.replace(/[jJ]+/gu, (field) => {
     const hourLength = field.length % 2 === 0 ? 2 : 1;
     if (field[0] === 'J') return 'H'.repeat(hourLength);
 
     const hour = localeHourSymbol.repeat(hourLength);
-    if (
-      field[0] !== 'j' ||
-      (localeHourSymbol !== 'h' && localeHourSymbol !== 'K')
-    ) {
+    if (localeHourSymbol !== 'h' && localeHourSymbol !== 'K') {
       return hour;
     }
     const dayPeriod =
