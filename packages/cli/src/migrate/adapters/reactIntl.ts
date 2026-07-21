@@ -121,7 +121,7 @@ export const reactIntlAdapter: SourceAdapter = {
   middlewareCandidates: [],
 
   projectUsagePattern:
-    /(?:from\s+|import\s*\(\s*|import\s*|require\s*\(\s*)['"](react-intl|@formatjs\/)/,
+    /(?:from\s+|import\s*\(\s*|import\s*|require\s*\(\s*)['"](react-intl(?:\/|['"])|@formatjs\/)/,
   teardownPackages: [
     'react-intl',
     'babel-plugin-formatjs',
