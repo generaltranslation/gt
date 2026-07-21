@@ -24,6 +24,7 @@ import {
   Settings,
   SupportedLibraries,
   SetupOptions,
+  SupportedFrameworks,
   TranslateFlags,
   SharedFlags,
 } from '../types/index.js';
@@ -640,7 +641,8 @@ export class BaseCLI {
           await this.handleInitCommand(
             ranReactSetup,
             useDefaults,
-            framework.name === 'vite'
+            framework.name,
+            options.config
           );
 
           logger.endCommand(
@@ -665,7 +667,7 @@ export class BaseCLI {
 
         // Configure gt.config.json
         const framework = await detectFramework();
-        await this.handleInitCommand(false, false, framework.name === 'vite');
+        await this.handleInitCommand(false, false, framework.name);
 
         logger.endCommand(
           'Done! Make sure you have an API key and project ID to use General Translation. Get them on the dashboard: https://generaltranslation.com/dashboard'
@@ -688,7 +690,8 @@ export class BaseCLI {
   protected async handleInitCommand(
     ranReactSetup: boolean,
     useDefaults: boolean = false,
-    isVite: boolean = false
+    framework?: SupportedFrameworks,
+    requestedConfigFilepath?: string
   ): Promise<void> {
     const { defaultLocale, locales } = await getDesiredLocales(); // Locales should still be asked for even if using defaults
 
@@ -715,9 +718,10 @@ export class BaseCLI {
       return selectedValue === 'cdn';
     })();
 
-    const defaultTranslationsDir = isVite
-      ? DEFAULT_VITE_TRANSLATIONS_DIR
-      : DEFAULT_TRANSLATIONS_DIR;
+    const defaultTranslationsDir =
+      framework === 'vite'
+        ? DEFAULT_VITE_TRANSLATIONS_DIR
+        : DEFAULT_TRANSLATIONS_DIR;
 
     // Ask where the translations are stored
     const translationsDir =
@@ -742,8 +746,30 @@ export class BaseCLI {
         finalTranslationsDir,
         locales
       );
+      if (framework === 'next-pages') {
+        const gitignorePath = path.join(process.cwd(), '.gitignore');
+        const ignoredDirectory = `${finalTranslationsDir
+          .replace(/^\.\//, '')
+          .replace(/\/$/, '')}/`;
+        const gitignoreContents = fs.existsSync(gitignorePath)
+          ? await fs.promises.readFile(gitignorePath, 'utf8')
+          : '';
+        const ignoredPaths = gitignoreContents.split(/\r?\n/);
+        if (!ignoredPaths.includes(ignoredDirectory)) {
+          const separator =
+            gitignoreContents && !gitignoreContents.endsWith('\n') ? '\n' : '';
+          await fs.promises.appendFile(
+            gitignorePath,
+            `${separator}${ignoredDirectory}\n`,
+            'utf8'
+          );
+        }
+      }
       logger.message(
-        `Created ${chalk.cyan('loadTranslations.js')} file for local translations.
+        framework === 'next-pages'
+          ? `Created ${chalk.cyan('loadTranslations.js')} for local translations. ${chalk.cyan('withGTConfig')} will detect it automatically.
+See https://generaltranslation.com/docs/react/nextjs-pages-router-quickstart`
+          : `Created ${chalk.cyan('loadTranslations.js')} file for local translations.
 Make sure to add this function to your app configuration.
 See https://generaltranslation.com/en/docs/next/guides/local-tx`
       );
@@ -792,8 +818,8 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
       };
     }
 
-    let configFilepath = 'gt.config.json';
-    if (fs.existsSync('src/gt.config.json')) {
+    let configFilepath = requestedConfigFilepath || 'gt.config.json';
+    if (!requestedConfigFilepath && fs.existsSync('src/gt.config.json')) {
       configFilepath = 'src/gt.config.json';
     }
 

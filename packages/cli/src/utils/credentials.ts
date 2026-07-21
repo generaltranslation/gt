@@ -139,9 +139,7 @@ export async function setCredentials(
 
   // Always append the credentials to the file
   let prefix = '';
-  if (framework === 'next-pages') {
-    prefix = 'NEXT_PUBLIC_';
-  } else if (framework === 'vite') {
+  if (framework === 'vite') {
     prefix = 'VITE_';
   } else if (framework === 'gatsby') {
     prefix = 'GATSBY_';
@@ -151,15 +149,28 @@ export async function setCredentials(
     prefix = 'REDWOOD_ENV_';
   }
 
-  envContent += `\n${prefix}GT_PROJECT_ID=${credentials.projectId}\n`;
-
-  for (const apiKey of credentials.apiKeys) {
-    if (apiKey.type === 'development') {
-      envContent += `${prefix || ''}GT_DEV_API_KEY=${apiKey.key}\n`;
-    } else {
-      envContent += `GT_API_KEY=${apiKey.key}\n`;
-    }
+  const credentialLines = [
+    `${prefix}GT_PROJECT_ID=${credentials.projectId}`,
+    ...credentials.apiKeys.map((apiKey) =>
+      apiKey.type === 'development'
+        ? `${prefix}GT_DEV_API_KEY=${apiKey.key}`
+        : `GT_API_KEY=${apiKey.key}`
+    ),
+  ];
+  if (framework === 'next-pages') {
+    const managedKeys = new Set([
+      'GT_PROJECT_ID',
+      'GT_DEV_API_KEY',
+      'GT_API_KEY',
+      'NEXT_PUBLIC_GT_PROJECT_ID',
+      'NEXT_PUBLIC_GT_DEV_API_KEY',
+    ]);
+    envContent = envContent
+      .split(/\r?\n/)
+      .filter((line) => !managedKeys.has(line.split('=', 1)[0]))
+      .join('\n');
   }
+  envContent += `\n${credentialLines.join('\n')}\n`;
 
   // Ensure we don't have excessive newlines
   envContent = envContent.replace(/\n{3,}/g, '\n\n').trim() + '\n';

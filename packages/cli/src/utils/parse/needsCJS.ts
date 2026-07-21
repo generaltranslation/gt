@@ -55,7 +55,11 @@ export function needsCJS({
     needsCJS = false;
   } else {
     // No imports/requires found, fall back to configuration-based logic
-    if (filepath.endsWith('.ts') || filepath.endsWith('.tsx')) {
+    if (filepath.endsWith('.cjs') || filepath.endsWith('.cts')) {
+      needsCJS = true;
+    } else if (filepath.endsWith('.mjs') || filepath.endsWith('.mts')) {
+      needsCJS = false;
+    } else if (filepath.endsWith('.ts') || filepath.endsWith('.tsx')) {
       // For TypeScript files, check tsconfig.json compilerOptions.module
       const moduleSetting = tsconfigJson?.compilerOptions?.module;
       if (moduleSetting === 'commonjs' || moduleSetting === 'node') {

@@ -215,6 +215,28 @@ export default nextConfig;
   });
 
   describe('JavaScript file type detection', () => {
+    it('uses CommonJS and wraps module.exports in a .cjs config', async () => {
+      const filepath = '/test/next.config.cjs';
+      const { errors, warnings, filesUpdated } = createTestArrays();
+      const code = `const nextConfig = { reactStrictMode: true };\nmodule.exports = nextConfig;`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
+      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
+
+      await handleInitGT(filepath, errors, warnings, filesUpdated);
+
+      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
+        filepath,
+        expect.stringContaining(
+          'const withGTConfig = require("gt-next/config").withGTConfig'
+        )
+      );
+      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
+        filepath,
+        expect.stringContaining('module.exports = withGTConfig(nextConfig, {})')
+      );
+    });
+
     it('should use CommonJS for .js files when package.json type is not module', async () => {
       const filepath = '/test/next.config.js';
       const { errors, warnings, filesUpdated } = createTestArrays();
@@ -267,7 +289,7 @@ export default nextConfig;
   });
 
   describe('existing imports detection', () => {
-    it('should not add import if withGTConfig is already imported', async () => {
+    it('should apply an existing withGTConfig import when it is not called', async () => {
       const filepath = '/test/next.config.js';
       const { errors, warnings, filesUpdated } = createTestArrays();
       const packageJson = createMockPackageJson();
@@ -287,8 +309,11 @@ export default nextConfig;
 
       await handleInitGT(filepath, errors, warnings, filesUpdated, packageJson);
 
-      expect(vi.mocked(fs.promises.writeFile)).not.toHaveBeenCalled();
-      expect(filesUpdated).toHaveLength(0);
+      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
+        filepath,
+        expect.stringContaining('export default withGTConfig(nextConfig, {})')
+      );
+      expect(filesUpdated).toEqual([filepath]);
     });
 
     it('should not add import if withGTConfig is already required (destructuring)', async () => {
@@ -784,6 +809,36 @@ export default nextConfig;
   });
 
   describe('file mutation tracking', () => {
+    it('passes a custom GT config path without replacing Next config', async () => {
+      const filepath = '/test/next.config.ts';
+      const { errors, warnings, filesUpdated } = createTestArrays();
+      const code = `const nextConfig = { reactStrictMode: true };\nexport default nextConfig;`;
+
+      vi.mocked(fs.promises.readFile).mockResolvedValue(code);
+      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
+
+      await handleInitGT(
+        filepath,
+        errors,
+        warnings,
+        filesUpdated,
+        { type: 'module' },
+        undefined,
+        'src/gt.config.json'
+      );
+
+      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
+        filepath,
+        expect.stringContaining(
+          'withGTConfig(nextConfig, { config: "src/gt.config.json" })'
+        )
+      );
+      expect(vi.mocked(fs.promises.writeFile)).toHaveBeenCalledWith(
+        filepath,
+        expect.stringContaining('reactStrictMode: true')
+      );
+    });
+
     it('should add filepath to filesUpdated array when file is modified', async () => {
       const filepath = '/test/next.config.js';
       const { errors, warnings, filesUpdated } = createTestArrays();

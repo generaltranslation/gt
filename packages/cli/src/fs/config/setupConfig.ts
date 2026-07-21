@@ -27,7 +27,6 @@ export async function createOrUpdateConfig(
   const newContent = {
     ...(options.projectId && { projectId: options.projectId }),
     ...(options.defaultLocale && { defaultLocale: options.defaultLocale }),
-    ...(options.files && { files: options.files }),
     ...(options.framework && { framework: options.framework }),
     ...(options.baseUrl && { baseUrl: options.baseUrl }),
     ...(options.publish && { publish: options.publish }),
@@ -46,10 +45,32 @@ export async function createOrUpdateConfig(
     }
 
     // merge old and new content
+    const oldFiles =
+      typeof oldContent.files === 'object' && oldContent.files !== null
+        ? (oldContent.files as Record<string, unknown>)
+        : {};
+    const mergedFiles = options.files
+      ? Object.fromEntries(
+          Object.entries(options.files).map(([format, formatOptions]) => [
+            format,
+            typeof oldFiles[format] === 'object' &&
+            oldFiles[format] !== null &&
+            typeof formatOptions === 'object' &&
+            formatOptions !== null
+              ? {
+                  ...(oldFiles[format] as Record<string, unknown>),
+                  ...formatOptions,
+                }
+              : formatOptions,
+          ])
+        )
+      : undefined;
+
     const mergedContent = {
       $schema: GT_CONFIG_SCHEMA_URL,
       ...oldContent,
       ...newContent,
+      ...(mergedFiles && { files: { ...oldFiles, ...mergedFiles } }),
     } as Record<string, unknown> & { locales?: string[] };
 
     // Add locales to mergedContent if they exist

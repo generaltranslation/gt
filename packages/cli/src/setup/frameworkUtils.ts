@@ -31,7 +31,8 @@ export function getFrameworkDisplayName(
 export function getReactFrameworkLibrary(
   frameworkObject: ReactFrameworkObject
 ): string {
-  return frameworkObject.name === 'next-app'
+  return frameworkObject.name === 'next-app' ||
+    frameworkObject.name === 'next-pages'
     ? Libraries.GT_NEXT
     : Libraries.GT_REACT;
 }

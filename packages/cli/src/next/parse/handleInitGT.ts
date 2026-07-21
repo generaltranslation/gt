@@ -10,6 +10,7 @@ const generate = generateModule.default || generateModule;
 import * as t from '@babel/types';
 import { logger } from '../../console/logger.js';
 import { needsCJS } from '../../utils/parse/needsCJS.js';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 
 export async function handleInitGT(
   filepath: string,
@@ -17,7 +18,8 @@ export async function handleInitGT(
   warnings: string[],
   filesUpdated: string[],
   packageJson?: { type?: string },
-  tsconfigJson?: { compilerOptions?: { module?: string } }
+  tsconfigJson?: { compilerOptions?: { module?: string } },
+  gtConfigPath?: string
 ) {
   const code = await fs.promises.readFile(filepath, 'utf8');
 
@@ -39,14 +41,19 @@ export async function handleInitGT(
       tsconfigJson,
     });
 
-    // Check if withGTConfig is already imported/required
-    let hasGTConfig = false;
+    // Check if withGTConfig is already imported/required and applied. Keeping
+    // these checks separate lets the wizard repair a config that imported the
+    // helper but never wrapped its export.
+    let hasGTConfigImport = false;
+    let hasGTConfigCall = false;
     traverse(ast, {
       ImportDeclaration(path) {
         if (path.node.source.value === 'gt-next/config') {
           path.node.specifiers.forEach((spec) => {
             if (t.isImportSpecifier(spec)) {
-              if (spec.local.name === 'withGTConfig') hasGTConfig = true;
+              if (spec.local.name === 'withGTConfig') {
+                hasGTConfigImport = true;
+              }
             }
           });
         }
@@ -64,7 +71,7 @@ export async function handleInitGT(
             ) {
               // Handle simple assignment: const withGTConfig = require(...)
               if (t.isIdentifier(dec.id, { name: 'withGTConfig' }))
-                hasGTConfig = true;
+                hasGTConfigImport = true;
 
               // Handle destructuring: const { withGTConfig } = require(...)
               if (t.isObjectPattern(dec.id)) {
@@ -74,7 +81,9 @@ export async function handleInitGT(
                     t.isIdentifier(prop.key) &&
                     t.isIdentifier(prop.value)
                   ) {
-                    if (prop.key.name === 'withGTConfig') hasGTConfig = true;
+                    if (prop.key.name === 'withGTConfig') {
+                      hasGTConfigImport = true;
+                    }
                   }
                 });
               }
@@ -92,44 +101,52 @@ export async function handleInitGT(
                 t.isIdentifier(dec.id, { name: 'withGTConfig' }) &&
                 t.isIdentifier(dec.init.property, { name: 'withGTConfig' })
               ) {
-                hasGTConfig = true;
+                hasGTConfigImport = true;
               }
             }
           }
         });
       },
+      CallExpression(path) {
+        if (t.isIdentifier(path.node.callee, { name: 'withGTConfig' })) {
+          hasGTConfigCall = true;
+        }
+      },
     });
 
-    // Return early if withGTConfig is already present
-    if (hasGTConfig) {
+    // Return early only when withGTConfig is both available and applied.
+    if (hasGTConfigImport && hasGTConfigCall) {
       return;
     }
 
-    ast.program.body.unshift(
-      cjsEnabled
-        ? t.variableDeclaration('const', [
-            t.variableDeclarator(
-              t.identifier('withGTConfig'),
-              t.memberExpression(
-                t.callExpression(t.identifier('require'), [
-                  t.stringLiteral('gt-next/config'),
-                ]),
-                t.identifier('withGTConfig')
-              )
-            ),
-          ])
-        : t.importDeclaration(
-            [
-              t.importSpecifier(
+    if (!hasGTConfigImport) {
+      ast.program.body.unshift(
+        cjsEnabled
+          ? t.variableDeclaration('const', [
+              t.variableDeclarator(
                 t.identifier('withGTConfig'),
-                t.identifier('withGTConfig')
+                t.memberExpression(
+                  t.callExpression(t.identifier('require'), [
+                    t.stringLiteral('gt-next/config'),
+                  ]),
+                  t.identifier('withGTConfig')
+                )
               ),
-            ],
-            t.stringLiteral('gt-next/config')
-          )
-    );
+            ])
+          : t.importDeclaration(
+              [
+                t.importSpecifier(
+                  t.identifier('withGTConfig'),
+                  t.identifier('withGTConfig')
+                ),
+              ],
+              t.stringLiteral('gt-next/config')
+            )
+      );
+    }
 
     // Find and transform the default export
+    let transformedExport = false;
     traverse(ast, {
       ExportDefaultDeclaration(path) {
         const oldExport = path.node.declaration;
@@ -180,10 +197,41 @@ export async function handleInitGT(
 
         path.node.declaration = t.callExpression(t.identifier('withGTConfig'), [
           exportExpression,
-          t.objectExpression([]),
+          createGTConfigOptions(gtConfigPath),
         ]);
+        transformedExport = true;
+        path.skip();
+      },
+      AssignmentExpression(path) {
+        if (
+          !t.isMemberExpression(path.node.left) ||
+          !t.isIdentifier(path.node.left.object, { name: 'module' }) ||
+          !t.isIdentifier(path.node.left.property, { name: 'exports' }) ||
+          !t.isExpression(path.node.right)
+        ) {
+          return;
+        }
+        path.node.right = t.callExpression(t.identifier('withGTConfig'), [
+          path.node.right,
+          createGTConfigOptions(gtConfigPath),
+        ]);
+        transformedExport = true;
+        path.skip();
       },
     });
+
+    if (!transformedExport) {
+      warnings.push(
+        createDiagnosticMessage({
+          whatHappened: `The setup wizard could not apply withGTConfig in ${filepath}`,
+          why: 'the file does not have a default export or module.exports assignment the wizard can wrap safely',
+          fix: 'Wrap the existing Next.js config export with withGTConfig manually',
+          docsUrl:
+            'https://generaltranslation.com/docs/react/nextjs-pages-router-quickstart',
+        })
+      );
+      return;
+    }
 
     // Generate the modified code
     const output = generate(
@@ -212,4 +260,13 @@ export async function handleInitGT(
     logger.error(`Error parsing file ${filepath}: ${error}`);
     errors.push(`Failed to parse ${filepath}: ${error}`);
   }
+}
+
+function createGTConfigOptions(gtConfigPath?: string): t.ObjectExpression {
+  if (!gtConfigPath || gtConfigPath === 'gt.config.json') {
+    return t.objectExpression([]);
+  }
+  return t.objectExpression([
+    t.objectProperty(t.identifier('config'), t.stringLiteral(gtConfigPath)),
+  ]);
 }

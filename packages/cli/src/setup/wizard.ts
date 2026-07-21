@@ -16,8 +16,18 @@ import { loadConfig } from '../fs/config/loadConfig.js';
 import { addVitePlugin } from '../react/parse/addVitePlugin/index.js';
 import { exitSync } from '../console/logging.js';
 import { ReactFrameworkObject } from '../types/index.js';
-import { getFrameworkDisplayName } from './frameworkUtils.js';
+import {
+  getFrameworkDisplayName,
+  getReactFrameworkLibrary,
+} from './frameworkUtils.js';
 import { Libraries } from '../types/libraries.js';
+import path from 'node:path';
+import fs from 'node:fs';
+import {
+  hasPagesRouterLocaleRouting,
+  setupPagesRouter,
+} from '../next/parse/setupPagesRouter.js';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 
 export async function handleSetupReactCommand(
   options: SetupOptions,
@@ -70,8 +80,14 @@ Please let us know what you would like to see added at https://github.com/genera
     exitSync(0);
   }
 
+  const gtConfigPath =
+    options.config ||
+    (fs.existsSync('src/gt.config.json')
+      ? 'src/gt.config.json'
+      : 'gt.config.json');
+
   // ----- Create a starter gt.config.json file -----
-  await createOrUpdateConfig(options.config || 'gt.config.json', {
+  await createOrUpdateConfig(gtConfigPath, {
     framework: frameworkType as SupportedReactFrameworks,
   });
 
@@ -84,31 +100,18 @@ Please let us know what you would like to see added at https://github.com/genera
     );
     exitSync(1);
   }
-  // Check if gt-next or gt-react is installed
-  if (
-    frameworkType === 'next-app' &&
-    !isPackageInstalled(Libraries.GT_NEXT, packageJson)
-  ) {
+  const frameworkLibrary = getReactFrameworkLibrary({
+    name: frameworkType,
+    type: 'react',
+  });
+  if (!isPackageInstalled(frameworkLibrary, packageJson)) {
     const packageManager = await getPackageManager();
     const spinner = logger.createSpinner('timer');
     spinner.start(
-      `Installing ${Libraries.GT_NEXT} with ${packageManager.name}...`
+      `Installing ${frameworkLibrary} with ${packageManager.name}...`
     );
-    await installPackage(Libraries.GT_NEXT, packageManager);
-    spinner.stop(chalk.green(`Automatically installed ${Libraries.GT_NEXT}.`));
-  } else if (
-    ['next-pages', 'react', 'redwood', 'vite', 'gatsby'].includes(
-      frameworkType
-    ) &&
-    !isPackageInstalled(Libraries.GT_REACT, packageJson)
-  ) {
-    const packageManager = await getPackageManager();
-    const spinner = logger.createSpinner('timer');
-    spinner.start(
-      `Installing ${Libraries.GT_REACT} with ${packageManager.name}...`
-    );
-    await installPackage(Libraries.GT_REACT, packageManager);
-    spinner.stop(chalk.green(`Automatically installed ${Libraries.GT_REACT}.`));
+    await installPackage(frameworkLibrary, packageManager);
+    spinner.stop(chalk.green(`Automatically installed ${frameworkLibrary}.`));
   }
 
   const errors: string[] = [];
@@ -119,42 +122,88 @@ Please let us know what you would like to see added at https://github.com/genera
   const tsconfigPath = findFilepath(['tsconfig.json']);
   const tsconfigJson = tsconfigPath ? loadConfig(tsconfigPath) : undefined;
 
-  if (frameworkType === 'next-app') {
+  if (frameworkType === 'next-app' || frameworkType === 'next-pages') {
     // Check if they have a next.config.js file
     const nextConfigPath = findFilepath([
       './next.config.js',
       './next.config.ts',
       './next.config.mjs',
       './next.config.mts',
+      './next.config.cjs',
     ]);
     if (!nextConfigPath) {
-      logger.error('No next.config.[js|ts|mjs|mts] file found.');
+      logger.error(
+        createDiagnosticMessage({
+          source: 'gt',
+          severity: 'Error',
+          whatHappened: 'No Next.js configuration file was found',
+          fix: 'Add a next.config.js, next.config.ts, next.config.mjs, next.config.mts, or next.config.cjs file at the project root and rerun setup',
+          docsUrl:
+            'https://generaltranslation.com/docs/react/nextjs-pages-router-quickstart',
+        })
+      );
       exitSync(1);
     }
 
-    const mergeOptions = {
-      ...options,
-      disableIds: true,
-      disableFormatting: true,
-      skipTs: true,
-      addGTProvider: true,
-    };
-    const spinner = logger.createSpinner();
-    spinner.start('Wrapping JSX content with <T> tags...');
-    // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
-    const { filesUpdated: filesUpdatedNext } = await wrapContentNext(
-      mergeOptions,
-      Libraries.GT_NEXT,
-      errors,
-      warnings
-    );
-    filesUpdated = [...filesUpdated, ...filesUpdatedNext];
+    if (frameworkType === 'next-app') {
+      const mergeOptions = {
+        ...options,
+        disableIds: true,
+        disableFormatting: true,
+        skipTs: true,
+        addGTProvider: true,
+      };
+      const spinner = logger.createSpinner();
+      spinner.start('Wrapping JSX content with <T> tags...');
+      // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
+      const { filesUpdated: filesUpdatedNext } = await wrapContentNext(
+        mergeOptions,
+        Libraries.GT_NEXT,
+        errors,
+        warnings
+      );
+      filesUpdated = [...filesUpdated, ...filesUpdatedNext];
 
-    spinner.stop(
-      chalk.green(
-        `Success! Updated ${chalk.bold.cyan(filesUpdated.length)} files:\n`
-      ) + filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
-    );
+      spinner.stop(
+        chalk.green(
+          `Success! Updated ${chalk.bold.cyan(filesUpdated.length)} files:\n`
+        ) + filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
+      );
+    } else {
+      const pagesDirectory = [
+        path.join(process.cwd(), 'pages'),
+        path.join(process.cwd(), 'src', 'pages'),
+      ].find((candidate) => fs.existsSync(candidate));
+      if (!pagesDirectory) {
+        logger.error(
+          createDiagnosticMessage({
+            source: 'gt',
+            severity: 'Error',
+            whatHappened: 'No Pages Router directory was found',
+            fix: 'Run the setup wizard from a Next.js project containing pages or src/pages',
+            docsUrl:
+              'https://generaltranslation.com/docs/react/nextjs-pages-router-quickstart',
+          })
+        );
+        exitSync(1);
+      }
+      const { filesUpdated: pagesFilesUpdated } = await setupPagesRouter(
+        pagesDirectory,
+        errors,
+        warnings,
+        {
+          hasStaticLocaleRouting: hasPagesRouterLocaleRouting(
+            await fs.promises.readFile(nextConfigPath, 'utf8')
+          ),
+        }
+      );
+      filesUpdated = [...filesUpdated, ...pagesFilesUpdated];
+      logger.step(
+        chalk.green(
+          `Configured ${chalk.bold.cyan(pagesFilesUpdated.length)} Pages Router files for gt-next.`
+        )
+      );
+    }
 
     // Add the withGTConfig() function to the next.config.js file
     await handleInitGT(
@@ -163,7 +212,8 @@ Please let us know what you would like to see added at https://github.com/genera
       warnings,
       filesUpdated,
       packageJson,
-      tsconfigJson
+      tsconfigJson,
+      gtConfigPath
     );
     logger.step(
       chalk.green(`Added withGTConfig() to your ${nextConfigPath} file.`)
