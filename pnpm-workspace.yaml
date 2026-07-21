@@ -10,6 +10,7 @@ minimumReleaseAge: 2880
 
 minimumReleaseAgeExclude:
   - '@generaltranslation/*'
+  - '@generaltranslation/migrate'
   - gt-next
   - gt-react
   - gt-sanity
