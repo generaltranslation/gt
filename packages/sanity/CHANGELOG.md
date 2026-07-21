@@ -1,5 +1,12 @@
 # gt-sanity
 
+## 2.1.3
+
+### Patch Changes
+
+- Updated dependencies [[`c658e7e`](https://github.com/generaltranslation/gt/commit/c658e7e1f6929965e3752a6828e3658dd8c527a8)]:
+  - generaltranslation@9.0.3
+
 ## 2.1.2
 
 ### Patch Changes

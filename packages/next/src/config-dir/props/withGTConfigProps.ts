@@ -28,6 +28,11 @@ export type CompilerOptions = {
    * @default false
    */
   disableBuildChecks?: boolean;
+  /**
+   * Whether to automatically wrap translatable JSX.
+   * @default false
+   */
+  enableAutoJsxInjection?: boolean;
 };
 
 export type RenderMethod = 'skeleton' | 'replace' | 'default';

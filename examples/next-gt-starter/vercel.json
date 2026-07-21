@@ -1,0 +1,5 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "rustup toolchain install stable --profile minimal --target wasm32-wasip1 && RUSTUP_TOOLCHAIN=stable pnpm exec turbo run build --env-mode=loose",
+  "installCommand": "corepack pnpm install --frozen-lockfile"
+}

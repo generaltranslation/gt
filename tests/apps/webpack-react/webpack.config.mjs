@@ -6,6 +6,10 @@ import HtmlWebpackPlugin from 'html-webpack-plugin';
 import webpack from 'webpack';
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
+const reactDir = fs.realpathSync(path.join(appDir, 'node_modules/react'));
+const reactDomDir = fs.realpathSync(
+  path.join(appDir, 'node_modules/react-dom')
+);
 const html = fs
   .readFileSync(path.join(appDir, 'index.html'), 'utf8')
   .replace(/\s*<script type="module" src="\/src\/index\.ts"><\/script>\s*/, '');
@@ -23,6 +27,10 @@ export default (_env, argv) => {
       clean: true,
     },
     resolve: {
+      alias: {
+        react: reactDir,
+        'react-dom': reactDomDir,
+      },
       extensions: ['.tsx', '.ts', '.jsx', '.js'],
     },
     module: {
