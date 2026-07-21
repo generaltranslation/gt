@@ -16,6 +16,7 @@ function buildPackage(): void {
   execFileSync(command, args, {
     cwd: packageRoot,
     stdio: 'pipe',
+    timeout: 60_000,
   });
 }
 
@@ -25,8 +26,11 @@ function node(args: string[]): void {
 
 describe('gt-tanstack-start package exports', () => {
   beforeAll(() => {
+    // Turbo guarantees this package's build task completes before its test
+    // task. Standalone package tests rebuild so they cannot use stale output.
+    if (process.env.TURBO_HASH) return;
     buildPackage();
-  }, 60_000);
+  }, 65_000);
 
   it('publishes ESM-only entrypoints', () => {
     const packageJson = JSON.parse(
