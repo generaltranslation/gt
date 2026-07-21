@@ -1,5 +1,35 @@
 # gt-tanstack-start
 
+## 11.0.12
+
+### Patch Changes
+
+- [#1941](https://github.com/generaltranslation/gt/pull/1941) [`7fef71d`](https://github.com/generaltranslation/gt/commit/7fef71de88a770bd5e14ec9f62cdac91671b3d2f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add request-scoped server middleware and server-only translation helpers for TanStack Start.
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.0.12
+  - gt-react@11.0.12
+
+## 11.0.11
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.0.11
+  - gt-react@11.0.11
+
+## 11.0.10
+
+### Patch Changes
+
+- [#1916](https://github.com/generaltranslation/gt/pull/1916) [`c658e7e`](https://github.com/generaltranslation/gt/commit/c658e7e1f6929965e3752a6828e3658dd8c527a8) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Unify `gt.config.json` types so complete config objects can be spread into compiler plugins and runtime initializers while file settings remain optional.
+
+- Updated dependencies [[`c658e7e`](https://github.com/generaltranslation/gt/commit/c658e7e1f6929965e3752a6828e3658dd8c527a8)]:
+  - generaltranslation@9.0.3
+  - gt-i18n@1.0.7
+  - @generaltranslation/react-core@11.0.10
+  - gt-react@11.0.10
+
 ## 11.0.9
 
 ### Patch Changes

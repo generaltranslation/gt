@@ -18,8 +18,7 @@ import gtConfig from '../../gt.config.json';
 import loadTranslations from '../loadTranslations';
 
 initializeGT({
-  defaultLocale: gtConfig.defaultLocale,
-  locales: gtConfig.locales,
+  ...gtConfig,
   loadTranslations,
 });
 
@@ -29,6 +28,11 @@ export const Route = createRootRoute({
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
       { title: 'gt-tanstack-start Rendering Modes Test' },
+      {
+        name: 'description',
+        content:
+          'A test bed for gt-tanstack-start across TanStack Start rendering modes.',
+      },
     ],
   }),
   component: RootComponent,

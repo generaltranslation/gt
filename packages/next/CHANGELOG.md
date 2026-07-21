@@ -1,5 +1,36 @@
 # gt-next
 
+## 11.0.12
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.0.12
+  - gt-react@11.0.12
+
+## 11.0.11
+
+### Patch Changes
+
+- [#1928](https://github.com/generaltranslation/gt/pull/1928) [`84bc362`](https://github.com/generaltranslation/gt/commit/84bc362d03d03c6f70773c35e6d92770ad56548f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Use the client-safe React i18n cache in the browser so gt-next only resolves dictionary files and loaders on the server.
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.0.11
+  - gt-react@11.0.11
+
+## 11.0.10
+
+### Patch Changes
+
+- [#1921](https://github.com/generaltranslation/gt/pull/1921) [`50043dd`](https://github.com/generaltranslation/gt/commit/50043dd68387d6db52afa6f09c74d9c9fa4d2d5f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Support automatic JSX injection with the webpack compiler and import the injected components from `gt-next`.
+
+- Updated dependencies [[`dce7a7a`](https://github.com/generaltranslation/gt/commit/dce7a7a0b5b82ee0ac7ca3518030ab51026da103), [`c658e7e`](https://github.com/generaltranslation/gt/commit/c658e7e1f6929965e3752a6828e3658dd8c527a8)]:
+  - @generaltranslation/compiler@1.3.32
+  - generaltranslation@9.0.3
+  - gt-i18n@1.0.7
+  - @generaltranslation/react-core@11.0.10
+  - gt-react@11.0.10
+
 ## 11.0.9
 
 ### Patch Changes

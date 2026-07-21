@@ -6,6 +6,16 @@ export const Route = createFileRoute('/data-only')({
   loader: () => ({
     value: `Data-only loader ran at ${new Date().toISOString()}`,
   }),
+  head: () => ({
+    meta: [
+      { title: 'Data-only rendering | gt-tanstack-start' },
+      {
+        name: 'description',
+        content:
+          'Test gt-tanstack-start with server-loaded data and client-rendered route content.',
+      },
+    ],
+  }),
   component: DataOnlyRoute,
 });
 
