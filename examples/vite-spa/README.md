@@ -20,23 +20,25 @@ In a single-page app, `gt-react` runs entirely in the browser. You initialize it
 ```bash
 git clone https://github.com/generaltranslation/gt.git
 cd gt/examples/vite-spa
-npm install
+corepack pnpm install
 ```
+
+The `gt`, `gt-react`, and `@generaltranslation/compiler` dependencies are pinned to `workspace:*`, a pnpm-only protocol that resolves against the monorepo, so a plain `npm install` inside this directory fails. To run the example on its own, copy this directory out of the monorepo and replace those three `workspace:*` pins with their published versions, after which `npm install` works.
 
 ### Run development server
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 ### Build for production
 
 ```bash
-npm run build
-npm run preview
+pnpm build
+pnpm preview
 ```
 
-`npm run build` builds offline from the committed translation files, so it needs no account or API key. To regenerate the translation files after changing source content, run `npm run translate` with a production `GT_API_KEY` and `GT_PROJECT_ID` (create them with `npx gt auth`; a `gtx-dev-` key is not accepted), then build.
+`pnpm build` builds offline from the committed translation files, so it needs no account or API key. To regenerate the translation files after changing source content, run `pnpm translate` with a production `GT_API_KEY` and `GT_PROJECT_ID` (create them with `npx gt auth`; a `gtx-dev-` key is not accepted), then build.
 
 ## How it works
 
@@ -58,7 +60,7 @@ To preview translations as you edit (instead of relying on the committed files),
 
 1. The GT compiler is already wired into `vite.config.ts` with `vite as gtCompiler` from `@generaltranslation/compiler`.
 2. Copy `.env.example` to `.env.local` and add a project ID and a development API key (one that starts with `gtx-dev-`). Get them at [dash.generaltranslation.com](https://dash.generaltranslation.com/signup) or with `npx gt auth`. `src/index.ts` already forwards `VITE_GT_PROJECT_ID` and `VITE_GT_DEV_API_KEY` to `initializeGTSPA`.
-3. Run `npm run dev` and switch to a non-default locale. When you edit translatable content, the compiler registers the change and `gt-react` requests an updated development translation.
+3. Run `pnpm dev` and switch to a non-default locale. When you edit translatable content, the compiler registers the change and `gt-react` requests an updated development translation.
 
 Never expose a production key (`gtx-api-`) in browser code, and do not commit `.env.local`.
 
