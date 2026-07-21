@@ -22,7 +22,7 @@
     "build:release": "turbo run build:release --filter='./packages/*'",
     "bench": "turbo run bench",
     "size": "size-limit",
-    "check:library-defaults": "node scripts/check-library-defaults.mjs",
+    "check:library-defaults": "node scripts/check-library-defaults.mjs && vitest run scripts/check-library-defaults.test.mjs",
     "check:release-versions": "node scripts/check-release-versions.mjs",
     "format": "oxfmt --check .",
     "format:fix": "oxfmt .",
