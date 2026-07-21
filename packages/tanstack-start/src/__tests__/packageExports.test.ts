@@ -1,20 +1,11 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { beforeAll, describe, expect, it } from 'vitest';
 
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
-const builtArtifacts = [
-  'index.client.mjs',
-  'index.server.mjs',
-  'server.mjs',
-].map((artifact) => join(packageRoot, 'dist', artifact));
-
-function hasBuiltArtifacts(): boolean {
-  return builtArtifacts.every((artifact) => existsSync(artifact));
-}
 
 function buildPackage(): void {
   const command = process.env.npm_execpath ? process.execPath : 'pnpm';
@@ -25,6 +16,7 @@ function buildPackage(): void {
   execFileSync(command, args, {
     cwd: packageRoot,
     stdio: 'pipe',
+    timeout: 60_000,
   });
 }
 
@@ -34,9 +26,11 @@ function node(args: string[]): void {
 
 describe('gt-tanstack-start package exports', () => {
   beforeAll(() => {
-    if (hasBuiltArtifacts()) return;
+    // Turbo guarantees this package's build task completes before its test
+    // task. Standalone package tests rebuild so they cannot use stale output.
+    if (process.env.TURBO_HASH) return;
     buildPackage();
-  }, 60_000);
+  }, 65_000);
 
   it('publishes ESM-only entrypoints', () => {
     const packageJson = JSON.parse(
