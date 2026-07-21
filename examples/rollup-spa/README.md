@@ -18,13 +18,15 @@ A client-side React 19 app bundled with Rollup that uses `gt-react` for internat
 ```bash
 git clone https://github.com/generaltranslation/gt.git
 cd gt/examples/rollup-spa
-npm install
+corepack pnpm install
 ```
+
+The `gt`, `gt-react`, and `@generaltranslation/compiler` dependencies are pinned to `workspace:*`, a pnpm-only protocol that resolves against the monorepo, so a plain `npm install` inside this directory fails. To run the example on its own, copy this directory out of the monorepo and replace those three `workspace:*` pins with their published versions, after which `npm install` works.
 
 ### Run development server
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 This starts `rollup -c -w`, which rebuilds on every change and serves `dist` at http://127.0.0.1:5173 with automatic browser reload.
@@ -32,8 +34,8 @@ This starts `rollup -c -w`, which rebuilds on every change and serves `dist` at 
 ### Build for production
 
 ```bash
-npm run build
-npm run preview
+pnpm build
+pnpm preview
 ```
 
 `preview` serves the production build from `dist` at http://127.0.0.1:4173.
