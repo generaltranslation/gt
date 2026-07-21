@@ -156,6 +156,21 @@ describe('condenseVars printer regression', () => {
       '{_gt_1} {n, number, custom<a>}',
     ],
     [
+      'paired braces in a named style',
+      '{_gt_1, select, other {Ada}} {n, number, custom{nested}}',
+      '{_gt_1} {n, number, custom{nested}}',
+    ],
+    [
+      'quoted braces in a named style',
+      "{_gt_1, select, other {Ada}} {n, number, custom'{nested}'}",
+      "{_gt_1} {n, number, custom'{nested}'}",
+    ],
+    [
+      'apostrophe at a closing tag boundary',
+      "<b>{_gt_1, select, other {Ada}}''</b>",
+      "<b>{_gt_1}''</b>",
+    ],
+    [
       'escaped pound inside plural',
       "{count, plural, other {'#' # {_gt_1, select, other {}}}}",
       "{count,plural,other{'#' # {_gt_1}}}",

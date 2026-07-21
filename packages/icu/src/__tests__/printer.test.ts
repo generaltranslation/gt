@@ -6,6 +6,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { parse, printAST } from '../index';
+import { TYPE, type MessageFormatElement } from '../types';
 
 const GENERATED_ROUND_TRIP_MESSAGES = [
   ...Array.from(
@@ -94,6 +95,35 @@ const GENERATED_ESCAPED_PLURAL_ROUND_TRIP_MESSAGES =
     )
   );
 
+const ADVERSARIAL_LITERAL_FRAGMENTS = [
+  'a',
+  "'",
+  '{',
+  '}',
+  '#',
+  '<b>',
+  '</b>',
+  '<>',
+  '🎉',
+] as const;
+
+const GENERATED_ADVERSARIAL_LITERALS = [1, 2, 3, 4].flatMap((length) =>
+  Array.from(
+    { length: ADVERSARIAL_LITERAL_FRAGMENTS.length ** length },
+    (_, combination) => {
+      let cursor = combination;
+      return Array.from({ length }, () => {
+        const fragment =
+          ADVERSARIAL_LITERAL_FRAGMENTS[
+            cursor % ADVERSARIAL_LITERAL_FRAGMENTS.length
+          ];
+        cursor = Math.floor(cursor / ADVERSARIAL_LITERAL_FRAGMENTS.length);
+        return fragment;
+      }).join('');
+    }
+  )
+);
+
 describe('printAST', () => {
   it.each([
     ['', ''],
@@ -128,6 +158,9 @@ describe('printAST', () => {
     ["'{isn''t}'", "'{isn''t}'"],
     ["It''s {name} o''clock", "It's {name} o'clock"],
     ["{name}'s book", "{name}''s book"],
+    ["{name}''''s book", "{name}'''s book"],
+    ["''''{name}", "''''{name}"],
+    ["<b>''''</b>", "<b>''''</b>"],
     ["{count, plural, other {'#' #}}", "{count,plural,other{'#' #}}"],
     ["{count, plural, other {'##'}}", "{count,plural,other{'##'}}"],
     ["{count, plural, other {'{#}'}}", "{count,plural,other{'{#}'}}"],
@@ -159,19 +192,50 @@ describe('printAST', () => {
     expect(parse(printAST(original))).toEqual(original);
   });
 
-  it.each(['custom<a', 'custom<a>', 'custom</a>'])(
-    'prints named style %j idempotently',
-    (style) => {
-      const original = parse(`{n, number, ${style}}`);
-      const once = printAST(original);
-      const twice = printAST(parse(once));
-      const threeTimes = printAST(parse(twice));
+  it.each([
+    'custom<a',
+    'custom<a>',
+    'custom</a>',
+    'foo{bar}',
+    'foo{{bar}}',
+    "custom'{style}'",
+    "custom'{'nested'}'",
+  ])('prints named style %j idempotently', (style) => {
+    const original = parse(`{n, number, ${style}}`);
+    const once = printAST(original);
+    const twice = printAST(parse(once));
+    const threeTimes = printAST(parse(twice));
 
-      expect(twice).toBe(once);
-      expect(threeTimes).toBe(once);
-      expect(parse(once)).toEqual(original);
+    expect(twice).toBe(once);
+    expect(threeTimes).toBe(once);
+    expect(parse(once)).toEqual(original);
+  });
+
+  it('does not require the ES2022 Array.prototype.at API', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(Array.prototype, 'at');
+    Object.defineProperty(Array.prototype, 'at', {
+      configurable: true,
+      value: undefined,
+    });
+
+    let printed: string | undefined;
+    try {
+      printed = printAST([
+        {
+          type: TYPE.literal,
+          value: "'#{</b>",
+        },
+      ]);
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(Array.prototype, 'at', descriptor);
+      } else {
+        Reflect.deleteProperty(Array.prototype, 'at');
+      }
     }
-  );
+
+    expect(parse(printed!)).toEqual([{ type: TYPE.literal, value: "'#{</b>" }]);
+  });
 
   it.each(GENERATED_ROUND_TRIP_MESSAGES)(
     'preserves the AST through print and reparse for %j',
@@ -192,4 +256,43 @@ describe('printAST', () => {
       expect(reparsed).toEqual(original);
     }
   );
+
+  it('round-trips adversarial apostrophe and syntax combinations in every literal context', () => {
+    for (const value of GENERATED_ADVERSARIAL_LITERALS) {
+      const literal = { type: TYPE.literal, value } as const;
+      const cases: MessageFormatElement[][] = [
+        [literal],
+        [{ type: TYPE.argument, value: 'before' }, literal],
+        [literal, { type: TYPE.argument, value: 'after' }],
+        [
+          {
+            type: TYPE.select,
+            value: 'choice',
+            options: { other: { value: [literal] } },
+          },
+        ],
+        [
+          {
+            type: TYPE.plural,
+            value: 'count',
+            options: { other: { value: [literal] } },
+            offset: 0,
+            pluralType: 'cardinal',
+          },
+        ],
+        [{ type: TYPE.tag, value: 'b', children: [literal] }],
+      ];
+
+      for (const ast of cases) {
+        const printed = printAST(ast);
+        const reparsed = parse(printed);
+        if (JSON.stringify(reparsed) !== JSON.stringify(ast)) {
+          expect(
+            reparsed,
+            `printAST(${JSON.stringify(ast)}) = ${printed}`
+          ).toEqual(ast);
+        }
+      }
+    }
+  });
 });

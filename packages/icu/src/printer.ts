@@ -20,12 +20,13 @@ type SimpleFormatStyle = NonNullable<
 >;
 
 export function printAST(ast: MessageFormatElement[]): string {
-  return printElements(ast, false);
+  return printElements(ast, false, false);
 }
 
 function printElements(
   ast: MessageFormatElement[],
-  isInPlural: boolean
+  isInPlural: boolean,
+  closesContainer: boolean
 ): string {
   return ast
     .map((element, index) => {
@@ -34,8 +35,8 @@ function printElements(
           return printLiteral(
             element,
             isInPlural,
-            index === 0,
-            index === ast.length - 1
+            index > 0,
+            index < ast.length - 1 || closesContainer
           );
         case TYPE.argument:
           return `{${element.value}}`;
@@ -50,7 +51,7 @@ function printElements(
         case TYPE.pound:
           return '#';
         case TYPE.tag:
-          return `<${element.value}>${printElements(element.children, isInPlural)}</${element.value}>`;
+          return `<${element.value}>${printElements(element.children, isInPlural, true)}</${element.value}>`;
       }
     })
     .join('');
@@ -98,36 +99,82 @@ function findBraceSyntaxEnd(message: string, index: number): number {
  * nested in plural tags. FormatJS 3.5.x later adopted the same syntax-run
  * strategy to make printer output round-trippable.
  */
-function escapeMessage(
-  message: string,
-  isInPlural = false,
-  escapeTags = true
+function escapeApostropheRuns(
+  value: string,
+  isInPlural: boolean,
+  followsQuotedSyntax: boolean,
+  followsElement: boolean,
+  precedesSyntax: boolean
 ): string {
   let result = '';
-  let literalStart = 0;
-  let quotedStart = -1;
-  let quotedEnd = -1;
+  let index = 0;
 
-  function flushQuotedToken(): void {
-    if (quotedStart === -1) return;
+  while (index < value.length) {
+    if (value[index] !== "'") {
+      result += value[index];
+      index += 1;
+      continue;
+    }
 
-    const literal = message.slice(literalStart, quotedStart);
-    result += literal;
-    const trailingApostrophes = literal.match(/'+$/u)?.[0].length ?? 0;
-    if (trailingApostrophes % 2 === 1) result += "'";
-    result += quoteSyntaxToken(message.slice(quotedStart, quotedEnd));
-    literalStart = quotedEnd;
-    quotedStart = -1;
+    const start = index;
+    while (value[index] === "'") index += 1;
+    const length = index - start;
+    const next = value[index];
+    const introducesQuote =
+      next === '{' ||
+      next === '}' ||
+      next === '<' ||
+      next === '>' ||
+      (isInPlural && next === '#');
+    const touchesSyntax =
+      (start === 0 && followsQuotedSyntax) ||
+      (index === value.length && precedesSyntax) ||
+      introducesQuote;
+    const preservesElementBoundary = start === 0 && followsElement;
+
+    // A single apostrophe is literal unless it introduces ICU syntax. Longer
+    // runs otherwise need 2n-1 apostrophes because the parser collapses each
+    // pair. At a syntax boundary they need 2n so the boundary apostrophe
+    // cannot be mistaken for a quote delimiter. Keep the established doubled
+    // spelling for one apostrophe after another AST element; longer runs use
+    // the shortest correct encoding rather than changing more hash bytes.
+    result +=
+      length === 1 && !touchesSyntax && !preservesElementBoundary
+        ? "'"
+        : "'".repeat(
+            touchesSyntax
+              ? length * 2
+              : length === 1 && preservesElementBoundary
+                ? 2
+                : length * 2 - 1
+          );
   }
 
+  return result;
+}
+
+function escapeMessage(
+  message: string,
+  isInPlural: boolean,
+  hasPrecedingSyntax: boolean,
+  hasFollowingSyntax: boolean
+): string {
+  const quotedRanges: Array<{ start: number; end: number }> = [];
+
   function quoteToken(start: number, end: number): void {
-    if (quotedStart !== -1 && start === quotedEnd) {
-      quotedEnd = end;
-      return;
+    const previous = quotedRanges[quotedRanges.length - 1];
+    if (
+      previous &&
+      (start === previous.end ||
+        /^'+$/u.test(message.slice(previous.end, start)))
+    ) {
+      // Merge across apostrophe-only gaps. Two independently quoted syntax
+      // tokens would otherwise make their closing/opening delimiters combine
+      // with the literal apostrophes and change the reparsed value.
+      previous.end = end;
+    } else {
+      quotedRanges.push({ start, end });
     }
-    flushQuotedToken();
-    quotedStart = start;
-    quotedEnd = end;
   }
 
   for (let index = 0; index < message.length; index += 1) {
@@ -138,7 +185,7 @@ function escapeMessage(
       index = end - 1;
     } else if (character === '}') {
       quoteToken(index, index + 1);
-    } else if (escapeTags && isTagSyntaxStart(message, index)) {
+    } else if (isTagSyntaxStart(message, index)) {
       const end = findTagSyntaxEnd(message, index);
       quoteToken(index, end);
       index = end - 1;
@@ -147,24 +194,42 @@ function escapeMessage(
     }
   }
 
-  flushQuotedToken();
-  return result + message.slice(literalStart);
+  let result = '';
+  let literalStart = 0;
+  for (const range of quotedRanges) {
+    result += escapeApostropheRuns(
+      message.slice(literalStart, range.start),
+      isInPlural,
+      literalStart !== 0,
+      literalStart === 0 && hasPrecedingSyntax,
+      true
+    );
+    result += quoteSyntaxToken(message.slice(range.start, range.end));
+    literalStart = range.end;
+  }
+
+  result += escapeApostropheRuns(
+    message.slice(literalStart),
+    isInPlural,
+    literalStart !== 0,
+    literalStart === 0 && hasPrecedingSyntax,
+    hasFollowingSyntax
+  );
+  return result;
 }
 
 function printLiteral(
   { value }: LiteralElement,
   isInPlural: boolean,
-  isFirstElement: boolean,
-  isLastElement: boolean
+  hasPrecedingSyntax: boolean,
+  hasFollowingSyntax: boolean
 ): string {
-  let escaped = value;
-  if (!isFirstElement && escaped[0] === "'") {
-    escaped = `''${escaped.slice(1)}`;
-  }
-  if (!isLastElement && escaped[escaped.length - 1] === "'") {
-    escaped = `${escaped.slice(0, -1)}''`;
-  }
-  return escapeMessage(escaped, isInPlural);
+  return escapeMessage(
+    value,
+    isInPlural,
+    hasPrecedingSyntax,
+    hasFollowingSyntax
+  );
 }
 
 function printSimpleFormat(
@@ -190,9 +255,11 @@ function printNumberSkeletonToken(
 }
 
 function printStyle(style: SimpleFormatStyle): string {
-  // Tag syntax is only meaningful in message literals. Escaping `<a` inside a
-  // named style changes the style value on every parse/print cycle.
-  if (typeof style === 'string') return escapeMessage(style, false, false);
+  // ICU argStyleText has its own grammar: apostrophes are meaningful and
+  // unquoted braces are allowed when paired. Re-escaping it as message text
+  // changes the style bytes and can even create an unclosed quote, so preserve
+  // the parser-produced style exactly.
+  if (typeof style === 'string') return style;
   if (style.type === SKELETON_TYPE.dateTime) return `::${style.pattern}`;
   return `::${style.tokens.map(printNumberSkeletonToken).join(' ')}`;
 }
@@ -214,7 +281,7 @@ function printOptions(
   return Object.entries(options)
     .map(
       ([selector, option]) =>
-        `${selector}{${printElements(option.value, inPlural)}}`
+        `${selector}{${printElements(option.value, inPlural, true)}}`
     )
     .join(' ');
 }

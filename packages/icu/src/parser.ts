@@ -174,15 +174,20 @@ class IcuParser {
     if (!this.consume('>')) this.fail('INVALID_TAG', start);
     const children = this.parseMessage(true, inPlural, true);
 
+    const closingTagStart = this.index;
     if (!this.consume('</')) this.fail('UNCLOSED_TAG', start);
-    const closingStart = this.index;
-    if (!isAsciiLetter(this.current())) this.fail('INVALID_TAG', closingStart);
+    const closingNameStart = this.index;
+    if (!isAsciiLetter(this.current())) {
+      this.failAt('INVALID_TAG', closingTagStart, this.index);
+    }
     const closingTag = this.readTagName();
     if (closingTag !== tagName) {
-      this.fail('UNMATCHED_CLOSING_TAG', closingStart);
+      this.fail('UNMATCHED_CLOSING_TAG', closingNameStart);
     }
     this.skipSpace();
-    if (!this.consume('>')) this.fail('INVALID_TAG', closingStart);
+    if (!this.consume('>')) {
+      this.failAt('INVALID_TAG', closingTagStart, this.index);
+    }
 
     return this.withLocation(
       { type: TYPE.tag, value: tagName, children },
@@ -225,9 +230,11 @@ class IcuParser {
     if (this.atEnd()) this.fail('EXPECT_ARGUMENT_CLOSING_BRACE', start);
     if (!this.consume(',')) this.fail('MALFORMED_ARGUMENT', start);
     this.skipSpace();
+    if (this.atEnd()) this.fail('EXPECT_ARGUMENT_CLOSING_BRACE', start);
 
     const argumentTypeStart = this.index;
     const argumentType = this.readIdentifier();
+    const argumentTypeEnd = this.index;
     if (!argumentType) this.fail('EXPECT_ARGUMENT_TYPE', argumentTypeStart);
 
     switch (argumentType) {
@@ -242,6 +249,7 @@ class IcuParser {
           start,
           value,
           argumentType,
+          argumentTypeEnd,
           expectingCloseTag
         );
       default:
@@ -256,18 +264,34 @@ class IcuParser {
   ): MessageFormatElement {
     this.skipSpace();
     let style: string | NumberSkeleton | DateTimeSkeleton | null = null;
+    let styleSource:
+      | { rawStyle: string; start: number; end: number }
+      | undefined;
 
     if (this.consume(',')) {
       this.skipSpace();
       const styleStart = this.index;
       const rawStyle = trimEnd(this.readSimpleStyle());
-      if (!rawStyle) this.fail('EXPECT_ARGUMENT_STYLE', styleStart);
+      if (!rawStyle) this.fail('EXPECT_ARGUMENT_STYLE');
+      styleSource = { rawStyle, start: styleStart, end: this.index };
+    }
 
+    if (!this.consume('}')) {
+      this.fail('EXPECT_ARGUMENT_CLOSING_BRACE', start);
+    }
+
+    if (styleSource) {
+      const { rawStyle, start: styleStart, end: styleEnd } = styleSource;
       if (rawStyle.slice(0, 2) === '::') {
         const skeleton = trimStart(rawStyle.slice(2));
-        const styleLocation = this.location(styleStart, this.index);
+        const styleLocation = this.location(styleStart, styleEnd);
         if (argumentType === 'number') {
-          const tokens = parseNumberSkeletonTokens(skeleton);
+          let tokens: ReturnType<typeof parseNumberSkeletonTokens>;
+          try {
+            tokens = parseNumberSkeletonTokens(skeleton);
+          } catch {
+            this.failAt('INVALID_NUMBER_SKELETON', styleStart, styleEnd);
+          }
           style = {
             type: SKELETON_TYPE.number,
             tokens,
@@ -277,7 +301,9 @@ class IcuParser {
               : {},
           };
         } else {
-          if (!skeleton) this.fail('EXPECT_DATE_TIME_SKELETON', styleStart);
+          if (!skeleton) {
+            this.failAt('EXPECT_DATE_TIME_SKELETON', start, this.index);
+          }
           const pattern = resolveLocaleHourSkeleton(
             skeleton,
             this.options.locale
@@ -294,10 +320,6 @@ class IcuParser {
       } else {
         style = rawStyle;
       }
-    }
-
-    if (!this.consume('}')) {
-      this.fail('EXPECT_ARGUMENT_CLOSING_BRACE', start);
     }
 
     const type = {
@@ -320,10 +342,13 @@ class IcuParser {
       const character = this.current();
       if (character === "'") {
         this.index += 1;
+        const quotedContentStart = this.index;
         while (!this.atEnd() && this.current() !== "'") {
           this.index += this.current().length;
         }
-        if (this.atEnd()) this.fail('UNCLOSED_QUOTE_IN_ARGUMENT_STYLE', start);
+        if (this.atEnd()) {
+          this.fail('UNCLOSED_QUOTE_IN_ARGUMENT_STYLE', quotedContentStart);
+        }
         this.index += 1;
       } else if (character === '{') {
         nestedBraces += 1;
@@ -344,10 +369,17 @@ class IcuParser {
     start: number,
     value: string,
     argumentType: 'plural' | 'selectordinal' | 'select',
+    argumentTypeEnd: number,
     expectingCloseTag: boolean
   ): MessageFormatElement {
     this.skipSpace();
-    if (!this.consume(',')) this.fail('EXPECT_SELECT_ARGUMENT_OPTIONS');
+    if (!this.consume(',')) {
+      this.failAt(
+        'EXPECT_SELECT_ARGUMENT_OPTIONS',
+        argumentTypeEnd,
+        argumentTypeEnd
+      );
+    }
     this.skipSpace();
 
     let offset = 0;
@@ -356,7 +388,10 @@ class IcuParser {
     if (argumentType !== 'select' && selector === 'offset') {
       if (!this.consume(':')) this.fail('EXPECT_PLURAL_ARGUMENT_OFFSET_VALUE');
       this.skipSpace();
-      offset = this.readInteger('EXPECT_PLURAL_ARGUMENT_OFFSET_VALUE');
+      offset = this.readInteger(
+        'EXPECT_PLURAL_ARGUMENT_OFFSET_VALUE',
+        'INVALID_PLURAL_ARGUMENT_OFFSET_VALUE'
+      );
       this.skipSpace();
       selector = this.readIdentifier();
     }
@@ -372,21 +407,30 @@ class IcuParser {
         // `=-0` remain observably distinct from their canonical spellings,
         // matching FormatJS parsing and runtime behavior.
         selector = `=${this.readIntegerToken(
-          'EXPECT_PLURAL_ARGUMENT_SELECTOR'
+          'EXPECT_PLURAL_ARGUMENT_SELECTOR',
+          'INVALID_PLURAL_ARGUMENT_SELECTOR'
         )}`;
       }
       if (seen.has(selector)) {
-        this.fail(
+        this.failAt(
           argumentType === 'select'
             ? 'DUPLICATE_SELECT_ARGUMENT_SELECTOR'
-            : 'DUPLICATE_PLURAL_ARGUMENT_SELECTOR'
+            : 'DUPLICATE_PLURAL_ARGUMENT_SELECTOR',
+          selectorStart,
+          this.index
         );
       }
       seen.add(selector);
 
       this.skipSpace();
       const optionStart = this.index;
-      if (!this.consume('{')) this.fail('EXPECT_ARGUMENT_SELECTOR_FRAGMENT');
+      if (!this.consume('{')) {
+        this.fail(
+          argumentType === 'select'
+            ? 'EXPECT_SELECT_ARGUMENT_SELECTOR_FRAGMENT'
+            : 'EXPECT_PLURAL_ARGUMENT_SELECTOR_FRAGMENT'
+        );
+      }
       const optionValue = this.parseMessage(
         true,
         argumentType !== 'select',
@@ -409,7 +453,13 @@ class IcuParser {
       selector = this.readIdentifier();
     }
 
-    if (entries.length === 0) this.fail('EXPECT_ARGUMENT_SELECTOR');
+    if (entries.length === 0) {
+      this.fail(
+        argumentType === 'select'
+          ? 'EXPECT_SELECT_ARGUMENT_SELECTOR'
+          : 'EXPECT_PLURAL_ARGUMENT_SELECTOR'
+      );
+    }
     if (
       this.options.requiresOtherClause &&
       !entries.some(([entrySelector]) => entrySelector === 'other')
@@ -439,19 +489,25 @@ class IcuParser {
     );
   }
 
-  private readInteger(errorCode: string): number {
-    return Number(this.readIntegerToken(errorCode));
+  private readInteger(
+    expectedErrorCode: string,
+    invalidErrorCode: string
+  ): number {
+    return Number(this.readIntegerToken(expectedErrorCode, invalidErrorCode));
   }
 
-  private readIntegerToken(errorCode: string): string {
+  private readIntegerToken(
+    expectedErrorCode: string,
+    invalidErrorCode: string
+  ): string {
     const start = this.index;
     if (this.current() === '+' || this.current() === '-') this.index += 1;
     const digitStart = this.index;
     while (/\d/u.test(this.current())) this.index += 1;
-    if (digitStart === this.index) this.fail(errorCode, start);
+    if (digitStart === this.index) this.fail(expectedErrorCode, start);
     const token = this.message.slice(start, this.index);
     const value = Number(token);
-    if (!isSafeInteger(value)) this.fail('INVALID_NUMBER', start);
+    if (!isSafeInteger(value)) this.fail(invalidErrorCode, start);
     return token;
   }
 
@@ -514,13 +570,17 @@ class IcuParser {
   }
 
   private fail(code: string, offset = this.index): never {
+    return this.failAt(code, offset, Math.max(offset, this.index));
+  }
+
+  private failAt(code: string, start: number, end: number): never {
     const error = new SyntaxError(code) as SyntaxError & {
       location: Location;
       originalMessage: string;
     };
     error.location = {
-      start: this.position(offset),
-      end: this.position(Math.max(offset, this.index)),
+      start: this.position(start),
+      end: this.position(end),
     };
     error.originalMessage = this.message;
     throw error;

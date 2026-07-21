@@ -418,6 +418,44 @@ describe('parse', () => {
     }
   );
 
+  it.each([
+    ['foo{bar}', 'foo{bar}'],
+    ['foo{{bar}}', 'foo{{bar}}'],
+    ["custom'{style}'", "custom'{style}'"],
+    ["custom'{'nested'}'", "custom'{'nested'}'"],
+  ])('preserves valid ICU argument style text %j', (style, expected) => {
+    const [element] = parse(`{n, number, ${style}}`);
+    expect(element).toMatchObject({
+      type: TYPE.number,
+      style: expected,
+    });
+  });
+
+  it('rejects unpaired argument-style braces', () => {
+    expect(() => parse('{n, number, foo{bar}')).toThrow(
+      'EXPECT_ARGUMENT_CLOSING_BRACE'
+    );
+  });
+
+  it.each([
+    '#',
+    '##',
+    '+',
+    'r',
+    's',
+    '#r',
+    '##s',
+    '+r',
+    '+s',
+    '.00/#',
+    '.00/+',
+    '.00/r',
+  ])('rejects malformed significant-precision skeleton ::%s', (skeleton) => {
+    expect(() => parse(`{n, number, ::${skeleton}}`)).toThrow(
+      'Significant precision must start with @'
+    );
+  });
+
   it('preserves FormatJS SyntaxError metadata', () => {
     expect.assertions(4);
     try {
@@ -441,17 +479,22 @@ describe('parse', () => {
     ['Hello {name', 'EXPECT_ARGUMENT_CLOSING_BRACE'],
     ['Hello {}', 'EMPTY_ARGUMENT'],
     ['{name, unknown}', 'INVALID_ARGUMENT_TYPE'],
-    ['{name, select, }', 'EXPECT_ARGUMENT_SELECTOR'],
-    ['{count, plural, }', 'EXPECT_ARGUMENT_SELECTOR'],
+    ['{name, select, }', 'EXPECT_SELECT_ARGUMENT_SELECTOR'],
+    ['{count, plural, }', 'EXPECT_PLURAL_ARGUMENT_SELECTOR'],
     [
       '{x, select, a {A} a {B} other {C}}',
       'DUPLICATE_SELECT_ARGUMENT_SELECTOR',
     ],
     ['<b>text</i>', 'UNMATCHED_CLOSING_TAG'],
     ['<b>text', 'UNCLOSED_TAG'],
-    ['{n, number, ::}', 'Number skeleton cannot be empty'],
-    ['{n, number, ::currency/}', 'Invalid number skeleton token'],
+    ['{n, number, ::}', 'INVALID_NUMBER_SKELETON'],
+    ['{n, number, ::currency/}', 'INVALID_NUMBER_SKELETON'],
+    ['{n, number, ::currency}', 'currency requires an option'],
+    ['{n, number, ::unit}', 'unit requires an option'],
+    ['{n, number, ::integer-width}', 'integer-width requires an option'],
     ['{n, number, ::integer-width/*}', 'Unsupported integer width'],
+    ['{n, number, ::integer-width/x}', 'Unsupported integer width'],
+    ['{n, number, ::integer-width/foo*00bar}', 'Unsupported integer width'],
     [
       '{n, number, ::integer-width/*00/foo}',
       'integer-width stems only accept a single optional option',

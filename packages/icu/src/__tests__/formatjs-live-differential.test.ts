@@ -223,6 +223,46 @@ const INVALID_MESSAGES = [
   '<b>unterminated',
 ] as const;
 
+const EXACT_ERROR_MESSAGES = [
+  '{',
+  '{name',
+  '{value,',
+  '{value,}',
+  '{value, select',
+  '{value, select,',
+  '{value, select, selected',
+  '{value, select, selected {yes} selected {again} other {no}}',
+  '{value, plural',
+  '{value, plural,',
+  '{value, plural, offset: other {no}}',
+  '{value, plural, offset:999999999999999999999 other {no}}',
+  '{value, plural, =1.5 {decimal} other {no}}',
+  '{value, plural, =999999999999999999999 {large} other {no}}',
+  '{value, plural, one selected other {no}}',
+  '<b>unterminated',
+  '<b>text</>',
+  '<b>text</b',
+  "{value, number, 'unterminated}",
+  '{value, number, ::currency/',
+  '{value, number, ::currency/}',
+  '{value, number, ::}',
+] as const;
+
+const INVALID_SIGNIFICANT_PRECISION_SKELETONS = [
+  '#',
+  '##',
+  '+',
+  'r',
+  's',
+  '#r',
+  '##s',
+  '+r',
+  '+s',
+  '.00/#',
+  '.00/+',
+  '.00/r',
+] as const;
+
 const formatJsFormatters = new Map<string, IntlMessageFormat>();
 
 function formatWithFormatJs(
@@ -398,7 +438,7 @@ describe('live FormatJS parser compatibility', () => {
     }
   );
 
-  it.each(['{', '{name', '{value,}', '<b>unterminated'])(
+  it.each(EXACT_ERROR_MESSAGES)(
     'matches SyntaxError metadata for %j',
     (message) => {
       let formatJsError: unknown;
@@ -420,6 +460,15 @@ describe('live FormatJS parser compatibility', () => {
         originalMessage: (formatJsError as Error & { originalMessage: string })
           .originalMessage,
       });
+    }
+  );
+
+  it.each(INVALID_SIGNIFICANT_PRECISION_SKELETONS)(
+    'matches FormatJS rejection of malformed significant precision ::%s',
+    (skeleton) => {
+      const message = `{value, number, ::${skeleton}}`;
+      expect(() => parse(message)).toThrow();
+      expect(() => formatJsParse(message)).toThrow();
     }
   );
 });

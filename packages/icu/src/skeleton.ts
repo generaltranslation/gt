@@ -6,7 +6,8 @@
 import type { ExtendedNumberFormatOptions, NumberSkeletonToken } from './types';
 
 const FRACTION_PRECISION = /^\.(?:(0+)(\*)?|(#+)|(0+)(#+))$/;
-const SIGNIFICANT_PRECISION = /^(@+)?(\+|#+)?[rs]?$/;
+const SIGNIFICANT_PRECISION = /^@+(\+|#+)?[rs]?$/;
+const INVALID_SIGNIFICANT_PRECISION = /^(?:(?:\+|#+)[rs]?|[rs])$/;
 const INTEGER_WIDTH = /^(?:(\*)(0+)|(#+)(0+)|(0+))$/;
 const NUMBER_SKELETON_WHITE_SPACE = /[\t-\r \x85\u200E\u200F\u2028\u2029]+/u;
 const DATE_TIME_FIELD =
@@ -179,6 +180,14 @@ export function parseNumberSkeletonOptions(
       continue;
     }
 
+    if (INVALID_SIGNIFICANT_PRECISION.test(token.stem)) {
+      // UTS 35 significant-digit precision starts with one or more `@`
+      // characters. FormatJS rejects these malformed stems too, although its
+      // pinned parser does so with an incidental TypeError while destructuring
+      // a missing match group.
+      throw new SyntaxError('Significant precision must start with @.');
+    }
+
     if (applySign(result, token.stem)) continue;
     if (applyConciseScientific(result, token.stem)) continue;
   }
@@ -296,6 +305,9 @@ function parseSignificantPrecision(
   precision: string
 ): ModernNumberFormatOptions {
   const result: ModernNumberFormatOptions = {};
+  if (INVALID_SIGNIFICANT_PRECISION.test(precision)) {
+    throw new SyntaxError('Significant precision must start with @.');
+  }
   if (!SIGNIFICANT_PRECISION.test(precision)) return result;
   if (precision.endsWith('r')) result.roundingPriority = 'morePrecision';
   if (precision.endsWith('s')) result.roundingPriority = 'lessPrecision';
