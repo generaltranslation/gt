@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://assets.gtx.dev/config-schema.json",
   "title": "General Translation Configuration",
-  "description": "Configuration schema for gt.config.json files used by General Translation CLI",
+  "description": "Configuration schema for gt.config.json files used by General Translation libraries and CLI",
   "type": "object",
   "properties": {
     "$schema": {
@@ -11,33 +11,60 @@
     },
     "_versionId": {
       "type": "string",
-      "description": "Internal version identifier for the configuration"
+      "description": "Internal version identifier written by the CLI"
     },
-    "runtimeUrl": {
+    "_branchId": {
       "type": "string",
-      "format": "uri",
-      "description": "Runtime URL for the General Translation service"
+      "description": "Internal branch identifier written by the CLI"
+    },
+    "_disableDevHotReload": {
+      "type": "boolean",
+      "description": "Internal override that disables development hot reload"
     },
     "projectId": {
       "type": "string",
       "description": "The project ID for your General Translation project"
     },
+    "apiKey": {
+      "type": "string",
+      "description": "Production API key. Prefer the GT_API_KEY environment variable instead of storing credentials in this file"
+    },
+    "devApiKey": {
+      "type": "string",
+      "description": "Development API key. Prefer the framework-specific GT_DEV_API_KEY environment variable instead of storing credentials in this file"
+    },
     "defaultLocale": {
       "type": "string",
-      "description": "The default locale for your project. This is the locale that your source content is written in and serves as the fallback locale.",
+      "description": "The locale that source content is written in and the fallback locale when no supported locale is resolved",
       "examples": ["en", "en-US", "fr", "es"]
     },
     "locales": {
       "type": "array",
-      "description": "An array of locales for your project. These are the locales that you want to translate your project into.",
-      "items": {
-        "type": "string"
-      },
+      "description": "Locales supported by the project",
+      "items": { "type": "string" },
       "uniqueItems": true,
       "examples": [
         ["fr", "es", "de"],
         ["en-US", "fr-FR", "es-ES"]
       ]
+    },
+    "customMapping": { "$ref": "#/definitions/customMapping" },
+    "enableI18n": {
+      "type": "boolean",
+      "description": "Initial value for whether translations are enabled"
+    },
+    "runtimeUrl": {
+      "type": ["string", "null"],
+      "description": "Runtime translation service URL. Use null or an empty string to disable runtime translation"
+    },
+    "cacheUrl": {
+      "type": ["string", "null"],
+      "description": "Remote translation cache URL. Use null to disable the remote cache"
+    },
+    "cacheExpiryTime": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "description": "Translation cache lifetime in milliseconds. Use null to disable expiry"
     },
     "baseUrl": {
       "type": "string",
@@ -51,25 +78,34 @@
     },
     "stageTranslations": {
       "type": "boolean",
-      "description": "Optional boolean flag that indicates whether your project is configured to use human review",
+      "description": "Always stage the project during translation",
       "default": false
     },
     "requiresReview": {
       "type": "boolean",
-      "description": "When true, translated files require approval before the CLI downloads and uses them. File-type requiresReview settings and component-level $requiresReview props override this default.",
+      "description": "Whether translated files require approval before the CLI downloads and uses them. File-type settings and component-level $requiresReview props override this default",
       "default": false
+    },
+    "publish": {
+      "type": "boolean",
+      "description": "Whether translations should be published to the CDN"
+    },
+    "omitConfigIds": {
+      "type": "boolean",
+      "description": "Do not write _versionId or _branchId to this file"
+    },
+    "skipVersionCheck": {
+      "type": "boolean",
+      "description": "Skip the CLI check for inconsistent General Translation package versions in a monorepo"
     },
     "modelProvider": {
       "type": "string",
-      "description": "AI model provider to use for translations",
-      "enum": ["anthropic", "openai"]
+      "description": "AI model provider to use for translations"
     },
     "src": {
       "type": "array",
-      "description": "Optional array of relative directory paths that contain translatable content",
-      "items": {
-        "type": "string"
-      },
+      "description": "Glob patterns containing translatable source content",
+      "items": { "type": "string" },
       "examples": [
         [
           "src/**/*.{js,jsx,ts,tsx}",
@@ -81,369 +117,410 @@
     },
     "dictionary": {
       "type": "string",
-      "description": "Optional string that specifies the relative path to the dictionary file",
+      "description": "Relative path to a dictionary file used by framework integrations",
       "examples": ["./dictionary.json", "./src/dictionary.ts"]
+    },
+    "loadTranslationsPath": {
+      "type": "string",
+      "description": "Path to a custom loadTranslations module"
+    },
+    "loadDictionaryPath": {
+      "type": "string",
+      "description": "Path to a custom loadDictionary module"
+    },
+    "getLocalePath": {
+      "type": "string",
+      "description": "Path to a custom request-scoped getLocale module"
+    },
+    "getRegionPath": {
+      "type": "string",
+      "description": "Path to a custom request-scoped getRegion module"
     },
     "framework": {
       "type": "string",
-      "description": "The framework being used in the project",
-      "enum": ["next-app", "next-pages", "vite", "gatsby", "react", "redwood"]
+      "description": "The framework used by the project",
+      "enum": [
+        "mintlify",
+        "next-app",
+        "next-pages",
+        "vite",
+        "gatsby",
+        "redwood",
+        "react"
+      ]
     },
     "version": {
       "type": "string",
-      "description": "Custom version ID to use for translations. Should be unique"
+      "description": "Custom version ID to use for translations"
     },
     "description": {
       "type": "string",
-      "description": "Description of the project or configuration"
+      "description": "Project description and runtime translation context"
+    },
+    "tag": {
+      "type": "string",
+      "description": "Tag associated with a translation run"
+    },
+    "tagMessage": {
+      "type": "string",
+      "description": "Message associated with a translation tag"
+    },
+    "ignoreBrowserLocales": {
+      "type": "boolean",
+      "description": "Ignore the browser's preferred locales"
+    },
+    "disableInvalidLocaleWarning": {
+      "type": "boolean",
+      "description": "Disable warnings for invalid request locales"
+    },
+    "pathRegex": {
+      "type": "string",
+      "description": "Regular expression source that limits i18n middleware routing by pathname"
+    },
+    "renderSettings": {
+      "type": "object",
+      "description": "Controls how framework integrations render translations",
+      "properties": {
+        "method": {
+          "type": "string",
+          "enum": ["skeleton", "replace", "default"]
+        },
+        "timeout": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Render timeout in milliseconds"
+        }
+      },
+      "required": ["method"],
+      "additionalProperties": false
+    },
+    "maxConcurrentRequests": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Maximum number of concurrent translation requests"
+    },
+    "maxBatchSize": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Maximum number of translations in one request batch"
+    },
+    "batchInterval": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Delay between translation batches in milliseconds"
+    },
+    "batchConfig": { "$ref": "#/definitions/batchConfig" },
+    "runtimeTranslation": {
+      "type": "object",
+      "description": "Runtime translation request settings",
+      "properties": {
+        "timeout": { "type": "number", "minimum": 0 },
+        "metadata": {
+          "type": "object",
+          "description": "Metadata forwarded with runtime translation requests",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "localeCookieName": {
+      "type": "string",
+      "description": "Cookie name used by React runtimes to persist the locale"
+    },
+    "regionCookieName": {
+      "type": "string",
+      "description": "Cookie name used by React runtimes to persist the region"
+    },
+    "enableI18nCookieName": {
+      "type": "string",
+      "description": "Cookie name used by React runtimes to persist whether translations are enabled"
+    },
+    "htmlTagOptions": {
+      "type": "object",
+      "description": "Controls browser updates to the document HTML element",
+      "properties": {
+        "updateHtmlLangTag": { "type": "boolean" },
+        "updateHtmlDirTag": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "eslint": {
+      "type": "boolean",
+      "description": "Enable ESLint configuration generation for gt-next"
+    },
+    "eslintSeverity": {
+      "type": "string",
+      "enum": ["error", "warn"],
+      "description": "Severity used by generated General Translation ESLint rules"
+    },
+    "overwriteESLintConfig": {
+      "type": "boolean",
+      "description": "Allow gt-next to overwrite an existing ESLint config"
+    },
+    "headersAndCookies": { "$ref": "#/definitions/headersAndCookies" },
+    "experimentalCompilerOptions": {
+      "$ref": "#/definitions/compilerOptions"
+    },
+    "files": { "$ref": "#/definitions/files" },
+    "sharedStaticAssets": {
+      "$ref": "#/definitions/sharedStaticAssets"
+    },
+    "options": { "$ref": "#/definitions/additionalOptions" },
+    "parsingOptions": {
+      "type": "object",
+      "description": "Module resolution settings used while parsing source files",
+      "properties": {
+        "conditionNames": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Package export conditions checked during module resolution"
+        }
+      },
+      "additionalProperties": false
+    },
+    "branchOptions": {
+      "type": "object",
+      "description": "Translation branch detection and selection settings",
+      "properties": {
+        "currentBranch": { "type": "string" },
+        "autoDetectBranches": { "type": "boolean" },
+        "remoteName": { "type": "string", "default": "origin" },
+        "enabled": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": true,
+  "definitions": {
+    "customMapping": {
+      "type": "object",
+      "description": "Maps custom or aliased locale codes to a display name or partial locale properties",
+      "additionalProperties": {
+        "oneOf": [
+          { "type": "string" },
+          {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "name": { "type": "string" },
+              "nativeName": { "type": "string" },
+              "languageCode": { "type": "string" },
+              "languageName": { "type": "string" },
+              "nativeLanguageName": { "type": "string" },
+              "nameWithRegionCode": { "type": "string" },
+              "nativeNameWithRegionCode": { "type": "string" },
+              "regionCode": { "type": "string" },
+              "regionName": { "type": "string" },
+              "nativeRegionName": { "type": "string" },
+              "scriptCode": { "type": "string" },
+              "scriptName": { "type": "string" },
+              "nativeScriptName": { "type": "string" },
+              "maximizedCode": { "type": "string" },
+              "maximizedName": { "type": "string" },
+              "nativeMaximizedName": { "type": "string" },
+              "minimizedCode": { "type": "string" },
+              "minimizedName": { "type": "string" },
+              "nativeMinimizedName": { "type": "string" },
+              "emoji": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "componentFlags": {
+      "type": "object",
+      "properties": {
+        "jsx": { "type": "boolean" },
+        "strings": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "booleanOrComponentFlags": {
+      "oneOf": [
+        { "type": "boolean" },
+        { "$ref": "#/definitions/componentFlags" }
+      ]
+    },
+    "gtParsingFlags": {
+      "type": "object",
+      "description": "Flags shared by the CLI, compiler, and runtimes while parsing GT source files",
+      "properties": {
+        "autoderive": {
+          "$ref": "#/definitions/booleanOrComponentFlags"
+        },
+        "includeSourceCodeContext": { "type": "boolean" },
+        "enableAutoJsxInjection": { "type": "boolean" },
+        "legacyGtReactImportSource": { "type": "boolean" },
+        "devHotReload": {
+          "$ref": "#/definitions/booleanOrComponentFlags"
+        }
+      },
+      "additionalProperties": false
+    },
+    "gtFileConfig": {
+      "type": "object",
+      "description": "Generated GT translation file settings",
+      "properties": {
+        "output": {
+          "type": "string",
+          "description": "Output path pattern with a [locale] placeholder",
+          "examples": [
+            "public/i18n/[locale].json",
+            "translations/[locale].json"
+          ]
+        },
+        "publish": {
+          "type": "boolean",
+          "description": "Publish generated GT JSON translations to the CDN"
+        },
+        "parsingFlags": { "$ref": "#/definitions/gtParsingFlags" },
+        "includeSourceCodeContext": {
+          "type": "boolean",
+          "deprecated": true,
+          "description": "Deprecated. Use parsingFlags.includeSourceCodeContext instead"
+        }
+      },
+      "additionalProperties": false
+    },
+    "includePattern": {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "properties": {
+            "pattern": { "type": "string" },
+            "publish": { "type": "boolean" }
+          },
+          "required": ["pattern"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "transformOption": {
+      "type": "object",
+      "properties": {
+        "match": {
+          "type": "string",
+          "description": "Regular expression used to match source path content"
+        },
+        "replace": {
+          "type": "string",
+          "description": "Replacement string, which may use locale property placeholders"
+        }
+      },
+      "required": ["replace"],
+      "additionalProperties": false
+    },
+    "fileTransform": {
+      "oneOf": [
+        { "type": "string" },
+        { "$ref": "#/definitions/transformOption" },
+        {
+          "type": "array",
+          "items": { "$ref": "#/definitions/transformOption" },
+          "minItems": 1
+        }
+      ]
+    },
+    "requiresReview": {
+      "oneOf": [
+        { "type": "boolean" },
+        {
+          "type": "object",
+          "properties": {
+            "include": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "exclude": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "description": "Whether translated versions of matched files require approval. Exclusions win over inclusions, and unmatched files inherit the top-level default"
+    },
+    "fileTypeConfig": {
+      "type": "object",
+      "properties": {
+        "include": {
+          "type": "array",
+          "description": "Glob patterns matching files to translate",
+          "items": { "$ref": "#/definitions/includePattern" },
+          "minItems": 1
+        },
+        "exclude": {
+          "type": "array",
+          "description": "Glob patterns matching files to exclude",
+          "items": { "type": "string" }
+        },
+        "transform": { "$ref": "#/definitions/fileTransform" },
+        "transformationFormat": {
+          "type": "string",
+          "description": "Output format requested for translated files",
+          "enum": [
+            "GTJSON",
+            "JSON",
+            "PO",
+            "POT",
+            "YAML",
+            "MDX",
+            "MD",
+            "TS",
+            "JS",
+            "HTML",
+            "TXT",
+            "TWILIO_CONTENT_JSON"
+          ]
+        },
+        "parsingFlags": {
+          "type": "object",
+          "description": "File-type-specific parsing flags",
+          "additionalProperties": true
+        },
+        "requiresReview": { "$ref": "#/definitions/requiresReview" }
+      },
+      "required": ["include"],
+      "additionalProperties": false
     },
     "files": {
       "type": "object",
-      "description": "Configuration for different file types that you want to translate",
+      "description": "Configuration for generated GT JSON and source file types translated by the CLI",
       "properties": {
-        "gt": {
-          "type": "object",
-          "description": "General Translation files configuration",
-          "properties": {
-            "output": {
-              "type": "string",
-              "description": "Output path pattern with [locale] placeholder for saving translations locally",
-              "examples": [
-                "public/i18n/[locale].json",
-                "translations/[locale].json"
-              ]
-            },
-            "includeSourceCodeContext": {
-              "type": "boolean",
-              "description": "Include surrounding source code lines as context for translations. Only applies to library users that send GT JSON for translation.",
-              "default": false
-            }
-          },
-          "required": ["output"],
-          "additionalProperties": false
+        "gt": { "$ref": "#/definitions/gtFileConfig" },
+        "json": { "$ref": "#/definitions/fileTypeConfig" },
+        "pot": { "$ref": "#/definitions/fileTypeConfig" },
+        "mdx": { "$ref": "#/definitions/fileTypeConfig" },
+        "md": { "$ref": "#/definitions/fileTypeConfig" },
+        "ts": { "$ref": "#/definitions/fileTypeConfig" },
+        "js": { "$ref": "#/definitions/fileTypeConfig" },
+        "yaml": { "$ref": "#/definitions/fileTypeConfig" },
+        "html": { "$ref": "#/definitions/fileTypeConfig" },
+        "txt": { "$ref": "#/definitions/fileTypeConfig" },
+        "twilioContentJson": {
+          "$ref": "#/definitions/fileTypeConfig"
         },
-        "json": {
-          "type": "object",
-          "description": "JSON files configuration",
-          "properties": {
-            "include": {
-              "type": "array",
-              "description": "Array of glob patterns that match the JSON files you want to translate",
-              "items": {
-                "type": "string"
-              },
-              "minItems": 1,
-              "examples": [
-                ["content/[locale]/**/*.json", "data/[locale]/*.json"]
-              ]
-            },
-            "exclude": {
-              "type": "array",
-              "description": "Array of glob patterns that match the JSON files you want to exclude from translation",
-              "items": {
-                "type": "string"
-              },
-              "examples": [["content/[locale]/exclude/**/*.json"]]
-            },
-            "transform": {
-              "type": "string",
-              "description": "String defining a remapping of the file name. Should contain a wildcard * and [locale] placeholder",
-              "examples": ["*.[locale].json", "*-[locale].json"]
-            },
-            "requiresReview": {
-              "oneOf": [
-                { "type": "boolean" },
-                {
-                  "type": "object",
-                  "properties": {
-                    "include": {
-                      "type": "array",
-                      "description": "Glob patterns for files that require review approval",
-                      "items": { "type": "string" }
-                    },
-                    "exclude": {
-                      "type": "array",
-                      "description": "Glob patterns for files that never require review approval (wins over include)",
-                      "items": { "type": "string" }
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              ],
-              "description": "Whether translated versions of matched files require approval before the CLI uses them. Files matching neither glob inherit the top-level requiresReview default."
-            }
-          },
-          "required": ["include"],
-          "additionalProperties": false
-        },
-        "mdx": {
-          "type": "object",
-          "description": "MDX (Markdown component) files configuration",
-          "properties": {
-            "include": {
-              "type": "array",
-              "description": "Array of glob patterns that match the MDX files you want to translate",
-              "items": {
-                "type": "string"
-              },
-              "minItems": 1,
-              "examples": [["content/docs/[locale]/**/*.mdx"]]
-            },
-            "exclude": {
-              "type": "array",
-              "description": "Array of glob patterns that match the MDX files you want to exclude from translation",
-              "items": {
-                "type": "string",
-                "pattern": ".*\\[locale\\].*"
-              }
-            },
-            "transform": {
-              "type": "string",
-              "description": "String defining a remapping of the file name. Should contain a wildcard * and [locale] placeholder",
-              "examples": ["*.[locale].mdx"]
-            },
-            "requiresReview": {
-              "oneOf": [
-                { "type": "boolean" },
-                {
-                  "type": "object",
-                  "properties": {
-                    "include": {
-                      "type": "array",
-                      "description": "Glob patterns for files that require review approval",
-                      "items": { "type": "string" }
-                    },
-                    "exclude": {
-                      "type": "array",
-                      "description": "Glob patterns for files that never require review approval (wins over include)",
-                      "items": { "type": "string" }
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              ],
-              "description": "Whether translated versions of matched files require approval before the CLI uses them. Files matching neither glob inherit the top-level requiresReview default."
-            }
-          },
-          "required": ["include"],
-          "additionalProperties": false
-        },
-        "md": {
-          "type": "object",
-          "description": "Markdown files configuration",
-          "properties": {
-            "include": {
-              "type": "array",
-              "description": "Array of glob patterns that match the Markdown files you want to translate",
-              "items": {
-                "type": "string"
-              },
-              "minItems": 1,
-              "examples": [["docs/[locale]/**/*.md"]]
-            },
-            "exclude": {
-              "type": "array",
-              "description": "Array of glob patterns that match the Markdown files you want to exclude from translation",
-              "items": {
-                "type": "string",
-                "pattern": ".*\\[locale\\].*"
-              }
-            },
-            "transform": {
-              "type": "string",
-              "description": "String defining a remapping of the file name. Should contain a wildcard * and [locale] placeholder",
-              "examples": ["*.[locale].md"]
-            },
-            "requiresReview": {
-              "oneOf": [
-                { "type": "boolean" },
-                {
-                  "type": "object",
-                  "properties": {
-                    "include": {
-                      "type": "array",
-                      "description": "Glob patterns for files that require review approval",
-                      "items": { "type": "string" }
-                    },
-                    "exclude": {
-                      "type": "array",
-                      "description": "Glob patterns for files that never require review approval (wins over include)",
-                      "items": { "type": "string" }
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              ],
-              "description": "Whether translated versions of matched files require approval before the CLI uses them. Files matching neither glob inherit the top-level requiresReview default."
-            }
-          },
-          "required": ["include"],
-          "additionalProperties": false
-        },
-        "js": {
-          "type": "object",
-          "description": "JavaScript files configuration",
-          "properties": {
-            "include": {
-              "type": "array",
-              "description": "Array of glob patterns that match the JavaScript files you want to translate",
-              "items": {
-                "type": "string"
-              },
-              "minItems": 1,
-              "examples": [["scripts/[locale]/**/*.js"]]
-            },
-            "exclude": {
-              "type": "array",
-              "description": "Array of glob patterns that match the JavaScript files you want to exclude from translation",
-              "items": {
-                "type": "string",
-                "pattern": ".*\\[locale\\].*"
-              }
-            },
-            "transform": {
-              "type": "string",
-              "description": "String defining a remapping of the file name. Should contain a wildcard * and [locale] placeholder",
-              "examples": ["*.[locale].js"]
-            },
-            "requiresReview": {
-              "oneOf": [
-                { "type": "boolean" },
-                {
-                  "type": "object",
-                  "properties": {
-                    "include": {
-                      "type": "array",
-                      "description": "Glob patterns for files that require review approval",
-                      "items": { "type": "string" }
-                    },
-                    "exclude": {
-                      "type": "array",
-                      "description": "Glob patterns for files that never require review approval (wins over include)",
-                      "items": { "type": "string" }
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              ],
-              "description": "Whether translated versions of matched files require approval before the CLI uses them. Files matching neither glob inherit the top-level requiresReview default."
-            }
-          },
-          "required": ["include"],
-          "additionalProperties": false
-        },
-        "ts": {
-          "type": "object",
-          "description": "TypeScript files configuration",
-          "properties": {
-            "include": {
-              "type": "array",
-              "description": "Array of glob patterns that match the TypeScript files you want to translate",
-              "items": {
-                "type": "string"
-              },
-              "minItems": 1,
-              "examples": [["scripts/[locale]/**/*.ts"]]
-            },
-            "exclude": {
-              "type": "array",
-              "description": "Array of glob patterns that match the TypeScript files you want to exclude from translation",
-              "items": {
-                "type": "string",
-                "pattern": ".*\\[locale\\].*"
-              }
-            },
-            "transform": {
-              "type": "string",
-              "description": "String defining a remapping of the file name. Should contain a wildcard * and [locale] placeholder",
-              "examples": ["*.[locale].ts"]
-            },
-            "requiresReview": {
-              "oneOf": [
-                { "type": "boolean" },
-                {
-                  "type": "object",
-                  "properties": {
-                    "include": {
-                      "type": "array",
-                      "description": "Glob patterns for files that require review approval",
-                      "items": { "type": "string" }
-                    },
-                    "exclude": {
-                      "type": "array",
-                      "description": "Glob patterns for files that never require review approval (wins over include)",
-                      "items": { "type": "string" }
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              ],
-              "description": "Whether translated versions of matched files require approval before the CLI uses them. Files matching neither glob inherit the top-level requiresReview default."
-            }
-          },
-          "required": ["include"],
-          "additionalProperties": false
-        },
-        "yaml": {
-          "type": "object",
-          "description": "YAML files configuration",
-          "properties": {
-            "include": {
-              "type": "array",
-              "description": "Array of glob patterns that match the YAML files you want to translate",
-              "items": {
-                "type": "string"
-              },
-              "minItems": 1,
-              "examples": [
-                ["config/[locale]/**/*.yaml", "data/[locale]/**/*.yml"]
-              ]
-            },
-            "exclude": {
-              "type": "array",
-              "description": "Array of glob patterns that match the YAML files you want to exclude from translation",
-              "items": {
-                "type": "string",
-                "pattern": ".*\\[locale\\].*"
-              }
-            },
-            "transform": {
-              "type": "string",
-              "description": "String defining a remapping of the file name. Should contain a wildcard * and [locale] placeholder",
-              "examples": ["*.[locale].yaml", "*-[locale].yml"]
-            },
-            "requiresReview": {
-              "oneOf": [
-                { "type": "boolean" },
-                {
-                  "type": "object",
-                  "properties": {
-                    "include": {
-                      "type": "array",
-                      "description": "Glob patterns for files that require review approval",
-                      "items": { "type": "string" }
-                    },
-                    "exclude": {
-                      "type": "array",
-                      "description": "Glob patterns for files that never require review approval (wins over include)",
-                      "items": { "type": "string" }
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              ],
-              "description": "Whether translated versions of matched files require approval before the CLI uses them. Files matching neither glob inherit the top-level requiresReview default."
-            }
-          },
-          "required": ["include"],
-          "additionalProperties": false
+        "JSON": { "$ref": "#/definitions/fileTypeConfig" },
+        "POT": { "$ref": "#/definitions/fileTypeConfig" },
+        "MDX": { "$ref": "#/definitions/fileTypeConfig" },
+        "MD": { "$ref": "#/definitions/fileTypeConfig" },
+        "TS": { "$ref": "#/definitions/fileTypeConfig" },
+        "JS": { "$ref": "#/definitions/fileTypeConfig" },
+        "YAML": { "$ref": "#/definitions/fileTypeConfig" },
+        "HTML": { "$ref": "#/definitions/fileTypeConfig" },
+        "TXT": { "$ref": "#/definitions/fileTypeConfig" },
+        "TWILIO_CONTENT_JSON": {
+          "$ref": "#/definitions/fileTypeConfig"
         }
       },
       "additionalProperties": false
     },
     "sharedStaticAssets": {
       "type": "object",
-      "description": "Configuration for moving shared static assets to a single directory and rewriting references in source files, or mirroring assets to each locale directory.",
+      "description": "Moves shared static assets to one directory or mirrors them to locale directories",
       "properties": {
         "include": {
           "oneOf": [
@@ -453,23 +530,11 @@
               "items": { "type": "string" },
               "minItems": 1
             }
-          ],
-          "description": "Glob or array of globs (repo-root relative) that match static assets to consolidate (e.g., 'docs/**/*.{png,jpg,svg}')."
+          ]
         },
-        "outDir": {
-          "type": "string",
-          "description": "Repo-root relative output directory where assets will be placed (on disk). Examples: 'public/shared', 'static/img', 'shared'. Not required when mirrorToLocales is true."
-        },
-        "publicPath": {
-          "type": "string",
-          "description": "Public URL prefix to use in rewritten content. If omitted, it is derived from outDir (public/* → '/…', static/* → '/…', otherwise '/basename(outDir)').",
-          "examples": ["/shared", "/img", "/assets"]
-        },
-        "mirrorToLocales": {
-          "type": "boolean",
-          "description": "When true, copy matched assets to the equivalent location in each locale directory instead of centralizing them. This preserves relative paths in translated files. outDir and publicPath are ignored.",
-          "default": false
-        }
+        "outDir": { "type": "string" },
+        "publicPath": { "type": "string" },
+        "mirrorToLocales": { "type": "boolean", "default": false }
       },
       "required": ["include"],
       "if": {
@@ -478,228 +543,155 @@
           "required": ["mirrorToLocales"]
         }
       },
-      "then": {
-        "required": ["outDir"]
+      "then": { "required": ["outDir"] },
+      "additionalProperties": false
+    },
+    "transformOptions": {
+      "type": "object",
+      "patternProperties": {
+        ".*": { "$ref": "#/definitions/transformOption" }
       },
       "additionalProperties": false
     },
-    "options": {
+    "structuralTransform": {
       "type": "object",
-      "description": "Additional configuration options",
+      "properties": {
+        "sourcePointer": { "type": "string" },
+        "destinationPointer": { "type": "string" }
+      },
+      "required": ["sourcePointer", "destinationPointer"],
+      "additionalProperties": false
+    },
+    "sourceObjectOptions": {
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["array", "object"] },
+        "include": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "key": { "type": "string" },
+        "localeProperty": { "type": "string", "default": "code" },
+        "transform": { "$ref": "#/definitions/transformOptions" },
+        "omitProperties": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "experimentalSort": {
+          "type": "string",
+          "enum": ["locales", "localesAlphabetical"]
+        },
+        "splitEntries": { "type": "boolean" }
+      },
+      "required": ["type", "include"],
+      "additionalProperties": false
+    },
+    "jsonSchemaConfig": {
+      "type": "object",
+      "properties": {
+        "preset": {
+          "type": "string",
+          "enum": ["mintlify", "mintlify-hide-default", "openapi"]
+        },
+        "structuralTransform": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/structuralTransform" }
+        },
+        "resolveRefs": { "type": "boolean" },
+        "include": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "composite": {
+          "type": "object",
+          "patternProperties": {
+            ".*": { "$ref": "#/definitions/sourceObjectOptions" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "not": { "required": ["include", "composite"] },
+      "additionalProperties": false
+    },
+    "yamlSchemaConfig": {
+      "type": "object",
+      "properties": {
+        "preset": {
+          "type": "string",
+          "enum": ["mintlify", "openapi"]
+        },
+        "include": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "transform": { "$ref": "#/definitions/transformOptions" }
+      },
+      "additionalProperties": false
+    },
+    "additionalOptions": {
+      "type": "object",
+      "description": "Additional CLI configuration",
       "properties": {
         "jsonSchema": {
           "type": "object",
-          "description": "JSON schema configuration for specific file globs",
+          "description": "JSON translation schemas keyed by file glob",
           "patternProperties": {
-            ".*": {
-              "type": "object",
-              "description": "JSON schema options for files matching this glob pattern",
-              "properties": {
-                "preset": {
-                  "type": "string",
-                  "enum": ["mintlify", "openapi"],
-                  "description": "Preset configuration to use"
-                },
-                "include": {
-                  "type": "array",
-                  "description": "Array of JSONPaths to include (mutually exclusive with composite)",
-                  "items": {
-                    "type": "string"
-                  }
-                },
-                "composite": {
-                  "type": "object",
-                  "description": "Composite configuration (mutually exclusive with include)",
-                  "patternProperties": {
-                    ".*": {
-                      "type": "object",
-                      "description": "Source object options for this JSONPath",
-                      "properties": {
-                        "type": {
-                          "type": "string",
-                          "enum": ["array", "object"],
-                          "description": "Type of the source object"
-                        },
-                        "include": {
-                          "type": "array",
-                          "description": "Array of relative JSONPaths to include in the translated JSON",
-                          "items": {
-                            "type": "string"
-                          }
-                        },
-                        "key": {
-                          "type": "string",
-                          "description": "Relative JSONPath to the key to distinguish between source and target locales (required for array type)"
-                        },
-                        "experimentalSort": {
-                          "type": "string",
-                          "enum": ["locales", "localesAlphabetical"],
-                          "description": "Optional sorting behavior for array type. When set to 'locales', items are ordered to match your locales array. When set to 'localesAlphabetical', the default locale stays first and the remaining locales are sorted alphabetically by locale code."
-                        },
-                        "localeProperty": {
-                          "type": "string",
-                          "description": "Specific locale property to use for the key for target locales",
-                          "default": "code"
-                        },
-                        "transform": {
-                          "type": "object",
-                          "description": "Optional config for transforming specific fields in the source item",
-                          "patternProperties": {
-                            ".*": {
-                              "type": "object",
-                              "description": "Transform configuration for this JSONPath",
-                              "properties": {
-                                "match": {
-                                  "type": "string",
-                                  "description": "Regex to match strings to replace"
-                                },
-                                "replace": {
-                                  "type": "string",
-                                  "description": "String or regex pattern to replace the match with"
-                                }
-                              },
-                              "required": ["replace"],
-                              "additionalProperties": false
-                            }
-                          },
-                          "additionalProperties": false
-                        }
-                      },
-                      "required": ["type", "include"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              },
-              "oneOf": [
-                {
-                  "required": ["include"],
-                  "not": {
-                    "required": ["composite"]
-                  }
-                },
-                {
-                  "required": ["composite"],
-                  "not": {
-                    "required": ["include"]
-                  }
-                }
-              ],
-              "additionalProperties": false
-            }
+            ".*": { "$ref": "#/definitions/jsonSchemaConfig" }
           },
           "additionalProperties": false
         },
         "yamlSchema": {
           "type": "object",
-          "description": "YAML schema configuration for specific file globs",
+          "description": "YAML translation schemas keyed by file glob",
           "patternProperties": {
-            ".*": {
-              "type": "object",
-              "description": "YAML schema options for files matching this glob pattern",
-              "properties": {
-                "preset": {
-                  "type": "string",
-                  "enum": ["mintlify"],
-                  "description": "Preset configuration to use"
-                },
-                "include": {
-                  "type": "array",
-                  "description": "Array of YAML paths to include for translation",
-                  "items": {
-                    "type": "string"
-                  }
-                },
-                "transform": {
-                  "type": "object",
-                  "description": "Optional config for transforming specific fields",
-                  "patternProperties": {
-                    ".*": {
-                      "type": "object",
-                      "description": "Transform configuration for this YAMLPath",
-                      "properties": {
-                        "match": {
-                          "type": "string",
-                          "description": "Regex to match strings to replace"
-                        },
-                        "replace": {
-                          "type": "string",
-                          "description": "String or regex pattern to replace the match with"
-                        }
-                      },
-                      "required": ["replace"],
-                      "additionalProperties": false
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              },
-              "additionalProperties": false
-            }
+            ".*": { "$ref": "#/definitions/yamlSchemaConfig" }
           },
           "additionalProperties": false
         },
         "skipFileValidation": {
           "type": "object",
-          "description": "Skip pre-parse validation for specific file types before sending content to the translation pipeline.",
           "properties": {
-            "json": {
-              "type": "boolean",
-              "description": "Skip JSON parseability checks."
-            },
-            "yaml": {
-              "type": "boolean",
-              "description": "Skip YAML parseability checks."
-            },
-            "mdx": {
-              "type": "boolean",
-              "description": "Skip MDX AST parseability checks."
-            }
+            "json": { "type": "boolean" },
+            "yaml": { "type": "boolean" },
+            "mdx": { "type": "boolean" }
           },
           "additionalProperties": false
         },
         "mintlify": {
           "type": "object",
-          "description": "Mintlify-specific options.",
           "properties": {
             "openapi": {
               "type": "object",
-              "description": "OpenAPI localization settings for Mintlify. Framework defaults to mintlify.",
               "properties": {
                 "files": {
                   "type": "array",
-                  "description": "Ordered list of OpenAPI spec files (JSON only). Earlier entries win when resolving ambiguities.",
-                  "items": {
-                    "type": "string"
-                  },
+                  "items": { "type": "string" },
                   "minItems": 1
                 },
                 "translateFields": {
                   "type": "array",
-                  "description": "JSONPaths to translate within OpenAPI specs.",
                   "items": { "type": "string" }
                 }
               },
               "required": ["files"],
               "additionalProperties": false
-            }
+            },
+            "inferTitleFromFilename": { "type": "boolean" }
           },
           "additionalProperties": false
         },
-        "docsUrlPattern": {
-          "type": "string",
-          "description": "Pattern for localizing static URLs in markdown files (e.g., '/docs/[locale]' or '/[locale]')",
-          "examples": ["/docs/[locale]", "/[locale]"]
+        "docsUrlPattern": { "type": "string" },
+        "docsImportPattern": { "type": "string" },
+        "excludeStaticUrls": {
+          "type": "array",
+          "items": { "type": "string" }
         },
-        "docsImportPattern": {
-          "type": "string",
-          "description": "Pattern for localizing static imports in markdown files (e.g., '/docs/[locale]/foo.md' or '/[locale]/foo.md')",
-          "examples": ["/docs/[locale]/foo.md", "/[locale]/foo.md"]
+        "excludeStaticImports": {
+          "type": "array",
+          "items": { "type": "string" }
         },
         "docsImportRewrites": {
           "type": "array",
-          "description": "Explicit rewrites for import prefixes before pattern-based localization (e.g., map '@site/docs' to '@site/i18n/[locale]/docusaurus-plugin-content-docs/current')",
           "items": {
             "type": "object",
             "properties": {
@@ -710,78 +702,85 @@
             "additionalProperties": false
           }
         },
-        "docsHideDefaultLocaleImport": {
-          "type": "boolean",
-          "description": "If true, hide the default locale in the import path",
-          "default": false
-        },
+        "docsHideDefaultLocaleImport": { "type": "boolean" },
         "copyFiles": {
           "type": "array",
-          "description": "Array of files to copy to the target locale",
-          "items": {
-            "type": "string"
-          },
-          "examples": [["static/images/**/*.png", "public/assets/**/*.pdf"]]
+          "items": { "type": "string" }
         },
-        "experimentalLocalizeStaticImports": {
-          "type": "boolean",
-          "description": "Inserts locale in static import paths in md/mdx files",
-          "default": false
-        },
-        "experimentalLocalizeStaticUrls": {
-          "type": "boolean",
-          "description": "Inserts locale in static url paths in md/mdx files",
-          "default": false
-        },
-        "experimentalLocalizeRelativeAssets": {
-          "type": "boolean",
-          "description": "Rewrites relative image asset URLs in translated md/mdx files to valid paths",
-          "default": false
-        },
-        "experimentalHideDefaultLocale": {
-          "type": "boolean",
-          "description": "Hides the default locale in the import path",
-          "default": false
-        },
-        "experimentalFlattenJsonFiles": {
-          "type": "boolean",
-          "description": "Flattens JSON files into a single file",
-          "default": false
-        },
-        "baseDomain": {
-          "type": "string",
-          "format": "uri",
-          "description": "The base http:// url where the project is hosted",
-          "examples": ["https://example.com", "https://docs.example.com"]
-        },
-        "experimentalClearLocaleDirs": {
-          "type": "boolean",
-          "description": "If true, clear locale directories before writing translations (default: false)",
-          "default": false
-        },
+        "experimentalClearLocaleDirs": { "type": "boolean" },
         "clearLocaleDirsExclude": {
           "type": "array",
-          "description": "Array of glob patterns with [locale] or [locales] placeholder to exclude from clearing (e.g., './snippets/[locale]/preserved/**' or './[locales]/static/**')",
-          "items": {
-            "type": "string"
-          },
-          "examples": [
-            ["./snippets/[locale]/preserved/**", "./[locales]/static/**"]
-          ]
+          "items": { "type": "string" }
+        },
+        "experimentalLocalizeStaticImports": { "type": "boolean" },
+        "experimentalLocalizeStaticUrls": { "type": "boolean" },
+        "experimentalLocalizeRelativeAssets": { "type": "boolean" },
+        "experimentalAddHeaderAnchorIds": {
+          "type": "string",
+          "enum": ["mintlify", "default"]
+        },
+        "experimentalHideDefaultLocale": { "type": "boolean" },
+        "experimentalFlattenJsonFiles": { "type": "boolean" },
+        "experimentalCanonicalLocaleKeys": { "type": "boolean" },
+        "baseDomain": {
+          "type": "string",
+          "format": "uri"
         }
       },
       "additionalProperties": false
+    },
+    "batchConfig": {
+      "type": "object",
+      "description": "Runtime translation batching settings",
+      "properties": {
+        "maxConcurrentRequests": { "type": "integer", "minimum": 1 },
+        "maxBatchSize": { "type": "integer", "minimum": 1 },
+        "batchInterval": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "headersAndCookies": {
+      "type": "object",
+      "description": "Header and cookie names used by gt-next",
+      "properties": {
+        "localeHeaderName": { "type": "string" },
+        "localeCookieName": { "type": "string" },
+        "enableI18nCookieName": { "type": "string" },
+        "referrerLocaleCookieName": { "type": "string" },
+        "localeRoutingEnabledCookieName": { "type": "string" },
+        "resetLocaleCookieName": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "compilerOptions": {
+      "type": "object",
+      "description": "Compiler integration settings used by gt-next",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["babel", "swc", "none"]
+        },
+        "logLevel": {
+          "type": "string",
+          "enum": ["silent", "error", "warn", "info", "debug"]
+        },
+        "compileTimeHash": { "type": "boolean" },
+        "disableBuildChecks": { "type": "boolean" },
+        "enableAutoJsxInjection": { "type": "boolean" }
+      },
+      "required": ["type"],
+      "additionalProperties": false
     }
   },
-  "required": ["defaultLocale", "locales"],
-  "additionalProperties": true,
   "examples": [
     {
+      "$schema": "https://assets.gtx.dev/config-schema.json",
       "defaultLocale": "en",
       "locales": ["fr", "es"],
       "files": {
         "gt": {
-          "output": "public/i18n/[locale].json"
+          "output": "public/i18n/[locale].json",
+          "parsingFlags": { "enableAutoJsxInjection": true }
         },
         "mdx": {
           "include": ["content/docs/[locale]/**/*.mdx"],
@@ -793,7 +792,6 @@
         }
       },
       "src": ["./src", "./app", "./pages", "./components"],
-      "dictionary": "./dictionary.json",
       "stageTranslations": false
     }
   ]
