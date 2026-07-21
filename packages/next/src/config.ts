@@ -77,7 +77,18 @@ type InternalGTConfigProps = BaseWithGTConfigProps &
     _disableDevHotReload?: boolean;
   };
 
-type WithGTConfigResult<TNextConfig extends object> = TNextConfig & NextConfig;
+type WithGTConfigValue<T> =
+  T extends Promise<infer U>
+    ? Promise<U & NextConfig>
+    : T extends PromiseLike<infer U>
+      ? PromiseLike<U & NextConfig>
+      : T & NextConfig;
+
+type WithGTConfigResult<TNextConfig extends object> = TNextConfig extends (
+  ...args: infer A
+) => infer R
+  ? (...args: A) => WithGTConfigValue<R>
+  : TNextConfig & NextConfig;
 
 function isThenable(value: unknown): value is PromiseLike<NextConfig> {
   return (

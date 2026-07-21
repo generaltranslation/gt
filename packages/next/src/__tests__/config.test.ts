@@ -1632,9 +1632,11 @@ describe('withGTConfig', () => {
   describe('18. Function-form next config', () => {
     it('calls a sync config function and layers GT on the result', async () => {
       const withGTConfig = await getWithGTConfig();
-      const built = withGTConfig((_phase: string): NextConfig => ({
-        reactStrictMode: true,
-      }));
+      const built = withGTConfig(
+        (_phase: string): NextConfig => ({
+          reactStrictMode: true,
+        })
+      );
 
       expect(typeof built).toBe('function');
       const resolved = (
