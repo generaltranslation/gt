@@ -57,7 +57,9 @@ function printElements(
 }
 
 function escapeMessage(message: string): string {
-  return message.replace(/([{}](?:[\s\S]*[{}])?)/, "'$1'");
+  return message.replace(/([{}](?:[\s\S]*[{}])?)/, (matched) => {
+    return `'${matched.replace(/'/g, "''")}'`;
+  });
 }
 
 function printLiteral(

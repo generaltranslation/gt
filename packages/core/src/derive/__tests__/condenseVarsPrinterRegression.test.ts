@@ -2,10 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { parse } from '@generaltranslation/icu';
 import { condenseVars } from '../condenseVars';
 
-// Pins the exact serialized output produced by the FormatJS `printAST`
-// implementation that condenseVars historically used. The vendored printer
-// must keep every one of these outputs byte-identical, because the condensed
-// strings feed into hashing.
+// Pins the serialized output used by condenseVars. Existing FormatJS output
+// stays byte-identical unless it was not safely reparseable; corrected cases
+// use the canonical, round-trippable form because condensed strings feed into
+// hashing and later parsing.
 describe('condenseVars printer regression', () => {
   it.each([
     ['single indexed select', '{_gt_1, select, other {}}', '{_gt_1}'],
@@ -119,6 +119,11 @@ describe('condenseVars printer regression', () => {
       'quoted brace run',
       "Show '{'raw'}' and '}' {_gt_1, select, other {}}",
       "Show '{raw} and }' {_gt_1}",
+    ],
+    [
+      'apostrophe inside quoted braces',
+      "'{isn''t}' {_gt_1, select, other {}}",
+      "'{isn''t}' {_gt_1}",
     ],
     [
       'escaped apostrophes',

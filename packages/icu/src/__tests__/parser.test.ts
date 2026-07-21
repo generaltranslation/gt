@@ -212,6 +212,19 @@ describe('parse', () => {
     ]);
   });
 
+  it.each(['<a\u0301>x</a\u0301>', '<a\u203f>x</a\u203f>'])(
+    'parses FormatJS-compatible Unicode tag names in %j',
+    (message) => {
+      expect(parse(message)).toEqual([
+        {
+          type: TYPE.tag,
+          value: message.slice(1, message.indexOf('>')),
+          children: [{ type: TYPE.literal, value: 'x' }],
+        },
+      ]);
+    }
+  );
+
   it('can treat tags as plain text', () => {
     expect(parse('<b>{name}</b>', { ignoreTag: true })).toEqual([
       { type: TYPE.literal, value: '<b>' },

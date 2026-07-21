@@ -97,11 +97,11 @@ describe('printAST', () => {
     ],
     ['<b>Bold <i>{name}</i></b>', '<b>Bold <i>{name}</i></b>'],
     ["Cost: '{'price'}'", "Cost: '{price}'"],
-    ["'{isn''t}'", "'{isn't}'"],
+    ["'{isn''t}'", "'{isn''t}'"],
     ["It''s {name} o''clock", "It's {name} o'clock"],
     ["{name}'s book", "{name}''s book"],
     ["{count, plural, other {'#' #}}", "{count,plural,other{'#' #}}"],
-  ])('prints %j with stable historical bytes', (message, expected) => {
+  ])('prints %j with stable canonical bytes', (message, expected) => {
     expect(printAST(parse(message))).toBe(expected);
   });
 
@@ -112,8 +112,10 @@ describe('printAST', () => {
     '{status, select, yes {{name} accepted} other {none}}',
     '{count, plural, one {<b># item</b>} other {<b># items</b>}}',
     '{count, plural, one {{status, select, yes {{name}} other {none}}} other {No}}',
-  ])('produces reparseable output for %j', (message) => {
-    expect(() => parse(printAST(parse(message)))).not.toThrow();
+    "'{isn''t}'",
+  ])('preserves the AST through print and reparse for %j', (message) => {
+    const original = parse(message);
+    expect(parse(printAST(original))).toEqual(original);
   });
 
   it.each(GENERATED_ROUND_TRIP_MESSAGES)(
