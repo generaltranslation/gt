@@ -13,7 +13,7 @@ type FormatParams<Value, Options> = {
  * Formats a message according to the specified locales and options.
  *
  * @param {string} message - The message to format.
- * @param {string | string[]} [locales='en'] - The locales to use for formatting.
+ * @param {string | string[]} [locales=libraryDefaultLocale] - The locales to use for formatting.
  * @param {Record<string, any>} [variables={}] - The variables to use for formatting.
  * @returns {string} The formatted message.
  * @internal
@@ -35,7 +35,7 @@ export function _formatMessageICU(
  *
  * @param {Object} params - The parameters for the number formatting.
  * @param {number} params.value - The number to format.
- * @param {string | string[]} [params.locales=['en']] - The locales to use for formatting.
+ * @param {string | string[]} [params.locales=[libraryDefaultLocale]] - The locales to use for formatting.
  * @param {Intl.NumberFormatOptions} [params.options={}] - Additional options for number formatting.
  *
  * @returns {string} The formatted number.
@@ -59,7 +59,7 @@ export function _formatNum({
  *
  * @param {Object} params - The parameters for the date formatting.
  * @param {Date} params.value - The date to format.
- * @param {string | string[]} [params.locales='en'] - The locales to use for formatting.
+ * @param {string | string[]} [params.locales=libraryDefaultLocale] - The locales to use for formatting.
  * @param {Intl.DateTimeFormatOptions} [params.options={}] - Additional options for date formatting.
  *
  * @returns {string} The formatted date.
@@ -85,7 +85,7 @@ export function _formatDateTime({
  * @param {Object} params - The parameters for the currency formatting.
  * @param {number} params.value - The currency value to format.
  * @param {string} params.currency - The currency code (e.g., 'USD').
- * @param {string | string[]} [params.locales=['en']] - The locales to use for formatting.
+ * @param {string | string[]} [params.locales=[libraryDefaultLocale]] - The locales to use for formatting.
  * @param {Intl.NumberFormatOptions} [params.options={}] - Additional options for currency formatting.
  *
  * @returns {string} The formatted currency value.
@@ -116,7 +116,7 @@ export function _formatCurrency({
  *
  * @param {Object} params - The parameters for the list formatting.
  * @param {Array<string | number>} params.value - The list of items to format.
- * @param {string | string[]} [params.locales=['en']] - The locales to use for formatting.
+ * @param {string | string[]} [params.locales=[libraryDefaultLocale]] - The locales to use for formatting.
  * @param {Intl.ListFormatOptions} [params.options={}] - Additional options for list formatting.
  *
  * @returns {string} The formatted list.
@@ -140,7 +140,7 @@ export function _formatList({
  * Formats a list of items according to the specified locales and options.
  * @param {Object} params - The parameters for the list formatting.
  * @param {Array<T>} params.value - The list of items to format.
- * @param {string | string[]} [params.locales=['en']] - The locales to use for formatting.
+ * @param {string | string[]} [params.locales=[libraryDefaultLocale]] - The locales to use for formatting.
  * @param {Intl.ListFormatOptions} [params.options={}] - Additional options for list formatting.
  * @returns {Array<T | string>} The formatted list parts.
  * @internal
@@ -211,7 +211,7 @@ export function _selectRelativeTimeUnit(
  * @param {Object} params - The parameters for the relative time formatting.
  * @param {number} params.value - The relative time value to format.
  * @param {Intl.RelativeTimeFormatUnit} params.unit - The unit of time (e.g., 'second', 'minute', 'hour', 'day', 'week', 'month', 'year').
- * @param {string | string[]} [params.locales=['en']] - The locales to use for formatting.
+ * @param {string | string[]} [params.locales=[libraryDefaultLocale]] - The locales to use for formatting.
  * @param {Intl.RelativeTimeFormatOptions} [params.options={}] - Additional options for relative time formatting.
  *
  * @returns {string} The formatted relative time string.

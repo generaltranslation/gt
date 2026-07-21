@@ -3,6 +3,7 @@
 import { Merger } from './types';
 import { SanityDocument } from 'sanity';
 import { extractWithPath, arrayToJSONMatchPath } from '@sanity/mutator';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -91,7 +92,7 @@ const fieldLevelMerge = (
   //should be fetched according to the revision and id of the translated obj above
   baseDoc: SanityDocument,
   localeId: string,
-  baseLang: string = 'en'
+  baseLang: string = libraryDefaultLocale
 ): Record<string, unknown> => {
   const merged: Record<string, unknown> = {};
   const metaKeys = ['_rev', '_id', '_type'];

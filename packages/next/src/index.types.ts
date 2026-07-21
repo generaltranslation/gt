@@ -496,7 +496,7 @@ export const useLocales: typeof _useLocales = () => {
 /**
  * Returns the application's default locale.
  *
- * If no default locale is provided, it defaults to 'en'.
+ * If no default locale is provided, it uses the library default locale.
  *
  * @returns {string} A BCP 47 locale tag, e.g., 'en-US'.
  *
