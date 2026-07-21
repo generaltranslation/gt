@@ -5,6 +5,7 @@ import { afterEach, describe, expect, test } from 'vitest';
 import {
   defaultGroups,
   isWithinVariableDeclaration,
+  normalizeRepositoryPath,
   validateRepository,
 } from './check-library-defaults.mjs';
 
@@ -39,6 +40,17 @@ async function createRepository(files) {
 }
 
 describe('validateRepository', () => {
+  test('normalizes Windows paths for declaration and exception matching', () => {
+    const windowsPath = path.win32.relative(
+      'C:\\repo',
+      'C:\\repo\\packages\\core\\src\\settings\\settings.ts'
+    );
+
+    expect(normalizeRepositoryPath(windowsPath)).toBe(
+      'packages/core/src/settings/settings.ts'
+    );
+  });
+
   test('limits exceptions and declarations to their specific AST contexts', async () => {
     const repositoryRoot = await createRepository({
       'packages/core/src/settings.ts': `

@@ -34,6 +34,10 @@ export function isWithinCallExpression(callText) {
   };
 }
 
+export function normalizeRepositoryPath(relativePath) {
+  return relativePath.split(path.win32.sep).join(path.posix.sep);
+}
+
 export const defaultGroups = [
   {
     name: 'libraryDefaultLocale',
@@ -209,7 +213,9 @@ function collectSourceFiles(repositoryRoot, directory, files = []) {
     if (!/\.(?:[cm]?[jt]sx?)$/.test(entry.name)) continue;
     if (/\.(?:test|spec)\.[cm]?[jt]sx?$/.test(entry.name)) continue;
     if (/\.d\.[cm]?ts$/.test(entry.name)) continue;
-    files.push(path.relative(repositoryRoot, absolutePath));
+    files.push(
+      normalizeRepositoryPath(path.relative(repositoryRoot, absolutePath))
+    );
   }
   return files;
 }
