@@ -194,8 +194,12 @@ function formatElements(
   return mergeLiteralParts(result);
 }
 
+function hasOwn(object: object, key: PropertyKey): boolean {
+  return Object.prototype.hasOwnProperty.call(object, key);
+}
+
 function requireVariable(variables: MessageVariables, name: string): unknown {
-  if (!Object.hasOwn(variables, name)) {
+  if (!hasOwn(variables, name)) {
     throw new Error(`The ICU message variable "${name}" was not provided.`);
   }
   return variables[name];
@@ -245,20 +249,20 @@ function numberOptions(
   return {};
 }
 
-function applyScale(value: unknown, scale = 1): number | bigint {
+function applyScale(value: unknown, scale?: number): unknown {
   // intl-messageformat treated scale/0 as an absent scale. Preserve that
   // observable behavior for existing messages even though multiplying by zero
   // would follow the ICU skeleton definition more literally.
-  const effectiveScale = scale || 1;
+  if (!scale) return value;
   if (typeof value === 'bigint') {
-    if (!Number.isInteger(effectiveScale)) {
+    if (!Number.isInteger(scale)) {
       throw new RangeError(
-        `Cannot apply fractional scale ${effectiveScale} to a bigint value.`
+        `Cannot apply fractional scale ${scale} to a bigint value.`
       );
     }
-    return value * BigInt(effectiveScale);
+    return value * BigInt(scale);
   }
-  return Number(value) * effectiveScale;
+  return Number(value) * scale;
 }
 
 function getNumberFormat(
@@ -330,7 +334,7 @@ function hasPluralCategoryOption(options: Record<string, unknown>): boolean {
 }
 
 function ownOption<T>(options: Record<string, T>, key: string): T | undefined {
-  return Object.hasOwn(options, key) ? options[key] : undefined;
+  return hasOwn(options, key) ? options[key] : undefined;
 }
 
 function invalidSelection(

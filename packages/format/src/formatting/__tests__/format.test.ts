@@ -75,6 +75,15 @@ describe('_formatMessageICU', () => {
     ).toBe('12.34');
   });
 
+  it('preserves numeric-string precision through the public boundary', () => {
+    expect(
+      publicFormatMessage('{value, number}', {
+        locales: 'en-US',
+        variables: { value: '123456789012345678901234567890' },
+      })
+    ).toBe('123,456,789,012,345,678,901,234,567,890');
+  });
+
   it('passes date skeletons through the package boundary', () => {
     const value = new Date('2020-05-06T14:03:02Z');
     expect(
