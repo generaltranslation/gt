@@ -1,5 +1,13 @@
 # gt-next
 
+## 11.0.12
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.0.12
+  - gt-react@11.0.12
+
 ## 11.0.11
 
 ### Patch Changes
