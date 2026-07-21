@@ -7,7 +7,7 @@ import type {
   RoutingInfo,
   SourceResult,
 } from '../types.js';
-import type { SupportedLibraries } from '../../types/index.js';
+import type { MigrateIO } from '../io.js';
 
 /**
  * The per-source-library seam for `gt migrate`. Everything the transforms and
@@ -21,8 +21,10 @@ import type { SupportedLibraries } from '../../types/index.js';
  * simply omits them.
  */
 export interface SourceAdapter {
-  /** the SupportedLibraries id this adapter migrates from. */
-  id: SupportedLibraries;
+  /** the library id this adapter migrates from (next-intl, react-intl,
+   *  react-i18next). A plain string so the engine carries no CLI type coupling;
+   *  the driver compares it against the detected library and the --from value. */
+  id: string;
   /** human-readable name, used only in report prose. */
   displayName: string;
 
@@ -97,7 +99,8 @@ export interface SourceAdapter {
   parseRoutingConfig(cwd: string): RoutingInfo;
   discoverCatalogs(
     cwd: string,
-    routing: RoutingInfo
+    routing: RoutingInfo,
+    io?: MigrateIO
   ): Promise<MessageCatalogs | null>;
 
   // --- config lane (each optional; absent => that lane is skipped) ---

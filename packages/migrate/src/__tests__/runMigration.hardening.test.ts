@@ -2,27 +2,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { handleMigrateCommand } from '../../cli/commands/migrate.js';
-
-vi.mock('../../hooks/postProcess.js', () => ({
-  formatFiles: vi.fn(async () => {}),
-  detectFormatter: vi.fn(async () => null),
-}));
-
-vi.mock('../../utils/installPackage.js', () => ({
-  installPackage: vi.fn(async () => {}),
-}));
-
-vi.mock('../../utils/packageManager.js', async (importOriginal) => ({
-  ...(await importOriginal<object>()),
-  getPackageManager: vi.fn(async () => ({
-    id: 'npm',
-    name: 'npm',
-    label: 'npm',
-    installCommand: 'install',
-    devDependencyFlag: '--save-dev',
-  })),
-}));
+import { buildReport } from '../report.js';
+import { runMigration } from '../runMigration.js';
+import type { MigrateIO } from '../io.js';
 
 // Make the source transform throw for one file (simulating a babel replaceWith
 // throw), and behave normally for everything else. Both the driver and the
@@ -46,6 +28,24 @@ vi.mock('../transformSource.js', async (importOriginal) => {
   };
 });
 
+// runMigration is UI-free: this fake io is enough for a non-interactive,
+// --allow-dirty, --yes run (guardGit and the confirm prompt are no-ops here).
+function makeIO(): MigrateIO {
+  return {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    fatal: vi.fn((message: string) => {
+      throw new Error(message);
+    }) as unknown as (message: string) => never,
+    guardGit: vi.fn(),
+    promptConfirm: vi.fn(async () => true),
+    promptText: vi.fn(async () => ''),
+    promptLocale: vi.fn(async () => ''),
+    promptLocaleList: vi.fn(async () => []),
+  };
+}
+
 const tmpDirs: string[] = [];
 
 afterEach(() => {
@@ -53,9 +53,6 @@ afterEach(() => {
     fs.rmSync(tmpDirs.pop()!, { recursive: true, force: true });
   }
 });
-
-const read = (cwd: string, rel: string) =>
-  fs.readFileSync(path.join(cwd, rel), 'utf8');
 
 function makeApp(): string {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-hard-'));
@@ -91,11 +88,12 @@ function makeApp(): string {
   return cwd;
 }
 
-describe('handleMigrateCommand transform hardening', () => {
+describe('runMigration transform hardening', () => {
   it('degrades a throwing file to a reported skip and finishes the run', async () => {
     const cwd = makeApp();
-    // The run must complete rather than aborting with a raw stack trace.
-    await handleMigrateCommand(
+    // The run must complete (return a context) rather than throwing a raw
+    // stack trace out of the engine.
+    const ctx = await runMigration(
       {
         config: 'gt.config.json',
         from: 'next-intl',
@@ -104,25 +102,32 @@ describe('handleMigrateCommand transform hardening', () => {
         allowDirty: true,
       },
       'next-intl',
+      makeIO(),
       cwd
     );
 
-    // The throwing file is left completely untouched.
-    expect(read(cwd, 'src/components/boom.tsx')).toContain('next-intl');
-    expect(read(cwd, 'src/components/boom.tsx')).not.toContain('gt-next');
+    // The throwing file is a reported skip, and no edit rewrites it.
+    const boom = path.join(cwd, 'src/components/boom.tsx');
+    const boomReasons = ctx.skippedFiles.get(boom);
+    expect(boomReasons?.join(' ')).toMatch(/internal transform error/);
+    expect(ctx.edits.some((edit) => edit.path === boom)).toBe(false);
 
     // The report carries the internal-error skip for that file.
-    const report = read(cwd, 'gt-migrate-report.md');
+    const report = buildReport(ctx, false, false);
     expect(report).toContain('internal transform error');
     expect(report).toContain('boom.tsx');
 
-    // The rest of the run still happened: the good page migrated to gt-next.
-    expect(read(cwd, 'src/app/[locale]/page.tsx')).toMatch(
-      /from ["']gt-next["']/
+    // The rest of the run still happened: the good page has a gt-next edit.
+    const pageEdit = ctx.edits.find((edit) =>
+      edit.path.endsWith(path.join('[locale]', 'page.tsx'))
     );
+    expect(pageEdit?.content).toMatch(/from ["']gt-next["']/);
 
-    // A skip means partial mode: next-intl stays installed (teardown blocked).
-    const pkg = JSON.parse(read(cwd, 'package.json'));
-    expect(pkg.dependencies['next-intl']).toBeDefined();
+    // A skip means partial mode: teardown is blocked, so any package.json edit
+    // keeps next-intl (and typically there is none).
+    const pkgEdit = ctx.edits.find((edit) =>
+      edit.path.endsWith('package.json')
+    );
+    if (pkgEdit) expect(pkgEdit.content).toContain('next-intl');
   });
 });

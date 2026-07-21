@@ -3,7 +3,9 @@ import traverseModule from '@babel/traverse';
 import * as t from '@babel/types';
 import type { Separators } from './catalogConvert.js';
 
-const traverse = traverseModule.default || traverseModule;
+const traverse: typeof traverseModule =
+  (traverseModule as { default?: typeof traverseModule }).default ||
+  traverseModule;
 
 /**
  * Call-site evidence the catalog converter needs but cannot see from the JSON

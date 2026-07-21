@@ -5,8 +5,12 @@ import * as t from '@babel/types';
 import { ensureNamedImports } from './importUtils.js';
 import type { SourceResult } from './types.js';
 
-const traverse = traverseModule.default || traverseModule;
-const generate = generateModule.default || generateModule;
+const traverse: typeof traverseModule =
+  (traverseModule as { default?: typeof traverseModule }).default ||
+  traverseModule;
+const generate: typeof generateModule =
+  (generateModule as { default?: typeof generateModule }).default ||
+  generateModule;
 
 /**
  * Partial migrations keep next-intl's request config alive for the skipped

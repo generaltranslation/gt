@@ -6,8 +6,12 @@ import { ensureNamedImports, removeUnusedNamedImports } from './importUtils.js';
 import { isParamsInit, transformSourceFile } from './transformSource.js';
 import type { MigrationContext, SourceResult, TodoEntry } from './types.js';
 
-const traverse = traverseModule.default || traverseModule;
-const generate = generateModule.default || generateModule;
+const traverse: typeof traverseModule =
+  (traverseModule as { default?: typeof traverseModule }).default ||
+  traverseModule;
+const generate: typeof generateModule =
+  (generateModule as { default?: typeof generateModule }).default ||
+  generateModule;
 
 /**
  * Layout files get the regular source transform plus layout-specific work:

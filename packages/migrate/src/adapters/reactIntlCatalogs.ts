@@ -3,7 +3,7 @@ import path from 'node:path';
 import { parse } from '@babel/parser';
 import traverseModule from '@babel/traverse';
 import * as t from '@babel/types';
-import { matchFiles } from '../../fs/matchFiles.js';
+import { matchFiles } from '../fs/matchFiles.js';
 import type {
   FileEdit,
   MessageCatalogs,
@@ -11,7 +11,9 @@ import type {
   TodoEntry,
 } from '../types.js';
 
-const traverse = traverseModule.default || traverseModule;
+const traverse: typeof traverseModule =
+  (traverseModule as { default?: typeof traverseModule }).default ||
+  traverseModule;
 
 // FormatJS ships catalogs under a few conventional dirs; check the react-intl
 // ones ahead of the shared next-intl defaults.

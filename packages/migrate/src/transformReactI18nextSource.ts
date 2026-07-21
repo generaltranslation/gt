@@ -5,8 +5,12 @@ import * as t from '@babel/types';
 import { getI18nextConfig } from './reactI18nextConfig.js';
 import type { MigrationContext, SourceResult, TodoEntry } from './types.js';
 
-const traverse = traverseModule.default || traverseModule;
-const generate = generateModule.default || generateModule;
+const traverse: typeof traverseModule =
+  (traverseModule as { default?: typeof traverseModule }).default ||
+  traverseModule;
+const generate: typeof generateModule =
+  (generateModule as { default?: typeof generateModule }).default ||
+  generateModule;
 
 const GT_MODULE = 'gt-next';
 

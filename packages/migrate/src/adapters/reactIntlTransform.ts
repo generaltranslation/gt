@@ -8,8 +8,12 @@ import type { TransformOptions } from '../transformSource.js';
 import { isParamsInit, removeParamsParameter } from '../transformSource.js';
 import type { MigrationContext, SourceResult, TodoEntry } from '../types.js';
 
-const traverse = traverseModule.default || traverseModule;
-const generate = generateModule.default || generateModule;
+const traverse: typeof traverseModule =
+  (traverseModule as { default?: typeof traverseModule }).default ||
+  traverseModule;
+const generate: typeof generateModule =
+  (generateModule as { default?: typeof generateModule }).default ||
+  generateModule;
 
 const MODULE = 'react-intl';
 const GT_MODULE = 'gt-next';

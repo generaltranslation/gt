@@ -4,13 +4,8 @@ import {
   createDiagnosticMessage,
   libraryDefaultLocale,
 } from 'generaltranslation/internal';
-import {
-  promptLocale,
-  promptLocaleList,
-  promptText,
-} from '../console/logging.js';
-import { logger } from '../console/logger.js';
 import { loadCatalog } from './discover.js';
+import type { MigrateIO } from './io.js';
 import type { MessageCatalogs, RoutingInfo } from './types.js';
 
 /**
@@ -26,14 +21,15 @@ import type { MessageCatalogs, RoutingInfo } from './types.js';
  */
 export async function resolveCatalogsInteractively(
   cwd: string,
-  routing: RoutingInfo
+  routing: RoutingInfo,
+  io: MigrateIO
 ): Promise<MessageCatalogs | null> {
   // Non-interactive (CI, piped input): no one to answer, keep the hard error.
   // Gate on stdin: it is the stream the prompts read, and it stays a TTY when
   // only the output is piped (`gt migrate ... | tee log`).
   if (!process.stdin.isTTY) return null;
 
-  logger.warn(
+  io.warn(
     createDiagnosticMessage({
       whatHappened:
         'Could not automatically locate your next-intl message catalogs',
@@ -42,7 +38,7 @@ export async function resolveCatalogsInteractively(
   );
 
   const validateDir = catalogDirValidator(cwd);
-  const dirInput = await promptText({
+  const dirInput = await io.promptText({
     message:
       'Where are your translation files? (directory path relative to the project root)',
     defaultValue: routing.requestFile ? undefined : 'messages',
@@ -60,7 +56,7 @@ export async function resolveCatalogsInteractively(
     .filter((file) => file.endsWith('.json'))
     .map((file) => path.basename(file, '.json'));
 
-  const locales = await promptLocaleList({
+  const locales = await io.promptLocaleList({
     message: 'Which locales should be migrated?',
     defaultValue: stems,
   });
@@ -71,13 +67,13 @@ export async function resolveCatalogsInteractively(
     (locales.includes(libraryDefaultLocale)
       ? libraryDefaultLocale
       : locales[0]);
-  const defaultLocale = await promptLocale({
+  const defaultLocale = await io.promptLocale({
     message: 'Which locale is the source (default) locale?',
     defaultValue: defaultSeed,
   });
 
   if (!locales.includes(defaultLocale)) {
-    logger.error(
+    io.error(
       createDiagnosticMessage({
         whatHappened: `Default locale '${defaultLocale}' is not one of the selected locales [${locales.join(', ')}]`,
         fix: 'Pick a default locale that is in the selected list and re-run.',
@@ -89,7 +85,7 @@ export async function resolveCatalogsInteractively(
   for (const locale of locales) {
     const file = path.join(dir, `${locale}.json`);
     if (!fs.existsSync(file)) {
-      logger.error(
+      io.error(
         createDiagnosticMessage({
           whatHappened: `No catalog file found for '${locale}', expected ${file}`,
           fix: `Add that file, or remove '${locale}' from the selected locales, then re-run.`,

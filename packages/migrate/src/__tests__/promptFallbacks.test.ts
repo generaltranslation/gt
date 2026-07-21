@@ -3,24 +3,26 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resolveCatalogsInteractively } from '../promptFallbacks.js';
+import type { MigrateIO } from '../io.js';
 import type { RoutingInfo } from '../types.js';
 
-vi.mock('../../console/logging.js', () => ({
-  promptText: vi.fn(),
-  promptLocale: vi.fn(),
-  promptLocaleList: vi.fn(),
-}));
-
-vi.mock('../../console/logger.js', () => ({
-  logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
-}));
-
-import {
-  promptLocale,
-  promptLocaleList,
-  promptText,
-} from '../../console/logging.js';
-import { logger } from '../../console/logger.js';
+// The interactive fallback runs entirely through the injected io (the CLI wires
+// io.prompt* to its @clack/prompts helpers and io.warn/error to its logger); a
+// fake scripts the answers and records the diagnostics.
+function makeIO() {
+  return {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    fatal: vi.fn(),
+    guardGit: vi.fn(),
+    promptConfirm: vi.fn(),
+    promptText: vi.fn(),
+    promptLocale: vi.fn(),
+    promptLocaleList: vi.fn(),
+  } satisfies MigrateIO;
+}
+let io: ReturnType<typeof makeIO>;
 
 const emptyRouting: RoutingInfo = {
   locales: null,
@@ -48,6 +50,7 @@ const originalIsTTY = process.stdin.isTTY;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  io = makeIO();
   // Default to an interactive session; the non-TTY case overrides this.
   process.stdin.isTTY = true;
 });
@@ -65,11 +68,11 @@ describe('resolveCatalogsInteractively', () => {
     const cwd = makeProject({
       'messages/en.json': JSON.stringify({ a: 'A' }),
     });
-    const result = await resolveCatalogsInteractively(cwd, emptyRouting);
+    const result = await resolveCatalogsInteractively(cwd, emptyRouting, io);
     expect(result).toBeNull();
-    expect(promptText).not.toHaveBeenCalled();
-    expect(promptLocaleList).not.toHaveBeenCalled();
-    expect(promptLocale).not.toHaveBeenCalled();
+    expect(io.promptText).not.toHaveBeenCalled();
+    expect(io.promptLocaleList).not.toHaveBeenCalled();
+    expect(io.promptLocale).not.toHaveBeenCalled();
   });
 
   it('builds MessageCatalogs from the answered directory, locales, and default', async () => {
@@ -77,11 +80,11 @@ describe('resolveCatalogsInteractively', () => {
       'messages/en.json': JSON.stringify({ Home: { title: 'Hello' } }),
       'messages/es.json': JSON.stringify({ Home: { title: 'Hola' } }),
     });
-    vi.mocked(promptText).mockResolvedValue('messages');
-    vi.mocked(promptLocaleList).mockResolvedValue(['en', 'es']);
-    vi.mocked(promptLocale).mockResolvedValue('en');
+    io.promptText.mockResolvedValue('messages');
+    io.promptLocaleList.mockResolvedValue(['en', 'es']);
+    io.promptLocale.mockResolvedValue('en');
 
-    const result = await resolveCatalogsInteractively(cwd, emptyRouting);
+    const result = await resolveCatalogsInteractively(cwd, emptyRouting, io);
     expect(result).not.toBeNull();
     expect(result!.dir).toBe(path.join(cwd, 'messages'));
     expect(result!.defaultLocale).toBe('en');
@@ -89,7 +92,7 @@ describe('resolveCatalogsInteractively', () => {
     expect(result!.byLocale.en).toEqual({ Home: { title: 'Hello' } });
     expect(result!.byLocale.es).toEqual({ Home: { title: 'Hola' } });
     // The lead-in goes through the standard diagnostic messaging system.
-    expect(logger.warn).toHaveBeenCalledWith(
+    expect(io.warn).toHaveBeenCalledWith(
       expect.stringContaining(
         'Could not automatically locate your next-intl message catalogs'
       )
@@ -101,13 +104,13 @@ describe('resolveCatalogsInteractively', () => {
       'messages/en.json': JSON.stringify({ a: 'A' }),
       'messages/es.json': JSON.stringify({ a: 'B' }),
     });
-    vi.mocked(promptText).mockResolvedValue('messages');
-    vi.mocked(promptLocaleList).mockResolvedValue(['en', 'es']);
-    vi.mocked(promptLocale).mockResolvedValue('de');
+    io.promptText.mockResolvedValue('messages');
+    io.promptLocaleList.mockResolvedValue(['en', 'es']);
+    io.promptLocale.mockResolvedValue('de');
 
-    const result = await resolveCatalogsInteractively(cwd, emptyRouting);
+    const result = await resolveCatalogsInteractively(cwd, emptyRouting, io);
     expect(result).toBeNull();
-    expect(logger.error).toHaveBeenCalledWith(
+    expect(io.error).toHaveBeenCalledWith(
       expect.stringContaining(
         "Default locale 'de' is not one of the selected locales [en, es]"
       )
@@ -118,13 +121,13 @@ describe('resolveCatalogsInteractively', () => {
     const cwd = makeProject({
       'messages/en.json': JSON.stringify({ a: 'A' }),
     });
-    vi.mocked(promptText).mockResolvedValue('messages');
-    vi.mocked(promptLocaleList).mockResolvedValue(['en', 'fr']);
-    vi.mocked(promptLocale).mockResolvedValue('en');
+    io.promptText.mockResolvedValue('messages');
+    io.promptLocaleList.mockResolvedValue(['en', 'fr']);
+    io.promptLocale.mockResolvedValue('en');
 
-    const result = await resolveCatalogsInteractively(cwd, emptyRouting);
+    const result = await resolveCatalogsInteractively(cwd, emptyRouting, io);
     expect(result).toBeNull();
-    expect(logger.error).toHaveBeenCalledWith(
+    expect(io.error).toHaveBeenCalledWith(
       expect.stringContaining("No catalog file found for 'fr'")
     );
   });

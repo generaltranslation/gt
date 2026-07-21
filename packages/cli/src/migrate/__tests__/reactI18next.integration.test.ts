@@ -6,7 +6,7 @@ import { formatMessage } from '@generaltranslation/format';
 import { parse as parseIcu } from '@formatjs/icu-messageformat-parser';
 import { handleMigrateCommand } from '../../cli/commands/migrate.js';
 import { logger } from '../../console/logger.js';
-import { clearI18nextConfigCache } from '../reactI18nextConfig.js';
+import { clearI18nextConfigCache } from '@generaltranslation/migrate';
 
 vi.mock('../../hooks/postProcess.js', () => ({
   formatFiles: vi.fn(async () => {}),

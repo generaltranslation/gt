@@ -13,7 +13,9 @@ import { transformReactI18nextSource } from '../transformReactI18nextSource.js';
 import type { RoutingInfo } from '../types.js';
 import type { SourceAdapter } from './types.js';
 
-const traverse = traverseModule.default || traverseModule;
+const traverse: typeof traverseModule =
+  (traverseModule as { default?: typeof traverseModule }).default ||
+  traverseModule;
 
 const PROVIDER = 'I18nextProvider';
 

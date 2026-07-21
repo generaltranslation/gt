@@ -44,7 +44,7 @@ import { upload } from './commands/upload.js';
 import { attachSharedFlags, attachTranslateFlags } from './flags.js';
 import { handleStage } from './commands/stage.js';
 import { handleMigrateCommand } from './commands/migrate.js';
-import type { MigrateOptions } from '../migrate/types.js';
+import type { MigrateOptions } from '@generaltranslation/migrate';
 import { handleSetupProject } from './commands/setupProject.js';
 import { handleDownload } from './commands/download.js';
 import {

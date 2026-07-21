@@ -5,8 +5,12 @@ import * as t from '@babel/types';
 import { removeUnusedNamedImports } from './importUtils.js';
 import type { MigrationContext, SourceResult, TodoEntry } from './types.js';
 
-const traverse = traverseModule.default || traverseModule;
-const generate = generateModule.default || generateModule;
+const traverse: typeof traverseModule =
+  (traverseModule as { default?: typeof traverseModule }).default ||
+  traverseModule;
+const generate: typeof generateModule =
+  (generateModule as { default?: typeof generateModule }).default ||
+  generateModule;
 
 // gt-next TARGET modules — constant across every source adapter, so they stay
 // in the core transform. Every next-intl-specific symbol table (client/server

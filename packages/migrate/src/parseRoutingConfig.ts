@@ -5,7 +5,9 @@ import traverseModule from '@babel/traverse';
 import * as t from '@babel/types';
 import type { RoutingInfo } from './types.js';
 
-const traverse = traverseModule.default || traverseModule;
+const traverse: typeof traverseModule =
+  (traverseModule as { default?: typeof traverseModule }).default ||
+  traverseModule;
 
 const ROUTING_CANDIDATES = [
   'i18n/routing.ts',

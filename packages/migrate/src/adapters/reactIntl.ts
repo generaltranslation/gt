@@ -8,7 +8,9 @@ import { transformReactIntlNextConfig } from './reactIntlNextConfig.js';
 import { transformReactIntlSource } from './reactIntlTransform.js';
 import type { SourceAdapter } from './types.js';
 
-const traverse = traverseModule.default || traverseModule;
+const traverse: typeof traverseModule =
+  (traverseModule as { default?: typeof traverseModule }).default ||
+  traverseModule;
 
 const PROVIDER = 'IntlProvider';
 

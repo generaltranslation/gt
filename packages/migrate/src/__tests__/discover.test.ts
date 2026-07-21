@@ -3,14 +3,26 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-
-vi.mock('../../console/logger.js', () => ({
-  logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
-}));
-
-import { logger } from '../../console/logger.js';
 import { discoverCatalogs } from '../discover.js';
+import type { MigrateIO } from '../io.js';
 import type { RoutingInfo } from '../types.js';
+
+// discoverCatalogs surfaces its one advisory through the injected io (the CLI
+// wires io.warn to its logger); a fake records the calls.
+function makeIO() {
+  return {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    fatal: vi.fn(),
+    guardGit: vi.fn(),
+    promptConfirm: vi.fn(),
+    promptText: vi.fn(),
+    promptLocale: vi.fn(),
+    promptLocaleList: vi.fn(),
+  } satisfies MigrateIO;
+}
+let io: ReturnType<typeof makeIO>;
 
 const emptyRouting: RoutingInfo = {
   locales: null,
@@ -36,6 +48,7 @@ function makeProject(files: Record<string, string>): string {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  io = makeIO();
 });
 
 afterEach(() => {
@@ -160,9 +173,9 @@ describe('discoverCatalogs', () => {
       locales: ['en', 'es', 'fr'],
       defaultLocale: 'en',
     };
-    expect(await discoverCatalogs(cwd, routing)).toBeNull();
-    expect(logger.warn).toHaveBeenCalledTimes(1);
-    const message = vi.mocked(logger.warn).mock.calls[0][0];
+    expect(await discoverCatalogs(cwd, routing, io)).toBeNull();
+    expect(io.warn).toHaveBeenCalledTimes(1);
+    const message = vi.mocked(io.warn).mock.calls[0][0];
     expect(message).toMatch(/fr/);
     expect(message).toContain(path.join(cwd, 'messages'));
   });
@@ -172,9 +185,9 @@ describe('discoverCatalogs', () => {
       'messages/en.json': '{}',
       'messages/es.json': '{}',
     });
-    const result = await discoverCatalogs(cwd, emptyRouting);
+    const result = await discoverCatalogs(cwd, emptyRouting, io);
     expect(result!.locales.sort()).toEqual(['en', 'es']);
-    expect(logger.warn).not.toHaveBeenCalled();
+    expect(io.warn).not.toHaveBeenCalled();
   });
 
   it('does not warn when every routing locale has a catalog', async () => {
@@ -187,9 +200,9 @@ describe('discoverCatalogs', () => {
       locales: ['en', 'fr'],
       defaultLocale: 'en',
     };
-    const result = await discoverCatalogs(cwd, routing);
+    const result = await discoverCatalogs(cwd, routing, io);
     expect(result!.locales.sort()).toEqual(['en', 'fr']);
-    expect(logger.warn).not.toHaveBeenCalled();
+    expect(io.warn).not.toHaveBeenCalled();
   });
 
   it('carries the parse error under Details rather than inline in whatHappened', async () => {

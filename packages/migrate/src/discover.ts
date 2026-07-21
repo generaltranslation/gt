@@ -5,7 +5,7 @@ import {
   formatDiagnosticErrorDetails,
   libraryDefaultLocale,
 } from 'generaltranslation/internal';
-import { logger } from '../console/logger.js';
+import type { MigrateIO } from './io.js';
 import type { MessageCatalogs, RoutingInfo } from './types.js';
 
 const DEFAULT_CATALOG_DIRS = ['messages', 'src/messages', 'locales'];
@@ -17,7 +17,8 @@ const DEFAULT_CATALOG_DIRS = ['messages', 'src/messages', 'locales'];
  */
 export async function discoverCatalogs(
   cwd: string,
-  routing: RoutingInfo
+  routing: RoutingInfo,
+  io?: MigrateIO
 ): Promise<MessageCatalogs | null> {
   const candidates: string[] = [];
   const requestDir = catalogDirFromRequestFile(routing.requestFile);
@@ -44,7 +45,7 @@ export async function discoverCatalogs(
   if (routing.locales) {
     const missing = routing.locales.filter((locale) => !stems.includes(locale));
     if (missing.length > 0) {
-      logger.warn(
+      io?.warn(
         createDiagnosticMessage({
           whatHappened: `Your next-intl routing config lists locales with no catalog file in ${dir}`,
           details: `no catalog for ${missing.join(', ')}`,

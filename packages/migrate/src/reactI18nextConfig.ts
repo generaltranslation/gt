@@ -5,7 +5,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DEFAULT_SEPARATORS, type Separators } from './catalogConvert.js';
 
-const traverse = traverseModule.default || traverseModule;
+const traverse: typeof traverseModule =
+  (traverseModule as { default?: typeof traverseModule }).default ||
+  traverseModule;
 
 export type I18nextConfig = {
   locales: string[] | null;

@@ -1,7 +1,9 @@
 import traverseModule from '@babel/traverse';
 import * as t from '@babel/types';
 
-const traverse = traverseModule.default || traverseModule;
+const traverse: typeof traverseModule =
+  (traverseModule as { default?: typeof traverseModule }).default ||
+  traverseModule;
 
 /**
  * Ensures `import { <names> } from '<module>'` exists, merging into an
