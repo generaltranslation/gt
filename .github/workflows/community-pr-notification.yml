@@ -16,16 +16,25 @@ jobs:
       is_member: ${{ steps.check.outputs.is_member }}
 
     steps:
+      - name: Generate organization membership token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.GT_MEMBERS_APP_CLIENT_ID }}
+          private-key: ${{ secrets.GT_MEMBERS_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          permission-members: read
+
       - name: Check organization membership
         id: check
         env:
-          ORG_MEMBERS_TOKEN: ${{ secrets.GT_ORG_MEMBERS_TOKEN }}
+          ORG_MEMBERS_TOKEN: ${{ steps.app-token.outputs.token }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
         run: |
           set -u
 
           status=''
-          # Read the token through stdin so it never appears in process arguments.
+          # Read the short-lived token through stdin so it never appears in process arguments.
           if ! status="$(
             curl -q --config - <<EOF
           silent
@@ -53,7 +62,7 @@ jobs:
               echo 'is_member=false' >> "${GITHUB_OUTPUT}"
               ;;
             *)
-              echo "::error::Could not verify General Translation organization membership (HTTP ${status}). Check GT_ORG_MEMBERS_TOKEN and its Members: read permission."
+              echo "::error::Could not verify General Translation organization membership (HTTP ${status}). Check the GitHub App installation and its Members: read permission."
               exit 1
               ;;
           esac
