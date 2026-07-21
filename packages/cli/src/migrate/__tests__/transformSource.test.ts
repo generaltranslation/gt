@@ -186,6 +186,89 @@ describe('transformSourceFile: provider', () => {
     expect(result.code).not.toContain('NextIntlClientProvider');
     expect(result.code).not.toContain('useMessages');
     expect(result.code).toMatch(/import \{ GTProvider \} from ["']gt-next["']/);
+    // messages and locale are absorbed by the swap; nothing else was dropped
+    expect(result.todos).toEqual([]);
+  });
+
+  it('records a TODO naming provider props the swap drops', () => {
+    const result = transform(
+      [
+        "import { NextIntlClientProvider, useMessages } from 'next-intl';",
+        'export function Providers({ children }: { children: React.ReactNode }) {',
+        '  const messages = useMessages();',
+        '  return (',
+        '    <NextIntlClientProvider',
+        '      messages={messages}',
+        '      timeZone="Europe/Vienna"',
+        '      onError={console.error}',
+        '    >',
+        '      {children}',
+        '    </NextIntlClientProvider>',
+        '  );',
+        '}',
+      ].join('\n')
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).toContain('<GTProvider>');
+    const reasons = result.todos.map((todo) => todo.reason).join(' ');
+    expect(reasons).toContain('timeZone');
+    expect(reasons).toContain('onError');
+    expect(reasons).toContain('GTProvider swap');
+  });
+
+  it('drops a getLocale binding that only fed the stripped provider locale', () => {
+    const result = transform(
+      [
+        "import { NextIntlClientProvider } from 'next-intl';",
+        "import { getLocale, getMessages } from 'next-intl/server';",
+        'export default async function Providers({',
+        '  children,',
+        '}: {',
+        '  children: React.ReactNode;',
+        '}) {',
+        '  const locale = await getLocale();',
+        '  const messages = await getMessages();',
+        '  return (',
+        '    <NextIntlClientProvider locale={locale} messages={messages}>',
+        '      {children}',
+        '    </NextIntlClientProvider>',
+        '  );',
+        '}',
+      ].join('\n')
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).toContain('<GTProvider>');
+    // both stranded bindings and the now-dead getLocale import are gone
+    expect(result.code).not.toContain('getLocale');
+    expect(result.code).not.toContain('const locale');
+    expect(result.code).not.toContain('getMessages');
+  });
+
+  it('keeps a getLocale binding that is still read outside the provider', () => {
+    const result = transform(
+      [
+        "import { NextIntlClientProvider } from 'next-intl';",
+        "import { getLocale } from 'next-intl/server';",
+        'export default async function Providers({',
+        '  children,',
+        '}: {',
+        '  children: React.ReactNode;',
+        '}) {',
+        '  const locale = await getLocale();',
+        '  return (',
+        '    <NextIntlClientProvider locale={locale}>',
+        '      <div lang={locale}>{children}</div>',
+        '    </NextIntlClientProvider>',
+        '  );',
+        '}',
+      ].join('\n')
+    );
+    expect(result.skipReasons).toEqual([]);
+    // the div still reads locale, so the binding and swapped import survive
+    expect(result.code).toContain('const locale = await getLocale()');
+    expect(result.code).toMatch(
+      /import \{\s*getLocale\s*\} from ["']gt-next\/server["']/
+    );
   });
 
   it('skips when the messages binding is also used outside the provider', () => {

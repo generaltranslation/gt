@@ -420,28 +420,71 @@ export function transformSourceFile(
   const removedProviderMessageBindings = new Set<string>();
   for (const providerPath of providerElements) {
     const opening = providerPath.node.openingElement;
+    // `messages` is absorbed by the dictionary pipeline and `locale` by
+    // gt-next's own resolution; any other prop (timeZone, formats, now,
+    // onError, ...) carried behavior GTProvider does not take, so name what
+    // was dropped instead of clearing it silently.
+    const droppedProps = opening.attributes
+      .map((attr) => {
+        if (t.isJSXSpreadAttribute(attr)) return '{...spread}';
+        return t.isJSXIdentifier(attr.name) ? attr.name.name : null;
+      })
+      .filter(
+        (name): name is string =>
+          name !== null && name !== 'messages' && name !== 'locale'
+      );
+    if (droppedProps.length > 0) {
+      todos.push({
+        file,
+        line: opening.loc?.start.line,
+        reason: `NextIntlClientProvider prop${droppedProps.length > 1 ? 's' : ''} ${droppedProps.join(', ')} dropped in the GTProvider swap; re-create the behavior through gt-next configuration if still needed (e.g. timeZone affects date formatting)`,
+      });
+    }
     opening.name = t.jsxIdentifier('GTProvider');
     opening.attributes = [];
     if (providerPath.node.closingElement) {
       providerPath.node.closingElement.name = t.jsxIdentifier('GTProvider');
     }
   }
+  let removedGetLocaleBinding = false;
   if (providerElements.length > 0) {
+    const getLocaleLocals = localsBy((name) => name === 'getLocale');
     traverse(ast, {
+      Program(path) {
+        // The attribute strip above removed the JSX references; recrawl so the
+        // getLocale binding check below sees true reference counts.
+        path.scope.crawl();
+      },
       VariableDeclarator(path) {
         if (
-          t.isIdentifier(path.node.id) &&
-          strippedAttrIdentifiers.has(path.node.id.name)
+          !t.isIdentifier(path.node.id) ||
+          !strippedAttrIdentifiers.has(path.node.id.name)
         ) {
-          const init = unwrapAwait(path.node.init);
-          if (
-            init &&
-            t.isCallExpression(init) &&
-            t.isIdentifier(init.callee) &&
-            messagesHookLocals.has(init.callee.name)
-          ) {
-            removedProviderMessageBindings.add(init.callee.name);
+          return;
+        }
+        const init = unwrapAwait(path.node.init);
+        if (
+          !init ||
+          !t.isCallExpression(init) ||
+          !t.isIdentifier(init.callee)
+        ) {
+          return;
+        }
+        if (messagesHookLocals.has(init.callee.name)) {
+          removedProviderMessageBindings.add(init.callee.name);
+          path.remove();
+          return;
+        }
+        // `const locale = await getLocale()` that only fed the stripped
+        // provider attribute would survive as an unreferenced variable.
+        // Messages hooks are provider-only by the skip analysis above;
+        // getLocale has no such analysis, so the reference check is the guard
+        // (a locale still read elsewhere keeps its declaration).
+        if (getLocaleLocals.has(init.callee.name)) {
+          const binding = path.scope.getBinding(path.node.id.name);
+          if (binding && !binding.referenced) {
             path.remove();
+            removedGetLocaleBinding = true;
           }
         }
       },
@@ -658,6 +701,14 @@ export function transformSourceFile(
     }
   }
 
+  // Step 3 may have removed a `const locale = await getLocale()` whose only
+  // consumer was a stripped provider attribute; the import surgery above still
+  // swapped its getLocale specifier in, so prune it when nothing references it
+  // anymore (a second getLocale call site elsewhere keeps the import).
+  if (removedGetLocaleBinding) {
+    removeUnusedNamedImports(ast, ['getLocale']);
+  }
+
   const output = generate(
     ast,
     {
@@ -714,7 +765,7 @@ function unwrapAwait(node: t.Node | null | undefined): t.Expression | null {
  * the params promise in a page/segment). Other sources (`props.params`, an
  * arbitrary call) are ignored so only genuine route-param destructures qualify.
  */
-function isParamsInit(node: t.Expression | null | undefined): boolean {
+export function isParamsInit(node: t.Expression | null | undefined): boolean {
   if (!node) return false;
   if (t.isIdentifier(node, { name: 'params' })) return true;
   if (

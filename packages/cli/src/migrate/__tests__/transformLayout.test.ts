@@ -771,6 +771,84 @@ describe('transformLayoutFile', () => {
     expect(bindings).toContain('...rest');
   });
 
+  it('cleans an orphaned use(params) destructure and its react import', () => {
+    const useParamsLayout = [
+      "import { use } from 'react';",
+      "import { notFound } from 'next/navigation';",
+      "import { hasLocale } from 'next-intl';",
+      "import { routing } from '@/i18n/routing';",
+      'export default function LocaleLayout({',
+      '  children,',
+      '  params,',
+      '}: {',
+      '  children: React.ReactNode;',
+      '  params: Promise<{ locale: string }>;',
+      '}) {',
+      '  const { locale } = use(params);',
+      '  if (!hasLocale(routing.locales, locale)) {',
+      '    notFound();',
+      '  }',
+      '  return (',
+      '    <html lang="en">',
+      '      <body>{children}</body>',
+      '    </html>',
+      '  );',
+      '}',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/[locale]/layout.tsx',
+      useParamsLayout,
+      makeContext()
+    );
+    expect(result.skipReasons).toEqual([]);
+    // guard, destructure, params binding, and the stranded use import all go
+    expect(result.code).not.toContain('use(params)');
+    expect(result.code).not.toMatch(/import \{\s*use\s*\} from ["']react["']/);
+    const bindings = signatureBindings(result.code!, 'LocaleLayout');
+    expect(bindings).not.toContain('params');
+  });
+
+  it('feeds a retained provider from a use(params) locale binding', () => {
+    const useParamsProviderLayout = [
+      "import { use } from 'react';",
+      "import { NextIntlClientProvider, hasLocale } from 'next-intl';",
+      "import { notFound } from 'next/navigation';",
+      "import { routing } from '@/i18n/routing';",
+      'export default function LocaleLayout({',
+      '  children,',
+      '  params,',
+      '}: {',
+      '  children: React.ReactNode;',
+      '  params: Promise<{ locale: string }>;',
+      '}) {',
+      '  const { locale } = use(params);',
+      '  if (!hasLocale(routing.locales, locale)) {',
+      '    notFound();',
+      '  }',
+      '  return (',
+      '    <html lang={locale}>',
+      '      <body>',
+      '        <NextIntlClientProvider>{children}</NextIntlClientProvider>',
+      '      </body>',
+      '    </html>',
+      '  );',
+      '}',
+    ].join('\n');
+    const result = transformLayoutFile(
+      'src/app/[locale]/layout.tsx',
+      useParamsProviderLayout,
+      makeContext(['src/components/Price.tsx'])
+    );
+    expect(result.skipReasons).toEqual([]);
+    // the static use(params) binding feeds the provider, not a request-scoped
+    // getLocale(), and the still-referenced use import survives
+    expect(result.code).toMatch(
+      /<NextIntlClientProvider[^>]*locale=\{locale\}/
+    );
+    expect(result.code).not.toContain('getLocale()');
+    expect(result.code).toMatch(/import \{\s*use\s*\} from ["']react["']/);
+  });
+
   it('keeps params in the signature when <html lang={locale}> still uses it', () => {
     const result = transformLayoutFile(
       'src/app/[locale]/layout.tsx',
