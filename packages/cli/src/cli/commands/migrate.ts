@@ -649,11 +649,25 @@ export async function handleMigrateCommand(
 
   const report = buildReport(ctx, false, gtNextMissing);
   const reportPath = path.join(cwd, 'gt-migrate-report.md');
-  fs.writeFileSync(reportPath, report);
+  // Print before writing: if the report file cannot land (disk full after the
+  // migration writes, a permission error on the project root), the user still
+  // gets the full report on the console instead of a raw stack trace over a
+  // migrated tree the dirty-tree guard would then block from a clean re-run.
   logger.message(report);
+  let reportWritten = true;
+  try {
+    fs.writeFileSync(reportPath, report);
+  } catch {
+    reportWritten = false;
+    logger.warn(
+      'Could not write gt-migrate-report.md; the full report is printed above.'
+    );
+  }
   echoWarnings(ctx);
   logger.endCommand(
-    `Migration written (${writtenFiles.length} files). Full report: ${path.relative(cwd, reportPath)}`
+    reportWritten
+      ? `Migration written (${writtenFiles.length} files). Full report: ${path.relative(cwd, reportPath)}`
+      : `Migration written (${writtenFiles.length} files). Report printed above (the report file could not be written).`
   );
 }
 

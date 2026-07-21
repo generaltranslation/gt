@@ -551,6 +551,41 @@ describe('handleMigrateCommand integration', () => {
     warn.mockRestore();
   });
 
+  it('prints the report even when the report file cannot be written', async () => {
+    const cwd = makeApp();
+    // A directory at the report path makes the final writeFileSync throw
+    // (EISDIR) after every migration write already landed.
+    fs.mkdirSync(path.join(cwd, 'gt-migrate-report.md'));
+    const message = vi.spyOn(logger, 'message');
+    const warn = vi.spyOn(logger, 'warn');
+    await handleMigrateCommand(
+      {
+        config: 'gt.config.json',
+        from: 'next-intl',
+        dryRun: false,
+        yes: true,
+        allowDirty: true,
+      },
+      'next-intl',
+      cwd
+    );
+    // the full report reached the console before the failed write
+    expect(
+      message.mock.calls.some(([text]) =>
+        String(text).includes('# gt migrate report')
+      )
+    ).toBe(true);
+    expect(
+      warn.mock.calls.some(([text]) =>
+        String(text).includes('Could not write gt-migrate-report.md')
+      )
+    ).toBe(true);
+    // the migration itself landed
+    expect(read(cwd, 'src/app/[locale]/page.tsx')).toContain('gt-next');
+    message.mockRestore();
+    warn.mockRestore();
+  });
+
   it('dry run writes nothing', async () => {
     const cwd = makeApp();
     const before = read(cwd, 'src/app/[locale]/page.tsx');
