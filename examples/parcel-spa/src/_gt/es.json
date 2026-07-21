@@ -1,0 +1,33 @@
+{
+  "741e5ec888531aea": {
+    "t": "section",
+    "i": 1,
+    "c": [
+      {
+        "t": "p",
+        "i": 2,
+        "c": "gt-react + Parcel"
+      },
+      {
+        "t": "h1",
+        "i": 3,
+        "c": "Hola desde el ejemplo de SPA de General Translation"
+      },
+      {
+        "t": "p",
+        "i": 4,
+        "c": "Esta interfaz se traduce en tiempo de compilacion por el compilador de GT, a traves de un transformador nativo de Parcel."
+      }
+    ]
+  },
+  "3c80d1610aae9fd5": [
+    "Hiciste clic ",
+    {
+      "i": 1,
+      "k": "_gt_n_1",
+      "v": "n"
+    },
+    " veces"
+  ],
+  "27c40600ef88cc8b": "Lanza tu producto en todos los idiomas."
+}

@@ -1,0 +1,75 @@
+{
+  "name": "@generaltranslation/parcel-transformer",
+  "version": "0.0.0",
+  "description": "Parcel transformer that runs the General Translation compiler for compile-time i18n optimization",
+  "type": "module",
+  "main": "dist/index.mjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.mts",
+  "files": [
+    "dist",
+    "CHANGELOG.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build:release": "pnpm run build:clean",
+    "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
+    "build": "tsdown",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "release": "pnpm run build:clean && pnpm publish --access public",
+    "release:alpha": "pnpm run build:clean && pnpm publish --access public --tag alpha",
+    "release:beta": "pnpm run build:clean && pnpm publish --access public --tag beta",
+    "release:latest": "pnpm run build:clean && pnpm publish --access public --tag latest",
+    "typecheck": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/generaltranslation/gt.git"
+  },
+  "keywords": [
+    "parcel",
+    "parcel-plugin",
+    "parcel-transformer",
+    "gt-react",
+    "gt-next",
+    "translation",
+    "i18n"
+  ],
+  "author": "General Translation, Inc.",
+  "license": "FSL-1.1-ALv2",
+  "bugs": {
+    "url": "https://github.com/generaltranslation/gt/issues"
+  },
+  "homepage": "https://generaltranslation.com/",
+  "engines": {
+    "node": ">=16.0.0",
+    "parcel": "^2.16.0"
+  },
+  "dependencies": {
+    "@babel/core": "catalog:",
+    "@babel/plugin-proposal-decorators": "^7.28.5",
+    "@babel/preset-react": "^7.28.5",
+    "@babel/preset-typescript": "^7.28.5",
+    "@generaltranslation/compiler": "workspace:*",
+    "@parcel/plugin": "^2.16.0"
+  },
+  "devDependencies": {
+    "@parcel/types": "^2.16.0",
+    "@types/babel__core": "^7.20.0",
+    "@types/node": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "typescript": {
+    "definition": "dist/index.d.mts"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
+    }
+  }
+}

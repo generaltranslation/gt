@@ -65,5 +65,13 @@
   "dependencies": {
     "lefthook": "^1.12.3",
     "vite": "^7.0.5"
+  },
+  "@parcel/resolver-default": {
+    "packageExports": true
+  },
+  "alias": {
+    "buffer": false,
+    "react": "./examples/parcel-spa/node_modules/react",
+    "react-dom": "./examples/parcel-spa/node_modules/react-dom"
   }
 }
