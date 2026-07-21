@@ -186,6 +186,61 @@ describe('transformSourceFile: provider', () => {
     expect(result.code).toMatch(/import \{ GTProvider \} from ["']gt-next["']/);
   });
 
+  it('drops a getLocale binding that only fed the stripped provider locale', () => {
+    const result = transform(
+      [
+        "import { NextIntlClientProvider } from 'next-intl';",
+        "import { getLocale, getMessages } from 'next-intl/server';",
+        'export default async function Providers({',
+        '  children,',
+        '}: {',
+        '  children: React.ReactNode;',
+        '}) {',
+        '  const locale = await getLocale();',
+        '  const messages = await getMessages();',
+        '  return (',
+        '    <NextIntlClientProvider locale={locale} messages={messages}>',
+        '      {children}',
+        '    </NextIntlClientProvider>',
+        '  );',
+        '}',
+      ].join('\n')
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).toContain('<GTProvider>');
+    // both stranded bindings and the now-dead getLocale import are gone
+    expect(result.code).not.toContain('getLocale');
+    expect(result.code).not.toContain('const locale');
+    expect(result.code).not.toContain('getMessages');
+  });
+
+  it('keeps a getLocale binding that is still read outside the provider', () => {
+    const result = transform(
+      [
+        "import { NextIntlClientProvider } from 'next-intl';",
+        "import { getLocale } from 'next-intl/server';",
+        'export default async function Providers({',
+        '  children,',
+        '}: {',
+        '  children: React.ReactNode;',
+        '}) {',
+        '  const locale = await getLocale();',
+        '  return (',
+        '    <NextIntlClientProvider locale={locale}>',
+        '      <div lang={locale}>{children}</div>',
+        '    </NextIntlClientProvider>',
+        '  );',
+        '}',
+      ].join('\n')
+    );
+    expect(result.skipReasons).toEqual([]);
+    // the div still reads locale, so the binding and swapped import survive
+    expect(result.code).toContain('const locale = await getLocale()');
+    expect(result.code).toMatch(
+      /import \{\s*getLocale\s*\} from ["']gt-next\/server["']/
+    );
+  });
+
   it('skips when the messages binding is also used outside the provider', () => {
     const result = transform(
       [

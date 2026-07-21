@@ -414,22 +414,45 @@ export function transformSourceFile(
       providerPath.node.closingElement.name = t.jsxIdentifier('GTProvider');
     }
   }
+  let removedGetLocaleBinding = false;
   if (providerElements.length > 0) {
+    const getLocaleLocals = localsBy((name) => name === 'getLocale');
     traverse(ast, {
+      Program(path) {
+        // The attribute strip above removed the JSX references; recrawl so the
+        // getLocale binding check below sees true reference counts.
+        path.scope.crawl();
+      },
       VariableDeclarator(path) {
         if (
-          t.isIdentifier(path.node.id) &&
-          strippedAttrIdentifiers.has(path.node.id.name)
+          !t.isIdentifier(path.node.id) ||
+          !strippedAttrIdentifiers.has(path.node.id.name)
         ) {
-          const init = unwrapAwait(path.node.init);
-          if (
-            init &&
-            t.isCallExpression(init) &&
-            t.isIdentifier(init.callee) &&
-            messagesHookLocals.has(init.callee.name)
-          ) {
-            removedProviderMessageBindings.add(init.callee.name);
+          return;
+        }
+        const init = unwrapAwait(path.node.init);
+        if (
+          !init ||
+          !t.isCallExpression(init) ||
+          !t.isIdentifier(init.callee)
+        ) {
+          return;
+        }
+        if (messagesHookLocals.has(init.callee.name)) {
+          removedProviderMessageBindings.add(init.callee.name);
+          path.remove();
+          return;
+        }
+        // `const locale = await getLocale()` that only fed the stripped
+        // provider attribute would survive as an unreferenced variable.
+        // Messages hooks are provider-only by the skip analysis above;
+        // getLocale has no such analysis, so the reference check is the guard
+        // (a locale still read elsewhere keeps its declaration).
+        if (getLocaleLocals.has(init.callee.name)) {
+          const binding = path.scope.getBinding(path.node.id.name);
+          if (binding && !binding.referenced) {
             path.remove();
+            removedGetLocaleBinding = true;
           }
         }
       },
@@ -634,6 +657,14 @@ export function transformSourceFile(
     if (removedOrphan) {
       removeUnusedNamedImports(ast, ['use']);
     }
+  }
+
+  // Step 3 may have removed a `const locale = await getLocale()` whose only
+  // consumer was a stripped provider attribute; the import surgery above still
+  // swapped its getLocale specifier in, so prune it when nothing references it
+  // anymore (a second getLocale call site elsewhere keeps the import).
+  if (removedGetLocaleBinding) {
+    removeUnusedNamedImports(ast, ['getLocale']);
   }
 
   const output = generate(
