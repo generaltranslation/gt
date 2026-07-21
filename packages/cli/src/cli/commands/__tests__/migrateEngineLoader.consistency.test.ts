@@ -15,6 +15,12 @@ import {
 // the coupling, so this test does: bump the engine's minor line or its
 // interface without moving the CLI constants and the monorepo fails here
 // instead of stranding users on a range that can never satisfy the CLI.
+//
+// The interface assertion reads the BUILT engine (the workspace export map
+// points at dist/), which CI rebuilds before this suite (turbo `test` depends
+// on `build`). A bare local vitest run against a stale engine dist can
+// false-pass the interface half; the version half reads package.json straight
+// from disk and is build-independent.
 describe('engine range and interface version stay coupled', () => {
   it('the workspace engine satisfies ENGINE_RANGE', () => {
     const pkgPath = path.resolve(

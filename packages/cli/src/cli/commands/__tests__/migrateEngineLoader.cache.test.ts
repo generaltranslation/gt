@@ -104,6 +104,21 @@ describe('installAndImport cache internals', () => {
     expect(vi.mocked(spawnSync)).toHaveBeenCalledTimes(1);
   });
 
+  it('reinstalls a good-looking tree that lacks the completion marker', async () => {
+    // Pins the marker check itself (re-attack F1): this tree resolves AND
+    // imports cleanly, so the self-heal catch can never fire; only the marker
+    // distrust triggers the reinstall. An interrupted npm can leave the
+    // engine's own files complete while a lazily-required transitive dep is
+    // missing, which is exactly the state the marker exists to catch.
+    writeGoodPackage();
+    mockNpmInstallSuccess();
+    const mod = (await installAndImport()) as {
+      runMigration: () => string;
+    };
+    expect(mod.runMigration()).toBe('ok');
+    expect(vi.mocked(spawnSync)).toHaveBeenCalledTimes(1);
+  });
+
   it('reuses a completed cache without touching npm', async () => {
     writeGoodPackage();
     fs.writeFileSync(path.join(CACHE_DIR, '.install-complete'), '');
