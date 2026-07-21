@@ -2,6 +2,10 @@ import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import chalk from 'chalk';
+import {
+  createDiagnosticMessage,
+  formatDiagnosticErrorDetails,
+} from 'generaltranslation/internal';
 import { logger } from '../../console/logger.js';
 import { logErrorAndExit, promptConfirm } from '../../console/logging.js';
 import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
@@ -417,14 +421,39 @@ export async function handleMigrateCommand(
   }
 
   const writtenFiles: string[] = [];
-  for (const edit of ctx.edits) {
-    if (edit.kind === 'delete') {
-      fs.rmSync(edit.path, { force: true });
-    } else {
-      fs.mkdirSync(path.dirname(edit.path), { recursive: true });
-      fs.writeFileSync(edit.path, edit.content ?? '');
-      writtenFiles.push(edit.path);
+  let applied = 0;
+  try {
+    for (const edit of ctx.edits) {
+      if (edit.kind === 'delete') {
+        fs.rmSync(edit.path, { force: true });
+      } else {
+        fs.mkdirSync(path.dirname(edit.path), { recursive: true });
+        fs.writeFileSync(edit.path, edit.content ?? '');
+        writtenFiles.push(edit.path);
+      }
+      applied += 1;
     }
+  } catch (error) {
+    // Buffering means nothing is touched until every transform succeeds, but
+    // a filesystem error mid-loop (permissions, disk full) still strands a
+    // partial write; name the damage and the way back instead of letting a
+    // raw stack trace surface.
+    if (writtenFiles.length > 0) {
+      logger.warn(
+        `Files already rewritten: ${writtenFiles
+          .map((file) => path.relative(cwd, file))
+          .join(', ')}`
+      );
+    }
+    logErrorAndExit(
+      createDiagnosticMessage({
+        whatHappened: `Applying the migration failed after ${applied} of ${ctx.edits.length} planned file changes, so the project is partially migrated`,
+        fix: 'Fix the underlying filesystem error and restore the pre-migration state with `git checkout .` (plus `git clean -fd` for newly created files) before re-running.',
+        wayOut:
+          'If you ran with --allow-dirty on a tree with uncommitted changes, restore those files from your own stash or backup instead.',
+        details: formatDiagnosticErrorDetails(error),
+      })
+    );
   }
 
   // The rewritten files import gt-next — install it so the app builds.

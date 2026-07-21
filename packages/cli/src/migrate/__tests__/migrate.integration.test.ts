@@ -10,6 +10,18 @@ vi.mock('../../hooks/postProcess.js', () => ({
   detectFormatter: vi.fn(async () => null),
 }));
 
+// logErrorAndExit would kill the vitest worker; throw a sentinel instead so
+// error-path tests can assert on the diagnostic it was called with.
+const logErrorAndExitMock = vi.hoisted(() =>
+  vi.fn((message: string): never => {
+    throw new Error(`exit: ${message}`);
+  })
+);
+vi.mock('../../console/logging.js', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  logErrorAndExit: logErrorAndExitMock,
+}));
+
 vi.mock('../../utils/installPackage.js', () => ({
   installPackage: vi.fn(async () => {}),
 }));
@@ -466,6 +478,36 @@ describe('handleMigrateCommand integration', () => {
     expect(read(cwd, 'src/app/[locale]/page.tsx')).toBe(before);
     expect(fs.existsSync(path.join(cwd, 'gt.config.json'))).toBe(false);
     expect(fs.existsSync(path.join(cwd, 'gt-migrate-report.md'))).toBe(false);
+  });
+
+  it('names the partial write and the recovery path when a write fails', async () => {
+    const cwd = makeApp();
+    // The layout is written after the page, so making it unwritable fails the
+    // write loop midway with the page already rewritten.
+    const layoutPath = path.join(cwd, 'src/app/[locale]/layout.tsx');
+    fs.chmodSync(layoutPath, 0o444);
+    await expect(
+      handleMigrateCommand(
+        {
+          config: 'gt.config.json',
+          from: 'next-intl',
+          dryRun: false,
+          yes: true,
+          allowDirty: true,
+        },
+        'next-intl',
+        cwd
+      )
+    ).rejects.toThrow(/partially migrated/);
+    fs.chmodSync(layoutPath, 0o644);
+    // the page landed before the failure; the layout kept its original source
+    expect(read(cwd, 'src/app/[locale]/page.tsx')).toContain('gt-next');
+    expect(read(cwd, 'src/app/[locale]/layout.tsx')).toContain(
+      'NextIntlClientProvider'
+    );
+    const exitMessage = logErrorAndExitMock.mock.calls.at(-1)?.[0] as string;
+    expect(exitMessage).toContain('git checkout .');
+    expect(exitMessage).toMatch(/Details:/);
   });
 
   it('skips t.rich files instead of discarding translations', async () => {
