@@ -82,6 +82,7 @@ export type TranslateFlags = SharedFlags & {
   experimentalLocalizeRelativeAssets?: boolean;
   experimentalAddHeaderAnchorIds?: 'mintlify' | 'default';
   omitConfigIds?: boolean;
+  pseudo?: boolean | string;
   excludeStaticUrls?: string[];
   excludeStaticImports?: string[];
   docsImportRewrites?: Array<{

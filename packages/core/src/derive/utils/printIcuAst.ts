@@ -44,6 +44,15 @@ type SimpleFormatStyle = NonNullable<
   (DateElement | TimeElement | NumberElement)['style']
 >;
 
+type PrintIcuAstOptions = {
+  /**
+   * Escape every literal `#` inside plural options instead of only the
+   * first (the upstream quirk). Output is no longer byte-identical to
+   * FormatJS `printAST`, so never enable this on the hashing path.
+   */
+  escapeAllPounds?: boolean;
+};
+
 /**
  * Local copy of FormatJS `printAST` (see the license header above). The
  * published printer subpath is CommonJS-only, which browsers and Vite-based
@@ -51,14 +60,21 @@ type SimpleFormatStyle = NonNullable<
  * package's ESM variant uses extensionless relative imports that fail Node
  * resolution.
  *
- * Output must stay byte-identical to FormatJS `printAST` because condensed
- * ICU strings feed into hashing.
+ * By default output stays byte-identical to FormatJS `printAST` because
+ * condensed ICU strings feed into hashing.
  */
-export function printIcuAst(ast: MessageFormatElement[]): string {
-  return doPrintAst(ast, false);
+export function printIcuAst(
+  ast: MessageFormatElement[],
+  options: PrintIcuAstOptions = {}
+): string {
+  return doPrintAst(ast, false, options);
 }
 
-function doPrintAst(ast: MessageFormatElement[], isInPlural: boolean): string {
+function doPrintAst(
+  ast: MessageFormatElement[],
+  isInPlural: boolean,
+  options: PrintIcuAstOptions
+): string {
   const printedNodes = ast.map((el, i) => {
     switch (el.type) {
       case TYPE.literal:
@@ -66,7 +82,8 @@ function doPrintAst(ast: MessageFormatElement[], isInPlural: boolean): string {
           el,
           isInPlural,
           i === 0,
-          i === ast.length - 1
+          i === ast.length - 1,
+          options
         );
       case TYPE.argument:
         return `{${el.value}}`;
@@ -75,20 +92,29 @@ function doPrintAst(ast: MessageFormatElement[], isInPlural: boolean): string {
       case TYPE.number:
         return printSimpleFormatElement(el);
       case TYPE.plural:
-        return printPluralElement(el);
+        return printPluralElement(el, options);
       case TYPE.select:
-        return printSelectElement(el);
+        return printSelectElement(el, options);
       case TYPE.pound:
         return '#';
       case TYPE.tag:
-        return printTagElement(el);
+        return printTagElement(el, isInPlural, options);
     }
   });
   return printedNodes.join('');
 }
 
-function printTagElement(el: TagElement): string {
-  return `<${el.value}>${printIcuAst(el.children)}</${el.value}>`;
+function printTagElement(
+  el: TagElement,
+  isInPlural: boolean,
+  options: PrintIcuAstOptions
+): string {
+  // The parser keeps plural context inside tags (a bare `#` in a tag inside
+  // a plural option is a pound element), but upstream's printer resets it.
+  // Preserve the context when escaping all pounds; keep the upstream reset
+  // otherwise so default output stays byte-identical.
+  const childrenInPlural = options.escapeAllPounds ? isInPlural : false;
+  return `<${el.value}>${doPrintAst(el.children, childrenInPlural, options)}</${el.value}>`;
 }
 
 function printEscapedMessage(message: string): string {
@@ -99,7 +125,8 @@ function printLiteralElement(
   { value }: LiteralElement,
   isInPlural: boolean,
   isFirstEl: boolean,
-  isLastEl: boolean
+  isLastEl: boolean,
+  options: PrintIcuAstOptions
 ): string {
   let escaped = value;
   // If this literal starts with a ' and it's not the 1st node, the node
@@ -112,9 +139,12 @@ function printLiteralElement(
     escaped = `${escaped.slice(0, escaped.length - 1)}''`;
   }
   escaped = printEscapedMessage(escaped);
+  if (!isInPlural) return escaped;
   // Upstream escapes only the first `#` (String#replace with a string
-  // pattern); keep the quirk so output stays byte-identical
-  return isInPlural ? escaped.replace('#', "'#'") : escaped;
+  // pattern); keep the quirk by default so output stays byte-identical
+  return options.escapeAllPounds
+    ? escaped.split('#').join("'#'")
+    : escaped.replace('#', "'#'");
 }
 
 function printSimpleFormatElement(
@@ -144,18 +174,24 @@ function printArgumentStyle(style: SimpleFormatStyle): string {
   }
 }
 
-function printSelectElement(el: SelectElement): string {
+function printSelectElement(
+  el: SelectElement,
+  options: PrintIcuAstOptions
+): string {
   const msg = [
     el.value,
     'select',
     Object.keys(el.options)
-      .map((id) => `${id}{${doPrintAst(el.options[id].value, false)}}`)
+      .map((id) => `${id}{${doPrintAst(el.options[id].value, false, options)}}`)
       .join(' '),
   ].join(',');
   return `{${msg}}`;
 }
 
-function printPluralElement(el: PluralElement): string {
+function printPluralElement(
+  el: PluralElement,
+  options: PrintIcuAstOptions
+): string {
   const type = el.pluralType === 'cardinal' ? 'plural' : 'selectordinal';
   const msg = [
     el.value,
@@ -163,7 +199,7 @@ function printPluralElement(el: PluralElement): string {
     [
       el.offset ? `offset:${el.offset}` : '',
       ...Object.keys(el.options).map(
-        (id) => `${id}{${doPrintAst(el.options[id].value, true)}}`
+        (id) => `${id}{${doPrintAst(el.options[id].value, true, options)}}`
       ),
     ]
       .filter(Boolean)

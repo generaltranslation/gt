@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { parse } from '@formatjs/icu-messageformat-parser';
+import {
+  parse,
+  TYPE,
+  type PluralElement,
+} from '@formatjs/icu-messageformat-parser';
 // Test-only import of the CommonJS subpath the vendored printer replaces;
 // vitest runs in Node where CJS interop works.
 import { printAST } from '@formatjs/icu-messageformat-parser/printer.js';
@@ -91,5 +95,33 @@ describe('printIcuAst', () => {
     const printed = printIcuAst(parse(message));
 
     expect(() => parse(printed)).not.toThrow();
+  });
+});
+
+describe('escapeAllPounds option', () => {
+  const TWO_ESCAPED_POUNDS = "{n, plural, other {'#'a '#'b}}";
+
+  it('escapes every literal # inside plural options so output reparses losslessly', () => {
+    const printed = printIcuAst(parse(TWO_ESCAPED_POUNDS), {
+      escapeAllPounds: true,
+    });
+    const reparsed = parse(printed);
+    const option = (reparsed[0] as PluralElement).options.other.value;
+    expect(option).toHaveLength(1);
+    expect(option[0]).toMatchObject({ type: TYPE.literal, value: '#a #b' });
+  });
+
+  it('keeps default output byte-identical to upstream (first # only)', () => {
+    const ast = parse(TWO_ESCAPED_POUNDS);
+    expect(printIcuAst(ast)).toBe(printAST(ast));
+  });
+
+  it('threads the option through tags nested in plural options', () => {
+    const printed = printIcuAst(
+      parse("{n, plural, other {<b>'#'x '#'y</b>}}", { ignoreTag: false }),
+      { escapeAllPounds: true }
+    );
+    expect(() => parse(printed, { ignoreTag: false })).not.toThrow();
+    expect(printed).not.toMatch(/[^']#/);
   });
 });
