@@ -26,7 +26,7 @@ function node(args: string[]): void {
 describe('gt-tanstack-start package exports', () => {
   beforeAll(() => {
     buildPackage();
-  });
+  }, 60_000);
 
   it('publishes ESM-only entrypoints', () => {
     const packageJson = JSON.parse(
