@@ -346,8 +346,7 @@ describe.sequential('_uploadTranslations', () => {
     );
   });
 
-  // TODO: Re-enable when the API supports POT -> PO file format transforms.
-  it.skip('should upload POT sources with PO translations', async () => {
+  it('should upload POT sources with PO translations', async () => {
     const mockFiles = [
       {
         source: createMockFileUpload({

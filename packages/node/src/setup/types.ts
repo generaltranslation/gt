@@ -12,4 +12,5 @@ import type {
 export type InitializeGTParams = I18nConfigParams & I18nCacheConstructorParams;
 
 // Other Reexports
-export type { GTConfig, TranslationsLoader } from 'gt-i18n/internal/types';
+export type { GTConfig } from 'generaltranslation/types';
+export type { TranslationsLoader } from 'gt-i18n/internal/types';

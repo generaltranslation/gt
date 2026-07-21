@@ -20,6 +20,8 @@ import {
   useLocaleProperties as _useLocaleProperties,
   Currency as _Currency,
   DateTime as _DateTime,
+  GtInternalTranslateJsx as _GtInternalTranslateJsx,
+  GtInternalVar as _GtInternalVar,
   RelativeTime as _RelativeTime,
   Num as _Num,
   Var as _Var,
@@ -114,6 +116,11 @@ export const T: typeof _T = () => {
 };
 /** @internal _gtt - The GT transformation for the component. */
 T._gtt = 'translate';
+
+export const GtInternalTranslateJsx: typeof _GtInternalTranslateJsx = () => {
+  throw new Error(typesFileError);
+};
+GtInternalTranslateJsx._gtt = 'translate-client-automatic';
 
 /**
  * The `<Currency>` component renders a formatted currency string, allowing customization of name, default value, currency type, and formatting options.
@@ -223,6 +230,11 @@ export const Var: typeof _Var = () => {
 };
 /** @internal _gtt - The GT transformation for the component. */
 Var._gtt = 'variable-variable';
+
+export const GtInternalVar: typeof _GtInternalVar = () => {
+  throw new Error(typesFileError);
+};
+GtInternalVar._gtt = 'variable-variable-automatic';
 
 /**
  * Marks JSX children as derivable by the GT compiler and CLI.
