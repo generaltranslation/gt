@@ -264,6 +264,25 @@ describe('parse', () => {
   });
 
   it.each([
+    'constructor',
+    'toString',
+    '__proto__',
+    'valueOf',
+    'hasOwnProperty',
+  ])('ignores inherited rounding-mode map key %j', (stem) => {
+    const [element] = parse(`{amount, number, ::${stem}}`);
+    if (
+      element.type !== TYPE.number ||
+      element.style == null ||
+      typeof element.style === 'string'
+    ) {
+      throw new Error('Expected a parsed number skeleton');
+    }
+
+    expect(element.style.parsedOptions).toEqual({});
+  });
+
+  it.each([
     ['0085', '\u0085'],
     ['200E', '\u200E'],
     ['200F', '\u200F'],

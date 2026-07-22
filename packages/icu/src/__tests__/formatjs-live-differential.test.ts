@@ -89,6 +89,14 @@ const NUMBER_RUNTIME_CASES = NUMBER_LOCALES.flatMap((locale) =>
   )
 );
 
+const OBJECT_PROTOTYPE_SKELETON_STEMS = [
+  'constructor',
+  'toString',
+  '__proto__',
+  'valueOf',
+  'hasOwnProperty',
+] as const;
+
 const DATE_VALUE = new Date('2020-05-06T14:03:02Z');
 const DATE_RUNTIME_CASES = NUMBER_LOCALES.flatMap((locale) =>
   [
@@ -338,6 +346,17 @@ describe('live FormatJS runtime compatibility', () => {
     }
   );
 
+  it.each(OBJECT_PROTOTYPE_SKELETON_STEMS)(
+    'ignores inherited rounding-mode map key ::%s like FormatJS',
+    (stem) => {
+      const message = `{value, number, ::${stem}}`;
+      const values = { value: 1234.5 };
+      expect(formatMessage(message, 'en-US', values)).toEqual(
+        formatWithFormatJs(message, 'en-US', values)
+      );
+    }
+  );
+
   it.each(DATE_RUNTIME_CASES)(
     'matches date/time formatting for $locale and $message',
     ({ locale, message, value }) => {
@@ -454,6 +473,16 @@ describe('live FormatJS parser compatibility', () => {
     (message) => {
       const ast = parse(message, { captureLocation: false });
       expect(parse(printAST(ast), { captureLocation: false })).toEqual(ast);
+    }
+  );
+
+  it.each(OBJECT_PROTOTYPE_SKELETON_STEMS)(
+    'ignores inherited rounding-mode map key ::%s in the AST',
+    (stem) => {
+      const message = `{value, number, ::${stem}}`;
+      expect(parse(message, { captureLocation: false })).toEqual(
+        formatJsParse(message, { captureLocation: false })
+      );
     }
   );
 

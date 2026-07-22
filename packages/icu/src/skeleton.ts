@@ -158,9 +158,8 @@ export function parseNumberSkeletonOptions(
         continue;
     }
 
-    const roundingMode = ROUNDING_MODES[token.stem];
-    if (roundingMode) {
-      result.roundingMode = roundingMode;
+    if (Object.prototype.hasOwnProperty.call(ROUNDING_MODES, token.stem)) {
+      result.roundingMode = ROUNDING_MODES[token.stem];
       continue;
     }
 

@@ -2,10 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { formatMessage, parse } from '@generaltranslation/icu';
 import { condenseVars } from '../condenseVars';
 
-// Pins the serialized output used by condenseVars. Existing FormatJS output
-// stays byte-identical unless it was not safely reparseable; corrected cases
-// use the canonical, round-trippable form because condensed strings feed into
-// hashing and later parsing.
+// Pins representative serialized output used transiently by condenseVars
+// before runtime interpolation. Round-trip and rendered-value compatibility
+// are required; byte parity with the old printer is preferred but not required.
+// Translation hashing uses indexVars source slices and does not call this printer.
 describe('condenseVars printer regression', () => {
   it.each([
     ['single indexed select', '{_gt_1, select, other {}}', '{_gt_1}'],

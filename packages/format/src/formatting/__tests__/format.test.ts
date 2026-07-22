@@ -76,6 +76,23 @@ describe('_formatMessageICU', () => {
   });
 
   it.each([
+    'constructor',
+    'toString',
+    '__proto__',
+    'valueOf',
+    'hasOwnProperty',
+  ])(
+    'ignores inherited rounding-mode map key %j through the public boundary',
+    (stem) => {
+      expect(
+        _formatMessageICU(`{value, number, ::${stem}}`, 'en-US', {
+          value: 1234.5,
+        })
+      ).toBe('1,234.5');
+    }
+  );
+
+  it.each([
     ['{value, number, ::integer-width/*}', 1.23456789, '1.235'],
     ['{value, number, ::integer-width/x*00}', 1.23456789, '01.235'],
     ['{value, number, ::.00/xyzr}', 1.23456789, '1.23456789'],
