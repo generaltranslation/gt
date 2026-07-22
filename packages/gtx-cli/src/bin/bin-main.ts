@@ -14,10 +14,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const require = createRequire(import.meta.url);
 
-function detectPlatform() {
-  const platform = process.platform;
-  const arch = process.arch;
-
+export function detectPlatform(
+  platform: NodeJS.Platform = process.platform,
+  arch: string = process.arch
+): string | null {
   // Map Node.js platform/arch to our target names
   const platformMap: Record<string, Record<string, string>> = {
     darwin: {
@@ -69,51 +69,201 @@ function resolveBinary(target: string): string | null {
   return null;
 }
 
+function defaultGetReport(): unknown {
+  return typeof process.report?.getReport === 'function'
+    ? process.report.getReport()
+    : undefined;
+}
+
+// Prebuilt Linux binaries are glibc-only. Some package managers (npm 8, and
+// others that ignore the "libc" field) install the glibc package on musl
+// systems anyway, so we must detect musl at runtime and take the JS fallback
+// instead of spawning an incompatible executable. Detection is best-effort:
+// any ambiguity or error resolves to "glibc" so the common case never breaks.
+export function isMuslLinux(
+  overrides: {
+    platform?: NodeJS.Platform;
+    getReport?: () => unknown;
+    fileExists?: (path: string) => boolean;
+  } = {}
+): boolean {
+  const platform = overrides.platform ?? process.platform;
+  if (platform !== 'linux') {
+    return false;
+  }
+
+  try {
+    // Primary signal: Node populates header.glibcVersionRuntime on glibc
+    // builds and omits it on musl builds. A non-empty string means glibc.
+    let glibcVersion: unknown;
+    try {
+      const getReport = overrides.getReport ?? defaultGetReport;
+      const report = getReport() as
+        | { header?: { glibcVersionRuntime?: unknown } }
+        | undefined;
+      glibcVersion = report?.header?.glibcVersionRuntime;
+    } catch {
+      glibcVersion = undefined;
+    }
+    if (typeof glibcVersion === 'string' && glibcVersion.length > 0) {
+      return false;
+    }
+
+    // Secondary signal: Alpine, the common musl distro, ships this marker.
+    const fileExists = overrides.fileExists ?? existsSync;
+    if (fileExists('/etc/alpine-release')) {
+      return true;
+    }
+
+    // Unknown: assume glibc so a supported system is never forced onto the
+    // slower JS fallback by a false positive.
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+type FallbackDiagnostic = {
+  whatHappened: string;
+  fix?: string;
+  details?: string;
+};
+
+export type ExecutionPlan =
+  | { kind: 'fallback'; diagnostic: FallbackDiagnostic }
+  | { kind: 'spawn'; binaryPath: string };
+
+// Pure routing decision: pick the platform binary, the JS fallback, or an
+// actionable failure. Kept free of I/O so both branches are unit-testable.
+export function planBinaryExecution(
+  overrides: {
+    platform?: NodeJS.Platform;
+    arch?: string;
+    detectMusl?: () => boolean;
+    resolve?: (target: string) => string | null;
+  } = {}
+): ExecutionPlan {
+  const platform = overrides.platform ?? process.platform;
+  const arch = overrides.arch ?? process.arch;
+
+  const target = detectPlatform(platform, arch);
+  if (!target) {
+    return {
+      kind: 'fallback',
+      diagnostic: {
+        whatHappened: `No prebuilt gtx-cli binary exists for your platform (${platform}-${arch})`,
+      },
+    };
+  }
+
+  // Detect musl before resolving or spawning: the glibc-only Linux binary can
+  // be installed on Alpine/musl by package managers that ignore "libc".
+  const detectMusl = overrides.detectMusl ?? (() => isMuslLinux({ platform }));
+  if (detectMusl()) {
+    return {
+      kind: 'fallback',
+      diagnostic: {
+        whatHappened: `Prebuilt gtx-cli binaries require glibc, but this Linux system uses musl (for example Alpine)`,
+      },
+    };
+  }
+
+  const resolve = overrides.resolve ?? resolveBinary;
+  const binaryPath = resolve(target);
+  if (!binaryPath) {
+    return {
+      kind: 'fallback',
+      diagnostic: {
+        whatHappened: `Could not find the gtx-cli binary for your platform (${platform}-${arch})`,
+        fix: `It ships in the optional dependency "${platformPackageName(
+          target
+        )}", which package managers install automatically; it can be missing when a lockfile was created with --omit=optional or on a different platform, so deleting node_modules and your lockfile then reinstalling usually restores it`,
+      },
+    };
+  }
+
+  return { kind: 'spawn', binaryPath };
+}
+
+function ensureSentence(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed) return '';
+  return /[.!?)]$/.test(trimmed) ? trimmed : `${trimmed}.`;
+}
+
+export type BinDiagnosticSeverity = 'Error' | 'Warning';
+
+// Launcher-local diagnostic formatter. bin-main is a lean launcher that runs on
+// every invocation, so it deliberately imports only Node built-ins and lazy
+// loads the CLI. Importing createDiagnosticMessage from generaltranslation/
+// internal would pull that whole barrel (and @generaltranslation/format) onto
+// the hot path, so we reproduce its canonical "<source> <Severity>: ..." shape
+// here with zero runtime dependencies.
+export function createBinDiagnostic(input: {
+  severity: BinDiagnosticSeverity;
+  whatHappened: string;
+  reassurance?: string;
+  fix?: string;
+  details?: string;
+}): string {
+  const detailText =
+    input.details && input.details.trim()
+      ? `Details: ${input.details}`
+      : undefined;
+  const message = [input.whatHappened, input.reassurance, input.fix, detailText]
+    .filter((part): part is string => !!part && !!part.trim())
+    .map(ensureSentence)
+    .join(' ');
+  return `gtx-cli ${input.severity}: ${message}`;
+}
+
 // The bin variant still ships the full JS implementation in dist/, so a
-// missing binary degrades to the JS CLI instead of failing outright
-function runJsFallback(reason: string): void {
-  console.error(`${reason}\nFalling back to the JS implementation of gtx-cli.`);
+// missing or incompatible binary degrades to the JS CLI instead of failing
+// outright.
+function runJsFallback(diagnostic: FallbackDiagnostic): void {
+  console.error(
+    createBinDiagnostic({
+      severity: 'Warning',
+      whatHappened: diagnostic.whatHappened,
+      fix: diagnostic.fix,
+      details: diagnostic.details,
+      reassurance: 'Falling back to the JS implementation of gtx-cli.',
+    })
+  );
   import('../main.js').catch((error) => {
     const message = error instanceof Error ? error.message : String(error);
     const code = (error as NodeJS.ErrnoException | undefined)?.code;
     if (code === 'ERR_MODULE_NOT_FOUND' || code === 'MODULE_NOT_FOUND') {
       console.error(
-        `The JS fallback failed to load (${message}).\n` +
-          `Try deleting node_modules and your lockfile, then reinstalling.`
+        createBinDiagnostic({
+          severity: 'Error',
+          whatHappened: 'The JS fallback failed to load',
+          fix: 'Try deleting node_modules and your lockfile, then reinstalling',
+          details: message,
+        })
       );
     } else {
-      console.error(`gtx-cli failed while running the JS fallback: ${message}`);
+      console.error(
+        createBinDiagnostic({
+          severity: 'Error',
+          whatHappened: 'The JS fallback threw while running',
+          details: message,
+        })
+      );
     }
     process.exit(1);
   });
 }
 
 function routeToBinary(): void {
-  const target = detectPlatform();
+  const plan = planBinaryExecution();
 
-  if (!target) {
-    runJsFallback(
-      `No prebuilt gtx-cli binary exists for your platform (${process.platform}-${process.arch}).`
-    );
+  if (plan.kind === 'fallback') {
+    runJsFallback(plan.diagnostic);
     return;
   }
 
-  const binaryPath = resolveBinary(target);
-
-  if (!binaryPath) {
-    runJsFallback(
-      `Could not find the gtx-cli binary for your platform (${process.platform}-${process.arch}).\n` +
-        `It ships in the optional dependency "${platformPackageName(target)}",\n` +
-        `which package managers install automatically. It can be missing when a\n` +
-        `lockfile was created with --omit=optional or on a different platform;\n` +
-        `deleting node_modules and your lockfile, then reinstalling, usually\n` +
-        `restores the native binary.` +
-        (process.platform === 'linux'
-          ? `\nNote: prebuilt Linux binaries are glibc-only; Alpine/musl always uses the fallback.`
-          : '')
-    );
-    return;
-  }
+  const { binaryPath } = plan;
 
   // Check and fix execute permissions if needed (Unix-like systems only)
   if (process.platform !== 'win32') {
@@ -135,17 +285,33 @@ function routeToBinary(): void {
     stdio: 'inherit',
   });
 
+  let settled = false;
+
   child.on('close', (code) => {
+    if (settled) return;
+    settled = true;
     // code might be null
     process.exit(code ?? 1);
   });
 
-  child.on('error', () => {
-    process.exit(1);
+  child.on('error', (error) => {
+    if (settled) return;
+    settled = true;
+    // 'error' fires when the process could not be spawned at all (for example
+    // an incompatible glibc binary on an undetected musl system). The binary
+    // never executed, so it is safe to degrade to the JS fallback rather than
+    // exit with a bare failure.
+    runJsFallback({
+      whatHappened: 'The prebuilt gtx-cli binary could not be started',
+      details: error instanceof Error ? error.message : String(error),
+    });
   });
 
   return;
 }
 
-// Entry point
-routeToBinary();
+// Entry point: only auto-run when invoked as the CLI, not when imported by
+// tests. import.meta.main is true only for the process entry module.
+if ((import.meta as { main?: boolean }).main) {
+  routeToBinary();
+}
