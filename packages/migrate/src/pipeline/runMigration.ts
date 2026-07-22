@@ -44,7 +44,7 @@ export const MIGRATE_INTERFACE_VERSION = 1;
  * `gt migrate`: converts an existing i18n setup in a Next.js App Router
  * project to gt-next. Sources are handled by pluggable adapters selected with
  * the required `--from` flag (next-intl, react-intl, react-i18next today; the
- * registry lives in ./adapters/). This doc describes the core
+ * registry lives in ../adapters/). This doc describes the core
  * next-intl engine; each adapter's module documents its own mapping and
  * limits.
  *

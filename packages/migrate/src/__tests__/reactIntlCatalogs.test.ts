@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { discoverReactIntlCatalogs } from '../adapters/reactIntlCatalogs.js';
+import { discoverReactIntlCatalogs } from '../catalogs/reactIntlCatalogs.js';
 import type { RoutingInfo } from '../pipeline/types.js';
 
 const routing: RoutingInfo = {

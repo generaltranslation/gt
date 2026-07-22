@@ -3,9 +3,9 @@ import traverseModule from '@babel/traverse';
 import * as t from '@babel/types';
 import { classifyMessage } from '../catalogs/classifyMessage.js';
 import type { RoutingInfo } from '../pipeline/types.js';
-import { discoverReactIntlCatalogs } from './reactIntlCatalogs.js';
-import { transformReactIntlNextConfig } from './reactIntlNextConfig.js';
-import { transformReactIntlSource } from './reactIntlTransform.js';
+import { discoverReactIntlCatalogs } from '../catalogs/reactIntlCatalogs.js';
+import { transformReactIntlNextConfig } from '../transforms/reactIntlNextConfig.js';
+import { transformReactIntlSource } from '../transforms/reactIntlTransform.js';
 import type { SourceAdapter } from './types.js';
 
 const traverse: typeof traverseModule =

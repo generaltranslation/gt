@@ -3,7 +3,7 @@ import { parse } from '@babel/parser';
 import traverseModule from '@babel/traverse';
 import generateModule from '@babel/generator';
 import * as t from '@babel/types';
-import { ensureNamedImports } from '../transforms/importUtils.js';
+import { ensureNamedImports } from './importUtils.js';
 import type {
   MigrationContext,
   SourceResult,

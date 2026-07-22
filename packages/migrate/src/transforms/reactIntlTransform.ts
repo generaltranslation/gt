@@ -3,12 +3,9 @@ import traverseModule, { type NodePath } from '@babel/traverse';
 import generateModule from '@babel/generator';
 import * as t from '@babel/types';
 import { classifyMessage } from '../catalogs/classifyMessage.js';
-import { ensureNamedImports } from '../transforms/importUtils.js';
-import type { TransformOptions } from '../transforms/transformSource.js';
-import {
-  isParamsInit,
-  removeParamsParameter,
-} from '../transforms/transformSource.js';
+import { ensureNamedImports } from './importUtils.js';
+import type { TransformOptions } from './transformSource.js';
+import { isParamsInit, removeParamsParameter } from './transformSource.js';
 import type {
   MigrationContext,
   SourceResult,
