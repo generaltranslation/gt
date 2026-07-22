@@ -34,6 +34,13 @@ export class SetupStep {
       return files;
     }
 
+    if (result.status !== 'queued' || !result.setupJobId) {
+      this.spinner.stop(
+        chalk.yellow('Setup status unknown — proceeding without setup')
+      );
+      return files;
+    }
+
     // Poll for completion
     const start = Date.now();
     const pollInterval = 5000; // 5 seconds
