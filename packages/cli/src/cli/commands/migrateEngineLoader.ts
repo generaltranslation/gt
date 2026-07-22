@@ -104,6 +104,8 @@ export async function loadMigrateEngine(
         } catch (error) {
           deps.fail(
             createDiagnosticMessage({
+              source: 'gt',
+              severity: 'Error',
               whatHappened: `Could not load or install the gt migrate engine (${PACKAGE_NAME})`,
               fix: `Add ${PACKAGE_NAME} as a devDependency with your package manager (for example \`npm install --save-dev ${PACKAGE_NAME}\`) and re-run \`gt migrate\`.`,
               wayOut:
@@ -120,6 +122,8 @@ export async function loadMigrateEngine(
   if (!engine) {
     deps.fail(
       createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Error',
         whatHappened: `The loaded ${PACKAGE_NAME} module does not export runMigration, so it is not a usable migrate engine`,
         fix: `Reinstall ${PACKAGE_NAME} (or remove a broken copy from your project) and re-run \`gt migrate\`.`,
       })
@@ -129,6 +133,8 @@ export async function loadMigrateEngine(
   if (engine.MIGRATE_INTERFACE_VERSION !== EXPECTED_INTERFACE_VERSION) {
     deps.fail(
       createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Error',
         whatHappened: `The installed ${PACKAGE_NAME} speaks migrate interface version ${String(
           engine.MIGRATE_INTERFACE_VERSION
         )}, but this gt CLI expects version ${EXPECTED_INTERFACE_VERSION}`,

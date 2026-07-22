@@ -116,6 +116,8 @@ export async function handleMigrateCommand(
     }
     logErrorAndExit(
       createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Error',
         whatHappened: `Applying the migration failed after ${applied} of ${ctx.edits.length} planned file changes, so the project is partially migrated`,
         fix: 'Fix the underlying filesystem error and restore the pre-migration state with `git checkout .` (plus `git clean -fd` for newly created files) before re-running.',
         wayOut:
