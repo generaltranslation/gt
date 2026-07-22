@@ -17,9 +17,9 @@ export function initializeGT(config: InitializeGTParams): void {
               window.location.pathname,
               locale
             );
-            window.location.assign(
-              `${pathname}${window.location.search}${window.location.hash}`
-            );
+            const destination = new URL(window.location.href);
+            destination.pathname = pathname;
+            window.location.assign(destination.href);
           },
         }
       : config;

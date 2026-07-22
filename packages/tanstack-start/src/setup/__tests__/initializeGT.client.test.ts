@@ -40,6 +40,7 @@ describe('initializeGT client', () => {
     const assign = vi.fn();
     vi.stubGlobal('window', {
       location: {
+        href: 'https://example.com/ar/about?view=full#bio',
         pathname: '/ar/about',
         search: '?view=full',
         hash: '#bio',
@@ -58,7 +59,36 @@ describe('initializeGT client', () => {
       mockCreateOrUpdateBrowserConditionStore.mock.calls[0][0];
     browserConfig._reload({ locale: 'fr' });
     expect(mockGetPathnameForLocale).toHaveBeenCalledWith('/ar/about', 'fr');
-    expect(assign).toHaveBeenCalledWith('/fr/about?view=full#bio');
+    expect(assign).toHaveBeenCalledWith(
+      'https://example.com/fr/about?view=full#bio'
+    );
+  });
+
+  it('keeps protocol-relative pathnames on the current origin', () => {
+    const assign = vi.fn();
+    vi.stubGlobal('window', {
+      location: {
+        href: 'https://example.com/fr//evil.example?view=full#bio',
+        pathname: '/fr//evil.example',
+        search: '?view=full',
+        hash: '#bio',
+        assign,
+      },
+    });
+    mockGetPathnameForLocale.mockReturnValueOnce('//evil.example');
+
+    initializeGT({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+      localeRouting: true,
+    });
+
+    const browserConfig =
+      mockCreateOrUpdateBrowserConditionStore.mock.calls[0][0];
+    browserConfig._reload({ locale: 'en' });
+    expect(assign).toHaveBeenCalledWith(
+      'https://example.com//evil.example?view=full#bio'
+    );
   });
 
   it('preserves a custom reload when locale routing is enabled', () => {
