@@ -61,6 +61,22 @@ describe('initializeGT client', () => {
     expect(assign).toHaveBeenCalledWith('/fr/about?view=full#bio');
   });
 
+  it('preserves a custom reload when locale routing is enabled', () => {
+    const customReload = vi.fn();
+    const config = {
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+      localeRouting: true,
+      _reload: customReload,
+    };
+
+    initializeGT(config);
+
+    const browserConfig =
+      mockCreateOrUpdateBrowserConditionStore.mock.calls.at(-1)![0];
+    expect(browserConfig._reload).toBe(customReload);
+  });
+
   it('initializes React with the cookie locale', () => {
     const config = {
       defaultLocale: 'en',

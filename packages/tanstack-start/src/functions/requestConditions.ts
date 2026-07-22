@@ -3,7 +3,7 @@ import { getI18nConfig } from '@generaltranslation/react-core/pure';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { getCookieValue, parseAcceptLanguage } from 'gt-i18n/internal';
 import type { RequestConditions } from '../condition-store/AsyncLocalConditionStore';
-import type { InitializeGTParams } from '../types';
+import type { InitializeGTParams } from '../types/InitializeGTParams';
 import { getLocaleFromPath } from './localeRouting';
 
 export const localeCookieOptions = {
@@ -22,13 +22,14 @@ const noLocaleCandidatesWarning = createDiagnosticMessage({
 
 export function resolveRequestConditions(
   request: Request,
-  localeConfig?: InitializeGTParams
+  localeConfig?: InitializeGTParams,
+  pathname = new URL(request.url).pathname
 ): RequestConditions {
   const i18nConfig = getI18nConfig();
   const cookieHeader = request.headers.get('cookie');
   const localeCandidates: string[] = [];
   if (localeConfig?.localeRouting) {
-    const pathLocale = getLocaleFromPath(new URL(request.url).pathname);
+    const pathLocale = getLocaleFromPath(pathname);
     if (pathLocale) localeCandidates.push(pathLocale);
   }
   const cookieLocale = getCookieValue(

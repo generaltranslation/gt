@@ -97,9 +97,10 @@ describe('AsyncLocalConditionStore', () => {
       createRequest({
         locale: 'es',
         enableI18n: true,
-        pathname: '/fr/about',
+        pathname: '/ignored',
       }),
-      () => expect(conditionStore.getLocale()).toBe('fr')
+      () => expect(conditionStore.getLocale()).toBe('fr'),
+      '/fr/about'
     );
   });
 

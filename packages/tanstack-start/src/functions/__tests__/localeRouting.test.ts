@@ -17,6 +17,11 @@ describe.sequential('locale routing', () => {
     expect(getLocaleFromPath('/')).toBeUndefined();
   });
 
+  it('reads locale prefixes after the TanStack Router basepath', () => {
+    expect(getLocaleFromPath('/app/fr/about', '/app')).toBe('fr');
+    expect(getLocaleFromPath('/app/about', '/app')).toBeUndefined();
+  });
+
   it('replaces existing locale prefixes', () => {
     expect(getPathnameForLocale('/fr/about', 'ar')).toBe('/ar/about');
     expect(getPathnameForLocale('/fr', 'ar')).toBe('/ar');
@@ -31,5 +36,14 @@ describe.sequential('locale routing', () => {
   it('prefixes non-default locales', () => {
     expect(getPathnameForLocale('/about', 'fr')).toBe('/fr/about');
     expect(getPathnameForLocale('/', 'fr')).toBe('/fr');
+  });
+
+  it('preserves the TanStack Router basepath', () => {
+    expect(getPathnameForLocale('/app/fr/about', 'ar', '/app')).toBe(
+      '/app/ar/about'
+    );
+    expect(getPathnameForLocale('/app/fr/about', 'en', '/app')).toBe(
+      '/app/about'
+    );
   });
 });

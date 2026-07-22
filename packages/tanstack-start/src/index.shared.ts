@@ -1,5 +1,5 @@
 export { parseLocale } from './functions/parseLocale';
-export type { InitializeGTParams } from './types';
+export type { InitializeGTParams } from './types/InitializeGTParams';
 export {
   getLocale,
   getEnableI18n,

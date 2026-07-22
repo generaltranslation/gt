@@ -2,7 +2,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
 import { resolveRequestConditions } from '../functions/requestConditions';
-import type { InitializeGTParams } from '../types';
+import type { InitializeGTParams } from '../types/InitializeGTParams';
 
 export type RequestConditions = {
   locale: string;
@@ -26,8 +26,8 @@ export class AsyncLocalConditionStore implements ReadonlyConditionStoreInterface
 
   constructor(private readonly config: InitializeGTParams) {}
 
-  run<T>(request: Request, callback: () => T): T {
-    const conditions = resolveRequestConditions(request, this.config);
+  run<T>(request: Request, callback: () => T, pathname?: string): T {
+    const conditions = resolveRequestConditions(request, this.config, pathname);
     return this.storage.run(conditions, callback);
   }
 
