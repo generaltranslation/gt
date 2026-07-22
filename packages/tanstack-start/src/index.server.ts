@@ -1,2 +1,3 @@
 export * from './index.shared';
-export { initializeGT } from './setup/initializeGT';
+export { gtMiddleware } from './middleware/gtMiddleware';
+export { initializeGT } from './setup/initializeGT.server';

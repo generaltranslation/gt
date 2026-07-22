@@ -1,5 +1,15 @@
 # gt-next
 
+## 11.0.13
+
+### Patch Changes
+
+- [#1935](https://github.com/generaltranslation/gt/pull/1935) [`ca2d2d7`](https://github.com/generaltranslation/gt/commit/ca2d2d70fb4e58b205cee7a899a6df9fcae3f0dd) Thanks [@pjsny](https://github.com/pjsny)! - Support Next.js's function-form config in `withGTConfig`. When passed a `(phase, context) => NextConfig` function (Next's function config form), `withGTConfig` now calls it and wraps the resolved config instead of spreading the function as a plain object. This lets `withGTConfig` compose with other Next config plugins that return a config function — matching `@sentry/nextjs`'s `withSentryConfig` — for both sync and async config functions.
+
+- Updated dependencies [[`f1eb7c4`](https://github.com/generaltranslation/gt/commit/f1eb7c42bebf0eb75e477c700a61ac060924bb30)]:
+  - gt-react@11.0.13
+  - @generaltranslation/react-core@11.0.13
+
 ## 11.0.12
 
 ### Patch Changes

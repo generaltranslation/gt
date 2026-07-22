@@ -54,20 +54,52 @@ describe('gt-tanstack-start package exports', () => {
     ).toEqual(['index.client.mjs', 'index.server.mjs', 'server.mjs']);
   });
 
-  it('loads the main and server ESM entrypoints', () => {
+  it('references only declared dependencies from public declarations', () => {
+    for (const file of [
+      'index.client.d.mts',
+      'index.server.d.mts',
+      'server.d.mts',
+    ]) {
+      const declaration = readFileSync(join(packageRoot, 'dist', file), 'utf8');
+
+      expect(declaration).not.toMatch(
+        /@tanstack\/(?:start-client-core|start-fn-stubs)/
+      );
+    }
+  });
+
+  it('loads isomorphic helpers and middleware from the main ESM entrypoint', () => {
     node([
       '--input-type=module',
       '-e',
       `
         import assert from 'node:assert/strict';
-        import { GTProvider, parseLocale } from 'gt-tanstack-start';
-        import { getGT, getLocale, gtMiddleware } from 'gt-tanstack-start/server';
+        import { GTProvider, getGT, getLocale, gtMiddleware, parseLocale } from 'gt-tanstack-start';
+        import { getGT as legacyGetGT, gtMiddleware as legacyGtMiddleware } from 'gt-tanstack-start/server';
 
         assert.equal(typeof GTProvider, 'function');
         assert.equal(typeof parseLocale, 'function');
         assert.equal(typeof getGT, 'function');
         assert.equal(typeof getLocale, 'function');
         assert.equal(typeof gtMiddleware, 'object');
+        assert.equal(typeof legacyGetGT, 'function');
+        assert.equal(typeof legacyGtMiddleware, 'object');
+      `,
+    ]);
+  });
+
+  it('loads isomorphic helpers from the browser ESM entrypoint', () => {
+    node([
+      '--conditions=browser',
+      '--input-type=module',
+      '-e',
+      `
+        import assert from 'node:assert/strict';
+        import { getGT, getLocale, initializeGT } from 'gt-tanstack-start';
+
+        assert.equal(typeof getGT, 'function');
+        assert.equal(typeof getLocale, 'function');
+        assert.equal(typeof initializeGT, 'function');
       `,
     ]);
   });

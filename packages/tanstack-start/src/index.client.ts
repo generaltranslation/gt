@@ -1,2 +1,2 @@
 export * from './index.shared';
-export { initializeGT } from 'gt-react';
+export { initializeGT } from './setup/initializeGT.client';

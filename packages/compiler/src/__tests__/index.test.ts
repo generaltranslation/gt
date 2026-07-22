@@ -7,7 +7,14 @@ import type {
   UnpluginBuildContext,
   UnpluginContext,
 } from 'unplugin';
-import gtUnplugin, { MISSING_GT_CONFIG_WARNING } from '../index';
+import gtUnplugin, {
+  esbuild,
+  MISSING_GT_CONFIG_WARNING,
+  rollup,
+  rspack,
+  vite,
+  webpack,
+} from '../index';
 import type { GTUnpluginOptions } from '../index';
 
 const JSX_RUNTIME_CODE = `
@@ -322,5 +329,31 @@ describe('gtUnplugin config loading', () => {
     } finally {
       warnSpy.mockRestore();
     }
+  });
+});
+
+describe('bundler adapters', () => {
+  it('exposes a factory for every supported bundler, including rspack', () => {
+    for (const adapter of [webpack, vite, rollup, rspack, esbuild]) {
+      expect(typeof adapter).toBe('function');
+    }
+  });
+
+  it('builds a raw rspack plugin that exposes a transform hook', () => {
+    const plugin = gtUnplugin.raw(
+      {
+        defaultLocale: 'en',
+        locales: ['en', 'es'],
+        files: {
+          gt: {
+            output: 'src/_gt/[locale].json',
+          },
+        },
+      },
+      { framework: 'rspack' }
+    );
+
+    expect(plugin).toBeTypeOf('object');
+    expect(typeof plugin.transform).toBe('function');
   });
 });
