@@ -29,6 +29,7 @@
     "next-pages-router",
     "vite-create-app",
     "rollup-spa",
+    "rsbuild-spa",
     "vite-spa",
     "webpack-spa",
     "cli-test-app",
