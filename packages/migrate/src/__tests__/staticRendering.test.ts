@@ -2,14 +2,14 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { emitGtFiles } from '../emitGtFiles.js';
-import { buildReport } from '../report.js';
-import { transformLayoutFile } from '../transformLayout.js';
+import { emitGtFiles } from '../emit/emitGtFiles.js';
+import { buildReport } from '../report/report.js';
+import { transformLayoutFile } from '../transforms/transformLayout.js';
 import type {
   MessageCatalogs,
   MigrationContext,
   RoutingInfo,
-} from '../types.js';
+} from '../pipeline/types.js';
 import { nextIntlAdapter } from '../adapters/nextIntl.js';
 
 const tmpDirs: string[] = [];

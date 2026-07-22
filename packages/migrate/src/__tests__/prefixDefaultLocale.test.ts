@@ -5,13 +5,13 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   localePrefixHasCustomPrefixes,
   parseRoutingConfig,
-} from '../parseRoutingConfig.js';
-import { transformMiddlewareFile } from '../transformMiddleware.js';
+} from '../config/parseRoutingConfig.js';
+import { transformMiddlewareFile } from '../transforms/transformMiddleware.js';
 import type {
   MessageCatalogs,
   MigrationContext,
   RoutingInfo,
-} from '../types.js';
+} from '../pipeline/types.js';
 import { nextIntlAdapter } from '../adapters/nextIntl.js';
 
 const tmpDirs: string[] = [];

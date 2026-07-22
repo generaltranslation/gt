@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { transformRequestConfigFile } from '../transformRequestConfig.js';
+import { transformRequestConfigFile } from '../transforms/transformRequestConfig.js';
 
 const canonical = [
   "import { getRequestConfig } from 'next-intl/server';",

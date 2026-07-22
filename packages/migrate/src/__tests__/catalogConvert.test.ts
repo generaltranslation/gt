@@ -7,7 +7,7 @@ import {
   DEFAULT_SEPARATORS,
   escapeIcuText,
   type ConvertInput,
-} from '../catalogConvert.js';
+} from '../catalogs/catalogConvert.js';
 
 /** Builds a single-locale, single-namespace input with sane defaults. */
 function input(

@@ -4,14 +4,14 @@ import {
   getAdapter,
   supportedSourceIds,
   type SourceAdapter,
-} from './adapters/index.js';
-import { emitGtFiles } from './emitGtFiles.js';
-import { matchFiles } from './fs/matchFiles.js';
+} from '../adapters/index.js';
+import { emitGtFiles } from '../emit/emitGtFiles.js';
+import { matchFiles } from '../fs/matchFiles.js';
 import type { MigrateIO } from './io.js';
-import { resolveCatalogsInteractively } from './promptFallbacks.js';
+import { resolveCatalogsInteractively } from '../catalogs/promptFallbacks.js';
 import { hasDependency, resolveMigrationSource } from './resolveSource.js';
-import { transformLayoutFile } from './transformLayout.js';
-import { transformSourceFile } from './transformSource.js';
+import { transformLayoutFile } from '../transforms/transformLayout.js';
+import { transformSourceFile } from '../transforms/transformSource.js';
 import type {
   MigrateOptions,
   MigrationContext,

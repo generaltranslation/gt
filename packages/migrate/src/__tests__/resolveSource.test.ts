@@ -6,7 +6,7 @@ import {
   hasDependency,
   readDeps,
   resolveMigrationSource,
-} from '../resolveSource.js';
+} from '../pipeline/resolveSource.js';
 
 const tmpDirs: string[] = [];
 

@@ -3,7 +3,10 @@ import traverseModule from '@babel/traverse';
 import * as t from '@babel/types';
 import fs from 'node:fs';
 import path from 'node:path';
-import { DEFAULT_SEPARATORS, type Separators } from './catalogConvert.js';
+import {
+  DEFAULT_SEPARATORS,
+  type Separators,
+} from '../catalogs/catalogConvert.js';
 
 const traverse: typeof traverseModule =
   (traverseModule as { default?: typeof traverseModule }).default ||

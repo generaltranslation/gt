@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { transformSourceFile } from '../transformSource.js';
+import { transformSourceFile } from '../transforms/transformSource.js';
 import type {
   MessageCatalogs,
   MigrationContext,
   RoutingInfo,
-} from '../types.js';
+} from '../pipeline/types.js';
 import { nextIntlAdapter } from '../adapters/nextIntl.js';
 
 const routing: RoutingInfo = {

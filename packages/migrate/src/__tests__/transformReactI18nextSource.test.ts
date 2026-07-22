@@ -1,13 +1,13 @@
 import { parse } from '@babel/parser';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { reactI18nextAdapter } from '../adapters/reactI18next.js';
-import { clearI18nextConfigCache } from '../reactI18nextConfig.js';
-import { transformReactI18nextSource } from '../transformReactI18nextSource.js';
+import { clearI18nextConfigCache } from '../config/reactI18nextConfig.js';
+import { transformReactI18nextSource } from '../transforms/transformReactI18nextSource.js';
 import type {
   MessageCatalogs,
   MigrationContext,
   RoutingInfo,
-} from '../types.js';
+} from '../pipeline/types.js';
 
 const routing: RoutingInfo = {
   locales: ['en'],

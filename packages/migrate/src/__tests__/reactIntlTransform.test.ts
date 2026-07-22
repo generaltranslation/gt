@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { reactIntlAdapter } from '../adapters/reactIntl.js';
-import { transformSourceFile } from '../transformSource.js';
-import type { TransformOptions } from '../transformSource.js';
+import { transformSourceFile } from '../transforms/transformSource.js';
+import type { TransformOptions } from '../transforms/transformSource.js';
 import type {
   MessageCatalogs,
   MigrationContext,
   RoutingInfo,
-} from '../types.js';
+} from '../pipeline/types.js';
 
 const routing: RoutingInfo = {
   locales: null,

@@ -3,7 +3,7 @@ import traverseModule from '@babel/traverse';
 import generateModule from '@babel/generator';
 import * as t from '@babel/types';
 import { ensureNamedImports } from './importUtils.js';
-import type { SourceResult } from './types.js';
+import type { SourceResult } from '../pipeline/types.js';
 
 const traverse: typeof traverseModule =
   (traverseModule as { default?: typeof traverseModule }).default ||

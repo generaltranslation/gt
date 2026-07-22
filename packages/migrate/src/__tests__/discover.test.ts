@@ -3,9 +3,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-import { discoverCatalogs } from '../discover.js';
-import type { MigrateIO } from '../io.js';
-import type { RoutingInfo } from '../types.js';
+import { discoverCatalogs } from '../catalogs/discover.js';
+import type { MigrateIO } from '../pipeline/io.js';
+import type { RoutingInfo } from '../pipeline/types.js';
 
 // discoverCatalogs surfaces its one advisory through the injected io (the CLI
 // wires io.warn to its logger); a fake records the calls.

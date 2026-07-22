@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { MigrationContext } from './types.js';
+import type { MigrationContext } from '../pipeline/types.js';
 
 /**
  * Renders the migration report: what was converted, what was skipped and

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildReport } from '../report.js';
+import { buildReport } from '../report/report.js';
 import { nextIntlAdapter } from '../adapters/nextIntl.js';
 import { reactI18nextAdapter } from '../adapters/reactI18next.js';
 import type {
@@ -7,7 +7,7 @@ import type {
   MigrationContext,
   RoutingInfo,
   SourceAdapter,
-} from '../types.js';
+} from '../pipeline/types.js';
 
 const routing: RoutingInfo = {
   locales: ['en', 'es'],

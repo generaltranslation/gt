@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
-import { getAdapter } from './adapters/index.js';
+import { getAdapter } from '../adapters/index.js';
 
 /**
  * `determineLibrary` collapses every i18next-family dependency (react-i18next,

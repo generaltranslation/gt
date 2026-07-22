@@ -1,13 +1,13 @@
-import type { MessageClass } from '../classifyMessage.js';
-import type { TransformOptions } from '../transformSource.js';
+import type { MessageClass } from '../catalogs/classifyMessage.js';
+import type { TransformOptions } from '../transforms/transformSource.js';
 import type {
   FileEdit,
   MessageCatalogs,
   MigrationContext,
   RoutingInfo,
   SourceResult,
-} from '../types.js';
-import type { MigrateIO } from '../io.js';
+} from '../pipeline/types.js';
+import type { MigrateIO } from '../pipeline/io.js';
 
 /**
  * The per-source-library seam for `gt migrate`. Everything the transforms and

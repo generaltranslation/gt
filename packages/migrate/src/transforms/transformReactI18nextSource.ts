@@ -2,8 +2,12 @@ import { parse } from '@babel/parser';
 import traverseModule, { type NodePath } from '@babel/traverse';
 import generateModule from '@babel/generator';
 import * as t from '@babel/types';
-import { getI18nextConfig } from './reactI18nextConfig.js';
-import type { MigrationContext, SourceResult, TodoEntry } from './types.js';
+import { getI18nextConfig } from '../config/reactI18nextConfig.js';
+import type {
+  MigrationContext,
+  SourceResult,
+  TodoEntry,
+} from '../pipeline/types.js';
 
 const traverse: typeof traverseModule =
   (traverseModule as { default?: typeof traverseModule }).default ||

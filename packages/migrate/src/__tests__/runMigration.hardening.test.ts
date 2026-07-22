@@ -2,16 +2,17 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { buildReport } from '../report.js';
-import { runMigration } from '../runMigration.js';
-import type { MigrateIO } from '../io.js';
+import { buildReport } from '../report/report.js';
+import { runMigration } from '../pipeline/runMigration.js';
+import type { MigrateIO } from '../pipeline/io.js';
 
 // Make the source transform throw for one file (simulating a babel replaceWith
 // throw), and behave normally for everything else. Both the driver and the
 // layout pass import transformSourceFile from this module, so the wrapper
 // covers both; only files named boom.tsx blow up.
-vi.mock('../transformSource.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../transformSource.js')>();
+vi.mock('../transforms/transformSource.js', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('../transforms/transformSource.js')>();
   return {
     ...actual,
     transformSourceFile: (

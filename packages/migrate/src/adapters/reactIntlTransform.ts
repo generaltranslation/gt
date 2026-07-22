@@ -2,11 +2,18 @@ import { parse } from '@babel/parser';
 import traverseModule, { type NodePath } from '@babel/traverse';
 import generateModule from '@babel/generator';
 import * as t from '@babel/types';
-import { classifyMessage } from '../classifyMessage.js';
-import { ensureNamedImports } from '../importUtils.js';
-import type { TransformOptions } from '../transformSource.js';
-import { isParamsInit, removeParamsParameter } from '../transformSource.js';
-import type { MigrationContext, SourceResult, TodoEntry } from '../types.js';
+import { classifyMessage } from '../catalogs/classifyMessage.js';
+import { ensureNamedImports } from '../transforms/importUtils.js';
+import type { TransformOptions } from '../transforms/transformSource.js';
+import {
+  isParamsInit,
+  removeParamsParameter,
+} from '../transforms/transformSource.js';
+import type {
+  MigrationContext,
+  SourceResult,
+  TodoEntry,
+} from '../pipeline/types.js';
 
 const traverse: typeof traverseModule =
   (traverseModule as { default?: typeof traverseModule }).default ||

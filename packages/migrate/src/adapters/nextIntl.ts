@@ -1,14 +1,14 @@
 import { parse } from '@babel/parser';
 import traverseModule from '@babel/traverse';
 import * as t from '@babel/types';
-import { classifyMessage } from '../classifyMessage.js';
-import { discoverCatalogs } from '../discover.js';
-import { parseRoutingConfig } from '../parseRoutingConfig.js';
-import { transformMiddlewareFile } from '../transformMiddleware.js';
-import { transformNavigationFile } from '../transformNavigation.js';
-import { transformNextConfigFile } from '../transformNextConfig.js';
-import { transformRequestConfigFile } from '../transformRequestConfig.js';
-import type { RoutingInfo } from '../types.js';
+import { classifyMessage } from '../catalogs/classifyMessage.js';
+import { discoverCatalogs } from '../catalogs/discover.js';
+import { parseRoutingConfig } from '../config/parseRoutingConfig.js';
+import { transformMiddlewareFile } from '../transforms/transformMiddleware.js';
+import { transformNavigationFile } from '../transforms/transformNavigation.js';
+import { transformNextConfigFile } from '../transforms/transformNextConfig.js';
+import { transformRequestConfigFile } from '../transforms/transformRequestConfig.js';
+import type { RoutingInfo } from '../pipeline/types.js';
 import type { SourceAdapter } from './types.js';
 
 const traverse: typeof traverseModule =

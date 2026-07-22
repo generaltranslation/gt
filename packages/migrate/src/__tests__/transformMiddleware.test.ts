@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { transformMiddlewareFile } from '../transformMiddleware.js';
+import { transformMiddlewareFile } from '../transforms/transformMiddleware.js';
 import type {
   MessageCatalogs,
   MigrationContext,
   RoutingInfo,
-} from '../types.js';
+} from '../pipeline/types.js';
 import { nextIntlAdapter } from '../adapters/nextIntl.js';
 
 function makeContext(routing: Partial<RoutingInfo>): MigrationContext {

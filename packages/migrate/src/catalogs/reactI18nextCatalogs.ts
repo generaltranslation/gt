@@ -1,19 +1,19 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { matchFiles } from './fs/matchFiles.js';
+import { matchFiles } from '../fs/matchFiles.js';
 import {
   CatalogConversionError,
   convertCatalogs,
   type ConvertInput,
 } from './catalogConvert.js';
-import { getI18nextConfig } from './reactI18nextConfig.js';
+import { getI18nextConfig } from '../config/reactI18nextConfig.js';
 import { collectCallSiteEvidence } from './reactI18nextEvidence.js';
 import type {
   FileEdit,
   MessageCatalogs,
   MigrationContext,
   RoutingInfo,
-} from './types.js';
+} from '../pipeline/types.js';
 
 /** Directories an i18next app conventionally keeps `{lng}/{ns}.json` under. */
 const LOCALE_ROOTS = [

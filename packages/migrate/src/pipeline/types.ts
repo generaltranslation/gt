@@ -1,4 +1,4 @@
-import type { SourceAdapter } from './adapters/types.js';
+import type { SourceAdapter } from '../adapters/types.js';
 
 export type MigrateOptions = {
   src?: string[];

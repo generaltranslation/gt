@@ -3,7 +3,7 @@ import path from 'node:path';
 import { parse } from '@babel/parser';
 import traverseModule from '@babel/traverse';
 import * as t from '@babel/types';
-import type { RoutingInfo } from './types.js';
+import type { RoutingInfo } from '../pipeline/types.js';
 
 const traverse: typeof traverseModule =
   (traverseModule as { default?: typeof traverseModule }).default ||

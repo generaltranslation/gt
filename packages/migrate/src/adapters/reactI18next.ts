@@ -1,16 +1,16 @@
 import { parse } from '@babel/parser';
 import traverseModule from '@babel/traverse';
 import * as t from '@babel/types';
-import { classifyMessage } from '../classifyMessage.js';
-import { getI18nextConfig } from '../reactI18nextConfig.js';
+import { classifyMessage } from '../catalogs/classifyMessage.js';
+import { getI18nextConfig } from '../config/reactI18nextConfig.js';
 import {
   discoverReactI18nextCatalogs,
   emitReactI18nextCatalogs,
-} from '../reactI18nextCatalogs.js';
-import { transformReactI18nextLayout } from '../transformReactI18nextLayout.js';
-import { transformReactI18nextNextConfig } from '../transformReactI18nextNextConfig.js';
-import { transformReactI18nextSource } from '../transformReactI18nextSource.js';
-import type { RoutingInfo } from '../types.js';
+} from '../catalogs/reactI18nextCatalogs.js';
+import { transformReactI18nextLayout } from '../transforms/transformReactI18nextLayout.js';
+import { transformReactI18nextNextConfig } from '../transforms/transformReactI18nextNextConfig.js';
+import { transformReactI18nextSource } from '../transforms/transformReactI18nextSource.js';
+import type { RoutingInfo } from '../pipeline/types.js';
 import type { SourceAdapter } from './types.js';
 
 const traverse: typeof traverseModule =

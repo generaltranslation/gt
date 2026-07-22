@@ -1,8 +1,8 @@
 import { parse } from '@babel/parser';
 import traverseModule from '@babel/traverse';
 import * as t from '@babel/types';
-import { classifyMessage } from '../classifyMessage.js';
-import type { RoutingInfo } from '../types.js';
+import { classifyMessage } from '../catalogs/classifyMessage.js';
+import type { RoutingInfo } from '../pipeline/types.js';
 import { discoverReactIntlCatalogs } from './reactIntlCatalogs.js';
 import { transformReactIntlNextConfig } from './reactIntlNextConfig.js';
 import { transformReactIntlSource } from './reactIntlTransform.js';

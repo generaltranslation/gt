@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { transformLayoutFile } from '../transformLayout.js';
+import { transformLayoutFile } from '../transforms/transformLayout.js';
 import type {
   MessageCatalogs,
   MigrationContext,
   RoutingInfo,
-} from '../types.js';
+} from '../pipeline/types.js';
 import { nextIntlAdapter } from '../adapters/nextIntl.js';
 import { reactIntlAdapter } from '../adapters/reactIntl.js';
 

@@ -4,7 +4,11 @@ import generateModule from '@babel/generator';
 import * as t from '@babel/types';
 import { ensureNamedImports, removeUnusedNamedImports } from './importUtils.js';
 import { isParamsInit, transformSourceFile } from './transformSource.js';
-import type { MigrationContext, SourceResult, TodoEntry } from './types.js';
+import type {
+  MigrationContext,
+  SourceResult,
+  TodoEntry,
+} from '../pipeline/types.js';
 
 const traverse: typeof traverseModule =
   (traverseModule as { default?: typeof traverseModule }).default ||

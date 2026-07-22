@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   clearI18nextConfigCache,
   getI18nextConfig,
-} from '../reactI18nextConfig.js';
+} from '../config/reactI18nextConfig.js';
 
 const tmpDirs: string[] = [];
 

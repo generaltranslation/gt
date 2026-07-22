@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { transformNavigationFile } from '../transformNavigation.js';
+import { transformNavigationFile } from '../transforms/transformNavigation.js';
 import type {
   MessageCatalogs,
   MigrationContext,
   RoutingInfo,
-} from '../types.js';
+} from '../pipeline/types.js';
 import { nextIntlAdapter } from '../adapters/nextIntl.js';
 
 const canonical = [

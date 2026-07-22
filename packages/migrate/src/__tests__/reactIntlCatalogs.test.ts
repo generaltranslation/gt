@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { discoverReactIntlCatalogs } from '../adapters/reactIntlCatalogs.js';
-import type { RoutingInfo } from '../types.js';
+import type { RoutingInfo } from '../pipeline/types.js';
 
 const routing: RoutingInfo = {
   locales: null,

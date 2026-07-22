@@ -2,7 +2,7 @@ import { createRequire } from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
 import { lt, minVersion, valid } from 'semver';
-import type { FileEdit, MigrationContext } from './types.js';
+import type { FileEdit, MigrationContext } from '../pipeline/types.js';
 
 /** next/root-params (and its `locale()` export) landed in Next 15.5.0. */
 const NEXT_ROOT_PARAMS_MIN_VERSION = '15.5.0';

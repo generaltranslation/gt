@@ -3,8 +3,8 @@ import {
   convertCatalogs,
   DEFAULT_SEPARATORS,
   type Separators,
-} from '../catalogConvert.js';
-import { collectCallSiteEvidence } from '../reactI18nextEvidence.js';
+} from '../catalogs/catalogConvert.js';
+import { collectCallSiteEvidence } from '../catalogs/reactI18nextEvidence.js';
 
 function collect(code: string, defaultNS = 'translation') {
   return collectCallSiteEvidence(

@@ -4,13 +4,16 @@
  * the report. Everything interactive or process-level is injected through the
  * `MigrateIO` object, so the engine pulls in no CLI UI dependencies.
  */
-export { runMigration, MIGRATE_INTERFACE_VERSION } from './runMigration.js';
-export { buildReport } from './report.js';
+export {
+  runMigration,
+  MIGRATE_INTERFACE_VERSION,
+} from './pipeline/runMigration.js';
+export { buildReport } from './report/report.js';
 // Resets the per-run i18next config cache; used between programmatic runs and by
 // the CLI's integration tests.
-export { clearI18nextConfigCache } from './reactI18nextConfig.js';
+export { clearI18nextConfigCache } from './config/reactI18nextConfig.js';
 
-export type { MigrateIO } from './io.js';
+export type { MigrateIO } from './pipeline/io.js';
 export type {
   MigrateOptions,
   MigrationContext,
@@ -19,5 +22,5 @@ export type {
   MessageCatalogs,
   RoutingInfo,
   SourceResult,
-} from './types.js';
+} from './pipeline/types.js';
 export type { SourceAdapter } from './adapters/types.js';

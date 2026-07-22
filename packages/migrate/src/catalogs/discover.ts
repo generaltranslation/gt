@@ -5,8 +5,8 @@ import {
   formatDiagnosticErrorDetails,
   libraryDefaultLocale,
 } from 'generaltranslation/internal';
-import type { MigrateIO } from './io.js';
-import type { MessageCatalogs, RoutingInfo } from './types.js';
+import type { MigrateIO } from '../pipeline/io.js';
+import type { MessageCatalogs, RoutingInfo } from '../pipeline/types.js';
 
 const DEFAULT_CATALOG_DIRS = ['messages', 'src/messages', 'locales'];
 

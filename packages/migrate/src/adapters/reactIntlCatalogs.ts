@@ -9,7 +9,7 @@ import type {
   MessageCatalogs,
   RoutingInfo,
   TodoEntry,
-} from '../types.js';
+} from '../pipeline/types.js';
 
 const traverse: typeof traverseModule =
   (traverseModule as { default?: typeof traverseModule }).default ||

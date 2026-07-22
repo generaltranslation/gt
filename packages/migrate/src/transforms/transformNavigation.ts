@@ -1,6 +1,10 @@
 import { parse } from '@babel/parser';
 import * as t from '@babel/types';
-import type { MigrationContext, SourceResult, TodoEntry } from './types.js';
+import type {
+  MigrationContext,
+  SourceResult,
+  TodoEntry,
+} from '../pipeline/types.js';
 
 /** Destructured names we can replace with equivalent behavior. */
 const NEXT_NAVIGATION_EXPORTS = new Set([

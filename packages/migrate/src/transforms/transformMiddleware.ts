@@ -3,8 +3,12 @@ import traverseModule from '@babel/traverse';
 import generateModule from '@babel/generator';
 import * as t from '@babel/types';
 import { ensureNamedImports, removeUnusedNamedImports } from './importUtils.js';
-import { localePrefixHasCustomPrefixes } from './parseRoutingConfig.js';
-import type { MigrationContext, SourceResult, TodoEntry } from './types.js';
+import { localePrefixHasCustomPrefixes } from '../config/parseRoutingConfig.js';
+import type {
+  MigrationContext,
+  SourceResult,
+  TodoEntry,
+} from '../pipeline/types.js';
 
 const traverse: typeof traverseModule =
   (traverseModule as { default?: typeof traverseModule }).default ||

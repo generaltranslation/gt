@@ -2,9 +2,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { resolveCatalogsInteractively } from '../promptFallbacks.js';
-import type { MigrateIO } from '../io.js';
-import type { RoutingInfo } from '../types.js';
+import { resolveCatalogsInteractively } from '../catalogs/promptFallbacks.js';
+import type { MigrateIO } from '../pipeline/io.js';
+import type { RoutingInfo } from '../pipeline/types.js';
 
 // The interactive fallback runs entirely through the injected io (the CLI wires
 // io.prompt* to its @clack/prompts helpers and io.warn/error to its logger); a

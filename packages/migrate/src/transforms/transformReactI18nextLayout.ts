@@ -4,7 +4,7 @@ import generateModule from '@babel/generator';
 import * as t from '@babel/types';
 import { ensureNamedImports } from './importUtils.js';
 import { transformReactI18nextSource } from './transformReactI18nextSource.js';
-import type { MigrationContext, SourceResult } from './types.js';
+import type { MigrationContext, SourceResult } from '../pipeline/types.js';
 
 const traverse: typeof traverseModule =
   (traverseModule as { default?: typeof traverseModule }).default ||

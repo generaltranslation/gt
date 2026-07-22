@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { classifyMessage } from '../classifyMessage.js';
+import { classifyMessage } from '../catalogs/classifyMessage.js';
 
 describe('classifyMessage', () => {
   it('classifies plain text', () => {

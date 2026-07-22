@@ -2,8 +2,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { emitGtFiles } from '../emitGtFiles.js';
-import type { MessageCatalogs, MigrationContext } from '../types.js';
+import { emitGtFiles } from '../emit/emitGtFiles.js';
+import type { MessageCatalogs, MigrationContext } from '../pipeline/types.js';
 import { nextIntlAdapter } from '../adapters/nextIntl.js';
 
 const tmpDirs: string[] = [];
