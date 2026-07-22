@@ -676,12 +676,12 @@ importers:
       '@clack/prompts':
         specifier: 1.0.0-alpha.6
         version: 1.0.0-alpha.6
-      '@formatjs/icu-messageformat-parser':
-        specifier: ^2.11.4
-        version: 2.11.4
       '@generaltranslation/format':
         specifier: workspace:*
         version: link:../format
+      '@generaltranslation/icu':
+        specifier: workspace:*
+        version: link:../icu
       '@generaltranslation/python-extractor':
         specifier: workspace:*
         version: link:../python-extractor
@@ -891,12 +891,12 @@ importers:
 
   packages/core:
     dependencies:
-      '@formatjs/icu-messageformat-parser':
-        specifier: ^2.11.4
-        version: 2.11.4
       '@generaltranslation/format':
         specifier: workspace:*
         version: link:../format
+      '@generaltranslation/icu':
+        specifier: workspace:*
+        version: link:../icu
       '@noble/hashes':
         specifier: ^2.2.0
         version: 2.2.0
@@ -904,9 +904,6 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 22.13.10
-      intl-messageformat:
-        specifier: ^10.7.16
-        version: 10.7.16
       tsdown:
         specifier: 'catalog:'
         version: 0.21.10(synckit@0.11.11)(typescript@5.9.3)
@@ -916,9 +913,9 @@ importers:
 
   packages/format:
     dependencies:
-      intl-messageformat:
-        specifier: ^10.7.16
-        version: 10.7.16
+      '@generaltranslation/icu':
+        specifier: workspace:*
+        version: link:../icu
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -976,6 +973,27 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
+
+  packages/icu:
+    devDependencies:
+      '@formatjs/icu-messageformat-parser':
+        specifier: 2.11.4
+        version: 2.11.4
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.13.10
+      intl-messageformat:
+        specifier: 10.7.16
+        version: 10.7.16
+      tsdown:
+        specifier: 'catalog:'
+        version: 0.21.10(synckit@0.11.11)(typescript@5.9.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@edge-runtime/vm@4.0.4)(@types/debug@4.1.12)(@types/node@22.13.10)(jiti@2.7.0)(jsdom@29.0.1(@noble/hashes@2.2.0))(lightningcss@1.32.0)(terser@5.44.0)(tsx@4.21.0)(yaml@2.8.3)
 
   packages/locadex:
     dependencies:
@@ -1202,9 +1220,9 @@ importers:
 
   packages/react-core-linter:
     dependencies:
-      '@formatjs/icu-messageformat-parser':
-        specifier: ^2.11.4
-        version: 2.11.4
+      '@generaltranslation/icu':
+        specifier: workspace:*
+        version: link:../icu
       '@typescript-eslint/utils':
         specifier: ^8.50.1
         version: 8.50.1(eslint@9.36.0(jiti@2.7.0))(typescript@5.9.3)
