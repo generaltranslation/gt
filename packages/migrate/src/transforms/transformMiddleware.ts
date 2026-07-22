@@ -56,7 +56,7 @@ export function transformMiddlewareFile(
     return {
       ...none,
       skipReasons: [
-        "localePrefix could not be statically resolved (it references a variable or computed value), so converting the middleware would guess the app's public URL structure; inline a literal localePrefix in defineRouting (or convert the middleware by hand) and rerun the migration. The retained file still imports next-intl/middleware and holds back full teardown",
+        "localePrefix could not be statically resolved (it references a variable, a computed value, or a spread that cannot be read statically), so converting the middleware would guess the app's public URL structure; inline a literal localePrefix in defineRouting (or convert the middleware by hand) and rerun the migration. The retained file still imports next-intl/middleware and holds back full teardown",
       ],
     };
   }
@@ -68,7 +68,7 @@ export function transformMiddlewareFile(
     return {
       ...none,
       skipReasons: [
-        'pathnames could not be statically resolved (it references a variable or computed value), so pathConfig cannot be emitted and converting would silently drop the localized pathnames; inline a literal pathnames in defineRouting (or convert the middleware by hand) and rerun the migration. The retained file still imports next-intl/middleware and holds back full teardown',
+        'pathnames could not be statically resolved (it references a variable, a computed value, or a spread that cannot be read statically), so pathConfig cannot be emitted and converting would silently drop the localized pathnames; inline a literal pathnames in defineRouting (or convert the middleware by hand) and rerun the migration. The retained file still imports next-intl/middleware and holds back full teardown',
       ],
     };
   }

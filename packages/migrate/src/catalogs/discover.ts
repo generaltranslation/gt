@@ -1,10 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 import {
-  createDiagnosticMessage,
+  createMigrateDiagnostic,
   formatDiagnosticErrorDetails,
-  libraryDefaultLocale,
-} from 'generaltranslation/internal';
+} from '../pipeline/diagnostics.js';
 import type { MigrateIO } from '../pipeline/io.js';
 import type { MessageCatalogs, RoutingInfo } from '../pipeline/types.js';
 
@@ -46,7 +46,8 @@ export async function discoverCatalogs(
     const missing = routing.locales.filter((locale) => !stems.includes(locale));
     if (missing.length > 0) {
       io?.warn(
-        createDiagnosticMessage({
+        createMigrateDiagnostic({
+          severity: 'Warning',
           whatHappened: `Your next-intl routing config lists locales with no catalog file in ${dir}`,
           details: `no catalog for ${missing.join(', ')}`,
           fix: `Add the missing ${missing
@@ -98,7 +99,8 @@ export function loadCatalog(
     return JSON.parse(fs.readFileSync(file, 'utf8'));
   } catch (error) {
     throw new Error(
-      createDiagnosticMessage({
+      createMigrateDiagnostic({
+        severity: 'Error',
         whatHappened: `Could not parse message catalog ${file}`,
         fix: 'Fix the JSON (no comments, trailing commas, or BOM) and re-run.',
         details: formatDiagnosticErrorDetails(error),

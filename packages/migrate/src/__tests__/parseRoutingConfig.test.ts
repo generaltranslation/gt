@@ -246,6 +246,29 @@ describe('parseRoutingConfig', () => {
     expect(result.pathnamesUnresolved).toBe(true);
   });
 
+  it('flags an inline-object-literal spread as unresolved', () => {
+    const cwd = makeProject({
+      'i18n/routing.ts': [
+        "import { defineRouting } from 'next-intl/routing';",
+        'export const routing = defineRouting({',
+        "  ...{ localePrefix: 'as-needed', pathnames: { '/about': { en: '/about', de: '/ueber-uns' } } },",
+        "  locales: ['en', 'de'],",
+        "  defaultLocale: 'en',",
+        '});',
+      ].join('\n'),
+    });
+    const result = parseRoutingConfig(cwd);
+    // The spread argument is a static object literal, but getProperty never
+    // reads inside a spread, so its localePrefix/pathnames would otherwise read
+    // as absent and the transforms would emit next-intl's default prefixing and
+    // drop the localized pathnames. Every spread is treated as unresolvable, so
+    // both fields are flagged rather than silently absent.
+    expect(result.localePrefix).toBeNull();
+    expect(result.localePrefixUnresolved).toBe(true);
+    expect(result.pathnames).toBeNull();
+    expect(result.pathnamesUnresolved).toBe(true);
+  });
+
   it('falls back to a plain exported object with locales/defaultLocale', () => {
     const cwd = makeProject({
       'i18n.ts': [

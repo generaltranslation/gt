@@ -1,9 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import {
-  createDiagnosticMessage,
-  libraryDefaultLocale,
-} from 'generaltranslation/internal';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
+import { createMigrateDiagnostic } from '../pipeline/diagnostics.js';
 import { loadCatalog } from './discover.js';
 import type { MigrateIO } from '../pipeline/io.js';
 import type { MessageCatalogs, RoutingInfo } from '../pipeline/types.js';
@@ -30,7 +28,8 @@ export async function resolveCatalogsInteractively(
   if (!process.stdin.isTTY) return null;
 
   io.warn(
-    createDiagnosticMessage({
+    createMigrateDiagnostic({
+      severity: 'Warning',
       whatHappened:
         'Could not automatically locate your next-intl message catalogs',
       fix: 'Answer a few questions and we will pick them up from there.',
@@ -74,7 +73,8 @@ export async function resolveCatalogsInteractively(
 
   if (!locales.includes(defaultLocale)) {
     io.error(
-      createDiagnosticMessage({
+      createMigrateDiagnostic({
+        severity: 'Error',
         whatHappened: `Default locale '${defaultLocale}' is not one of the selected locales [${locales.join(', ')}]`,
         fix: 'Pick a default locale that is in the selected list and re-run.',
       })
@@ -86,7 +86,8 @@ export async function resolveCatalogsInteractively(
     const file = path.join(dir, `${locale}.json`);
     if (!fs.existsSync(file)) {
       io.error(
-        createDiagnosticMessage({
+        createMigrateDiagnostic({
+          severity: 'Error',
           whatHappened: `No catalog file found for '${locale}', expected ${file}`,
           fix: `Add that file, or remove '${locale}' from the selected locales, then re-run.`,
         })
