@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.14.65
+
+### Patch Changes
+
+- [#1962](https://github.com/generaltranslation/gt/pull/1962) [`99f63e6`](https://github.com/generaltranslation/gt/commit/99f63e6826244cb07c18382031cce3fd8ca4ffc2) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Clear the locale search query after selecting a locale during setup.
+
 ## 2.14.64
 
 ### Patch Changes
