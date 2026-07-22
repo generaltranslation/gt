@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parse } from '@formatjs/icu-messageformat-parser';
+import { parse } from '@generaltranslation/icu';
 import { indexVars } from '../indexVars';
 
 describe('indexVars', () => {
@@ -77,6 +77,14 @@ describe('indexVars', () => {
 
     expect(result).toBe(
       '{count, number} items and {date, date, short} with {_gt_1, select, other {}}'
+    );
+  });
+
+  it('indexes GT placeholders after FormatJS-style argument braces', () => {
+    const input = '{n, number, foo{bar} {_gt_, select, other {X}}}';
+
+    expect(indexVars(input)).toBe(
+      '{n, number, foo{bar} {_gt_1, select, other {}}}'
     );
   });
 

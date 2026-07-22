@@ -1,3 +1,4 @@
+import { performance } from 'node:perf_hooks';
 import { describe, it, expect } from 'vitest';
 import { decodeVars } from '../decodeVars';
 
@@ -15,6 +16,24 @@ describe('decodeVars', () => {
     const result = decodeVars(input);
 
     expect(result).toBe('Hello John, you are a Developer!');
+  });
+
+  it('decodes thousands of captured variables without quadratic stalls', () => {
+    const count = 2_000;
+    const input = Array.from(
+      { length: count },
+      (_, index) => `{_gt_, select, other {value${index}}}`
+    ).join(' ');
+    const expected = Array.from(
+      { length: count },
+      (_, index) => `value${index}`
+    ).join(' ');
+    const start = performance.now();
+    const result = decodeVars(input);
+    const duration = performance.now() - start;
+
+    expect(result).toBe(expected);
+    expect(duration).toBeLessThan(1_000);
   });
 
   it('should preserve non-GT ICU elements unchanged', () => {

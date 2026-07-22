@@ -51,7 +51,7 @@
     "definition": "dist/index.d.cts"
   },
   "dependencies": {
-    "intl-messageformat": "^10.7.16"
+    "@generaltranslation/icu": "workspace:*"
   },
   "exports": {
     ".": {

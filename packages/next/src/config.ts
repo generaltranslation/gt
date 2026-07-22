@@ -785,6 +785,59 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
             pathString
           );
         }
+        // Webpack parses .mjs as strict ESM and does not treat require()
+        // calls as dependencies, so the require()-backed internal aliases
+        // above would never apply and their runtime errors are swallowed
+        // (loaders silently no-op). Parse gt-next's ESM dist as
+        // javascript/auto so webpack picks up those require() calls.
+        // Server compilation only: the call sites are server-only, and this
+        // keeps the rule from ever pulling a user's loader file into the
+        // client bundle. Turbopack resolves them through resolveAlias and
+        // needs no rule.
+        // The guard mirrors the alias block above: any configured alias
+        // enables the rule. The request-function aliases are static-imported
+        // (initGT.server), and resolve.alias applies at resolution regardless
+        // of parser mode, so they work without the rule; they gate it anyway
+        // for symmetry and for any future require()-backed consumer.
+        if (
+          options.isServer &&
+          (resolvedDictionaryFilePath ||
+            customLoadTranslationsPath ||
+            customLoadDictionaryPath ||
+            Object.keys(requestFunctionPaths).length > 0)
+        ) {
+          // gt-next normally resolves inside a node_modules dir (app-local,
+          // hoisted monorepo root, or the pnpm store), but symlinked installs
+          // (workspace:*, file:) resolve to a real path with no node_modules
+          // segment — so also match this package's dist dir, where this
+          // compiled file lives.
+          const gtNextDistDirs: (string | RegExp)[] = [
+            /node_modules[\\/]gt-next[\\/]dist[\\/]/,
+          ];
+          try {
+            // Trust __dirname only when it verifiably is gt-next's dist: a
+            // bundler that inlines this file elsewhere would otherwise widen
+            // the rule to every .mjs under its output dir. The compiled
+            // config always sits beside its ESM twin and the internal
+            // modules these aliases target.
+            if (
+              fs.existsSync(path.join(__dirname, 'config.mjs')) &&
+              fs.existsSync(path.join(__dirname, 'internal', '_dictionary.mjs'))
+            ) {
+              gtNextDistDirs.push(__dirname + path.sep);
+            }
+          } catch {
+            // __dirname is undefined when the ESM dist of this module is
+            // loaded natively; the node_modules pattern still applies.
+          }
+          webpackConfig.module ??= {};
+          webpackConfig.module.rules ??= [];
+          webpackConfig.module.rules.push({
+            test: /\.mjs$/,
+            include: gtNextDistDirs,
+            type: 'javascript/auto',
+          });
+        }
       }
       if (typeof internalNextConfig?.webpack === 'function') {
         return internalNextConfig.webpack(webpackConfig, options);

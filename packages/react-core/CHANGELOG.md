@@ -1,5 +1,7 @@
 # @generaltranslation/react-core
 
+## 11.0.13
+
 ## 11.0.12
 
 ## 11.0.11

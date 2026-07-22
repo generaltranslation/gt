@@ -6,7 +6,12 @@ vi.mock('@tanstack/react-start', () => ({
   createMiddleware: () => ({
     server: (serverFn: unknown) => serverFn,
   }),
-  createServerOnlyFn: <T>(serverFn: T) => serverFn,
+  createIsomorphicFn: () => ({
+    server: (serverFn: (...args: never[]) => unknown) => ({
+      client: (clientFn: (...args: never[]) => unknown) =>
+        Object.assign(serverFn, { client: clientFn, server: serverFn }),
+    }),
+  }),
 }));
 
 vi.mock('@tanstack/react-start/server', () => ({
@@ -16,7 +21,7 @@ vi.mock('@tanstack/react-start/server', () => ({
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 import { AsyncLocalConditionStore } from '../../condition-store/AsyncLocalConditionStore';
 import { setConditionStore } from '../../condition-store/singleton';
-import { getEnableI18n, getLocale } from '../../functions/server';
+import { getEnableI18n, getLocale } from '../../functions/runtime';
 import { gtMiddleware } from '../gtMiddleware';
 
 type GlobalWithRegistry = {

@@ -3,7 +3,7 @@ import type {
   PluralOrSelectOption,
   LiteralElement,
   SelectElement,
-} from '@formatjs/icu-messageformat-parser/types.js';
+} from '@generaltranslation/icu';
 
 interface GTIndexedSelectOption extends PluralOrSelectOption {
   value: Array<LiteralElement>;
