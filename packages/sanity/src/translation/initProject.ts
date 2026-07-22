@@ -27,14 +27,19 @@ export async function initProject(
     if (job?.status === 'completed') {
       // eslint-disable-next-line no-console
       console.log('Setup successfully completed');
-    } else {
-      const failure = complete
-        ? (job?.error?.message ?? 'Unknown error')
-        : 'Timed out while waiting for setup generation';
+    } else if (!complete) {
       // eslint-disable-next-line no-console
       console.log(
-        `Setup ${complete ? 'failed' : 'timed out'} — proceeding without setup (${failure})`
+        'Setup timed out — proceeding without setup (Timed out while waiting for setup generation)'
       );
+    } else if (job?.status === 'failed') {
+      // eslint-disable-next-line no-console
+      console.log(
+        `Setup failed — proceeding without setup (${job.error?.message ?? 'Unknown error'})`
+      );
+    } else {
+      // eslint-disable-next-line no-console
+      console.log('Setup status unknown — proceeding without setup');
     }
   }
 

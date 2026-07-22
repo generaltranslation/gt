@@ -26,6 +26,20 @@ describe.sequential('_awaitJobIds', () => {
     expect(_checkJobStatus).not.toHaveBeenCalled();
   });
 
+  it('should not poll when the timeout is zero', async () => {
+    const result = await _awaitJobIds(
+      ['job-1'],
+      { timeoutSeconds: 0 },
+      mockConfig
+    );
+
+    expect(result).toEqual({
+      complete: false,
+      jobs: [{ jobId: 'job-1', status: 'unknown' }],
+    });
+    expect(_checkJobStatus).not.toHaveBeenCalled();
+  });
+
   it('should accept job IDs directly', async () => {
     vi.mocked(_checkJobStatus).mockResolvedValueOnce([
       { jobId: 'job-1', status: 'completed' },
@@ -159,11 +173,70 @@ describe.sequential('_awaitJobIds', () => {
       mockConfig
     );
 
-    await vi.advanceTimersByTimeAsync(3001);
+    await vi.advanceTimersByTimeAsync(3000);
     const result = await promise;
 
     expect(result.complete).toBe(false);
     expect(result.jobs).toEqual([{ jobId: 'job-1', status: 'processing' }]);
+    expect(_checkJobStatus).toHaveBeenCalledTimes(3);
+    expect(
+      vi
+        .mocked(_checkJobStatus)
+        .mock.calls.map(([, , requestTimeout]) => requestTimeout)
+    ).toEqual([3000, 2000, 1000]);
+
+    vi.useRealTimers();
+  });
+
+  it('should clamp the polling interval to the remaining timeout', async () => {
+    vi.useFakeTimers();
+
+    vi.mocked(_checkJobStatus).mockResolvedValue([
+      { jobId: 'job-1', status: 'processing' },
+    ]);
+
+    const promise = _awaitJobIds(
+      ['job-1'],
+      { pollingIntervalSeconds: 5, timeoutSeconds: 3 },
+      mockConfig
+    );
+
+    await vi.advanceTimersByTimeAsync(3000);
+    const result = await promise;
+
+    expect(result.complete).toBe(false);
+    expect(_checkJobStatus).toHaveBeenCalledTimes(1);
+
+    vi.useRealTimers();
+  });
+
+  it('should ignore a completion returned at the deadline', async () => {
+    vi.useFakeTimers();
+
+    vi.mocked(_checkJobStatus).mockImplementationOnce(
+      () =>
+        new Promise((resolve) =>
+          setTimeout(
+            () => resolve([{ jobId: 'job-1', status: 'completed' }]),
+            3000
+          )
+        )
+    );
+
+    const promise = _awaitJobIds(
+      ['job-1'],
+      { pollingIntervalSeconds: 1, timeoutSeconds: 3 },
+      mockConfig
+    );
+
+    await vi.advanceTimersByTimeAsync(3000);
+    const result = await promise;
+
+    expect(result).toEqual({
+      complete: false,
+      jobs: [{ jobId: 'job-1', status: 'unknown' }],
+    });
+    expect(_checkJobStatus).toHaveBeenCalledTimes(1);
 
     vi.useRealTimers();
   });
