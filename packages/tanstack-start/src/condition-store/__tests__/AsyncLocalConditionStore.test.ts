@@ -17,17 +17,19 @@ function createRequest({
   locale,
   region,
   enableI18n,
+  pathname = '/',
 }: {
   locale: string;
   region?: string;
   enableI18n: boolean;
+  pathname?: string;
 }) {
   const cookies = [
     `generaltranslation.locale=${locale}`,
     `generaltranslation.enable-i18n=${String(enableI18n)}`,
   ];
   if (region) cookies.push(`generaltranslation.region=${region}`);
-  return new Request('https://example.com', {
+  return new Request(`https://example.com${pathname}`, {
     headers: { cookie: cookies.join('; ') },
   });
 }
@@ -83,6 +85,35 @@ describe('AsyncLocalConditionStore', () => {
       region: 'FR',
       enableI18n: true,
     });
+  });
+
+  it('prioritizes a path locale when locale routing is enabled', () => {
+    const conditionStore = new AsyncLocalConditionStore({
+      ...config,
+      localeRouting: true,
+    });
+
+    conditionStore.run(
+      createRequest({
+        locale: 'es',
+        enableI18n: true,
+        pathname: '/fr/about',
+      }),
+      () => expect(conditionStore.getLocale()).toBe('fr')
+    );
+  });
+
+  it('ignores path locales when locale routing is disabled', () => {
+    const conditionStore = new AsyncLocalConditionStore(config);
+
+    conditionStore.run(
+      createRequest({
+        locale: 'es',
+        enableI18n: true,
+        pathname: '/fr/about',
+      }),
+      () => expect(conditionStore.getLocale()).toBe('es')
+    );
   });
 
   it('throws when conditions are read outside a request scope', () => {
