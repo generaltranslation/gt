@@ -14,7 +14,7 @@ A multilingual single-page React app built with [Rsbuild](https://rsbuild.rs) (w
 ## What this demonstrates
 
 - **Runtime SPA setup.** `src/index.ts` awaits `initializeGTSPA()` once at startup, then dynamically imports the app. There is no `<GTProvider>`.
-- **`<T>` and `t()`.** `src/App.tsx` wraps content in `<T>` and uses a module-level `t()` string from `src/copy.ts`.
+- **`<T>` and `` t`...` ``.** `src/App.tsx` wraps content in `<T>` and uses a module-level `` t`...` `` string from `src/copy.ts`. The `t` macro is global, attached by the `gt-react/macros` import in `src/index.ts`, so no per-file import is needed (SPA-only pattern).
 - **A language switcher.** `<LocaleSelector />` reads the locales from `gt.config.json`.
 - **The GT compiler on Rspack.** `rsbuild.config.ts` adds the compiler via `tools.rspack.plugins` using the `rspack` adapter from `@generaltranslation/compiler`.
 
