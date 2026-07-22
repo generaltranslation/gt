@@ -86,17 +86,6 @@
       },
       "default": "./dist/index.server.mjs"
     },
-    "./internal": {
-      "require": {
-        "types": "./dist/internal.d.cts",
-        "default": "./dist/internal.cjs"
-      },
-      "import": {
-        "types": "./dist/internal.d.mts",
-        "default": "./dist/internal.mjs"
-      },
-      "default": "./dist/internal.mjs"
-    },
     "./macros": {
       "require": {
         "types": "./dist/macros.d.cts",
@@ -110,9 +99,6 @@
   },
   "typesVersions": {
     "*": {
-      "internal": [
-        "./dist/internal.d.cts"
-      ],
       "macros": [
         "./dist/macros.d.cts"
       ]

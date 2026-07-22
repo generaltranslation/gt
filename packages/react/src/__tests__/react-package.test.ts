@@ -13,8 +13,6 @@ const runtimeArtifactNames = [
   'index.client.mjs',
   'index.server.cjs',
   'index.server.mjs',
-  'internal.cjs',
-  'internal.mjs',
   'macros.cjs',
   'macros.mjs',
 ].sort();
@@ -49,7 +47,7 @@ function isAllowedExternalizedSubpath(
   specifier: string
 ): boolean {
   return (
-    (file.startsWith('index.') || file.startsWith('internal.')) &&
+    file.startsWith('index.') &&
     (specifier.startsWith('@generaltranslation/react-core/') ||
       specifier.startsWith('gt-i18n/'))
   );
@@ -111,19 +109,6 @@ describe('gt-react package exports', () => {
           assert.equal(typeof parseLocale, 'function');
           assert.equal(typeof GtInternalVar, 'function');
           assert.equal(typeof GtInternalRuntimeTranslateString, 'function');
-        `,
-    ]);
-  });
-
-  it('loads client condition-store helpers from the internal entrypoint', () => {
-    node([
-      '--input-type=module',
-      '-e',
-      `
-          import assert from 'node:assert/strict';
-          import { createOrUpdateBrowserConditionStore } from 'gt-react/internal';
-
-          assert.equal(typeof createOrUpdateBrowserConditionStore, 'function');
         `,
     ]);
   });
