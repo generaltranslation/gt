@@ -8,7 +8,7 @@ import { spawn } from 'child_process';
 import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { existsSync, chmodSync, statSync } from 'fs';
+import { existsSync, chmodSync, statSync, realpathSync } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -93,8 +93,20 @@ export function isMuslLinux(
   }
 
   try {
-    // Primary signal: Node populates header.glibcVersionRuntime on glibc
-    // builds and omits it on musl builds. A non-empty string means glibc.
+    // Cheap primary check: Alpine, the common musl distro, ships this marker.
+    // The overwhelming majority of Linux hosts run glibc and lack the file, so
+    // they short-circuit here without paying for process.report.getReport()
+    // (measured ~10ms) on every launch.
+    const fileExists = overrides.fileExists ?? existsSync;
+    if (!fileExists('/etc/alpine-release')) {
+      return false;
+    }
+
+    // Marker present: distinguish a real Alpine/musl host from a glibc host
+    // that merely carries the marker (glibc-via-gcompat images, mislabeled
+    // bases). Node populates header.glibcVersionRuntime on glibc builds and
+    // omits it on musl builds, so a non-empty string means glibc (not musl).
+    // Any error resolves to musl here since the marker already pointed at it.
     let glibcVersion: unknown;
     try {
       const getReport = overrides.getReport ?? defaultGetReport;
@@ -105,19 +117,7 @@ export function isMuslLinux(
     } catch {
       glibcVersion = undefined;
     }
-    if (typeof glibcVersion === 'string' && glibcVersion.length > 0) {
-      return false;
-    }
-
-    // Secondary signal: Alpine, the common musl distro, ships this marker.
-    const fileExists = overrides.fileExists ?? existsSync;
-    if (fileExists('/etc/alpine-release')) {
-      return true;
-    }
-
-    // Unknown: assume glibc so a supported system is never forced onto the
-    // slower JS fallback by a false positive.
-    return false;
+    return !(typeof glibcVersion === 'string' && glibcVersion.length > 0);
   } catch {
     return false;
   }
@@ -297,10 +297,14 @@ function routeToBinary(): void {
   child.on('error', (error) => {
     if (settled) return;
     settled = true;
-    // 'error' fires when the process could not be spawned at all (for example
-    // an incompatible glibc binary on an undetected musl system). The binary
-    // never executed, so it is safe to degrade to the JS fallback rather than
-    // exit with a bare failure.
+    // 'error' fires only when the process could not be spawned at all (for
+    // example execve failing with ENOENT because the ELF interpreter is
+    // missing). The binary never executed, so degrading to the JS fallback
+    // here cannot double-run a side-effecting command. The inverse case is
+    // intentionally NOT masked: a mis-targeted binary that does start and then
+    // exits nonzero (for example exit 127 from a present-but-broken loader on
+    // an undetected musl host) surfaces through 'close', where we propagate the
+    // exit code rather than re-run a binary that already ran.
     runJsFallback({
       whatHappened: 'The prebuilt gt binary could not be started',
       details: error instanceof Error ? error.message : String(error),
@@ -310,8 +314,36 @@ function routeToBinary(): void {
   return;
 }
 
+// Returns true when this module is the process entry point (run directly as
+// the CLI) rather than imported by another module such as the test suite.
+//
+// import.meta.main is the reliable signal but only exists on Node >= 24.2.0; on
+// the older supported LTS lines (18/20/22, and 24.0/24.1) it is undefined. When
+// it is missing we fall back to comparing the realpath of the process entry
+// against the realpath of this module. process.argv[1] is frequently an npm
+// .bin symlink while import.meta.url is the installed realpath, so both sides
+// are resolved through realpathSync before comparing; a symlinked launcher
+// still matches. Any resolution error resolves to false.
+export function isProcessEntry(
+  metaMain: boolean | undefined,
+  moduleUrl: string,
+  entryArg: string | undefined = process.argv[1]
+): boolean {
+  if (typeof metaMain === 'boolean') {
+    return metaMain;
+  }
+  if (!entryArg) {
+    return false;
+  }
+  try {
+    return realpathSync(entryArg) === realpathSync(fileURLToPath(moduleUrl));
+  } catch {
+    return false;
+  }
+}
+
 // Entry point: only auto-run when invoked as the CLI, not when imported by
-// tests. import.meta.main is true only for the process entry module.
-if ((import.meta as { main?: boolean }).main) {
+// tests.
+if (isProcessEntry((import.meta as { main?: boolean }).main, import.meta.url)) {
   routeToBinary();
 }

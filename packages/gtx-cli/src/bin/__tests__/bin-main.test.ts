@@ -1,15 +1,32 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
+import { execSync, spawnSync } from 'child_process';
+import { existsSync, mkdtempSync, rmSync, symlinkSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
+import { fileURLToPath } from 'url';
 import {
   detectPlatform,
   isMuslLinux,
   planBinaryExecution,
   createBinDiagnostic,
+  isProcessEntry,
 } from '../bin-main.js';
+// Dev-only import of the real core formatter to lock the launcher-local copy to
+// it (see the parity suite below). The launcher never imports this at runtime;
+// the test resolves the built bundle by relative path so it needs no extra
+// dependency on either CLI package.
+import { createDiagnosticMessage } from '../../../../core/dist/internal.mjs';
 
 // Importing bin-main must not spawn a binary or fall back: the module guards
-// its entry point behind import.meta.main, so pulling in the exported helpers
+// its entry point behind isProcessEntry(), so pulling in the exported helpers
 // here is side-effect free. If the guard regressed, this test file would run
 // the launcher on import and these assertions would never be reached.
+
+const launcherPath = fileURLToPath(
+  new URL('../../../dist/bin/bin-main.js', import.meta.url)
+);
+const packageRoot = fileURLToPath(new URL('../../../', import.meta.url));
+const jsFallbackPath = join(packageRoot, 'dist', 'main.js');
 
 describe('detectPlatform', () => {
   it('maps supported platform/arch pairs to target names', () => {
@@ -45,12 +62,28 @@ describe('isMuslLinux', () => {
     ).toBe(false);
   });
 
-  it('is false on glibc Linux (glibcVersionRuntime present)', () => {
+  it('short-circuits to false on Linux without the Alpine marker, without consulting the report', () => {
+    let reportConsulted = false;
+    const result = isMuslLinux({
+      platform: 'linux',
+      getReport: () => {
+        reportConsulted = true;
+        return { header: {} };
+      },
+      fileExists: () => false,
+    });
+    expect(result).toBe(false);
+    // The expensive process.report.getReport() must not run on the common
+    // glibc path (no marker present); the cheap marker check short-circuits.
+    expect(reportConsulted).toBe(false);
+  });
+
+  it('is false on a glibc host that carries the Alpine marker (glibc signal wins)', () => {
     expect(
       isMuslLinux({
         platform: 'linux',
         getReport: () => ({ header: { glibcVersionRuntime: '2.31' } }),
-        fileExists: () => true, // ignored: primary signal wins
+        fileExists: (path) => path === '/etc/alpine-release',
       })
     ).toBe(false);
   });
@@ -65,17 +98,7 @@ describe('isMuslLinux', () => {
     ).toBe(true);
   });
 
-  it('is false when the glibc signal is absent and it is not Alpine (conservative default)', () => {
-    expect(
-      isMuslLinux({
-        platform: 'linux',
-        getReport: () => ({ header: {} }),
-        fileExists: () => false,
-      })
-    ).toBe(false);
-  });
-
-  it('falls back to the Alpine marker when the report getter throws', () => {
+  it('treats a throwing report as non-glibc when the Alpine marker is present', () => {
     expect(
       isMuslLinux({
         platform: 'linux',
@@ -85,18 +108,23 @@ describe('isMuslLinux', () => {
         fileExists: (path) => path === '/etc/alpine-release',
       })
     ).toBe(true);
-    expect(
-      isMuslLinux({
-        platform: 'linux',
-        getReport: () => {
-          throw new Error('report unavailable');
-        },
-        fileExists: () => false,
-      })
-    ).toBe(false);
   });
 
-  it('treats an empty-string glibc version as not-glibc and consults the secondary signal', () => {
+  it('never reaches the report when the Alpine marker is absent', () => {
+    let reportConsulted = false;
+    const result = isMuslLinux({
+      platform: 'linux',
+      getReport: () => {
+        reportConsulted = true;
+        throw new Error('report unavailable');
+      },
+      fileExists: () => false,
+    });
+    expect(result).toBe(false);
+    expect(reportConsulted).toBe(false);
+  });
+
+  it('treats an empty-string glibc version as not-glibc (marker present, so musl)', () => {
     expect(
       isMuslLinux({
         platform: 'linux',
@@ -140,20 +168,25 @@ describe('planBinaryExecution', () => {
     });
   });
 
-  it('spawns the resolved binary on a non-Linux platform without consulting musl', () => {
+  it('consults detectMusl unconditionally, then spawns the resolved binary on a non-Linux platform', () => {
     let muslConsulted = false;
     const plan = planBinaryExecution({
       platform: 'darwin',
       arch: 'arm64',
       detectMusl: () => {
         muslConsulted = true;
-        return true;
+        return false;
       },
       resolve: (target) => `/somewhere/gtx-cli-${target}`,
     });
-    // detectMusl is still called, but returns false for non-Linux in real use;
-    // here we only assert the darwin binary path is taken when it reports false.
+    // planBinaryExecution always calls detectMusl; the non-Linux short-circuit
+    // lives inside isMuslLinux (which returns false off Linux), not here. When
+    // it reports false the resolved binary is spawned.
     expect(muslConsulted).toBe(true);
+    expect(plan).toEqual({
+      kind: 'spawn',
+      binaryPath: '/somewhere/gtx-cli-darwin-arm64',
+    });
   });
 
   it('falls back to JS on an unsupported platform', () => {
@@ -236,5 +269,169 @@ describe('createBinDiagnostic', () => {
         details: '   ',
       })
     ).toBe('gtx-cli Error: The JS fallback threw while running.');
+  });
+});
+
+// The launcher reimplements core's createDiagnosticMessage locally to stay a
+// dependency-free hot path (a static generaltranslation/internal import would
+// pull the whole barrel onto every invocation). This suite locks that copy to
+// core: if core's formatter changes part ordering, punctuation, or the Details
+// prefix, one of these assertions fails so the two drift loudly instead of
+// silently. createBinDiagnostic hardcodes the "gtx-cli" source, so the core call is
+// given the same source.
+describe('createBinDiagnostic parity with core createDiagnosticMessage', () => {
+  const cases: {
+    name: string;
+    input: Parameters<typeof createBinDiagnostic>[0];
+  }[] = [
+    {
+      name: 'whatHappened only, ")"-terminated (no appended period)',
+      input: {
+        severity: 'Warning',
+        whatHappened:
+          'No prebuilt gtx-cli binary exists for your platform (freebsd-x64)',
+      },
+    },
+    {
+      name: 'all optional fields populated',
+      input: {
+        severity: 'Warning',
+        whatHappened: 'Could not find the gtx-cli binary',
+        reassurance: 'Falling back to the JS implementation of gtx-cli.',
+        fix: 'reinstall the package',
+        details: 'ENOENT',
+      },
+    },
+    {
+      name: 'Error severity, already period-terminated whatHappened',
+      input: {
+        severity: 'Error',
+        whatHappened: 'The JS fallback failed to load.',
+      },
+    },
+    {
+      name: 'Error severity, whatHappened plus Details only',
+      input: {
+        severity: 'Error',
+        whatHappened: 'The JS fallback threw while running',
+        details: 'boom',
+      },
+    },
+    {
+      name: 'whitespace-only Details is dropped',
+      input: {
+        severity: 'Warning',
+        whatHappened: 'The prebuilt gtx-cli binary could not be started',
+        details: '   ',
+      },
+    },
+    {
+      name: 'whatHappened plus fix, no reassurance or details',
+      input: {
+        severity: 'Error',
+        whatHappened: 'The JS fallback failed to load',
+        fix: 'Try deleting node_modules and your lockfile, then reinstalling',
+      },
+    },
+    {
+      name: 'whatHappened plus reassurance, musl fallback wording',
+      input: {
+        severity: 'Warning',
+        whatHappened:
+          'Prebuilt gtx-cli binaries require glibc, but this Linux system uses musl (for example Alpine)',
+        reassurance: 'Falling back to the JS implementation of gtx-cli.',
+      },
+    },
+  ];
+
+  it.each(cases)('matches core for: $name', ({ input }) => {
+    expect(createBinDiagnostic(input)).toBe(
+      createDiagnosticMessage({ source: 'gtx-cli', ...input })
+    );
+  });
+});
+
+// The 17 helper tests above import the module, so isProcessEntry (the entry
+// guard) is never exercised as the *process entry* by them. These tests drive
+// the guard directly, including the pre-Node-24.2 path where import.meta.main
+// is undefined. On commit b63dfe69d the guard was a bare `import.meta.main`
+// with no fallback, so the undefined-metaMain cases below would report "not the
+// entry" and the CLI would silently no-op; here they must report the entry.
+describe('isProcessEntry', () => {
+  it('uses import.meta.main directly when it is a boolean (Node >= 24.2)', () => {
+    expect(isProcessEntry(true, import.meta.url, '/anything')).toBe(true);
+    expect(isProcessEntry(false, import.meta.url, '/anything')).toBe(false);
+  });
+
+  it('falls back to a realpath comparison when import.meta.main is undefined', () => {
+    const self = fileURLToPath(import.meta.url);
+    // Launched directly on a Node without import.meta.main: argv[1] is this
+    // very module, so it is the entry.
+    expect(isProcessEntry(undefined, import.meta.url, self)).toBe(true);
+    // A different entry module means we were imported, not run directly.
+    expect(
+      isProcessEntry(undefined, import.meta.url, join(tmpdir(), 'not-me.js'))
+    ).toBe(false);
+    // No process entry argument at all resolves to false, never throws.
+    expect(isProcessEntry(undefined, import.meta.url, undefined)).toBe(false);
+  });
+
+  it('resolves a .bin-style symlink on the pre-24.2 fallback path', () => {
+    const self = fileURLToPath(import.meta.url);
+    const dir = mkdtempSync(join(tmpdir(), 'binlink-'));
+    const link = join(dir, 'cli');
+    symlinkSync(self, link);
+    try {
+      // argv[1] is the symlink (the npm .bin shape) while import.meta.url is the
+      // realpath. A naive URL compare would return false here; resolving the
+      // realpath on both sides makes the symlinked launcher match.
+      expect(isProcessEntry(undefined, import.meta.url, link)).toBe(true);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+// End-to-end coverage of the actual production wiring: run the BUILT launcher
+// as a subprocess (the shape npm publishes as bin) and confirm it routes. On a
+// box with no platform binary it prints the fallback diagnostic on stderr and
+// hands off to the JS CLI (its usage on stdout). A silent no-op, which is how
+// the pre-24.2 import.meta.main regression manifested, would exit 0 with empty
+// output and fail these assertions.
+describe('built launcher entry point (integration)', () => {
+  beforeAll(() => {
+    if (!existsSync(launcherPath) || !existsSync(jsFallbackPath)) {
+      // The launcher only exists after a build. Build once here so the test
+      // exercises the real entry instead of being skipped; in CI turbo builds
+      // the package before tests run, so this is a no-op there.
+      execSync('pnpm run build', { cwd: packageRoot, stdio: 'ignore' });
+    }
+  }, 300000);
+
+  it('routes to the JS fallback when run directly as the process entry', () => {
+    const result = spawnSync(process.execPath, [launcherPath, '--help'], {
+      encoding: 'utf8',
+    });
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('Usage:');
+    expect(result.stderr).toContain('Falling back to the JS implementation of');
+  });
+
+  it('routes when invoked through a .bin-style symlink (the published shape)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'binlink-'));
+    const link = join(dir, 'cli');
+    symlinkSync(launcherPath, link);
+    try {
+      const result = spawnSync(process.execPath, [link, '--help'], {
+        encoding: 'utf8',
+      });
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('Usage:');
+      expect(result.stderr).toContain(
+        'Falling back to the JS implementation of'
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
