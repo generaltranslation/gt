@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { LocaleSelector, Num, T, Var, t, useLocale } from 'gt-react';
+import { LocaleSelector, Num, T, Var, useLocale } from 'gt-react';
 import type { Route } from './+types/home';
 import { HtmlLangSync } from '../components/HtmlLangSync';
 
@@ -22,7 +22,7 @@ export default function Home() {
     <main className='page'>
       <HtmlLangSync />
       <section className='panel'>
-        <p className='eyebrow'>{t('Home')}</p>
+        <p className='eyebrow'>{t`Home`}</p>
 
         <T>
           <h1>Ship your app in every language</h1>
@@ -52,7 +52,7 @@ export default function Home() {
         <div className='controls'>
           <LocaleSelector />
           <Link className='link' to='/about'>
-            {t('About this example')}
+            {t`About this example`}
           </Link>
         </div>
       </section>

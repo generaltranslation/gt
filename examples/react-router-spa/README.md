@@ -44,10 +44,12 @@ This example deliberately pins React Router v7, so the React Router v8 future-fl
 
 ## How initialization works
 
-In an SPA, `gt-react` must finish initializing before any component renders or any `t()` call runs. React Router lets you own the browser entry point, `app/entry.client.tsx`, which is the right place to do this:
+In an SPA, `gt-react` must finish initializing before any component renders or any `` t`...` `` macro runs. React Router lets you own the browser entry point, `app/entry.client.tsx`, which is the right place to do this:
 
 ```tsx
 // app/entry.client.tsx
+import 'gt-react/macros'; // attaches the global t`...` macro
+
 async function main() {
   await initializeGTSPA({ ...gtConfig, loadTranslations });
   const { hydrate } = await import('./hydrate');
@@ -55,9 +57,9 @@ async function main() {
 }
 ```
 
-We `await initializeGTSPA(...)` and only then dynamically import the module that hydrates the router. The dynamic import is the key detail: it guarantees that no route module (and therefore no module-level `t()`) is evaluated until initialization has finished. `app/routes/about.tsx` demonstrates a module-level `t()` call (in `app/messages.ts`) that resolves correctly for this reason.
+The `gt-react/macros` import attaches the global `t` macro, so no file in the app needs to import `t` itself (an SPA-only pattern). We `await initializeGTSPA(...)` and only then dynamically import the module that hydrates the router. The dynamic import is the key detail: it guarantees that no route module (and therefore no module-level `` t`...` ``) is evaluated until initialization has finished. `app/routes/about.tsx` demonstrates a module-level `` t`...` `` string (in `app/messages.ts`) that resolves correctly for this reason.
 
-React Router prerenders a small static shell into `index.html` at build time. That prerender runs in Node, where `gt-react` is not (and cannot be) initialized, so the shell in `app/root.tsx` is kept free of `gt-react`. All translated content lives in child routes, which render only in the browser. Do not add build-time `prerender` paths for routes that render `<T>` or call `t()`, because those would run in the uninitialized Node context. The static shell hardcodes `lang='en'`; a small client component, `app/components/HtmlLangSync.tsx`, rendered from each route, syncs the html `lang` (and `dir`) attribute to the active locale once gt-react is running in the browser.
+React Router prerenders a small static shell into `index.html` at build time. That prerender runs in Node, where `gt-react` is not (and cannot be) initialized, so the shell in `app/root.tsx` is kept free of `gt-react`. All translated content lives in child routes, which render only in the browser. Do not add build-time `prerender` paths for routes that render `<T>` or use `` t`...` ``, because those would run in the Node context, where gt-react is uninitialized and the global `t` macro does not exist (`gt-react/macros` is imported only in the browser entry). The static shell hardcodes `lang='en'`; a small client component, `app/components/HtmlLangSync.tsx`, rendered from each route, syncs the html `lang` (and `dir`) attribute to the active locale once gt-react is running in the browser.
 
 Switching the locale reloads the page. `gt-react` reinitializes with the newly selected locale and re-resolves every string. A production host must serve `index.html` as the fallback for unknown paths (standard SPA hosting) so that reloading a deep route like `/about` works. The included `vercel.json` does this with a rewrite that maps every path to `/index.html`, and `pnpm preview` serves the same fallback locally.
 

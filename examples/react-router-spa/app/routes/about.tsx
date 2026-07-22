@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { LocaleSelector, T, t } from 'gt-react';
+import { LocaleSelector, T } from 'gt-react';
 import type { Route } from './+types/about';
 import { moduleLevelHeading } from '../messages';
 import { HtmlLangSync } from '../components/HtmlLangSync';
@@ -35,7 +35,7 @@ export default function About() {
         <div className='controls'>
           <LocaleSelector />
           <Link className='link' to='/'>
-            {t('Back home')}
+            {t`Back home`}
           </Link>
         </div>
       </section>
