@@ -43,10 +43,10 @@ pnpm preview
 ## How it works
 
 - **`gt.config.json`** lists your default and target locales and tells the CLI where to write translation files (`src/_gt/[locale].json`).
-- **`src/index.ts`** is the entry module. It `await`s `initializeGTSPA()` (which picks the user's locale and loads its translations), then dynamically imports `./main` so the app renders only after GT is ready. This ordering is what lets module-level `t()` calls resolve. `index.html` points its module script at `/src/index.ts`.
+- **`src/index.ts`** is the entry module. It imports `gt-react/macros` (which attaches the global `t` macro), `await`s `initializeGTSPA()` (which picks the user's locale and loads its translations), then dynamically imports `./main` so the app renders only after GT is ready. This ordering is what lets module-level `` t`...` `` macros resolve. `index.html` points its module script at `/src/index.ts`.
 - **`src/loadTranslations.ts`** dynamically imports the right JSON file from `src/_gt/` at runtime.
 - **`src/components/Welcome.tsx`** wraps content in `<T>` and drops in a `<LocaleSelector>`.
-- **`src/navigation.ts`** uses `t()` at the module level to translate plain strings.
+- **`src/navigation.ts`** translates plain strings at the module level with the global `` t`...` `` macro. No import is needed in the file itself; the one `gt-react/macros` import in the entry covers the whole app (SPA-only pattern).
 
 When the user picks a language, `gt-react` saves the choice to the `generaltranslation.locale` cookie and reloads the page. `initializeGTSPA` then re-runs and loads the new locale's translations before the app renders.
 
