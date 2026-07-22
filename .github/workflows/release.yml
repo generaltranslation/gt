@@ -137,16 +137,21 @@ jobs:
           published_packages='${{ steps.changesets.outputs.publishedPackages }}'
           version=$(jq -r .version packages/cli/package.json)
 
-          platforms_complete=true
-          for target in darwin-x64 darwin-arm64 linux-x64 linux-arm64 win32-x64; do
-            if ! npm view "@generaltranslation/gt-${target}@${version}" version > /dev/null 2>&1; then
-              platforms_complete=false
-            fi
-          done
+          # Only versions whose bin release already declares the platform
+          # optionalDependencies are eligible for platform backfill; bin
+          # releases from the old bundled layout are left alone.
+          needs_platform_backfill=false
+          if npm view "gt@${version}-bin.0" optionalDependencies 2>/dev/null | grep -q '@generaltranslation/gt-'; then
+            for target in darwin-x64 darwin-arm64 linux-x64 linux-arm64 win32-x64; do
+              if ! npm view "@generaltranslation/gt-${target}@${version}" version > /dev/null 2>&1; then
+                needs_platform_backfill=true
+              fi
+            done
+          fi
 
           if [ -n "$published_packages" ] && echo "$published_packages" | jq -e 'any(.[]; .name == "gt")' > /dev/null; then
             echo "should_release_bin=true" >> $GITHUB_OUTPUT
-          elif npm view "gt@${version}" version > /dev/null 2>&1 && { ! npm view "gt@${version}-bin.0" version > /dev/null 2>&1 || [ "$platforms_complete" = "false" ]; }; then
+          elif npm view "gt@${version}" version > /dev/null 2>&1 && { ! npm view "gt@${version}-bin.0" version > /dev/null 2>&1 || [ "$needs_platform_backfill" = "true" ]; }; then
             # A previous run published gt but failed before the binary
             # release (or one of its platform packages) landed; finish it
             # on this run.
@@ -263,16 +268,21 @@ jobs:
           published_packages='${{ steps.changesets.outputs.publishedPackages }}'
           version=$(jq -r .version packages/gtx-cli/package.json)
 
-          platforms_complete=true
-          for target in darwin-x64 darwin-arm64 linux-x64 linux-arm64 win32-x64; do
-            if ! npm view "@generaltranslation/gtx-cli-${target}@${version}" version > /dev/null 2>&1; then
-              platforms_complete=false
-            fi
-          done
+          # Only versions whose bin release already declares the platform
+          # optionalDependencies are eligible for platform backfill; bin
+          # releases from the old bundled layout are left alone.
+          needs_platform_backfill=false
+          if npm view "gtx-cli@${version}-bin.0" optionalDependencies 2>/dev/null | grep -q '@generaltranslation/gtx-cli-'; then
+            for target in darwin-x64 darwin-arm64 linux-x64 linux-arm64 win32-x64; do
+              if ! npm view "@generaltranslation/gtx-cli-${target}@${version}" version > /dev/null 2>&1; then
+                needs_platform_backfill=true
+              fi
+            done
+          fi
 
           if [ -n "$published_packages" ] && echo "$published_packages" | jq -e 'any(.[]; .name == "gtx-cli")' > /dev/null; then
             echo "should_release_bin=true" >> $GITHUB_OUTPUT
-          elif npm view "gtx-cli@${version}" version > /dev/null 2>&1 && { ! npm view "gtx-cli@${version}-bin.0" version > /dev/null 2>&1 || [ "$platforms_complete" = "false" ]; }; then
+          elif npm view "gtx-cli@${version}" version > /dev/null 2>&1 && { ! npm view "gtx-cli@${version}-bin.0" version > /dev/null 2>&1 || [ "$needs_platform_backfill" = "true" ]; }; then
             # A previous run published gtx-cli but failed before the binary
             # release (or one of its platform packages) landed; finish it
             # on this run.

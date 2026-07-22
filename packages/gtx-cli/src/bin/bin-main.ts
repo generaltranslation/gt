@@ -74,10 +74,16 @@ function resolveBinary(target: string): string | null {
 function runJsFallback(reason: string): void {
   console.error(`${reason}\nFalling back to the JS implementation of gtx-cli.`);
   import('../main.js').catch((error) => {
-    console.error(
-      `The JS fallback failed to load (${error instanceof Error ? error.message : error}).\n` +
-        `Try deleting node_modules and your lockfile, then reinstalling.`
-    );
+    const message = error instanceof Error ? error.message : String(error);
+    const code = (error as NodeJS.ErrnoException | undefined)?.code;
+    if (code === 'ERR_MODULE_NOT_FOUND' || code === 'MODULE_NOT_FOUND') {
+      console.error(
+        `The JS fallback failed to load (${message}).\n` +
+          `Try deleting node_modules and your lockfile, then reinstalling.`
+      );
+    } else {
+      console.error(`gtx-cli failed while running the JS fallback: ${message}`);
+    }
     process.exit(1);
   });
 }

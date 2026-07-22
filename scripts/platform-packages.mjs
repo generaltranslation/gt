@@ -9,7 +9,7 @@
 //   node ../../scripts/platform-packages.mjs generate
 //   node ../../scripts/platform-packages.mjs publish [--dry-run]
 
-import { execFileSync } from 'child_process';
+import { execFileSync, spawnSync } from 'child_process';
 import {
   chmodSync,
   copyFileSync,
@@ -135,22 +135,30 @@ function publishAll(cliDir, { dryRun }) {
       process.stdout.write(`Skipping ${name}@${version} (already published)\n`);
       continue;
     }
-    // Keep prerelease trains off the latest tag (manual prerelease releases)
-    const tag = version.includes('-')
+    // Keep prerelease trains off the latest tag (manual prerelease
+    // releases); npm rejects tags that parse as semver, so numeric preids
+    // fall back to a named tag
+    let tag = version.includes('-')
       ? version.split('-')[1].split('.')[0]
       : 'latest';
+    if (!/^[a-zA-Z]/.test(tag)) {
+      tag = 'prerelease';
+    }
     const args = ['publish', '--access', 'public', '--tag', tag];
     if (dryRun) {
       args.push('--dry-run');
     }
-    try {
-      execFileSync('npm', args, {
-        cwd: dir,
-        stdio: ['ignore', 'inherit', 'pipe'],
-      });
-    } catch (error) {
-      const stderr = String(error.stderr ?? '');
-      process.stderr.write(stderr);
+    const result = spawnSync('npm', args, {
+      cwd: dir,
+      stdio: ['ignore', 'inherit', 'pipe'],
+      encoding: 'utf8',
+    });
+    const stderr = result.stderr ?? '';
+    process.stderr.write(stderr);
+    if (result.error) {
+      throw result.error;
+    }
+    if (result.status !== 0) {
       // The registry can reject or time out a publish that actually landed;
       // treat a version that is now visible as published
       const alreadyPublished =
@@ -172,7 +180,9 @@ function publishAll(cliDir, { dryRun }) {
             `trusted publisher on npmjs.com.\n`
         );
       }
-      throw error;
+      throw new Error(
+        `npm publish failed for ${name}@${version} (exit ${result.status})`
+      );
     }
     process.stdout.write(`Published ${name}@${version}\n`);
   }
@@ -205,7 +215,13 @@ function isInvokedDirectly() {
   } catch {
     // Keep the unresolved path; the comparison below then decides
   }
-  return invokedPath === fileURLToPath(import.meta.url);
+  let selfPath = fileURLToPath(import.meta.url);
+  try {
+    selfPath = realpathSync(selfPath);
+  } catch {
+    // Keep the unresolved path
+  }
+  return invokedPath === selfPath;
 }
 
 if (isInvokedDirectly()) {
