@@ -1,5 +1,11 @@
 # gt-sanity
 
+## 2.1.4
+
+### Patch Changes
+
+- [#1958](https://github.com/generaltranslation/gt/pull/1958) [`45e1452`](https://github.com/generaltranslation/gt/commit/45e14525b135177074e6d0ef9d3eafdb0eedf408) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Use the canonical library locale for serialization fallbacks.
+
 ## 2.1.3
 
 ### Patch Changes
