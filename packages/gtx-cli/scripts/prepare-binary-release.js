@@ -3,6 +3,10 @@
 import { readFileSync, writeFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import {
+  TARGETS,
+  platformPackageName,
+} from '../../../scripts/platform-packages.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -17,6 +21,17 @@ const binaryVersion = `${originalVersion}-bin.0`;
 // Modify package.json for binary release
 packageJson.version = binaryVersion;
 packageJson.bin = 'dist/bin/bin-main.js';
+
+// Pin the per-platform binary packages to this exact release
+packageJson.optionalDependencies = {
+  ...packageJson.optionalDependencies,
+  ...Object.fromEntries(
+    TARGETS.map((entry) => [
+      platformPackageName(packageJson.name, entry.target),
+      originalVersion,
+    ])
+  ),
+};
 
 // Write modified package.json
 writeFileSync(

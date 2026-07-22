@@ -7,7 +7,6 @@
   "files": [
     "bin",
     "dist",
-    "binaries",
     "CHANGELOG.md"
   ],
   "type": "module",
@@ -29,7 +28,7 @@
     "test:watch": "vitest --config=./vitest.config.ts",
     "release": "pnpm run release:normal && pnpm run release:bin",
     "release:normal": "pnpm run build:clean && pnpm publish",
-    "release:bin": "pnpm run bin:prep && pnpm run build:bin:clean && pnpm publish --tag bin --no-git-checks && pnpm run bin:restore && pnpm run build:clean",
+    "release:bin": "pnpm run bin:prep && pnpm run build:bin:clean && node ../../scripts/platform-packages.mjs generate && node ../../scripts/platform-packages.mjs publish && pnpm publish --tag bin --no-git-checks && pnpm run bin:restore && pnpm run build:clean",
     "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",
     "release:beta": "pnpm run build:clean && pnpm publish --tag beta",
     "release:latest": "pnpm run build:clean && pnpm publish --tag latest",

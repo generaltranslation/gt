@@ -197,6 +197,26 @@ jobs:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
 
+      - name: Release gt platform packages to npm
+        if: steps.check-gt.outputs.should_release_bin == 'true'
+        working-directory: packages/cli
+        run: |
+          node ../../scripts/platform-packages.mjs generate
+          # Platform packages must reach the registry before the gt bin
+          # package that depends on them. The publish script skips versions
+          # that already exist, so each retry resumes where it left off.
+          for attempt in 1 2 3 4 5; do
+            if node ../../scripts/platform-packages.mjs publish; then
+              break
+            fi
+            if [ "$attempt" = 5 ]; then
+              echo "Publishing gt platform packages failed after ${attempt} attempts"
+              exit 1
+            fi
+            echo "Platform publish attempt ${attempt} failed, retrying in 30s"
+            sleep 30
+          done
+
       - name: Release gt binary to npm
         if: steps.check-gt.outputs.should_release_bin == 'true'
         run: |
@@ -272,6 +292,26 @@ jobs:
           r2-bucket: ${{ secrets.R2_BUCKET_NAME }}
           source-dir: packages/gtx-cli/binaries
           destination-dir: gtx-cli/latest
+
+      - name: Release gtx-cli platform packages to npm
+        if: steps.check-gtx-cli.outputs.should_release_bin == 'true'
+        working-directory: packages/gtx-cli
+        run: |
+          node ../../scripts/platform-packages.mjs generate
+          # Platform packages must reach the registry before the gtx-cli bin
+          # package that depends on them. The publish script skips versions
+          # that already exist, so each retry resumes where it left off.
+          for attempt in 1 2 3 4 5; do
+            if node ../../scripts/platform-packages.mjs publish; then
+              break
+            fi
+            if [ "$attempt" = 5 ]; then
+              echo "Publishing gtx-cli platform packages failed after ${attempt} attempts"
+              exit 1
+            fi
+            echo "Platform publish attempt ${attempt} failed, retrying in 30s"
+            sleep 30
+          done
 
       - name: Release gtx-cli binary to npm
         if: steps.check-gtx-cli.outputs.should_release_bin == 'true'
