@@ -54,6 +54,20 @@ describe('gt-tanstack-start package exports', () => {
     ).toEqual(['index.client.mjs', 'index.server.mjs', 'server.mjs']);
   });
 
+  it('references only declared dependencies from public declarations', () => {
+    for (const file of [
+      'index.client.d.mts',
+      'index.server.d.mts',
+      'server.d.mts',
+    ]) {
+      const declaration = readFileSync(join(packageRoot, 'dist', file), 'utf8');
+
+      expect(declaration).not.toMatch(
+        /@tanstack\/(?:start-client-core|start-fn-stubs)/
+      );
+    }
+  });
+
   it('loads isomorphic helpers and middleware from the main ESM entrypoint', () => {
     node([
       '--input-type=module',

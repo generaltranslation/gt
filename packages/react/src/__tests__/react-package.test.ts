@@ -127,6 +127,22 @@ describe('gt-react package exports', () => {
     ]);
   });
 
+  it('throws when the condition-store factory is called from the server entrypoint', () => {
+    node([
+      '--input-type=module',
+      '-e',
+      `
+          import assert from 'node:assert/strict';
+          import { createOrUpdateBrowserConditionStore } from 'gt-react';
+
+          assert.throws(
+            () => createOrUpdateBrowserConditionStore({}),
+            /server runtime entry point/
+          );
+        `,
+    ]);
+  });
+
   it('loads side-effect entrypoints without default-export interop', () => {
     node([
       '-e',
