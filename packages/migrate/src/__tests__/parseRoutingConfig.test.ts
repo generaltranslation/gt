@@ -201,6 +201,51 @@ describe('parseRoutingConfig', () => {
     expect(result.defaultLocale).toBe('en');
   });
 
+  it('flags localePrefix and pathnames unresolved under an unresolvable spread', () => {
+    const cwd = makeProject({
+      'i18n/routing.ts': [
+        "import { defineRouting } from 'next-intl/routing';",
+        "import { base } from './base';",
+        'export const routing = defineRouting({',
+        "  locales: ['en', 'de'],",
+        "  defaultLocale: 'en',",
+        '  ...base,',
+        '});',
+      ].join('\n'),
+    });
+    const result = parseRoutingConfig(cwd);
+    // localePrefix/pathnames could be carried by ...base; the parser cannot see
+    // them, so it must report "unresolved" rather than "absent" so the
+    // transforms skip instead of assuming next-intl's 'always' default.
+    expect(result.localePrefix).toBeNull();
+    expect(result.localePrefixUnresolved).toBe(true);
+    expect(result.pathnames).toBeNull();
+    expect(result.pathnamesUnresolved).toBe(true);
+  });
+
+  it('does not flag unresolved when a directly resolved field coexists with a spread', () => {
+    const cwd = makeProject({
+      'i18n/routing.ts': [
+        "import { defineRouting } from 'next-intl/routing';",
+        "import { base } from './base';",
+        'export const routing = defineRouting({',
+        '  ...base,',
+        "  locales: ['en', 'de'],",
+        "  defaultLocale: 'en',",
+        "  localePrefix: 'as-needed',",
+        '});',
+      ].join('\n'),
+    });
+    const result = parseRoutingConfig(cwd);
+    // localePrefix is resolved to a literal after the spread, so it wins; do not
+    // downgrade a value we can actually read. pathnames is still hidden by the
+    // spread, so it stays unresolved.
+    expect(result.localePrefix).toBe('as-needed');
+    expect(result.localePrefixUnresolved).toBeFalsy();
+    expect(result.pathnames).toBeNull();
+    expect(result.pathnamesUnresolved).toBe(true);
+  });
+
   it('falls back to a plain exported object with locales/defaultLocale', () => {
     const cwd = makeProject({
       'i18n.ts': [

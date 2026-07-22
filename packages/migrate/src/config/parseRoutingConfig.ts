@@ -35,8 +35,12 @@ const REQUEST_CANDIDATES = [
  * "configured but unreadable" and never mistake the null for next-intl's
  * default.
  *
- * A spread inside defineRouting ({ ...base }) hides properties entirely, so
- * a value carried only by the spread reads as absent (no flag). Not solved.
+ * A spread whose contents cannot be read ({ ...base }) may carry localePrefix
+ * or pathnames, or override a value set before it. When such a spread is
+ * present, either field is reported UNRESOLVED (not absent) unless a property
+ * resolves it AFTER the spread, so the transforms skip and leave a TODO rather
+ * than assume next-intl's 'always' default or silently drop localized
+ * pathnames.
  */
 export function parseRoutingConfig(cwd: string): RoutingInfo {
   const info: RoutingInfo = {
@@ -91,7 +95,62 @@ export function parseRoutingConfig(cwd: string): RoutingInfo {
     info.pathnamesUnresolved = true;
   }
 
+  // A spread we cannot read ({ ...base }) may carry localePrefix/pathnames or
+  // override a value set before it. Any field not resolved by a property
+  // appearing AFTER the last such spread is downgraded to unresolved so the
+  // middleware/navigation transforms skip (with a TODO) instead of assuming a
+  // default. A property placed after the spread wins in JS object semantics, so
+  // that value is kept.
+  const lastSpreadIndex = lastUnresolvableSpreadIndex(config);
+  if (lastSpreadIndex >= 0) {
+    const localePrefixIndex = propertyIndex(config, 'localePrefix');
+    if (!(info.localePrefix !== null && localePrefixIndex > lastSpreadIndex)) {
+      info.localePrefix = null;
+      info.localePrefixUnresolved = true;
+    }
+    const pathnamesIndex = propertyIndex(config, 'pathnames');
+    if (!(info.pathnames !== null && pathnamesIndex > lastSpreadIndex)) {
+      info.pathnames = null;
+      info.pathnamesUnresolved = true;
+    }
+  }
+
   return info;
+}
+
+/**
+ * Index of the last spread whose contents cannot be statically read (a variable
+ * reference, a call). An inline object-literal spread that fully resolves does
+ * not count. Returns -1 when there is no such spread.
+ */
+function lastUnresolvableSpreadIndex(object: t.ObjectExpression): number {
+  let last = -1;
+  for (let i = 0; i < object.properties.length; i++) {
+    const property = object.properties[i];
+    if (
+      t.isSpreadElement(property) &&
+      staticValue(property.argument) === undefined
+    ) {
+      last = i;
+    }
+  }
+  return last;
+}
+
+/** Index of the first direct (non-computed) property named `name`, else -1. */
+function propertyIndex(object: t.ObjectExpression, name: string): number {
+  for (let i = 0; i < object.properties.length; i++) {
+    const property = object.properties[i];
+    if (
+      t.isObjectProperty(property) &&
+      !property.computed &&
+      (t.isIdentifier(property.key, { name }) ||
+        (t.isStringLiteral(property.key) && property.key.value === name))
+    ) {
+      return i;
+    }
+  }
+  return -1;
 }
 
 /**
