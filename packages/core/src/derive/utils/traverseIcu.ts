@@ -1,9 +1,9 @@
 import {
-  MessageFormatElement,
   parse,
-  ParserOptions,
   TYPE,
-} from '@formatjs/icu-messageformat-parser';
+  type MessageFormatElement,
+  type ParserOptions,
+} from '@generaltranslation/icu';
 
 type TraverseIcuOptions = ParserOptions & {
   recurseIntoVisited?: boolean;

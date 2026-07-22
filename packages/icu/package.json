@@ -1,0 +1,68 @@
+{
+  "name": "@generaltranslation/icu",
+  "version": "0.0.1",
+  "description": "Dependency-free ICU MessageFormat parsing and formatting for General Translation",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.cts",
+  "files": [
+    "dist",
+    "CHANGELOG.md",
+    "LICENSE.md",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build:release": "pnpm run build:clean",
+    "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
+    "build": "tsdown",
+    "test": "vitest run --config=./vitest.config.ts",
+    "test:watch": "vitest --config=./vitest.config.ts",
+    "release": "pnpm run build:clean && pnpm publish --access public",
+    "release:alpha": "pnpm run build:clean && pnpm publish --access public --tag alpha",
+    "release:beta": "pnpm run build:clean && pnpm publish --access public --tag beta",
+    "release:latest": "pnpm run build:clean && pnpm publish --access public --tag latest",
+    "typecheck": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/generaltranslation/gt.git",
+    "directory": "packages/icu"
+  },
+  "keywords": [
+    "icu",
+    "messageformat",
+    "internationalization",
+    "localization",
+    "i18n"
+  ],
+  "author": "General Translation, Inc.",
+  "license": "FSL-1.1-ALv2",
+  "bugs": {
+    "url": "https://github.com/generaltranslation/gt/issues"
+  },
+  "homepage": "https://generaltranslation.com/",
+  "devDependencies": {
+    "@formatjs/icu-messageformat-parser": "2.11.4",
+    "@types/node": "catalog:",
+    "intl-messageformat": "10.7.16",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "typescript": {
+    "definition": "dist/index.d.cts"
+  },
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      },
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      }
+    }
+  }
+}

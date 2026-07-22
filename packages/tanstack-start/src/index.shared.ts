@@ -1,4 +1,11 @@
 export { parseLocale } from './functions/parseLocale';
+export {
+  getLocale,
+  getEnableI18n,
+  getGT,
+  getMessages,
+  getTranslations,
+} from './functions/runtime';
 
 export {
   // ===== Components ===== //
