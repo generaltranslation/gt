@@ -472,9 +472,40 @@ function harvestDefaultMessages(cwd: string): {
     } catch {
       continue;
     }
+    // The transform resolves react-intl imports alias-aware; the harvest must
+    // match it, or an aliased <FormattedMessage> gets rewritten while its
+    // defaultMessage never reaches the synthesized catalog (a missing key at
+    // runtime). Bare names stay matched too, so a symbol reaching the file
+    // some other way (a local re-export barrel) keeps its previous behavior.
+    const localsOf = new Map<string, Set<string>>();
+    for (const stmt of ast.program.body) {
+      if (!t.isImportDeclaration(stmt) || stmt.source.value !== 'react-intl') {
+        continue;
+      }
+      for (const spec of stmt.specifiers) {
+        if (t.isImportSpecifier(spec) && t.isIdentifier(spec.imported)) {
+          const set = localsOf.get(spec.imported.name) ?? new Set<string>();
+          set.add(spec.local.name);
+          localsOf.set(spec.imported.name, set);
+        }
+      }
+    }
+    const formattedMessageNames = new Set([
+      'FormattedMessage',
+      ...(localsOf.get('FormattedMessage') ?? []),
+    ]);
+    const defineNames = new Set([
+      'defineMessages',
+      'defineMessage',
+      ...(localsOf.get('defineMessages') ?? []),
+      ...(localsOf.get('defineMessage') ?? []),
+    ]);
     traverse(ast, {
       JSXOpeningElement(path) {
-        if (!t.isJSXIdentifier(path.node.name, { name: 'FormattedMessage' })) {
+        if (
+          !t.isJSXIdentifier(path.node.name) ||
+          !formattedMessageNames.has(path.node.name.name)
+        ) {
           return;
         }
         record(
@@ -488,9 +519,7 @@ function harvestDefaultMessages(cwd: string): {
           t.isMemberExpression(callee) &&
           !callee.computed &&
           t.isIdentifier(callee.property, { name: 'formatMessage' });
-        const isDefine =
-          t.isIdentifier(callee, { name: 'defineMessages' }) ||
-          t.isIdentifier(callee, { name: 'defineMessage' });
+        const isDefine = t.isIdentifier(callee) && defineNames.has(callee.name);
         if (isFormatMessage) {
           recordFromDescriptor(path.node.arguments[0], record);
         } else if (isDefine) {

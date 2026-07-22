@@ -484,6 +484,9 @@ describe('react-i18next full migration', () => {
           i18next: '^23.0.0',
         },
       }),
+      // The App Router gate refuses a project with no app/ before the notice
+      // can fire; both-libraries projects this notice serves are App Router.
+      'app/page.tsx': 'export default function Page() { return null; }\n',
     });
     const warns: string[] = [];
     vi.spyOn(logger, 'warn').mockImplementation((m: string) => {

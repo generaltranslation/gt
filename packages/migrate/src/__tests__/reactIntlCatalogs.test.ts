@@ -141,6 +141,38 @@ describe('discoverReactIntlCatalogs', () => {
       ).toBe(false);
     });
 
+    it('harvests aliased FormattedMessage and defineMessages imports', async () => {
+      // The transform resolves react-intl locals alias-aware; the harvest must
+      // too, or an aliased component is rewritten while its defaultMessage
+      // never reaches the synthesized catalog (a missing key at runtime).
+      const cwd = makeDir({
+        'messages/fr.json': JSON.stringify({
+          title: 'Bienvenue',
+          greeting: 'Salut {name}',
+        }),
+        'src/Provider.tsx': [
+          "'use client';",
+          "import { IntlProvider } from 'react-intl';",
+          'export function P({ locale, children }: any) {',
+          '  return <IntlProvider locale={locale} defaultLocale="en">{children}</IntlProvider>;',
+          '}',
+        ].join('\n'),
+        'src/Client.tsx': [
+          "'use client';",
+          "import { FormattedMessage as FM, defineMessages as dm } from 'react-intl';",
+          'const messages = dm({',
+          "  title: { id: 'title', defaultMessage: 'Welcome' },",
+          '});',
+          'export function C() {',
+          '  return <p><FM id="greeting" defaultMessage="Hello {name}" values={{ name: "Ada" }} /></p>;',
+          '}',
+        ].join('\n'),
+      });
+      const catalogs = await discoverReactIntlCatalogs(cwd, routing);
+      expect(catalogs!.byLocale.en.greeting).toBe('Hello {name}');
+      expect(catalogs!.byLocale.en.title).toBe('Welcome');
+    });
+
     it('throws when no defaultMessage can seed the default catalog', async () => {
       const cwd = makeDir({
         'messages/fr.json': JSON.stringify({ title: 'Bienvenue' }),
