@@ -6,8 +6,8 @@
 // managers only download the binary matching the user's platform.
 //
 // Run from the CLI package directory (packages/cli or packages/gtx-cli):
-//   node ../../scripts/platform-packages.js generate
-//   node ../../scripts/platform-packages.js publish [--dry-run]
+//   node ../../scripts/platform-packages.mjs generate
+//   node ../../scripts/platform-packages.mjs publish [--dry-run]
 
 import { execFileSync } from 'child_process';
 import {
@@ -16,6 +16,7 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
   writeFileSync,
 } from 'fs';
@@ -73,6 +74,8 @@ export function generatePlatformPackage(entry, options) {
     os: [entry.os],
     cpu: [entry.cpu],
     ...(entry.libc ? { libc: [entry.libc] } : {}),
+    // No exports map on purpose: bin-main.js resolves the binary as a bare
+    // subpath, which an exports field would block
     files: [binFile],
     // Yarn PnP must extract the package so the binary exists on disk
     preferUnplugged: true,
@@ -132,11 +135,45 @@ function publishAll(cliDir, { dryRun }) {
       process.stdout.write(`Skipping ${name}@${version} (already published)\n`);
       continue;
     }
-    const args = ['publish', '--access', 'public'];
+    // Keep prerelease trains off the latest tag (manual prerelease releases)
+    const tag = version.includes('-')
+      ? version.split('-')[1].split('.')[0]
+      : 'latest';
+    const args = ['publish', '--access', 'public', '--tag', tag];
     if (dryRun) {
       args.push('--dry-run');
     }
-    execFileSync('npm', args, { cwd: dir, stdio: 'inherit' });
+    try {
+      execFileSync('npm', args, {
+        cwd: dir,
+        stdio: ['ignore', 'inherit', 'pipe'],
+      });
+    } catch (error) {
+      const stderr = String(error.stderr ?? '');
+      process.stderr.write(stderr);
+      // The registry can reject or time out a publish that actually landed;
+      // treat a version that is now visible as published
+      const alreadyPublished =
+        /previously published|EPUBLISHCONFLICT|cannot publish over/i.test(
+          stderr
+        ) ||
+        (!dryRun && versionExistsOnNpm(name, version));
+      if (alreadyPublished) {
+        process.stdout.write(
+          `${name}@${version} reached the registry despite the error\n`
+        );
+        continue;
+      }
+      if (/E401|E403|ENEEDAUTH/i.test(stderr)) {
+        process.stderr.write(
+          `Publishing ${name} failed with an auth error. If this package has ` +
+            `never been published, npm trusted publishing cannot create it: a ` +
+            `maintainer must publish it once with a token, then configure its ` +
+            `trusted publisher on npmjs.com.\n`
+        );
+      }
+      throw error;
+    }
     process.stdout.write(`Published ${name}@${version}\n`);
   }
 }
@@ -150,12 +187,27 @@ function main() {
     publishAll(cliDir, { dryRun: process.argv.includes('--dry-run') });
   } else {
     console.error(
-      'Usage: node scripts/platform-packages.js <generate|publish> [--dry-run]'
+      'Usage: node scripts/platform-packages.mjs <generate|publish> [--dry-run]'
     );
     process.exit(1);
   }
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+// Resolve symlinks before comparing; a mismatch here would silently skip
+// main() and let the release proceed without the platform packages
+function isInvokedDirectly() {
+  if (!process.argv[1]) {
+    return false;
+  }
+  let invokedPath = process.argv[1];
+  try {
+    invokedPath = realpathSync(invokedPath);
+  } catch {
+    // Keep the unresolved path; the comparison below then decides
+  }
+  return invokedPath === fileURLToPath(import.meta.url);
+}
+
+if (isInvokedDirectly()) {
   main();
 }

@@ -81,6 +81,8 @@ describe('platform-packages', () => {
     expect(baseVersion('2.14.64-bin.3')).toBe('2.14.64');
     expect(baseVersion('2.14.64')).toBe('2.14.64');
     expect(baseVersion('2.15.0-alpha.1')).toBe('2.15.0-alpha.1');
+    expect(baseVersion('2.15.0-alpha.1-bin.0')).toBe('2.15.0-alpha.1');
+    expect(baseVersion('2.14.51-odysseus.7')).toBe('2.14.51-odysseus.7');
   });
 
   it('generates a valid package for every target', () => {

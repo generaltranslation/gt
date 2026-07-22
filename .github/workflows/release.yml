@@ -137,11 +137,19 @@ jobs:
           published_packages='${{ steps.changesets.outputs.publishedPackages }}'
           version=$(jq -r .version packages/cli/package.json)
 
+          platforms_complete=true
+          for target in darwin-x64 darwin-arm64 linux-x64 linux-arm64 win32-x64; do
+            if ! npm view "@generaltranslation/gt-${target}@${version}" version > /dev/null 2>&1; then
+              platforms_complete=false
+            fi
+          done
+
           if [ -n "$published_packages" ] && echo "$published_packages" | jq -e 'any(.[]; .name == "gt")' > /dev/null; then
             echo "should_release_bin=true" >> $GITHUB_OUTPUT
-          elif npm view "gt@${version}" version > /dev/null 2>&1 && ! npm view "gt@${version}-bin.0" version > /dev/null 2>&1; then
+          elif npm view "gt@${version}" version > /dev/null 2>&1 && { ! npm view "gt@${version}-bin.0" version > /dev/null 2>&1 || [ "$platforms_complete" = "false" ]; }; then
             # A previous run published gt but failed before the binary
-            # release landed; finish it on this run.
+            # release (or one of its platform packages) landed; finish it
+            # on this run.
             echo "should_release_bin=true" >> $GITHUB_OUTPUT
           else
             echo "should_release_bin=false" >> $GITHUB_OUTPUT
@@ -201,6 +209,11 @@ jobs:
         if: steps.check-gt.outputs.should_release_bin == 'true'
         working-directory: packages/cli
         run: |
+          # NOTE: the first-ever publish of a platform package cannot use
+          # trusted publishing (npm requires a package to exist before a
+          # trusted publisher can be configured for it). New names must be
+          # bootstrapped once with a token by a maintainer, then given a
+          # trusted publisher on npmjs.com.
           node ../../scripts/platform-packages.mjs generate
           # Platform packages must reach the registry before the gt bin
           # package that depends on them. The publish script skips versions
@@ -250,11 +263,19 @@ jobs:
           published_packages='${{ steps.changesets.outputs.publishedPackages }}'
           version=$(jq -r .version packages/gtx-cli/package.json)
 
+          platforms_complete=true
+          for target in darwin-x64 darwin-arm64 linux-x64 linux-arm64 win32-x64; do
+            if ! npm view "@generaltranslation/gtx-cli-${target}@${version}" version > /dev/null 2>&1; then
+              platforms_complete=false
+            fi
+          done
+
           if [ -n "$published_packages" ] && echo "$published_packages" | jq -e 'any(.[]; .name == "gtx-cli")' > /dev/null; then
             echo "should_release_bin=true" >> $GITHUB_OUTPUT
-          elif npm view "gtx-cli@${version}" version > /dev/null 2>&1 && ! npm view "gtx-cli@${version}-bin.0" version > /dev/null 2>&1; then
+          elif npm view "gtx-cli@${version}" version > /dev/null 2>&1 && { ! npm view "gtx-cli@${version}-bin.0" version > /dev/null 2>&1 || [ "$platforms_complete" = "false" ]; }; then
             # A previous run published gtx-cli but failed before the binary
-            # release landed; finish it on this run.
+            # release (or one of its platform packages) landed; finish it
+            # on this run.
             echo "should_release_bin=true" >> $GITHUB_OUTPUT
           else
             echo "should_release_bin=false" >> $GITHUB_OUTPUT

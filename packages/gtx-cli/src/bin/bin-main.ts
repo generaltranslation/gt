@@ -69,25 +69,44 @@ function resolveBinary(target: string): string | null {
   return null;
 }
 
+// The bin variant still ships the full JS implementation in dist/, so a
+// missing binary degrades to the JS CLI instead of failing outright
+function runJsFallback(reason: string): void {
+  console.error(`${reason}\nFalling back to the JS implementation of gtx-cli.`);
+  import('../main.js').catch((error) => {
+    console.error(
+      `The JS fallback failed to load (${error instanceof Error ? error.message : error}).\n` +
+        `Try deleting node_modules and your lockfile, then reinstalling.`
+    );
+    process.exit(1);
+  });
+}
+
 function routeToBinary(): void {
   const target = detectPlatform();
 
   if (!target) {
-    console.error(`Unsupported platform: ${process.platform}-${process.arch}`);
-    process.exit(1);
+    runJsFallback(
+      `No prebuilt gtx-cli binary exists for your platform (${process.platform}-${process.arch}).`
+    );
+    return;
   }
 
   const binaryPath = resolveBinary(target);
 
   if (!binaryPath) {
-    console.error(
+    runJsFallback(
       `Could not find the gtx-cli binary for your platform (${process.platform}-${process.arch}).\n` +
         `It ships in the optional dependency "${platformPackageName(target)}",\n` +
         `which package managers install automatically. It can be missing when a\n` +
-        `lockfile was created with --omit=optional or on a different platform.\n` +
-        `Try deleting node_modules and your lockfile, then reinstalling.`
+        `lockfile was created with --omit=optional or on a different platform;\n` +
+        `deleting node_modules and your lockfile, then reinstalling, usually\n` +
+        `restores the native binary.` +
+        (process.platform === 'linux'
+          ? `\nNote: prebuilt Linux binaries are glibc-only; Alpine/musl always uses the fallback.`
+          : '')
     );
-    process.exit(1);
+    return;
   }
 
   // Check and fix execute permissions if needed (Unix-like systems only)

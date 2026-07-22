@@ -14,8 +14,9 @@ const __dirname = dirname(__filename);
 const packageJsonPath = join(__dirname, '..', 'package.json');
 const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
 
-// Modify version to add -bin.0 suffix
-const originalVersion = packageJson.version;
+// Modify version to add -bin.0 suffix. Strip any existing suffix first so a
+// rerun after a crashed release stays idempotent instead of compounding.
+const originalVersion = packageJson.version.replace(/-bin\.\d+$/, '');
 const binaryVersion = `${originalVersion}-bin.0`;
 
 // Modify package.json for binary release
