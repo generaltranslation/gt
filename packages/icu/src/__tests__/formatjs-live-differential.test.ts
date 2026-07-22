@@ -64,6 +64,12 @@ const NUMBER_MESSAGES = [
   '{value, number, ::currency/USD .00}',
   '{value, number, ::compact-short}',
   '{value, number, ::integer-width/*000}',
+  '{value, number, ::integer-width/xx}',
+  '{value, number, ::integer-width/*}',
+  '{value, number, ::integer-width/x*00}',
+  '{value, number, ::integer-width/foo*00bar}',
+  '{value, number, ::.00/xyzr}',
+  '{value, number, ::.00/xyzs}',
 ] as const;
 const NUMBER_VALUES: Array<number | string> = [
   -1234.567,
@@ -171,6 +177,26 @@ const SIMPLE_RUNTIME_CASES = [
     message: "This '{isn''t}' {name}'s first test",
     values: { name: 'Ada' },
   },
+  {
+    locale: 'en-US',
+    message: '{n, number, foo{bar}baz}',
+    values: { n: 1234.5 },
+  },
+  {
+    locale: 'en-US',
+    message: '{n, number, ::s{al.e/0.5}',
+    values: { n: 1234.5 },
+  },
+  {
+    locale: 'en-US',
+    message: '{n,number,{}',
+    values: { n: 1234.5 },
+  },
+  {
+    locale: 'en-US',
+    message: '{x, number,{percent}',
+    values: { x: 1234.5 },
+  },
 ] as const;
 
 const PARSER_MESSAGES = [
@@ -188,6 +214,13 @@ const PARSER_MESSAGES = [
   '{value, number, ::currency/USD .00##}',
   '{value, number, ::scale/0}',
   '{value, number, ::integer-width/*000}',
+  '{value, number, ::integer-width/xx}',
+  '{value, number, ::integer-width/*}',
+  '{value, number, ::integer-width/x*00}',
+  '{value, number, ::integer-width/foo*00bar}',
+  '{value, number, ::currency}',
+  '{value, number, ::.00/xyzr}',
+  '{value, number, ::.00/xyzs}',
   '{value, date, ::yyyyMMMdd}',
   '{value, time, ::HHmmss}',
   '{value, time, ::C}',
@@ -195,6 +228,11 @@ const PARSER_MESSAGES = [
   '{value, time, ::A}',
   '{value, time, ::jh}',
   '{value, time, ::hj}',
+  '{n, number, foo{bar}baz}',
+  '{n, number, ::s{al.e/0.5}',
+  '{n,number,{}',
+  '{x, number,{percent}',
+  '{n, number, foo{bar} {_gt_, select, other {X}}}',
   ...Array.from(
     { length: 128 },
     (_, index) => `prefix ${index} {value${index}} suffix ${127 - index}`

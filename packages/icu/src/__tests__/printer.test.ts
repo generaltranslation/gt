@@ -187,6 +187,9 @@ describe('printAST', () => {
     "{_gt_1,select,other{Ada}}''}}",
     '{n, number, custom<a}',
     '{n, number, custom<a>}',
+    "'}'<br/> done",
+    "'<x>'<br/>",
+    "<a1/>''''",
   ])('preserves the AST through print and reparse for %j', (message) => {
     const original = parse(message);
     expect(parse(printAST(original))).toEqual(original);
@@ -210,6 +213,24 @@ describe('printAST', () => {
     expect(threeTimes).toBe(once);
     expect(parse(once)).toEqual(original);
   });
+
+  it.each([
+    ["'}'<br/> done", "'}'<br/> done"],
+    ["'<x>'<br/>", "'<x>'<br/>"],
+    ["<a1/>''''", "<a1/>'''"],
+    ["'}'<a-é/> done", "'}'<a-é/> done"],
+    ["'}'<a𐀀/> done", "'}'<a𐀀/> done"],
+  ])(
+    'prints self-closing tag literals without corrupting adjacent syntax in %j',
+    (message, expected) => {
+      const original = parse(message);
+      const printed = printAST(original);
+
+      expect(printed).toBe(expected);
+      expect(parse(printed)).toEqual(original);
+      expect(printAST(parse(printed))).toBe(printed);
+    }
+  );
 
   it('does not require the ES2022 Array.prototype.at API', () => {
     const descriptor = Object.getOwnPropertyDescriptor(Array.prototype, 'at');

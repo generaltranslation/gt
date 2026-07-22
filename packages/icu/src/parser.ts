@@ -20,6 +20,7 @@ import {
   parseNumberSkeletonTokens,
   resolveLocaleHourSkeleton,
 } from './skeleton';
+import { isAsciiLetter, isTagNameCharacter } from './tag';
 
 // FormatJS distinguishes ICU grammar whitespace (Pattern_White_Space) from
 // the broader Unicode whitespace set used to terminate identifiers. Keeping
@@ -336,7 +337,6 @@ class IcuParser {
 
   private readSimpleStyle(): string {
     const start = this.index;
-    let nestedBraces = 0;
 
     while (!this.atEnd()) {
       const character = this.current();
@@ -350,13 +350,16 @@ class IcuParser {
           this.fail('UNCLOSED_QUOTE_IN_ARGUMENT_STYLE', quotedContentStart);
         }
         this.index += 1;
-      } else if (character === '{') {
-        nestedBraces += 1;
-        this.index += 1;
       } else if (character === '}') {
-        if (nestedBraces === 0) break;
-        nestedBraces -= 1;
-        this.index += 1;
+        // intl-messageformat 10.7.16's pinned parser terminates argument
+        // styles at the first unquoted `}`, even after an opening `{`. The
+        // upstream scanner intended to balance braces but did not advance
+        // after decrementing its nesting counter, so the same `}` was visited
+        // until it ended the style. Preserve that observable bug because it
+        // determines trailing AST elements and existing GT translation hashes.
+        // This intentionally differs from ICU's matched-brace argStyleText
+        // grammar.
+        break;
       } else {
         this.index += character.length;
       }
@@ -603,40 +606,6 @@ function entriesToObject<T>(entries: Array<[string, T]>): Record<string, T> {
   return result;
 }
 
-function isAsciiLetter(character: string): boolean {
-  return /^[A-Za-z]$/u.test(character);
-}
-
-/**
- * Matches the PENChar ranges used by FormatJS and the custom-element-name
- * grammar, while allowing ASCII uppercase characters and names without a dash.
- */
-function isTagNameCharacter(character: string): boolean {
-  const codePoint = codePointValue(character);
-
-  return (
-    codePoint === 0x2d ||
-    codePoint === 0x2e ||
-    (codePoint >= 0x30 && codePoint <= 0x39) ||
-    codePoint === 0x5f ||
-    (codePoint >= 0x41 && codePoint <= 0x5a) ||
-    (codePoint >= 0x61 && codePoint <= 0x7a) ||
-    codePoint === 0xb7 ||
-    (codePoint >= 0xc0 && codePoint <= 0xd6) ||
-    (codePoint >= 0xd8 && codePoint <= 0xf6) ||
-    (codePoint >= 0xf8 && codePoint <= 0x37d) ||
-    (codePoint >= 0x37f && codePoint <= 0x1fff) ||
-    (codePoint >= 0x200c && codePoint <= 0x200d) ||
-    (codePoint >= 0x203f && codePoint <= 0x2040) ||
-    (codePoint >= 0x2070 && codePoint <= 0x218f) ||
-    (codePoint >= 0x2c00 && codePoint <= 0x2fef) ||
-    (codePoint >= 0x3001 && codePoint <= 0xd7ff) ||
-    (codePoint >= 0xf900 && codePoint <= 0xfdcf) ||
-    (codePoint >= 0xfdf0 && codePoint <= 0xfffd) ||
-    (codePoint >= 0x10000 && codePoint <= 0xeffff)
-  );
-}
-
 function buildPositionIndex(message: string): PositionIndex {
   const lines = new Uint32Array(message.length + 1);
   const columns = new Uint32Array(message.length + 1);
@@ -674,17 +643,6 @@ function characterAt(value: string, index: number): string {
   return second >= 0xdc00 && second <= 0xdfff
     ? value.slice(index, index + 2)
     : value.charAt(index);
-}
-
-function codePointValue(character: string): number {
-  const first = character.charCodeAt(0);
-  if (first >= 0xd800 && first <= 0xdbff && character.length > 1) {
-    const second = character.charCodeAt(1);
-    if (second >= 0xdc00 && second <= 0xdfff) {
-      return (first - 0xd800) * 0x400 + second - 0xdc00 + 0x10000;
-    }
-  }
-  return first;
 }
 
 function isSafeInteger(value: number): boolean {

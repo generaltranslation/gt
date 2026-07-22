@@ -8,7 +8,7 @@ import type { ExtendedNumberFormatOptions, NumberSkeletonToken } from './types';
 const FRACTION_PRECISION = /^\.(?:(0+)(\*)?|(#+)|(0+)(#+))$/;
 const SIGNIFICANT_PRECISION = /^@+(\+|#+)?[rs]?$/;
 const INVALID_SIGNIFICANT_PRECISION = /^(?:(?:\+|#+)[rs]?|[rs])$/;
-const INTEGER_WIDTH = /^(?:(\*)(0+)|(#+)(0+)|(0+))$/;
+const INTEGER_WIDTH = /(\*)(0+)|(#+)(0+)|(0+)/g;
 const NUMBER_SKELETON_WHITE_SPACE = /[\t-\r \x85\u200E\u200F\u2028\u2029]+/u;
 const DATE_TIME_FIELD =
   /(?:[Eec]{1,6}|G{1,5}|[Qq]{1,5}|(?:[yYur]+|U{1,5})|[ML]{1,5}|d{1,2}|D{1,3}|F|[abB]{1,5}|[hHkK]{1,2}|w{1,2}|W|m{1,2}|s{1,2}|[zZOvVxX]{1,4})(?=([^']*'[^']*')*[^']*$)/g;
@@ -81,7 +81,6 @@ export function parseNumberSkeletonOptions(
         result.scale = 100;
         continue;
       case 'currency':
-        requireOption(token);
         result.style = 'currency';
         result.currency = option;
         continue;
@@ -257,17 +256,29 @@ function applyIntegerWidth(
   result: ModernNumberFormatOptions,
   width: string
 ): void {
-  const match = INTEGER_WIDTH.exec(width);
-  if (!match) {
-    throw new SyntaxError(`Unsupported integer width: ${width}.`);
-  }
-  if (match[1]) {
-    result.minimumIntegerDigits = match[2].length;
-  } else if (match[3]) {
-    throw new Error('We currently do not support maximum integer digits');
-  } else {
-    throw new Error('We currently do not support exact integer digits');
-  }
+  // Preserve the pinned FormatJS parser's unanchored, global replacement
+  // semantics. Besides accepting ICU's valid `*` no-op form, it ignored
+  // unmatched legacy text and applied every matching substring in order.
+  width.replace(
+    INTEGER_WIDTH,
+    (
+      _match,
+      star: string | undefined,
+      minimum: string | undefined,
+      maximum: string | undefined,
+      maximumMinimum: string | undefined,
+      exact: string | undefined
+    ) => {
+      if (star && minimum) {
+        result.minimumIntegerDigits = minimum.length;
+      } else if (maximum && maximumMinimum) {
+        throw new Error('We currently do not support maximum integer digits');
+      } else if (exact) {
+        throw new Error('We currently do not support exact integer digits');
+      }
+      return '';
+    }
+  );
 }
 
 function applyFractionPrecision(
@@ -305,12 +316,16 @@ function parseSignificantPrecision(
   precision: string
 ): ModernNumberFormatOptions {
   const result: ModernNumberFormatOptions = {};
+  // FormatJS derived rounding priority from the suffix before attempting to
+  // parse the significant-digit body. Keep that observable behavior for
+  // legacy fraction options such as `.00/xyzr`, while retaining the explicit
+  // errors below for malformed forms that FormatJS also rejected.
+  if (precision.endsWith('r')) result.roundingPriority = 'morePrecision';
+  if (precision.endsWith('s')) result.roundingPriority = 'lessPrecision';
   if (INVALID_SIGNIFICANT_PRECISION.test(precision)) {
     throw new SyntaxError('Significant precision must start with @.');
   }
   if (!SIGNIFICANT_PRECISION.test(precision)) return result;
-  if (precision.endsWith('r')) result.roundingPriority = 'morePrecision';
-  if (precision.endsWith('s')) result.roundingPriority = 'lessPrecision';
 
   const significant = precision.replace(/[rs]$/u, '');
   const required = significant.match(/^@+/u)?.[0] ?? '';

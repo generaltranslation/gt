@@ -4,6 +4,7 @@
  */
 
 import { SKELETON_TYPE, TYPE } from './types';
+import { isAsciiLetter, isTagNameCharacter } from './tag';
 import type {
   DateElement,
   LiteralElement,
@@ -59,12 +60,6 @@ function printElements(
 
 function quoteSyntaxToken(token: string): string {
   return `'${token.replace(/'/g, "''")}'`;
-}
-
-function isAsciiLetter(character: string | undefined): boolean {
-  if (!character) return false;
-  const code = character.charCodeAt(0);
-  return (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
 }
 
 function isTagSyntaxStart(message: string, index: number): boolean {
@@ -224,12 +219,32 @@ function printLiteral(
   hasPrecedingSyntax: boolean,
   hasFollowingSyntax: boolean
 ): string {
+  // The parser normalizes self-closing tags into standalone literal elements.
+  // Emitting a validated normalized tag raw is safe and preserves that AST
+  // boundary. Quoting it independently can join apostrophe delimiters with an
+  // adjacent literal and corrupt the rendered message.
+  if (isSelfClosingTagLiteral(value)) return value;
   return escapeMessage(
     value,
     isInPlural,
     hasPrecedingSyntax,
     hasFollowingSyntax
   );
+}
+
+function isSelfClosingTagLiteral(value: string): boolean {
+  if (!value.startsWith('<') || !value.endsWith('/>')) return false;
+  const name = value.slice(1, -2);
+  let first = true;
+
+  for (const character of name) {
+    if (first ? !isAsciiLetter(character) : !isTagNameCharacter(character)) {
+      return false;
+    }
+    first = false;
+  }
+
+  return !first;
 }
 
 function printSimpleFormat(
@@ -255,10 +270,10 @@ function printNumberSkeletonToken(
 }
 
 function printStyle(style: SimpleFormatStyle): string {
-  // ICU argStyleText has its own grammar: apostrophes are meaningful and
-  // unquoted braces are allowed when paired. Re-escaping it as message text
-  // changes the style bytes and can even create an unclosed quote, so preserve
-  // the parser-produced style exactly.
+  // argStyleText has its own apostrophe semantics, and the compatibility
+  // parser can expose unmatched opening braces from FormatJS's scanner quirk.
+  // Re-escaping it as message text changes the style AST and can create an
+  // unclosed quote, so preserve the parser-produced bytes exactly.
   if (typeof style === 'string') return style;
   if (style.type === SKELETON_TYPE.dateTime) return `::${style.pattern}`;
   return `::${style.tokens.map(printNumberSkeletonToken).join(' ')}`;

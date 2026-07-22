@@ -75,6 +75,24 @@ describe('_formatMessageICU', () => {
     ).toBe('12.34');
   });
 
+  it.each([
+    ['{value, number, ::integer-width/*}', 1.23456789, '1.235'],
+    ['{value, number, ::integer-width/x*00}', 1.23456789, '01.235'],
+    ['{value, number, ::.00/xyzr}', 1.23456789, '1.23456789'],
+    ['{value, number, foo{bar}baz}', 1234.5, '1,234.5baz}'],
+  ])(
+    'preserves pinned FormatJS formatting for legacy message %j',
+    (message, value, expected) => {
+      expect(_formatMessageICU(message, 'en-US', { value })).toBe(expected);
+    }
+  );
+
+  it('preserves FormatJS parse success before native currency validation', () => {
+    expect(() =>
+      _formatMessageICU('{value, number, ::currency}', 'en-US', { value: 1 })
+    ).toThrow(TypeError);
+  });
+
   it('preserves numeric-string precision through the public boundary', () => {
     expect(
       publicFormatMessage('{value, number}', {

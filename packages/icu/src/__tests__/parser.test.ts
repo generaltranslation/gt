@@ -419,11 +419,9 @@ describe('parse', () => {
   );
 
   it.each([
-    ['foo{bar}', 'foo{bar}'],
-    ['foo{{bar}}', 'foo{{bar}}'],
     ["custom'{style}'", "custom'{style}'"],
     ["custom'{'nested'}'", "custom'{'nested'}'"],
-  ])('preserves valid ICU argument style text %j', (style, expected) => {
+  ])('preserves quoted ICU argument style text %j', (style, expected) => {
     const [element] = parse(`{n, number, ${style}}`);
     expect(element).toMatchObject({
       type: TYPE.number,
@@ -431,10 +429,23 @@ describe('parse', () => {
     });
   });
 
-  it('rejects unpaired argument-style braces', () => {
-    expect(() => parse('{n, number, foo{bar}')).toThrow(
-      'EXPECT_ARGUMENT_CLOSING_BRACE'
-    );
+  it.each([
+    ['{n, number, foo{bar}baz}', 'foo{bar', 'baz}'],
+    ['{n, number, foo{{bar}}baz}', 'foo{{bar', '}baz}'],
+  ])(
+    'preserves FormatJS splitting at the first unquoted style brace in %j',
+    (message, style, trailingLiteral) => {
+      expect(parse(message)).toMatchObject([
+        { type: TYPE.number, style },
+        { type: TYPE.literal, value: trailingLiteral },
+      ]);
+    }
+  );
+
+  it('preserves FormatJS acceptance of an unmatched opening style brace', () => {
+    expect(parse('{n, number, foo{bar}')).toMatchObject([
+      { type: TYPE.number, style: 'foo{bar' },
+    ]);
   });
 
   it.each([
@@ -489,12 +500,16 @@ describe('parse', () => {
     ['<b>text', 'UNCLOSED_TAG'],
     ['{n, number, ::}', 'INVALID_NUMBER_SKELETON'],
     ['{n, number, ::currency/}', 'INVALID_NUMBER_SKELETON'],
-    ['{n, number, ::currency}', 'currency requires an option'],
     ['{n, number, ::unit}', 'unit requires an option'],
     ['{n, number, ::integer-width}', 'integer-width requires an option'],
-    ['{n, number, ::integer-width/*}', 'Unsupported integer width'],
-    ['{n, number, ::integer-width/x}', 'Unsupported integer width'],
-    ['{n, number, ::integer-width/foo*00bar}', 'Unsupported integer width'],
+    [
+      '{n, number, ::integer-width/000}',
+      'We currently do not support exact integer digits',
+    ],
+    [
+      '{n, number, ::integer-width/##00}',
+      'We currently do not support maximum integer digits',
+    ],
     [
       '{n, number, ::integer-width/*00/foo}',
       'integer-width stems only accept a single optional option',
@@ -504,4 +519,24 @@ describe('parse', () => {
   ])('rejects malformed ICU %j', (message, error) => {
     expect(() => parse(message)).toThrow(error);
   });
+
+  it.each([
+    ['{d, date, ::v}', RangeError, 'Unsupported date/time skeleton field: v.'],
+    [
+      '{n, number, ::#}',
+      SyntaxError,
+      'Significant precision must start with @.',
+    ],
+    [
+      '{n, number, ::Efoo}',
+      SyntaxError,
+      'Malformed concise eng/scientific notation',
+    ],
+  ])(
+    'uses stable diagnostics instead of FormatJS incidental errors for %j',
+    (message, ErrorType, error) => {
+      expect(() => parse(message)).toThrow(ErrorType);
+      expect(() => parse(message)).toThrow(error);
+    }
+  );
 });

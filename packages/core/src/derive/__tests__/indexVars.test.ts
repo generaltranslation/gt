@@ -80,6 +80,14 @@ describe('indexVars', () => {
     );
   });
 
+  it('indexes GT placeholders after FormatJS-style argument braces', () => {
+    const input = '{n, number, foo{bar} {_gt_, select, other {X}}}';
+
+    expect(indexVars(input)).toBe(
+      '{n, number, foo{bar} {_gt_1, select, other {}}}'
+    );
+  });
+
   it('should handle empty string', () => {
     const input = '';
     const result = indexVars(input);

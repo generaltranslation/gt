@@ -158,7 +158,7 @@ describe('condenseVars printer regression', () => {
     [
       'paired braces in a named style',
       '{_gt_1, select, other {Ada}} {n, number, custom{nested}}',
-      '{_gt_1} {n, number, custom{nested}}',
+      "{_gt_1} {n, number, custom{nested}'}'",
     ],
     [
       'quoted braces in a named style',
@@ -179,6 +179,16 @@ describe('condenseVars printer regression', () => {
       'multiple escaped pounds inside plural',
       "{_gt_1, select, other {Ada}} {count, plural, other {'##'}}",
       "{_gt_1} {count,plural,other{'##'}}",
+    ],
+    [
+      'self-closing tag after quoted syntax',
+      "{_gt_1, select, other {Ada}} '}'<br/> done",
+      "{_gt_1} '}'<br/> done",
+    ],
+    [
+      'self-closing tag between an argument and text',
+      '{_gt_1, select, other {Ada}}<br/>done',
+      '{_gt_1}<br/>done',
     ],
     [
       'unicode and emoji',
@@ -214,6 +224,16 @@ describe('condenseVars printer regression', () => {
 
     expect(formatMessage(condensed, 'en', { _gt_1: 'Ada', count: 7 })).toBe(
       'Ada ##'
+    );
+  });
+
+  it('preserves quoted syntax adjacent to a self-closing tag at runtime', () => {
+    const condensed = condenseVars(
+      "{_gt_1, select, other {Ada}} '}'<br/> done"
+    );
+
+    expect(formatMessage(condensed, 'en', { _gt_1: 'Ada' })).toBe(
+      'Ada }<br/> done'
     );
   });
 
