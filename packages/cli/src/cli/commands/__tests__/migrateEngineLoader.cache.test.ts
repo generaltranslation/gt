@@ -18,7 +18,7 @@ vi.mock('node:os', async (importOriginal) => {
 });
 
 import { spawnSync } from 'node:child_process';
-import { installAndImport } from '../migrateEngineLoader.js';
+import { installAndImport, runNpmInstall } from '../migrateEngineLoader.js';
 
 const CACHE_DIR = path.join(TEST_HOME, '.gt', 'migrate-engine', '_0.1.0');
 const PKG_DIR = path.join(
@@ -127,6 +127,49 @@ describe('installAndImport cache internals', () => {
     };
     expect(mod.runMigration()).toBe('ok');
     expect(vi.mocked(spawnSync)).not.toHaveBeenCalled();
+  });
+
+  it('runs npm through the shell on Windows with metacharacter args quoted', () => {
+    // npm is npm.cmd on Windows: spawnSync cannot execute it directly and
+    // newer Node refuses .cmd targets without a shell, so the first-run fetch
+    // silently failed over to the devDependency diagnostic on every Windows
+    // machine. cmd.exe gets Node's args unescaped, so the range (^ is a cmd
+    // escape) and a cache path with spaces must arrive quoted.
+    vi.mocked(spawnSync).mockReturnValue({
+      status: 0,
+      stdout: '',
+      stderr: '',
+    } as unknown as ReturnType<typeof spawnSync>);
+    runNpmInstall('C:\\Users\\John Doe\\.gt\\migrate-engine\\_0.1.0', 'win32');
+    const [command, args, options] = vi.mocked(spawnSync).mock.calls[0] as [
+      string,
+      string[],
+      { shell?: boolean },
+    ];
+    expect(command).toBe('npm');
+    expect(options.shell).toBe(true);
+    expect(args).toContain('"@generaltranslation/migrate@^0.1.0"');
+    expect(args).toContain(
+      '"C:\\Users\\John Doe\\.gt\\migrate-engine\\_0.1.0"'
+    );
+  });
+
+  it('runs npm directly (no shell) on posix platforms', () => {
+    vi.mocked(spawnSync).mockReturnValue({
+      status: 0,
+      stdout: '',
+      stderr: '',
+    } as unknown as ReturnType<typeof spawnSync>);
+    runNpmInstall('/Users/dev/.gt/migrate-engine/_0.1.0', 'darwin');
+    const [command, args, options] = vi.mocked(spawnSync).mock.calls[0] as [
+      string,
+      string[],
+      { shell?: boolean },
+    ];
+    expect(command).toBe('npm');
+    expect(options.shell).toBeUndefined();
+    expect(args).toContain('@generaltranslation/migrate@^0.1.0');
+    expect(args).toContain('/Users/dev/.gt/migrate-engine/_0.1.0');
   });
 
   it('propagates a failed install with npm stderr in the error', async () => {

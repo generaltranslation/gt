@@ -1,4 +1,8 @@
-import { spawnSync } from 'node:child_process';
+import {
+  spawnSync,
+  type SpawnSyncOptionsWithStringEncoding,
+  type SpawnSyncReturns,
+} from 'node:child_process';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import os from 'node:os';
@@ -214,20 +218,7 @@ function freshInstall(dir: string): string {
   // npm ships with node, so it is used even when the project uses
   // pnpm/yarn/bun: this is a tool cache, not a mutation of the user's
   // project. Fully non-interactive with output piped, never inherited.
-  const result = spawnSync(
-    'npm',
-    [
-      'install',
-      `${PACKAGE_NAME}@${ENGINE_RANGE}`,
-      '--prefix',
-      dir,
-      '--no-save',
-      '--no-audit',
-      '--no-fund',
-      '--loglevel=error',
-    ],
-    { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' }
-  );
+  const result = runNpmInstall(dir);
   if (result.error) throw result.error;
   if (result.status !== 0) {
     throw new Error(
@@ -236,11 +227,49 @@ function freshInstall(dir: string): string {
     );
   }
   fs.writeFileSync(path.join(dir, INSTALL_MARKER), '');
-  const resolved = resolveInCache(dir);
-  if (!resolved) {
+  const resolvedAfterInstall = resolveInCache(dir);
+  if (!resolvedAfterInstall) {
     throw new Error(`${PACKAGE_NAME} was not found in ${dir} after install`);
   }
-  return resolved;
+  return resolvedAfterInstall;
+}
+
+/**
+ * Spawns the tool-cache npm install. On Windows npm is npm.cmd, which
+ * spawnSync cannot execute directly (and newer Node refuses .cmd targets
+ * without a shell), so the call runs through the shell there. cmd.exe receives
+ * Node's args unescaped, so the two values that can carry spaces or cmd
+ * metacharacters (the cache path, and the version range whose ^ is a cmd
+ * escape character) are quoted; double quotes cannot appear in Windows paths.
+ *
+ * @internal exported for the platform-invocation unit tests
+ */
+export function runNpmInstall(
+  dir: string,
+  platform: NodeJS.Platform = process.platform
+): SpawnSyncReturns<string> {
+  const args = [
+    'install',
+    `${PACKAGE_NAME}@${ENGINE_RANGE}`,
+    '--prefix',
+    dir,
+    '--no-save',
+    '--no-audit',
+    '--no-fund',
+    '--loglevel=error',
+  ];
+  const options: SpawnSyncOptionsWithStringEncoding = {
+    stdio: ['ignore', 'pipe', 'pipe'],
+    encoding: 'utf8',
+  };
+  if (platform === 'win32') {
+    return spawnSync(
+      'npm',
+      args.map((arg) => (/[\s^]/.test(arg) ? `"${arg}"` : arg)),
+      { ...options, shell: true }
+    );
+  }
+  return spawnSync('npm', args, options);
 }
 
 /**
