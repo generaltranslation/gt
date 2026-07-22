@@ -12,6 +12,7 @@ import {
   PortableTextTypeComponent,
   toHTML,
 } from '@portabletext/to-html';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 
 const META_FIELDS = ['_key', '_type', '_id', '_weak'];
 
@@ -217,7 +218,7 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
   const serializeDocument = (
     doc: SanityDocument,
     translationLevel: TranslationLevel = 'document',
-    baseLang = 'en',
+    baseLang: string = libraryDefaultLocale,
     stopTypes = defaultStopTypes,
     serializers = customSerializers
   ) => {
