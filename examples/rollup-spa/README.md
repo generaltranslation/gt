@@ -46,10 +46,10 @@ pnpm preview
 
 ## How it works
 
-- `rollup.config.mjs` runs the GT compiler (`rollup` export from `@generaltranslation/compiler`) as the first plugin. It rewrites `<T>` and `t()` at build time and gives each message a stable hash.
+- `rollup.config.mjs` runs the GT compiler (`rollup` export from `@generaltranslation/compiler`) as the first plugin. It rewrites `<T>` and `` t`...` `` at build time and gives each message a stable hash.
 - `src/index.ts` calls `initializeGTSPA` before rendering. There is no `<GTProvider>`; the SPA initializer sets up the runtime.
 - `src/loadTranslations.ts` maps each locale to a static `import('./_gt/<locale>.json')`. Rollup code-splits those files into separate chunks that load on demand. Rollup cannot analyze a fully dynamic import path, so the locales are listed explicitly rather than built from a template literal. When you add a locale to `gt.config.json`, add a matching entry to the loader map in this file.
-- `src/App.tsx` shows the three ways to translate: a `<T>` component, a `<Var>` for a live value, and a module-level `t()` string. Selecting a locale reloads the page (this is how `gt-react` persists the choice), so the module-level string re-resolves with the new locale.
+- `src/App.tsx` shows the three ways to translate: a `<T>` component, a `<Var>` for a live value, and a module-level `` t`...` `` string. The `t` macro is global, attached by the `gt-react/macros` import in `src/index.ts`, so no per-file import is needed (SPA-only pattern). Selecting a locale reloads the page (this is how `gt-react` persists the choice), so the module-level string re-resolves with the new locale.
 
 Translations for `zh`, `fr`, `es`, and `ja` live in `src/_gt`. They are committed to the repo, so locale switching works in a production build with no API access.
 
