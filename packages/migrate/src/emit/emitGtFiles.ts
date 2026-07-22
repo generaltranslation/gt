@@ -53,13 +53,44 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
     existing.files && typeof existing.files === 'object'
       ? (existing.files as Record<string, unknown>)
       : {};
+  // A hybrid/partially-migrated project may already carry a files.gt entry whose
+  // custom input/output paths (and parsingFlags, publish, ...) a current GT
+  // workflow relies on. Preserve it rather than clobber it: the migration's
+  // default output only fills in what an existing entry omits, matching how the
+  // rest of this emit path merges pre-existing config instead of overwriting it.
+  const defaultGt = { output: 'public/_gt/[locale].json' };
+  const existingGt = existingFiles.gt;
+  let gt: unknown;
+  if (
+    existingGt &&
+    typeof existingGt === 'object' &&
+    !Array.isArray(existingGt)
+  ) {
+    gt = { ...defaultGt, ...(existingGt as Record<string, unknown>) };
+    ctx.todos.push({
+      file: configPath,
+      reason:
+        'an existing files.gt configuration was preserved (its output/parsingFlags/publish were kept); verify it still points where the migrated catalogs are served',
+    });
+  } else if (existingGt !== undefined) {
+    // Present but not a plain object (pathological): leave it untouched rather
+    // than overwrite a shape we do not understand, and flag it.
+    gt = existingGt;
+    ctx.todos.push({
+      file: configPath,
+      reason:
+        'an existing files.gt value was left unchanged because it is not an object; set it by hand if the migration needs a different output',
+    });
+  } else {
+    gt = defaultGt;
+  }
   const config = {
     ...existing,
     defaultLocale: ctx.catalogs.defaultLocale,
     locales: ctx.catalogs.locales,
     files: {
       ...existingFiles,
-      gt: { output: 'public/_gt/[locale].json' },
+      gt,
     },
   };
   edits.push({

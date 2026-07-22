@@ -305,6 +305,57 @@ describe('emitGtFiles', () => {
     expect(config.defaultLocale).toBe('en');
   });
 
+  it('preserves an existing files.gt entry instead of clobbering it', () => {
+    const ctx = makeProject({
+      'package.json': basePackageJson,
+      'gt.config.json': JSON.stringify({
+        projectId: 'abc123',
+        files: {
+          gt: {
+            output: 'custom/dir/[locale].json',
+            publish: true,
+            parsingFlags: { includeSourceCodeContext: true },
+          },
+        },
+      }),
+      'messages/en.json': '{}',
+    });
+    const edits = emitGtFiles(ctx);
+    const configEdit = edits.find((edit) =>
+      edit.path.endsWith('gt.config.json')
+    )!;
+    const config = JSON.parse(configEdit.content!);
+    // A hybrid project's current GT workflow relies on these; the migration must
+    // not overwrite them.
+    expect(config.files.gt.output).toBe('custom/dir/[locale].json');
+    expect(config.files.gt.publish).toBe(true);
+    expect(config.files.gt.parsingFlags).toEqual({
+      includeSourceCodeContext: true,
+    });
+    // Preserving a custom entry is surfaced so the user can verify it.
+    expect(ctx.todos.some((todo) => todo.reason.includes('files.gt'))).toBe(
+      true
+    );
+  });
+
+  it('still writes the default files.gt when none exists', () => {
+    const ctx = makeProject({
+      'package.json': basePackageJson,
+      'gt.config.json': JSON.stringify({ projectId: 'abc123' }),
+      'messages/en.json': '{}',
+    });
+    const edits = emitGtFiles(ctx);
+    const configEdit = edits.find((edit) =>
+      edit.path.endsWith('gt.config.json')
+    )!;
+    const config = JSON.parse(configEdit.content!);
+    expect(config.files.gt.output).toBe('public/_gt/[locale].json');
+    // No pre-existing entry to preserve, so no files.gt todo.
+    expect(ctx.todos.some((todo) => todo.reason.includes('files.gt'))).toBe(
+      false
+    );
+  });
+
   it('does not clobber an existing loadDictionary file', () => {
     const ctx = makeProject({
       'package.json': basePackageJson,
