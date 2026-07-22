@@ -1,9 +1,6 @@
 import { createIsomorphicFn } from '@tanstack/react-start';
 import { getRequest } from '@tanstack/react-start/server';
-import {
-  defaultLocaleCookieName,
-  getI18nConfig,
-} from '@generaltranslation/react-core/pure';
+import { getI18nConfig } from '@generaltranslation/react-core/pure';
 import { getCookieValue } from 'gt-i18n/internal';
 import type { LocaleResolverConfig } from 'gt-i18n/internal/types';
 import {
@@ -54,9 +51,26 @@ function determineLocaleServer({
 
 /** Read the server-synchronized locale cookie during client initialization. */
 export function determineLocaleClient({
-  localeCookieName = defaultLocaleCookieName,
-}: {
-  localeCookieName?: string;
-}): string | undefined {
-  return getCookieValue(document.cookie, localeCookieName);
+  defaultLocale,
+  locales,
+  customMapping,
+}: LocaleResolverConfig): string {
+  const i18nConfig = getI18nConfig();
+  const localeCookieName = i18nConfig.getLocaleCookieName();
+  const candidates: string[] = [];
+
+  const cookie = getCookieValue(document.cookie, localeCookieName);
+  if (cookie) candidates.push(cookie);
+
+  if (candidates.length === 0) {
+    console.warn(
+      'gt-tanstack-start(client): no locales could be determined for this request'
+    );
+  }
+
+  return i18nConfig.resolveSupportedLocale(candidates, {
+    defaultLocale,
+    locales,
+    customMapping,
+  });
 }

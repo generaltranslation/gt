@@ -1,11 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockDetermineLocaleClient, mockInitializeReactGT } = vi.hoisted(() => ({
+const {
+  mockCreateOrUpdateBrowserConditionStore,
+  mockDetermineLocaleClient,
+  mockInitializeReactGT,
+} = vi.hoisted(() => ({
+  mockCreateOrUpdateBrowserConditionStore: vi.fn(),
   mockDetermineLocaleClient: vi.fn(() => 'fr'),
   mockInitializeReactGT: vi.fn(),
 }));
 
 vi.mock('gt-react', () => ({
+  createOrUpdateBrowserConditionStore: mockCreateOrUpdateBrowserConditionStore,
   initializeGT: mockInitializeReactGT,
 }));
 
@@ -17,6 +23,7 @@ import { initializeGT } from '../initializeGT.client';
 
 describe('initializeGT client', () => {
   beforeEach(() => {
+    mockCreateOrUpdateBrowserConditionStore.mockReset();
     mockDetermineLocaleClient.mockClear();
     mockInitializeReactGT.mockReset();
   });
@@ -29,10 +36,14 @@ describe('initializeGT client', () => {
 
     initializeGT(config);
 
-    expect(mockInitializeReactGT).toHaveBeenCalledWith({
+    expect(mockInitializeReactGT).toHaveBeenCalledWith(config);
+    expect(mockDetermineLocaleClient).toHaveBeenCalledWith(config);
+    expect(mockCreateOrUpdateBrowserConditionStore).toHaveBeenCalledWith({
       ...config,
       locale: 'fr',
     });
-    expect(mockDetermineLocaleClient).toHaveBeenCalledWith(config);
+    expect(mockInitializeReactGT.mock.invocationCallOrder[0]).toBeLessThan(
+      mockDetermineLocaleClient.mock.invocationCallOrder[0]
+    );
   });
 });

@@ -212,7 +212,7 @@ describe.sequential('parseLocale', () => {
     });
   });
 
-  it('reads the default locale cookie during client initialization', () => {
+  it('resolves the default locale cookie during client initialization', () => {
     Object.defineProperty(globalThis, 'document', {
       configurable: true,
       value: {
@@ -220,10 +220,15 @@ describe.sequential('parseLocale', () => {
       },
     });
 
-    expect(determineLocaleClient({})).toBe('brand-french');
+    expect(determineLocaleClient(localeConfig)).toBe('fr');
   });
 
-  it('reads a custom locale cookie during client initialization', () => {
+  it('resolves a custom locale cookie during client initialization', () => {
+    resetI18nConfigSingleton();
+    initializeI18nConfig({
+      ...localeConfig,
+      localeCookieName: 'custom-locale',
+    });
     Object.defineProperty(globalThis, 'document', {
       configurable: true,
       value: {
@@ -231,17 +236,15 @@ describe.sequential('parseLocale', () => {
       },
     });
 
-    expect(determineLocaleClient({ localeCookieName: 'custom-locale' })).toBe(
-      'fr'
-    );
+    expect(determineLocaleClient(localeConfig)).toBe('fr');
   });
 
-  it('leaves locale selection to gt-react without a cookie', () => {
+  it('falls back to the default locale during client initialization', () => {
     Object.defineProperty(globalThis, 'document', {
       configurable: true,
       value: { cookie: '' },
     });
 
-    expect(determineLocaleClient({})).toBeUndefined();
+    expect(determineLocaleClient(localeConfig)).toBe('en');
   });
 });
