@@ -5,6 +5,7 @@ import type { TxProps } from './utils/TxProps';
 
 export { initializeGTSPA } from './setup/initializeGTSPA';
 export { initializeGTSRA as initializeGT } from './setup/initializeGTSRA';
+export { createOrUpdateBrowserConditionStore } from './condition-store/createBrowserConditionStore';
 export { parseLocale } from './functions/parseLocale';
 export { useLocaleSelector } from './components/useLocaleSelector';
 export { useRegionSelector } from './components/useRegionSelector';
