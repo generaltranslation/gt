@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1784608944283,
+  "lastUpdate": 1784752888440,
   "repoUrl": "https://github.com/generaltranslation/gt",
   "entries": {
     "Middleware Benchmarks": [
@@ -7540,6 +7540,122 @@ window.BENCHMARK_DATA = {
             "value": 126.79999999998836,
             "unit": "ms",
             "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.12\"\n}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "e8457b74e756b2fcfd30575f95aad78bd91f4206",
+          "message": "[ci] release (#1961)\n\nThis PR was opened by the [Changesets\nrelease](https://github.com/changesets/action) GitHub action. When\nyou're ready to do a release, you can merge this and the packages will\nbe published to npm automatically. If you're not ready to do a release\nyet, that's fine, whenever you add more changesets to main, this PR will\nbe updated.\n\n\n# Releases\n## gt@2.14.65\n\n### Patch Changes\n\n- [#1962](https://github.com/generaltranslation/gt/pull/1962)\n[`99f63e6`](https://github.com/generaltranslation/gt/commit/99f63e6826244cb07c18382031cce3fd8ca4ffc2)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - Clear the\nlocale search query after selecting a locale during setup.\n## gtx-cli@2.14.65\n\n### Patch Changes\n\n- Updated dependencies\n[[`99f63e6`](https://github.com/generaltranslation/gt/commit/99f63e6826244cb07c18382031cce3fd8ca4ffc2)]:\n  - gt@2.14.65\n## locadex@1.0.200\n\n### Patch Changes\n\n- Updated dependencies\n[[`99f63e6`](https://github.com/generaltranslation/gt/commit/99f63e6826244cb07c18382031cce3fd8ca4ffc2)]:\n  - gt@2.14.65\n## gt-next@11.0.13\n\n### Patch Changes\n\n- [#1935](https://github.com/generaltranslation/gt/pull/1935)\n[`ca2d2d7`](https://github.com/generaltranslation/gt/commit/ca2d2d70fb4e58b205cee7a899a6df9fcae3f0dd)\nThanks [@pjsny](https://github.com/pjsny)! - Support Next.js's\nfunction-form config in `withGTConfig`. When passed a `(phase, context)\n=> NextConfig` function (Next's function config form), `withGTConfig`\nnow calls it and wraps the resolved config instead of spreading the\nfunction as a plain object. This lets `withGTConfig` compose with other\nNext config plugins that return a config function — matching\n`@sentry/nextjs`'s `withSentryConfig` — for both sync and async config\nfunctions.\n\n- Updated dependencies\n[[`f1eb7c4`](https://github.com/generaltranslation/gt/commit/f1eb7c42bebf0eb75e477c700a61ac060924bb30)]:\n  - gt-react@11.0.13\n  - @generaltranslation/react-core@11.0.13\n## gt-react@11.0.13\n\n### Patch Changes\n\n- [#1971](https://github.com/generaltranslation/gt/pull/1971)\n[`f1eb7c4`](https://github.com/generaltranslation/gt/commit/f1eb7c42bebf0eb75e477c700a61ac060924bb30)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - Initialize\nTanStack Start browser condition state from the locale cookie, expose\ntranslation helpers from the isomorphic package entry point, and\ndeprecate `parseLocale()` in favor of `getLocale()`. Export the browser\ncondition-store factory from `gt-react` for framework integrations.\n\n- Updated dependencies []:\n  - @generaltranslation/react-core@11.0.13\n## gt-react-native@11.0.13\n\n### Patch Changes\n\n- Updated dependencies []:\n  - @generaltranslation/react-core@11.0.13\n## gt-sanity@2.1.4\n\n### Patch Changes\n\n- [#1958](https://github.com/generaltranslation/gt/pull/1958)\n[`45e1452`](https://github.com/generaltranslation/gt/commit/45e14525b135177074e6d0ef9d3eafdb0eedf408)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - Use the\ncanonical library locale for serialization fallbacks.\n## gt-tanstack-start@11.0.13\n\n### Patch Changes\n\n- [#1971](https://github.com/generaltranslation/gt/pull/1971)\n[`f1eb7c4`](https://github.com/generaltranslation/gt/commit/f1eb7c42bebf0eb75e477c700a61ac060924bb30)\nThanks [@ErnestM1234](https://github.com/ErnestM1234)! - Initialize\nTanStack Start browser condition state from the locale cookie, expose\ntranslation helpers from the isomorphic package entry point, and\ndeprecate `parseLocale()` in favor of `getLocale()`. Export the browser\ncondition-store factory from `gt-react` for framework integrations.\n\n- Updated dependencies\n[[`f1eb7c4`](https://github.com/generaltranslation/gt/commit/f1eb7c42bebf0eb75e477c700a61ac060924bb30)]:\n  - gt-react@11.0.13\n  - @generaltranslation/react-core@11.0.13\n## @generaltranslation/react-core@11.0.13\n\n\n## webpack-spa@0.0.1\n\n### Patch Changes\n\n- Updated dependencies\n[[`f1eb7c4`](https://github.com/generaltranslation/gt/commit/f1eb7c42bebf0eb75e477c700a61ac060924bb30),\n[`99f63e6`](https://github.com/generaltranslation/gt/commit/99f63e6826244cb07c18382031cce3fd8ca4ffc2)]:\n  - gt-react@11.0.13\n  - gt@2.14.65\n\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+          "timestamp": "2026-07-22T20:34:05Z",
+          "url": "https://github.com/generaltranslation/gt/commit/e8457b74e756b2fcfd30575f95aad78bd91f4206"
+        },
+        "date": 1784752887311,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "gt-next > unit > middleware: factory creation latency > createNextMiddleware() (mean)",
+            "value": 0.026595512525928972,
+            "range": "±0.0163",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.13\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > default locale request (/) (mean)",
+            "value": 0.13069371536852945,
+            "range": "±0.0714",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.13\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > non-default locale request (/fr) (mean)",
+            "value": 0.2870736963260682,
+            "range": "±0.0979",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.13\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > nested route (/fr/about) (mean)",
+            "value": 0.2917757812135327,
+            "range": "±0.1314",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > ttfb",
+            "value": 131.5,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > domContentLoaded",
+            "value": 216.5,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > load",
+            "value": 308.9000000000233,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > elapsed",
+            "value": 122,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > ttfb",
+            "value": 19.100000000034925,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > domContentLoaded",
+            "value": 28.400000000023283,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > load",
+            "value": 113.70000000001164,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: locale-switch-en-to-fr > elapsed",
+            "value": 608,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > ttfb",
+            "value": 11.200000000011642,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > domContentLoaded",
+            "value": 21,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.13\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > load",
+            "value": 109.20000000001164,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.13\"\n}"
           }
         ]
       }
