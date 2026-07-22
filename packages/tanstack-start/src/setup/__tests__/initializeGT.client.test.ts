@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockInitializeReactGT, mockParseLocale } = vi.hoisted(() => ({
+const { mockDetermineLocaleClient, mockInitializeReactGT } = vi.hoisted(() => ({
+  mockDetermineLocaleClient: vi.fn(() => 'fr'),
   mockInitializeReactGT: vi.fn(),
-  mockParseLocale: vi.fn(() => 'fr'),
 }));
 
 vi.mock('gt-react', () => ({
@@ -10,15 +10,15 @@ vi.mock('gt-react', () => ({
 }));
 
 vi.mock('../../functions/parseLocale', () => ({
-  parseLocale: mockParseLocale,
+  determineLocaleClient: mockDetermineLocaleClient,
 }));
 
 import { initializeGT } from '../initializeGT.client';
 
 describe('initializeGT client', () => {
   beforeEach(() => {
+    mockDetermineLocaleClient.mockClear();
     mockInitializeReactGT.mockReset();
-    mockParseLocale.mockClear();
   });
 
   it('initializes React with the cookie locale', () => {
@@ -33,6 +33,6 @@ describe('initializeGT client', () => {
       ...config,
       locale: 'fr',
     });
-    expect(mockParseLocale).toHaveBeenCalledOnce();
+    expect(mockDetermineLocaleClient).toHaveBeenCalledWith(config);
   });
 });

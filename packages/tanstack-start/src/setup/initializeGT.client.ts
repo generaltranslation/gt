@@ -1,5 +1,5 @@
 import { initializeGT as initializeReactGT } from 'gt-react';
-import { parseLocale } from '../functions/parseLocale';
+import { determineLocaleClient } from '../functions/parseLocale';
 
 type InitializeGTParams = Parameters<typeof initializeReactGT>[0];
 
@@ -7,6 +7,6 @@ type InitializeGTParams = Parameters<typeof initializeReactGT>[0];
 export function initializeGT(config: InitializeGTParams): void {
   initializeReactGT({
     ...config,
-    locale: parseLocale(),
+    locale: determineLocaleClient(config),
   });
 }
