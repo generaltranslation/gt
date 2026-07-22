@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { parse } from '@babel/parser';
 import traverseModule from '@babel/traverse';
 import * as t from '@babel/types';
@@ -366,12 +367,13 @@ function determineDefaultLocale(
         'defaultLocale in gt.config.json and re-run.',
     };
   }
-  if (locales.includes('en')) {
+  if (locales.includes(libraryDefaultLocale)) {
     return {
-      locale: 'en',
+      locale: libraryDefaultLocale,
       assumption:
-        "Assumed the source (default) locale is 'en' because an en catalog is " +
-        'present and no defaultLocale was declared in routing config or on an ' +
+        `Assumed the source (default) locale is '${libraryDefaultLocale}' ` +
+        `because the ${libraryDefaultLocale} catalog is present and no ` +
+        'defaultLocale was declared in routing config or on an ' +
         '<IntlProvider>/createIntl. If your source language differs, set ' +
         'defaultLocale in gt.config.json and re-run.',
     };
@@ -385,14 +387,16 @@ function determineDefaultLocale(
         'source language (set defaultLocale in gt.config.json otherwise).',
     };
   }
-  // Nothing to anchor on and multiple locales present; assume 'en' so the
-  // harvest can seed it (real react-intl apps source from English).
+  // Nothing to anchor on and multiple locales present; assume the library
+  // default so the harvest can seed it (real react-intl apps source from
+  // English).
   return {
-    locale: 'en',
+    locale: libraryDefaultLocale,
     assumption:
-      "Assumed the source (default) locale is 'en' though no en catalog is " +
-      'present and none was declared; the en source catalog is synthesized from ' +
-      'inline defaultMessages. Verify this is your source language (set ' +
+      `Assumed the source (default) locale is '${libraryDefaultLocale}' ` +
+      `though no ${libraryDefaultLocale} catalog is present and none was ` +
+      `declared; the ${libraryDefaultLocale} source catalog is synthesized ` +
+      'from inline defaultMessages. Verify this is your source language (set ' +
       'defaultLocale in gt.config.json otherwise).',
   };
 }

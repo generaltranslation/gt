@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { matchFiles } from '../fs/matchFiles.js';
 import {
   CatalogConversionError,
@@ -79,7 +80,11 @@ export async function discoverReactI18nextCatalogs(
   const defaultLocale =
     config.defaultLocale ??
     routing.defaultLocale ??
-    (locales.includes('en') ? 'en' : locales.length === 1 ? locales[0] : null);
+    (locales.includes(libraryDefaultLocale)
+      ? libraryDefaultLocale
+      : locales.length === 1
+        ? locales[0]
+        : null);
   if (!defaultLocale || !locales.includes(defaultLocale)) return null;
 
   // Read every {lng}/{ns}.json into raw[locale][ns].
