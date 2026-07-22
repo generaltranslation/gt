@@ -142,7 +142,12 @@ export async function handleMigrateCommand(
       );
     } catch {
       logger.warn(
-        `Could not detect the package manager, so ${Libraries.GT_NEXT} was not installed; the report includes the manual install step.`
+        createDiagnosticMessage({
+          source: 'gt',
+          severity: 'Warning',
+          whatHappened: `Could not detect the package manager, so ${Libraries.GT_NEXT} was not installed`,
+          fix: 'Install it by hand; the report includes the manual install step.',
+        })
       );
     }
     if (packageManager !== null) {
@@ -167,7 +172,12 @@ export async function handleMigrateCommand(
     );
   } catch {
     logger.warn(
-      'Post-migration formatting failed; run your formatter over the changed files.'
+      createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Warning',
+        whatHappened: 'Post-migration formatting failed',
+        fix: 'Run your formatter over the changed files.',
+      })
     );
   }
 
@@ -184,7 +194,12 @@ export async function handleMigrateCommand(
   } catch {
     reportWritten = false;
     logger.warn(
-      'Could not write gt-migrate-report.md; the full report is printed above.'
+      createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Warning',
+        whatHappened: 'Could not write gt-migrate-report.md',
+        reassurance: 'The full report is printed above.',
+      })
     );
   }
   echoWarnings(ctx);
@@ -220,8 +235,13 @@ function guardGitState(cwd: string, options: MigrateOptions): void {
       .trim();
     if (status.length > 0) {
       logErrorAndExit(
-        'Working tree has uncommitted changes. Commit or stash first so the ' +
-          'migration is reviewable (or pass --allow-dirty).'
+        createDiagnosticMessage({
+          source: 'gt',
+          severity: 'Error',
+          whatHappened: 'Working tree has uncommitted changes',
+          why: 'the migration rewrites files in place and should stay reviewable',
+          fix: 'Commit or stash first, or pass --allow-dirty to override.',
+        })
       );
     }
   } catch {

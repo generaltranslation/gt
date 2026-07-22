@@ -5,6 +5,10 @@ import { parse } from '@babel/parser';
 import traverseModule from '@babel/traverse';
 import * as t from '@babel/types';
 import { matchFiles } from '../fs/matchFiles.js';
+import {
+  createMigrateDiagnostic,
+  formatDiagnosticErrorDetails,
+} from '../pipeline/diagnostics.js';
 import type {
   FileEdit,
   MessageCatalogs,
@@ -101,11 +105,12 @@ export async function discoverReactIntlCatalogs(
     // id (else t() throws at runtime).
     if (Object.keys(harvested).length === 0) {
       throw new Error(
-        `No '${defaultLocale}' catalog was found in ${path.relative(cwd, dir) || '.'}/ and no literal ` +
-          'defaultMessage could be harvested to synthesize one. gt-next needs a ' +
-          'default-locale source entry per id (its dictionary throws on unknown ' +
-          `keys). Add ${defaultLocale}.json, or give each formatMessage/` +
-          '<FormattedMessage> a literal defaultMessage, then re-run gt migrate.'
+        createMigrateDiagnostic({
+          severity: 'Error',
+          whatHappened: `No '${defaultLocale}' catalog was found in ${path.relative(cwd, dir) || '.'}/ and no literal defaultMessage could be harvested to synthesize one`,
+          why: 'gt-next needs a default-locale source entry per id (its dictionary throws on unknown keys)',
+          fix: `Add ${defaultLocale}.json, or give each formatMessage/<FormattedMessage> a literal defaultMessage, then re-run gt migrate.`,
+        })
       );
     }
     flatByLocale[defaultLocale] = { ...harvested };
@@ -297,13 +302,21 @@ function normalizeCatalog(file: string): Record<string, unknown> {
     raw = JSON.parse(fs.readFileSync(file, 'utf8'));
   } catch (error) {
     throw new Error(
-      `Could not parse message catalog ${file}: ${String(error)}. ` +
-        'Fix the JSON (no comments, trailing commas, or BOM) and re-run.'
+      createMigrateDiagnostic({
+        severity: 'Error',
+        whatHappened: `Could not parse message catalog ${file}`,
+        fix: 'Fix the JSON (no comments, trailing commas, or BOM) and re-run.',
+        details: formatDiagnosticErrorDetails(error),
+      })
     );
   }
   if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
     throw new Error(
-      `Message catalog ${file} is not a JSON object of messages.`
+      createMigrateDiagnostic({
+        severity: 'Error',
+        whatHappened: `Message catalog ${file} is not a JSON object of messages`,
+        fix: 'Make it a flat JSON object mapping each id to an ICU string, then re-run.',
+      })
     );
   }
   const result: Record<string, unknown> = {};
@@ -312,9 +325,12 @@ function normalizeCatalog(file: string): Record<string, unknown> {
       result[id] = value;
     } else if (Array.isArray(value)) {
       throw new Error(
-        `Message catalog ${file} looks AST-compiled (\`formatjs compile --ast\`): ` +
-          'gt-next needs ICU source strings. Re-run `formatjs compile` without ' +
-          '`--ast`, then re-run gt migrate.'
+        createMigrateDiagnostic({
+          severity: 'Error',
+          whatHappened: `Message catalog ${file} looks AST-compiled (\`formatjs compile --ast\`)`,
+          why: 'gt-next needs ICU source strings, not the compiled AST form',
+          fix: 'Re-run `formatjs compile` without `--ast`, then re-run gt migrate.',
+        })
       );
     } else if (
       value !== null &&
@@ -325,8 +341,11 @@ function normalizeCatalog(file: string): Record<string, unknown> {
       result[id] = (value as Record<string, unknown>).defaultMessage;
     } else {
       throw new Error(
-        `Message catalog ${file} has an unrecognized entry for '${id}'. ` +
-          'Expected an ICU string or `{ defaultMessage }`.'
+        createMigrateDiagnostic({
+          severity: 'Error',
+          whatHappened: `Message catalog ${file} has an unrecognized entry for '${id}'`,
+          fix: 'Expected an ICU string or `{ defaultMessage }`; fix that entry, then re-run.',
+        })
       );
     }
   }

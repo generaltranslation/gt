@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { getAdapter } from '../adapters/index.js';
+import { createMigrateDiagnostic } from './diagnostics.js';
 
 /**
  * `determineLibrary` collapses every i18next-family dependency (react-i18next,
@@ -85,8 +85,7 @@ export function hasDependency(cwd: string, name: string): boolean {
 }
 
 function nextI18nextMessage(): string {
-  return createDiagnosticMessage({
-    source: 'gt',
+  return createMigrateDiagnostic({
     severity: 'Error',
     whatHappened: 'gt migrate does not support next-i18next / Pages Router yet',
     why: "next-i18next's serverSideTranslations and appWithTranslation are Pages-Router APIs with no direct gt-next equivalent (gt-next targets the App Router)",
@@ -98,8 +97,7 @@ function nextI18nextMessage(): string {
 }
 
 function bareI18nextMessage(): string {
-  return createDiagnosticMessage({
-    source: 'gt',
+  return createMigrateDiagnostic({
     severity: 'Error',
     whatHappened: 'gt migrate found bare i18next (no react-i18next)',
     why: 'gt migrate targets react-i18next component usage in a Next.js App Router app, and bare i18next is typically a Node or vanilla-JS setup with no React hooks to convert',
@@ -111,8 +109,7 @@ function bareI18nextMessage(): string {
 }
 
 function pagesRouterMessage(id: string): string {
-  return createDiagnosticMessage({
-    source: 'gt',
+  return createMigrateDiagnostic({
     severity: 'Error',
     whatHappened: `gt migrate found ${id} but no App Router (no app/ or src/app/ directory)`,
     why: 'gt-next targets the Next.js App Router; a Pages Router app has no gt-next equivalent for its i18n wiring',

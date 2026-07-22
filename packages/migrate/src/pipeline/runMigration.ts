@@ -10,6 +10,7 @@ import { matchFiles } from '../fs/matchFiles.js';
 import type { MigrateIO } from './io.js';
 import { resolveCatalogsInteractively } from '../catalogs/promptFallbacks.js';
 import { hasDependency, resolveMigrationSource } from './resolveSource.js';
+import { createMigrateDiagnostic } from './diagnostics.js';
 import { transformLayoutFile } from '../transforms/transformLayout.js';
 import { transformSourceFile } from '../transforms/transformSource.js';
 import type {
@@ -133,8 +134,11 @@ export async function runMigration(
   const adapter = getAdapter(resolution.id);
   if (!adapter) {
     io.fatal(
-      `gt migrate cannot migrate from '${resolution.id}'. ` +
-        `Supported sources: ${supportedSourceIds().join(', ')}.`
+      createMigrateDiagnostic({
+        severity: 'Error',
+        whatHappened: `gt migrate cannot migrate from '${resolution.id}'`,
+        fix: `Pass one of the supported sources: ${supportedSourceIds().join(', ')}.`,
+      })
     );
   }
 
@@ -144,9 +148,12 @@ export async function runMigration(
   // leaving every source file untouched, since no import matches.
   if (!isSourceLibraryInstalled(cwd, adapter)) {
     io.fatal(
-      `--from ${options.from} was passed, but ${adapter.displayName} was not ` +
-        'found in this project (checked package.json and node_modules). Install ' +
-        'it first, or correct the --from value, then re-run.'
+      createMigrateDiagnostic({
+        severity: 'Error',
+        whatHappened: `--from ${options.from} was passed, but ${adapter.displayName} was not found in this project`,
+        why: 'it is not declared in package.json and is not present in node_modules',
+        fix: 'Install it first, or correct the --from value, then re-run.',
+      })
     );
   }
 
@@ -159,7 +166,11 @@ export async function runMigration(
     !(library === 'i18next' && adapter.id === 'react-i18next')
   ) {
     io.warn(
-      `Detected '${library}' in this project; migrating from ${adapter.displayName} per --from.`
+      createMigrateDiagnostic({
+        severity: 'Warning',
+        whatHappened: `Detected '${library}' in this project, but migrating from ${adapter.displayName} per --from`,
+        fix: 'If you targeted the wrong source, re-run with the correct --from value.',
+      })
     );
   }
 
@@ -168,8 +179,12 @@ export async function runMigration(
   // not get silently half-migrated (the m2 finding).
   if (adapter.id === 'next-intl' && hasDependency(cwd, 'react-i18next')) {
     io.warn(
-      'Also detected react-i18next in your dependencies. This run migrates next-intl only; ' +
-        're-run with --from react-i18next to target the react-i18next surface instead.'
+      createMigrateDiagnostic({
+        severity: 'Warning',
+        whatHappened:
+          'Also detected react-i18next in your dependencies; this run migrates next-intl only',
+        fix: 'Re-run with --from react-i18next to target the react-i18next surface instead.',
+      })
     );
   }
 
@@ -206,9 +221,12 @@ export async function runMigration(
   }
   if (!catalogs) {
     io.fatal(
-      `Could not locate ${adapter.displayName} message catalogs (looked for the request ` +
-        "config's import path, then messages/, src/messages/, locales/). " +
-        'Pass --src or add a JSON catalog per locale and retry.'
+      createMigrateDiagnostic({
+        severity: 'Error',
+        whatHappened: `Could not locate ${adapter.displayName} message catalogs`,
+        why: "the request config's import path, messages/, src/messages/, and locales/ were all checked and none held a JSON catalog per locale",
+        fix: 'Pass --src or add a JSON catalog per locale and retry.',
+      })
     );
   }
   io.info(
@@ -561,10 +579,13 @@ export async function runMigration(
       ? 'The gt-next scaffolding would still be written'
       : 'The gt-next scaffolding was still written';
     io.warn(
-      `Nothing to migrate: no files importing ${adapter.displayName} were found. ` +
-        `Is ${options.from} really this project's i18n library? ` +
-        `${scaffoldingClause}; re-run with --from <library> ` +
-        'if you targeted the wrong source.'
+      createMigrateDiagnostic({
+        severity: 'Warning',
+        whatHappened: `Nothing to migrate: no files importing ${adapter.displayName} were found`,
+        why: `${options.from} may not be this project's i18n library`,
+        reassurance: `${scaffoldingClause}.`,
+        fix: 'Re-run with --from <library> if you targeted the wrong source.',
+      })
     );
   }
 
