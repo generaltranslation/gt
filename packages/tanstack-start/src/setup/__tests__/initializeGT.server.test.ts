@@ -21,7 +21,7 @@ vi.mock('../../condition-store/AsyncLocalConditionStore', () => ({
 }));
 
 import { getConditionStore } from '../../condition-store/singleton';
-import { initializeGT } from '../initializeGT';
+import { initializeGT } from '../initializeGT.server';
 
 type GlobalWithRegistry = {
   __generaltranslation?: {
@@ -39,7 +39,7 @@ function resetConditionStoreSingleton() {
   }
 }
 
-describe.sequential('initializeGT', () => {
+describe.sequential('initializeGT server', () => {
   beforeEach(() => {
     resetConditionStoreSingleton();
     mockInitializeReactGT.mockReset();

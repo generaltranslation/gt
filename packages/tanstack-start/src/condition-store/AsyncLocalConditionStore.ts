@@ -15,7 +15,7 @@ const missingRequestScopeError = createDiagnosticMessage({
   severity: 'Error',
   whatHappened: 'Cannot read GT request state outside a request scope',
   why: 'the gt-tanstack-start request middleware has not initialized the ConditionStore for this request',
-  fix: "Register gtMiddleware from 'gt-tanstack-start/server' as global TanStack Start request middleware.",
+  fix: "Register gtMiddleware from 'gt-tanstack-start' as global TanStack Start request middleware.",
 });
 
 /**

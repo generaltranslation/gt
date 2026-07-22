@@ -1,7 +1,7 @@
 import { FormatVariables } from '../types';
 import { intlCache } from '../cache/IntlCache';
 import { libraryDefaultLocale } from '../settings/settings';
-import { IntlMessageFormat } from 'intl-messageformat';
+import { formatMessage } from '@generaltranslation/icu';
 
 type FormatParams<Value, Options> = {
   value: Value;
@@ -17,17 +17,17 @@ type FormatParams<Value, Options> = {
  * @param {Record<string, any>} [variables={}] - The variables to use for formatting.
  * @returns {string} The formatted message.
  * @internal
- *
- * Returns an empty string if IntlMessageFormat produces no output.
- * TODO: Add this to custom formats.
  */
 export function _formatMessageICU(
   message: string,
   locales: string | string[] = libraryDefaultLocale,
   variables: FormatVariables = {}
 ): string {
-  const messageFormat = new IntlMessageFormat(message, locales);
-  return messageFormat.format(variables)?.toString() ?? '';
+  // Preserve the previous IntlMessageFormat wrapper behavior for truthy
+  // non-string arguments such as booleans and Dates.
+  return (
+    (formatMessage(message, locales, variables) as unknown)?.toString() ?? ''
+  );
 }
 
 /**

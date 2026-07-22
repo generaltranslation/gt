@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockRequest = vi.hoisted(() => vi.fn());
 const mockSetCookie = vi.hoisted(() => vi.fn());
+const mockGetLocale = vi.hoisted(() => vi.fn(() => 'fr'));
 
 vi.mock('@tanstack/react-start', () => ({
   createIsomorphicFn: () => ({
@@ -19,10 +20,14 @@ vi.mock('@tanstack/react-start/server', () => ({
   setCookie: (...args: unknown[]) => mockSetCookie(...args),
 }));
 
+vi.mock('../runtime', () => ({
+  getLocale: mockGetLocale,
+}));
+
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 import { AsyncLocalConditionStore } from '../../condition-store/AsyncLocalConditionStore';
 import { setConditionStore } from '../../condition-store/singleton';
-import { determineLocale } from '../parseLocale';
+import { determineLocale, determineLocaleClient } from '../parseLocale';
 
 type GlobalWithRegistry = {
   __generaltranslation?: {
@@ -72,13 +77,9 @@ const originalDocumentDescriptor = Object.getOwnPropertyDescriptor(
   globalThis,
   'document'
 );
-const originalNavigatorDescriptor = Object.getOwnPropertyDescriptor(
-  globalThis,
-  'navigator'
-);
 
 function restoreGlobalProperty(
-  property: 'document' | 'navigator',
+  property: 'document',
   descriptor: PropertyDescriptor | undefined
 ) {
   if (descriptor) {
@@ -93,13 +94,13 @@ describe.sequential('parseLocale', () => {
   beforeEach(() => {
     resetI18nConfigSingleton();
     initializeI18nConfig(localeConfig);
+    mockGetLocale.mockClear();
     mockRequest.mockReset();
     mockSetCookie.mockReset();
   });
 
   afterEach(() => {
     restoreGlobalProperty('document', originalDocumentDescriptor);
-    restoreGlobalProperty('navigator', originalNavigatorDescriptor);
   });
 
   it('uses the server cookie before Accept-Language', () => {
@@ -173,20 +174,7 @@ describe.sequential('parseLocale', () => {
     expect(mockSetCookie).not.toHaveBeenCalled();
   });
 
-  it('uses client cookies', () => {
-    Object.defineProperty(globalThis, 'document', {
-      configurable: true,
-      value: {
-        cookie: 'generaltranslation.locale=brand-french',
-      },
-    });
-    Object.defineProperty(globalThis, 'navigator', {
-      configurable: true,
-      value: {
-        language: 'es',
-      },
-    });
-
+  it('reads initialized locale state on the client', () => {
     expect(
       (
         determineLocale as unknown as {
@@ -194,6 +182,7 @@ describe.sequential('parseLocale', () => {
         }
       ).client(localeConfig)
     ).toBe('fr');
+    expect(mockGetLocale).toHaveBeenCalledOnce();
   });
 
   it('reads and writes a custom locale cookie name on the server', () => {
@@ -223,7 +212,18 @@ describe.sequential('parseLocale', () => {
     });
   });
 
-  it('reads a custom locale cookie name on the client', () => {
+  it('resolves the default locale cookie during client initialization', () => {
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      value: {
+        cookie: 'generaltranslation.locale=brand-french',
+      },
+    });
+
+    expect(determineLocaleClient(localeConfig)).toBe('fr');
+  });
+
+  it('resolves a custom locale cookie during client initialization', () => {
     resetI18nConfigSingleton();
     initializeI18nConfig({
       ...localeConfig,
@@ -235,42 +235,16 @@ describe.sequential('parseLocale', () => {
         cookie: 'generaltranslation.locale=es; custom-locale=fr',
       },
     });
-    Object.defineProperty(globalThis, 'navigator', {
-      configurable: true,
-      value: {
-        language: 'es',
-      },
-    });
 
-    expect(
-      (
-        determineLocale as unknown as {
-          client: (config: typeof localeConfig) => string;
-        }
-      ).client(localeConfig)
-    ).toBe('fr');
+    expect(determineLocaleClient(localeConfig)).toBe('fr');
   });
 
-  it('falls back to the default locale on the client without a cookie', () => {
+  it('falls back to the default locale during client initialization', () => {
     Object.defineProperty(globalThis, 'document', {
       configurable: true,
-      value: {
-        cookie: '',
-      },
-    });
-    Object.defineProperty(globalThis, 'navigator', {
-      configurable: true,
-      value: {
-        language: 'es',
-      },
+      value: { cookie: '' },
     });
 
-    expect(
-      (
-        determineLocale as unknown as {
-          client: (config: typeof localeConfig) => string;
-        }
-      ).client(localeConfig)
-    ).toBe('en');
+    expect(determineLocaleClient(localeConfig)).toBe('en');
   });
 });

@@ -12,7 +12,8 @@
     "window": "readonly",
     "NodeJS": "readonly",
     "React": "readonly",
-    "__DEV__": "readonly"
+    "__DEV__": "readonly",
+    "t": "readonly"
   },
   "ignorePatterns": [
     "dist/",

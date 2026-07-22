@@ -8,13 +8,18 @@ import {
   isConditionStoreInitialized,
 } from '../condition-store/singleton';
 import { resolveRequestConditions } from './requestConditions';
+import { getLocale } from './runtime';
 
 export const determineLocale = createIsomorphicFn()
   .server(determineLocaleServer)
-  .client(determineLocaleClient);
+  .client(() => getLocale());
 
 /**
  * Resolve the user's locale for the current TanStack Start request or browser.
+ *
+ * @deprecated Use `getLocale()` with `gtMiddleware` instead. This function is
+ * retained as a fallback for server setups that have not initialized request
+ * scope through the middleware.
  */
 export function parseLocale(): string {
   const i18nConfig = getI18nConfig();
@@ -44,11 +49,12 @@ function determineLocaleServer({
   }).locale;
 }
 
-function determineLocaleClient({
+/** Read the server-synchronized locale cookie during client initialization. */
+export function determineLocaleClient({
   defaultLocale,
   locales,
   customMapping,
-}: LocaleResolverConfig) {
+}: LocaleResolverConfig): string {
   const i18nConfig = getI18nConfig();
   const localeCookieName = i18nConfig.getLocaleCookieName();
   const candidates: string[] = [];
