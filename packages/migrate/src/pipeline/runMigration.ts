@@ -105,7 +105,7 @@ export const MIGRATE_INTERFACE_VERSION = 1;
  *   calls bare `require`. The command emits a TODO advising a rename to
  *   `next.config.ts`.
  * - runtime `loadDictionary` resolution in webpack builds needs the
- *   gt-next fix from #1909; with it, both migration modes build and serve
+ *   gt-next fix from #1909 (shipped in gt-next 11.1.0); with it, both migration modes build and serve
  *   cleanly.
  *
  * This is the engine entry point the gt CLI loads on demand. It is UI-free:

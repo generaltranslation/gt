@@ -1,6 +1,7 @@
 // This file is MIT licensed and was adapted from https://github.com/getsentry/sentry-wizard/blob/master/src/utils/package-manager.ts and https://github.com/getsentry/sentry-wizard/blob/master/src/utils/clack/index.ts
 import * as fs from 'fs';
 import * as path from 'path';
+import YAML from 'yaml';
 import { getPackageJson, updatePackageJson } from './packageJson.js';
 import { promptSelect } from '../console/logging.js';
 
@@ -267,20 +268,24 @@ export function _detectPackageManger(cwd: string): PackageManager | null {
 
 /**
  * The workspace member patterns a directory declares: pnpm-workspace.yaml
- * `packages` entries when the file exists, else the package.json `workspaces`
- * field (array or `{ packages: [...] }`). null when the directory declares no
- * workspace at all.
+ * `packages` entries when the file exists (parsed as real YAML, so flow-style
+ * arrays work), else the package.json `workspaces` field (array or
+ * `{ packages: [...] }`). null when the directory declares no workspace at
+ * all.
  */
 function workspacePatternsOf(dir: string): string[] | null {
   try {
     const yamlPath = path.join(dir, 'pnpm-workspace.yaml');
     if (fs.existsSync(yamlPath)) {
-      const patterns: string[] = [];
-      for (const line of fs.readFileSync(yamlPath, 'utf-8').split('\n')) {
-        const match = /^\s*-\s*['"]?([^'"#\s][^'"#]*)/.exec(line);
-        if (match) patterns.push(match[1].trim());
+      const doc = YAML.parse(fs.readFileSync(yamlPath, 'utf-8')) as {
+        packages?: unknown;
+      } | null;
+      if (doc && Array.isArray(doc.packages)) {
+        return doc.packages.filter(
+          (entry): entry is string => typeof entry === 'string'
+        );
       }
-      return patterns;
+      return [];
     }
   } catch {
     // fall through to package.json
@@ -303,33 +308,54 @@ function escapeRegExp(literal: string): string {
   return literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function workspacePatternToRegExp(pattern: string): RegExp {
+  // `./packages/*` and `packages/*/` are the same pattern.
+  const body = pattern.replace(/^\.\//, '').replace(/\/+$/, '');
+  const segments = body.split('/');
+  let source = '';
+  for (let i = 0; i < segments.length; i++) {
+    const segment = segments[i];
+    if (segment === '**') {
+      // Globstar matches zero or more whole segments, so `packages/**`
+      // covers `packages/a/b` (and `packages` itself), and
+      // `packages/**/lib` covers `packages/lib`.
+      if (i === segments.length - 1) {
+        source = source.replace(/\/$/, '');
+        source += source ? '(?:/.+)?' : '.*';
+      } else {
+        source += '(?:[^/]+/)*';
+      }
+      continue;
+    }
+    source += segment.split('*').map(escapeRegExp).join('[^/]*');
+    if (i < segments.length - 1) source += '/';
+  }
+  return new RegExp('^' + source + '$');
+}
+
 /**
  * Whether a member path (relative to the workspace root) is covered by the
  * root's workspace patterns. Supports the common glob subset: literal paths,
- * `*` for one path segment, `**` for any depth. Negations (`!...`) never
- * match. Targeting an uncovered directory would make the install fail
- * ("npm error No workspaces found"), so an uncovered member is treated as not
- * belonging to that root at all.
+ * `*` for one path segment, `**` for any depth (including zero). Negations
+ * subtract: a member matching a `!pattern` is not covered. Targeting an
+ * uncovered directory would make the install fail ("npm error No workspaces
+ * found"), so an uncovered member is treated as not belonging to that root
+ * at all.
  */
 function matchesWorkspacePattern(member: string, patterns: string[]): boolean {
   const memberPosix = member.split(path.sep).join('/');
-  return patterns.some((pattern) => {
-    if (pattern.startsWith('!')) return false;
-    const body = pattern.replace(/\/+$/, '');
-    const regex = new RegExp(
-      '^' +
-        body
-          .split('/')
-          .map((segment) =>
-            segment === '**'
-              ? '.+'
-              : segment.split('*').map(escapeRegExp).join('[^/]*')
-          )
-          .join('/') +
-        '$'
-    );
-    return regex.test(memberPosix);
-  });
+  const positive = patterns.filter((pattern) => !pattern.startsWith('!'));
+  const negative = patterns
+    .filter((pattern) => pattern.startsWith('!'))
+    .map((pattern) => pattern.slice(1));
+  return (
+    positive.some((pattern) =>
+      workspacePatternToRegExp(pattern).test(memberPosix)
+    ) &&
+    !negative.some((pattern) =>
+      workspacePatternToRegExp(pattern).test(memberPosix)
+    )
+  );
 }
 
 /**

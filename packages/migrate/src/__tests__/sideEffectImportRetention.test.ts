@@ -173,6 +173,22 @@ describe('transformNavigationFile: side-effect import retention', () => {
     expect(result.code).toContain("import 'server-only';");
   });
 
+  it('does not turn a zero-specifier type-only import into a runtime import', () => {
+    const result = transformNavigationFile(
+      'src/i18n/navigation.ts',
+      [
+        "import type {} from './types';",
+        "import { createNavigation } from 'next-intl/navigation';",
+        "import { routing } from './routing';",
+        'export const { Link } = createNavigation(routing);',
+      ].join('\n'),
+      makeContext()
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).not.toBeNull();
+    expect(result.code).not.toContain("import './types'");
+  });
+
   it('holds the wrapper when a side-effect import targets the torn-down library', () => {
     const result = transformNavigationFile(
       'src/i18n/navigation.ts',

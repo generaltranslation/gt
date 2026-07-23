@@ -114,6 +114,76 @@ describe('detectPackageManagerWithRoot', () => {
     expect(result!.packageManager.id).toBe('npm');
   });
 
+  it('parses a flow-style pnpm-workspace.yaml', () => {
+    write('package.json', JSON.stringify({ name: 'mono' }));
+    write('pnpm-workspace.yaml', "packages: ['apps/*', 'packages/*']\n");
+    write('pnpm-lock.yaml', 'lockfileVersion: 9');
+    write('apps/web/package.json', JSON.stringify({ name: 'web' }));
+
+    const result = detectPackageManagerWithRoot(path.join(root, 'apps/web'));
+    expect(result).not.toBeNull();
+    expect(result!.packageManager.id).toBe('pnpm');
+  });
+
+  it('reads only the packages key from pnpm-workspace.yaml', () => {
+    // Entries under other list-valued keys (onlyBuiltDependencies, catalogs)
+    // must not become member patterns.
+    write('package.json', JSON.stringify({ name: 'mono' }));
+    write(
+      'pnpm-workspace.yaml',
+      [
+        'packages:',
+        "  - 'apps/*'",
+        'onlyBuiltDependencies:',
+        '  - esbuild',
+        '',
+      ].join('\n')
+    );
+    write('pnpm-lock.yaml', 'lockfileVersion: 9');
+    write('esbuild/package.json', JSON.stringify({ name: 'esbuild-dir' }));
+
+    const result = detectPackageManagerWithRoot(path.join(root, 'esbuild'));
+    expect(result).toBeNull();
+  });
+
+  it('normalizes a leading ./ in workspace patterns', () => {
+    write('package.json', JSON.stringify({ workspaces: ['./packages/*'] }));
+    write('package-lock.json', '{}');
+    write('packages/dashboard/package.json', JSON.stringify({ name: 'dash' }));
+
+    const result = detectPackageManagerWithRoot(
+      path.join(root, 'packages/dashboard')
+    );
+    expect(result).not.toBeNull();
+    expect(result!.packageManager.id).toBe('npm');
+  });
+
+  it('matches zero directories through a mid-pattern globstar', () => {
+    write('package.json', JSON.stringify({ workspaces: ['packages/**/lib'] }));
+    write('package-lock.json', '{}');
+    write('packages/lib/package.json', JSON.stringify({ name: 'lib' }));
+
+    const result = detectPackageManagerWithRoot(
+      path.join(root, 'packages/lib')
+    );
+    expect(result).not.toBeNull();
+    expect(result!.packageManager.id).toBe('npm');
+  });
+
+  it('subtracts negated patterns', () => {
+    write(
+      'package.json',
+      JSON.stringify({ workspaces: ['packages/*', '!packages/excluded'] })
+    );
+    write('package-lock.json', '{}');
+    write('packages/excluded/package.json', JSON.stringify({ name: 'x' }));
+
+    const result = detectPackageManagerWithRoot(
+      path.join(root, 'packages/excluded')
+    );
+    expect(result).toBeNull();
+  });
+
   it('returns null on an ambiguous ancestor', () => {
     write('package.json', JSON.stringify({ workspaces: ['packages/*'] }));
     write('package-lock.json', '{}');

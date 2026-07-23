@@ -162,7 +162,11 @@ export function transformNavigationFile(
   // that holds the file instead.
   const sideEffectImports = ast.program.body.filter(
     (statement): statement is t.ImportDeclaration =>
-      t.isImportDeclaration(statement) && statement.specifiers.length === 0
+      t.isImportDeclaration(statement) &&
+      statement.specifiers.length === 0 &&
+      // `import type {} from 'x'` is erased at build time; reconstructing it
+      // would invent a runtime side-effect import.
+      statement.importKind !== 'type'
   );
   const ownedSideEffect = sideEffectImports.find((declaration) =>
     ctx.adapter.teardownPackages.includes(
