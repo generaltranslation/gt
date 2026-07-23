@@ -2,6 +2,10 @@
 
 import { Card, Flex, Label } from '@sanity/ui';
 
+// Matches the height of a Button with fontSize={1} and padding={2} (the
+// Import button rendered beside the bar), so the two read as one row.
+const BAR_HEIGHT = '35px';
+
 export default function ProgressBar({ progress }: { progress: number }) {
   if (typeof progress === 'undefined') {
     console.warn('No progress prop passed to ProgressBar');
@@ -9,14 +13,26 @@ export default function ProgressBar({ progress }: { progress: number }) {
   }
 
   return (
-    <Card border radius={2} style={{ width: `100%`, position: `relative` }}>
+    <Card
+      border
+      radius={2}
+      overflow='hidden'
+      style={{ width: '100%', position: 'relative', height: BAR_HEIGHT }}
+    >
+      <Card
+        tone='positive'
+        style={{
+          position: 'absolute',
+          inset: 0,
+          transform: `scaleX(${progress / 100})`,
+          transformOrigin: 'left',
+          transition: 'transform .2s ease',
+        }}
+      />
       <Flex
         style={{
-          position: `absolute`,
-          left: 0,
-          right: 0,
-          top: 0,
-          bottom: 0,
+          position: 'absolute',
+          inset: 0,
           zIndex: 1,
         }}
         align='center'
@@ -24,17 +40,6 @@ export default function ProgressBar({ progress }: { progress: number }) {
       >
         <Label size={1}>{progress}%</Label>
       </Flex>
-      <Card
-        style={{
-          width: '100%',
-          transform: `scaleX(${progress / 100})`,
-          transformOrigin: 'left',
-          transition: 'transform .2s ease',
-          boxSizing: 'border-box',
-        }}
-        padding={2}
-        tone='positive'
-      />
     </Card>
   );
 }
