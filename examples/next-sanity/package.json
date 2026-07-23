@@ -12,6 +12,7 @@
   "dependencies": {
     "@sanity/client": "^7.24.0",
     "generaltranslation": "workspace:*",
+    "gt-sanity": "workspace:*",
     "gt-next": "workspace:*",
     "next": "16.2.11",
     "next-sanity": "13.1.4",

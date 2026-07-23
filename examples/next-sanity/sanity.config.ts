@@ -2,6 +2,7 @@
 
 import { defineConfig } from 'sanity';
 import { structureTool } from 'sanity/structure';
+import { gtPlugin } from 'gt-sanity';
 import { sanityDataset, sanityProjectId } from './src/sanity/env';
 import { schemaTypes } from './src/sanity/schemaTypes';
 
@@ -11,7 +12,17 @@ const sanityConfig = defineConfig({
   basePath: '/studio',
   projectId: sanityProjectId,
   dataset: sanityDataset,
-  plugins: [structureTool()],
+  plugins: [
+    structureTool(),
+    gtPlugin({
+      sourceLocale: 'en',
+      locales: ['es', 'zh', 'ja'],
+      translateDocuments: [
+        { type: 'documentTranslationExample' },
+        { type: 'fieldTranslationExample' },
+      ],
+    }),
+  ],
   schema: { types: schemaTypes },
 });
 
