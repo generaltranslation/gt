@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { parse } from '@babel/parser';
 import * as t from '@babel/types';
 import { packageNameOf } from './importUtils.js';
@@ -192,13 +194,6 @@ export function transformNavigationFile(
     (name) => NEXT_NAVIGATION_EXPORTS.has(name) && name !== 'usePathname'
   );
 
-  if (wrapsPathname) {
-    lines.push(
-      "import { usePathname as useNextPathname } from 'next/navigation';"
-    );
-    lines.push("import { useLocale } from 'gt-next';");
-    lines.push('');
-  }
   if (destructured.includes('Link')) {
     lines.push("export { default as Link } from 'gt-next/link';");
   }
@@ -206,21 +201,58 @@ export function transformNavigationFile(
     lines.push(`export { ${passthrough.join(', ')} } from 'next/navigation';`);
   }
   if (wrapsPathname) {
-    lines.push('');
-    lines.push(
-      "// next-intl's usePathname returns the pathname without the locale"
-    );
-    lines.push("// prefix; next/navigation's includes it. Strip it to stay");
-    lines.push('// drop-in for existing callers.');
-    lines.push('export function usePathname() {');
-    lines.push('  const pathname = useNextPathname();');
-    lines.push('  const locale = useLocale();');
-    lines.push('  const prefix = `/${locale}`;');
-    lines.push("  if (pathname === prefix) return '/';");
-    lines.push('  return pathname.startsWith(`${prefix}/`)');
-    lines.push('    ? pathname.slice(prefix.length)');
-    lines.push('    : pathname;');
-    lines.push('}');
+    // The usePathname wrapper calls client-only hooks, but this module is
+    // also imported by Server Components (a server page importing Link),
+    // so the hook body must live behind its own 'use client' boundary; a
+    // directive-less module with hook imports fails the RSC build the
+    // moment a server file imports anything from it.
+    const extension = path.extname(file);
+    const base = path.basename(file, extension);
+    const clientBase = `${base}.client`;
+    const clientPath = path.join(path.dirname(file), clientBase + extension);
+    // Check every JS/TS extension, not just the wrapper's own: a sibling
+    // `navigation.client.tsx` would make the `./navigation.client` specifier
+    // ambiguous even though the exact emitted path is free.
+    const collides = ['.ts', '.tsx', '.js', '.jsx'].some((ext) => {
+      const candidate = path.join(path.dirname(file), clientBase + ext);
+      return (
+        fs.existsSync(candidate) ||
+        ctx.edits.some((edit) => edit.path === candidate)
+      );
+    });
+    if (collides) {
+      return {
+        ...none,
+        skipReasons: [
+          `converting usePathname needs a companion client module at ${clientBase}${extension}, but that file already exists; convert this navigation wrapper manually`,
+        ],
+      };
+    }
+    ctx.edits.push({
+      path: clientPath,
+      kind: 'write',
+      content: [
+        "'use client';",
+        '',
+        "import { usePathname as useNextPathname } from 'next/navigation';",
+        "import { useLocale } from 'gt-next';",
+        '',
+        "// next-intl's usePathname returns the pathname without the locale",
+        "// prefix; next/navigation's includes it. Strip it to stay",
+        '// drop-in for existing callers.',
+        'export function usePathname() {',
+        '  const pathname = useNextPathname();',
+        '  const locale = useLocale();',
+        '  const prefix = `/${locale}`;',
+        "  if (pathname === prefix) return '/';",
+        '  return pathname.startsWith(`${prefix}/`)',
+        '    ? pathname.slice(prefix.length)',
+        '    : pathname;',
+        '}',
+        '',
+      ].join('\n'),
+    });
+    lines.push(`export { usePathname } from './${clientBase}';`);
   }
 
   const todos: TodoEntry[] = [];

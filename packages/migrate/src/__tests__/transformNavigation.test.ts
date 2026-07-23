@@ -66,20 +66,55 @@ describe('transformNavigationFile', () => {
   });
 
   it('wraps usePathname to strip the locale prefix like next-intl', () => {
+    const ctx = makeContext();
     const result = transformNavigationFile(
       'src/i18n/navigation.ts',
       canonical,
-      makeContext()
+      ctx
     );
     expect(result.skipReasons).toEqual([]);
     // not a raw re-export; next/navigation's includes the prefix
     expect(result.code).not.toMatch(
       /export \{[^}]*usePathname[^}]*\} from ["']next\/navigation["']/
     );
-    expect(result.code).toContain('export function usePathname()');
-    expect(result.code).toContain('useNextPathname');
-    expect(result.code).toMatch(/import \{ useLocale \} from ["']gt-next["']/);
-    expect(result.code).toContain('pathname.slice(prefix.length)');
+    // The hook body lives in a companion 'use client' module: the wrapper is
+    // also imported by Server Components (a server page importing Link), and
+    // a directive-less module with hook imports fails the RSC build.
+    expect(result.code).toContain(
+      "export { usePathname } from './navigation.client'"
+    );
+    expect(result.code).not.toContain('useNextPathname');
+    const clientEdit = ctx.edits.find((edit) =>
+      edit.path.endsWith('navigation.client.ts')
+    );
+    expect(clientEdit).toBeDefined();
+    expect(clientEdit!.content).toMatch(/^'use client';/);
+    expect(clientEdit!.content).toContain('export function usePathname()');
+    expect(clientEdit!.content).toContain('useNextPathname');
+    expect(clientEdit!.content).toMatch(
+      /import \{ useLocale \} from ["']gt-next["']/
+    );
+    expect(clientEdit!.content).toContain('pathname.slice(prefix.length)');
+  });
+
+  it('holds the wrapper when the companion client module name is taken', () => {
+    const ctx = makeContext();
+    ctx.edits.push({
+      path: 'src/i18n/navigation.client.ts',
+      kind: 'write',
+      content: 'existing',
+    });
+    const result = transformNavigationFile(
+      'src/i18n/navigation.ts',
+      canonical,
+      ctx
+    );
+    expect(result.code).toBeNull();
+    expect(
+      result.skipReasons.some((reason) =>
+        reason.includes('navigation.client.ts')
+      )
+    ).toBe(true);
   });
 
   it('omits the programmatic-navigation TODO when nothing needs it', () => {

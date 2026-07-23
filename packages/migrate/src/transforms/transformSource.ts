@@ -404,25 +404,33 @@ export function transformSourceFile(
   //    a `const { locale } = use(params)` that this removal actually made dead.
   const removedSetRequestLocaleArgs = new Set<string>();
   let setRequestLocaleRemoved = false;
-  traverse(ast, {
-    ExpressionStatement(path) {
-      const expression = unwrapAwait(path.node.expression);
-      if (
-        expression &&
-        t.isCallExpression(expression) &&
-        t.isIdentifier(expression.callee) &&
-        removalLocals.has(expression.callee.name)
-      ) {
-        for (const argument of expression.arguments) {
-          if (t.isIdentifier(argument)) {
-            removedSetRequestLocaleArgs.add(argument.name);
+  // While the provider is retained (partial mode), setRequestLocale stays:
+  // the retained next-intl surface (a request-scoped getMessages() feeding
+  // the provider) demotes every route under the layout to dynamic rendering
+  // without it, and next-intl is still installed for it to work against. The
+  // finish-teardown re-run removes it once nothing imports next-intl; gt-next
+  // ignores it either way.
+  if (!providerRetained) {
+    traverse(ast, {
+      ExpressionStatement(path) {
+        const expression = unwrapAwait(path.node.expression);
+        if (
+          expression &&
+          t.isCallExpression(expression) &&
+          t.isIdentifier(expression.callee) &&
+          removalLocals.has(expression.callee.name)
+        ) {
+          for (const argument of expression.arguments) {
+            if (t.isIdentifier(argument)) {
+              removedSetRequestLocaleArgs.add(argument.name);
+            }
           }
+          path.remove();
+          setRequestLocaleRemoved = true;
         }
-        path.remove();
-        setRequestLocaleRemoved = true;
-      }
-    },
-  });
+      },
+    });
+  }
 
   // 2. getTranslations({ locale, namespace }) -> getTranslations('namespace').
   //    A dynamic namespace becomes the positional argument
@@ -578,8 +586,9 @@ export function transformSourceFile(
     if (providerRetained) {
       // next-intl stays installed, so keep the retained provider, the `Locale`
       // type (its precise augmented union still applies), a still-referenced
-      // hasLocale locale guard, and any provider-linked messages hooks. Any
-      // `Locale` specifier left unreferenced is pruned below.
+      // hasLocale locale guard, any provider-linked messages hooks, and the
+      // setRequestLocale calls kept above (removals are only applied on full
+      // conversion). Any `Locale` specifier left unreferenced is pruned below.
       kept = importPath.node.specifiers.filter(
         (specifier): specifier is t.ImportSpecifier =>
           t.isImportSpecifier(specifier) &&
@@ -589,6 +598,7 @@ export function transformSourceFile(
             (adapter.localeType !== null &&
               specifier.imported.name === adapter.localeType) ||
             adapter.localeValidators.has(specifier.imported.name) ||
+            adapter.removals.has(specifier.imported.name) ||
             (adapter.messagesHooks.has(specifier.imported.name) &&
               !removedProviderMessageBindings.has(specifier.local.name)))
       );

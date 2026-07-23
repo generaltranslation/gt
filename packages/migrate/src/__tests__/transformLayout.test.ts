@@ -329,6 +329,30 @@ describe('transformLayoutFile', () => {
     expect(result.code).toContain('hasLocale(routing.locales, locale)');
   });
 
+  it('keeps setRequestLocale while the provider is retained (SSG for the retained surface)', () => {
+    // Without setRequestLocale, the retained provider's request-scoped
+    // getMessages() renders every route under the layout dynamically; the
+    // original app was static, so partial mode must keep the call (and its
+    // import) until the finish-teardown re-run removes next-intl entirely.
+    const result = transformLayoutFile(
+      'src/app/[locale]/layout.tsx',
+      localeLayout,
+      makeContext(['src/components/Price.tsx'])
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).toContain('setRequestLocale(locale)');
+    expect(result.code).toMatch(
+      /import \{[^}]*setRequestLocale[^}]*\} from ["']next-intl\/server["']/
+    );
+    // full conversion still removes it
+    const full = transformLayoutFile(
+      'src/app/[locale]/layout.tsx',
+      localeLayout,
+      makeContext()
+    );
+    expect(full.code).not.toContain('setRequestLocale');
+  });
+
   it('passes the param locale (not getLocale) to a retained provider annotated with next-intl Locale', () => {
     const localeTypedLayout = [
       "import { Locale, hasLocale, NextIntlClientProvider } from 'next-intl';",
