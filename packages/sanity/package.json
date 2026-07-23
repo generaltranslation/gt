@@ -72,10 +72,10 @@
     "@sanity/document-internationalization": "^6.0.6",
     "@sanity/icons": "^3.7.4",
     "@sanity/incompatible-plugin": "^1.0.5",
-    "@sanity/mutator": "^5.18.0",
-    "@sanity/schema": "^5.18.0",
+    "@sanity/mutator": "^5.31.1",
+    "@sanity/schema": "^5.31.1",
     "@sanity/ui": "^3.1.14",
-    "@sanity/util": "^5.18.0",
+    "@sanity/util": "^5.31.1",
     "generaltranslation": "workspace:*",
     "jsonpath-plus": "^10.3.0",
     "jsonpointer": "^5.0.1",
@@ -92,7 +92,7 @@
     "just-clone": "^6.2.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
-    "sanity": "^5.18.0",
+    "sanity": "^5.31.1",
     "styled-components": "^6.1.19"
   },
   "peerDependencies": {
