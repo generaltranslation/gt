@@ -102,6 +102,7 @@
   "sanityPlugin": {
     "verifyPackage": {
       "eslintImports": false,
+      "nodeEngine": false,
       "packageName": false
     }
   },
