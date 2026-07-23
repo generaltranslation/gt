@@ -6,7 +6,8 @@
     "moduleResolution": "node16",
     "outDir": "./dist",
     "rootDir": "./src",
-    "composite": true
+    "composite": true,
+    "types": ["node"]
   },
   "include": ["src"],
   "references": [

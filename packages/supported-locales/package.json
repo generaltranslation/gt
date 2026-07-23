@@ -54,6 +54,7 @@
   },
   "devDependencies": {
     "tsdown": "catalog:",
+    "@generaltranslation/typescript-native": "workspace:*",
     "typescript": "catalog:"
   }
 }

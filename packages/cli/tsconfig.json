@@ -7,7 +7,8 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "jsx": "react-jsx",
-    "composite": true
+    "composite": true,
+    "types": ["node"]
   },
   "include": ["src"],
   "exclude": ["**/__tests__/**/*", "**/__mocks__/**/*"],

@@ -82,6 +82,7 @@
     "lodash.merge": "^4.6.2"
   },
   "devDependencies": {
+    "@generaltranslation/typescript-native": "workspace:*",
     "@portabletext/types": "^2.0.15",
     "@sanity/browserslist-config": "^1.0.5",
     "@sanity/pkg-utils": "^10.4.13",
@@ -93,7 +94,8 @@
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "sanity": "^5.18.0",
-    "styled-components": "^6.1.19"
+    "styled-components": "^6.1.19",
+    "typescript": "catalog:"
   },
   "peerDependencies": {
     "react": ">=19.2.0",

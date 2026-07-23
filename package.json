@@ -60,6 +60,7 @@
     "size-limit": "^12.1.0",
     "turbo": "^2.5.3",
     "tslib": "catalog:",
+    "@generaltranslation/typescript-native": "workspace:*",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },

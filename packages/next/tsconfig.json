@@ -1,13 +1,14 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "module": "CommonJS",
-    "moduleResolution": "node",
+    "module": "Preserve",
+    "moduleResolution": "bundler",
     "sourceMap": true,
     "declarationMap": true,
     "jsx": "react-jsx",
     "outDir": "./dist",
-    "rootDir": "./src"
+    "rootDir": "./src",
+    "types": ["node"]
   },
   "include": ["src/**/*", "src/.ts"],
   "exclude": ["**/__tests__/**/*", "**/__mocks__/**/*"],

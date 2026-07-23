@@ -46,6 +46,7 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "tsdown": "catalog:",
+    "@generaltranslation/typescript-native": "workspace:*",
     "typescript": "catalog:"
   },
   "typescript": {

@@ -3,13 +3,14 @@
   "compilerOptions": {
     "module": "ESNext",
     "target": "ES2022",
-    "moduleResolution": "Node",
+    "moduleResolution": "bundler",
     "sourceMap": true,
     "declarationMap": true,
     "jsx": "react-jsx",
     "outDir": "./dist",
     "rootDir": "./src",
-    "composite": true
+    "composite": true,
+    "types": ["node"]
   },
   "include": ["src/**/*", "../i18n/src/msg/__tests__"],
   "exclude": ["**/*.test.ts"],

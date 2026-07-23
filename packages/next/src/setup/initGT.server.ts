@@ -1,6 +1,4 @@
-// @ts-expect-error: resolved by Next aliases or gt-next package exports.
 import * as getLocaleModule from 'gt-next/internal/_getLocale';
-// @ts-expect-error: resolved by Next aliases or gt-next package exports.
 import * as getRegionModule from 'gt-next/internal/_getRegion';
 import { getParams } from './shared';
 import type { NextSetupI18nConfigParams } from './shared';

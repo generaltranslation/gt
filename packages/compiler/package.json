@@ -51,6 +51,7 @@
     "@types/babel__traverse": "^7.20.0",
     "@types/node": "catalog:",
     "tsdown": "catalog:",
+    "@generaltranslation/typescript-native": "workspace:*",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
