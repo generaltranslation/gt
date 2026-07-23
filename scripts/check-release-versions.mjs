@@ -64,8 +64,16 @@ const workspacePackages = new Map(
 );
 
 for (const { path, manifest } of packageManifests) {
-  for (const peerName of Object.keys(manifest.peerDependencies ?? {})) {
+  for (const [peerName, peerRange] of Object.entries(
+    manifest.peerDependencies ?? {}
+  )) {
     if (!workspacePackages.has(peerName)) continue;
+
+    if (!peerRange.startsWith('workspace:')) {
+      errors.push(
+        `${manifest.name} declares internal peer ${peerName} with a bare semver range (${peerRange}) in ${path}; use the workspace: protocol so version bumps cannot drift the lockfile or reference an unpublished version`
+      );
+    }
 
     const workspaceRange =
       manifest.dependencies?.[peerName] ??
