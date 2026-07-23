@@ -1,5 +1,5 @@
 import { getI18nConfig } from 'gt-i18n/internal';
-import { createInvalidRequestLocaleWarning } from '../errors/createErrors';
+import { createInvalidRequestLocaleWarning } from '../errors/request';
 
 function determineSupportedLocale(locale: unknown): string | undefined {
   if (typeof locale !== 'string' || locale.length === 0) return undefined;

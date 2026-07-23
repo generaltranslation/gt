@@ -1,12 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import {
-  withGTStaticPropsClientError,
-  withGTStaticPropsRscError,
-} from '../createErrors';
+import { createWithGTStaticPropsClientError } from '../client';
+import { withGTStaticPropsRscError } from '../createErrors';
 
 describe('withGTStaticProps errors', () => {
   it('provides an actionable browser diagnostic', () => {
-    expect(withGTStaticPropsClientError).toBe(
+    expect(createWithGTStaticPropsClientError()).toBe(
       'gt-next Error: withGTStaticProps() cannot run in the browser because static props are generated on the server by the Pages Router. Export withGTStaticProps() from a Pages Router page module.'
     );
   });
