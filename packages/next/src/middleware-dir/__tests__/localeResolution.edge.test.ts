@@ -1,8 +1,8 @@
 // @vitest-environment edge-runtime
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
-import { GT } from 'generaltranslation';
-import { getLocaleFromRequest } from '../utils';
+import type { CustomMapping } from '@generaltranslation/format/types';
+import { createLocaleResolver, getLocaleFromRequest } from '../utils';
 
 // ---- Cookie Constants ----
 const LOCALE_COOKIE = 'generaltranslation.locale';
@@ -46,9 +46,10 @@ function callGetLocaleFromRequest(
     gtServicesEnabled?: boolean;
     prefixDefaultLocale?: boolean;
     defaultLocalePaths?: string[];
+    customMapping?: CustomMapping;
   } = {}
 ) {
-  const gt = new GT();
+  const localeResolver = createLocaleResolver(overrides.customMapping);
   return getLocaleFromRequest(
     req,
     overrides.defaultLocale ?? DEFAULT_LOCALE,
@@ -60,7 +61,7 @@ function callGetLocaleFromRequest(
     REFERRER_COOKIE,
     LOCALE_COOKIE,
     RESET_COOKIE,
-    gt
+    localeResolver
   );
 }
 
@@ -142,6 +143,22 @@ describe('Locale Resolution (Category 1)', () => {
 
     expect(result.userLocale).toBe('en');
     expect(result.clearResetCookie).toBe(true);
+  });
+
+  it('resolves custom locale aliases without the full runtime', () => {
+    const req = createRequest('/pirate/about');
+    const result = callGetLocaleFromRequest(req, {
+      approvedLocales: ['en', 'pirate'],
+      customMapping: {
+        pirate: {
+          code: 'en-US',
+          name: 'Pirate',
+        },
+      },
+    });
+
+    expect(result.userLocale).toBe('pirate');
+    expect(result.pathnameLocale).toBe('pirate');
   });
 
   it('1.6: Accept-Language: es → userLocale=es', () => {
