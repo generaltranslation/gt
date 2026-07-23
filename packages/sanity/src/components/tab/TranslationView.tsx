@@ -222,7 +222,7 @@ export const TranslationView = () => {
       {/* Generate Translations Section */}
       <Stack space={4}>
         <Text as='h2' weight='semibold' size={2}>
-          Generate Translations
+          Translate
         </Text>
 
         {/* Locale Selection */}
@@ -266,7 +266,7 @@ export const TranslationView = () => {
           }}
           disabled={isBusy || !availableLocales.length}
           tone='positive'
-          text={isBusy ? 'Creating translations...' : 'Generate Translations'}
+          text={isBusy ? 'Creating translations...' : 'Translate'}
         />
       </Stack>
 
