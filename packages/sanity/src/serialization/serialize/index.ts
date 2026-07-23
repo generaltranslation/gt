@@ -6,7 +6,12 @@ import {
 } from '../BaseSerializationConfig';
 import { ObjectField, SanityDocument, TypedObject, Schema } from 'sanity';
 import { TranslationLevel } from '../types';
-import { fieldFilter, languageObjectFieldFilter } from './fieldFilters';
+import {
+  fieldFilter,
+  isFieldExcludedByOptions,
+  isFieldExcludedFromTranslation,
+  languageObjectFieldFilter,
+} from './fieldFilters';
 import {
   PortableTextHtmlComponents,
   PortableTextTypeComponent,
@@ -18,6 +23,7 @@ const META_FIELDS = ['_key', '_type', '_id', '_weak'];
 
 type SchemaTypeWithFields = {
   fields?: ObjectField[];
+  options?: unknown;
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -41,6 +47,12 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
       return '';
     }
 
+    // The exclusion options also apply to a type definition's own `options`
+    // ("this field or type" in the native plugins' semantics).
+    if (isFieldExcludedByOptions(getSchema(obj._type)?.options)) {
+      return '';
+    }
+
     //if user has declared a custom serializer, use that
     //instead of this method
     const typeSerializers = isRecord(serializers.types)
@@ -58,10 +70,13 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
 
     //if schema is available, encode values in the order they're declared in the schema,
     //since this will likely be more intuitive for a translator.
+    //fields the schema excludes from translation (localize: false or an
+    //options exclusion) are dropped here so exclusion applies at any depth.
     let fieldNames = Object.keys(obj).filter((key) => key !== '_type');
     const schema = getSchema(obj._type);
     if (schema && schema.fields) {
       fieldNames = schema.fields
+        .filter((field) => !isFieldExcludedFromTranslation(field))
         .map((field) => field.name)
         .filter((schemaKey) => Object.keys(obj).includes(schemaKey));
     }

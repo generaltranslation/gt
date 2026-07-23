@@ -1,6 +1,9 @@
 import type { PortableTextHtmlComponents } from '@portabletext/to-html';
 import { getLocaleProperties } from 'generaltranslation';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import {
+  createDiagnosticMessage,
+  libraryDefaultLocale,
+} from 'generaltranslation/internal';
 import { definePlugin } from 'sanity';
 import { route } from 'sanity/router';
 import { translateAction } from './actions/translateAction';
@@ -13,10 +16,11 @@ import type {
   FieldLevelTranslationMode,
 } from './adapter/types';
 import {
-  createInternationalizedArrayTypes,
+  buildInternationalizedArrayPlugin,
   resolveFieldLevelConfig,
-} from './schema/createInternationalizedArrayTypes';
-import type { GTFieldLevelLocalizationConfig } from './schema/types';
+} from './schema/fieldLevelConfig';
+import type { GTFieldLevelLocalizationConfig } from './schema/fieldLevelConfig';
+import './schema/schemaOptions';
 import TranslationsTool from './components/page/TranslationsTool';
 import { documentInternationalization } from './documentInternationalization';
 import type { CustomDeserializers } from './serialization/types';
@@ -60,12 +64,22 @@ export type {
 export type { SerializedDocument } from './serialization/types';
 
 // ===== Field-Level (Internationalized Array) Localization ===== //
-export { createInternationalizedArrayTypes };
+// gt-sanity configures the reference plugin rather than shipping its own UI;
+// the plugin and its types are re-exported for direct/advanced use.
+export {
+  internationalizedArray,
+  internationalizedArrayLanguageFilter,
+  isInternationalizedArrayItemType,
+} from 'sanity-plugin-internationalized-array';
+export type {
+  PluginConfig as InternationalizedArrayPluginConfig,
+  Language as InternationalizedArrayLanguage,
+} from 'sanity-plugin-internationalized-array';
 export type {
   GTFieldLevelLocalizationConfig,
   FieldLevelFieldType,
-  FieldLevelUIComponents,
-} from './schema/types';
+} from './schema/fieldLevelConfig';
+export type { GTSchemaFieldOptions } from './schema/schemaOptions';
 export type { FieldLevelTranslationMode };
 
 export type GTPluginConfig = Omit<
@@ -93,12 +107,14 @@ export type GTPluginConfig = Omit<
   // with language badges, translation menu, and per-language templates.
   // Requires translateDocuments to specify which document types to enable translations for.
   showDocumentInternationalization?: boolean;
-  // Field-level (internationalized-array) localization. Generates
-  // `internationalizedArray*` schema types + input components when enabled.
+  // Field-level (internationalized-array) localization. When enabled,
+  // auto-configures sanity-plugin-internationalized-array (the reference
+  // plugin, which owns the schema types and Studio UI) from this plugin's
+  // locales. Leave disabled if you register that plugin yourself.
   // `fieldLevelLocalization` is a descriptive alias for the same config.
   internationalizedArray?: GTFieldLevelLocalizationConfig;
   fieldLevelLocalization?: GTFieldLevelLocalizationConfig;
-  // How matched documents are translated. Independent from schema generation:
+  // How matched documents are translated. Independent from schema setup:
   // enabling `internationalizedArray` only adds editable fields; routing
   // translation through the array path requires opting in here. Default 'document'.
   translationLevel?: FieldLevelTranslationMode;
@@ -163,9 +179,10 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
       normalizeFilters(fieldLevelDocuments) ?? [];
 
     // `internationalizedArray` and `fieldLevelLocalization` are aliases.
-    const fieldLevelConfig = resolveFieldLevelConfig(
-      internationalizedArray ?? fieldLevelLocalization
-    );
+    const rawFieldLevelConfig =
+      internationalizedArray ?? fieldLevelLocalization;
+    warnOnRemovedFieldLevelOptions(rawFieldLevelConfig);
+    const fieldLevelConfig = resolveFieldLevelConfig(rawFieldLevelConfig);
 
     pluginConfig.init(
       secretsNamespace,
@@ -185,8 +202,7 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
       additionalDeserializers,
       additionalBlockDeserializers,
       translationLevel,
-      normalizedFieldLevelDocuments,
-      fieldLevelConfig.typePrefix
+      normalizedFieldLevelDocuments
     );
     gt.setConfig({
       sourceLocale: resolvedSourceLocale,
@@ -235,25 +251,23 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
       }
     }
 
-    const schemaTypes = fieldLevelConfig.enabled
-      ? createInternationalizedArrayTypes({
-          sourceLocale: resolvedSourceLocale,
-          locales,
-          fieldTypes: fieldLevelConfig.fieldTypes,
-          languageTitles: fieldLevelConfig.languageTitles,
-          getLanguageTitle: fieldLevelConfig.getLanguageTitle,
-          typePrefix: fieldLevelConfig.typePrefix,
-          includeCompatibilityTypes: fieldLevelConfig.includeCompatibilityTypes,
-          components: fieldLevelConfig.components,
-        })
-      : [];
+    // Field-level localization is provided by the reference plugin,
+    // configured from gtPlugin's locales. Users who already register
+    // sanity-plugin-internationalized-array themselves should leave this
+    // disabled — translation only reads the stored data shape.
+    if (fieldLevelConfig.enabled) {
+      plugins.push(
+        buildInternationalizedArrayPlugin(
+          fieldLevelConfig,
+          resolvedSourceLocale,
+          locales
+        )
+      );
+    }
 
     return {
       name: 'gt-sanity',
       plugins,
-      schema: {
-        types: schemaTypes,
-      },
       tools: [
         {
           name: 'translations',
@@ -270,3 +284,31 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
     };
   }
 );
+
+// Options that existed while gt-sanity shipped its own field-level UI (v2.1.x)
+// and have no equivalent in sanity-plugin-internationalized-array.
+const REMOVED_FIELD_LEVEL_OPTIONS = [
+  'typePrefix',
+  'includeCompatibilityTypes',
+  'components',
+] as const;
+
+function warnOnRemovedFieldLevelOptions(
+  config: GTFieldLevelLocalizationConfig | undefined
+): void {
+  if (!config) return;
+  const removed = REMOVED_FIELD_LEVEL_OPTIONS.filter(
+    (key) => (config as Record<string, unknown>)[key] !== undefined
+  );
+  if (removed.length === 0) return;
+  console.warn(
+    createDiagnosticMessage({
+      source: 'gt-sanity',
+      severity: 'Warning',
+      whatHappened: `Ignored unsupported field-level localization ${removed.length === 1 ? 'option' : 'options'}`,
+      why: 'field-level localization is now provided by sanity-plugin-internationalized-array, which has no equivalent for these options',
+      fix: 'Remove them from the gtPlugin configuration',
+      details: removed,
+    })
+  );
+}

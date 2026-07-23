@@ -98,6 +98,44 @@ export const languageObjectFieldFilter = (
   return findBaseLang(obj);
 };
 
+/**
+ * Schema `options` namespaces that can exclude a field from translation.
+ * `gt.exclude` is gt-sanity's own; `documentInternationalization.exclude`
+ * (@sanity/document-internationalization) and `aiAssist.exclude`
+ * (@sanity/assist) are honored so studios don't have to maintain a second
+ * exclusion pattern for GT.
+ */
+type FieldExclusionOptions = {
+  gt?: { exclude?: boolean };
+  documentInternationalization?: { exclude?: boolean };
+  aiAssist?: { exclude?: boolean };
+};
+
+export const isFieldExcludedByOptions = (options: unknown): boolean => {
+  if (!isRecord(options)) return false;
+  const exclusionOptions = options as FieldExclusionOptions;
+  return (
+    exclusionOptions.gt?.exclude === true ||
+    exclusionOptions.documentInternationalization?.exclude === true ||
+    exclusionOptions.aiAssist?.exclude === true
+  );
+};
+
+/**
+ * A schema field is excluded from translation either by the legacy
+ * `localize: false` field property or by one of the `options` namespaces.
+ */
+export const isFieldExcludedFromTranslation = (field: ObjectField): boolean => {
+  const fieldMetadata = field as ObjectField & {
+    localize?: boolean;
+    options?: unknown;
+  };
+  return (
+    fieldMetadata.localize === false ||
+    isFieldExcludedByOptions(fieldMetadata.options)
+  );
+};
+
 /*
  * Eliminates stop-types and non-localizable fields
  * for document-level translation.
@@ -113,7 +151,6 @@ export const fieldFilter = (
 
   const fieldFilterFunc = (field: ObjectField): boolean => {
     const fieldMetadata = field as ObjectField & {
-      localize?: boolean;
       type?: string | { name?: string };
     };
     const fieldType =
@@ -121,7 +158,7 @@ export const fieldFilter = (
         ? fieldMetadata.type
         : fieldMetadata.type?.name;
 
-    if (fieldMetadata.localize === false) {
+    if (isFieldExcludedFromTranslation(field)) {
       return false;
     } else if (fieldType === 'string' || fieldType === 'text') {
       return true;
