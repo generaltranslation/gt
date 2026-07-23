@@ -52,6 +52,7 @@ describe('gt-next package exports', () => {
   });
 
   const distIt = existsSync(distInitGTServerPath) ? it : it.skip;
+  const distClientIt = existsSync(distClientPath) ? it : it.skip;
 
   distIt('keeps custom request functions visible to bundler aliases', () => {
     const serverBuild = readFileSync(distInitGTServerPath, 'utf8');
@@ -62,13 +63,16 @@ describe('gt-next package exports', () => {
     expect(serverBuild).not.toContain('serverRequire');
   });
 
-  distIt('keeps server diagnostics out of the client module graph', () => {
-    const clientModules = collectStaticModuleGraph(distClientPath);
+  distClientIt(
+    'keeps server diagnostics out of the client module graph',
+    () => {
+      const clientModules = collectStaticModuleGraph(distClientPath);
 
-    expect(clientModules).toContain('dist/errors/client.mjs');
-    expect(clientModules).toContain('dist/errors/request.mjs');
-    expect(clientModules).not.toContain('dist/errors/createErrors.mjs');
-  });
+      expect(clientModules).toContain('dist/errors/client.mjs');
+      expect(clientModules).toContain('dist/errors/request.mjs');
+      expect(clientModules).not.toContain('dist/errors/createErrors.mjs');
+    }
+  );
 
   distIt('initializes custom resolvers from the ESM server build', () => {
     const script = `
