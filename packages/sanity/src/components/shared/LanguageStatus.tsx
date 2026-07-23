@@ -56,8 +56,9 @@ export const LanguageStatus = ({
             fontSize={1}
             padding={2}
             onClick={handleImport}
-            text={isBusy ? 'Importing...' : 'Import'}
-            icon={isBusy ? null : DownloadIcon}
+            text='Import'
+            loading={isBusy}
+            icon={DownloadIcon}
             disabled={isBusy || !progress || progress < 100}
           />
         )}

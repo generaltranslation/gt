@@ -54,28 +54,6 @@ const TranslationsToolContent: React.FC = () => {
   // Track which specific operation is running
   const [currentOperation, setCurrentOperation] = useState<string | null>(null);
 
-  const getOperationText = (
-    operationName: string | null,
-    isProcessing: boolean
-  ) => {
-    if (!isProcessing || !operationName) return operationName;
-
-    switch (operationName) {
-      case 'Translate All':
-        return 'Translating...';
-      case 'Import All':
-        return 'Importing...';
-      case 'Import Missing':
-        return 'Importing...';
-      case 'Patch References':
-        return 'Patching...';
-      case 'Publish Translations':
-        return 'Publishing...';
-      default:
-        return 'Processing...';
-    }
-  };
-
   const getProgressOperationName = () => {
     switch (currentOperation) {
       case 'Import All':
@@ -119,10 +97,8 @@ const TranslationsToolContent: React.FC = () => {
 
             <Button
               icon={TranslateIcon}
-              text={getOperationText(
-                'Translate All',
-                isBusy && currentOperation === 'Translate All'
-              )}
+              text='Translate All'
+              loading={isBusy && currentOperation === 'Translate All'}
               onClick={() => {
                 setCurrentOperation('Translate All');
                 setIsTranslateAllDialogOpen(true);
@@ -156,7 +132,8 @@ const TranslationsToolContent: React.FC = () => {
                   padding={2}
                   mode='ghost'
                   icon={RefreshIcon}
-                  text={isRefreshing ? 'Refreshing...' : 'Refresh'}
+                  text='Refresh'
+                  loading={isRefreshing}
                   onClick={handleRefreshAll}
                   disabled={isRefreshing || actionsDisabled}
                 />
@@ -180,15 +157,9 @@ const TranslationsToolContent: React.FC = () => {
                       setCurrentOperation('Import All');
                       setIsImportAllDialogOpen(true);
                     }}
-                    text={getOperationText(
-                      'Import All',
-                      isBusy && currentOperation === 'Import All'
-                    )}
-                    icon={
-                      isBusy && currentOperation === 'Import All'
-                        ? null
-                        : DownloadIcon
-                    }
+                    text='Import All'
+                    loading={isBusy && currentOperation === 'Import All'}
+                    icon={DownloadIcon}
                     disabled={actionsDisabled}
                   />
                 </Tooltip>
@@ -203,15 +174,9 @@ const TranslationsToolContent: React.FC = () => {
                       setCurrentOperation('Import Missing');
                       setIsImportMissingDialogOpen(true);
                     }}
-                    text={getOperationText(
-                      'Import Missing',
-                      isBusy && currentOperation === 'Import Missing'
-                    )}
-                    icon={
-                      isBusy && currentOperation === 'Import Missing'
-                        ? null
-                        : DownloadIcon
-                    }
+                    text='Import Missing'
+                    loading={isBusy && currentOperation === 'Import Missing'}
+                    icon={DownloadIcon}
                     disabled={actionsDisabled}
                   />
                 </Tooltip>
@@ -226,15 +191,9 @@ const TranslationsToolContent: React.FC = () => {
                       setCurrentOperation('Patch References');
                       handlePatchDocumentReferences();
                     }}
-                    text={getOperationText(
-                      'Patch References',
-                      isBusy && currentOperation === 'Patch References'
-                    )}
-                    icon={
-                      isBusy && currentOperation === 'Patch References'
-                        ? null
-                        : LinkIcon
-                    }
+                    text='Patch References'
+                    loading={isBusy && currentOperation === 'Patch References'}
+                    icon={LinkIcon}
                     disabled={actionsDisabled}
                   />
                 </Tooltip>
@@ -249,15 +208,11 @@ const TranslationsToolContent: React.FC = () => {
                       setCurrentOperation('Publish Translations');
                       handlePublishAllTranslations();
                     }}
-                    text={getOperationText(
-                      'Publish Translations',
+                    text='Publish Translations'
+                    loading={
                       isBusy && currentOperation === 'Publish Translations'
-                    )}
-                    icon={
-                      isBusy && currentOperation === 'Publish Translations'
-                        ? null
-                        : PublishIcon
                     }
+                    icon={PublishIcon}
                     disabled={actionsDisabled}
                   />
                 </Tooltip>
