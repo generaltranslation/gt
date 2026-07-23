@@ -89,6 +89,7 @@ function convertV1ToV2(
         ...(entry.postProcessHash
           ? { postProcessHash: entry.postProcessHash }
           : {}),
+        ...(entry.fileName ? { fileName: entry.fileName } : {}),
       };
     }
 
@@ -121,6 +122,7 @@ function convertV2ToV1Branch(
         ...(translation.postProcessHash
           ? { postProcessHash: translation.postProcessHash }
           : {}),
+        ...(translation.fileName ? { fileName: translation.fileName } : {}),
       };
     }
   }
