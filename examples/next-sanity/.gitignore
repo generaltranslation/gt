@@ -7,3 +7,5 @@ next-env.d.ts
 !.env.example
 !src/sanity/lib/
 !src/sanity/lib/client.ts
+
+.env.local

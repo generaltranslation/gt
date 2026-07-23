@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "branchId": "brc_zgrxqhdkelauhry5xy63ccib",
+  "entries": [
+    {
+      "fileId": "879f3a5f954ee8b75bf1e91f4ea9916b41c933e5beba7eb6362647a637c9c66d",
+      "versionId": "24fce1df90505e1f4a61419059f5413982906974068e1e80009af16928cfa428",
+      "translations": {
+        "es": {
+          "updatedAt": "2026-07-23T00:07:53.114Z",
+          "fileName": "public/_gt/es.json",
+          "postProcessHash": "cb8a48d3df01a4f5b9d6ac1112bd9a722504ad3df39f9df04221ce6ee57a5721"
+        }
+      },
+      "fileName": "__INTERNAL_GT_TEMPLATE_NAME__",
+      "staged": false
+    }
+  ]
+}

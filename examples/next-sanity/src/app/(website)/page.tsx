@@ -1,13 +1,15 @@
-import { T } from 'gt-next';
+import { T, Var } from 'gt-next';
+import { getGT } from 'gt-next/server';
 import Link from 'next/link';
 import LocaleSelector from '@/components/LocaleSelector';
 import { getDocumentCount } from '@/sanity/lib/client';
 
 export default async function HomePage() {
+  const gt = await getGT();
   const documentCount = await getDocumentCount();
 
   return (
-    <T id='next-sanity-home'>
+    <T>
       <main className='page'>
         <p className='eyebrow'>GT-NEXT + SANITY</p>
         <h1>One app for translated pages and structured content.</h1>
@@ -35,9 +37,15 @@ export default async function HomePage() {
           <article className='card'>
             <h2>Sanity</h2>
             <p>
-              {documentCount === null
-                ? 'Add a Sanity project ID to load the embedded Studio and query content.'
-                : `Connected to a dataset with ${documentCount} documents.`}
+              <Var>
+                {documentCount === null
+                  ? gt(
+                      'Add a Sanity project ID to load the embedded Studio and query content.'
+                    )
+                  : gt(`Connected to a dataset with {count} documents.`, {
+                      count: documentCount,
+                    })}
+              </Var>
             </p>
           </article>
           <article className='card'>
