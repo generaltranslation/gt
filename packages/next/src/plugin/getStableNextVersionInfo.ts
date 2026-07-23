@@ -1,3 +1,5 @@
+import { createRequire } from 'module';
+
 import {
   createUnresolvedNextVersionError,
   createUnresolvedReactVersionError,
@@ -9,6 +11,10 @@ import {
   SWC_PLUGIN_SUPPORT,
 } from './constants';
 
+// @ts-expect-error gt-next declaration emit still uses CommonJS, but the ESM
+// config build needs import.meta.url because Node config files do not define require.
+const moduleRequire = createRequire(import.meta.url);
+
 /**
  * Get the next version of the package.
  */
@@ -16,12 +22,12 @@ function getPackageVersion(packageName: string): string {
   const packageJsonPath = `${packageName}/package.json`;
 
   try {
-    const resolvedPackageJsonPath = require.resolve(packageJsonPath, {
+    const resolvedPackageJsonPath = moduleRequire.resolve(packageJsonPath, {
       paths: [process.cwd()],
     });
-    return require(resolvedPackageJsonPath).version;
+    return moduleRequire(resolvedPackageJsonPath).version;
   } catch (_error) {
-    return require(packageJsonPath).version;
+    return moduleRequire(packageJsonPath).version;
   }
 }
 
