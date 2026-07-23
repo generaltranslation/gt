@@ -19,6 +19,10 @@ embedded Studio at [http://localhost:3000/studio](http://localhost:3000/studio).
 Without a project ID, `/studio` shows setup instructions instead of starting the
 Studio.
 
+The website renders up to six published `documentTranslationExample` and
+`fieldTranslationExample` documents. Drafts remain visible only in Studio until
+they are published.
+
 ## Translation fixtures
 
 - `documentTranslationExample` covers document-level strings, text, Portable

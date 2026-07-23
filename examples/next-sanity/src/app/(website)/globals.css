@@ -101,3 +101,71 @@ h1 {
   color: var(--muted);
   line-height: 1.5;
 }
+
+.sanity-content {
+  width: min(70rem, 100%);
+  margin: 0 auto;
+  padding: 0 1.5rem 4rem;
+}
+
+.sanity-content > h2 {
+  margin: 0.5rem 0 1.5rem;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 1rem;
+}
+
+.content-card {
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--card);
+}
+
+.content-card h3 {
+  margin: 0.5rem 0 1rem;
+  font-size: 1.5rem;
+}
+
+.content-card p {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.content-type {
+  margin: 0;
+  color: var(--accent) !important;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.content-section {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.content-section h4 {
+  margin-bottom: 0;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.tags li {
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  color: var(--foreground);
+  background: var(--background);
+  font-size: 0.8rem;
+}

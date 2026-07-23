@@ -35,7 +35,10 @@ function getCommonAncestor(paths: string[]): string {
 
   for (const currentPath of remainingPaths) {
     for (let index = 0; index < commonParts.length; index++) {
-      if (commonParts[index] !== currentPath[index]) {
+      if (
+        normalizeRoot(commonParts[index]!) !==
+        normalizeRoot(currentPath[index] ?? '')
+      ) {
         commonParts.length = index;
         break;
       }
