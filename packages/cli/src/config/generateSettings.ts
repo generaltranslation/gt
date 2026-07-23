@@ -35,6 +35,13 @@ export const DEFAULT_SRC_PATTERNS = [
   'app/**/*.{js,jsx,ts,tsx}',
   'pages/**/*.{js,jsx,ts,tsx}',
   'components/**/*.{js,jsx,ts,tsx}',
+  // Root-level source files (e.g. `server.js` from the gt-node quickstart).
+  // The negations below are root-scoped (a leading `*` never crosses `/`), so
+  // they exclude config/build/declaration files at the project root without
+  // affecting the directory patterns above.
+  '*.{js,jsx,ts,tsx}',
+  '!*.config.{js,cjs,mjs,ts,cts,mts}',
+  '!*.d.ts',
 ];
 
 export const DEFAULT_PYTHON_SRC_PATTERNS = ['**/*.py'];
