@@ -18,7 +18,7 @@ vi.mock('../../../console/logger.js', () => ({
 describe('SetupStep', () => {
   const gt = {
     setupProject: vi.fn(),
-    checkJobStatus: vi.fn(),
+    awaitJobs: vi.fn(),
   };
 
   const settings = {
@@ -47,9 +47,59 @@ describe('SetupStep', () => {
     const result = await step.run(files);
 
     expect(result).toBe(files);
-    expect(gt.checkJobStatus).not.toHaveBeenCalled();
+    expect(gt.awaitJobs).not.toHaveBeenCalled();
     expect(spinner.stop).toHaveBeenCalledWith(
       expect.stringContaining('Setup status unknown')
+    );
+  });
+
+  it.each([
+    [
+      'completed jobs',
+      { complete: true, jobs: [{ jobId: 'setup-job', status: 'completed' }] },
+      'Setup successfully completed',
+    ],
+    [
+      'failed jobs',
+      {
+        complete: true,
+        jobs: [
+          {
+            jobId: 'setup-job',
+            status: 'failed',
+            error: { message: 'Setup failed' },
+          },
+        ],
+      },
+      'Setup failed: Setup failed',
+    ],
+    [
+      'unknown jobs',
+      { complete: true, jobs: [{ jobId: 'setup-job', status: 'unknown' }] },
+      'Setup status unknown',
+    ],
+    [
+      'timed out jobs',
+      { complete: false, jobs: [{ jobId: 'setup-job', status: 'processing' }] },
+      'Setup timed out',
+    ],
+  ])('reports %s', async (_description, awaitResult, expectedMessage) => {
+    gt.setupProject.mockResolvedValue({
+      status: 'queued',
+      setupJobId: 'setup-job',
+    });
+    gt.awaitJobs.mockResolvedValue(awaitResult);
+    const step = new SetupStep(gt as unknown as GT, settings, 1_000);
+
+    const result = await step.run(files);
+
+    expect(result).toBe(files);
+    expect(gt.awaitJobs).toHaveBeenCalledWith(
+      ['setup-job'],
+      expect.objectContaining({ timeoutSeconds: 1 })
+    );
+    expect(spinner.stop).toHaveBeenCalledWith(
+      expect.stringContaining(expectedMessage)
     );
   });
 });
