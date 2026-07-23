@@ -133,25 +133,24 @@ const getFieldTypeName = (field: ObjectField): string | undefined => {
   return typeof fieldType === 'string' ? fieldType : fieldType?.name;
 };
 
-/*
- * Exclusion options on a type definition apply to every field of that type.
- * Object values also hit the runtime `_type` check in serializeObject, but
- * primitive and array aliases carry no runtime `_type`, so their type
- * definitions (and any alias chain) must be resolved through the schema here.
+/**
+ * Exclusion options on a type definition apply to every value of that type,
+ * including through chains of type aliases. Walks the named type and each
+ * alias target until a definition is excluded or the chain ends.
  */
-const isFieldTypeExcludedByOptions = (
-  field: ObjectField,
+export const isTypeExcludedByOptions = (
+  typeName: string | undefined,
   resolveType: SchemaTypeResolver | undefined
 ): boolean => {
   if (!resolveType) return false;
   const seen = new Set<string>();
-  let typeName = getFieldTypeName(field);
-  while (typeName && !seen.has(typeName)) {
-    seen.add(typeName);
-    const typeDef = resolveType(typeName);
+  let current = typeName;
+  while (current && !seen.has(current)) {
+    seen.add(current);
+    const typeDef = resolveType(current);
     if (!typeDef) return false;
     if (isFieldExcludedByOptions(typeDef.options)) return true;
-    typeName = typeof typeDef.type === 'string' ? typeDef.type : undefined;
+    current = typeof typeDef.type === 'string' ? typeDef.type : undefined;
   }
   return false;
 };
@@ -172,7 +171,7 @@ export const isFieldExcludedFromTranslation = (
   return (
     fieldMetadata.localize === false ||
     isFieldExcludedByOptions(fieldMetadata.options) ||
-    isFieldTypeExcludedByOptions(field, resolveType)
+    isTypeExcludedByOptions(getFieldTypeName(field), resolveType)
   );
 };
 

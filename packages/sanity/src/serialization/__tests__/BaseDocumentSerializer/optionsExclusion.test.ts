@@ -56,6 +56,13 @@ const excludedStringAliasType = {
   type: 'excludedString',
 };
 
+// Alias of an excluded object type: runtime values carry the alias `_type`.
+const excludedObjectAliasType = {
+  name: 'legalAlias',
+  title: 'Legal Alias',
+  type: 'legalBoilerplate',
+};
+
 // Control: an alias without exclusion options stays translatable.
 const includedStringType = {
   name: 'includedString',
@@ -103,6 +110,29 @@ const articleType = {
       type: 'excludedStringAlias',
     },
     { name: 'subtitle', title: 'Subtitle', type: 'includedString' },
+    { name: 'legalViaAlias', title: 'Legal Via Alias', type: 'legalAlias' },
+    {
+      name: 'legalList',
+      title: 'Legal List',
+      type: 'array',
+      of: [{ type: 'legalAlias' }],
+    },
+    // Anonymous inline object: exclusion inside declared fields must apply
+    // even though the runtime value carries no `_type`.
+    {
+      name: 'meta',
+      title: 'Meta',
+      type: 'object',
+      fields: [
+        { name: 'metaHeading', title: 'Meta Heading', type: 'string' },
+        {
+          name: 'inlineSecret',
+          title: 'Inline Secret',
+          type: 'string',
+          options: { gt: { exclude: true } },
+        },
+      ],
+    },
   ],
 };
 
@@ -114,6 +144,7 @@ const schema: InstanceType<typeof Schema> = new Schema({
     excludedStringType,
     excludedArrayType,
     excludedStringAliasType,
+    excludedObjectAliasType,
     includedStringType,
     articleType,
   ],
@@ -141,6 +172,21 @@ const doc = {
   tags: ['array-alias-excluded-value'],
   aliasedSecret: 'alias-chain-excluded-value',
   subtitle: 'string-alias-included-value',
+  legalViaAlias: {
+    _type: 'legalAlias',
+    text: 'object-alias-excluded-value',
+  },
+  legalList: [
+    {
+      _key: 'legal-item-1',
+      _type: 'legalAlias',
+      text: 'object-alias-in-array-excluded-value',
+    },
+  ],
+  meta: {
+    metaHeading: 'inline-object-heading',
+    inlineSecret: 'inline-object-excluded-value',
+  },
 } as unknown as SanityDocument;
 
 describe('isFieldExcludedByOptions', () => {
@@ -217,6 +263,21 @@ describe('serialization honors schema options exclusion', () => {
 
   test('keeps fields of alias types without exclusion options', () => {
     expect(serialized.content).toContain('string-alias-included-value');
+  });
+
+  test('excludes object alias fields of an excluded object type', () => {
+    expect(serialized.content).not.toContain('object-alias-excluded-value');
+  });
+
+  test('excludes object alias array members of an excluded object type', () => {
+    expect(serialized.content).not.toContain(
+      'object-alias-in-array-excluded-value'
+    );
+  });
+
+  test('excludes fields nested inside anonymous inline objects', () => {
+    expect(serialized.content).toContain('inline-object-heading');
+    expect(serialized.content).not.toContain('inline-object-excluded-value');
   });
 });
 
