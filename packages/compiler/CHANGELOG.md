@@ -1,5 +1,15 @@
 # @generaltranslation/compiler
 
+## 1.3.33
+
+### Patch Changes
+
+- [#1950](https://github.com/generaltranslation/gt/pull/1950) [`d801c41`](https://github.com/generaltranslation/gt/commit/d801c41134554726a0436eaf5b7b3f0242a3a91f) Thanks [@JoshKappler](https://github.com/JoshKappler)! - Export an `rspack` plugin adapter alongside the existing `webpack`, `vite`, `rollup`, and `esbuild` adapters. This lets Rspack based toolchains (such as Rsbuild) wire the GT compiler in through `tools.rspack.plugins`. The adapter is the `rspack` output of the shared unplugin instance, so it behaves identically to the other bundler adapters.
+
+- Updated dependencies [[`bbf4eb0`](https://github.com/generaltranslation/gt/commit/bbf4eb0cf77160baa615776619acd7afe35697ba), [`f53bb5e`](https://github.com/generaltranslation/gt/commit/f53bb5ea4b4989a2a4ad3aebf464011f01e029ad)]:
+  - generaltranslation@9.0.4
+  - @generaltranslation/format@0.1.3
+
 ## 1.3.32
 
 ### Patch Changes

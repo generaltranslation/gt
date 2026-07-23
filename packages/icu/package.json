@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/icu",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Dependency-free ICU MessageFormat parsing and formatting for General Translation",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",

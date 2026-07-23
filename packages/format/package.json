@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/format",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Locale and formatting utilities for General Translation",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
