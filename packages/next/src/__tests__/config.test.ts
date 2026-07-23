@@ -1189,7 +1189,6 @@ describe('withGTConfig', () => {
 
       const expectedKeys = [
         '_GENERALTRANSLATION_I18N_CONFIG_PARAMS',
-        '_GENERALTRANSLATION_CLIENT_I18N_CONFIG_PARAMS',
         '_GENERALTRANSLATION_LOCAL_DICTIONARY_ENABLED',
         '_GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED',
         '_GENERALTRANSLATION_DEFAULT_LOCALE',
@@ -1254,14 +1253,21 @@ describe('withGTConfig', () => {
           description: 'server-only description',
           loadTranslationsPath: './server-only-loader.ts',
           customMetadata: 'server-only metadata',
+          cacheExpiryTime: 12345,
+          _versionId: 'version-id',
+          _disableDevHotReload: true,
         }
       );
 
       const clientConfig = JSON.parse(
-        result.env!._GENERALTRANSLATION_CLIENT_I18N_CONFIG_PARAMS!
+        result.env!.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS!
       );
-      expect(clientConfig).toMatchObject({
+      expect(clientConfig).toEqual({
+        defaultLocale: expect.any(String),
+        locales: expect.any(Array),
+        runtimeUrl: expect.any(String),
         cacheUrl: expect.any(String),
+        cacheExpiryTime: 12345,
         maxConcurrentRequests: expect.any(Number),
         maxBatchSize: expect.any(Number),
         batchInterval: expect.any(Number),
@@ -1270,11 +1276,9 @@ describe('withGTConfig', () => {
           localeCookieName: expect.any(String),
           enableI18nCookieName: expect.any(String),
         },
+        _versionId: 'version-id',
+        _disableDevHotReload: true,
       });
-      expect(clientConfig).not.toHaveProperty('description');
-      expect(clientConfig).not.toHaveProperty('loadTranslationsPath');
-      expect(clientConfig).not.toHaveProperty('customMetadata');
-      expect(clientConfig).not.toHaveProperty('experimentalCompilerOptions');
     });
 
     it('boolean flags are string "true"/"false", not booleans', async () => {

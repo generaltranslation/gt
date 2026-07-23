@@ -9,29 +9,28 @@ function setConfigEnv() {
       defaultLocale: 'en',
       locales: ['en', 'fr'],
       runtimeUrl: 'https://runtime.example.com',
+      cacheUrl: 'https://cache.example.com',
+      renderSettings: { timeout: 123 },
+      headersAndCookies: {
+        localeCookieName: 'custom-locale',
+        enableI18nCookieName: 'custom-enable-i18n',
+      },
+      maxConcurrentRequests: 1,
+      maxBatchSize: 2,
+      batchInterval: 3,
+      cacheExpiryTime: 12345,
+      _versionId: 'version-id',
     });
-  process.env._GENERALTRANSLATION_CLIENT_I18N_CONFIG_PARAMS = JSON.stringify({
-    cacheUrl: 'https://cache.example.com',
-    renderSettings: { timeout: 123 },
-    headersAndCookies: {
-      localeCookieName: 'custom-locale',
-      enableI18nCookieName: 'custom-enable-i18n',
-    },
-    maxConcurrentRequests: 1,
-    maxBatchSize: 2,
-    batchInterval: 3,
-    cacheExpiryTime: 12345,
-    _versionId: 'version-id',
-  });
 }
 
-function updatePrivateConfig(config: Record<string, unknown>) {
-  process.env._GENERALTRANSLATION_CLIENT_I18N_CONFIG_PARAMS = JSON.stringify({
-    ...JSON.parse(
-      process.env._GENERALTRANSLATION_CLIENT_I18N_CONFIG_PARAMS || '{}'
-    ),
-    ...config,
-  });
+function updateClientConfig(config: Record<string, unknown>) {
+  process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS =
+    JSON.stringify({
+      ...JSON.parse(
+        process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS || '{}'
+      ),
+      ...config,
+    });
 }
 
 describe('getParams', () => {
@@ -81,10 +80,8 @@ describe('getParams', () => {
   });
 
   it('lets the i18n cache choose the remote translation loader', () => {
-    updatePrivateConfig({
-      _cacheComponentsEnabled: true,
+    updateClientConfig({
       _disableDevHotReload: true,
-      loadTranslationsType: 'remote',
       cacheExpiryTime: 0,
     });
 

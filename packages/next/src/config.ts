@@ -45,7 +45,6 @@ import {
   cacheComponentsDevHotReloadDisabledWarning,
   cacheComponentsMissingLoadTranslationsError,
 } from './errors/cacheComponents';
-import { I18nConfigParams } from 'gt-i18n/internal/types';
 import { getRuntimeCredentials } from './setup/runtimeCredentials';
 
 type AutoderiveConfig = boolean | { jsx?: boolean; strings?: boolean };
@@ -596,16 +595,11 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     ...privateConfigParams
   } = mergedConfig;
   const I18NConfigParams = JSON.stringify(privateConfigParams);
-  const publicI18NConfigParams: Omit<
-    I18nConfigParams,
-    'projectId' | 'devApiKey' | 'apiKey'
-  > = {
+  const clientI18NConfigParams = {
     defaultLocale: mergedConfig.defaultLocale,
     locales: mergedConfig.locales,
     customMapping: mergedConfig.customMapping,
     runtimeUrl: mergedConfig.runtimeUrl,
-  };
-  const clientI18NConfigParams = {
     cacheUrl: mergedConfig.cacheUrl,
     cacheExpiryTime: mergedConfig.cacheExpiryTime,
     maxConcurrentRequests: mergedConfig.maxConcurrentRequests,
@@ -683,9 +677,6 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
       ...internalNextConfig.env,
       _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams,
       NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS: JSON.stringify(
-        publicI18NConfigParams
-      ),
-      _GENERALTRANSLATION_CLIENT_I18N_CONFIG_PARAMS: JSON.stringify(
         clientI18NConfigParams
       ),
       ...(resolvedDictionaryFilePathType && {

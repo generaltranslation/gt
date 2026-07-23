@@ -14,20 +14,17 @@ export function getParams(): {
   nextI18nCacheParams: NextI18nCacheParams;
 } {
   // Read from build output
-  const publicConfig = JSON.parse(
-    process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS || '{}'
-  );
   const clientConfig = JSON.parse(
-    process.env._GENERALTRANSLATION_CLIENT_I18N_CONFIG_PARAMS || '{}'
+    process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS || '{}'
   );
   const { projectId, devApiKey, apiKey } = getRuntimeCredentials();
 
   // I18nConfigParams
   const i18nConfigParams: NextSetupI18nConfigParams = {
-    defaultLocale: publicConfig.defaultLocale,
-    locales: publicConfig.locales,
-    customMapping: publicConfig.customMapping,
-    runtimeUrl: publicConfig.runtimeUrl,
+    defaultLocale: clientConfig.defaultLocale,
+    locales: clientConfig.locales,
+    customMapping: clientConfig.customMapping,
+    runtimeUrl: clientConfig.runtimeUrl,
     projectId,
     devApiKey,
     apiKey,
@@ -43,7 +40,7 @@ export function getParams(): {
     apiKey,
     devApiKey,
     projectId,
-    runtimeUrl: publicConfig.runtimeUrl,
+    runtimeUrl: clientConfig.runtimeUrl,
     cacheUrl: clientConfig.cacheUrl,
     _versionId: clientConfig._versionId,
     cacheExpiryTime: clientConfig.cacheExpiryTime,
@@ -58,7 +55,7 @@ export function getParams(): {
       // TODO: reduce redundancy in this config
       timeout,
       metadata: {
-        sourceLocale: publicConfig.defaultLocale,
+        sourceLocale: clientConfig.defaultLocale,
         timeout,
         projectId,
         publish: true,
