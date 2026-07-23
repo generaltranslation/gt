@@ -1,6 +1,6 @@
 {
   "name": "gt-sanity",
-  "version": "2.1.4",
+  "version": "3.0.0",
   "description": "General Translation integration with Sanity",
   "keywords": [
     "sanity",
@@ -79,7 +79,8 @@
     "generaltranslation": "workspace:*",
     "jsonpath-plus": "^10.3.0",
     "jsonpointer": "^5.0.1",
-    "lodash.merge": "^4.6.2"
+    "lodash.merge": "^4.6.2",
+    "sanity-plugin-internationalized-array": "^5.1.0"
   },
   "devDependencies": {
     "@portabletext/types": "^2.0.15",

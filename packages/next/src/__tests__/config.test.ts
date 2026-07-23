@@ -1242,6 +1242,45 @@ describe('withGTConfig', () => {
       expect(parsed.devApiKey).toBeUndefined();
     });
 
+    it('limits client config params to runtime fields', async () => {
+      const withGTConfig = await getWithGTConfig();
+      vi.mocked(fs.existsSync).mockImplementation((filepath) =>
+        String(filepath).endsWith('server-only-loader.ts')
+      );
+      const result = withGTConfig(
+        {},
+        {
+          description: 'server-only description',
+          loadTranslationsPath: './server-only-loader.ts',
+          customMetadata: 'server-only metadata',
+          cacheExpiryTime: 12345,
+          _versionId: 'version-id',
+          _disableDevHotReload: true,
+        }
+      );
+
+      const clientConfig = JSON.parse(
+        result.env!.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS!
+      );
+      expect(clientConfig).toEqual({
+        defaultLocale: expect.any(String),
+        locales: expect.any(Array),
+        runtimeUrl: expect.any(String),
+        cacheUrl: expect.any(String),
+        cacheExpiryTime: 12345,
+        maxConcurrentRequests: expect.any(Number),
+        maxBatchSize: expect.any(Number),
+        batchInterval: expect.any(Number),
+        renderSettings: { timeout: expect.any(Number) },
+        headersAndCookies: {
+          localeCookieName: expect.any(String),
+          enableI18nCookieName: expect.any(String),
+        },
+        _versionId: 'version-id',
+        _disableDevHotReload: true,
+      });
+    });
+
     it('boolean flags are string "true"/"false", not booleans', async () => {
       const withGTConfig = await getWithGTConfig();
       const result = withGTConfig();

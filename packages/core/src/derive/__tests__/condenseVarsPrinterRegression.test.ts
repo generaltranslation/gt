@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { parse } from '@formatjs/icu-messageformat-parser';
+import { formatMessage, parse } from '@generaltranslation/icu';
 import { condenseVars } from '../condenseVars';
 
-// Pins the exact serialized output produced by the FormatJS `printAST`
-// implementation that condenseVars historically used. The vendored printer
-// must keep every one of these outputs byte-identical, because the condensed
-// strings feed into hashing.
+// Pins representative serialized output used transiently by condenseVars
+// before runtime interpolation. Round-trip and rendered-value compatibility
+// are required; byte parity with the old printer is preferred but not required.
+// Translation hashing uses indexVars source slices and does not call this printer.
 describe('condenseVars printer regression', () => {
   it.each([
     ['single indexed select', '{_gt_1, select, other {}}', '{_gt_1}'],
@@ -86,6 +86,11 @@ describe('condenseVars printer regression', () => {
       '{count,plural,offset:2 =0{none} =1{one} other{# left}} {_gt_1}',
     ],
     [
+      'plural with lexically distinct exact matches',
+      '{count, plural, =1 {canonical} =01 {leading} =+1 {positive} other {other}} {_gt_1, select, other {}}',
+      '{count,plural,=1{canonical} =01{leading} =+1{positive} other{other}} {_gt_1}',
+    ],
+    [
       'selectordinal with pound',
       '{place, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} {_gt_1, select, other {}}',
       '{place,selectordinal,one{#st} two{#nd} few{#rd} other{#th}} {_gt_1}',
@@ -121,6 +126,11 @@ describe('condenseVars printer regression', () => {
       "Show '{raw} and }' {_gt_1}",
     ],
     [
+      'apostrophe inside quoted braces',
+      "'{isn''t}' {_gt_1, select, other {}}",
+      "'{isn''t}' {_gt_1}",
+    ],
+    [
       'escaped apostrophes',
       "It''s {_gt_1, select, other {}} o''clock",
       "It's {_gt_1} o'clock",
@@ -131,9 +141,54 @@ describe('condenseVars printer regression', () => {
       "{_gt_1}''s book",
     ],
     [
+      'even apostrophe run before quoted braces',
+      "{_gt_1,select,other{}}'''{}'#",
+      "{_gt_1}'''{}'#",
+    ],
+    [
+      'even apostrophe run before closing braces',
+      "{_gt_1, select, other {Ada}}''}}",
+      "{_gt_1}'''}}'",
+    ],
+    [
+      'tag-like text in a named style',
+      '{_gt_1, select, other {Ada}} {n, number, custom<a>}',
+      '{_gt_1} {n, number, custom<a>}',
+    ],
+    [
+      'paired braces in a named style',
+      '{_gt_1, select, other {Ada}} {n, number, custom{nested}}',
+      "{_gt_1} {n, number, custom{nested}'}'",
+    ],
+    [
+      'quoted braces in a named style',
+      "{_gt_1, select, other {Ada}} {n, number, custom'{nested}'}",
+      "{_gt_1} {n, number, custom'{nested}'}",
+    ],
+    [
+      'apostrophe at a closing tag boundary',
+      "<b>{_gt_1, select, other {Ada}}''</b>",
+      "<b>{_gt_1}''</b>",
+    ],
+    [
       'escaped pound inside plural',
       "{count, plural, other {'#' # {_gt_1, select, other {}}}}",
       "{count,plural,other{'#' # {_gt_1}}}",
+    ],
+    [
+      'multiple escaped pounds inside plural',
+      "{_gt_1, select, other {Ada}} {count, plural, other {'##'}}",
+      "{_gt_1} {count,plural,other{'##'}}",
+    ],
+    [
+      'self-closing tag after quoted syntax',
+      "{_gt_1, select, other {Ada}} '}'<br/> done",
+      "{_gt_1} '}'<br/> done",
+    ],
+    [
+      'self-closing tag between an argument and text',
+      '{_gt_1, select, other {Ada}}<br/>done',
+      '{_gt_1}<br/>done',
     ],
     [
       'unicode and emoji',
@@ -160,5 +215,34 @@ describe('condenseVars printer regression', () => {
 
     expect(result).toBe(expected);
     expect(() => parse(result)).not.toThrow();
+  });
+
+  it('preserves multiple literal pounds through condense and runtime formatting', () => {
+    const condensed = condenseVars(
+      "{_gt_1, select, other {Ada}} {count, plural, other {'##'}}"
+    );
+
+    expect(formatMessage(condensed, 'en', { _gt_1: 'Ada', count: 7 })).toBe(
+      'Ada ##'
+    );
+  });
+
+  it('preserves quoted syntax adjacent to a self-closing tag at runtime', () => {
+    const condensed = condenseVars(
+      "{_gt_1, select, other {Ada}} '}'<br/> done"
+    );
+
+    expect(formatMessage(condensed, 'en', { _gt_1: 'Ada' })).toBe(
+      'Ada }<br/> done'
+    );
+  });
+
+  it.each([
+    ["{_gt_1,select,other{}}'''{}'#", "Ada'{}#"],
+    ["{_gt_1, select, other {Ada}}''}}", "Ada'}}"],
+  ])('preserves apostrophe-boundary rendering for %j', (message, expected) => {
+    const condensed = condenseVars(message);
+
+    expect(formatMessage(condensed, 'en', { _gt_1: 'Ada' })).toBe(expected);
   });
 });

@@ -6,7 +6,12 @@ import {
 } from '../BaseSerializationConfig';
 import { ObjectField, SanityDocument, TypedObject, Schema } from 'sanity';
 import { TranslationLevel } from '../types';
-import { fieldFilter, languageObjectFieldFilter } from './fieldFilters';
+import {
+  fieldFilter,
+  isFieldExcludedFromTranslation,
+  isTypeExcludedByOptions,
+  languageObjectFieldFilter,
+} from './fieldFilters';
 import {
   PortableTextHtmlComponents,
   PortableTextTypeComponent,
@@ -17,7 +22,21 @@ import { libraryDefaultLocale } from 'generaltranslation/internal';
 const META_FIELDS = ['_key', '_type', '_id', '_weak'];
 
 type SchemaTypeWithFields = {
+  type?: unknown;
   fields?: ObjectField[];
+  options?: unknown;
+};
+
+/**
+ * A raw (uncompiled) schema field or array-member definition. Inline object
+ * declarations carry their `fields` here, and array declarations carry their
+ * member definitions in `of`.
+ */
+type RawFieldDef = {
+  name?: string;
+  type?: string;
+  fields?: ObjectField[];
+  of?: RawFieldDef[];
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -32,12 +51,42 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
       | SchemaTypeWithFields
       | undefined;
 
+  /*
+   * Resolve a type name to its declared fields, following chains of type
+   * aliases (a type whose definition just references another named type).
+   */
+  const resolveSchemaFields = (
+    typeName: string | undefined
+  ): ObjectField[] | undefined => {
+    const seen = new Set<string>();
+    let current = typeName;
+    while (current && !seen.has(current)) {
+      seen.add(current);
+      const typeDef = getSchema(current);
+      if (!typeDef) return undefined;
+      if (typeDef.fields) return typeDef.fields;
+      current = typeof typeDef.type === 'string' ? typeDef.type : undefined;
+    }
+    return undefined;
+  };
+
   const serializeObject = (
     obj: TypedObject,
     stopTypes: string[],
-    serializers: Partial<PortableTextHtmlComponents>
+    serializers: Partial<PortableTextHtmlComponents>,
+    // Declared fields from the enclosing field or array-member definition.
+    // Used when the value itself resolves to no schema type — anonymous
+    // inline objects carry no `_type`.
+    declaredFields?: ObjectField[]
   ) => {
     if (stopTypes.includes(obj._type)) {
+      return '';
+    }
+
+    // The exclusion options also apply to a type definition's own `options`
+    // ("this field or type" in the native plugins' semantics), including
+    // through chains of type aliases.
+    if (isTypeExcludedByOptions(obj._type, getSchema)) {
       return '';
     }
 
@@ -58,13 +107,27 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
 
     //if schema is available, encode values in the order they're declared in the schema,
     //since this will likely be more intuitive for a translator.
+    //fields the schema excludes from translation (localize: false or an
+    //options exclusion) are dropped here so exclusion applies at any depth.
     let fieldNames = Object.keys(obj).filter((key) => key !== '_type');
-    const schema = getSchema(obj._type);
-    if (schema && schema.fields) {
-      fieldNames = schema.fields
+    const resolvedFields = resolveSchemaFields(obj._type);
+    if (resolvedFields) {
+      fieldNames = resolvedFields
+        .filter((field) => !isFieldExcludedFromTranslation(field, getSchema))
         .map((field) => field.name)
         .filter((schemaKey) => Object.keys(obj).includes(schemaKey));
+    } else if (declaredFields) {
+      //anonymous inline objects have no schema type of their own; keep every
+      //runtime key (undeclared data still round-trips) but drop keys whose
+      //inline declaration excludes them from translation
+      const excludedNames = new Set(
+        declaredFields
+          .filter((field) => isFieldExcludedFromTranslation(field, getSchema))
+          .map((field) => field.name)
+      );
+      fieldNames = fieldNames.filter((name) => !excludedNames.has(name));
     }
+    const knownFields = resolvedFields ?? declaredFields;
 
     //account for anonymous inline objects
     if (typeof obj === 'object' && !obj._type) {
@@ -92,6 +155,9 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
 
       if (!META_FIELDS.includes(fieldName)) {
         const value = obj[fieldName];
+        const fieldDef = knownFields?.find(
+          (field) => field.name === fieldName
+        ) as RawFieldDef | undefined;
         //strings are either string fields or have recursively been turned
         //into HTML because they were a nested object or array
         if (typeof value === 'string') {
@@ -105,28 +171,40 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
 
         //array fields get filtered and its children serialized
         else if (Array.isArray(value)) {
-          htmlField = serializeArray(value, fieldName, stopTypes, {
-            ...serializers,
-            types: { ...typeSerializers },
-          });
+          htmlField = serializeArray(
+            value,
+            fieldName,
+            stopTypes,
+            {
+              ...serializers,
+              types: { ...typeSerializers },
+            },
+            fieldDef?.of
+          );
         }
 
         //this is an object in an object, serialize it first
         else if (isRecord(value)) {
           const embeddedObject = value as TypedObject;
-          const embeddedObjectSchema = getSchema(embeddedObject._type);
+          const embeddedFields = resolveSchemaFields(embeddedObject._type);
           let toTranslate = embeddedObject;
-          if (embeddedObjectSchema && embeddedObjectSchema.fields) {
+          if (embeddedFields) {
             toTranslate = fieldFilter(
               toTranslate,
-              embeddedObjectSchema.fields,
-              stopTypes
+              embeddedFields,
+              stopTypes,
+              getSchema
             );
           }
-          const objHTML = serializeObject(toTranslate, stopTypes, {
-            ...serializers,
-            types: { ...typeSerializers },
-          });
+          const objHTML = serializeObject(
+            toTranslate,
+            stopTypes,
+            {
+              ...serializers,
+              types: { ...typeSerializers },
+            },
+            fieldDef?.fields
+          );
           htmlField = `<div class="${fieldName}" data-level="field">${objHTML}</div>`;
         }
 
@@ -172,7 +250,10 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
     fieldContent: Array<Record<string, unknown> | string>,
     fieldName: string,
     stopTypes: string[],
-    serializers: Partial<PortableTextHtmlComponents>
+    serializers: Partial<PortableTextHtmlComponents>,
+    // Declared member definitions (the array field's `of`), used to resolve
+    // fields of anonymous inline object members that carry no schema type.
+    memberDefs?: RawFieldDef[]
   ) => {
     //filter for any blocks that user has indicated
     //should not be sent for translation
@@ -183,28 +264,39 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
         !stopTypes.includes(block._type)
     );
 
-    //take out any fields in these blocks that should
-    //not be sent to translation
-    const filteredBlocks = validBlocks.map((block) => {
-      if (typeof block === 'string') {
-        return block;
-      }
-      const schema = getSchema(
-        typeof block._type === 'string' ? block._type : ''
+    //fields declared inline on the matching array-member definition
+    const declaredMemberFields = (
+      blockType: string | undefined
+    ): ObjectField[] | undefined => {
+      if (!memberDefs?.length) return undefined;
+      const byName = memberDefs.find(
+        (def) => def.name === blockType || def.type === blockType
       );
-      if (schema && schema.fields) {
-        return fieldFilter(block, schema.fields, stopTypes);
-      }
-      return block;
-    });
+      if (byName?.fields) return byName.fields;
+      if (!blockType && memberDefs.length === 1) return memberDefs[0].fields;
+      return undefined;
+    };
 
-    const output = filteredBlocks.map((obj) => {
+    const output = validBlocks.map((block) => {
       //if object in array is just a string, just return it
-      if (typeof obj === 'string') {
-        return `<span>${obj}</span>`;
+      if (typeof block === 'string') {
+        return `<span>${block}</span>`;
       }
+      //take out any fields in this block that should
+      //not be sent to translation
+      const blockType =
+        typeof block._type === 'string' ? block._type : undefined;
+      const memberFields = resolveSchemaFields(blockType);
+      const filtered = memberFields
+        ? fieldFilter(block, memberFields, stopTypes, getSchema)
+        : block;
       //send to serialization method
-      return serializeObject(obj as TypedObject, stopTypes, serializers);
+      return serializeObject(
+        filtered as TypedObject,
+        stopTypes,
+        serializers,
+        declaredMemberFields(blockType)
+      );
     });
 
     //encode this with data-level field
@@ -233,7 +325,12 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
     //otherwise, we can refer to the schema and a list of stop types
     //to determine what should not be sent
     else {
-      filteredObj = fieldFilter(doc, schema?.fields ?? [], stopTypes);
+      filteredObj = fieldFilter(
+        doc,
+        schema?.fields ?? [],
+        stopTypes,
+        getSchema
+      );
     }
 
     const serializedFields: Record<string, unknown> = {};
@@ -241,6 +338,9 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
     for (const key in filteredObj) {
       if (filteredObj.hasOwnProperty(key) === false) continue;
       const value = filteredObj[key];
+      const fieldDef = schema?.fields?.find((field) => field.name === key) as
+        | RawFieldDef
+        | undefined;
 
       if (typeof value === 'string') {
         serializedFields[key] = value;
@@ -252,7 +352,8 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
           ),
           key,
           stopTypes,
-          serializers
+          serializers,
+          fieldDef?.of
         );
       } else if (
         value &&
@@ -262,7 +363,8 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
         const serialized = serializeObject(
           value as TypedObject,
           stopTypes,
-          serializers
+          serializers,
+          fieldDef?.fields
         );
         serializedFields[key] =
           `<div class="${key}" data-level='field'>${serialized}</div>`;

@@ -56,6 +56,18 @@ describe('gtFallback', () => {
       expect(result).toBe('Bonjour John !');
     });
 
+    it('preserves multiple literal pounds while condensing a translation', () => {
+      const source = 'Hello {_gt_, select, other {Ada}}!';
+      const translation =
+        "{_gt_1, select, other {}}: {count, plural, other {'##'}}";
+      const result = gtFallback(translation, {
+        count: 7,
+        $_fallback: source,
+      });
+
+      expect(result).toBe('Ada: ##');
+    });
+
     it('resolves multiple declareVars with reordering in translation', () => {
       const source =
         'I play with {_gt_, select, other {toys}} at the {_gt_, select, other {park}}';
