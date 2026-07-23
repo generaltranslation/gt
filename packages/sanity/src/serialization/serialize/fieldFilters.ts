@@ -121,18 +121,58 @@ export const isFieldExcludedByOptions = (options: unknown): boolean => {
   );
 };
 
-/**
- * A schema field is excluded from translation either by the legacy
- * `localize: false` field property or by one of the `options` namespaces.
+/** Resolves a schema type name to its raw type definition, if registered. */
+export type SchemaTypeResolver = (
+  typeName: string
+) => { type?: unknown; options?: unknown } | undefined;
+
+const getFieldTypeName = (field: ObjectField): string | undefined => {
+  const fieldType = (
+    field as ObjectField & { type?: string | { name?: string } }
+  ).type;
+  return typeof fieldType === 'string' ? fieldType : fieldType?.name;
+};
+
+/*
+ * Exclusion options on a type definition apply to every field of that type.
+ * Object values also hit the runtime `_type` check in serializeObject, but
+ * primitive and array aliases carry no runtime `_type`, so their type
+ * definitions (and any alias chain) must be resolved through the schema here.
  */
-export const isFieldExcludedFromTranslation = (field: ObjectField): boolean => {
+const isFieldTypeExcludedByOptions = (
+  field: ObjectField,
+  resolveType: SchemaTypeResolver | undefined
+): boolean => {
+  if (!resolveType) return false;
+  const seen = new Set<string>();
+  let typeName = getFieldTypeName(field);
+  while (typeName && !seen.has(typeName)) {
+    seen.add(typeName);
+    const typeDef = resolveType(typeName);
+    if (!typeDef) return false;
+    if (isFieldExcludedByOptions(typeDef.options)) return true;
+    typeName = typeof typeDef.type === 'string' ? typeDef.type : undefined;
+  }
+  return false;
+};
+
+/**
+ * A schema field is excluded from translation by the legacy `localize: false`
+ * field property, by one of the `options` namespaces on the field itself, or
+ * by exclusion options on the type definition the field references.
+ */
+export const isFieldExcludedFromTranslation = (
+  field: ObjectField,
+  resolveType?: SchemaTypeResolver
+): boolean => {
   const fieldMetadata = field as ObjectField & {
     localize?: boolean;
     options?: unknown;
   };
   return (
     fieldMetadata.localize === false ||
-    isFieldExcludedByOptions(fieldMetadata.options)
+    isFieldExcludedByOptions(fieldMetadata.options) ||
+    isFieldTypeExcludedByOptions(field, resolveType)
   );
 };
 
@@ -143,22 +183,17 @@ export const isFieldExcludedFromTranslation = (field: ObjectField): boolean => {
 export const fieldFilter = (
   obj: Record<string, unknown>,
   objFields: ObjectField[],
-  stopTypes: string[]
+  stopTypes: string[],
+  resolveType?: SchemaTypeResolver
 ): TypedObject => {
   const filteredObj: TypedObject = {
     _type: typeof obj._type === 'string' ? obj._type : '',
   };
 
   const fieldFilterFunc = (field: ObjectField): boolean => {
-    const fieldMetadata = field as ObjectField & {
-      type?: string | { name?: string };
-    };
-    const fieldType =
-      typeof fieldMetadata.type === 'string'
-        ? fieldMetadata.type
-        : fieldMetadata.type?.name;
+    const fieldType = getFieldTypeName(field);
 
-    if (isFieldExcludedFromTranslation(field)) {
+    if (isFieldExcludedFromTranslation(field, resolveType)) {
       return false;
     } else if (fieldType === 'string' || fieldType === 'text') {
       return true;

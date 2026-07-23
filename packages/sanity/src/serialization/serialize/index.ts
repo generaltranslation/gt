@@ -76,7 +76,7 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
     const schema = getSchema(obj._type);
     if (schema && schema.fields) {
       fieldNames = schema.fields
-        .filter((field) => !isFieldExcludedFromTranslation(field))
+        .filter((field) => !isFieldExcludedFromTranslation(field, getSchema))
         .map((field) => field.name)
         .filter((schemaKey) => Object.keys(obj).includes(schemaKey));
     }
@@ -135,7 +135,8 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
             toTranslate = fieldFilter(
               toTranslate,
               embeddedObjectSchema.fields,
-              stopTypes
+              stopTypes,
+              getSchema
             );
           }
           const objHTML = serializeObject(toTranslate, stopTypes, {
@@ -208,7 +209,7 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
         typeof block._type === 'string' ? block._type : ''
       );
       if (schema && schema.fields) {
-        return fieldFilter(block, schema.fields, stopTypes);
+        return fieldFilter(block, schema.fields, stopTypes, getSchema);
       }
       return block;
     });
@@ -248,7 +249,12 @@ export const BaseDocumentSerializer = (schemas: Schema) => {
     //otherwise, we can refer to the schema and a list of stop types
     //to determine what should not be sent
     else {
-      filteredObj = fieldFilter(doc, schema?.fields ?? [], stopTypes);
+      filteredObj = fieldFilter(
+        doc,
+        schema?.fields ?? [],
+        stopTypes,
+        getSchema
+      );
     }
 
     const serializedFields: Record<string, unknown> = {};

@@ -1,4 +1,5 @@
 import { getLocaleProperties } from 'generaltranslation';
+import type { CustomMapping } from 'generaltranslation/types';
 import type { PluginOptions } from 'sanity';
 import { internationalizedArray } from 'sanity-plugin-internationalized-array';
 import type { PluginConfig as InternationalizedArrayPluginConfig } from 'sanity-plugin-internationalized-array';
@@ -92,12 +93,13 @@ function toNativeFieldType(
 export function buildInternationalizedArrayPlugin(
   config: ResolvedFieldLevelConfig,
   sourceLocale: string,
-  locales: string[]
+  locales: string[],
+  customMapping?: CustomMapping
 ): PluginOptions {
   const languageTitle = (locale: string) =>
     config.getLanguageTitle?.(locale) ??
     config.languageTitles?.[locale] ??
-    getLocaleProperties(locale, sourceLocale).name ??
+    getLocaleProperties(locale, sourceLocale, customMapping).name ??
     locale;
 
   const allLocales = Array.from(new Set([sourceLocale, ...locales]));

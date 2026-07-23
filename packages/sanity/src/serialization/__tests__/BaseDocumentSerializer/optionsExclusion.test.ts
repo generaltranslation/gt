@@ -32,6 +32,37 @@ const excludedObjectType = {
   fields: [{ name: 'text', title: 'Text', type: 'string' }],
 };
 
+// Primitive and array aliases carry no runtime `_type`, so their exclusion
+// must be resolved from the schema rather than from the serialized value.
+const excludedStringType = {
+  name: 'excludedString',
+  title: 'Excluded String',
+  type: 'string',
+  options: { gt: { exclude: true } },
+};
+
+const excludedArrayType = {
+  name: 'excludedTags',
+  title: 'Excluded Tags',
+  type: 'array',
+  of: [{ type: 'string' }],
+  options: { gt: { exclude: true } },
+};
+
+// Alias of an excluded alias: exclusion applies through the chain.
+const excludedStringAliasType = {
+  name: 'excludedStringAlias',
+  title: 'Excluded String Alias',
+  type: 'excludedString',
+};
+
+// Control: an alias without exclusion options stays translatable.
+const includedStringType = {
+  name: 'includedString',
+  title: 'Included String',
+  type: 'string',
+};
+
 const articleType = {
   name: 'optionsArticle',
   title: 'Options Article',
@@ -64,12 +95,28 @@ const articleType = {
       options: { gt: { exclude: false } },
     },
     { name: 'seo', title: 'SEO', type: 'seoBlock' },
+    { name: 'secret', title: 'Secret', type: 'excludedString' },
+    { name: 'tags', title: 'Tags', type: 'excludedTags' },
+    {
+      name: 'aliasedSecret',
+      title: 'Aliased Secret',
+      type: 'excludedStringAlias',
+    },
+    { name: 'subtitle', title: 'Subtitle', type: 'includedString' },
   ],
 };
 
 const schema: InstanceType<typeof Schema> = new Schema({
   name: 'test',
-  types: [nestedObjectType, excludedObjectType, articleType],
+  types: [
+    nestedObjectType,
+    excludedObjectType,
+    excludedStringType,
+    excludedArrayType,
+    excludedStringAliasType,
+    includedStringType,
+    articleType,
+  ],
 });
 
 const doc = {
@@ -90,6 +137,10 @@ const doc = {
     _type: 'legalBoilerplate',
     text: 'all-rights-reserved-text',
   },
+  secret: 'string-alias-excluded-value',
+  tags: ['array-alias-excluded-value'],
+  aliasedSecret: 'alias-chain-excluded-value',
+  subtitle: 'string-alias-included-value',
 } as unknown as SanityDocument;
 
 describe('isFieldExcludedByOptions', () => {
@@ -147,6 +198,25 @@ describe('serialization honors schema options exclusion', () => {
 
   test('excludes whole types marked in the type definition options', () => {
     expect(serialized.content).not.toContain('all-rights-reserved-text');
+  });
+
+  test('excludes fields whose string alias type is marked in options', () => {
+    expect(findByClass(docTree.children, 'secret')).toBeUndefined();
+    expect(serialized.content).not.toContain('string-alias-excluded-value');
+  });
+
+  test('excludes fields whose array alias type is marked in options', () => {
+    expect(findByClass(docTree.children, 'tags')).toBeUndefined();
+    expect(serialized.content).not.toContain('array-alias-excluded-value');
+  });
+
+  test('excludes fields through a chain of type aliases', () => {
+    expect(findByClass(docTree.children, 'aliasedSecret')).toBeUndefined();
+    expect(serialized.content).not.toContain('alias-chain-excluded-value');
+  });
+
+  test('keeps fields of alias types without exclusion options', () => {
+    expect(serialized.content).toContain('string-alias-included-value');
   });
 });
 

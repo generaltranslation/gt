@@ -238,7 +238,11 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
       if (schemaTypes.length > 0) {
         const allLocales = [resolvedSourceLocale, ...locales];
         const supportedLanguages = allLocales.map((locale) => {
-          const props = getLocaleProperties(locale, resolvedSourceLocale);
+          const props = getLocaleProperties(
+            locale,
+            resolvedSourceLocale,
+            customMapping
+          );
           return { id: locale, title: props.name };
         });
         plugins.push(
@@ -260,7 +264,8 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
         buildInternationalizedArrayPlugin(
           fieldLevelConfig,
           resolvedSourceLocale,
-          locales
+          locales,
+          customMapping
         )
       );
     }

@@ -4,13 +4,26 @@ import {
   resolveFieldLevelConfig,
 } from '../fieldLevelConfig';
 
-type SchemaTypeLike = { name: string };
+type SchemaTypeLike = {
+  name: string;
+  options?: { languages?: { id: string; title: string }[] };
+};
 
 function schemaTypeNames(
   plugin: ReturnType<typeof buildInternationalizedArrayPlugin>
 ): string[] {
   const types = (plugin.schema?.types ?? []) as SchemaTypeLike[];
   return types.map((type) => type.name);
+}
+
+function languageOptions(
+  plugin: ReturnType<typeof buildInternationalizedArrayPlugin>
+): { id: string; title: string }[] {
+  const types = (plugin.schema?.types ?? []) as SchemaTypeLike[];
+  const arrayType = types.find(
+    (type) => type.name === 'internationalizedArrayString'
+  );
+  return arrayType?.options?.languages ?? [];
 }
 
 describe('resolveFieldLevelConfig', () => {
@@ -53,6 +66,38 @@ describe('buildInternationalizedArrayPlugin', () => {
     const names = schemaTypeNames(plugin);
     expect(names).toContain('internationalizedArrayBlock');
     expect(names).toContain('internationalizedArrayBlockValue');
+  });
+
+  test('applies customMapping to language titles', () => {
+    const plugin = buildInternationalizedArrayPlugin(
+      resolveFieldLevelConfig({ enabled: true }),
+      'en',
+      ['zh-TW'],
+      { 'zh-TW': 'Traditional Chinese' }
+    );
+    expect(languageOptions(plugin)).toEqual([
+      { id: 'en', title: 'English' },
+      { id: 'zh-TW', title: 'Traditional Chinese' },
+    ]);
+  });
+
+  test('languageTitles and getLanguageTitle take precedence over customMapping', () => {
+    const plugin = buildInternationalizedArrayPlugin(
+      resolveFieldLevelConfig({
+        enabled: true,
+        languageTitles: { 'zh-TW': 'From languageTitles' },
+        getLanguageTitle: (locale) =>
+          locale === 'es' ? 'From getLanguageTitle' : undefined!,
+      }),
+      'en',
+      ['zh-TW', 'es'],
+      { 'zh-TW': 'From customMapping', es: 'From customMapping' }
+    );
+    expect(languageOptions(plugin)).toEqual([
+      { id: 'en', title: 'English' },
+      { id: 'zh-TW', title: 'From languageTitles' },
+      { id: 'es', title: 'From getLanguageTitle' },
+    ]);
   });
 
   test('deduplicates a source locale repeated in locales', () => {
