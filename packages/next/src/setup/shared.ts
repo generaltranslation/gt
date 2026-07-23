@@ -14,51 +14,48 @@ export function getParams(): {
   nextI18nCacheParams: NextI18nCacheParams;
 } {
   // Read from build output
-  const publicConfig = JSON.parse(
+  const clientConfig = JSON.parse(
     process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS || '{}'
-  );
-  const privateConfig = JSON.parse(
-    process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS || '{}'
   );
   const { projectId, devApiKey, apiKey } = getRuntimeCredentials();
 
   // I18nConfigParams
   const i18nConfigParams: NextSetupI18nConfigParams = {
-    defaultLocale: publicConfig.defaultLocale,
-    locales: publicConfig.locales,
-    customMapping: publicConfig.customMapping,
-    runtimeUrl: publicConfig.runtimeUrl,
+    defaultLocale: clientConfig.defaultLocale,
+    locales: clientConfig.locales,
+    customMapping: clientConfig.customMapping,
+    runtimeUrl: clientConfig.runtimeUrl,
     projectId,
     devApiKey,
     apiKey,
-    cacheUrl: privateConfig.cacheUrl,
-    _disableDevHotReload: privateConfig._disableDevHotReload,
-    localeCookieName: privateConfig.headersAndCookies?.localeCookieName,
-    enableI18nCookieName: privateConfig.headersAndCookies?.enableI18nCookieName,
+    cacheUrl: clientConfig.cacheUrl,
+    _disableDevHotReload: clientConfig._disableDevHotReload,
+    localeCookieName: clientConfig.headersAndCookies?.localeCookieName,
+    enableI18nCookieName: clientConfig.headersAndCookies?.enableI18nCookieName,
   };
 
   // NextI18nCacheParams
-  const timeout = privateConfig.renderSettings?.timeout;
+  const timeout = clientConfig.renderSettings?.timeout;
   const nextI18nCacheParams: NextI18nCacheParams = {
     apiKey,
     devApiKey,
     projectId,
-    runtimeUrl: publicConfig.runtimeUrl,
-    cacheUrl: privateConfig.cacheUrl,
-    _versionId: privateConfig._versionId,
-    cacheExpiryTime: privateConfig.cacheExpiryTime,
+    runtimeUrl: clientConfig.runtimeUrl,
+    cacheUrl: clientConfig.cacheUrl,
+    _versionId: clientConfig._versionId,
+    cacheExpiryTime: clientConfig.cacheExpiryTime,
     // batching config
     batchConfig: {
-      maxConcurrentRequests: privateConfig.maxConcurrentRequests,
-      maxBatchSize: privateConfig.maxBatchSize,
-      batchInterval: privateConfig.batchInterval,
+      maxConcurrentRequests: clientConfig.maxConcurrentRequests,
+      maxBatchSize: clientConfig.maxBatchSize,
+      batchInterval: clientConfig.batchInterval,
     },
     // runtime translation config
     runtimeTranslation: {
       // TODO: reduce redundancy in this config
       timeout,
       metadata: {
-        sourceLocale: publicConfig.defaultLocale,
+        sourceLocale: clientConfig.defaultLocale,
         timeout,
         projectId,
         publish: true,
