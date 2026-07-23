@@ -3,14 +3,30 @@ import {
   initializeGT as initializeReactGT,
 } from 'gt-react';
 import { determineLocaleClient } from '../functions/parseLocale';
-
-type InitializeGTParams = Parameters<typeof initializeReactGT>[0];
+import { getPathnameForLocale } from '../functions/localeRouting';
+import type { InitializeGTParams } from '../types/InitializeGTParams';
 
 /** Initialize GT and its browser condition store from the locale cookie. */
 export function initializeGT(config: InitializeGTParams): void {
+  const browserConfig =
+    config.localeRouting && !config._reload
+      ? {
+          ...config,
+          _reload: ({ locale }: { locale: string }) => {
+            const pathname = getPathnameForLocale(
+              window.location.pathname,
+              locale
+            );
+            const destination = new URL(window.location.href);
+            destination.pathname = pathname;
+            window.location.assign(destination.href);
+          },
+        }
+      : config;
+
   initializeReactGT(config);
   createOrUpdateBrowserConditionStore({
-    ...config,
+    ...browserConfig,
     locale: determineLocaleClient(config),
   });
 }
