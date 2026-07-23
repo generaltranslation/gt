@@ -1,5 +1,19 @@
 # gt-tanstack-start
 
+## 11.1.0
+
+### Minor Changes
+
+- [#1974](https://github.com/generaltranslation/gt/pull/1974) [`bbf4eb0`](https://github.com/generaltranslation/gt/commit/bbf4eb0cf77160baa615776619acd7afe35697ba) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add opt-in locale routing for TanStack Start. Setting `localeRouting` in `gt.config.json` makes `gtMiddleware` prioritize locale path prefixes and updates client locale changes to keep the pathname in sync while leaving the default locale unprefixed.
+
+### Patch Changes
+
+- Updated dependencies [[`bbf4eb0`](https://github.com/generaltranslation/gt/commit/bbf4eb0cf77160baa615776619acd7afe35697ba), [`f53bb5e`](https://github.com/generaltranslation/gt/commit/f53bb5ea4b4989a2a4ad3aebf464011f01e029ad)]:
+  - generaltranslation@9.0.4
+  - gt-i18n@1.0.8
+  - gt-react@11.1.0
+  - @generaltranslation/react-core@11.1.0
+
 ## 11.0.13
 
 ### Patch Changes

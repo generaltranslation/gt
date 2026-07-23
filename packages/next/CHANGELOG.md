@@ -1,5 +1,23 @@
 # gt-next
 
+## 11.1.0
+
+### Patch Changes
+
+- [#1909](https://github.com/generaltranslation/gt/pull/1909) [`f351466`](https://github.com/generaltranslation/gt/commit/f35146669f61ff86bd39747f0126ab0e2855e4a4) Thanks [@JoshKappler](https://github.com/JoshKappler)! - Fix loadDictionary, loadTranslations, and the dictionary option silently loading nothing in webpack builds.
+
+  Webpack parses .mjs as strict ESM and does not treat require() calls as dependencies, so the require()-backed gt-next/internal aliases never applied: the aliased user files were not bundled and the runtime ReferenceError was swallowed, leaving every dictionary lookup failing with "Dictionary entry X cannot be found". Turbopack builds were unaffected, which is why apps built with --turbopack never hit this.
+
+  withGTConfig's webpack hook now parses gt-next's ESM dist as javascript/auto whenever any gt-next internal alias is configured, so webpack picks up the require() calls behind the dictionary and loader aliases. Custom getLocale/getRegion paths resolve through static imports and already worked on webpack; they enable the rule only for consistency. Dist output is unchanged and turbopack behavior is untouched.
+
+- Updated dependencies [[`bbf4eb0`](https://github.com/generaltranslation/gt/commit/bbf4eb0cf77160baa615776619acd7afe35697ba), [`d801c41`](https://github.com/generaltranslation/gt/commit/d801c41134554726a0436eaf5b7b3f0242a3a91f), [`f53bb5e`](https://github.com/generaltranslation/gt/commit/f53bb5ea4b4989a2a4ad3aebf464011f01e029ad)]:
+  - generaltranslation@9.0.4
+  - @generaltranslation/compiler@1.3.33
+  - @generaltranslation/format@0.1.3
+  - gt-i18n@1.0.8
+  - gt-react@11.1.0
+  - @generaltranslation/react-core@11.1.0
+
 ## 11.0.13
 
 ### Patch Changes
