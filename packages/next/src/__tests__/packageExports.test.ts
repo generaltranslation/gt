@@ -1,11 +1,34 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const distInitGTServerPath = join(packageRoot, 'dist/setup/initGT.server.mjs');
+const distClientPath = join(packageRoot, 'dist/index.client.mjs');
+
+function collectStaticModuleGraph(entryPath: string): Set<string> {
+  const modules = new Set<string>();
+  const pending = [entryPath];
+  const relativeImportPattern =
+    /(?:from\s*|import\s*(?:\(\s*)?)["'](\.[^"']+)["']/g;
+
+  while (pending.length) {
+    const modulePath = pending.pop()!;
+    if (modules.has(modulePath) || !existsSync(modulePath)) continue;
+    modules.add(modulePath);
+
+    const source = readFileSync(modulePath, 'utf8');
+    for (const match of source.matchAll(relativeImportPattern)) {
+      pending.push(resolve(dirname(modulePath), match[1]));
+    }
+  }
+
+  return new Set(
+    [...modules].map((modulePath) => relative(packageRoot, modulePath))
+  );
+}
 
 describe('gt-next package exports', () => {
   it('uses RSC-specific declarations for the react-server condition', () => {
@@ -37,6 +60,14 @@ describe('gt-next package exports', () => {
     expect(serverBuild).toContain('gt-next/internal/_getRegion');
     expect(serverBuild).not.toContain('createRequire');
     expect(serverBuild).not.toContain('serverRequire');
+  });
+
+  distIt('keeps server diagnostics out of the client module graph', () => {
+    const clientModules = collectStaticModuleGraph(distClientPath);
+
+    expect(clientModules).toContain('dist/errors/client.mjs');
+    expect(clientModules).toContain('dist/errors/request.mjs');
+    expect(clientModules).not.toContain('dist/errors/createErrors.mjs');
   });
 
   distIt('initializes custom resolvers from the ESM server build', () => {

@@ -1,10 +1,8 @@
 // ---- ERRORS ---- //
 
-import { getLocaleProperties } from '@generaltranslation/format';
 import {
   createGtNextDiagnostic,
   createGtNextPluginDiagnostic,
-  formatDiagnosticErrorDetails,
 } from './diagnostics';
 import { BABEL_PLUGIN_SUPPORT, SWC_PLUGIN_SUPPORT } from '../plugin/constants';
 
@@ -58,20 +56,6 @@ export const createDictionarySubsetError = (id: string, functionName: string) =>
     fix: 'Make sure the id maps to the correct subroute of the dictionary',
   });
 
-export const unresolvedCustomLoadDictionaryError = createGtNextDiagnostic({
-  severity: 'Error',
-  whatHappened:
-    'loadDictionary() was found during the build but could not be resolved at runtime',
-  fix: 'Export a loadDictionary() function from the configured file',
-});
-
-export const unresolvedCustomLoadTranslationsError = createGtNextDiagnostic({
-  severity: 'Error',
-  whatHappened:
-    'loadTranslations() was found during the build but could not be resolved at runtime',
-  fix: 'Export a loadTranslations() function from the configured file',
-});
-
 export const unresolvedLoadDictionaryBuildError = (path: string) =>
   createGtNextDiagnostic({
     severity: 'Error',
@@ -106,13 +90,6 @@ export const getTranslationsSnapshotRscError = createGtNextDiagnostic({
   fix: 'Use gt-next build-time translation helpers in the App Router, or call getTranslationsSnapshot() from a Pages Router entry point',
 });
 
-export const withGTStaticPropsClientError = createGtNextDiagnostic({
-  severity: 'Error',
-  whatHappened: 'withGTStaticProps() cannot run in the browser',
-  why: 'Static props are generated on the server by the Pages Router',
-  fix: 'Export withGTStaticProps() from a Pages Router page module',
-});
-
 export const withGTStaticPropsRscError = createGtNextDiagnostic({
   severity: 'Error',
   whatHappened:
@@ -137,28 +114,6 @@ export const invalidCanonicalLocalesError = (locales: string[]) =>
     details: locales,
   });
 
-export const createInvalidRequestLocaleWarning = (
-  locale: string,
-  defaultLocale: string
-) =>
-  createGtNextDiagnostic({
-    severity: 'Warning',
-    whatHappened: `Locale "${locale}" is not valid or is not supported by this app`,
-    wayOut: `The default locale "${defaultLocale}" will be used for this request`,
-    fix: 'Use a valid BCP 47 locale code, add a custom mapping, or configure the locale in gt-next',
-  });
-
-export const createInvalidPathRegexError = (
-  pathRegex: string,
-  error: unknown
-) =>
-  createGtNextDiagnostic({
-    severity: 'Error',
-    whatHappened: `pathRegex "${pathRegex}" is not a valid regular expression`,
-    fix: 'Pass a valid JavaScript regular expression string to withGTConfig()',
-    details: formatDiagnosticErrorDetails(error),
-  });
-
 // ---- WARNINGS ---- //
 
 export const createBadFilepathWarning = (filename: string, dir: string[]) =>
@@ -166,14 +121,6 @@ export const createBadFilepathWarning = (filename: string, dir: string[]) =>
     whatHappened: `${filename} was found in ${dir.join(' or ')}, which is not supported`,
     fix: 'Move it to your project root so gt-next can load it',
   });
-
-export const createUnsupportedLocalesWarning = (locales: string[]) =>
-  `gt-next: The following locales are currently unsupported by our service: ${locales
-    .map((locale) => {
-      const { name } = getLocaleProperties(locale);
-      return `${locale} (${name})`;
-    })
-    .join(', ')}`;
 
 export const projectIdMissingWarn = createGtNextDiagnostic({
   whatHappened: 'Runtime translation needs a project ID',

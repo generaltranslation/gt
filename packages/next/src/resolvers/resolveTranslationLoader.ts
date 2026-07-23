@@ -1,4 +1,4 @@
-import { unresolvedCustomLoadTranslationsError } from '../errors/createErrors';
+import { createUnresolvedCustomLoadTranslationsError } from '../errors/loaders';
 
 type CustomLoader = (locale: string) => Promise<unknown>;
 
@@ -29,6 +29,8 @@ export function resolveTranslationLoader(): CustomLoader | undefined {
   if (!customLoadTranslations) {
     // So the custom loader doesnt eval to falsey
     customLoadTranslations = async (_: string) => undefined;
+    const unresolvedCustomLoadTranslationsError =
+      createUnresolvedCustomLoadTranslationsError();
 
     // Throw error in dev
     if (process.env.NODE_ENV !== 'production') {
