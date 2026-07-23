@@ -71,7 +71,6 @@ export class BrowserI18nCache extends I18nCache<Translation> {
         void getOrCreateLocalStorageCache(localStorageCaches, {
           locale,
           projectId,
-          init: { [hash]: translation },
         }).then((cache) => cache.write(hash, translation));
       };
     }

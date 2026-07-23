@@ -197,7 +197,7 @@ describe('gt-react package exports', () => {
     const runtimeArtifacts = readdirSync(join(packageRoot, 'dist')).filter(
       (file) => /\.(cjs|mjs)$/.test(file)
     );
-    expect(runtimeArtifacts.filter((file) => !file.includes('-'))).toEqual(
+    expect(runtimeArtifacts).toEqual(
       expect.arrayContaining(runtimeArtifactNames)
     );
 
