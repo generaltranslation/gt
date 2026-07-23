@@ -12,6 +12,6 @@ export const gtMiddleware: RequestMiddlewareAfterServer<
   {},
   undefined,
   undefined
-> = createMiddleware().server(({ request, next }) => {
-  return getConditionStore().run(request, () => next());
+> = createMiddleware().server(({ request, pathname, next }) => {
+  return getConditionStore().run(request, () => next(), pathname);
 });
