@@ -151,7 +151,7 @@ describe('Locale Resolution (Category 1)', () => {
       approvedLocales: ['en', 'pirate'],
       customMapping: {
         pirate: {
-          code: 'en-US',
+          code: 'en-us',
           name: 'Pirate',
         },
       },

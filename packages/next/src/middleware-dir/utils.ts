@@ -33,7 +33,6 @@ export type LocaleResolver = {
     approvedLocales: string[]
   ) => string | undefined;
   isValidLocale: (locale: string) => boolean;
-  resolveAliasLocale: (locale: string) => string;
 };
 
 export function createLocaleResolver(
@@ -43,14 +42,16 @@ export function createLocaleResolver(
     determineLocale(locales, approvedLocales) {
       const approvedLocalePairs = approvedLocales.map((locale) => ({
         locale,
-        canonicalLocale: resolveCanonicalLocale(locale, customMapping),
+        canonicalLocale: standardizeLocale(
+          resolveCanonicalLocale(locale, customMapping)
+        ),
       }));
       const resolvedLocale = determineLocale(
         Array.isArray(locales)
           ? locales.map((locale) =>
-              resolveCanonicalLocale(locale, customMapping)
+              standardizeLocale(resolveCanonicalLocale(locale, customMapping))
             )
-          : resolveCanonicalLocale(locales, customMapping),
+          : standardizeLocale(resolveCanonicalLocale(locales, customMapping)),
         approvedLocalePairs.map(({ canonicalLocale }) => canonicalLocale),
         customMapping
       );
@@ -62,7 +63,6 @@ export function createLocaleResolver(
       );
     },
     isValidLocale: (locale) => isValidLocale(locale, customMapping),
-    resolveAliasLocale: (locale) => resolveAliasLocale(locale, customMapping),
   };
 }
 
@@ -342,19 +342,13 @@ export function getLocaleFromRequest(
       ? standardizeLocale(unstandardizedPathnameLocale || '')
       : unstandardizedPathnameLocale;
 
-    if (
-      extractedLocale &&
-      localeResolver.isValidLocale(extractedLocale) &&
-      localeResolver.determineLocale([extractedLocale], approvedLocales)
-    ) {
-      const determinedLocale = localeResolver.determineLocale(
-        [extractedLocale],
-        approvedLocales
-      );
-      if (determinedLocale) {
-        pathnameLocale = localeResolver.resolveAliasLocale(determinedLocale);
-        candidates.push(pathnameLocale);
-      }
+    const determinedLocale =
+      extractedLocale && localeResolver.isValidLocale(extractedLocale)
+        ? localeResolver.determineLocale([extractedLocale], approvedLocales)
+        : undefined;
+    if (determinedLocale) {
+      pathnameLocale = determinedLocale;
+      candidates.push(pathnameLocale);
     }
   }
 
