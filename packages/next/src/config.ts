@@ -605,6 +605,23 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     customMapping: mergedConfig.customMapping,
     runtimeUrl: mergedConfig.runtimeUrl,
   };
+  const clientI18NConfigParams = {
+    cacheUrl: mergedConfig.cacheUrl,
+    cacheExpiryTime: mergedConfig.cacheExpiryTime,
+    maxConcurrentRequests: mergedConfig.maxConcurrentRequests,
+    maxBatchSize: mergedConfig.maxBatchSize,
+    batchInterval: mergedConfig.batchInterval,
+    renderSettings: {
+      timeout: mergedConfig.renderSettings?.timeout,
+    },
+    headersAndCookies: {
+      localeCookieName: mergedConfig.headersAndCookies?.localeCookieName,
+      enableI18nCookieName:
+        mergedConfig.headersAndCookies?.enableI18nCookieName,
+    },
+    _versionId: mergedConfig._versionId,
+    _disableDevHotReload: mergedConfig._disableDevHotReload,
+  };
 
   const { type: _type, ...compilerOptions } =
     mergedConfig.experimentalCompilerOptions || {};
@@ -667,6 +684,9 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
       _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams,
       NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS: JSON.stringify(
         publicI18NConfigParams
+      ),
+      _GENERALTRANSLATION_CLIENT_I18N_CONFIG_PARAMS: JSON.stringify(
+        clientI18NConfigParams
       ),
       ...(resolvedDictionaryFilePathType && {
         _GENERALTRANSLATION_DICTIONARY_FILE_TYPE:

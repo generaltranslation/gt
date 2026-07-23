@@ -1189,6 +1189,7 @@ describe('withGTConfig', () => {
 
       const expectedKeys = [
         '_GENERALTRANSLATION_I18N_CONFIG_PARAMS',
+        '_GENERALTRANSLATION_CLIENT_I18N_CONFIG_PARAMS',
         '_GENERALTRANSLATION_LOCAL_DICTIONARY_ENABLED',
         '_GENERALTRANSLATION_LOCAL_TRANSLATION_ENABLED',
         '_GENERALTRANSLATION_DEFAULT_LOCALE',
@@ -1240,6 +1241,40 @@ describe('withGTConfig', () => {
       expect(parsed.projectId).toBeUndefined();
       expect(parsed.apiKey).toBeUndefined();
       expect(parsed.devApiKey).toBeUndefined();
+    });
+
+    it('limits client config params to runtime fields', async () => {
+      const withGTConfig = await getWithGTConfig();
+      vi.mocked(fs.existsSync).mockImplementation((filepath) =>
+        String(filepath).endsWith('server-only-loader.ts')
+      );
+      const result = withGTConfig(
+        {},
+        {
+          description: 'server-only description',
+          loadTranslationsPath: './server-only-loader.ts',
+          customMetadata: 'server-only metadata',
+        }
+      );
+
+      const clientConfig = JSON.parse(
+        result.env!._GENERALTRANSLATION_CLIENT_I18N_CONFIG_PARAMS!
+      );
+      expect(clientConfig).toMatchObject({
+        cacheUrl: expect.any(String),
+        maxConcurrentRequests: expect.any(Number),
+        maxBatchSize: expect.any(Number),
+        batchInterval: expect.any(Number),
+        renderSettings: { timeout: expect.any(Number) },
+        headersAndCookies: {
+          localeCookieName: expect.any(String),
+          enableI18nCookieName: expect.any(String),
+        },
+      });
+      expect(clientConfig).not.toHaveProperty('description');
+      expect(clientConfig).not.toHaveProperty('loadTranslationsPath');
+      expect(clientConfig).not.toHaveProperty('customMetadata');
+      expect(clientConfig).not.toHaveProperty('experimentalCompilerOptions');
     });
 
     it('boolean flags are string "true"/"false", not booleans', async () => {

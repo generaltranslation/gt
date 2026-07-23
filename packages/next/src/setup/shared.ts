@@ -17,8 +17,8 @@ export function getParams(): {
   const publicConfig = JSON.parse(
     process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS || '{}'
   );
-  const privateConfig = JSON.parse(
-    process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS || '{}'
+  const clientConfig = JSON.parse(
+    process.env._GENERALTRANSLATION_CLIENT_I18N_CONFIG_PARAMS || '{}'
   );
   const { projectId, devApiKey, apiKey } = getRuntimeCredentials();
 
@@ -31,27 +31,27 @@ export function getParams(): {
     projectId,
     devApiKey,
     apiKey,
-    cacheUrl: privateConfig.cacheUrl,
-    _disableDevHotReload: privateConfig._disableDevHotReload,
-    localeCookieName: privateConfig.headersAndCookies?.localeCookieName,
-    enableI18nCookieName: privateConfig.headersAndCookies?.enableI18nCookieName,
+    cacheUrl: clientConfig.cacheUrl,
+    _disableDevHotReload: clientConfig._disableDevHotReload,
+    localeCookieName: clientConfig.headersAndCookies?.localeCookieName,
+    enableI18nCookieName: clientConfig.headersAndCookies?.enableI18nCookieName,
   };
 
   // NextI18nCacheParams
-  const timeout = privateConfig.renderSettings?.timeout;
+  const timeout = clientConfig.renderSettings?.timeout;
   const nextI18nCacheParams: NextI18nCacheParams = {
     apiKey,
     devApiKey,
     projectId,
     runtimeUrl: publicConfig.runtimeUrl,
-    cacheUrl: privateConfig.cacheUrl,
-    _versionId: privateConfig._versionId,
-    cacheExpiryTime: privateConfig.cacheExpiryTime,
+    cacheUrl: clientConfig.cacheUrl,
+    _versionId: clientConfig._versionId,
+    cacheExpiryTime: clientConfig.cacheExpiryTime,
     // batching config
     batchConfig: {
-      maxConcurrentRequests: privateConfig.maxConcurrentRequests,
-      maxBatchSize: privateConfig.maxBatchSize,
-      batchInterval: privateConfig.batchInterval,
+      maxConcurrentRequests: clientConfig.maxConcurrentRequests,
+      maxBatchSize: clientConfig.maxBatchSize,
+      batchInterval: clientConfig.batchInterval,
     },
     // runtime translation config
     runtimeTranslation: {

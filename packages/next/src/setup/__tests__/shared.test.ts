@@ -10,7 +10,7 @@ function setConfigEnv() {
       locales: ['en', 'fr'],
       runtimeUrl: 'https://runtime.example.com',
     });
-  process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS = JSON.stringify({
+  process.env._GENERALTRANSLATION_CLIENT_I18N_CONFIG_PARAMS = JSON.stringify({
     cacheUrl: 'https://cache.example.com',
     renderSettings: { timeout: 123 },
     headersAndCookies: {
@@ -26,8 +26,10 @@ function setConfigEnv() {
 }
 
 function updatePrivateConfig(config: Record<string, unknown>) {
-  process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS = JSON.stringify({
-    ...JSON.parse(process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS || '{}'),
+  process.env._GENERALTRANSLATION_CLIENT_I18N_CONFIG_PARAMS = JSON.stringify({
+    ...JSON.parse(
+      process.env._GENERALTRANSLATION_CLIENT_I18N_CONFIG_PARAMS || '{}'
+    ),
     ...config,
   });
 }
