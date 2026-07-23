@@ -9,9 +9,7 @@ import {
 } from 'gt-i18n/internal';
 import type { HtmlTagOptions } from './types';
 import type { Translation } from 'gt-i18n/types';
-import { DEFAULT_HTML_TAG_OPTIONS } from './constants';
 import { LocalStorageTranslationCache } from './LocalStorageTranslationCache';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
 
 /**
  * The configuration for the BrowserI18nCache
@@ -24,9 +22,6 @@ export type BrowserI18nCacheParams = I18nCacheConstructorParams & {
  * I18nCache implementation for Browser.
  */
 export class BrowserI18nCache extends I18nCache<Translation> {
-  /** Customize browser-related behavior */
-  private htmlTagOptions?: HtmlTagOptions;
-
   /** Per-locale localStorage translation caches (dev mode only) */
   private _localStorageCaches!: Record<string, LocalStorageTranslationCache>;
 
@@ -35,7 +30,8 @@ export class BrowserI18nCache extends I18nCache<Translation> {
 
   constructor(config: BrowserI18nCacheParams) {
     // Must be initialized before super()
-    const { htmlTagOptions, ...managerConfig } = config;
+    // Keep accepting htmlTagOptions without passing it to the translation cache.
+    const { htmlTagOptions: _htmlTagOptions, ...managerConfig } = config;
     const localStorageCaches: Record<string, LocalStorageTranslationCache> = {};
     const i18nConfig = getI18nConfig();
     const devHotReloadEnabled =
@@ -57,11 +53,6 @@ export class BrowserI18nCache extends I18nCache<Translation> {
 
     this._localStorageCaches = localStorageCaches;
     this._devHotReloadJsx = devHotReloadEnabled;
-
-    this.htmlTagOptions = {
-      ...DEFAULT_HTML_TAG_OPTIONS,
-      ...htmlTagOptions,
-    };
 
     // For dev hot reload, we need to write the translations to the localStorage cache
     if (devHotReloadEnabled) {
@@ -107,45 +98,6 @@ export class BrowserI18nCache extends I18nCache<Translation> {
     }
     return this._localStorageCaches[locale];
   }
-
-  /**
-   * Update the html tag (lang, dir)
-   *
-   * @deprecated, TODO: we should use a different system for managing this html tag
-   * this should just be for managing translations
-   */
-  updateHtmlTag(
-    locale: string,
-    htmlTagOptions?: { lang?: string; dir?: 'ltr' | 'rtl' } & HtmlTagOptions
-  ): void {
-    // Get parameters
-    const htmlLocale = htmlTagOptions?.lang || locale;
-    const i18nConfig = getI18nConfig();
-    const canonicalLocale = i18nConfig.resolveCanonicalLocale(htmlLocale);
-
-    // Validate parameters
-    if (!i18nConfig.isValidLocale(canonicalLocale)) {
-      console.warn(createInvalidLocaleWarning(htmlLocale));
-      return;
-    }
-
-    const localeDirection =
-      htmlTagOptions?.dir || i18nConfig.getLocaleDirection(canonicalLocale);
-
-    // Merge options
-    const mergedHtmlTagOptions = {
-      ...this.htmlTagOptions,
-      ...htmlTagOptions,
-    };
-
-    // Update html tag
-    if (mergedHtmlTagOptions.updateHtmlLangTag) {
-      document.documentElement.lang = canonicalLocale;
-    }
-    if (mergedHtmlTagOptions.updateHtmlDirTag) {
-      document.documentElement.dir = localeDirection;
-    }
-  }
 }
 
 // ===== Helper Functions ===== //
@@ -173,11 +125,3 @@ function wrapLoaderWithLocalStorage(
     return localStorageCaches[locale].getInternalCache();
   };
 }
-
-const createInvalidLocaleWarning = (locale: string) =>
-  createDiagnosticMessage({
-    source: 'gt-react',
-    severity: 'Warning',
-    whatHappened: `Locale "${locale}" is not valid`,
-    fix: 'Use a valid BCP 47 locale code or add a custom mapping',
-  });
