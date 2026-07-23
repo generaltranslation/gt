@@ -4,3 +4,4 @@ package-lock.json
 binaries
 .rollup.cache
 src/generated/version.ts
+npm

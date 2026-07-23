@@ -137,11 +137,24 @@ jobs:
           published_packages='${{ steps.changesets.outputs.publishedPackages }}'
           version=$(jq -r .version packages/cli/package.json)
 
+          # Only versions whose bin release already declares the platform
+          # optionalDependencies are eligible for platform backfill; bin
+          # releases from the old bundled layout are left alone.
+          needs_platform_backfill=false
+          if npm view "gt@${version}-bin.0" optionalDependencies 2>/dev/null | grep -q '@generaltranslation/gt-'; then
+            for target in darwin-x64 darwin-arm64 linux-x64 linux-arm64 win32-x64; do
+              if ! npm view "@generaltranslation/gt-${target}@${version}" version > /dev/null 2>&1; then
+                needs_platform_backfill=true
+              fi
+            done
+          fi
+
           if [ -n "$published_packages" ] && echo "$published_packages" | jq -e 'any(.[]; .name == "gt")' > /dev/null; then
             echo "should_release_bin=true" >> $GITHUB_OUTPUT
-          elif npm view "gt@${version}" version > /dev/null 2>&1 && ! npm view "gt@${version}-bin.0" version > /dev/null 2>&1; then
+          elif npm view "gt@${version}" version > /dev/null 2>&1 && { ! npm view "gt@${version}-bin.0" version > /dev/null 2>&1 || [ "$needs_platform_backfill" = "true" ]; }; then
             # A previous run published gt but failed before the binary
-            # release landed; finish it on this run.
+            # release (or one of its platform packages) landed; finish it
+            # on this run.
             echo "should_release_bin=true" >> $GITHUB_OUTPUT
           else
             echo "should_release_bin=false" >> $GITHUB_OUTPUT
@@ -197,6 +210,31 @@ jobs:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
 
+      - name: Release gt platform packages to npm
+        if: steps.check-gt.outputs.should_release_bin == 'true'
+        working-directory: packages/cli
+        run: |
+          # NOTE: the first-ever publish of a platform package cannot use
+          # trusted publishing (npm requires a package to exist before a
+          # trusted publisher can be configured for it). New names must be
+          # bootstrapped once with a token by a maintainer, then given a
+          # trusted publisher on npmjs.com.
+          node ../../scripts/platform-packages.mjs generate
+          # Platform packages must reach the registry before the gt bin
+          # package that depends on them. The publish script skips versions
+          # that already exist, so each retry resumes where it left off.
+          for attempt in 1 2 3 4 5; do
+            if node ../../scripts/platform-packages.mjs publish; then
+              break
+            fi
+            if [ "$attempt" = 5 ]; then
+              echo "Publishing gt platform packages failed after ${attempt} attempts"
+              exit 1
+            fi
+            echo "Platform publish attempt ${attempt} failed, retrying in 30s"
+            sleep 30
+          done
+
       - name: Release gt binary to npm
         if: steps.check-gt.outputs.should_release_bin == 'true'
         run: |
@@ -230,11 +268,24 @@ jobs:
           published_packages='${{ steps.changesets.outputs.publishedPackages }}'
           version=$(jq -r .version packages/gtx-cli/package.json)
 
+          # Only versions whose bin release already declares the platform
+          # optionalDependencies are eligible for platform backfill; bin
+          # releases from the old bundled layout are left alone.
+          needs_platform_backfill=false
+          if npm view "gtx-cli@${version}-bin.0" optionalDependencies 2>/dev/null | grep -q '@generaltranslation/gtx-cli-'; then
+            for target in darwin-x64 darwin-arm64 linux-x64 linux-arm64 win32-x64; do
+              if ! npm view "@generaltranslation/gtx-cli-${target}@${version}" version > /dev/null 2>&1; then
+                needs_platform_backfill=true
+              fi
+            done
+          fi
+
           if [ -n "$published_packages" ] && echo "$published_packages" | jq -e 'any(.[]; .name == "gtx-cli")' > /dev/null; then
             echo "should_release_bin=true" >> $GITHUB_OUTPUT
-          elif npm view "gtx-cli@${version}" version > /dev/null 2>&1 && ! npm view "gtx-cli@${version}-bin.0" version > /dev/null 2>&1; then
+          elif npm view "gtx-cli@${version}" version > /dev/null 2>&1 && { ! npm view "gtx-cli@${version}-bin.0" version > /dev/null 2>&1 || [ "$needs_platform_backfill" = "true" ]; }; then
             # A previous run published gtx-cli but failed before the binary
-            # release landed; finish it on this run.
+            # release (or one of its platform packages) landed; finish it
+            # on this run.
             echo "should_release_bin=true" >> $GITHUB_OUTPUT
           else
             echo "should_release_bin=false" >> $GITHUB_OUTPUT
@@ -272,6 +323,26 @@ jobs:
           r2-bucket: ${{ secrets.R2_BUCKET_NAME }}
           source-dir: packages/gtx-cli/binaries
           destination-dir: gtx-cli/latest
+
+      - name: Release gtx-cli platform packages to npm
+        if: steps.check-gtx-cli.outputs.should_release_bin == 'true'
+        working-directory: packages/gtx-cli
+        run: |
+          node ../../scripts/platform-packages.mjs generate
+          # Platform packages must reach the registry before the gtx-cli bin
+          # package that depends on them. The publish script skips versions
+          # that already exist, so each retry resumes where it left off.
+          for attempt in 1 2 3 4 5; do
+            if node ../../scripts/platform-packages.mjs publish; then
+              break
+            fi
+            if [ "$attempt" = 5 ]; then
+              echo "Publishing gtx-cli platform packages failed after ${attempt} attempts"
+              exit 1
+            fi
+            echo "Platform publish attempt ${attempt} failed, retrying in 30s"
+            sleep 30
+          done
 
       - name: Release gtx-cli binary to npm
         if: steps.check-gtx-cli.outputs.should_release_bin == 'true'
