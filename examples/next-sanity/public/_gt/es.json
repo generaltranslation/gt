@@ -1,0 +1,101 @@
+{
+  "3b74276a61386b0f": "Conectado a un conjunto de datos con {count} documentos.",
+  "8882b333de10679f": "Añade un ID de proyecto de Sanity para cargar el Studio integrado y consultar el contenido.",
+  "91e3b8b76eb71360": {
+    "c": [
+      {
+        "c": "GT-NEXT + SANITY",
+        "i": 2,
+        "t": "p"
+      },
+      {
+        "c": "Una app para páginas traducidas y contenido estructurado.",
+        "i": 3,
+        "t": "h1"
+      },
+      {
+        "c": "Este ejemplo de App Router usa gt-next en el sitio web y monta Sanity Studio en /studio. Sus esquemas ya están listos para configurar traducciones a nivel de documento y de campo.",
+        "i": 4,
+        "t": "p"
+      },
+      {
+        "c": [
+          {
+            "c": "Abrir Sanity Studio",
+            "i": 6,
+            "t": "Link"
+          },
+          {
+            "i": 7,
+            "t": "LocaleSelector"
+          }
+        ],
+        "i": 5,
+        "t": "div"
+      },
+      {
+        "c": [
+          {
+            "c": [
+              {
+                "c": "gt-next",
+                "i": 10,
+                "t": "h2"
+              },
+              {
+                "c": "La página está envuelta en GTProvider y se traduce con el componente T. Usa el selector de idioma para cambiar de idioma.",
+                "i": 11,
+                "t": "p"
+              }
+            ],
+            "i": 9,
+            "t": "article"
+          },
+          {
+            "c": [
+              {
+                "c": "Sanity",
+                "i": 13,
+                "t": "h2"
+              },
+              {
+                "c": {
+                  "i": 15,
+                  "k": "_gt_value_15",
+                  "v": "v"
+                },
+                "i": 14,
+                "t": "p"
+              }
+            ],
+            "i": 12,
+            "t": "article"
+          },
+          {
+            "c": [
+              {
+                "c": "Datos de prueba de traducción",
+                "i": 17,
+                "t": "h2"
+              },
+              {
+                "c": "Los esquemas cubren estrategias de traducción por documento, internationalized-array y mixtas sin habilitar todavía la i18n de Sanity.",
+                "i": 18,
+                "t": "p"
+              }
+            ],
+            "i": 16,
+            "t": "article"
+          }
+        ],
+        "d": {
+          "arl": "Example status"
+        },
+        "i": 8,
+        "t": "section"
+      }
+    ],
+    "i": 1,
+    "t": "main"
+  }
+}
