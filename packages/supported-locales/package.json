@@ -54,6 +54,7 @@
   },
   "devDependencies": {
     "tsdown": "catalog:",
+    "@typescript/native": "catalog:",
     "typescript": "catalog:"
   }
 }

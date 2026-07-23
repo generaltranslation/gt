@@ -32,7 +32,8 @@
     "@generaltranslation/react-core": "workspace:*",
     "generaltranslation": "workspace:*",
     "gt-react": "workspace:*",
-    "gt-i18n": "workspace:*"
+    "gt-i18n": "workspace:*",
+    "server-only": "^0.0.1"
   },
   "scripts": {
     "patch": "pnpm version patch",
@@ -73,6 +74,7 @@
     "@types/react-dom": ">=18.0.0 <20.0.0",
     "next": "15.2.3",
     "tsdown": "catalog:",
+    "@typescript/native": "catalog:",
     "typescript": "catalog:"
   },
   "exports": {

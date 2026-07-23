@@ -2,16 +2,16 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "module": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "composite": true,
     "stripInternal": true,
     "outDir": "./dist",
     "rootDir": "./src",
-    "baseUrl": "./",
     "paths": {
-      "gt-node": ["dist/index.d.cts"]
+      "gt-node": ["./dist/index.d.cts"]
     },
-    "lib": ["ES2023"]
+    "lib": ["ES2023"],
+    "types": ["node"]
   },
   "include": ["src/**/*.ts"],
   "exclude": ["**/*.test.ts"],

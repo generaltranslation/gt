@@ -21,6 +21,7 @@
     "@types/node": "catalog:",
     "tsdown": "catalog:",
     "tsx": "^4.16.5",
+    "@typescript/native": "catalog:",
     "typescript": "catalog:"
   },
   "scripts": {

@@ -50,6 +50,7 @@
     "@types/react": ">=18.0.0 <20.0.0",
     "@types/react-dom": ">=18.0.0 <20.0.0",
     "tsdown": "catalog:",
+    "@typescript/native": "catalog:",
     "typescript": "catalog:"
   },
   "exports": {

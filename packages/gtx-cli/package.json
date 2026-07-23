@@ -73,6 +73,7 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "tsdown": "catalog:",
+    "@typescript/native": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

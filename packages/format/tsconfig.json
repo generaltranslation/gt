@@ -11,7 +11,8 @@
       "@generaltranslation/format": ["./dist/index.d.cts"],
       "@generaltranslation/format/types": ["./dist/types.d.cts"]
     },
-    "lib": ["ES2023", "DOM", "DOM.Iterable"]
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["node"]
   },
   "include": ["src/**/*.ts"],
   "exclude": ["**/*.test.ts"]

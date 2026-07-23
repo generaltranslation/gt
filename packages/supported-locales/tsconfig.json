@@ -2,11 +2,10 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "module": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "stripInternal": true,
     "outDir": "./dist",
     "rootDir": "./src",
-    "baseUrl": "./",
     "composite": true,
     "lib": ["ES2023"]
   },

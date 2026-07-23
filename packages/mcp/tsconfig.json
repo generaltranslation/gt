@@ -4,9 +4,10 @@
     "module": "ES2022",
     "outDir": "./dist",
     "rootDir": "./src",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "sourceMap": true,
-    "declarationMap": true
+    "declarationMap": true,
+    "types": ["node"]
   },
   "include": ["src/**/*", "src/.ts"],
   "exclude": ["**/*.test.ts"]

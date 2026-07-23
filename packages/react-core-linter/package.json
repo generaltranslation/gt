@@ -69,16 +69,17 @@
     "@types/estree": "^1.0.8",
     "@types/estree-jsx": "^1.0.5",
     "@types/node": "catalog:",
-    "@typescript-eslint/eslint-plugin": "^8.0.0",
-    "@typescript-eslint/parser": "^8.0.0",
-    "@typescript-eslint/rule-tester": "^8.50.1",
+    "@typescript-eslint/eslint-plugin": "^8.65.0",
+    "@typescript-eslint/parser": "^8.65.0",
+    "@typescript-eslint/rule-tester": "^8.65.0",
     "eslint": "^9.0.0",
     "tsdown": "catalog:",
+    "@typescript/native": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
   "dependencies": {
     "@generaltranslation/icu": "workspace:*",
-    "@typescript-eslint/utils": "^8.50.1"
+    "@typescript-eslint/utils": "^8.65.0"
   }
 }

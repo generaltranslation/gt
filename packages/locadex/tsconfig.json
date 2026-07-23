@@ -15,8 +15,7 @@
     // This improves issue grouping in Sentry.
     "sourceRoot": "/",
 
-    // Enable source mapping for locadex
-    "baseUrl": "."
+    "types": ["node"]
   },
   "include": ["src/**/*", "src/.ts"],
   "exclude": ["**/*.test.ts"],

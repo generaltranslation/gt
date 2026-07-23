@@ -2,17 +2,17 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "module": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "target": "ES2018",
     "composite": true,
     "stripInternal": true,
     "outDir": "./dist",
     "rootDir": "./src",
-    "baseUrl": "./",
     "paths": {
-      "@generaltranslation/icu": ["dist/index.d.cts"]
+      "@generaltranslation/icu": ["./dist/index.d.cts"]
     },
-    "lib": ["ES2023"]
+    "lib": ["ES2023"],
+    "types": ["node"]
   },
   "include": ["src/**/*.ts"],
   "exclude": ["**/*.test.ts"]

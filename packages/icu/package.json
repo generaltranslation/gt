@@ -47,6 +47,7 @@
     "@types/node": "catalog:",
     "intl-messageformat": "10.7.16",
     "tsdown": "catalog:",
+    "@typescript/native": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
