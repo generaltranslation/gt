@@ -1,5 +1,17 @@
 # generaltranslation
 
+## 9.0.4
+
+### Patch Changes
+
+- [#1974](https://github.com/generaltranslation/gt/pull/1974) [`bbf4eb0`](https://github.com/generaltranslation/gt/commit/bbf4eb0cf77160baa615776619acd7afe35697ba) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add opt-in locale routing for TanStack Start. Setting `localeRouting` in `gt.config.json` makes `gtMiddleware` prioritize locale path prefixes and updates client locale changes to keep the pathname in sync while leaving the default locale unprefixed.
+
+- [#1929](https://github.com/generaltranslation/gt/pull/1929) [`f53bb5e`](https://github.com/generaltranslation/gt/commit/f53bb5ea4b4989a2a4ad3aebf464011f01e029ad) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Replace the FormatJS ICU parser and runtime formatter dependencies with the new dependency-free `@generaltranslation/icu` package.
+
+- Updated dependencies [[`f53bb5e`](https://github.com/generaltranslation/gt/commit/f53bb5ea4b4989a2a4ad3aebf464011f01e029ad)]:
+  - @generaltranslation/icu@0.1.0
+  - @generaltranslation/format@0.1.3
+
 ## 9.0.3
 
 ### Patch Changes
