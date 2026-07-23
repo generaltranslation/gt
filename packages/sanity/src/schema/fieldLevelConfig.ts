@@ -1,5 +1,6 @@
 import { getLocaleProperties } from 'generaltranslation';
 import type { CustomMapping } from 'generaltranslation/types';
+import { formatLocalePropertiesLabel } from '../utils/localeDisplay';
 import type { PluginOptions } from 'sanity';
 import { internationalizedArray } from 'sanity-plugin-internationalized-array';
 import type { PluginConfig as InternationalizedArrayPluginConfig } from 'sanity-plugin-internationalized-array';
@@ -99,8 +100,10 @@ export function buildInternationalizedArrayPlugin(
   const languageTitle = (locale: string) =>
     config.getLanguageTitle?.(locale) ??
     config.languageTitles?.[locale] ??
-    getLocaleProperties(locale, sourceLocale, customMapping).name ??
-    locale;
+    formatLocalePropertiesLabel(
+      locale,
+      getLocaleProperties(locale, sourceLocale, customMapping)
+    );
 
   const allLocales = Array.from(new Set([sourceLocale, ...locales]));
 

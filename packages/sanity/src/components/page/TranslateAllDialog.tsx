@@ -29,11 +29,7 @@ export const TranslateAllDialog: React.FC<TranslateAllDialogProps> = ({
         <Box padding={3}>
           <Flex gap={2}>
             <Button text='Cancel' mode='ghost' onClick={onClose} />
-            <Button
-              text='Translate All'
-              tone='critical'
-              onClick={handleConfirm}
-            />
+            <Button text='Translate All' onClick={handleConfirm} />
           </Flex>
         </Box>
       }
