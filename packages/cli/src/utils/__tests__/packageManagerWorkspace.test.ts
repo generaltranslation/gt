@@ -73,6 +73,47 @@ describe('detectPackageManagerWithRoot', () => {
     expect(result).toBeNull();
   });
 
+  it('rejects a workspace root whose patterns do not cover the member', () => {
+    // Targeting an uncovered directory would make `npm install --workspace`
+    // fail ("No workspaces found"), so the root must not claim it.
+    write('package.json', JSON.stringify({ workspaces: ['packages/*'] }));
+    write('package-lock.json', '{}');
+    write('apps/web/package.json', JSON.stringify({ name: 'web' }));
+
+    const result = detectPackageManagerWithRoot(path.join(root, 'apps/web'));
+    expect(result).toBeNull();
+  });
+
+  it('covers a deep member through a ** pattern', () => {
+    write('package.json', JSON.stringify({ workspaces: ['packages/**'] }));
+    write('package-lock.json', '{}');
+    write(
+      'packages/apps/dashboard/package.json',
+      JSON.stringify({ name: 'dash' })
+    );
+
+    const result = detectPackageManagerWithRoot(
+      path.join(root, 'packages/apps/dashboard')
+    );
+    expect(result).not.toBeNull();
+    expect(result!.packageManager.id).toBe('npm');
+  });
+
+  it('reads the workspaces object form', () => {
+    write(
+      'package.json',
+      JSON.stringify({ workspaces: { packages: ['packages/*'] } })
+    );
+    write('package-lock.json', '{}');
+    write('packages/dashboard/package.json', JSON.stringify({ name: 'dash' }));
+
+    const result = detectPackageManagerWithRoot(
+      path.join(root, 'packages/dashboard')
+    );
+    expect(result).not.toBeNull();
+    expect(result!.packageManager.id).toBe('npm');
+  });
+
   it('returns null on an ambiguous ancestor', () => {
     write('package.json', JSON.stringify({ workspaces: ['packages/*'] }));
     write('package-lock.json', '{}');

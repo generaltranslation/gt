@@ -1,5 +1,6 @@
 import { parse } from '@babel/parser';
 import * as t from '@babel/types';
+import { packageNameOf } from './importUtils.js';
 import type {
   MigrationContext,
   SourceResult,
@@ -155,7 +156,33 @@ export function transformNavigationFile(
   // hooks work when imported from client components, and a directive here
   // would turn the Link re-export into a client reference for server
   // importers.
+  // Pre-existing side-effect imports (`import 'server-only'`) carry meaning
+  // the regenerated wrapper must keep; reconstruct them at the top verbatim.
+  // One importing the library being torn down would dangle after teardown, so
+  // that holds the file instead.
+  const sideEffectImports = ast.program.body.filter(
+    (statement): statement is t.ImportDeclaration =>
+      t.isImportDeclaration(statement) && statement.specifiers.length === 0
+  );
+  const ownedSideEffect = sideEffectImports.find((declaration) =>
+    ctx.adapter.teardownPackages.includes(
+      packageNameOf(declaration.source.value)
+    )
+  );
+  if (ownedSideEffect) {
+    return {
+      ...none,
+      skipReasons: [
+        `side-effect import of '${ownedSideEffect.source.value}' would break once ${ctx.adapter.displayName} is removed (convert it manually)`,
+      ],
+    };
+  }
+
   const lines: string[] = [];
+  for (const declaration of sideEffectImports) {
+    lines.push(`import '${declaration.source.value}';`);
+  }
+  if (sideEffectImports.length > 0) lines.push('');
   const wrapsPathname = destructured.includes('usePathname');
   const passthrough = destructured.filter(
     (name) => NEXT_NAVIGATION_EXPORTS.has(name) && name !== 'usePathname'

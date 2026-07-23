@@ -147,9 +147,13 @@ export async function handleMigrateCommand(
       packageManager = detected.packageManager;
       if (detected.root !== path.resolve(cwd) && packageManager.id === 'npm') {
         installCwd = detected.root;
-        installExtraArgs.push(
-          `--workspace=${path.relative(detected.root, path.resolve(cwd))}`
-        );
+        // npm matches workspace paths POSIX-style, so normalize the
+        // separators (path.relative yields backslashes on Windows).
+        const member = path
+          .relative(detected.root, path.resolve(cwd))
+          .split(path.sep)
+          .join('/');
+        installExtraArgs.push(`--workspace=${member}`);
       }
     } else {
       // When detection fails everywhere, getPackageManager falls back to an

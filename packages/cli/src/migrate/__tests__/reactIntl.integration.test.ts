@@ -452,12 +452,12 @@ describe('react-intl migration integration', () => {
     );
   });
 
-  it('reports the #1909 build caveat and a build step in Next steps (M5, m3)', async () => {
+  it('reports the webpack-build version caveat and a build step in Next steps (M5, m3)', async () => {
     const cwd = makeApp();
     await run(cwd);
     const report = read(cwd, 'gt-migrate-report.md');
-    // #1909 caveat present with the Turbopack workaround.
-    expect(report).toMatch(/#1909/);
+    // version caveat present with the Turbopack workaround for older gt-next.
+    expect(report).toMatch(/gt-next >= 11\.1\.0/);
     expect(report).toMatch(/next build --turbopack/);
     // clean migration has no TODOs section, so the step must not reference it.
     expect(report).not.toContain('## TODOs');

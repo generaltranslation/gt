@@ -3,7 +3,7 @@ import traverseModule, { type NodePath } from '@babel/traverse';
 import generateModule from '@babel/generator';
 import * as t from '@babel/types';
 import { classifyMessage } from '../catalogs/classifyMessage.js';
-import { ensureNamedImports } from './importUtils.js';
+import { ensureNamedImports, packageNameOf } from './importUtils.js';
 import type { TransformOptions } from './transformSource.js';
 import { isParamsInit, removeParamsParameter } from './transformSource.js';
 import type {
@@ -22,6 +22,20 @@ const generate: typeof generateModule =
 const MODULE = 'react-intl';
 const GT_MODULE = 'gt-next';
 const GT_SERVER_MODULE = 'gt-next/server';
+
+/**
+ * The packages teardown removes for react-intl. Owned by this transform so the
+ * side-effect-import hold below and the adapter's teardown share one list
+ * (the adapter imports it; importing the adapter from here would be a cycle).
+ * Runtime polyfill subpackages (@formatjs/intl-*) are deliberately absent:
+ * they survive teardown, so their side-effect imports stay valid.
+ */
+export const REACT_INTL_TEARDOWN_PACKAGES = [
+  'react-intl',
+  'babel-plugin-formatjs',
+  '@formatjs/cli',
+  '@formatjs/swc-plugin',
+];
 
 /** react-intl symbols this adapter knows how to convert or unwrap. Everything
  *  else imported from react-intl forces a whole-file skip (graceful, reported),
@@ -151,14 +165,18 @@ export function transformReactIntlSource(
     ImportDeclaration(path) {
       const source = path.node.source.value;
       if (source !== MODULE && !source.startsWith('@formatjs/')) return;
-      // Side-effect imports (polyfills like `import '@formatjs/intl-numberformat/polyfill'`)
-      // have no gt-next mapping and must never be deleted silently; hold the
-      // file, matching how named @formatjs imports are treated below.
+      // Side-effect imports must never be deleted silently. Hold the file
+      // only when the imported package is actually torn down (react-intl
+      // itself, the FormatJS build tooling); runtime polyfills like
+      // `import '@formatjs/intl-numberformat/polyfill'` survive teardown and
+      // stay valid, so leave the declaration alone and keep converting.
       if (path.node.specifiers.length === 0) {
-        hasOwnedSideEffectImport = true;
-        skipReasons.push(
-          `side-effect import of '${source}' would break once react-intl is removed; convert it manually`
-        );
+        if (REACT_INTL_TEARDOWN_PACKAGES.includes(packageNameOf(source))) {
+          hasOwnedSideEffectImport = true;
+          skipReasons.push(
+            `side-effect import of '${source}' would break once react-intl is removed; convert it manually`
+          );
+        }
         return;
       }
       reactIntlImports.push(path);

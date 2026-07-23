@@ -5,7 +5,10 @@ import { classifyMessage } from '../catalogs/classifyMessage.js';
 import type { RoutingInfo } from '../pipeline/types.js';
 import { discoverReactIntlCatalogs } from '../catalogs/reactIntlCatalogs.js';
 import { transformReactIntlNextConfig } from '../transforms/reactIntlNextConfig.js';
-import { transformReactIntlSource } from '../transforms/reactIntlTransform.js';
+import {
+  REACT_INTL_TEARDOWN_PACKAGES,
+  transformReactIntlSource,
+} from '../transforms/reactIntlTransform.js';
 import type { SourceAdapter } from './types.js';
 
 const traverse: typeof traverseModule =
@@ -124,12 +127,7 @@ export const reactIntlAdapter: SourceAdapter = {
 
   projectUsagePattern:
     /(?:from\s+|import\s*\(\s*|import\s*|require\s*\(\s*)['"](react-intl(?:\/|['"])|@formatjs\/)/,
-  teardownPackages: [
-    'react-intl',
-    'babel-plugin-formatjs',
-    '@formatjs/cli',
-    '@formatjs/swc-plugin',
-  ],
+  teardownPackages: REACT_INTL_TEARDOWN_PACKAGES,
   // react-intl has no dedicated config file safe to delete (a .babelrc may hold
   // unrelated plugins); the FormatJS build plugin is torn down in next.config.
   teardownConfigFiles: (_routing: RoutingInfo) => [],

@@ -239,15 +239,13 @@ export function buildReport(
         'automatically when it can detect your package manager.'
     );
   }
-  // #1909: a migrated app (next-intl, react-intl, or react-i18next alike) does
-  // not `next build` on published gt-next until the internal loadDictionary
-  // alias fix ships (the default webpack build cannot resolve the generated
-  // gt/dictionaries), so steer verification to Turbopack meanwhile; said here
-  // at the point of use, not just in a doc the user never opens (the F3 finding).
+  // The internal loadDictionary alias fix (#1909) shipped in gt-next 11.1.0;
+  // on older published versions the default webpack build cannot resolve the
+  // generated gt/dictionaries, so steer those to Turbopack; said here at the
+  // point of use, not just in a doc the user never opens (the F3 finding).
   steps.push(
-    'A migrated app (next-intl, react-intl, or react-i18next alike) will not ' +
-      '`next build` on published gt-next until #1909 ships; build with ' +
-      '`next build --turbopack` to verify meanwhile.'
+    'Webpack `next build` needs gt-next >= 11.1.0; on an older gt-next, ' +
+      'build with `next build --turbopack` or upgrade.'
   );
   // Only point at the TODOs section when there is one (see above).
   steps.push(

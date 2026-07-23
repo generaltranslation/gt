@@ -265,16 +265,71 @@ export function _detectPackageManger(cwd: string): PackageManager | null {
   return null;
 }
 
-function isWorkspaceRoot(dir: string): boolean {
+/**
+ * The workspace member patterns a directory declares: pnpm-workspace.yaml
+ * `packages` entries when the file exists, else the package.json `workspaces`
+ * field (array or `{ packages: [...] }`). null when the directory declares no
+ * workspace at all.
+ */
+function workspacePatternsOf(dir: string): string[] | null {
   try {
-    if (fs.existsSync(path.join(dir, 'pnpm-workspace.yaml'))) return true;
+    const yamlPath = path.join(dir, 'pnpm-workspace.yaml');
+    if (fs.existsSync(yamlPath)) {
+      const patterns: string[] = [];
+      for (const line of fs.readFileSync(yamlPath, 'utf-8').split('\n')) {
+        const match = /^\s*-\s*['"]?([^'"#\s][^'"#]*)/.exec(line);
+        if (match) patterns.push(match[1].trim());
+      }
+      return patterns;
+    }
+  } catch {
+    // fall through to package.json
+  }
+  try {
     const pkg = JSON.parse(
       fs.readFileSync(path.join(dir, 'package.json'), 'utf-8')
-    ) as { workspaces?: unknown };
-    return pkg.workspaces !== undefined;
+    ) as { workspaces?: string[] | { packages?: string[] } };
+    if (Array.isArray(pkg.workspaces)) return pkg.workspaces;
+    if (pkg.workspaces && Array.isArray(pkg.workspaces.packages)) {
+      return pkg.workspaces.packages;
+    }
   } catch {
-    return false;
+    // not a workspace root
   }
+  return null;
+}
+
+function escapeRegExp(literal: string): string {
+  return literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Whether a member path (relative to the workspace root) is covered by the
+ * root's workspace patterns. Supports the common glob subset: literal paths,
+ * `*` for one path segment, `**` for any depth. Negations (`!...`) never
+ * match. Targeting an uncovered directory would make the install fail
+ * ("npm error No workspaces found"), so an uncovered member is treated as not
+ * belonging to that root at all.
+ */
+function matchesWorkspacePattern(member: string, patterns: string[]): boolean {
+  const memberPosix = member.split(path.sep).join('/');
+  return patterns.some((pattern) => {
+    if (pattern.startsWith('!')) return false;
+    const body = pattern.replace(/\/+$/, '');
+    const regex = new RegExp(
+      '^' +
+        body
+          .split('/')
+          .map((segment) =>
+            segment === '**'
+              ? '.+'
+              : segment.split('*').map(escapeRegExp).join('[^/]*')
+          )
+          .join('/') +
+        '$'
+    );
+    return regex.test(memberPosix);
+  });
 }
 
 /**
@@ -305,8 +360,18 @@ export function detectPackageManagerWithRoot(
     );
     // Ambiguity keeps the no-assumptions rule from _detectPackageManger.
     if (found.length > 1) return null;
-    if (found.length === 1 && isWorkspaceRoot(dir)) {
-      return { packageManager: found[0], root: dir };
+    if (found.length === 1) {
+      const patterns = workspacePatternsOf(dir);
+      // Only a workspace root whose patterns actually cover the member
+      // counts; a lockfile-bearing ancestor that merely sits above the
+      // directory (a clone dropped inside an unrelated monorepo, a stray
+      // workspaces field in the home directory) must not claim it.
+      if (
+        patterns !== null &&
+        matchesWorkspacePattern(path.relative(dir, resolved), patterns)
+      ) {
+        return { packageManager: found[0], root: dir };
+      }
     }
     const parent = path.dirname(dir);
     if (parent === dir) return null;

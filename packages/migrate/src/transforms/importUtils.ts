@@ -6,6 +6,16 @@ const traverse: typeof traverseModule =
   traverseModule;
 
 /**
+ * The npm package a module specifier resolves to
+ * ('@formatjs/intl-pluralrules/polyfill' -> '@formatjs/intl-pluralrules',
+ * 'next-intl/server' -> 'next-intl').
+ */
+export function packageNameOf(source: string): string {
+  const segments = source.split('/');
+  return source.startsWith('@') ? segments.slice(0, 2).join('/') : segments[0];
+}
+
+/**
  * Ensures `import { <names> } from '<module>'` exists, merging into an
  * existing declaration when present. Names already bound are not duplicated.
  */

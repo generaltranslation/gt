@@ -2,7 +2,7 @@ import { parse } from '@babel/parser';
 import traverseModule, { type NodePath } from '@babel/traverse';
 import generateModule from '@babel/generator';
 import * as t from '@babel/types';
-import { removeUnusedNamedImports } from './importUtils.js';
+import { packageNameOf, removeUnusedNamedImports } from './importUtils.js';
 import type {
   MigrationContext,
   SourceResult,
@@ -117,14 +117,18 @@ export function transformSourceFile(
     ImportDeclaration(path) {
       const source = path.node.source.value;
       if (!adapter.ownsModule(source)) return;
-      // A side-effect import (`import 'next-intl/whatever'`) has no gt-next
-      // mapping and must never be deleted silently; hold the file instead,
-      // like a re-export.
+      // A side-effect import has no gt-next mapping and must never be deleted
+      // silently. When its package is actually torn down (`import 'next-intl'`),
+      // hold the file like a re-export; a side-effect import of an owned
+      // package that survives teardown stays valid, so leave the declaration
+      // alone and keep converting.
       if (path.node.specifiers.length === 0) {
-        hasOwnedSideEffectImport = true;
-        skipReasons.push(
-          `side-effect import of '${source}' would break once ${adapter.displayName} is removed (convert it manually)`
-        );
+        if (adapter.teardownPackages.includes(packageNameOf(source))) {
+          hasOwnedSideEffectImport = true;
+          skipReasons.push(
+            `side-effect import of '${source}' would break once ${adapter.displayName} is removed (convert it manually)`
+          );
+        }
         return;
       }
       nextIntlImports.push(path);

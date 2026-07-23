@@ -4,6 +4,7 @@ import generateModule from '@babel/generator';
 import type * as t from '@babel/types';
 import { removeUnusedNamedImports } from '../transforms/importUtils.js';
 import { transformLayoutFile } from '../transforms/transformLayout.js';
+import { transformNavigationFile } from '../transforms/transformNavigation.js';
 import { transformSourceFile } from '../transforms/transformSource.js';
 import type {
   MessageCatalogs,
@@ -100,10 +101,16 @@ describe('removeUnusedNamedImports: side-effect import retention', () => {
 });
 
 describe('transformLayoutFile: side-effect import retention', () => {
+  // Includes a removable hasLocale guard and routing import so the layout
+  // pass genuinely runs removeUnusedNamedImports (the deletion path Ernest
+  // hit in the field); a fixture without prunable imports would pass even
+  // without the guard in importUtils.
   const layoutWithGlobals = [
     "import './globals.css';",
-    "import { NextIntlClientProvider } from 'next-intl';",
+    "import { NextIntlClientProvider, hasLocale } from 'next-intl';",
     "import { getMessages, setRequestLocale } from 'next-intl/server';",
+    "import { notFound } from 'next/navigation';",
+    "import { routing } from '@/i18n/routing';",
     'export default async function LocaleLayout({',
     '  children,',
     '  params,',
@@ -112,6 +119,9 @@ describe('transformLayoutFile: side-effect import retention', () => {
     '  params: Promise<{ locale: string }>;',
     '}) {',
     '  const { locale } = await params;',
+    '  if (!hasLocale(routing.locales, locale)) {',
+    '    notFound();',
+    '  }',
     '  setRequestLocale(locale);',
     '  const messages = await getMessages();',
     '  return (',
@@ -126,7 +136,7 @@ describe('transformLayoutFile: side-effect import retention', () => {
     '}',
   ].join('\n');
 
-  it('keeps import "./globals.css" when the layout is mutated', () => {
+  it('keeps import "./globals.css" while the cleanup prunes emptied imports', () => {
     const result = transformLayoutFile(
       'src/app/[locale]/layout.tsx',
       layoutWithGlobals,
@@ -134,10 +144,52 @@ describe('transformLayoutFile: side-effect import retention', () => {
     );
     expect(result.skipReasons).toEqual([]);
     expect(result.code).not.toBeNull();
-    // the transform really ran (provider swapped), so the cleanup pass executed
     expect(result.code).toContain('<GTProvider>');
-    // the pre-existing stylesheet import must survive the cleanup pass
+    // the emptied guard imports are pruned, proving the cleanup pass ran...
+    expect(result.code).not.toContain('hasLocale');
+    expect(result.code).not.toContain('@/i18n/routing');
+    // ...and the pre-existing stylesheet import survived it
     expect(result.code).toContain("import './globals.css'");
+  });
+});
+
+describe('transformNavigationFile: side-effect import retention', () => {
+  const navigationWrapper = [
+    "import 'server-only';",
+    "import { createNavigation } from 'next-intl/navigation';",
+    "import { routing } from './routing';",
+    'export const { Link, redirect, usePathname, useRouter } =',
+    '  createNavigation(routing);',
+  ].join('\n');
+
+  it('reconstructs pre-existing side-effect imports in the regenerated wrapper', () => {
+    const result = transformNavigationFile(
+      'src/i18n/navigation.ts',
+      navigationWrapper,
+      makeContext()
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).not.toBeNull();
+    expect(result.code).toContain("import 'server-only';");
+  });
+
+  it('holds the wrapper when a side-effect import targets the torn-down library', () => {
+    const result = transformNavigationFile(
+      'src/i18n/navigation.ts',
+      [
+        "import 'next-intl/config';",
+        "import { createNavigation } from 'next-intl/navigation';",
+        "import { routing } from './routing';",
+        'export const { Link } = createNavigation(routing);',
+      ].join('\n'),
+      makeContext()
+    );
+    expect(result.code).toBeNull();
+    expect(
+      result.skipReasons.some((reason) =>
+        reason.includes("side-effect import of 'next-intl/config'")
+      )
+    ).toBe(true);
   });
 });
 
@@ -181,11 +233,36 @@ describe('transformSourceFile: owned-module side-effect import retention', () =>
 });
 
 describe('react-intl: side-effect import retention', () => {
-  it('holds a file with a @formatjs polyfill side-effect import', () => {
+  it('keeps converting past a @formatjs polyfill side-effect import and retains it', () => {
+    // Runtime polyfills survive teardown (they are not in teardownPackages),
+    // so their imports stay valid: the file converts and the import stays.
+    const ctx = makeContext(reactIntlAdapter);
+    ctx.catalogs.byLocale.en = { title: 'Title' };
     const result = transformSourceFile(
       'src/app/page.tsx',
       [
         "import '@formatjs/intl-numberformat/polyfill';",
+        "import { FormattedMessage } from 'react-intl';",
+        'export function Page() {',
+        '  return <FormattedMessage id="title" defaultMessage="Title" />;',
+        '}',
+      ].join('\n'),
+      ctx,
+      {}
+    );
+    expect(result.skipReasons).toEqual([]);
+    expect(result.code).not.toBeNull();
+    expect(result.code).toContain(
+      "import '@formatjs/intl-numberformat/polyfill'"
+    );
+    expect(result.code).not.toContain('react-intl');
+  });
+
+  it('holds a file with a bare react-intl side-effect import (torn down)', () => {
+    const result = transformSourceFile(
+      'src/app/page.tsx',
+      [
+        "import 'react-intl';",
         "import { FormattedMessage } from 'react-intl';",
         'export function Page() {',
         '  return <FormattedMessage id="title" defaultMessage="Title" />;',
@@ -196,9 +273,7 @@ describe('react-intl: side-effect import retention', () => {
     );
     expect(
       result.skipReasons.some((reason) =>
-        reason.includes(
-          "side-effect import of '@formatjs/intl-numberformat/polyfill'"
-        )
+        reason.includes("side-effect import of 'react-intl'")
       )
     ).toBe(true);
   });
