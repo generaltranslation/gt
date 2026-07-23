@@ -1,5 +1,31 @@
 # gt-sanity
 
+## 3.0.0
+
+### Major Changes
+
+- [#1981](https://github.com/generaltranslation/gt/pull/1981) [`0b2a13f`](https://github.com/generaltranslation/gt/commit/0b2a13f50b0ba9de6f5c56d359af2ed6afc644f1) Thanks [@brian-lou](https://github.com/brian-lou)! - Adopt `sanity-plugin-internationalized-array` as the field-level localization engine and add schema-options-based field exclusion.
+
+  **Field-level localization is now powered by the reference plugin.** Enabling `fieldLevelLocalization` (or its `internationalizedArray` alias) in `gtPlugin` now auto-configures `sanity-plugin-internationalized-array` from your locales instead of generating gt-sanity's own schema types and Studio UI. Studio behavior (per-language add buttons, language labels, field actions) now always matches the native plugin, and studios that already register the plugin themselves can keep their setup — translation is shape-based and works either way.
+
+  **Breaking changes:**
+  - Removed the `createInternationalizedArrayTypes` export and the `FieldLevelUIComponents` type; gt-sanity no longer ships its own field-level input/item components.
+  - Removed the `typePrefix`, `includeCompatibilityTypes`, and `components` options from `GTFieldLevelLocalizationConfig` (no native equivalent). Passing them logs a warning and they are ignored. Data created with a custom `typePrefix` is no longer detected; standard `internationalizedArray*` data is unaffected.
+  - `gt-sanity` now re-exports `internationalizedArray`, `internationalizedArrayLanguageFilter`, and `isInternationalizedArrayItemType` from `sanity-plugin-internationalized-array` for direct use, and `GTFieldLevelLocalizationConfig` gained native passthrough options (`defaultLanguages`, `buttonLocations`, `buttonAddAll`, `languageDisplay`, `apiVersion`).
+
+  **New: exclude fields from translation in the schema.** The serializer now honors `options.gt.exclude`, `options.documentInternationalization.exclude` (`@sanity/document-internationalization`), and `options.aiAssist.exclude` (`@sanity/assist`) on field definitions and on type definitions ("field or type", matching the native plugins' semantics), at any nesting depth — no need to maintain a parallel exclusion list in the plugin config. Exclusion via schema options and `localize: false` now also applies to fields of top-level object fields, which were previously not filtered.
+
+### Patch Changes
+
+- [#1982](https://github.com/generaltranslation/gt/pull/1982) [`00c688c`](https://github.com/generaltranslation/gt/commit/00c688c3a232e87a95dc515d1f60c6c9b039f80d) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Revamped Sanity UI
+
+## 2.1.5
+
+### Patch Changes
+
+- Updated dependencies [[`bbf4eb0`](https://github.com/generaltranslation/gt/commit/bbf4eb0cf77160baa615776619acd7afe35697ba), [`f53bb5e`](https://github.com/generaltranslation/gt/commit/f53bb5ea4b4989a2a4ad3aebf464011f01e029ad)]:
+  - generaltranslation@9.0.4
+
 ## 2.1.4
 
 ### Patch Changes

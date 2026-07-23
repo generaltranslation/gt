@@ -42,6 +42,8 @@ export type GTConfig = {
   locales?: string[];
   customMapping?: CustomMapping;
   enableI18n?: boolean;
+  /** Enable framework-provided locale path routing when supported. */
+  localeRouting?: boolean;
 
   projectId?: string;
   devApiKey?: string;

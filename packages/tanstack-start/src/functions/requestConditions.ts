@@ -1,11 +1,10 @@
 import { setCookie } from '@tanstack/react-start/server';
-import {
-  getI18nConfig,
-  type I18nConfigParams,
-} from '@generaltranslation/react-core/pure';
+import { getI18nConfig } from '@generaltranslation/react-core/pure';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { getCookieValue, parseAcceptLanguage } from 'gt-i18n/internal';
 import type { RequestConditions } from '../condition-store/AsyncLocalConditionStore';
+import type { InitializeGTParams } from '../types/InitializeGTParams';
+import { getLocaleFromPath } from './localeRouting';
 
 export const localeCookieOptions = {
   path: '/',
@@ -23,11 +22,16 @@ const noLocaleCandidatesWarning = createDiagnosticMessage({
 
 export function resolveRequestConditions(
   request: Request,
-  localeConfig?: I18nConfigParams
+  localeConfig?: InitializeGTParams,
+  pathname = new URL(request.url).pathname
 ): RequestConditions {
   const i18nConfig = getI18nConfig();
   const cookieHeader = request.headers.get('cookie');
   const localeCandidates: string[] = [];
+  if (localeConfig?.localeRouting) {
+    const pathLocale = getLocaleFromPath(pathname);
+    if (pathLocale) localeCandidates.push(pathLocale);
+  }
   const cookieLocale = getCookieValue(
     cookieHeader,
     i18nConfig.getLocaleCookieName()

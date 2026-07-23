@@ -1,19 +1,20 @@
 // adapted from https://github.com/sanity-io/sanity-translations-tab. See LICENSE.md for more details.
 
 import { useCallback, useState } from 'react';
-import { Flex, Card, Text, Grid, Box, Button } from '@sanity/ui';
-import { DownloadIcon, CheckmarkCircleIcon } from '@sanity/icons';
+import { Badge, Box, Button, Flex, Grid } from '@sanity/ui';
+import { CheckmarkCircleIcon, DownloadIcon } from '@sanity/icons';
 import ProgressBar from './ProgressBar';
+import { LocaleLabel } from './LocaleLabel';
 
 type LanguageStatusProps = {
-  title: string;
+  localeId: string;
   progress: number;
   importFile: () => Promise<void>;
   isImported?: boolean;
 };
 
 export const LanguageStatus = ({
-  title,
+  localeId,
   progress,
   importFile,
   isImported = false,
@@ -31,38 +32,37 @@ export const LanguageStatus = ({
   }, [importFile, setIsBusy]);
 
   return (
-    <Card shadow={1}>
-      <Grid columns={5} gap={3} padding={3}>
-        <Flex columnStart={1} columnEnd={3} align='center'>
-          <Text weight='bold' size={1}>
-            {title}
-          </Text>
+    <Grid columns={5} gap={3} paddingX={3} paddingY={2}>
+      <Flex columnStart={1} columnEnd={3} align='center'>
+        <LocaleLabel localeId={localeId} />
+      </Flex>
+      {typeof displayedProgress === 'number' ? (
+        <Flex columnStart={3} columnEnd={5} align='center'>
+          <ProgressBar progress={displayedProgress} />
         </Flex>
-        {typeof displayedProgress === 'number' ? (
-          <Flex columnStart={3} columnEnd={5} align='center'>
-            <ProgressBar progress={displayedProgress} />
-          </Flex>
-        ) : null}
-        <Box columnStart={5} columnEnd={6}>
-          {isImported ? (
-            <Flex align='center' justify='center' style={{ color: 'green' }}>
+      ) : null}
+      <Flex columnStart={5} columnEnd={6} align='center' justify='flex-end'>
+        {isImported ? (
+          <Badge tone='positive' fontSize={0} radius={2}>
+            <Flex align='center' gap={1}>
               <CheckmarkCircleIcon />
-              <Text size={1} style={{ marginLeft: '4px' }}>
-                Imported
-              </Text>
+              <Box>Imported</Box>
             </Flex>
-          ) : (
-            <Button
-              style={{ width: `100%` }}
-              mode='ghost'
-              onClick={handleImport}
-              text={isBusy ? 'Importing...' : 'Import'}
-              icon={isBusy ? null : DownloadIcon}
-              disabled={isBusy || !progress || progress < 100}
-            />
-          )}
-        </Box>
-      </Grid>
-    </Card>
+          </Badge>
+        ) : (
+          <Button
+            style={{ width: '100%' }}
+            mode='ghost'
+            fontSize={1}
+            padding={2}
+            onClick={handleImport}
+            text='Import'
+            loading={isBusy}
+            icon={DownloadIcon}
+            disabled={isBusy || !progress || progress < 100}
+          />
+        )}
+      </Flex>
+    </Grid>
   );
 };

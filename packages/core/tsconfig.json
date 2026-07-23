@@ -2,16 +2,16 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "module": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "composite": true,
     "stripInternal": true,
     "outDir": "./dist",
     "rootDir": "./src",
-    "baseUrl": "./",
     "paths": {
-      "generaltranslation": ["dist/index.d.cts"]
+      "generaltranslation": ["./dist/index.d.cts"]
     },
-    "lib": ["ES2023"]
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["node"]
   },
   "include": [
     "src/**/*.ts",
