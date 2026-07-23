@@ -265,6 +265,55 @@ export function _detectPackageManger(cwd: string): PackageManager | null {
   return null;
 }
 
+function isWorkspaceRoot(dir: string): boolean {
+  try {
+    if (fs.existsSync(path.join(dir, 'pnpm-workspace.yaml'))) return true;
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(dir, 'package.json'), 'utf-8')
+    ) as { workspaces?: unknown };
+    return pkg.workspaces !== undefined;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Resolves the package manager for a directory whose lockfile may live at a
+ * monorepo root. Checks `cwd` itself first (same single-match rule as
+ * _detectPackageManger); on a miss, walks up looking for a directory with a
+ * lockfile that is also a workspace root (a `workspaces` field in its
+ * package.json, or a pnpm-workspace.yaml). The workspace requirement keeps a
+ * stray lockfile in an unrelated ancestor (e.g. the home directory) from
+ * being picked up.
+ */
+export function detectPackageManagerWithRoot(
+  cwd: string
+): { packageManager: PackageManager; root: string } | null {
+  const resolved = path.resolve(cwd);
+  const atLeaf = packageManagers.filter((packageManager) =>
+    packageManager.detect(resolved)
+  );
+  if (atLeaf.length === 1) {
+    return { packageManager: atLeaf[0], root: resolved };
+  }
+  if (atLeaf.length > 1) return null;
+
+  let dir = path.dirname(resolved);
+  while (true) {
+    const found = packageManagers.filter((packageManager) =>
+      packageManager.detect(dir)
+    );
+    // Ambiguity keeps the no-assumptions rule from _detectPackageManger.
+    if (found.length > 1) return null;
+    if (found.length === 1 && isWorkspaceRoot(dir)) {
+      return { packageManager: found[0], root: dir };
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) return null;
+    dir = parent;
+  }
+}
+
 // Get the package manager for the current project
 // Uses a global cache to avoid prompting the user multiple times
 export async function getPackageManager(

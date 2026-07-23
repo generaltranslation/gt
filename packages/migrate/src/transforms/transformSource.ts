@@ -97,6 +97,7 @@ export function transformSourceFile(
   const symbols: ImportedSymbol[] = [];
   const nextIntlImports: NodePath<t.ImportDeclaration>[] = [];
   let hasNextIntlReexport = false;
+  let hasOwnedSideEffectImport = false;
 
   const noteReexport = (source: string) => {
     if (!adapter.ownsModule(source)) return;
@@ -116,6 +117,16 @@ export function transformSourceFile(
     ImportDeclaration(path) {
       const source = path.node.source.value;
       if (!adapter.ownsModule(source)) return;
+      // A side-effect import (`import 'next-intl/whatever'`) has no gt-next
+      // mapping and must never be deleted silently; hold the file instead,
+      // like a re-export.
+      if (path.node.specifiers.length === 0) {
+        hasOwnedSideEffectImport = true;
+        skipReasons.push(
+          `side-effect import of '${source}' would break once ${adapter.displayName} is removed (convert it manually)`
+        );
+        return;
+      }
       nextIntlImports.push(path);
       for (const specifier of path.node.specifiers) {
         if (!t.isImportSpecifier(specifier)) {
@@ -137,7 +148,12 @@ export function transformSourceFile(
       }
     },
   });
-  if (nextIntlImports.length === 0 && !hasNextIntlReexport) return none;
+  if (
+    nextIntlImports.length === 0 &&
+    !hasNextIntlReexport &&
+    !hasOwnedSideEffectImport
+  )
+    return none;
 
   // The exact `Locale` import specifiers (value- or type-position, aliased or
   // not). References that bind to one of these are rewritten to `string`; a
@@ -617,6 +633,10 @@ export function transformSourceFile(
           if (!adapter.ownsModule(source)) {
             return;
           }
+          // Pre-existing side-effect imports (zero specifiers) are retained;
+          // classification already skips those files, this guard keeps the
+          // invariant if a future path reaches here without it.
+          if (path.node.specifiers.length === 0) return;
           path.node.specifiers = path.node.specifiers.filter(
             (specifier) =>
               !(

@@ -19,7 +19,10 @@ import type { SupportedLibraries } from '../../types/index.js';
 import { Libraries } from '../../types/libraries.js';
 import { installPackage } from '../../utils/installPackage.js';
 import { getPackageJson, isPackageInstalled } from '../../utils/packageJson.js';
-import { getPackageManager } from '../../utils/packageManager.js';
+import {
+  detectPackageManagerWithRoot,
+  getPackageManager,
+} from '../../utils/packageManager.js';
 import type { PackageManager } from '../../utils/packageManager.js';
 import { loadMigrateEngine } from './migrateEngineLoader.js';
 import type {
@@ -130,27 +133,46 @@ export async function handleMigrateCommand(
   // The rewritten files import gt-next; install it so the app builds.
   let gtNextMissing = !(await isGtNextInstalled(cwd));
   if (gtNextMissing) {
-    // When detection fails (no lockfile), getPackageManager falls back to an
-    // interactive prompt. A non-interactive run cannot answer it, and dying on
-    // prompt EOF here would end the run after the edits were written but
-    // before the report exists, so detection failure falls through to the
-    // report's manual-install step instead.
+    // In a monorepo the lockfile lives at the workspace root, not in the app
+    // directory the migration ran in, so leaf-only detection would miss it.
+    // Resolve the nearest workspace root: npm must run the install at the
+    // root targeting the member (running it in the leaf would start a second,
+    // detached dependency tree); the workspace-native managers resolve the
+    // root themselves when run from the leaf.
     let packageManager: PackageManager | null = null;
-    try {
-      packageManager = await getPackageManager(
-        cwd,
-        undefined,
-        !process.stdin.isTTY
-      );
-    } catch {
-      logger.warn(
-        createDiagnosticMessage({
-          source: 'gt',
-          severity: 'Warning',
-          whatHappened: `Could not detect the package manager, so ${Libraries.GT_NEXT} was not installed`,
-          fix: 'Install it by hand; the report includes the manual install step.',
-        })
-      );
+    let installCwd = cwd;
+    const installExtraArgs: string[] = [];
+    const detected = detectPackageManagerWithRoot(cwd);
+    if (detected) {
+      packageManager = detected.packageManager;
+      if (detected.root !== path.resolve(cwd) && packageManager.id === 'npm') {
+        installCwd = detected.root;
+        installExtraArgs.push(
+          `--workspace=${path.relative(detected.root, path.resolve(cwd))}`
+        );
+      }
+    } else {
+      // When detection fails everywhere, getPackageManager falls back to an
+      // interactive prompt. A non-interactive run cannot answer it, and dying
+      // on prompt EOF here would end the run after the edits were written but
+      // before the report exists, so detection failure falls through to the
+      // report's manual-install step instead.
+      try {
+        packageManager = await getPackageManager(
+          cwd,
+          undefined,
+          !process.stdin.isTTY
+        );
+      } catch {
+        logger.warn(
+          createDiagnosticMessage({
+            source: 'gt',
+            severity: 'Warning',
+            whatHappened: `Could not detect the package manager, so ${Libraries.GT_NEXT} was not installed`,
+            fix: 'Install it by hand; the report includes the manual install step.',
+          })
+        );
+      }
     }
     if (packageManager !== null) {
       const spinner = logger.createSpinner('timer');
@@ -158,7 +180,13 @@ export async function handleMigrateCommand(
         `Installing ${Libraries.GT_NEXT} with ${packageManager.name}...`
       );
       try {
-        await installPackage(Libraries.GT_NEXT, packageManager, false, cwd);
+        await installPackage(
+          Libraries.GT_NEXT,
+          packageManager,
+          false,
+          installCwd,
+          installExtraArgs
+        );
         spinner.stop(chalk.green(`Installed ${Libraries.GT_NEXT}.`));
         gtNextMissing = false;
       } catch {

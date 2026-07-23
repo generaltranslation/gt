@@ -41,9 +41,18 @@ vi.mock('../../utils/packageManager.js', async (importOriginal) => ({
 
 const tmpDirs: string[] = [];
 
-function makeApp(overrides: Record<string, string> = {}): string {
-  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-app-'));
-  tmpDirs.push(cwd);
+function makeApp(
+  overrides: Record<string, string> = {},
+  baseDir?: string
+): string {
+  let cwd: string;
+  if (baseDir) {
+    fs.mkdirSync(baseDir, { recursive: true });
+    cwd = baseDir;
+  } else {
+    cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-app-'));
+    tmpDirs.push(cwd);
+  }
   const files: Record<string, string> = {
     'package.json': JSON.stringify(
       {
@@ -309,7 +318,8 @@ describe('handleMigrateCommand integration', () => {
       'gt-next',
       expect.anything(),
       false,
-      cwd
+      cwd,
+      []
     );
 
     // report exists and mentions next steps
@@ -318,6 +328,45 @@ describe('handleMigrateCommand integration', () => {
     expect(report).toContain('npx gt generate');
     // install succeeded, so no manual install step
     expect(report).not.toContain('Install gt-next');
+  });
+
+  it('installs gt-next through the npm workspace root in a monorepo', async () => {
+    // The app is an npm-workspace member: package-lock.json lives at the
+    // monorepo root, the migrated app at packages/dashboard has none. Leaf
+    // detection misses, the ancestor walk must find the root, and the
+    // install must run at the root targeting the member (running npm in the
+    // leaf would start a second, detached dependency tree).
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-mono-'));
+    tmpDirs.push(root);
+    fs.writeFileSync(
+      path.join(root, 'package.json'),
+      JSON.stringify({ name: 'mono', workspaces: ['packages/*'] })
+    );
+    fs.writeFileSync(path.join(root, 'package-lock.json'), '{}');
+    const cwd = makeApp({}, path.join(root, 'packages', 'dashboard'));
+
+    vi.mocked(getPackageManager).mockClear();
+    await handleMigrateCommand(
+      {
+        config: 'gt.config.json',
+        from: 'next-intl',
+        dryRun: false,
+        yes: true,
+        allowDirty: true,
+      },
+      'next-intl',
+      cwd
+    );
+
+    expect(vi.mocked(installPackage)).toHaveBeenCalledWith(
+      'gt-next',
+      expect.objectContaining({ id: 'npm' }),
+      false,
+      root,
+      [`--workspace=${path.join('packages', 'dashboard')}`]
+    );
+    // detection succeeded, so the interactive-prompt fallback never ran
+    expect(vi.mocked(getPackageManager)).not.toHaveBeenCalled();
   });
 
   it('retains a routing file reachable only through a retained request file', async () => {

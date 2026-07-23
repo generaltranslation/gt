@@ -75,6 +75,10 @@ export function removeUnusedNamedImports(ast: t.File, locals: string[]): void {
 
   traverse(ast, {
     ImportDeclaration(path) {
+      // A declaration that was already specifier-less (a side-effect import
+      // like `import './globals.css'`) is not this cleanup's to touch: only
+      // remove a declaration this pruning itself emptied.
+      if (path.node.specifiers.length === 0) return;
       path.node.specifiers = path.node.specifiers.filter((specifier) => {
         const local = specifier.local.name;
         return !uses.has(local) || uses.get(local)! > 0;

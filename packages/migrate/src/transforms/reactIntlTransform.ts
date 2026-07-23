@@ -131,6 +131,7 @@ export function transformReactIntlSource(
   // but it dangles once react-intl is uninstalled. Mirror the next-intl engine's
   // noteReexport: skip+report so teardown never leaves a broken re-export.
   let hasReactIntlReexport = false;
+  let hasOwnedSideEffectImport = false;
   const noteReexport = (source: string | null | undefined) => {
     if (!source || (source !== MODULE && !source.startsWith('@formatjs/'))) {
       return;
@@ -150,6 +151,16 @@ export function transformReactIntlSource(
     ImportDeclaration(path) {
       const source = path.node.source.value;
       if (source !== MODULE && !source.startsWith('@formatjs/')) return;
+      // Side-effect imports (polyfills like `import '@formatjs/intl-numberformat/polyfill'`)
+      // have no gt-next mapping and must never be deleted silently; hold the
+      // file, matching how named @formatjs imports are treated below.
+      if (path.node.specifiers.length === 0) {
+        hasOwnedSideEffectImport = true;
+        skipReasons.push(
+          `side-effect import of '${source}' would break once react-intl is removed; convert it manually`
+        );
+        return;
+      }
       reactIntlImports.push(path);
       for (const specifier of path.node.specifiers) {
         if (!t.isImportSpecifier(specifier)) {
@@ -173,7 +184,12 @@ export function transformReactIntlSource(
       }
     },
   });
-  if (reactIntlImports.length === 0 && !hasReactIntlReexport) return none;
+  if (
+    reactIntlImports.length === 0 &&
+    !hasReactIntlReexport &&
+    !hasOwnedSideEffectImport
+  )
+    return none;
 
   const localsOf = (name: string) =>
     new Set(symbols.filter((s) => s.imported === name).map((s) => s.local));
