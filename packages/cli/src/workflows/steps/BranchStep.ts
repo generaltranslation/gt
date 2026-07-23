@@ -1,4 +1,3 @@
-import { WorkflowStep } from './WorkflowStep.js';
 import { logErrorAndExit } from '../../console/logging.js';
 import { logger } from '../../console/logger.js';
 import type { GT } from 'generaltranslation';
@@ -16,14 +15,13 @@ type BranchStepClient = Pick<GT, 'queryBranchData' | 'createBranch'>;
 type BranchStepSettings = Pick<Settings, 'branchOptions'>;
 
 // Step 1: Resolve the current branch id & update API with branch information
-export class BranchStep extends WorkflowStep<null, BranchData | null> {
+export class BranchStep {
   private spinner = logger.createSpinner('dots');
   private branchData: BranchData;
   private settings: BranchStepSettings;
   private gt: BranchStepClient;
 
   constructor(gt: BranchStepClient, settings: BranchStepSettings) {
-    super();
     this.gt = gt;
     this.settings = settings;
     this.branchData = {
@@ -192,9 +190,5 @@ export class BranchStep extends WorkflowStep<null, BranchData | null> {
     this.spinner.stop(chalk.green('Branch information resolved successfully'));
 
     return this.branchData;
-  }
-
-  async wait(): Promise<void> {
-    return;
   }
 }

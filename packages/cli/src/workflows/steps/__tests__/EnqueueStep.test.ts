@@ -33,7 +33,6 @@ describe('EnqueueStep', () => {
     const step = new EnqueueStep(gt as unknown as GT, settings);
 
     const result = await step.run([]);
-    await step.wait();
 
     expect(result).toEqual({
       jobData: {},

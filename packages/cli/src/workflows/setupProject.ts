@@ -38,7 +38,6 @@ export async function runSetupProjectWorkflow(
 
     // first run the branch step
     const branchData = await branchStep.run();
-    await branchStep.wait();
 
     if (!branchData) {
       return logErrorAndExit(branchResolutionError);
@@ -46,11 +45,9 @@ export async function runSetupProjectWorkflow(
 
     // then run the upload step
     const uploadedFiles = await uploadStep.run({ files, branchData });
-    await uploadStep.wait();
 
     // then run the setup step
     await setupStep.run(uploadedFiles, options.force ?? false);
-    await setupStep.wait();
 
     return { branchData };
   } catch (error) {

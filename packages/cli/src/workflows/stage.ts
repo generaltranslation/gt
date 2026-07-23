@@ -49,19 +49,16 @@ export async function runStageFilesWorkflow({
 
     // first run the branch step
     const branchData = await branchStep.run();
-    await branchStep.wait();
     if (!branchData) {
       return logErrorAndExit(branchResolutionError);
     }
 
     // then run the upload step
     const uploadedFiles = await uploadStep.run({ files, branchData });
-    await uploadStep.wait();
 
     // optionally run the user edit diffs step
     if (options?.saveLocal) {
       await userEditDiffsStep.run(uploadedFiles);
-      await userEditDiffsStep.wait();
     }
 
     // then run the tag step (non-fatal — tagging failure should not block translations)
@@ -70,7 +67,6 @@ export async function runStageFilesWorkflow({
         const userProvidedTag = !!options.tag;
         const tagStep = new TagStep(gt, settings, userProvidedTag);
         await tagStep.run(uploadedFiles);
-        await tagStep.wait();
       } catch {
         logger.warn('Failed to create translation tag. Continuing...');
       }
@@ -78,7 +74,6 @@ export async function runStageFilesWorkflow({
 
     // then run the setup step
     await setupStep.run(uploadedFiles);
-    await setupStep.wait();
 
     // then run the enqueue step
     const { filesToEnqueue, skippedFiles } = await filterFilesForEnqueue({
@@ -94,7 +89,6 @@ export async function runStageFilesWorkflow({
     }
 
     const enqueueResult = await enqueueStep.run(filesToEnqueue);
-    await enqueueStep.wait();
 
     return { branchData, enqueueResult };
   } catch (error) {
