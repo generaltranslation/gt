@@ -18,8 +18,9 @@ export function _getLocaleDirection(code: string): 'ltr' | 'rtl' {
     if (textInfoDirection) {
       return textInfoDirection;
     }
-    languageCode = locale.language;
-    scriptCode = locale.script;
+    const maximizedLocale = locale.maximize();
+    languageCode = maximizedLocale.language;
+    scriptCode = maximizedLocale.script;
   } catch {
     ({ languageCode, scriptCode } = extractLocaleParts(code));
   }

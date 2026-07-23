@@ -51,6 +51,11 @@ describe.sequential('_getLocaleDirection (browser)', () => {
     expect(_getLocaleDirection('az-Latn')).toBe('ltr');
   });
 
+  it('should infer an rtl script when the locale omits its script subtag', () => {
+    mockLocaleWithoutTextInfo();
+    expect(_getLocaleDirection('ks')).toBe('rtl');
+  });
+
   it('should fall back to known rtl languages when Intl.Locale is not available', () => {
     vi.spyOn(intlCache, 'get').mockImplementation(() => {
       throw new Error('Intl.Locale not supported');

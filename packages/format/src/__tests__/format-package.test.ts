@@ -185,7 +185,9 @@ describe('@generaltranslation/format package export', () => {
       (artifact) => /^IntlCache-.*\.(?:cjs|mjs)$/.test(artifact)
     );
 
-    expect(intlCacheArtifacts).toHaveLength(2);
+    expect(
+      new Set(intlCacheArtifacts.map((artifact) => artifact.split('.').at(-1)))
+    ).toEqual(new Set(['cjs', 'mjs']));
     for (const artifact of intlCacheArtifacts) {
       expect(
         readFileSync(join(packageRoot, 'dist', artifact), 'utf8')
