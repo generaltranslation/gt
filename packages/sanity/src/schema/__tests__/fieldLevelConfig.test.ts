@@ -76,7 +76,8 @@ describe('buildInternationalizedArrayPlugin', () => {
       { 'zh-TW': 'Traditional Chinese' }
     );
     expect(languageOptions(plugin)).toEqual([
-      { id: 'en', title: 'English' },
+      { id: 'en', title: '🇺🇸 English (en)' },
+      // A string customMapping is the user's full label — no flag or code added.
       { id: 'zh-TW', title: 'Traditional Chinese' },
     ]);
   });
@@ -94,7 +95,7 @@ describe('buildInternationalizedArrayPlugin', () => {
       { 'zh-TW': 'From customMapping', es: 'From customMapping' }
     );
     expect(languageOptions(plugin)).toEqual([
-      { id: 'en', title: 'English' },
+      { id: 'en', title: '🇺🇸 English (en)' },
       { id: 'zh-TW', title: 'From languageTitles' },
       { id: 'es', title: 'From getLanguageTitle' },
     ]);

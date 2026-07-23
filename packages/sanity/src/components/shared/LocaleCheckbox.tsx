@@ -1,11 +1,7 @@
 import { useCallback } from 'react';
-import { Button, Flex, Switch, Box, Text } from '@sanity/ui';
-import styled from 'styled-components';
+import { Button, Checkbox, Flex } from '@sanity/ui';
 import { TranslationLocale } from '../../types';
-
-const WrapText = styled(Box)`
-  white-space: normal;
-`;
+import { LocaleLabel } from './LocaleLabel';
 
 type LocaleCheckboxProps = {
   locale: TranslationLocale;
@@ -28,19 +24,15 @@ export const LocaleCheckbox = ({
       mode='ghost'
       onClick={onClick}
       style={{ cursor: 'pointer' }}
-      radius={2}
+      padding={3}
     >
       <Flex align='center' gap={3}>
-        <Switch
+        <Checkbox
           style={{ pointerEvents: 'none' }}
           onChange={onClick}
           checked={checked}
         />
-        <WrapText>
-          <Text size={1} weight='semibold'>
-            {locale.description}
-          </Text>
-        </WrapText>
+        <LocaleLabel localeId={locale.localeId} />
       </Flex>
     </Button>
   );

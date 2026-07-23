@@ -13,7 +13,16 @@ import { useSecrets } from '../../hooks/useSecrets';
 import { Secrets } from '../../types';
 import { pluginConfig } from '../../adapter/core';
 
-const theme = buildTheme();
+// GT's design system rounds nearly every surface to 6px (rounded-md). Bump
+// the default radius steps so plugin buttons/cards/inputs match without
+// having to set `radius` on every component.
+const gtRadius = [0, 4, 6, 8, 12, 16, 24];
+const baseTheme = buildTheme();
+const theme = {
+  ...baseTheme,
+  radius: gtRadius,
+  v2: baseTheme.v2 && { ...baseTheme.v2, radius: gtRadius },
+};
 
 interface BaseTranslationWrapperProps {
   children: React.ReactNode;
