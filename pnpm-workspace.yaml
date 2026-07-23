@@ -29,7 +29,6 @@ minimumReleaseAgeExclude:
 
 catalog:
   '@babel/core': ^7.28.4
-  '@typescript/native': npm:typescript@^7.0.2
   '@types/node': ^22.13.5
   oxfmt: ^0.47.0
   oxlint: ^1.62.0

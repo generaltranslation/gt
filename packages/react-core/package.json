@@ -43,7 +43,7 @@
     "@types/node": "catalog:",
     "@types/react": ">=18.0.0 <20.0.0",
     "tsdown": "catalog:",
-    "@typescript/native": "catalog:",
+    "@generaltranslation/typescript-native": "workspace:*",
     "typescript": "catalog:"
   },
   "exports": {

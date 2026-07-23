@@ -61,7 +61,7 @@
     "remark-parse": "^11.0.0",
     "remark-stringify": "^11.0.0",
     "tsdown": "catalog:",
-    "@typescript/native": "catalog:",
+    "@generaltranslation/typescript-native": "workspace:*",
     "typescript": "catalog:",
     "unified": "^11.0.5",
     "vitest": "catalog:"

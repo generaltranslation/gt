@@ -74,7 +74,7 @@
     "@types/react-dom": ">=18.0.0 <20.0.0",
     "next": "15.2.3",
     "tsdown": "catalog:",
-    "@typescript/native": "catalog:",
+    "@generaltranslation/typescript-native": "workspace:*",
     "typescript": "catalog:"
   },
   "exports": {

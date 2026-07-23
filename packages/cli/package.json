@@ -169,7 +169,7 @@
     "ts-node": "^10.9.2",
     "tsdown": "catalog:",
     "tslib": "catalog:",
-    "@typescript/native": "catalog:",
+    "@generaltranslation/typescript-native": "workspace:*",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

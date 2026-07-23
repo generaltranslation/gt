@@ -74,7 +74,7 @@
     "@typescript-eslint/rule-tester": "^8.65.0",
     "eslint": "^9.0.0",
     "tsdown": "catalog:",
-    "@typescript/native": "catalog:",
+    "@generaltranslation/typescript-native": "workspace:*",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
