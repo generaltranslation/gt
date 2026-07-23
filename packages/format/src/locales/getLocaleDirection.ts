@@ -1,5 +1,4 @@
 import { intlCache } from '../cache/IntlCache';
-import { _getLocaleProperties } from './getLocaleProperties';
 
 /**
  * Get the text direction for a given locale code using the Intl.Locale API.
@@ -9,6 +8,9 @@ import { _getLocaleProperties } from './getLocaleProperties';
  * @internal
  */
 export function _getLocaleDirection(code: string): 'ltr' | 'rtl' {
+  let languageCode: string | undefined;
+  let scriptCode: string | undefined;
+
   // Extract via textInfo property
   try {
     const locale = intlCache.get('Locale', code);
@@ -16,12 +18,11 @@ export function _getLocaleDirection(code: string): 'ltr' | 'rtl' {
     if (textInfoDirection) {
       return textInfoDirection;
     }
+    languageCode = locale.language;
+    scriptCode = locale.script;
   } catch {
-    // Fall back to language/script heuristics below.
+    ({ languageCode, scriptCode } = extractLocaleParts(code));
   }
-
-  // Fallback to simple heuristics
-  const { scriptCode, languageCode } = _getLocaleProperties(code);
 
   // Handle RTL script or language
   if (scriptCode) {
@@ -88,4 +89,14 @@ function extractDirectionWithTextInfo(locale: Intl.Locale) {
       ? locale.textInfo.direction
       : undefined;
   return direction === 'rtl' || direction === 'ltr' ? direction : undefined;
+}
+
+function extractLocaleParts(code: string): {
+  languageCode?: string;
+  scriptCode?: string;
+} {
+  const parts = code.replaceAll('_', '-').split('-');
+  const languageCode = /^[a-z]{2,3}$/i.test(parts[0]) ? parts[0] : undefined;
+  const scriptCode = parts.find((part) => /^[a-z]{4}$/i.test(part));
+  return { languageCode, scriptCode };
 }

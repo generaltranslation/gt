@@ -1,9 +1,9 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { beforeAll, describe, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 
 import type { CustomMapping } from '@generaltranslation/format/types';
 
@@ -178,5 +178,18 @@ describe('@generaltranslation/format package export', () => {
       ],
       { stdio: 'pipe' }
     );
+  });
+
+  it('keeps the custom cutoff formatter out of the native Intl cache chunk', () => {
+    const intlCacheArtifacts = readdirSync(join(packageRoot, 'dist')).filter(
+      (artifact) => /^IntlCache-.*\.(?:cjs|mjs)$/.test(artifact)
+    );
+
+    expect(intlCacheArtifacts).toHaveLength(2);
+    for (const artifact of intlCacheArtifacts) {
+      expect(
+        readFileSync(join(packageRoot, 'dist', artifact), 'utf8')
+      ).not.toContain('CutoffFormat');
+    }
   });
 });

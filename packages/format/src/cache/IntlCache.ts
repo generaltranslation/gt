@@ -1,17 +1,16 @@
 import { libraryDefaultLocale } from '../settings/settings';
-import { CutoffFormatConstructor } from '../formatting/custom-formats/CutoffFormat/CutoffFormat';
 import {
   ConstructorType,
-  CustomIntlConstructors,
-  CustomIntlType,
+  IntlConstructors,
+  IntlConstructorMap,
   IntlCacheObject,
 } from './types';
 
 /**
  * Object mapping constructor names to their respective constructor functions
- * Includes all native Intl constructors plus custom ones like CutoffFormat
+ * Includes the native Intl constructors.
  */
-const CustomIntl: CustomIntlType = {
+const IntlConstructor: IntlConstructorMap = {
   Collator: Intl.Collator,
   DateTimeFormat: Intl.DateTimeFormat,
   DisplayNames: Intl.DisplayNames,
@@ -21,11 +20,10 @@ const CustomIntl: CustomIntlType = {
   PluralRules: Intl.PluralRules,
   RelativeTimeFormat: Intl.RelativeTimeFormat,
   Segmenter: Intl.Segmenter,
-  CutoffFormat: CutoffFormatConstructor,
 };
 
 /**
- * Cache for Intl and custom format instances to avoid repeated instantiation
+ * Cache for native Intl format instances to avoid repeated instantiation
  * Uses a two-level structure: constructor name -> cache key -> instance.
  */
 class IntlCache {
@@ -56,9 +54,9 @@ class IntlCache {
    * @param args Constructor arguments (locales, options).
    * @returns Cached or newly created Intl instance.
    */
-  get<K extends keyof CustomIntlConstructors>(
+  get<K extends keyof IntlConstructors>(
     constructor: K,
-    ...args: ConstructorParameters<CustomIntlConstructors[K]>
+    ...args: ConstructorParameters<IntlConstructors[K]>
   ): InstanceType<ConstructorType<K>> {
     const [locales = libraryDefaultLocale, options = {}] = args;
     const key = this.generateKey(locales, options);
@@ -71,7 +69,7 @@ class IntlCache {
 
     if (intlObject === undefined) {
       // Create new instance and cache it
-      intlObject = new CustomIntl[constructor](...args);
+      intlObject = new IntlConstructor[constructor](...args);
       cache[key] = intlObject;
     }
 

@@ -8,7 +8,6 @@ import {
   _formatRelativeTime,
   _selectRelativeTimeUnit,
 } from './formatting/format';
-import { intlCache } from './cache/IntlCache';
 import { _requiresTranslation } from './locales/requiresTranslation';
 import { _determineLocale } from './locales/determineLocale';
 import { _isSameLanguage } from './locales/isSameLanguage';
@@ -24,6 +23,7 @@ import type { CustomMapping, FormatVariables } from './types';
 import { _resolveAliasLocale } from './locales/resolveAliasLocale';
 import { _resolveCanonicalLocale } from './locales/resolveCanonicalLocale';
 import type { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
+import { cutoffFormatCache } from './formatting/custom-formats/CutoffFormat/CutoffFormatCache';
 import type { StringFormat } from './types-dir/jsx/content';
 
 export type LocaleConfigConstructorParams = {
@@ -158,12 +158,8 @@ export class LocaleConfig {
     options: WithLocales<CutoffFormatOptions> = {}
   ) {
     const { locales, ...formatOptions } = options;
-    return intlCache
-      .get(
-        'CutoffFormat',
-        this.getFormattingLocales(targetLocale, locales),
-        formatOptions
-      )
+    return cutoffFormatCache
+      .get(this.getFormattingLocales(targetLocale, locales), formatOptions)
       .format(value);
   }
 

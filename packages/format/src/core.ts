@@ -8,8 +8,8 @@ import {
   _formatRelativeTime,
   _selectRelativeTimeUnit,
 } from './formatting/format';
-import { intlCache } from './cache/IntlCache';
 import type { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
+import { cutoffFormatCache } from './formatting/custom-formats/CutoffFormat/CutoffFormatCache';
 import { _determineLocale } from './locales/determineLocale';
 import { _getLocaleDirection } from './locales/getLocaleDirection';
 import { _getLocaleEmoji } from './locales/getLocaleEmoji';
@@ -101,7 +101,7 @@ export function formatCutoff(
   options?: LocalesOption & CutoffFormatOptions
 ) {
   const { locales, ...formatOptions } = options ?? {};
-  return intlCache.get('CutoffFormat', locales, formatOptions).format(value);
+  return cutoffFormatCache.get(locales, formatOptions).format(value);
 }
 
 /**
