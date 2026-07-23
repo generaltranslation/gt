@@ -1,0 +1,27 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+node_modules
+dist
+
+# Rsbuild cache
+.rsbuild
+
+# Local env
+.env
+.env.local
+*.local
+
+# Ship the template. The root .gitignore's `*.env.*` rule would otherwise skip it.
+!.env.example
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store

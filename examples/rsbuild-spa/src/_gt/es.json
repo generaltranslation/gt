@@ -1,0 +1,18 @@
+{
+  "d4c8e25226fbf46e": {
+    "c": "Traduce tu aplicación React en tiempo de ejecución",
+    "i": 1,
+    "t": "h1"
+  },
+  "64309ed11137e1e4": {
+    "c": "Esta aplicación de página única se empaqueta con Rsbuild y se internacionaliza con General Translation.",
+    "i": 1,
+    "t": "p"
+  },
+  "c2a69b690ade6918": {
+    "c": "Elige un idioma arriba. Toda la página se vuelve a renderizar en el idioma seleccionado, sin proveedor y sin servidor.",
+    "i": 1,
+    "t": "p"
+  },
+  "8ab08ff86829e23b": "Internacionalización en tiempo de ejecución para aplicaciones de página única."
+}

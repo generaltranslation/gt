@@ -1,0 +1,18 @@
+{
+  "d4c8e25226fbf46e": {
+    "c": "Traduisez votre application React à l'exécution",
+    "i": 1,
+    "t": "h1"
+  },
+  "64309ed11137e1e4": {
+    "c": "Cette application monopage est packagée par Rsbuild et internationalisée avec General Translation.",
+    "i": 1,
+    "t": "p"
+  },
+  "c2a69b690ade6918": {
+    "c": "Choisissez une langue ci-dessus. Toute la page est rendue à nouveau dans la langue sélectionnée, sans fournisseur ni serveur.",
+    "i": 1,
+    "t": "p"
+  },
+  "8ab08ff86829e23b": "Internationalisation à l'exécution pour les applications monopage."
+}
