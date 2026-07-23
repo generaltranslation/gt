@@ -42,6 +42,20 @@ function wrapTerminalSessionAware<T extends SpinnerResult | ProgressResult>(
 }
 
 export type LogFormat = 'default' | 'json';
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+
+// Numeric ordering used to decide the quiet floor without lowering an
+// already-more-restrictive level chosen via GT_LOG_LEVEL.
+const LOG_LEVEL_RANK: Record<LogLevel, number> = {
+  debug: 10,
+  info: 20,
+  warn: 30,
+  error: 40,
+};
+
+// Under --quiet, informational output is suppressed but warnings and errors
+// still print, so the console never drops below this level.
+const QUIET_FLOOR_LEVEL: LogLevel = 'warn';
 
 // Mock spinner that logs to console instead of updating terminal UI
 class MockSpinner implements SpinnerResult {
@@ -124,6 +138,8 @@ class Logger {
   private pinoLogger: PinoLogger | null = null;
   private fileLogger: PinoLogger | null = null;
   private logFormat: LogFormat;
+  private logLevel: LogLevel;
+  private quiet = false;
 
   private constructor() {
     // Read configuration from environment variables
@@ -148,6 +164,7 @@ class Logger {
     }
 
     this.logFormat = format;
+    this.logLevel = logLevel as LogLevel;
 
     // Console output (stdout) - only for JSON format
     // For 'default' format, we use @clack/prompts directly
@@ -184,35 +201,64 @@ class Logger {
     return Logger.instance;
   }
 
+  /**
+   * Enable or disable quiet mode. When quiet, informational chatter
+   * (info/step/success/message/debug/trace, spinners, progress bars, and
+   * command intro/outro markers) is suppressed on the console, while warnings
+   * and errors still print. Quiet wins over GT_LOG_LEVEL but never lowers an
+   * already-more-restrictive level. File logging is unaffected so an explicit
+   * GT_LOG_FILE still captures everything.
+   */
+  setQuiet(quiet: boolean): void {
+    this.quiet = quiet;
+    if (this.pinoLogger) {
+      this.pinoLogger.level = quiet
+        ? LOG_LEVEL_RANK[this.logLevel] > LOG_LEVEL_RANK[QUIET_FLOOR_LEVEL]
+          ? this.logLevel
+          : QUIET_FLOOR_LEVEL
+        : this.logLevel;
+    }
+  }
+
+  isQuiet(): boolean {
+    return this.quiet;
+  }
+
   // Standard logging methods
   trace(message: string): void {
-    if (this.logFormat === 'default') {
-      endTerminalSession();
-      // @clack/prompts doesn't have trace, use message
-      clackLog.message(message, { symbol: chalk.dim('•') });
-    } else {
-      this.pinoLogger?.trace(message);
+    if (!this.quiet) {
+      if (this.logFormat === 'default') {
+        endTerminalSession();
+        // @clack/prompts doesn't have trace, use message
+        clackLog.message(message, { symbol: chalk.dim('•') });
+      } else {
+        this.pinoLogger?.trace(message);
+      }
     }
     this.fileLogger?.trace(message);
   }
 
   debug(message: string): void {
-    if (this.logFormat === 'default') {
-      endTerminalSession();
-      // @clack/prompts doesn't have debug, use message
-      clackLog.message(message, { symbol: chalk.dim('◆') });
-    } else {
-      this.pinoLogger?.debug(message);
+    if (!this.quiet) {
+      if (this.logFormat === 'default') {
+        endTerminalSession();
+        // @clack/prompts doesn't have debug, use message
+        clackLog.message(message, { symbol: chalk.dim('◆') });
+      } else {
+        this.pinoLogger?.debug(message);
+      }
     }
     this.fileLogger?.debug(message);
   }
 
   info(message: string): void {
-    if (this.logFormat === 'default') {
-      endTerminalSession();
-      clackLog.info(message);
-    } else {
-      this.pinoLogger?.info(message);
+    if (!this.quiet) {
+      if (this.logFormat === 'default') {
+        endTerminalSession();
+        clackLog.info(message);
+      } else {
+        this.pinoLogger?.info(message);
+      }
     }
     this.fileLogger?.info(message);
   }
@@ -254,37 +300,48 @@ class Logger {
 
   // @clack/prompts specific methods (for 'default' format)
   success(message: string): void {
-    if (this.logFormat === 'default') {
-      endTerminalSession();
-      clackLog.success(message);
-    } else {
-      this.pinoLogger?.info(message); // Map to info for non-default formats
+    if (!this.quiet) {
+      if (this.logFormat === 'default') {
+        endTerminalSession();
+        clackLog.success(message);
+      } else {
+        this.pinoLogger?.info(message); // Map to info for non-default formats
+      }
     }
     this.fileLogger?.info(message);
   }
 
   step(message: string): void {
-    if (this.logFormat === 'default') {
-      endTerminalSession();
-      clackLog.step(message);
-    } else {
-      this.pinoLogger?.info(message); // Map to info for non-default formats
+    if (!this.quiet) {
+      if (this.logFormat === 'default') {
+        endTerminalSession();
+        clackLog.step(message);
+      } else {
+        this.pinoLogger?.info(message); // Map to info for non-default formats
+      }
     }
     this.fileLogger?.info(message);
   }
 
   message(message: string, symbol?: string): void {
-    if (this.logFormat === 'default') {
-      endTerminalSession();
-      clackLog.message(message, symbol ? { symbol } : undefined);
-    } else {
-      this.pinoLogger?.info(message); // Map to info for non-default formats
+    if (!this.quiet) {
+      if (this.logFormat === 'default') {
+        endTerminalSession();
+        clackLog.message(message, symbol ? { symbol } : undefined);
+      } else {
+        this.pinoLogger?.info(message); // Map to info for non-default formats
+      }
     }
     this.fileLogger?.info(message);
   }
 
   // Spinner functionality
   createSpinner(indicator: 'dots' | 'timer' = 'timer'): SpinnerResult {
+    // Quiet mode suppresses spinner UI; the mock routes through the gated
+    // info() so nothing reaches the console while file logging is preserved.
+    if (this.quiet) {
+      return new MockSpinner(this);
+    }
     if (this.logFormat === 'default') {
       return wrapTerminalSessionAware(spinner({ indicator }));
     } else {
@@ -294,6 +351,9 @@ class Logger {
 
   // Progress bar functionality
   createProgressBar(total: number): ProgressResult {
+    if (this.quiet) {
+      return new MockProgress(total, this);
+    }
     if (this.logFormat === 'default') {
       return wrapTerminalSessionAware(progress({ max: total }));
     } else {
@@ -303,21 +363,25 @@ class Logger {
 
   // Command start/end markers
   startCommand(message: string): void {
-    if (this.logFormat === 'default') {
-      endTerminalSession();
-      intro(chalk.cyan(message));
-    } else {
-      this.info(`╭─ ${message}`);
+    if (!this.quiet) {
+      if (this.logFormat === 'default') {
+        endTerminalSession();
+        intro(chalk.cyan(message));
+      } else {
+        this.info(`╭─ ${message}`);
+      }
     }
     this.fileLogger?.info(`[START] ${message}`);
   }
 
   endCommand(message: string): void {
-    if (this.logFormat === 'default') {
-      endTerminalSession();
-      outro(chalk.cyan(message));
-    } else {
-      this.info(`╰─ ${message}`);
+    if (!this.quiet) {
+      if (this.logFormat === 'default') {
+        endTerminalSession();
+        outro(chalk.cyan(message));
+      } else {
+        this.info(`╰─ ${message}`);
+      }
     }
     this.fileLogger?.info(`[END] ${message}`);
   }

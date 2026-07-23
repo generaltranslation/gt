@@ -64,8 +64,14 @@ export function exitSync(code: number): never {
 
 // GT specific logging
 export function displayHeader(introString?: string) {
-  displayAsciiTitle();
-  displayInitializingText();
+  // The ASCII banner is pure chatter and writes to console directly, bypassing
+  // the logger, so gate it here to honor --quiet. startCommand stays outside
+  // the gate: it is quiet-aware itself and must still run so the file log
+  // gets its [START] marker.
+  if (!logger.isQuiet()) {
+    displayAsciiTitle();
+    displayInitializingText();
+  }
 
   if (introString) {
     logger.startCommand(introString);

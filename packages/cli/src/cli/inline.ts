@@ -8,8 +8,6 @@ import {
 } from './flags.js';
 import { displayHeader, exitSync } from '../console/logging.js';
 import { logger } from '../console/logger.js';
-import { intro } from '@clack/prompts';
-import chalk from 'chalk';
 import { resolveLocaleFiles } from '../fs/config/parseFilesConfig.js';
 import { noFilesError } from '../console/index.js';
 import { saveJSON } from '../fs/saveJSON.js';
@@ -81,8 +79,9 @@ export class InlineCLI extends BaseCLI {
           'Scans the project for a dictionary and/or inline content and validates the project for errors.'
         )
     ).action(async (files: string[], options: Options) => {
-      // intro here since we don't want to show the ascii title
-      intro(chalk.cyan('Validating project...'));
+      // startCommand here since we don't want to show the ascii title; it
+      // renders the same intro while honoring --quiet.
+      logger.startCommand('Validating project...');
       await this.handleValidate(options, files);
       logger.endCommand('Done!');
     });
