@@ -1,0 +1,52 @@
+{
+  "b0943e2832e84043": [
+    {
+      "c": "Lanza tu aplicación en todos los idiomas",
+      "i": 1,
+      "t": "h1"
+    },
+    {
+      "c": "Esta es una aplicación de una sola página con React Router v7. gt-react se inicializa una vez en el navegador y luego traduce este contenido sin ningún componente proveedor.",
+      "i": 2,
+      "t": "p"
+    }
+  ],
+  "3c80d1610aae9fd5": [
+    "Pulsado ",
+    {
+      "i": 1,
+      "k": "_gt_n_1",
+      "v": "n"
+    },
+    " veces"
+  ],
+  "01439bead26afa0d": [
+    "Idioma activo: ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    }
+  ],
+  "4f8ade15bd06f5de": [
+    {
+      "c": "Acerca de este ejemplo",
+      "i": 1,
+      "t": "h1"
+    },
+    {
+      "c": "gt-react se inicializa una vez al arrancar. Como la inicialización termina antes de que cualquier módulo de ruta se cargue en el navegador, llamar a t() en el nivel superior de un módulo funciona correctamente.",
+      "i": 2,
+      "t": "p"
+    }
+  ],
+  "9a4c508f88343108": {
+    "c": "Cambiar el idioma recarga la página, por lo que gt-react se reinicializa con el nuevo idioma y vuelve a resolver todas las cadenas, incluida la de nivel de módulo de arriba.",
+    "i": 1,
+    "t": "p"
+  },
+  "2ecf88ef9e8e4259": "Inicio",
+  "0ca0a4d1447d07b2": "Acerca de este ejemplo",
+  "a3c752fe6dc9d16b": "Esta frase se genera con una llamada a t() en el nivel superior de un módulo.",
+  "febceedf6fa4bfb2": "Volver al inicio"
+}

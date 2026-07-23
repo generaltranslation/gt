@@ -1,0 +1,139 @@
+:root {
+  color-scheme: light dark;
+  --bg: #0b0d12;
+  --panel: #14171f;
+  --panel-border: #262b36;
+  --text: #f5f7fa;
+  --muted: #9aa4b2;
+  --accent: #7c93ff;
+  --accent-contrast: #0b0d12;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100dvh;
+  background: radial-gradient(1200px 600px at 50% -10%, #1a1f2e, var(--bg));
+  color: var(--text);
+}
+
+.loading {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.page {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: 2rem 1.25rem;
+}
+
+.panel {
+  width: min(640px, 100%);
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 2.25rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+
+.eyebrow {
+  margin: 0 0 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+h1 {
+  margin: 0 0 0.75rem;
+  font-size: 1.9rem;
+  line-height: 1.15;
+}
+
+p {
+  margin: 0 0 1rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.counter {
+  appearance: none;
+  border: 1px solid var(--panel-border);
+  background: #1b2030;
+  color: var(--text);
+  border-radius: 10px;
+  padding: 0.6rem 1rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.counter:hover {
+  border-color: var(--accent);
+}
+
+.locale {
+  margin-top: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.lead {
+  margin: 0 0 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 10px;
+  background: #1b2030;
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+  font-weight: 500;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--panel-border);
+}
+
+.link {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+select {
+  background: #1b2030;
+  color: var(--text);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.9rem;
+}
