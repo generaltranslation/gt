@@ -452,6 +452,7 @@ export class BaseCLI {
           settings,
           results.fileVersionData,
           results.jobData,
+          results.completedTranslationKeys,
           results.branchData,
           results.publishMap
         );

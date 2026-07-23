@@ -27,6 +27,7 @@ export async function handleTranslate(
   settings: Settings,
   fileVersionData: FileTranslationData | undefined,
   jobData: EnqueueFilesResult | undefined,
+  completedTranslationKeys: ReadonlySet<string> | undefined,
   branchData: BranchData | undefined,
   publishMap?: Map<string, boolean>
 ) {
@@ -50,6 +51,7 @@ export async function handleTranslate(
     await runDownloadWorkflow({
       fileVersionData: fileVersionData,
       jobData: jobData,
+      completedTranslationKeys,
       branchData: branchData,
       locales: settings.locales,
       timeoutDuration: options.timeout,

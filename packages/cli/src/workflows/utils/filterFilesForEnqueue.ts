@@ -11,6 +11,7 @@ type FilterFilesForEnqueueClient = Pick<GT, 'queryFileData'>;
 export type EnqueueFilterResult = {
   filesToEnqueue: FileReference[];
   skippedFiles: FileReference[];
+  completedTranslationKeys?: ReadonlySet<string>;
 };
 
 export async function filterFilesForEnqueue({
@@ -67,5 +68,9 @@ export async function filterFilesForEnqueue({
     }
   }
 
-  return { filesToEnqueue, skippedFiles };
+  return {
+    filesToEnqueue,
+    skippedFiles,
+    completedTranslationKeys: completedKeys,
+  };
 }

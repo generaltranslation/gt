@@ -32,6 +32,7 @@ export async function runStageFilesWorkflow({
 }): Promise<{
   branchData: BranchData;
   enqueueResult: EnqueueFilesResult;
+  completedTranslationKeys?: ReadonlySet<string>;
 }> {
   try {
     // Log files to be translated
@@ -44,8 +45,6 @@ export async function runStageFilesWorkflow({
     const branchStep = new BranchStep(gt, settings);
     const uploadStep = new UploadSourcesStep(gt, settings);
     const userEditDiffsStep = new UserEditDiffsStep(settings);
-    const setupStep = new SetupStep(gt, settings, timeoutMs);
-    const enqueueStep = new EnqueueStep(gt, settings, options.force);
 
     // first run the branch step
     const branchData = await branchStep.run();
@@ -77,26 +76,33 @@ export async function runStageFilesWorkflow({
     }
 
     // then run the setup step
+    const setupStep = new SetupStep(gt, settings, timeoutMs);
     await setupStep.run(uploadedFiles);
     await setupStep.wait();
 
-    // then run the enqueue step
-    const { filesToEnqueue, skippedFiles } = await filterFilesForEnqueue({
-      gt,
-      files: uploadedFiles,
-      locales: settings.locales,
-      force: options.force,
-    });
+    const { filesToEnqueue, skippedFiles, completedTranslationKeys } =
+      await filterFilesForEnqueue({
+        gt,
+        files: uploadedFiles,
+        locales: settings.locales,
+        force: options.force,
+      });
     if (skippedFiles.length > 0) {
       logger.info(
         `Skipped enqueue for ${skippedFiles.length} already translated file${skippedFiles.length === 1 ? '' : 's'}`
       );
     }
 
+    // then run the enqueue step
+    const enqueueStep = new EnqueueStep(gt, settings, options.force);
     const enqueueResult = await enqueueStep.run(filesToEnqueue);
     await enqueueStep.wait();
 
-    return { branchData, enqueueResult };
+    return {
+      branchData,
+      enqueueResult,
+      completedTranslationKeys,
+    };
   } catch (error) {
     return logErrorAndExit(
       withOriginalError(
