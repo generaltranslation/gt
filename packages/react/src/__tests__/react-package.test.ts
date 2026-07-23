@@ -193,12 +193,30 @@ describe('gt-react package exports', () => {
     }
   });
 
-  it('emits independent runtime entrypoints without shared chunks', () => {
-    expect(
-      readdirSync(join(packageRoot, 'dist'))
-        .filter((file) => /\.(cjs|mjs)$/.test(file))
-        .sort()
-    ).toEqual(runtimeArtifactNames);
+  it('keeps the dev-only localStorage cache out of the initial client entrypoint', () => {
+    const runtimeArtifacts = readdirSync(join(packageRoot, 'dist')).filter(
+      (file) => /\.(cjs|mjs)$/.test(file)
+    );
+    expect(runtimeArtifacts.filter((file) => !file.includes('-'))).toEqual(
+      expect.arrayContaining(runtimeArtifactNames)
+    );
+
+    const clientEntries = ['dist/index.client.cjs', 'dist/index.client.mjs'];
+    for (const file of clientEntries) {
+      expect(readFileSync(join(packageRoot, file), 'utf8')).not.toContain(
+        'gt:tx:'
+      );
+    }
+
+    const cacheChunks = runtimeArtifacts.filter((file) =>
+      file.startsWith('LocalStorageTranslationCache-')
+    );
+    expect(cacheChunks).toHaveLength(2);
+    for (const file of cacheChunks) {
+      expect(readFileSync(join(packageRoot, 'dist', file), 'utf8')).toContain(
+        'gt:tx:'
+      );
+    }
   });
 
   it('bundles workspace subpath imports in runtime artifacts', () => {
