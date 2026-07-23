@@ -77,7 +77,8 @@ describe('buildInternationalizedArrayPlugin', () => {
     );
     expect(languageOptions(plugin)).toEqual([
       { id: 'en', title: '🇺🇸 English (en)' },
-      { id: 'zh-TW', title: '🇹🇼 Traditional Chinese (zh-TW)' },
+      // A string customMapping is the user's full label — no flag or code added.
+      { id: 'zh-TW', title: 'Traditional Chinese' },
     ]);
   });
 

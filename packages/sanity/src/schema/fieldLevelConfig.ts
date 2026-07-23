@@ -102,7 +102,8 @@ export function buildInternationalizedArrayPlugin(
     config.languageTitles?.[locale] ??
     formatLocalePropertiesLabel(
       locale,
-      getLocaleProperties(locale, sourceLocale, customMapping)
+      getLocaleProperties(locale, sourceLocale, customMapping),
+      customMapping?.[locale]
     );
 
   const allLocales = Array.from(new Set([sourceLocale, ...locales]));

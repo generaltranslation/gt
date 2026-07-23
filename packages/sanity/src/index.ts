@@ -246,7 +246,11 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
           );
           return {
             id: locale,
-            title: formatLocalePropertiesLabel(locale, props),
+            title: formatLocalePropertiesLabel(
+              locale,
+              props,
+              customMapping?.[locale]
+            ),
           };
         });
         plugins.push(

@@ -16,7 +16,7 @@ export const LocaleLabel = ({
   size = 1,
   weight = 'medium',
 }: LocaleLabelProps) => {
-  const { emoji, name, code } = getLocaleDisplay(localeId);
+  const { emoji, name, code, verbatim } = getLocaleDisplay(localeId);
 
   return (
     <Flex align='center' gap={2}>
@@ -28,9 +28,11 @@ export const LocaleLabel = ({
       <Text size={size} weight={weight}>
         {name}
       </Text>
-      <Badge fontSize={0} radius={2}>
-        {code}
-      </Badge>
+      {!verbatim && (
+        <Badge fontSize={0} radius={2}>
+          {code}
+        </Badge>
+      )}
     </Flex>
   );
 };
