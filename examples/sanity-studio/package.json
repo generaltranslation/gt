@@ -1,0 +1,26 @@
+{
+  "name": "sanity-studio-example",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Dev/example Sanity Studio for the gt-sanity plugin",
+  "type": "module",
+  "scripts": {
+    "dev": "sanity dev",
+    "build": "sanity build",
+    "seed": "sanity exec scripts/seed.ts --with-user-token"
+  },
+  "dependencies": {
+    "@sanity/icons": "^3.7.4",
+    "@sanity/ui": "^3.1.14",
+    "@sanity/vision": "^5.18.0",
+    "gt-sanity": "workspace:*",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "sanity": "^5.18.0",
+    "styled-components": "^6.1.19"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.7",
+    "typescript": "catalog:"
+  }
+}
