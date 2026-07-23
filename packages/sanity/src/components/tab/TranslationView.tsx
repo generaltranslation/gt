@@ -11,7 +11,6 @@ import {
   Card,
   Button,
   Grid,
-  Box,
   Flex,
   Switch,
   Tooltip,
@@ -21,7 +20,13 @@ import { pluginConfig } from '../../adapter/core';
 import { useTranslations } from '../TranslationsProvider';
 import { LanguageStatus } from '../shared/LanguageStatus';
 import { LocaleCheckbox } from '../shared/LocaleCheckbox';
-import { DownloadIcon, LinkIcon, PublishIcon } from '@sanity/icons';
+import {
+  DownloadIcon,
+  LinkIcon,
+  PublishIcon,
+  RefreshIcon,
+  TranslateIcon,
+} from '@sanity/icons';
 import {
   createTranslationStatusKey,
   getDocumentPublishedId,
@@ -219,7 +224,7 @@ export const TranslationView = () => {
 
   return (
     <Stack space={6} padding={4}>
-      {/* Generate Translations Section */}
+      {/* Translate Section */}
       <Stack space={4}>
         <Text as='h2' weight='semibold' size={2}>
           Translate
@@ -236,6 +241,7 @@ export const TranslationView = () => {
             <Button
               fontSize={1}
               padding={2}
+              mode='ghost'
               text='Toggle All'
               onClick={toggleAllLocales}
             />
@@ -265,8 +271,8 @@ export const TranslationView = () => {
             handleTranslateAll();
           }}
           disabled={isBusy || !availableLocales.length}
-          tone='positive'
-          text={isBusy ? 'Creating translations...' : 'Translate'}
+          icon={TranslateIcon}
+          text={isBusy ? 'Translating...' : 'Translate'}
         />
       </Stack>
 
@@ -288,14 +294,16 @@ export const TranslationView = () => {
               <Button
                 fontSize={1}
                 padding={2}
-                text='Refresh Status'
+                mode='ghost'
+                icon={RefreshIcon}
+                text={isRefreshing ? 'Refreshing...' : 'Refresh'}
                 onClick={handleRefreshAll}
                 disabled={isRefreshing || isBusy}
               />
             </Flex>
           </Flex>
 
-          <Box>
+          <Card border radius={3} paddingY={1}>
             {availableLocales.map((locale) => {
               const key = createTranslationStatusKey(
                 branchId,
@@ -310,7 +318,7 @@ export const TranslationView = () => {
               return (
                 <LanguageStatus
                   key={key}
-                  title={locale.description}
+                  localeId={locale.localeId}
                   progress={progress}
                   isImported={isImported}
                   importFile={async () => {
@@ -325,7 +333,7 @@ export const TranslationView = () => {
                 />
               );
             })}
-          </Box>
+          </Card>
 
           {/* Import Controls */}
           <Stack space={3}>
@@ -333,7 +341,6 @@ export const TranslationView = () => {
               <Flex gap={2} align='center'>
                 <Button
                   mode='ghost'
-                  tone='primary'
                   onClick={() => handleImportTranslations()}
                   text={isImporting ? 'Importing...' : 'Import All'}
                   icon={DownloadIcon}
@@ -397,7 +404,6 @@ export const TranslationView = () => {
               >
                 <Button
                   mode='ghost'
-                  tone='caution'
                   onClick={async () => {
                     await handlePatchDocumentReferences();
                   }}
@@ -424,7 +430,6 @@ export const TranslationView = () => {
               >
                 <Button
                   mode='ghost'
-                  tone='positive'
                   onClick={async () => {
                     setIsPublishing(true);
                     try {

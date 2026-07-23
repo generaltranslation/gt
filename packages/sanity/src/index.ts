@@ -4,6 +4,7 @@ import {
   createDiagnosticMessage,
   libraryDefaultLocale,
 } from 'generaltranslation/internal';
+import { formatLocalePropertiesLabel } from './utils/localeDisplay';
 import { definePlugin } from 'sanity';
 import { route } from 'sanity/router';
 import { translateAction } from './actions/translateAction';
@@ -243,7 +244,10 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
             resolvedSourceLocale,
             customMapping
           );
-          return { id: locale, title: props.name };
+          return {
+            id: locale,
+            title: formatLocalePropertiesLabel(locale, props),
+          };
         });
         plugins.push(
           documentInternationalization({
