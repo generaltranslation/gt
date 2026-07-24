@@ -58,13 +58,19 @@ describe('transformNavigationFile', () => {
       // so TS wrappers re-export under next/link's concrete type
       /export const Link = GTLink as unknown as typeof NextLink;/
     );
+    // Round 9: useRouter is a locale-prefixing wrapper now, so redirect is the
+    // only next/navigation passthrough left.
     expect(result.code).toMatch(
-      /export \{ redirect, useRouter \} from ["']next\/navigation["']/
+      /export \{ redirect \} from ["']next\/navigation["']/
+    );
+    expect(result.code).toContain(
+      "export { usePathname, useRouter } from './navigation.client'"
     );
     expect(result.code).not.toContain('createNavigation');
-    expect(result.todos.some((todo) => todo.reason.includes('locale'))).toBe(
-      true
-    );
+    // The redirect TODO is anchored to the call sites the driver scanned (see
+    // round9Nav.test.ts); this hand-built context lists no project files, so
+    // there are none to name.
+    expect(result.todos).toEqual([]);
   });
 
   it('wraps usePathname to strip the locale prefix like next-intl', () => {
@@ -83,7 +89,7 @@ describe('transformNavigationFile', () => {
     // also imported by Server Components (a server page importing Link), and
     // a directive-less module with hook imports fails the RSC build.
     expect(result.code).toContain(
-      "export { usePathname } from './navigation.client'"
+      "export { usePathname, useRouter } from './navigation.client'"
     );
     expect(result.code).not.toContain('useNextPathname');
     const clientEdit = ctx.edits.find((edit) =>

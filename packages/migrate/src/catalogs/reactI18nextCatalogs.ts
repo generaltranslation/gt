@@ -131,6 +131,36 @@ export async function discoverReactI18nextCatalogs(
     }
   }
 
+  // A configured `ns` entry with no catalog file is a namespace the app tells
+  // i18next to load and nothing on disk can satisfy: the converted dictionary
+  // would silently lack it, so every `t('thatNs:key')` throws in gt-next
+  // (unknown keys throw there, they do not fall back to the raw key). Refuse
+  // for the same reason the supportedLngs check above does, before anything is
+  // written. Checked as a union across locales: a namespace present for one
+  // locale and absent for another is ordinary i18next fallback, not a hole.
+  if (config.namespaces) {
+    const present = new Set(
+      locales.flatMap((locale) => Object.keys(raw[locale] ?? {}))
+    );
+    const missing = config.namespaces.filter((ns) => !present.has(ns));
+    if (missing.length > 0) {
+      throw new CatalogConversionError(
+        createMigrateDiagnostic({
+          severity: 'Error',
+          whatHappened: `your i18next config lists namespaces with no catalog file in ${path.relative(cwd, root)}`,
+          details: `no catalog for ${missing.join(', ')}; found ${
+            present.size > 0 ? [...present].sort().join(', ') : 'none'
+          }`,
+          fix: `Add ${missing
+            .map((ns) => `<locale>/${ns}.json`)
+            .join(
+              ', '
+            )} under ${path.relative(cwd, root)}, or drop ${missing.join(', ')} from the i18next \`ns\` option, then re-run gt migrate.`,
+        })
+      );
+    }
+  }
+
   // Collect call-site evidence so plurals/context group only where the app
   // actually passes { count } / { context }.
   const sources = readProjectSources(cwd);
