@@ -1,5 +1,18 @@
 # gtx-cli
 
+## 2.14.67
+
+### Patch Changes
+
+- [#1889](https://github.com/generaltranslation/gt/pull/1889) [`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b) Thanks [@bgub](https://github.com/bgub)! - Allow `awaitJobs()` to poll job IDs directly and reuse that shared polling implementation for CLI and Sanity project setup.
+
+- [#1886](https://github.com/generaltranslation/gt/pull/1886) [`7cb2dfe`](https://github.com/generaltranslation/gt/commit/7cb2dfef077ee642f211996b0d729844a18258a8) Thanks [@bgub](https://github.com/bgub)! - Flatten the CLI workflow step lifecycle by folding completion behavior into each step's `run()` method and removing the unused shared step protocol.
+
+- Updated dependencies [[`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b)]:
+  - generaltranslation@9.0.5
+  - @generaltranslation/python-extractor@0.2.32
+  - @generaltranslation/supported-locales@2.1.12
+
 ## 2.14.66
 
 ### Patch Changes
