@@ -783,3 +783,82 @@ describe('re-attack: nav caller shapes the first pass missed', () => {
     expect(reason).toMatch(/\[object Object\]/);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Post-re-attack pins (adversary C's probes): the fix pass must not trade the
+// closed findings for new false stops
+// ---------------------------------------------------------------------------
+
+describe('post-re-attack: boundary verdict is scoped to the [locale] chain', () => {
+  it('ignores a sibling app client layout (monorepo neighbor)', () => {
+    const files = {
+      'package.json': JSON.stringify({
+        name: 'demo',
+        dependencies: { next: '15.5.0' },
+      }),
+      'apps/a/app/[locale]/layout.tsx': lines(
+        'export default function L({ children }: { children: React.ReactNode }) {',
+        '  return (',
+        '    <html>',
+        '      <body>{children}</body>',
+        '    </html>',
+        '  );',
+        '}'
+      ),
+      'apps/b/app/layout.tsx': lines(
+        "'use client';",
+        'export default function B({ children }: { children: React.ReactNode }) {',
+        '  return (',
+        '    <html>',
+        '      <body>{children}</body>',
+        '    </html>',
+        '  );',
+        '}'
+      ),
+    };
+    const cwd = makeTree(files);
+    const ctx = makeContext(reactI18nextAdapter, {}, cwd);
+    ctx.projectFiles = Object.keys(files).map((file) => path.join(cwd, file));
+    expect(checkServerProviderBoundary(ctx)).toBeNull();
+  });
+});
+
+describe('post-re-attack: dependency-array exemption edges', () => {
+  const transform = (code: string) =>
+    transformReactI18nextSource(
+      'src/app/page.tsx',
+      code,
+      makeContext(reactI18nextAdapter, { title: 'Title' })
+    );
+
+  it('unwraps `[t] as const`', () => {
+    const r = transform(
+      lines(
+        "import { useMemo } from 'react';",
+        "import { useTranslation } from 'react-i18next';",
+        'export function C() {',
+        '  const { t } = useTranslation();',
+        "  const label = useMemo(() => t('title'), [t] as const);",
+        '  return <span>{label}</span>;',
+        '}'
+      )
+    );
+    expect(r.skipReasons).toEqual([]);
+  });
+
+  it('does not exempt a custom use* hook that may consume the value', () => {
+    const r = transform(
+      lines(
+        "import { useTranslation } from 'react-i18next';",
+        "import { useStore } from '@/lib/store';",
+        'export function C() {',
+        '  const { t } = useTranslation();',
+        '  const store = useStore([t]);',
+        "  return <span>{t('title')}</span>;",
+        '}'
+      )
+    );
+    expect(r.code).toBeNull();
+    expect(r.skipReasons.join(' ')).toMatch(/used as a value/);
+  });
+});

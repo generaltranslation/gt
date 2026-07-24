@@ -931,49 +931,10 @@ function resolvesFromNodeModules(cwd: string, names: Set<string>): boolean {
 export function checkServerProviderBoundary(
   ctx: MigrationContext
 ): { why: string; fix: string } | null {
-  // The whole PROJECT's layouts, not just the scanned ones: a --src scope
-  // that excludes the root layout must not produce a false "no <body>" stop
-  // on an app whose boundary is fine.
-  const layouts = (ctx.projectFiles ?? ctx.sourceFiles ?? []).filter(
-    isLayoutFile
-  );
-  let bodyLayout: string | null = null;
-  for (const file of layouts) {
-    let code: string;
-    try {
-      code = fs.readFileSync(file, 'utf8');
-    } catch {
-      continue;
-    }
-    let ast: ReturnType<typeof parse>;
-    try {
-      ast = parse(code, {
-        sourceType: 'module',
-        plugins: ['jsx', 'typescript'],
-      });
-    } catch {
-      // Unparseable layout: the layout pass reports it; not a boundary verdict.
-      continue;
-    }
-    if (!hasBodyJsxElement(ast)) continue;
-    bodyLayout = file;
-    const isClientLayout = ast.program.directives.some(
-      (directive) => directive.value.value === 'use client'
-    );
-    if (isClientLayout) {
-      return {
-        why: `${path.relative(ctx.cwd, file)} renders <body> but is a Client Component ('use client'); gt-next's server GTProvider (the one gt migrate wires) is an async Server Component and cannot load its dictionary inside a client layout — the build passes and production throws (Dictionary entry ... cannot be found)`,
-        fix: "Split the layout: keep <html>/<body> in a Server Component and move the client logic into a nested client component, then re-run gt migrate. (Alternatively, wire gt-next's client GTProvider, which takes an explicit locale and translations, by hand.)",
-      };
-    }
-  }
-  if (!bodyLayout) {
-    return {
-      why: 'no project layout renders a literal <body> element, so gt migrate has no Server Component mount point for GTProvider (a <body> produced through a wrapper component is not recognized)',
-      fix: 'Ensure a root Server Component layout renders <html>/<body> directly, then re-run gt migrate; if yours does so through a wrapper component, add GTProvider around the app children by hand instead.',
-    };
-  }
-
+  // Locale resolution first: it also anchors WHICH layout chain the <body>
+  // verdict below may judge. Judging every project layout returned the
+  // client-layout stop for a SIBLING app's layout (a monorepo neighbor that
+  // has nothing to do with the routes being migrated) — the re-attack P2.
   const localeLayout = findLocaleLayout(ctx);
   if (localeLayout.kind === 'none') {
     return {
@@ -987,6 +948,55 @@ export function checkServerProviderBoundary(
       fix: `Rename the ${localeLayout.segment} directory to [locale] (updating the imports and links that point at it), then re-run gt migrate.`,
     };
   }
+
+  // The <body> mount-point verdict, judged ONLY on the layout chain that
+  // renders the migrated routes: the [locale] layout and its ancestors.
+  // Project-wide judging returned a verdict about a sibling app's layout (the
+  // re-attack P2); scan-scoped judging false-stopped --src runs whose root
+  // layout sat outside the scope. The chain comes from projectFiles, so both
+  // are safe. Nearest chain layout that renders a literal <body> decides.
+  const localeDir = path.dirname(localeLayout.file);
+  const chainLayouts = (ctx.projectFiles ?? ctx.sourceFiles ?? [])
+    .filter(isLayoutFile)
+    .filter((file) => {
+      const dir = path.dirname(file);
+      return dir === localeDir || localeDir.startsWith(dir + path.sep);
+    })
+    // nearest first (deepest directory wins)
+    .sort((a, b) => b.length - a.length);
+  let bodyLayout: string | null = null;
+  for (const file of chainLayouts) {
+    let ast: ReturnType<typeof parse>;
+    try {
+      ast = parse(fs.readFileSync(file, 'utf8'), {
+        sourceType: 'module',
+        plugins: ['jsx', 'typescript'],
+      });
+    } catch {
+      // Unreadable/unparseable layout: the layout pass reports it; not a
+      // boundary verdict.
+      continue;
+    }
+    if (!hasBodyJsxElement(ast)) continue;
+    bodyLayout = file;
+    const isClientLayout = ast.program.directives.some(
+      (directive) => directive.value.value === 'use client'
+    );
+    if (isClientLayout) {
+      return {
+        why: `${path.relative(ctx.cwd, file)} renders <body> but is a Client Component ('use client'); gt-next's server GTProvider (the one gt migrate wires) is an async Server Component and cannot load its dictionary inside a client layout — the build passes and production throws (Dictionary entry ... cannot be found)`,
+        fix: "Split the layout: keep <html>/<body> in a Server Component and move the client logic into a nested client component, then re-run gt migrate. (Alternatively, wire gt-next's client GTProvider, which takes an explicit locale and translations, by hand.)",
+      };
+    }
+    break;
+  }
+  if (!bodyLayout) {
+    return {
+      why: 'no layout in the [locale] chain renders a literal <body> element, so gt migrate has no Server Component mount point for GTProvider (a <body> produced through a wrapper component is not recognized)',
+      fix: 'Ensure the root layout renders <html>/<body> directly, then re-run gt migrate; if yours does so through a wrapper component, add GTProvider around the app children by hand instead.',
+    };
+  }
+
   if (localeLayout.hasRootLayoutAbove) {
     return {
       why: 'a separate root layout sits above the [locale] segment, so next/root-params does not expose locale there, and gt migrate has no other per-route locale source it can wire automatically in this app; every route would render the default language',
@@ -1074,9 +1084,13 @@ function isGtConfigWired(ctx: MigrationContext): boolean {
 /**
  * True when the config source contains a real `withGTConfig(...)` CALL, not
  * just the substring (a comment or a string would false-pass the wiring
- * post-condition and ship an app with no dictionary/locale wiring). Falls
- * back to the substring on a parse failure rather than false-fatal on syntax
- * this parser cannot read.
+ * post-condition and ship an app with no dictionary/locale wiring). Accepts
+ * every callee shape the transforms' own idempotency guard accepts: the
+ * literal name, an aliased named import (`import { withGTConfig as w }`
+ * called as `w(...)`), and a namespace member (`gt.withGTConfig(...)`) — a
+ * hand-authored config in any of those shapes must not fatal an incremental
+ * re-run (the re-attack config P3). Falls back to the substring on a parse
+ * failure rather than false-fatal on syntax this parser cannot read.
  */
 function hasWithGTConfigCall(content: string): boolean {
   if (!content.includes('withGTConfig')) return false;
@@ -1089,18 +1103,44 @@ function hasWithGTConfigCall(content: string): boolean {
   } catch {
     return true;
   }
+  // Local names bound to the withGTConfig import (aliases included).
+  const calleeNames = new Set(['withGTConfig']);
+  for (const statement of ast.program.body) {
+    if (statement.type !== 'ImportDeclaration') continue;
+    for (const specifier of statement.specifiers) {
+      if (
+        specifier.type === 'ImportSpecifier' &&
+        specifier.imported.type === 'Identifier' &&
+        specifier.imported.name === 'withGTConfig'
+      ) {
+        calleeNames.add(specifier.local.name);
+      }
+    }
+  }
   let found = false;
   const stack: object[] = [ast.program as unknown as object];
   while (stack.length > 0 && !found) {
     const node = stack.pop() as Record<string, unknown> & { type?: string };
-    if (
-      node.type === 'CallExpression' &&
-      (node.callee as { type?: string; name?: string })?.type ===
-        'Identifier' &&
-      (node.callee as { name?: string }).name === 'withGTConfig'
-    ) {
-      found = true;
-      break;
+    if (node.type === 'CallExpression') {
+      const callee = node.callee as {
+        type?: string;
+        name?: string;
+        computed?: boolean;
+        property?: { type?: string; name?: string };
+      };
+      if (callee?.type === 'Identifier' && calleeNames.has(callee.name!)) {
+        found = true;
+        break;
+      }
+      if (
+        callee?.type === 'MemberExpression' &&
+        !callee.computed &&
+        callee.property?.type === 'Identifier' &&
+        callee.property.name === 'withGTConfig'
+      ) {
+        found = true;
+        break;
+      }
     }
     for (const key of Object.keys(node)) {
       const value = node[key];

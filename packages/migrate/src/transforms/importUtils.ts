@@ -101,21 +101,48 @@ export function removeUnusedNamedImports(ast: t.File, locals: string[]): void {
 }
 
 /**
+ * React's own dependency-array hooks. Deliberately NOT any `use*` name: a
+ * custom hook can genuinely consume its array argument's values (a
+ * `useStore([t])` typed against the source library would then convert into a
+ * type error), so only the built-ins whose dep arrays React treats as pure
+ * identity lists are exempt. A custom hook's dep array over-holds
+ * conservatively with the escape reason instead.
+ */
+const REACT_DEP_ARRAY_HOOKS = new Set([
+  'useMemo',
+  'useCallback',
+  'useEffect',
+  'useLayoutEffect',
+  'useInsertionEffect',
+  'useImperativeHandle',
+]);
+
+/**
  * True when `path` (an identifier reference) sits directly inside a React
  * hook's dependency array: an element of an ArrayExpression that is itself an
- * argument of a `useX(...)` / `React.useX(...)` call. A translation binding
- * listed there (`useMemo(() => t('k'), [t])`, required by
- * react-hooks/exhaustive-deps) is an identity read with no call-signature
- * contract, so the escape audits must not treat it as a disqualifying value
- * escape (the round-7 re-attack P2).
+ * argument of a built-in dependency-array hook call (`useMemo(...)`,
+ * `React.useCallback(...)`), unwrapping TS cast wrappers (`[t] as const`). A
+ * translation binding listed there (required by react-hooks/exhaustive-deps)
+ * is an identity read with no call-signature contract, so the escape audits
+ * must not treat it as a disqualifying value escape (the round-7 re-attack).
  */
 export function isHookDependencyArrayElement(path: NodePath): boolean {
   const arrayPath = path.parentPath;
   if (!arrayPath?.isArrayExpression()) return false;
   if (!(arrayPath.node.elements as t.Node[]).includes(path.node)) return false;
-  const callPath = arrayPath.parentPath;
+  // `[t] as const` / `[t] satisfies ...` / parenthesized arrays still reach
+  // the call as the same dependency list; walk out through the wrappers.
+  let argumentPath: NodePath = arrayPath;
+  while (
+    argumentPath.parentPath?.isTSAsExpression() ||
+    argumentPath.parentPath?.isTSSatisfiesExpression() ||
+    argumentPath.parentPath?.isParenthesizedExpression()
+  ) {
+    argumentPath = argumentPath.parentPath;
+  }
+  const callPath = argumentPath.parentPath;
   if (!callPath?.isCallExpression()) return false;
-  if (!(callPath.node.arguments as t.Node[]).includes(arrayPath.node)) {
+  if (!(callPath.node.arguments as t.Node[]).includes(argumentPath.node)) {
     return false;
   }
   const callee = callPath.node.callee;
@@ -126,5 +153,5 @@ export function isHookDependencyArrayElement(path: NodePath): boolean {
         t.isIdentifier(callee.property)
       ? callee.property.name
       : null;
-  return hookName !== null && /^use[A-Z]/.test(hookName);
+  return hookName !== null && REACT_DEP_ARRAY_HOOKS.has(hookName);
 }
