@@ -12,10 +12,29 @@ const EXTENSIONS = ['.tsx', '.ts', '.jsx', '.js'];
  * client call there is a test concern (reported through the test-file
  * handling), not a build hazard. Shared with the driver, which routes these
  * files into the explicit tests-need-manual-migration stage.
+ *
+ * Match it against the path RELATIVE to the project root (isTestFilePath),
+ * never the absolute one: the directories above the project belong to the
+ * environment, not the app (a CI workspace at /builds/e2e/, a checkout under
+ * ~/tests/), and matching those reclassified every file in the project as a
+ * test file.
+ *
+ * The setup-file alternatives cover the conventions a runner wires by CONFIG
+ * rather than by import (`setupFiles`/`setupFilesAfterEach`), which is where a
+ * suite's whole i18n mock usually lives: vitest.setup.ts, jest-setup.js,
+ * src/setupTests.ts (CRA/jest), test-setup.ts.
  */
 export const TEST_FILE_PATH =
-  /(^|\/)(__tests__|__mocks__|tests?|e2e)\/|\.(test|spec)\.[cm]?[jt]sx?$|(^|\/)(vitest|jest)\.setup\./;
-const TEST_PATH = TEST_FILE_PATH;
+  /(^|\/)(__tests__|__mocks__|tests?|e2e)\/|\.(test|spec)\.[cm]?[jt]sx?$|(^|\/)((vitest|jest)[.-]setup|setup-?[Tt]ests?|test-?[Ss]etup)\.[cm]?[jt]sx?$/;
+
+/**
+ * Whether a project file is test-ish, judged on its project-relative path (see
+ * TEST_FILE_PATH). Every consumer must go through this: passing an absolute
+ * path lets a directory the user does not control decide the classification.
+ */
+export function isTestFilePath(file: string, cwd: string): boolean {
+  return TEST_FILE_PATH.test(toPosix(path.relative(cwd, file)));
+}
 
 /**
  * App Router files Next.js renders as a route segment of its own. These are
@@ -126,29 +145,56 @@ export function detectLatentClientCallHazards(ctx: MigrationContext): void {
   }
   if (clientModules.size === 0) return;
 
-  const clientBasenames = [...clientModules].map((file) =>
-    path.basename(file).replace(/\.[^.]+$/, '')
-  );
+  // Names an importer of a client module must mention somewhere in its source.
+  // A barrel at <dir>/index.tsx is imported as '<dir>' ('@/widgets/Widget',
+  // '../widgets/Widget'), so for those the DIRECTORY name is the mention, and
+  // keying only on the basename ('index') skipped every such route before it
+  // was ever parsed (the round-9 F1 finding: a client barrel acquitted itself).
+  const clientMentionNames = new Set<string>();
+  for (const file of clientModules) {
+    const base = path.basename(file).replace(/\.[^.]+$/, '');
+    clientMentionNames.add(base);
+    if (base === 'index') {
+      clientMentionNames.add(path.basename(path.dirname(file)));
+    }
+  }
 
   // 2. Import graph + the server render graph reachable from route entries.
   const graph = buildImportGraph(ctx, projectFiles, fileSet, readFile);
+  const aliases = graph.aliases;
   const serverGraph = collectServerGraph(
     ctx,
     projectFiles,
     graph.imports,
     clientModules
   );
+  // Reverse edges, for the completeness question below.
+  const importersOf = new Map<string, string[]>();
+  for (const [file, targets] of graph.imports) {
+    for (const target of targets) {
+      const list = importersOf.get(target);
+      if (list) list.push(file);
+      else importersOf.set(target, [file]);
+    }
+  }
 
   // 3. Server modules calling functions imported from those client modules.
   const hazards: NonNullable<MigrationContext['latentClientCallHazards']> = [];
   for (const file of projectFiles) {
     if (clientModules.has(file)) continue;
-    if (TEST_PATH.test(toPosix(file))) continue;
+    if (isTestFilePath(file, ctx.cwd)) continue;
     const code = readFile(file);
     if (!code) continue;
-    // Cheap prefilter: an import of a client module must at least mention its
-    // basename somewhere in the file.
-    if (!clientBasenames.some((base) => code.includes(base))) continue;
+    // Cheap prefilter: an import of a client module must at least mention the
+    // name the importer would write for it (see clientMentionNames).
+    let mentions = false;
+    for (const name of clientMentionNames) {
+      if (code.includes(name)) {
+        mentions = true;
+        break;
+      }
+    }
+    if (!mentions) continue;
     let ast: t.File;
     try {
       ast = parse(code, {
@@ -172,7 +218,8 @@ export function detectLatentClientCallHazards(ctx: MigrationContext): void {
         statement.source.value,
         path.dirname(file),
         fileSet,
-        projectFiles
+        projectFiles,
+        aliases
       );
       // Alias suffix matching can be ambiguous (a/i18n/labels.ts and
       // b/i18n/labels.ts both end in the specifier's tail). When ANY
@@ -231,6 +278,18 @@ export function detectLatentClientCallHazards(ctx: MigrationContext): void {
 
     // Graph placement decides whether this call can ever run on the server.
     if (serverGraph.has(file)) {
+      // reachingRouteEntries walks RESOLVED edges only, so its answer is a
+      // lower bound whenever an unresolved specifier could name this file or
+      // anything that imports it: another route could reach the same hazard
+      // through the edge we never saw. Per-route containment on a lower bound
+      // would leave that route prerendered with the hazard in its graph (the
+      // round-9 F2 regression), so the completeness question is recorded here
+      // and the emit phase falls back to the project-wide withhold.
+      const unresolvedReacher = unresolvedReachPath(
+        file,
+        importersOf,
+        graph.unresolvedTails
+      );
       hazards.push({
         caller: file,
         importedName: found.importedName,
@@ -241,6 +300,9 @@ export function detectLatentClientCallHazards(ctx: MigrationContext): void {
           graph.imports,
           serverGraph
         ),
+        ...(unresolvedReacher === null
+          ? {}
+          : { reachSetIncomplete: unresolvedReacher }),
       });
       continue;
     }
@@ -280,7 +342,11 @@ function buildImportGraph(
   projectFiles: string[],
   fileSet: Set<string>,
   readFile: (file: string) => string | null
-): { imports: Map<string, string[]>; unresolvedTails: Set<string> } {
+): {
+  imports: Map<string, string[]>;
+  unresolvedTails: Set<string>;
+  aliases: ImportAliases;
+} {
   const specifierPatterns = [
     /\bfrom\s*['"]([^'"\n]+)['"]/g,
     /\bimport\s*\(\s*['"]([^'"\n]+)['"]\s*\)/g,
@@ -288,6 +354,8 @@ function buildImportGraph(
     /\brequire\s*\(\s*['"]([^'"\n]+)['"]\s*\)/g,
   ];
   const declaredPackages = declaredDependencyNames(ctx.cwd);
+  const isInstalledPackage = installedPackageChecker(ctx.cwd);
+  const aliases = loadImportAliases(ctx.cwd);
   const imports = new Map<string, string[]>();
   const unresolvedTails = new Set<string>();
   for (const file of projectFiles) {
@@ -305,7 +373,8 @@ function buildImportGraph(
         specifier,
         path.dirname(file),
         fileSet,
-        projectFiles
+        projectFiles,
+        aliases
       );
       if (resolved.length > 0) {
         for (const target of resolved) {
@@ -313,20 +382,20 @@ function buildImportGraph(
         }
         continue;
       }
-      if (isPackageSpecifier(specifier, declaredPackages)) continue;
+      if (
+        isPackageSpecifier(specifier, declaredPackages) ||
+        isInstalledPackage(specifier)
+      ) {
+        continue;
+      }
       // Local-looking and unresolved: remember what it could have pointed at.
-      const segments = specifier.split('/').filter(Boolean);
-      const last = segments.at(-1)?.replace(/\.[^.]+$/, '');
-      if (last) unresolvedTails.add(last);
-      // './components/Foo/index' and './components/Foo' can name the same
-      // module, so the parent segment is a candidate tail too.
-      if ((!last || last === 'index') && segments.length > 1) {
-        unresolvedTails.add(segments.at(-2)!);
+      for (const tail of specifierTailCandidates(specifier)) {
+        unresolvedTails.add(tail);
       }
     }
     imports.set(file, [...targets]);
   }
-  return { imports, unresolvedTails };
+  return { imports, unresolvedTails, aliases };
 }
 
 /**
@@ -411,7 +480,7 @@ function reachingRouteEntries(
  * as the honesty guard on "nothing on the server imports this": with a
  * plausible missing importer we keep the hazard instead of clearing it.
  */
-function couldBeUnresolvedImportTarget(
+export function couldBeUnresolvedImportTarget(
   file: string,
   unresolvedTails: Set<string>
 ): boolean {
@@ -422,8 +491,54 @@ function couldBeUnresolvedImportTarget(
   );
 }
 
+/**
+ * The first file in `hazardFile`'s transitive-importer closure (itself
+ * included) that an unresolved specifier could name, or null when the closure
+ * is fully resolved. A hit means the set of routes reaching the hazard is a
+ * LOWER BOUND: the missing edge could come from a route we placed nowhere, or
+ * from a module some other route renders. Walks reverse edges over the WHOLE
+ * import graph, not just the server graph, because a module outside the server
+ * graph is exactly what an unresolved edge would pull into it.
+ */
+function unresolvedReachPath(
+  hazardFile: string,
+  importersOf: Map<string, string[]>,
+  unresolvedTails: Set<string>
+): string | null {
+  const seen = new Set([hazardFile]);
+  const queue = [hazardFile];
+  for (let index = 0; index < queue.length; index += 1) {
+    const file = queue[index];
+    if (couldBeUnresolvedImportTarget(file, unresolvedTails)) return file;
+    for (const importer of importersOf.get(file) ?? []) {
+      if (seen.has(importer)) continue;
+      seen.add(importer);
+      queue.push(importer);
+    }
+  }
+  return null;
+}
+
+/**
+ * The project-file tails an unresolved local-looking specifier could name:
+ * its last segment, plus the parent segment when the specifier names a
+ * directory or an index module ('./components/Foo' and './components/Foo/index'
+ * are the same module). Shared by the import graph and the teardown's
+ * delete guard so both ask the completeness question the same way.
+ */
+export function specifierTailCandidates(specifier: string): string[] {
+  const segments = specifier.split('/').filter(Boolean);
+  const last = segments.at(-1)?.replace(/\.[^.]+$/, '');
+  const tails: string[] = [];
+  if (last) tails.push(last);
+  if ((!last || last === 'index') && segments.length > 1) {
+    tails.push(segments.at(-2)!);
+  }
+  return tails;
+}
+
 /** Dependency names declared in cwd/package.json (all four sections). */
-function declaredDependencyNames(cwd: string): Set<string> {
+export function declaredDependencyNames(cwd: string): Set<string> {
   const names = new Set<string>();
   try {
     const pkg = JSON.parse(
@@ -451,7 +566,33 @@ function declaredDependencyNames(cwd: string): Set<string> {
  * (relative paths, '@/x' aliases, tsconfig `paths` aliases, baseUrl-relative
  * specifiers) is treated as a project path we could not follow.
  */
-function isPackageSpecifier(
+/**
+ * A memoized "is this specifier's package actually installed?" test, for the
+ * specifiers isPackageSpecifier cannot classify: a package used without being
+ * declared (a transitive dependency imported directly) resolves for the
+ * bundler, so treating its subpath as an unfollowable PROJECT path would make
+ * both the hazard guard and the teardown guard fire on nothing.
+ */
+export function installedPackageChecker(
+  cwd: string
+): (specifier: string) => boolean {
+  const cache = new Map<string, boolean>();
+  return (specifier: string): boolean => {
+    if (specifier.startsWith('.') || path.isAbsolute(specifier)) return false;
+    const segments = specifier.split('/');
+    const packageName = specifier.startsWith('@')
+      ? segments.slice(0, 2).join('/')
+      : segments[0];
+    let installed = cache.get(packageName);
+    if (installed === undefined) {
+      installed = fs.existsSync(path.join(cwd, 'node_modules', packageName));
+      cache.set(packageName, installed);
+    }
+    return installed;
+  };
+}
+
+export function isPackageSpecifier(
   specifier: string,
   declaredPackages: Set<string>
 ): boolean {
@@ -473,12 +614,19 @@ function isPackageSpecifier(
  * than one file (same tail under different roots), so ALL matches are
  * returned and the caller decides how to treat ambiguity. Bare package
  * imports match nothing.
+ *
+ * A specifier that carries a module extension resolves against the extensions
+ * stripped too: NodeNext/ESM code imports the OUTPUT name ('./labels.js' for
+ * labels.ts), and plain ESM JavaScript writes the real one ('./labels.js' for
+ * labels.js), and neither form can be found by appending an extension to it.
+ * Missing that edge left routes prerendered with a hazard in their graph.
  */
 export function resolveImportToProjectFiles(
   specifier: string,
   importerDir: string,
   fileSet: Set<string>,
-  projectFiles: string[]
+  projectFiles: string[],
+  aliases?: ImportAliases
 ): string[] {
   const tryBase = (base: string): string[] => {
     for (const ext of EXTENSIONS) {
@@ -488,13 +636,23 @@ export function resolveImportToProjectFiles(
       const index = path.join(base, `index${ext}`);
       if (fileSet.has(index)) return [index];
     }
-    return [];
+    const stripped = stripModuleExtension(base);
+    return stripped === null ? [] : tryBase(stripped);
   };
   if (specifier.startsWith('.')) {
     return tryBase(path.resolve(importerDir, specifier));
   }
   if (path.isAbsolute(specifier)) {
     return tryBase(specifier);
+  }
+  // The project's own tsconfig/jsconfig aliases, which are authoritative: they
+  // are how the bundler resolves this specifier. Only when they produce nothing
+  // does the suffix heuristic below get a turn.
+  if (aliases) {
+    for (const base of aliasBases(specifier, aliases)) {
+      const resolved = tryBase(base);
+      if (resolved.length > 0) return resolved;
+    }
   }
   const suffixes: string[] = [];
   const firstSegmentEnd = specifier.indexOf('/');
@@ -508,6 +666,13 @@ export function resolveImportToProjectFiles(
     suffixes.push(specifier.slice(firstSegmentEnd + 1));
   }
   suffixes.push(specifier);
+  const strippedSuffixes: string[] = [];
+  for (const suffix of suffixes) {
+    const stripped = stripModuleExtension(suffix);
+    if (stripped !== null) strippedSuffixes.push(stripped);
+  }
+  // Appended after the written forms, so an exact match still wins.
+  suffixes.push(...strippedSuffixes);
   const matches: string[] = [];
   for (const suffix of suffixes) {
     if (!suffix) continue;
@@ -525,6 +690,192 @@ export function resolveImportToProjectFiles(
     if (matches.length > 0) break;
   }
   return matches;
+}
+
+/**
+ * The project's own path aliases, read from tsconfig/jsconfig: `baseUrl` and
+ * `compilerOptions.paths`. Empty when there is no config, none are declared, or
+ * the file cannot be read.
+ */
+export type ImportAliases = {
+  /** absolute directory non-relative specifiers resolve against, or null */
+  baseUrl: string | null;
+  /** each `paths` pattern, split on its single `*`, with absolute targets */
+  patterns: { prefix: string; suffix: string; targets: string[] }[];
+};
+
+const EMPTY_ALIASES: ImportAliases = { baseUrl: null, patterns: [] };
+
+/**
+ * Loads the project's tsconfig/jsconfig path aliases so specifiers the BUNDLER
+ * resolves resolve here too. Without them, every `paths` alias that does not
+ * mirror its target's path ('#config' -> src/i18n/routing.ts) was an edge the
+ * import graph could not follow, which is what makes a hazard acquittal or a
+ * teardown deletion unsafe. `extends` is followed for relative/absolute parents
+ * (bounded), and any read/parse failure degrades to "no aliases", i.e. exactly
+ * the previous behavior.
+ *
+ * Not cached deliberately: each pipeline stage loads it once and passes it
+ * down, so a project whose config changes between runs is never judged by a
+ * stale table.
+ */
+export function loadImportAliases(cwd: string): ImportAliases {
+  for (const name of ['tsconfig.json', 'jsconfig.json']) {
+    const aliases = readAliasesFrom(path.join(cwd, name), 0);
+    if (aliases !== null) return aliases;
+  }
+  return EMPTY_ALIASES;
+}
+
+function readAliasesFrom(
+  configFile: string,
+  depth: number
+): ImportAliases | null {
+  if (depth > 4) return null;
+  let config: {
+    extends?: unknown;
+    compilerOptions?: { baseUrl?: unknown; paths?: unknown };
+  };
+  try {
+    config = parseJsonWithComments(fs.readFileSync(configFile, 'utf8')) as {
+      extends?: unknown;
+      compilerOptions?: { baseUrl?: unknown; paths?: unknown };
+    };
+  } catch {
+    return null;
+  }
+  const dir = path.dirname(configFile);
+  // A config that declares nothing itself still counts when its parent does.
+  let inherited: ImportAliases = EMPTY_ALIASES;
+  if (typeof config.extends === 'string' && config.extends.startsWith('.')) {
+    const parentPath = path.resolve(dir, config.extends);
+    inherited =
+      readAliasesFrom(parentPath, depth + 1) ??
+      readAliasesFrom(`${parentPath}.json`, depth + 1) ??
+      EMPTY_ALIASES;
+  }
+  const options = config.compilerOptions ?? {};
+  const baseUrl =
+    typeof options.baseUrl === 'string'
+      ? path.resolve(dir, options.baseUrl)
+      : inherited.baseUrl;
+  const patterns = [...inherited.patterns];
+  const declared = options.paths;
+  if (declared && typeof declared === 'object') {
+    // `paths` targets are relative to baseUrl when it is set, otherwise to the
+    // config's own directory (the TS 4.4+ default).
+    const root = baseUrl ?? dir;
+    for (const [pattern, targets] of Object.entries(
+      declared as Record<string, unknown>
+    )) {
+      if (!Array.isArray(targets)) continue;
+      const star = pattern.indexOf('*');
+      const resolved = targets
+        .filter((target): target is string => typeof target === 'string')
+        .map((target) => path.resolve(root, target));
+      if (resolved.length === 0) continue;
+      patterns.push(
+        star === -1
+          ? { prefix: pattern, suffix: '', targets: resolved }
+          : {
+              prefix: pattern.slice(0, star),
+              suffix: pattern.slice(star + 1),
+              targets: resolved,
+            }
+      );
+    }
+  }
+  return { baseUrl, patterns };
+}
+
+/**
+ * JSON.parse with the tsconfig dialect's slack: line/block comments and
+ * trailing commas. String contents are preserved (the scanner tracks quoting),
+ * so a `//` inside a path value survives.
+ */
+function parseJsonWithComments(text: string): unknown {
+  let out = '';
+  let inString = false;
+  let index = 0;
+  while (index < text.length) {
+    const char = text[index];
+    if (inString) {
+      out += char;
+      if (char === '\\') {
+        out += text[index + 1] ?? '';
+        index += 2;
+        continue;
+      }
+      if (char === '"') inString = false;
+      index += 1;
+      continue;
+    }
+    if (char === '"') {
+      inString = true;
+      out += char;
+      index += 1;
+      continue;
+    }
+    if (char === '/' && text[index + 1] === '/') {
+      while (index < text.length && text[index] !== '\n') index += 1;
+      continue;
+    }
+    if (char === '/' && text[index + 1] === '*') {
+      index += 2;
+      while (
+        index < text.length &&
+        !(text[index] === '*' && text[index + 1] === '/')
+      ) {
+        index += 1;
+      }
+      index += 2;
+      continue;
+    }
+    out += char;
+    index += 1;
+  }
+  return JSON.parse(out.replace(/,(\s*[}\]])/g, '$1'));
+}
+
+/**
+ * The candidate file bases an alias table maps this specifier onto: every
+ * matching `paths` pattern's substitutions first (most specific pattern wins,
+ * as in TypeScript), then the baseUrl-relative path.
+ */
+function aliasBases(specifier: string, aliases: ImportAliases): string[] {
+  const matches = aliases.patterns
+    .filter(
+      (pattern) =>
+        specifier.startsWith(pattern.prefix) &&
+        specifier.endsWith(pattern.suffix) &&
+        specifier.length >= pattern.prefix.length + pattern.suffix.length
+    )
+    // Longest prefix first: '@/lib/*' outranks '@/*' for '@/lib/x'.
+    .sort((a, b) => b.prefix.length - a.prefix.length);
+  const bases: string[] = [];
+  for (const pattern of matches) {
+    const captured = specifier.slice(
+      pattern.prefix.length,
+      specifier.length - pattern.suffix.length
+    );
+    for (const target of pattern.targets) {
+      bases.push(target.includes('*') ? target.replace('*', captured) : target);
+    }
+  }
+  if (aliases.baseUrl !== null) {
+    bases.push(path.resolve(aliases.baseUrl, specifier));
+  }
+  return bases;
+}
+
+/**
+ * A specifier/path with its trailing module extension removed, or null when it
+ * carries none. Only the JS/TS module extensions are stripped, so a data path
+ * ('./labels.json') and a dotted filename ('./chart.min') keep theirs.
+ */
+function stripModuleExtension(specifier: string): string | null {
+  const match = /\.[cm]?[jt]sx?$/.exec(specifier);
+  return match === null ? null : specifier.slice(0, match.index);
 }
 
 /** Minimal recursive AST walk; node shapes only, no scope needed. */

@@ -18,9 +18,11 @@ import { resolveCatalogsInteractively } from '../catalogs/promptFallbacks.js';
 import { hasDependency, resolveMigrationSource } from './resolveSource.js';
 import {
   detectLatentClientCallHazards,
+  isTestFilePath,
+  loadImportAliases,
   resolveImportToProjectFiles,
-  TEST_FILE_PATH,
 } from './latentClientCalls.js';
+import { auditConvertedDictionaryKeys } from './auditDictionaryKeys.js';
 import { createMigrateDiagnostic } from './diagnostics.js';
 import { transformLayoutFile } from '../transforms/transformLayout.js';
 import { transformSourceFile } from '../transforms/transformSource.js';
@@ -348,7 +350,7 @@ export async function runMigration(
       // listed in the report's own test section, and held as skips (provider
       // and teardown survive for them) when, and only when, they really
       // import the library; see recordTestFileNeedingMigration.
-      if (TEST_FILE_PATH.test(file.split(path.sep).join('/'))) {
+      if (isTestFilePath(file, cwd) || mocksSourceLibrary(code, adapter)) {
         recordTestFileNeedingMigration(ctx, adapter, file, code);
         continue;
       }
@@ -413,7 +415,8 @@ export async function runMigration(
     } catch {
       continue;
     }
-    const isTestFile = TEST_FILE_PATH.test(file.split(path.sep).join('/'));
+    const isTestFile =
+      isTestFilePath(file, cwd) || mocksSourceLibrary(content, adapter);
     if (adapter.projectUsagePattern.test(content)) {
       // Same test-stage routing as Pass 1: a tests/ tree at the project root
       // sits outside the default globs, and its setup/helpers are the most
@@ -785,6 +788,13 @@ export async function runMigration(
     ctx.edits.push(...catalogEdits);
   }
 
+  // Every converted call site now resolves its keys through gt-next, which
+  // THROWS on a key the dictionary does not have where the source library
+  // rendered the raw key and logged. Both halves of that check are in hand
+  // here (the emitted call sites and the catalogs, including any this run
+  // rewrote), so cross-check them and report each unresolvable static key.
+  auditConvertedDictionaryKeys(ctx);
+
   // Backstop: if nothing matched the source library at all (no file transformed,
   // none skipped for using it, and no catalogs converted), the run migrated
   // nothing and only wrote scaffolding. That almost always means the wrong
@@ -905,6 +915,28 @@ function collect(
  * Either way the file lands in the report's test section, which is the thing
  * the user acts on.
  */
+/**
+ * True when the file MOCKS the source library's module (`vi.mock('next-intl')`,
+ * `jest.mock('react-intl', …)`, `jest.doMock`, `vi.unstable_mockModule`). That
+ * call shape exists only in test wiring, and it is the whole i18n setup of many
+ * suites, so a file holding one belongs in the test stage no matter what it is
+ * named: the setup-file conventions are open-ended (src/setupTests.ts,
+ * test/bootstrap.ts, config/vitest-env.ts), and a name the path pattern misses
+ * was filed as inert "retained wiring" instead (the round-9 F7 finding).
+ *
+ * Classification only; teardown is unaffected. recordTestFileNeedingMigration
+ * makes a file a SKIP only when it really imports the library, so a mock-only
+ * mention still never holds the migration back.
+ */
+function mocksSourceLibrary(code: string, adapter: SourceAdapter): boolean {
+  const mockCall =
+    /\b(?:vi|jest)\s*\.\s*(?:mock|doMock|unstable_mockModule)\s*\(\s*(['"][^'"]+['"])/g;
+  for (const match of code.matchAll(mockCall)) {
+    if (adapter.mentionedIn(match[1])) return true;
+  }
+  return false;
+}
+
 function recordTestFileNeedingMigration(
   ctx: MigrationContext,
   adapter: SourceAdapter,
@@ -944,11 +976,11 @@ function addTransitiveTestFiles(
   const flagged = new Set(ctx.testFilesNeedingMigration ?? []);
   if (flagged.size === 0) return;
   const candidates = projectFiles.filter(
-    (file) =>
-      !flagged.has(file) && TEST_FILE_PATH.test(file.split(path.sep).join('/'))
+    (file) => !flagged.has(file) && isTestFilePath(file, ctx.cwd)
   );
   if (candidates.length === 0) return;
   const fileSet = new Set(projectFiles);
+  const aliases = loadImportAliases(ctx.cwd);
   const importsOf = new Map<string, string[]>();
   for (const file of candidates) {
     let content: string;
@@ -964,7 +996,8 @@ function addTransitiveTestFiles(
           specifier,
           path.dirname(file),
           fileSet,
-          projectFiles
+          projectFiles,
+          aliases
         )
       );
     }
@@ -1016,8 +1049,7 @@ function addSuitesExercisingConvertedCode(
     }
   });
   if (!hasMockOnly) return;
-  const isTest = (file: string) =>
-    TEST_FILE_PATH.test(file.split(path.sep).join('/'));
+  const isTest = (file: string) => isTestFilePath(file, ctx.cwd);
   const convertedGtCallers = new Set(
     ctx.edits
       .filter(
@@ -1031,6 +1063,7 @@ function addSuitesExercisingConvertedCode(
   );
   if (convertedGtCallers.size === 0) return;
   const fileSet = new Set(projectFiles);
+  const aliases = loadImportAliases(ctx.cwd);
   for (const file of projectFiles) {
     if (flagged.has(file) || !isTest(file)) continue;
     let content: string;
@@ -1045,7 +1078,8 @@ function addSuitesExercisingConvertedCode(
           specifier,
           path.dirname(file),
           fileSet,
-          projectFiles
+          projectFiles,
+          aliases
         )
       )
       .find((target) => convertedGtCallers.has(target));

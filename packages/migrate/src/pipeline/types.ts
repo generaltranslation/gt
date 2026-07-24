@@ -151,6 +151,14 @@ export type MigrationContext = {
      *  confidence (an import specifier it could not resolve), which forces the
      *  project-wide withhold; absent when a caller built the context by hand. */
     reachedFrom?: { entry: string; chain: string[] }[];
+    /** Set when `reachedFrom` is a LOWER BOUND rather than the whole set: an
+     *  import specifier the resolver could not follow could name this file (or
+     *  a file that imports it), so another route may reach the same hazard
+     *  through an edge the graph never saw. Holds that file, for the report.
+     *  Per-route containment cannot be trusted then (it would leave that route
+     *  prerendered with the hazard in its graph), so the emit phase falls back
+     *  to withholding the resolvers project-wide and says why. */
+    reachSetIncomplete?: string;
   }[];
   /** Test files (setup, render helpers, mocks, specs) that use the source
    *  library. No codemod can follow vi.mock()/jest.mock() of the source

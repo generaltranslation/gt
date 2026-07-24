@@ -16,6 +16,15 @@ const generate: typeof generateModule =
 
 const PLUGIN_MODULE = 'next-intl/plugin';
 
+/** See findExportedGtWrap. */
+type ExistingGtWrap =
+  | {
+      kind: 'plugin-around-gt';
+      exportDeclaration: t.ExportDefaultDeclaration;
+      gtCall: t.CallExpression;
+    }
+  | { kind: 'other' };
+
 /**
  * Replaces the createNextIntlPlugin wrapper in next.config.* with
  * withGTConfig, pointing gt-next's dictionary at the default-locale catalog.
@@ -92,6 +101,58 @@ export function transformNextConfigFile(
       }
     },
   });
+
+  const print = (): string =>
+    generate(
+      ast,
+      {
+        retainLines: true,
+        retainFunctionParens: true,
+        comments: true,
+        compact: 'auto',
+      },
+      code
+    ).code;
+
+  // Re-running gt migrate is the remediation this transform's own TODOs
+  // prescribe ("re-run once they are converted to finish the teardown"), so a
+  // config this run already wired must never be wrapped a second time: every
+  // run appended another withGTConfig(...) around the last one, without bound.
+  const existing = findExportedGtWrap(ast, wrapperNames, pluginLocal);
+  if (existing) {
+    if (existing.kind === 'plugin-around-gt' && !retainNextIntl) {
+      // The teardown the earlier run promised: nothing uses next-intl any
+      // more, so the plugin wrapper around the existing withGTConfig call can
+      // go. The call itself (and the user's options in it) is left alone.
+      existing.exportDeclaration.declaration = existing.gtCall;
+      for (const declPath of wrapperDeclPaths) declPath.remove();
+      for (const importPath of pluginImportPaths) importPath.remove();
+      return {
+        code: print(),
+        todos: [
+          {
+            file,
+            reason: `withGTConfig was already installed in this config, so it was left exactly as it is (dictionary path and options included) instead of being wrapped again. This run only removed the ${ctx.adapter.displayName} plugin wrapper around it, which no file needs now. Verify the options in the existing withGTConfig call still match your catalogs`,
+          },
+        ],
+        skipReasons: [],
+      };
+    }
+    // Left untouched. The source library's plugin is still composed inside the
+    // exported value, so the emit phase must keep the library and its
+    // request/routing files (same contract as the fallback wrap below).
+    ctx.nextConfigRetainsPlugin = true;
+    return {
+      code: null,
+      todos: [
+        {
+          file,
+          reason: `already wired: this config's export is already wrapped in withGTConfig, so gt migrate left it untouched rather than wrapping it again. ${ctx.adapter.displayName}'s plugin is still composed in this file, so the package and its request/routing config stay installed; remove that plugin wrapper by hand and re-run \`gt migrate --from ${ctx.adapter.id}\` to finish the teardown`,
+        },
+      ],
+      skipReasons: [],
+    };
+  }
 
   const dictionaryPath = relativeDictionaryPath(ctx);
   let rewrote = false;
@@ -262,17 +323,104 @@ export function transformNextConfigFile(
     });
   }
 
-  const output = generate(
-    ast,
-    {
-      retainLines: true,
-      retainFunctionParens: true,
-      comments: true,
-      compact: 'auto',
+  return { code: print(), todos, skipReasons: [] };
+}
+
+/**
+ * The withGTConfig call already present in this config's EXPORTED value, if
+ * any: the state of every re-run, since the first run put it there.
+ *
+ * `plugin-around-gt` is the shape the recognized swap produces while files
+ * still use the source library (`withNextIntl(withGTConfig(cfg, {...}))`),
+ * which a later run can finish tearing down. `other` covers everything else,
+ * including the fallback whole-export wrap (`withGTConfig(async () => {...})`,
+ * with the plugin call still inside the wrapped value): those must be left
+ * exactly as they are.
+ *
+ * Callee recognition matches the wiring post-condition's (runMigration's
+ * hasWithGTConfigCall): the literal name, an aliased named import
+ * (`import { withGTConfig as w }`), and a namespace member
+ * (`gt.withGTConfig(...)`). Scoped to the exported value on purpose: a
+ * withGTConfig call elsewhere in the file is not the wiring, so a config whose
+ * export is unwrapped still gets wrapped.
+ */
+function findExportedGtWrap(
+  ast: t.File,
+  wrapperNames: Set<string>,
+  pluginLocal: string
+): ExistingGtWrap | null {
+  const gtNames = new Set(['withGTConfig']);
+  for (const statement of ast.program.body) {
+    if (!t.isImportDeclaration(statement)) continue;
+    for (const specifier of statement.specifiers) {
+      if (
+        t.isImportSpecifier(specifier) &&
+        t.isIdentifier(specifier.imported, { name: 'withGTConfig' })
+      ) {
+        gtNames.add(specifier.local.name);
+      }
+    }
+  }
+  const isGtCall = (
+    node: t.Node | null | undefined
+  ): node is t.CallExpression =>
+    t.isCallExpression(node) &&
+    ((t.isIdentifier(node.callee) && gtNames.has(node.callee.name)) ||
+      (t.isMemberExpression(node.callee) &&
+        !node.callee.computed &&
+        t.isIdentifier(node.callee.property, { name: 'withGTConfig' })));
+
+  let result: ExistingGtWrap | null = null;
+  const inspect = (
+    value: t.Expression,
+    exportDeclaration: t.ExportDefaultDeclaration | null
+  ): void => {
+    if (result) return;
+    const inner = t.isCallExpression(value) ? value.arguments[0] : null;
+    if (
+      exportDeclaration &&
+      t.isCallExpression(value) &&
+      ((t.isIdentifier(value.callee) && wrapperNames.has(value.callee.name)) ||
+        (t.isCallExpression(value.callee) &&
+          t.isIdentifier(value.callee.callee, { name: pluginLocal }))) &&
+      isGtCall(inner)
+    ) {
+      result = { kind: 'plugin-around-gt', exportDeclaration, gtCall: inner };
+      return;
+    }
+    let found = false;
+    // A gt call anywhere inside the exported value counts: the fallback wrap
+    // nests it around a function whose body still holds the plugin call.
+    t.traverseFast(value, (node) => {
+      if (!found && isGtCall(node)) found = true;
+    });
+    if (found) result = { kind: 'other' };
+  };
+
+  traverse(ast, {
+    ExportDefaultDeclaration(exportPath) {
+      const declaration = exportPath.node.declaration;
+      if (t.isExpression(declaration)) inspect(declaration, exportPath.node);
+      else if (t.isFunctionDeclaration(declaration)) {
+        // `export default function config() {...}`: never a gt wrap itself,
+        // but its body could hold one (nothing to unwrap either way).
+        inspect(t.functionExpression(null, [], declaration.body), null);
+      }
     },
-    code
-  );
-  return { code: output.code, todos, skipReasons: [] };
+    AssignmentExpression(assignPath) {
+      const { left, right } = assignPath.node;
+      if (
+        t.isMemberExpression(left) &&
+        !left.computed &&
+        t.isIdentifier(left.object, { name: 'module' }) &&
+        t.isIdentifier(left.property, { name: 'exports' }) &&
+        t.isExpression(right)
+      ) {
+        inspect(right, null);
+      }
+    },
+  });
+  return result;
 }
 
 function relativeDictionaryPath(ctx: MigrationContext): string {

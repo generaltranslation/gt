@@ -9,7 +9,14 @@ import { createMigrateDiagnostic } from '../pipeline/diagnostics.js';
 import {
   CONTAINABLE_ENTRY_KINDS,
   appRouteEntryKind,
+  couldBeUnresolvedImportTarget,
+  declaredDependencyNames,
+  installedPackageChecker,
+  isPackageSpecifier,
+  loadImportAliases,
+  resolveImportToProjectFiles,
   routePatternFor,
+  specifierTailCandidates,
 } from '../pipeline/latentClientCalls.js';
 import type { FileEdit, MigrationContext } from '../pipeline/types.js';
 
@@ -274,7 +281,7 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
     // Two candidates converge in at most two passes; the loop generalizes it.
     const retained: {
       file: string;
-      importer: { file: string; exact: boolean };
+      importer: NonNullable<ReturnType<typeof findRemainingImporter>>;
     }[] = [];
     let deletable = [...deletions];
     let settled = false;
@@ -358,13 +365,21 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
 
     for (const { file: configFile, importer } of retained) {
       // Deleting a module that something still imports breaks the build;
-      // keep it and say so instead.
-      ctx.todos.push({
-        file: configFile,
-        reason: importer.exact
-          ? `kept because ${path.relative(ctx.cwd, importer.file)} still imports it; migrate that reference off ${adapter.displayName}, then delete this file`
-          : `kept because ${path.relative(ctx.cwd, importer.file)} appears to import it through a path alias; if that specifier is really a third-party package, delete this file yourself`,
-      });
+      // keep it and say so instead. The third case is the honest one for an
+      // incomplete graph: gt migrate could not follow the specifier (or could
+      // not read the file), so it cannot say this module is unused.
+      const importerPath = path.relative(ctx.cwd, importer.file);
+      let reason: string;
+      if (importer.exact) {
+        reason = `kept because ${importerPath} still imports it; migrate that reference off ${adapter.displayName}, then delete this file`;
+      } else if (importer.unresolvedSpecifier === undefined) {
+        reason = `kept because ${importerPath} appears to import it through a path alias; if that specifier is really a third-party package, delete this file yourself`;
+      } else if (importer.unresolvedSpecifier === '') {
+        reason = `kept because gt migrate could not read ${importerPath}, so it cannot tell whether that file still imports this one; check it and delete this file yourself if nothing does`;
+      } else {
+        reason = `kept because ${importerPath} imports '${importer.unresolvedSpecifier}', which gt migrate could not resolve to a file (a tsconfig/bundler path alias it cannot follow) and which could name this one; if that specifier points elsewhere, delete this file yourself`;
+      }
+      ctx.todos.push({ file: configFile, reason });
     }
     for (const configFile of deletable) {
       edits.push({ path: configFile, kind: 'delete' });
@@ -636,6 +651,20 @@ function planHazardContainment(
         reason:
           'gt migrate could not determine which routes render ' +
           relative(hazard.caller),
+      };
+    }
+    // The routes it DID find are a lower bound: an unresolved specifier could
+    // name this file or one that imports it, so another route may render the
+    // same hazard. Containing only the routes we can see would leave that one
+    // prerendered with the hazard in its graph, so withhold project-wide.
+    if (hazard.reachSetIncomplete) {
+      return {
+        contained: false,
+        reason:
+          `an import of ${relative(hazard.reachSetIncomplete)} could not be ` +
+          'resolved (a tsconfig/bundler path alias, or a specifier gt migrate ' +
+          `could not map to a file), so the set of routes that render ` +
+          `${relative(hazard.caller)} is unknown`,
       };
     }
     for (const { entry, chain } of hazard.reachedFrom) {
@@ -1071,12 +1100,22 @@ function isStrictAncestorDir(ancestor: string, descendant: string): boolean {
  * src/ (or the project root when there is no src/). Other non-package
  * specifiers get a best-effort trailing-segment match (`exact: false`, see
  * matchesAliasedTarget).
+ *
+ * The answer gates a DELETE, so "no importer found" has to mean the graph was
+ * complete enough to say so. Two ways it is not, both of which retain the file
+ * instead (`unresolvedSpecifier` set, for the report):
+ *  - a local-looking specifier that resolves to no project file at all and
+ *    whose tail could name the target: a tsconfig `paths` alias that does not
+ *    mirror the file path ('#config' -> src/i18n/routing.ts) is invisible to
+ *    the heuristics above, and deleting the target leaves it dangling;
+ *  - a project file this process cannot read: it may hold the import, and
+ *    every other read in this module already fails toward retention.
  */
 function findRemainingImporter(
   ctx: MigrationContext,
   target: string,
   ignoredFiles: string[]
-): { file: string; exact: boolean } | null {
+): { file: string; exact: boolean; unresolvedSpecifier?: string } | null {
   const targetNoExt = stripExtension(target);
   const pendingEdits = new Map(
     ctx.edits
@@ -1092,11 +1131,37 @@ function findRemainingImporter(
     // break at build time if their target is deleted.
     /(?:from\s+|import\s*\(\s*|import\s*|require\s*\(\s*)['"]([^'"]+)['"]/g;
 
-  for (const file of ctx.projectFiles ?? ctx.sourceFiles ?? []) {
+  const projectFiles = ctx.projectFiles ?? ctx.sourceFiles ?? [];
+  const fileSet = new Set(projectFiles);
+  const declaredPackages = declaredDependencyNames(ctx.cwd);
+  const isInstalledPackage = installedPackageChecker(ctx.cwd);
+  const aliases = loadImportAliases(ctx.cwd);
+  // Same "could an unresolved specifier name this file?" question the hazard
+  // detector asks (couldBeUnresolvedImportTarget), so both stages treat an
+  // incomplete graph identically. Each tail remembers the file and specifier
+  // that produced it, for the report.
+  const unresolvedTails = new Map<
+    string,
+    { file: string; specifier: string }
+  >();
+  let unreadable: string | null = null;
+
+  for (const file of projectFiles) {
     if (ignoredFiles.includes(file)) continue;
-    const content =
-      pendingEdits.get(file) ??
-      (fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '');
+    let content: string;
+    const pending = pendingEdits.get(file);
+    if (pending !== undefined) {
+      content = pending;
+    } else {
+      try {
+        content = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
+      } catch {
+        // Unreadable: it could be the importer, and an unguarded read here
+        // aborted the whole run. Retain rather than delete on faith.
+        unreadable ??= file;
+        continue;
+      }
+    }
     for (const match of content.matchAll(specifierPattern)) {
       const specifier = match[1];
       let resolved: string | null = null;
@@ -1104,15 +1169,46 @@ function findRemainingImporter(
         resolved = path.resolve(path.dirname(file), specifier);
       } else if (specifier.startsWith('@/') || specifier.startsWith('~/')) {
         resolved = path.join(aliasRoot, specifier.slice(2));
-      } else if (matchesAliasedTarget(ctx, specifier, targetNoExt)) {
-        // Custom tsconfig path aliases (and baseUrl imports) can't be
-        // resolved without parsing tsconfig. Err toward keeping the file:
-        // a non-package specifier whose trailing path segments match the
-        // target counts as an importer. Aliases that don't mirror the file
-        // path (single-name or multi-segment scoped ones) are still
-        // missed, and those files are deleted with their aliased imports
-        // left dangling.
-        return { file, exact: false };
+      } else {
+        // Every other non-relative specifier goes through the pipeline's
+        // resolver, which reads the project's own tsconfig/jsconfig `paths`:
+        // an alias that does not mirror its target's path ('#config' ->
+        // src/i18n/routing.ts) is invisible to the tail heuristics, and the
+        // file was deleted with that import left dangling.
+        const candidates = resolveImportToProjectFiles(
+          specifier,
+          path.dirname(file),
+          fileSet,
+          projectFiles,
+          aliases
+        );
+        if (
+          candidates.some(
+            (candidate) => stripExtension(candidate) === targetNoExt
+          )
+        ) {
+          return { file, exact: true };
+        }
+        if (candidates.length === 0) {
+          if (matchesAliasedTarget(ctx, specifier, targetNoExt)) {
+            // Err toward keeping the file: a non-package specifier whose
+            // trailing path segments match the target counts as an importer.
+            return { file, exact: false };
+          }
+          if (
+            !isPackageSpecifier(specifier, declaredPackages) &&
+            !isInstalledPackage(specifier)
+          ) {
+            // Local-looking and unresolvable by every route above: remember
+            // what it could have named. Checked against the target after the
+            // whole project is scanned, so a real importer still wins.
+            for (const tail of specifierTailCandidates(specifier)) {
+              if (!unresolvedTails.has(tail)) {
+                unresolvedTails.set(tail, { file, specifier });
+              }
+            }
+          }
+        }
       }
       if (
         resolved !== null &&
@@ -1122,6 +1218,18 @@ function findRemainingImporter(
         return { file, exact: true };
       }
     }
+  }
+  // No file was found importing the target. That is only a real acquittal
+  // while the scan could read every file and follow every local specifier.
+  if (couldBeUnresolvedImportTarget(target, new Set(unresolvedTails.keys()))) {
+    const base = path.basename(targetNoExt);
+    const hit =
+      unresolvedTails.get(base) ??
+      unresolvedTails.get(path.basename(path.dirname(targetNoExt)))!;
+    return { file: hit.file, exact: false, unresolvedSpecifier: hit.specifier };
+  }
+  if (unreadable !== null) {
+    return { file: unreadable, exact: false, unresolvedSpecifier: '' };
   }
   return null;
 }
