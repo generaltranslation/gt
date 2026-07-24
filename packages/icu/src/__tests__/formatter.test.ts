@@ -209,6 +209,14 @@ describe('formatMessage', () => {
     ).toBe('hello <b>world$$!$$ <br/> </b>');
   });
 
+  it('preserves a falsy rich-text result', () => {
+    expect(
+      formatMessage('<value>ignored</value>', 'en', {
+        value: () => 0,
+      })
+    ).toBe(0);
+  });
+
   it('formats named number styles', () => {
     expect(formatMessage('{n, number}', 'en-US', { n: 123456.78 })).toBe(
       new Intl.NumberFormat('en-US').format(123456.78)
