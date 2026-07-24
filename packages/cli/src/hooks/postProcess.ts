@@ -22,6 +22,20 @@ export type FormatReport = {
    * was kept instead.
    */
   preservedFiles: string[];
+  /**
+   * Files the JSX-children invariant could not be applied to: unreadable when
+   * the snapshot was taken, unreadable after the formatter ran, or a rollback
+   * write that itself failed. Whatever the formatter left is what is on disk
+   * for them, and saying so is the point of the field.
+   */
+  unverifiedFiles: string[];
+  /**
+   * Set when the formatter did not run to completion (it threw partway, biome
+   * exited nonzero, a write failed). null means it finished. A formatter that
+   * writes the files itself can fail AFTER rewriting some of them, so this is
+   * reported rather than letting `reason` assert a pass that did not happen.
+   */
+  failure: string | null;
 };
 
 type PrettierModule = {
@@ -390,13 +404,54 @@ function noteDiscardedFormatting(file: string, report: FormatReport): void {
   );
 }
 
-async function snapshotFiles(files: string[]): Promise<Map<string, string>> {
+function noteUnverified(file: string, why: string, report: FormatReport): void {
+  if (!report.unverifiedFiles.includes(file)) report.unverifiedFiles.push(file);
+  logger.warn(
+    chalk.yellow(
+      `Could not check ${file} against the JSX-children invariant (${why}); whatever the formatter wrote is what is on disk.`
+    )
+  );
+}
+
+/**
+ * The formatter did not finish. Recorded on the report, not just logged, and
+ * the reason line stops claiming a pass that did not happen. First failure
+ * wins: it is the causal one, and a child process can emit both 'error' and
+ * 'close'.
+ */
+function noteFormatterFailure(
+  formatter: Formatter,
+  detail: string,
+  report: FormatReport
+): void {
+  if (report.failure !== null) return;
+  report.failure = `${formatter} did not finish: ${detail}`;
+  report.reason = `${report.reason} (did not finish: ${detail})`;
+  logger.warn(
+    chalk.yellow(
+      `${formatter} formatting failed: ${detail}. Checking what it had already written and rolling back anything unsafe.`
+    )
+  );
+}
+
+async function snapshotFiles(
+  files: string[],
+  report: FormatReport
+): Promise<Map<string, string>> {
   const snapshots = new Map<string, string>();
   for (const file of files) {
     try {
       snapshots.set(file, await fs.promises.readFile(file, 'utf-8'));
-    } catch {
-      // A file that cannot be read cannot be verified or rolled back.
+    } catch (error) {
+      // A file that cannot be read cannot be verified or rolled back, so the
+      // formatter is about to rewrite something this pass can no longer check.
+      // Silently dropping it out of the snapshot map is what made the whole
+      // check invisible; name it instead.
+      noteUnverified(
+        file,
+        `unreadable before formatting: ${String(error)}`,
+        report
+      );
     }
   }
   return snapshots;
@@ -405,6 +460,13 @@ async function snapshotFiles(files: string[]): Promise<Map<string, string>> {
 /**
  * For formatters that write the files themselves (biome, eslint --fix): restore
  * any file whose rewrite changed the JSX children, and record what happened.
+ *
+ * Every snapshotted file leaves this function in one of three reported states:
+ * kept (verified safe), rolled back (named in preservedFiles), or unverified
+ * (named in unverifiedFiles). One file's failure must not skip the rest, which
+ * is why each is handled inside its own try: the caller reaches this through a
+ * `finally`, precisely because the formatter may already have rewritten files
+ * before it threw.
  */
 async function rollbackUnsafeRewrites(
   snapshots: Map<string, string>,
@@ -414,7 +476,12 @@ async function rollbackUnsafeRewrites(
     let current: string;
     try {
       current = await fs.promises.readFile(file, 'utf-8');
-    } catch {
+    } catch (error) {
+      noteUnverified(
+        file,
+        `unreadable after formatting: ${String(error)}`,
+        report
+      );
       continue;
     }
     if (current === original) continue;
@@ -422,7 +489,18 @@ async function rollbackUnsafeRewrites(
       report.formattedFiles.push(file);
       continue;
     }
-    await fs.promises.writeFile(file, original);
+    try {
+      await fs.promises.writeFile(file, original);
+    } catch (error) {
+      // The rewrite is unsafe AND could not be undone: the worst state, so it
+      // is the one that must not be silent.
+      noteUnverified(
+        file,
+        `its unsafe reformat could not be rolled back: ${String(error)}`,
+        report
+      );
+      continue;
+    }
     noteDiscardedFormatting(file, report);
   }
 }
@@ -436,6 +514,8 @@ export async function formatFiles(
     reason: 'no files to format',
     formattedFiles: [],
     preservedFiles: [],
+    unverifiedFiles: [],
+    failure: null,
   };
   if (filesUpdated.length === 0) return report;
 
@@ -487,7 +567,21 @@ export async function formatFiles(
           );
           announced = true;
         }
-        const content = await fs.promises.readFile(file, 'utf-8');
+        // Read and write are per-file for the same reason the loops below are:
+        // one unreadable or unwritable file must not abandon the rest of the
+        // pass. Nothing unverified can be left behind here, because prettier
+        // only ever writes content this loop has already checked.
+        let content: string;
+        try {
+          content = await fs.promises.readFile(file, 'utf-8');
+        } catch (error) {
+          logger.warn(
+            chalk.yellow(
+              `Could not format ${file}, keeping it unformatted: ${String(error)}`
+            )
+          );
+          continue;
+        }
         let formatted: string;
         try {
           const config = (await project.module.resolveConfig(file)) ?? {};
@@ -514,7 +608,16 @@ export async function formatFiles(
           noteDiscardedFormatting(file, report);
           continue;
         }
-        await fs.promises.writeFile(file, formatted);
+        try {
+          await fs.promises.writeFile(file, formatted);
+        } catch (error) {
+          logger.warn(
+            chalk.yellow(
+              `Could not format ${file}, keeping it unformatted: ${String(error)}`
+            )
+          );
+          continue;
+        }
         report.formattedFiles.push(file);
       }
       return report;
@@ -525,7 +628,7 @@ export async function formatFiles(
       logger.message(chalk.dim('Cleaning up with biome...'));
       // biome rewrites the files itself, so the same JSX-children invariant is
       // checked afterwards and a file that fails it is rolled back.
-      const snapshots = await snapshotFiles(filesUpdated);
+      const snapshots = await snapshotFiles(filesUpdated, report);
       try {
         await new Promise<void>((resolve) => {
           const args = [
@@ -540,25 +643,24 @@ export async function formatFiles(
           });
 
           child.on('error', (error: Error) => {
-            logger.warn(
-              chalk.yellow('Biome formatting failed: ' + error.message)
-            );
+            noteFormatterFailure('biome', error.message, report);
             resolve();
           });
 
           child.on('close', (code: number) => {
             if (code !== 0) {
-              logger.warn(
-                chalk.yellow(`Biome formatting failed with exit code ${code}`)
-              );
+              // biome writes as it goes, so a nonzero exit can still have
+              // rewritten files; the rollback below covers them.
+              noteFormatterFailure('biome', `exit code ${code}`, report);
             }
             resolve();
           });
         });
       } catch (error) {
-        logger.warn(chalk.yellow('Biome formatting failed: ' + String(error)));
+        noteFormatterFailure('biome', String(error), report);
+      } finally {
+        await rollbackUnsafeRewrites(snapshots, report);
       }
-      await rollbackUnsafeRewrites(snapshots, report);
       return report;
     }
 
@@ -570,15 +672,29 @@ export async function formatFiles(
         fix: true,
         overrideConfigFile: undefined, // Will use project's .eslintrc
       });
-      const snapshots = await snapshotFiles(filesUpdated);
-      for (const file of filesUpdated) {
-        const results = await eslint.lintFiles([file]);
-        await ESLint.outputFixes(results);
+      const snapshots = await snapshotFiles(filesUpdated, report);
+      // ESLint.outputFixes writes the files, so a throw part way through the
+      // loop (a plugin/parser failure in a later overrides cascade, EACCES or
+      // ENOSPC during the write) leaves already-rewritten files on disk. The
+      // rollback has to run for those anyway, which is why it is in a finally
+      // rather than after the loop, and the failure itself is reported.
+      try {
+        for (const file of filesUpdated) {
+          const results = await eslint.lintFiles([file]);
+          await ESLint.outputFixes(results);
+        }
+      } catch (error) {
+        noteFormatterFailure('eslint', String(error), report);
+      } finally {
+        await rollbackUnsafeRewrites(snapshots, report);
       }
-      await rollbackUnsafeRewrites(snapshots, report);
       return report;
     }
   } catch (e) {
+    // Anything that escaped a branch's own handling (formatter resolution, a
+    // prettier write). The branches that let a formatter write files run their
+    // rollback in a finally, so nothing unverified reaches here silently.
+    report.failure ??= `${report.formatter ?? 'the formatter'} did not finish: ${String(e)}`;
     logger.warn(chalk.yellow('Unable to run code formatter: ' + String(e)));
   }
   return report;

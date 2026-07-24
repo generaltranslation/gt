@@ -508,6 +508,170 @@ describe('round 9: locale-prefixing useRouter for converted next-intl wrappers',
   });
 });
 
+// Round 9 F8 (R3): tags the emitted router could not inline as a plain string
+// literal were filtered out of LOCALES with no TODO, warning or skip, and
+// LOCALES is the whole input to the double-prefix guard: an href a call site
+// already prefixed with a dropped locale got prefixed a second time. Nothing
+// is narrowed silently now; a tag is escaped and inlined, or it is reported.
+describe('round 9: the emitted LOCALES array is never narrowed silently', () => {
+  /**
+   * A memo-engine-shaped app whose routing config declares `locales`, with the
+   * catalog file discovery insists on for each one (see catalogs/discover.ts:45).
+   */
+  function appWithLocales(
+    locales: string[],
+    options: { wrapperExtension?: 'ts' | 'js' } = {}
+  ): string {
+    const catalogs: Record<string, string> = {};
+    for (const locale of locales) {
+      catalogs[`messages/${locale}.json`] = JSON.stringify({
+        Home: { title: locale },
+      });
+    }
+    return nextIntlApp({
+      ...options,
+      extraFiles: {
+        'i18n/routing.ts': lines(
+          "import { defineRouting } from 'next-intl/routing';",
+          'export const routing = defineRouting({',
+          `  locales: ${JSON.stringify(locales)},`,
+          "  defaultLocale: 'en',",
+          "  localePrefix: 'always',",
+          '});'
+        ),
+        ...catalogs,
+      },
+    });
+  }
+
+  it('inlines exotic-but-real tags rather than dropping them', async () => {
+    const cwd = await appWithLocales(
+      ['en', 'zh-Hans-CN', 'sr-Cyrl', 'ca-ES-valencia', 'en-US.UTF-8'],
+      { wrapperExtension: 'js' }
+    );
+    const ctx = await migrate(cwd);
+    const client = editFor(ctx, 'i18n/navigation.client.js');
+    expect(client).toContain(
+      "const LOCALES = ['en', 'zh-Hans-CN', 'sr-Cyrl', 'ca-ES-valencia', 'en-US.UTF-8'];"
+    );
+
+    const router = fakeRouter();
+    const instance = loadEmittedClientModule(client!, 'en', router).useRouter();
+    // Each configured locale is already-prefixed, including the dotted tag the
+    // old inline-safety filter dropped (dropping it double-prefixed this href).
+    instance.push('/zh-Hans-CN/deals');
+    instance.push('/sr-Cyrl/deals');
+    instance.push('/ca-ES-valencia/deals');
+    instance.push('/en-US.UTF-8/deals');
+    instance.push('/deals');
+    expect(router.calls).toEqual([
+      ['push', '/zh-Hans-CN/deals'],
+      ['push', '/sr-Cyrl/deals'],
+      ['push', '/ca-ES-valencia/deals'],
+      ['push', '/en-US.UTF-8/deals'],
+      ['push', '/en/deals'],
+    ]);
+  });
+
+  it('escapes a tag that would otherwise break the emitted module', async () => {
+    // The shape the old filter existed for: a quote (and a backslash) inside
+    // the tag. Escaping keeps the guard complete AND the module parseable.
+    const cwd = await appWithLocales(['en', "fr'x", 'de\\y'], {
+      wrapperExtension: 'js',
+    });
+    const ctx = await migrate(cwd);
+    const client = editFor(ctx, 'i18n/navigation.client.js');
+    expect(client).toContain("const LOCALES = ['en', 'fr\\'x', 'de\\\\y'];");
+
+    const router = fakeRouter();
+    // new Function() throws on a syntax error, so this evaluating at all is the
+    // "the emitted module still parses" assertion.
+    const instance = loadEmittedClientModule(client!, 'en', router).useRouter();
+    instance.push("/fr'x/deals");
+    instance.push('/de\\y/deals');
+    instance.push('/deals');
+    expect(router.calls).toEqual([
+      ['push', "/fr'x/deals"],
+      ['push', '/de\\y/deals'],
+      ['push', '/en/deals'],
+    ]);
+  });
+
+  it('reports a tag that cannot be a URL segment instead of dropping it', async () => {
+    // Reached through the catalog fallback (routing declares no `locales`, so
+    // the catalog stems are the locale set): '#' ends a URL path segment, so
+    // this tag can never equal one.
+    const cwd = await nextIntlApp({
+      extraFiles: {
+        'i18n/routing.ts': lines(
+          "import { defineRouting } from 'next-intl/routing';",
+          'export const routing = defineRouting({',
+          "  defaultLocale: 'en',",
+          "  localePrefix: 'always',",
+          '});'
+        ),
+        'messages/es#mx.json': JSON.stringify({ Home: { title: 'MX' } }),
+      },
+    });
+    const ctx = await migrate(cwd);
+    const client = editFor(ctx, 'i18n/navigation.client.ts');
+    // Excluded for a reason that is about routing, not about syntax: an empty
+    // tag would make LOCALES.includes('') true for '/' and switch prefixing
+    // off entirely, and a tag holding '/' can never equal one segment.
+    // The routable catalogs are still all there; only the tag that cannot be
+    // a segment is out, and it is named in the module the reader will open.
+    expect(client).toContain("const LOCALES = ['en', 'es'];");
+    expect(client).toContain(
+      '// TODO(gt-migrate): "es#mx" is a configured locale that cannot be'
+    );
+    const todo = ctx.todos.find((candidate) =>
+      candidate.reason.includes('cannot be a URL path segment')
+    );
+    expect(todo?.file).toBe(path.join(cwd, 'i18n/navigation.ts'));
+    expect(todo?.reason).toContain('"es#mx"');
+    expect(todo?.reason).toContain('prefixed a second time');
+  });
+
+  it("escapes the 'as-needed' default locale it inlines too", async () => {
+    const cwd = await nextIntlApp({
+      localePrefix: "'as-needed'",
+      defaultLocale: '"fr\'x"',
+      wrapperExtension: 'js',
+      extraFiles: {
+        'i18n/routing.ts': lines(
+          "import { defineRouting } from 'next-intl/routing';",
+          'export const routing = defineRouting({',
+          `  locales: ${JSON.stringify(["fr'x", 'es'])},`,
+          '  defaultLocale: "fr\'x",',
+          "  localePrefix: 'as-needed',",
+          '});'
+        ),
+        "messages/fr'x.json": JSON.stringify({ Home: { title: 'FR' } }),
+      },
+    });
+    const ctx = await migrate(cwd);
+    const client = editFor(ctx, 'i18n/navigation.client.js');
+    expect(client).toContain("const DEFAULT_LOCALE = 'fr\\'x';");
+
+    const router = fakeRouter();
+    const instance = loadEmittedClientModule(
+      client!,
+      "fr'x",
+      router
+    ).useRouter();
+    // 'as-needed': the default locale is served unprefixed, every other one is
+    // prefixed. Both branches read DEFAULT_LOCALE, so a broken literal here is
+    // a module that does not parse.
+    instance.push('/deals');
+    const other = loadEmittedClientModule(client!, 'es', router).useRouter();
+    other.push('/deals');
+    expect(router.calls).toEqual([
+      ['push', '/deals'],
+      ['push', '/es/deals'],
+    ]);
+  });
+});
+
 describe('round 9: the locale-aware hold still wins', () => {
   it('holds the wrapper on next-intl when a caller uses { locale }', async () => {
     const cwd = await nextIntlApp({

@@ -16,16 +16,64 @@ vi.mock('../../console/logger.js', () => ({
 // A stand-in eslint whose --fix writes whatever the current test asks for, so
 // the rollback path can be exercised without a real eslint config.
 let eslintFixture: { file: string; content: string } | null = null;
+/**
+ * Per-file behavior for the same stand-in, for the tests that need eslint to
+ * fail part way through the pass (round 9 F6): each entry may rewrite its file,
+ * throw, or both, in the order the formatter visits them.
+ */
+let eslintPerFile = new Map<string, { content?: string; throws?: string }>();
 
 vi.mock('eslint', () => ({
   ESLint: class {
     async lintFiles(files: string[]) {
       return files.map((filePath) => ({ filePath }));
     }
-    static async outputFixes() {
+    static async outputFixes(results?: { filePath: string }[]) {
+      for (const { filePath } of results ?? []) {
+        const action = eslintPerFile.get(filePath);
+        if (!action) continue;
+        if (action.content !== undefined)
+          fs.writeFileSync(filePath, action.content);
+        if (action.throws) throw new Error(action.throws);
+      }
       if (!eslintFixture) return;
       fs.writeFileSync(eslintFixture.file, eslintFixture.content);
     }
+  },
+}));
+
+/**
+ * What the stand-in `npx @biomejs/biome format --write` does: biome writes the
+ * files itself, so a run that fails can still have rewritten some of them.
+ */
+let biomeRun: {
+  writes?: { file: string; content: string }[];
+  /** run after the writes, e.g. to make a file unwritable */
+  after?: () => void;
+  error?: string;
+  exitCode?: number;
+} | null = null;
+
+vi.mock('node:child_process', () => ({
+  spawn: () => {
+    const handlers = new Map<string, (arg: never) => void>();
+    setTimeout(() => {
+      for (const write of biomeRun?.writes ?? []) {
+        fs.writeFileSync(write.file, write.content);
+      }
+      biomeRun?.after?.();
+      if (biomeRun?.error) {
+        handlers.get('error')?.(new Error(biomeRun.error) as never);
+        return;
+      }
+      handlers.get('close')?.((biomeRun?.exitCode ?? 0) as never);
+    }, 0);
+    return {
+      on(event: string, callback: (arg: never) => void) {
+        handlers.set(event, callback);
+        return this;
+      },
+    };
   },
 }));
 
@@ -59,6 +107,8 @@ afterEach(() => {
 
 beforeEach(() => {
   eslintFixture = null;
+  eslintPerFile = new Map();
+  biomeRun = null;
   vi.mocked(logger.message).mockClear();
   vi.mocked(logger.warn).mockClear();
 });
@@ -355,6 +405,125 @@ describe('the invariant covers every formatter, not just prettier', () => {
     expect(fs.readFileSync(file, 'utf-8')).toBe(fixed);
     expect(report.formattedFiles).toEqual([file]);
     expect(report.preservedFiles).toEqual([]);
+  });
+});
+
+// Round 9 F6 (R3): the rollback ran AFTER the per-file loop, so any throw
+// inside the loop unwound past it and left files eslint had already rewritten
+// on disk, unverified, with an empty preservedFiles and a report still saying
+// "formatted with eslint --fix". Every snapshotted file must end in one of
+// three reported states: kept, rolled back, or named as unverified.
+describe('a formatter that fails part way still verifies what it wrote', () => {
+  /** A project with eslint installed, so detection picks the eslint branch. */
+  function eslintProject(files: Record<string, string>): string {
+    const root = makeProject(tmpRoot(), files);
+    write(
+      path.join(root, 'node_modules', 'eslint', 'package.json'),
+      JSON.stringify({ name: 'eslint', version: '9.0.0' })
+    );
+    return root;
+  }
+
+  const SAFE_SOURCE = [
+    'export function Hello() {',
+    '  return <p>hi</p>;',
+    '}',
+    '',
+  ].join('\n');
+
+  it('rolls back, keeps and reports across an eslint throw mid-pass', async () => {
+    const root = eslintProject({
+      'src/safe.tsx': SAFE_SOURCE,
+      'src/card.tsx': CTA_SOURCE,
+      'src/later.tsx': SAFE_SOURCE,
+    });
+    const safe = path.join(root, 'src/safe.tsx');
+    const card = path.join(root, 'src/card.tsx');
+    const later = path.join(root, 'src/later.tsx');
+    const safeFixed = SAFE_SOURCE.replace(
+      'export function',
+      'export  function'
+    );
+    // File 1 gets a harmless rewrite, file 2 gets the rendered-whitespace
+    // reflow the invariant exists to reject and then blows up (a parser or
+    // plugin failure in a later overrides cascade, EACCES during the write).
+    eslintPerFile.set(safe, { content: safeFixed });
+    eslintPerFile.set(card, {
+      content: CTA_REFLOWED,
+      throws: 'fake eslint blew up on file 2',
+    });
+
+    const report = await formatFiles([safe, card, later]);
+
+    // The unsafe rewrite is undone and named...
+    expect(fs.readFileSync(card, 'utf-8')).toBe(CTA_SOURCE);
+    expect(report.preservedFiles).toEqual([card]);
+    // ...the safe one is kept and named...
+    expect(fs.readFileSync(safe, 'utf-8')).toBe(safeFixed);
+    expect(report.formattedFiles).toEqual([safe]);
+    // ...the file the pass never reached is untouched...
+    expect(fs.readFileSync(later, 'utf-8')).toBe(SAFE_SOURCE);
+    expect(report.formattedFiles).not.toContain(later);
+    // ...and the failure itself is on the report, not just in the console.
+    expect(report.failure).toMatch(/eslint did not finish/);
+    expect(report.failure).toContain('fake eslint blew up on file 2');
+    expect(report.unverifiedFiles).toEqual([]);
+  });
+
+  it('names a file it could not snapshot instead of dropping it silently', async () => {
+    const root = eslintProject({ 'src/hello.tsx': SAFE_SOURCE });
+    const present = path.join(root, 'src/hello.tsx');
+    // A file gt migrate wrote that the formatter pass can no longer read
+    // (removed or unreadable in between): it cannot be verified or rolled
+    // back, so it must be reported as such rather than skipped.
+    const gone = path.join(root, 'src/gone.tsx');
+
+    const report = await formatFiles([present, gone]);
+
+    expect(report.unverifiedFiles).toEqual([gone]);
+    expect(report.preservedFiles).toEqual([]);
+  });
+
+  it('reports a biome run that rewrote a file and then failed', async () => {
+    const root = makeProject(tmpRoot(), { 'src/card.tsx': CTA_SOURCE });
+    write(
+      path.join(root, 'node_modules', '@biomejs', 'biome', 'package.json'),
+      JSON.stringify({ name: '@biomejs/biome', version: '1.9.0' })
+    );
+    const card = path.join(root, 'src/card.tsx');
+    biomeRun = {
+      writes: [{ file: card, content: CTA_REFLOWED }],
+      exitCode: 1,
+    };
+
+    const report = await formatFiles([card]);
+
+    expect(report.formatter).toBe('biome');
+    expect(fs.readFileSync(card, 'utf-8')).toBe(CTA_SOURCE);
+    expect(report.preservedFiles).toEqual([card]);
+    expect(report.failure).toMatch(/biome did not finish: exit code 1/);
+  });
+
+  it('names an unsafe rewrite it could not roll back', async () => {
+    const root = makeProject(tmpRoot(), { 'src/card.tsx': CTA_SOURCE });
+    write(
+      path.join(root, 'node_modules', '@biomejs', 'biome', 'package.json'),
+      JSON.stringify({ name: '@biomejs/biome', version: '1.9.0' })
+    );
+    const card = path.join(root, 'src/card.tsx');
+    biomeRun = {
+      writes: [{ file: card, content: CTA_REFLOWED }],
+      // Read-only after the rewrite: the restore write fails, which is the
+      // worst state of all and so the one that must not be silent.
+      after: () => fs.chmodSync(card, 0o444),
+    };
+
+    const report = await formatFiles([card]);
+
+    expect(report.unverifiedFiles).toEqual([card]);
+    expect(report.preservedFiles).toEqual([]);
+    expect(report.formattedFiles).toEqual([]);
+    fs.chmodSync(card, 0o644);
   });
 });
 

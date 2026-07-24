@@ -18,8 +18,29 @@ const NEXT_NAVIGATION_EXPORTS = new Set([
   'useRouter',
 ]);
 
-/** Locale tags safe to inline into the generated module as string literals. */
-const SAFE_LOCALE_TAG = /^[A-Za-z0-9_-]+$/;
+/**
+ * A tag that cannot be a URL path segment at all: empty, or carrying a
+ * character that ends the segment. Nothing else disqualifies a tag from the
+ * emitted LOCALES array; escaping (see `quoted`) covers inlining any string
+ * safely, so the array is not narrowed for syntax reasons.
+ */
+const UNROUTABLE_LOCALE_TAG = /^$|[/?#]/;
+
+/**
+ * A string as a single-quoted JS literal. Escaping (rather than filtering out
+ * what a naive interpolation would break) is what keeps the emitted LOCALES
+ * array complete: a tag missing from it is a locale the double-prefix guard
+ * stops covering.
+ */
+function quoted(value: string): string {
+  return `'${value
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029')}'`;
+}
 
 /**
  * Rewrites the thin `createNavigation(routing)` wrapper module so every
@@ -288,6 +309,7 @@ export function transformNavigationFile(
   if (passthrough.length > 0) {
     lines.push(`export { ${passthrough.join(', ')} } from 'next/navigation';`);
   }
+  const routerLocales = prefixLocales(ctx);
   if (wrapsPathname || wrapsRouter) {
     // The usePathname/useRouter wrappers call client-only hooks, but this
     // module is also imported by Server Components (a server page importing
@@ -329,7 +351,8 @@ export function transformNavigationFile(
         wrapsPathname,
         wrapsRouter,
         typed: isTypeScriptWrapper,
-        locales: prefixLocales(ctx),
+        locales: routerLocales.inlined,
+        unroutableLocales: routerLocales.unroutable,
         unprefixedLocale:
           prefixMode === 'as-needed' ? ctx.routing.defaultLocale : null,
       }),
@@ -344,6 +367,15 @@ export function transformNavigationFile(
   }
 
   const todos: TodoEntry[] = [];
+  // A configured tag the generated guard cannot test for is a locale whose
+  // already-prefixed hrefs get prefixed twice. The emitted module says so at
+  // the call site; the report says so where the user is already reading.
+  if (wrapsRouter && routerLocales.unroutable.length > 0) {
+    todos.push({
+      file,
+      reason: `${routerLocales.unroutable.map((locale) => JSON.stringify(locale)).join(', ')} ${routerLocales.unroutable.length > 1 ? 'are configured locales that cannot be URL path segments' : 'is a configured locale that cannot be a URL path segment'}, so the generated useRouter leaves ${routerLocales.unroutable.length > 1 ? 'them' : 'it'} out of its already-prefixed check: an href a call site already prefixed with ${routerLocales.unroutable.length > 1 ? 'one of them' : 'it'} would be prefixed a second time; fix the tag in the routing config or adjust the generated module by hand`,
+    });
+  }
   // Per-locale URL prefixes (localePrefix.prefixes) have no gt-next
   // equivalent: the middleware transform drops them, so the migrated app
   // serves /<locale> and the generated router prefixes to match. Say so here
@@ -403,15 +435,30 @@ export function transformNavigationFile(
 
 /** Locales that may legitimately appear as an href's first segment. Routing is
  *  the authority; the catalog set is the fallback when defineRouting's locales
- *  could not be read statically. */
-function prefixLocales(ctx: MigrationContext): string[] {
+ *  could not be read statically.
+ *
+ *  Every tag is inlined, escaped rather than filtered: a tag missing from the
+ *  emitted LOCALES array is a locale whose already-prefixed hrefs get prefixed
+ *  a second time, which is worse than an exotic-looking string literal. The
+ *  only exclusions are tags that cannot BE a first URL segment (empty, or
+ *  holding /?#): an empty tag would make LOCALES.includes('') true for '/' and
+ *  turn the whole prefix off, and a tag holding a segment terminator can never
+ *  equal a segment. Those are reported, not dropped quietly. */
+function prefixLocales(ctx: MigrationContext): {
+  inlined: string[];
+  unroutable: string[];
+} {
   const locales =
     ctx.routing.locales && ctx.routing.locales.length > 0
       ? ctx.routing.locales
       : ctx.catalogs.locales;
-  // A tag that cannot be inlined as a plain string literal would emit a broken
-  // module; drop it (the double-prefix guard also tests the active locale).
-  return locales.filter((locale) => SAFE_LOCALE_TAG.test(locale));
+  const inlined: string[] = [];
+  const unroutable: string[] = [];
+  for (const locale of locales) {
+    if (UNROUTABLE_LOCALE_TAG.test(locale)) unroutable.push(locale);
+    else inlined.push(locale);
+  }
+  return { inlined, unroutable };
 }
 
 /**
@@ -429,11 +476,19 @@ function buildNavigationClientModule(options: {
   wrapsRouter: boolean;
   typed: boolean;
   locales: string[];
+  /** configured tags that cannot appear as a URL segment (see prefixLocales) */
+  unroutableLocales: string[];
   /** the locale served without a prefix ('as-needed'), else null */
   unprefixedLocale: string | null;
 }): string {
-  const { wrapsPathname, wrapsRouter, typed, locales, unprefixedLocale } =
-    options;
+  const {
+    wrapsPathname,
+    wrapsRouter,
+    typed,
+    locales,
+    unroutableLocales,
+    unprefixedLocale,
+  } = options;
   const ts = (annotation: string) => (typed ? annotation : '');
   const lines: string[] = ["'use client';", ''];
 
@@ -473,13 +528,31 @@ function buildNavigationClientModule(options: {
   if (wrapsRouter) {
     lines.push(
       '// Locales this app serves, so an href a call site already prefixed by',
-      '// hand is not prefixed twice.',
-      `const LOCALES = [${locales.map((locale) => `'${locale}'`).join(', ')}];`
+      '// hand is not prefixed twice.'
+    );
+    if (unroutableLocales.length > 0) {
+      // Named in the emitted module as well as in the report: the guard below
+      // silently does less for these locales, and the reader of this file is
+      // the person who can tell whether the tag is a typo or real.
+      const many = unroutableLocales.length > 1;
+      const named = unroutableLocales
+        .map((locale) => JSON.stringify(locale))
+        .join(', ');
+      lines.push(
+        `// TODO(gt-migrate): ${named} ${many ? 'are configured locales that cannot be' : 'is a configured locale that cannot be'}`,
+        `// a URL path segment, so ${many ? 'they are' : 'it is'} left out of LOCALES below: an`,
+        `// href a call site already prefixed with ${many ? 'one of them' : 'it'} is prefixed a`,
+        '// second time. Fix the tag in the routing config, or add the check',
+        '// here by hand.'
+      );
+    }
+    lines.push(
+      `const LOCALES = [${locales.map((locale) => quoted(locale)).join(', ')}];`
     );
     if (unprefixedLocale) {
       lines.push(
         "// localePrefix 'as-needed': the default locale is served unprefixed.",
-        `const DEFAULT_LOCALE = '${unprefixedLocale}';`
+        `const DEFAULT_LOCALE = ${quoted(unprefixedLocale)};`
       );
     }
     lines.push(
