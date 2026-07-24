@@ -232,21 +232,27 @@ describe('round 9 panel: the dropped getTranslations locale override', () => {
 });
 
 describe('round 9 panel: the final next step works on the emitted tree', () => {
-  it('names --dictionary with the path this run wired', async () => {
+  // UPDATED in round-9 panel round 4 (finding B1). The original pin was written
+  // against 27ffc9eb7, where bare `npx gt generate` printed "No inline content
+  // or dictionaries were found" and wrote 2-byte `{}` files, so the step named
+  // --dictionary and called the flag required. The SAME commit that fixed the
+  // report (10bf65775) also taught the engine to record `dictionary` in
+  // gt.config.json and gt generate to honor it, which made the justification
+  // false on the tree the run emits: re-measured, bare `npx gt generate` writes
+  // the full 52,826-byte templates, byte-identical to the run with the flag.
+  // The property under test is unchanged (the final step must work on the
+  // emitted tree); only the command that satisfies it moved.
+  it('names the command that works on the tree, and the config it recorded', async () => {
     const cwd = writeTree(baseApp);
     const { ctx } = await migrate(cwd);
     const report = buildReport(ctx, false, false);
 
-    // Measured on the emitted sniply tree: bare `npx gt generate` printed "No
-    // inline content or dictionaries were found" and wrote 2-byte `{}` files;
-    // with --dictionary messages/en.json it wrote 902 entries (52,826 B) and
-    // the following `next build` stayed green with identical rendered text.
-    expect(report).toContain('`npx gt generate --dictionary messages/en.json`');
-    expect(report).toContain(
-      '`npx gt translate --dictionary messages/en.json`'
+    expect(report).toContain('`npx gt generate` (no API key)');
+    expect(report).toContain('"dictionary": "./messages/en.json"');
+    expect(report).not.toContain('The flag is required');
+    expect(report).not.toContain(
+      'No inline content or dictionaries were found'
     );
-    expect(report).not.toContain('`npx gt generate` (no API key)');
-    expect(report).toContain('No inline content or dictionaries were found');
   });
 });
 
@@ -332,7 +338,11 @@ describe('round 9 panel: the retained provider ships both catalogs', () => {
     expect(differences).toContain(
       'roughly one extra catalog file worth of HTML'
     );
-    expect(differences).toContain('removes the duplicate payload');
+    // UPDATED in round-9 panel round 4 (finding B3.3): "removes the duplicate
+    // payload" was measurably false at 10bf65775, because the teardown re-run
+    // nested a second GTProvider (B4). With that fixed the clause is true and
+    // now states what was measured on each locale.
+    expect(differences).toContain("removes that provider's copy");
   });
 
   it('says nothing about payload when no provider is retained', async () => {
@@ -652,10 +662,19 @@ describe('round 9 panel: the pre-flight catalog line', () => {
     // The directory this adapter reports is its own OUTPUT dir; the catalogs
     // were read from public/locales/<locale>/. Naming it as the read location
     // pointed the user at a path that does not exist yet.
+    //
+    // UPDATED in round-9 panel round 4 (finding B8): the fix for this finding
+    // dropped the "in <dir>" clause entirely, which then hid the discovery
+    // location from a react-i18next user whose catalogs are somewhere else. The
+    // line now prints BOTH, so the assertion is no longer "says nothing about
+    // where they were found" but "the location it names as the read location is
+    // the one it actually read".
     const reported = path.relative(cwd, ctx.catalogs.dir);
     expect(fs.existsSync(ctx.catalogs.dir)).toBe(false);
     expect(catalogLine).toBeDefined();
-    expect(catalogLine).not.toMatch(/\] in \S/);
+    expect(ctx.catalogs.sourceDir).toBe(path.join(cwd, 'public/locales'));
+    expect(fs.existsSync(ctx.catalogs.sourceDir!)).toBe(true);
+    expect(catalogLine).toContain('in public/locales/');
     expect(catalogLine).toContain(
       `catalog directory for the migration: ${reported}`
     );

@@ -7,6 +7,7 @@ import {
   packageNameOf,
   removeUnusedNamedImports,
 } from './importUtils.js';
+import { planProviderUnwraps, unwrapJsxElement } from './providerNesting.js';
 import type {
   MigrationContext,
   SourceResult,
@@ -509,12 +510,19 @@ export function transformSourceFile(
       .map((symbol) => symbol.specifier)
   );
   const removedProviderMessageSpecifiers = new Set<t.Node>();
+  // A provider that already sits inside a GTProvider is UNWRAPPED instead of
+  // renamed (see planProviderUnwraps): a second GTProvider nested in the first
+  // serializes gt-next's dictionary twice, which is the duplicated payload the
+  // report's teardown step promises to remove.
+  const providerUnwraps = planProviderUnwraps(providerElements);
+  let emittedGtProvider = false;
   for (const providerPath of providerElements) {
     const opening = providerPath.node.openingElement;
     // `messages` is absorbed by the dictionary pipeline and `locale` by
     // gt-next's own resolution; any other prop (timeZone, formats, now,
     // onError, ...) carried behavior GTProvider does not take, so name what
-    // was dropped instead of clearing it silently.
+    // was dropped instead of clearing it silently. Both outcomes drop them, so
+    // the note is owed either way.
     const droppedProps = opening.attributes
       .map((attr) => {
         if (t.isJSXSpreadAttribute(attr)) return '{...spread}';
@@ -531,6 +539,16 @@ export function transformSourceFile(
         reason: `NextIntlClientProvider prop${droppedProps.length > 1 ? 's' : ''} ${droppedProps.join(', ')} dropped in the GTProvider swap; re-create the behavior through gt-next configuration if still needed (e.g. timeZone affects date formatting)`,
       });
     }
+    if (!providerUnwraps.has(providerPath)) emittedGtProvider = true;
+  }
+  // Innermost first, so unwrapping an ancestor never moves a path this loop has
+  // yet to touch (the decisions above were all taken pre-mutation).
+  for (const providerPath of [...providerElements].reverse()) {
+    if (providerUnwraps.has(providerPath)) {
+      unwrapJsxElement(providerPath);
+      continue;
+    }
+    const opening = providerPath.node.openingElement;
     opening.name = t.jsxIdentifier('GTProvider');
     opening.attributes = [];
     if (providerPath.node.closingElement) {
@@ -599,7 +617,10 @@ export function transformSourceFile(
     } else if (
       adapter.providerName !== null &&
       symbol.imported === adapter.providerName &&
-      !providerRetained
+      !providerRetained &&
+      // Every provider element was unwrapped into an existing GTProvider, so
+      // this file introduces no GTProvider of its own and must not import one.
+      emittedGtProvider
     ) {
       clientSpecifiers.push(
         t.importSpecifier(

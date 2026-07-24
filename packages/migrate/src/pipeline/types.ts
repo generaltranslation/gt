@@ -33,7 +33,20 @@ export type MessageCatalogs = {
   defaultLocale: string;
   locales: string[];
   byLocale: Record<string, Record<string, unknown>>;
+  /** the directory the MIGRATION serves catalogs from (where loadDictionary is
+   *  pointed, and where a format-converting adapter writes them). */
   dir: string;
+  /**
+   * The directory discovery actually READ the catalogs from, when it differs
+   * from `dir`: react-i18next reads `locales/<locale>/*.json` and writes a new
+   * `gt/dictionaries/`, and react-intl repoints `dir` at a sibling gt-owned
+   * directory when it re-nests or synthesizes. The pre-flight line prints both,
+   * so a user can see which files were found as well as where the migration will
+   * serve them from (round-9 R1 #4: printing only one of the two named a
+   * directory that did not exist, and printing only `dir` then hid the
+   * discovery location). Absent when the two are the same.
+   */
+  sourceDir?: string;
   /**
    * Catalog files the adapter synthesized during discovery and needs written to
    * disk (never a mutation of an existing file, new files only). react-intl
@@ -184,6 +197,18 @@ export type MigrationContext = {
    *  source-library reference of its own). report.ts prefers this over its
    *  derived evidence. */
   testFileEvidence?: Map<string, string>;
+  /** The `dictionary` value the emitted gt.config.json carries, and whether
+   *  THIS run put it there. `gt generate`/`gt translate` read that key (see
+   *  aggregateInlineTranslations), so the report's final step is only allowed
+   *  to say bare `npx gt generate` works when the recorded dictionary really is
+   *  the catalog this migration wired: a config that already named a different
+   *  dictionary is never clobbered, and there the flag IS required. */
+  recordedDictionary?: { path: string; wroteThisRun: boolean };
+  /** Project files this run could not read (EACCES and friends), so no import
+   *  of theirs is in the graph. The teardown decision is undecidable while one
+   *  exists, and the report has to name the file and say so rather than filing
+   *  the retained config under generic "retained wiring". */
+  unreadableFiles?: string[];
 };
 
 export type SourceResult = {

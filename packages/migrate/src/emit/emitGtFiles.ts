@@ -12,6 +12,7 @@ import {
   couldBeUnresolvedImportTarget,
   declaredDependencyNames,
   installedPackageChecker,
+  isPlausibleModuleSpecifier,
   isPackageSpecifier,
   loadImportAliases,
   resolveImportToProjectFiles,
@@ -145,14 +146,23 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
       path.join(ctx.catalogs.dir, `${ctx.catalogs.defaultLocale}.json`)
     )
   );
+  const migrationDictionary = configDefaultCatalog.startsWith('.')
+    ? configDefaultCatalog
+    : `./${configDefaultCatalog}`;
+  // What the emitted config ends up naming, for the report's final step: the
+  // migration's own catalog when this run recorded it, otherwise whatever the
+  // user's config already said (a non-string value is pathological and counts as
+  // "not the migration's", which only makes the report name the flag).
+  ctx.recordedDictionary =
+    existing.dictionary === undefined
+      ? { path: migrationDictionary, wroteThisRun: true }
+      : typeof existing.dictionary === 'string'
+        ? { path: existing.dictionary, wroteThisRun: false }
+        : undefined;
   const config = {
     ...existing,
     ...(existing.dictionary === undefined
-      ? {
-          dictionary: configDefaultCatalog.startsWith('.')
-            ? configDefaultCatalog
-            : `./${configDefaultCatalog}`,
-        }
+      ? { dictionary: migrationDictionary }
       : {}),
     defaultLocale: ctx.catalogs.defaultLocale,
     locales: ctx.catalogs.locales,
@@ -312,7 +322,12 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
       // loop iterates (bound at pass start) is never mutated in place.
       const pass = deletable;
       for (const configFile of pass) {
-        const importer = findRemainingImporter(ctx, configFile, deletable);
+        const importer = findRemainingImporter(
+          ctx,
+          configFile,
+          deletable,
+          deletions
+        );
         if (importer) {
           retained.push({ file: configFile, importer });
           deletable = deletable.filter((file) => file !== configFile);
@@ -398,12 +413,37 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
       } else if (importer.unresolvedSpecifier === '') {
         reason = `kept because gt migrate could not read ${importerPath}, so it cannot tell whether that file still imports this one; check it and delete this file yourself if nothing does`;
       } else {
-        reason = `kept because ${importerPath} imports '${importer.unresolvedSpecifier}', which gt migrate could not resolve to a file (a tsconfig/bundler path alias it cannot follow) and which could name this one; if that specifier points elsewhere, delete this file yourself`;
+        reason = `kept because ${importerPath} imports '${importer.unresolvedSpecifier}', which gt migrate could not resolve to a file, a declared dependency or an installed package (a bundler-only path alias it cannot follow), so it cannot rule out that the specifier names this one; if it points elsewhere, delete this file yourself`;
       }
       ctx.todos.push({ file: configFile, reason });
     }
     for (const configFile of deletable) {
       edits.push({ path: configFile, kind: 'delete' });
+    }
+  }
+
+  // A file this process could not read blocks the teardown decision even when
+  // the delete guard above never runs: the failed read is itself recorded as a
+  // skip, so `fullyMigrated` is false and the whole teardown branch is skipped.
+  // Left silent, the retained routing/request files fall through to the report's
+  // generic "Still referencing" bucket ("Nothing in them was changed: they are
+  // retained wiring ..."), which hides the one fact the reader needs (round-9
+  // re-attack B6). Name the file and the reason, the same way the guard's own
+  // unreadable branch does.
+  const unreadableFiles = ctx.unreadableFiles ?? [];
+  if (!fullyMigrated && unreadableFiles.length > 0) {
+    const named = unreadableFiles
+      .map((file) => path.relative(ctx.cwd, file))
+      .sort()
+      .join(', ');
+    const subject = unreadableFiles.length > 1 ? 'those files' : 'that file';
+    for (const configFile of adapter
+      .teardownConfigFiles(ctx.routing)
+      .filter((file) => fs.existsSync(file))) {
+      ctx.todos.push({
+        file: configFile,
+        reason: `kept because gt migrate could not read ${named}, so it cannot tell whether ${subject} still imports this one; fix the permissions (or check it by hand), then re-run \`gt migrate --from ${adapter.id}\` to finish the teardown`,
+      });
     }
   }
 
@@ -1138,6 +1178,18 @@ function readDeclaredNextLowerBound(cwd: string): string | null {
   }
 }
 
+/**
+ * The module every transform emits imports of. It is a package, not a project
+ * path, even in a tree where it is not installed yet: a non-dry run installs it,
+ * and the report's first step says to install it when it could not. Without this
+ * carve-out the delete guard's "any unfollowable specifier retains the file"
+ * fallback fires on the migration's OWN emitted imports and blocks every
+ * teardown in a project that did not already depend on gt-next.
+ */
+function isMigrationTargetModule(specifier: string): boolean {
+  return specifier === 'gt-next' || specifier.startsWith('gt-next/');
+}
+
 function isStrictAncestorDir(ancestor: string, descendant: string): boolean {
   const rel = path.relative(ancestor, descendant);
   return rel !== '' && !rel.startsWith('..') && !path.isAbsolute(rel);
@@ -1154,17 +1206,27 @@ function isStrictAncestorDir(ancestor: string, descendant: string): boolean {
  * The answer gates a DELETE, so "no importer found" has to mean the graph was
  * complete enough to say so. Two ways it is not, both of which retain the file
  * instead (`unresolvedSpecifier` set, for the report):
- *  - a local-looking specifier that resolves to no project file at all and
- *    whose tail could name the target: a tsconfig `paths` alias that does not
- *    mirror the file path ('#config' -> src/i18n/routing.ts) is invisible to
- *    the heuristics above, and deleting the target leaves it dangling;
+ *  - ANY non-relative specifier that resolves to no project file, no declared
+ *    dependency and no installed package. The tail heuristic came first (a
+ *    specifier whose trailing segments could name the target), but the delete is
+ *    the irreversible operation here, so a specifier this process cannot follow
+ *    at all now retains the target whether or not its tail happens to match:
+ *    a bundler-only alias ('#config' -> src/i18n/routing.ts) shares nothing with
+ *    the path it names, and deleting the target left that import dangling
+ *    (round-9 F9, still reproducing at the re-attack as B2). The alias tables
+ *    themselves are read first, so a declared alias resolves exactly and this
+ *    fallback never sees it;
  *  - a project file this process cannot read: it may hold the import, and
  *    every other read in this module already fails toward retention.
  */
 function findRemainingImporter(
   ctx: MigrationContext,
   target: string,
-  ignoredFiles: string[]
+  ignoredFiles: string[],
+  /** every teardown candidate, retained ones included: `ignoredFiles` shrinks as
+   *  the fixed point retains files, and the blanket retention below has to know
+   *  which candidate an unfollowable specifier already accounts for. */
+  teardownCandidates: string[] = ignoredFiles
 ): { file: string; exact: boolean; unresolvedSpecifier?: string } | null {
   const targetNoExt = stripExtension(target);
   const pendingEdits = new Map(
@@ -1194,6 +1256,10 @@ function findRemainingImporter(
     string,
     { file: string; specifier: string }
   >();
+  // The first specifier this process could not follow to anything at all, tail
+  // match or not. Only consulted after the whole project is scanned, so a real
+  // importer (or a tail match, which names a stronger reason) still wins.
+  let unfollowable: { file: string; specifier: string } | null = null;
   let unreadable: string | null = null;
 
   for (const file of projectFiles) {
@@ -1214,6 +1280,11 @@ function findRemainingImporter(
     }
     for (const match of content.matchAll(specifierPattern)) {
       const specifier = match[1];
+      // The pattern matches file TEXT, so prose in a comment can produce a
+      // "specifier" (sniply: `// ... the token value from "sniply_session=TOKEN;
+      // Path=/; ..."`). Nothing can resolve it, and the unfollowable-specifier
+      // retention below would then block every teardown on a comment.
+      if (!isPlausibleModuleSpecifier(specifier)) continue;
       let resolved: string | null = null;
       if (specifier.startsWith('.')) {
         resolved = path.resolve(path.dirname(file), specifier);
@@ -1240,22 +1311,54 @@ function findRemainingImporter(
           return { file, exact: true };
         }
         if (candidates.length === 0) {
-          if (matchesAliasedTarget(ctx, specifier, targetNoExt)) {
+          if (
+            matchesAliasedTarget(
+              ctx,
+              specifier,
+              targetNoExt,
+              isInstalledPackage
+            )
+          ) {
             // Err toward keeping the file: a non-package specifier whose
             // trailing path segments match the target counts as an importer.
             return { file, exact: false };
           }
           if (
             !isPackageSpecifier(specifier, declaredPackages) &&
-            !isInstalledPackage(specifier)
+            !isInstalledPackage(specifier) &&
+            !isMigrationTargetModule(specifier)
           ) {
-            // Local-looking and unresolvable by every route above: remember
-            // what it could have named. Checked against the target after the
-            // whole project is scanned, so a real importer still wins.
-            for (const tail of specifierTailCandidates(specifier)) {
+            // Unresolvable by every route above: remember what it could have
+            // named, and that it exists at all. Both are checked against the
+            // target after the whole project is scanned, so a real importer
+            // still wins; the tail map produces the more specific reason.
+            const tails = specifierTailCandidates(specifier);
+            for (const tail of tails) {
               if (!unresolvedTails.has(tail)) {
                 unresolvedTails.set(tail, { file, specifier });
               }
+            }
+            // A specifier whose alias tail names ANOTHER teardown candidate is
+            // already accounted for by that candidate's own retention, so it must
+            // not also block this one: '#app/i18n/routing' keeps routing.ts and
+            // leaves request.ts deletable. Only a specifier that names nothing in
+            // particular falls through to the blanket retention below.
+            const namesAnotherCandidate = teardownCandidates.some(
+              (candidate) => {
+                const candidateNoExt = stripExtension(candidate);
+                if (candidateNoExt === targetNoExt) return false;
+                return (
+                  matchesAliasedTarget(
+                    ctx,
+                    specifier,
+                    candidateNoExt,
+                    isInstalledPackage
+                  ) || couldBeUnresolvedImportTarget(candidate, new Set(tails))
+                );
+              }
+            );
+            if (!namesAnotherCandidate) {
+              unfollowable ??= { file, specifier };
             }
           }
         }
@@ -1278,6 +1381,13 @@ function findRemainingImporter(
       unresolvedTails.get(path.basename(path.dirname(targetNoExt)))!;
     return { file: hit.file, exact: false, unresolvedSpecifier: hit.specifier };
   }
+  if (unfollowable !== null) {
+    return {
+      file: unfollowable.file,
+      exact: false,
+      unresolvedSpecifier: unfollowable.specifier,
+    };
+  }
   if (unreadable !== null) {
     return { file: unreadable, exact: false, unresolvedSpecifier: '' };
   }
@@ -1294,15 +1404,14 @@ function findRemainingImporter(
 function matchesAliasedTarget(
   ctx: MigrationContext,
   specifier: string,
-  targetNoExt: string
+  targetNoExt: string,
+  isInstalledPackage: (specifier: string) => boolean
 ): boolean {
   if (!specifier.includes('/')) return false;
-  const packageName = specifier.startsWith('@')
-    ? specifier.split('/').slice(0, 2).join('/')
-    : specifier.split('/')[0];
-  if (fs.existsSync(path.join(ctx.cwd, 'node_modules', packageName))) {
-    return false;
-  }
+  // Installed anywhere the bundler would look, not just in cwd/node_modules: a
+  // workspace app resolves its packages from the repo root (see
+  // installedPackageChecker).
+  if (isInstalledPackage(specifier)) return false;
   const relTarget = toPosix(path.relative(ctx.cwd, targetNoExt));
   const full = stripExtension(specifier);
   const tail = full.split('/').slice(1).join('/');

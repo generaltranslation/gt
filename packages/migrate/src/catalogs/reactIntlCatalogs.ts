@@ -201,18 +201,26 @@ export async function discoverReactIntlCatalogs(
     // Re-nesting or augmenting an existing catalog would mutate originals, so
     // write every locale to a sibling gt-owned directory and serve from there.
     for (const locale of finalLocales) {
+      const target = path.join(catalogDir, `${locale}.json`);
       filesToEmit.push({
-        path: path.join(catalogDir, `${locale}.json`),
+        path: target,
         kind: 'write',
+        // Flag the creation at the write site, so the report's Created section is
+        // a complete inventory of new files without having to infer it from a
+        // filename (round-9 re-attack B8). Existence-checked, because a re-run
+        // finds these already present and "did not exist" would then be false.
+        ...(fs.existsSync(target) ? {} : { created: true }),
         content: JSON.stringify(byLocale[locale] ?? {}, null, 2) + '\n',
       });
     }
   } else if (b2Synthesized) {
     // No dotted keys and the default catalog file did not exist: writing it into
     // the original directory is a new file, not a mutation.
+    const target = path.join(dir, `${defaultLocale}.json`);
     filesToEmit.push({
-      path: path.join(dir, `${defaultLocale}.json`),
+      path: target,
       kind: 'write',
+      ...(fs.existsSync(target) ? {} : { created: true }),
       content: JSON.stringify(byLocale[defaultLocale] ?? {}, null, 2) + '\n',
     });
   }
@@ -222,6 +230,10 @@ export async function discoverReactIntlCatalogs(
     locales: finalLocales,
     byLocale,
     dir: catalogDir,
+    // `dir` is where discovery read the catalogs; catalogDir may be the sibling
+    // gt-owned directory this run writes instead. Recorded only when they differ,
+    // so the pre-flight line can name both.
+    ...(catalogDir === dir ? {} : { sourceDir: dir }),
     ...(filesToEmit.length > 0 ? { filesToEmit } : {}),
     ...(collisions.size > 0 ? { flatKeyCollisions: [...collisions] } : {}),
     ...(warnings.length > 0 ? { warnings } : {}),

@@ -113,6 +113,9 @@ export const reactI18nextAdapter: SourceAdapter = {
   translationHooks: { client: 'useTranslation', server: 'getT' },
   providerName: PROVIDER,
   localeType: null,
+  // remapTCalls emits a "dynamic translation key left unchanged" TODO at every
+  // computed call site, so the key audit must not add a second note there.
+  reportsComputedKeys: true,
 
   hasProvider,
   classifyMessage,

@@ -7,6 +7,7 @@ import {
   canHostNamedSpecifiers,
   isHookDependencyArrayElement,
 } from './importUtils.js';
+import { planProviderUnwraps, unwrapJsxElement } from './providerNesting.js';
 import type {
   MigrationContext,
   SourceResult,
@@ -700,8 +701,12 @@ export function transformReactI18nextSource(
     new Set([...useTranslationLocals, 'useTranslations'])
   );
 
-  // 4. Provider swap: <I18nextProvider> -> <GTProvider> (unless retained).
+  // 4. Provider swap: <I18nextProvider> -> <GTProvider> (unless retained). A
+  //    provider already nested inside a GTProvider (a previous partial run's
+  //    output, being torn down now) is unwrapped instead: renaming it would
+  //    serialize gt-next's dictionary twice (see planProviderUnwraps).
   if (providerLocals.size > 0 && !options.retainProvider) {
+    const providerPaths: NodePath<t.JSXElement>[] = [];
     traverse(ast, {
       JSXElement(path) {
         const opening = path.node.openingElement;
@@ -711,14 +716,23 @@ export function transformReactI18nextSource(
         ) {
           return;
         }
-        opening.name = t.jsxIdentifier('GTProvider');
-        opening.attributes = [];
-        if (path.node.closingElement) {
-          path.node.closingElement.name = t.jsxIdentifier('GTProvider');
-        }
-        needsGtProvider = true;
+        providerPaths.push(path);
       },
     });
+    const unwraps = planProviderUnwraps(providerPaths);
+    for (const path of [...providerPaths].reverse()) {
+      if (unwraps.has(path)) {
+        unwrapJsxElement(path);
+        continue;
+      }
+      const opening = path.node.openingElement;
+      opening.name = t.jsxIdentifier('GTProvider');
+      opening.attributes = [];
+      if (path.node.closingElement) {
+        path.node.closingElement.name = t.jsxIdentifier('GTProvider');
+      }
+      needsGtProvider = true;
+    }
   }
 
   // 5. Trans -> t(...) conversions. A JSXExpressionContainer is a legal node

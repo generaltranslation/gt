@@ -52,6 +52,10 @@ export interface SourceAdapter {
   providerName: string | null;
   /** the routing-derived locale union type name, or null when absent. */
   localeType: string | null;
+  /** set when this adapter's own transform already emits a per-site note for
+   *  every call site whose translation key is computed. The key audit then leaves
+   *  those sites alone instead of reporting them twice. */
+  reportsComputedKeys?: boolean;
 
   // --- provider detection (the driver defers provider-bearing files) ---
   /** true when `code` renders this library's provider element (alias-aware). */

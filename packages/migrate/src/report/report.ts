@@ -1,6 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { resolveImportToProjectFiles } from '../pipeline/latentClientCalls.js';
+import {
+  isPlausibleModuleSpecifier,
+  resolveImportToProjectFiles,
+} from '../pipeline/latentClientCalls.js';
 import type { FileEdit, MigrationContext } from '../pipeline/types.js';
 
 const escapeRegExp = (value: string) =>
@@ -272,15 +275,29 @@ export function buildReport(
           (edit.content ?? '').includes(`<${adapter.providerName}`)
         );
   const providerRetained = providerEdit !== undefined;
-  const providerCarriesMessages =
-    providerEdit !== undefined &&
-    new RegExp(
-      `<${escapeRegExp(adapter.providerName ?? '')}\\b[^>]*\\bmessages\\b`
-    ).test(providerEdit.content ?? '');
 
   // Test files render in their own section below with the migration recipe;
   // listing them anywhere else double-reports them.
   const testFileSet = new Set(ctx.testFilesNeedingMigration ?? []);
+
+  // The payload claim is about the STATE OF THE TREE, not about what this run
+  // rewrote, and it holds for every provider shape (round-9 re-attack B3,
+  // measured): `messages={messages}`, a bare `locale={locale}` provider that
+  // inherits its messages, and react-i18next's `i18n={instance}` all grow every
+  // page by the same 1x/2x shape. Gating it on a `messages` attribute this run
+  // wrote therefore missed two of three measurable real apps, and gating it on a
+  // written edit at all made the bullet vanish on a re-run over an
+  // already-migrated tree that still carries both payloads. So: any project file
+  // whose POST-RUN content still renders the provider counts. Test files are
+  // excluded: a provider mounted by a render helper ships in no page.
+  const providerInPostRunTree =
+    providerRetained ||
+    (adapter.providerName !== null &&
+      (ctx.projectFiles ?? []).some((file) => {
+        if (testFileSet.has(file)) return false;
+        const content = postRunContent(file);
+        return content !== null && adapter.hasProvider(content);
+      }));
 
   if (ctx.skippedFiles.size > 0) {
     lines.push('## Needs manual migration (files left untouched)');
@@ -474,19 +491,37 @@ export function buildReport(
           linkClause
   );
   // Retaining the source library's provider keeps two i18n payloads in the
-  // page. Measured shape (round-9 audit, one real app): no prerendered page was
-  // byte-identical after the run and each grew by roughly the size of the
-  // catalog file(s) that page renders with. Stated only when a written edit both
-  // renders the provider AND hands it messages, and sized in catalog-file terms
-  // rather than a number this run never measured for the user's app.
-  if (providerCarriesMessages) {
+  // page. Measured shape (round-9 audit and re-attack, three real apps across
+  // both adapters): every prerendered page grew, and the size splits by locale;
+  // a default-locale page by roughly one catalog file, a page in any other
+  // locale by roughly both catalogs combined (sniply: +53 KB on /en, +112 KB on
+  // /es, against catalogs of 55 KB and 62 KB; the same 1x/2x shape on autohack
+  // and plantpal). Sized in catalog-file terms, since the byte counts belong to
+  // those apps and not to the user's.
+  //
+  // The teardown clause is only true because the re-run now UNWRAPS the retained
+  // provider instead of renaming it to a second, nested GTProvider (finding B4,
+  // fixed in the same commit as this sentence and measured end to end on sniply:
+  // catalog-key occurrences per page 1x at baseline, 2x on /en and 3x on /es
+  // while the provider renders, and 1x on /en and 2x on /es after the teardown).
+  // The residual on a non-default-locale page is gt-next's own serialization,
+  // not something the teardown can remove, so the sentence says so rather than
+  // implying the page returns to its pre-migration size everywhere.
+  if (providerInPostRunTree) {
     lines.push(
       `- Both catalogs ship in every page while ${adapter.providerName} still ` +
-        "renders: gt-next's dictionary and the messages you pass that provider " +
-        'are each serialized into the page, so a prerendered page carries ' +
-        'roughly one extra catalog file worth of HTML. Finishing the teardown ' +
+        "renders: gt-next's dictionary and the messages that provider serves " +
+        'are each serialized into the page. A default-locale page carries ' +
+        'roughly one extra catalog file worth of HTML; a page in any other ' +
+        "locale carries roughly both catalogs' combined size (the " +
+        "default-locale catalog plus that locale's). Finishing the teardown " +
         '(convert the files listed above, then re-run ' +
-        `\`gt migrate --from ${adapter.id}\`) removes the duplicate payload.`
+        `\`gt migrate --from ${adapter.id}\`) removes that provider's copy: the ` +
+        `re-run replaces ${adapter.providerName} with its children rather than ` +
+        'nesting a second GTProvider. A default-locale page then measures back ' +
+        'at its pre-migration size; a page in another locale keeps one extra ' +
+        'catalog, because gt-next serves the source dictionary alongside the ' +
+        'target one.'
     );
   }
   lines.push('');
@@ -556,27 +591,47 @@ export function buildReport(
       ? 'Review the TODOs above, then run your build.'
       : 'Run your build.'
   );
-  // The dictionary this run wired lives where the catalogs do, and the gt CLI
-  // does not read it from gt.config.json or next.config: it takes --dictionary,
-  // or a conventional ./dictionary.{js,ts,json}. Measured on a migrated app:
-  // bare `npx gt generate` prints "No inline content or dictionaries were found"
-  // and writes 2-byte `{}` catalogs, while the same command with --dictionary
-  // writes the full source template. So the step names the flag with the real
-  // path instead of a command that cannot work on the tree this run emitted.
+  // This migration keeps your strings in a dictionary (not inline <T>
+  // content), so `gt generate`/`gt translate` have to be pointed at one. The run
+  // records it in gt.config.json's `dictionary` key and both commands read that
+  // key, so the bare command works on the tree this run emits (measured: full
+  // 52,826-byte templates, byte-identical to the same run with the flag).
+  //
+  // The one shape where the flag really is required is a config that ALREADY
+  // named a dictionary: that value is never clobbered, so the commands would
+  // generate from the user's own dictionary instead of the migrated catalogs.
+  // The step says whichever of those is true for this run rather than one
+  // sentence that is false in the other case (the round-9 re-attack finding B1:
+  // the previous wording claimed the flag was mandatory and that the CLI ignores
+  // gt.config.json, both falsified by the same commit that wrote it).
   const dictionaryPath = relative(
     path.join(ctx.catalogs.dir, `${ctx.catalogs.defaultLocale}.json`)
   )
     .split(path.sep)
     .join('/');
-  steps.push(
-    `\`npx gt generate --dictionary ${dictionaryPath}\` (no API key) or ` +
-      `\`npx gt translate --dictionary ${dictionaryPath}\` (with credentials) ` +
-      'to translate new locales. The flag is required: this migration keeps your ' +
-      'strings in a dictionary (not inline <T> content), and the gt CLI looks ' +
-      'for one only there or at a conventional ./dictionary.{js,ts,json} path, ' +
-      'not in gt.config.json or next.config. Without it both commands report ' +
-      '"No inline content or dictionaries were found" and write empty catalogs.'
-  );
+  const recorded = ctx.recordedDictionary;
+  if (recorded && recorded.wroteThisRun) {
+    steps.push(
+      '`npx gt generate` (no API key) or `npx gt translate` (with credentials) ' +
+        `to translate new locales. This run recorded \`"dictionary": "${recorded.path}"\` ` +
+        'in gt.config.json and both commands read that key, so no flag is needed ' +
+        `on this tree. Pass \`--dictionary <path>\` only to point them at a ` +
+        'different catalog.'
+    );
+  } else {
+    steps.push(
+      `\`npx gt generate --dictionary ${dictionaryPath}\` (no API key) or ` +
+        `\`npx gt translate --dictionary ${dictionaryPath}\` (with credentials) ` +
+        'to translate new locales. The flag is needed here: ' +
+        (recorded
+          ? `your gt.config.json already names a dictionary (\`${recorded.path}\`), which ` +
+            'this run left as it was, so without the flag both commands generate ' +
+            'from that one'
+          : 'it is what points both commands at the catalogs this migration ' +
+            'wired') +
+        '.'
+    );
+  }
   for (const [index, step] of steps.entries()) {
     lines.push(`${index + 1}. ${step}`);
   }
@@ -633,7 +688,8 @@ function extractImportSpecifiers(code: string): string[] {
   const pattern = /(?:from|import|require)\s*\(?\s*['"]([^'"]+)['"]/g;
   let match: RegExpExecArray | null;
   while ((match = pattern.exec(code)) !== null) {
-    specifiers.push(match[1]);
+    // Same prose-in-a-comment noise the other extraction sites filter.
+    if (isPlausibleModuleSpecifier(match[1])) specifiers.push(match[1]);
   }
   return specifiers;
 }

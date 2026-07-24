@@ -250,10 +250,16 @@ export async function runMigration(
   // catalogs live under locales/<locale>/. Printing it as "found in" therefore
   // named a path that does not exist on disk yet (the round-9 parity finding), so
   // the line labels the directory by the role it actually has.
+  // Both halves are printed: WHERE the catalogs were found (the react-i18next
+  // user whose files live under locales/<locale>/ could not otherwise tell that
+  // those were the ones read) and WHERE this migration will serve them from
+  // (round-9 R1 #4 and its re-attack residual).
+  const asDir = (dir: string) => `${path.relative(cwd, dir) || '.'}/`;
   io.info(
-    `Found catalogs for [${catalogs.locales.join(', ')}] ` +
+    `Found catalogs for [${catalogs.locales.join(', ')}] in ` +
+      `${asDir(catalogs.sourceDir ?? catalogs.dir)} ` +
       `(default: ${catalogs.defaultLocale}); catalog directory for the ` +
-      `migration: ${path.relative(cwd, catalogs.dir) || '.'}`
+      `migration: ${asDir(catalogs.dir)}`
   );
 
   const ctx: MigrationContext = {
@@ -874,10 +880,32 @@ function runLayoutTransform(
 }
 
 /**
+ * Errno codes that mean "this file exists but this process cannot read it",
+ * as opposed to a genuine transform bug. A file in that state may hold an import
+ * of anything, so the teardown decision cannot be made while one exists (see
+ * ctx.unreadableFiles). ENOENT is deliberately absent: a file that is not there
+ * imports nothing.
+ */
+const UNREADABLE_ERRNO = new Set([
+  'EACCES',
+  'EPERM',
+  'EISDIR',
+  'EIO',
+  'ELOOP',
+  'EBUSY',
+  'EMFILE',
+  'ENFILE',
+]);
+
+/**
  * Records a whole-file skip for an uncaught transform error, so one file
  * blowing up (e.g. a babel throw during a rewrite) degrades to a reported skip
  * with the file left untouched, instead of aborting the entire command with a
  * raw stack trace. The skip surfaces in the report's manual-migration section.
+ *
+ * A read failure is additionally recorded as an unreadable file: the skip alone
+ * only says the file was left untouched, while the emit phase needs to know that
+ * this file's imports are unknown before it decides any deletion.
  */
 function recordTransformError(
   ctx: MigrationContext,
@@ -885,6 +913,10 @@ function recordTransformError(
   error: unknown
 ): void {
   const message = error instanceof Error ? error.message : String(error);
+  const code = (error as { code?: unknown } | null)?.code;
+  if (typeof code === 'string' && UNREADABLE_ERRNO.has(code)) {
+    (ctx.unreadableFiles ??= []).push(file);
+  }
   ctx.skippedFiles.set(file, [
     `internal transform error on ${path.relative(ctx.cwd, file)}: ${message}; file left untouched`,
   ]);

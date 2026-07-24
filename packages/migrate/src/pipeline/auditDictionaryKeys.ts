@@ -31,9 +31,15 @@ const GT_FACTORIES = new Set(['useTranslations', 'getTranslations']);
  * otherwise correctly migrated, and holding whole files back for a key their
  * author already got wrong would cost more than it saves.
  *
+ * A computed key (`t(`step.${index}`)`) cannot be resolved at codemod time, so
+ * it is never claimed missing; it gets a per-site TODO instead, naming the
+ * static prefix that IS checkable, on the adapters that do not already report
+ * their dynamic call sites (react-i18next does; next-intl reported nothing at
+ * all, which left memo-engine's 10 template-literal sites silent on an engine
+ * that throws on a miss: round-9 re-attack B7).
+ *
  * Conservative by construction; every uncertainty resolves to silence:
- *  - only STATIC keys are checked (a template/computed key cannot be resolved
- *    at codemod time, and those call sites are already reported elsewhere);
+ *  - only STATIC keys are ever reported as missing;
  *  - factory bindings are resolved through scope (binding identity, not name),
  *    so a shadowed `t` cannot be attributed to the wrong namespace;
  *  - a key counts as present if it resolves in ANY shape the dictionary
@@ -47,6 +53,12 @@ export function auditConvertedDictionaryKeys(ctx: MigrationContext): void {
 
   const misses: { file: string; line: number; key: string; full: string }[] =
     [];
+  const catalogPath =
+    path.relative(
+      ctx.cwd,
+      path.join(ctx.catalogs.dir, `${ctx.catalogs.defaultLocale}.json`)
+    ) || `${ctx.catalogs.defaultLocale}.json`;
+  const posixCatalogPath = catalogPath.split(path.sep).join('/');
   for (const edit of ctx.edits) {
     if (edit.kind !== 'write') continue;
     if (!/\.[cm]?[jt]sx?$/.test(edit.path)) continue;
@@ -68,26 +80,49 @@ export function auditConvertedDictionaryKeys(ctx: MigrationContext): void {
       // to report, and guessing keys out of it would be worse than silence.
       continue;
     }
-    for (const site of collectKeySites(ast)) {
+    const sites = collectKeySites(ast);
+    for (const site of sites.static) {
       const full = site.namespace ? `${site.namespace}.${site.key}` : site.key;
       if (catalogs.some((catalog) => hasDictionaryKey(catalog, full))) continue;
       misses.push({ file: edit.path, line: site.line, key: site.key, full });
     }
+    if (ctx.adapter.reportsComputedKeys) continue;
+    for (const site of sites.computed) {
+      const display = site.namespace
+        ? `${site.namespace}.${site.expression}`
+        : site.expression;
+      // The checkable part: the namespace plus whatever leading path segments
+      // the key expression spells out before its first interpolation. Nothing
+      // below that can be verified, so the TODO says exactly that.
+      const prefix = [site.namespace, site.staticPrefix]
+        .filter((part): part is string => part !== null && part !== '')
+        .join('.');
+      const prefixClause =
+        prefix === ''
+          ? 'No part of it is static, so nothing about it could be checked.'
+          : catalogs.some((catalog) => hasDictionaryKey(catalog, prefix))
+            ? `Its static prefix '${prefix}' IS in ${posixCatalogPath}; the keys under it were not checked.`
+            : `Its static prefix '${prefix}' is NOT in ${posixCatalogPath}, so every key this expression builds will throw.`;
+      ctx.todos.push({
+        file: edit.path,
+        line: site.line,
+        reason:
+          `computed key \`${display}\`: gt migrate cannot resolve it, so it ` +
+          `was not checked against ${posixCatalogPath}. ${prefixClause} Verify ` +
+          'that every key this expression can produce exists (in every locale): ' +
+          'gt-next THROWS "Dictionary entry <key> cannot be found" on a miss, ' +
+          `where ${ctx.adapter.displayName} rendered the raw key and logged`,
+      });
+    }
   }
   if (misses.length === 0) return;
-
-  const catalogPath =
-    path.relative(
-      ctx.cwd,
-      path.join(ctx.catalogs.dir, `${ctx.catalogs.defaultLocale}.json`)
-    ) || `${ctx.catalogs.defaultLocale}.json`;
   for (const miss of misses) {
     ctx.todos.push({
       file: miss.file,
       line: miss.line,
       reason:
         `t('${miss.key}') resolves to the dictionary key '${miss.full}', which ` +
-        `is not in ${catalogPath.split(path.sep).join('/')}. ` +
+        `is not in ${posixCatalogPath}. ` +
         `${ctx.adapter.displayName} rendered a missing key as its own name and ` +
         'logged it, so this call site still rendered; gt-next throws ' +
         `"Dictionary entry ${miss.full} cannot be found" instead, which is a 500 ` +
@@ -102,7 +137,7 @@ export function auditConvertedDictionaryKeys(ctx: MigrationContext): void {
     .join(', ');
   (ctx.warnings ??= []).push(
     `${misses.length} converted call site(s) ask for dictionary keys that are ` +
-      `not in ${catalogPath.split(path.sep).join('/')} (${sample}${
+      `not in ${posixCatalogPath} (${sample}${
         misses.length > 3 ? ', …' : ''
       }): gt-next THROWS on an unknown key where ${ctx.adapter.displayName} ` +
       'rendered the raw key and logged, so those routes now 500 (or fail the ' +
@@ -167,15 +202,28 @@ function hasDictionaryKey(catalog: unknown, key: string): boolean {
   return cursor !== undefined;
 }
 
+type StaticKeySite = { namespace: string | null; key: string; line: number };
+type ComputedKeySite = {
+  namespace: string | null;
+  /** the key argument rendered with each interpolation as `${...}` */
+  expression: string;
+  /** the leading key path the expression spells out literally, or null */
+  staticPrefix: string | null;
+  line: number;
+};
+
 /**
- * The static dictionary lookups in one emitted file: `t('key')` calls whose
- * `t` is bound to a gt-next `useTranslations(ns)` / `getTranslations(ns)`
- * result. Bindings are matched by IDENTITY through babel's scope, so two
- * same-named locals in different scopes never mix their namespaces.
+ * The dictionary lookups in one emitted file: `t(...)` calls whose `t` is bound
+ * to a gt-next `useTranslations(ns)` / `getTranslations(ns)` result, split into
+ * the ones whose key is a literal and the ones that compute it. Bindings are
+ * matched by IDENTITY through babel's scope, so two same-named locals in
+ * different scopes never mix their namespaces.
  */
-function collectKeySites(
-  ast: t.File
-): { namespace: string | null; key: string; line: number }[] {
+function collectKeySites(ast: t.File): {
+  static: StaticKeySite[];
+  computed: ComputedKeySite[];
+} {
+  const empty = { static: [], computed: [] };
   const factoryLocals = new Set<string>();
   for (const statement of ast.program.body) {
     if (!t.isImportDeclaration(statement)) continue;
@@ -191,7 +239,7 @@ function collectKeySites(
       }
     }
   }
-  if (factoryLocals.size === 0) return [];
+  if (factoryLocals.size === 0) return empty;
 
   // declarator id node -> namespace ('' = root scope, null = not static)
   const bindings = new Map<t.Identifier, string | null>();
@@ -211,9 +259,10 @@ function collectKeySites(
       bindings.set(id, namespaceOf(init.arguments[0]));
     },
   });
-  if (bindings.size === 0) return [];
+  if (bindings.size === 0) return empty;
 
-  const sites: { namespace: string | null; key: string; line: number }[] = [];
+  const staticSites: StaticKeySite[] = [];
+  const computedSites: ComputedKeySite[] = [];
   traverse(ast, {
     CallExpression(callPath) {
       const callee = callPath.node.callee;
@@ -224,16 +273,57 @@ function collectKeySites(
       // `undefined` = not one of our factory results; `null` = a namespace we
       // could not read statically, so its keys are unresolvable by definition.
       if (namespace === undefined || namespace === null) return;
-      const key = staticKey(callPath.node.arguments[0]);
-      if (key === null) return;
-      sites.push({
-        namespace: namespace === '' ? null : namespace,
-        key,
-        line: callPath.node.loc?.start.line ?? 0,
+      const scope = namespace === '' ? null : namespace;
+      const line = callPath.node.loc?.start.line ?? 0;
+      const argument = callPath.node.arguments[0];
+      const key = staticKey(argument);
+      if (key !== null) {
+        staticSites.push({ namespace: scope, key, line });
+        return;
+      }
+      // A `t()` with no argument at all is not a lookup; anything else is one
+      // whose key this process cannot resolve.
+      if (argument === undefined) return;
+      computedSites.push({
+        namespace: scope,
+        expression: renderComputedKey(argument),
+        staticPrefix: staticKeyPrefix(argument),
+        line,
       });
     },
   });
-  return sites;
+  return { static: staticSites, computed: computedSites };
+}
+
+/**
+ * A computed key argument as the report shows it: a template literal keeps its
+ * literal chunks with every interpolation collapsed to `${...}`
+ * (`` `step.${index}` `` -> `step.${...}`), and any other expression (an
+ * identifier, a member access, a call) is just `${...}`, since its text would
+ * tell the reader nothing the file does not already show.
+ */
+function renderComputedKey(argument: t.Node): string {
+  if (!t.isTemplateLiteral(argument)) return '${...}';
+  return argument.quasis
+    .map((quasi) => quasi.value.cooked ?? quasi.value.raw)
+    .join('${...}');
+}
+
+/**
+ * The dictionary path a computed key is guaranteed to sit under: the literal
+ * lead of a template literal up to its last '.' before the first interpolation
+ * (`` `step.${i}` `` -> 'step'). Null when the key starts computing immediately,
+ * or when its literal lead names no complete segment ('' for `` `${i}` ``,
+ * 'stepX' for `` `stepX${i}` `` -- the latter is a fragment of a segment, not a
+ * parent of one, so it is not a checkable prefix).
+ */
+function staticKeyPrefix(argument: t.Node): string | null {
+  if (!t.isTemplateLiteral(argument) || argument.quasis.length === 0) {
+    return null;
+  }
+  const lead = argument.quasis[0].value.cooked ?? argument.quasis[0].value.raw;
+  const lastDot = lead.lastIndexOf('.');
+  return lastDot <= 0 ? null : lead.slice(0, lastDot);
 }
 
 /**

@@ -365,7 +365,12 @@ function buildImportGraph(
     for (const pattern of specifierPatterns) {
       pattern.lastIndex = 0;
       let match: RegExpExecArray | null;
-      while ((match = pattern.exec(code)) !== null) specifiers.add(match[1]);
+      while ((match = pattern.exec(code)) !== null) {
+        // Prose in a comment can spell `from "..."`; those are not imports, and
+        // an unfollowable one would widen the hazard reach set (see
+        // isPlausibleModuleSpecifier).
+        if (isPlausibleModuleSpecifier(match[1])) specifiers.add(match[1]);
+      }
     }
     const targets = new Set<string>();
     for (const specifier of specifiers) {
@@ -579,17 +584,63 @@ export function installedPackageChecker(
   const cache = new Map<string, boolean>();
   return (specifier: string): boolean => {
     if (specifier.startsWith('.') || path.isAbsolute(specifier)) return false;
-    const segments = specifier.split('/');
-    const packageName = specifier.startsWith('@')
-      ? segments.slice(0, 2).join('/')
-      : segments[0];
+    const packageName = packageNameOfSpecifier(specifier);
     let installed = cache.get(packageName);
     if (installed === undefined) {
-      installed = fs.existsSync(path.join(cwd, 'node_modules', packageName));
+      installed = isInstalledUnderAnyAncestor(cwd, packageName);
       cache.set(packageName, installed);
     }
     return installed;
   };
+}
+
+/** The package a bare specifier belongs to ('@scope/pkg/sub' -> '@scope/pkg'). */
+function packageNameOfSpecifier(specifier: string): string {
+  const segments = specifier.split('/');
+  return specifier.startsWith('@')
+    ? segments.slice(0, 2).join('/')
+    : segments[0];
+}
+
+/**
+ * Node/webpack/Turbopack resolution, not a single-directory check: a bare
+ * specifier resolves against `node_modules` in the importing directory AND every
+ * ancestor. npm and pnpm workspaces install to the REPO ROOT, so an app at
+ * `packages/dashboard` commonly has no `node_modules` of its own, and treating
+ * its (undeclared, hoisted) package imports as unfollowable PROJECT paths made a
+ * whole-project SSG withhold fire on a specifier whose tail happened to match a
+ * file name (round-9 re-attack B5). Walking up is what the bundler does, so a
+ * package found anywhere above is a package here.
+ */
+function isInstalledUnderAnyAncestor(
+  from: string,
+  packageName: string
+): boolean {
+  let dir = path.resolve(from);
+  for (;;) {
+    if (fs.existsSync(path.join(dir, 'node_modules', packageName))) return true;
+    const parent = path.dirname(dir);
+    if (parent === dir) return false;
+    dir = parent;
+  }
+}
+
+/**
+ * Filters the noise out of REGEX-extracted import specifiers. The patterns match
+ * `from '<x>'` anywhere in the file text, including inside prose: sniply's
+ * `// Extract just the token value from "sniply_session=TOKEN; Path=/; ..."`
+ * became a "specifier" that no resolver could follow, and any stage that treats
+ * an unfollowable specifier as a possible project path then fires on a comment.
+ * A real module specifier carries no whitespace and none of the punctuation that
+ * only prose and expressions use, so those are dropped before any decision is
+ * taken. Deliberately not a comment stripper: mis-parsing a string containing
+ * '//' would HIDE a real import, and both callers fail toward retention, which is
+ * the safe direction only while every real import is still seen.
+ */
+export function isPlausibleModuleSpecifier(specifier: string): boolean {
+  if (specifier.length === 0 || specifier.length > 200) return false;
+  if (/[\s;=,(){}`<>|]/.test(specifier)) return false;
+  return /^[\w@#~./]/.test(specifier);
 }
 
 export function isPackageSpecifier(
@@ -720,11 +771,80 @@ const EMPTY_ALIASES: ImportAliases = { baseUrl: null, patterns: [] };
  * stale table.
  */
 export function loadImportAliases(cwd: string): ImportAliases {
+  let aliases: ImportAliases = EMPTY_ALIASES;
   for (const name of ['tsconfig.json', 'jsconfig.json']) {
-    const aliases = readAliasesFrom(path.join(cwd, name), 0);
-    if (aliases !== null) return aliases;
+    const found = readAliasesFrom(path.join(cwd, name), 0);
+    if (found !== null) {
+      aliases = found;
+      break;
+    }
   }
-  return EMPTY_ALIASES;
+  // package.json `imports` subpath aliases ('#config' -> ./src/i18n/routing.ts)
+  // are first-class in Node, webpack 5 and Turbopack, and are NOT a tsconfig
+  // concept, so a project can declare one without any tsconfig at all. Missing
+  // them left the same edge unfollowable that the tsconfig table exists to
+  // close, and the teardown deleted a config file whose only importer reached it
+  // through such an alias (round-9 re-attack B2). Appended after the tsconfig
+  // patterns, which stay authoritative when both declare the same specifier.
+  const subpaths = readPackageSubpathImports(cwd);
+  if (subpaths.length === 0) return aliases;
+  return {
+    baseUrl: aliases.baseUrl,
+    patterns: [...aliases.patterns, ...subpaths],
+  };
+}
+
+/**
+ * The project's `package.json` "imports" map, as alias patterns. Only targets
+ * that name a path ('./src/...') are kept: a subpath that maps to a package
+ * ('#dep': 'lodash') names no project file. Condition objects
+ * ({ node: './a.js', default: './b.js' }) contribute every string leaf, because
+ * any of them can be the one the bundler picks.
+ */
+function readPackageSubpathImports(cwd: string): ImportAliases['patterns'] {
+  let declared: unknown;
+  try {
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(cwd, 'package.json'), 'utf8')
+    ) as { imports?: unknown };
+    declared = pkg.imports;
+  } catch {
+    return [];
+  }
+  if (!declared || typeof declared !== 'object' || Array.isArray(declared)) {
+    return [];
+  }
+  const patterns: ImportAliases['patterns'] = [];
+  for (const [pattern, value] of Object.entries(
+    declared as Record<string, unknown>
+  )) {
+    // Node requires every key to start with '#'; anything else is not a subpath
+    // import and must not be treated as one.
+    if (!pattern.startsWith('#')) continue;
+    const targets = conditionTargets(value, 0)
+      .filter((target) => target.startsWith('.'))
+      .map((target) => path.resolve(cwd, target));
+    if (targets.length === 0) continue;
+    const star = pattern.indexOf('*');
+    patterns.push(
+      star === -1
+        ? { prefix: pattern, suffix: '', targets }
+        : {
+            prefix: pattern.slice(0, star),
+            suffix: pattern.slice(star + 1),
+            targets,
+          }
+    );
+  }
+  return patterns;
+}
+
+/** Every string leaf of an "imports" value (string, array, or condition map). */
+function conditionTargets(value: unknown, depth: number): string[] {
+  if (typeof value === 'string') return [value];
+  if (depth > 4 || value === null || typeof value !== 'object') return [];
+  const nested = Array.isArray(value) ? value : Object.values(value);
+  return nested.flatMap((entry) => conditionTargets(entry, depth + 1));
 }
 
 function readAliasesFrom(

@@ -185,7 +185,9 @@ export async function discoverReactI18nextCatalogs(
 
   const dir = chooseOutputDir(cwd);
 
-  return { defaultLocale, locales, byLocale, dir, reports };
+  // `root` is where the catalogs were read from (locales/, public/locales/, ...)
+  // and `dir` is the new gt-owned output; the pre-flight line prints both.
+  return { defaultLocale, locales, byLocale, dir, sourceDir: root, reports };
 }
 
 /**
@@ -197,9 +199,16 @@ export function emitReactI18nextCatalogs(ctx: MigrationContext): FileEdit[] {
   const edits: FileEdit[] = [];
   for (const locale of ctx.catalogs.locales) {
     const tree = ctx.catalogs.byLocale[locale] ?? {};
+    const target = path.join(ctx.catalogs.dir, `${locale}.json`);
     edits.push({
-      path: path.join(ctx.catalogs.dir, `${locale}.json`),
+      path: target,
       kind: 'write',
+      // These are converted content in a brand-new output directory (the source
+      // catalogs stay where they were), so the report's Created section is only a
+      // complete inventory of new files if they carry the flag. Existence-checked
+      // rather than assumed: on a re-run the file is already there, and claiming
+      // "did not exist before the run" would be false (round-9 re-attack B8).
+      ...(fs.existsSync(target) ? {} : { created: true }),
       content: JSON.stringify(tree, null, 2) + '\n',
     });
   }
