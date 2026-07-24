@@ -379,12 +379,20 @@ export function detectLocaleAwareNavUsage(code: string): string | null {
 
   const routerHookLocals = new Set<string>();
   const redirectLocals = new Set<string>();
+  const namespaceLocals = new Set<string>();
   for (const statement of ast.program.body) {
     if (!t.isImportDeclaration(statement)) continue;
     if (statement.importKind === 'type') continue;
     const source = statement.source.value;
     if (source === 'next/navigation' || source === 'next/router') continue;
     for (const specifier of statement.specifiers) {
+      if (t.isImportNamespaceSpecifier(specifier)) {
+        // `import * as nav from '@/i18n/navigation'` reaches the same
+        // wrapper exports through member access (nav.useRouter(),
+        // nav.redirect({...})).
+        namespaceLocals.add(specifier.local.name);
+        continue;
+      }
       if (
         !t.isImportSpecifier(specifier) ||
         !t.isIdentifier(specifier.imported) ||
@@ -402,7 +410,13 @@ export function detectLocaleAwareNavUsage(code: string): string | null {
       }
     }
   }
-  if (routerHookLocals.size === 0 && redirectLocals.size === 0) return null;
+  if (
+    routerHookLocals.size === 0 &&
+    redirectLocals.size === 0 &&
+    namespaceLocals.size === 0
+  ) {
+    return null;
+  }
 
   // `const router = useRouter()` bindings (wrapper-derived hooks only).
   const routerLocals = new Set<string>();
@@ -416,20 +430,61 @@ export function detectLocaleAwareNavUsage(code: string): string | null {
           (t.isStringLiteral(property.key) && property.key.value === 'locale'))
     );
 
+  // `useRouter()` in any of its reachable spellings: a bare imported local,
+  // or a namespace member (nav.useRouter()).
+  const isUseRouterCall = (node: t.Node | null | undefined): boolean => {
+    if (!node || !t.isCallExpression(node)) return false;
+    const callee = node.callee;
+    if (t.isIdentifier(callee)) return routerHookLocals.has(callee.name);
+    return (
+      t.isMemberExpression(callee) &&
+      !callee.computed &&
+      t.isIdentifier(callee.object) &&
+      namespaceLocals.has(callee.object.name) &&
+      t.isIdentifier(callee.property, { name: 'useRouter' })
+    );
+  };
+
   // Pass 1: collect router bindings (the walk is not in source order, so a
-  // call site could otherwise be visited before its declarator).
+  // call site could otherwise be visited before its declarator). Both
+  // `const router = useRouter()` and destructured methods
+  // (`const { replace } = useRouter()`) count; the latter's locals map to
+  // their method names so their BARE calls are checked in pass 2.
+  const ROUTER_METHODS = ['push', 'replace', 'prefetch'];
+  const routerMethodLocals = new Map<string, string>();
   walkNodes(ast, (node) => {
-    if (
-      t.isVariableDeclarator(node) &&
-      t.isIdentifier(node.id) &&
-      node.init &&
-      t.isCallExpression(node.init) &&
-      t.isIdentifier(node.init.callee) &&
-      routerHookLocals.has(node.init.callee.name)
-    ) {
+    if (!t.isVariableDeclarator(node) || !isUseRouterCall(node.init)) return;
+    if (t.isIdentifier(node.id)) {
       routerLocals.add(node.id.name);
+      return;
+    }
+    if (t.isObjectPattern(node.id)) {
+      for (const property of node.id.properties) {
+        if (
+          t.isObjectProperty(property) &&
+          !property.computed &&
+          t.isIdentifier(property.key) &&
+          t.isIdentifier(property.value) &&
+          ROUTER_METHODS.includes(property.key.name)
+        ) {
+          routerMethodLocals.set(property.value.name, property.key.name);
+        }
+      }
     }
   });
+
+  const localeAwareArgsReason = (
+    node: t.CallExpression,
+    method: string
+  ): string | null => {
+    if (hasLocaleProp(node.arguments[1])) {
+      return `router.${method}(href, { locale }) is next-intl's locale-aware signature, which a plain next/navigation router does not accept; convert this call (and its locale switching) to gt-next manually, then re-run gt migrate`;
+    }
+    if (t.isObjectExpression(node.arguments[0])) {
+      return `router.${method}({ pathname, ... }) object hrefs are next-intl-only; next/navigation takes a string; convert this call manually, then re-run gt migrate`;
+    }
+    return null;
+  };
 
   // Pass 2: find locale-aware call shapes.
   let reason: string | null = null;
@@ -440,21 +495,41 @@ export function detectLocaleAwareNavUsage(code: string): string | null {
     if (
       t.isMemberExpression(callee) &&
       !callee.computed &&
-      t.isIdentifier(callee.object) &&
-      routerLocals.has(callee.object.name) &&
-      t.isIdentifier(callee.property) &&
-      ['push', 'replace', 'prefetch'].includes(callee.property.name)
+      t.isIdentifier(callee.property)
     ) {
       const method = callee.property.name;
-      if (hasLocaleProp(node.arguments[1])) {
-        reason = `router.${method}(href, { locale }) is next-intl's locale-aware signature, which a plain next/navigation router does not accept; convert this call (and its locale switching) to gt-next manually, then re-run gt migrate`;
-      } else if (t.isObjectExpression(node.arguments[0])) {
-        reason = `router.${method}({ pathname, ... }) object hrefs are next-intl-only; next/navigation takes a string; convert this call manually, then re-run gt migrate`;
+      if (ROUTER_METHODS.includes(method)) {
+        // `router.replace(...)` on a collected binding, or chained
+        // `useRouter().replace(...)` / `nav.useRouter().replace(...)`.
+        const onRouterBinding =
+          t.isIdentifier(callee.object) && routerLocals.has(callee.object.name);
+        if (onRouterBinding || isUseRouterCall(callee.object)) {
+          reason = localeAwareArgsReason(node, method);
+          return;
+        }
+      }
+      // Namespace redirect: nav.redirect({ href, locale }).
+      if (
+        t.isIdentifier(callee.object) &&
+        namespaceLocals.has(callee.object.name) &&
+        (method === 'redirect' || method === 'permanentRedirect') &&
+        t.isObjectExpression(node.arguments[0])
+      ) {
+        reason = `${method}({ href, ... }) is next-intl's object signature; next/navigation's ${method} takes a string path and would navigate to /[object Object]; convert this call manually, then re-run gt migrate`;
       }
       return;
     }
-    if (t.isIdentifier(callee) && redirectLocals.has(callee.name)) {
-      if (t.isObjectExpression(node.arguments[0])) {
+    if (t.isIdentifier(callee)) {
+      // Destructured router method called bare: `replace(href, { locale })`.
+      const method = routerMethodLocals.get(callee.name);
+      if (method) {
+        reason = localeAwareArgsReason(node, method);
+        if (reason) return;
+      }
+      if (
+        redirectLocals.has(callee.name) &&
+        t.isObjectExpression(node.arguments[0])
+      ) {
         reason = `${callee.name}({ href, ... }) is next-intl's object signature; next/navigation's ${callee.name} takes a string path and would navigate to /[object Object]; convert this call manually, then re-run gt migrate`;
       }
     }

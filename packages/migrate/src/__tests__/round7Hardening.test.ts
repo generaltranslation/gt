@@ -546,10 +546,7 @@ describe('checkServerProviderBoundary', () => {
     });
     const ctx = makeContext(reactI18nextAdapter, {}, cwd);
     ctx.projectFiles = Object.keys(files).map((file) => path.join(cwd, file));
-    const layouts = ctx.projectFiles.filter((file) =>
-      path.basename(file).startsWith('layout.')
-    );
-    return checkServerProviderBoundary(ctx, layouts);
+    return checkServerProviderBoundary(ctx);
   }
 
   const clientRootLayout = lines(
@@ -616,5 +613,173 @@ describe('report: tests need manual migration section', () => {
     expect(report).toContain('suites WILL fail');
     // listed exactly once (in its own section, not the generic skip list)
     expect(report.match(/tests\/setup\.ts/g)).toHaveLength(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Re-attack round (adversary panel on the round-7 diff): scope resolution,
+// dependency arrays, and the nav-detection caller shapes the first pass missed
+// ---------------------------------------------------------------------------
+
+describe('re-attack: react-i18next scope-aware t handling', () => {
+  const messages = { title: 'Title', About: { x: 'X' } };
+  const transform = (code: string) =>
+    transformReactI18nextSource(
+      'src/app/page.tsx',
+      code,
+      makeContext(reactI18nextAdapter, messages)
+    );
+
+  it('converts a file whose only non-call t is a shadowing map param (the false hold)', () => {
+    const r = transform(
+      lines(
+        "import { useTranslation } from 'react-i18next';",
+        'export function About({ tools }: { tools: { name: string }[] }) {',
+        '  const { t } = useTranslation();',
+        '  return (',
+        '    <div>',
+        "      <h1>{t('title')}</h1>",
+        '      {tools.map((t, i) => (',
+        '        <span key={i}>{t.name}</span>',
+        '      ))}',
+        '    </div>',
+        '  );',
+        '}'
+      )
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).toContain('useTranslations');
+    // the shadow's member read is untouched
+    expect(r.code).toContain('t.name');
+  });
+
+  it('does not remap a shadowing string param used in calls', () => {
+    const r = transform(
+      lines(
+        "import { useTranslation } from 'react-i18next';",
+        'function lookup(value: string) { return value; }',
+        'export function Form() {',
+        '  const { t } = useTranslation();',
+        '  function onText(t: string) {',
+        '    return lookup(t);',
+        '  }',
+        "  return <span data-x={onText('a')}>{t('title')}</span>;",
+        '}'
+      )
+    );
+    expect(r.skipReasons).toEqual([]);
+    // the shadow passed to lookup() survives as-is
+    expect(r.code).toContain('lookup(t)');
+  });
+
+  it('still holds a real value escape of the translation function', () => {
+    const r = transform(
+      lines(
+        "import { useTranslation } from 'react-i18next';",
+        "import { localizedError } from '@/lib/errors';",
+        'export function Form() {',
+        '  const { t } = useTranslation();',
+        "  return <span>{localizedError('x', t)}</span>;",
+        '}'
+      )
+    );
+    expect(r.code).toBeNull();
+    expect(r.skipReasons.join(' ')).toMatch(/TFunction/);
+  });
+
+  it('allows t in a hook dependency array', () => {
+    const r = transform(
+      lines(
+        "import { useMemo } from 'react';",
+        "import { useTranslation } from 'react-i18next';",
+        'export function C() {',
+        '  const { t } = useTranslation();',
+        "  const label = useMemo(() => t('title'), [t]);",
+        '  return <span>{label}</span>;',
+        '}'
+      )
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).toContain('useTranslations');
+  });
+});
+
+describe('re-attack: react-intl dependency-array exemption', () => {
+  const transform = (code: string) =>
+    transformSourceFile(
+      'src/app/[locale]/Client.tsx',
+      code,
+      makeContext(reactIntlAdapter, { a: 'A' })
+    );
+
+  it('allows intl in a hook dependency array', () => {
+    const r = transform(
+      lines(
+        "import { useMemo } from 'react';",
+        "import { useIntl } from 'react-intl';",
+        'export function C() {',
+        '  const intl = useIntl();',
+        "  const label = useMemo(() => intl.formatMessage({ id: 'a' }), [intl]);",
+        '  return <span>{label}</span>;',
+        '}'
+      )
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).toContain('useTranslations()');
+  });
+
+  it('allows a destructured formatMessage in a dependency array', () => {
+    const r = transform(
+      lines(
+        "import { useCallback } from 'react';",
+        "import { useIntl } from 'react-intl';",
+        'export function C() {',
+        '  const { formatMessage } = useIntl();',
+        "  const label = useCallback(() => formatMessage({ id: 'a' }), [formatMessage]);",
+        '  return <span>{label()}</span>;',
+        '}'
+      )
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).toContain('useTranslations()');
+  });
+});
+
+describe('re-attack: nav caller shapes the first pass missed', () => {
+  it('flags a destructured router method called bare', () => {
+    const reason = detectLocaleAwareNavUsage(
+      lines(
+        "import { useRouter } from '@/i18n/navigation';",
+        'export function Switcher({ pathname }: { pathname: string }) {',
+        '  const { replace } = useRouter();',
+        "  return <button onClick={() => replace(pathname, { locale: 'es' })} />;",
+        '}'
+      )
+    );
+    expect(reason).toMatch(/locale-aware signature/);
+  });
+
+  it('flags a chained useRouter().replace call', () => {
+    const reason = detectLocaleAwareNavUsage(
+      lines(
+        "import { useRouter } from '@/i18n/navigation';",
+        'export function go(pathname: string) {',
+        "  useRouter().replace(pathname, { locale: 'es' });",
+        '}'
+      )
+    );
+    expect(reason).toMatch(/locale-aware signature/);
+  });
+
+  it('flags namespace-imported navigation', () => {
+    const reason = detectLocaleAwareNavUsage(
+      lines(
+        "import * as nav from '@/i18n/navigation';",
+        'export function go(locale: string) {',
+        "  nav.redirect({ href: '/dash', locale });",
+        '}'
+      )
+    );
+    expect(reason).toMatch(/\[object Object\]/);
   });
 });

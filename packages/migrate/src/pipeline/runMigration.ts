@@ -390,7 +390,7 @@ export async function runMigration(
   // AutoHack/Memo/Sniply failures). Stop with the manual steps instead; edits
   // are buffered, so nothing has been written.
   if (adapter.requiresServerProviderBoundary) {
-    const boundaryProblem = checkServerProviderBoundary(ctx, layouts);
+    const boundaryProblem = checkServerProviderBoundary(ctx);
     if (boundaryProblem) {
       io.fatal(
         createMigrateDiagnostic({
@@ -667,19 +667,28 @@ export async function runMigration(
   }
 
   // A [locale] layout without <body> raises a "GTProvider was not added"
-  // TODO, but when the ROOT layout above it received the provider that claim
-  // reads as false (the round-7 PlantPal report inaccuracy). Once any written
-  // edit carries the provider, drop the stale advice.
-  if (
-    ctx.edits.some(
+  // TODO, but when a layout ABOVE it received the provider that claim reads
+  // as false (the round-7 PlantPal report inaccuracy). Scoped to ancestry:
+  // in a (rare) multi-root-layout app, a subtree whose own layout chain never
+  // got the provider keeps its TODO (the re-attack P3).
+  const gtProviderLayoutDirs = ctx.edits
+    .filter(
       (edit) =>
-        edit.kind === 'write' && (edit.content ?? '').includes('<GTProvider')
+        edit.kind === 'write' &&
+        isLayoutFile(edit.path) &&
+        (edit.content ?? '').includes('<GTProvider')
     )
-  ) {
-    ctx.todos = ctx.todos.filter(
-      (todo) =>
-        !todo.reason.startsWith('GTProvider was not added automatically')
-    );
+    .map((edit) => path.dirname(edit.path));
+  if (gtProviderLayoutDirs.length > 0) {
+    ctx.todos = ctx.todos.filter((todo) => {
+      if (!todo.reason.startsWith('GTProvider was not added automatically')) {
+        return true;
+      }
+      const todoDir = path.dirname(todo.file);
+      return !gtProviderLayoutDirs.some(
+        (dir) => todoDir === dir || todoDir.startsWith(dir + path.sep)
+      );
+    });
   }
 
   // Failing suites must not be discoverable only by running them: echo the
@@ -920,9 +929,14 @@ function resolvesFromNodeModules(cwd: string, names: Set<string>): boolean {
  * or null when the boundary is sound.
  */
 export function checkServerProviderBoundary(
-  ctx: MigrationContext,
-  layouts: string[]
+  ctx: MigrationContext
 ): { why: string; fix: string } | null {
+  // The whole PROJECT's layouts, not just the scanned ones: a --src scope
+  // that excludes the root layout must not produce a false "no <body>" stop
+  // on an app whose boundary is fine.
+  const layouts = (ctx.projectFiles ?? ctx.sourceFiles ?? []).filter(
+    isLayoutFile
+  );
   let bodyLayout: string | null = null;
   for (const file of layouts) {
     let code: string;
@@ -931,61 +945,92 @@ export function checkServerProviderBoundary(
     } catch {
       continue;
     }
-    if (!/<body[\s>]/.test(code)) continue;
-    bodyLayout = file;
-    let isClientLayout = false;
+    let ast: ReturnType<typeof parse>;
     try {
-      const ast = parse(code, {
+      ast = parse(code, {
         sourceType: 'module',
         plugins: ['jsx', 'typescript'],
       });
-      isClientLayout = ast.program.directives.some(
-        (directive) => directive.value.value === 'use client'
-      );
     } catch {
       // Unparseable layout: the layout pass reports it; not a boundary verdict.
       continue;
     }
+    if (!hasBodyJsxElement(ast)) continue;
+    bodyLayout = file;
+    const isClientLayout = ast.program.directives.some(
+      (directive) => directive.value.value === 'use client'
+    );
     if (isClientLayout) {
       return {
-        why: `${path.relative(ctx.cwd, file)} renders <body> but is a Client Component ('use client'); gt-next's GTProvider is an async Server Component and cannot load its dictionary inside a client layout — the build passes and production throws (Dictionary entry ... cannot be found)`,
-        fix: 'Split the layout: keep <html>/<body> in a Server Component and move the client logic into a nested client component, then re-run gt migrate.',
+        why: `${path.relative(ctx.cwd, file)} renders <body> but is a Client Component ('use client'); gt-next's server GTProvider (the one gt migrate wires) is an async Server Component and cannot load its dictionary inside a client layout — the build passes and production throws (Dictionary entry ... cannot be found)`,
+        fix: "Split the layout: keep <html>/<body> in a Server Component and move the client logic into a nested client component, then re-run gt migrate. (Alternatively, wire gt-next's client GTProvider, which takes an explicit locale and translations, by hand.)",
       };
     }
   }
   if (!bodyLayout) {
     return {
-      why: 'no scanned layout renders <body>, so there is no Server Component mount point for GTProvider',
-      fix: 'Add a root Server Component layout that renders <html>/<body>, then re-run gt migrate.',
+      why: 'no project layout renders a literal <body> element, so gt migrate has no Server Component mount point for GTProvider (a <body> produced through a wrapper component is not recognized)',
+      fix: 'Ensure a root Server Component layout renders <html>/<body> directly, then re-run gt migrate; if yours does so through a wrapper component, add GTProvider around the app children by hand instead.',
     };
   }
 
   const localeLayout = findLocaleLayout(ctx);
   if (localeLayout.kind === 'none') {
     return {
-      why: `the app has no [locale] route segment; gt-next resolves the active locale per-route from the [locale] root param, and ${ctx.adapter.displayName}'s client-side locale state has no gt-next equivalent, so every converted call site would render the default locale no matter what the user selects`,
-      fix: 'Move localized routes under a [locale] segment (app/[locale]/...), then re-run gt migrate.',
+      why: `the app has no [locale] route segment. gt migrate only knows how to wire gt-next's server-side locale resolution (withGTConfig + next/root-params), which needs one; this app resolves its locale in ${ctx.adapter.displayName}'s client-side state, which gt migrate cannot wire automatically, so every converted call site would render the default locale no matter what the user selects`,
+      fix: "Move localized routes under a [locale] segment (app/[locale]/...) and re-run gt migrate, or wire gt-next's client GTProvider (it takes an explicit locale) to your locale state by hand.",
     };
   }
   if (localeLayout.kind === 'other-segment') {
     return {
-      why: `the localized route segment is ${localeLayout.segment}, not [locale]; next/root-params only exposes a locale() export for a segment named literally [locale], so every non-default locale would render in the default language`,
+      why: `the localized route segment is ${localeLayout.segment}, not [locale]; next/root-params only exposes a locale() export for a segment named literally [locale], and gt migrate has no other per-route locale source it can wire automatically, so every non-default locale would render in the default language`,
       fix: `Rename the ${localeLayout.segment} directory to [locale] (updating the imports and links that point at it), then re-run gt migrate.`,
     };
   }
   if (localeLayout.hasRootLayoutAbove) {
     return {
-      why: 'a separate root layout sits above the [locale] segment, so next/root-params does not expose locale there and gt-next falls back to request headers/cookies this app never sets; every route would render the default language',
-      fix: 'Merge the root layout down into [locale]/layout.tsx so [locale] is the root layout, then re-run gt migrate.',
+      why: 'a separate root layout sits above the [locale] segment, so next/root-params does not expose locale there, and gt migrate has no other per-route locale source it can wire automatically in this app; every route would render the default language',
+      fix: "Merge the root layout down into [locale]/layout.tsx so [locale] is the root layout, then re-run gt migrate (or wire gt-next's client GTProvider to your locale state by hand).",
     };
   }
   if (!supportsRootParams(ctx.cwd)) {
     return {
-      why: "this project's Next resolves below 15.5 (or its version could not be determined), so next/root-params — the only per-route locale signal gt-next has in this app — is unavailable",
+      why: "this project's Next resolves below 15.5 (or its version could not be determined), so next/root-params — the only per-route locale signal gt migrate can wire in this app — is unavailable",
       fix: 'Upgrade Next to >= 15.5, then re-run gt migrate.',
     };
   }
   return null;
+}
+
+/** True when the AST renders a literal `<body>` JSX element somewhere. */
+function hasBodyJsxElement(ast: ReturnType<typeof parse>): boolean {
+  let found = false;
+  const stack: object[] = [ast.program as unknown as object];
+  while (stack.length > 0 && !found) {
+    const node = stack.pop() as Record<string, unknown> & { type?: string };
+    if (
+      node.type === 'JSXOpeningElement' &&
+      (node.name as { type?: string; name?: string })?.type ===
+        'JSXIdentifier' &&
+      (node.name as { name?: string }).name === 'body'
+    ) {
+      found = true;
+      break;
+    }
+    for (const key of Object.keys(node)) {
+      const value = node[key];
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          if (item && typeof item === 'object' && 'type' in item) {
+            stack.push(item);
+          }
+        }
+      } else if (value && typeof value === 'object' && 'type' in value) {
+        stack.push(value);
+      }
+    }
+  }
+  return found;
 }
 
 /**
@@ -1009,13 +1054,13 @@ function isGtConfigWired(ctx: MigrationContext): boolean {
   for (const candidate of candidatePaths) {
     const edited = editedByPath.get(candidate);
     if (edited !== undefined) {
-      if (edited.includes('withGTConfig')) return true;
+      if (hasWithGTConfigCall(edited)) return true;
       continue;
     }
     try {
       if (
         fs.existsSync(candidate) &&
-        fs.readFileSync(candidate, 'utf8').includes('withGTConfig')
+        hasWithGTConfigCall(fs.readFileSync(candidate, 'utf8'))
       ) {
         return true;
       }
@@ -1024,6 +1069,53 @@ function isGtConfigWired(ctx: MigrationContext): boolean {
     }
   }
   return false;
+}
+
+/**
+ * True when the config source contains a real `withGTConfig(...)` CALL, not
+ * just the substring (a comment or a string would false-pass the wiring
+ * post-condition and ship an app with no dictionary/locale wiring). Falls
+ * back to the substring on a parse failure rather than false-fatal on syntax
+ * this parser cannot read.
+ */
+function hasWithGTConfigCall(content: string): boolean {
+  if (!content.includes('withGTConfig')) return false;
+  let ast: ReturnType<typeof parse>;
+  try {
+    ast = parse(content, {
+      sourceType: 'unambiguous',
+      plugins: ['jsx', 'typescript'],
+    });
+  } catch {
+    return true;
+  }
+  let found = false;
+  const stack: object[] = [ast.program as unknown as object];
+  while (stack.length > 0 && !found) {
+    const node = stack.pop() as Record<string, unknown> & { type?: string };
+    if (
+      node.type === 'CallExpression' &&
+      (node.callee as { type?: string; name?: string })?.type ===
+        'Identifier' &&
+      (node.callee as { name?: string }).name === 'withGTConfig'
+    ) {
+      found = true;
+      break;
+    }
+    for (const key of Object.keys(node)) {
+      const value = node[key];
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          if (item && typeof item === 'object' && 'type' in item) {
+            stack.push(item);
+          }
+        }
+      } else if (value && typeof value === 'object' && 'type' in value) {
+        stack.push(value);
+      }
+    }
+  }
+  return found;
 }
 
 function isEsmNextConfig(configFile: string, cwd: string): boolean {

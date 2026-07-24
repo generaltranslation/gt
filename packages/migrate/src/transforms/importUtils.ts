@@ -1,4 +1,4 @@
-import traverseModule from '@babel/traverse';
+import traverseModule, { type NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 
 const traverse: typeof traverseModule =
@@ -98,4 +98,33 @@ export function removeUnusedNamedImports(ast: t.File, locals: string[]): void {
       }
     },
   });
+}
+
+/**
+ * True when `path` (an identifier reference) sits directly inside a React
+ * hook's dependency array: an element of an ArrayExpression that is itself an
+ * argument of a `useX(...)` / `React.useX(...)` call. A translation binding
+ * listed there (`useMemo(() => t('k'), [t])`, required by
+ * react-hooks/exhaustive-deps) is an identity read with no call-signature
+ * contract, so the escape audits must not treat it as a disqualifying value
+ * escape (the round-7 re-attack P2).
+ */
+export function isHookDependencyArrayElement(path: NodePath): boolean {
+  const arrayPath = path.parentPath;
+  if (!arrayPath?.isArrayExpression()) return false;
+  if (!(arrayPath.node.elements as t.Node[]).includes(path.node)) return false;
+  const callPath = arrayPath.parentPath;
+  if (!callPath?.isCallExpression()) return false;
+  if (!(callPath.node.arguments as t.Node[]).includes(arrayPath.node)) {
+    return false;
+  }
+  const callee = callPath.node.callee;
+  const hookName = t.isIdentifier(callee)
+    ? callee.name
+    : t.isMemberExpression(callee) &&
+        !callee.computed &&
+        t.isIdentifier(callee.property)
+      ? callee.property.name
+      : null;
+  return hookName !== null && /^use[A-Z]/.test(hookName);
 }

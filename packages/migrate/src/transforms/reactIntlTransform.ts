@@ -3,7 +3,11 @@ import traverseModule, { type NodePath } from '@babel/traverse';
 import generateModule from '@babel/generator';
 import * as t from '@babel/types';
 import { classifyMessage } from '../catalogs/classifyMessage.js';
-import { ensureNamedImports, packageNameOf } from './importUtils.js';
+import {
+  ensureNamedImports,
+  isHookDependencyArrayElement,
+  packageNameOf,
+} from './importUtils.js';
 import type { TransformOptions } from './transformSource.js';
 import { isParamsInit, removeParamsParameter } from './transformSource.js';
 import type {
@@ -355,6 +359,10 @@ export function transformReactIntlSource(
       return;
     }
     for (const refPath of binding.referencePaths) {
+      // A hook dependency array (`useMemo(() => intl.formatMessage(...),
+      // [intl])`) is an identity read with no IntlShape contract;
+      // exhaustive-deps makes it pervasive, so it is never an escape.
+      if (isHookDependencyArrayElement(refPath)) continue;
       if (bareCallsOnly) {
         // A destructured formatMessage local becomes a gt-next translation
         // function with a different call signature (id, values) vs

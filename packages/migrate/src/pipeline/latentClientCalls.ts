@@ -104,13 +104,21 @@ export function detectLatentClientCallHazards(ctx: MigrationContext): void {
     for (const statement of ast.program.body) {
       if (!t.isImportDeclaration(statement)) continue;
       if (statement.importKind === 'type') continue;
-      const resolved = resolveImportToProjectFile(
+      const candidates = resolveImportToProjectFiles(
         statement.source.value,
         path.dirname(file),
         fileSet,
         projectFiles
       );
-      if (!resolved || !clientModules.has(resolved)) continue;
+      // Alias suffix matching can be ambiguous (a/i18n/labels.ts and
+      // b/i18n/labels.ts both end in the specifier's tail). When ANY
+      // candidate is a client module, treat the import as client: the wrong
+      // direction here withholds static rendering with a named reason, while
+      // the opposite error ships a prerender crash.
+      const resolved = candidates.find((candidate) =>
+        clientModules.has(candidate)
+      );
+      if (!resolved) continue;
       for (const specifier of statement.specifiers) {
         if (t.isImportSpecifier(specifier)) {
           if (specifier.importKind === 'type') continue;
@@ -169,27 +177,30 @@ export function detectLatentClientCallHazards(ctx: MigrationContext): void {
 }
 
 /**
- * Resolves an import specifier to a project file: relative specifiers resolve
- * against the importer's directory; aliased specifiers ('@/i18n/labels',
- * '~/lib/x', '#app/y') drop their alias segment and suffix-match against the
- * project file list, and baseUrl-style specifiers ('src/i18n/labels') match
- * as-is. Bare package imports match nothing and return null.
+ * Resolves an import specifier to its candidate project files: relative
+ * specifiers resolve against the importer's directory (at most one match);
+ * aliased specifiers ('@/i18n/labels', '~/lib/x', '#app/y') drop their alias
+ * segment and suffix-match against the project file list, and baseUrl-style
+ * specifiers ('src/i18n/labels') match as-is. Suffix matching can hit more
+ * than one file (same tail under different roots), so ALL matches are
+ * returned and the caller decides how to treat ambiguity. Bare package
+ * imports match nothing.
  */
-function resolveImportToProjectFile(
+function resolveImportToProjectFiles(
   specifier: string,
   importerDir: string,
   fileSet: Set<string>,
   projectFiles: string[]
-): string | null {
-  const tryBase = (base: string): string | null => {
+): string[] {
+  const tryBase = (base: string): string[] => {
     for (const ext of EXTENSIONS) {
-      if (fileSet.has(base + ext)) return base + ext;
+      if (fileSet.has(base + ext)) return [base + ext];
     }
     for (const ext of EXTENSIONS) {
       const index = path.join(base, `index${ext}`);
-      if (fileSet.has(index)) return index;
+      if (fileSet.has(index)) return [index];
     }
-    return null;
+    return [];
   };
   if (specifier.startsWith('.')) {
     return tryBase(path.resolve(importerDir, specifier));
@@ -209,6 +220,7 @@ function resolveImportToProjectFile(
     suffixes.push(specifier.slice(firstSegmentEnd + 1));
   }
   suffixes.push(specifier);
+  const matches: string[] = [];
   for (const suffix of suffixes) {
     if (!suffix) continue;
     for (const file of projectFiles) {
@@ -218,12 +230,13 @@ function resolveImportToProjectFile(
           posix.endsWith(`/${suffix}${ext}`) ||
           posix.endsWith(`/${suffix}/index${ext}`)
         ) {
-          return file;
+          matches.push(file);
         }
       }
     }
+    if (matches.length > 0) break;
   }
-  return null;
+  return matches;
 }
 
 /** Minimal recursive AST walk; node shapes only, no scope needed. */

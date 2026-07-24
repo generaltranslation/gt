@@ -3,6 +3,7 @@ import traverseModule, { type NodePath } from '@babel/traverse';
 import generateModule from '@babel/generator';
 import * as t from '@babel/types';
 import { getI18nextConfig } from '../config/reactI18nextConfig.js';
+import { isHookDependencyArrayElement } from './importUtils.js';
 import type {
   MigrationContext,
   SourceResult,
@@ -279,6 +280,9 @@ export function transformReactI18nextSource(
         if (!binding || !path.isReferencedIdentifier()) return;
         // Reference inside its own destructure declarator: ignore.
         if (isOwnDeclarator(path)) return;
+        // A shadow (an unrelated same-named param or local) is not the i18n
+        // instance; resolving it here would wrongly hold the file.
+        if (!resolvesToHookDeclarator(path, useTranslationLocals)) return;
         binding.referenced = true;
         const parent = path.parent;
         // `i18n.changeLanguage(...)`: member access on i18n, property
@@ -324,10 +328,18 @@ export function transformReactI18nextSource(
           return;
         }
         if (isOwnDeclarator(path)) return;
+        // A shadow (`.map((t) => t.name)`, `function f(t: string)`) is not
+        // the translation function; holding the file over it reported a
+        // false escape (the re-attack P1, live on two fixtures).
+        if (!resolvesToHookDeclarator(path, useTranslationLocals)) return;
         const parent = path.parent;
         if (t.isCallExpression(parent) && parent.callee === path.node) {
           return; // a direct t(...) call, remapped below
         }
+        // A hook dependency array (`useMemo(() => t('k'), [t])`) is an
+        // identity read with no call-signature contract; exhaustive-deps
+        // makes it pervasive, so it must not count as an escape.
+        if (isHookDependencyArrayElement(path)) return;
         if (
           t.isJSXExpressionContainer(parent) &&
           parent.expression === path.node
@@ -383,6 +395,13 @@ export function transformReactI18nextSource(
     CallExpression(path) {
       const callee = path.node.callee;
       if (!t.isIdentifier(callee) || !tBindings.has(callee.name)) return;
+      const calleePath = path.get('callee');
+      if (
+        !calleePath.isIdentifier() ||
+        !resolvesToHookDeclarator(calleePath, useTranslationLocals)
+      ) {
+        return; // a shadow's call, not the translation function's
+      }
       const binding = tBindings.get(callee.name)!;
       if (binding.rootId === null) return; // root hook reaches every namespace
       const keyArg = path.node.arguments[0];
@@ -442,6 +461,13 @@ export function transformReactI18nextSource(
     CallExpression(path) {
       const callee = path.node.callee;
       if (!t.isIdentifier(callee) || !tBindings.has(callee.name)) return;
+      const calleePath = path.get('callee');
+      if (
+        !calleePath.isIdentifier() ||
+        !resolvesToHookDeclarator(calleePath, useTranslationLocals)
+      ) {
+        return; // a shadow's call, not the translation function's
+      }
       const keyArg = path.node.arguments[0];
       if (
         t.isArrayExpression(keyArg) &&
@@ -593,6 +619,24 @@ export function transformReactI18nextSource(
           i18nBindings.has(callee.object.name) &&
           t.isIdentifier(callee.property, { name: 'changeLanguage' })
         ) {
+          // Scope guard runs post-mutation: the declarator may already hold
+          // useSetLocale() (converted) or still useTranslation() (stale
+          // binding path after a multi-declarator replacement); a shadow
+          // matches neither.
+          const calleePath = path.get('callee');
+          const objectPath = calleePath.isMemberExpression()
+            ? calleePath.get('object')
+            : null;
+          if (
+            !objectPath ||
+            !objectPath.isIdentifier() ||
+            !resolvesToHookDeclarator(
+              objectPath,
+              new Set([...useTranslationLocals, 'useSetLocale'])
+            )
+          ) {
+            return;
+          }
           path.node.callee = t.identifier(callee.object.name);
         }
       },
@@ -600,7 +644,15 @@ export function transformReactI18nextSource(
   }
 
   // 3. Remap / normalize t() calls (ns:key, fallback arrays, string defaults).
-  remapTCalls(ast, tBindings, config, ctx, todos, file);
+  remapTCalls(
+    ast,
+    tBindings,
+    config,
+    ctx,
+    todos,
+    file,
+    new Set([...useTranslationLocals, 'useTranslations'])
+  );
 
   // 4. Provider swap: <I18nextProvider> -> <GTProvider> (unless retained).
   if (providerLocals.size > 0 && !options.retainProvider) {
@@ -669,13 +721,25 @@ function remapTCalls(
   config: ReturnType<typeof getI18nextConfig>,
   ctx: MigrationContext,
   todos: TodoEntry[],
-  file: string
+  file: string,
+  hookCallees: Set<string>
 ): void {
   const catalog = ctx.catalogs.byLocale[ctx.catalogs.defaultLocale] ?? {};
   traverse(ast, {
     CallExpression(path) {
       const callee = path.node.callee;
       if (!t.isIdentifier(callee) || !tBindings.has(callee.name)) return;
+      // Post-mutation scope guard: rewriting a shadow's call (`.map((t) =>
+      // t.name)`) would corrupt unrelated code; the declarator holds
+      // useTranslations() once converted, useTranslation() if the binding
+      // path went stale in a multi-declarator replacement.
+      const calleePath = path.get('callee');
+      if (
+        !calleePath.isIdentifier() ||
+        !resolvesToHookDeclarator(calleePath, hookCallees)
+      ) {
+        return;
+      }
       const binding = tBindings.get(callee.name)!;
       const [keyArg, secondArg] = path.node.arguments;
 
@@ -1049,5 +1113,37 @@ function isOwnDeclarator(path: NodePath<t.Identifier>): boolean {
   return (
     (t.isObjectPattern(id) || t.isArrayPattern(id)) &&
     !!path.findParent((p) => p.node === id)
+  );
+}
+
+/**
+ * True when an identifier reference actually resolves to a binding declared
+ * by `const {...} = <hook>()` for one of `hookCallees` (useTranslation and,
+ * post-conversion, useTranslations/useSetLocale). Name matching alone treated
+ * every same-named identifier as the translation binding, so a shadow — a
+ * `.map((t) => t.name)` param, a `function f(t: string)` param, a catch
+ * clause — wrongly held whole files with a false "t escapes as a value"
+ * reason (the round-7 re-attack P1; it fired on two live fixtures). Scope
+ * resolution is deliberately by binding DECLARATION shape, not identifier
+ * node identity: the conversion replaces declarator nodes in place, so a
+ * node-identity check would go stale between the analysis and mutation
+ * passes, while the declarator's init shape stays recognizable in both.
+ * An unresolvable binding (undeclared name) returns false: nothing to
+ * convert, nothing to hold.
+ */
+function resolvesToHookDeclarator(
+  path: NodePath<t.Identifier>,
+  hookCallees: Set<string>
+): boolean {
+  const binding = path.scope.getBinding(path.node.name);
+  if (!binding) return false;
+  const declarator = binding.path;
+  if (!declarator.isVariableDeclarator()) return false;
+  const init = declarator.node.init;
+  return (
+    !!init &&
+    t.isCallExpression(init) &&
+    t.isIdentifier(init.callee) &&
+    hookCallees.has(init.callee.name)
   );
 }
