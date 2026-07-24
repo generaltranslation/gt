@@ -709,8 +709,15 @@ describe('react-i18next out-of-scope teardown scan (projectUsagePattern)', () =>
     // Clean full migration: the provider is swapped for <GTProvider>.
     expect(providers).toContain('<GTProvider');
     expect(providers).not.toContain('<I18nextProvider');
-    // The bare-i18next server file is not misreported as an unscanned usage.
-    expect(read(cwd, 'gt-migrate-report.md')).not.toContain(
+    // The bare-i18next server file is not misreported as an unscanned usage
+    // (no skip, no manual-migration entry) -- but the round-9 reference sweep
+    // MUST still name it informationally: it references the i18next runtime
+    // after the run, and silence about that is how round 9's findings shipped.
+    const report = read(cwd, 'gt-migrate-report.md');
+    const needsManual = report.split('## Still referencing')[0];
+    expect(needsManual).not.toContain('server/i18n-server.ts');
+    expect(report).toContain('## Still referencing');
+    expect(report.split('## Still referencing')[1]).toContain(
       'server/i18n-server.ts'
     );
   });

@@ -72,7 +72,17 @@ export function buildReport(
     lines.push('- (no files changed)');
   }
   for (const edit of written) {
-    lines.push(`- ${relative(edit.path)}`);
+    // A rewritten file that still references the source library must never
+    // read as fully converted (the round-9 request.ts finding): say so inline.
+    const stillReferences =
+      typeof edit.content === 'string' &&
+      /\.[cm]?[jt]sx?$/.test(edit.path) &&
+      adapter.mentionedIn(edit.content);
+    lines.push(
+      stillReferences
+        ? `- ${relative(edit.path)} (rewritten; still references ${adapter.displayName} for the parts this run retained)`
+        : `- ${relative(edit.path)}`
+    );
   }
   for (const edit of deleted) {
     lines.push(`- ${relative(edit.path)} (deleted)`);
@@ -287,10 +297,72 @@ export function buildReport(
   lines.push(
     `- Unknown dictionary keys throw in gt-next (${adapter.displayName} rendered the raw key and logged).`
   );
+  // Measured, not asserted: when this run generated the prefixing router
+  // wrapper, router.push/replace/prefetch ARE locale-prefixed and only the
+  // server-side redirects are not. The old blanket sentence stays accurate
+  // for react-intl/react-i18next runs and held wrappers.
+  const routerWrapped = ctx.edits.some(
+    (edit) =>
+      edit.kind === 'write' &&
+      /navigation\.client\.[cm]?[jt]sx?$/.test(edit.path) &&
+      (edit.content ?? '').includes('export function useRouter()')
+  );
   lines.push(
-    '- Programmatic navigation (redirect, router.push) is not locale-prefixed automatically; <Link> from gt-next/link is.'
+    routerWrapped
+      ? '- Server redirects (redirect, permanentRedirect) are not locale-prefixed automatically; <Link> from gt-next/link is, and the generated navigation wrapper keeps useRouter().push/replace/prefetch prefixed.'
+      : '- Programmatic navigation (redirect, router.push) is not locale-prefixed automatically; <Link> from gt-next/link is.'
   );
   lines.push('');
+
+  // No post-run source-library reference may go unnamed (the round-9 audit
+  // lesson: this report is judged against the emitted tree, and silence about
+  // a file that still references the library reads as a false "fully
+  // converted"). Sweep every project file's post-run content; anything still
+  // referencing the library and not already named above gets its own section.
+  const writtenByPath = new Map(
+    ctx.edits
+      .filter((edit) => edit.kind === 'write')
+      .map((edit) => [edit.path, edit.content ?? ''])
+  );
+  const deletedPaths = new Set(
+    ctx.edits.filter((edit) => edit.kind === 'delete').map((edit) => edit.path)
+  );
+  const namedSoFar = lines.join('\n');
+  const isNamed = (rel: string) => {
+    const escaped = rel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`${escaped}(?![\\w.])`).test(namedSoFar);
+  };
+  const stillReferencing: string[] = [];
+  for (const file of ctx.projectFiles ?? []) {
+    if (deletedPaths.has(file)) continue;
+    let content = writtenByPath.get(file);
+    if (content === undefined) {
+      try {
+        content = fs.readFileSync(file, 'utf8');
+      } catch {
+        continue; // unreadable or gone outside this run: nothing to claim
+      }
+    }
+    if (!adapter.mentionedIn(content)) continue;
+    if (isNamed(relative(file))) continue;
+    stillReferencing.push(relative(file));
+  }
+  if (stillReferencing.length > 0) {
+    lines.push(`## Still referencing ${adapter.displayName}`);
+    lines.push('');
+    lines.push(
+      `These files still reference ${adapter.displayName} after the migration and no ` +
+        'section above covers them. Nothing in them was changed: they are retained ' +
+        `wiring (imported by files this run kept on ${adapter.displayName}) or ` +
+        'references the migration does not touch. Verify each is still needed by a ' +
+        'retained file, or migrate it by hand and re-run gt migrate:'
+    );
+    lines.push('');
+    for (const file of stillReferencing.sort()) {
+      lines.push(`- ${file}`);
+    }
+    lines.push('');
+  }
 
   lines.push('## Next steps');
   lines.push('');

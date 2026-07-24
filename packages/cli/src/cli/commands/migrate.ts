@@ -201,9 +201,19 @@ export async function handleMigrateCommand(
   }
 
   try {
-    await formatFiles(
+    const formatting = await formatFiles(
       writtenFiles.filter((file) => /\.[cm]?[jt]sx?$/.test(file))
     );
+    // Report honesty: a file the formatter would have reflowed into different
+    // rendered JSX is kept unformatted, and the written report must say so,
+    // not just the console log.
+    for (const file of formatting.preservedFiles) {
+      (ctx.warnings ??= []).push(
+        `${path.relative(cwd, file)}: left unformatted because reformatting it ` +
+          'would have changed the JSX children (rendered whitespace); run your ' +
+          'formatter yourself if you want it reflowed'
+      );
+    }
   } catch {
     logger.warn(
       createDiagnosticMessage({

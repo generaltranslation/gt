@@ -156,9 +156,13 @@ export type MigrationContext = {
    *  library. No codemod can follow vi.mock()/jest.mock() of the source
    *  module or an IntlProvider render helper, and converting the components
    *  under test breaks the suites either way, so these are an explicit manual
-   *  stage: excluded from conversion, counted as skips (provider and teardown
-   *  survive for them), and listed in their own report section with the
-   *  expectation set plainly (the suites fail until they are migrated). */
+   *  stage: excluded from conversion, listed in their own report section with
+   *  the expectation set plainly, and counted as skips (provider and teardown
+   *  survive for them) only when the file really imports the library; a
+   *  mock-only mention is reported without being made a skip, since the mock
+   *  is dead once the components under test are converted. Also includes test
+   *  files reached transitively (a suite that renders through a flagged
+   *  helper), which are report-only for the same reason. */
   testFilesNeedingMigration?: string[];
 };
 
