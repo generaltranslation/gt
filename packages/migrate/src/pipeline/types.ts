@@ -164,6 +164,12 @@ export type MigrationContext = {
    *  files reached transitively (a suite that renders through a flagged
    *  helper), which are report-only for the same reason. */
   testFilesNeedingMigration?: string[];
+  /** Per-file wording for the report's test section, recorded at the
+   *  classification site when deriving it from the file's own content would
+   *  guess wrong (a suite flagged for importing converted code carries no
+   *  source-library reference of its own). report.ts prefers this over its
+   *  derived evidence. */
+  testFileEvidence?: Map<string, string>;
 };
 
 export type SourceResult = {

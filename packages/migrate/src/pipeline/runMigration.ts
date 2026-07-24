@@ -704,6 +704,15 @@ export async function runMigration(
     });
   }
 
+  // A dead global mock breaks suites that never import any flagged file:
+  // vitest/jest wire setup files by CONFIG, not imports, so a suite that
+  // renders converted components fails without a single reference the import
+  // closure can see (the round-9 sniply shape: tests/setup.ts mocks
+  // next-intl, and the three failing suites import only the components).
+  // When any flagged test file is a mock-only mention, name every test file
+  // that imports converted code which now calls gt-next.
+  addSuitesExercisingConvertedCode(ctx, adapter, projectFiles);
+
   // Failing suites must not be discoverable only by running them: echo the
   // test stage at the end of the run, not just inside the report.
   if (
@@ -975,6 +984,79 @@ function addTransitiveTestFiles(
   }
   if (added.length > 0) {
     (ctx.testFilesNeedingMigration ??= []).push(...added);
+  }
+}
+
+/**
+ * Names the suites a dead global mock will break. An import-flagged helper's
+ * blast radius is its importers (the closure above); a MOCK-ONLY setup file's
+ * blast radius is every suite whose rendered components the mock used to
+ * intercept, and those suites carry no reference any scan or closure can see
+ * (vitest/jest register setup files through config). Approximation, stated
+ * plainly: a test file that imports converted code which now calls gt-next is
+ * named; whether it fails depends on whether the tested path reaches a hook,
+ * so the report's section wording carries the "unless" clause. Report-only:
+ * never added to ctx.skippedFiles.
+ */
+function addSuitesExercisingConvertedCode(
+  ctx: MigrationContext,
+  adapter: SourceAdapter,
+  projectFiles: string[]
+): void {
+  const flagged = new Set(ctx.testFilesNeedingMigration ?? []);
+  if (flagged.size === 0) return;
+  const hasMockOnly = [...flagged].some((file) => {
+    try {
+      const code = fs.readFileSync(file, 'utf8');
+      return (
+        !adapter.projectUsagePattern.test(code) && adapter.mentionedIn(code)
+      );
+    } catch {
+      return false;
+    }
+  });
+  if (!hasMockOnly) return;
+  const isTest = (file: string) =>
+    TEST_FILE_PATH.test(file.split(path.sep).join('/'));
+  const convertedGtCallers = new Set(
+    ctx.edits
+      .filter(
+        (edit) =>
+          edit.kind === 'write' &&
+          /\.[cm]?[jt]sx?$/.test(edit.path) &&
+          !isTest(edit.path) &&
+          (edit.content ?? '').includes('gt-next')
+      )
+      .map((edit) => edit.path)
+  );
+  if (convertedGtCallers.size === 0) return;
+  const fileSet = new Set(projectFiles);
+  for (const file of projectFiles) {
+    if (flagged.has(file) || !isTest(file)) continue;
+    let content: string;
+    try {
+      content = fs.readFileSync(file, 'utf8');
+    } catch {
+      continue;
+    }
+    const hit = importSpecifiers(content)
+      .flatMap((specifier) =>
+        resolveImportToProjectFiles(
+          specifier,
+          path.dirname(file),
+          fileSet,
+          projectFiles
+        )
+      )
+      .find((target) => convertedGtCallers.has(target));
+    if (!hit) continue;
+    flagged.add(file);
+    (ctx.testFilesNeedingMigration ??= []).push(file);
+    (ctx.testFileEvidence ??= new Map()).set(
+      file,
+      `imports converted code (${path.relative(ctx.cwd, hit)}) that now calls ` +
+        `gt-next; the ${adapter.displayName} test wiring named here no longer intercepts it`
+    );
   }
 }
 

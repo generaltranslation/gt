@@ -71,18 +71,24 @@ export function buildReport(
   if (written.length === 0) {
     lines.push('- (no files changed)');
   }
-  for (const edit of written) {
-    // A rewritten file that still references the source library must never
-    // read as fully converted (the round-9 request.ts finding): say so inline.
-    const stillReferences =
+  // A rewritten file that still references the source library must never sit
+  // under "Converted" (the round-9 request.ts finding): those files get their
+  // own section below, and Converted holds only clean conversions.
+  const partiallyConverted = written.filter(
+    (edit) =>
       typeof edit.content === 'string' &&
       /\.[cm]?[jt]sx?$/.test(edit.path) &&
-      adapter.mentionedIn(edit.content);
+      adapter.mentionedIn(edit.content)
+  );
+  const partialSet = new Set(partiallyConverted);
+  const fullyConverted = written.filter((edit) => !partialSet.has(edit));
+  if (written.length > 0 && fullyConverted.length === 0) {
     lines.push(
-      stillReferences
-        ? `- ${relative(edit.path)} (rewritten; still references ${adapter.displayName} for the parts this run retained)`
-        : `- ${relative(edit.path)}`
+      `- (none fully; every rewritten file still references ${adapter.displayName}, see the next section)`
     );
+  }
+  for (const edit of fullyConverted) {
+    lines.push(`- ${relative(edit.path)}`);
   }
   for (const edit of deleted) {
     lines.push(`- ${relative(edit.path)} (deleted)`);
@@ -93,6 +99,23 @@ export function buildReport(
       'now load through loadDictionary.ts; no re-translation needed.'
   );
   lines.push('');
+
+  if (partiallyConverted.length > 0) {
+    lines.push(
+      `## Partially converted (still reference ${adapter.displayName})`
+    );
+    lines.push('');
+    lines.push(
+      `These files were rewritten by this run and still reference ${adapter.displayName} ` +
+        'for the parts it retained (a composed plugin, a retained provider or its ' +
+        'request config). They are deliberately not listed under Converted:'
+    );
+    lines.push('');
+    for (const edit of partiallyConverted) {
+      lines.push(`- ${relative(edit.path)}`);
+    }
+    lines.push('');
+  }
 
   // getLocale is the locale resolver (reads next/root-params); getRegion just
   // returns undefined. The report must only credit static rendering to what was
@@ -414,6 +437,11 @@ export function buildReport(
  */
 function testFileEvidence(ctx: MigrationContext, file: string): string | null {
   const adapter = ctx.adapter;
+  // Evidence recorded at the classification site wins: a suite flagged for
+  // importing converted code has no source-library reference of its own, so
+  // deriving from content below would mislabel it as a helper importer.
+  const recorded = ctx.testFileEvidence?.get(file);
+  if (recorded) return recorded;
   let code: string;
   try {
     code = fs.readFileSync(file, 'utf8');

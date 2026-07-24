@@ -197,8 +197,8 @@ describe('round 9: the report names every post-run source-library reference', ()
     const report = buildReport(ctx, false);
 
     // In partial mode at least one written file keeps a next-intl reference
-    // (the composed next.config, or the request config). Its Converted line
-    // must not read as fully converted.
+    // (the composed next.config, or the request config). It must live under
+    // "Partially converted", never under "Converted".
     const rewrittenStillReferencing = ctx.edits.filter(
       (edit) =>
         edit.kind === 'write' &&
@@ -206,13 +206,15 @@ describe('round 9: the report names every post-run source-library reference', ()
         ctx.adapter.mentionedIn(edit.content ?? '')
     );
     expect(rewrittenStillReferencing.length).toBeGreaterThan(0);
+    expect(report).toContain('## Partially converted');
+    const convertedSection =
+      report.split('## Converted')[1]?.split('\n## ')[0] ?? '';
+    const partialSection =
+      report.split('## Partially converted')[1]?.split('\n## ')[0] ?? '';
     for (const edit of rewrittenStillReferencing) {
       const rel = path.relative(cwd, edit.path).split(path.sep).join('/');
-      const relNative = path.relative(cwd, edit.path);
-      const annotated = new RegExp(
-        `- (${rel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}|${relNative.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}) \\(rewritten; still references next-intl`
-      );
-      expect(report).toMatch(annotated);
+      expect(partialSection).toContain(rel);
+      expect(convertedSection).not.toContain(`- ${rel}\n`);
     }
   });
 
@@ -232,6 +234,62 @@ describe('round 9: the report names every post-run source-library reference', ()
     const ctx = await migrate(cwd);
     const report = buildReport(ctx, false);
     expect(report).not.toContain('## Still referencing');
-    expect(report).not.toContain('(rewritten; still references');
+    expect(report).not.toContain('## Partially converted');
+  });
+
+  it('names the suites a dead config-wired mock breaks, and only those', async () => {
+    // The sniply shape: the ONLY next-intl reference in the test tree is a
+    // vi.mock string in a setup file that vitest wires through config, so the
+    // failing suites import nothing any scan or import-closure can see. The
+    // suites that import converted (now gt-next-calling) code get named with
+    // recorded evidence; a suite exercising untouched code does not.
+    const cwd = writeTree({
+      ...baseApp,
+      'vitest.config.ts': lines(
+        "import { defineConfig } from 'vitest/config';",
+        'export default defineConfig({',
+        "  test: { setupFiles: ['./tests/setup.ts'] },",
+        '});'
+      ),
+      'tests/setup.ts': lines(
+        "import { vi } from 'vitest';",
+        'vi.mock("next-intl", () => ({',
+        '  useTranslations: () => (key: string) => key,',
+        '}));'
+      ),
+      'components/Widget.tsx': lines(
+        "import { useTranslations } from 'next-intl';",
+        'export function Widget() {',
+        "  const t = useTranslations('Home');",
+        "  return <span>{t('title')}</span>;",
+        '}'
+      ),
+      'components/Plain.tsx': lines(
+        'export function Plain() {',
+        '  return <span>plain</span>;',
+        '}'
+      ),
+      'tests/components/Widget.test.tsx': lines(
+        "import { Widget } from '../../components/Widget';",
+        "it('renders', () => {",
+        '  expect(Widget).toBeDefined();',
+        '});'
+      ),
+      'tests/components/Plain.test.tsx': lines(
+        "import { Plain } from '../../components/Plain';",
+        "it('renders', () => {",
+        '  expect(Plain).toBeDefined();',
+        '});'
+      ),
+    });
+    const ctx = await migrate(cwd);
+    const report = buildReport(ctx, false);
+    const testSection =
+      report.split('## Tests need manual migration')[1]?.split('\n## ')[0] ??
+      '';
+    expect(testSection).toContain('tests/setup.ts');
+    expect(testSection).toContain('tests/components/Widget.test.tsx');
+    expect(testSection).toContain('imports converted code');
+    expect(testSection).not.toContain('tests/components/Plain.test.tsx');
   });
 });
