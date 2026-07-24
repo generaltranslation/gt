@@ -101,6 +101,9 @@ describe('parse', () => {
     expect(
       Object.hasOwn((ast[0] as { options: object }).options, '__proto__')
     ).toBe(true);
+    expect(Object.getPrototypeOf((ast[0] as { options: object }).options)).toBe(
+      Object.prototype
+    );
   });
 
   it('does not require Object.fromEntries to build selector options', () => {
@@ -383,6 +386,30 @@ describe('parse', () => {
       ]);
     }
   );
+
+  it('matches the FormatJS tag-name character boundaries', () => {
+    const allowed = [
+      0x2d, 0x2e, 0x30, 0x39, 0x5f, 0xb7, 0xc0, 0xd6, 0xd8, 0xf6, 0xf8, 0x37d,
+      0x37f, 0x1fff, 0x200c, 0x200d, 0x203f, 0x2040, 0x2070, 0x218f, 0x2c00,
+      0x2fef, 0x3001, 0xd7ff, 0xf900, 0xfdcf, 0xfdf0, 0xfffd, 0x10000, 0xeffff,
+    ];
+    const rejected = [
+      0xd7, 0xf7, 0x37e, 0x203e, 0x2041, 0x206f, 0x2ff0, 0xe000, 0xfdd0, 0xfffe,
+      0xf0000,
+    ];
+
+    for (const codePoint of allowed) {
+      const character = String.fromCodePoint(codePoint);
+      expect(parse(`<a${character}>x</a${character}>`)[0]).toMatchObject({
+        type: TYPE.tag,
+        value: `a${character}`,
+      });
+    }
+    for (const codePoint of rejected) {
+      const character = String.fromCodePoint(codePoint);
+      expect(() => parse(`<a${character}>x</a${character}>`)).toThrow();
+    }
+  });
 
   it('can treat tags as plain text', () => {
     expect(parse('<b>{name}</b>', { ignoreTag: true })).toEqual([

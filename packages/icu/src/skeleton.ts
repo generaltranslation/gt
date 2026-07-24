@@ -28,17 +28,23 @@ type ModernNumberFormatOptions = ExtendedNumberFormatOptions & {
   trailingZeroDisplay?: 'auto' | 'stripIfInteger';
 };
 
-const ROUNDING_MODES: Record<
-  string,
-  NonNullable<ModernNumberFormatOptions['roundingMode']>
+const ROUNDING_MODES: Partial<
+  Record<string, NonNullable<ModernNumberFormatOptions['roundingMode']>>
 > = {
-  'rounding-mode-floor': 'floor',
-  'rounding-mode-ceiling': 'ceil',
-  'rounding-mode-down': 'trunc',
-  'rounding-mode-up': 'expand',
-  'rounding-mode-half-even': 'halfEven',
-  'rounding-mode-half-down': 'halfTrunc',
-  'rounding-mode-half-up': 'halfExpand',
+  floor: 'floor',
+  ceiling: 'ceil',
+  down: 'trunc',
+  up: 'expand',
+  'half-even': 'halfEven',
+  'half-down': 'halfTrunc',
+  'half-up': 'halfExpand',
+};
+
+const HOUR_CYCLES: Record<string, Intl.LocaleHourCycleKey> = {
+  h: 'h12',
+  H: 'h23',
+  K: 'h11',
+  k: 'h24',
 };
 
 export function parseNumberSkeletonTokens(
@@ -158,8 +164,11 @@ export function parseNumberSkeletonOptions(
         continue;
     }
 
-    if (Object.prototype.hasOwnProperty.call(ROUNDING_MODES, token.stem)) {
-      result.roundingMode = ROUNDING_MODES[token.stem];
+    if (token.stem.slice(0, 14) === 'rounding-mode-') {
+      const roundingMode = ROUNDING_MODES[token.stem.slice(14)];
+      if (typeof roundingMode === 'string') {
+        result.roundingMode = roundingMode;
+      }
       continue;
     }
 
@@ -168,10 +177,7 @@ export function parseNumberSkeletonOptions(
       continue;
     }
 
-    if (FRACTION_PRECISION.test(token.stem)) {
-      applyFractionPrecision(result, token);
-      continue;
-    }
+    if (applyFractionPrecision(result, token)) continue;
 
     if (SIGNIFICANT_PRECISION.test(token.stem)) {
       Object.assign(result, parseSignificantPrecision(token.stem));
@@ -283,13 +289,13 @@ function applyIntegerWidth(
 function applyFractionPrecision(
   result: ModernNumberFormatOptions,
   token: NumberSkeletonToken
-): void {
+): boolean {
+  const match = FRACTION_PRECISION.exec(token.stem);
+  if (!match) return false;
   if (token.options.length > 1) {
     throw new SyntaxError('Fraction precision accepts at most one option.');
   }
 
-  const match = FRACTION_PRECISION.exec(token.stem);
-  if (!match) return;
   const [, zeros, unlimited, hashes, required, optional] = match;
 
   if (unlimited === '*') {
@@ -309,6 +315,7 @@ function applyFractionPrecision(
   } else if (token.options[0]) {
     Object.assign(result, parseSignificantPrecision(token.options[0]));
   }
+  return true;
 }
 
 function parseSignificantPrecision(
@@ -341,13 +348,11 @@ function parseSignificantPrecision(
 }
 
 export function parseDateTimeSkeletonOptions(
-  skeleton: string,
-  locale?: Intl.Locale
+  skeleton: string
 ): Intl.DateTimeFormatOptions {
-  const pattern = resolveLocaleHourSkeleton(skeleton, locale);
   const result: Intl.DateTimeFormatOptions = {};
 
-  for (const [field] of pattern.matchAll(DATE_TIME_FIELD)) {
+  for (const [field] of skeleton.matchAll(DATE_TIME_FIELD)) {
     const length = field.length;
     switch (field[0]) {
       case 'G':
@@ -380,19 +385,10 @@ export function parseDateTimeSkeletonOptions(
         result.hour12 = true;
         break;
       case 'h':
-        result.hourCycle = 'h12';
-        result.hour = length === 2 ? '2-digit' : 'numeric';
-        break;
       case 'H':
-        result.hourCycle = 'h23';
-        result.hour = length === 2 ? '2-digit' : 'numeric';
-        break;
       case 'K':
-        result.hourCycle = 'h11';
-        result.hour = length === 2 ? '2-digit' : 'numeric';
-        break;
       case 'k':
-        result.hourCycle = 'h24';
+        result.hourCycle = HOUR_CYCLES[field[0]];
         result.hour = length === 2 ? '2-digit' : 'numeric';
         break;
       case 'm':
@@ -404,32 +400,8 @@ export function parseDateTimeSkeletonOptions(
       case 'z':
         result.timeZoneName = length < 4 ? 'short' : 'long';
         break;
-      case 'Y':
-      case 'u':
-      case 'U':
-      case 'r':
-      case 'Q':
-      case 'q':
-      case 'w':
-      case 'W':
-      case 'D':
-      case 'F':
-      case 'b':
-      case 'B':
-      case 'Z':
-      case 'O':
-      case 'v':
-      case 'V':
-      case 'X':
-      case 'x':
+      default:
         throw unsupported(field, 'date/time');
-      case 'C':
-      case 'S':
-      case 'A':
-        // @formatjs/icu-messageformat-parser accepted these fields but omitted
-        // them from parsedOptions, causing Intl.DateTimeFormat to use its
-        // default date output when no other supported fields were present.
-        break;
     }
   }
 
@@ -457,19 +429,17 @@ export function resolveLocaleHourSkeleton(
         extraLength += 1;
         index += 1;
       }
-      let hourLength = 1 + (extraLength & 1);
-      let dayPeriodLength = extraLength < 2 ? 1 : 3 + (extraLength >> 1);
-      if (localeHourSymbol === 'H' || localeHourSymbol === 'k') {
-        dayPeriodLength = 0;
-      }
-      while (dayPeriodLength > 0) {
-        resolvedSkeleton += 'a';
-        dayPeriodLength -= 1;
-      }
-      while (hourLength > 0) {
-        resolvedSkeleton = localeHourSymbol + resolvedSkeleton;
-        hourLength -= 1;
-      }
+      const hourLength = 1 + (extraLength & 1);
+      const dayPeriodLength =
+        localeHourSymbol === 'H' || localeHourSymbol === 'k'
+          ? 0
+          : extraLength < 2
+            ? 1
+            : 3 + (extraLength >> 1);
+      resolvedSkeleton =
+        localeHourSymbol.repeat(hourLength) +
+        resolvedSkeleton +
+        'a'.repeat(dayPeriodLength);
     } else if (character === 'J') {
       resolvedSkeleton += 'H';
     } else {
