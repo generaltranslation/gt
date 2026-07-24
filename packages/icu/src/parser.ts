@@ -393,6 +393,7 @@ class IcuParser {
     }
 
     const options: Record<string, PluralOrSelectOption> = Object.create(null);
+    let hasOptions = false;
     let selectorStart = firstSelectorStart;
 
     while (selector || (argumentType !== 'select' && this.current() === '=')) {
@@ -438,13 +439,14 @@ class IcuParser {
         value: optionValue,
         ...(optionLocation ? { location: optionLocation } : {}),
       };
+      hasOptions = true;
 
       this.skipSpace();
       selectorStart = this.index;
       selector = this.readIdentifier();
     }
 
-    if (Object.keys(options).length === 0) {
+    if (!hasOptions) {
       this.fail(
         argumentType === 'select'
           ? 'EXPECT_SELECT_ARGUMENT_SELECTOR'

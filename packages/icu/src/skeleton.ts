@@ -169,6 +169,8 @@ export function parseNumberSkeletonOptions(
       if (typeof roundingMode === 'string') {
         result.roundingMode = roundingMode;
       }
+      // Unknown rounding-mode stems are intentionally ignored. No later token
+      // form matches this prefix, so continuing preserves prior behavior.
       continue;
     }
 
