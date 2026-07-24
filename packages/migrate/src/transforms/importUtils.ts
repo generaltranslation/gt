@@ -16,41 +16,75 @@ export function packageNameOf(source: string): string {
 }
 
 /**
+ * True when a declaration can host added VALUE ImportSpecifiers: named and
+ * default imports qualify. `import * as ns` cannot syntactically hold named
+ * specifiers alongside the namespace, and a type-only declaration
+ * (`import type { ... }`) would silently erase an added value binding at
+ * build time.
+ */
+export function canHostNamedSpecifiers(
+  declaration: t.ImportDeclaration
+): boolean {
+  return (
+    declaration.importKind !== 'type' &&
+    !declaration.specifiers.some((specifier) =>
+      t.isImportNamespaceSpecifier(specifier)
+    )
+  );
+}
+
+/**
  * Ensures `import { <names> } from '<module>'` exists, merging into an
  * existing compatible declaration when present. Names already bound are not
  * duplicated. Callers reference each name verbatim in generated code, so
- * "present" means the module's OWN symbol is bound under its own name; an
- * alias of it (`withGTConfig as wgc`) still gets a plain specifier added
- * (legal: one symbol may be imported twice), while a namespace import
+ * "present" means the module's OWN symbol is VALUE-bound under its own name;
+ * an alias of it (`withGTConfig as wgc`) still gets a plain specifier added
+ * (legal: one symbol may be imported twice), a namespace import
  * (`import * as gt`) can never host named specifiers and gets a separate
- * declaration instead.
+ * declaration instead, and a TYPE-ONLY binding of a needed symbol is promoted
+ * to a value import (a value import satisfies both value and type uses;
+ * leaving it type-only would strand the generated value references).
  */
 export function ensureNamedImports(
   ast: t.File,
   module: string,
   names: string[]
 ): void {
+  const wanted = new Set(names);
   let target: t.ImportDeclaration | null = null;
   const present = new Set<string>();
   const conflictingLocals = new Set<string>();
+  const typeOnlyPromotions: Array<{
+    declaration: t.ImportDeclaration;
+    specifier: t.ImportSpecifier;
+    name: string;
+  }> = [];
   traverse(ast, {
     ImportDeclaration(path) {
       if (path.node.source.value !== module) return;
-      const hasNamespace = path.node.specifiers.some((specifier) =>
-        t.isImportNamespaceSpecifier(specifier)
-      );
-      if (!target && !hasNamespace) target = path.node;
+      if (!target && canHostNamedSpecifiers(path.node)) target = path.node;
+      const declarationTypeOnly = path.node.importKind === 'type';
       for (const specifier of path.node.specifiers) {
         if (t.isImportSpecifier(specifier)) {
           const imported = t.isIdentifier(specifier.imported)
             ? specifier.imported.name
             : specifier.imported.value;
-          if (imported === specifier.local.name) {
-            present.add(imported);
-          } else {
-            // `import { other as withGTConfig }`: the local name is taken by a
-            // DIFFERENT symbol, so adding a plain specifier would redeclare it.
+          const typeOnly =
+            declarationTypeOnly || specifier.importKind === 'type';
+          if (imported !== specifier.local.name) {
+            // `import { other as withGTConfig }`: the local name is taken by
+            // a DIFFERENT symbol, so adding a plain specifier would redeclare
+            // it.
             conflictingLocals.add(specifier.local.name);
+          } else if (!typeOnly) {
+            present.add(imported);
+          } else if (wanted.has(imported)) {
+            typeOnlyPromotions.push({
+              declaration: path.node,
+              specifier,
+              name: imported,
+            });
+            present.add(imported);
           }
         } else {
           conflictingLocals.add(specifier.local.name);
@@ -58,6 +92,23 @@ export function ensureNamedImports(
       }
     },
   });
+
+  for (const { declaration, specifier, name } of typeOnlyPromotions) {
+    if (declaration.importKind === 'type') {
+      if (declaration.specifiers.length === 1) {
+        declaration.importKind = 'value';
+      } else {
+        // Sibling type specifiers must stay type-only: pull ours out and let
+        // the missing-names path below re-bind it as a value import.
+        declaration.specifiers = declaration.specifiers.filter(
+          (candidate) => candidate !== specifier
+        );
+        present.delete(name);
+      }
+    } else {
+      specifier.importKind = null;
+    }
+  }
 
   const missing = names.filter(
     (name) => !present.has(name) && !conflictingLocals.has(name)

@@ -74,11 +74,17 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
   let existing: Record<string, unknown> = {};
   if (fs.existsSync(configPath)) {
     // Readability was asserted by checkExistingGtConfig before any edit was
-    // enqueued; continuing past a parse failure here would enqueue a write
-    // that replaces the user's whole config (projectId, custom files entries,
-    // publish settings) with defaults. Edits are buffered, so a throw leaves
-    // the project untouched.
-    existing = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    // enqueued; continuing past an unreadable config here would enqueue a
+    // write that replaces the user's whole config (projectId, custom files
+    // entries, publish settings) with defaults. Re-assert rather than trust
+    // the caller: edits are buffered, so a throw leaves the project untouched.
+    const parsed: unknown = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      throw new Error(
+        `existing ${configPath} is not a JSON object; checkExistingGtConfig must gate emitGtFiles`
+      );
+    }
+    existing = parsed as Record<string, unknown>;
   }
   const existingFiles =
     existing.files && typeof existing.files === 'object'

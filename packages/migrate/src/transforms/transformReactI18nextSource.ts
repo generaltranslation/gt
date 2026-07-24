@@ -3,7 +3,10 @@ import traverseModule, { type NodePath } from '@babel/traverse';
 import generateModule from '@babel/generator';
 import * as t from '@babel/types';
 import { getI18nextConfig } from '../config/reactI18nextConfig.js';
-import { isHookDependencyArrayElement } from './importUtils.js';
+import {
+  canHostNamedSpecifiers,
+  isHookDependencyArrayElement,
+} from './importUtils.js';
 import type {
   MigrationContext,
   SourceResult,
@@ -210,6 +213,15 @@ export function transformReactI18nextSource(
 
       const id = path.node.id;
       if (t.isObjectPattern(id)) {
+        // A pattern that binds nothing (`const {} = useTranslation()`) would
+        // fall through every branch below: no binding recorded, no skip
+        // pushed, and the rewrite would then strip the import while leaving
+        // the bare useTranslation() call behind.
+        if (id.properties.length === 0) {
+          skipReasons.push(
+            'useTranslation() is destructured to no bindings; remove the call or convert this file manually'
+          );
+        }
         for (const property of id.properties) {
           if (
             !t.isObjectProperty(property) ||
@@ -255,7 +267,15 @@ export function transformReactI18nextSource(
         // rebuilds this declaration from the first two identifier elements
         // only, so any other element (`ready` at index 2, a default, a rest
         // element) would be silently dropped while its references remain.
-        // Holes (`const [, i18n] = ...`) bind nothing and stay allowed.
+        // Holes (`const [, i18n] = ...`) bind nothing and stay allowed, but a
+        // pattern of ONLY holes (or `const [] = ...`) binds nothing at all
+        // and would leave a bare useTranslation() call with its import
+        // stripped.
+        if (id.elements.every((element) => element == null)) {
+          skipReasons.push(
+            'useTranslation() is destructured to no bindings; remove the call or convert this file manually'
+          );
+        }
         id.elements.forEach((element, index) => {
           if (element == null) return;
           if (index <= 1 && t.isIdentifier(element)) {
@@ -1031,11 +1051,17 @@ function applyImportSurgery(
   gtSpecifiers: t.ImportSpecifier[],
   retainProvider: boolean
 ): void {
-  // Find an existing gt-next import to merge into.
+  // Find an existing gt-next import to merge into. A namespace or type-only
+  // import cannot host added value specifiers (`import * as gt, { x }` does
+  // not parse); those get a separate declaration instead.
   let mergeTarget: t.ImportDeclaration | null = null;
   traverse(ast, {
     ImportDeclaration(path) {
-      if (path.node.source.value === GT_MODULE && !mergeTarget) {
+      if (
+        path.node.source.value === GT_MODULE &&
+        !mergeTarget &&
+        canHostNamedSpecifiers(path.node)
+      ) {
         mergeTarget = path.node;
       }
     },

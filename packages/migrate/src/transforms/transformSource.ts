@@ -2,7 +2,11 @@ import { parse } from '@babel/parser';
 import traverseModule, { type NodePath } from '@babel/traverse';
 import generateModule from '@babel/generator';
 import * as t from '@babel/types';
-import { packageNameOf, removeUnusedNamedImports } from './importUtils.js';
+import {
+  canHostNamedSpecifiers,
+  packageNameOf,
+  removeUnusedNamedImports,
+} from './importUtils.js';
 import type {
   MigrationContext,
   SourceResult,
@@ -555,9 +559,13 @@ export function transformSourceFile(
   traverse(ast, {
     ImportDeclaration(path) {
       const source = path.node.source.value;
+      // A namespace or type-only import cannot host added value specifiers
+      // (`import * as gt, { x }` does not parse); leave it alone and emit a
+      // separate declaration below.
       if (
         (source === GT_MODULE || source === GT_SERVER_MODULE) &&
-        !mergeTargets.has(source)
+        !mergeTargets.has(source) &&
+        canHostNamedSpecifiers(path.node)
       ) {
         mergeTargets.set(source, path.node);
       }

@@ -5,11 +5,14 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { parse } from '@babel/parser';
 import generateModule from '@babel/generator';
 import { transformReactI18nextSource } from '../transforms/transformReactI18nextSource.js';
+import { transformSourceFile } from '../transforms/transformSource.js';
 import { ensureNamedImports } from '../transforms/importUtils.js';
 import { checkExistingGtConfig, emitGtFiles } from '../emit/emitGtFiles.js';
 import { discoverReactI18nextCatalogs } from '../catalogs/reactI18nextCatalogs.js';
 import { clearI18nextConfigCache } from '../config/reactI18nextConfig.js';
 import { reactI18nextAdapter } from '../adapters/reactI18next.js';
+import { nextIntlAdapter } from '../adapters/nextIntl.js';
+import type { SourceAdapter } from '../adapters/types.js';
 import type {
   MessageCatalogs,
   MigrationContext,
@@ -33,7 +36,10 @@ const routing: RoutingInfo = {
   requestFile: null,
 };
 
-function makeContext(cwd = '/project'): MigrationContext {
+function makeContext(
+  cwd = '/project',
+  adapter: SourceAdapter = reactI18nextAdapter
+): MigrationContext {
   const catalogs: MessageCatalogs = {
     defaultLocale: 'en',
     locales: ['en', 'es'],
@@ -44,7 +50,7 @@ function makeContext(cwd = '/project'): MigrationContext {
     cwd,
     catalogs,
     routing,
-    adapter: reactI18nextAdapter,
+    adapter,
     edits: [],
     todos: [],
     skippedFiles: new Map(),
@@ -356,5 +362,123 @@ describe('react-i18next locale narrowing', () => {
     const catalogs = await discoverReactI18nextCatalogs(cwd, routing);
     expect(catalogs).not.toBeNull();
     expect([...catalogs!.locales].sort()).toEqual(['en', 'es']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Re-attack round pins (adversary panel on the round-8 diff).
+// ---------------------------------------------------------------------------
+
+// P1 (adversary B): the source-file import surgeries had finding #3's bug
+// unfixed; a pre-existing `import * as gt from 'gt-next'` got named
+// specifiers merged in, shipping unparseable output with a success report.
+describe('source-file import surgery vs namespace imports', () => {
+  const reparse = (code: string) =>
+    parse(code, { sourceType: 'module', plugins: ['typescript', 'jsx'] });
+
+  it('react-i18next: adds a separate declaration next to a gt-next namespace import', () => {
+    const r = transform(
+      lines(
+        "'use client';",
+        "import * as gt from 'gt-next';",
+        "import { useTranslation } from 'react-i18next';",
+        'export default function Page() {',
+        '  const { t } = useTranslation();',
+        "  return <span data-x={String(gt)}>{t('title')}</span>;",
+        '}'
+      )
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).toMatch(/import \* as gt from ["']gt-next["']/);
+    expect(r.code).toMatch(/import \{ useTranslations \} from ["']gt-next["']/);
+    reparse(r.code!);
+  });
+
+  it('next-intl: adds a separate declaration next to a gt-next namespace import', () => {
+    const r = transformSourceFile(
+      'src/app/[locale]/page.tsx',
+      lines(
+        "'use client';",
+        "import * as gt from 'gt-next';",
+        "import { useTranslations } from 'next-intl';",
+        'export default function Page() {',
+        '  const t = useTranslations();',
+        "  return <span data-x={String(gt)}>{t('title')}</span>;",
+        '}'
+      ),
+      makeContext('/project', nextIntlAdapter)
+    );
+    expect(r.code).toMatch(/import \* as gt from ["']gt-next["']/);
+    reparse(r.code!);
+  });
+});
+
+// P2 (adversary A): degenerate destructures fell through every validation
+// branch; the import was stripped while the bare useTranslation() call stayed.
+describe('degenerate useTranslation destructures are held', () => {
+  for (const pattern of ['const {} =', 'const [] =', 'const [,] =']) {
+    it(`holds \`${pattern} useTranslation()\``, () => {
+      const r = transform(
+        lines(
+          "'use client';",
+          "import { useTranslation } from 'react-i18next';",
+          'export default function Preload() {',
+          `  ${pattern} useTranslation();`,
+          '  return <div>preloaded</div>;',
+          '}'
+        )
+      );
+      expect(r.code).toBeNull();
+      expect(r.skipReasons.join(' ')).toMatch(/no bindings/);
+    });
+  }
+});
+
+// P3 (adversary A): a type-only import of a needed symbol counted as present,
+// so no value import was added and generated code referenced a type binding.
+describe('ensureNamedImports promotes type-only bindings', () => {
+  const run = (code: string, names: string[]) => {
+    const ast = parse(code, {
+      sourceType: 'module',
+      plugins: ['typescript', 'jsx'],
+    });
+    ensureNamedImports(ast, 'gt-next/config', names);
+    const output = generate(ast).code;
+    parse(output, { sourceType: 'module', plugins: ['typescript', 'jsx'] });
+    return output;
+  };
+
+  it('promotes a whole type-only declaration to a value import', () => {
+    const output = run("import type { withGTConfig } from 'gt-next/config';", [
+      'withGTConfig',
+    ]);
+    expect(output).toMatch(/import \{ withGTConfig \}/);
+    expect(output).not.toMatch(/import type/);
+  });
+
+  it('promotes an inline type specifier to a value specifier', () => {
+    const output = run("import { type withGTConfig } from 'gt-next/config';", [
+      'withGTConfig',
+    ]);
+    expect(output).toMatch(/import \{ withGTConfig \}/);
+    expect(output).not.toMatch(/type withGTConfig/);
+  });
+
+  it('splits a mixed type-only declaration, keeping siblings type-only', () => {
+    const output = run(
+      "import type { withGTConfig, GTConfig } from 'gt-next/config';",
+      ['withGTConfig']
+    );
+    expect(output).toMatch(/import type \{ GTConfig \}/);
+    expect(output).toMatch(/import \{ withGTConfig \}/);
+  });
+});
+
+// P3 (adversary A): emitGtFiles trusted its caller to have run the pre-flight
+// and would spread non-object JSON into the merged config.
+describe('emitGtFiles re-asserts the config shape', () => {
+  it('throws on valid JSON that is not an object', () => {
+    const cwd = makeTree({ 'gt.config.json': '["en", "es"]' });
+    expect(() => emitGtFiles(makeContext(cwd))).toThrow(/not a JSON object/);
   });
 });
