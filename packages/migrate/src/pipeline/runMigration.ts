@@ -242,9 +242,18 @@ export async function runMigration(
       })
     );
   }
+  // `catalogs.dir` is the directory the MIGRATION uses (where loadDictionary is
+  // pointed, and where an adapter that rewrites catalog formats writes them), not
+  // necessarily the directory discovery read from: the react-intl adapter
+  // repoints it at a sibling gt-owned dir when it re-nests or synthesizes, and
+  // the react-i18next adapter sets it to a brand-new output dir while the source
+  // catalogs live under locales/<locale>/. Printing it as "found in" therefore
+  // named a path that does not exist on disk yet (the round-9 parity finding), so
+  // the line labels the directory by the role it actually has.
   io.info(
-    `Found catalogs for [${catalogs.locales.join(', ')}] in ${path.relative(cwd, catalogs.dir) || '.'} ` +
-      `(default: ${catalogs.defaultLocale})`
+    `Found catalogs for [${catalogs.locales.join(', ')}] ` +
+      `(default: ${catalogs.defaultLocale}); catalog directory for the ` +
+      `migration: ${path.relative(cwd, catalogs.dir) || '.'}`
   );
 
   const ctx: MigrationContext = {
@@ -722,11 +731,20 @@ export async function runMigration(
     ctx.testFilesNeedingMigration &&
     ctx.testFilesNeedingMigration.length > 0
   ) {
+    // The count is of FILES needing a hand migration; the failure prediction is
+    // scoped to the suites among them. Saying "N files ... those suites FAIL"
+    // promises N failing suites, which overstates by every file the test runner
+    // wires through config: a setup file is never collected as a suite, so it
+    // cannot fail on its own (the round-9 audit measured 4 files -> 3 failing
+    // suites). No file is dropped from the count; only the prediction is scoped.
     (ctx.warnings ??= []).push(
       `${ctx.testFilesNeedingMigration.length} test file(s) depend on ` +
         `${adapter.displayName} test wiring (setup, render helpers, mocks) or ` +
-        'on another test file that does; those suites FAIL until that wiring ' +
-        "is migrated by hand (see the report's " +
+        'on another test file that does; migrate that wiring by hand. The ' +
+        'suites among them that exercise converted code FAIL until you do, ' +
+        'unless every part of the app a file touches was left untouched by this ' +
+        'run; a setup file your test runner wires by config is not itself a ' +
+        "collected suite, so its breakage shows up in the suites it wires (see the report's " +
         '"Tests need manual migration" section).'
     );
   }

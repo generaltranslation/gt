@@ -485,7 +485,15 @@ export function transformSourceFile(
         file,
         line: rewrite.line,
         reason:
-          'getTranslations locale override dropped; gt-next resolves the request locale itself; use options.$locale on individual calls if a fixed locale was intended',
+          'getTranslations locale override dropped; gt-next resolves the request ' +
+          'locale itself, so an override that forwarded the route/request locale ' +
+          'needs no replacement (metadata and content still render in the ' +
+          'requested locale). If a FIXED locale was intended, note that gt-next ' +
+          'has no per-call locale override for dictionary calls: getTranslations ' +
+          'takes only a namespace, and t() options are variables plus ' +
+          '$context/$format/$maxChars, so passing $locale type-checks, builds, ' +
+          'and silently changes nothing. Read that locale from its catalog file ' +
+          'directly (import it and index the key) or inline the literal string',
       });
     }
   }

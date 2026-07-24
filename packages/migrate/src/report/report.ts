@@ -1,6 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { MigrationContext } from '../pipeline/types.js';
+import { resolveImportToProjectFiles } from '../pipeline/latentClientCalls.js';
+import type { FileEdit, MigrationContext } from '../pipeline/types.js';
+
+const escapeRegExp = (value: string) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
  * Renders the migration report: what was converted, what was skipped and
@@ -64,13 +68,59 @@ export function buildReport(
     lines.push('');
   }
 
-  lines.push('## Converted');
-  lines.push('');
   const written = ctx.edits.filter((edit) => edit.kind === 'write');
   const deleted = ctx.edits.filter((edit) => edit.kind === 'delete');
-  if (written.length === 0) {
-    lines.push('- (no files changed)');
-  }
+  // Post-run content of any project file, read once: the pending edit when this
+  // run wrote the file, else what is on disk. Every claim below that depends on
+  // the emitted tree (the gt-next/link bullet, the consumers section, the
+  // still-referencing sweep) reads through here, so no two of them can disagree
+  // about what the tree contains.
+  const writtenByPath = new Map(
+    written.map((edit) => [edit.path, edit.content ?? ''])
+  );
+  const deletedPaths = new Set(deleted.map((edit) => edit.path));
+  const diskCache = new Map<string, string | null>();
+  const postRunContent = (file: string): string | null => {
+    if (deletedPaths.has(file)) return null;
+    const pending = writtenByPath.get(file);
+    if (pending !== undefined) return pending;
+    if (diskCache.has(file)) return diskCache.get(file)!;
+    let content: string | null;
+    try {
+      content = fs.readFileSync(file, 'utf8');
+    } catch {
+      content = null; // unreadable or gone outside this run: nothing to claim
+    }
+    diskCache.set(file, content);
+    return content;
+  };
+
+  // "Converted" must not take credit for converting a file this run CREATED
+  // (the round-9 audit: getLocale.ts, getRegion.ts, loadDictionary.ts and a
+  // synthesized gt.config.json never existed before the run). Creation is
+  // claimed only on positive evidence, never guessed from a filename:
+  //  - an explicit flag from the write site, when one is present;
+  //  - a catalog file the adapter synthesized (filesToEmit is documented
+  //    new-files-only, never a mutation);
+  //  - a source file absent from the PRE-RUN scan sets. Both sets are collected
+  //    before anything is written and the transform pass iterates them, so a
+  //    source file this run rewrote is always in one of them.
+  // Anything without evidence stays under Converted rather than guessing.
+  const preRunFiles = new Set([
+    ...(ctx.projectFiles ?? []),
+    ...(ctx.sourceFiles ?? []),
+  ]);
+  const synthesizedCatalogs = new Set(
+    (ctx.catalogs.filesToEmit ?? []).map((edit) => edit.path)
+  );
+  const isCreated = (edit: FileEdit): boolean => {
+    if ('created' in edit && (edit as { created?: unknown }).created === true) {
+      return true;
+    }
+    if (synthesizedCatalogs.has(edit.path)) return true;
+    return /\.[cm]?[jt]sx?$/.test(edit.path) && !preRunFiles.has(edit.path);
+  };
+
   // A rewritten file that still references the source library must never sit
   // under "Converted" (the round-9 request.ts finding): those files get their
   // own section below, and Converted holds only clean conversions.
@@ -81,10 +131,28 @@ export function buildReport(
       adapter.mentionedIn(edit.content)
   );
   const partialSet = new Set(partiallyConverted);
-  const fullyConverted = written.filter((edit) => !partialSet.has(edit));
-  if (written.length > 0 && fullyConverted.length === 0) {
+  const rewrittenOrCreated = written.filter((edit) => !partialSet.has(edit));
+  const createdFiles = rewrittenOrCreated.filter(isCreated);
+  const createdSet = new Set(createdFiles);
+  const fullyConverted = rewrittenOrCreated.filter(
+    (edit) => !createdSet.has(edit)
+  );
+
+  lines.push('## Converted');
+  lines.push('');
+  if (written.length === 0) {
+    lines.push('- (no files changed)');
+  } else if (fullyConverted.length === 0 && deleted.length === 0) {
+    const because = [
+      partiallyConverted.length > 0
+        ? `every rewritten file still references ${adapter.displayName} (see the next section)`
+        : null,
+      createdFiles.length > 0
+        ? 'this run only added new files (see Created)'
+        : null,
+    ].filter((reason): reason is string => reason !== null);
     lines.push(
-      `- (none fully; every rewritten file still references ${adapter.displayName}, see the next section)`
+      `- (none${because.length > 0 ? `; ${because.join('; ')}` : ''})`
     );
   }
   for (const edit of fullyConverted) {
@@ -99,6 +167,21 @@ export function buildReport(
       'now load through loadDictionary.ts; no re-translation needed.'
   );
   lines.push('');
+
+  if (createdFiles.length > 0) {
+    lines.push('## Created (new files this run added)');
+    lines.push('');
+    lines.push(
+      'These files did not exist before the run; they are the gt-next wiring it ' +
+        'wrote. Nothing in them was converted from ' +
+        `${adapter.displayName}:`
+    );
+    lines.push('');
+    for (const edit of createdFiles) {
+      lines.push(`- ${relative(edit.path)}`);
+    }
+    lines.push('');
+  }
 
   if (partiallyConverted.length > 0) {
     lines.push(
@@ -121,13 +204,20 @@ export function buildReport(
   // returns undefined. The report must only credit static rendering to what was
   // actually emitted: when getLocale already existed and was left untouched, the
   // claim hinges on that pre-existing file, not on the getRegion we emitted.
-  const emittedGetLocale = ctx.edits.find(
+  //
+  // Both are matched on the CONTENT the emit phase writes, not on the filename
+  // alone (the same class as the navigation sentence below): a project file of
+  // its own named getLocale.ts that this run merely converted would otherwise be
+  // credited with restoring static rendering it has nothing to do with.
+  const emittedGetLocale = written.find(
     (edit) =>
-      edit.kind === 'write' && path.basename(edit.path) === 'getLocale.ts'
+      path.basename(edit.path) === 'getLocale.ts' &&
+      (edit.content ?? '').includes("import { locale } from 'next/root-params'")
   );
-  const emittedGetRegion = ctx.edits.find(
+  const emittedGetRegion = written.find(
     (edit) =>
-      edit.kind === 'write' && path.basename(edit.path) === 'getRegion.ts'
+      path.basename(edit.path) === 'getRegion.ts' &&
+      (edit.content ?? '').includes('export default async function getRegion()')
   );
   if (emittedGetLocale && emittedGetRegion) {
     // Both resolvers emitted; gt-next resolves the locale from next/root-params.
@@ -168,21 +258,33 @@ export function buildReport(
     lines.push('');
   }
 
+  // Claim the retained provider only when a written edit actually renders it: a
+  // project that never rendered one (a bespoke server-side setup) keeps working
+  // through the retained package alone, and naming a provider there would be
+  // false. Conservative by design; a provider living only in a skipped
+  // (unwritten) file just goes unmentioned. Two sections read this: the skip
+  // section's "these keep working" and the payload-size behavior difference,
+  // which additionally needs the provider to be handed its own messages.
+  const providerEdit =
+    adapter.providerName === null
+      ? undefined
+      : written.find((edit) =>
+          (edit.content ?? '').includes(`<${adapter.providerName}`)
+        );
+  const providerRetained = providerEdit !== undefined;
+  const providerCarriesMessages =
+    providerEdit !== undefined &&
+    new RegExp(
+      `<${escapeRegExp(adapter.providerName ?? '')}\\b[^>]*\\bmessages\\b`
+    ).test(providerEdit.content ?? '');
+
+  // Test files render in their own section below with the migration recipe;
+  // listing them anywhere else double-reports them.
+  const testFileSet = new Set(ctx.testFilesNeedingMigration ?? []);
+
   if (ctx.skippedFiles.size > 0) {
     lines.push('## Needs manual migration (files left untouched)');
     lines.push('');
-    // Claim the retained provider only when a written edit actually renders
-    // it: a project that never rendered one (a bespoke server-side setup)
-    // keeps working through the retained package alone, and naming a provider
-    // there would be false. Conservative by design; a provider living only in
-    // a skipped (unwritten) file just goes unmentioned.
-    const providerRetained =
-      adapter.providerName !== null &&
-      ctx.edits.some(
-        (edit) =>
-          edit.kind === 'write' &&
-          (edit.content ?? '').includes(`<${adapter.providerName}`)
-      );
     lines.push(
       `${adapter.displayName} is still installed` +
         (providerRetained
@@ -193,9 +295,6 @@ export function buildReport(
         'the teardown.'
     );
     lines.push('');
-    // Test files render in their own section below with the migration recipe;
-    // listing them here too would double-report them as generic skips.
-    const testFileSet = new Set(ctx.testFilesNeedingMigration ?? []);
     for (const [file, reasons] of ctx.skippedFiles) {
       if (testFileSet.has(file)) continue;
       lines.push(`- ${relative(file)}`);
@@ -227,14 +326,21 @@ export function buildReport(
       '## Tests need manual migration (run these suites before calling the migration done)'
     );
     lines.push('');
+    // The count is of FILES needing a hand migration, which is what this list
+    // holds; the failure prediction is scoped to the collected suites among
+    // them. A config-wired setup file is not itself a suite (vitest/jest never
+    // collect it), so "N files -> N failing suites" would overstate the count by
+    // every such file (the round-9 audit finding on the run-level warning).
     lines.push(
       `${testFiles.length} test file(s) depend on ${adapter.displayName} test ` +
         'wiring (setup files, render helpers, provider wrappers, module ' +
         'mocks), or import another test file that does. The components and ' +
-        'modules they exercise now call gt-next APIs, so these suites WILL ' +
-        'fail until that wiring is migrated, unless every part of the app a ' +
-        'file touches was left untouched by this run (a mock of a module whose ' +
-        'consumers were all skipped still intercepts):'
+        'modules they exercise now call gt-next APIs, so the collected suites ' +
+        'WILL fail until that wiring is migrated, unless every part of the app ' +
+        'a file touches was left untouched by this run (a mock of a module ' +
+        'whose consumers were all skipped still intercepts). A file your test ' +
+        'runner wires by config (a setup file) is not collected as a suite ' +
+        'itself: its breakage surfaces in the suites it wires:'
     );
     lines.push('');
     for (const file of testFiles) {
@@ -265,34 +371,46 @@ export function buildReport(
     lines.push('');
   }
 
-  // Wrapper transparency (the F2 finding): a component that imports its
-  // translation hook from a local wrapper (i18n/client, i18n/server) rather than
-  // from react-i18next is silently left unchanged (it has no react-i18next
-  // import to key off). Surface those consumers explicitly by listing every file
-  // that imports one of the left-unchanged modules, so the untouched call sites
-  // are visible instead of appearing done.
-  if (adapter.id === 'react-i18next') {
-    const consumers = findConsumersOfSkippedFiles(ctx);
-    if (consumers.length > 0) {
+  // Wrapper transparency: a file that reaches the old i18n through a LOCAL
+  // module this run left unchanged (a react-i18next i18n/client wrapper, a
+  // next-intl createNavigation wrapper) has no source-library import of its own,
+  // so nothing converts it and the post-run sweep cannot see it either (it
+  // references the wrapper, not the library). Left silent, such a file reads as
+  // done under "Converted" while its hook or its Link/useRouter/redirect still
+  // run through the old library. Every adapter has this shape (the round-9
+  // audit: 19 files kept importing a retained next-intl navigation wrapper while
+  // this section was gated to react-i18next), so it is listed for all of them.
+  // A flagged test file that imports a flagged helper is already listed, with
+  // its own recipe, in the test stage above; naming it here too would report it
+  // twice.
+  const consumers = findConsumersOfSkippedFiles(ctx, postRunContent).filter(
+    ({ consumer }) => !testFileSet.has(consumer)
+  );
+  if (consumers.length > 0) {
+    lines.push(
+      `## Files importing a left-unchanged module (${consumers.length})`
+    );
+    lines.push('');
+    lines.push(
+      `${consumers.length} file(s) import one of the modules left unchanged ` +
+        'above. Whatever they use from that module (a translation hook, ' +
+        `Link/useRouter/redirect) still runs through ${adapter.displayName}, ` +
+        'including for files listed under Converted, whose OWN ' +
+        `${adapter.displayName} imports were converted. Point those uses at the ` +
+        'gt-next equivalents (useTranslations / getTranslations / <T> / ' +
+        'gt-next/link) by hand, or migrate the module they import and re-run ' +
+        `\`gt migrate --from ${adapter.id}\`.`
+    );
+    lines.push('');
+    for (const { consumer, imports } of consumers) {
       lines.push(
-        `## Files importing a left-unchanged module (${consumers.length})`
+        `- ${relative(consumer)} (imports ${imports
+          .map((imp) => relative(imp))
+          .join(', ')})`
       );
-      lines.push('');
-      lines.push(
-        `${consumers.length} file(s) import one of the modules left unchanged ` +
-          'above (your local i18n wrapper / server code). Their call sites still ' +
-          'use the old i18n and were NOT migrated; point them at the gt-next ' +
-          'equivalents (useTranslations / getTranslations / <T>) by hand.'
-      );
-      lines.push('');
-      for (const { consumer, imports } of consumers) {
-        lines.push(
-          `- ${relative(consumer)} (imports ${imports
-            .map((imp) => relative(imp))
-            .join(', ')})`
-        );
-      }
-      lines.push('');
+    }
+    lines.push('');
+    if (adapter.id === 'react-i18next') {
       lines.push(
         'Note: context/plural detection uses call sites that import ' +
           'useTranslation directly from react-i18next; wrapper call sites do not ' +
@@ -320,21 +438,57 @@ export function buildReport(
   lines.push(
     `- Unknown dictionary keys throw in gt-next (${adapter.displayName} rendered the raw key and logged).`
   );
-  // Measured, not asserted: when this run generated the prefixing router
-  // wrapper, router.push/replace/prefetch ARE locale-prefixed and only the
-  // server-side redirects are not. The old blanket sentence stays accurate
-  // for react-intl/react-i18next runs and held wrappers.
-  const routerWrapped = ctx.edits.some(
-    (edit) =>
-      edit.kind === 'write' &&
-      /navigation\.client\.[cm]?[jt]sx?$/.test(edit.path) &&
-      (edit.content ?? '').includes('export function useRouter()')
-  );
+  // Both halves of the navigation sentence are gated on the emitted tree, not on
+  // a proxy. The router half keys off the CONTENT the navigation transform
+  // generates, never the emitted filename: the companion module is named after
+  // the wrapper's own basename, so a wrapper at i18n/nav.ts emits
+  // i18n/nav.client.ts and a filename test would miss it and print the blanket
+  // sentence over a tree whose router.push IS prefixed (the round-9 code
+  // adversary finding).
+  const routerWrapped = written.some((edit) => {
+    const content = edit.content ?? '';
+    return (
+      content.includes('export function useRouter()') &&
+      content.includes('localizeHref(href, locale)')
+    );
+  });
+  // The <Link> half asserts gt-next/link behavior, so it only ships when the
+  // emitted tree actually imports gt-next/link. A next-intl run that holds the
+  // navigation wrapper (its call sites use locale-aware signatures) emits no
+  // such import, and the tree's links are prefixed by the retained library
+  // instead.
+  const gtLinkImportPattern = /['"]gt-next\/link['"]/;
+  const gtLinkImported =
+    written.some((edit) => gtLinkImportPattern.test(edit.content ?? '')) ||
+    (ctx.projectFiles ?? []).some((file) =>
+      gtLinkImportPattern.test(postRunContent(file) ?? '')
+    );
+  const linkClause = gtLinkImported
+    ? ' <Link> from gt-next/link is prefixed.'
+    : '';
   lines.push(
     routerWrapped
-      ? '- Server redirects (redirect, permanentRedirect) are not locale-prefixed automatically; <Link> from gt-next/link is, and the generated navigation wrapper keeps useRouter().push/replace/prefetch prefixed.'
-      : '- Programmatic navigation (redirect, router.push) is not locale-prefixed automatically; <Link> from gt-next/link is.'
+      ? '- Server redirects (redirect, permanentRedirect) are not locale-prefixed automatically; the generated navigation wrapper keeps useRouter().push/replace/prefetch prefixed.' +
+          linkClause
+      : '- Programmatic navigation (redirect, router.push) is not locale-prefixed automatically.' +
+          linkClause
   );
+  // Retaining the source library's provider keeps two i18n payloads in the
+  // page. Measured shape (round-9 audit, one real app): no prerendered page was
+  // byte-identical after the run and each grew by roughly the size of the
+  // catalog file(s) that page renders with. Stated only when a written edit both
+  // renders the provider AND hands it messages, and sized in catalog-file terms
+  // rather than a number this run never measured for the user's app.
+  if (providerCarriesMessages) {
+    lines.push(
+      `- Both catalogs ship in every page while ${adapter.providerName} still ` +
+        "renders: gt-next's dictionary and the messages you pass that provider " +
+        'are each serialized into the page, so a prerendered page carries ' +
+        'roughly one extra catalog file worth of HTML. Finishing the teardown ' +
+        '(convert the files listed above, then re-run ' +
+        `\`gt migrate --from ${adapter.id}\`) removes the duplicate payload.`
+    );
+  }
   lines.push('');
 
   // No post-run source-library reference may go unnamed (the round-9 audit
@@ -342,30 +496,21 @@ export function buildReport(
   // a file that still references the library reads as a false "fully
   // converted"). Sweep every project file's post-run content; anything still
   // referencing the library and not already named above gets its own section.
-  const writtenByPath = new Map(
-    ctx.edits
-      .filter((edit) => edit.kind === 'write')
-      .map((edit) => [edit.path, edit.content ?? ''])
-  );
-  const deletedPaths = new Set(
-    ctx.edits.filter((edit) => edit.kind === 'delete').map((edit) => edit.path)
-  );
   const namedSoFar = lines.join('\n');
-  const isNamed = (rel: string) => {
-    const escaped = rel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    return new RegExp(`${escaped}(?![\\w.])`).test(namedSoFar);
-  };
+  // Both edges of the path have to be bounded. The right edge stops `foo.ts`
+  // from matching inside `foo.tsx`; the left edge stops `lib/meta.ts` from
+  // matching inside `src/lib/meta.ts`, which used to make a root-level file that
+  // still references the library disappear from the report entirely (the round-9
+  // code adversary finding). Path characters ('/', '\', word chars, '.', '-')
+  // may not sit immediately left of the match; list punctuation and quotes may.
+  const isNamed = (rel: string) =>
+    new RegExp(`(?<![\\w./\\\\-])${escapeRegExp(rel)}(?![\\w.])`).test(
+      namedSoFar
+    );
   const stillReferencing: string[] = [];
   for (const file of ctx.projectFiles ?? []) {
-    if (deletedPaths.has(file)) continue;
-    let content = writtenByPath.get(file);
-    if (content === undefined) {
-      try {
-        content = fs.readFileSync(file, 'utf8');
-      } catch {
-        continue; // unreadable or gone outside this run: nothing to claim
-      }
-    }
+    const content = postRunContent(file);
+    if (content === null) continue;
     if (!adapter.mentionedIn(content)) continue;
     if (isNamed(relative(file))) continue;
     stillReferencing.push(relative(file));
@@ -411,8 +556,26 @@ export function buildReport(
       ? 'Review the TODOs above, then run your build.'
       : 'Run your build.'
   );
+  // The dictionary this run wired lives where the catalogs do, and the gt CLI
+  // does not read it from gt.config.json or next.config: it takes --dictionary,
+  // or a conventional ./dictionary.{js,ts,json}. Measured on a migrated app:
+  // bare `npx gt generate` prints "No inline content or dictionaries were found"
+  // and writes 2-byte `{}` catalogs, while the same command with --dictionary
+  // writes the full source template. So the step names the flag with the real
+  // path instead of a command that cannot work on the tree this run emitted.
+  const dictionaryPath = relative(
+    path.join(ctx.catalogs.dir, `${ctx.catalogs.defaultLocale}.json`)
+  )
+    .split(path.sep)
+    .join('/');
   steps.push(
-    '`npx gt generate` (no API key) or `npx gt translate` (with credentials) to translate new locales.'
+    `\`npx gt generate --dictionary ${dictionaryPath}\` (no API key) or ` +
+      `\`npx gt translate --dictionary ${dictionaryPath}\` (with credentials) ` +
+      'to translate new locales. The flag is required: this migration keeps your ' +
+      'strings in a dictionary (not inline <T> content), and the gt CLI looks ' +
+      'for one only there or at a conventional ./dictionary.{js,ts,json} path, ' +
+      'not in gt.config.json or next.config. Without it both commands report ' +
+      '"No inline content or dictionaries were found" and write empty catalogs.'
   );
   for (const [index, step] of steps.entries()) {
     lines.push(`${index + 1}. ${step}`);
@@ -463,15 +626,6 @@ function testFileEvidence(ctx: MigrationContext, file: string): string | null {
   );
 }
 
-const SOURCE_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'];
-
-function stripSourceExtension(file: string): string {
-  for (const ext of SOURCE_EXTENSIONS) {
-    if (file.endsWith(ext)) return file.slice(0, -ext.length);
-  }
-  return file;
-}
-
 /** Extracts the specifier of every static/dynamic import, re-export, and
  *  require in a source file (best-effort, for the wrapper-consumer report). */
 function extractImportSpecifiers(code: string): string[] {
@@ -485,42 +639,54 @@ function extractImportSpecifiers(code: string): string[] {
 }
 
 /**
- * Finds every project source file that imports one of the skip+reported files
- * via a relative path. These are the call sites left unchanged because they go
- * through a local wrapper (or import the bespoke server module) rather than
- * react-i18next directly, so the report can name them instead of implying they
- * were migrated.
+ * Finds every project source file that imports one of the skip+reported files.
+ * These are the call sites left unchanged because they reach the old i18n
+ * through a local module (a react-i18next i18n/client wrapper, a next-intl
+ * createNavigation wrapper) rather than through the library directly, so the
+ * report can name them instead of implying they were migrated.
+ *
+ * Specifiers resolve the same way the rest of the pipeline resolves them
+ * (relative, '@/x'-style aliases, baseUrl-relative), because a path alias is the
+ * App Router norm: the round-9 audit found 19 files importing a retained
+ * next-intl wrapper as '@/i18n/navigation', which a relative-only match saw as
+ * zero consumers. Suffix matching can be ambiguous, so a specifier that resolves
+ * to more than one project file counts only when EVERY candidate is a skipped
+ * file (an ambiguous specifier must not manufacture a consumer).
+ *
+ * Reads post-run content, so a file this run rewrote is judged by what it will
+ * actually contain on disk.
  */
 function findConsumersOfSkippedFiles(
-  ctx: MigrationContext
+  ctx: MigrationContext,
+  postRunContent: (file: string) => string | null
 ): { consumer: string; imports: string[] }[] {
   const skipped = new Set(ctx.skippedFiles.keys());
   if (skipped.size === 0) return [];
-  const byExtless = new Map<string, string>();
-  for (const file of skipped) byExtless.set(stripSourceExtension(file), file);
 
   const projectFiles = ctx.projectFiles ?? ctx.sourceFiles ?? [];
+  const fileSet = new Set(projectFiles);
+  // A skipped file outside the project scan still has to be matchable.
+  for (const file of skipped) fileSet.add(file);
+  const resolutionFiles = [...fileSet];
   const results: { consumer: string; imports: string[] }[] = [];
   for (const file of projectFiles) {
     if (skipped.has(file)) continue;
-    let code: string;
-    try {
-      code = fs.readFileSync(file, 'utf8');
-    } catch {
-      continue;
-    }
+    const code = postRunContent(file);
+    if (code === null) continue;
     const hits = new Set<string>();
     for (const specifier of extractImportSpecifiers(code)) {
-      if (!specifier.startsWith('.')) continue;
-      const resolved = stripSourceExtension(
-        path.resolve(path.dirname(file), specifier)
+      const candidates = resolveImportToProjectFiles(
+        specifier,
+        path.dirname(file),
+        fileSet,
+        resolutionFiles
       );
-      const match =
-        byExtless.get(resolved) ?? byExtless.get(path.join(resolved, 'index'));
-      if (match) hits.add(match);
+      if (candidates.length === 0) continue;
+      if (!candidates.every((candidate) => skipped.has(candidate))) continue;
+      for (const candidate of candidates) hits.add(candidate);
     }
     if (hits.size > 0) {
-      results.push({ consumer: file, imports: [...hits] });
+      results.push({ consumer: file, imports: [...hits].sort() });
     }
   }
   return results;

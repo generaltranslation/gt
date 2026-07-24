@@ -781,13 +781,42 @@ function applyHazardContainment(
         'this route',
     });
   }
+  // "gt migrate added the export" is only true for the routes where this run
+  // planned an insertion. A route that already carried
+  // `dynamic = "force-dynamic"` was left alone (the planner returned 'already',
+  // which is what target.content === null records), and on a re-run over an
+  // already-migrated tree that is EVERY route: claiming credit for writing them
+  // then, under a dry-run header that says nothing was written, is a past-tense
+  // action this run did not take (the round-9 audit finding). Each group gets its
+  // own verb; the label is per group, so no route moves out of the warning.
+  const label = (group: ContainmentTarget[]) =>
+    group
+      .map((target) => `${target.pattern} (${relative(target.entry)})`)
+      .join(', ');
+  const inserted = targets.filter((target) => target.content !== null);
+  const alreadyPresent = targets.filter((target) => target.content === null);
+  const containment = [
+    inserted.length > 0
+      ? // Present tense so the sentence is true in both modes: a --dry-run
+        // report says "nothing written" in its own header, and past-tense credit
+        // for a write that has not happened is the same defect as crediting an
+        // insertion into a file this run never touched.
+        'gt migrate adds `export const dynamic = "force-dynamic"` to ' +
+        `${label(inserted)}.`
+      : null,
+    alreadyPresent.length > 0
+      ? '`export const dynamic = "force-dynamic"` is already present (kept as ' +
+        `is, not written by this run) on ${label(alreadyPresent)}.`
+      : null,
+  ]
+    .filter((clause): clause is string => clause !== null)
+    .join(' ');
   (ctx.warnings ??= []).push(
     `${targets.length} route(s) held dynamic (ƒ) to protect the build: ` +
       'their server render reaches a function imported from a client module, ' +
       'a React Server Components violation this app already carries (see the ' +
-      'TODOs). Prerendering them would execute that call and fail the build, ' +
-      'so gt migrate added `export const dynamic = "force-dynamic"` to ' +
-      `${targets.map((target) => `${target.pattern} (${relative(target.entry)})`).join(', ')}. ` +
+      'TODOs). Prerendering them would execute that call and fail the build. ' +
+      `${containment} ` +
       'This takes static rendering away from no route that had it: no build ' +
       'that succeeded could have prerendered a route whose render fails. ' +
       'Every other route keeps static rendering (SSG) through ' +
