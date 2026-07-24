@@ -4,6 +4,7 @@ import traverseModule from '@babel/traverse';
 import generateModule from '@babel/generator';
 import * as t from '@babel/types';
 import { ensureNamedImports } from './importUtils.js';
+import { buildGtOptionsExpression } from './gtOptions.js';
 import type {
   MigrationContext,
   SourceResult,
@@ -93,15 +94,56 @@ export function transformReactIntlNextConfig(
   // 2. Wrap the default-exported config in withGTConfig(config, { dictionary }).
   const dictionaryPath = relativeDictionaryPath(ctx);
   let wrapped = false;
+  let cjsExport = false;
   traverse(ast, {
     ExportDefaultDeclaration(pathExport) {
+      // Babel also visits nodes this visitor just inserted (the function-
+      // declaration branch replaces the export with a new one); one wrap only.
+      if (wrapped) return;
       const declaration = pathExport.node.declaration;
+      // `export default function config(...) {...}`: withGTConfig accepts a
+      // function config natively (it resolves the result, sync or async, and
+      // re-wraps it), so demote a named declaration to keep self-references
+      // valid and wrap the reference; re-shape an anonymous one inline.
+      if (t.isFunctionDeclaration(declaration)) {
+        if (declaration.id) {
+          pathExport.replaceWithMultiple([
+            declaration,
+            t.exportDefaultDeclaration(
+              gtConfigCall(
+                ctx,
+                t.identifier(declaration.id.name),
+                dictionaryPath
+              )
+            ),
+          ]);
+        } else {
+          pathExport.node.declaration = gtConfigCall(
+            ctx,
+            t.functionExpression(
+              null,
+              declaration.params,
+              declaration.body,
+              declaration.generator,
+              declaration.async
+            ),
+            dictionaryPath
+          );
+        }
+        wrapped = true;
+        mutated = true;
+        return;
+      }
       if (!t.isExpression(declaration)) return;
       if (isAlreadyGtWrapped(declaration)) {
         wrapped = true;
         return;
       }
-      pathExport.node.declaration = gtConfigCall(declaration, dictionaryPath);
+      pathExport.node.declaration = gtConfigCall(
+        ctx,
+        declaration,
+        dictionaryPath
+      );
       wrapped = true;
       mutated = true;
     },
@@ -119,9 +161,10 @@ export function transformReactIntlNextConfig(
         wrapped = true;
         return;
       }
-      pathAssign.node.right = gtConfigCall(right, dictionaryPath);
+      pathAssign.node.right = gtConfigCall(ctx, right, dictionaryPath);
       wrapped = true;
       mutated = true;
+      cjsExport = true;
     },
   });
 
@@ -136,7 +179,29 @@ export function transformReactIntlNextConfig(
 
   if (!mutated) return { ...none, todos };
 
-  ensureNamedImports(ast, 'gt-next/config', ['withGTConfig']);
+  if (cjsExport) {
+    // A module.exports config loads as CJS, where an injected ESM import
+    // statement would not parse; use the require form instead.
+    ast.program.body.unshift(
+      t.variableDeclaration('const', [
+        t.variableDeclarator(
+          t.objectPattern([
+            t.objectProperty(
+              t.identifier('withGTConfig'),
+              t.identifier('withGTConfig'),
+              false,
+              true
+            ),
+          ]),
+          t.callExpression(t.identifier('require'), [
+            t.stringLiteral('gt-next/config'),
+          ])
+        ),
+      ])
+    );
+  } else {
+    ensureNamedImports(ast, 'gt-next/config', ['withGTConfig']);
+  }
 
   const output = generate(
     ast,
@@ -170,17 +235,13 @@ function isAlreadyGtWrapped(node: t.Expression): boolean {
 }
 
 function gtConfigCall(
+  ctx: MigrationContext,
   config: t.Expression,
   dictionaryPath: string
 ): t.CallExpression {
   return t.callExpression(t.identifier('withGTConfig'), [
     config,
-    t.objectExpression([
-      t.objectProperty(
-        t.identifier('dictionary'),
-        t.stringLiteral(dictionaryPath)
-      ),
-    ]),
+    buildGtOptionsExpression(ctx, dictionaryPath),
   ]);
 }
 

@@ -4,6 +4,7 @@ import traverseModule from '@babel/traverse';
 import generateModule from '@babel/generator';
 import * as t from '@babel/types';
 import { ensureNamedImports } from './importUtils.js';
+import { buildGtOptionsExpression } from './gtOptions.js';
 import type { MigrationContext, SourceResult } from '../pipeline/types.js';
 
 const traverse: typeof traverseModule =
@@ -51,22 +52,45 @@ export function transformReactI18nextNextConfig(
   }
 
   const dictionaryPath = relativeDictionaryPath(ctx);
-  const gtOptions = t.objectExpression([
-    t.objectProperty(
-      t.identifier('dictionary'),
-      t.stringLiteral(dictionaryPath)
-    ),
-  ]);
+  const gtOptions = buildGtOptionsExpression(ctx, dictionaryPath);
   const wrap = (config: t.Expression): t.CallExpression =>
     t.callExpression(t.identifier('withGTConfig'), [config, gtOptions]);
 
   let rewrote = false;
   let isCjs = false;
 
-  // ESM: export default <expr>.
+  // ESM: export default <expr> (withGTConfig accepts a function config
+  // natively, so function expressions and declarations wrap the same way; a
+  // named declaration is demoted first so self-references stay valid).
   traverse(ast, {
     ExportDefaultDeclaration(exportPath) {
+      // Babel also visits nodes this visitor just inserted: after the
+      // function-declaration branch below replaces the export with
+      // [declaration, export default withGTConfig(...)], the new export node
+      // comes through here again and the expression branch would wrap it a
+      // second time (withGTConfig(withGTConfig(...))). One wrap per file.
+      if (rewrote) return;
       const declaration = exportPath.node.declaration;
+      if (t.isFunctionDeclaration(declaration)) {
+        if (declaration.id) {
+          exportPath.replaceWithMultiple([
+            declaration,
+            t.exportDefaultDeclaration(wrap(t.identifier(declaration.id.name))),
+          ]);
+        } else {
+          exportPath.node.declaration = wrap(
+            t.functionExpression(
+              null,
+              declaration.params,
+              declaration.body,
+              declaration.generator,
+              declaration.async
+            )
+          );
+        }
+        rewrote = true;
+        return;
+      }
       if (!t.isExpression(declaration)) return;
       exportPath.node.declaration = wrap(declaration);
       rewrote = true;
@@ -95,17 +119,16 @@ export function transformReactI18nextNextConfig(
   }
 
   if (!rewrote) {
+    // A skip, not a TODO: converted consumers depend on withGTConfig for
+    // dictionary and locale resolution, so a config left unwrapped means the
+    // migration must not proceed (the driver turns a config-lane failure into
+    // a hard stop with this reason).
     return {
       ...none,
-      code: null,
-      todos: [
-        {
-          file,
-          reason:
-            "could not find a default export / module.exports to wrap; add `withGTConfig(yourConfig, { dictionary: '" +
-            dictionaryPath +
-            "' })` from gt-next/config to next.config manually (gt-next needs it to load the dictionary and run its compiler plugin)",
-        },
+      skipReasons: [
+        "could not find a default export / module.exports to wrap; add `withGTConfig(yourConfig, { dictionary: '" +
+          dictionaryPath +
+          "' })` from gt-next/config to next.config manually, then re-run gt migrate",
       ],
     };
   }

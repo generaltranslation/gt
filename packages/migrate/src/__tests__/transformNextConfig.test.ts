@@ -54,7 +54,9 @@ describe('transformNextConfigFile', () => {
       /import \{ withGTConfig \} from ["']gt-next\/config["']/
     );
     expect(result.code).toMatch(
-      /export default withGTConfig\(nextConfig, \{\s*dictionary: ["']\.\/messages\/en\.json["'],?\s*\}\)/
+      // cacheUrl: null rides along for project-less (dictionary-only) runs so
+      // gt-next's I18nCache does not warn about a missing projectId
+      /export default withGTConfig\(nextConfig, \{\s*dictionary: ["']\.\/messages\/en\.json["'],?\s*cacheUrl: null,?\s*\}\)/
     );
     expect(result.code).not.toContain('createNextIntlPlugin');
     expect(result.code).not.toContain('withNextIntl');
@@ -96,7 +98,7 @@ describe('transformNextConfigFile', () => {
       "createNextIntlPlugin('./src/i18n/request.ts')"
     );
     expect(result.code).toMatch(
-      /export default withNextIntl\(\s*withGTConfig\(nextConfig, \{\s*dictionary: ["']\.\/messages\/en\.json["'],?\s*\}\)\s*\)/
+      /export default withNextIntl\(\s*withGTConfig\(nextConfig, \{\s*dictionary: ["']\.\/messages\/en\.json["'],?\s*cacheUrl: null,?\s*\}\)\s*\)/
     );
     expect(
       result.todos.some((todo) => todo.reason.includes('createNextIntlPlugin'))

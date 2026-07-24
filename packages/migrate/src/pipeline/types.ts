@@ -116,6 +116,40 @@ export type MigrationContext = {
   /** resolved --config path; gt.config.json is read from and written to this
    *  path (defaults to <cwd>/gt.config.json when the flag is absent) */
   configFile?: string;
+  /** files whose programmatic navigation uses next-intl's locale-aware call
+   *  signatures (router.replace(href, { locale }), redirect({ href, locale })).
+   *  Each such file skips, and while any exist the createNavigation wrapper is
+   *  held on next-intl (see transformNavigation) so those call sites keep
+   *  resolving against the library that understands them. */
+  localeAwareNavCallers?: string[];
+  /** set when next.config's export shape forced the fallback wrap
+   *  (withGTConfig around the WHOLE exported value) and the source library's
+   *  plugin therefore stays composed inside it. The emit phase must then keep
+   *  the library installed and its request/routing files on disk even on an
+   *  otherwise-full migration, or the retained composition stops resolving. */
+  nextConfigRetainsPlugin?: boolean;
+  /** Server modules that CALL a function imported from a 'use client' module
+   *  (e.g. a server page calling a local useLocalizedLabel() hook exported by
+   *  a client-directive file). That is a latent React Server Components
+   *  violation the app already carries: it only detonates when the route
+   *  actually renders on the server, which request-scoped (dynamic ƒ) baseline
+   *  rendering may never do at build time. Restoring static rendering would
+   *  make prerender execute the call and fail the build, so while any of these
+   *  exist the static locale resolvers are withheld (routes stay dynamic,
+   *  build-parity with the baseline) and the report names each hazard. */
+  latentClientCallHazards?: {
+    caller: string;
+    importedName: string;
+    clientModule: string;
+  }[];
+  /** Test files (setup, render helpers, mocks, specs) that use the source
+   *  library. No codemod can follow vi.mock()/jest.mock() of the source
+   *  module or an IntlProvider render helper, and converting the components
+   *  under test breaks the suites either way, so these are an explicit manual
+   *  stage: excluded from conversion, counted as skips (provider and teardown
+   *  survive for them), and listed in their own report section with the
+   *  expectation set plainly (the suites fail until they are migrated). */
+  testFilesNeedingMigration?: string[];
 };
 
 export type SourceResult = {

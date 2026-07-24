@@ -123,6 +123,7 @@ export const reactIntlAdapter: SourceAdapter = {
   transformNextConfig: transformReactIntlNextConfig,
 
   nextConfigCandidates: ['next.config.ts', 'next.config.js', 'next.config.mjs'],
+  requiresServerProviderBoundary: true,
   middlewareCandidates: [],
 
   projectUsagePattern:

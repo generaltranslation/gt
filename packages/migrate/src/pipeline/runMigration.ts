@@ -1,15 +1,24 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { parse } from '@babel/parser';
 import {
   getAdapter,
   supportedSourceIds,
   type SourceAdapter,
 } from '../adapters/index.js';
-import { emitGtFiles } from '../emit/emitGtFiles.js';
+import {
+  emitGtFiles,
+  findLocaleLayout,
+  supportsRootParams,
+} from '../emit/emitGtFiles.js';
 import { matchFiles } from '../fs/matchFiles.js';
 import type { MigrateIO } from './io.js';
 import { resolveCatalogsInteractively } from '../catalogs/promptFallbacks.js';
 import { hasDependency, resolveMigrationSource } from './resolveSource.js';
+import {
+  detectLatentClientCallHazards,
+  TEST_FILE_PATH,
+} from './latentClientCalls.js';
 import { createMigrateDiagnostic } from './diagnostics.js';
 import { transformLayoutFile } from '../transforms/transformLayout.js';
 import { transformSourceFile } from '../transforms/transformSource.js';
@@ -313,36 +322,86 @@ export async function runMigration(
   // context), so they are deferred until every other file's skip status is
   // known; see the deferred passes below.
   const providerFiles: string[] = [];
+  const navigationFiles: { file: string; code: string }[] = [];
   for (const file of sourceFiles) {
     if (configLaneFiles.has(file)) continue;
     try {
       const code = fs.readFileSync(file, 'utf8');
+      // Locale-aware navigation callers (router.replace(href, { locale }),
+      // redirect({ href, locale })) skip whole and hold the wrapper. Scanned
+      // before every other classification because such a caller may have no
+      // direct source-library import at all (it imports only the wrapper), so
+      // no other pass would ever see it.
+      const navCallerReason =
+        adapter.navigation?.detectLocaleAwareCaller?.(code);
+      if (navCallerReason) {
+        ctx.skippedFiles.set(file, [navCallerReason]);
+        (ctx.localeAwareNavCallers ??= []).push(file);
+        continue;
+      }
+      // Test files are not runtime code: no codemod can follow a vi.mock()/
+      // jest.mock() of the source module or an IntlProvider render helper,
+      // and converting the components they render breaks the suites either
+      // way. They form an explicit manual stage: excluded from conversion,
+      // held as skips (provider and teardown survive for them), and listed in
+      // the report's own test section.
+      if (TEST_FILE_PATH.test(file.split(path.sep).join('/'))) {
+        if (
+          adapter.projectUsagePattern.test(code) ||
+          adapter.mentionedIn(code)
+        ) {
+          ctx.skippedFiles.set(file, [
+            `test file uses ${adapter.displayName}; migrate the test setup, render helpers, and mocks by hand (see the report's "Tests need manual migration" section)`,
+          ]);
+          (ctx.testFilesNeedingMigration ??= []).push(file);
+        }
+        continue;
+      }
       if (isLayoutFile(file)) {
         layouts.push(file);
         continue;
       }
       if (adapter.navigation?.isNavigationFile(code)) {
-        const navigation = adapter.navigation.transformNavigation(
-          file,
-          code,
-          ctx
-        );
-        if (navigation.code !== null || navigation.skipReasons.length > 0) {
-          collect(ctx, file, navigation);
-          continue;
-        }
-        // The transform claimed nothing: the detection was a false match (a
-        // comment, an unrelated helper with the same name). Fall through to
-        // the generic source pass so real source-library usage in this file
-        // is still converted or registered as a skip.
+        // Deferred below (Pass 1b): the wrapper's convert-vs-hold decision
+        // needs the complete locale-aware-caller set, which exists only once
+        // this loop and the outside-scan check have both finished.
+        navigationFiles.push({ file, code });
+        continue;
       }
       if (adapter.hasProvider(code)) {
         providerFiles.push(file);
         continue;
       }
-      collect(ctx, file, runSourceTransform(file, code, ctx));
+      collect(ctx, file, runSourceTransform(file, code, ctx), code);
     } catch (error) {
       recordTransformError(ctx, file, error);
+    }
+  }
+
+  // Pre-flight for adapters whose consumers only work behind a real server
+  // provider boundary (react-intl, react-i18next). gt-next's GTProvider is an
+  // async Server Component with children-only props, so it needs a Server
+  // Component layout to mount in, and the locale must resolve per-route
+  // through next/root-params ([locale] as the ROOT layout). When either
+  // condition fails there is no mechanical wiring that yields a correct app:
+  // conversion produces output that builds and then breaks at runtime (a
+  // production dictionary crash from GTProvider inside a client layout;
+  // default-language content on every non-default locale route — the round-7
+  // AutoHack/Memo/Sniply failures). Stop with the manual steps instead; edits
+  // are buffered, so nothing has been written.
+  if (adapter.requiresServerProviderBoundary) {
+    const boundaryProblem = checkServerProviderBoundary(ctx, layouts);
+    if (boundaryProblem) {
+      io.fatal(
+        createMigrateDiagnostic({
+          severity: 'Error',
+          whatHappened:
+            "gt migrate cannot wire gt-next's provider and locale correctly in this project",
+          why: boundaryProblem.why,
+          reassurance: 'Nothing has been written.',
+          fix: boundaryProblem.fix,
+        })
+      );
     }
   }
 
@@ -360,11 +419,67 @@ export async function runMigration(
       continue;
     }
     if (adapter.projectUsagePattern.test(content)) {
-      ctx.skippedFiles.set(file, [
-        `uses ${adapter.displayName} but was not scanned (outside the --src scope or the default globs); include it or convert it manually`,
-      ]);
+      // Same test-stage routing as Pass 1: a tests/ tree at the project root
+      // sits outside the default globs, and its setup/helpers are the most
+      // common holders of the provider wiring the suites depend on.
+      if (TEST_FILE_PATH.test(file.split(path.sep).join('/'))) {
+        ctx.skippedFiles.set(file, [
+          `test file uses ${adapter.displayName}; migrate the test setup, render helpers, and mocks by hand (see the report's "Tests need manual migration" section)`,
+        ]);
+        (ctx.testFilesNeedingMigration ??= []).push(file);
+      } else {
+        ctx.skippedFiles.set(file, [
+          `uses ${adapter.displayName} but was not scanned (outside the --src scope or the default globs); include it or convert it manually`,
+        ]);
+      }
+      continue;
+    }
+    // Same locale-aware-navigation check as Pass 1: an unscanned caller that
+    // imports only the wrapper matches no source-library pattern, yet its
+    // call sites break just as hard once the wrapper is converted.
+    const navCallerReason =
+      adapter.navigation?.detectLocaleAwareCaller?.(content);
+    if (navCallerReason) {
+      ctx.skippedFiles.set(file, [navCallerReason]);
+      (ctx.localeAwareNavCallers ??= []).push(file);
     }
   }
+
+  // Pass 1b: navigation wrappers, deferred from Pass 1 so the
+  // locale-aware-caller set (Pass 1 + the outside-scan check above) is
+  // complete before the wrapper decides between converting and holding.
+  for (const { file, code } of navigationFiles) {
+    try {
+      const navigation = adapter.navigation!.transformNavigation(
+        file,
+        code,
+        ctx
+      );
+      if (navigation.code !== null || navigation.skipReasons.length > 0) {
+        collect(ctx, file, navigation, code);
+        continue;
+      }
+      // The transform claimed nothing: the detection was a false match (a
+      // comment, an unrelated helper with the same name). Fall through to
+      // the generic source pass so real source-library usage in this file
+      // is still converted or registered as a skip.
+      if (adapter.hasProvider(code)) {
+        providerFiles.push(file);
+        continue;
+      }
+      collect(ctx, file, runSourceTransform(file, code, ctx), code);
+    } catch (error) {
+      recordTransformError(ctx, file, error);
+    }
+  }
+
+  // Latent client-call hazards (a server module calling a function imported
+  // from a 'use client' module) decide whether the emit phase may restore
+  // static rendering: prerendering such a route executes the call and fails
+  // the build, so while any exist the resolvers are withheld and routes stay
+  // dynamic, exactly as the baseline rendered them. Detected here, on
+  // baseline content, before any conversion decisions read it.
+  detectLatentClientCallHazards(ctx);
 
   // Pass 2a: classify deferred provider files. A provider file that must be
   // skipped for its own reasons (an unsupported next-intl API alongside the
@@ -378,7 +493,7 @@ export async function runMigration(
       const code = fs.readFileSync(file, 'utf8');
       const classified = runSourceTransform(file, code, ctx);
       if (classified.skipReasons.length > 0) {
-        collect(ctx, file, classified);
+        collect(ctx, file, classified, code);
       } else {
         providerFilesToApply.push(file);
       }
@@ -442,7 +557,7 @@ export async function runMigration(
   // this exact state and found no new skips, so these results are settled.
   for (const [file, code] of layoutSources) {
     if (ctx.skippedFiles.has(file)) continue;
-    collect(ctx, file, runLayoutTransform(adapter, file, code, ctx));
+    collect(ctx, file, runLayoutTransform(adapter, file, code, ctx), code);
   }
 
   // Pass 2c: apply the deferred provider files now that the skip set is final
@@ -454,7 +569,12 @@ export async function runMigration(
   for (const file of providerFilesToApply) {
     try {
       const code = fs.readFileSync(file, 'utf8');
-      collect(ctx, file, runSourceTransform(file, code, ctx, retainProviders));
+      collect(
+        ctx,
+        file,
+        runSourceTransform(file, code, ctx, retainProviders),
+        code
+      );
     } catch (error) {
       recordTransformError(ctx, file, error);
     }
@@ -468,7 +588,12 @@ export async function runMigration(
     for (const configFile of findRootFiles(cwd, adapter.nextConfigCandidates)) {
       try {
         const code = fs.readFileSync(configFile, 'utf8');
-        collect(ctx, configFile, transformNextConfig(configFile, code, ctx));
+        collect(
+          ctx,
+          configFile,
+          transformNextConfig(configFile, code, ctx),
+          code
+        );
         if (isEsmNextConfig(configFile, cwd)) {
           // gt-next/config's ESM bundle currently breaks under a native-ESM
           // config ("require is not defined" resolving the Next.js version).
@@ -541,6 +666,36 @@ export async function runMigration(
     });
   }
 
+  // A [locale] layout without <body> raises a "GTProvider was not added"
+  // TODO, but when the ROOT layout above it received the provider that claim
+  // reads as false (the round-7 PlantPal report inaccuracy). Once any written
+  // edit carries the provider, drop the stale advice.
+  if (
+    ctx.edits.some(
+      (edit) =>
+        edit.kind === 'write' && (edit.content ?? '').includes('<GTProvider')
+    )
+  ) {
+    ctx.todos = ctx.todos.filter(
+      (todo) =>
+        !todo.reason.startsWith('GTProvider was not added automatically')
+    );
+  }
+
+  // Failing suites must not be discoverable only by running them: echo the
+  // test stage at the end of the run, not just inside the report.
+  if (
+    ctx.testFilesNeedingMigration &&
+    ctx.testFilesNeedingMigration.length > 0
+  ) {
+    (ctx.warnings ??= []).push(
+      `${ctx.testFilesNeedingMigration.length} test file(s) still wire ` +
+        `${adapter.displayName}; those suites FAIL until their setup/render ` +
+        "helpers/mocks are migrated by hand (see the report's " +
+        '"Tests need manual migration" section).'
+    );
+  }
+
   // Count real source transforms before emitGtFiles adds the gt-next
   // scaffolding (config, loaders, resolvers). ctx.edits holds only transform
   // writes at this point.
@@ -549,6 +704,36 @@ export async function runMigration(
   ).length;
 
   ctx.edits.push(...emitGtFiles(ctx));
+
+  // Hard post-condition: converted files are gt-next consumers, and gt-next
+  // has no dictionary or locale wiring without withGTConfig in next.config.
+  // If the config lane failed to install it (an export shape even the
+  // fallback wrap could not reach, or a config skipped for its own reasons),
+  // writing the conversion anyway ships an app whose every locale route fails
+  // at runtime while the report reads as a success (the round-7 Memo Engine
+  // 500s). Edits are still buffered, so stopping here leaves the project
+  // untouched.
+  if (transformedSourceFiles > 0 && !isGtConfigWired(ctx)) {
+    const existing = findRootFiles(cwd, adapter.nextConfigCandidates);
+    const detail = existing
+      .map((configFile) => {
+        const reasons = ctx.skippedFiles.get(configFile);
+        const relativePath = path.relative(cwd, configFile);
+        return reasons
+          ? `${relativePath}: ${reasons.join('; ')}`
+          : relativePath;
+      })
+      .join(' | ');
+    io.fatal(
+      createMigrateDiagnostic({
+        severity: 'Error',
+        whatHappened: `gt migrate could not install withGTConfig in this project's Next.js config (${detail || 'no config file found'})`,
+        why: 'converted files resolve their dictionary and locale through withGTConfig; without it every migrated route fails at runtime',
+        reassurance: 'Nothing has been written.',
+        fix: "Wrap the config's export in withGTConfig(yourConfig, { dictionary: '<path to your default-locale catalog>' }) from gt-next/config by hand, then re-run gt migrate.",
+      })
+    );
+  }
 
   // Adapters that rewrite catalogs (react-i18next: i18next JSON -> merged ICU
   // dictionaries) emit the converted files into their new output dir and record
@@ -641,14 +826,17 @@ function recordTransformError(
 function collect(
   ctx: MigrationContext,
   file: string,
-  result: SourceResult
+  result: SourceResult,
+  originalCode?: string
 ): void {
   if (result.skipReasons.length > 0) {
     ctx.skippedFiles.set(file, result.skipReasons);
     return;
   }
   ctx.todos.push(...result.todos);
-  if (result.code !== null) {
+  // A byte-identical write is not a conversion: listing it as "Converted"
+  // misreports the run (the round-7 i18n-provider false entry), so drop it.
+  if (result.code !== null && result.code !== originalCode) {
     ctx.edits.push({ path: file, kind: 'write', content: result.code });
   }
 }
@@ -721,6 +909,121 @@ function resolvesFromNodeModules(cwd: string, names: Set<string>): boolean {
     if (parent === dir) return false;
     dir = parent;
   }
+}
+
+/**
+ * Validates the two conditions gt-next needs before react-intl/react-i18next
+ * consumers can be converted (see requiresServerProviderBoundary on the
+ * adapter): a Server Component layout rendering <body> for GTProvider to
+ * mount in, and a [locale] segment as the ROOT layout on root-params-capable
+ * Next so the locale resolves per-route. Returns the human-readable problem,
+ * or null when the boundary is sound.
+ */
+export function checkServerProviderBoundary(
+  ctx: MigrationContext,
+  layouts: string[]
+): { why: string; fix: string } | null {
+  let bodyLayout: string | null = null;
+  for (const file of layouts) {
+    let code: string;
+    try {
+      code = fs.readFileSync(file, 'utf8');
+    } catch {
+      continue;
+    }
+    if (!/<body[\s>]/.test(code)) continue;
+    bodyLayout = file;
+    let isClientLayout = false;
+    try {
+      const ast = parse(code, {
+        sourceType: 'module',
+        plugins: ['jsx', 'typescript'],
+      });
+      isClientLayout = ast.program.directives.some(
+        (directive) => directive.value.value === 'use client'
+      );
+    } catch {
+      // Unparseable layout: the layout pass reports it; not a boundary verdict.
+      continue;
+    }
+    if (isClientLayout) {
+      return {
+        why: `${path.relative(ctx.cwd, file)} renders <body> but is a Client Component ('use client'); gt-next's GTProvider is an async Server Component and cannot load its dictionary inside a client layout — the build passes and production throws (Dictionary entry ... cannot be found)`,
+        fix: 'Split the layout: keep <html>/<body> in a Server Component and move the client logic into a nested client component, then re-run gt migrate.',
+      };
+    }
+  }
+  if (!bodyLayout) {
+    return {
+      why: 'no scanned layout renders <body>, so there is no Server Component mount point for GTProvider',
+      fix: 'Add a root Server Component layout that renders <html>/<body>, then re-run gt migrate.',
+    };
+  }
+
+  const localeLayout = findLocaleLayout(ctx);
+  if (localeLayout.kind === 'none') {
+    return {
+      why: `the app has no [locale] route segment; gt-next resolves the active locale per-route from the [locale] root param, and ${ctx.adapter.displayName}'s client-side locale state has no gt-next equivalent, so every converted call site would render the default locale no matter what the user selects`,
+      fix: 'Move localized routes under a [locale] segment (app/[locale]/...), then re-run gt migrate.',
+    };
+  }
+  if (localeLayout.kind === 'other-segment') {
+    return {
+      why: `the localized route segment is ${localeLayout.segment}, not [locale]; next/root-params only exposes a locale() export for a segment named literally [locale], so every non-default locale would render in the default language`,
+      fix: `Rename the ${localeLayout.segment} directory to [locale] (updating the imports and links that point at it), then re-run gt migrate.`,
+    };
+  }
+  if (localeLayout.hasRootLayoutAbove) {
+    return {
+      why: 'a separate root layout sits above the [locale] segment, so next/root-params does not expose locale there and gt-next falls back to request headers/cookies this app never sets; every route would render the default language',
+      fix: 'Merge the root layout down into [locale]/layout.tsx so [locale] is the root layout, then re-run gt migrate.',
+    };
+  }
+  if (!supportsRootParams(ctx.cwd)) {
+    return {
+      why: "this project's Next resolves below 15.5 (or its version could not be determined), so next/root-params — the only per-route locale signal gt-next has in this app — is unavailable",
+      fix: 'Upgrade Next to >= 15.5, then re-run gt migrate.',
+    };
+  }
+  return null;
+}
+
+/**
+ * True when the migration's final state has withGTConfig wired into a Next
+ * config: a buffered edit whose content carries it (a converted or freshly
+ * created config), or an existing config candidate that already contains it
+ * on disk (an idempotent re-run). Edits win over disk content for the same
+ * path, so a config rewritten this run is judged by what will be written.
+ */
+function isGtConfigWired(ctx: MigrationContext): boolean {
+  const candidatePaths = new Set(
+    ctx.adapter.nextConfigCandidates.map((candidate) =>
+      path.join(ctx.cwd, candidate)
+    )
+  );
+  const editedByPath = new Map(
+    ctx.edits
+      .filter((edit) => edit.kind === 'write' && candidatePaths.has(edit.path))
+      .map((edit) => [edit.path, edit.content ?? ''])
+  );
+  for (const candidate of candidatePaths) {
+    const edited = editedByPath.get(candidate);
+    if (edited !== undefined) {
+      if (edited.includes('withGTConfig')) return true;
+      continue;
+    }
+    try {
+      if (
+        fs.existsSync(candidate) &&
+        fs.readFileSync(candidate, 'utf8').includes('withGTConfig')
+      ) {
+        return true;
+      }
+    } catch {
+      // unreadable: fall through; another candidate may be wired
+    }
+  }
+  return false;
 }
 
 function isEsmNextConfig(configFile: string, cwd: string): boolean {

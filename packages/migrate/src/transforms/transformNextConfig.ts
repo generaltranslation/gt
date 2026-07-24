@@ -1,9 +1,10 @@
 import path from 'node:path';
 import { parse } from '@babel/parser';
-import traverseModule from '@babel/traverse';
+import traverseModule, { type NodePath } from '@babel/traverse';
 import generateModule from '@babel/generator';
 import * as t from '@babel/types';
 import { ensureNamedImports } from './importUtils.js';
+import { buildGtOptionsExpression } from './gtOptions.js';
 import type { MigrationContext, SourceResult } from '../pipeline/types.js';
 
 const traverse: typeof traverseModule =
@@ -50,7 +51,12 @@ export function transformNextConfigFile(
     };
   }
 
+  // Collect the plugin import and wrapper bindings WITHOUT removing anything
+  // yet: whether they can go depends on which rewrite path below succeeds (the
+  // fallback wrap keeps the plugin composed inside the exported value, where
+  // deleting its import would break the file).
   let pluginLocal: string | null = null;
+  const pluginImportPaths: NodePath<t.ImportDeclaration>[] = [];
   traverse(ast, {
     ImportDeclaration(importPath) {
       if (importPath.node.source.value !== PLUGIN_MODULE) return;
@@ -59,7 +65,7 @@ export function transformNextConfigFile(
           pluginLocal = specifier.local.name;
         }
       }
-      if (!retainNextIntl) importPath.remove();
+      pluginImportPaths.push(importPath);
     },
   });
   if (!pluginLocal) {
@@ -71,6 +77,7 @@ export function transformNextConfigFile(
 
   // `const withNextIntl = createNextIntlPlugin(...)` wrapper bindings.
   const wrapperNames = new Set<string>();
+  const wrapperDeclPaths: NodePath<t.VariableDeclarator>[] = [];
   traverse(ast, {
     VariableDeclarator(declPath) {
       const init = declPath.node.init;
@@ -81,7 +88,7 @@ export function transformNextConfigFile(
         t.isIdentifier(declPath.node.id)
       ) {
         wrapperNames.add(declPath.node.id.name);
-        if (!retainNextIntl) declPath.remove();
+        wrapperDeclPaths.push(declPath);
       }
     },
   });
@@ -103,12 +110,7 @@ export function transformNextConfigFile(
       const config = t.isExpression(inner) ? inner : t.objectExpression([]);
       const gtCall = t.callExpression(t.identifier('withGTConfig'), [
         config,
-        t.objectExpression([
-          t.objectProperty(
-            t.identifier('dictionary'),
-            t.stringLiteral(dictionaryPath)
-          ),
-        ]),
+        buildGtOptionsExpression(ctx, dictionaryPath),
       ]);
       if (retainNextIntl) {
         // Keep the next-intl plugin composed on the outside; it only injects
@@ -120,6 +122,90 @@ export function transformNextConfigFile(
       rewrote = true;
     },
   });
+  // The recognized shape consumed the plugin call, so on a full migration the
+  // plugin import and its wrapper bindings can finally go (deferred from the
+  // collection passes above; the fallback below must NOT reach this state).
+  if (rewrote && !retainNextIntl) {
+    for (const declPath of wrapperDeclPaths) declPath.remove();
+    for (const importPath of pluginImportPaths) importPath.remove();
+  }
+
+  // Fallback for export shapes the plugin swap above cannot restructure: a
+  // function default export (a composed async config), an identifier, a
+  // foreign compose call, or a CJS module.exports. withGTConfig natively
+  // accepts a function config (it resolves the function's result, sync or
+  // async, and re-wraps it), so wrapping the WHOLE exported value is safe
+  // without touching the body. The next-intl plugin stays composed inside
+  // that value, so ctx.nextConfigRetainsPlugin tells the emit phase to keep
+  // next-intl installed and its request/routing files on disk; without this
+  // path, the run converted every consumer to gt-next while never installing
+  // withGTConfig, and each locale route 500'd at runtime (the round-7 Memo
+  // Engine failure).
+  let wrappedWholeExport = false;
+  if (!rewrote) {
+    const gtCallOf = (expr: t.Expression): t.CallExpression =>
+      t.callExpression(t.identifier('withGTConfig'), [
+        expr,
+        buildGtOptionsExpression(ctx, dictionaryPath),
+      ]);
+    traverse(ast, {
+      ExportDefaultDeclaration(exportPath) {
+        if (rewrote) return;
+        const declaration = exportPath.node.declaration;
+        if (t.isFunctionDeclaration(declaration)) {
+          if (declaration.id) {
+            // Named: demote to a plain declaration (its name may be
+            // self-referenced), then default-export the wrapped reference.
+            exportPath.replaceWithMultiple([
+              declaration,
+              t.exportDefaultDeclaration(
+                gtCallOf(t.identifier(declaration.id.name))
+              ),
+            ]);
+          } else {
+            // Anonymous: re-shape into a function expression and wrap inline.
+            exportPath.node.declaration = gtCallOf(
+              t.functionExpression(
+                null,
+                declaration.params,
+                declaration.body,
+                declaration.generator,
+                declaration.async
+              )
+            );
+          }
+          rewrote = true;
+          wrappedWholeExport = true;
+          return;
+        }
+        if (t.isExpression(declaration)) {
+          exportPath.node.declaration = gtCallOf(declaration);
+          rewrote = true;
+          wrappedWholeExport = true;
+        }
+      },
+    });
+    if (!rewrote) {
+      // CJS: module.exports = <expr>.
+      traverse(ast, {
+        AssignmentExpression(assignPath) {
+          if (rewrote) return;
+          const { left, right } = assignPath.node;
+          if (
+            t.isMemberExpression(left) &&
+            !left.computed &&
+            t.isIdentifier(left.object, { name: 'module' }) &&
+            t.isIdentifier(left.property, { name: 'exports' }) &&
+            t.isExpression(right)
+          ) {
+            assignPath.node.right = gtCallOf(right);
+            rewrote = true;
+            wrappedWholeExport = true;
+          }
+        },
+      });
+    }
+  }
   if (!rewrote) {
     return {
       ...none,
@@ -129,10 +215,45 @@ export function transformNextConfigFile(
     };
   }
 
-  ensureNamedImports(ast, 'gt-next/config', ['withGTConfig']);
+  // A wrapped module.exports config is CJS; an ESM import statement would not
+  // load there, so inject the require form instead.
+  const usesCjsExport =
+    !/\bexport\s+default\b/.test(code) && wrappedWholeExport;
+  if (usesCjsExport) {
+    ast.program.body.unshift(
+      t.variableDeclaration('const', [
+        t.variableDeclarator(
+          t.objectPattern([
+            t.objectProperty(
+              t.identifier('withGTConfig'),
+              t.identifier('withGTConfig'),
+              false,
+              true
+            ),
+          ]),
+          t.callExpression(t.identifier('require'), [
+            t.stringLiteral('gt-next/config'),
+          ])
+        ),
+      ])
+    );
+  } else {
+    ensureNamedImports(ast, 'gt-next/config', ['withGTConfig']);
+  }
 
   const todos: SourceResult['todos'] = [];
-  if (retainNextIntl) {
+  if (wrappedWholeExport) {
+    // The plugin call still lives inside the wrapped value; the emit phase
+    // reads this flag to keep next-intl installed and its request/routing
+    // files on disk, so the retained composition keeps resolving.
+    ctx.nextConfigRetainsPlugin = true;
+    todos.push({
+      file,
+      reason:
+        'this config exports a shape gt migrate cannot restructure (a function or composed value), so withGTConfig now wraps the whole export and createNextIntlPlugin stays composed inside it. next-intl and its request/routing config stay installed; once you remove the plugin from the config by hand, re-run ' +
+        `\`gt migrate --from ${ctx.adapter.id}\` to finish the teardown`,
+    });
+  } else if (retainNextIntl) {
     todos.push({
       file,
       reason:

@@ -2,6 +2,7 @@ import { createRequire } from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
 import { lt, minVersion, valid } from 'semver';
+import { hasGtProjectConfigured } from '../transforms/gtOptions.js';
 import type { FileEdit, MigrationContext } from '../pipeline/types.js';
 
 /** next/root-params (and its `locale()` export) landed in Next 15.5.0. */
@@ -99,6 +100,51 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
     content: JSON.stringify(config, null, 2) + '\n',
   });
 
+  // gt-next is wired through withGTConfig in next.config. An app with no
+  // config file at all (Next runs fine without one) would otherwise migrate
+  // with no dictionary or locale wiring and fail on every locale route at
+  // runtime, so create a minimal one.
+  if (
+    !adapter.nextConfigCandidates.some((candidate) =>
+      fs.existsSync(path.join(ctx.cwd, candidate))
+    )
+  ) {
+    const defaultCatalog = toPosix(
+      path.relative(
+        ctx.cwd,
+        path.join(ctx.catalogs.dir, `${ctx.catalogs.defaultLocale}.json`)
+      )
+    );
+    const dictionaryOption = defaultCatalog.startsWith('.')
+      ? defaultCatalog
+      : `./${defaultCatalog}`;
+    const createdConfigPath = path.join(ctx.cwd, 'next.config.ts');
+    edits.push({
+      path: createdConfigPath,
+      kind: 'write',
+      content: [
+        "import { withGTConfig } from 'gt-next/config';",
+        '',
+        'export default withGTConfig(',
+        '  {},',
+        '  {',
+        `    dictionary: '${dictionaryOption}',`,
+        // Same dictionary-only default as the config transforms: without it,
+        // gt-next's I18nCache warns on every run that a remote store needs a
+        // projectId; delete the line once a GT project is configured.
+        ...(hasGtProjectConfigured(ctx) ? [] : ['    cacheUrl: null,']),
+        '  }',
+        ');',
+        '',
+      ].join('\n'),
+    });
+    ctx.todos.push({
+      file: createdConfigPath,
+      reason:
+        'created (the project had no next.config): withGTConfig wires gt-next dictionary and locale resolution; fold it into your own config if you add one later',
+    });
+  }
+
   // loadDictionary.ts; serves the preserved next-intl catalogs per locale.
   const loaderExists = [
     'loadDictionary.ts',
@@ -155,8 +201,18 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
   // statically-rendered routes static.
   emitStaticLocaleResolvers(ctx, edits);
 
-  // package.json + next-intl config teardown, only when fully migrated.
-  if (fullyMigrated) {
+  // package.json + next-intl config teardown, only when fully migrated. A
+  // config whose export shape forced the fallback wrap still has the source
+  // library's plugin composed inside it (ctx.nextConfigRetainsPlugin), so the
+  // package and its request/routing files must survive even then; the config's
+  // own TODO explains how to finish the teardown by hand.
+  if (fullyMigrated && ctx.nextConfigRetainsPlugin) {
+    ctx.todos.push({
+      file: path.join(ctx.cwd, 'package.json'),
+      reason: `${adapter.displayName} kept in package.json (and its config files kept on disk) because next.config still composes its plugin inside the wrapped export; migrate that config by hand, then remove the dependency and re-run gt migrate`,
+    });
+  }
+  if (fullyMigrated && !ctx.nextConfigRetainsPlugin) {
     // Decide config-file retention FIRST. Deleting a module that something
     // still imports breaks the build, so a routing.ts/request.ts kept for a
     // remaining importer also keeps its own `next-intl` import alive. Removing
@@ -391,6 +447,44 @@ function emitStaticLocaleResolvers(
     return;
   }
 
+  // Latent RSC violations (a server module calling a function imported from
+  // a 'use client' module) only detonate when a route actually renders on the
+  // server. The baseline rendered these routes dynamically and the bug sat
+  // unnoticed; restoring static rendering would make prerender execute the
+  // call and fail the build. Withhold the resolvers (routes stay dynamic,
+  // build-parity with the baseline) and name every hazard so the app bug is
+  // fixable.
+  if (ctx.latentClientCallHazards && ctx.latentClientCallHazards.length > 0) {
+    for (const hazard of ctx.latentClientCallHazards) {
+      ctx.todos.push({
+        file: hazard.caller,
+        reason:
+          `calls ${hazard.importedName}() imported from the client module ` +
+          `${path.relative(ctx.cwd, hazard.clientModule)} while itself being a ` +
+          'server module: React throws "Attempted to call ' +
+          `${hazard.importedName}() from the server" the moment this route ` +
+          'renders on the server. This bug predates the migration (dynamic ' +
+          'rendering hid it); fix it by marking the caller "use client", or ' +
+          'by giving the client module a server-safe entry',
+      });
+    }
+    (ctx.warnings ??= []).push(
+      `static rendering NOT restored: ${ctx.latentClientCallHazards.length} ` +
+        'server file(s) call functions imported from client modules (a latent ' +
+        'React Server Components violation this app already carries; see the ' +
+        'TODOs). Routes stay dynamic exactly as before the migration; fix the ' +
+        'listed callers and re-run gt migrate to restore static rendering.'
+    );
+    ctx.todos.push({
+      file: localeLayout.file,
+      reason:
+        'static rendering not restored: see the latent client-call hazards ' +
+        'above; prerendering would execute those calls and fail the build. ' +
+        'After fixing them, re-run gt migrate to add getLocale.ts/getRegion.ts',
+    });
+    return;
+  }
+
   const useSrc = fs.existsSync(path.join(ctx.cwd, 'src'));
   emitResolverFile(
     ctx,
@@ -460,7 +554,7 @@ function emitResolverFile(
  *    `[locale]` (e.g. `[lang]`), which next/root-params cannot resolve;
  *  - `none`: no dynamic-segment layout at all; nothing to restore.
  */
-type LocaleLayout =
+export type LocaleLayout =
   | { kind: 'locale'; file: string; hasRootLayoutAbove: boolean }
   | { kind: 'other-segment'; file: string; segment: string }
   | { kind: 'none' };
@@ -473,7 +567,7 @@ type LocaleLayout =
  * Uses the full project file list so the decision is not limited to the --src
  * scan.
  */
-function findLocaleLayout(ctx: MigrationContext): LocaleLayout {
+export function findLocaleLayout(ctx: MigrationContext): LocaleLayout {
   const files = ctx.projectFiles ?? ctx.sourceFiles ?? [];
   const layouts = files.filter(isLayoutFileName);
   // The `[locale]` layout is the one that sits directly in the [locale]
@@ -533,7 +627,7 @@ function isDynamicSegmentDir(dir: string): boolean {
  * version cannot be determined, so a broken `import … from 'next/root-params'`
  * is never emitted on faith.
  */
-function supportsRootParams(cwd: string): boolean {
+export function supportsRootParams(cwd: string): boolean {
   const version =
     readInstalledNextVersion(cwd) ?? readDeclaredNextLowerBound(cwd);
   return version !== null && !lt(version, NEXT_ROOT_PARAMS_MIN_GATE);

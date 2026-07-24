@@ -131,6 +131,7 @@ export const reactI18nextAdapter: SourceAdapter = {
   // react-i18next has no navigation wrapper, no standard middleware, and no
   // next-intl-style request config; those lanes are simply absent.
   nextConfigCandidates: ['next.config.ts', 'next.config.js', 'next.config.mjs'],
+  requiresServerProviderBoundary: true,
   middlewareCandidates: [],
 
   // Mirrors ownsModule: this adapter migrates the react-i18next client surface,

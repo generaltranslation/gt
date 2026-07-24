@@ -308,6 +308,52 @@ export function transformReactI18nextSource(
     }
   }
 
+  // Inspect t usages the same way: only direct `t(...)` calls (plus a `t={t}`
+  // prop on a <Trans>, which the Trans conversion consumes) are supported. A
+  // `t` that escapes as a value — passed to a helper (typically typed against
+  // i18next's branded TFunction), stored, returned, or read as a member —
+  // keeps i18next's signature and type expectations at its consumer, which
+  // gt-next's translation function does not satisfy; rewriting the binding
+  // anyway is what broke the round-7 PlantPal build and produced Memo
+  // Engine's 134 translateKnown(t, ...) type errors. Whole-file skip instead.
+  if (tBindings.size > 0) {
+    const escapedTs = new Set<string>();
+    traverse(ast, {
+      Identifier(path) {
+        if (!tBindings.has(path.node.name) || !path.isReferencedIdentifier()) {
+          return;
+        }
+        if (isOwnDeclarator(path)) return;
+        const parent = path.parent;
+        if (t.isCallExpression(parent) && parent.callee === path.node) {
+          return; // a direct t(...) call, remapped below
+        }
+        if (
+          t.isJSXExpressionContainer(parent) &&
+          parent.expression === path.node
+        ) {
+          const attr = path.parentPath?.parent;
+          const element = path.parentPath?.parentPath?.parent;
+          if (
+            t.isJSXAttribute(attr) &&
+            t.isJSXIdentifier(attr.name, { name: 't' }) &&
+            t.isJSXOpeningElement(element) &&
+            t.isJSXIdentifier(element.name) &&
+            transLocals.has(element.name.name)
+          ) {
+            return; // <Trans t={t}>: consumed by the Trans conversion
+          }
+        }
+        escapedTs.add(path.node.name);
+      },
+    });
+    for (const name of escapedTs) {
+      skipReasons.push(
+        `the translation function '${name}' from useTranslation() is used as a value beyond direct ${name}(...) calls (passed to a helper, stored, or returned); consumers typed against i18next's TFunction will not accept gt-next's translation function, so this file stays on react-i18next; convert it together with that helper manually`
+      );
+    }
+  }
+
   // Detect Trans elements and classify.
   const transConversions: {
     path: NodePath<t.JSXElement>;

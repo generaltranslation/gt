@@ -5,7 +5,10 @@ import { classifyMessage } from '../catalogs/classifyMessage.js';
 import { discoverCatalogs } from '../catalogs/discover.js';
 import { parseRoutingConfig } from '../config/parseRoutingConfig.js';
 import { transformMiddlewareFile } from '../transforms/transformMiddleware.js';
-import { transformNavigationFile } from '../transforms/transformNavigation.js';
+import {
+  detectLocaleAwareNavUsage,
+  transformNavigationFile,
+} from '../transforms/transformNavigation.js';
 import { transformNextConfigFile } from '../transforms/transformNextConfig.js';
 import { transformRequestConfigFile } from '../transforms/transformRequestConfig.js';
 import type { RoutingInfo } from '../pipeline/types.js';
@@ -101,6 +104,7 @@ export const nextIntlAdapter: SourceAdapter = {
   navigation: {
     isNavigationFile: (code) => code.includes('createNavigation'),
     transformNavigation: transformNavigationFile,
+    detectLocaleAwareCaller: detectLocaleAwareNavUsage,
   },
   transformNextConfig: transformNextConfigFile,
   transformMiddleware: transformMiddlewareFile,

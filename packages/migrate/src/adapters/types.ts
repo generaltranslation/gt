@@ -118,6 +118,16 @@ export interface SourceAdapter {
       code: string,
       ctx: MigrationContext
     ): SourceResult;
+    /**
+     * Detects a CALLER file using the library's locale-aware programmatic
+     * navigation signatures (e.g. next-intl's `router.replace(href,
+     * { locale })`, `redirect({ href, locale })`), which stop working the
+     * moment the wrapper becomes a passthrough. Returns a whole-file skip
+     * reason or null. The driver runs this over every scanned file, records
+     * hits in ctx.localeAwareNavCallers, and transformNavigation holds the
+     * wrapper on the source library while any exist.
+     */
+    detectLocaleAwareCaller?(code: string): string | null;
   };
   transformNextConfig?(
     file: string,
@@ -134,6 +144,20 @@ export interface SourceAdapter {
   // --- config-lane file identity (relative candidates resolved by the driver) ---
   /** next.config.* candidate paths, relative to the project root. */
   nextConfigCandidates: string[];
+  /**
+   * True when this library's consumers can only work after migration if
+   * gt-next's GTProvider (an async Server Component, children-only props)
+   * gets a real server mount point AND the locale resolves per-route. The
+   * driver then pre-flights both conditions — a Server Component layout
+   * rendering <body>, and a [locale] segment as the ROOT layout on
+   * root-params-capable Next — and stops with guidance when either fails,
+   * instead of converting consumers into an app that builds but breaks at
+   * runtime (wrong-locale content, or a production dictionary crash from a
+   * GTProvider inside a client layout). next-intl is exempt: its middleware
+   * transform carries the locale, and its layout pass has its own
+   * client-layout handling.
+   */
+  requiresServerProviderBoundary?: boolean;
   /** middleware/proxy candidate paths, relative to the project root. */
   middlewareCandidates: string[];
 

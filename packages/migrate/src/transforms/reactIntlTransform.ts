@@ -331,6 +331,93 @@ export function transformReactIntlSource(
     }
   }
 
+  // Every reference to a planned intl binding must be a form the plan actually
+  // converts: an `X.formatMessage(...)` member call (rewritten in step 3), or an
+  // `X.<other>(...)` member call (already routed to a skip by the call visitor).
+  // Anything else — a property read like `intl.locale`, X passed/stored/returned
+  // as a value, a destructuring of X, a reassignment — survives the swap as a
+  // read of gt-next's translation function, which has none of IntlShape's
+  // members, so the output only fails at type-check or runtime (the round-7
+  // PlantPal/Sniply `.locale` and cross-file IntlShape failures). Audit before
+  // any mutation and skip the whole file instead.
+  const auditIntlBindingReferences = (
+    declPath: NodePath,
+    name: string,
+    origin: string,
+    bareCallsOnly: boolean
+  ): void => {
+    const binding = declPath.scope.getBinding(name);
+    if (!binding) return;
+    if (binding.constantViolations.length > 0) {
+      skipReasons.push(
+        `'${name}' (from ${origin}) is reassigned after its declaration; the conversion cannot follow it, so convert this file manually`
+      );
+      return;
+    }
+    for (const refPath of binding.referencePaths) {
+      if (bareCallsOnly) {
+        // A destructured formatMessage local becomes a gt-next translation
+        // function with a different call signature (id, values) vs
+        // (descriptor, values); only its own bare calls are rewritten, so any
+        // other reference (passed to a helper typed against react-intl's
+        // formatMessage, stored, returned) would break that consumer.
+        const parent = refPath.parentPath;
+        if (parent?.isCallExpression() && parent.node.callee === refPath.node) {
+          continue;
+        }
+        skipReasons.push(
+          `'${name}' (from ${origin}) is used as a value beyond direct calls (passed, stored, or returned); its call signature changes under gt-next, so convert this file manually`
+        );
+        return;
+      }
+      const parent = refPath.parentPath;
+      if (
+        parent?.isMemberExpression() &&
+        parent.node.object === refPath.node &&
+        !parent.node.computed &&
+        t.isIdentifier(parent.node.property)
+      ) {
+        const grand = parent.parentPath;
+        if (grand?.isCallExpression() && grand.node.callee === parent.node) {
+          // formatMessage calls are converted; other method calls already
+          // recorded their own skip in the call visitor.
+          continue;
+        }
+        skipReasons.push(
+          `${name}.${parent.node.property.name} (from ${origin}) is read as a value, and gt-next's translation function has no '${parent.node.property.name}' member; convert this file manually`
+        );
+        return;
+      }
+      skipReasons.push(
+        `'${name}' (an IntlShape from ${origin}) is used as a value beyond .formatMessage() calls (passed, stored, returned, or destructured); gt-next's translation function is not an IntlShape, so convert this file manually`
+      );
+      return;
+    }
+  };
+  for (const decl of useIntlDecls) {
+    if (t.isIdentifier(decl.node.id)) {
+      auditIntlBindingReferences(decl, decl.node.id.name, 'useIntl()', false);
+    }
+  }
+  for (const { declarator } of createIntlDecls) {
+    if (t.isIdentifier(declarator.node.id)) {
+      auditIntlBindingReferences(
+        declarator,
+        declarator.node.id.name,
+        'createIntl()',
+        false
+      );
+    }
+  }
+  for (const { path: destructurePath, localName } of useIntlDestructureDecls) {
+    auditIntlBindingReferences(
+      destructurePath,
+      localName,
+      'useIntl().formatMessage',
+      true
+    );
+  }
+
   // Provider retained (partial migration): leave <IntlProvider> and its import
   // untouched; skipped files still need the react-intl context.
   const providerUnwraps = retainProvider ? [] : providerElements;
@@ -681,18 +768,40 @@ export function transformReactIntlSource(
 
   // 2. client `const intl = useIntl()` -> `const intl = useTranslations()`.
   //    react-intl's useIntl takes no argument; gt-next's useTranslations resolves
-  //    the full id, so no namespace/rootId is threaded through.
+  //    the full id, so no namespace/rootId is threaded through. In an async
+  //    function (an async Server Component; client components cannot be async)
+  //    a client hook is a rules-of-hooks violation and prerender fails
+  //    ("Expected a suspended thenable"), so emit the server API instead.
   for (const decl of useIntlDecls) {
-    decl.node.init = t.callExpression(t.identifier('useTranslations'), []);
-    needsClientT = true;
+    const fn = t.isIdentifier(decl.node.id)
+      ? (intlBindingFns.get(decl.node.id.name) ?? null)
+      : null;
+    if (fn?.async) {
+      decl.node.init = t.awaitExpression(
+        t.callExpression(t.identifier('getTranslations'), [])
+      );
+      needsServerT = true;
+    } else {
+      decl.node.init = t.callExpression(t.identifier('useTranslations'), []);
+      needsClientT = true;
+    }
   }
   // 2b. destructured `const { formatMessage } = useIntl()` ->
   //     `const <local> = useTranslations()` (its bare calls are rewritten in 3,
-  //     since `formatMessage` was registered as a binding).
+  //     since `formatMessage` was registered as a binding). Same async split as
+  //     step 2.
   for (const { path, localName } of useIntlDestructureDecls) {
+    const fn = intlBindingFns.get(localName) ?? null;
     path.node.id = t.identifier(localName);
-    path.node.init = t.callExpression(t.identifier('useTranslations'), []);
-    needsClientT = true;
+    if (fn?.async) {
+      path.node.init = t.awaitExpression(
+        t.callExpression(t.identifier('getTranslations'), [])
+      );
+      needsServerT = true;
+    } else {
+      path.node.init = t.callExpression(t.identifier('useTranslations'), []);
+      needsClientT = true;
+    }
   }
 
   // 3. intl.formatMessage({ id }, values) -> intl(id, values).
@@ -726,7 +835,10 @@ export function transformReactIntlSource(
           ],
         };
       }
-      needsClientT = true;
+      // Same async split as step 2: an async function is a Server Component,
+      // where an injected client hook breaks lint and prerendering.
+      if (fn.async) needsServerT = true;
+      else needsClientT = true;
     }
     const args: t.Expression[] = [t.stringLiteral(id)];
     if (values) args.push(values);
@@ -1452,18 +1564,20 @@ function translationBindingFor(
   return { name: '$gtT', injected: true };
 }
 
-/** Inserts `const <name> = useTranslations();` at the top of a function body.
+/** Inserts `const <name> = useTranslations();` at the top of a function body
+ *  (or `const <name> = await getTranslations();` when the function is async —
+ *  an async Server Component, where a client hook is invalid).
  *  An implicit-body arrow (`() => <expr>`) is first converted to a block
  *  (`() => { const <name> = useTranslations(); return <expr>; }`), so the hook
  *  the caller already emitted as `<name>(...)` always has its declaration;
  *  emitting the call without it would leave `<name>` undeclared (TS2304 at
  *  typecheck, ReferenceError at render). Only arrows can have a non-block body. */
 function insertHookDeclaration(fn: t.Function, name: string): void {
+  const init = fn.async
+    ? t.awaitExpression(t.callExpression(t.identifier('getTranslations'), []))
+    : t.callExpression(t.identifier('useTranslations'), []);
   const declaration = t.variableDeclaration('const', [
-    t.variableDeclarator(
-      t.identifier(name),
-      t.callExpression(t.identifier('useTranslations'), [])
-    ),
+    t.variableDeclarator(t.identifier(name), init),
   ]);
   if (t.isBlockStatement(fn.body)) {
     fn.body.body.unshift(declaration);

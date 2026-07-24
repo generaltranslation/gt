@@ -153,6 +153,29 @@ export function transformNavigationFile(
     };
   }
 
+  // While any caller still uses next-intl's locale-aware programmatic
+  // signatures (router.replace(href, { locale }), redirect({ href, locale })),
+  // swapping this wrapper's useRouter/redirect for next/navigation
+  // passthroughs rewrites the API out from under those call sites: the object
+  // arguments fail TypeScript, redirect stringifies to /[object Object], and
+  // locale selectors no-op (the round-7 PlantPal/Sniply/AutoHack failures).
+  // The callers themselves were already skipped (see the driver's
+  // locale-aware-navigation scan); holding the wrapper keeps them working
+  // against the library that understands their signatures.
+  const navCallers = ctx.localeAwareNavCallers ?? [];
+  if (navCallers.length > 0) {
+    const examples = navCallers
+      .slice(0, 3)
+      .map((caller) => path.relative(ctx.cwd, caller))
+      .join(', ');
+    return {
+      ...none,
+      skipReasons: [
+        `${navCallers.length} file(s) still call navigation with next-intl's locale-aware signatures (${examples}); the wrapper stays on next-intl so they keep working; convert those call sites manually, then re-run gt migrate`,
+      ],
+    };
+  }
+
   // The generated module deliberately has no 'use client' directive, same
   // as the next-intl createNavigation file it replaces: a shared module's
   // hooks work when imported from client components, and a directive here
@@ -195,7 +218,28 @@ export function transformNavigationFile(
   );
 
   if (destructured.includes('Link')) {
-    lines.push("export { default as Link } from 'gt-next/link';");
+    const isTypeScriptWrapper = /\.(ts|tsx|mts|cts)$/.test(file);
+    if (isTypeScriptWrapper) {
+      // gt-next/link currently publishes its component typed as
+      // ForwardRefExoticComponent<any>; the `any` erases prop typing at every
+      // call site, so an onClick handler's parameter becomes implicit any and
+      // fails strict builds (the round-7 Sniply failure). Its props are
+      // next/link's (plus runtime locale handling), so re-export it under
+      // next/link's concrete type until gt-next ships typed props.
+      lines.push("import GTLink from 'gt-next/link';");
+      lines.push("import type NextLink from 'next/link';");
+      lines.push('');
+      lines.push(
+        '// gt-next/link ships untyped props (ForwardRefExoticComponent<any>),'
+      );
+      lines.push(
+        "// which breaks contextual typing at call sites; next/link's type is"
+      );
+      lines.push('// the accurate one for it.');
+      lines.push('export const Link = GTLink as unknown as typeof NextLink;');
+    } else {
+      lines.push("export { default as Link } from 'gt-next/link';");
+    }
   }
   if (passthrough.length > 0) {
     lines.push(`export { ${passthrough.join(', ')} } from 'next/navigation';`);
@@ -301,4 +345,142 @@ function findCreateNavigationLocal(ast: t.File): string | null {
     }
   }
   return null;
+}
+
+/**
+ * Detects next-intl's locale-aware programmatic navigation signatures in a
+ * caller file: `router.push/replace/prefetch(href, { locale })`, object hrefs
+ * (`router.push({ pathname, ... })`), and `redirect({ href, locale })` /
+ * `permanentRedirect({ ... })`, where the functions come from anywhere EXCEPT
+ * next/navigation or next/router (a createNavigation wrapper, next-intl's
+ * legacy client entry, a re-export of either). next/navigation understands
+ * none of these shapes, so once the wrapper becomes a passthrough the calls
+ * fail TypeScript, redirect targets become /[object Object], and locale
+ * selectors silently no-op. Callers importing straight from next/navigation
+ * are excluded: an object argument there is broken before the migration ever
+ * runs, and holding the file would misattribute a pre-existing bug.
+ *
+ * Returns a whole-file skip reason, or null when the file is clean. Parse
+ * failures return null; the regular source pass owns that diagnosis.
+ */
+export function detectLocaleAwareNavUsage(code: string): string | null {
+  // Cheap pre-filter; correctness comes from the AST walk below.
+  if (!/\b(useRouter|redirect|permanentRedirect)\b/.test(code)) return null;
+
+  let ast: t.File;
+  try {
+    ast = parse(code, {
+      sourceType: 'module',
+      plugins: ['jsx', 'typescript'],
+    });
+  } catch {
+    return null;
+  }
+
+  const routerHookLocals = new Set<string>();
+  const redirectLocals = new Set<string>();
+  for (const statement of ast.program.body) {
+    if (!t.isImportDeclaration(statement)) continue;
+    if (statement.importKind === 'type') continue;
+    const source = statement.source.value;
+    if (source === 'next/navigation' || source === 'next/router') continue;
+    for (const specifier of statement.specifiers) {
+      if (
+        !t.isImportSpecifier(specifier) ||
+        !t.isIdentifier(specifier.imported) ||
+        specifier.importKind === 'type'
+      ) {
+        continue;
+      }
+      if (specifier.imported.name === 'useRouter') {
+        routerHookLocals.add(specifier.local.name);
+      } else if (
+        specifier.imported.name === 'redirect' ||
+        specifier.imported.name === 'permanentRedirect'
+      ) {
+        redirectLocals.add(specifier.local.name);
+      }
+    }
+  }
+  if (routerHookLocals.size === 0 && redirectLocals.size === 0) return null;
+
+  // `const router = useRouter()` bindings (wrapper-derived hooks only).
+  const routerLocals = new Set<string>();
+  const hasLocaleProp = (expr: t.Node | null | undefined): boolean =>
+    t.isObjectExpression(expr) &&
+    expr.properties.some(
+      (property) =>
+        t.isObjectProperty(property) &&
+        !property.computed &&
+        ((t.isIdentifier(property.key) && property.key.name === 'locale') ||
+          (t.isStringLiteral(property.key) && property.key.value === 'locale'))
+    );
+
+  // Pass 1: collect router bindings (the walk is not in source order, so a
+  // call site could otherwise be visited before its declarator).
+  walkNodes(ast, (node) => {
+    if (
+      t.isVariableDeclarator(node) &&
+      t.isIdentifier(node.id) &&
+      node.init &&
+      t.isCallExpression(node.init) &&
+      t.isIdentifier(node.init.callee) &&
+      routerHookLocals.has(node.init.callee.name)
+    ) {
+      routerLocals.add(node.id.name);
+    }
+  });
+
+  // Pass 2: find locale-aware call shapes.
+  let reason: string | null = null;
+  walkNodes(ast, (node) => {
+    if (reason) return;
+    if (!t.isCallExpression(node)) return;
+    const callee = node.callee;
+    if (
+      t.isMemberExpression(callee) &&
+      !callee.computed &&
+      t.isIdentifier(callee.object) &&
+      routerLocals.has(callee.object.name) &&
+      t.isIdentifier(callee.property) &&
+      ['push', 'replace', 'prefetch'].includes(callee.property.name)
+    ) {
+      const method = callee.property.name;
+      if (hasLocaleProp(node.arguments[1])) {
+        reason = `router.${method}(href, { locale }) is next-intl's locale-aware signature, which a plain next/navigation router does not accept; convert this call (and its locale switching) to gt-next manually, then re-run gt migrate`;
+      } else if (t.isObjectExpression(node.arguments[0])) {
+        reason = `router.${method}({ pathname, ... }) object hrefs are next-intl-only; next/navigation takes a string; convert this call manually, then re-run gt migrate`;
+      }
+      return;
+    }
+    if (t.isIdentifier(callee) && redirectLocals.has(callee.name)) {
+      if (t.isObjectExpression(node.arguments[0])) {
+        reason = `${callee.name}({ href, ... }) is next-intl's object signature; next/navigation's ${callee.name} takes a string path and would navigate to /[object Object]; convert this call manually, then re-run gt migrate`;
+      }
+    }
+  });
+  return reason;
+}
+
+/** Minimal recursive AST walk (babel's traverse needs a scope-attached path;
+ *  this detection only needs node shapes, so a plain recursion is cheaper and
+ *  keeps this function dependency-free for the driver's per-file scan). */
+function walkNodes(root: t.Node, visit: (node: t.Node) => void): void {
+  const stack: t.Node[] = [root];
+  while (stack.length > 0) {
+    const node = stack.pop()!;
+    visit(node);
+    for (const key of Object.keys(node)) {
+      const value = (node as unknown as Record<string, unknown>)[key];
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          if (item && typeof item === 'object' && 'type' in item) {
+            stack.push(item as t.Node);
+          }
+        }
+      } else if (value && typeof value === 'object' && 'type' in value) {
+        stack.push(value as t.Node);
+      }
+    }
+  }
 }

@@ -160,12 +160,48 @@ export function buildReport(
         'the teardown.'
     );
     lines.push('');
+    // Test files render in their own section below with the migration recipe;
+    // listing them here too would double-report them as generic skips.
+    const testFileSet = new Set(ctx.testFilesNeedingMigration ?? []);
     for (const [file, reasons] of ctx.skippedFiles) {
+      if (testFileSet.has(file)) continue;
       lines.push(`- ${relative(file)}`);
       for (const reason of reasons) {
         lines.push(`  - ${reason}`);
       }
     }
+    lines.push('');
+  }
+
+  // The explicit test stage (round-7 P2): converted components now call
+  // gt-next APIs, so suites whose setup/render helpers/mocks still wire the
+  // source library FAIL until those are migrated by hand. No codemod can
+  // follow a vi.mock()/jest.mock() of the source module or an IntlProvider
+  // render helper, so this is called out as a blocking manual step instead of
+  // being buried among generic skips.
+  const testFiles = ctx.testFilesNeedingMigration ?? [];
+  if (testFiles.length > 0) {
+    lines.push('## Tests need manual migration (suites WILL fail until then)');
+    lines.push('');
+    lines.push(
+      `${testFiles.length} test file(s) still wire ${adapter.displayName} ` +
+        '(setup, render helpers, provider wrappers, or module mocks). The ' +
+        'components they exercise now call gt-next APIs, so these suites fail ' +
+        'until the helpers are migrated:'
+    );
+    lines.push('');
+    for (const file of testFiles) {
+      lines.push(`- ${relative(file)}`);
+    }
+    lines.push('');
+    lines.push(
+      'Migrate them by hand: swap module mocks from ' +
+        `${adapter.displayName} to gt-next (mock \`useTranslations\` to return ` +
+        'a lookup into your catalogs), and replace provider-based render ' +
+        `helpers (a unit-test render generally should not mount gt-next's ` +
+        'server-side GTProvider). Run the suites before calling the ' +
+        'migration done.'
+    );
     lines.push('');
   }
 

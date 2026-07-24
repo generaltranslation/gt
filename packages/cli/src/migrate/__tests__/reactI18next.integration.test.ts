@@ -417,17 +417,41 @@ describe('react-i18next full migration', () => {
         items_other: '{{count}} produktów',
       }),
     });
-    await handleMigrateCommand(
-      { ...OPTIONS, from: 'react-i18next' },
-      'base',
-      cwd
-    );
-    const report = read(cwd, 'gt-migrate-report.md');
-    expect(report).toContain('## WARNINGS');
-    expect(report).toMatch(/render in the DEFAULT language/i);
-    expect(report).toMatch(/WRONG LANGUAGE/);
-    // The warning names the actual segment.
-    expect(report).toContain('[lng]');
+    // Round-7 hardening: a non-[locale] segment means the locale cannot
+    // resolve per-route, so every non-default locale renders the DEFAULT
+    // language. That used to convert-with-a-warning; it now stops before
+    // writing (the server-provider-boundary pre-flight), naming the rename.
+    const errors: string[] = [];
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(((
+      code?: number
+    ) => {
+      throw new Error(`exit:${code}`);
+    }) as never);
+    const errorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation((...args: unknown[]) => {
+        errors.push(args.join(' '));
+      });
+    const loggerErrorSpy = vi.spyOn(logger, 'error').mockImplementation(((
+      message: string
+    ) => {
+      errors.push(message);
+    }) as never);
+
+    await expect(
+      handleMigrateCommand({ ...OPTIONS, from: 'react-i18next' }, 'base', cwd)
+    ).rejects.toThrow('exit:1');
+
+    exitSpy.mockRestore();
+    errorSpy.mockRestore();
+    loggerErrorSpy.mockRestore();
+    const output = errors.join('\n');
+    expect(output).toContain('[lng]');
+    expect(output).toMatch(/default language/i);
+    expect(output).toMatch(/Rename/);
+    // Nothing was written.
+    expect(fs.existsSync(path.join(cwd, 'gt-migrate-report.md'))).toBe(false);
+    expect(fs.existsSync(path.join(cwd, 'gt/dictionaries'))).toBe(false);
   });
 
   it('lists files that import a left-unchanged wrapper module (F2)', async () => {

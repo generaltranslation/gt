@@ -54,7 +54,9 @@ describe('transformNavigationFile', () => {
     );
     expect(result.skipReasons).toEqual([]);
     expect(result.code).toMatch(
-      /export \{ default as Link \} from ["']gt-next\/link["']/
+      // typed re-export: gt-next/link ships ForwardRefExoticComponent<any>,
+      // so TS wrappers re-export under next/link's concrete type
+      /export const Link = GTLink as unknown as typeof NextLink;/
     );
     expect(result.code).toMatch(
       /export \{ redirect, useRouter \} from ["']next\/navigation["']/
@@ -236,7 +238,9 @@ describe('transformNavigationFile', () => {
     );
     expect(result.skipReasons).toEqual([]);
     expect(result.code).toMatch(
-      /export \{ default as Link \} from ["']gt-next\/link["']/
+      // typed re-export: gt-next/link ships ForwardRefExoticComponent<any>,
+      // so TS wrappers re-export under next/link's concrete type
+      /export const Link = GTLink as unknown as typeof NextLink;/
     );
     expect(result.code).not.toContain('createNavigation');
   });
