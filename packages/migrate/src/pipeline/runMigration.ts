@@ -18,6 +18,7 @@ import { resolveCatalogsInteractively } from '../catalogs/promptFallbacks.js';
 import { hasDependency, resolveMigrationSource } from './resolveSource.js';
 import {
   detectLatentClientCallHazards,
+  resolveImportToProjectFiles,
   TEST_FILE_PATH,
 } from './latentClientCalls.js';
 import { createMigrateDiagnostic } from './diagnostics.js';
@@ -344,18 +345,11 @@ export async function runMigration(
       // jest.mock() of the source module or an IntlProvider render helper,
       // and converting the components they render breaks the suites either
       // way. They form an explicit manual stage: excluded from conversion,
-      // held as skips (provider and teardown survive for them), and listed in
-      // the report's own test section.
+      // listed in the report's own test section, and held as skips (provider
+      // and teardown survive for them) when, and only when, they really
+      // import the library; see recordTestFileNeedingMigration.
       if (TEST_FILE_PATH.test(file.split(path.sep).join('/'))) {
-        if (
-          adapter.projectUsagePattern.test(code) ||
-          adapter.mentionedIn(code)
-        ) {
-          ctx.skippedFiles.set(file, [
-            `test file uses ${adapter.displayName}; migrate the test setup, render helpers, and mocks by hand (see the report's "Tests need manual migration" section)`,
-          ]);
-          (ctx.testFilesNeedingMigration ??= []).push(file);
-        }
+        recordTestFileNeedingMigration(ctx, adapter, file, code);
         continue;
       }
       if (isLayoutFile(file)) {
@@ -419,15 +413,13 @@ export async function runMigration(
     } catch {
       continue;
     }
+    const isTestFile = TEST_FILE_PATH.test(file.split(path.sep).join('/'));
     if (adapter.projectUsagePattern.test(content)) {
       // Same test-stage routing as Pass 1: a tests/ tree at the project root
       // sits outside the default globs, and its setup/helpers are the most
       // common holders of the provider wiring the suites depend on.
-      if (TEST_FILE_PATH.test(file.split(path.sep).join('/'))) {
-        ctx.skippedFiles.set(file, [
-          `test file uses ${adapter.displayName}; migrate the test setup, render helpers, and mocks by hand (see the report's "Tests need manual migration" section)`,
-        ]);
-        (ctx.testFilesNeedingMigration ??= []).push(file);
+      if (isTestFile) {
+        recordTestFileNeedingMigration(ctx, adapter, file, content);
       } else {
         ctx.skippedFiles.set(file, [
           `uses ${adapter.displayName} but was not scanned (outside the --src scope or the default globs); include it or convert it manually`,
@@ -443,8 +435,28 @@ export async function runMigration(
     if (navCallerReason) {
       ctx.skippedFiles.set(file, [navCallerReason]);
       (ctx.localeAwareNavCallers ??= []).push(file);
+      continue;
+    }
+    // The import-shaped projectUsagePattern above cannot see the bare
+    // specifier in vi.mock('next-intl', ...) / jest.mock(...): there is no
+    // from/import/require prefix to match. That string is the entire i18n
+    // wiring of many suites (a project-root tests/setup.ts is the common
+    // shape), and Pass 1 never sees such a file because the tests tree sits
+    // outside the default globs, so the suites broke with the report saying
+    // nothing at all (the round-9 Sniply finding: 24 failing tests, zero
+    // mentions of "test" in the report). Checked last, so the import and
+    // locale-aware-navigation paths above keep their exact precedence.
+    if (isTestFile) {
+      recordTestFileNeedingMigration(ctx, adapter, file, content);
     }
   }
+
+  // The failing suite is often not the file that names the source library: a
+  // spec that renders through a flagged helper (tests/i18n-test-utils.tsx)
+  // has no reference of its own, so neither pass above can see it. Close over
+  // test-file imports so the report names the suites that break, not only the
+  // helper they share.
+  addTransitiveTestFiles(ctx, projectFiles);
 
   // Pass 1b: navigation wrappers, deferred from Pass 1 so the
   // locale-aware-caller set (Pass 1 + the outside-scan check above) is
@@ -699,9 +711,10 @@ export async function runMigration(
     ctx.testFilesNeedingMigration.length > 0
   ) {
     (ctx.warnings ??= []).push(
-      `${ctx.testFilesNeedingMigration.length} test file(s) still wire ` +
-        `${adapter.displayName}; those suites FAIL until their setup/render ` +
-        "helpers/mocks are migrated by hand (see the report's " +
+      `${ctx.testFilesNeedingMigration.length} test file(s) depend on ` +
+        `${adapter.displayName} test wiring (setup, render helpers, mocks) or ` +
+        'on another test file that does; those suites FAIL until that wiring ' +
+        "is migrated by hand (see the report's " +
         '"Tests need manual migration" section).'
     );
   }
@@ -856,6 +869,153 @@ function collect(
   if (result.code !== null && result.code !== originalCode) {
     ctx.edits.push({ path: file, kind: 'write', content: result.code });
   }
+}
+
+/**
+ * Routes a test file into the explicit manual-migration stage when it
+ * references the source library at all: a real import, OR a bare specifier
+ * string, which is the only trace a `vi.mock('next-intl', …)` /
+ * `jest.mock(…)` leaves (adapter.mentionedIn matches it; the import-shaped
+ * projectUsagePattern cannot). Shared by both scan passes so a project-root
+ * tests/ tree is classified exactly like one inside src/.
+ *
+ * The two kinds of reference are NOT equivalent for teardown, so they are
+ * recorded differently:
+ *
+ * - a real import needs the package retained (it resolves at test time), so
+ *   the file is also a skip. `ctx.skippedFiles` is what holds the whole
+ *   teardown back (provider retention here and in transformLayout, plus the
+ *   fullyMigrated gate in emitGtFiles), which is correct for this case.
+ * - a mock-only mention needs nothing retained: the mock is dead the moment
+ *   the components under test are converted (it intercepts a module they no
+ *   longer import). Letting a dead string keep the package installed, keep its
+ *   plugin composed in next.config, and keep its client provider nested inside
+ *   GTProvider would hold a whole app's teardown hostage to a test file with
+ *   no runtime effect, so it is reported without being made a skip.
+ *
+ * Either way the file lands in the report's test section, which is the thing
+ * the user acts on.
+ */
+function recordTestFileNeedingMigration(
+  ctx: MigrationContext,
+  adapter: SourceAdapter,
+  file: string,
+  code: string
+): void {
+  const importsSource = adapter.projectUsagePattern.test(code);
+  if (!importsSource && !adapter.mentionedIn(code)) return;
+  if (importsSource) {
+    ctx.skippedFiles.set(file, [
+      `test file uses ${adapter.displayName}; migrate the test setup, render helpers, and mocks by hand (see the report's "Tests need manual migration" section)`,
+    ]);
+  }
+  (ctx.testFilesNeedingMigration ??= []).push(file);
+}
+
+/**
+ * Extends the test stage over test-file imports: any test file that imports an
+ * already-flagged test file joins the stage. The flagged file is usually a
+ * shared render helper or setup module, and the suites that break are its
+ * importers, which carry no source-library reference themselves, so no scan
+ * pass can see them (the round-9 Memo Engine finding: the report named
+ * tests/i18n-test-utils.tsx while the two suites that actually failed,
+ * citation-overlay.test.tsx and coverage-gate.test.tsx, went unmentioned).
+ * Run to a fixed point so a chain of helpers closes too.
+ *
+ * Report-only by construction: these files never mention the source library,
+ * so nothing about them needs retaining and they are deliberately kept out of
+ * ctx.skippedFiles (which gates teardown). Resolution reuses the pipeline's
+ * alias-aware resolver, so '@/tests/i18n-test-utils' resolves like the
+ * bundler resolves it.
+ */
+function addTransitiveTestFiles(
+  ctx: MigrationContext,
+  projectFiles: string[]
+): void {
+  const flagged = new Set(ctx.testFilesNeedingMigration ?? []);
+  if (flagged.size === 0) return;
+  const candidates = projectFiles.filter(
+    (file) =>
+      !flagged.has(file) && TEST_FILE_PATH.test(file.split(path.sep).join('/'))
+  );
+  if (candidates.length === 0) return;
+  const fileSet = new Set(projectFiles);
+  const importsOf = new Map<string, string[]>();
+  for (const file of candidates) {
+    let content: string;
+    try {
+      content = fs.readFileSync(file, 'utf8');
+    } catch {
+      continue;
+    }
+    const resolved: string[] = [];
+    for (const specifier of importSpecifiers(content)) {
+      resolved.push(
+        ...resolveImportToProjectFiles(
+          specifier,
+          path.dirname(file),
+          fileSet,
+          projectFiles
+        )
+      );
+    }
+    if (resolved.length > 0) importsOf.set(file, resolved);
+  }
+  const added: string[] = [];
+  for (;;) {
+    let grew = false;
+    for (const file of candidates) {
+      if (flagged.has(file)) continue;
+      if (!importsOf.get(file)?.some((target) => flagged.has(target))) continue;
+      flagged.add(file);
+      added.push(file);
+      grew = true;
+    }
+    if (!grew) break;
+  }
+  if (added.length > 0) {
+    (ctx.testFilesNeedingMigration ??= []).push(...added);
+  }
+}
+
+/**
+ * Every module specifier a file imports from, for import-graph questions that
+ * only need the specifier (not bindings). Static imports and re-exports come
+ * from the AST; a file this parser cannot read falls back to a textual scan so
+ * an exotic test file still contributes edges instead of silently dropping out
+ * of the graph.
+ */
+function importSpecifiers(code: string): string[] {
+  const specifiers: string[] = [];
+  let ast: ReturnType<typeof parse>;
+  try {
+    ast = parse(code, {
+      sourceType: 'unambiguous',
+      plugins: ['jsx', 'typescript'],
+    });
+  } catch {
+    for (const match of code.matchAll(
+      /(?:from\s*|import\s*|import\s*\(\s*|require\s*\(\s*)['"]([^'"]+)['"]/g
+    )) {
+      specifiers.push(match[1]);
+    }
+    return specifiers;
+  }
+  for (const statement of ast.program.body) {
+    if (
+      statement.type === 'ImportDeclaration' &&
+      statement.importKind !== 'type'
+    ) {
+      specifiers.push(statement.source.value);
+    } else if (
+      (statement.type === 'ExportNamedDeclaration' ||
+        statement.type === 'ExportAllDeclaration') &&
+      statement.source
+    ) {
+      specifiers.push(statement.source.value);
+    }
+  }
+  return specifiers;
 }
 
 /**

@@ -186,7 +186,7 @@ export function detectLatentClientCallHazards(ctx: MigrationContext): void {
  * returned and the caller decides how to treat ambiguity. Bare package
  * imports match nothing.
  */
-function resolveImportToProjectFiles(
+export function resolveImportToProjectFiles(
   specifier: string,
   importerDir: string,
   fileSet: Set<string>,

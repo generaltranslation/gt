@@ -178,29 +178,56 @@ export function buildReport(
   // source library FAIL until those are migrated by hand. No codemod can
   // follow a vi.mock()/jest.mock() of the source module or an IntlProvider
   // render helper, so this is called out as a blocking manual step instead of
-  // being buried among generic skips.
+  // being buried among generic skips. The list includes suites the driver
+  // reached through the test-import closure (they render through a flagged
+  // helper and carry no reference of their own), so each entry states its own
+  // evidence: a user has to know whether to edit an import, a mock, or a
+  // helper this file shares.
   const testFiles = ctx.testFilesNeedingMigration ?? [];
   if (testFiles.length > 0) {
-    lines.push('## Tests need manual migration (suites WILL fail until then)');
+    // The heading states the action, not a blanket prediction: one shape of
+    // flagged file can still pass (a mock of a module every consumer of which
+    // this run held), and asserting otherwise would be a claim about the
+    // user's suite that nothing here measured. The stakes stay in the body,
+    // bounded by that exception.
+    lines.push(
+      '## Tests need manual migration (run these suites before calling the migration done)'
+    );
     lines.push('');
     lines.push(
-      `${testFiles.length} test file(s) still wire ${adapter.displayName} ` +
-        '(setup, render helpers, provider wrappers, or module mocks). The ' +
-        'components they exercise now call gt-next APIs, so these suites fail ' +
-        'until the helpers are migrated:'
+      `${testFiles.length} test file(s) depend on ${adapter.displayName} test ` +
+        'wiring (setup files, render helpers, provider wrappers, module ' +
+        'mocks), or import another test file that does. The components and ' +
+        'modules they exercise now call gt-next APIs, so these suites WILL ' +
+        'fail until that wiring is migrated, unless every part of the app a ' +
+        'file touches was left untouched by this run (a mock of a module whose ' +
+        'consumers were all skipped still intercepts):'
     );
     lines.push('');
     for (const file of testFiles) {
       lines.push(`- ${relative(file)}`);
+      const evidence = testFileEvidence(ctx, file);
+      if (evidence) lines.push(`  - ${evidence}`);
     }
     lines.push('');
+    // next-intl is the only source here with a documented server subpath users
+    // mock (next-intl/server); the others have no equivalent entry to name.
+    const mockedServerModule =
+      adapter.id === 'next-intl'
+        ? '`next-intl/server`'
+        : `${adapter.displayName}'s server-side entry`;
     lines.push(
       'Migrate them by hand: swap module mocks from ' +
         `${adapter.displayName} to gt-next (mock \`useTranslations\` to return ` +
         'a lookup into your catalogs), and replace provider-based render ' +
         `helpers (a unit-test render generally should not mount gt-next's ` +
-        'server-side GTProvider). Run the suites before calling the ' +
-        'migration done.'
+        'server-side GTProvider). One case needs more than a rename: a suite ' +
+        `that mocked ${mockedServerModule} must mock \`gt-next/server\` ` +
+        'instead. Loading it for real under vitest fails with `Cannot find ' +
+        "package 'server-only'`, which drops the whole suite at collection " +
+        '(vitest reports that as a failed *suite*, so the tests it contains ' +
+        'disappear from the count rather than showing up as failures). Run ' +
+        'the suites before calling the migration done.'
     );
     lines.push('');
   }
@@ -298,6 +325,42 @@ export function buildReport(
   lines.push('');
 
   return lines.join('\n');
+}
+
+/**
+ * Why a flagged test file is in the stage, and therefore which edit it needs:
+ * a real import of the source library, a module mock that names it as a bare
+ * string (vi.mock/jest.mock; the mock stops intercepting the moment the
+ * components under test are converted), or neither, which means it reached the
+ * stage through another flagged test file it imports (a shared render helper).
+ *
+ * Measured from the file's current content rather than recorded during the
+ * scan: test files are never written by a migration, so this reads the same
+ * bytes the scan classified, and the report cannot drift from what the file
+ * actually contains. An unreadable file gets no evidence line instead of a
+ * guessed one.
+ */
+function testFileEvidence(ctx: MigrationContext, file: string): string | null {
+  const adapter = ctx.adapter;
+  let code: string;
+  try {
+    code = fs.readFileSync(file, 'utf8');
+  } catch {
+    return null;
+  }
+  if (adapter.projectUsagePattern.test(code)) {
+    return `imports ${adapter.displayName} directly`;
+  }
+  if (adapter.mentionedIn(code)) {
+    return (
+      `mocks ${adapter.displayName} (vi.mock/jest.mock); the mock no longer ` +
+      'intercepts converted components'
+    );
+  }
+  return (
+    'imports a test file listed here (a shared setup or render helper); its ' +
+    `${adapter.displayName} wiring no longer intercepts what this suite renders`
+  );
 }
 
 const SOURCE_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'];
