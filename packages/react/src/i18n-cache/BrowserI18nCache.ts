@@ -15,7 +15,8 @@ type LocalStorageCachePromises = Record<
   Promise<LocalStorageTranslationCache>
 >;
 
-// Share one lazy module import across all BrowserI18nCache instances.
+// Lazily import the development-only cache so bundlers can keep it out of the initial client chunk.
+// `??=` saves the first import promise, so all cache instances reuse the same lazy module load.
 let localStorageCacheModulePromise:
   | Promise<typeof import('./LocalStorageTranslationCache')>
   | undefined;
@@ -158,7 +159,7 @@ function getOrCreateLocalStorageCache(
     init?: Record<string, Translation>;
   }
 ): Promise<LocalStorageTranslationCache> {
-  // Cache the promise before awaiting it so concurrent calls for a locale share one instance.
+  // `||=` saves the first promise for this locale, so concurrent calls reuse one cache instance.
   return (localStorageCaches[params.locale] ||= loadLocalStorageCache().then(
     ({ LocalStorageTranslationCache }) =>
       new LocalStorageTranslationCache(params)
