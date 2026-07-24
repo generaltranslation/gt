@@ -84,15 +84,17 @@ function unwrapTsExpression(node: t.Node): t.Node {
  * The literal string elements of a guard's tested array, resolved through an
  * in-file const binding when the guard names one. `values` is null when the
  * contents cannot be proven from this file (imported, computed, reassigned, or
- * holding non-literal elements); `bindingName` names the local const that held
- * the array so a removed guard can take a now-unused array with it.
+ * holding non-literal elements); `declarator` is the resolved declarator NODE of
+ * the local const that held the array, so a removed guard can take that exact
+ * array with it. The node, not its name: a same-named const in an unrelated
+ * scope is a different declarator and must not be pruned.
  */
 function resolveGuardArray(
   arrayNode: t.Node,
   scope: NodePath['scope']
-): { values: string[] | null; bindingName: string | null } {
+): { values: string[] | null; declarator: t.VariableDeclarator | null } {
   let node = unwrapTsExpression(arrayNode);
-  let bindingName: string | null = null;
+  let declarator: t.VariableDeclarator | null = null;
   if (t.isIdentifier(node)) {
     const binding = scope.getBinding(node.name);
     if (
@@ -101,18 +103,18 @@ function resolveGuardArray(
       !t.isVariableDeclarator(binding.path.node) ||
       !binding.path.node.init
     ) {
-      return { values: null, bindingName: null };
+      return { values: null, declarator: null };
     }
-    bindingName = node.name;
+    declarator = binding.path.node;
     node = unwrapTsExpression(binding.path.node.init);
   }
-  if (!t.isArrayExpression(node)) return { values: null, bindingName };
+  if (!t.isArrayExpression(node)) return { values: null, declarator };
   const values: string[] = [];
   for (const element of node.elements) {
-    if (!t.isStringLiteral(element)) return { values: null, bindingName };
+    if (!t.isStringLiteral(element)) return { values: null, declarator };
     values.push(element.value);
   }
-  return { values, bindingName };
+  return { values, declarator };
 }
 
 /**
@@ -318,7 +320,7 @@ export function transformLayoutFile(
       for (const value of tested) if (!configured.has(value)) return false;
       return true;
     };
-    const droppedGuardArrays: string[] = [];
+    const droppedGuardArrays: t.VariableDeclarator[] = [];
     traverse(ast, {
       IfStatement(path) {
         const scan = scanLocaleGuardTest(
@@ -345,7 +347,7 @@ export function transformLayoutFile(
         // configured locale, so removing such a guard would change routing
         // behavior and it stays in place instead.
         let removable = true;
-        const localArrayBindings: string[] = [];
+        const localArrayBindings: t.VariableDeclarator[] = [];
         for (const arrayNode of scan.includesArrays) {
           const resolved = resolveGuardArray(arrayNode, path.scope);
           if (resolved.values !== null) {
@@ -353,8 +355,8 @@ export function transformLayoutFile(
               removable = false;
               break;
             }
-            if (resolved.bindingName) {
-              localArrayBindings.push(resolved.bindingName);
+            if (resolved.declarator) {
+              localArrayBindings.push(resolved.declarator);
             }
           } else if (!/locales/i.test(generate(arrayNode).code)) {
             removable = false;
@@ -383,9 +385,11 @@ export function transformLayoutFile(
     });
     // Dropping a guard can strand the const array it tested; take the array
     // with it when the guard was its only consumer, so the emitted layout
-    // passes no-unused-vars.
+    // passes no-unused-vars. Identity, not name: only the declarator the
+    // removed guard actually resolved to is a candidate, so an unreferenced
+    // same-named const in an unrelated scope is never pruned.
     if (droppedGuardArrays.length > 0) {
-      const pruneNames = new Set(droppedGuardArrays);
+      const pruneDeclarators = new Set<t.Node>(droppedGuardArrays);
       traverse(ast, {
         Program(path) {
           // The guard removal above changed reference counts; recrawl so the
@@ -394,13 +398,14 @@ export function transformLayoutFile(
         },
         VariableDeclarator(path) {
           if (
-            !t.isIdentifier(path.node.id) ||
-            !pruneNames.has(path.node.id.name)
+            !pruneDeclarators.has(path.node) ||
+            !t.isIdentifier(path.node.id)
           ) {
             return;
           }
           const binding = path.scope.getBinding(path.node.id.name);
-          if (!binding || binding.referenced) return;
+          if (!binding || binding.path.node !== path.node) return;
+          if (binding.referenced) return;
           const declaration = path.parentPath;
           if (
             t.isVariableDeclaration(declaration.node) &&
@@ -419,10 +424,13 @@ export function transformLayoutFile(
   // 2. Keep `<html lang={locale}>` on the [locale] route param. Rewriting it
   //    to a request-scoped `await getLocale()` (reads headers/cookies) forces
   //    every route to render dynamically (ƒ) and loses static rendering (SSG);
-  //    the param resolves statically via next/root-params. Record which param
-  //    bindings the lang attribute uses so the unused-destructure cleanup in
-  //    step 7 preserves them.
-  const langParamBindings = new Set<string>();
+  //    the param resolves statically via next/root-params. Record the
+  //    DECLARATORS the lang attribute's identifier resolves to, resolved up the
+  //    attribute's own scope chain, so the unused-destructure cleanup in step 7
+  //    preserves exactly those and not an unrelated same-named binding in a
+  //    sibling function (generateMetadata destructures `locale` out of params
+  //    too, and another transform can leave that one genuinely dead).
+  const langParamDeclarators = new Set<t.Node>();
   if (isLocaleLayout) {
     traverse(ast, {
       JSXAttribute(path) {
@@ -430,8 +438,13 @@ export function transformLayoutFile(
         const value = path.node.value;
         if (!t.isJSXExpressionContainer(value)) return;
         const expression = value.expression;
-        if (t.isIdentifier(expression)) {
-          langParamBindings.add(expression.name);
+        if (!t.isIdentifier(expression)) return;
+        // A lang identifier bound to a function parameter or a module-level
+        // const yields a non-declarator binding and simply never registers,
+        // which is safe: step 7 only ever removes a params destructure.
+        const binding = path.scope.getBinding(expression.name);
+        if (binding && t.isVariableDeclarator(binding.path.node)) {
+          langParamDeclarators.add(binding.path.node);
         }
       },
     });
@@ -634,6 +647,11 @@ export function transformLayoutFile(
         const declarator = path.node.declarations[0];
         if (!t.isObjectPattern(declarator.id)) return;
         if (!isParamsInit(declarator.init)) return;
+        // The declarator that feeds `<html lang={...}>` must survive even if
+        // guard removal left it looking unreferenced to the recrawled scope.
+        // Node identity, so a sibling function's own same-named destructure is
+        // still collectable when it really is dead.
+        if (langParamDeclarators.has(declarator)) return;
         for (const property of declarator.id.properties) {
           if (
             !t.isObjectProperty(property) ||
@@ -641,9 +659,6 @@ export function transformLayoutFile(
           ) {
             return;
           }
-          // The `<html lang={...}>` param binding must survive even if guard
-          // removal left it looking unreferenced to the recrawled scope.
-          if (langParamBindings.has(property.value.name)) return;
           const binding = path.scope.getBinding(property.value.name);
           if (!binding || binding.referenced) return;
         }

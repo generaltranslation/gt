@@ -220,6 +220,14 @@ export function transformSourceFile(
     namespace: string | null;
     namespaceExpression: t.Expression | null;
     hadLocale: boolean;
+    /**
+     * The declarator the dropped `locale` option resolved to at this call site
+     * (usually the enclosing function's `const { locale } = await params`), or
+     * null when the option was not a plain in-file binding. Dropping the option
+     * removes a reference, so this is one of the declarations the orphan cleanup
+     * below is allowed to remove: the codemod created the orphan.
+     */
+    localeDeclarator: t.VariableDeclarator | null;
     line?: number;
   }[] = [];
   const providerElements: NodePath<t.JSXElement>[] = [];
@@ -267,12 +275,20 @@ export function transformSourceFile(
             namespaceProp && !t.isStringLiteral(namespaceProp)
               ? namespaceProp
               : null;
-          const hadLocale = getObjectProp(first, 'locale') !== null;
+          const localeProp = getObjectProp(first, 'locale');
+          const localeIdentifier = unwrapTsWrappers(unwrapAwait(localeProp));
+          const localeBinding = t.isIdentifier(localeIdentifier)
+            ? path.scope.getBinding(localeIdentifier.name)
+            : null;
           objectArgRewrites.push({
             call: init,
             namespace,
             namespaceExpression,
-            hadLocale,
+            hadLocale: localeProp !== null,
+            localeDeclarator:
+              localeBinding && t.isVariableDeclarator(localeBinding.path.node)
+                ? localeBinding.path.node
+                : null,
             line: init.loc?.start.line,
           });
           tBindings.set(path.node.id.name, { namespace });
@@ -403,10 +419,16 @@ export function transformSourceFile(
     });
   }
 
-  // 1. setRequestLocale call statements. Record the bare-identifier arguments
-  //    (usually `locale`) so the orphaned-destructure cleanup below only touches
-  //    a `const { locale } = use(params)` that this removal actually made dead.
-  const removedSetRequestLocaleArgs = new Set<string>();
+  // 1. setRequestLocale call statements. Record the DECLARATOR each removed
+  //    call's bare-identifier argument (usually `locale`) resolved to, so the
+  //    orphaned-destructure cleanup below only touches a `const { locale } =
+  //    use(params)` that this removal actually made dead. The declarator node,
+  //    not the argument name: a sibling function's identically named destructure
+  //    is a different declarator and stays the author's own code. Step 2 adds to
+  //    the same registry for the other rewrite that drops a locale reference
+  //    (the getTranslations locale option), so both orphans this codemod creates
+  //    are cleaned and neither cleanup reaches into another scope.
+  const droppedLocaleRefDeclarators = new Set<t.Node>();
   let setRequestLocaleRemoved = false;
   // While the provider is retained (partial mode), setRequestLocale stays:
   // the retained next-intl surface (a request-scoped getMessages() feeding
@@ -425,8 +447,12 @@ export function transformSourceFile(
           removalLocals.has(expression.callee.name)
         ) {
           for (const argument of expression.arguments) {
-            if (t.isIdentifier(argument)) {
-              removedSetRequestLocaleArgs.add(argument.name);
+            if (!t.isIdentifier(argument)) continue;
+            // Resolve up this call's own scope chain, before the removal, so
+            // the recorded node is the declaration that actually fed the call.
+            const binding = path.scope.getBinding(argument.name);
+            if (binding && t.isVariableDeclarator(binding.path.node)) {
+              droppedLocaleRefDeclarators.add(binding.path.node);
             }
           }
           path.remove();
@@ -440,6 +466,7 @@ export function transformSourceFile(
   //    A dynamic namespace becomes the positional argument
   //    getTranslations(expr) so its keys still resolve; a missing namespace
   //    stays getTranslations().
+  let droppedLocaleOption = false;
   for (const rewrite of objectArgRewrites) {
     rewrite.call.arguments = rewrite.namespace
       ? [t.stringLiteral(rewrite.namespace)]
@@ -447,6 +474,13 @@ export function transformSourceFile(
         ? [rewrite.namespaceExpression]
         : [];
     if (rewrite.hadLocale) {
+      // This rewrite just deleted a `locale` reference; the declaration it read
+      // from is now the codemod's orphan to clean (step 5), scoped to the exact
+      // declarator resolved at the call site.
+      droppedLocaleOption = true;
+      if (rewrite.localeDeclarator) {
+        droppedLocaleRefDeclarators.add(rewrite.localeDeclarator);
+      }
       todos.push({
         file,
         line: rewrite.line,
@@ -456,8 +490,17 @@ export function transformSourceFile(
     }
   }
 
-  // 3. Provider swap + linked messages cleanup.
-  const removedProviderMessageBindings = new Set<string>();
+  // 3. Provider swap + linked messages cleanup. The removed-hook registry holds
+  //    the import SPECIFIER nodes whose hook call this pass deleted, so the
+  //    import surgery below drops exactly those; a local shadow that happens to
+  //    share a hook's name resolves to a different binding and never takes the
+  //    real (still-used) import with it.
+  const messagesHookSpecifierNodes = new Set<t.Node>(
+    symbols
+      .filter((symbol) => adapter.messagesHooks.has(symbol.imported))
+      .map((symbol) => symbol.specifier)
+  );
+  const removedProviderMessageSpecifiers = new Set<t.Node>();
   for (const providerPath of providerElements) {
     const opening = providerPath.node.openingElement;
     // `messages` is absorbed by the dictionary pipeline and `locale` by
@@ -511,7 +554,13 @@ export function transformSourceFile(
           return;
         }
         if (messagesHookLocals.has(init.callee.name)) {
-          removedProviderMessageBindings.add(init.callee.name);
+          const calleeBinding = path.scope.getBinding(init.callee.name);
+          if (
+            calleeBinding &&
+            messagesHookSpecifierNodes.has(calleeBinding.path.node)
+          ) {
+            removedProviderMessageSpecifiers.add(calleeBinding.path.node);
+          }
           path.remove();
           return;
         }
@@ -608,7 +657,7 @@ export function transformSourceFile(
             adapter.localeValidators.has(specifier.imported.name) ||
             adapter.removals.has(specifier.imported.name) ||
             (adapter.messagesHooks.has(specifier.imported.name) &&
-              !removedProviderMessageBindings.has(specifier.local.name)))
+              !removedProviderMessageSpecifiers.has(specifier)))
       );
     }
     if (kept.length > 0) {
@@ -674,14 +723,18 @@ export function transformSourceFile(
   }
 
   // 5. Orphaned param-locale cleanup. Runs LAST, after every reference-adding
-  //    step, so the recrawl below sees true reference counts. setRequestLocale
-  //    removal can strand a `const { locale } = use(params)` (or `= await
-  //    params`), which then trips no-unused-vars / TS6133; drop it, the now-dead
-  //    `params` parameter, and the `use` import to match how layouts (step 7)
-  //    leave their own path lint-clean. Layouts opt out (dropOrphanedParamLocale
-  //    false): they revive that destructure by injecting `locale={locale}` into
-  //    a retained provider after this pass.
-  if (options.dropOrphanedParamLocale !== false && setRequestLocaleRemoved) {
+  //    step, so the recrawl below sees true reference counts. Removing
+  //    setRequestLocale or dropping a getTranslations locale option can strand a
+  //    `const { locale } = use(params)` (or `= await params`), which then trips
+  //    no-unused-vars / TS6133; drop it, the now-dead `params` parameter, and the
+  //    `use` import to match how layouts (step 7) leave their own path
+  //    lint-clean. Layouts opt out (dropOrphanedParamLocale false): they revive
+  //    that destructure by injecting `locale={locale}` into a retained provider
+  //    after this pass.
+  if (
+    options.dropOrphanedParamLocale !== false &&
+    (setRequestLocaleRemoved || droppedLocaleOption)
+  ) {
     // Functions whose orphaned params destructure was removed here; each one's
     // `params` parameter may now be unreferenced and need dropping.
     const paramsCleanupTargets = new Set<t.Function>();
@@ -696,11 +749,12 @@ export function transformSourceFile(
         const declarator = path.node.declarations[0];
         if (!t.isObjectPattern(declarator.id)) return;
         if (!isParamsInit(declarator.init)) return;
-        // All-or-nothing: keep the declaration unless EVERY name it binds is
-        // now unreferenced AND at least one was a removed setRequestLocale
-        // argument (so we only clean orphans this codemod created, never the
-        // author's own pre-existing dead code).
-        let boundToRemovedArg = false;
+        // All-or-nothing: keep the declaration unless a rewrite above deleted a
+        // reference that resolved to THIS declarator (so we only clean orphans
+        // this codemod created, never the author's own pre-existing dead code,
+        // and never a sibling function's same-named destructure) AND every name
+        // it binds is now unreferenced.
+        if (!droppedLocaleRefDeclarators.has(declarator)) return;
         for (const property of declarator.id.properties) {
           if (
             !t.isObjectProperty(property) ||
@@ -708,13 +762,9 @@ export function transformSourceFile(
           ) {
             return;
           }
-          if (removedSetRequestLocaleArgs.has(property.value.name)) {
-            boundToRemovedArg = true;
-          }
           const binding = path.scope.getBinding(property.value.name);
           if (!binding || binding.referenced) return;
         }
-        if (!boundToRemovedArg) return;
         const fn = path.getFunctionParent();
         if (fn) paramsCleanupTargets.add(fn.node);
         path.remove();
@@ -792,6 +842,24 @@ function bindsToNextIntlLocale(
 ): boolean {
   const binding = path.scope.getBinding(name);
   return binding != null && localeSpecifierNodes.has(binding.path.node);
+}
+
+/**
+ * Strips `as T` / `satisfies T` / `!` wrappers, so a `locale as Locale` option
+ * still resolves to the binding it reads (the cast itself is removed later by the
+ * `Locale` -> `string` pass, which runs after this analysis).
+ */
+function unwrapTsWrappers(node: t.Node | null | undefined): t.Node | null {
+  let current: t.Node | null = node ?? null;
+  while (
+    current &&
+    (t.isTSAsExpression(current) ||
+      t.isTSSatisfiesExpression(current) ||
+      t.isTSNonNullExpression(current))
+  ) {
+    current = current.expression;
+  }
+  return current;
 }
 
 function unwrapAwait(node: t.Node | null | undefined): t.Expression | null {
