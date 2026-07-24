@@ -251,14 +251,32 @@ export function transformReactI18nextSource(
           }
         }
       } else if (t.isArrayPattern(id)) {
-        const [tEl, i18nEl] = id.elements;
-        if (t.isIdentifier(tEl)) tBindings.set(tEl.name, { rootId, i18nextNs });
-        if (t.isIdentifier(i18nEl))
-          i18nBindings.set(i18nEl.name, {
-            onlyChangeLanguage: true,
-            local: i18nEl.name,
-            referenced: false,
-          });
+        // Validate the WHOLE pattern before recording bindings: the rewrite
+        // rebuilds this declaration from the first two identifier elements
+        // only, so any other element (`ready` at index 2, a default, a rest
+        // element) would be silently dropped while its references remain.
+        // Holes (`const [, i18n] = ...`) bind nothing and stay allowed.
+        id.elements.forEach((element, index) => {
+          if (element == null) return;
+          if (index <= 1 && t.isIdentifier(element)) {
+            if (index === 0) {
+              tBindings.set(element.name, { rootId, i18nextNs });
+            } else {
+              i18nBindings.set(element.name, {
+                onlyChangeLanguage: true,
+                local: element.name,
+                referenced: false,
+              });
+            }
+            return;
+          }
+          // Position 2 is react-i18next's `ready` flag.
+          skipReasons.push(
+            index === 2 && t.isIdentifier(element)
+              ? "useTranslation()'s `ready` flag has no gt-next equivalent (gt handles loading via streaming); remove it manually"
+              : 'useTranslation() is array-destructured in a shape gt migrate does not preserve (a default, a rest element, or elements beyond [t, i18n]); convert manually'
+          );
+        });
       } else {
         skipReasons.push(
           'useTranslation() is assigned to a non-destructured binding; convert manually'
@@ -600,7 +618,15 @@ export function transformReactI18nextSource(
       } else if (replacements.length > 1) {
         const declaration = path.parentPath;
         if (declaration.isVariableDeclaration()) {
-          declaration.node.declarations = replacements;
+          // Replace only this declarator (path.key is its index in the
+          // declarations list): a sibling declarator in the same statement
+          // (`const keep = init(), { t, i18n } = useTranslation()`) must
+          // survive the split.
+          declaration.node.declarations.splice(
+            path.key as number,
+            1,
+            ...replacements
+          );
         }
       }
     },

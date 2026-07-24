@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { lt, minVersion, valid } from 'semver';
 import { hasGtProjectConfigured } from '../transforms/gtOptions.js';
+import { createMigrateDiagnostic } from '../pipeline/diagnostics.js';
 import type { FileEdit, MigrationContext } from '../pipeline/types.js';
 
 /** next/root-params (and its `locale()` export) landed in Next 15.5.0. */
@@ -22,6 +23,38 @@ const NEXT_ROOT_PARAMS_MIN_GATE = `${NEXT_ROOT_PARAMS_MIN_VERSION}-0`;
  * package.json edit, and deletions of the now-unused next-intl config files.
  * next-intl teardown only happens once no skipped files remain.
  */
+/**
+ * Pre-write gate for the config merge in emitGtFiles: an existing
+ * gt.config.json that cannot be read, parsed, or is not a JSON object must
+ * stop the run BEFORE any edit is enqueued. Continuing with `{}` (what the
+ * merge would otherwise start from) writes a replacement config, silently
+ * discarding settings the parse never saw (projectId, custom files entries,
+ * publish options). Returns the diagnostic to fatal with, or null when the
+ * config is absent or readable. Resolves the path exactly as emitGtFiles does.
+ */
+export function checkExistingGtConfig(ctx: MigrationContext): string | null {
+  const configPath = ctx.configFile ?? path.join(ctx.cwd, 'gt.config.json');
+  if (!fs.existsSync(configPath)) return null;
+  let problem: string | null = null;
+  try {
+    const parsed = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      problem = 'the file is valid JSON but not a JSON object';
+    }
+  } catch (error) {
+    problem = String(error);
+  }
+  if (!problem) return null;
+  return createMigrateDiagnostic({
+    severity: 'Error',
+    whatHappened: `your existing ${path.relative(ctx.cwd, configPath)} could not be read as a JSON object`,
+    why: 'gt migrate merges its settings into the existing config; overwriting an unreadable one would discard settings it cannot see (projectId, custom files entries, publish options)',
+    details: problem,
+    reassurance: 'Nothing has been written.',
+    fix: 'Fix the JSON (or move the file aside to start fresh) and re-run gt migrate.',
+  });
+}
+
 export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
   const adapter = ctx.adapter;
   const edits: FileEdit[] = [];
@@ -40,15 +73,12 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
   const configPath = ctx.configFile ?? path.join(ctx.cwd, 'gt.config.json');
   let existing: Record<string, unknown> = {};
   if (fs.existsSync(configPath)) {
-    try {
-      existing = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    } catch {
-      // Unreadable existing config: preserve nothing, report via todo.
-      ctx.todos.push({
-        file: configPath,
-        reason: 'existing gt.config.json could not be parsed and was replaced',
-      });
-    }
+    // Readability was asserted by checkExistingGtConfig before any edit was
+    // enqueued; continuing past a parse failure here would enqueue a write
+    // that replaces the user's whole config (projectId, custom files entries,
+    // publish settings) with defaults. Edits are buffered, so a throw leaves
+    // the project untouched.
+    existing = JSON.parse(fs.readFileSync(configPath, 'utf8'));
   }
   const existingFiles =
     existing.files && typeof existing.files === 'object'

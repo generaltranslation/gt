@@ -7,6 +7,7 @@ import {
   type SourceAdapter,
 } from '../adapters/index.js';
 import {
+  checkExistingGtConfig,
   emitGtFiles,
   findLocaleLayout,
   supportsRootParams,
@@ -711,6 +712,13 @@ export async function runMigration(
   const transformedSourceFiles = ctx.edits.filter(
     (edit) => edit.kind === 'write'
   ).length;
+
+  // An existing gt.config.json the merge below cannot read must stop the run
+  // here: emitGtFiles would otherwise build its write from `{}` and enqueue a
+  // replacement that discards the user's projectId/files/publish settings.
+  // Edits are still buffered, so stopping leaves the project untouched.
+  const configReadProblem = checkExistingGtConfig(ctx);
+  if (configReadProblem) io.fatal(configReadProblem);
 
   ctx.edits.push(...emitGtFiles(ctx));
 

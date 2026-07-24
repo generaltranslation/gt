@@ -17,7 +17,13 @@ export function packageNameOf(source: string): string {
 
 /**
  * Ensures `import { <names> } from '<module>'` exists, merging into an
- * existing declaration when present. Names already bound are not duplicated.
+ * existing compatible declaration when present. Names already bound are not
+ * duplicated. Callers reference each name verbatim in generated code, so
+ * "present" means the module's OWN symbol is bound under its own name; an
+ * alias of it (`withGTConfig as wgc`) still gets a plain specifier added
+ * (legal: one symbol may be imported twice), while a namespace import
+ * (`import * as gt`) can never host named specifiers and gets a separate
+ * declaration instead.
  */
 export function ensureNamedImports(
   ast: t.File,
@@ -26,19 +32,36 @@ export function ensureNamedImports(
 ): void {
   let target: t.ImportDeclaration | null = null;
   const present = new Set<string>();
+  const conflictingLocals = new Set<string>();
   traverse(ast, {
     ImportDeclaration(path) {
       if (path.node.source.value !== module) return;
-      if (!target) target = path.node;
+      const hasNamespace = path.node.specifiers.some((specifier) =>
+        t.isImportNamespaceSpecifier(specifier)
+      );
+      if (!target && !hasNamespace) target = path.node;
       for (const specifier of path.node.specifiers) {
         if (t.isImportSpecifier(specifier)) {
-          present.add(specifier.local.name);
+          const imported = t.isIdentifier(specifier.imported)
+            ? specifier.imported.name
+            : specifier.imported.value;
+          if (imported === specifier.local.name) {
+            present.add(imported);
+          } else {
+            // `import { other as withGTConfig }`: the local name is taken by a
+            // DIFFERENT symbol, so adding a plain specifier would redeclare it.
+            conflictingLocals.add(specifier.local.name);
+          }
+        } else {
+          conflictingLocals.add(specifier.local.name);
         }
       }
     },
   });
 
-  const missing = names.filter((name) => !present.has(name));
+  const missing = names.filter(
+    (name) => !present.has(name) && !conflictingLocals.has(name)
+  );
   if (missing.length === 0) return;
   const specifiers = missing.map((name) =>
     t.importSpecifier(t.identifier(name), t.identifier(name))

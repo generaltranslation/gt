@@ -8,6 +8,7 @@ import {
   type ConvertInput,
 } from './catalogConvert.js';
 import { getI18nextConfig } from '../config/reactI18nextConfig.js';
+import { createMigrateDiagnostic } from '../pipeline/diagnostics.js';
 import { collectCallSiteEvidence } from './reactI18nextEvidence.js';
 import type {
   FileEdit,
@@ -72,6 +73,29 @@ export async function discoverReactI18nextCatalogs(
       return false;
     }
   });
+  // A supportedLngs entry with no catalog directory here would silently
+  // migrate a narrower locale set than the app declares (i18next may serve
+  // that locale through fallback or a remote backend). Refuse, mirroring the
+  // next-intl discovery path, instead of dropping locales quietly.
+  if (config.locales) {
+    const missing = config.locales.filter(
+      (locale) => !localeDirs.includes(locale)
+    );
+    if (missing.length > 0) {
+      throw new CatalogConversionError(
+        createMigrateDiagnostic({
+          severity: 'Error',
+          whatHappened: `your i18next config lists locales with no catalog directory in ${path.relative(cwd, root)}`,
+          details: `no catalog for ${missing.join(', ')}`,
+          fix: `Add ${missing
+            .map((locale) => `${locale}/<namespace>.json`)
+            .join(
+              ', '
+            )} under ${path.relative(cwd, root)}, or update supportedLngs to match the catalogs present, then re-run gt migrate.`,
+        })
+      );
+    }
+  }
   const locales = config.locales
     ? localeDirs.filter((locale) => config.locales!.includes(locale))
     : localeDirs;
