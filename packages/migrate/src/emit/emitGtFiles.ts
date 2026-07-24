@@ -135,8 +135,25 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
   } else {
     gt = defaultGt;
   }
+  // gt generate/translate read the dictionary from gt.config.json (they never
+  // see the next.config wiring), so record it here too; never clobber a value
+  // the user already set (round-9 audit: bare `gt generate` on the emitted
+  // tree found no dictionary and wrote empty templates).
+  const configDefaultCatalog = toPosix(
+    path.relative(
+      ctx.cwd,
+      path.join(ctx.catalogs.dir, `${ctx.catalogs.defaultLocale}.json`)
+    )
+  );
   const config = {
     ...existing,
+    ...(existing.dictionary === undefined
+      ? {
+          dictionary: configDefaultCatalog.startsWith('.')
+            ? configDefaultCatalog
+            : `./${configDefaultCatalog}`,
+        }
+      : {}),
     defaultLocale: ctx.catalogs.defaultLocale,
     locales: ctx.catalogs.locales,
     files: {
@@ -144,9 +161,11 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
       gt,
     },
   };
+  const configExisted = fs.existsSync(configPath);
   edits.push({
     path: configPath,
     kind: 'write',
+    ...(configExisted ? {} : { created: true }),
     content: JSON.stringify(config, null, 2) + '\n',
   });
 
@@ -172,6 +191,7 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
     edits.push({
       path: createdConfigPath,
       kind: 'write',
+      created: true,
       content: [
         "import { withGTConfig } from 'gt-next/config';",
         '',
@@ -226,6 +246,7 @@ export function emitGtFiles(ctx: MigrationContext): FileEdit[] {
     edits.push({
       path: loaderPath,
       kind: 'write',
+      created: true,
       content: [
         'const loadDictionary = async (locale: string) => {',
         '  try {',
@@ -982,7 +1003,7 @@ function emitResolverFile(
     return;
   }
   const filePath = path.join(ctx.cwd, useSrc ? `src/${base}.ts` : `${base}.ts`);
-  edits.push({ path: filePath, kind: 'write', content });
+  edits.push({ path: filePath, kind: 'write', created: true, content });
 }
 
 /**

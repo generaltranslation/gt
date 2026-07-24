@@ -214,6 +214,20 @@ export async function handleMigrateCommand(
           'formatter yourself if you want it reflowed'
       );
     }
+    if (formatting.failure) {
+      (ctx.warnings ??= []).push(
+        `post-migration formatting did not finish (${formatting.failure}); ` +
+          'the files it had already rewritten were checked and any unsafe ' +
+          'rewrite was rolled back'
+      );
+    }
+    for (const file of formatting.unverifiedFiles) {
+      (ctx.warnings ??= []).push(
+        `${path.relative(cwd, file)}: could not be checked against the ` +
+          'JSX-children invariant, so whatever the formatter wrote is what is ' +
+          'on disk; review it'
+      );
+    }
   } catch {
     logger.warn(
       createDiagnosticMessage({

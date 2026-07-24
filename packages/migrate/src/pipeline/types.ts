@@ -15,6 +15,12 @@ export type FileEdit = {
   path: string;
   kind: 'write' | 'delete';
   content?: string;
+  /** Set by synthesis sites that KNOW the file did not exist before the run
+   *  (gt.config.json when none was read, a created next.config, the
+   *  dictionary loader, the locale resolvers). The report lists these under
+   *  "Created" instead of "Converted". Transform rewrites never set it;
+   *  absence means "not known to be new", never "known to be old". */
+  created?: boolean;
 };
 
 export type TodoEntry = {

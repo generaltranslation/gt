@@ -235,6 +235,12 @@ export type Settings = {
   projectId?: string;
   defaultLocale: string;
   locales: string[];
+  /** Dictionary path from gt.config.json. generateSettings spreads the whole
+   *  config into the returned object, so the value has always been present at
+   *  runtime when configured; typing it lets commands honor it instead of
+   *  silently falling back to convention paths (gt generate did, and wrote
+   *  empty templates on migrated trees whose config named the catalogs). */
+  dictionary?: string;
   customMapping?: CustomMapping;
   files: {
     resolvedPaths: ResolvedFiles; // Absolute resolved paths for the default locale

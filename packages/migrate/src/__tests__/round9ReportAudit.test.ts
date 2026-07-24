@@ -237,6 +237,27 @@ describe('round 9: the report names every post-run source-library reference', ()
     expect(report).not.toContain('## Partially converted');
   });
 
+  it('lists synthesized files under Created, never Converted', async () => {
+    const cwd = writeTree(baseApp);
+    const ctx = await migrate(cwd);
+    const report = buildReport(ctx, false);
+    const convertedSection =
+      report.split('## Converted')[1]?.split('\n## ')[0] ?? '';
+    const createdSection =
+      report.split('## Created')[1]?.split('\n## ')[0] ?? '';
+    // gt.config.json did not exist before the run; the synthesis site knows
+    // that and flags the edit, so the report must not claim it was converted.
+    expect(createdSection).toContain('gt.config.json');
+    expect(convertedSection).not.toContain('- gt.config.json');
+    // The emitted config carries the dictionary gt generate reads.
+    const emitted = ctx.edits.find((edit) =>
+      edit.path.endsWith('gt.config.json')
+    );
+    expect(JSON.parse(emitted?.content ?? '{}').dictionary).toBe(
+      './messages/en.json'
+    );
+  });
+
   it('names the suites a dead config-wired mock breaks, and only those', async () => {
     // The sniply shape: the ONLY next-intl reference in the test tree is a
     // vi.mock string in a setup file that vitest wires through config, so the
