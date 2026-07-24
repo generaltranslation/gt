@@ -31,10 +31,7 @@ const GRAMMAR_WHITE_SPACE = /[\t-\r \x85\u200E\u200F\u2028\u2029]/u;
 const IDENTIFIER_BOUNDARY =
   /[\t-\r \x85\xA0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000\x21-\x2F\x3A-\x40\x5B-\x5E\x60\x7B-\x7E\xA1-\xA7\xA9\xAB\xAC\xAE\xB0\xB1\xB6\xBB\xBF\xD7\xF7\u2010-\u2027\u2030-\u203E\u2041-\u2053\u2055-\u205E\u2190-\u245F\u2500-\u2775\u2794-\u2BFF\u2E00-\u2E7F\u3001-\u3003\u3008-\u3020\u3030\uFD3E-\uFD3F\uFE45-\uFE46]/u;
 
-type PositionIndex = {
-  lines: Uint32Array;
-  columns: Uint32Array;
-};
+type PositionIndex = [lines: Uint32Array, columns: Uint32Array];
 
 class IcuParser {
   private index = 0;
@@ -131,13 +128,7 @@ class IcuParser {
       return "'";
     }
 
-    const quotesSyntax =
-      next === '{' ||
-      next === '}' ||
-      next === '<' ||
-      next === '>' ||
-      (next === '#' && inPlural);
-    if (!quotesSyntax) return null;
+    if (!'{}<>'.includes(next) && (next !== '#' || !inPlural)) return null;
 
     this.index += 1;
     let value = '';
@@ -265,26 +256,25 @@ class IcuParser {
   ): MessageFormatElement {
     this.skipSpace();
     let style: string | NumberSkeleton | DateTimeSkeleton | null = null;
-    let styleSource:
-      | { rawStyle: string; start: number; end: number }
-      | undefined;
+    let rawStyle: string | undefined;
+    let styleStart = 0;
+    let styleEnd = 0;
 
     if (this.consume(',')) {
       this.skipSpace();
-      const styleStart = this.index;
-      const rawStyle = trimEnd(this.readSimpleStyle());
+      styleStart = this.index;
+      rawStyle = this.readSimpleStyle().replace(/\s+$/u, '');
       if (!rawStyle) this.fail('EXPECT_ARGUMENT_STYLE');
-      styleSource = { rawStyle, start: styleStart, end: this.index };
+      styleEnd = this.index;
     }
 
     if (!this.consume('}')) {
       this.fail('EXPECT_ARGUMENT_CLOSING_BRACE', start);
     }
 
-    if (styleSource) {
-      const { rawStyle, start: styleStart, end: styleEnd } = styleSource;
+    if (rawStyle) {
       if (rawStyle.slice(0, 2) === '::') {
-        const skeleton = trimStart(rawStyle.slice(2));
+        const skeleton = rawStyle.slice(2).replace(/^\s+/u, '');
         const styleLocation = this.location(styleStart, styleEnd);
         if (argumentType === 'number') {
           let tokens: ReturnType<typeof parseNumberSkeletonTokens>;
@@ -323,11 +313,12 @@ class IcuParser {
       }
     }
 
-    const type = {
-      number: TYPE.number,
-      date: TYPE.date,
-      time: TYPE.time,
-    }[argumentType];
+    const type =
+      argumentType === 'number'
+        ? TYPE.number
+        : argumentType === 'date'
+          ? TYPE.date
+          : TYPE.time;
     return this.withLocation(
       { type, value, style } as MessageFormatElement,
       start,
@@ -391,16 +382,17 @@ class IcuParser {
     if (argumentType !== 'select' && selector === 'offset') {
       if (!this.consume(':')) this.fail('EXPECT_PLURAL_ARGUMENT_OFFSET_VALUE');
       this.skipSpace();
-      offset = this.readInteger(
-        'EXPECT_PLURAL_ARGUMENT_OFFSET_VALUE',
-        'INVALID_PLURAL_ARGUMENT_OFFSET_VALUE'
+      offset = Number(
+        this.readIntegerToken(
+          'EXPECT_PLURAL_ARGUMENT_OFFSET_VALUE',
+          'INVALID_PLURAL_ARGUMENT_OFFSET_VALUE'
+        )
       );
       this.skipSpace();
       selector = this.readIdentifier();
     }
 
-    const entries: Array<[string, PluralOrSelectOption]> = [];
-    const seen = new Set<string>();
+    const options: Record<string, PluralOrSelectOption> = Object.create(null);
     let selectorStart = firstSelectorStart;
 
     while (selector || (argumentType !== 'select' && this.current() === '=')) {
@@ -414,7 +406,7 @@ class IcuParser {
           'INVALID_PLURAL_ARGUMENT_SELECTOR'
         )}`;
       }
-      if (seen.has(selector)) {
+      if (selector in options) {
         this.failAt(
           argumentType === 'select'
             ? 'DUPLICATE_SELECT_ARGUMENT_SELECTOR'
@@ -423,7 +415,6 @@ class IcuParser {
           this.index
         );
       }
-      seen.add(selector);
 
       this.skipSpace();
       const optionStart = this.index;
@@ -443,35 +434,29 @@ class IcuParser {
         this.fail('EXPECT_ARGUMENT_CLOSING_BRACE', optionStart);
       }
       const optionLocation = this.location(optionStart, this.index);
-      entries.push([
-        selector,
-        {
-          value: optionValue,
-          ...(optionLocation ? { location: optionLocation } : {}),
-        },
-      ]);
+      options[selector] = {
+        value: optionValue,
+        ...(optionLocation ? { location: optionLocation } : {}),
+      };
 
       this.skipSpace();
       selectorStart = this.index;
       selector = this.readIdentifier();
     }
 
-    if (entries.length === 0) {
+    if (Object.keys(options).length === 0) {
       this.fail(
         argumentType === 'select'
           ? 'EXPECT_SELECT_ARGUMENT_SELECTOR'
           : 'EXPECT_PLURAL_ARGUMENT_SELECTOR'
       );
     }
-    if (
-      this.options.requiresOtherClause &&
-      !entries.some(([entrySelector]) => entrySelector === 'other')
-    ) {
+    if (this.options.requiresOtherClause && !('other' in options)) {
       this.fail('MISSING_OTHER_CLAUSE', selectorStart);
     }
     if (!this.consume('}')) this.fail('EXPECT_ARGUMENT_CLOSING_BRACE', start);
+    Object.setPrototypeOf(options, Object.prototype);
 
-    const options = entriesToObject(entries);
     if (argumentType === 'select') {
       return this.withLocation(
         { type: TYPE.select, value, options },
@@ -492,13 +477,6 @@ class IcuParser {
     );
   }
 
-  private readInteger(
-    expectedErrorCode: string,
-    invalidErrorCode: string
-  ): number {
-    return Number(this.readIntegerToken(expectedErrorCode, invalidErrorCode));
-  }
-
   private readIntegerToken(
     expectedErrorCode: string,
     invalidErrorCode: string
@@ -509,8 +487,9 @@ class IcuParser {
     while (/\d/u.test(this.current())) this.index += 1;
     if (digitStart === this.index) this.fail(expectedErrorCode, start);
     const token = this.message.slice(start, this.index);
-    const value = Number(token);
-    if (!isSafeInteger(value)) this.fail(invalidErrorCode, start);
+    if (Math.abs(Number(token)) > 0x1fffffffffffff) {
+      this.fail(invalidErrorCode, start);
+    }
     return token;
   }
 
@@ -567,8 +546,8 @@ class IcuParser {
     const positions = (this.positions ??= buildPositionIndex(this.message));
     return {
       offset,
-      line: positions.lines[offset],
-      column: positions.columns[offset],
+      line: positions[0][offset],
+      column: positions[1][offset],
     };
   }
 
@@ -590,22 +569,6 @@ class IcuParser {
   }
 }
 
-function entriesToObject<T>(entries: Array<[string, T]>): Record<string, T> {
-  const result: Record<string, T> = {};
-  for (const [key, value] of entries) {
-    // Assignment to __proto__ mutates Object.prototype instead of creating an
-    // own key. Object.fromEntries avoided that, and defineProperty preserves
-    // the same safe AST shape without requiring the ES2019 API.
-    Object.defineProperty(result, key, {
-      configurable: true,
-      enumerable: true,
-      value,
-      writable: true,
-    });
-  }
-  return result;
-}
-
 function buildPositionIndex(message: string): PositionIndex {
   const lines = new Uint32Array(message.length + 1);
   const columns = new Uint32Array(message.length + 1);
@@ -615,9 +578,11 @@ function buildPositionIndex(message: string): PositionIndex {
 
   while (offset < message.length) {
     const character = characterAt(message, offset);
-    for (let codeUnit = 0; codeUnit < character.length; codeUnit += 1) {
-      lines[offset + codeUnit] = line;
-      columns[offset + codeUnit] = column + codeUnit;
+    lines[offset] = line;
+    columns[offset] = column;
+    if (character.length === 2) {
+      lines[offset + 1] = line;
+      columns[offset + 1] = column + 1;
     }
     offset += character.length;
     if (character === '\n') {
@@ -630,7 +595,7 @@ function buildPositionIndex(message: string): PositionIndex {
 
   lines[offset] = line;
   columns[offset] = column;
-  return { lines, columns };
+  return [lines, columns];
 }
 
 function characterAt(value: string, index: number): string {
@@ -643,22 +608,6 @@ function characterAt(value: string, index: number): string {
   return second >= 0xdc00 && second <= 0xdfff
     ? value.slice(index, index + 2)
     : value.charAt(index);
-}
-
-function isSafeInteger(value: number): boolean {
-  return (
-    Number.isFinite(value) &&
-    Math.floor(value) === value &&
-    Math.abs(value) <= 0x1fffffffffffff
-  );
-}
-
-function trimStart(value: string): string {
-  return value.replace(/^\s+/u, '');
-}
-
-function trimEnd(value: string): string {
-  return value.replace(/\s+$/u, '');
 }
 
 export function parse(
