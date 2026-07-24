@@ -1,5 +1,14 @@
 # gt-sanity
 
+## 3.0.1
+
+### Patch Changes
+
+- [#1889](https://github.com/generaltranslation/gt/pull/1889) [`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b) Thanks [@bgub](https://github.com/bgub)! - Allow `awaitJobs()` to poll job IDs directly and reuse that shared polling implementation for CLI and Sanity project setup.
+
+- Updated dependencies [[`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b)]:
+  - generaltranslation@9.0.5
+
 ## 3.0.0
 
 ### Major Changes
