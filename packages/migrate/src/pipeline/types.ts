@@ -134,13 +134,23 @@ export type MigrationContext = {
    *  violation the app already carries: it only detonates when the route
    *  actually renders on the server, which request-scoped (dynamic ƒ) baseline
    *  rendering may never do at build time. Restoring static rendering would
-   *  make prerender execute the call and fail the build, so while any of these
-   *  exist the static locale resolvers are withheld (routes stay dynamic,
-   *  build-parity with the baseline) and the report names each hazard. */
+   *  make prerender execute the call and fail the build, so the emit phase
+   *  holds exactly the routes that reach one dynamic (or, when it cannot,
+   *  withholds the static locale resolvers project-wide) and the report names
+   *  each hazard. "Server module" is decided by the import graph, not by one
+   *  file's directive: a file only ever imported from client modules is a
+   *  client component, and a file nothing imports is in no route's graph. */
   latentClientCallHazards?: {
     caller: string;
     importedName: string;
     clientModule: string;
+    /** App route entries (page/layout/route/...) whose server render reaches
+     *  this caller, each with the import chain that gets there (entry first,
+     *  caller last). Drives per-route containment in emitGtFiles. Empty means
+     *  the detector could not place the caller in any route's graph with
+     *  confidence (an import specifier it could not resolve), which forces the
+     *  project-wide withhold; absent when a caller built the context by hand. */
+    reachedFrom?: { entry: string; chain: string[] }[];
   }[];
   /** Test files (setup, render helpers, mocks, specs) that use the source
    *  library. No codemod can follow vi.mock()/jest.mock() of the source

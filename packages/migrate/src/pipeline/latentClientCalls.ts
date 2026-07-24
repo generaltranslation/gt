@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { isBuiltin } from 'node:module';
 import { parse } from '@babel/parser';
 import * as t from '@babel/types';
 import type { MigrationContext } from './types.js';
@@ -17,6 +18,51 @@ export const TEST_FILE_PATH =
 const TEST_PATH = TEST_FILE_PATH;
 
 /**
+ * App Router files Next.js renders as a route segment of its own. These are
+ * the entry points of the server component graph: nothing imports them, the
+ * framework renders them, so reachability has to start here.
+ */
+const ROUTE_ENTRY_FILE = /^(page|layout|template|default|route)\.[cm]?[jt]sx?$/;
+
+/**
+ * The route-segment files Next.js documents as reading route segment config
+ * (`export const dynamic`): layout.js, page.js, route.js. A hazard reachable
+ * only through a `template`/`default` file therefore cannot be contained by
+ * writing that export, so the emit phase falls back to withholding.
+ */
+export const CONTAINABLE_ENTRY_KINDS = new Set(['page', 'layout', 'route']);
+
+/**
+ * Which App Router entry a file is (`page`, `layout`, `template`, `default`,
+ * `route`), or null when it is not one. Next.js only reads an app directory at
+ * `app/` or `src/app/`, so the path is anchored: a component named page.tsx
+ * outside those trees is an ordinary module, not a route.
+ */
+export function appRouteEntryKind(file: string, cwd: string): string | null {
+  const relative = toPosix(path.relative(cwd, file));
+  if (!/^(?:src\/)?app\//.test(relative)) return null;
+  const match = ROUTE_ENTRY_FILE.exec(path.basename(file));
+  return match ? match[1] : null;
+}
+
+/**
+ * The route pattern an App Router entry file serves, as `next build` prints it
+ * (`src/app/[locale]/about/page.tsx` -> `/[locale]/about`). Route groups
+ * (`(marketing)`) and parallel-route slots (`@modal`) are path-only segments
+ * and drop out, matching Next's own output. Null for a file outside app/.
+ */
+export function routePatternFor(file: string, cwd: string): string | null {
+  const relative = toPosix(path.relative(cwd, file));
+  const match = /^(?:src\/)?app\/(.*)$/.exec(relative);
+  if (!match) return null;
+  const segments = match[1]
+    .split('/')
+    .slice(0, -1)
+    .filter((segment) => !/^\(.*\)$/.test(segment) && !segment.startsWith('@'));
+  return `/${segments.join('/')}`;
+}
+
+/**
  * Finds latent React Server Components violations the app already carries:
  * a server module (no 'use client' directive) that CALLS a function imported
  * from a client module (e.g. a server page calling a useLocalizedLabel()
@@ -25,12 +71,21 @@ const TEST_PATH = TEST_FILE_PATH;
  * app whose routes all render dynamically may never hit it at build time.
  * gt migrate's static-rendering restoration would make prerender execute the
  * call and fail the build (the round-7 Sniply /about, /terms, /privacy
- * failures), so the emit phase withholds the locale resolvers while any of
- * these exist and the report names each one.
+ * failures), so the emit phase contains the routes that reach one (or, when
+ * containment is impossible, withholds the locale resolvers) and the report
+ * names every hazard.
  *
  * Only direct calls count: rendering a client COMPONENT from a server file
  * (<ClientThing />) and passing a client function around as a reference are
  * both legal composition and must not trip this.
+ *
+ * "Server module" is a property of the import graph, not of one file's
+ * directive (the round-9 finding). A file with no directive that is only ever
+ * imported from 'use client' modules IS a client component under RSC, and a
+ * file nothing imports at all is in no route's graph; neither can crash a
+ * server render, so neither is a hazard. Only files reachable from an app
+ * route entry through non-client imports are, and each hazard records the
+ * entries that reach it so the emit phase can contain exactly those routes.
  */
 export function detectLatentClientCallHazards(ctx: MigrationContext): void {
   const projectFiles = ctx.projectFiles ?? [];
@@ -75,7 +130,16 @@ export function detectLatentClientCallHazards(ctx: MigrationContext): void {
     path.basename(file).replace(/\.[^.]+$/, '')
   );
 
-  // 2. Server modules calling functions imported from those client modules.
+  // 2. Import graph + the server render graph reachable from route entries.
+  const graph = buildImportGraph(ctx, projectFiles, fileSet, readFile);
+  const serverGraph = collectServerGraph(
+    ctx,
+    projectFiles,
+    graph.imports,
+    clientModules
+  );
+
+  // 3. Server modules calling functions imported from those client modules.
   const hazards: NonNullable<MigrationContext['latentClientCallHazards']> = [];
   for (const file of projectFiles) {
     if (clientModules.has(file)) continue;
@@ -113,8 +177,8 @@ export function detectLatentClientCallHazards(ctx: MigrationContext): void {
       // Alias suffix matching can be ambiguous (a/i18n/labels.ts and
       // b/i18n/labels.ts both end in the specifier's tail). When ANY
       // candidate is a client module, treat the import as client: the wrong
-      // direction here withholds static rendering with a named reason, while
-      // the opposite error ships a prerender crash.
+      // direction here reports a hazard with a named reason, while the
+      // opposite error ships a prerender crash.
       const resolved = candidates.find((candidate) =>
         clientModules.has(candidate)
       );
@@ -162,18 +226,242 @@ export function detectLatentClientCallHazards(ctx: MigrationContext): void {
         }
       }
     });
-    if (hazard !== null) {
-      const found: { importedName: string; clientModule: string } = hazard;
+    if (hazard === null) continue;
+    const found: { importedName: string; clientModule: string } = hazard;
+
+    // Graph placement decides whether this call can ever run on the server.
+    if (serverGraph.has(file)) {
       hazards.push({
         caller: file,
         importedName: found.importedName,
         clientModule: found.clientModule,
+        reachedFrom: reachingRouteEntries(
+          ctx,
+          file,
+          graph.imports,
+          serverGraph
+        ),
+      });
+      continue;
+    }
+    // Outside the server graph. That is only a real acquittal if the graph is
+    // complete for this file: an import specifier we could not resolve (a
+    // tsconfig `paths` alias, a webpack alias) could be the server importer we
+    // never saw. When one could plausibly point here, keep the hazard with no
+    // reaching entries, which makes the emit phase withhold globally the way
+    // it always did rather than emit a build that crashes on prerender.
+    if (couldBeUnresolvedImportTarget(file, graph.unresolvedTails)) {
+      hazards.push({
+        caller: file,
+        importedName: found.importedName,
+        clientModule: found.clientModule,
+        reachedFrom: [],
       });
     }
   }
   if (hazards.length > 0) {
     ctx.latentClientCallHazards = hazards;
   }
+}
+
+/**
+ * The app's module-level import graph, plus the specifiers that looked local
+ * but resolved to no project file (see couldBeUnresolvedImportTarget).
+ *
+ * Specifiers are scanned with regexes rather than parsed: this runs over EVERY
+ * project file (not just the i18n ones), re-exports and dynamic imports carry
+ * graph edges too, and an over-matched specifier (one inside a comment or a
+ * string) only ever adds an edge. Extra edges make the server graph larger,
+ * which keeps more hazards, which is the safe direction; a missed edge is the
+ * one that ships a crashing build.
+ */
+function buildImportGraph(
+  ctx: MigrationContext,
+  projectFiles: string[],
+  fileSet: Set<string>,
+  readFile: (file: string) => string | null
+): { imports: Map<string, string[]>; unresolvedTails: Set<string> } {
+  const specifierPatterns = [
+    /\bfrom\s*['"]([^'"\n]+)['"]/g,
+    /\bimport\s*\(\s*['"]([^'"\n]+)['"]\s*\)/g,
+    /\bimport\s+['"]([^'"\n]+)['"]/g,
+    /\brequire\s*\(\s*['"]([^'"\n]+)['"]\s*\)/g,
+  ];
+  const declaredPackages = declaredDependencyNames(ctx.cwd);
+  const imports = new Map<string, string[]>();
+  const unresolvedTails = new Set<string>();
+  for (const file of projectFiles) {
+    const code = readFile(file);
+    if (!code) continue;
+    const specifiers = new Set<string>();
+    for (const pattern of specifierPatterns) {
+      pattern.lastIndex = 0;
+      let match: RegExpExecArray | null;
+      while ((match = pattern.exec(code)) !== null) specifiers.add(match[1]);
+    }
+    const targets = new Set<string>();
+    for (const specifier of specifiers) {
+      const resolved = resolveImportToProjectFiles(
+        specifier,
+        path.dirname(file),
+        fileSet,
+        projectFiles
+      );
+      if (resolved.length > 0) {
+        for (const target of resolved) {
+          if (target !== file) targets.add(target);
+        }
+        continue;
+      }
+      if (isPackageSpecifier(specifier, declaredPackages)) continue;
+      // Local-looking and unresolved: remember what it could have pointed at.
+      const segments = specifier.split('/').filter(Boolean);
+      const last = segments.at(-1)?.replace(/\.[^.]+$/, '');
+      if (last) unresolvedTails.add(last);
+      // './components/Foo/index' and './components/Foo' can name the same
+      // module, so the parent segment is a candidate tail too.
+      if ((!last || last === 'index') && segments.length > 1) {
+        unresolvedTails.add(segments.at(-2)!);
+      }
+    }
+    imports.set(file, [...targets]);
+  }
+  return { imports, unresolvedTails };
+}
+
+/**
+ * Every project file React can render on the SERVER: the transitive closure of
+ * the app's route entries (page/layout/template/default/route) over imports,
+ * stopping at each 'use client' boundary. Entry files that are themselves
+ * client modules are not roots, so a component imported only from client pages
+ * never enters the closure (it is a client component, and React renders it on
+ * the client).
+ */
+function collectServerGraph(
+  ctx: MigrationContext,
+  projectFiles: string[],
+  imports: Map<string, string[]>,
+  clientModules: Set<string>
+): Set<string> {
+  const serverGraph = new Set<string>();
+  const queue = projectFiles.filter(
+    (file) =>
+      !clientModules.has(file) && appRouteEntryKind(file, ctx.cwd) !== null
+  );
+  for (const entry of queue) serverGraph.add(entry);
+  // Breadth-first over a visited set, so import cycles terminate.
+  for (let index = 0; index < queue.length; index += 1) {
+    for (const target of imports.get(queue[index]) ?? []) {
+      if (clientModules.has(target) || serverGraph.has(target)) continue;
+      serverGraph.add(target);
+      queue.push(target);
+    }
+  }
+  return serverGraph;
+}
+
+/**
+ * The route entries whose server render reaches `hazardFile`, each with the
+ * import chain that gets there (entry first, hazard last) so the report can
+ * show the user why a route was contained. Walks the import graph BACKWARDS
+ * from the hazard, staying inside the server graph (which already excludes
+ * client modules and everything only they import).
+ */
+function reachingRouteEntries(
+  ctx: MigrationContext,
+  hazardFile: string,
+  imports: Map<string, string[]>,
+  serverGraph: Set<string>
+): { entry: string; chain: string[] }[] {
+  const importers = new Map<string, string[]>();
+  for (const [file, targets] of imports) {
+    if (!serverGraph.has(file)) continue;
+    for (const target of targets) {
+      if (!serverGraph.has(target)) continue;
+      const list = importers.get(target);
+      if (list) list.push(file);
+      else importers.set(target, [file]);
+    }
+  }
+  // Shortest-path BFS: `parent` doubles as the visited set.
+  const parent = new Map<string, string | null>([[hazardFile, null]]);
+  const queue = [hazardFile];
+  const reached: { entry: string; chain: string[] }[] = [];
+  for (let index = 0; index < queue.length; index += 1) {
+    const file = queue[index];
+    if (appRouteEntryKind(file, ctx.cwd) !== null) {
+      const chain: string[] = [];
+      for (let step: string | null = file; step; step = parent.get(step)!) {
+        chain.push(step);
+      }
+      reached.push({ entry: file, chain });
+    }
+    for (const importer of importers.get(file) ?? []) {
+      if (parent.has(importer)) continue;
+      parent.set(importer, file);
+      queue.push(importer);
+    }
+  }
+  return reached;
+}
+
+/**
+ * True when some unresolved local-looking specifier in the project could have
+ * named this file, i.e. the import graph may be missing an edge INTO it. Used
+ * as the honesty guard on "nothing on the server imports this": with a
+ * plausible missing importer we keep the hazard instead of clearing it.
+ */
+function couldBeUnresolvedImportTarget(
+  file: string,
+  unresolvedTails: Set<string>
+): boolean {
+  const base = path.basename(file).replace(/\.[^.]+$/, '');
+  if (unresolvedTails.has(base)) return true;
+  return (
+    base === 'index' && unresolvedTails.has(path.basename(path.dirname(file)))
+  );
+}
+
+/** Dependency names declared in cwd/package.json (all four sections). */
+function declaredDependencyNames(cwd: string): Set<string> {
+  const names = new Set<string>();
+  try {
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(cwd, 'package.json'), 'utf8')
+    ) as Record<string, Record<string, string> | undefined>;
+    for (const section of [
+      'dependencies',
+      'devDependencies',
+      'peerDependencies',
+      'optionalDependencies',
+    ]) {
+      for (const name of Object.keys(pkg[section] ?? {})) names.add(name);
+    }
+  } catch {
+    // No readable package.json: every unresolved specifier is then treated as
+    // possibly-local, which only makes the hazard check more conservative.
+  }
+  return names;
+}
+
+/**
+ * True when an unresolved specifier is a third-party/builtin module rather
+ * than a project path: a node: builtin, or a declared dependency (optionally
+ * with a subpath, 'gt-next/server'). Everything else that failed to resolve
+ * (relative paths, '@/x' aliases, tsconfig `paths` aliases, baseUrl-relative
+ * specifiers) is treated as a project path we could not follow.
+ */
+function isPackageSpecifier(
+  specifier: string,
+  declaredPackages: Set<string>
+): boolean {
+  if (specifier.startsWith('.') || path.isAbsolute(specifier)) return false;
+  if (isBuiltin(specifier)) return true;
+  const segments = specifier.split('/');
+  const packageName = specifier.startsWith('@')
+    ? segments.slice(0, 2).join('/')
+    : segments[0];
+  return isBuiltin(packageName) || declaredPackages.has(packageName);
 }
 
 /**

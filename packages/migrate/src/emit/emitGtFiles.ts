@@ -1,9 +1,16 @@
 import { createRequire } from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
+import { parse } from '@babel/parser';
+import * as t from '@babel/types';
 import { lt, minVersion, valid } from 'semver';
 import { hasGtProjectConfigured } from '../transforms/gtOptions.js';
 import { createMigrateDiagnostic } from '../pipeline/diagnostics.js';
+import {
+  CONTAINABLE_ENTRY_KINDS,
+  appRouteEntryKind,
+  routePatternFor,
+} from '../pipeline/latentClientCalls.js';
 import type { FileEdit, MigrationContext } from '../pipeline/types.js';
 
 /** next/root-params (and its `locale()` export) landed in Next 15.5.0. */
@@ -485,13 +492,16 @@ function emitStaticLocaleResolvers(
 
   // Latent RSC violations (a server module calling a function imported from
   // a 'use client' module) only detonate when a route actually renders on the
-  // server. The baseline rendered these routes dynamically and the bug sat
-  // unnoticed; restoring static rendering would make prerender execute the
-  // call and fail the build. Withhold the resolvers (routes stay dynamic,
-  // build-parity with the baseline) and name every hazard so the app bug is
-  // fixable.
+  // server: restoring static rendering makes prerender execute the call and
+  // fail the build. The hazard is a property of ONE ROUTE'S server graph, so
+  // the response is per route: hold exactly the routes that reach a hazard
+  // dynamic, emit the resolvers, and let every other route keep static
+  // rendering. Only when no such containment exists (see planHazardContainment)
+  // do the resolvers get withheld project-wide, which is what round 9 measured
+  // as 15 lost SSG route patterns in Sniply.
   if (ctx.latentClientCallHazards && ctx.latentClientCallHazards.length > 0) {
-    for (const hazard of ctx.latentClientCallHazards) {
+    const hazards = ctx.latentClientCallHazards;
+    for (const hazard of hazards) {
       ctx.todos.push({
         file: hazard.caller,
         reason:
@@ -499,26 +509,48 @@ function emitStaticLocaleResolvers(
           `${path.relative(ctx.cwd, hazard.clientModule)} while itself being a ` +
           'server module: React throws "Attempted to call ' +
           `${hazard.importedName}() from the server" the moment this route ` +
-          'renders on the server. This bug predates the migration (dynamic ' +
-          'rendering hid it); fix it by marking the caller "use client", or ' +
-          'by giving the client module a server-safe entry',
+          'renders on the server. This bug predates the migration: the route ' +
+          'already throws this at request time whenever it is rendered on the ' +
+          'server. Dynamic rendering did not hide the bug, it only moved the ' +
+          'failure from build time to request time. Fix it by marking the ' +
+          'caller "use client", or by giving the client module a server-safe ' +
+          'entry',
       });
     }
-    (ctx.warnings ??= []).push(
-      `static rendering NOT restored: ${ctx.latentClientCallHazards.length} ` +
-        'server file(s) call functions imported from client modules (a latent ' +
-        'React Server Components violation this app already carries; see the ' +
-        'TODOs). Routes stay dynamic exactly as before the migration; fix the ' +
-        'listed callers and re-run gt migrate to restore static rendering.'
-    );
-    ctx.todos.push({
-      file: localeLayout.file,
-      reason:
-        'static rendering not restored: see the latent client-call hazards ' +
-        'above; prerendering would execute those calls and fail the build. ' +
-        'After fixing them, re-run gt migrate to add getLocale.ts/getRegion.ts',
-    });
-    return;
+    const plan = planHazardContainment(ctx, localeLayout.file, hazards);
+    if (!plan.contained) {
+      // No per-route containment: the resolvers stay withheld and every route
+      // under the localized segment renders dynamically. The warning must not
+      // claim anything about how those routes rendered BEFORE this run (gt
+      // migrate never builds the app, so it cannot know); it states the
+      // consequence and tells the user where to see it.
+      const patterns = localizedRoutePatterns(ctx, localeLayout.file);
+      (ctx.warnings ??= []).push(
+        `static rendering NOT restored: ${hazards.length} server file(s) call ` +
+          'functions imported from client modules, a React Server Components ' +
+          'violation this app already carries (see the TODOs). ' +
+          'getLocale.ts/getRegion.ts were withheld because prerendering those ' +
+          `callers would execute the call and fail the build (${plan.reason}). ` +
+          'Consequence: gt-next resolves the locale from request-scoped ' +
+          'headers/cookies instead, so every route under [locale] renders ' +
+          'dynamically (ƒ), including any route that `next build` previously ' +
+          'listed as ● (SSG)' +
+          (patterns.length > 0 ? `: ${patterns.join(', ')}` : '') +
+          '. Compare the route table from your last pre-migration build ' +
+          'against the next one to see which routes changed. Fix the listed ' +
+          'callers and re-run gt migrate to restore static rendering.'
+      );
+      ctx.todos.push({
+        file: localeLayout.file,
+        reason:
+          'static rendering not restored: see the latent client-call hazards ' +
+          `above; ${plan.reason}, and prerendering would execute those calls ` +
+          'and fail the build. After fixing them, re-run gt migrate to add ' +
+          'getLocale.ts/getRegion.ts',
+      });
+      return;
+    }
+    applyHazardContainment(ctx, edits, plan.targets);
   }
 
   const useSrc = fs.existsSync(path.join(ctx.cwd, 'src'));
@@ -550,6 +582,319 @@ function emitStaticLocaleResolvers(
     ].join('\n'),
     'verify it does not read cookies()/headers(); a request-scoped region read forces dynamic rendering'
   );
+}
+
+/** One route file to hold dynamic, with why (for the report) and its new content. */
+type ContainmentTarget = {
+  /** the route file the `dynamic` export goes into */
+  entry: string;
+  /** route pattern as `next build` prints it (`/[locale]/about`) */
+  pattern: string;
+  /** the hazard(s) this route reaches, each with its import chain */
+  reasons: { hazard: LatentHazard; chain: string[] }[];
+  /** new file content, or null when it already exports force-dynamic */
+  content: string | null;
+};
+
+type LatentHazard = NonNullable<
+  MigrationContext['latentClientCallHazards']
+>[number];
+
+/**
+ * Decides how to keep a latent client call from crashing prerender.
+ *
+ * Containment is per route: `export const dynamic = "force-dynamic"` on exactly
+ * the route segments whose server graph reaches a hazard. That is safe against
+ * the regression this replaced (round 9: one hazard withheld the resolvers and
+ * cost Sniply 15 SSG route patterns), because holding these routes dynamic
+ * cannot take static rendering away from a route that had it: prerendering a
+ * route that reaches the hazard executes the call and fails the build, so no
+ * build that succeeded could have prerendered it.
+ *
+ * Containment is impossible when the reaching route file cannot carry the
+ * export, or when writing it would demote the whole localized app anyway (the
+ * hazard sits in the [locale] layout, whose subtree is every localized route).
+ * The caller then withholds the resolvers project-wide and reports it.
+ */
+function planHazardContainment(
+  ctx: MigrationContext,
+  localeLayoutFile: string,
+  hazards: LatentHazard[]
+):
+  | { contained: true; targets: ContainmentTarget[] }
+  | { contained: false; reason: string } {
+  const relative = (file: string) => path.relative(ctx.cwd, file);
+  const localeDir = path.dirname(localeLayoutFile);
+  const targets = new Map<string, ContainmentTarget>();
+  for (const hazard of hazards) {
+    // No reaching entries means the detector could not place this file in any
+    // route's graph with confidence (an import specifier it could not
+    // resolve), so there is no route to contain.
+    if (!hazard.reachedFrom || hazard.reachedFrom.length === 0) {
+      return {
+        contained: false,
+        reason:
+          'gt migrate could not determine which routes render ' +
+          relative(hazard.caller),
+      };
+    }
+    for (const { entry, chain } of hazard.reachedFrom) {
+      const existing = targets.get(entry);
+      if (existing) {
+        existing.reasons.push({ hazard, chain });
+        continue;
+      }
+      const kind = appRouteEntryKind(entry, ctx.cwd);
+      if (!kind || !CONTAINABLE_ENTRY_KINDS.has(kind)) {
+        return {
+          contained: false,
+          reason:
+            `${relative(hazard.caller)} renders through ${relative(entry)}, ` +
+            'which Next.js does not read route segment config (export const ' +
+            'dynamic) from',
+        };
+      }
+      const entryDir = path.dirname(entry);
+      if (
+        kind === 'layout' &&
+        (entryDir === localeDir || isStrictAncestorDir(entryDir, localeDir))
+      ) {
+        return {
+          contained: false,
+          reason:
+            `${relative(hazard.caller)} renders through ${relative(entry)}, ` +
+            'a layout whose subtree is the whole localized app, so holding it ' +
+            'dynamic would demote every route anyway',
+        };
+      }
+      if (ctx.skippedFiles.has(entry)) {
+        return {
+          contained: false,
+          reason:
+            `${relative(hazard.caller)} renders through ${relative(entry)}, ` +
+            'which this run left untouched for manual migration',
+        };
+      }
+      const source = pendingOrDiskContent(ctx, entry);
+      if (source === null) {
+        return {
+          contained: false,
+          reason: `gt migrate could not read ${relative(entry)}`,
+        };
+      }
+      const insertion = planForceDynamicExport(source);
+      if (insertion.kind === 'conflict') {
+        return {
+          contained: false,
+          reason:
+            `${relative(entry)} renders ${relative(hazard.caller)} but ` +
+            insertion.detail,
+        };
+      }
+      targets.set(entry, {
+        entry,
+        pattern: routePatternFor(entry, ctx.cwd) ?? relative(entry),
+        reasons: [{ hazard, chain }],
+        content: insertion.kind === 'already' ? null : insertion.content,
+      });
+    }
+  }
+  return { contained: true, targets: [...targets.values()] };
+}
+
+/**
+ * Writes the containment: the `dynamic` export into each reaching route file
+ * (folded into that file's pending edit when the transform already rewrote it,
+ * so one write does not clobber the other), a TODO per contained route naming
+ * the hazard chain, and one warning that says which routes were held dynamic
+ * and that the rest keep static rendering. Says nothing about how the app
+ * rendered before this run, which gt migrate never measures.
+ */
+function applyHazardContainment(
+  ctx: MigrationContext,
+  edits: FileEdit[],
+  targets: ContainmentTarget[]
+): void {
+  const relative = (file: string) => path.relative(ctx.cwd, file);
+  for (const target of targets) {
+    if (target.content !== null) {
+      // Last write wins on disk, so fold into the LAST pending edit.
+      const pending = [...ctx.edits]
+        .reverse()
+        .find((edit) => edit.kind === 'write' && edit.path === target.entry);
+      if (pending) pending.content = target.content;
+      else {
+        edits.push({
+          path: target.entry,
+          kind: 'write',
+          content: target.content,
+        });
+      }
+    }
+    const chains = target.reasons
+      .map(
+        ({ hazard, chain }) =>
+          `${chain.map(relative).join(' -> ')} calls ` +
+          `${hazard.importedName}() from the client module ` +
+          relative(hazard.clientModule)
+      )
+      .join('; ');
+    ctx.todos.push({
+      file: target.entry,
+      reason:
+        (target.content === null
+          ? 'held dynamic (it already exports dynamic = "force-dynamic")'
+          : 'held dynamic (gt migrate added export const dynamic = ' +
+            '"force-dynamic")') +
+        `: prerendering ${target.pattern} would execute a client-module call ` +
+        `on the server and fail the build. Chain: ${chains}. Fix that call, ` +
+        'then delete the dynamic export to get static rendering (SSG) back on ' +
+        'this route',
+    });
+  }
+  (ctx.warnings ??= []).push(
+    `${targets.length} route(s) held dynamic (ƒ) to protect the build: ` +
+      'their server render reaches a function imported from a client module, ' +
+      'a React Server Components violation this app already carries (see the ' +
+      'TODOs). Prerendering them would execute that call and fail the build, ' +
+      'so gt migrate added `export const dynamic = "force-dynamic"` to ' +
+      `${targets.map((target) => `${target.pattern} (${relative(target.entry)})`).join(', ')}. ` +
+      'This takes static rendering away from no route that had it: no build ' +
+      'that succeeded could have prerendered a route whose render fails. ' +
+      'Every other route keeps static rendering (SSG) through ' +
+      'getLocale.ts/getRegion.ts. Fix the listed calls, delete the dynamic ' +
+      'export(s), and re-run your build to confirm.'
+  );
+}
+
+/**
+ * The route patterns under the localized segment, for the report's
+ * withholding warning (every one of them renders dynamically once the
+ * resolvers are withheld). Long lists are truncated so the warning stays
+ * readable, and the truncation says so rather than silently cutting off.
+ */
+function localizedRoutePatterns(
+  ctx: MigrationContext,
+  localeLayoutFile: string
+): string[] {
+  const localeDir = path.dirname(localeLayoutFile) + path.sep;
+  const patterns = new Set<string>();
+  for (const file of ctx.projectFiles ?? []) {
+    if (!file.startsWith(localeDir)) continue;
+    if (appRouteEntryKind(file, ctx.cwd) !== 'page') continue;
+    const pattern = routePatternFor(file, ctx.cwd);
+    if (pattern) patterns.add(pattern);
+  }
+  const sorted = [...patterns].sort();
+  const limit = 12;
+  return sorted.length > limit
+    ? [...sorted.slice(0, limit), `and ${sorted.length - limit} more`]
+    : sorted;
+}
+
+/** A file's content as it will land on disk: its pending edit, else disk. */
+function pendingOrDiskContent(
+  ctx: MigrationContext,
+  file: string
+): string | null {
+  const pending = [...ctx.edits]
+    .reverse()
+    .find((edit) => edit.kind === 'write' && edit.path === file);
+  if (pending) return pending.content ?? '';
+  try {
+    return fs.readFileSync(file, 'utf8');
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Plans the `export const dynamic = "force-dynamic"` insertion into a route
+ * file: after its imports (and after any directive prologue, so a leading
+ * 'use client'/'use server' keeps its position). Re-running gt migrate must not
+ * stack duplicate declarations, so an existing `dynamic` export short-circuits:
+ * one already set to force-dynamic is a no-op, and any OTHER `dynamic` export
+ * is a conflict this must not overwrite (the user chose that rendering mode).
+ */
+function planForceDynamicExport(
+  source: string
+):
+  | { kind: 'insert'; content: string }
+  | { kind: 'already' }
+  | { kind: 'conflict'; detail: string } {
+  let ast: t.File;
+  try {
+    ast = parse(source, {
+      sourceType: 'module',
+      plugins: ['jsx', 'typescript'],
+    });
+  } catch {
+    return { kind: 'conflict', detail: 'gt migrate could not parse it' };
+  }
+  for (const statement of ast.program.body) {
+    if (!t.isExportNamedDeclaration(statement)) continue;
+    const declaration = statement.declaration;
+    if (t.isVariableDeclaration(declaration)) {
+      for (const declarator of declaration.declarations) {
+        if (
+          !t.isIdentifier(declarator.id) ||
+          declarator.id.name !== 'dynamic'
+        ) {
+          continue;
+        }
+        if (
+          t.isStringLiteral(declarator.init) &&
+          declarator.init.value === 'force-dynamic'
+        ) {
+          return { kind: 'already' };
+        }
+        return {
+          kind: 'conflict',
+          detail: t.isStringLiteral(declarator.init)
+            ? `it already exports dynamic = "${declarator.init.value}"`
+            : 'it already exports a `dynamic` route segment config',
+        };
+      }
+    }
+    for (const specifier of statement.specifiers) {
+      if (!t.isExportSpecifier(specifier)) continue;
+      const exported = t.isIdentifier(specifier.exported)
+        ? specifier.exported.name
+        : specifier.exported.value;
+      if (exported === 'dynamic') {
+        return {
+          kind: 'conflict',
+          detail: 'it already exports a `dynamic` route segment config',
+        };
+      }
+    }
+  }
+  // Insert after the last leading import (and never before a directive, which
+  // must stay the first statement in the file).
+  let offset = 0;
+  for (const directive of ast.program.directives) {
+    offset = Math.max(offset, directive.end ?? 0);
+  }
+  for (const statement of ast.program.body) {
+    if (t.isImportDeclaration(statement)) {
+      offset = Math.max(offset, statement.end ?? 0);
+    }
+  }
+  const block = [
+    '// Added by gt migrate: this route renders a call to a client-module',
+    '// function on the server, which crashes prerendering. See the TODOs in',
+    '// gt-migrate-report.md; delete this once that call is fixed.',
+    'export const dynamic = "force-dynamic";',
+  ].join('\n');
+  const head = source.slice(0, offset);
+  const tail = source.slice(offset);
+  const glue = tail.startsWith('\n') ? '' : '\n';
+  return {
+    kind: 'insert',
+    content: head
+      ? `${head}\n\n${block}${glue}${tail}`
+      : `${block}\n${glue}${tail}`,
+  };
 }
 
 /**
