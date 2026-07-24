@@ -1,0 +1,297 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { afterEach, describe, expect, it } from 'vitest';
+import { parseRoutingConfig } from '../config/parseRoutingConfig.js';
+
+const tmpDirs: string[] = [];
+
+function makeProject(files: Record<string, string>): string {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-routing-'));
+  tmpDirs.push(dir);
+  for (const [rel, content] of Object.entries(files)) {
+    const abs = path.join(dir, rel);
+    fs.mkdirSync(path.dirname(abs), { recursive: true });
+    fs.writeFileSync(abs, content);
+  }
+  return dir;
+}
+
+afterEach(() => {
+  while (tmpDirs.length) {
+    fs.rmSync(tmpDirs.pop()!, { recursive: true, force: true });
+  }
+});
+
+describe('parseRoutingConfig', () => {
+  it('extracts a canonical defineRouting config', () => {
+    const cwd = makeProject({
+      'src/i18n/routing.ts': [
+        "import { defineRouting } from 'next-intl/routing';",
+        'export const routing = defineRouting({',
+        "  locales: ['en', 'es', 'ja'],",
+        "  defaultLocale: 'en',",
+        '});',
+      ].join('\n'),
+      'src/i18n/request.ts': '// request config',
+    });
+    const result = parseRoutingConfig(cwd);
+    expect(result.locales).toEqual(['en', 'es', 'ja']);
+    expect(result.defaultLocale).toBe('en');
+    expect(result.localePrefix).toBeNull();
+    expect(result.pathnames).toBeNull();
+    expect(result.routingFile).toBe(path.join(cwd, 'src/i18n/routing.ts'));
+    expect(result.requestFile).toBe(path.join(cwd, 'src/i18n/request.ts'));
+  });
+
+  it('unwraps as-const assertions and reads string localePrefix', () => {
+    const cwd = makeProject({
+      'i18n/routing.ts': [
+        "import { defineRouting } from 'next-intl/routing';",
+        'export const routing = defineRouting({',
+        "  locales: ['en', 'de'] as const,",
+        "  defaultLocale: 'en' as const,",
+        "  localePrefix: 'always',",
+        '});',
+      ].join('\n'),
+    });
+    const result = parseRoutingConfig(cwd);
+    expect(result.locales).toEqual(['en', 'de']);
+    expect(result.localePrefix).toBe('always');
+  });
+
+  it('reads localePrefix object form via its mode', () => {
+    const cwd = makeProject({
+      'i18n/routing.ts': [
+        "import { defineRouting } from 'next-intl/routing';",
+        'export const routing = defineRouting({',
+        "  locales: ['en', 'fr'],",
+        "  defaultLocale: 'en',",
+        "  localePrefix: { mode: 'as-needed' },",
+        '});',
+      ].join('\n'),
+    });
+    expect(parseRoutingConfig(cwd).localePrefix).toBe('as-needed');
+  });
+
+  it('captures literal pathnames verbatim', () => {
+    const cwd = makeProject({
+      'i18n/routing.ts': [
+        "import { defineRouting } from 'next-intl/routing';",
+        'export const routing = defineRouting({',
+        "  locales: ['en', 'de'],",
+        "  defaultLocale: 'en',",
+        '  pathnames: {',
+        "    '/': '/',",
+        "    '/about': { en: '/about', de: '/ueber-uns' },",
+        '  },',
+        '});',
+      ].join('\n'),
+    });
+    expect(parseRoutingConfig(cwd).pathnames).toEqual({
+      '/': '/',
+      '/about': { en: '/about', de: '/ueber-uns' },
+    });
+  });
+
+  it('flags a shorthand variable localePrefix as unresolved', () => {
+    const cwd = makeProject({
+      'i18n/routing.ts': [
+        "import { defineRouting } from 'next-intl/routing';",
+        "const localePrefix = 'as-needed';",
+        'export const routing = defineRouting({',
+        "  locales: ['en', 'fr'],",
+        "  defaultLocale: 'en',",
+        '  localePrefix,',
+        '});',
+      ].join('\n'),
+    });
+    const result = parseRoutingConfig(cwd);
+    expect(result.localePrefix).toBeNull();
+    expect(result.localePrefixUnresolved).toBe(true);
+  });
+
+  it('flags an object localePrefix with a dynamic mode as unresolved', () => {
+    const cwd = makeProject({
+      'i18n/routing.ts': [
+        "import { defineRouting } from 'next-intl/routing';",
+        'export const routing = defineRouting({',
+        "  locales: ['en', 'fr'],",
+        "  defaultLocale: 'en',",
+        '  localePrefix: { mode: prefixMode },',
+        '});',
+      ].join('\n'),
+    });
+    const result = parseRoutingConfig(cwd);
+    expect(result.localePrefix).toBeNull();
+    expect(result.localePrefixUnresolved).toBe(true);
+  });
+
+  it('flags a referenced pathnames as unresolved', () => {
+    const cwd = makeProject({
+      'i18n/routing.ts': [
+        "import { defineRouting } from 'next-intl/routing';",
+        "const pathnames = { '/about': '/about' };",
+        'export const routing = defineRouting({',
+        "  locales: ['en', 'de'],",
+        "  defaultLocale: 'en',",
+        '  pathnames,',
+        '});',
+      ].join('\n'),
+    });
+    const result = parseRoutingConfig(cwd);
+    expect(result.pathnames).toBeNull();
+    expect(result.pathnamesUnresolved).toBe(true);
+  });
+
+  it('leaves both unresolved flags unset when localePrefix and pathnames are absent', () => {
+    const cwd = makeProject({
+      'i18n/routing.ts': [
+        "import { defineRouting } from 'next-intl/routing';",
+        'export const routing = defineRouting({',
+        "  locales: ['en', 'es'],",
+        "  defaultLocale: 'en',",
+        '});',
+      ].join('\n'),
+    });
+    const result = parseRoutingConfig(cwd);
+    expect(result.localePrefix).toBeNull();
+    expect(result.localePrefixUnresolved).toBeFalsy();
+    expect(result.pathnames).toBeNull();
+    expect(result.pathnamesUnresolved).toBeFalsy();
+  });
+
+  it('resolves literal localePrefix and pathnames without setting unresolved flags', () => {
+    const cwd = makeProject({
+      'i18n/routing.ts': [
+        "import { defineRouting } from 'next-intl/routing';",
+        'export const routing = defineRouting({',
+        "  locales: ['en', 'de'],",
+        "  defaultLocale: 'en',",
+        "  localePrefix: 'as-needed',",
+        '  pathnames: {',
+        "    '/about': { en: '/about', de: '/ueber-uns' },",
+        '  },',
+        '});',
+      ].join('\n'),
+    });
+    const result = parseRoutingConfig(cwd);
+    expect(result.localePrefix).toBe('as-needed');
+    expect(result.localePrefixUnresolved).toBeFalsy();
+    expect(result.pathnames).toEqual({
+      '/about': { en: '/about', de: '/ueber-uns' },
+    });
+    expect(result.pathnamesUnresolved).toBeFalsy();
+  });
+
+  it('returns null fields for values it cannot statically resolve', () => {
+    const cwd = makeProject({
+      'i18n/routing.ts': [
+        "import { defineRouting } from 'next-intl/routing';",
+        "import { LOCALES } from './constants';",
+        'export const routing = defineRouting({',
+        '  locales: LOCALES,',
+        "  defaultLocale: 'en',",
+        '  ...extra,',
+        '});',
+      ].join('\n'),
+    });
+    const result = parseRoutingConfig(cwd);
+    expect(result.locales).toBeNull();
+    expect(result.defaultLocale).toBe('en');
+  });
+
+  it('flags localePrefix and pathnames unresolved under an unresolvable spread', () => {
+    const cwd = makeProject({
+      'i18n/routing.ts': [
+        "import { defineRouting } from 'next-intl/routing';",
+        "import { base } from './base';",
+        'export const routing = defineRouting({',
+        "  locales: ['en', 'de'],",
+        "  defaultLocale: 'en',",
+        '  ...base,',
+        '});',
+      ].join('\n'),
+    });
+    const result = parseRoutingConfig(cwd);
+    // localePrefix/pathnames could be carried by ...base; the parser cannot see
+    // them, so it must report "unresolved" rather than "absent" so the
+    // transforms skip instead of assuming next-intl's 'always' default.
+    expect(result.localePrefix).toBeNull();
+    expect(result.localePrefixUnresolved).toBe(true);
+    expect(result.pathnames).toBeNull();
+    expect(result.pathnamesUnresolved).toBe(true);
+  });
+
+  it('does not flag unresolved when a directly resolved field coexists with a spread', () => {
+    const cwd = makeProject({
+      'i18n/routing.ts': [
+        "import { defineRouting } from 'next-intl/routing';",
+        "import { base } from './base';",
+        'export const routing = defineRouting({',
+        '  ...base,',
+        "  locales: ['en', 'de'],",
+        "  defaultLocale: 'en',",
+        "  localePrefix: 'as-needed',",
+        '});',
+      ].join('\n'),
+    });
+    const result = parseRoutingConfig(cwd);
+    // localePrefix is resolved to a literal after the spread, so it wins; do not
+    // downgrade a value we can actually read. pathnames is still hidden by the
+    // spread, so it stays unresolved.
+    expect(result.localePrefix).toBe('as-needed');
+    expect(result.localePrefixUnresolved).toBeFalsy();
+    expect(result.pathnames).toBeNull();
+    expect(result.pathnamesUnresolved).toBe(true);
+  });
+
+  it('flags an inline-object-literal spread as unresolved', () => {
+    const cwd = makeProject({
+      'i18n/routing.ts': [
+        "import { defineRouting } from 'next-intl/routing';",
+        'export const routing = defineRouting({',
+        "  ...{ localePrefix: 'as-needed', pathnames: { '/about': { en: '/about', de: '/ueber-uns' } } },",
+        "  locales: ['en', 'de'],",
+        "  defaultLocale: 'en',",
+        '});',
+      ].join('\n'),
+    });
+    const result = parseRoutingConfig(cwd);
+    // The spread argument is a static object literal, but getProperty never
+    // reads inside a spread, so its localePrefix/pathnames would otherwise read
+    // as absent and the transforms would emit next-intl's default prefixing and
+    // drop the localized pathnames. Every spread is treated as unresolvable, so
+    // both fields are flagged rather than silently absent.
+    expect(result.localePrefix).toBeNull();
+    expect(result.localePrefixUnresolved).toBe(true);
+    expect(result.pathnames).toBeNull();
+    expect(result.pathnamesUnresolved).toBe(true);
+  });
+
+  it('falls back to a plain exported object with locales/defaultLocale', () => {
+    const cwd = makeProject({
+      'i18n.ts': [
+        'export const routing = {',
+        "  locales: ['en', 'pt'],",
+        "  defaultLocale: 'pt',",
+        '};',
+      ].join('\n'),
+    });
+    const result = parseRoutingConfig(cwd);
+    expect(result.locales).toEqual(['en', 'pt']);
+    expect(result.defaultLocale).toBe('pt');
+  });
+
+  it('returns all-null info when no routing files exist', () => {
+    const cwd = makeProject({ 'src/app/page.tsx': 'export {}' });
+    expect(parseRoutingConfig(cwd)).toEqual({
+      locales: null,
+      defaultLocale: null,
+      localePrefix: null,
+      pathnames: null,
+      routingFile: null,
+      requestFile: null,
+    });
+  });
+});

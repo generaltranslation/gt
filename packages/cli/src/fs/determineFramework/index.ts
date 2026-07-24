@@ -41,6 +41,11 @@ export function determineLibrary(): {
       } else if (dependencies['i18next']) {
         library = 'i18next';
       }
+      // react-intl is intentionally not detected here. `gt migrate` selects its
+      // source from the required --from flag, and this global detector has no
+      // react-intl consumer (JSON aggregation has no react-intl format), so
+      // adding it only flipped i18next's precedence for dual-dependency projects
+      // and changed pre-existing command behavior.
 
       if (dependencies['i18next-icu']) {
         additionalModules.push('i18next-icu');

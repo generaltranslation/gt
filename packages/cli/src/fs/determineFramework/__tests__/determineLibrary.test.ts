@@ -82,6 +82,38 @@ describe('determineLibrary', () => {
       expect(mockWarn).not.toHaveBeenCalled();
     });
 
+    it('keeps i18next precedence for a react-intl + i18next project (gt migrate uses --from)', () => {
+      // Regression: the global detector must not let react-intl outrank i18next,
+      // or JSON aggregation for a dual-dependency project falls through from the
+      // I18NEXT format to STRING. gt migrate selects its source via --from, so
+      // the detector never needs to pick react-intl.
+      mockExistsSync.mockImplementation((path) => {
+        if (String(path).endsWith('package.json')) return true;
+        return false;
+      });
+      mockReadFileSync.mockReturnValue(
+        JSON.stringify({
+          dependencies: { 'react-intl': '6.0.0', i18next: '23.0.0' },
+        })
+      );
+
+      const result = determineLibrary();
+      expect(result.library).toBe('i18next');
+    });
+
+    it("returns 'base' for a react-intl-only project (detector does not select react-intl)", () => {
+      mockExistsSync.mockImplementation((path) => {
+        if (String(path).endsWith('package.json')) return true;
+        return false;
+      });
+      mockReadFileSync.mockReturnValue(
+        JSON.stringify({ dependencies: { 'react-intl': '6.0.0' } })
+      );
+
+      const result = determineLibrary();
+      expect(result.library).toBe('base');
+    });
+
     it('detects i18next-icu as additional module', () => {
       mockExistsSync.mockReturnValue(true);
       mockReadFileSync.mockReturnValue(

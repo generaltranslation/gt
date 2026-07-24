@@ -150,6 +150,8 @@
     "yaml": "^2.8.0"
   },
   "devDependencies": {
+    "@formatjs/icu-messageformat-parser": "^2.11.4",
+    "@generaltranslation/migrate": "workspace:*",
     "@types/babel__generator": "^7.27.0",
     "@types/babel__traverse": "^7.20.6",
     "@types/figlet": "^1.7.0",

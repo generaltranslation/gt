@@ -76,6 +76,41 @@ class MockSpinner implements SpinnerResult {
   }
 }
 
+// Non-animated spinner for non-TTY (piped) stdout in 'default' format.
+// @clack/prompts' spinner only suppresses its animation for isCI, not for
+// general non-TTY output, so piping `gt <cmd>` dumps every animation frame plus
+// cursor-control escapes ([?25l, [1G, [J) into the pipe. Emit a single plain
+// start line and a single completion line instead, keeping the SpinnerResult API.
+class PlainSpinner implements SpinnerResult {
+  private currentMessage: string = '';
+  isCancelled: boolean = false;
+
+  start(message?: string): void {
+    endTerminalSession();
+    if (message) {
+      this.currentMessage = message;
+      process.stdout.write(`${message}\n`);
+    }
+  }
+
+  stop(message?: string): void {
+    endTerminalSession();
+    const msg = message || this.currentMessage;
+    if (msg) {
+      process.stdout.write(`${msg}\n`);
+    }
+    this.currentMessage = '';
+  }
+
+  message(message?: string): void {
+    // Update the tracked message without emitting a frame per update; a piped
+    // stream should see only the start and completion lines.
+    if (message) {
+      this.currentMessage = message;
+    }
+  }
+}
+
 // Mock progress bar that logs to console instead of updating terminal UI
 class MockProgress implements ProgressResult {
   private max: number;
@@ -108,6 +143,50 @@ class MockProgress implements ProgressResult {
     this.current += amount;
     const msg = message || 'Progress';
     this.logger.info(`[Progress] ${msg} (${this.current}/${this.max})`);
+  }
+}
+
+// Non-animated progress bar for non-TTY (piped) stdout in 'default' format.
+// Like the animated spinner, @clack/prompts' progress bar streams a frame plus
+// cursor-control escapes ([?25l, [1G, [J) on every advance, which corrupts a
+// pipe (used by `gt translate`'s poll/download steps). Emit a single plain
+// start line and a single completion line, advancing silently in between, while
+// keeping the ProgressResult API. Mirrors PlainSpinner.
+class PlainProgress implements ProgressResult {
+  private currentMessage: string = '';
+  isCancelled: boolean = false;
+
+  start(message?: string): void {
+    endTerminalSession();
+    if (message) {
+      this.currentMessage = message;
+      process.stdout.write(`${message}\n`);
+    }
+  }
+
+  stop(message?: string): void {
+    endTerminalSession();
+    const msg = message || this.currentMessage;
+    if (msg) {
+      process.stdout.write(`${msg}\n`);
+    }
+    this.currentMessage = '';
+  }
+
+  message(message?: string): void {
+    // Track the latest message without emitting a frame per update; a piped
+    // stream should see only the start and completion lines.
+    if (message) {
+      this.currentMessage = message;
+    }
+  }
+
+  advance(_amount: number, message?: string): void {
+    // Silent advance: no per-frame writes into the pipe. Track the message so
+    // stop() can fall back to the most recent status if called without one.
+    if (message) {
+      this.currentMessage = message;
+    }
   }
 }
 
@@ -286,6 +365,11 @@ class Logger {
   // Spinner functionality
   createSpinner(indicator: 'dots' | 'timer' = 'timer'): SpinnerResult {
     if (this.logFormat === 'default') {
+      // Non-TTY (piped) output: skip the animated spinner, which would otherwise
+      // stream animation frames and cursor escapes into the pipe.
+      if (!process.stdout.isTTY) {
+        return new PlainSpinner();
+      }
       return wrapTerminalSessionAware(spinner({ indicator }));
     } else {
       return new MockSpinner(this);
@@ -295,6 +379,12 @@ class Logger {
   // Progress bar functionality
   createProgressBar(total: number): ProgressResult {
     if (this.logFormat === 'default') {
+      // Non-TTY (piped) output: skip the animated progress bar, which would
+      // otherwise stream a frame and cursor escapes into the pipe on every
+      // advance (e.g. `gt translate`'s poll/download steps piped to a file).
+      if (!process.stdout.isTTY) {
+        return new PlainProgress();
+      }
       return wrapTerminalSessionAware(progress({ max: total }));
     } else {
       return new MockProgress(total, this);
