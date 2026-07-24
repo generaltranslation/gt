@@ -45,9 +45,6 @@ export type I18nCacheConstructorParams = DictionaryConfig &
  */
 export type I18nCacheConfig = {
   projectId?: string;
-  devApiKey?: string;
-  apiKey?: string;
-  runtimeUrl?: string | null;
   modelProvider?: string;
   /**
    * Locale cache TTL in milliseconds. Undefined uses the default TTL, null

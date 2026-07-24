@@ -95,6 +95,46 @@
         "types": "./dist/internal-types.d.mts",
         "default": "./dist/internal-types.mjs"
       }
+    },
+    "./internal/i18n-cache": {
+      "require": {
+        "types": "./dist/I18nCache.d.cts",
+        "default": "./dist/I18nCache.cjs"
+      },
+      "import": {
+        "types": "./dist/I18nCache.d.mts",
+        "default": "./dist/I18nCache.mjs"
+      }
+    },
+    "./internal/snapshot-store": {
+      "require": {
+        "types": "./dist/i18n-cache/SnapshotStore.d.cts",
+        "default": "./dist/i18n-cache/SnapshotStore.cjs"
+      },
+      "import": {
+        "types": "./dist/i18n-cache/SnapshotStore.d.mts",
+        "default": "./dist/i18n-cache/SnapshotStore.mjs"
+      }
+    },
+    "./internal/runtime-translation-resolver": {
+      "require": {
+        "types": "./dist/RuntimeTranslationResolver.d.cts",
+        "default": "./dist/RuntimeTranslationResolver.cjs"
+      },
+      "import": {
+        "types": "./dist/RuntimeTranslationResolver.d.mts",
+        "default": "./dist/RuntimeTranslationResolver.mjs"
+      }
+    },
+    "./internal/translation-loader": {
+      "require": {
+        "types": "./dist/i18n-cache/createTranslationLoader.d.cts",
+        "default": "./dist/i18n-cache/createTranslationLoader.cjs"
+      },
+      "import": {
+        "types": "./dist/i18n-cache/createTranslationLoader.d.mts",
+        "default": "./dist/i18n-cache/createTranslationLoader.mjs"
+      }
     }
   },
   "typesVersions": {
@@ -107,6 +147,18 @@
       ],
       "internal/types": [
         "./dist/internal-types.d.cts"
+      ],
+      "internal/i18n-cache": [
+        "./dist/I18nCache.d.cts"
+      ],
+      "internal/snapshot-store": [
+        "./dist/i18n-cache/SnapshotStore.d.cts"
+      ],
+      "internal/runtime-translation-resolver": [
+        "./dist/RuntimeTranslationResolver.d.cts"
+      ],
+      "internal/translation-loader": [
+        "./dist/i18n-cache/createTranslationLoader.d.cts"
       ]
     }
   }

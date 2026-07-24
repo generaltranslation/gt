@@ -6,7 +6,6 @@ import {
 import {
   getI18nConfig,
   getReactI18nCache,
-  ReactI18nCache,
 } from '@generaltranslation/react-core/pure';
 import { initializeGT } from '../initGT';
 import { initializeGTClient } from '../initGT.client';
@@ -86,7 +85,7 @@ describe('initializeGTClient', () => {
     vi.restoreAllMocks();
   });
 
-  it('uses the client-safe ReactI18nCache', () => {
+  it('provides the legacy cache API without initializing the server cache', () => {
     initializeGTClient({
       i18nConfigParams: {
         defaultLocale: 'en',
@@ -96,7 +95,13 @@ describe('initializeGTClient', () => {
     });
 
     const cache = getReactI18nCache();
-    expect(cache).toBeInstanceOf(ReactI18nCache);
     expect(cache).not.toBeInstanceOf(NextI18nCache);
+    expect(
+      cache.lookupTranslation('en', 'Hello', {
+        $_hash: 'greeting',
+        $format: 'ICU',
+      })
+    ).toBe('Hello');
+    expect(cache.loadTranslations).toBeTypeOf('function');
   });
 });

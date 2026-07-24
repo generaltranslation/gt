@@ -1,7 +1,12 @@
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { createGlobalSingleton } from '../globals/createGlobalSingleton';
-import { I18nCache } from './I18nCache';
+import type { I18nCache } from './I18nCache';
 import { Translation } from './translations-manager/utils/types/translation-data';
+
+/** Public I18nCache methods without the class's nominal protected state. */
+export type I18nCacheInstance<
+  TranslationValue extends Translation = Translation,
+> = Pick<I18nCache<TranslationValue>, keyof I18nCache<TranslationValue>>;
 
 const i18nCacheSingleton = createGlobalSingleton<I18nCache>({
   namespace: 'i18n',
@@ -30,6 +35,10 @@ export function getI18nCache<U extends Translation = Translation>():
   return i18nCacheSingleton.get();
 }
 
+export function isI18nCacheInitialized(): boolean {
+  return i18nCacheSingleton.isInitialized();
+}
+
 /**
  * Configure the singleton instance of I18nCache
  * @param config - The configuration for the I18nCache
@@ -39,7 +48,7 @@ export function getI18nCache<U extends Translation = Translation>():
  * Note: should not be consumed by gt-react, consumers should use a wrapper
  */
 export function setI18nCache<TranslationValue extends Translation>(
-  i18nCacheInstance: I18nCache<TranslationValue>
+  i18nCacheInstance: I18nCacheInstance<TranslationValue>
 ): void {
   i18nCacheSingleton.set(i18nCacheInstance as unknown as I18nCache);
 }

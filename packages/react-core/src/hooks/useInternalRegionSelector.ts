@@ -1,8 +1,14 @@
 import { useMemo } from 'react';
 import { useCustomMapping, useLocales } from './i18n-config';
 import { useLocale, useRegion } from './condition-store';
-import { getLocaleProperties } from '@generaltranslation/format';
-import { getI18nConfig } from 'gt-i18n/internal';
+import {
+  getLocaleProperties,
+  getRegionProperties,
+} from '@generaltranslation/format';
+import type {
+  CustomMapping,
+  CustomRegionMapping,
+} from '@generaltranslation/format/types';
 
 export type RegionData = {
   code: string;
@@ -58,7 +64,7 @@ export function useInternalRegionSelector({
     regions, // ordered list of ISO 3166 region codes
     regionData, // map of ISO 3166 region codes to region display data, potentially not ordered
   ] = useMemo<[string[], Map<string, RegionData>]>(() => {
-    const gt = getI18nConfig().getGTClass(locale);
+    const localeRegionMapping = getCustomRegionMapping(localeCustomMapping);
     const regionToLocaleMap = new Map(
       contextLocales.map((l) => {
         const lp = getLocaleProperties(l, locale, localeCustomMapping); // has to be directly called so sourceLocale can be in the user's current locale
@@ -76,7 +82,7 @@ export function useInternalRegionSelector({
           r,
           {
             locale: regionToLocaleMap?.get(r)?.code || locale,
-            ...gt.getRegionProperties(r),
+            ...getRegionProperties(r, locale, localeRegionMapping),
             ...(typeof customMapping?.[r] === 'string'
               ? { name: customMapping?.[r] }
               : customMapping?.[r]),
@@ -122,4 +128,24 @@ export function useInternalRegionSelector({
     locale,
     localeRegion,
   };
+}
+
+function getCustomRegionMapping(
+  customMapping: CustomMapping
+): CustomRegionMapping {
+  const regionMapping: CustomRegionMapping = {};
+  for (const [mappedLocale, mapping] of Object.entries(customMapping)) {
+    if (
+      typeof mapping === 'object' &&
+      mapping?.regionCode &&
+      !regionMapping[mapping.regionCode]
+    ) {
+      regionMapping[mapping.regionCode] = {
+        locale: mappedLocale,
+        ...(mapping.regionName && { name: mapping.regionName }),
+        ...(mapping.emoji && { emoji: mapping.emoji }),
+      };
+    }
+  }
+  return regionMapping;
 }

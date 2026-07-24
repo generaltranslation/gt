@@ -70,10 +70,10 @@ export function useLocales() {
   return getI18nConfig().getLocales();
 }
 export function useLocaleDirection(locale: string) {
-  return getI18nConfig().getGTClass().getLocaleDirection(locale);
+  return getI18nConfig().getLocaleDirection(locale);
 }
 export function useLocaleProperties(locale: string) {
-  return getI18nConfig().getGTClass().getLocaleProperties(locale);
+  return getI18nConfig().getLocaleProperties(locale);
 }
 export function useDefaultLocale(): string {
   return getI18nConfig().getDefaultLocale();
