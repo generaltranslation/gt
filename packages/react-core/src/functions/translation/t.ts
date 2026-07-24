@@ -11,7 +11,7 @@ import {
   isReadonlyConditionStoreInitialized,
 } from '../../condition-store/singleton-operations';
 import { StringContent, StringFormat } from 'generaltranslation/types';
-import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
+import { getReactI18nCacheInstance } from '../../i18n-cache/singleton-operations';
 import { getShouldTranslate } from '../../hooks/utils/getShouldTranslate';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 
@@ -60,7 +60,7 @@ export function resolveStringContent(
   content: StringContent,
   options: LookupOptionsFor<StringFormat> = {}
 ): StringContent {
-  const i18nCache = getReactI18nCache();
+  const cache = getReactI18nCacheInstance();
   const defaultLocale = getI18nConfig().getDefaultLocale();
   if (!getShouldTranslate()) {
     return interpolateMessage({
@@ -71,7 +71,7 @@ export function resolveStringContent(
   }
 
   const lookupOptions = createLookupOptions(locale, options, 'ICU');
-  const translation = i18nCache.lookupTranslation(
+  const translation = cache.lookupTranslation(
     lookupOptions.$locale,
     content,
     lookupOptions
@@ -106,8 +106,8 @@ function handleTaggedTemplateLiteralTranslation(
     messageOrStrings,
     values
   );
-  const i18nCache = getReactI18nCache();
-  const translatedInterpolatedTemplate = i18nCache.lookupTranslation(
+  const cache = getReactI18nCacheInstance();
+  const translatedInterpolatedTemplate = cache.lookupTranslation(
     locale,
     interpolatedTemplate,
     { $format: 'STRING' }
@@ -218,22 +218,8 @@ function getLocale(): string {
  * Overloaded type for the `t` function.
  * - Tagged template: t`Hello, ${name}` (transformed by the compiler plugin at build time)
  * - Function call: t("Hello, {name}", { name: "John" })
- *
- * {@link TemplateSyncResolutionFunction}
- * {@link SyncResolutionFunction}
  */
 interface StringOrTemplateSyncResolutionFunction {
   (strings: TemplateStringsArray, ...values: unknown[]): string;
   (message: string, options?: GTTranslationOptions): string;
 }
-
-/**
- * Type for the `t` function when used as a tagged template literal.
- * @param strings - The template strings.
- * @param values - The values to interpolate.
- * @returns The translated message.
- */
-type TemplateSyncResolutionFunction = (
-  strings: TemplateStringsArray,
-  ...values: unknown[]
-) => string;

@@ -1,21 +1,20 @@
-import {
-  getI18nCache,
-  getI18nConfig,
-  setI18nCache,
-  type I18nCache,
-} from 'gt-i18n/internal';
+import { getI18nCache, getI18nConfig } from 'gt-i18n/internal';
 import type { Locale } from 'gt-i18n/internal/types';
-import type { Dictionary, Translation } from 'gt-i18n/types';
-import { ReactI18nCache, type ReactI18nCacheParams } from 'gt-react';
+import type { Dictionary } from 'gt-i18n/types';
+import {
+  ReactI18nCache,
+  setReactI18nCache,
+  type ReactI18nCacheParams,
+} from 'gt-react';
 import { getDictionary } from '../dictionary/getDictionary';
 import { resolveDictionaryLoader } from '../resolvers/resolveDictionaryLoader';
 
 export function getNextI18nCache(): NextI18nCache {
-  return getI18nCache() as NextI18nCache;
+  return getI18nCache() as unknown as NextI18nCache;
 }
 
 export function setNextI18nCache(i18nCache: NextI18nCache): void {
-  setI18nCache(i18nCache as I18nCache<Translation>);
+  setReactI18nCache(i18nCache);
 }
 
 export type NextI18nCacheParams = ReactI18nCacheParams;

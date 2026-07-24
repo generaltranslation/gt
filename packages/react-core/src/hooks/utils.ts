@@ -31,17 +31,14 @@ export function useShouldTranslate(): boolean {
 }
 
 export function useLocaleProperties(locale: string): LocaleProperties {
-  return useMemo(
-    () => getI18nConfig().getGTClass().getLocaleProperties(locale),
-    [locale]
-  );
+  return useMemo(() => getI18nConfig().getLocaleProperties(locale), [locale]);
 }
 
 export function useLocaleDirection(locale?: string): 'ltr' | 'rtl' {
   const currentLocale = useLocale();
   const resolvedLocale = locale ?? currentLocale;
   return useMemo(
-    () => getI18nConfig().getGTClass().getLocaleDirection(resolvedLocale),
+    () => getI18nConfig().getLocaleDirection(resolvedLocale),
     [resolvedLocale]
   );
 }

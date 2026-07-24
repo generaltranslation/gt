@@ -32,8 +32,10 @@ describe('i18n cache singleton operations', () => {
   });
 
   it('throws when the i18n cache has not been initialized', async () => {
-    const { getI18nCache } = await import('../singleton-operations');
+    const { getI18nCache, isI18nCacheInitialized } =
+      await import('../singleton-operations');
 
+    expect(isI18nCacheInitialized()).toBe(false);
     expect(() => getI18nCache()).toThrow(
       'Cannot read I18nCache before it has been initialized'
     );
@@ -46,8 +48,10 @@ describe('i18n cache singleton operations', () => {
     setI18nCache(cache);
 
     vi.resetModules();
-    const { getI18nCache } = await import('../singleton-operations');
+    const { getI18nCache, isI18nCacheInitialized } =
+      await import('../singleton-operations');
 
+    expect(isI18nCacheInitialized()).toBe(true);
     expect(getI18nCache()).toBe(cache);
   });
 

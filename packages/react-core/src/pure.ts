@@ -45,7 +45,9 @@ export type {
 export {
   internalInitializeGTSRA,
   type ReactInitializeGTParams,
+  type ReactInitializeGTClientParams,
 } from './setup/initializeGTSRA';
+export { internalInitializeGTClient } from './setup/initializeGTClient';
 
 export {
   ReactI18nCache,
