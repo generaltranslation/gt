@@ -825,7 +825,7 @@ function convertTree(
     } else if (Array.isArray(value)) {
       tc.addReport(
         fullKey(key),
-        `array value / \`returnObjects\` has no gt dictionary equivalent (leaves are strings); left as-is; convert to <T> or discrete keys`
+        `array value / \`returnObjects\` has no gt dictionary equivalent (leaves are strings); kept verbatim, which is NOT inert: gt-next t() throws "Dictionary entry <key> cannot be found" on a non-string value, so every file reading this key is held on react-i18next instead of converted; convert to <T> or discrete keys`
       );
       result[key] = value;
     } else if (value !== null && typeof value === 'object') {

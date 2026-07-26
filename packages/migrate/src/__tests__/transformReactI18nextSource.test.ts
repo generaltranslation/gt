@@ -745,3 +745,126 @@ describe('provider swap', () => {
     ).not.toThrow();
   });
 });
+
+describe('round 10 finding 2: call sites that read a non-renderable value', () => {
+  // The catalog converter keeps an i18next array verbatim (ICU dictionaries
+  // have no equivalent) and reports it. Pre-fix the source transform knew
+  // nothing about that, converted the reading call site, and listed the file
+  // under Converted; the migrated app then failed `next build` on the type
+  // (TS) or prerendering with "Dictionary entry links.tips cannot be found".
+  const archiveView = [
+    "import { useTranslation } from 'react-i18next';",
+    'export function C() {',
+    "  const { t } = useTranslation('links');",
+    "  const tips = t('tips', { returnObjects: true }) as string[];",
+    "  return <ul>{tips.map((tip) => <li key={tip}>{t('archive.title')}</li>)}</ul>;",
+    '}',
+  ].join('\n');
+
+  it('holds the whole file, naming the key and what the catalog holds', () => {
+    const { code, skipReasons } = transform(archiveView, {
+      links: {
+        tips: ['Tag as you go', 'Archive weekly'],
+        archive: { title: 'Archived' },
+      },
+    });
+    expect(code).toBeNull();
+    expect(skipReasons.join(' ')).toContain("t('tips')");
+    expect(skipReasons.join(' ')).toContain('links.tips');
+    expect(skipReasons.join(' ')).toContain('an array (2 entries)');
+    expect(skipReasons.join(' ')).toContain('cannot be found');
+  });
+
+  it('holds a `returnObjects` call even when the value happens to render', () => {
+    // A one-element array IS a gt-next leaf ([message]), so the key resolves;
+    // the CONSUMER is still broken, because t() hands back a string and the
+    // call site maps over it.
+    const { code, skipReasons } = transform(
+      [
+        "import { useTranslation } from 'react-i18next';",
+        'export function C() {',
+        "  const { t } = useTranslation('links');",
+        "  return <p>{(t('tips', { returnObjects: true }) as string[]).length}</p>;",
+        '}',
+      ].join('\n'),
+      { links: { tips: ['Only one'] } }
+    );
+    expect(code).toBeNull();
+    expect(skipReasons.join(' ')).toContain('returnObjects');
+  });
+
+  it('converts a `returnObjects: false` call (i18next returns a string there)', () => {
+    const { code, skipReasons } = transform(
+      [
+        "import { useTranslation } from 'react-i18next';",
+        'export function C() {',
+        "  const { t } = useTranslation('links');",
+        "  return <p>{t('title', { returnObjects: false })}</p>;",
+        '}',
+      ].join('\n'),
+      { links: { title: 'Saved links' } }
+    );
+    expect(skipReasons).toEqual([]);
+    expect(code).toContain("t('title'");
+  });
+
+  it('converts the same file when every key it reads is a string', () => {
+    const { code, skipReasons } = transform(
+      [
+        "import { useTranslation } from 'react-i18next';",
+        'export function C() {',
+        "  const { t } = useTranslation('links');",
+        "  return <p>{t('archive.title')}</p>;",
+        '}',
+      ].join('\n'),
+      { links: { tips: ['a', 'b'], archive: { title: 'Archived' } } }
+    );
+    expect(skipReasons).toEqual([]);
+    expect(code).toContain("t('archive.title')");
+  });
+
+  it('holds a <Trans> whose key is an array in the catalog', () => {
+    const { code, skipReasons } = transform(
+      [
+        "import { Trans, useTranslation } from 'react-i18next';",
+        'export function C() {',
+        "  const { t } = useTranslation('links');",
+        '  return <p><Trans i18nKey="tips" /></p>;',
+        '}',
+      ].join('\n'),
+      { links: { tips: ['a', 'b'] } }
+    );
+    expect(code).toBeNull();
+    expect(skipReasons.join(' ')).toContain('an array (2 entries)');
+  });
+
+  it('resolves a fallback array to a key that RENDERS, not merely one present', () => {
+    const { code, skipReasons } = transform(
+      [
+        "import { useTranslation } from 'react-i18next';",
+        'export function C() {',
+        '  const { t } = useTranslation();',
+        "  return <p>{t(['tips', 'title'])}</p>;",
+        '}',
+      ].join('\n'),
+      { tips: ['a', 'b'], title: 'Saved links' }
+    );
+    expect(skipReasons).toEqual([]);
+    expect(code).toContain("t('title')");
+  });
+
+  it('holds a fallback array when none of its keys render', () => {
+    const { code, skipReasons } = transform(
+      [
+        "import { useTranslation } from 'react-i18next';",
+        'export function C() {',
+        '  const { t } = useTranslation();',
+        "  return <p>{t(['tips', 'absent'])}</p>;",
+        '}',
+      ].join('\n'),
+      { tips: ['a', 'b'] }
+    );
+    expect(code).toBeNull();
+    expect(skipReasons.join(' ')).toContain('an array (2 entries)');
+  });
+});
