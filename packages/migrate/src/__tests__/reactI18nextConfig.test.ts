@@ -1,31 +1,16 @@
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import {
   clearI18nextConfigCache,
   getI18nextConfig,
 } from '../config/reactI18nextConfig.js';
+import { makeTree, registerTreeCleanup } from './support/tree.js';
 
-const tmpDirs: string[] = [];
+registerTreeCleanup();
 
-function makeApp(files: Record<string, string>): string {
-  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-ri18n-cfg-'));
-  tmpDirs.push(cwd);
-  for (const [rel, content] of Object.entries(files)) {
-    const full = path.join(cwd, rel);
-    fs.mkdirSync(path.dirname(full), { recursive: true });
-    fs.writeFileSync(full, content);
-  }
-  return cwd;
-}
+const makeApp = (files: Record<string, string>) =>
+  makeTree(files, { prefix: 'gt-ri18n-cfg-' });
 
 beforeEach(() => clearI18nextConfigCache());
-afterEach(() => {
-  for (const dir of tmpDirs.splice(0))
-    fs.rmSync(dir, { recursive: true, force: true });
-});
-
 describe('getI18nextConfig', () => {
   it('returns defaults when no config file exists', () => {
     const config = getI18nextConfig(makeApp({}));

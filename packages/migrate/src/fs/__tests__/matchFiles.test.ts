@@ -1,7 +1,4 @@
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { matchFiles } from '../matchFiles.js';
 
 vi.mock('fast-glob', () => ({
@@ -13,12 +10,6 @@ vi.mock('fast-glob', () => ({
     ]),
   },
 }));
-
-const tmpDirs: string[] = [];
-afterEach(() => {
-  for (const dir of tmpDirs.splice(0))
-    fs.rmSync(dir, { recursive: true, force: true });
-});
 
 describe('matchFiles', () => {
   it('sorts glob results so processing and reports are deterministic', () => {

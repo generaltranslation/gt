@@ -1,7 +1,5 @@
-import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   detectLocaleAwareNavUsage,
   transformNavigationFile,
@@ -22,6 +20,10 @@ import type {
   RoutingInfo,
 } from '../pipeline/types.js';
 import type { SourceAdapter } from '../adapters/types.js';
+import {
+  makeTree as makeProjectTree,
+  registerTreeCleanup,
+} from './support/tree.js';
 
 // Round-7 field-test hardening (Ernest, 2026-07-23): every test here pins a
 // fix for a failure class observed on the real-app fixture matrix. The
@@ -61,23 +63,10 @@ function makeContext(
 
 const lines = (...l: string[]) => l.join('\n');
 
-const tmpDirs: string[] = [];
-afterEach(() => {
-  while (tmpDirs.length) {
-    fs.rmSync(tmpDirs.pop()!, { recursive: true, force: true });
-  }
-});
+registerTreeCleanup();
 
-function makeTree(files: Record<string, string>): string {
-  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-r7-'));
-  tmpDirs.push(cwd);
-  for (const [file, content] of Object.entries(files)) {
-    const target = path.join(cwd, file);
-    fs.mkdirSync(path.dirname(target), { recursive: true });
-    fs.writeFileSync(target, content);
-  }
-  return cwd;
-}
+const makeTree = (files: Record<string, string>) =>
+  makeProjectTree(files, { prefix: 'gt-migrate-r7-' });
 
 // ---------------------------------------------------------------------------
 // P1: locale-aware navigation signatures (PlantPal/Sniply no-op selectors,

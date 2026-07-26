@@ -1,9 +1,8 @@
-import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { discoverReactIntlCatalogs } from '../catalogs/reactIntlCatalogs.js';
 import type { RoutingInfo } from '../pipeline/types.js';
+import { makeTree, registerTreeCleanup } from './support/tree.js';
 
 const routing: RoutingInfo = {
   locales: null,
@@ -14,24 +13,10 @@ const routing: RoutingInfo = {
   requestFile: null,
 };
 
-const tmpDirs: string[] = [];
+registerTreeCleanup();
 
-function makeDir(files: Record<string, string>): string {
-  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-rintl-cat-'));
-  tmpDirs.push(cwd);
-  for (const [rel, content] of Object.entries(files)) {
-    const abs = path.join(cwd, rel);
-    fs.mkdirSync(path.dirname(abs), { recursive: true });
-    fs.writeFileSync(abs, content);
-  }
-  return cwd;
-}
-
-afterEach(() => {
-  while (tmpDirs.length) {
-    fs.rmSync(tmpDirs.pop()!, { recursive: true, force: true });
-  }
-});
+const makeDir = (files: Record<string, string>) =>
+  makeTree(files, { prefix: 'gt-rintl-cat-' });
 
 describe('discoverReactIntlCatalogs', () => {
   it('reads flat {id: ICU} catalogs and picks en as default', async () => {

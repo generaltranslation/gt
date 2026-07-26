@@ -1,10 +1,10 @@
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { buildReport } from '../report/report.js';
 import { runMigration } from '../pipeline/runMigration.js';
-import type { MigrateIO } from '../pipeline/io.js';
+import { makeIO } from './support/io.js';
+import { makeTree, registerTreeCleanup } from './support/tree.js';
 import type { FileEdit, MigrationContext } from '../pipeline/types.js';
 
 // ---------------------------------------------------------------------------
@@ -37,29 +37,7 @@ import type { FileEdit, MigrationContext } from '../pipeline/types.js';
 // shipped through a unit-level check that a hand-built context would pass.
 // ---------------------------------------------------------------------------
 
-function makeIO(): MigrateIO {
-  return {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    fatal: vi.fn((message: string) => {
-      throw new Error(message);
-    }) as unknown as (message: string) => never,
-    guardGit: vi.fn(),
-    promptConfirm: vi.fn(async () => true),
-    promptText: vi.fn(async () => ''),
-    promptLocale: vi.fn(async () => ''),
-    promptLocaleList: vi.fn(async () => []),
-  };
-}
-
-const tmpDirs: string[] = [];
-
-afterEach(() => {
-  while (tmpDirs.length) {
-    fs.rmSync(tmpDirs.pop()!, { recursive: true, force: true });
-  }
-});
+registerTreeCleanup();
 
 const lines = (...parts: string[]) => parts.join('\n') + '\n';
 
@@ -125,27 +103,15 @@ const baseFiles: Record<string, string> = {
   ),
 };
 
-function writeFiles(cwd: string, files: Record<string, string>): void {
-  for (const [relative, content] of Object.entries(files)) {
-    const absolute = path.join(cwd, relative);
-    fs.mkdirSync(path.dirname(absolute), { recursive: true });
-    fs.writeFileSync(absolute, content);
-  }
-}
-
 /** A project in a fresh tmpdir. `root` puts it under a chosen parent (F3). */
 function makeApp(
   overrides: Record<string, string> = {},
   options: { root?: string; prefix?: string } = {}
 ): string {
-  const root = options.root ?? os.tmpdir();
-  fs.mkdirSync(root, { recursive: true });
-  const cwd = fs.mkdtempSync(
-    path.join(root, options.prefix ?? 'gt-migrate-r9pe-')
+  return makeTree(
+    { ...baseFiles, ...overrides },
+    { root: options.root, prefix: options.prefix ?? 'gt-migrate-r9pe-' }
   );
-  tmpDirs.push(cwd);
-  writeFiles(cwd, { ...baseFiles, ...overrides });
-  return cwd;
 }
 
 const migrate = (cwd: string) =>
@@ -371,8 +337,7 @@ describe('round 9 F3: test-file classification ignores directories above the pro
   it.each(['tests', 'e2e', '__mocks__'])(
     'converts the app normally when the checkout sits under %s/',
     async (segment) => {
-      const parent = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-r9pe-'));
-      tmpDirs.push(parent);
+      const parent = makeTree({}, { prefix: 'gt-migrate-r9pe-' });
       const root = path.join(parent, segment);
       const cwd = makeApp({ 'src/app/[locale]/page.tsx': page }, { root });
       const ctx = await migrate(cwd);

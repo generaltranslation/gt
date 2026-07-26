@@ -1,24 +1,17 @@
-import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { emitGtFiles } from '../emit/emitGtFiles.js';
+import { makeTree, registerTreeCleanup } from './support/tree.js';
 import type { MessageCatalogs, MigrationContext } from '../pipeline/types.js';
 import { nextIntlAdapter } from '../adapters/nextIntl.js';
 
-const tmpDirs: string[] = [];
+registerTreeCleanup();
 
 function makeProject(
   files: Record<string, string>,
   skipped: string[] = []
 ): MigrationContext {
-  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-emit-'));
-  tmpDirs.push(cwd);
-  for (const [rel, content] of Object.entries(files)) {
-    const abs = path.join(cwd, rel);
-    fs.mkdirSync(path.dirname(abs), { recursive: true });
-    fs.writeFileSync(abs, content);
-  }
+  const cwd = makeTree(files, { prefix: 'gt-migrate-emit-' });
   const catalogs: MessageCatalogs = {
     defaultLocale: 'en',
     locales: ['en', 'es'],
@@ -43,12 +36,6 @@ function makeProject(
     adapter: nextIntlAdapter,
   };
 }
-
-afterEach(() => {
-  while (tmpDirs.length) {
-    fs.rmSync(tmpDirs.pop()!, { recursive: true, force: true });
-  }
-});
 
 const basePackageJson = JSON.stringify(
   {

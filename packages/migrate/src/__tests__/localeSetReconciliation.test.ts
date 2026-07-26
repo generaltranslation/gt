@@ -3,48 +3,23 @@
 // pipeline over a tmpdir project because the defect lived in the seam
 // between two passes, exactly where hand-built-context unit tests cannot see.
 
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { runMigration } from '../pipeline/runMigration.js';
+import { makeIO } from './support/io.js';
+import { makeTree, registerTreeCleanup } from './support/tree.js';
 import type { MigrateIO } from '../pipeline/io.js';
 import type { MigrationContext } from '../pipeline/types.js';
 
-const tmpDirs: string[] = [];
-afterEach(() => {
-  while (tmpDirs.length)
-    fs.rmSync(tmpDirs.pop()!, { recursive: true, force: true });
-});
+registerTreeCleanup();
 
-function makeIO(localeList: string[] = []): MigrateIO {
-  return {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    fatal: vi.fn((message: string) => {
-      throw new Error(message);
-    }) as unknown as (message: string) => never,
-    guardGit: vi.fn(),
-    promptConfirm: vi.fn(async () => true),
-    promptText: vi.fn(async () => 'messages'),
-    promptLocale: vi.fn(async () => 'en'),
-    promptLocaleList: vi.fn(async () => localeList),
-  };
-}
+/** The interactive answers this suite scripts: catalogs in messages/, default en. */
+const scriptedIO = (localeList: string[] = []) =>
+  makeIO({ text: 'messages', locale: 'en', localeList });
 
 const lines = (...parts: string[]) => parts.join('\n') + '\n';
 
-function tree(files: Record<string, string>): string {
-  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-test-'));
-  tmpDirs.push(cwd);
-  for (const [rel, content] of Object.entries(files)) {
-    const abs = path.join(cwd, rel);
-    fs.mkdirSync(path.dirname(abs), { recursive: true });
-    fs.writeFileSync(abs, content);
-  }
-  return cwd;
-}
+const tree = (files: Record<string, string>) =>
+  makeTree(files, { prefix: 'gt-migrate-test-' });
 
 const migrate = (cwd: string, io: MigrateIO) =>
   runMigration(
@@ -147,7 +122,7 @@ describe('A1: which locale set applies?', () => {
     let ctx: MigrationContext;
     try {
       // The user answers "migrate en and es" (fr has no catalog file).
-      ctx = await migrate(cwd, makeIO(['en', 'es']));
+      ctx = await migrate(cwd, scriptedIO(['en', 'es']));
     } finally {
       if (originalTTY)
         Object.defineProperty(process.stdin, 'isTTY', originalTTY);

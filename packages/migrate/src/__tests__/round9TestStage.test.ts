@@ -1,10 +1,12 @@
-import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { buildReport } from '../report/report.js';
 import { runMigration } from '../pipeline/runMigration.js';
-import type { MigrateIO } from '../pipeline/io.js';
+import { makeIO } from './support/io.js';
+import {
+  makeTree as makeProjectTree,
+  registerTreeCleanup,
+} from './support/tree.js';
 import type { MigrationContext } from '../pipeline/types.js';
 
 // Round-9 field-test hardening (Ernest, 2026-07-24): the test-file manual
@@ -22,40 +24,10 @@ import type { MigrationContext } from '../pipeline/types.js';
 // (round7Hardening.test.ts:604), hard-coding the exact path the pipeline could
 // not detect. A pre-populated context cannot fail this way, so none is used.
 
-function makeIO(): MigrateIO {
-  return {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    fatal: vi.fn((message: string) => {
-      throw new Error(message);
-    }) as unknown as (message: string) => never,
-    guardGit: vi.fn(),
-    promptConfirm: vi.fn(async () => true),
-    promptText: vi.fn(async () => ''),
-    promptLocale: vi.fn(async () => ''),
-    promptLocaleList: vi.fn(async () => []),
-  };
-}
+registerTreeCleanup();
 
-const tmpDirs: string[] = [];
-
-afterEach(() => {
-  while (tmpDirs.length) {
-    fs.rmSync(tmpDirs.pop()!, { recursive: true, force: true });
-  }
-});
-
-function makeTree(files: Record<string, string>): string {
-  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-r9-'));
-  tmpDirs.push(cwd);
-  for (const [rel, content] of Object.entries(files)) {
-    const abs = path.join(cwd, rel);
-    fs.mkdirSync(path.dirname(abs), { recursive: true });
-    fs.writeFileSync(abs, content);
-  }
-  return cwd;
-}
+const makeTree = (files: Record<string, string>) =>
+  makeProjectTree(files, { prefix: 'gt-migrate-r9-' });
 
 function migrate(cwd: string, from: string): Promise<MigrationContext> {
   return runMigration(

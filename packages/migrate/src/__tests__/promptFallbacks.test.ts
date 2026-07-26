@@ -1,30 +1,15 @@
-import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resolveCatalogsInteractively } from '../catalogs/promptFallbacks.js';
-import type { MigrateIO } from '../pipeline/io.js';
+import { makeIO, type MockIO } from './support/io.js';
+import { makeTree, registerTreeCleanup } from './support/tree.js';
 import type { RoutingInfo } from '../pipeline/types.js';
 
 // The interactive fallback runs entirely through the injected io (the CLI wires
-// io.prompt* to its @clack/prompts helpers and io.warn/error to its logger); a
-// fake scripts the answers and records the diagnostics.
-function makeIO() {
-  return {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    fatal: vi.fn((message: string) => {
-      throw new Error(message);
-    }) as unknown as (message: string) => never,
-    guardGit: vi.fn(),
-    promptConfirm: vi.fn(),
-    promptText: vi.fn(),
-    promptLocale: vi.fn(),
-    promptLocaleList: vi.fn(),
-  } satisfies MigrateIO;
-}
-let io: ReturnType<typeof makeIO>;
+// io.prompt* to its @clack/prompts helpers and io.warn/error to its logger);
+// the shared fake records the diagnostics and every test that reaches a prompt
+// scripts its own answer below.
+let io: MockIO;
 
 const emptyRouting: RoutingInfo = {
   locales: null,
@@ -35,18 +20,8 @@ const emptyRouting: RoutingInfo = {
   requestFile: null,
 };
 
-const tmpDirs: string[] = [];
-
-function makeProject(files: Record<string, string>): string {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-fallback-'));
-  tmpDirs.push(dir);
-  for (const [rel, content] of Object.entries(files)) {
-    const abs = path.join(dir, rel);
-    fs.mkdirSync(path.dirname(abs), { recursive: true });
-    fs.writeFileSync(abs, content);
-  }
-  return dir;
-}
+const makeProject = (files: Record<string, string>) =>
+  makeTree(files, { prefix: 'gt-migrate-fallback-' });
 
 const originalIsTTY = process.stdin.isTTY;
 
@@ -59,10 +34,9 @@ beforeEach(() => {
 
 afterEach(() => {
   process.stdin.isTTY = originalIsTTY;
-  while (tmpDirs.length) {
-    fs.rmSync(tmpDirs.pop()!, { recursive: true, force: true });
-  }
 });
+
+registerTreeCleanup();
 
 describe('resolveCatalogsInteractively', () => {
   it('returns null without prompting when the session is non-interactive', async () => {

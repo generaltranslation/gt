@@ -1,10 +1,10 @@
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { runMigration } from '../pipeline/runMigration.js';
 import { clearI18nextConfigCache } from '../config/reactI18nextConfig.js';
-import type { MigrateIO } from '../pipeline/io.js';
+import { makeIO } from './support/io.js';
+import { makeTree, registerTreeCleanup } from './support/tree.js';
 import type { MigrationContext } from '../pipeline/types.js';
 
 // Round-9 review (Ernest, 2026-07-24), class C: the emitted navigation wrapper
@@ -16,41 +16,14 @@ import type { MigrationContext } from '../pipeline/types.js';
 // Every test here drives the REAL pipeline against a real tmpdir project;
 // nothing hand-populates a MigrationContext.
 
-function makeIO(): MigrateIO {
-  return {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    fatal: vi.fn((message: string) => {
-      throw new Error(message);
-    }) as unknown as (message: string) => never,
-    guardGit: vi.fn(),
-    promptConfirm: vi.fn(async () => true),
-    promptText: vi.fn(async () => ''),
-    promptLocale: vi.fn(async () => ''),
-    promptLocaleList: vi.fn(async () => []),
-  };
-}
-
-const tmpDirs: string[] = [];
+registerTreeCleanup();
 
 afterEach(() => {
-  while (tmpDirs.length) {
-    fs.rmSync(tmpDirs.pop()!, { recursive: true, force: true });
-  }
   clearI18nextConfigCache();
 });
 
-function writeTree(files: Record<string, string>): string {
-  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-r9-nav-'));
-  tmpDirs.push(cwd);
-  for (const [rel, content] of Object.entries(files)) {
-    const abs = path.join(cwd, rel);
-    fs.mkdirSync(path.dirname(abs), { recursive: true });
-    fs.writeFileSync(abs, content);
-  }
-  return cwd;
-}
+const writeTree = (files: Record<string, string>) =>
+  makeTree(files, { prefix: 'gt-r9-nav-' });
 
 function migrate(cwd: string, from = 'next-intl'): Promise<MigrationContext> {
   return runMigration(
