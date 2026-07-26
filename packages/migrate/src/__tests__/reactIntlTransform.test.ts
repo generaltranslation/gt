@@ -1537,9 +1537,136 @@ describe('reactIntl: provider unwrap prunes orphaned destructured props (FB2)', 
     expect(r.code).not.toContain('react-intl');
     // Runtime param reduced to { children } (no unused locale/messages binding)...
     expect(r.code).toMatch(/IntlProviderWrapper\(\s*\{\s*children\s*\}/);
-    // ...while the TypeScript annotation is left fully untouched (types never lint).
+    // ...while the TypeScript annotation is left fully untouched. Narrowing it
+    // here fails `next build` on this exact fixture the moment the migration
+    // ends, because the layout still passes both props; the type edit and the
+    // call-site edit only compile together, so the TODO asks for both (N1).
     expect(r.code).toMatch(/locale:\s*string/);
     expect(r.code).toMatch(/messages:\s*Record<string, string>/);
     expect(r.code).toMatch(/children:\s*React\.ReactNode/);
+  });
+});
+
+describe('reactIntl N1: the dead-prop TODO states every step its remedy needs', () => {
+  const wrapper = (param: string) =>
+    lines(
+      "'use client';",
+      "import { IntlProvider } from 'react-intl';",
+      `export function Wrapper(${param}) {`,
+      '  return (',
+      '    <IntlProvider locale={locale} messages={messages}>',
+      '      {children}',
+      '    </IntlProvider>',
+      '  );',
+      '}'
+    );
+
+  const deadPropTodo = (r: { todos: { reason: string }[] }) =>
+    r.todos.find((todo) => todo.reason.includes('no longer reads'))?.reason ??
+    '';
+
+  it('names the inline props type as the other half of the remedy', () => {
+    const r = transform(
+      wrapper(
+        lines(
+          '{ locale, messages, children }: {',
+          '  locale: string;',
+          '  messages: Record<string, string>;',
+          '  children: React.ReactNode;',
+          '}'
+        )
+      )
+    );
+    expect(r.skipReasons).toEqual([]);
+    // The annotation stays: the call sites still pass both props, and narrowing
+    // it here fails the build before the user has touched anything.
+    expect(r.code).toMatch(/\{\s*children\s*\}\s*:\s*\{/);
+    expect(r.code).toMatch(/locale:\s*string/);
+    expect(r.code).toMatch(/messages:\s*Record<string, string>/);
+    // Both measured failure directions are in the remedy, so neither edit
+    // looks safe on its own.
+    expect(deadPropTodo(r)).toContain("this component's own props type");
+    expect(deadPropTodo(r)).toContain('in the same change');
+    expect(deadPropTodo(r)).toContain('the call-site edit alone fails');
+    expect(deadPropTodo(r)).toContain('the type edit alone fails');
+  });
+
+  it('names a named props type by its own name', () => {
+    const r = transform(
+      lines(
+        "'use client';",
+        "import { IntlProvider } from 'react-intl';",
+        'type Props = { locale: string; messages: Record<string, string>; children: React.ReactNode };',
+        'export function Wrapper({ locale, messages, children }: Props) {',
+        '  return <IntlProvider locale={locale} messages={messages}>{children}</IntlProvider>;',
+        '}'
+      )
+    );
+    expect(r.skipReasons).toEqual([]);
+    // A named type can be shared with other components, so it is not rewritten.
+    expect(r.code).toMatch(/type Props = \{/);
+    expect(r.code).toMatch(/Wrapper\(\s*\{\s*children\s*\}\s*:\s*Props\)/);
+    expect(deadPropTodo(r)).toContain('`Props`');
+    expect(deadPropTodo(r)).toContain('in the same change');
+  });
+
+  it('claims no type edit on an untyped parameter', () => {
+    const r = transform(wrapper('{ locale, messages, children }'));
+    expect(r.skipReasons).toEqual([]);
+    expect(deadPropTodo(r)).toContain(
+      'Remove the dead props at each call site'
+    );
+    expect(deadPropTodo(r)).not.toContain('props type');
+  });
+
+  it('claims no type edit on an `any` parameter, which requires nothing', () => {
+    const r = transform(wrapper('{ locale, messages, children }: any'));
+    expect(r.skipReasons).toEqual([]);
+    expect(deadPropTodo(r)).toContain('`locale`');
+    expect(deadPropTodo(r)).not.toContain('props type');
+  });
+
+  it('keeps a type member whose prop survived the splice', () => {
+    const r = transform(
+      lines(
+        "'use client';",
+        "import { IntlProvider } from 'react-intl';",
+        'export function Wrapper({ locale, messages, children }: {',
+        '  locale: string;',
+        '  messages: Record<string, string>;',
+        '  children: React.ReactNode;',
+        '}) {',
+        '  return (',
+        '    <div data-locale={locale}>',
+        '      <IntlProvider locale={locale} messages={messages}>{children}</IntlProvider>',
+        '    </div>',
+        '  );',
+        '}'
+      )
+    );
+    expect(r.skipReasons).toEqual([]);
+    // locale is still read, so its binding stays; only `messages` is named.
+    expect(r.code).toMatch(/locale:\s*string/);
+    expect(deadPropTodo(r)).toContain('`messages`');
+    expect(deadPropTodo(r)).not.toContain('`locale`');
+    expect(deadPropTodo(r)).toContain("this component's own props type");
+  });
+
+  it('leaves the annotation alone when a rest sibling blocks the splice', () => {
+    const r = transform(
+      wrapper(
+        lines(
+          '{ locale, messages, children, ...rest }: {',
+          '  locale: string;',
+          '  messages: Record<string, string>;',
+          '  children: React.ReactNode;',
+          '}'
+        )
+      )
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(r.code).toMatch(/locale:\s*string/);
+    expect(r.code).toMatch(/messages:\s*Record<string, string>/);
+    expect(deadPropTodo(r)).toBe('');
   });
 });

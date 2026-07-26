@@ -989,25 +989,33 @@ export function transformReactIntlSource(
   }
   if (orphanedPropBindings.size > 0) {
     const pruned = pruneOrphanedProps(ast, orphanedPropBindings);
-    if (pruned.length > 0) {
+    if (pruned.names.length > 0) {
       // The component no longer reads these props, but every call site still
       // passing them serializes their values (a whole message catalog, in the
       // wrapper idiom) across the client boundary into each page for nothing.
       // The transform never edits other files, so the call sites are the
       // user's step (round-10 claims finding 1: the payload cost was real and
       // the report attributed it to a provider that no longer existed).
+      // The type clause is the rest of that step. Both edits are the user's and
+      // both are needed: dropping the props at the call sites alone leaves the
+      // type requiring them, and dropping them from the type alone breaks the
+      // call sites that still pass them (both measured on portfolio, N1).
+      const typeClause =
+        pruned.declaredIn.length > 0
+          ? `, and delete the same members from ${pruned.declaredIn.join(' and ')} in the same change: the call-site edit alone fails the type check on the props the component still declares, and the type edit alone fails on the call sites that still pass them`
+          : '';
       todos.push({
         file,
         reason:
-          `this component no longer reads the ${pruned
+          `this component no longer reads the ${pruned.names
             .map((name) => `\`${name}\``)
             .join(
               ', '
-            )} prop${pruned.length > 1 ? 's' : ''} its <IntlProvider> consumed; ` +
+            )} prop${pruned.names.length > 1 ? 's' : ''} its <IntlProvider> consumed; ` +
           'call sites still passing them serialize those values into every ' +
           'page that renders this component. Remove the dead props at each ' +
           'call site (and any now-unused values feeding them) to reclaim ' +
-          'that payload',
+          `that payload${typeClause}`,
       });
     }
   }
@@ -1751,15 +1759,28 @@ function pruneOrphanedArgBindings(ast: t.File, targets: Set<t.Node>): void {
   });
 }
 
+/** What the prop splice did, so the emitted TODO can name every remaining step. */
+type PropPrune = {
+  /** props spliced out of a destructured parameter */
+  names: string[];
+  /** labels of the props types that still declare them, for the TODO */
+  declaredIn: string[];
+};
+
 /**
  * Prunes destructured component props the unwrapped <IntlProvider> was the sole
  * consumer of (`function W({ locale, messages, children })` → `{ children }`).
  * Same safety rules as transformLayout step 7: a RestElement sibling aborts the
- * splice, the TypeScript annotation is left untouched, and the recrawled binding
- * of the function's own scope decides; a prop still read elsewhere survives.
+ * splice and the recrawled binding of the function's own scope decides, so a prop
+ * still read elsewhere survives.
+ *
+ * The TypeScript annotation is left alone and reported instead. Narrowing it here
+ * was measured to break `next build` on react-intl/portfolio the moment the
+ * migration finishes, because the call sites still pass the props; the two edits
+ * only compile together, and the transform owns one file (round-10 N1).
  */
-function pruneOrphanedProps(ast: t.File, targets: Set<t.Node>): string[] {
-  const pruned: string[] = [];
+function pruneOrphanedProps(ast: t.File, targets: Set<t.Node>): PropPrune {
+  const result: PropPrune = { names: [], declaredIn: [] };
   traverse(ast, {
     Program(path) {
       path.scope.crawl();
@@ -1784,16 +1805,55 @@ function pruneOrphanedProps(ast: t.File, targets: Set<t.Node>): string[] {
           if (binding && !binding.referenced) remove.add(property);
         }
         if (remove.size === 0) continue;
+        const removedNames = new Set<string>();
         for (const property of remove) {
           if (t.isObjectProperty(property) && t.isIdentifier(property.value)) {
-            pruned.push(property.value.name);
+            removedNames.add(property.value.name);
+            result.names.push(property.value.name);
           }
         }
         param.properties = param.properties.filter(
           (property) => !remove.has(property)
         );
+        const declaredIn = propsTypeStillRequiring(param, removedNames);
+        if (declaredIn && !result.declaredIn.includes(declaredIn)) {
+          result.declaredIn.push(declaredIn);
+        }
       }
     },
   });
-  return pruned;
+  return result;
+}
+
+/**
+ * Where the spliced props are still declared, phrased for the TODO, or null when
+ * the parameter's type does not require them (untyped, or `any`) and the call
+ * sites are the only edit left.
+ */
+function propsTypeStillRequiring(
+  param: t.ObjectPattern,
+  removed: Set<string>
+): string | null {
+  const annotation = param.typeAnnotation;
+  if (!t.isTSTypeAnnotation(annotation)) return null;
+  const declared = annotation.typeAnnotation;
+  if (t.isTSAnyKeyword(declared)) return null;
+  if (t.isTSTypeLiteral(declared)) {
+    const declaresRemoved = declared.members.some((member) => {
+      const name = propertySignatureName(member);
+      return name !== null && removed.has(name);
+    });
+    return declaresRemoved ? "this component's own props type" : null;
+  }
+  return t.isTSTypeReference(declared) && t.isIdentifier(declared.typeName)
+    ? `the \`${declared.typeName.name}\` type this component's props are declared with`
+    : "this component's props type";
+}
+
+/** The declared name of a `{ locale: string }` member, or null for any other member. */
+function propertySignatureName(member: t.TSTypeElement): string | null {
+  if (!t.isTSPropertySignature(member) || member.computed) return null;
+  if (t.isIdentifier(member.key)) return member.key.name;
+  if (t.isStringLiteral(member.key)) return member.key.value;
+  return null;
 }
