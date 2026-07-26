@@ -156,7 +156,13 @@ describe('gt-next leaf semantics', () => {
     });
   });
 
-  it('resolves a flat dotted leaf inside a namespace object', () => {
+  it('pins the shape permissiveness this change did NOT touch', () => {
+    // A flat dotted leaf inside a namespace object still counts as resolved,
+    // as it has since the audit was written. gt-next itself splits the id on
+    // '.' and walks objects only, so this would throw at runtime; narrowing it
+    // turns silence into new "missing key" claims across all three adapters
+    // and is a separate finding from the leaf-TYPE one. Pinned so the next
+    // change to it is deliberate.
     expect(resolveDictionaryKey({ UI: { 'a.b': 'x' } }, 'UI.a.b')).toEqual({
       kind: 'renderable',
     });
