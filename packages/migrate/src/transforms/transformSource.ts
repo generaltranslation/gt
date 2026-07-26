@@ -9,6 +9,7 @@ import {
   removeUnusedNamedImports,
 } from './importUtils.js';
 import { planProviderUnwraps, unwrapJsxElement } from './providerNesting.js';
+import { planServerEntryLocale, REGISTER_LOCALE } from './serverEntryLocale.js';
 import type {
   MigrationContext,
   SourceResult,
@@ -213,6 +214,23 @@ export function transformSourceFile(
   const providerLocals = localsBy(
     (name) => adapter.providerName !== null && name === adapter.providerName
   );
+  const localeResolvingLocals = localsBy((name) =>
+    adapter.serverSwaps.has(name)
+  );
+
+  // Route Handlers and Server Actions resolve the locale through the emitted
+  // getLocale.ts, which calls next/root-params; Next.js refuses to resolve it
+  // there (round-10 finding 1). A handler under [locale] gets the route locale
+  // registered instead; anything else gets the caveat as a TODO. Planned here,
+  // before the skip gate, and applied after the import surgery.
+  const serverEntry = planServerEntryLocale({
+    ast,
+    file,
+    cwd: ctx.cwd,
+    isLocaleResolvingCall: (call) =>
+      t.isIdentifier(call.callee) &&
+      localeResolvingLocals.has(call.callee.name),
+  });
 
   // ---- analysis pass -------------------------------------------------------
 
@@ -487,10 +505,21 @@ export function transformSourceFile(
         file,
         line: rewrite.line,
         reason:
-          'getTranslations locale override dropped; gt-next resolves the request ' +
-          'locale itself, so an override that forwarded the route/request locale ' +
-          'needs no replacement (metadata and content still render in the ' +
-          'requested locale). If a FIXED locale was intended, note that gt-next ' +
+          'getTranslations locale override dropped; ' +
+          // In a Route Handler the unqualified claim is false: gt-next's own
+          // resolution runs next/root-params, which Next.js throws on there.
+          // What makes the locale resolve is the registerLocale call this run
+          // added, so the TODO names it (round-10 finding 1).
+          (serverEntry.kind === 'register'
+            ? `gt migrate added ${REGISTER_LOCALE}() at the top of this Route ` +
+              'Handler (next/root-params, which gt-next resolves the locale ' +
+              'through, throws inside one), so gt-next reads the route locale ' +
+              'from there and the override needs no replacement'
+            : 'gt-next resolves the request ' +
+              'locale itself, so an override that forwarded the route/request locale ' +
+              'needs no replacement (metadata and content still render in the ' +
+              'requested locale)') +
+          '. If a FIXED locale was intended, note that gt-next ' +
           'has no per-call locale override for dictionary calls: getTranslations ' +
           'takes only a namespace, and t() options are variables plus ' +
           '$context/$format/$maxChars, so passing $locale type-checks, builds, ' +
@@ -632,6 +661,14 @@ export function transformSourceFile(
     }
     // removals and provider-linked messages hooks simply disappear.
   }
+  if (serverEntry.kind === 'register') {
+    serverSpecifiers.push(
+      t.importSpecifier(
+        t.identifier(REGISTER_LOCALE),
+        t.identifier(REGISTER_LOCALE)
+      )
+    );
+  }
 
   const newDeclarations: t.ImportDeclaration[] = [];
   const mergeTargets = new Map<string, t.ImportDeclaration>();
@@ -750,6 +787,25 @@ export function transformSourceFile(
         },
       });
     }
+  }
+
+  // 4b. Route Handler locale registration. After the import surgery (which
+  //     added the registerLocale specifier) and BEFORE the orphan cleanup, so
+  //     the `params` this writes a reference to still counts as referenced and
+  //     the cleanup leaves the parameter alone.
+  if (serverEntry.kind === 'register') {
+    serverEntry.apply();
+    todos.push({
+      file,
+      reason:
+        `Route Handler: gt migrate added ${REGISTER_LOCALE}() from ` +
+        `'gt-next/server' at the top of ${serverEntry.handlers.join(', ')} ` +
+        'because gt-next resolves the locale through next/root-params, which ' +
+        'Next.js throws on inside a Route Handler. Verify the handler answers ' +
+        'in the route locale',
+    });
+  } else if (serverEntry.kind === 'note') {
+    todos.push({ file, reason: serverEntry.reason });
   }
 
   // 5. Orphaned param-locale cleanup. Runs LAST, after every reference-adding
