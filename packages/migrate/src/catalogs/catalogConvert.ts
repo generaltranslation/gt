@@ -342,7 +342,7 @@ function hasTopLevelComma(spec: string): boolean {
  * literal text is ICU-escaped. Returns null when the value must be dropped
  * (a nesting cycle); reports accumulate through ctx.addReport.
  */
-export function convertLeaf(value: string, ctx: LeafContext): string | null {
+function convertLeaf(value: string, ctx: LeafContext): string | null {
   if (ctx.isIcu) {
     // i18next-icu: catalogs are already ICU. Only the `$t()` nesting (an
     // i18next feature, not ICU) needs inlining; the rest is passed through

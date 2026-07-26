@@ -1,7 +1,5 @@
-import { parse } from '@babel/parser';
-import traverseModule from '@babel/traverse';
-import * as t from '@babel/types';
 import { classifyMessage } from '../catalogs/classifyMessage.js';
+import { makeProviderDetector } from './providerDetector.js';
 import { discoverCatalogs } from '../catalogs/discover.js';
 import { parseRoutingConfig } from '../config/parseRoutingConfig.js';
 import { transformMiddlewareFile } from '../transforms/transformMiddleware.js';
@@ -14,10 +12,6 @@ import { transformNextConfigFile } from '../transforms/transformNextConfig.js';
 import { transformRequestConfigFile } from '../transforms/transformRequestConfig.js';
 import type { RoutingInfo } from '../pipeline/types.js';
 import type { SourceAdapter } from './types.js';
-
-const traverse: typeof traverseModule =
-  (traverseModule as { default?: typeof traverseModule }).default ||
-  traverseModule;
 
 const PROVIDER = 'NextIntlClientProvider';
 
@@ -33,47 +27,7 @@ function ownsModule(source: string): boolean {
  * the final skip set, not known during the pass that would otherwise transform
  * them. Cheap-exits before parsing when the provider name is absent.
  */
-function hasProvider(code: string): boolean {
-  if (!code.includes(PROVIDER)) return false;
-  let ast: t.File;
-  try {
-    ast = parse(code, {
-      sourceType: 'module',
-      plugins: ['jsx', 'typescript'],
-      tokens: true,
-      createParenthesizedExpressions: true,
-    });
-  } catch {
-    return false;
-  }
-
-  const providerLocals = new Set<string>();
-  traverse(ast, {
-    ImportDeclaration(path) {
-      if (!ownsModule(path.node.source.value)) return;
-      for (const specifier of path.node.specifiers) {
-        if (!t.isImportSpecifier(specifier)) continue;
-        const imported = t.isIdentifier(specifier.imported)
-          ? specifier.imported.name
-          : specifier.imported.value;
-        if (imported === PROVIDER) providerLocals.add(specifier.local.name);
-      }
-    },
-  });
-  if (providerLocals.size === 0) return false;
-
-  let found = false;
-  traverse(ast, {
-    JSXOpeningElement(path) {
-      const name = path.node.name;
-      if (t.isJSXIdentifier(name) && providerLocals.has(name.name)) {
-        found = true;
-        path.stop();
-      }
-    },
-  });
-  return found;
-}
+const hasProvider = makeProviderDetector(PROVIDER, ownsModule);
 
 /**
  * Adapter #1: next-intl -> gt-next. Holds every next-intl-specific table,

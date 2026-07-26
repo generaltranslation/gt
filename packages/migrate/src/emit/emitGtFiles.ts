@@ -20,6 +20,7 @@ import {
   specifierTailCandidates,
 } from '../pipeline/latentClientCalls.js';
 import { moduleSpecifierMatches } from '../fs/moduleSpecifiers.js';
+import { isLayoutFile, isLocaleSegmentLayout } from '../fs/layoutFiles.js';
 import type { FileEdit, MigrationContext } from '../pipeline/types.js';
 
 /** next/root-params (and its `locale()` export) landed in Next 15.5.0. */
@@ -1084,12 +1085,10 @@ export type LocaleLayout =
  */
 export function findLocaleLayout(ctx: MigrationContext): LocaleLayout {
   const files = ctx.projectFiles ?? ctx.sourceFiles ?? [];
-  const layouts = files.filter(isLayoutFileName);
+  const layouts = files.filter(isLayoutFile);
   // The `[locale]` layout is the one that sits directly in the [locale]
   // segment (…/[locale]/layout.tsx); not a deeper nested layout under it.
-  const localeLayout = layouts.find(
-    (file) => path.basename(path.dirname(file)) === '[locale]'
-  );
+  const localeLayout = layouts.find(isLocaleSegmentLayout);
   if (localeLayout) {
     const localeDir = path.dirname(localeLayout);
     const hasRootLayoutAbove = layouts.some(
@@ -1113,16 +1112,6 @@ export function findLocaleLayout(ctx: MigrationContext): LocaleLayout {
     };
   }
   return { kind: 'none' };
-}
-
-function isLayoutFileName(file: string): boolean {
-  const base = path.basename(file);
-  return (
-    base === 'layout.tsx' ||
-    base === 'layout.ts' ||
-    base === 'layout.jsx' ||
-    base === 'layout.js'
-  );
 }
 
 /**
@@ -1391,7 +1380,15 @@ function findRemainingImporter(
     const base = path.basename(targetNoExt);
     const hit =
       unresolvedTails.get(base) ??
-      unresolvedTails.get(path.basename(path.dirname(targetNoExt)))!;
+      unresolvedTails.get(path.basename(path.dirname(targetNoExt)));
+    // The guard and the lookups strip extensions with DIFFERENT rules (any
+    // dot-suffix vs module extensions only), so a teardown candidate with a
+    // non-module extension can pass the guard while both lookups miss
+    // (round-10 arch finding A12); retain without a named specifier rather
+    // than dereferencing a miss over a half-planned migration.
+    if (hit === undefined) {
+      return { file: target, exact: false, unresolvedSpecifier: '' };
+    }
     return { file: hit.file, exact: false, unresolvedSpecifier: hit.specifier };
   }
   if (unfollowable !== null) {

@@ -2,8 +2,17 @@ import { parse } from '@babel/parser';
 import traverseModule, { type NodePath } from '@babel/traverse';
 import generateModule from '@babel/generator';
 import * as t from '@babel/types';
-import { ensureNamedImports, removeUnusedNamedImports } from './importUtils.js';
-import { isParamsInit, transformSourceFile } from './transformSource.js';
+import {
+  ensureNamedImports,
+  hasUseClientDirective,
+  removeUnusedNamedImports,
+} from './importUtils.js';
+import {
+  isParamsInit,
+  removeParamsParameter,
+  transformSourceFile,
+} from './transformSource.js';
+import { isLocaleSegmentLayout } from '../fs/layoutFiles.js';
 import type {
   MigrationContext,
   SourceResult,
@@ -193,46 +202,6 @@ function findDefaultExportFunction(ast: t.File): t.Function | null {
   return result;
 }
 
-/**
- * Drop the `params` parameter from a function whose only use of it was an
- * orphaned `const { ... } = await params` that step 7 just removed. The usual
- * shape is an ObjectPattern parameter (`{ children, params }`): remove just the
- * `params` property, which never changes arity. If that would empty the pattern,
- * remove the whole parameter only when it is last (an empty `{}` trips
- * no-empty-pattern, and dropping a non-last positional param shifts the others).
- * TypeScript annotations are left untouched: an unused type member does not lint.
- */
-function removeParamsParameter(fn: t.Function): void {
-  const params = fn.params;
-  for (let index = 0; index < params.length; index++) {
-    const param = params[index];
-    if (t.isIdentifier(param, { name: 'params' })) {
-      if (index === params.length - 1) params.splice(index, 1);
-      return;
-    }
-    if (!t.isObjectPattern(param)) continue;
-    const propertyIndex = param.properties.findIndex(
-      (property) =>
-        t.isObjectProperty(property) &&
-        !property.computed &&
-        t.isIdentifier(property.value, { name: 'params' })
-    );
-    if (propertyIndex === -1) continue;
-    // A rest sibling would absorb the removed key at runtime (`...rest` gains
-    // `params`), so keep the parameter in that shape; the lint warning is the
-    // lesser evil to a behavior change.
-    if (param.properties.some((property) => t.isRestElement(property))) {
-      return;
-    }
-    if (param.properties.length === 1) {
-      if (index === params.length - 1) params.splice(index, 1);
-      return;
-    }
-    param.properties.splice(propertyIndex, 1);
-    return;
-  }
-}
-
 export function transformLayoutFile(
   file: string,
   code: string,
@@ -278,9 +247,7 @@ export function transformLayoutFile(
   // `await getLocale()` is server-only, and forcing the component async
   // would make it an invalid async client component. Keep the source
   // transform's output as is and flag the provider for manual wiring.
-  const isClientLayout = ast.program.directives.some(
-    (directive) => directive.value.value === 'use client'
-  );
+  const isClientLayout = hasUseClientDirective(ast);
   if (isClientLayout) {
     if (
       retainProvider &&
@@ -601,7 +568,7 @@ export function transformLayoutFile(
     });
     if (inserted) {
       ensureNamedImports(ast, 'gt-next', ['GTProvider']);
-    } else if (/\[locale\][\\/]layout\.[^\\/]+$/.test(file)) {
+    } else if (isLocaleSegmentLayout(file)) {
       // Only the root [locale] layout is expected to carry <body>; nested
       // layouts without one are normal and stay quiet.
       todos.push({

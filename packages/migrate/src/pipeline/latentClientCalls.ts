@@ -4,6 +4,7 @@ import { isBuiltin } from 'node:module';
 import { parse } from '@babel/parser';
 import * as t from '@babel/types';
 import { moduleSpecifierMatches } from '../fs/moduleSpecifiers.js';
+import { hasUseClientDirective } from '../transforms/importUtils.js';
 import type { MigrationContext } from './types.js';
 
 const EXTENSIONS = ['.tsx', '.ts', '.jsx', '.js'];
@@ -140,11 +141,7 @@ export function detectLatentClientCallHazards(ctx: MigrationContext): void {
         sourceType: 'module',
         plugins: ['jsx', 'typescript'],
       });
-      if (
-        ast.program.directives.some(
-          (directive) => directive.value.value === 'use client'
-        )
-      ) {
+      if (hasUseClientDirective(ast)) {
         clientModules.add(file);
       }
     } catch {

@@ -14,7 +14,9 @@ function makeIO() {
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-    fatal: vi.fn(),
+    fatal: vi.fn((message: string) => {
+      throw new Error(message);
+    }) as unknown as (message: string) => never,
     guardGit: vi.fn(),
     promptConfirm: vi.fn(),
     promptText: vi.fn(),

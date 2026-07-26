@@ -1,7 +1,5 @@
-import { parse } from '@babel/parser';
-import traverseModule from '@babel/traverse';
-import * as t from '@babel/types';
 import { classifyMessage } from '../catalogs/classifyMessage.js';
+import { makeProviderDetector } from './providerDetector.js';
 import { getI18nextConfig } from '../config/reactI18nextConfig.js';
 import {
   discoverReactI18nextCatalogs,
@@ -13,10 +11,6 @@ import { transformReactI18nextNextConfig } from '../transforms/transformReactI18
 import { transformReactI18nextSource } from '../transforms/transformReactI18nextSource.js';
 import type { RoutingInfo } from '../pipeline/types.js';
 import type { SourceAdapter } from './types.js';
-
-const traverse: typeof traverseModule =
-  (traverseModule as { default?: typeof traverseModule }).default ||
-  traverseModule;
 
 const PROVIDER = 'I18nextProvider';
 
@@ -30,47 +24,7 @@ function ownsModule(source: string): boolean {
  * (alias-aware). The driver defers these files so their provider-retention
  * decision can wait for the final skip set, exactly as it does for next-intl.
  */
-function hasProvider(code: string): boolean {
-  if (!code.includes(PROVIDER)) return false;
-  let ast: t.File;
-  try {
-    ast = parse(code, {
-      sourceType: 'module',
-      plugins: ['jsx', 'typescript'],
-      tokens: true,
-      createParenthesizedExpressions: true,
-    });
-  } catch {
-    return false;
-  }
-
-  const providerLocals = new Set<string>();
-  traverse(ast, {
-    ImportDeclaration(path) {
-      if (!ownsModule(path.node.source.value)) return;
-      for (const specifier of path.node.specifiers) {
-        if (!t.isImportSpecifier(specifier)) continue;
-        const imported = t.isIdentifier(specifier.imported)
-          ? specifier.imported.name
-          : specifier.imported.value;
-        if (imported === PROVIDER) providerLocals.add(specifier.local.name);
-      }
-    },
-  });
-  if (providerLocals.size === 0) return false;
-
-  let found = false;
-  traverse(ast, {
-    JSXOpeningElement(path) {
-      const name = path.node.name;
-      if (t.isJSXIdentifier(name) && providerLocals.has(name.name)) {
-        found = true;
-        path.stop();
-      }
-    },
-  });
-  return found;
-}
+const hasProvider = makeProviderDetector(PROVIDER, ownsModule);
 
 /** Builds RoutingInfo from the i18next init config. react-i18next has no
  *  next-intl-style locale-prefix URL model, so those fields are null and the

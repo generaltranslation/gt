@@ -1,7 +1,5 @@
-import { parse } from '@babel/parser';
-import traverseModule from '@babel/traverse';
-import * as t from '@babel/types';
 import { classifyMessage } from '../catalogs/classifyMessage.js';
+import { makeProviderDetector } from './providerDetector.js';
 import type { RoutingInfo } from '../pipeline/types.js';
 import { discoverReactIntlCatalogs } from '../catalogs/reactIntlCatalogs.js';
 import { transformReactIntlNextConfig } from '../transforms/reactIntlNextConfig.js';
@@ -11,10 +9,6 @@ import {
 } from '../transforms/reactIntlTransform.js';
 import { MODULE_SPECIFIER_PREFIX_SOURCE } from '../fs/moduleSpecifiers.js';
 import type { SourceAdapter } from './types.js';
-
-const traverse: typeof traverseModule =
-  (traverseModule as { default?: typeof traverseModule }).default ||
-  traverseModule;
 
 const PROVIDER = 'IntlProvider';
 
@@ -29,47 +23,7 @@ function ownsModule(source: string): boolean {
  * files: their provider-retention decision (unwrap vs keep) depends on the final
  * skip set. Cheap-exits before parsing when the provider name is absent.
  */
-function hasProvider(code: string): boolean {
-  if (!code.includes(PROVIDER)) return false;
-  let ast: t.File;
-  try {
-    ast = parse(code, {
-      sourceType: 'module',
-      plugins: ['jsx', 'typescript'],
-      tokens: true,
-      createParenthesizedExpressions: true,
-    });
-  } catch {
-    return false;
-  }
-
-  const providerLocals = new Set<string>();
-  traverse(ast, {
-    ImportDeclaration(path) {
-      if (path.node.source.value !== 'react-intl') return;
-      for (const specifier of path.node.specifiers) {
-        if (!t.isImportSpecifier(specifier)) continue;
-        const imported = t.isIdentifier(specifier.imported)
-          ? specifier.imported.name
-          : specifier.imported.value;
-        if (imported === PROVIDER) providerLocals.add(specifier.local.name);
-      }
-    },
-  });
-  if (providerLocals.size === 0) return false;
-
-  let found = false;
-  traverse(ast, {
-    JSXOpeningElement(path) {
-      const name = path.node.name;
-      if (t.isJSXIdentifier(name) && providerLocals.has(name.name)) {
-        found = true;
-        path.stop();
-      }
-    },
-  });
-  return found;
-}
+const hasProvider = makeProviderDetector(PROVIDER, ownsModule);
 
 /**
  * react-intl has no routing-config file (no defineRouting analogue); locales are
