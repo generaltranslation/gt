@@ -86,6 +86,52 @@ describe('buildReport retained-provider wording', () => {
     expect(report).toContain('src/i18n/config.ts');
   });
 
+  it('names them for the react-i18next per-namespace shape too (round-10 claims F3)', () => {
+    // The other live shape, measured on react-i18next/plantpal: catalogs read
+    // from locales/{lng}/{ns}.json, served from gt/dictionaries/, and the
+    // survivors import the namespace files by relative path and by `@/` alias
+    // (generateMetadata is the field case). `@/lib/locales` shares the prefix
+    // word but is a helper module, so it must not be listed.
+    const ctx = makeContext(reactI18nextAdapter, [
+      {
+        path: '/project/i18n.ts',
+        kind: 'write',
+        content: "import en from './locales/en/common.json';\n",
+      },
+      {
+        path: '/project/app/[locale]/layout.tsx',
+        kind: 'write',
+        content: [
+          "import { isAppLocale } from '@/lib/locales';",
+          "import es from '@/locales/es/common.json';",
+          'export async function generateMetadata() {',
+          '  return { description: es.meta.description };',
+          '}',
+        ].join('\n'),
+      },
+      {
+        path: '/project/lib/i18n-routing.ts',
+        kind: 'write',
+        content: "import { isAppLocale } from '@/lib/locales';\n",
+      },
+    ]);
+    ctx.catalogs.dir = '/project/gt/dictionaries';
+    ctx.catalogs.sourceDir = '/project/locales';
+    ctx.projectFiles = [
+      '/project/i18n.ts',
+      '/project/app/[locale]/layout.tsx',
+      '/project/lib/i18n-routing.ts',
+    ];
+    const report = buildReport(ctx, false, false);
+    expect(report).toContain('two live catalog trees');
+    // Scoped to the section's own bullet list: every path here is also listed
+    // under Converted, so a whole-report toContain would pass on that alone.
+    const listed = report.split('two live catalog trees')[1].split('\n\n')[0];
+    expect(listed).toContain('- i18n.ts');
+    expect(listed).toContain('- app/[locale]/layout.tsx');
+    expect(listed).not.toContain('lib/i18n-routing.ts');
+  });
+
   it('stays silent about catalog trees when the serving dir was not repointed (control)', () => {
     const ctx = makeContext(reactIntlAdapter, [
       {
