@@ -140,8 +140,16 @@ export function transformSourceFile(
       nextIntlImports.push(path);
       for (const specifier of path.node.specifiers) {
         if (!t.isImportSpecifier(specifier)) {
+          // A default import of the middleware factory is the documented shape,
+          // so "unsupported import form" names the wrong thing and leaves the
+          // user nothing to act on. Reaching the generic pass at all means the
+          // file is not at a path Next.js runs as middleware, which is the
+          // actionable fact (round-10 finding 9).
           skipReasons.push(
-            `unsupported ${adapter.displayName} import form from '${source}'`
+            adapter.middlewareModule !== undefined &&
+              source === adapter.middlewareModule
+              ? `this file imports '${source}' but is not at a path Next.js runs as middleware (${adapter.middlewareCandidates.join(', ')}), so the middleware conversion never saw it; move or rename it to one of those paths and rerun the migration, or convert it by hand`
+              : `unsupported ${adapter.displayName} import form from '${source}'`
           );
           continue;
         }

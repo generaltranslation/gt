@@ -68,14 +68,21 @@ export const nextIntlAdapter: SourceAdapter = {
   transformRequestConfig: transformRequestConfigFile,
 
   nextConfigCandidates: ['next.config.ts', 'next.config.js', 'next.config.mjs'],
+  // Both extensions of both filenames. Next 16 runs proxy.js exactly as it runs
+  // proxy.ts, and a JavaScript project whose middleware sat at src/proxy.js used
+  // to fall through to the generic source pass and never get converted
+  // (round-10 finding 9).
   middlewareCandidates: [
     'middleware.ts',
     'middleware.js',
     'src/middleware.ts',
     'src/middleware.js',
     'proxy.ts',
+    'proxy.js',
     'src/proxy.ts',
+    'src/proxy.js',
   ],
+  middlewareModule: 'next-intl/middleware',
 
   retainedNavigationPattern: new RegExp(
     MODULE_SPECIFIER_PREFIX_SOURCE + String.raw`['"]next-intl\/navigation['"]`
