@@ -744,8 +744,8 @@ export async function runMigration(
             '"require is not defined" resolving the installed Next.js version, ' +
             'so `next build` fails before it starts. Measured on gt-next ' +
             '11.1.0, the version this migration installs. Rename the file to ' +
-            'next.config.ts (Next.js compiles that to CJS) and the build ' +
-            'passes with the same output.';
+            'next.config.ts, which Next.js compiles to CJS; the build then ' +
+            'succeeds with the file otherwise unchanged.';
           ctx.todos.push({ file: configFile, reason });
           // A condition that breaks the build outright does not belong only in
           // the TODO list, which is read as a punch list of optional cleanups.
