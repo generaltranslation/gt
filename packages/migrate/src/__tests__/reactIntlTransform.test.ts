@@ -1416,6 +1416,33 @@ describe('reactIntl: provider unwrap prunes orphaned destructured props (FB2)', 
     expect(r.code).not.toMatch(/\blocale\b/);
     expect(r.code).not.toMatch(/\bmessages\b/);
     expect(r.code).toMatch(/<>[\s\S]*\{\s*children\s*\}[\s\S]*<\/>/);
+    // Call sites still passing the pruned props serialize a whole catalog into
+    // every page for nothing, so the transform names them (round-10 claims
+    // F1: that payload was real and the report blamed a provider that no
+    // longer existed).
+    const deadPropTodo = r.todos.find((todo) =>
+      todo.reason.includes('no longer reads')
+    );
+    expect(deadPropTodo?.reason).toContain('`locale`');
+    expect(deadPropTodo?.reason).toContain('`messages`');
+    expect(deadPropTodo?.reason).toContain('call site');
+  });
+
+  it('emits no dead-prop todo when nothing was pruned (round-10 claims F1 control)', () => {
+    const r = transform(
+      lines(
+        "'use client';",
+        "import { IntlProvider } from 'react-intl';",
+        'export function Wrapper({ locale, messages, children }: any) {',
+        '  console.log(locale, messages);',
+        '  return <IntlProvider locale={locale} messages={messages}>{children}</IntlProvider>;',
+        '}'
+      )
+    );
+    expect(r.skipReasons).toEqual([]);
+    expect(
+      r.todos.find((todo) => todo.reason.includes('no longer reads'))
+    ).toBeUndefined();
   });
 
   it('handles the arrow-component equivalent', () => {

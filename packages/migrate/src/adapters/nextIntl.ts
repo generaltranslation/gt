@@ -121,6 +121,9 @@ export const nextIntlAdapter: SourceAdapter = {
     'src/proxy.ts',
   ],
 
+  retainedNavigationPattern: new RegExp(
+    MODULE_SPECIFIER_PREFIX_SOURCE + String.raw`['"]next-intl\/navigation['"]`
+  ),
   projectUsagePattern: new RegExp(
     MODULE_SPECIFIER_PREFIX_SOURCE + String.raw`['"]next-intl(?:\/|['"])`
   ),

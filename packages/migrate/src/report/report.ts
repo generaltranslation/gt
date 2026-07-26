@@ -268,12 +268,14 @@ export function buildReport(
   // (unwritten) file just goes unmentioned. Two sections read this: the skip
   // section's "these keep working" and the payload-size behavior difference,
   // which additionally needs the provider to be handed its own messages.
+  // adapter.hasProvider, never a substring: `<IntlProviderWrapper` contains
+  // `<IntlProvider`, and the substring form claimed a retained provider over a
+  // tree the run had fully torn down, then prescribed a re-run the CLI refuses
+  // once the library is uninstalled (round-10 claims finding 1).
   const providerEdit =
     adapter.providerName === null
       ? undefined
-      : written.find((edit) =>
-          (edit.content ?? '').includes(`<${adapter.providerName}`)
-        );
+      : written.find((edit) => adapter.hasProvider(edit.content ?? ''));
   const providerRetained = providerEdit !== undefined;
 
   // Test files render in their own section below with the migration recipe;
@@ -483,11 +485,31 @@ export function buildReport(
   const linkClause = gtLinkImported
     ? ' <Link> from gt-next/link is prefixed.'
     : '';
+  // A post-run tree that still wires the source library's navigation factory
+  // keeps router.push/redirect prefixed through it; the blanket "not
+  // locale-prefixed" sentence over that tree is false, and a user who follows
+  // it hand-prefixes into /es/es/... 404s (round-10 claims finding 2).
+  const sourceNavRetained =
+    adapter.retainedNavigationPattern !== undefined &&
+    (ctx.projectFiles ?? []).some((file) => {
+      if (testFileSet.has(file)) return false;
+      const content = postRunContent(file);
+      return (
+        content !== null && adapter.retainedNavigationPattern!.test(content)
+      );
+    });
+  const retainedNavClause = sourceNavRetained
+    ? ` Call sites importing the retained ${adapter.displayName} navigation wrapper stay prefixed by it until that wrapper is converted.`
+    : '';
   lines.push(
     routerWrapped
       ? '- Server redirects (redirect, permanentRedirect) are not locale-prefixed automatically; the generated navigation wrapper keeps useRouter().push/replace/prefetch prefixed.' +
+          linkClause +
+          retainedNavClause
+      : sourceNavRetained
+        ? `- Programmatic navigation (router.push/replace, redirect) still runs through the retained ${adapter.displayName} navigation wrapper, which keeps it locale-prefixed; do not add locale prefixes by hand at those call sites. That holds until you convert the wrapper.` +
           linkClause
-      : '- Programmatic navigation (redirect, router.push) is not locale-prefixed automatically.' +
+        : '- Programmatic navigation (redirect, router.push) is not locale-prefixed automatically.' +
           linkClause
   );
   // Retaining the source library's provider keeps two i18n payloads in the

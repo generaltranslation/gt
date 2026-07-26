@@ -174,6 +174,17 @@ export interface SourceAdapter {
    */
   emitCatalogs?(ctx: MigrationContext): FileEdit[];
 
+  /**
+   * Matches a post-run file that still wires this library's locale-aware
+   * navigation (next-intl: an import of 'next-intl/navigation', where
+   * createNavigation lives). While one exists, router.push/redirect through
+   * that wrapper stays locale-prefixed by the retained library, and the
+   * report must not claim programmatic navigation lost its prefixing
+   * (round-10 claims finding 2: following that claim double-prefixes every
+   * push). Absent for libraries with no navigation factory.
+   */
+  retainedNavigationPattern?: RegExp;
+
   // --- teardown ---
   /** whole-project "still uses this library" scan (the teardown blocker). */
   projectUsagePattern: RegExp;

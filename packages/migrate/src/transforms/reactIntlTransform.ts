@@ -987,7 +987,28 @@ export function transformReactIntlSource(
     pruneOrphanedArgBindings(ast, orphanedArgBindings);
   }
   if (orphanedPropBindings.size > 0) {
-    pruneOrphanedProps(ast, orphanedPropBindings);
+    const pruned = pruneOrphanedProps(ast, orphanedPropBindings);
+    if (pruned.length > 0) {
+      // The component no longer reads these props, but every call site still
+      // passing them serializes their values (a whole message catalog, in the
+      // wrapper idiom) across the client boundary into each page for nothing.
+      // The transform never edits other files, so the call sites are the
+      // user's step (round-10 claims finding 1: the payload cost was real and
+      // the report attributed it to a provider that no longer existed).
+      todos.push({
+        file,
+        reason:
+          `this component no longer reads the ${pruned
+            .map((name) => `\`${name}\``)
+            .join(
+              ', '
+            )} prop${pruned.length > 1 ? 's' : ''} its <IntlProvider> consumed; ` +
+          'call sites still passing them serialize those values into every ' +
+          'page that renders this component. Remove the dead props at each ' +
+          'call site (and any now-unused values feeding them) to reclaim ' +
+          'that payload',
+      });
+    }
   }
 
   const output = generate(
@@ -1730,7 +1751,8 @@ function pruneOrphanedArgBindings(ast: t.File, targets: Set<t.Node>): void {
  * splice, the TypeScript annotation is left untouched, and the recrawled binding
  * of the function's own scope decides; a prop still read elsewhere survives.
  */
-function pruneOrphanedProps(ast: t.File, targets: Set<t.Node>): void {
+function pruneOrphanedProps(ast: t.File, targets: Set<t.Node>): string[] {
+  const pruned: string[] = [];
   traverse(ast, {
     Program(path) {
       path.scope.crawl();
@@ -1755,10 +1777,16 @@ function pruneOrphanedProps(ast: t.File, targets: Set<t.Node>): void {
           if (binding && !binding.referenced) remove.add(property);
         }
         if (remove.size === 0) continue;
+        for (const property of remove) {
+          if (t.isObjectProperty(property) && t.isIdentifier(property.value)) {
+            pruned.push(property.value.name);
+          }
+        }
         param.properties = param.properties.filter(
           (property) => !remove.has(property)
         );
       }
     },
   });
+  return pruned;
 }

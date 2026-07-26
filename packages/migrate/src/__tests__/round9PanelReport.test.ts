@@ -435,7 +435,15 @@ describe('round 9 panel: files importing a left-unchanged module', () => {
       report,
       '## Behavior differences to know about'
     );
+    // The retained next-intl wrapper still prefixes router.push/redirect, so
+    // the blanket "not locale-prefixed" sentence over this tree is false: a
+    // user following it hand-prefixes and every push double-prefixes into
+    // /es/es/... 404s (round-10 claims finding 2).
     expect(differences).toContain(
+      'still runs through the retained next-intl navigation wrapper'
+    );
+    expect(differences).toContain('do not add locale prefixes by hand');
+    expect(differences).not.toContain(
       'Programmatic navigation (redirect, router.push) is not locale-prefixed automatically.'
     );
     expect(differences).not.toContain('gt-next/link');
