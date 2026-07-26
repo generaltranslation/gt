@@ -248,6 +248,81 @@ describe('round 9: a hazard no route can render is not a hazard', () => {
     expect(emittedResolvers(ctx)).toEqual([]);
     expect(warningText(ctx)).toContain('could not determine which routes');
   });
+
+  it('withholds instead of containing per-route while a file is unreadable (round-10 A8)', async () => {
+    // An unreadable file has no edges in the import graph, so every reach set
+    // is a lower bound, exactly the condition per-route containment must
+    // refuse on. Pre-fix this fell through to containment on the visible
+    // routes only.
+    const cwd = makeApp({
+      'src/app/[locale]/about/page.tsx': lines(
+        "import { hidden } from '../../../lib/hidden';",
+        'export default function About() {',
+        '  return <h1>{hidden()}</h1>;',
+        '}'
+      ),
+      'src/lib/hidden.ts': lines(
+        "import { useLocalizedLabel } from '../i18n/labels';",
+        'export function hidden() {',
+        '  return useLocalizedLabel();',
+        '}'
+      ),
+      'src/lib/opaque.ts': lines('export const nothing = 1;'),
+    });
+    const opaque = path.join(cwd, 'src/lib/opaque.ts');
+    fs.chmodSync(opaque, 0o000);
+    try {
+      const ctx = await migrate(cwd);
+      expect(ctx.unreadableFiles).toContain(opaque);
+      expect(emittedResolvers(ctx)).toEqual([]);
+      expect(forceDynamicEdits(ctx)).toHaveLength(0);
+      expect(warningText(ctx)).toContain('could not be read');
+    } finally {
+      fs.chmodSync(opaque, 0o644);
+    }
+  });
+
+  it('records an unreadable file outside the --src scope and still withholds (round-10 A8)', async () => {
+    // The scoped run never reads the file in its transform pass, so only the
+    // out-of-scan sweep and the import graph ever touch it; both used to
+    // swallow the read error in silence.
+    const cwd = makeApp({
+      'src/app/[locale]/about/page.tsx': lines(
+        "import { hidden } from '../../../lib/hidden';",
+        'export default function About() {',
+        '  return <h1>{hidden()}</h1>;',
+        '}'
+      ),
+      'src/lib/hidden.ts': lines(
+        "import { useLocalizedLabel } from '../i18n/labels';",
+        'export function hidden() {',
+        '  return useLocalizedLabel();',
+        '}'
+      ),
+      'opaque.ts': lines('export const nothing = 1;'),
+    });
+    const opaque = path.join(cwd, 'opaque.ts');
+    fs.chmodSync(opaque, 0o000);
+    try {
+      const ctx = await runMigration(
+        {
+          config: 'gt.config.json',
+          from: 'next-intl',
+          dryRun: false,
+          yes: true,
+          allowDirty: true,
+          src: ['src'],
+        },
+        'next-intl',
+        makeIO(),
+        cwd
+      );
+      expect(ctx.unreadableFiles).toContain(opaque);
+      expect(emittedResolvers(ctx)).toEqual([]);
+    } finally {
+      fs.chmodSync(opaque, 0o644);
+    }
+  });
 });
 
 describe('round 9: containment holds only the routes that reach a hazard', () => {

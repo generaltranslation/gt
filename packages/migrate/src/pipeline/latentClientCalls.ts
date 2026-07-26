@@ -112,12 +112,19 @@ export function detectLatentClientCallHazards(ctx: MigrationContext): void {
   if (projectFiles.length === 0) return;
   const fileSet = new Set(projectFiles);
   const contentCache = new Map<string, string | null>();
+  // A file that cannot be read contributes no edges, so the whole graph is a
+  // lower bound while one exists (round-10 A8). Recorded on
+  // ctx.unreadableFiles, the one owner of "this run could not see inside that
+  // file": the teardown scan and the report already read it, and the
+  // containment planner refuses per-route containment on it.
+  const unreadableFiles = new Set<string>();
   const readFile = (file: string): string | null => {
     if (!contentCache.has(file)) {
       try {
         contentCache.set(file, fs.readFileSync(file, 'utf8'));
       } catch {
         contentCache.set(file, null);
+        unreadableFiles.add(file);
       }
     }
     return contentCache.get(file) ?? null;
@@ -310,16 +317,26 @@ export function detectLatentClientCallHazards(ctx: MigrationContext): void {
     // Outside the server graph. That is only a real acquittal if the graph is
     // complete for this file: an import specifier we could not resolve (a
     // tsconfig `paths` alias, a webpack alias) could be the server importer we
-    // never saw. When one could plausibly point here, keep the hazard with no
-    // reaching entries, which makes the emit phase withhold globally the way
-    // it always did rather than emit a build that crashes on prerender.
-    if (couldBeUnresolvedImportTarget(file, graph.unresolvedTails)) {
+    // never saw, and so could a file we could not read (round-10 A8). When
+    // either could plausibly point here, keep the hazard with no reaching
+    // entries, which makes the emit phase withhold globally the way it always
+    // did rather than emit a build that crashes on prerender.
+    if (
+      unreadableFiles.size > 0 ||
+      couldBeUnresolvedImportTarget(file, graph.unresolvedTails)
+    ) {
       hazards.push({
         caller: file,
         importedName: found.importedName,
         clientModule: found.clientModule,
         reachedFrom: [],
       });
+    }
+  }
+  if (unreadableFiles.size > 0) {
+    const known = new Set(ctx.unreadableFiles ?? []);
+    for (const file of unreadableFiles) {
+      if (!known.has(file)) (ctx.unreadableFiles ??= []).push(file);
     }
   }
   if (hazards.length > 0) {

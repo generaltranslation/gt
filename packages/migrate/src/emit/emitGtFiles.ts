@@ -703,6 +703,20 @@ function planHazardContainment(
   const relative = (file: string) => path.relative(ctx.cwd, file);
   const localeDir = path.dirname(localeLayoutFile);
   const targets = new Map<string, ContainmentTarget>();
+  // A file this run could not read has NO edges in the import graph, so every
+  // hazard's reach set is a lower bound the same way an unresolved specifier
+  // makes it one (round-10 A8: this used to fall through to per-route
+  // containment, exactly what reachSetIncomplete exists to prevent).
+  const unreadable = ctx.unreadableFiles ?? [];
+  if (unreadable.length > 0) {
+    return {
+      contained: false,
+      reason:
+        `${relative(unreadable[0])} could not be read, so its imports are ` +
+        'not in the route graph and the set of routes that render each ' +
+        'hazard is unknown',
+    };
+  }
   for (const hazard of hazards) {
     // No reaching entries means the detector could not place this file in any
     // route's graph with confidence (an import specifier it could not

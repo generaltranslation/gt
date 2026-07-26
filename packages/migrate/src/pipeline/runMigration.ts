@@ -501,6 +501,12 @@ export async function runMigration(
     try {
       content = fs.readFileSync(file, 'utf8');
     } catch {
+      // Whether this file still uses the source library is unknowable, so the
+      // teardown decision is too. Same owner as every other unreadable file
+      // (round-10 A8): the report names it, and emit retains on it.
+      if (!(ctx.unreadableFiles ?? []).includes(file)) {
+        (ctx.unreadableFiles ??= []).push(file);
+      }
       continue;
     }
     const isTestFile =
