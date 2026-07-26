@@ -61,6 +61,13 @@ describe('r10 finding 5: as-needed keeps /en live instead of redirecting', () =>
     const todo = result.todos.map((entry) => entry.reason).join(' ');
     expect(todo).toMatch(/redirect/i);
     expect(todo).toMatch(/canonical/i);
+    // The remedy is a PAIR of next.config rules, measured on a migrated
+    // as-needed app: `/en` -> `/` plus `/en/:path+` -> `/:path+` reproduces the
+    // baseline 307s exactly. A lone `/en/:path*` rule does not; the bare `/en`
+    // then redirects to an empty Location.
+    expect(todo).toContain('`/en` -> `/`');
+    expect(todo).toContain('`/en/:path+` -> `/:path+`');
+    expect(todo).not.toContain(':path*` in next.config');
   });
 
   it("raises nothing extra for 'always'", () => {

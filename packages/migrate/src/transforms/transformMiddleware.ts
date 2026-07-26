@@ -197,9 +197,11 @@ export function transformMiddlewareFile(
         `localePrefix 'as-needed': gt-next has no redirect-to-canonical option, so ` +
         `/${defaultLocale}/... stops redirecting to /... and starts serving the same ` +
         'page. What each URL serves is unchanged; only the redirect is gone. To keep ' +
-        `one canonical URL, add a redirect from \`/${defaultLocale}/:path*\` to ` +
-        '`/:path*` in next.config (next.config redirects are evaluated before ' +
-        'middleware), or leave both live and mark the canonical one with ' +
+        'one canonical URL, add this PAIR of redirects to next.config, which Next.js ' +
+        `evaluates before middleware: \`/${defaultLocale}\` -> \`/\` and ` +
+        `\`/${defaultLocale}/:path+\` -> \`/:path+\`. Both rules are needed: a lone ` +
+        '`:path*` rule redirects the bare prefix to an empty Location. Otherwise ' +
+        'leave both URLs live and mark the canonical one with ' +
         '`alternates.canonical` in your page metadata.',
     });
   }

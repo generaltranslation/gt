@@ -614,10 +614,12 @@ export function buildReport(
         `\`localePrefix: 'as-needed'\`, \`/${defaultLocale}/about\` redirected (307) ` +
         'to `/about`; gt-next serves both, so each returns 200 with the same ' +
         'content, on every route. What `/about` serves does not change. To keep ' +
-        `one canonical URL, add a redirect from \`/${defaultLocale}/:path*\` to ` +
-        '`/:path*` in next.config (next.config redirects are evaluated before ' +
-        'middleware), or leave both live and set `alternates.canonical` in your ' +
-        'page metadata.'
+        'one canonical URL, add this pair of redirects to next.config, which ' +
+        `Next.js evaluates before middleware: \`/${defaultLocale}\` to \`/\`, and ` +
+        `\`/${defaultLocale}/:path+\` to \`/:path+\`. Measured on a migrated ` +
+        'as-needed app: that pair restores the baseline 307s exactly, while a lone ' +
+        '`:path*` rule sends the bare prefix to an empty Location. Otherwise leave ' +
+        'both URLs live and set `alternates.canonical` in your page metadata.'
     );
   }
   // next-intl's middleware emitted RFC 8288 alternate Link headers on every

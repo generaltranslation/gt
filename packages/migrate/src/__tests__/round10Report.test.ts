@@ -103,6 +103,9 @@ describe('r10 finding 5: duplicate default-locale URLs are disclosed', () => {
     expect(section).toMatch(/\/en\/about/);
     expect(section).toMatch(/redirect/i);
     expect(section).toMatch(/canonical/i);
+    // Both halves of the measured remedy (see round10AsNeeded.test.ts).
+    expect(section).toContain('`/en` to `/`');
+    expect(section).toContain('`/en/:path+` to `/:path+`');
   });
 
   it("says nothing about duplicate URLs for 'always'", () => {
