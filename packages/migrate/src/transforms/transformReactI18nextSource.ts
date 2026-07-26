@@ -9,6 +9,10 @@ import {
   isHookDependencyArrayElement,
 } from './importUtils.js';
 import { planProviderUnwraps, unwrapJsxElement } from './providerNesting.js';
+import {
+  resolveDictionaryKey,
+  type DictionaryKeyResolution,
+} from '../catalogs/dictionaryLeaf.js';
 import type {
   MigrationContext,
   SourceResult,
@@ -86,6 +90,9 @@ export function transformReactI18nextSource(
   }
 
   const config = getI18nextConfig(ctx.cwd);
+  // The converted dictionary this run emits, in its default locale: the single
+  // record of what every key will actually resolve to at runtime.
+  const catalog = ctx.catalogs.byLocale[ctx.catalogs.defaultLocale] ?? {};
   const skipReasons: string[] = [];
   const todos: TodoEntry[] = [];
 
@@ -416,7 +423,7 @@ export function transformReactI18nextSource(
       JSXElement(path) {
         const name = path.node.openingElement.name;
         if (!t.isJSXIdentifier(name) || !transLocals.has(name.name)) return;
-        const outcome = analyzeTrans(path, tBindings, config, ctx);
+        const outcome = analyzeTrans(path, tBindings, config, catalog);
         if (typeof outcome === 'string') {
           skipReasons.push(outcome);
         } else {
@@ -552,6 +559,72 @@ export function transformReactI18nextSource(
       }
       skipReasons.push(
         `this file re-exports or wraps react-i18next's ${name} (e.g. a custom hook or a re-assignment); gt migrate cannot rewrite the wrapper, so point the wrapper's consumers at the gt-next equivalents (useTranslations/useSetLocale/<T>) manually`
+      );
+    },
+  });
+
+  // A converted t() must land on a value gt-next can render. The catalog
+  // converter keeps an i18next array / object value verbatim (ICU dictionaries
+  // have no equivalent) and reports it, while gt-next's t() renders string
+  // leaves only and throws "Dictionary entry <key> cannot be found" on the
+  // rest, so converting the READING call site turns a working page into a
+  // failed build (round-10 finding 2). The two layers meet here: the dictionary
+  // this run will emit IS ctx.catalogs.byLocale, which the key remapping below
+  // already reads, and resolveDictionaryKey is gt-next's own leaf rule rather
+  // than a second private copy of it. Whole-file hold, so react-i18next keeps
+  // serving the file: any skip retains the provider, and this adapter never
+  // uninstalls the package.
+  traverse(ast, {
+    CallExpression(path) {
+      const callee = path.node.callee;
+      if (!t.isIdentifier(callee) || !tBindings.has(callee.name)) return;
+      const calleePath = path.get('callee');
+      if (
+        !calleePath.isIdentifier() ||
+        !resolvesToHookDeclarator(calleePath, useTranslationLocals)
+      ) {
+        return; // a shadow's call, not the translation function's
+      }
+      const binding = tBindings.get(callee.name)!;
+
+      // `returnObjects` asks i18next for the array/object whole. gt-next's t()
+      // always returns a string, so even a catalog value that happens to
+      // render (a one-element array) leaves the CONSUMER broken: linkboard's
+      // `as string[]` + .map() failed the type check, and a JS app would hit
+      // "tips.map is not a function" at runtime.
+      const returnObjects = returnObjectsProperty(path.node.arguments);
+      if (
+        returnObjects &&
+        !t.isBooleanLiteral(returnObjects.value, { value: false })
+      ) {
+        skipReasons.push(
+          't() is called with `returnObjects`, so it reads an array or object out of the catalog; gt-next t() always returns a string (an object subtree needs a separate t.obj(key) call, whose return shape differs, and an array has no equivalent at all), so this file stays on react-i18next; split the value into discrete string keys or render it with <T>, then convert this file manually'
+        );
+      }
+
+      const keyArg = path.node.arguments[0];
+      const keys = t.isStringLiteral(keyArg)
+        ? [keyArg.value]
+        : t.isArrayExpression(keyArg)
+          ? keyArg.elements
+              .filter((e): e is t.StringLiteral => t.isStringLiteral(e))
+              .map((e) => e.value)
+          : [];
+      const resolved = keys.map((key) => ({
+        key,
+        resolution: keyResolution(catalog, binding, key, config),
+      }));
+      // A fallback array only breaks when NO listed key renders; the remap
+      // below picks the first one that does.
+      if (resolved.some((entry) => entry.resolution?.kind === 'renderable')) {
+        return;
+      }
+      const blocked = resolved.find(
+        (entry) => entry.resolution?.kind === 'unrenderable'
+      );
+      if (blocked?.resolution?.kind !== 'unrenderable') return;
+      skipReasons.push(
+        `t('${blocked.key}') reads the dictionary key '${dictionaryPath(blocked.key, binding, config)}', which the converted catalog holds as ${blocked.resolution.leaf}, not a string (i18next returns such a value whole; the ICU conversion has no equivalent, so it was kept verbatim and reported). gt-next t() renders string entries only and throws "Dictionary entry <key> cannot be found" on anything else, which fails \`next build\` where the route prerenders, so this file stays on react-i18next; split the value into discrete string keys or render it with <T>, then re-run`
       );
     },
   });
@@ -696,7 +769,7 @@ export function transformReactI18nextSource(
     ast,
     tBindings,
     config,
-    ctx,
+    catalog,
     todos,
     file,
     new Set([...useTranslationLocals, 'useTranslations'])
@@ -786,12 +859,11 @@ function remapTCalls(
   ast: t.File,
   tBindings: Map<string, TBinding>,
   config: ReturnType<typeof getI18nextConfig>,
-  ctx: MigrationContext,
+  catalog: Record<string, unknown>,
   todos: TodoEntry[],
   file: string,
   hookCallees: Set<string>
 ): void {
-  const catalog = ctx.catalogs.byLocale[ctx.catalogs.defaultLocale] ?? {};
   traverse(ast, {
     CallExpression(path) {
       const callee = path.node.callee;
@@ -819,8 +891,12 @@ function remapTCalls(
         // Arrays with a dynamic element never reach this pass: the B3 analysis
         // scan skips the whole file (unreachable guard kept as defense).
         if (keys.length !== keyArg.elements.length) return;
-        const winner = keys.find((k) =>
-          keyPresent(catalog, binding, k.value, config)
+        // The winning key must RENDER, not merely exist: picking a key whose
+        // value is an array would emit a call that throws (round-10 finding 3).
+        const winner = keys.find(
+          (k) =>
+            keyResolution(catalog, binding, k.value, config)?.kind ===
+            'renderable'
         );
         const chosen = winner ?? keys[0];
         if (chosen) {
@@ -915,28 +991,55 @@ function mapKey(
   return null;
 }
 
-function keyPresent(
+/**
+ * The path a call key resolves to in the converted dictionary: mapKey gives the
+ * path relative to the hook's scope, and a scoped hook prefixes its rootId back
+ * on because the emitted catalog nests the namespace. Null when the key cannot
+ * be mapped at all (a cross-namespace read from a scoped hook).
+ */
+function dictionaryPath(
+  rawKey: string,
+  binding: TBinding,
+  config: ReturnType<typeof getI18nextConfig>
+): string | null {
+  const mapped = mapKey(rawKey, binding, config);
+  if (mapped === null) return null;
+  return binding.rootId ? `${binding.rootId}.${mapped}` : mapped;
+}
+
+/** How gt-next would fare reading `rawKey` through this binding, or null when
+ *  the key has no dictionary path at all. */
+function keyResolution(
   catalog: Record<string, unknown>,
   binding: TBinding,
   rawKey: string,
   config: ReturnType<typeof getI18nextConfig>
-): boolean {
-  const mapped = mapKey(rawKey, binding, config);
-  if (mapped === null) return false;
-  const prefix = binding.rootId ? `${binding.rootId}.` : '';
-  return getByDottedPath(catalog, prefix + mapped) !== undefined;
+): DictionaryKeyResolution | null {
+  const full = dictionaryPath(rawKey, binding, config);
+  if (full === null) return null;
+  return resolveDictionaryKey(catalog, full);
 }
 
-function getByDottedPath(
-  tree: Record<string, unknown>,
-  dotted: string
-): unknown {
-  let current: unknown = tree;
-  for (const seg of dotted.split('.')) {
-    if (current === null || typeof current !== 'object') return undefined;
-    current = (current as Record<string, unknown>)[seg];
+/** The `returnObjects` property of a t() call's options object, if any. Both
+ *  i18next option positions are checked: t(key, options) and the 3-arg
+ *  t(key, defaultValue, options). */
+function returnObjectsProperty(
+  args: t.CallExpression['arguments']
+): t.ObjectProperty | null {
+  for (const arg of args.slice(1, 3)) {
+    if (!t.isObjectExpression(arg)) continue;
+    for (const property of arg.properties) {
+      if (!t.isObjectProperty(property) || property.computed) continue;
+      const key = property.key;
+      const name = t.isIdentifier(key)
+        ? key.name
+        : t.isStringLiteral(key)
+          ? key.value
+          : null;
+      if (name === 'returnObjects') return property;
+    }
   }
-  return current;
+  return null;
 }
 
 // ---- <Trans> analysis ------------------------------------------------------
@@ -950,7 +1053,7 @@ function analyzeTrans(
   path: NodePath<t.JSXElement>,
   tBindings: Map<string, TBinding>,
   config: ReturnType<typeof getI18nextConfig>,
-  ctx: MigrationContext
+  catalog: Record<string, unknown>
 ): t.CallExpression | string {
   const actionable =
     'a <Trans> with element children is not mechanically convertible; rewrite it with the gt-next <T> component (its children are translated in place)';
@@ -1028,6 +1131,12 @@ function analyzeTrans(
   const mapped = mapKey(rawKey, binding, config);
   if (mapped === null) {
     return `a <Trans i18nKey="${i18nKey}"> references a namespace outside its scoped hook; convert manually or use <T>`;
+  }
+  // Same leaf rule as the t() scan: converting this <Trans> to a t() call on a
+  // non-string dictionary value emits code that throws.
+  const resolution = keyResolution(catalog, binding, rawKey, config);
+  if (resolution?.kind === 'unrenderable') {
+    return `a <Trans i18nKey="${i18nKey}"> reads the dictionary key '${dictionaryPath(rawKey, binding, config)}', which the converted catalog holds as ${resolution.leaf}, not a string; gt-next t() renders string entries only and throws "Dictionary entry <key> cannot be found" on anything else, so split the value into discrete string keys or render it with <T>`;
   }
 
   const args: t.Expression[] = [t.stringLiteral(mapped)];
