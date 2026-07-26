@@ -8,8 +8,8 @@ import {
   removeUnusedNamedImports,
 } from './importUtils.js';
 import {
+  dropOrphanedParamsDestructures,
   isParamsInit,
-  removeParamsParameter,
   transformSourceFile,
 } from './transformSource.js';
 import { isLocaleSegmentLayout } from '../fs/layoutFiles.js';
@@ -601,68 +601,14 @@ export function transformLayoutFile(
   //    function so the cleanup does not just move the unused-variable warning
   //    from the destructure to the signature.
   if (mutated) {
-    // Functions whose orphaned params destructure was removed here; each one's
-    // `params` parameter may now be unreferenced and need dropping.
-    const paramsCleanupTargets = new Set<t.Function>();
-    let removedParamsDestructure = false;
-    traverse(ast, {
-      Program(path) {
-        // Recrawl so bindings reflect the removals above.
-        path.scope.crawl();
-      },
-      VariableDeclaration(path) {
-        if (path.node.declarations.length !== 1) return;
-        const declarator = path.node.declarations[0];
-        if (!t.isObjectPattern(declarator.id)) return;
-        if (!isParamsInit(declarator.init)) return;
-        // The declarator that feeds `<html lang={...}>` must survive even if
-        // guard removal left it looking unreferenced to the recrawled scope.
-        // Node identity, so a sibling function's own same-named destructure is
-        // still collectable when it really is dead.
-        if (langParamDeclarators.has(declarator)) return;
-        for (const property of declarator.id.properties) {
-          if (
-            !t.isObjectProperty(property) ||
-            !t.isIdentifier(property.value)
-          ) {
-            return;
-          }
-          const binding = path.scope.getBinding(property.value.name);
-          if (!binding || binding.referenced) return;
-        }
-        const fn = path.getFunctionParent();
-        if (fn) paramsCleanupTargets.add(fn.node);
-        path.remove();
-        removedParamsDestructure = true;
-      },
-    });
-
-    // Now drop any `params` parameter left unreferenced by those removals. A
-    // fresh crawl is required so the removed `await params` no longer counts as
-    // a reference; then each cleaned function's own `params` binding decides.
-    // Only that function's params is touched: a sibling generateMetadata that
-    // still reads its own params keeps its own, separately-scoped binding.
-    if (paramsCleanupTargets.size > 0) {
-      traverse(ast, {
-        Program(path) {
-          path.scope.crawl();
-        },
-        Function(path) {
-          if (!paramsCleanupTargets.has(path.node)) return;
-          const binding = path.scope.getBinding('params');
-          if (!binding || binding.kind !== 'param' || binding.referenced) {
-            return;
-          }
-          removeParamsParameter(path.node);
-        },
-      });
-    }
-
-    // A removed `use(params)` destructure may have been the last reference to
-    // the react `use` import; the helper only drops unreferenced names.
-    if (removedParamsDestructure) {
-      removeUnusedNamedImports(ast, ['use']);
-    }
+    // The declarator that feeds `<html lang={...}>` must survive even if guard
+    // removal left it looking unreferenced to the recrawled scope. Node
+    // identity, so a sibling function's own same-named destructure is still
+    // collectable when it really is dead.
+    dropOrphanedParamsDestructures(
+      ast,
+      (declarator) => !langParamDeclarators.has(declarator)
+    );
   }
 
   if (!mutated && base.code === null) {
