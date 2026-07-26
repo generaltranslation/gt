@@ -300,6 +300,18 @@ export function buildReport(
       path.basename(edit.path) === 'getRegion.ts' &&
       (edit.content ?? '').includes('export default async function getRegion()')
   );
+  // next/root-params is a route-render API: Next.js throws when the emitted
+  // resolver runs inside a Route Handler or a Server Action, so the sentence
+  // that credits it must name that boundary rather than read as "everything
+  // server-side resolves the locale now" (round-10 finding 1, where converted
+  // route.ts and 'use server' call sites returned 500 with the report saying
+  // gt-next resolved the request locale itself).
+  const rootParamsBoundary =
+    ' next/root-params is unavailable inside Route Handlers and Server ' +
+    'Actions, so the emitted resolver catches that and reads the locale ' +
+    'header the gt-next middleware sets; a converted route.ts under [locale] ' +
+    'also gets a registerLocale() call from its own route param. Both are ' +
+    'listed in the TODOs.';
   if (emittedGetLocale && emittedGetRegion) {
     // Both resolvers emitted; gt-next resolves the locale from next/root-params.
     lines.push(
@@ -307,7 +319,8 @@ export function buildReport(
         `${relative(emittedGetLocale.path)} and ${relative(emittedGetRegion.path)} ` +
         'so gt-next resolves the locale from next/root-params (the [locale] ' +
         'route param) instead of request-scoped headers/cookies; routes that ' +
-        'were statically rendered (SSG) stay static (ƒ dynamic otherwise).'
+        'were statically rendered (SSG) stay static (ƒ dynamic otherwise).' +
+        rootParamsBoundary
     );
     lines.push('');
   } else if (emittedGetLocale) {
@@ -319,7 +332,8 @@ export function buildReport(
         'headers/cookies; routes that were statically rendered (SSG) stay static ' +
         '(ƒ dynamic otherwise). A getRegion file already existed and was left ' +
         'untouched; verify it does not read cookies()/headers(), which would ' +
-        'force dynamic rendering (see TODOs).'
+        'force dynamic rendering (see TODOs).' +
+        rootParamsBoundary
     );
     lines.push('');
   } else if (emittedGetRegion) {

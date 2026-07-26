@@ -35,6 +35,16 @@ const NEXT_ROOT_PARAMS_MIN_VERSION = '15.5.0';
 const NEXT_ROOT_PARAMS_MIN_GATE = `${NEXT_ROOT_PARAMS_MIN_VERSION}-0`;
 
 /**
+ * The request header gt-next's middleware puts the resolved locale in
+ * (gt-next's own `defaultLocaleHeaderName`; it is not exported from a public
+ * entry point, so the emitted resolver carries the literal). The emitted
+ * getLocale.ts reads it where next/root-params refuses to resolve: Route
+ * Handlers and Server Actions. An app that renames it through
+ * `headersAndCookies.localeHeaderName` must rename it there too.
+ */
+const LOCALE_HEADER = 'x-generaltranslation-locale';
+
+/**
  * Emits the gt-next scaffolding: gt.config.json (merged with any existing
  * one), a loadDictionary loader for the preserved per-locale catalogs, the
  * package.json edit, and deletions of the now-unused next-intl config files.
@@ -632,6 +642,15 @@ function emitStaticLocaleResolvers(
   }
 
   const useSrc = fs.existsSync(path.join(ctx.cwd, 'src'));
+  // next/root-params resolves only inside a ROUTE RENDER. Next.js throws
+  // ("was used inside a Route Handler" / "inside a Server Action") everywhere
+  // else, and gt-next routes every server-side translation call through this
+  // file, so an unguarded `await locale()` turned every converted route.ts and
+  // 'use server' translation call into a 500 (round-10 finding 1, measured on
+  // a live app). The guard costs nothing statically: a prerender never enters
+  // the catch, so headers() is never read there and SSG survives (measured:
+  // the route table is byte-identical with and without it).
+  const defaultLocale = ctx.routing.defaultLocale ?? ctx.catalogs.defaultLocale;
   emitResolverFile(
     ctx,
     edits,
@@ -639,13 +658,26 @@ function emitStaticLocaleResolvers(
     useSrc,
     [
       "import { locale } from 'next/root-params';",
+      "import { headers } from 'next/headers';",
       '',
       'export default async function getLocale() {',
-      '  return await locale();',
+      '  try {',
+      '    return await locale();',
+      '  } catch {',
+      '    // next/root-params is unavailable in Route Handlers and Server',
+      "    // Actions. gt-next's middleware puts the request locale in this",
+      '    // header, which both of those can read.',
+      `    return (await headers()).get('${LOCALE_HEADER}') ?? '${defaultLocale}';`,
+      '  }',
       '}',
       '',
     ].join('\n'),
-    'verify it resolves the locale from next/root-params so static rendering (SSG) is preserved'
+    'verify it resolves the locale from next/root-params so static rendering ' +
+      '(SSG) is preserved, and that it GUARDS that call: Next.js throws when ' +
+      'next/root-params runs inside a Route Handler or a Server Action, so an ' +
+      'unguarded resolver returns a 500 from every converted translation call ' +
+      `in one. Fall back to the '${LOCALE_HEADER}' request header the gt-next ` +
+      'middleware sets'
   );
   emitResolverFile(
     ctx,

@@ -145,7 +145,15 @@ export const defaultGroups = [
   {
     name: 'defaultLocaleHeaderName',
     declarations: ['packages/next/src/utils/headers.ts'],
-    exceptions: [],
+    exceptions: [
+      {
+        path: 'packages/migrate/src/emit/emitGtFiles.ts',
+        reason:
+          'The header name is written into the getLocale.ts SOURCE TEXT gt migrate emits into the user project, which cannot import it: gt-next does not export defaultLocaleHeaderName from a public entry point, and @generaltranslation/migrate does not depend on gt-next.',
+        matches: isWithinVariableDeclaration('LOCALE_HEADER'),
+        expectedMatches: 1,
+      },
+    ],
   },
 ];
 
