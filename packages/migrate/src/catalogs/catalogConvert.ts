@@ -15,9 +15,6 @@ const CATEGORY_ORDER = ['zero', 'one', 'two', 'few', 'many', 'other'] as const;
 type PluralCategory = (typeof CATEGORY_ORDER)[number];
 const ALL_CATEGORIES = new Set<string>(CATEGORY_ORDER);
 
-/** i18next's builtin interpolation formatters we can represent in ICU. */
-const MECHANICAL_FORMATTERS = new Set(['number', 'currency']);
-
 export type Separators = {
   /** '.' by default; `false` means flat keys (dots are literal); unsupported. */
   keySeparator: string | false;

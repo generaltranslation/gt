@@ -13,6 +13,7 @@ import {
   transformSourceFile,
 } from './transformSource.js';
 import { isLocaleSegmentLayout } from '../fs/layoutFiles.js';
+import { printsIdentically } from './printEquality.js';
 import type {
   MigrationContext,
   SourceResult,
@@ -681,5 +682,12 @@ export function transformLayoutFile(
     },
     working
   );
+  // A re-run re-asserts already-true facts (the provider is already nested,
+  // the guard already gone), sets `mutated`, and emits a print-only rewrite;
+  // shipping it drifted comment indentation one space per run, forever
+  // (round-10 parity finding 5). No semantic change, no write.
+  if (printsIdentically(output.code, code)) {
+    return { code: null, todos, skipReasons: [] };
+  }
   return { code: output.code, todos, skipReasons: [] };
 }

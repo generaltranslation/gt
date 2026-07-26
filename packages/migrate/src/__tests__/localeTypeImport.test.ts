@@ -235,17 +235,12 @@ describe('transformSourceFile: next-intl Locale type', () => {
       { retainProvider: true, dropLocaleValidation: true }
     );
     expect(result.skipReasons).toEqual([]);
-    expect(result.code).not.toBeNull();
-    // provider left untouched for later nesting under GTProvider
-    expect(result.code).toContain('NextIntlClientProvider');
-    expect(result.code).not.toContain('GTProvider');
-    // Locale specifier kept on the retained next-intl import
-    expect(result.code).toMatch(
-      /import \{[^}]*\bLocale\b[^}]*\} from ["']next-intl["']/
-    );
-    // references NOT rewritten to string
-    expect(result.code).toMatch(/Promise<\{\s*locale:\s*Locale;?\s*\}>/);
-    expect(result.code).not.toMatch(/locale:\s*string/);
+    // Nothing in this file changes semantically in retained mode, and a
+    // semantic no-op no longer ships a reflowed copy of the file (round-10
+    // parity finding 5: print-only rewrites drifted comment indentation on
+    // every re-run). code null means the file is left byte-identical, which
+    // preserves the Locale import, its references, and the provider exactly.
+    expect(result.code).toBeNull();
   });
 
   it('drops a retained Locale import when no reference survives', () => {

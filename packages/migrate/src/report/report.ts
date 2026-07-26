@@ -252,7 +252,14 @@ export function buildReport(
           ? `(${removals.join(', ')} removed; gt-next added by the install step)`
           : '(gt-next added by the install step)') +
         ', the lockfile (rewritten by that install), and this report file ' +
-        `(gt-migrate-report.md)${dryRun ? ' -- none of which happens on a dry run' : ''}.`
+        `(gt-migrate-report.md)${dryRun ? ' -- none of which happens on a dry run' : ''}.` +
+        (dryRun
+          ? ''
+          : ' Before committing, run your lockfile install once (`npm ci`): ' +
+            'npm can write a lockfile it then rejects after an install adds ' +
+            'a package (an npm behavior around optional platform ' +
+            'dependencies, timing-dependent on the registry); if that ' +
+            'happens, a second `npm install` resyncs it.')
     );
     lines.push('');
   }
@@ -601,14 +608,31 @@ export function buildReport(
   // not something the teardown can remove, so the sentence says so rather than
   // implying the page returns to its pre-migration size everywhere.
   if (providerInPostRunTree) {
+    // Concrete figures, not just direction (round-10 parity finding 3: "a
+    // page grows by roughly both catalogs" did not let a reader price a +168%
+    // Spanish page). Serialized (minified JSON) is the form that ships in the
+    // page, so it is the honest estimator; the pretty-printed file on disk is
+    // larger.
+    const catalogSizes = ctx.catalogs.locales
+      .map((locale) => {
+        const data = ctx.catalogs.byLocale[locale];
+        if (data === undefined) return null;
+        const bytes = Buffer.byteLength(JSON.stringify(data), 'utf8');
+        return `${locale} ~${Math.round(bytes / 102.4) / 10} KB`;
+      })
+      .filter((entry): entry is string => entry !== null)
+      .join(', ');
     lines.push(
       `- Both catalogs ship in every page while ${adapter.providerName} still ` +
         "renders: gt-next's dictionary and the messages that provider serves " +
         'are each serialized into the page. A default-locale page carries ' +
         'roughly one extra catalog file worth of HTML; a page in any other ' +
         "locale carries roughly both catalogs' combined size (the " +
-        "default-locale catalog plus that locale's). Finishing the teardown " +
-        '(convert the files listed above, then re-run ' +
+        "default-locale catalog plus that locale's)." +
+        (catalogSizes.length > 0
+          ? ` Your serialized catalogs measure: ${catalogSizes} (minified JSON, the form pages ship).`
+          : '') +
+        ' Finishing the teardown (convert the files listed above, then re-run ' +
         `\`gt migrate --from ${adapter.id}\`) removes that provider's copy: the ` +
         `re-run replaces ${adapter.providerName} with its children rather than ` +
         'nesting a second GTProvider. A default-locale page then measures back ' +

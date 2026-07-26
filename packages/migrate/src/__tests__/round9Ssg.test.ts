@@ -438,6 +438,34 @@ describe('round 9: containment holds only the routes that reach a hazard', () =>
     expect(warningText(ctx)).toContain('/[locale]/legal');
   });
 
+  it('a partial-migration re-run leaves an already-migrated layout untouched (round-10 parity F5)', async () => {
+    // Run 2 re-asserts already-true facts (provider nested, guard gone) and
+    // used to ship a print-only rewrite whose comment indentation drifted one
+    // space right on EVERY run, so re-running never reached a fixed point.
+    const cwd = makeApp({
+      // An unsupported API keeps the migration partial, so run 2 still has
+      // work to consider (a full migration's re-run refuses instead).
+      'src/components/legacy.tsx': lines(
+        "import { useFormatter } from 'next-intl';",
+        'export function Legacy() {',
+        '  const format = useFormatter();',
+        '  return <span>{format.number(1)}</span>;',
+        '}'
+      ),
+    });
+    const first = await migrate(cwd);
+    expect(first.skippedFiles.size).toBeGreaterThan(0);
+    const layoutEdit = (ctx: MigrationContext) =>
+      ctx.edits.find(
+        (edit) => edit.kind === 'write' && edit.path.endsWith('layout.tsx')
+      );
+    expect(layoutEdit(first)).toBeDefined();
+    applyEdits(first.edits);
+
+    const second = await migrate(cwd);
+    expect(layoutEdit(second)).toBeUndefined();
+  });
+
   it('re-running adds no second dynamic export (idempotent containment)', async () => {
     const cwd = makeApp({ 'src/app/[locale]/about/page.tsx': hazardAbout });
     const first = await migrate(cwd);

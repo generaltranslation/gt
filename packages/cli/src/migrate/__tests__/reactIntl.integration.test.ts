@@ -459,10 +459,13 @@ describe('react-intl migration integration', () => {
     // version caveat present with the Turbopack workaround for older gt-next.
     expect(report).toMatch(/gt-next >= 11\.1\.0/);
     expect(report).toMatch(/next build --turbopack/);
-    // clean migration has no TODOs section, so the step must not reference it.
-    expect(report).not.toContain('## TODOs');
-    expect(report).toContain('Run your build.');
-    expect(report).not.toContain('Review the TODOs above');
+    // This fixture's layout passes locale/messages into a wrapper the run
+    // rewrites to a passthrough, so the dead-prop TODO is expected (round-10
+    // claims finding 1: those props serialize a whole catalog into every page
+    // and the report used to say nothing).
+    expect(report).toContain('## TODOs');
+    expect(report).toContain('no longer reads');
+    expect(report).toContain('Review the TODOs above, then run your build.');
   });
 
   it('warns once (top level) about FormatJS auto-generated ids and skips those files (M3)', async () => {

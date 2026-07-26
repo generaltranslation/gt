@@ -2,6 +2,7 @@ import { parse } from '@babel/parser';
 import traverseModule, { type NodePath } from '@babel/traverse';
 import generateModule from '@babel/generator';
 import * as t from '@babel/types';
+import { printsIdentically } from './printEquality.js';
 import {
   canHostNamedSpecifiers,
   packageNameOf,
@@ -849,6 +850,12 @@ export function transformSourceFile(
     code
   );
 
+  // No semantic change, no write: shipping a print-only rewrite drifts
+  // comment indentation on every re-run (round-10 parity finding 5; the gate
+  // lives at each transform's own emit).
+  if (printsIdentically(output.code, code)) {
+    return { code: null, todos, skipReasons: [] };
+  }
   return {
     code: output.code,
     todos,
