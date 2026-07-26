@@ -3,6 +3,10 @@ import path from 'node:path';
 import { parse } from '@babel/parser';
 import traverseModule from '@babel/traverse';
 import * as t from '@babel/types';
+import {
+  dictionaryKeyExists,
+  resolveDictionaryKey,
+} from '../catalogs/dictionaryLeaf.js';
 import type { MigrationContext } from './types.js';
 
 const traverse: typeof traverseModule =
@@ -38,21 +42,35 @@ const GT_FACTORIES = new Set(['useTranslations', 'getTranslations']);
  * all, which left memo-engine's 10 template-literal sites silent on an engine
  * that throws on a miss: round-9 re-attack B7).
  *
+ * "Resolves" means what gt-next means by it: the key reaches a value `t()` can
+ * render (see catalogs/dictionaryLeaf.ts). Mere presence is not enough, because
+ * an array, a nested object, `null`, or a number throws the SAME
+ * "cannot be found" error as an absent key; counting those as resolved is what
+ * let a `returnObjects: true` array through silently and failed a migrated
+ * app's build (round-10 finding 3).
+ *
  * Conservative by construction; every uncertainty resolves to silence:
  *  - only STATIC keys are ever reported as missing;
  *  - factory bindings are resolved through scope (binding identity, not name),
  *    so a shadowed `t` cannot be attributed to the wrong namespace;
- *  - a key counts as present if it resolves in ANY shape the dictionary
- *    accepts (nested path, a flat dotted leaf, or a flat leaf inside its
- *    namespace object);
+ *  - a key counts as resolved if ANY shape the dictionary accepts reaches a
+ *    renderable leaf (nested path, a flat dotted leaf, or a flat leaf inside
+ *    its namespace object);
  *  - with no readable default-locale catalog, nothing is claimed at all.
  */
 export function auditConvertedDictionaryKeys(ctx: MigrationContext): void {
   const catalogs = defaultLocaleCatalogs(ctx);
   if (catalogs.length === 0) return;
 
-  const misses: { file: string; line: number; key: string; full: string }[] =
-    [];
+  /** `leaf` names what is there when the key resolved to an unrenderable
+   *  value; null when nothing is at that path at all. */
+  const misses: {
+    file: string;
+    line: number;
+    key: string;
+    full: string;
+    leaf: string | null;
+  }[] = [];
   const catalogPath =
     path.relative(
       ctx.cwd,
@@ -83,8 +101,22 @@ export function auditConvertedDictionaryKeys(ctx: MigrationContext): void {
     const sites = collectKeySites(ast);
     for (const site of sites.static) {
       const full = site.namespace ? `${site.namespace}.${site.key}` : site.key;
-      if (catalogs.some((catalog) => hasDictionaryKey(catalog, full))) continue;
-      misses.push({ file: edit.path, line: site.line, key: site.key, full });
+      const resolutions = catalogs.map((catalog) =>
+        resolveDictionaryKey(catalog, full)
+      );
+      if (resolutions.some((resolution) => resolution.kind === 'renderable')) {
+        continue;
+      }
+      const present = resolutions.find(
+        (resolution) => resolution.kind === 'unrenderable'
+      );
+      misses.push({
+        file: edit.path,
+        line: site.line,
+        key: site.key,
+        full,
+        leaf: present?.kind === 'unrenderable' ? present.leaf : null,
+      });
     }
     if (ctx.adapter.reportsComputedKeys) continue;
     for (const site of sites.computed) {
@@ -100,7 +132,7 @@ export function auditConvertedDictionaryKeys(ctx: MigrationContext): void {
       const prefixClause =
         prefix === ''
           ? 'No part of it is static, so nothing about it could be checked.'
-          : catalogs.some((catalog) => hasDictionaryKey(catalog, prefix))
+          : catalogs.some((catalog) => dictionaryKeyExists(catalog, prefix))
             ? `Its static prefix '${prefix}' IS in ${posixCatalogPath}; the keys under it were not checked.`
             : `Its static prefix '${prefix}' is NOT in ${posixCatalogPath}, so every key this expression builds will throw.`;
       ctx.todos.push({
@@ -122,12 +154,19 @@ export function auditConvertedDictionaryKeys(ctx: MigrationContext): void {
       line: miss.line,
       reason:
         `t('${miss.key}') resolves to the dictionary key '${miss.full}', which ` +
-        `is not in ${posixCatalogPath}. ` +
+        (miss.leaf === null
+          ? `is not in ${posixCatalogPath}. `
+          : `is ${miss.leaf} in ${posixCatalogPath}, not a string. gt-next's ` +
+            't() renders string entries only. ') +
         `${ctx.adapter.displayName} rendered a missing key as its own name and ` +
         'logged it, so this call site still rendered; gt-next throws ' +
         `"Dictionary entry ${miss.full} cannot be found" instead, which is a 500 ` +
         'on a dynamically rendered route and a failed `next build` on a ' +
-        'prerendered one. Add the key to your catalogs (every locale), or keep ' +
+        'prerendered one. ' +
+        (miss.leaf === null
+          ? 'Add the key to your catalogs (every locale), or keep '
+          : 'Give the key a string value in every locale (split the ' +
+            'value into discrete keys, or render it with <T>), or keep ') +
         `this call site on ${ctx.adapter.displayName}`,
     });
   }
@@ -136,13 +175,14 @@ export function auditConvertedDictionaryKeys(ctx: MigrationContext): void {
     .map((miss) => `${toRelative(ctx, miss.file)}:${miss.line} -> ${miss.full}`)
     .join(', ');
   (ctx.warnings ??= []).push(
-    `${misses.length} converted call site(s) ask for dictionary keys that are ` +
-      `not in ${posixCatalogPath} (${sample}${
+    `${misses.length} converted call site(s) ask for dictionary keys that ` +
+      `gt-next cannot resolve in ${posixCatalogPath} (${sample}${
         misses.length > 3 ? ', …' : ''
-      }): gt-next THROWS on an unknown key where ${ctx.adapter.displayName} ` +
+      }): the key is absent, or its value is not a string (an array, a nested ` +
+      `object, null). gt-next THROWS on both where ${ctx.adapter.displayName} ` +
       'rendered the raw key and logged, so those routes now 500 (or fail the ' +
       'build where they prerender). Each one has a TODO with its file, line, ' +
-      'and key; add the keys to your catalogs before shipping.'
+      'and key; fix the catalogs before shipping.'
   );
 }
 
@@ -180,26 +220,6 @@ function defaultLocaleCatalogs(ctx: MigrationContext): unknown[] {
     }
   }
   return catalogs;
-}
-
-/** True when `key` resolves in this catalog, in any shape gt-next accepts. */
-function hasDictionaryKey(catalog: unknown, key: string): boolean {
-  if (!catalog || typeof catalog !== 'object') return false;
-  const record = catalog as Record<string, unknown>;
-  if (key in record) return true;
-  const segments = key.split('.');
-  // Nested path, plus every "resolved prefix + flat remainder" split, which is
-  // how a flat leaf inside a namespace object ({ UI: { 'a.b': … } }) resolves.
-  let cursor: unknown = record;
-  for (let index = 0; index < segments.length; index += 1) {
-    if (!cursor || typeof cursor !== 'object') return false;
-    const level = cursor as Record<string, unknown>;
-    const remainder = segments.slice(index).join('.');
-    if (remainder in level) return true;
-    if (!(segments[index] in level)) return false;
-    cursor = level[segments[index]];
-  }
-  return cursor !== undefined;
 }
 
 type StaticKeySite = { namespace: string | null; key: string; line: number };
