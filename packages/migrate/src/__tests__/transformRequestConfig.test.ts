@@ -34,6 +34,49 @@ describe('transformRequestConfigFile', () => {
     expect(result.code).toContain('hasLocale(routing.locales, requested)');
   });
 
+  it('returns no work and no todo on its own output (idempotent)', () => {
+    const wired = transformRequestConfigFile(
+      'src/i18n/request.ts',
+      canonical
+    ).code!;
+    const again = transformRequestConfigFile('src/i18n/request.ts', wired);
+    expect(again.code).toBeNull();
+    expect(again.todos).toEqual([]);
+    expect(again.skipReasons).toEqual([]);
+  });
+
+  it('recognizes its own output through an alias and a reformat', () => {
+    const aliased = [
+      "import { getRequestConfig } from 'next-intl/server';",
+      "import { getLocale as gtGetLocale } from 'gt-next/server';",
+      '',
+      'export default getRequestConfig(',
+      '  async ({ requestLocale: _gtRequestLocale }) => {',
+      '    const requestLocale = _gtRequestLocale.then(async (requested) => {',
+      '      return requested ?? (await gtGetLocale());',
+      '    });',
+      '    return { locale: await requestLocale, messages: {} };',
+      '  }',
+      ');',
+    ].join('\n');
+    const result = transformRequestConfigFile('src/i18n/request.ts', aliased);
+    expect(result.code).toBeNull();
+    expect(result.todos).toEqual([]);
+  });
+
+  it('still reports the shape when the wrapper lost its getLocale import', () => {
+    // Hand-broken: the wrapper is there but nothing resolves getLocale, so the
+    // fallback really is unwired and the todo is the accurate report.
+    const broken = transformRequestConfigFile('src/i18n/request.ts', canonical)
+      .code!.split('\n')
+      .filter((line) => !line.includes('gt-next/server'))
+      .join('\n');
+    const result = transformRequestConfigFile('src/i18n/request.ts', broken);
+    expect(result.code).toBeNull();
+    expect(result.todos).toHaveLength(1);
+    expect(result.todos[0].reason).toContain('getLocale');
+  });
+
   it('emits a todo when the shape is not recognized', () => {
     const exotic = [
       "import { getRequestConfig } from 'next-intl/server';",
