@@ -12,6 +12,12 @@ const SWAPPED_MIDDLEWARE = [
   'export default createNextMiddleware();',
 ].join('\n');
 
+/** What the swap emits for next-intl's default and 'always' localePrefix. */
+const PREFIXED_MIDDLEWARE = [
+  "import { createNextMiddleware } from 'gt-next/middleware';",
+  'export default createNextMiddleware({ prefixDefaultLocale: true });',
+].join('\n');
+
 function makeContext(
   overrides: Partial<MigrationContext> = {},
   routingOverrides: Partial<RoutingInfo> = {}
@@ -82,6 +88,47 @@ describe('r10 finding 7: the lost hreflang Link headers are disclosed', () => {
     expect(behaviorSection(buildReport(ctx, false, false))).not.toMatch(
       /hreflang/
     );
+  });
+});
+
+describe('r10 finding 6: the extra root redirect hop is disclosed', () => {
+  const middlewareCtx = (content: string) =>
+    makeContext({
+      edits: [{ path: '/project/src/middleware.ts', kind: 'write', content }],
+    });
+
+  it('names both hops when the swapped middleware prefixes the default locale', () => {
+    const section = behaviorSection(
+      buildReport(middlewareCtx(PREFIXED_MIDDLEWARE), false, false)
+    );
+    // The measured shape: 307 to /en/, then a 308 to /en, against a baseline
+    // single 307 (reproduced on four migrated apps).
+    expect(section).toMatch(/`\/` now redirects twice/);
+    expect(section).toContain('307');
+    expect(section).toContain('308');
+    expect(section).toContain('`/en/`');
+    // Severity stays honest: the landing URL and the page are the same.
+    expect(section).toMatch(/unchanged/);
+    expect(section).toContain('createNextMiddleware');
+  });
+
+  it('says nothing when the middleware does not prefix the default locale', () => {
+    const section = behaviorSection(
+      buildReport(middlewareCtx(SWAPPED_MIDDLEWARE), false, false)
+    );
+    // 'as-needed' serves `/` directly, so there is no root redirect to disclose.
+    expect(section).not.toMatch(/redirects twice/);
+  });
+
+  it('says nothing when no middleware was swapped', () => {
+    const section = behaviorSection(
+      buildReport(
+        middlewareCtx('export default function Page() { return null; }'),
+        false,
+        false
+      )
+    );
+    expect(section).not.toMatch(/redirects twice/);
   });
 });
 

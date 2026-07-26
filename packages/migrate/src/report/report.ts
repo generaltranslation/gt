@@ -624,11 +624,19 @@ export function buildReport(
   // same way the <Link> clause above is: a written edit importing
   // gt-next/middleware, or a post-run file already importing it on a re-run.
   const gtMiddlewarePattern = /['"]gt-next\/middleware['"]/;
-  const middlewareSwapped =
-    written.some((edit) => gtMiddlewarePattern.test(edit.content ?? '')) ||
-    (ctx.projectFiles ?? []).some((file) =>
-      gtMiddlewarePattern.test(postRunContent(file) ?? '')
+  const findSwappedMiddleware = (): string | null => {
+    const edit = written.find((candidate) =>
+      gtMiddlewarePattern.test(candidate.content ?? '')
     );
+    if (edit) return edit.content ?? '';
+    for (const file of ctx.projectFiles ?? []) {
+      const content = postRunContent(file);
+      if (content !== null && gtMiddlewarePattern.test(content)) return content;
+    }
+    return null;
+  };
+  const swappedMiddleware = findSwappedMiddleware();
+  const middlewareSwapped = swappedMiddleware !== null;
   // Under next-intl's 'as-needed' the default locale has one canonical URL:
   // /<locale>/x redirects (307) to /x. gt-next's middleware matches the serving
   // half but has no redirect-to-canonical option, so both URLs return 200 with
@@ -661,6 +669,26 @@ export function buildReport(
         'them, so nothing in the app changes; if you need the signal, emit the ' +
         'equivalent from your pages with `alternates.languages` in Next.js ' +
         'metadata.'
+    );
+  }
+  // The bare root gains a redirect hop, measured on four migrated apps
+  // (round-10 finding 6). Gated on prefixDefaultLocale: true, which is the
+  // setting under which the root redirects into a locale at all; an
+  // 'as-needed' tree serves `/` directly and has no hop to disclose.
+  if (
+    middlewareSwapped &&
+    /prefixDefaultLocale\s*:\s*true/.test(swappedMiddleware)
+  ) {
+    const rootLocale = ctx.routing.defaultLocale ?? libraryDefaultLocale;
+    lines.push(
+      '- `/` now redirects twice instead of once. gt-next builds the root ' +
+        'redirect as `/<locale>/<pathname>` and the pathname there is `/`, so ' +
+        `\`/\` answers 307 to \`/${rootLocale}/\` and Next.js then normalizes ` +
+        `the trailing slash with a 308 to \`/${rootLocale}\`; next-intl sent a ` +
+        `single 307 to \`/${rootLocale}\`. The URL a visitor lands on and the ` +
+        'page it serves are unchanged, only the number of hops. This is ' +
+        "`createNextMiddleware`'s own behavior, so the migration cannot " +
+        'remove the extra hop.'
     );
   }
   // Retaining the source library's provider keeps two i18n payloads in the
