@@ -8,6 +8,7 @@ import {
   emitReactI18nextCatalogs,
 } from '../catalogs/reactI18nextCatalogs.js';
 import { transformReactI18nextLayout } from '../transforms/transformReactI18nextLayout.js';
+import { MODULE_SPECIFIER_PREFIX_SOURCE } from '../fs/moduleSpecifiers.js';
 import { transformReactI18nextNextConfig } from '../transforms/transformReactI18nextNextConfig.js';
 import { transformReactI18nextSource } from '../transforms/transformReactI18nextSource.js';
 import type { RoutingInfo } from '../pipeline/types.js';
@@ -141,8 +142,9 @@ export const reactI18nextAdapter: SourceAdapter = {
   // so the out-of-scope teardown scan counts only react-i18next imports. Bare
   // i18next (the hand-rolled server runtime) is out of v1 scope and must not
   // count as an unscanned usage, or a scoped run wrongly retains the provider.
-  projectUsagePattern:
-    /(?:from\s+|import\s*\(\s*|import\s*|require\s*\(\s*)['"]react-i18next(?:\/|['"])/,
+  projectUsagePattern: new RegExp(
+    MODULE_SPECIFIER_PREFIX_SOURCE + String.raw`['"]react-i18next(?:\/|['"])`
+  ),
   // The i18next runtime bootstrap and the bespoke server getT() are hand-rolled;
   // removing the deps is a manual step once the server is migrated, so no
   // automatic package/file teardown.

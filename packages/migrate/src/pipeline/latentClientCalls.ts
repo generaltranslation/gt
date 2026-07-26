@@ -3,6 +3,7 @@ import path from 'node:path';
 import { isBuiltin } from 'node:module';
 import { parse } from '@babel/parser';
 import * as t from '@babel/types';
+import { moduleSpecifierMatches } from '../fs/moduleSpecifiers.js';
 import type { MigrationContext } from './types.js';
 
 const EXTENSIONS = ['.tsx', '.ts', '.jsx', '.js'];
@@ -347,12 +348,6 @@ function buildImportGraph(
   unresolvedTails: Set<string>;
   aliases: ImportAliases;
 } {
-  const specifierPatterns = [
-    /\bfrom\s*['"]([^'"\n]+)['"]/g,
-    /\bimport\s*\(\s*['"]([^'"\n]+)['"]\s*\)/g,
-    /\bimport\s+['"]([^'"\n]+)['"]/g,
-    /\brequire\s*\(\s*['"]([^'"\n]+)['"]\s*\)/g,
-  ];
   const declaredPackages = declaredDependencyNames(ctx.cwd);
   const isInstalledPackage = installedPackageChecker(ctx.cwd);
   const aliases = loadImportAliases(ctx.cwd);
@@ -362,15 +357,11 @@ function buildImportGraph(
     const code = readFile(file);
     if (!code) continue;
     const specifiers = new Set<string>();
-    for (const pattern of specifierPatterns) {
-      pattern.lastIndex = 0;
-      let match: RegExpExecArray | null;
-      while ((match = pattern.exec(code)) !== null) {
-        // Prose in a comment can spell `from "..."`; those are not imports, and
-        // an unfollowable one would widen the hazard reach set (see
-        // isPlausibleModuleSpecifier).
-        if (isPlausibleModuleSpecifier(match[1])) specifiers.add(match[1]);
-      }
+    // Prose in a comment can spell `from "..."`; those are not imports, and
+    // an unfollowable one would widen the hazard reach set (see
+    // isPlausibleModuleSpecifier).
+    for (const specifier of moduleSpecifierMatches(code)) {
+      if (isPlausibleModuleSpecifier(specifier)) specifiers.add(specifier);
     }
     const targets = new Set<string>();
     for (const specifier of specifiers) {

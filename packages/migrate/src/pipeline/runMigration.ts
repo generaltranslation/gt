@@ -13,6 +13,7 @@ import {
   supportsRootParams,
 } from '../emit/emitGtFiles.js';
 import { matchFiles } from '../fs/matchFiles.js';
+import { moduleSpecifierMatches } from '../fs/moduleSpecifiers.js';
 import type { MigrateIO } from './io.js';
 import { resolveCatalogsInteractively } from '../catalogs/promptFallbacks.js';
 import { hasDependency, resolveMigrationSource } from './resolveSource.js';
@@ -242,6 +243,78 @@ export async function runMigration(
       })
     );
   }
+  // The routed locale set and the migrated locale set must agree: routing
+  // feeds generateStaticParams and the navigation wrapper, catalogs feeds
+  // gt.config.json and loadDictionary, and a locale present in one but not
+  // the other prerenders pages whose first t() throws over a dictionary that
+  // cannot serve them. Discovery enforces this (it bails on a routed locale
+  // with no catalog and drops catalog files routing does not list), but the
+  // interactive fallback re-enters with whatever list the user accepted, so
+  // the invariant is re-established here, the one point every catalog source
+  // funnels through (round-10 A1).
+  if (routing.locales) {
+    const catalogSet = new Set(catalogs.locales);
+    const routedSet = new Set(routing.locales);
+    const unservable = routing.locales.filter(
+      (locale) => !catalogSet.has(locale)
+    );
+    const unroutable = catalogs.locales.filter(
+      (locale) => !routedSet.has(locale)
+    );
+    if (unservable.length > 0 || unroutable.length > 0) {
+      const kept = routing.locales.filter((locale) => catalogSet.has(locale));
+      if (kept.length === 0 || !kept.includes(catalogs.defaultLocale)) {
+        io.fatal(
+          createMigrateDiagnostic({
+            severity: 'Error',
+            whatHappened:
+              'The routing config and the catalogs to migrate share no usable locale set',
+            details:
+              `the routing config lists [${routing.locales.join(', ')}], ` +
+              `the catalogs cover [${catalogs.locales.join(', ')}] with ` +
+              `default '${catalogs.defaultLocale}', and the migrated set ` +
+              'must contain its own default locale',
+            fix: 'Add the missing catalog files, or update the routing config, and re-run. Nothing has been written.',
+          })
+        );
+      }
+      routing.locales = kept;
+      catalogs.locales = kept;
+      const dropped: string[] = [];
+      if (unservable.length > 0) {
+        dropped.push(
+          `the routing config lists [${unservable.join(', ')}] with no ` +
+            'catalog file to serve, so those locales are not migrated: they ' +
+            'are left out of generateStaticParams and gt.config.json, and ' +
+            'their URLs stop resolving as locales. Add the missing catalog ' +
+            'files and re-run to keep them'
+        );
+      }
+      if (unroutable.length > 0) {
+        dropped.push(
+          `catalog files exist for [${unroutable.join(', ')}] that the ` +
+            'routing config does not route; they stay on disk but are not ' +
+            'served'
+        );
+      }
+      (catalogs.warnings ??= []).push(
+        `Locale set narrowed to [${kept.join(', ')}]: ${dropped.join('; ')}.`
+      );
+    }
+    if (
+      routing.defaultLocale !== null &&
+      routing.defaultLocale !== catalogs.defaultLocale
+    ) {
+      (catalogs.warnings ??= []).push(
+        `The routing config's default locale ('${routing.defaultLocale}') ` +
+          `differs from the migrated default ('${catalogs.defaultLocale}'); ` +
+          `the migration uses '${catalogs.defaultLocale}' everywhere a ` +
+          'default is emitted.'
+      );
+      routing.defaultLocale = catalogs.defaultLocale;
+    }
+  }
+
   // `catalogs.dir` is the directory the MIGRATION uses (where loadDictionary is
   // pointed, and where an adapter that rewrites catalog formats writes them), not
   // necessarily the directory discovery read from: the react-intl adapter
@@ -1160,11 +1233,7 @@ function importSpecifiers(code: string): string[] {
       plugins: ['jsx', 'typescript'],
     });
   } catch {
-    for (const match of code.matchAll(
-      /(?:from\s*|import\s*|import\s*\(\s*|require\s*\(\s*)['"]([^'"]+)['"]/g
-    )) {
-      specifiers.push(match[1]);
-    }
+    specifiers.push(...moduleSpecifierMatches(code));
     return specifiers;
   }
   for (const statement of ast.program.body) {

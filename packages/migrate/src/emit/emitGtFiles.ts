@@ -19,6 +19,7 @@ import {
   routePatternFor,
   specifierTailCandidates,
 } from '../pipeline/latentClientCalls.js';
+import { moduleSpecifierMatches } from '../fs/moduleSpecifiers.js';
 import type { FileEdit, MigrationContext } from '../pipeline/types.js';
 
 /** next/root-params (and its `locale()` export) landed in Next 15.5.0. */
@@ -1237,12 +1238,6 @@ function findRemainingImporter(
   const aliasRoot = fs.existsSync(path.join(ctx.cwd, 'src'))
     ? path.join(ctx.cwd, 'src')
     : ctx.cwd;
-  const specifierPattern =
-    // The bare `import\s*` branch catches side-effect imports
-    // (`import './routing'`), which have no `from` and no paren but still
-    // break at build time if their target is deleted.
-    /(?:from\s+|import\s*\(\s*|import\s*|require\s*\(\s*)['"]([^'"]+)['"]/g;
-
   const projectFiles = ctx.projectFiles ?? ctx.sourceFiles ?? [];
   const fileSet = new Set(projectFiles);
   const declaredPackages = declaredDependencyNames(ctx.cwd);
@@ -1278,8 +1273,12 @@ function findRemainingImporter(
         continue;
       }
     }
-    for (const match of content.matchAll(specifierPattern)) {
-      const specifier = match[1];
+    // The shared scanner (moduleSpecifiers.ts) is the same one the hazard
+    // import graph reads: this answer gates a DELETE, so it must never see
+    // fewer imports than any other stage (round-10 A2: the private regex here
+    // required whitespace after `from`, and `from'./routing'` got its target
+    // deleted while still imported).
+    for (const specifier of moduleSpecifierMatches(content)) {
       // The pattern matches file TEXT, so prose in a comment can produce a
       // "specifier" (sniply: `// ... the token value from "sniply_session=TOKEN;
       // Path=/; ..."`). Nothing can resolve it, and the unfollowable-specifier

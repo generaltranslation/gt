@@ -9,6 +9,7 @@ import {
   detectLocaleAwareNavUsage,
   transformNavigationFile,
 } from '../transforms/transformNavigation.js';
+import { MODULE_SPECIFIER_PREFIX_SOURCE } from '../fs/moduleSpecifiers.js';
 import { transformNextConfigFile } from '../transforms/transformNextConfig.js';
 import { transformRequestConfigFile } from '../transforms/transformRequestConfig.js';
 import type { RoutingInfo } from '../pipeline/types.js';
@@ -120,8 +121,9 @@ export const nextIntlAdapter: SourceAdapter = {
     'src/proxy.ts',
   ],
 
-  projectUsagePattern:
-    /(?:from\s+|import\s*\(\s*|import\s*|require\s*\(\s*)['"]next-intl(?:\/|['"])/,
+  projectUsagePattern: new RegExp(
+    MODULE_SPECIFIER_PREFIX_SOURCE + String.raw`['"]next-intl(?:\/|['"])`
+  ),
   teardownPackages: ['next-intl'],
   teardownConfigFiles: (routing: RoutingInfo) =>
     [routing.routingFile, routing.requestFile].filter(

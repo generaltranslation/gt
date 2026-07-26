@@ -9,6 +9,7 @@ import {
   REACT_INTL_TEARDOWN_PACKAGES,
   transformReactIntlSource,
 } from '../transforms/reactIntlTransform.js';
+import { MODULE_SPECIFIER_PREFIX_SOURCE } from '../fs/moduleSpecifiers.js';
 import type { SourceAdapter } from './types.js';
 
 const traverse: typeof traverseModule =
@@ -126,8 +127,10 @@ export const reactIntlAdapter: SourceAdapter = {
   requiresServerProviderBoundary: true,
   middlewareCandidates: [],
 
-  projectUsagePattern:
-    /(?:from\s+|import\s*\(\s*|import\s*|require\s*\(\s*)['"](react-intl(?:\/|['"])|@formatjs\/)/,
+  projectUsagePattern: new RegExp(
+    MODULE_SPECIFIER_PREFIX_SOURCE +
+      String.raw`['"](react-intl(?:\/|['"])|@formatjs\/)`
+  ),
   teardownPackages: REACT_INTL_TEARDOWN_PACKAGES,
   // react-intl has no dedicated config file safe to delete (a .babelrc may hold
   // unrelated plugins); the FormatJS build plugin is torn down in next.config.
