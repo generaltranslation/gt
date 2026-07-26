@@ -87,7 +87,7 @@ describe('transformMiddlewareFile prefixDefaultLocale mapping', () => {
     expect(result.todos).toEqual([]);
   });
 
-  it("omits the option for 'as-needed' (gt-next default already matches)", () => {
+  it("omits the option for 'as-needed' (gt-next serves the same URLs)", () => {
     const result = transformMiddlewareFile(
       'middleware.ts',
       canonical,
@@ -96,7 +96,12 @@ describe('transformMiddlewareFile prefixDefaultLocale mapping', () => {
     expect(result.skipReasons).toEqual([]);
     expect(result.code).toContain('createNextMiddleware()');
     expect(result.code).not.toContain('prefixDefaultLocale');
-    expect(result.todos).toEqual([]);
+    // The option match is on serving only. next-intl also REDIRECTED /en/* to
+    // the unprefixed path and gt-next has no equivalent, so the emitted code is
+    // right while the URL structure still changes; that is disclosed, not
+    // silent (round-10 finding 5, pinned in round10Middleware.test.ts).
+    expect(result.todos).toHaveLength(1);
+    expect(result.todos[0].reason).toMatch(/redirect/);
   });
 
   it("'never' skips the file so the retained middleware holds back teardown", () => {

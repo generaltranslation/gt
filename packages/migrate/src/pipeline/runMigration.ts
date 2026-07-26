@@ -1073,6 +1073,7 @@ function collect(
     return;
   }
   ctx.todos.push(...result.todos);
+  if (result.warnings) (ctx.warnings ??= []).push(...result.warnings);
   // A byte-identical write is not a conversion: listing it as "Converted"
   // misreports the run (the round-7 i18n-provider false entry), so drop it.
   if (result.code !== null && result.code !== originalCode) {

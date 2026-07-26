@@ -1,3 +1,4 @@
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { parse } from '@babel/parser';
 import traverseModule from '@babel/traverse';
 import generateModule from '@babel/generator';
@@ -149,13 +150,14 @@ export function transformMiddlewareFile(
 
   const mode = ctx.routing.localePrefix;
   const optionProperties: t.ObjectProperty[] = [];
+  const warnings: string[] = [];
   // next-intl defaults localePrefix to 'always': every locale is prefixed and
   // `/` redirects to `/<defaultLocale>`. gt-next's createNextMiddleware does
   // NOT prefix the default locale by default, so absent/'always' must set
   // prefixDefaultLocale: true to preserve the app's public URL structure.
-  // 'as-needed' already matches gt-next's default (omit); 'never' never
-  // reaches here (the early return above skips the file so the retained
-  // next-intl middleware holds back teardown).
+  // 'as-needed' matches gt-next's default on the SERVING half only (see
+  // below); 'never' never reaches here (the early return above skips the file
+  // so the retained next-intl middleware holds back teardown).
   if (mode === null || mode === 'always') {
     optionProperties.push(
       t.objectProperty(
@@ -174,6 +176,33 @@ export function transformMiddlewareFile(
   }
 
   const todos: TodoEntry[] = [];
+  // 'as-needed' matches gt-next's default only on what each URL SERVES. It does
+  // not match on redirects: next-intl sends /<defaultLocale>/x to /x (307), and
+  // gt-next returns 200 for both, so every route gains a live duplicate URL.
+  // gt-next's middleware has no redirect-to-canonical option (its only knobs
+  // are localeRouting, prefixDefaultLocale, ignoreSourceMaps and pathConfig),
+  // so this is disclosed rather than fixed (round-10 finding 5).
+  if (mode === 'as-needed') {
+    const defaultLocale = ctx.routing.defaultLocale ?? libraryDefaultLocale;
+    warnings.push(
+      `localePrefix 'as-needed': the default locale now answers on two URLs. ` +
+        `next-intl redirected /${defaultLocale}/... to the unprefixed path; ` +
+        `gt-next serves both, so /${defaultLocale}/about and /about each return ` +
+        '200 with the same content on every route. See the report for what you ' +
+        'can do about it.'
+    );
+    todos.push({
+      file,
+      reason:
+        `localePrefix 'as-needed': gt-next has no redirect-to-canonical option, so ` +
+        `/${defaultLocale}/... stops redirecting to /... and starts serving the same ` +
+        'page. What each URL serves is unchanged; only the redirect is gone. To keep ' +
+        `one canonical URL, add a redirect from \`/${defaultLocale}/:path*\` to ` +
+        '`/:path*` in next.config (next.config redirects are evaluated before ' +
+        'middleware), or leave both live and mark the canonical one with ' +
+        '`alternates.canonical` in your page metadata.',
+    });
+  }
   if (localePrefixHasCustomPrefixes(ctx.routing.routingFile)) {
     todos.push({
       file,
@@ -218,5 +247,5 @@ export function transformMiddlewareFile(
     },
     code
   );
-  return { code: output.code, todos, skipReasons: [] };
+  return { code: output.code, todos, skipReasons: [], warnings };
 }
