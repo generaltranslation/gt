@@ -30,6 +30,7 @@ import { createMigrateDiagnostic } from './diagnostics.js';
 import { transformLayoutFile } from '../transforms/transformLayout.js';
 import { transformSourceFile } from '../transforms/transformSource.js';
 import type {
+  FileEdit,
   MigrateOptions,
   MigrationContext,
   SourceResult,
@@ -909,7 +910,10 @@ export async function runMigration(
     }
   }
 
-  ctx.edits.push(...emitGtFiles(ctx));
+  // Held separately from ctx.edits so the byte-identical drop at the end of the
+  // run can tell an emitted file from a transformed source file.
+  const emittedEdits = emitGtFiles(ctx);
+  ctx.edits.push(...emittedEdits);
 
   // Hard post-condition: converted files are gt-next consumers, and gt-next
   // has no dictionary or locale wiring without withGTConfig in next.config.
@@ -949,6 +953,7 @@ export async function runMigration(
   if (adapter.emitCatalogs) {
     const catalogEdits = adapter.emitCatalogs(ctx);
     catalogEditsEmitted = catalogEdits.length;
+    emittedEdits.push(...catalogEdits);
     ctx.edits.push(...catalogEdits);
   }
 
@@ -958,6 +963,18 @@ export async function runMigration(
   // here (the emitted call sites and the catalogs, including any this run
   // rewrote), so cross-check them and report each unresolvable static key.
   auditConvertedDictionaryKeys(ctx);
+
+  // Same rule the source writes go through in collect(), applied to the files
+  // this run emitted: a re-run rewrites gt.config.json and the catalogs with the
+  // bytes already on disk, and listing those under Converted says the run
+  // changed a file it did not (round-10 N2). It runs here, after the key audit,
+  // so every catalog this run emitted is still in hand for the checks above.
+  const unchangedEmitted = new Set(
+    emittedEdits.filter((edit) => isUnchangedWrite(edit, contentOnDisk(edit)))
+  );
+  if (unchangedEmitted.size > 0) {
+    ctx.edits = ctx.edits.filter((edit) => !unchangedEmitted.has(edit));
+  }
 
   // Backstop: if nothing matched the source library at all (no file transformed,
   // none skipped for using it, and no catalogs converted), the run migrated
@@ -1074,10 +1091,37 @@ function collect(
   }
   ctx.todos.push(...result.todos);
   if (result.warnings) (ctx.warnings ??= []).push(...result.warnings);
-  // A byte-identical write is not a conversion: listing it as "Converted"
-  // misreports the run (the round-7 i18n-provider false entry), so drop it.
-  if (result.code !== null && result.code !== originalCode) {
-    ctx.edits.push({ path: file, kind: 'write', content: result.code });
+  if (result.code === null) return;
+  const edit: FileEdit = { path: file, kind: 'write', content: result.code };
+  if (!isUnchangedWrite(edit, originalCode)) ctx.edits.push(edit);
+}
+
+/**
+ * A write whose bytes already match what is there is not a change: listing it as
+ * Converted (or Created) claims the run touched a file it did not, which is the
+ * round-7 i18n-provider false entry and the round-10 N2 catalog re-listing. The
+ * one comparison both callers use; they differ only in where "what is there"
+ * comes from (a source transform holds the file it read, an emitted file does
+ * not, so it is read back off disk).
+ */
+function isUnchangedWrite(
+  edit: FileEdit,
+  current: string | null | undefined
+): boolean {
+  return (
+    edit.kind === 'write' &&
+    current !== null &&
+    current !== undefined &&
+    edit.content === current
+  );
+}
+
+/** The file's current bytes, or null when it is absent or unreadable. */
+function contentOnDisk(edit: FileEdit): string | null {
+  try {
+    return fs.readFileSync(edit.path, 'utf8');
+  } catch {
+    return null;
   }
 }
 
