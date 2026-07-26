@@ -25,6 +25,15 @@ const REQUEST_CANDIDATES = [
   'src/i18n/request.js',
 ];
 
+/** next.config candidate paths, shared with the adapter's config lane. */
+export const NEXT_CONFIG_CANDIDATES = [
+  'next.config.ts',
+  'next.config.js',
+  'next.config.mjs',
+];
+
+const PLUGIN_MODULE = 'next-intl/plugin';
+
 /**
  * Extracts locales/defaultLocale/localePrefix/pathnames from the project's
  * next-intl routing config. Only static literals are resolved; anything
@@ -52,7 +61,14 @@ export function parseRoutingConfig(cwd: string): RoutingInfo {
     requestFile: null,
   };
 
-  info.requestFile = findFirst(cwd, REQUEST_CANDIDATES);
+  // The plugin argument wins over the conventional paths: it is where next-intl
+  // itself reads the request config from, so a project that names one there has
+  // no file at src/i18n/request.ts to find. Falls back to the candidate list
+  // whenever the argument is absent, dynamic, or names a file that is not on
+  // disk, so every default-path project resolves exactly as before (round-10
+  // finding 8).
+  info.requestFile =
+    requestFileFromPlugin(cwd) ?? findFirst(cwd, REQUEST_CANDIDATES);
   info.routingFile = findFirst(cwd, ROUTING_CANDIDATES);
   if (!info.routingFile) return info;
 
@@ -117,6 +133,79 @@ export function parseRoutingConfig(cwd: string): RoutingInfo {
   }
 
   return info;
+}
+
+/**
+ * The request-config path named by `createNextIntlPlugin`, resolved against the
+ * project root, or null. Both documented argument forms are read: the string
+ * shorthand (`createNextIntlPlugin('./src/i18n/messages.ts')`) and the object
+ * form's `requestConfig`. The call is matched by BINDING, not by callee name, so
+ * a same-named local helper cannot redirect the engine at the wrong file.
+ *
+ * Returns null on anything it cannot resolve statically, and on a path with no
+ * file behind it, so the caller's conventional-path fallback stays in charge of
+ * every project that does not use the argument.
+ */
+function requestFileFromPlugin(cwd: string): string | null {
+  const configFile = findFirst(cwd, NEXT_CONFIG_CANDIDATES);
+  if (!configFile) return null;
+  let source: string;
+  try {
+    source = fs.readFileSync(configFile, 'utf8');
+  } catch {
+    return null;
+  }
+  if (!source.includes(PLUGIN_MODULE)) return null;
+
+  let ast: t.File;
+  try {
+    ast = parse(source, {
+      sourceType: 'module',
+      plugins: ['jsx', 'typescript'],
+    });
+  } catch {
+    return null;
+  }
+
+  let pluginLocal: string | null = null;
+  for (const statement of ast.program.body) {
+    if (
+      !t.isImportDeclaration(statement) ||
+      statement.source.value !== PLUGIN_MODULE
+    ) {
+      continue;
+    }
+    for (const specifier of statement.specifiers) {
+      if (t.isImportDefaultSpecifier(specifier)) {
+        pluginLocal = specifier.local.name;
+      }
+    }
+  }
+  if (!pluginLocal) return null;
+
+  let requested: string | null = null;
+  traverse(ast, {
+    CallExpression(callPath) {
+      if (requested !== null) return;
+      if (!t.isIdentifier(callPath.node.callee, { name: pluginLocal })) return;
+      // The binding must be the plugin import itself, not a shadowing local.
+      const binding = callPath.scope.getBinding(pluginLocal!);
+      if (!binding || binding.kind !== 'module') return;
+      const [argument] = callPath.node.arguments;
+      if (t.isStringLiteral(argument)) {
+        requested = argument.value;
+        return;
+      }
+      if (t.isObjectExpression(argument)) {
+        const value = staticValue(getProperty(argument, 'requestConfig'));
+        if (typeof value === 'string') requested = value;
+      }
+    },
+  });
+  if (requested === null) return null;
+
+  const resolved = path.resolve(cwd, requested);
+  return fs.existsSync(resolved) ? resolved : null;
 }
 
 /**

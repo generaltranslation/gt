@@ -1,7 +1,10 @@
 import { classifyMessage } from '../catalogs/classifyMessage.js';
 import { makeProviderDetector } from './providerDetector.js';
 import { discoverCatalogs } from '../catalogs/discover.js';
-import { parseRoutingConfig } from '../config/parseRoutingConfig.js';
+import {
+  NEXT_CONFIG_CANDIDATES,
+  parseRoutingConfig,
+} from '../config/parseRoutingConfig.js';
 import { transformMiddlewareFile } from '../transforms/transformMiddleware.js';
 import {
   detectLocaleAwareNavUsage,
@@ -67,15 +70,24 @@ export const nextIntlAdapter: SourceAdapter = {
   transformMiddleware: transformMiddlewareFile,
   transformRequestConfig: transformRequestConfigFile,
 
-  nextConfigCandidates: ['next.config.ts', 'next.config.js', 'next.config.mjs'],
+  // Same list parseRoutingConfig reads the plugin's request-config argument
+  // from, so the two lanes can never disagree about which file is the config.
+  nextConfigCandidates: NEXT_CONFIG_CANDIDATES,
+  // Both extensions of both filenames. Next 16 runs proxy.js exactly as it runs
+  // proxy.ts, and a JavaScript project whose middleware sat at src/proxy.js used
+  // to fall through to the generic source pass and never get converted
+  // (round-10 finding 9).
   middlewareCandidates: [
     'middleware.ts',
     'middleware.js',
     'src/middleware.ts',
     'src/middleware.js',
     'proxy.ts',
+    'proxy.js',
     'src/proxy.ts',
+    'src/proxy.js',
   ],
+  middlewareModule: 'next-intl/middleware',
 
   retainedNavigationPattern: new RegExp(
     MODULE_SPECIFIER_PREFIX_SOURCE + String.raw`['"]next-intl\/navigation['"]`

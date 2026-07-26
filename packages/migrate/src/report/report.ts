@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 import {
   isPlausibleModuleSpecifier,
   resolveImportToProjectFiles,
@@ -604,6 +605,52 @@ export function buildReport(
         : '- Programmatic navigation (redirect, router.push) is not locale-prefixed automatically.' +
           linkClause
   );
+  // Both middleware bullets below are gated on the swap having actually
+  // happened: a run that skipped the middleware (extra logic, localePrefix
+  // 'never', an unresolved routing value) leaves next-intl's middleware serving
+  // requests, and neither loss applies to it. Detected off the emitted tree, the
+  // same way the <Link> clause above is: a written edit importing
+  // gt-next/middleware, or a post-run file already importing it on a re-run.
+  const gtMiddlewarePattern = /['"]gt-next\/middleware['"]/;
+  const middlewareSwapped =
+    written.some((edit) => gtMiddlewarePattern.test(edit.content ?? '')) ||
+    (ctx.projectFiles ?? []).some((file) =>
+      gtMiddlewarePattern.test(postRunContent(file) ?? '')
+    );
+  // Under next-intl's 'as-needed' the default locale has one canonical URL:
+  // /<locale>/x redirects (307) to /x. gt-next's middleware matches the serving
+  // half but has no redirect-to-canonical option, so both URLs return 200 with
+  // identical content on every route (round-10 finding 5, measured on deskly).
+  if (middlewareSwapped && ctx.routing.localePrefix === 'as-needed') {
+    const defaultLocale = ctx.routing.defaultLocale ?? libraryDefaultLocale;
+    lines.push(
+      `- The default locale now answers on two URLs. Under next-intl's ` +
+        `\`localePrefix: 'as-needed'\`, \`/${defaultLocale}/about\` redirected (307) ` +
+        'to `/about`; gt-next serves both, so each returns 200 with the same ' +
+        'content, on every route. What `/about` serves does not change. To keep ' +
+        'one canonical URL, add this pair of redirects to next.config, which ' +
+        `Next.js evaluates before middleware: \`/${defaultLocale}\` to \`/\`, and ` +
+        `\`/${defaultLocale}/:path+\` to \`/:path+\`. Measured on a migrated ` +
+        'as-needed app: that pair restores the baseline 307s exactly, while a lone ' +
+        '`:path*` rule sends the bare prefix to an empty Location. Otherwise leave ' +
+        'both URLs live and set `alternates.canonical` in your page metadata.'
+    );
+  }
+  // next-intl's middleware emitted RFC 8288 alternate Link headers on every
+  // response; gt-next's emits none, at every localePrefix setting. The engine
+  // cannot add headers the library does not emit, so this is disclosed
+  // (round-10 finding 7, measured on both production builds).
+  if (middlewareSwapped) {
+    lines.push(
+      "- hreflang alternate `Link` headers are no longer sent. next-intl's " +
+        'middleware added RFC 8288 `Link` headers (`rel="alternate"` with an ' +
+        '`hreflang` for each locale, plus `x-default`) to every response; ' +
+        "gt-next's `createNextMiddleware` emits none. Only search engines read " +
+        'them, so nothing in the app changes; if you need the signal, emit the ' +
+        'equivalent from your pages with `alternates.languages` in Next.js ' +
+        'metadata.'
+    );
+  }
   // Retaining the source library's provider keeps two i18n payloads in the
   // page. Measured shape (round-9 audit and re-attack, three real apps across
   // both adapters): every prerendered page grew, and the size splits by locale;
@@ -741,19 +788,31 @@ export function buildReport(
     .split(path.sep)
     .join('/');
   const recorded = ctx.recordedDictionary;
+  // What the no-key path actually does, measured: `gt generate` exits 0 and
+  // writes public/_gt/<locale>.json for every target locale, holding the
+  // SOURCE-language strings under hashed keys. It is a template pass. Only
+  // `gt translate` (credentials) produces translated text, so describing both
+  // as "translate new locales" told users the free command had done the
+  // translation (round-10 finding 10).
+  const generateVsTranslate =
+    'writes a file per target locale filled with your source-language strings, ' +
+    'which is a template pass and not a translation; ';
   if (recorded && recorded.wroteThisRun) {
     steps.push(
-      '`npx gt generate` (no API key) or `npx gt translate` (with credentials) ' +
-        `to translate new locales. This run recorded \`"dictionary": "${recorded.path}"\` ` +
+      '`npx gt generate` (no API key) ' +
+        generateVsTranslate +
+        '`npx gt translate` (with credentials) is what produces the translated ' +
+        `text. This run recorded \`"dictionary": "${recorded.path}"\` ` +
         'in gt.config.json and both commands read that key, so no flag is needed ' +
         `on this tree. Pass \`--dictionary <path>\` only to point them at a ` +
         'different catalog.'
     );
   } else {
     steps.push(
-      `\`npx gt generate --dictionary ${dictionaryPath}\` (no API key) or ` +
+      `\`npx gt generate --dictionary ${dictionaryPath}\` (no API key) ` +
+        generateVsTranslate +
         `\`npx gt translate --dictionary ${dictionaryPath}\` (with credentials) ` +
-        'to translate new locales. The flag is needed here: ' +
+        'is what produces the translated text. The flag is needed here: ' +
         (recorded
           ? `your gt.config.json already names a dictionary (\`${recorded.path}\`), which ` +
             'this run left as it was, so without the flag both commands generate ' +

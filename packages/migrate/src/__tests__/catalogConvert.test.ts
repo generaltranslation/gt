@@ -568,6 +568,61 @@ describe('I1: # inside a number skeleton within a plural branch', () => {
   });
 });
 
+describe('r10 finding 6: a literal brace in a branch must not hide a later #', () => {
+  it('keeps # literal after an escaped { in a cardinal plural', () => {
+    const { dict } = convert(
+      {
+        slot_one: 'Slot {A holds #1 of {{count}}',
+        slot_other: 'Slots {A hold #1 of {{count}}',
+      },
+      { countKeys: new Set(['translation:slot']) }
+    );
+    const icu = dict.slot as string;
+    expect(() => parseIcu(icu)).not.toThrow();
+    expect(render(icu, 'en', { count: 3 })).toBe('Slots {A hold #1 of 3');
+    expect(render(icu, 'en', { count: 1 })).toBe('Slot {A holds #1 of 1');
+  });
+
+  it('control: # stays literal with no brace in the branch', () => {
+    const { dict } = convert(
+      { ok_one: 'Item #1 of {{count}}', ok_other: 'Items #1 of {{count}}' },
+      { countKeys: new Set(['translation:ok']) }
+    );
+    expect(render(dict.ok as string, 'en', { count: 3 })).toBe('Items #1 of 3');
+  });
+
+  it('keeps # literal after an escaped } in a selectordinal', () => {
+    const { dict } = convert(
+      {
+        rank_ordinal_one: 'Rank }B #1 of {{count}}',
+        rank_ordinal_other: 'Ranks }B #1 of {{count}}',
+      },
+      { countKeys: new Set(['translation:rank']) }
+    );
+    const icu = dict.rank as string;
+    expect(() => parseIcu(icu)).not.toThrow();
+    expect(render(icu, 'en', { count: 3 })).toBe('Ranks }B #1 of 3');
+  });
+
+  it('still leaves a number skeleton # alone after an escaped brace', () => {
+    const { dict } = convert(
+      {
+        bill_one:
+          'Bill {A #1 at {{price, number(minimumFractionDigits: 2, maximumFractionDigits: 4)}}',
+        bill_other:
+          'Bills {A #1 at {{price, number(minimumFractionDigits: 2, maximumFractionDigits: 4)}}',
+      },
+      { countKeys: new Set(['translation:bill']) }
+    );
+    const icu = dict.bill as string;
+    expect(icu).toContain('::.00##');
+    expect(() => parseIcu(icu)).not.toThrow();
+    expect(render(icu, 'en', { count: 3, price: 3 })).toBe(
+      'Bills {A #1 at 3.00'
+    );
+  });
+});
+
 describe('I2: custom keySeparator conversion', () => {
   const pipeSep = { ...DEFAULT_SEPARATORS, keySeparator: '|' };
 

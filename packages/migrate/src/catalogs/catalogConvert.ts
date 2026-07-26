@@ -892,20 +892,60 @@ function writeOrdinalAsLiteral(
  * `{price, number, ::.00##}`, or a nested plural's own count; and must be left
  * untouched; quoting it would corrupt the skeleton (ICU number skeletons have no
  * `'` quoting) and break the format.
+ *
+ * Quoted spans are copied verbatim and never counted. This runs AFTER
+ * `escapeIcuText`, which writes a literal `{` as `'{'`; counting that brace as
+ * an opening argument pinned depth above 0 for the rest of the branch and left
+ * every later `#` unquoted, so it rendered as the count (round-10 finding 6).
  */
 function quoteHashInBranch(value: string): string {
   let out = '';
   let depth = 0;
-  for (const ch of value) {
+  let i = 0;
+  while (i < value.length) {
+    const ch = value[i];
+    if (ch === "'") {
+      // `''` is a literal apostrophe, not the start of a quoted span.
+      if (value[i + 1] === "'") {
+        out += "''";
+        i += 2;
+        continue;
+      }
+      // A `'` only opens a quoted span when it precedes a syntax character;
+      // anywhere else it is a literal apostrophe (ICU's DOUBLE_OPTIONAL rule).
+      const next = value[i + 1];
+      if (next === '{' || next === '}' || next === '#' || next === '|') {
+        let end = i + 1;
+        while (end < value.length) {
+          if (value[end] === "'") {
+            if (value[end + 1] === "'") {
+              end += 2;
+              continue;
+            }
+            end += 1;
+            break;
+          }
+          end += 1;
+        }
+        out += value.slice(i, end);
+        i = end;
+        continue;
+      }
+      out += ch;
+      i += 1;
+      continue;
+    }
     if (ch === '{') {
       depth++;
     } else if (ch === '}') {
       if (depth > 0) depth--;
     } else if (ch === '#' && depth === 0) {
       out += "'#'";
+      i += 1;
       continue;
     }
     out += ch;
+    i += 1;
   }
   return out;
 }

@@ -732,13 +732,26 @@ export async function runMigration(
           code
         );
         if (isEsmNextConfig(configFile, cwd)) {
-          // gt-next/config's ESM bundle currently breaks under a native-ESM
-          // config ("require is not defined" resolving the Next.js version).
-          ctx.todos.push({
-            file: configFile,
-            reason:
-              'this config loads as native ESM, where gt-next/config (<= 11.0.9) fails with "require is not defined"; rename it to next.config.ts (Next.js compiles it to CJS) until gt-next ships an ESM-safe config entry',
-          });
+          // gt-next/config resolves the installed Next.js version with a bare
+          // `require` at module scope, and its ESM bundle ships no
+          // createRequire shim, so a natively-loaded config throws before the
+          // build starts. The old wording bounded this at "<= 11.0.9", which
+          // read as "not me" to everyone on the version gt migrate installs:
+          // 11.1.0 fails identically, and so does the gt-next source in this
+          // repo. No bound is stated because none is real (round-10 finding 4).
+          const reason =
+            'this config loads as native ESM, where gt-next/config throws ' +
+            '"require is not defined" resolving the installed Next.js version, ' +
+            'so `next build` fails before it starts. Measured on gt-next ' +
+            '11.1.0, the version this migration installs. Rename the file to ' +
+            'next.config.ts, which Next.js compiles to CJS; the build then ' +
+            'succeeds with the file otherwise unchanged.';
+          ctx.todos.push({ file: configFile, reason });
+          // A condition that breaks the build outright does not belong only in
+          // the TODO list, which is read as a punch list of optional cleanups.
+          (ctx.warnings ??= []).push(
+            `${path.relative(cwd, configFile) || configFile}: ${reason}`
+          );
         }
       } catch (error) {
         recordTransformError(ctx, configFile, error);
@@ -790,7 +803,14 @@ export async function runMigration(
   // Next.js ignores root-level middleware when the app lives in src/;
   // locale routing would silently not run (true for next-intl too, but
   // worth surfacing while we're here).
-  const rootMiddleware = findRootFiles(cwd, ['middleware.ts', 'middleware.js']);
+  // Every root-level candidate, not just middleware.* : proxy.ts/proxy.js are
+  // run by Next 16 the same way and were silently exempt from this check
+  // (round-10 finding 9). Root-level means no directory part; the src/ forms in
+  // the same list are already where Next looks.
+  const rootMiddleware = findRootFiles(
+    cwd,
+    adapter.middlewareCandidates.filter((candidate) => !candidate.includes('/'))
+  );
   if (
     rootMiddleware.length > 0 &&
     (fs.existsSync(path.join(cwd, 'src/app')) ||
@@ -1053,6 +1073,7 @@ function collect(
     return;
   }
   ctx.todos.push(...result.todos);
+  if (result.warnings) (ctx.warnings ??= []).push(...result.warnings);
   // A byte-identical write is not a conversion: listing it as "Converted"
   // misreports the run (the round-7 i18n-provider false entry), so drop it.
   if (result.code !== null && result.code !== originalCode) {

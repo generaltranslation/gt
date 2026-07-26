@@ -172,6 +172,15 @@ export interface SourceAdapter {
   requiresServerProviderBoundary?: boolean;
   /** middleware/proxy candidate paths, relative to the project root. */
   middlewareCandidates: string[];
+  /**
+   * The module a middleware file imports the source library's middleware
+   * factory from ('next-intl/middleware'). Set only by adapters with a
+   * middleware lane. The generic source pass reads it so a file importing it
+   * from a path Next.js does NOT run as middleware is told that its LOCATION is
+   * the problem, rather than being handed the generic "unsupported import form"
+   * reason it cannot act on (round-10 finding 9).
+   */
+  middlewareModule?: string;
 
   // --- catalog emission (optional) ---
   /**
