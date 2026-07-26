@@ -171,12 +171,17 @@ export function buildReport(
     `Existing translations preserved: catalogs in ${relative(ctx.catalogs.dir)}/ ` +
       'now load through loadDictionary.ts; no re-translation needed.'
   );
+  lines.push('');
   // When the migration serves catalogs from a NEW directory while surviving
   // files still import the originals (page metadata is the common case), the
   // tree has two live catalog trees, and a user editing only the new one
   // ships silently stale text (round-10 claims finding 3: measured on
   // react-intl/portfolio, where the <title> kept coming from messages/ after
   // messages-gt/ was edited). Name every file that keeps the old tree live.
+  // Its own `##` section, never the tail of Converted: anything reading the
+  // report by heading (the parity harness, a human skimming) attributed these
+  // bullets to Converted and read them as conversion claims (round-10 matrix
+  // finding 1, on react-i18next/plantpal).
   // Relative and @/~ specifiers only: an alias table the project defines is
   // resolved elsewhere for deletes, but this sentence is advisory, so a
   // missed exotic alias under-reports rather than mis-reports.
@@ -204,20 +209,27 @@ export function buildReport(
       });
     });
     if (oldCatalogImporters.length > 0) {
+      lines.push(
+        '## Original catalogs still read (two catalog trees are live)'
+      );
       lines.push('');
       lines.push(
         `The original catalogs in ${relative(ctx.catalogs.sourceDir)}/ are ` +
           'STILL READ by the files below, so this project now has two live ' +
           `catalog trees: edits to ${relative(ctx.catalogs.dir)}/ do not ` +
-          'reach these reads, and the two drift silently. Point them at the ' +
-          'migrated catalogs (or gt-next APIs), or keep both trees in sync:'
+          'reach these reads, and the two drift silently. This lists catalog ' +
+          'readers, not conversions: a file here may also appear under ' +
+          'Converted (for its own source-library imports) or nowhere else at ' +
+          'all. Point them at the migrated catalogs (or gt-next APIs), or ' +
+          'keep both trees in sync:'
       );
+      lines.push('');
       for (const file of oldCatalogImporters) {
         lines.push(`- ${relative(file)}`);
       }
+      lines.push('');
     }
   }
-  lines.push('');
 
   if (createdFiles.length > 0) {
     lines.push('## Created (new files this run added)');

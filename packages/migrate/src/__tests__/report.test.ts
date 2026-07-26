@@ -1,14 +1,46 @@
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildReport } from '../report/report.js';
 import { nextIntlAdapter } from '../adapters/nextIntl.js';
 import { reactIntlAdapter } from '../adapters/reactIntl.js';
 import { reactI18nextAdapter } from '../adapters/reactI18next.js';
+import { makeTree, registerTreeCleanup } from './support/tree.js';
 import type {
   MessageCatalogs,
   MigrationContext,
   RoutingInfo,
   SourceAdapter,
 } from '../pipeline/types.js';
+
+registerTreeCleanup();
+
+const CATALOG_READERS_HEADING =
+  '## Original catalogs still read (two catalog trees are live)';
+
+/**
+ * The report split into `##` sections with their top-level bullets, the way
+ * anything reading it by heading attributes a file: the parity harness's
+ * classifier and a human skimming both stop at the next heading.
+ */
+function sections(report: string): { heading: string; bullets: string[] }[] {
+  const out = [{ heading: '(preamble)', bullets: [] as string[] }];
+  for (const line of report.split('\n')) {
+    const heading = /^#{1,6}\s+(.*)$/.exec(line);
+    if (heading) {
+      out.push({ heading: heading[1].trim(), bullets: [] });
+      continue;
+    }
+    const bullet = /^[-*]\s+(\S+)/.exec(line);
+    if (bullet) out[out.length - 1].bullets.push(bullet[1]);
+  }
+  return out;
+}
+
+/** Every bullet path filed under a heading matching `match`. */
+const bulletsUnder = (report: string, match: RegExp): string[] =>
+  sections(report)
+    .filter((section) => match.test(section.heading))
+    .flatMap((section) => section.bullets);
 
 const routing: RoutingInfo = {
   locales: ['en', 'es'],
@@ -82,8 +114,10 @@ describe('buildReport retained-provider wording', () => {
     ctx.catalogs.sourceDir = '/project/messages';
     ctx.projectFiles = ['/project/src/i18n/config.ts'];
     const report = buildReport(ctx, false, false);
-    expect(report).toContain('two live catalog trees');
-    expect(report).toContain('src/i18n/config.ts');
+    expect(report).toContain(CATALOG_READERS_HEADING);
+    expect(bulletsUnder(report, /^Original catalogs still read/)).toContain(
+      'src/i18n/config.ts'
+    );
   });
 
   it('names them for the react-i18next per-namespace shape too (round-10 claims F3)', () => {
@@ -123,13 +157,61 @@ describe('buildReport retained-provider wording', () => {
       '/project/lib/i18n-routing.ts',
     ];
     const report = buildReport(ctx, false, false);
-    expect(report).toContain('two live catalog trees');
+    expect(report).toContain(CATALOG_READERS_HEADING);
     // Scoped to the section's own bullet list: every path here is also listed
     // under Converted, so a whole-report toContain would pass on that alone.
-    const listed = report.split('two live catalog trees')[1].split('\n\n')[0];
-    expect(listed).toContain('- i18n.ts');
-    expect(listed).toContain('- app/[locale]/layout.tsx');
+    const listed = bulletsUnder(report, /^Original catalogs still read/);
+    expect(listed).toContain('i18n.ts');
+    expect(listed).toContain('app/[locale]/layout.tsx');
     expect(listed).not.toContain('lib/i18n-routing.ts');
+  });
+
+  it('files a catalog reader outside Converted, so no heading reader can call it converted (round-10 matrix F1)', () => {
+    // The plantpal shape: i18n.ts is not written by this run, still imports
+    // react-i18next, and still reads locales/. Listed at the tail of the
+    // Converted section it was attributed to Converted by heading parsing and
+    // failed the harness's R1 ("listed under Converted and still imports
+    // react-i18next"). It is a catalog reader, not a conversion claim.
+    const dir = makeTree(
+      {
+        'i18n.ts': [
+          "import { initReactI18next } from 'react-i18next';",
+          "import en from './locales/en/common.json';",
+          'export default { en, initReactI18next };',
+        ].join('\n'),
+        'locales/en/common.json': '{}',
+        'app/page.tsx': 'export default function Page() { return null; }\n',
+      },
+      { prefix: 'gt-r10-report-' }
+    );
+    const ctx = makeContext(reactI18nextAdapter, [
+      {
+        path: path.join(dir, 'app/page.tsx'),
+        kind: 'write',
+        content: 'export default function Page() { return null; }\n',
+      },
+    ]);
+    ctx.cwd = dir;
+    ctx.catalogs.dir = path.join(dir, 'gt/dictionaries');
+    ctx.catalogs.sourceDir = path.join(dir, 'locales');
+    ctx.projectFiles = [
+      path.join(dir, 'i18n.ts'),
+      path.join(dir, 'app/page.tsx'),
+    ];
+    const report = buildReport(ctx, false, false);
+    expect(bulletsUnder(report, /^Original catalogs still read/)).toContain(
+      'i18n.ts'
+    );
+    expect(bulletsUnder(report, /^Converted/)).not.toContain('i18n.ts');
+    expect(bulletsUnder(report, /^Converted/)).toContain('app/page.tsx');
+    // The heading it lands under must not read as a conversion inventory to
+    // the harness classifier either (converted/created/partial are all wrong).
+    const heading = sections(report).find((section) =>
+      section.bullets.includes('i18n.ts')
+    )?.heading;
+    expect(heading).toBe(
+      'Original catalogs still read (two catalog trees are live)'
+    );
   });
 
   it('stays silent about catalog trees when the serving dir was not repointed (control)', () => {
@@ -143,6 +225,7 @@ describe('buildReport retained-provider wording', () => {
     ctx.projectFiles = ['/project/src/i18n/config.ts'];
     const report = buildReport(ctx, false, false);
     expect(report).not.toContain('two live catalog trees');
+    expect(report).not.toContain(CATALOG_READERS_HEADING);
   });
 
   it('names package.json, the lockfile, and the report file as changed (round-10 claims F5)', () => {
