@@ -363,6 +363,46 @@ describe('react-i18next locale narrowing', () => {
     expect(catalogs).not.toBeNull();
     expect([...catalogs!.locales].sort()).toEqual(['en', 'es']);
   });
+
+  it('reuses the dictionary dir gt.config.json names on a re-run (round-10 claims F7)', async () => {
+    // A prior run wrote gt/dictionaries and wired it into gt.config.json. A
+    // premature re-run used to pick the first NONEXISTENT candidate and mint
+    // gt/dictionaries-icu, a third live catalog location the config does not
+    // point at.
+    const cwd = makeTree({
+      'i18n.ts': i18nConfig,
+      'public/locales/en/translation.json': JSON.stringify({ title: 'Title' }),
+      'public/locales/es/translation.json': JSON.stringify({
+        title: 'Título',
+      }),
+      'gt/dictionaries/en.json': JSON.stringify({ title: 'Title' }),
+      'gt/dictionaries/es.json': JSON.stringify({ title: 'Título' }),
+      'gt.config.json': JSON.stringify({
+        defaultLocale: 'en',
+        locales: ['en', 'es'],
+        dictionary: './gt/dictionaries/en.json',
+      }),
+    });
+    const catalogs = await discoverReactI18nextCatalogs(cwd, routing);
+    expect(catalogs?.dir).toBe(path.join(cwd, 'gt/dictionaries'));
+  });
+
+  it('never reuses a user-named dictionary outside the tool-owned candidates (F7 control)', async () => {
+    const cwd = makeTree({
+      'i18n.ts': i18nConfig,
+      'public/locales/en/translation.json': JSON.stringify({ title: 'Title' }),
+      'public/locales/es/translation.json': JSON.stringify({
+        title: 'Título',
+      }),
+      'gt.config.json': JSON.stringify({
+        defaultLocale: 'en',
+        locales: ['en', 'es'],
+        dictionary: './my-own/dictionary/en.json',
+      }),
+    });
+    const catalogs = await discoverReactI18nextCatalogs(cwd, routing);
+    expect(catalogs?.dir).toBe(path.join(cwd, 'gt/dictionaries'));
+  });
 });
 
 // ---------------------------------------------------------------------------

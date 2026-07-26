@@ -241,6 +241,32 @@ function isLocaleRoot(dir: string): boolean {
 }
 
 function chooseOutputDir(cwd: string): string {
+  // A prior run's output dir is REUSED, never forked: the first-nonexistent
+  // rule alone sent a re-run to gt/dictionaries-icu while gt.config.json
+  // still pointed at gt/dictionaries, leaving three live catalog locations
+  // (round-10 claims finding 7). The dir gt.config.json names is only reused
+  // when it is one of this tool's own candidates; a user-named dictionary
+  // elsewhere is never written to. Re-converting the unchanged source
+  // catalogs into the same dir is an idempotent overwrite of tool-owned
+  // files. Reads the default config path; a --config elsewhere falls through
+  // to the candidate scan unchanged.
+  try {
+    const config = JSON.parse(
+      fs.readFileSync(path.join(cwd, 'gt.config.json'), 'utf8')
+    ) as { dictionary?: unknown };
+    if (typeof config.dictionary === 'string') {
+      const dir = path.dirname(path.resolve(cwd, config.dictionary));
+      if (
+        OUTPUT_DIR_CANDIDATES.some(
+          (candidate) => dir === path.join(cwd, candidate)
+        )
+      ) {
+        return dir;
+      }
+    }
+  } catch {
+    // no config yet, or unreadable: first run behavior below.
+  }
   for (const candidate of OUTPUT_DIR_CANDIDATES) {
     const full = path.join(cwd, candidate);
     if (!fs.existsSync(full)) return full;

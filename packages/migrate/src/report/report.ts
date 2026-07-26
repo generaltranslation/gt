@@ -4,6 +4,7 @@ import {
   isPlausibleModuleSpecifier,
   resolveImportToProjectFiles,
 } from '../pipeline/latentClientCalls.js';
+import { moduleSpecifierMatches } from '../fs/moduleSpecifiers.js';
 import type { FileEdit, MigrationContext } from '../pipeline/types.js';
 
 const escapeRegExp = (value: string) =>
@@ -169,6 +170,52 @@ export function buildReport(
     `Existing translations preserved: catalogs in ${relative(ctx.catalogs.dir)}/ ` +
       'now load through loadDictionary.ts; no re-translation needed.'
   );
+  // When the migration serves catalogs from a NEW directory while surviving
+  // files still import the originals (page metadata is the common case), the
+  // tree has two live catalog trees, and a user editing only the new one
+  // ships silently stale text (round-10 claims finding 3: measured on
+  // react-intl/portfolio, where the <title> kept coming from messages/ after
+  // messages-gt/ was edited). Name every file that keeps the old tree live.
+  // Relative and @/~ specifiers only: an alias table the project defines is
+  // resolved elsewhere for deletes, but this sentence is advisory, so a
+  // missed exotic alias under-reports rather than mis-reports.
+  if (
+    ctx.catalogs.sourceDir !== undefined &&
+    ctx.catalogs.sourceDir !== ctx.catalogs.dir
+  ) {
+    const sourceDirPrefix = ctx.catalogs.sourceDir + path.sep;
+    const aliasRoot = fs.existsSync(path.join(ctx.cwd, 'src'))
+      ? path.join(ctx.cwd, 'src')
+      : ctx.cwd;
+    const testFiles = new Set(ctx.testFilesNeedingMigration ?? []);
+    const oldCatalogImporters = (ctx.projectFiles ?? []).filter((file) => {
+      if (testFiles.has(file)) return false;
+      const content = postRunContent(file);
+      if (content === null) return false;
+      return moduleSpecifierMatches(content).some((specifier) => {
+        let resolved: string | null = null;
+        if (specifier.startsWith('.')) {
+          resolved = path.resolve(path.dirname(file), specifier);
+        } else if (specifier.startsWith('@/') || specifier.startsWith('~/')) {
+          resolved = path.join(aliasRoot, specifier.slice(2));
+        }
+        return resolved !== null && resolved.startsWith(sourceDirPrefix);
+      });
+    });
+    if (oldCatalogImporters.length > 0) {
+      lines.push('');
+      lines.push(
+        `The original catalogs in ${relative(ctx.catalogs.sourceDir)}/ are ` +
+          'STILL READ by the files below, so this project now has two live ' +
+          `catalog trees: edits to ${relative(ctx.catalogs.dir)}/ do not ` +
+          'reach these reads, and the two drift silently. Point them at the ' +
+          'migrated catalogs (or gt-next APIs), or keep both trees in sync:'
+      );
+      for (const file of oldCatalogImporters) {
+        lines.push(`- ${relative(file)}`);
+      }
+    }
+  }
   lines.push('');
 
   if (createdFiles.length > 0) {
@@ -183,6 +230,30 @@ export function buildReport(
     for (const edit of createdFiles) {
       lines.push(`- ${relative(edit.path)}`);
     }
+    lines.push('');
+  }
+
+  // The file inventories above cover source files; these three change too,
+  // and a reviewer diffing the branch must be able to attribute them to this
+  // run (round-10 claims finding 5: they appeared in no section and the
+  // report's own contract says nothing it changed may be absent).
+  {
+    const pkgEdit = ctx.edits.find(
+      (edit) => edit.kind === 'write' && edit.path.endsWith('package.json')
+    );
+    const removals = pkgEdit
+      ? adapter.teardownPackages.filter(
+          (name) => !(pkgEdit.content ?? '').includes(`"${name}"`)
+        )
+      : [];
+    lines.push(
+      'Also changed by this run: package.json ' +
+        (removals.length > 0
+          ? `(${removals.join(', ')} removed; gt-next added by the install step)`
+          : '(gt-next added by the install step)') +
+        ', the lockfile (rewritten by that install), and this report file ' +
+        `(gt-migrate-report.md)${dryRun ? ' -- none of which happens on a dry run' : ''}.`
+    );
     lines.push('');
   }
 
@@ -455,7 +526,7 @@ export function buildReport(
   lines.push('## Behavior differences to know about');
   lines.push('');
   lines.push(
-    `- Unknown dictionary keys throw in gt-next (${adapter.displayName} rendered the raw key and logged).`
+    `- Unknown dictionary keys throw in gt-next (${adapter.missingKeyBehavior}).`
   );
   // Both halves of the navigation sentence are gated on the emitted tree, not on
   // a proxy. The router half keys off the CONTENT the navigation transform

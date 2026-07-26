@@ -83,6 +83,8 @@ function hasProvider(code: string): boolean {
 export const nextIntlAdapter: SourceAdapter = {
   id: 'next-intl',
   displayName: 'next-intl',
+  missingKeyBehavior:
+    'next-intl rendered the raw key and logged a MISSING_MESSAGE error, so existing misses were visible',
 
   ownsModule,
   mentionedIn: (code) => /['"]next-intl(?:\/[^'"]*)?['"]/.test(code),

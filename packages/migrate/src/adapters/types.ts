@@ -27,6 +27,14 @@ export interface SourceAdapter {
   id: string;
   /** human-readable name, used only in report prose. */
   displayName: string;
+  /**
+   * What THIS library did with a missing catalog key, past tense, for the
+   * report's throw-on-miss warning. Measured per library, never generic
+   * (round-10 claims finding 4): next-intl rendered the raw key and logged,
+   * react-i18next rendered it silently, and react-intl rendered the
+   * defaultMessage, so its misses were invisible in both the UI and the logs.
+   */
+  missingKeyBehavior: string;
 
   // --- module identity (replaces the scattered literals/regexes) ---
   /** true when an import source belongs to this library ('next-intl', 'next-intl/…'). */

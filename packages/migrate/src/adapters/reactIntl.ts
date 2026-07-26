@@ -97,6 +97,8 @@ function parseRoutingConfig(_cwd: string): RoutingInfo {
 export const reactIntlAdapter: SourceAdapter = {
   id: 'react-intl',
   displayName: 'react-intl',
+  missingKeyBehavior:
+    'react-intl rendered the defaultMessage without logging, so a missing catalog entry was invisible; the keys that now fail the build are exactly the ones you could not notice before',
 
   ownsModule,
   mentionedIn: (code) => /['"](react-intl|@formatjs\/[^'"]*)['"]/.test(code),

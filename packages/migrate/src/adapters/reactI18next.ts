@@ -99,6 +99,8 @@ function parseRoutingConfig(cwd: string): RoutingInfo {
 export const reactI18nextAdapter: SourceAdapter = {
   id: 'react-i18next',
   displayName: 'react-i18next',
+  missingKeyBehavior:
+    'react-i18next rendered the raw key without logging, so existing misses were visible on the page but not in the logs',
 
   ownsModule,
   mentionedIn: (code) => /['"](?:react-)?i18next(?:\/[^'"]*)?['"]/.test(code),

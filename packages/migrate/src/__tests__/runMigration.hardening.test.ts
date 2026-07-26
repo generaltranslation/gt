@@ -131,4 +131,47 @@ describe('runMigration transform hardening', () => {
     );
     if (pkgEdit) expect(pkgEdit.content).toContain('next-intl');
   });
+
+  it('refuses loudly without -y in a non-interactive session (round-10 claims F6)', async () => {
+    // The prompt library's cancel path exits 0 with nothing written, which a
+    // CI job reads as a successful no-op migration. The engine must refuse
+    // with a real error before ever prompting.
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-noninter-'));
+    tmpDirs.push(cwd);
+    fs.writeFileSync(
+      path.join(cwd, 'package.json'),
+      JSON.stringify({
+        name: 'demo',
+        dependencies: { next: '15.5.0', 'next-intl': '^4.1.0' },
+      })
+    );
+    fs.mkdirSync(path.join(cwd, 'src/app'), { recursive: true });
+    const originalTTY = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY');
+    Object.defineProperty(process.stdin, 'isTTY', {
+      value: undefined,
+      configurable: true,
+    });
+    const io = makeIO();
+    try {
+      await expect(
+        runMigration(
+          {
+            config: 'gt.config.json',
+            from: 'next-intl',
+            dryRun: false,
+            yes: false,
+            allowDirty: true,
+          },
+          'next-intl',
+          io,
+          cwd
+        )
+      ).rejects.toThrow(/not interactive/);
+    } finally {
+      if (originalTTY) {
+        Object.defineProperty(process.stdin, 'isTTY', originalTTY);
+      }
+    }
+    expect(io.promptConfirm).not.toHaveBeenCalled();
+  });
 });

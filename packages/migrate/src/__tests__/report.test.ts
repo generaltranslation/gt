@@ -66,6 +66,61 @@ describe('buildReport retained-provider wording', () => {
     );
   });
 
+  it('names files that keep the original catalog tree live (round-10 claims F3)', () => {
+    // The migration serves catalogs from messages-gt/ while a surviving file
+    // still imports messages/ (page metadata is the field case): two live
+    // catalog trees, drifting silently unless the report says so.
+    const ctx = makeContext(reactIntlAdapter, [
+      {
+        path: '/project/src/i18n/config.ts',
+        kind: 'write',
+        content:
+          "import en from '../../messages/en.json';\nexport const metaMessages = { en };\n",
+      },
+    ]);
+    ctx.catalogs.dir = '/project/messages-gt';
+    ctx.catalogs.sourceDir = '/project/messages';
+    ctx.projectFiles = ['/project/src/i18n/config.ts'];
+    const report = buildReport(ctx, false, false);
+    expect(report).toContain('two live catalog trees');
+    expect(report).toContain('src/i18n/config.ts');
+  });
+
+  it('stays silent about catalog trees when the serving dir was not repointed (control)', () => {
+    const ctx = makeContext(reactIntlAdapter, [
+      {
+        path: '/project/src/i18n/config.ts',
+        kind: 'write',
+        content: "import en from '../../messages/en.json';\n",
+      },
+    ]);
+    ctx.projectFiles = ['/project/src/i18n/config.ts'];
+    const report = buildReport(ctx, false, false);
+    expect(report).not.toContain('two live catalog trees');
+  });
+
+  it('names package.json, the lockfile, and the report file as changed (round-10 claims F5)', () => {
+    const report = buildReport(makeContext(nextIntlAdapter, []), false, false);
+    expect(report).toContain('Also changed by this run: package.json');
+    expect(report).toContain('lockfile');
+    expect(report).toContain('gt-migrate-report.md');
+  });
+
+  it("states each library's own missing-key behavior (round-10 claims F4)", () => {
+    // Measured per library: react-intl rendered the defaultMessage (misses
+    // invisible), react-i18next rendered the raw key without logging; the old
+    // generic 'rendered the raw key and logged' sentence was false for both.
+    const rIntl = buildReport(makeContext(reactIntlAdapter, []), false, false);
+    expect(rIntl).toContain('rendered the defaultMessage without logging');
+    expect(rIntl).not.toContain('react-intl rendered the raw key');
+    const rI18n = buildReport(
+      makeContext(reactI18nextAdapter, []),
+      false,
+      false
+    );
+    expect(rI18n).toContain('rendered the raw key without logging');
+  });
+
   it('does not claim retention for a lookalike component name (round-10 claims F1)', () => {
     // `<IntlProviderWrapper` contains `<IntlProvider` as a substring; the
     // substring form claimed a retained provider over a fully torn-down tree

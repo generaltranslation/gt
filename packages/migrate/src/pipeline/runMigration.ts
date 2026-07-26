@@ -205,6 +205,21 @@ export async function runMigration(
   io.guardGit(cwd, options);
 
   if (!options.yes && !options.dryRun) {
+    // A non-interactive session cannot answer the prompt, and the prompt
+    // library's cancel path exits 0 with nothing written, which a CI job
+    // reads as a successful no-op migration (round-10 claims finding 6).
+    // Refuse loudly instead.
+    if (!process.stdin.isTTY) {
+      io.fatal(
+        createMigrateDiagnostic({
+          severity: 'Error',
+          whatHappened:
+            'gt migrate needs confirmation and this session is not interactive',
+          why: 'the in-place rewrite prompt cannot be answered without a terminal',
+          fix: 'Pass -y/--yes to confirm non-interactively (or --dry-run to preview). Nothing has been written.',
+        })
+      );
+    }
     const proceed = await io.promptConfirm({
       message:
         'This will rewrite source files in place (your translations are preserved). ' +
