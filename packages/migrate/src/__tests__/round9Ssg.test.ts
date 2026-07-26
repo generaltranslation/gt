@@ -1,10 +1,10 @@
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { buildReport } from '../report/report.js';
 import { runMigration } from '../pipeline/runMigration.js';
-import type { MigrateIO } from '../pipeline/io.js';
+import { makeIO } from './support/io.js';
+import { makeTree, registerTreeCleanup } from './support/tree.js';
 import type { FileEdit, MigrationContext } from '../pipeline/types.js';
 
 // ---------------------------------------------------------------------------
@@ -20,31 +20,9 @@ import type { FileEdit, MigrationContext } from '../pipeline/types.js';
 // latentClientCallHazards context is exactly how the hole shipped last round.
 // ---------------------------------------------------------------------------
 
-// runMigration is UI-free: this fake io is enough for a non-interactive,
+// runMigration is UI-free: the shared fake io is enough for a non-interactive,
 // --allow-dirty, --yes run (guardGit and the confirm prompt are no-ops here).
-function makeIO(): MigrateIO {
-  return {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    fatal: vi.fn((message: string) => {
-      throw new Error(message);
-    }) as unknown as (message: string) => never,
-    guardGit: vi.fn(),
-    promptConfirm: vi.fn(async () => true),
-    promptText: vi.fn(async () => ''),
-    promptLocale: vi.fn(async () => ''),
-    promptLocaleList: vi.fn(async () => []),
-  };
-}
-
-const tmpDirs: string[] = [];
-
-afterEach(() => {
-  while (tmpDirs.length) {
-    fs.rmSync(tmpDirs.pop()!, { recursive: true, force: true });
-  }
-});
+registerTreeCleanup();
 
 const lines = (...parts: string[]) => parts.join('\n') + '\n';
 
@@ -116,17 +94,10 @@ const baseFiles: Record<string, string> = {
 };
 
 function makeApp(overrides: Record<string, string> = {}): string {
-  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-r9ssg-'));
-  tmpDirs.push(cwd);
-  for (const [relative, content] of Object.entries({
-    ...baseFiles,
-    ...overrides,
-  })) {
-    const absolute = path.join(cwd, relative);
-    fs.mkdirSync(path.dirname(absolute), { recursive: true });
-    fs.writeFileSync(absolute, content);
-  }
-  return cwd;
+  return makeTree(
+    { ...baseFiles, ...overrides },
+    { prefix: 'gt-migrate-r9ssg-' }
+  );
 }
 
 const migrate = (cwd: string) =>

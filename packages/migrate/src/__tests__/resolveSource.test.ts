@@ -1,38 +1,35 @@
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   hasDependency,
   readDeps,
   resolveMigrationSource,
 } from '../pipeline/resolveSource.js';
+import { makeTree, registerTreeCleanup } from './support/tree.js';
 
-const tmpDirs: string[] = [];
+registerTreeCleanup();
 
 function makeApp(
   deps: Record<string, string>,
   dirs: string[] = [],
   files: Record<string, string> = {}
 ): string {
-  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-ri18n-detect-'));
-  tmpDirs.push(cwd);
-  fs.writeFileSync(
-    path.join(cwd, 'package.json'),
-    JSON.stringify({ name: 'demo', dependencies: deps }, null, 2)
+  const cwd = makeTree(
+    {
+      'package.json': JSON.stringify(
+        { name: 'demo', dependencies: deps },
+        null,
+        2
+      ),
+      ...files,
+    },
+    { prefix: 'gt-ri18n-detect-' }
   );
   for (const dir of dirs)
     fs.mkdirSync(path.join(cwd, dir), { recursive: true });
-  for (const [rel, content] of Object.entries(files)) {
-    fs.writeFileSync(path.join(cwd, rel), content);
-  }
   return cwd;
 }
-
-afterEach(() => {
-  for (const dir of tmpDirs.splice(0))
-    fs.rmSync(dir, { recursive: true, force: true });
-});
 
 describe('resolveMigrationSource', () => {
   it('resolves react-i18next + app/ dir to the react-i18next adapter', () => {
@@ -128,14 +125,14 @@ describe('resolveMigrationSource', () => {
 
 describe('readDeps / hasDependency (shared package.json reader)', () => {
   it('merges dependencies and devDependencies', () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-ri18n-deps-'));
-    tmpDirs.push(cwd);
-    fs.writeFileSync(
-      path.join(cwd, 'package.json'),
-      JSON.stringify({
-        dependencies: { 'react-i18next': '^14' },
-        devDependencies: { typescript: '^5' },
-      })
+    const cwd = makeTree(
+      {
+        'package.json': JSON.stringify({
+          dependencies: { 'react-i18next': '^14' },
+          devDependencies: { typescript: '^5' },
+        }),
+      },
+      { prefix: 'gt-ri18n-deps-' }
     );
     expect(readDeps(cwd)).toMatchObject({
       'react-i18next': '^14',
@@ -147,8 +144,7 @@ describe('readDeps / hasDependency (shared package.json reader)', () => {
   });
 
   it('returns empty / false when package.json is missing or unreadable', () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-ri18n-deps-'));
-    tmpDirs.push(cwd);
+    const cwd = makeTree({}, { prefix: 'gt-ri18n-deps-' });
     expect(readDeps(cwd)).toEqual({});
     expect(hasDependency(cwd, 'react-i18next')).toBe(false);
   });

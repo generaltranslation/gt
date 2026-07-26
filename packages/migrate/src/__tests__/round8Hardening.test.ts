@@ -1,7 +1,5 @@
-import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { parse } from '@babel/parser';
 import generateModule from '@babel/generator';
 import { transformReactI18nextSource } from '../transforms/transformReactI18nextSource.js';
@@ -18,6 +16,10 @@ import type {
   MigrationContext,
   RoutingInfo,
 } from '../pipeline/types.js';
+import {
+  makeTree as makeProjectTree,
+  registerTreeCleanup,
+} from './support/tree.js';
 
 // Round-8 review hardening (Ernest, 2026-07-24): every test here pins a fix
 // for a finding from the code-only review of 59e417a13 (mutation safety and
@@ -60,23 +62,10 @@ function makeContext(
 
 const lines = (...l: string[]) => l.join('\n');
 
-const tmpDirs: string[] = [];
-afterEach(() => {
-  while (tmpDirs.length) {
-    fs.rmSync(tmpDirs.pop()!, { recursive: true, force: true });
-  }
-});
+registerTreeCleanup();
 
-function makeTree(files: Record<string, string>): string {
-  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-r8-'));
-  tmpDirs.push(cwd);
-  for (const [file, content] of Object.entries(files)) {
-    const target = path.join(cwd, file);
-    fs.mkdirSync(path.dirname(target), { recursive: true });
-    fs.writeFileSync(target, content);
-  }
-  return cwd;
-}
+const makeTree = (files: Record<string, string>) =>
+  makeProjectTree(files, { prefix: 'gt-migrate-r8-' });
 
 const transform = (code: string) =>
   transformReactI18nextSource('src/app/page.tsx', code, makeContext());

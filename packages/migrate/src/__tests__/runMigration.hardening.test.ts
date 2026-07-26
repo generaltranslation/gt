@@ -1,10 +1,10 @@
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { buildReport } from '../report/report.js';
 import { runMigration } from '../pipeline/runMigration.js';
-import type { MigrateIO } from '../pipeline/io.js';
+import { makeIO } from './support/io.js';
+import { makeTree, registerTreeCleanup } from './support/tree.js';
 
 // Make the source transform throw for one file (simulating a babel replaceWith
 // throw), and behave normally for everything else. Both the driver and the
@@ -29,35 +29,11 @@ vi.mock('../transforms/transformSource.js', async (importOriginal) => {
   };
 });
 
-// runMigration is UI-free: this fake io is enough for a non-interactive,
+// runMigration is UI-free: the shared fake io is enough for a non-interactive,
 // --allow-dirty, --yes run (guardGit and the confirm prompt are no-ops here).
-function makeIO(): MigrateIO {
-  return {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    fatal: vi.fn((message: string) => {
-      throw new Error(message);
-    }) as unknown as (message: string) => never,
-    guardGit: vi.fn(),
-    promptConfirm: vi.fn(async () => true),
-    promptText: vi.fn(async () => ''),
-    promptLocale: vi.fn(async () => ''),
-    promptLocaleList: vi.fn(async () => []),
-  };
-}
-
-const tmpDirs: string[] = [];
-
-afterEach(() => {
-  while (tmpDirs.length) {
-    fs.rmSync(tmpDirs.pop()!, { recursive: true, force: true });
-  }
-});
+registerTreeCleanup();
 
 function makeApp(): string {
-  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-hard-'));
-  tmpDirs.push(cwd);
   const files: Record<string, string> = {
     'package.json': JSON.stringify({
       name: 'demo',
@@ -81,12 +57,7 @@ function makeApp(): string {
       '}',
     ].join('\n'),
   };
-  for (const [rel, content] of Object.entries(files)) {
-    const abs = path.join(cwd, rel);
-    fs.mkdirSync(path.dirname(abs), { recursive: true });
-    fs.writeFileSync(abs, content);
-  }
-  return cwd;
+  return makeTree(files, { prefix: 'gt-migrate-hard-' });
 }
 
 describe('runMigration transform hardening', () => {
@@ -136,14 +107,14 @@ describe('runMigration transform hardening', () => {
     // The prompt library's cancel path exits 0 with nothing written, which a
     // CI job reads as a successful no-op migration. The engine must refuse
     // with a real error before ever prompting.
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-noninter-'));
-    tmpDirs.push(cwd);
-    fs.writeFileSync(
-      path.join(cwd, 'package.json'),
-      JSON.stringify({
-        name: 'demo',
-        dependencies: { next: '15.5.0', 'next-intl': '^4.1.0' },
-      })
+    const cwd = makeTree(
+      {
+        'package.json': JSON.stringify({
+          name: 'demo',
+          dependencies: { next: '15.5.0', 'next-intl': '^4.1.0' },
+        }),
+      },
+      { prefix: 'gt-migrate-noninter-' }
     );
     fs.mkdirSync(path.join(cwd, 'src/app'), { recursive: true });
     const originalTTY = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY');

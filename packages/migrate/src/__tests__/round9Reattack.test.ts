@@ -1,10 +1,10 @@
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { buildReport } from '../report/report.js';
 import { runMigration } from '../pipeline/runMigration.js';
-import type { MigrateIO } from '../pipeline/io.js';
+import { makeCapturedIO, type CapturedIO } from './support/io.js';
+import { makeTree, registerTreeCleanup, writeFiles } from './support/tree.js';
 import type { FileEdit, MigrationContext } from '../pipeline/types.js';
 
 // ---------------------------------------------------------------------------
@@ -44,47 +44,9 @@ import type { FileEdit, MigrationContext } from '../pipeline/types.js';
 // hand-populates a MigrationContext.
 // ---------------------------------------------------------------------------
 
-type CapturedIO = { io: MigrateIO; info: string[]; warn: string[] };
-
-function makeIO(): CapturedIO {
-  const info: string[] = [];
-  const warn: string[] = [];
-  return {
-    info,
-    warn,
-    io: {
-      info: vi.fn((message: string) => void info.push(message)),
-      warn: vi.fn((message: string) => void warn.push(message)),
-      error: vi.fn(),
-      fatal: vi.fn((message: string) => {
-        throw new Error(message);
-      }) as unknown as (message: string) => never,
-      guardGit: vi.fn(),
-      promptConfirm: vi.fn(async () => true),
-      promptText: vi.fn(async () => ''),
-      promptLocale: vi.fn(async () => ''),
-      promptLocaleList: vi.fn(async () => []),
-    },
-  };
-}
-
-const tmpDirs: string[] = [];
-
-afterEach(() => {
-  while (tmpDirs.length) {
-    fs.rmSync(tmpDirs.pop()!, { recursive: true, force: true });
-  }
-});
+registerTreeCleanup();
 
 const lines = (...parts: string[]) => parts.join('\n') + '\n';
-
-function writeFiles(cwd: string, files: Record<string, string>): void {
-  for (const [relative, content] of Object.entries(files)) {
-    const absolute = path.join(cwd, relative);
-    fs.mkdirSync(path.dirname(absolute), { recursive: true });
-    fs.writeFileSync(absolute, content);
-  }
-}
 
 /** A layout that hands the retained provider its own messages. */
 const localeLayout = lines(
@@ -148,21 +110,17 @@ function makeApp(
   overrides: Record<string, string> = {},
   options: { root?: string; prefix?: string } = {}
 ): string {
-  const root = options.root ?? os.tmpdir();
-  fs.mkdirSync(root, { recursive: true });
-  const cwd = fs.mkdtempSync(
-    path.join(root, options.prefix ?? 'gt-migrate-r9r4-')
+  return makeTree(
+    { ...baseFiles, ...overrides },
+    { root: options.root, prefix: options.prefix ?? 'gt-migrate-r9r4-' }
   );
-  tmpDirs.push(cwd);
-  writeFiles(cwd, { ...baseFiles, ...overrides });
-  return cwd;
 }
 
 async function migrate(
   cwd: string,
   from = 'next-intl'
 ): Promise<{ ctx: MigrationContext; io: CapturedIO }> {
-  const io = makeIO();
+  const io = makeCapturedIO();
   const ctx = await runMigration(
     {
       config: 'gt.config.json',
@@ -605,15 +563,15 @@ describe('round 9 B5: a hoisted workspace package is a package, not a project pa
 
   /** Builds <root>/packages/app with node_modules only at <root>. */
   function workspace(hoisted: string[]): string {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-r9r4-ws-'));
-    tmpDirs.push(root);
-    fs.writeFileSync(
-      path.join(root, 'package.json'),
-      JSON.stringify({
-        name: 'monorepo',
-        private: true,
-        workspaces: ['packages/*'],
-      })
+    const root = makeTree(
+      {
+        'package.json': JSON.stringify({
+          name: 'monorepo',
+          private: true,
+          workspaces: ['packages/*'],
+        }),
+      },
+      { prefix: 'gt-migrate-r9r4-ws-' }
     );
     const cwd = path.join(root, 'packages', 'app');
     fs.mkdirSync(cwd, { recursive: true });
@@ -792,12 +750,8 @@ describe('round 9 B8: the Created inventory and the pre-flight line', () => {
     ),
   };
 
-  function writeTree(files: Record<string, string>): string {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-r9r4-i18n-'));
-    tmpDirs.push(cwd);
-    writeFiles(cwd, files);
-    return cwd;
-  }
+  const writeTree = (files: Record<string, string>) =>
+    makeTree(files, { prefix: 'gt-migrate-r9r4-i18n-' });
 
   it('lists the catalogs it synthesized under Created', async () => {
     const cwd = writeTree(i18nextApp);

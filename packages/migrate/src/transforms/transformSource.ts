@@ -753,7 +753,7 @@ export function transformSourceFile(
   }
 
   // 5. Orphaned param-locale cleanup. Runs LAST, after every reference-adding
-  //    step, so the recrawl below sees true reference counts. Removing
+  //    step, so the helper's recrawl sees true reference counts. Removing
   //    setRequestLocale or dropping a getTranslations locale option can strand a
   //    `const { locale } = use(params)` (or `= await params`), which then trips
   //    no-unused-vars / TS6133; drop it, the now-dead `params` parameter, and the
@@ -765,70 +765,13 @@ export function transformSourceFile(
     options.dropOrphanedParamLocale !== false &&
     (setRequestLocaleRemoved || droppedLocaleOption)
   ) {
-    // Functions whose orphaned params destructure was removed here; each one's
-    // `params` parameter may now be unreferenced and need dropping.
-    const paramsCleanupTargets = new Set<t.Function>();
-    let removedOrphan = false;
-    traverse(ast, {
-      Program(path) {
-        // Recrawl so bindings reflect every mutation above.
-        path.scope.crawl();
-      },
-      VariableDeclaration(path) {
-        if (path.node.declarations.length !== 1) return;
-        const declarator = path.node.declarations[0];
-        if (!t.isObjectPattern(declarator.id)) return;
-        if (!isParamsInit(declarator.init)) return;
-        // All-or-nothing: keep the declaration unless a rewrite above deleted a
-        // reference that resolved to THIS declarator (so we only clean orphans
-        // this codemod created, never the author's own pre-existing dead code,
-        // and never a sibling function's same-named destructure) AND every name
-        // it binds is now unreferenced.
-        if (!droppedLocaleRefDeclarators.has(declarator)) return;
-        for (const property of declarator.id.properties) {
-          if (
-            !t.isObjectProperty(property) ||
-            !t.isIdentifier(property.value)
-          ) {
-            return;
-          }
-          const binding = path.scope.getBinding(property.value.name);
-          if (!binding || binding.referenced) return;
-        }
-        const fn = path.getFunctionParent();
-        if (fn) paramsCleanupTargets.add(fn.node);
-        path.remove();
-        removedOrphan = true;
-      },
-    });
-
-    // Drop the `params` parameter left unreferenced by those removals. A fresh
-    // crawl is required so the removed destructure no longer counts as a
-    // reference; then each cleaned function's own `params` binding decides.
-    // Only that function's params is touched (a sibling generateMetadata keeps
-    // its own, separately-scoped binding).
-    if (paramsCleanupTargets.size > 0) {
-      traverse(ast, {
-        Program(path) {
-          path.scope.crawl();
-        },
-        Function(path) {
-          if (!paramsCleanupTargets.has(path.node)) return;
-          const binding = path.scope.getBinding('params');
-          if (!binding || binding.kind !== 'param' || binding.referenced) {
-            return;
-          }
-          removeParamsParameter(path.node);
-        },
-      });
-    }
-
-    // The removed destructure was the last reference to a `use` import; prune
-    // it (the helper only drops unreferenced names, so a still-used `use` or a
-    // `React.use` namespace stays).
-    if (removedOrphan) {
-      removeUnusedNamedImports(ast, ['use']);
-    }
+    // All-or-nothing: keep the declaration unless a rewrite above deleted a
+    // reference that resolved to THIS declarator (so we only clean orphans this
+    // codemod created, never the author's own pre-existing dead code, and never
+    // a sibling function's same-named destructure).
+    dropOrphanedParamsDestructures(ast, (declarator) =>
+      droppedLocaleRefDeclarators.has(declarator)
+    );
   }
 
   // Step 3 may have removed a `const locale = await getLocale()` whose only
@@ -945,6 +888,82 @@ export function isParamsInit(node: t.Expression | null | undefined): boolean {
     }
   }
   return false;
+}
+
+/**
+ * The four-phase cleanup for a `const { locale } = await params` (or
+ * `use(params)`) destructure that an earlier rewrite orphaned: recrawl so
+ * bindings reflect every mutation, remove the dead declaration, drop the
+ * `params` parameter it was the last reader of, and prune a now-unreferenced
+ * `use` import. Shared by transformSource's step 5 and transformLayout's step 7
+ * (round-10 finding A4): the two differ only in which declarators are eligible,
+ * so that gate arrives as `isRemovable` (source allows only declarators whose
+ * reference it deleted; layout excludes the one feeding `<html lang>`). Returns
+ * true when a destructure was removed.
+ */
+export function dropOrphanedParamsDestructures(
+  ast: t.File,
+  isRemovable: (declarator: t.VariableDeclarator) => boolean
+): boolean {
+  // Functions whose orphaned params destructure was removed here; each one's
+  // `params` parameter may now be unreferenced and need dropping.
+  const paramsCleanupTargets = new Set<t.Function>();
+  let removedOrphan = false;
+  traverse(ast, {
+    Program(path) {
+      // Recrawl so bindings reflect the mutations above.
+      path.scope.crawl();
+    },
+    VariableDeclaration(path) {
+      if (path.node.declarations.length !== 1) return;
+      const declarator = path.node.declarations[0];
+      if (!t.isObjectPattern(declarator.id)) return;
+      if (!isParamsInit(declarator.init)) return;
+      // All-or-nothing: the caller's gate must allow this declarator AND every
+      // name it binds must now be unreferenced.
+      if (!isRemovable(declarator)) return;
+      for (const property of declarator.id.properties) {
+        if (!t.isObjectProperty(property) || !t.isIdentifier(property.value)) {
+          return;
+        }
+        const binding = path.scope.getBinding(property.value.name);
+        if (!binding || binding.referenced) return;
+      }
+      const fn = path.getFunctionParent();
+      if (fn) paramsCleanupTargets.add(fn.node);
+      path.remove();
+      removedOrphan = true;
+    },
+  });
+
+  // Drop the `params` parameter left unreferenced by those removals. A fresh
+  // crawl is required so the removed destructure no longer counts as a
+  // reference; then each cleaned function's own `params` binding decides. Only
+  // that function's params is touched (a sibling generateMetadata that still
+  // reads its own keeps its own, separately-scoped binding).
+  if (paramsCleanupTargets.size > 0) {
+    traverse(ast, {
+      Program(path) {
+        path.scope.crawl();
+      },
+      Function(path) {
+        if (!paramsCleanupTargets.has(path.node)) return;
+        const binding = path.scope.getBinding('params');
+        if (!binding || binding.kind !== 'param' || binding.referenced) {
+          return;
+        }
+        removeParamsParameter(path.node);
+      },
+    });
+  }
+
+  // The removed destructure may have been the last reference to a `use` import;
+  // prune it (the helper only drops unreferenced names, so a still-used `use` or
+  // a `React.use` namespace stays).
+  if (removedOrphan) {
+    removeUnusedNamedImports(ast, ['use']);
+  }
+  return removedOrphan;
 }
 
 /**

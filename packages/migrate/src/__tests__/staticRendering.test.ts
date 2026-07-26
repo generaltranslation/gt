@@ -1,18 +1,16 @@
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { emitGtFiles } from '../emit/emitGtFiles.js';
 import { buildReport } from '../report/report.js';
 import { transformLayoutFile } from '../transforms/transformLayout.js';
+import { makeTree, registerTreeCleanup, writeFiles } from './support/tree.js';
 import type {
   MessageCatalogs,
   MigrationContext,
   RoutingInfo,
 } from '../pipeline/types.js';
 import { nextIntlAdapter } from '../adapters/nextIntl.js';
-
-const tmpDirs: string[] = [];
 
 /**
  * Builds a tiny in-memory project on disk and a MigrationContext whose
@@ -26,17 +24,14 @@ function makeProject(
   files: Record<string, string>,
   opts: { cwd?: string } = {}
 ): MigrationContext {
-  const cwd =
-    opts.cwd ?? fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-static-'));
-  if (!opts.cwd) tmpDirs.push(cwd);
+  // opts.cwd reuses a directory an earlier call made (the re-run cases), so it
+  // is already registered for cleanup and must not be recreated.
+  const cwd = opts.cwd ?? makeTree({}, { prefix: 'gt-migrate-static-' });
   fs.mkdirSync(cwd, { recursive: true });
-  const projectFiles: string[] = [];
-  for (const [rel, content] of Object.entries(files)) {
-    const abs = path.join(cwd, rel);
-    fs.mkdirSync(path.dirname(abs), { recursive: true });
-    fs.writeFileSync(abs, content);
-    if (/\.(?:[cm]?[jt]s|[jt]sx)$/.test(abs)) projectFiles.push(abs);
-  }
+  writeFiles(cwd, files);
+  const projectFiles = Object.keys(files)
+    .map((rel) => path.join(cwd, rel))
+    .filter((abs) => /\.(?:[cm]?[jt]s|[jt]sx)$/.test(abs));
   const catalogs: MessageCatalogs = {
     defaultLocale: 'en',
     locales: ['en', 'es'],
@@ -63,11 +58,7 @@ function makeProject(
   };
 }
 
-afterEach(() => {
-  while (tmpDirs.length) {
-    fs.rmSync(tmpDirs.pop()!, { recursive: true, force: true });
-  }
-});
+registerTreeCleanup();
 
 const basePackageJson = JSON.stringify(
   {
@@ -335,12 +326,14 @@ describe('emitGtFiles static-locale resolvers', () => {
     // (catalog/`latest`). A cwd-only node_modules read would miss the hoisted
     // next and then fail closed on the unparseable range; resolving the way
     // Node does must still find it.
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-mono-'));
-    tmpDirs.push(root);
-    fs.mkdirSync(path.join(root, 'node_modules', 'next'), { recursive: true });
-    fs.writeFileSync(
-      path.join(root, 'node_modules', 'next', 'package.json'),
-      JSON.stringify({ name: 'next', version: '16.0.0' })
+    const root = makeTree(
+      {
+        'node_modules/next/package.json': JSON.stringify({
+          name: 'next',
+          version: '16.0.0',
+        }),
+      },
+      { prefix: 'gt-migrate-mono-' }
     );
     const cwd = path.join(root, 'apps', 'web');
     const ctx = makeProject(

@@ -1,30 +1,15 @@
-import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { discoverCatalogs } from '../catalogs/discover.js';
-import type { MigrateIO } from '../pipeline/io.js';
+import { makeIO, type MockIO } from './support/io.js';
+import { makeTree, registerTreeCleanup } from './support/tree.js';
 import type { RoutingInfo } from '../pipeline/types.js';
 
 // discoverCatalogs surfaces its one advisory through the injected io (the CLI
-// wires io.warn to its logger); a fake records the calls.
-function makeIO() {
-  return {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    fatal: vi.fn((message: string) => {
-      throw new Error(message);
-    }) as unknown as (message: string) => never,
-    guardGit: vi.fn(),
-    promptConfirm: vi.fn(),
-    promptText: vi.fn(),
-    promptLocale: vi.fn(),
-    promptLocaleList: vi.fn(),
-  } satisfies MigrateIO;
-}
-let io: ReturnType<typeof makeIO>;
+// wires io.warn to its logger); the shared fake records the calls. It never
+// prompts, so the scripted prompt answers are irrelevant here.
+let io: MockIO;
 
 const emptyRouting: RoutingInfo = {
   locales: null,
@@ -35,29 +20,15 @@ const emptyRouting: RoutingInfo = {
   requestFile: null,
 };
 
-const tmpDirs: string[] = [];
-
-function makeProject(files: Record<string, string>): string {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-discover-'));
-  tmpDirs.push(dir);
-  for (const [rel, content] of Object.entries(files)) {
-    const abs = path.join(dir, rel);
-    fs.mkdirSync(path.dirname(abs), { recursive: true });
-    fs.writeFileSync(abs, content);
-  }
-  return dir;
-}
+const makeProject = (files: Record<string, string>) =>
+  makeTree(files, { prefix: 'gt-migrate-discover-' });
 
 beforeEach(() => {
   vi.clearAllMocks();
   io = makeIO();
 });
 
-afterEach(() => {
-  while (tmpDirs.length) {
-    fs.rmSync(tmpDirs.pop()!, { recursive: true, force: true });
-  }
-});
+registerTreeCleanup();
 
 describe('discoverCatalogs', () => {
   it('reports the offending file and the fix guidance when a catalog is malformed', async () => {

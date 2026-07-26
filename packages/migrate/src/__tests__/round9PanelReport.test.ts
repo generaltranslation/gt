@@ -1,10 +1,10 @@
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { runMigration } from '../pipeline/runMigration.js';
 import { buildReport } from '../report/report.js';
-import type { MigrateIO } from '../pipeline/io.js';
+import { makeCapturedIO, type CapturedIO } from './support/io.js';
+import { makeTree, registerTreeCleanup } from './support/tree.js';
 import type { FileEdit, MigrationContext } from '../pipeline/types.js';
 
 // Round-9 panel round 2 (2026-07-24): the claims audit and the code adversary
@@ -39,54 +39,16 @@ import type { FileEdit, MigrationContext } from '../pipeline/types.js';
 // Every test drives the REAL pipeline against a real tmpdir project; nothing
 // hand-populates a MigrationContext.
 
-type CapturedIO = { io: MigrateIO; info: string[]; warn: string[] };
+registerTreeCleanup();
 
-function makeIO(): CapturedIO {
-  const info: string[] = [];
-  const warn: string[] = [];
-  return {
-    info,
-    warn,
-    io: {
-      info: vi.fn((message: string) => void info.push(message)),
-      warn: vi.fn((message: string) => void warn.push(message)),
-      error: vi.fn(),
-      fatal: vi.fn((message: string) => {
-        throw new Error(message);
-      }) as unknown as (message: string) => never,
-      guardGit: vi.fn(),
-      promptConfirm: vi.fn(async () => true),
-      promptText: vi.fn(async () => ''),
-      promptLocale: vi.fn(async () => ''),
-      promptLocaleList: vi.fn(async () => []),
-    },
-  };
-}
-
-const tmpDirs: string[] = [];
-
-afterEach(() => {
-  while (tmpDirs.length) {
-    fs.rmSync(tmpDirs.pop()!, { recursive: true, force: true });
-  }
-});
-
-function writeTree(files: Record<string, string>): string {
-  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-r9-panel-'));
-  tmpDirs.push(cwd);
-  for (const [rel, content] of Object.entries(files)) {
-    const abs = path.join(cwd, rel);
-    fs.mkdirSync(path.dirname(abs), { recursive: true });
-    fs.writeFileSync(abs, content);
-  }
-  return cwd;
-}
+const writeTree = (files: Record<string, string>) =>
+  makeTree(files, { prefix: 'gt-r9-panel-' });
 
 async function migrate(
   cwd: string,
   from = 'next-intl'
 ): Promise<{ ctx: MigrationContext; io: CapturedIO }> {
-  const io = makeIO();
+  const io = makeCapturedIO();
   const ctx = await runMigration(
     {
       config: 'gt.config.json',

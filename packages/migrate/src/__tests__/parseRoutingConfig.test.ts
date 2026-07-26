@@ -1,27 +1,12 @@
-import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { parseRoutingConfig } from '../config/parseRoutingConfig.js';
+import { makeTree, registerTreeCleanup } from './support/tree.js';
 
-const tmpDirs: string[] = [];
+registerTreeCleanup();
 
-function makeProject(files: Record<string, string>): string {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-routing-'));
-  tmpDirs.push(dir);
-  for (const [rel, content] of Object.entries(files)) {
-    const abs = path.join(dir, rel);
-    fs.mkdirSync(path.dirname(abs), { recursive: true });
-    fs.writeFileSync(abs, content);
-  }
-  return dir;
-}
-
-afterEach(() => {
-  while (tmpDirs.length) {
-    fs.rmSync(tmpDirs.pop()!, { recursive: true, force: true });
-  }
-});
+const makeProject = (files: Record<string, string>) =>
+  makeTree(files, { prefix: 'gt-migrate-routing-' });
 
 describe('parseRoutingConfig', () => {
   it('extracts a canonical defineRouting config', () => {

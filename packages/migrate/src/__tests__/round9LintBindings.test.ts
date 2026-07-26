@@ -1,14 +1,13 @@
-import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { parse } from '@babel/parser';
 import traverseModule from '@babel/traverse';
 import * as t from '@babel/types';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { runMigration } from '../pipeline/runMigration.js';
 import { transformSourceFile } from '../transforms/transformSource.js';
 import { nextIntlAdapter } from '../adapters/nextIntl.js';
-import type { MigrateIO } from '../pipeline/io.js';
+import { makeIO } from './support/io.js';
+import { makeTree, registerTreeCleanup } from './support/tree.js';
 import type {
   MessageCatalogs,
   MigrationContext,
@@ -26,57 +25,34 @@ const traverse: typeof traverseModule =
 // wrong one. Each test below drives the real pipeline (runMigration over a real
 // tmpdir app) so the assertion covers detection, not just rendering.
 
-function makeIO(): MigrateIO {
-  return {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    fatal: vi.fn((message: string) => {
-      throw new Error(message);
-    }) as unknown as (message: string) => never,
-    guardGit: vi.fn(),
-    promptConfirm: vi.fn(async () => true),
-    promptText: vi.fn(async () => ''),
-    promptLocale: vi.fn(async () => ''),
-    promptLocaleList: vi.fn(async () => []),
-  };
-}
-
-const tmpDirs: string[] = [];
-
-afterEach(() => {
-  while (tmpDirs.length) {
-    fs.rmSync(tmpDirs.pop()!, { recursive: true, force: true });
-  }
-});
+registerTreeCleanup();
 
 /** A real on-disk next-intl app: the base files plus whatever a case adds. */
 function makeApp(extra: Record<string, string>): string {
-  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-migrate-r9b-'));
-  tmpDirs.push(cwd);
-  const files: Record<string, string> = {
-    'package.json': JSON.stringify({
-      name: 'demo',
-      dependencies: { next: '15.5.0', 'next-intl': '^4.1.0', react: '19.0.0' },
-    }),
-    'messages/en.json': JSON.stringify({
-      Home: { title: 'Welcome' },
-      Layout: { title: 'Site' },
-      Metadata: { title: 'Portfolio' },
-    }),
-    'messages/es.json': JSON.stringify({
-      Home: { title: 'Bienvenido' },
-      Layout: { title: 'Sitio' },
-      Metadata: { title: 'Portafolio' },
-    }),
-    ...extra,
-  };
-  for (const [rel, content] of Object.entries(files)) {
-    const abs = path.join(cwd, rel);
-    fs.mkdirSync(path.dirname(abs), { recursive: true });
-    fs.writeFileSync(abs, content);
-  }
-  return cwd;
+  return makeTree(
+    {
+      'package.json': JSON.stringify({
+        name: 'demo',
+        dependencies: {
+          next: '15.5.0',
+          'next-intl': '^4.1.0',
+          react: '19.0.0',
+        },
+      }),
+      'messages/en.json': JSON.stringify({
+        Home: { title: 'Welcome' },
+        Layout: { title: 'Site' },
+        Metadata: { title: 'Portfolio' },
+      }),
+      'messages/es.json': JSON.stringify({
+        Home: { title: 'Bienvenido' },
+        Layout: { title: 'Sitio' },
+        Metadata: { title: 'Portafolio' },
+      }),
+      ...extra,
+    },
+    { prefix: 'gt-migrate-r9b-' }
+  );
 }
 
 async function migrate(cwd: string): Promise<MigrationContext> {
