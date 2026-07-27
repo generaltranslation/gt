@@ -355,9 +355,8 @@ describe('react-i18next locale narrowing', () => {
 
   it('reuses the dictionary dir gt.config.json names on a re-run (round-10 claims F7)', async () => {
     // A prior run wrote gt/dictionaries and wired it into gt.config.json. A
-    // premature re-run used to pick the first NONEXISTENT candidate and mint
-    // gt/dictionaries-icu, a third live catalog location the config does not
-    // point at.
+    // re-run picking the first free candidate mints gt/dictionaries-icu, a
+    // third live catalog location the config does not point at.
     const cwd = makeTree({
       'i18n.ts': i18nConfig,
       'public/locales/en/translation.json': JSON.stringify({ title: 'Title' }),

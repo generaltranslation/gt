@@ -7,12 +7,9 @@ const traverse: typeof traverseModule =
   traverseModule;
 
 /**
- * Builds an adapter's `hasProvider`: does this code IMPORT the library's
- * provider component (from any module the adapter owns) and RENDER it as JSX?
- * One owner for all three adapters (round-10 arch finding A5): the three
- * hand-copied bodies had already drifted on the one line ever edited, and the
- * drifted copy missed subpath imports (`react-intl/lib`) its own `ownsModule`
- * accepts. Cheap-exits before parsing when the provider name is absent.
+ * Builds an adapter's `hasProvider`: the code both imports the provider from a
+ * module the adapter owns and renders it as JSX. One owner for all three
+ * adapters (round-10 A5). Exits before parsing when the name is absent.
  */
 export function makeProviderDetector(
   providerName: string,

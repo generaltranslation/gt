@@ -6,26 +6,9 @@ import { makeIO } from './support/io.js';
 import { makeTree, registerTreeCleanup } from './support/tree.js';
 import type { MigrationContext } from '../pipeline/types.js';
 
-// ---------------------------------------------------------------------------
-// Round 10, CRITICAL finding 1: the emitted getLocale.ts resolves the locale
-// through next/root-params, and Next.js throws when that is called inside a
-// Route Handler or a Server Action. Every converted `route.ts` / `'use server'`
-// translation call therefore 500s at runtime, while the report claimed "gt-next
-// resolves the request locale itself".
-//
-// Measured on the reviewer's deskly app: GET /de/api/status returned 200 with
-// German JSON before the migration and 500 after it.
-//
-// Two layers answer it, both measured on a live app:
-//  - the emitted resolver guards the root-params call and falls back to the
-//    locale header the gt-next middleware sets, which is readable in both
-//    contexts (Server Actions have nothing else to read);
-//  - a Route Handler under [locale] additionally registers its own route
-//    param, which is exact and does not depend on the middleware matcher.
-//
-// These tests drive the REAL pipeline over files on disk, because the hole was
-// exactly that no phase ever asked what KIND of entry a converted file is.
-// ---------------------------------------------------------------------------
+// Round-10 finding 1: next/root-params throws inside a Route Handler or Server
+// Action, so a converted translation call there 500s. Both answers are pinned
+// here, over the real pipeline: the guarded resolver and registerLocale.
 
 registerTreeCleanup();
 
@@ -157,7 +140,7 @@ describe('round 10 finding 1: Route Handlers under [locale]', () => {
       /import \{[^}]*registerLocale[^}]*\} from ['"]gt-next\/server['"]/
     );
     expect(code).toContain('registerLocale');
-    // It must run BEFORE the first gt-next call, per registerLocale's contract.
+    // registerLocale's contract: it runs ahead of the first gt-next call.
     const registerAt = code!.indexOf('registerLocale(');
     const translateAt = code!.indexOf('getTranslations(');
     expect(registerAt).toBeGreaterThan(-1);
@@ -350,8 +333,8 @@ describe('round 10 finding 1: the emitted resolver', () => {
     expect(code).toContain("import { locale } from 'next/root-params'");
     expect(code).toContain('try {');
     expect(code).toContain('catch');
-    // The fallback must resolve the REQUEST locale, not the default: returning
-    // the default is what made the probe answer /de in English.
+    // The fallback resolves the request locale; returning the default is what
+    // made the probe answer /de in English.
     expect(code).toContain("get('x-generaltranslation-locale')");
   });
 

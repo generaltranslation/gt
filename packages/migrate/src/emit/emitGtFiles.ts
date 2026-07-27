@@ -35,12 +35,9 @@ const NEXT_ROOT_PARAMS_MIN_VERSION = '15.5.0';
 const NEXT_ROOT_PARAMS_MIN_GATE = `${NEXT_ROOT_PARAMS_MIN_VERSION}-0`;
 
 /**
- * The request header gt-next's middleware puts the resolved locale in
- * (gt-next's own `defaultLocaleHeaderName`; it is not exported from a public
- * entry point, so the emitted resolver carries the literal). The emitted
- * getLocale.ts reads it where next/root-params refuses to resolve: Route
- * Handlers and Server Actions. An app that renames it through
- * `headersAndCookies.localeHeaderName` must rename it there too.
+ * gt-next's `defaultLocaleHeaderName`, inlined because no public entry point
+ * exports it. An app that renames it through
+ * `headersAndCookies.localeHeaderName` must rename it in getLocale.ts too.
  */
 const LOCALE_HEADER = 'x-generaltranslation-locale';
 
@@ -642,14 +639,9 @@ function emitStaticLocaleResolvers(
   }
 
   const useSrc = fs.existsSync(path.join(ctx.cwd, 'src'));
-  // next/root-params resolves only inside a ROUTE RENDER. Next.js throws
-  // ("was used inside a Route Handler" / "inside a Server Action") everywhere
-  // else, and gt-next routes every server-side translation call through this
-  // file, so an unguarded `await locale()` turned every converted route.ts and
-  // 'use server' translation call into a 500 (round-10 finding 1, measured on
-  // a live app). The guard costs nothing statically: a prerender never enters
-  // the catch, so headers() is never read there and SSG survives (measured:
-  // the route table is byte-identical with and without it).
+  // next/root-params throws outside a route render, so an unguarded
+  // `await locale()` 500s in route.ts and 'use server' (round-10 finding 1). A
+  // prerender never enters the catch, so headers() stays unread and SSG holds.
   const defaultLocale = ctx.routing.defaultLocale ?? ctx.catalogs.defaultLocale;
   emitResolverFile(
     ctx,
@@ -736,10 +728,9 @@ function planHazardContainment(
   const relative = (file: string) => path.relative(ctx.cwd, file);
   const localeDir = path.dirname(localeLayoutFile);
   const targets = new Map<string, ContainmentTarget>();
-  // A file this run could not read has NO edges in the import graph, so every
-  // hazard's reach set is a lower bound the same way an unresolved specifier
-  // makes it one (round-10 A8: this used to fall through to per-route
-  // containment, exactly what reachSetIncomplete exists to prevent).
+  // An unreadable file contributes no edges to the import graph, so every
+  // hazard's reach set is a lower bound, the same as an unresolved
+  // specifier makes it (round-10 A8).
   const unreadable = ctx.unreadableFiles ?? [];
   if (unreadable.length > 0) {
     return {
@@ -1308,11 +1299,9 @@ function findRemainingImporter(
         continue;
       }
     }
-    // The shared scanner (moduleSpecifiers.ts) is the same one the hazard
-    // import graph reads: this answer gates a DELETE, so it must never see
-    // fewer imports than any other stage (round-10 A2: the private regex here
-    // required whitespace after `from`, and `from'./routing'` got its target
-    // deleted while still imported).
+    // The shared scanner, the same one the hazard import graph reads: this
+    // answer gates a delete, so it must never see fewer imports than another
+    // stage does (round-10 A2).
     for (const specifier of moduleSpecifierMatches(content)) {
       // The pattern matches file TEXT, so prose in a comment can produce a
       // "specifier" (sniply: `// ... the token value from "sniply_session=TOKEN;
@@ -1413,11 +1402,9 @@ function findRemainingImporter(
     const hit =
       unresolvedTails.get(base) ??
       unresolvedTails.get(path.basename(path.dirname(targetNoExt)));
-    // The guard and the lookups strip extensions with DIFFERENT rules (any
-    // dot-suffix vs module extensions only), so a teardown candidate with a
-    // non-module extension can pass the guard while both lookups miss
-    // (round-10 arch finding A12); retain without a named specifier rather
-    // than dereferencing a miss over a half-planned migration.
+    // The guard strips any dot-suffix while the lookups strip module
+    // extensions only, so a candidate can pass the guard and miss both
+    // (round-10 A12). Retain rather than dereference the miss.
     if (hit === undefined) {
       return { file: target, exact: false, unresolvedSpecifier: '' };
     }

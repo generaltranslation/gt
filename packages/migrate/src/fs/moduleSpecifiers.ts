@@ -1,13 +1,7 @@
 /**
- * The one syntactic definition of "this file text contains a module
- * specifier". Four forms: `from '...'` (static import or re-export),
- * `import('...')` (dynamic), bare `import '...'` (side effect), and
- * `require('...')`, with ALL whitespace optional: `from'./x'` and
- * `import'./x'` are valid ES. Every consumer that answers "what does this
- * file import" reads it from here, because the consumers gate different
- * decisions (an irreversible delete, hazard containment, test-graph edges)
- * and a private copy that drifts one whitespace apart deletes a file
- * something still imports (round-10 A2).
+ * Static, dynamic, side-effect and `require` specifier forms, all with
+ * optional whitespace (`from'./x'` is valid ES). A drifting private copy
+ * deletes a file that is still imported, so every consumer reads this (A2).
  */
 
 const SPECIFIER_PATTERN_SOURCES = [
@@ -18,18 +12,16 @@ const SPECIFIER_PATTERN_SOURCES = [
 ] as const;
 
 /**
- * For adapters that match a LITERAL library name in specifier position
- * (`projectUsagePattern`): the same four import forms as a non-capturing
- * prefix, so "does this file use my library" and "what does this file
- * import" cannot drift apart again. Callers append `['"]<library>...`.
+ * The same four forms as a non-capturing prefix, for adapters matching a
+ * literal library name in specifier position. Callers append
+ * `['"]<library>...`.
  */
 export const MODULE_SPECIFIER_PREFIX_SOURCE = String.raw`(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s*|\brequire\s*\(\s*)`;
 
 /**
  * Every module specifier the file text contains, in source order per form,
- * duplicates included. Matches TEXT, not an AST, so prose in a comment can
- * produce a "specifier"; callers filter with isPlausibleModuleSpecifier or
- * resolve against the project as their decision requires.
+ * duplicates included. Matches text rather than an AST, so prose in a comment
+ * can produce one; callers filter or resolve as their decision requires.
  */
 export function moduleSpecifierMatches(code: string): string[] {
   const specifiers: string[] = [];

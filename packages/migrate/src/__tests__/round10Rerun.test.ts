@@ -7,12 +7,9 @@ import { makeCapturedIO } from './support/io.js';
 import { makeTree, registerTreeCleanup } from './support/tree.js';
 import type { FileEdit, MigrationContext } from '../pipeline/types.js';
 
-// ---------------------------------------------------------------------------
-// Round 10, N2: a re-run listed gt.config.json and gt/dictionaries/*.json under
-// "Converted" while `git status` showed only the report had changed. The engine
-// already dropped byte-identical SOURCE writes; the emitted files now go through
-// the same rule. Drives the real pipeline twice over a real tmpdir project.
-// ---------------------------------------------------------------------------
+// Round-10 N2: a re-run listed gt.config.json and the catalogs under
+// "Converted" while `git status` showed only the report had changed. Emitted
+// files now take the same byte-identical rule as source writes.
 
 registerTreeCleanup();
 
@@ -142,9 +139,8 @@ describe('round 10 N2: a re-run does not list writes it did not change', () => {
     expect(rewritten).not.toContain(path.join('gt', 'dictionaries', 'es.json'));
 
     // ...and the report cannot list them either, since it reads the same edits.
-    // Matched as bullets: both sections carry prose that names the catalog
-    // directory legitimately ("catalogs in gt/dictionaries/ now load through
-    // loadDictionary.ts"), and that sentence is true on a re-run.
+    // Matched as bullets, because both sections carry prose that names the
+    // catalog directory legitimately even on a re-run.
     const report = buildReport(second, false, false);
     for (const heading of ['Converted', 'Created (new files this run added)']) {
       const body = section(report, heading);

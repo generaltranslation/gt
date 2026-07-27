@@ -24,9 +24,8 @@ export function writeFiles(dir: string, files: Record<string, string>): void {
 
 /**
  * A fresh tmpdir holding `files`, registered for removal by
- * registerTreeCleanup. Most suites here drive the real pipeline over a real
- * project rather than a hand-populated MigrationContext, so this scaffold is
- * the shared setup for nearly every one of them (round-10 finding A10).
+ * registerTreeCleanup. Shared setup for the suites that drive the real
+ * pipeline over a real project rather than a built context (round-10 A10).
  */
 export function makeTree(
   files: Record<string, string>,

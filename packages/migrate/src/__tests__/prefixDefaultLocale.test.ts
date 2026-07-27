@@ -96,10 +96,9 @@ describe('transformMiddlewareFile prefixDefaultLocale mapping', () => {
     expect(result.skipReasons).toEqual([]);
     expect(result.code).toContain('createNextMiddleware()');
     expect(result.code).not.toContain('prefixDefaultLocale');
-    // The option match is on serving only. next-intl also REDIRECTED /en/* to
-    // the unprefixed path and gt-next has no equivalent, so the emitted code is
-    // right while the URL structure still changes; that is disclosed, not
-    // silent (round-10 finding 5, pinned in round10Middleware.test.ts).
+    // The option match is on serving only: next-intl also redirected /en/* to
+    // the unprefixed path, so the emitted code is right while the URL
+    // structure still changes, which is disclosed (round-10 finding 5).
     expect(result.todos).toHaveLength(1);
     expect(result.todos[0].reason).toMatch(/redirect/);
   });

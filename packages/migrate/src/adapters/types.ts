@@ -28,11 +28,9 @@ export interface SourceAdapter {
   /** human-readable name, used only in report prose. */
   displayName: string;
   /**
-   * What THIS library did with a missing catalog key, past tense, for the
-   * report's throw-on-miss warning. Measured per library, never generic
-   * (round-10 claims finding 4): next-intl rendered the raw key and logged,
-   * react-i18next rendered it silently, and react-intl rendered the
-   * defaultMessage, so its misses were invisible in both the UI and the logs.
+   * What this library did with a missing catalog key, past tense, for the
+   * report's throw-on-miss warning. Per library, never generic: the three
+   * differ from logging the raw key to rendering a defaultMessage (claims 4).
    */
   missingKeyBehavior: string;
 
@@ -174,11 +172,8 @@ export interface SourceAdapter {
   middlewareCandidates: string[];
   /**
    * The module a middleware file imports the source library's middleware
-   * factory from ('next-intl/middleware'). Set only by adapters with a
-   * middleware lane. The generic source pass reads it so a file importing it
-   * from a path Next.js does NOT run as middleware is told that its LOCATION is
-   * the problem, rather than being handed the generic "unsupported import form"
-   * reason it cannot act on (round-10 finding 9).
+   * factory from. The generic source pass reads it so a file at a path Next.js
+   * never runs as middleware is told that (round-10 finding 9).
    */
   middlewareModule?: string;
 
@@ -192,13 +187,9 @@ export interface SourceAdapter {
   emitCatalogs?(ctx: MigrationContext): FileEdit[];
 
   /**
-   * Matches a post-run file that still wires this library's locale-aware
-   * navigation (next-intl: an import of 'next-intl/navigation', where
-   * createNavigation lives). While one exists, router.push/redirect through
-   * that wrapper stays locale-prefixed by the retained library, and the
-   * report must not claim programmatic navigation lost its prefixing
-   * (round-10 claims finding 2: following that claim double-prefixes every
-   * push). Absent for libraries with no navigation factory.
+   * Matches a post-run file still wiring this library's locale-aware
+   * navigation. While one exists, the report must not claim programmatic
+   * navigation lost its prefixing (round-10 claims finding 2).
    */
   retainedNavigationPattern?: RegExp;
 

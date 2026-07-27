@@ -7,14 +7,9 @@ import { makeIO } from './support/io.js';
 import { makeTree, registerTreeCleanup } from './support/tree.js';
 import type { FileEdit, MigrationContext } from '../pipeline/types.js';
 
-// ---------------------------------------------------------------------------
-// Round 10, greptile: the requestLocale rewiring had no idempotency guard. Run 1
-// rewires the fallback through gt-next's getLocale(); run 2 no longer matches
-// the `{ requestLocale }` shape it is looking for, reads that as "shape not
-// recognized", and tells the user to wire a fallback the first run already
-// wired. Nothing is written wrong, but the instruction is false. Drives the
-// real pipeline twice over a real tmpdir project, the way round10Rerun does.
-// ---------------------------------------------------------------------------
+// The requestLocale rewiring had no idempotency guard, so run 2 stopped
+// recognizing its own output and told the user to wire a fallback run 1 had
+// already wired. Drives the real pipeline twice over a tmpdir project.
 
 registerTreeCleanup();
 
@@ -22,9 +17,8 @@ const lines = (...parts: string[]) => parts.join('\n') + '\n';
 
 /**
  * A next-intl app whose stats component imports an unsupported API, so the
- * migration stays partial: next-intl is retained, src/i18n/request.ts survives
- * teardown, and the requestLocale lane (which only runs when skips remain) is
- * live on both runs.
+ * migration stays partial and the requestLocale lane, which only runs while
+ * skips remain, is live on both runs.
  */
 const app: Record<string, string> = {
   'package.json': JSON.stringify(
@@ -183,9 +177,8 @@ describe('round 10 greptile: the requestLocale rewiring is idempotent', () => {
     // Still partial, so the lane is live on run 2 too; the guard is what stops
     // it, not an early exit somewhere upstream.
     expect(second.skippedFiles.size).toBeGreaterThan(0);
-    // OBSERVED on 8c9a14769: one TODO reading "request config shape not
-    // recognized; ... wire the fallback to gt-next/server getLocale()", against
-    // a file whose fallback is already wired to exactly that.
+    // Observed on 8c9a14769: a "request config shape not recognized" TODO
+    // against a file whose fallback is already wired to getLocale().
     expect(requestConfigTodos(second, cwd)).toEqual([]);
     expect(requestConfigWrites(second, cwd)).toEqual([]);
 

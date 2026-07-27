@@ -218,11 +218,9 @@ export type SourceResult = {
   /** non-empty means the whole file must be left untouched */
   skipReasons: string[];
   /**
-   * Top-level warnings this transform raised, merged into `ctx.warnings` by
-   * `collect` so they print at the end of the run instead of only in the TODO
-   * list. Returned rather than pushed onto ctx directly because the config lane
-   * classifies before it applies: a transform that pushed its own warning would
-   * emit it twice.
+   * Top-level warnings, merged into `ctx.warnings` by `collect` so they print
+   * at the end of the run. Returned rather than pushed, because the config
+   * lane classifies before it applies and would emit each warning twice.
    */
   warnings?: string[];
 };

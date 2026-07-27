@@ -398,9 +398,8 @@ describe('round 9 panel: files importing a left-unchanged module', () => {
       '## Behavior differences to know about'
     );
     // The retained next-intl wrapper still prefixes router.push/redirect, so
-    // the blanket "not locale-prefixed" sentence over this tree is false: a
-    // user following it hand-prefixes and every push double-prefixes into
-    // /es/es/... 404s (round-10 claims finding 2).
+    // the blanket "not locale-prefixed" sentence would send a user
+    // hand-prefixing into /es/es/... (round-10 claims finding 2).
     expect(differences).toContain(
       'still runs through the retained next-intl navigation wrapper'
     );

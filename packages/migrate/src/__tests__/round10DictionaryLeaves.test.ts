@@ -10,12 +10,9 @@ import { auditConvertedDictionaryKeys } from '../pipeline/auditDictionaryKeys.js
 import type { MigrationContext } from '../pipeline/types.js';
 
 /**
- * Round-10 finding 3. `hasDictionaryKey` answered "is this key present?", so
- * ANY non-undefined value counted, and the audit whose stated purpose is
- * predicting `Dictionary entry <key> cannot be found` stayed silent on the one
- * value that actually throws it. gt-next renders a DictionaryLeaf only
- * (`string`, `[message]`, `[message, options]`); everything else takes the same
- * throw as an absent key.
+ * Round-10 finding 3: the audit tested presence, so every non-undefined value
+ * counted and it stayed silent on the values gt-next actually throws on.
+ * Renderable means a DictionaryLeaf: `string`, `[message]`, `[message, opts]`.
  */
 
 const cwd = '/tmp/probe-app';
@@ -158,11 +155,8 @@ describe('gt-next leaf semantics', () => {
 
   it('pins the shape permissiveness this change did NOT touch', () => {
     // A flat dotted leaf inside a namespace object still counts as resolved,
-    // as it has since the audit was written. gt-next itself splits the id on
-    // '.' and walks objects only, so this would throw at runtime; narrowing it
-    // turns silence into new "missing key" claims across all three adapters
-    // and is a separate finding from the leaf-TYPE one. Pinned so the next
-    // change to it is deliberate.
+    // as it has since the audit was written. Narrowing it would raise new
+    // "missing key" claims on all three adapters, so it is a separate call.
     expect(resolveDictionaryKey({ UI: { 'a.b': 'x' } }, 'UI.a.b')).toEqual({
       kind: 'renderable',
     });

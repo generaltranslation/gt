@@ -235,11 +235,9 @@ describe('transformSourceFile: next-intl Locale type', () => {
       { retainProvider: true, dropLocaleValidation: true }
     );
     expect(result.skipReasons).toEqual([]);
-    // Nothing in this file changes semantically in retained mode, and a
-    // semantic no-op no longer ships a reflowed copy of the file (round-10
-    // parity finding 5: print-only rewrites drifted comment indentation on
-    // every re-run). code null means the file is left byte-identical, which
-    // preserves the Locale import, its references, and the provider exactly.
+    // Retained mode changes nothing here, and a semantic no-op no longer
+    // ships a reflowed copy (round-10 parity 5). Null code means the file is
+    // byte-identical, so the Locale import and the provider survive as written.
     expect(result.code).toBeNull();
   });
 

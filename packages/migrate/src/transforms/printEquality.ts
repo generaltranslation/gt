@@ -18,15 +18,9 @@ function canonical(code: string): string | null {
 }
 
 /**
- * True when two sources print to the same canonical form (comments and
- * formatting stripped), i.e. the rewrite carries no semantic change. A
- * transform whose output prints identically to its input must return "no
- * work" instead of the output: the generator re-indents multiline comments
- * relative to their new column, so shipping such rewrites moved comment
- * continuation lines one space right on EVERY re-run with no fixed point
- * (round-10 parity finding 5), and "re-run to confirm nothing changed" was
- * never a valid check. Unparseable input compares unequal, so a real rewrite
- * is never suppressed by a parse failure.
+ * True when two sources print to the same canonical form, so a transform
+ * returns "no work" rather than a rewrite that only re-indents comments and
+ * never settles (round-10 parity 5). Unparseable input compares unequal.
  */
 export function printsIdentically(after: string, before: string): boolean {
   const canonicalAfter = canonical(after);

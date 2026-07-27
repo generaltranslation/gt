@@ -42,18 +42,15 @@ const GT_FACTORIES = new Set(['useTranslations', 'getTranslations']);
  * all, which left memo-engine's 10 template-literal sites silent on an engine
  * that throws on a miss: round-9 re-attack B7).
  *
- * "Resolves" means what gt-next means by it: the key reaches a value `t()` can
- * render (see catalogs/dictionaryLeaf.ts). Mere presence is not enough, because
- * an array, a nested object, `null`, or a number throws the SAME
- * "cannot be found" error as an absent key; counting those as resolved is what
- * let a `returnObjects: true` array through silently and failed a migrated
- * app's build (round-10 finding 3).
+ * "Resolves" means the key reaches a value `t()` can render (see
+ * catalogs/dictionaryLeaf.ts). Presence is not enough: an array or a nested
+ * object throws the same "cannot be found" error (round-10 finding 3).
  *
  * Conservative by construction; every uncertainty resolves to silence:
  *  - only STATIC keys are ever reported as missing;
  *  - factory bindings are resolved through scope (binding identity, not name),
  *    so a shadowed `t` cannot be attributed to the wrong namespace;
- *  - a key counts as resolved if ANY shape the dictionary accepts reaches a
+ *  - a key counts as resolved when some shape the dictionary accepts reaches a
  *    renderable leaf (nested path, a flat dotted leaf, or a flat leaf inside
  *    its namespace object);
  *  - with no readable default-locale catalog, nothing is claimed at all.

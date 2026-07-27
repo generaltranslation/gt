@@ -1,7 +1,6 @@
 // Pinned reproductions from the round-10 architecture review (finding A1).
-// Written red against b27d1c0ff, green with the fix; they run the real
-// pipeline over a tmpdir project because the defect lived in the seam
-// between two passes, exactly where hand-built-context unit tests cannot see.
+// Driven over a real tmpdir project, because the defect lived in the seam
+// between two passes where a hand-built context cannot reach.
 
 import { describe, expect, it } from 'vitest';
 import { runMigration } from '../pipeline/runMigration.js';
@@ -57,7 +56,7 @@ const A1_FILES: Record<string, string> = {
     name: 'demo',
     dependencies: { next: '15.5.0', 'next-intl': '^4.1.0', react: '19.0.0' },
   }),
-  // routing declares THREE locales...
+  // routing declares three locales...
   'src/i18n/routing.ts': lines(
     "import { defineRouting } from 'next-intl/routing';",
     'export const routing = defineRouting({',
@@ -81,7 +80,7 @@ const A1_FILES: Record<string, string> = {
     '});'
   ),
   'next.config.ts': nextConfig,
-  // ...but only TWO have catalogs on disk, so discoverCatalogs bails and the
+  // ...but only two have catalogs on disk, so discoverCatalogs bails and the
   // interactive fallback (runMigration.ts:220-230) takes over.
   'messages/en.json': JSON.stringify({ Home: { title: 'Welcome' } }),
   'messages/es.json': JSON.stringify({ Home: { title: 'Bienvenido' } }),
@@ -131,11 +130,8 @@ describe('A1: which locale set applies?', () => {
     const layout = write(ctx, 'layout.tsx')!.content!;
     const gtConfig = JSON.parse(write(ctx, 'gt.config.json')!.content!);
 
-    // OBSERVED on b27d1c0ff:
-    //   layout    -> return ["en", "es", "fr"].map((locale) => ({ locale }));
-    //   gt.config -> "locales": ["en", "es"]
-    //   src/i18n/routing.ts DELETED, 0 skips, 0 todos, 0 warnings,
-    //   and the report never mentions "fr".
+    // Observed on b27d1c0ff: the layout prerendered "fr" while gt.config
+    // listed only en and es, silently, with no skip, todo or warning.
     expect(layout).not.toContain('"fr"');
     expect(gtConfig.locales).toEqual(ctx.routing.locales);
     // Nothing tells the user either way:

@@ -601,10 +601,9 @@ export function transformLayoutFile(
   //    function so the cleanup does not just move the unused-variable warning
   //    from the destructure to the signature.
   if (mutated) {
-    // The declarator that feeds `<html lang={...}>` must survive even if guard
-    // removal left it looking unreferenced to the recrawled scope. Node
-    // identity, so a sibling function's own same-named destructure is still
-    // collectable when it really is dead.
+    // The declarator feeding `<html lang={...}>` survives even when guard
+    // removal leaves it looking unreferenced. Matched by node identity, so a
+    // sibling's same-named destructure is still collectable when truly dead.
     dropOrphanedParamsDestructures(
       ast,
       (declarator) => !langParamDeclarators.has(declarator)
@@ -628,10 +627,8 @@ export function transformLayoutFile(
     },
     working
   );
-  // A re-run re-asserts already-true facts (the provider is already nested,
-  // the guard already gone), sets `mutated`, and emits a print-only rewrite;
-  // shipping it drifted comment indentation one space per run, forever
-  // (round-10 parity finding 5). No semantic change, no write.
+  // A re-run re-asserts already-true facts and emits a print-only rewrite,
+  // which drifts comment indentation a space per run (round-10 parity 5).
   if (printsIdentically(output.code, code)) {
     return { code: null, todos, skipReasons: [] };
   }

@@ -121,11 +121,9 @@ describe('buildReport retained-provider wording', () => {
   });
 
   it('names them for the react-i18next per-namespace shape too (round-10 claims F3)', () => {
-    // The other live shape, measured on react-i18next/plantpal: catalogs read
-    // from locales/{lng}/{ns}.json, served from gt/dictionaries/, and the
-    // survivors import the namespace files by relative path and by `@/` alias
-    // (generateMetadata is the field case). `@/lib/locales` shares the prefix
-    // word but is a helper module, so it must not be listed.
+    // The per-namespace shape: survivors import the namespace files by
+    // relative path and by `@/` alias. `@/lib/locales` shares the prefix word
+    // but is a helper module, so it must not be listed.
     const ctx = makeContext(reactI18nextAdapter, [
       {
         path: '/project/i18n.ts',
@@ -167,11 +165,9 @@ describe('buildReport retained-provider wording', () => {
   });
 
   it('files a catalog reader outside Converted, so no heading reader can call it converted (round-10 matrix F1)', () => {
-    // The plantpal shape: i18n.ts is not written by this run, still imports
-    // react-i18next, and still reads locales/. Listed at the tail of the
-    // Converted section it was attributed to Converted by heading parsing and
-    // failed the harness's R1 ("listed under Converted and still imports
-    // react-i18next"). It is a catalog reader, not a conversion claim.
+    // i18n.ts is not written by this run, still imports react-i18next, and
+    // still reads locales/. At the tail of Converted, a heading-based reader
+    // takes it for a conversion claim; it is only a catalog reader.
     const dir = makeTree(
       {
         'i18n.ts': [

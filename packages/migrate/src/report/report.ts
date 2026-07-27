@@ -172,19 +172,9 @@ export function buildReport(
       'now load through loadDictionary.ts; no re-translation needed.'
   );
   lines.push('');
-  // When the migration serves catalogs from a NEW directory while surviving
-  // files still import the originals (page metadata is the common case), the
-  // tree has two live catalog trees, and a user editing only the new one
-  // ships silently stale text (round-10 claims finding 3: measured on
-  // react-intl/portfolio, where the <title> kept coming from messages/ after
-  // messages-gt/ was edited). Name every file that keeps the old tree live.
-  // Its own `##` section, never the tail of Converted: anything reading the
-  // report by heading (the parity harness, a human skimming) attributed these
-  // bullets to Converted and read them as conversion claims (round-10 matrix
-  // finding 1, on react-i18next/plantpal).
-  // Relative and @/~ specifiers only: an alias table the project defines is
-  // resolved elsewhere for deletes, but this sentence is advisory, so a
-  // missed exotic alias under-reports rather than mis-reports.
+  // Files still importing the original catalog dir leave two live trees that
+  // drift silently, so they get their own section: anything read under
+  // Converted is taken as a conversion claim (round-10 claims finding 3).
   if (
     ctx.catalogs.sourceDir !== undefined &&
     ctx.catalogs.sourceDir !== ctx.catalogs.dir
@@ -199,6 +189,7 @@ export function buildReport(
       const content = postRunContent(file);
       if (content === null) return false;
       return moduleSpecifierMatches(content).some((specifier) => {
+        // Relative and @/~ only; a missed project alias under-reports here.
         let resolved: string | null = null;
         if (specifier.startsWith('.')) {
           resolved = path.resolve(path.dirname(file), specifier);
@@ -246,10 +237,8 @@ export function buildReport(
     lines.push('');
   }
 
-  // The file inventories above cover source files; these three change too,
-  // and a reviewer diffing the branch must be able to attribute them to this
-  // run (round-10 claims finding 5: they appeared in no section and the
-  // report's own contract says nothing it changed may be absent).
+  // package.json, the lockfile and this report change too, and the report's
+  // contract is that nothing the run changed may be absent (round-10 claims 5).
   {
     const pkgEdit = ctx.edits.find(
       (edit) => edit.kind === 'write' && edit.path.endsWith('package.json')
@@ -313,12 +302,9 @@ export function buildReport(
       path.basename(edit.path) === 'getRegion.ts' &&
       (edit.content ?? '').includes('export default async function getRegion()')
   );
-  // next/root-params is a route-render API: Next.js throws when the emitted
-  // resolver runs inside a Route Handler or a Server Action, so the sentence
-  // that credits it must name that boundary rather than read as "everything
-  // server-side resolves the locale now" (round-10 finding 1, where converted
-  // route.ts and 'use server' call sites returned 500 with the report saying
-  // gt-next resolved the request locale itself).
+  // next/root-params is a route-render API, so the sentence crediting it has
+  // to name the Route Handler / Server Action boundary instead of reading as
+  // "everything server-side resolves the locale now" (round-10 finding 1).
   const rootParamsBoundary =
     ' next/root-params is unavailable inside Route Handlers and Server ' +
     'Actions, so the emitted resolver catches that and reads the locale ' +
@@ -374,9 +360,8 @@ export function buildReport(
   // section's "these keep working" and the payload-size behavior difference,
   // which additionally needs the provider to be handed its own messages.
   // adapter.hasProvider, never a substring: `<IntlProviderWrapper` contains
-  // `<IntlProvider`, and the substring form claimed a retained provider over a
-  // tree the run had fully torn down, then prescribed a re-run the CLI refuses
-  // once the library is uninstalled (round-10 claims finding 1).
+  // `<IntlProvider`, and that claimed a retained provider over a tree the run
+  // had fully torn down (round-10 claims finding 1).
   const providerEdit =
     adapter.providerName === null
       ? undefined
@@ -590,10 +575,9 @@ export function buildReport(
   const linkClause = gtLinkImported
     ? ' <Link> from gt-next/link is prefixed.'
     : '';
-  // A post-run tree that still wires the source library's navigation factory
-  // keeps router.push/redirect prefixed through it; the blanket "not
-  // locale-prefixed" sentence over that tree is false, and a user who follows
-  // it hand-prefixes into /es/es/... 404s (round-10 claims finding 2).
+  // A tree still wiring the source library's navigation factory keeps
+  // router.push/redirect prefixed, so the blanket "not locale-prefixed"
+  // sentence would send a user into /es/es/... (round-10 claims finding 2).
   const sourceNavRetained =
     adapter.retainedNavigationPattern !== undefined &&
     (ctx.projectFiles ?? []).some((file) => {
@@ -617,12 +601,9 @@ export function buildReport(
         : '- Programmatic navigation (redirect, router.push) is not locale-prefixed automatically.' +
           linkClause
   );
-  // Both middleware bullets below are gated on the swap having actually
-  // happened: a run that skipped the middleware (extra logic, localePrefix
-  // 'never', an unresolved routing value) leaves next-intl's middleware serving
-  // requests, and neither loss applies to it. Detected off the emitted tree, the
-  // same way the <Link> clause above is: a written edit importing
-  // gt-next/middleware, or a post-run file already importing it on a re-run.
+  // The middleware bullets below only apply once the swap happened: a skipped
+  // middleware leaves next-intl serving requests. Detected off the emitted
+  // tree, like the <Link> clause above, so a re-run sees it too.
   const gtMiddlewarePattern = /['"]gt-next\/middleware['"]/;
   const findSwappedMiddleware = (): string | null => {
     const edit = written.find((candidate) =>
@@ -637,10 +618,9 @@ export function buildReport(
   };
   const swappedMiddleware = findSwappedMiddleware();
   const middlewareSwapped = swappedMiddleware !== null;
-  // Under next-intl's 'as-needed' the default locale has one canonical URL:
-  // /<locale>/x redirects (307) to /x. gt-next's middleware matches the serving
-  // half but has no redirect-to-canonical option, so both URLs return 200 with
-  // identical content on every route (round-10 finding 5, measured on deskly).
+  // Under next-intl's 'as-needed' /<locale>/x redirects (307) to /x. gt-next
+  // matches the serving half but has no redirect-to-canonical option, so both
+  // URLs return 200 on every route (round-10 finding 5).
   if (middlewareSwapped && ctx.routing.localePrefix === 'as-needed') {
     const defaultLocale = ctx.routing.defaultLocale ?? libraryDefaultLocale;
     lines.push(
@@ -656,10 +636,9 @@ export function buildReport(
         'both URLs live and set `alternates.canonical` in your page metadata.'
     );
   }
-  // next-intl's middleware emitted RFC 8288 alternate Link headers on every
-  // response; gt-next's emits none, at every localePrefix setting. The engine
-  // cannot add headers the library does not emit, so this is disclosed
-  // (round-10 finding 7, measured on both production builds).
+  // next-intl emitted RFC 8288 alternate Link headers on every response and
+  // gt-next emits none at any localePrefix setting, which the engine cannot
+  // add back, so it is disclosed instead (round-10 finding 7).
   if (middlewareSwapped) {
     lines.push(
       "- hreflang alternate `Link` headers are no longer sent. next-intl's " +
@@ -671,10 +650,9 @@ export function buildReport(
         'metadata.'
     );
   }
-  // The bare root gains a redirect hop, measured on four migrated apps
-  // (round-10 finding 6). Gated on prefixDefaultLocale: true, which is the
-  // setting under which the root redirects into a locale at all; an
-  // 'as-needed' tree serves `/` directly and has no hop to disclose.
+  // The bare root gains a redirect hop (round-10 finding 6). Gated on
+  // prefixDefaultLocale: true, the only setting under which the root
+  // redirects into a locale at all.
   if (
     middlewareSwapped &&
     /prefixDefaultLocale\s*:\s*true/.test(swappedMiddleware)
@@ -709,11 +687,9 @@ export function buildReport(
   // not something the teardown can remove, so the sentence says so rather than
   // implying the page returns to its pre-migration size everywhere.
   if (providerInPostRunTree) {
-    // Concrete figures, not just direction (round-10 parity finding 3: "a
-    // page grows by roughly both catalogs" did not let a reader price a +168%
-    // Spanish page). Serialized (minified JSON) is the form that ships in the
-    // page, so it is the honest estimator; the pretty-printed file on disk is
-    // larger.
+    // Concrete figures, not just direction (round-10 parity finding 3).
+    // Minified JSON is what ships in the page, so it is the honest
+    // estimator; the pretty-printed file on disk is larger.
     const catalogSizes = ctx.catalogs.locales
       .map((locale) => {
         const data = ctx.catalogs.byLocale[locale];
@@ -828,12 +804,9 @@ export function buildReport(
     .split(path.sep)
     .join('/');
   const recorded = ctx.recordedDictionary;
-  // What the no-key path actually does, measured: `gt generate` exits 0 and
-  // writes public/_gt/<locale>.json for every target locale, holding the
-  // SOURCE-language strings under hashed keys. It is a template pass. Only
-  // `gt translate` (credentials) produces translated text, so describing both
-  // as "translate new locales" told users the free command had done the
-  // translation (round-10 finding 10).
+  // `gt generate` writes public/_gt/<locale>.json holding source-language
+  // strings under hashed keys; only `gt translate` (credentials) produces
+  // translated text, so the two need separate wording (round-10 finding 10).
   const generateVsTranslate =
     'writes a file per target locale filled with your source-language strings, ' +
     'which is a template pass and not a translation; ';

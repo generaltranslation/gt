@@ -1,7 +1,6 @@
 // Pinned reproductions from the round-10 architecture review (finding A2).
-// Written red against b27d1c0ff, green with the fix; they run the real
-// pipeline over a tmpdir project because the defect lived in the seam
-// between two passes, exactly where hand-built-context unit tests cannot see.
+// Driven over a real tmpdir project, because the defect lived in the seam
+// between two passes where a hand-built context cannot reach.
 
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -85,9 +84,8 @@ const a2Files = (consumer: string): Record<string, string> => ({
     '}'
   ),
   'src/app/[locale]/page.tsx': page,
-  // The ONLY remaining importer of the routing config. Not an i18n file, so it
-  // is never skipped and never rewritten; the teardown guard is all that stands
-  // between it and a dangling import.
+  // The last remaining importer of the routing config. Not an i18n file, so
+  // the teardown guard is all that stands between it and a dangling import.
   'src/lib/localeList.ts': consumer,
 });
 
@@ -108,7 +106,7 @@ describe('A2: may this file be deleted?', () => {
       )
     );
     const ctx = await migrate(cwd, scriptedIO());
-    expect(deletedRouting(ctx, cwd)).toBe(false); // PASSES
+    expect(deletedRouting(ctx, cwd)).toBe(false); // green at b27d1c0ff
   });
 
   it("an importer written `from'x'` must also retain it", async () => {
@@ -122,8 +120,8 @@ describe('A2: may this file be deleted?', () => {
       )
     );
     const ctx = await migrate(cwd, scriptedIO());
-    // OBSERVED on b27d1c0ff: deleted === true, 0 skips, 0 todos, 0 warnings.
-    // The surviving src/lib/localeList.ts now imports a file that is gone.
-    expect(deletedRouting(ctx, cwd)).toBe(false); // FAILS
+    // Observed on b27d1c0ff: deleted silently, leaving src/lib/localeList.ts
+    // importing a file that is gone.
+    expect(deletedRouting(ctx, cwd)).toBe(false); // red at b27d1c0ff
   });
 });

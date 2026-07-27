@@ -747,11 +747,9 @@ describe('provider swap', () => {
 });
 
 describe('round 10 finding 2: call sites that read a non-renderable value', () => {
-  // The catalog converter keeps an i18next array verbatim (ICU dictionaries
-  // have no equivalent) and reports it. Pre-fix the source transform knew
-  // nothing about that, converted the reading call site, and listed the file
-  // under Converted; the migrated app then failed `next build` on the type
-  // (TS) or prerendering with "Dictionary entry links.tips cannot be found".
+  // The catalog converter keeps an i18next array verbatim and reports it.
+  // Converting the call site that reads it fails the migrated app's build on
+  // the type, or at prerender with "Dictionary entry cannot be found".
   const archiveView = [
     "import { useTranslation } from 'react-i18next';",
     'export function C() {',
@@ -776,9 +774,8 @@ describe('round 10 finding 2: call sites that read a non-renderable value', () =
   });
 
   it('holds a `returnObjects` call even when the value happens to render', () => {
-    // A one-element array IS a gt-next leaf ([message]), so the key resolves;
-    // the CONSUMER is still broken, because t() hands back a string and the
-    // call site maps over it.
+    // A one-element array is a gt-next leaf ([message]), so the key resolves,
+    // but t() hands back a string and the call site maps over it.
     const { code, skipReasons } = transform(
       [
         "import { useTranslation } from 'react-i18next';",

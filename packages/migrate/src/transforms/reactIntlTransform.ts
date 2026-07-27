@@ -990,16 +990,9 @@ export function transformReactIntlSource(
   if (orphanedPropBindings.size > 0) {
     const pruned = pruneOrphanedProps(ast, orphanedPropBindings);
     if (pruned.names.length > 0) {
-      // The component no longer reads these props, but every call site still
-      // passing them serializes their values (a whole message catalog, in the
-      // wrapper idiom) across the client boundary into each page for nothing.
-      // The transform never edits other files, so the call sites are the
-      // user's step (round-10 claims finding 1: the payload cost was real and
-      // the report attributed it to a provider that no longer existed).
-      // The type clause is the rest of that step. Both edits are the user's and
-      // both are needed: dropping the props at the call sites alone leaves the
-      // type requiring them, and dropping them from the type alone breaks the
-      // call sites that still pass them (both measured on portfolio, N1).
+      // Call sites still passing these props serialize a whole catalog across
+      // the client boundary for nothing, and the transform owns one file, so
+      // both halves of the remedy are the user's step (round-10 claims 1, N1).
       const typeClause =
         pruned.declaredIn.length > 0
           ? `, and delete the same members from ${pruned.declaredIn.join(' and ')} in the same change: the call-site edit alone fails the type check on the props the component still declares, and the type edit alone fails on the call sites that still pass them`
@@ -1771,13 +1764,9 @@ type PropPrune = {
  * Prunes destructured component props the unwrapped <IntlProvider> was the sole
  * consumer of (`function W({ locale, messages, children })` → `{ children }`).
  * Same safety rules as transformLayout step 7: a RestElement sibling aborts the
- * splice and the recrawled binding of the function's own scope decides, so a prop
- * still read elsewhere survives.
- *
- * The TypeScript annotation is left alone and reported instead. Narrowing it here
- * was measured to break `next build` on react-intl/portfolio the moment the
- * migration finishes, because the call sites still pass the props; the two edits
- * only compile together, and the transform owns one file (round-10 N1).
+ * splice and the recrawled binding of the function's own scope decides, so a
+ * prop read elsewhere survives. The TypeScript annotation is reported rather
+ * than narrowed: the two edits only compile together (round-10 N1).
  */
 function pruneOrphanedProps(ast: t.File, targets: Set<t.Node>): PropPrune {
   const result: PropPrune = { names: [], declaredIn: [] };

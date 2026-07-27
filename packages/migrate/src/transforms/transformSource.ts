@@ -141,11 +141,9 @@ export function transformSourceFile(
       nextIntlImports.push(path);
       for (const specifier of path.node.specifiers) {
         if (!t.isImportSpecifier(specifier)) {
-          // A default import of the middleware factory is the documented shape,
-          // so "unsupported import form" names the wrong thing and leaves the
-          // user nothing to act on. Reaching the generic pass at all means the
-          // file is not at a path Next.js runs as middleware, which is the
-          // actionable fact (round-10 finding 9).
+          // A default import of the middleware factory is the documented
+          // shape, so the actionable fact is the one that got us here: this
+          // path is not where Next.js runs middleware (round-10 finding 9).
           skipReasons.push(
             adapter.middlewareModule !== undefined &&
               source === adapter.middlewareModule
@@ -226,11 +224,9 @@ export function transformSourceFile(
     adapter.serverSwaps.has(name)
   );
 
-  // Route Handlers and Server Actions resolve the locale through the emitted
-  // getLocale.ts, which calls next/root-params; Next.js refuses to resolve it
-  // there (round-10 finding 1). A handler under [locale] gets the route locale
-  // registered instead; anything else gets the caveat as a TODO. Planned here,
-  // before the skip gate, and applied after the import surgery.
+  // Next.js refuses next/root-params inside Route Handlers and Server Actions,
+  // so a handler under [locale] registers the route locale instead and
+  // anything else gets a TODO (round-10 finding 1). Applied after the imports.
   const serverEntry = planServerEntryLocale({
     ast,
     file,
@@ -514,10 +510,9 @@ export function transformSourceFile(
         line: rewrite.line,
         reason:
           'getTranslations locale override dropped; ' +
-          // In a Route Handler the unqualified claim is false: gt-next's own
-          // resolution runs next/root-params, which Next.js throws on there.
-          // What makes the locale resolve is the registerLocale call this run
-          // added, so the TODO names it (round-10 finding 1).
+          // In a Route Handler next/root-params throws, so what resolves the
+          // locale is the registerLocale call this run added and the TODO has
+          // to name it (round-10 finding 1).
           (serverEntry.kind === 'register'
             ? `gt migrate added ${REGISTER_LOCALE}() at the top of this Route ` +
               'Handler (next/root-params, which gt-next resolves the locale ' +
@@ -797,10 +792,9 @@ export function transformSourceFile(
     }
   }
 
-  // 4b. Route Handler locale registration. After the import surgery (which
-  //     added the registerLocale specifier) and BEFORE the orphan cleanup, so
-  //     the `params` this writes a reference to still counts as referenced and
-  //     the cleanup leaves the parameter alone.
+  // 4b. Route Handler locale registration. Runs after the import surgery that
+  //     added the specifier and ahead of the orphan cleanup, so the `params`
+  //     reference it writes still counts and the parameter survives.
   if (serverEntry.kind === 'register') {
     serverEntry.apply();
     todos.push({
@@ -829,10 +823,9 @@ export function transformSourceFile(
     options.dropOrphanedParamLocale !== false &&
     (setRequestLocaleRemoved || droppedLocaleOption)
   ) {
-    // All-or-nothing: keep the declaration unless a rewrite above deleted a
-    // reference that resolved to THIS declarator (so we only clean orphans this
-    // codemod created, never the author's own pre-existing dead code, and never
-    // a sibling function's same-named destructure).
+    // Keep the declaration unless a rewrite above deleted a reference that
+    // resolved to this exact declarator, so the cleanup never reaches the
+    // author's dead code or a sibling function's same-named destructure.
     dropOrphanedParamsDestructures(ast, (declarator) =>
       droppedLocaleRefDeclarators.has(declarator)
     );
@@ -955,15 +948,9 @@ export function isParamsInit(node: t.Expression | null | undefined): boolean {
 }
 
 /**
- * The four-phase cleanup for a `const { locale } = await params` (or
- * `use(params)`) destructure that an earlier rewrite orphaned: recrawl so
- * bindings reflect every mutation, remove the dead declaration, drop the
- * `params` parameter it was the last reader of, and prune a now-unreferenced
- * `use` import. Shared by transformSource's step 5 and transformLayout's step 7
- * (round-10 finding A4): the two differ only in which declarators are eligible,
- * so that gate arrives as `isRemovable` (source allows only declarators whose
- * reference it deleted; layout excludes the one feeding `<html lang>`). Returns
- * true when a destructure was removed.
+ * Cleanup for a `params` destructure an earlier rewrite orphaned, shared by
+ * transformSource step 5 and transformLayout step 7 (round-10 A4). The two
+ * differ only in eligibility, which arrives as `isRemovable`.
  */
 export function dropOrphanedParamsDestructures(
   ast: t.File,
@@ -983,8 +970,8 @@ export function dropOrphanedParamsDestructures(
       const declarator = path.node.declarations[0];
       if (!t.isObjectPattern(declarator.id)) return;
       if (!isParamsInit(declarator.init)) return;
-      // All-or-nothing: the caller's gate must allow this declarator AND every
-      // name it binds must now be unreferenced.
+      // All-or-nothing: the caller's gate allows this declarator and every
+      // name it binds is now unreferenced.
       if (!isRemovable(declarator)) return;
       for (const property of declarator.id.properties) {
         if (!t.isObjectProperty(property) || !t.isIdentifier(property.value)) {
@@ -1000,11 +987,9 @@ export function dropOrphanedParamsDestructures(
     },
   });
 
-  // Drop the `params` parameter left unreferenced by those removals. A fresh
-  // crawl is required so the removed destructure no longer counts as a
-  // reference; then each cleaned function's own `params` binding decides. Only
-  // that function's params is touched (a sibling generateMetadata that still
-  // reads its own keeps its own, separately-scoped binding).
+  // Drop the `params` parameter left unreferenced by those removals. The fresh
+  // crawl is what stops the removed destructure from still counting as a
+  // reference; each cleaned function's own binding decides, nothing wider.
   if (paramsCleanupTargets.size > 0) {
     traverse(ast, {
       Program(path) {

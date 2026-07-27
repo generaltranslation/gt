@@ -1,10 +1,8 @@
 import path from 'node:path';
 
 /**
- * A Next.js layout file by basename. One owner (round-10 arch finding A6):
- * the driver's layout-pass selection and the emit phase's segment-layout
- * search carried byte-identical private copies held together by a "must
- * agree" comment.
+ * A Next.js layout file by basename. One owner for the driver's layout pass
+ * and the emit phase's segment-layout search (round-10 A6).
  */
 export function isLayoutFile(file: string): boolean {
   const base = path.basename(file);
@@ -17,10 +15,8 @@ export function isLayoutFile(file: string): boolean {
 }
 
 /**
- * A layout sitting DIRECTLY in a `[locale]` segment directory
- * (…/[locale]/layout.tsx), never a deeper layout nested under it. The
- * subtree question ("is this file anywhere under [locale]") is a different
- * predicate; do not widen this one to answer it.
+ * A layout in the `[locale]` segment directory itself, never one nested
+ * deeper. "Anywhere under [locale]" is a different predicate; keep it that way.
  */
 export function isLocaleSegmentLayout(file: string): boolean {
   return isLayoutFile(file) && path.basename(path.dirname(file)) === '[locale]';

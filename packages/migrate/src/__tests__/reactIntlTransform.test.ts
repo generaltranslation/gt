@@ -1417,9 +1417,7 @@ describe('reactIntl: provider unwrap prunes orphaned destructured props (FB2)', 
     expect(r.code).not.toMatch(/\bmessages\b/);
     expect(r.code).toMatch(/<>[\s\S]*\{\s*children\s*\}[\s\S]*<\/>/);
     // Call sites still passing the pruned props serialize a whole catalog into
-    // every page for nothing, so the transform names them (round-10 claims
-    // F1: that payload was real and the report blamed a provider that no
-    // longer existed).
+    // every page for nothing, so the transform names them (round-10 claims F1).
     const deadPropTodo = r.todos.find((todo) =>
       todo.reason.includes('no longer reads')
     );
@@ -1537,10 +1535,9 @@ describe('reactIntl: provider unwrap prunes orphaned destructured props (FB2)', 
     expect(r.code).not.toContain('react-intl');
     // Runtime param reduced to { children } (no unused locale/messages binding)...
     expect(r.code).toMatch(/IntlProviderWrapper\(\s*\{\s*children\s*\}/);
-    // ...while the TypeScript annotation is left fully untouched. Narrowing it
-    // here fails `next build` on this exact fixture the moment the migration
-    // ends, because the layout still passes both props; the type edit and the
-    // call-site edit only compile together, so the TODO asks for both (N1).
+    // ...while the TypeScript annotation is left untouched: the layout still
+    // passes both props, so the type edit and the call-site edit only compile
+    // together and the TODO asks for both (round-10 N1).
     expect(r.code).toMatch(/locale:\s*string/);
     expect(r.code).toMatch(/messages:\s*Record<string, string>/);
     expect(r.code).toMatch(/children:\s*React\.ReactNode/);

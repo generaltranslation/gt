@@ -1,15 +1,7 @@
 /**
- * gt-next's dictionary READ semantics, in one place: which values `t()` can
- * render, and what a dotted key resolves to in a catalog.
- *
- * Mirrors packages/i18n dictionary-helpers (`isDictionaryLeafNode`,
- * `getDictionaryValueAtPath`): `t(id)` looks the id up, hands the value to
- * `getDictionaryEntry`, and throws `Dictionary entry <id> cannot be found`
- * when that returns undefined. It returns undefined for anything that is not
- * a leaf, so an array, a nested object, `null`, or a number throws with the
- * SAME message as an absent key. Two layers need that answer (the key audit,
- * and the react-i18next source transform's convert-or-hold decision), so it
- * lives here once rather than as a private copy in each.
+ * gt-next's dictionary read semantics, mirroring packages/i18n
+ * dictionary-helpers: a non-leaf value throws the same "cannot be found" as an
+ * absent key. Both the key audit and the source transform read it from here.
  */
 
 /** How a key resolved against a catalog, from gt-next's point of view. */
@@ -24,7 +16,7 @@ export type DictionaryKeyResolution =
 /**
  * True when gt-next's `t()` renders this value: a string, or the
  * `[message]` / `[message, options]` leaf tuple (DictionaryLeaf). A tuple of
- * two strings is NOT a leaf, so an i18next `["a", "b"]` throws.
+ * two strings is not a leaf, so an i18next `["a", "b"]` throws.
  */
 export function isRenderableLeaf(value: unknown): boolean {
   if (typeof value === 'string') return true;
@@ -58,10 +50,9 @@ export function resolveDictionaryKey(
 }
 
 /**
- * True when SOMETHING sits at this path, renderable or not. For a container
- * (a namespace, the static prefix of a computed key) that is the only question
- * worth asking: an object is exactly what belongs there, so renderability
- * would report every namespace as broken.
+ * True when any value sits at this path, renderable or not. A container (a
+ * namespace, a computed key's static prefix) is supposed to hold an object,
+ * so testing renderability there would report every namespace as broken.
  */
 export function dictionaryKeyExists(catalog: unknown, key: string): boolean {
   return dictionaryKeyCandidates(catalog, key).length > 0;
@@ -70,8 +61,7 @@ export function dictionaryKeyExists(catalog: unknown, key: string): boolean {
 /**
  * Every value `key` could resolve to in this catalog: the nested path, plus a
  * flat dotted leaf at the root or inside a resolved prefix
- * (`{ UI: { 'a.b': … } }`). The union stays as permissive as the audit has
- * always been about SHAPE; only the leaf test below narrowed.
+ * (`{ UI: { 'a.b': … } }`). Shape only; the leaf test decides renderability.
  */
 function dictionaryKeyCandidates(catalog: unknown, key: string): unknown[] {
   const found: unknown[] = [];

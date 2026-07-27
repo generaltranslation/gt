@@ -231,12 +231,9 @@ export function isHookDependencyArrayElement(path: NodePath): boolean {
 }
 
 /**
- * A real 'use client' directive on the module (not a mention in prose). One
- * owner (round-10 arch finding A7). Callers judge different artifacts: the
- * pipeline reads disk content, the layout pass reads its own post-transform
- * AST. Those agree only while no transform adds or removes the directive,
- * which is a standing invariant of every transform in this package; a
- * transform that changes it must re-run client-ness classification.
+ * A real 'use client' directive on the module, not a mention in prose
+ * (round-10 A7). Callers read different artifacts, so a transform that adds or
+ * removes the directive must re-run client-ness classification.
  */
 export function hasUseClientDirective(ast: t.File): boolean {
   return ast.program.directives.some(

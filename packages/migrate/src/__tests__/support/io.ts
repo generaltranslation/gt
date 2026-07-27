@@ -2,9 +2,8 @@ import { vi } from 'vitest';
 import type { MigrateIO } from '../../pipeline/io.js';
 
 /**
- * The scripted answers a fake io gives. Every field defaults to the value the
- * majority of suites already used; a suite that needs a different answer names
- * only that field. Any member can still be re-scripted per test through the
+ * The scripted answers a fake io gives. Defaults match what most suites
+ * already used; any member can still be re-scripted per test through the
  * vitest mock it is (`io.promptText.mockResolvedValue(...)`).
  */
 export type MakeIOOptions = {
@@ -20,12 +19,8 @@ export type MakeIOOptions = {
 
 /**
  * A fake MigrateIO for tests, plus the info/warn transcripts it recorded.
- *
- * `fatal` THROWS. That is not a convenience: the interface declares
- * `fatal(message: string): never`, engine code calls it and keeps going on the
- * assumption that it cannot return, and a fake that returns instead turns a
- * would-be-fatal run into undefined behavior that the suite then pins as
- * correct (round-10 finding A10).
+ * `fatal` throws, matching its `never` return: a fake that returns lets engine
+ * code run on past a fatal and the suite pins that as correct (round-10 A10).
  */
 function buildIO(options: MakeIOOptions = {}) {
   const info: string[] = [];

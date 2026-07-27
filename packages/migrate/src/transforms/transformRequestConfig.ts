@@ -46,12 +46,9 @@ function callsAny(node: t.Node, locals: Set<string>): boolean {
 }
 
 /**
- * True when this callback already carries this transform's own output: the
- * destructured `requestLocale` renamed to a shadow binding, a
- * `const requestLocale = <shadow>.then(...)` wrapper over it, and a getLocale()
- * call from gt-next/server inside that wrapper. Keyed on the wired AST rather
- * than a marker comment, so a re-run recognizes work it did itself even after
- * the file has been reformatted or edited around.
+ * True when this callback already carries this transform's own output: a
+ * shadowed `requestLocale`, the `.then(...)` wrapper over it, and a getLocale()
+ * call inside. Keyed on the AST, so reformatting cannot hide it from a re-run.
  */
 function isAlreadyWired(
   param: t.ObjectPattern,

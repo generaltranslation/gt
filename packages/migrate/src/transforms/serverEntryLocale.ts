@@ -7,23 +7,9 @@ const traverse: typeof traverseModule =
   traverseModule;
 
 /**
- * gt-next resolves the request locale through the emitted src/getLocale.ts,
- * which reads `locale()` from next/root-params. That API is bound to a ROUTE
- * RENDER context: Next.js throws
- *
- *   `import('next/root-params').locale()` was used inside a Route Handler
- *   (or: inside a Server Action). This is not supported.
- *
- * so a converted `getTranslations()` call in a `route.ts` or in a `'use server'`
- * function 500s at runtime while every page keeps working (round-10 finding 1,
- * measured: GET /de/api/status 200 German before the migration, 500 after).
- *
- * gt-next's own answer for a Route Handler is `registerLocale(locale)`, which
- * puts the locale in the request's condition store before anything reads it, so
- * getLocale.ts is never called and next/root-params never runs. A handler under
- * `[locale]` has the locale in its route params, so this module writes that
- * call. A Server Action has no route params and no request-scoped locale to
- * read, so no mechanical rewrite is correct there; those files hold instead.
+ * next/root-params only resolves during a route render, so a converted
+ * translation call in a `route.ts` or `'use server'` function 500s (round-10
+ * finding 1). A handler under `[locale]` registers its route param instead.
  */
 
 /** The exports Next.js renders as Route Handler entry points. */
@@ -45,21 +31,15 @@ export type ServerEntryPlan =
   /** Not a Route Handler or Server Action, or one that never resolves a locale. */
   | { kind: 'none' }
   /**
-   * A Route Handler or Server Action whose locale gt migrate cannot pin to a
-   * route param. The emitted getLocale.ts no longer throws there (it falls back
-   * to the locale header gt-next's middleware sets), so the file still
-   * converts; what it owes the user is the caveat, not a hold.
+   * A Route Handler or Server Action with no route param to pin the locale to.
+   * The emitted getLocale.ts falls back to the middleware's locale header, so
+   * the file still converts and owes the user a caveat rather than a hold.
    */
   | { kind: 'note'; reason: string }
   /**
-   * A Route Handler whose locale IS reachable: `apply` writes
-   * `registerLocale(<locale>)` as the first statement of each handler that
-   * needs it. The caller adds the `registerLocale` import.
-   *
-   * Planning already resolved (and, where the handler had none, added) each
-   * handler's route-params argument, so apply() cannot fail. Planning probes
-   * every handler without mutating first, so a file that ends in `note`
-   * instead never keeps a half-added parameter.
+   * A Route Handler with a reachable locale: `apply` writes
+   * `registerLocale(<locale>)` first in each handler and the caller adds the
+   * import. Planning probes every handler first, so `apply` cannot fail.
    */
   | { kind: 'register'; handlers: string[]; apply: () => void };
 
@@ -80,11 +60,9 @@ export type ServerEntryOptions = {
 const toPosix = (value: string) => value.split(path.sep).join('/');
 
 /**
- * The locale route param a file under `app/` can read, or null. Only a segment
- * named literally `[locale]` counts, and for the same reason the emit phase
- * gives: gt-next reads the route param only for that name, so `[lang]` has no
- * locale to register (the emit phase already tells the user to rename it).
- * Catch-all forms (`[...locale]`) bind an array, not a locale string.
+ * The locale route param a file under `app/` can read, or null. gt-next reads
+ * that param only under the literal name `[locale]`, and a catch-all
+ * (`[...locale]`) binds an array rather than a locale string.
  */
 function localeRouteParam(file: string, cwd: string): string | null {
   const relative = toPosix(path.relative(cwd, file));
@@ -228,12 +206,8 @@ function addParamsParameter(
 
 /**
  * The expression that yields this handler's locale, or why it cannot be built.
- * `await` is safe on both param shapes: Next >= 15 hands the handler a promise,
- * and awaiting the plain object older versions pass is a no-op.
- *
- * `commit` false answers the same question without touching the AST, so the
- * planner can prove every handler is registerable before any of them is
- * changed. Both modes take the same branches, so the answers agree.
+ * `await` is safe on both param shapes: Next >= 15 passes a promise and
+ * awaiting the older plain object is a no-op. `commit` false skips the AST.
  */
 function localeExpression(
   fn: t.Function,
@@ -346,10 +320,8 @@ function registerLocaleStatement(
 }
 
 /**
- * Decides what a file that resolves the locale on the server needs, before any
- * mutation runs: `none` for ordinary server components, `skip` when converting
- * it would 500 at runtime with no locale to register, and `register` with the
- * mutation to apply for a Route Handler under `[locale]`.
+ * What a file resolving the locale on the server needs, decided before any
+ * mutation runs so a `note` file never keeps a half-applied change.
  */
 export function planServerEntryLocale(
   options: ServerEntryOptions
@@ -419,9 +391,8 @@ export function planServerEntryLocale(
     );
   }
 
-  // Attribute every resolving call to the handler it runs under. A call in a
-  // module-level helper belongs to whichever handler calls that helper, which
-  // is not knowable here, so every handler is registered; the store is
+  // A call in a module-level helper belongs to whichever handler reaches it,
+  // which is not knowable here, so every handler registers. The store is
   // request-scoped, so registering in a handler that never translates is inert.
   const needsRegistration = new Set<t.Function>();
   for (const callPath of resolverCalls) {

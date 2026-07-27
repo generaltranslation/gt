@@ -893,10 +893,9 @@ function writeOrdinalAsLiteral(
  * untouched; quoting it would corrupt the skeleton (ICU number skeletons have no
  * `'` quoting) and break the format.
  *
- * Quoted spans are copied verbatim and never counted. This runs AFTER
- * `escapeIcuText`, which writes a literal `{` as `'{'`; counting that brace as
- * an opening argument pinned depth above 0 for the rest of the branch and left
- * every later `#` unquoted, so it rendered as the count (round-10 finding 6).
+ * Quoted spans are copied verbatim and never counted, because this runs after
+ * `escapeIcuText` writes a literal `{` as `'{'` and counting that brace pins
+ * depth above 0 for the rest of the branch (round-10 finding 6).
  */
 function quoteHashInBranch(value: string): string {
   let out = '';

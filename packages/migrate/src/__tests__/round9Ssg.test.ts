@@ -222,9 +222,8 @@ describe('round 9: a hazard no route can render is not a hazard', () => {
 
   it('withholds instead of containing per-route while a file is unreadable (round-10 A8)', async () => {
     // An unreadable file has no edges in the import graph, so every reach set
-    // is a lower bound, exactly the condition per-route containment must
-    // refuse on. Pre-fix this fell through to containment on the visible
-    // routes only.
+    // is a lower bound, which is exactly the condition per-route containment
+    // has to refuse on.
     const cwd = makeApp({
       'src/app/[locale]/about/page.tsx': lines(
         "import { hidden } from '../../../lib/hidden';",
@@ -411,8 +410,8 @@ describe('round 9: containment holds only the routes that reach a hazard', () =>
 
   it('a partial-migration re-run leaves an already-migrated layout untouched (round-10 parity F5)', async () => {
     // Run 2 re-asserts already-true facts (provider nested, guard gone) and
-    // used to ship a print-only rewrite whose comment indentation drifted one
-    // space right on EVERY run, so re-running never reached a fixed point.
+    // used to ship a print-only rewrite whose comment indentation drifted a
+    // space per run, so re-running never reached a fixed point.
     const cwd = makeApp({
       // An unsupported API keeps the migration partial, so run 2 still has
       // work to consider (a full migration's re-run refuses instead).

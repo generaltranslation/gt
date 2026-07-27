@@ -563,17 +563,9 @@ export function transformReactI18nextSource(
     },
   });
 
-  // A converted t() must land on a value gt-next can render. The catalog
-  // converter keeps an i18next array / object value verbatim (ICU dictionaries
-  // have no equivalent) and reports it, while gt-next's t() renders string
-  // leaves only and throws "Dictionary entry <key> cannot be found" on the
-  // rest, so converting the READING call site turns a working page into a
-  // failed build (round-10 finding 2). The two layers meet here: the dictionary
-  // this run will emit IS ctx.catalogs.byLocale, which the key remapping below
-  // already reads, and resolveDictionaryKey is gt-next's own leaf rule rather
-  // than a second private copy of it. Whole-file hold, so react-i18next keeps
-  // serving the file: any skip retains the provider, and this adapter never
-  // uninstalls the package.
+  // A converted t() must land on a value gt-next can render, and the catalog
+  // converter keeps an array or object verbatim, which t() throws on (round-10
+  // finding 2). Held whole-file, so react-i18next keeps serving it.
   traverse(ast, {
     CallExpression(path) {
       const callee = path.node.callee;
@@ -587,11 +579,9 @@ export function transformReactI18nextSource(
       }
       const binding = tBindings.get(callee.name)!;
 
-      // `returnObjects` asks i18next for the array/object whole. gt-next's t()
-      // always returns a string, so even a catalog value that happens to
-      // render (a one-element array) leaves the CONSUMER broken: linkboard's
-      // `as string[]` + .map() failed the type check, and a JS app would hit
-      // "tips.map is not a function" at runtime.
+      // `returnObjects` asks i18next for the array or object whole, and
+      // gt-next's t() always returns a string, so the call site breaks even
+      // when the catalog value happens to render.
       const returnObjects = returnObjectsProperty(path.node.arguments);
       if (
         returnObjects &&
@@ -891,8 +881,8 @@ function remapTCalls(
         // Arrays with a dynamic element never reach this pass: the B3 analysis
         // scan skips the whole file (unreachable guard kept as defense).
         if (keys.length !== keyArg.elements.length) return;
-        // The winning key must RENDER, not merely exist: picking a key whose
-        // value is an array would emit a call that throws (round-10 finding 3).
+        // The winning key has to render, not merely exist: an array value
+        // would emit a call that throws (round-10 finding 3).
         const winner = keys.find(
           (k) =>
             keyResolution(catalog, binding, k.value, config)?.kind ===
@@ -992,10 +982,9 @@ function mapKey(
 }
 
 /**
- * The path a call key resolves to in the converted dictionary: mapKey gives the
- * path relative to the hook's scope, and a scoped hook prefixes its rootId back
- * on because the emitted catalog nests the namespace. Null when the key cannot
- * be mapped at all (a cross-namespace read from a scoped hook).
+ * The path a call key resolves to in the converted dictionary. A scoped hook
+ * prefixes its rootId back on, because the emitted catalog nests the
+ * namespace. Null when the key cannot be mapped at all.
  */
 function dictionaryPath(
   rawKey: string,

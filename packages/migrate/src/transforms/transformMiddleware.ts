@@ -155,7 +155,7 @@ export function transformMiddlewareFile(
   // `/` redirects to `/<defaultLocale>`. gt-next's createNextMiddleware does
   // NOT prefix the default locale by default, so absent/'always' must set
   // prefixDefaultLocale: true to preserve the app's public URL structure.
-  // 'as-needed' matches gt-next's default on the SERVING half only (see
+  // 'as-needed' matches gt-next's default on the serving half only (see
   // below); 'never' never reaches here (the early return above skips the file
   // so the retained next-intl middleware holds back teardown).
   if (mode === null || mode === 'always') {
@@ -176,12 +176,9 @@ export function transformMiddlewareFile(
   }
 
   const todos: TodoEntry[] = [];
-  // 'as-needed' matches gt-next's default only on what each URL SERVES. It does
-  // not match on redirects: next-intl sends /<defaultLocale>/x to /x (307), and
-  // gt-next returns 200 for both, so every route gains a live duplicate URL.
-  // gt-next's middleware has no redirect-to-canonical option (its only knobs
-  // are localeRouting, prefixDefaultLocale, ignoreSourceMaps and pathConfig),
-  // so this is disclosed rather than fixed (round-10 finding 5).
+  // The match is on serving, not redirects: next-intl sent /<defaultLocale>/x
+  // to /x (307) and gt-next answers 200 on both, with no redirect-to-canonical
+  // option to set, so every route gains a duplicate URL (round-10 finding 5).
   if (mode === 'as-needed') {
     const defaultLocale = ctx.routing.defaultLocale ?? libraryDefaultLocale;
     warnings.push(
