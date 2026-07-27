@@ -235,6 +235,36 @@ describe.sequential('_uploadSourceFiles', () => {
     );
   });
 
+  it('should pass binary (LOTTIE) content through without re-encoding', async () => {
+    // Binary formats arrive already base64-encoded; re-encoding would corrupt
+    // the bytes. The content must reach the API verbatim.
+    const zipBytes = Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x00, 0xff, 0x10]); // "PK\x03\x04" zip magic + non-UTF8 bytes
+    const base64Content = zipBytes.toString('base64');
+    const mockFiles = [
+      {
+        source: createMockFileUpload({
+          fileName: 'animation.lottie',
+          fileFormat: 'LOTTIE',
+          content: base64Content,
+        }),
+      },
+    ];
+
+    vi.mocked(apiRequest).mockResolvedValue({ success: true });
+
+    await _uploadSourceFiles(mockFiles, createMockOptions(), mockConfig);
+
+    const sentContent =
+      vi.mocked(apiRequest).mock.calls[0][2].body.data[0].source.content;
+    // Verbatim passthrough — NOT encode(base64Content).
+    expect(sentContent).toBe(base64Content);
+    expect(sentContent).not.toBe(
+      Buffer.from(base64Content, 'utf8').toString('base64')
+    );
+    // Round-trips back to the original bytes.
+    expect(Buffer.from(sentContent, 'base64')).toEqual(zipBytes);
+  });
+
   it('should upload PO and POT source files', async () => {
     const mockFiles = [
       {

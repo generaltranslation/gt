@@ -7,6 +7,7 @@ import { EnqueueStep } from './steps/EnqueueStep.js';
 import { BranchStep } from './steps/BranchStep.js';
 import { logger } from '../console/logger.js';
 import { filterFilesForEnqueue } from './utils/filterFilesForEnqueue.js';
+import { syncFonts } from './utils/syncFonts.js';
 
 /**
  * Enqueues translations for a given set of files
@@ -32,6 +33,10 @@ export async function runEnqueueWorkflow({
     logCollectedFiles(files);
 
     logger.debug('Files: ' + JSON.stringify(files, null, 2));
+
+    // Sync fonts before enqueueing so the translation jobs (e.g. Lottie
+    // layout refinement) can use them instead of fallback fonts.
+    await syncFonts(settings);
 
     // Create workflow with steps
     const branchStep = new BranchStep(gt, settings);

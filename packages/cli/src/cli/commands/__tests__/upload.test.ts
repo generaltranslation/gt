@@ -20,6 +20,10 @@ vi.mock('../../../fs/findFilepath.js', () => ({
     return files?.[filePath] ?? '';
   }),
   getRelative: vi.fn((filePath: string) => filePath),
+  readBinaryFileBase64: vi.fn((filePath: string) => {
+    const files = (vi as unknown).__mockBinaryFiles;
+    return files?.[filePath] ?? '';
+  }),
 }));
 vi.mock('../../../workflows/upload.js', () => ({
   runUploadFilesWorkflow: vi.fn(async () => ({
@@ -58,7 +62,7 @@ vi.mock('../../../fs/determineFramework/index.js', () => ({
   determineLibrary: vi.fn(() => ({ library: 'base', additionalModules: [] })),
 }));
 
-import { readFile } from '../../../fs/findFilepath.js';
+import { readFile, readBinaryFileBase64 } from '../../../fs/findFilepath.js';
 import { runUploadFilesWorkflow } from '../../../workflows/upload.js';
 import { runPublishWorkflow } from '../../../workflows/publish.js';
 import { createFileMapping } from '../../../formats/files/fileMapping.js';
@@ -68,6 +72,14 @@ import { existsSync, readFileSync } from 'node:fs';
 function setMockFiles(files: Record<string, string>) {
   (vi as unknown).__mockFiles = files;
   vi.mocked(readFile).mockImplementation((filePath: string) => {
+    return files[filePath] ?? '';
+  });
+}
+
+// Binary fixtures are stored base64-encoded, mirroring readBinaryFileBase64.
+function setMockBinaryFiles(files: Record<string, string>) {
+  (vi as unknown).__mockBinaryFiles = files;
+  vi.mocked(readBinaryFileBase64).mockImplementation((filePath: string) => {
     return files[filePath] ?? '';
   });
 }
@@ -199,6 +211,63 @@ describe('upload - Twilio Content JSON', () => {
 
     expect(jsonFile?.source.fileFormat).toBe('JSON');
     expect(twilioFile?.source.fileFormat).toBe('TWILIO_CONTENT_JSON');
+  });
+});
+
+describe('upload - binary (LOTTIE) files', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(existsSync).mockReturnValue(false);
+    vi.mocked(readFileSync).mockReturnValue('');
+    vi.mocked(createFileMapping).mockReturnValue({});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('round-trips source and translation bytes through base64 without UTF-8 decoding', async () => {
+    // Zip magic plus bytes that are invalid UTF-8 — a utf8 read would corrupt them.
+    const sourceBytes = Buffer.from([
+      0x50, 0x4b, 0x03, 0x04, 0x00, 0xff, 0xfe, 0x80,
+    ]);
+    const translatedBytes = Buffer.from([
+      0x50, 0x4b, 0x03, 0x04, 0x01, 0xfd, 0x00, 0x81,
+    ]);
+    setMockFiles({});
+    setMockBinaryFiles({
+      'anim/en.lottie': sourceBytes.toString('base64'),
+      'anim/es.lottie': translatedBytes.toString('base64'),
+    });
+
+    const filePaths: ResolvedFiles = { lottie: ['anim/en.lottie'] };
+    const settings = makeSettings({ locales: ['es'], options: {} });
+
+    vi.mocked(createFileMapping).mockReturnValue({
+      es: { 'anim/en.lottie': 'anim/es.lottie' },
+    });
+    vi.mocked(existsSync).mockReturnValue(true);
+
+    await uploadWithFiles(filePaths, settings);
+
+    expect(runUploadFilesWorkflow).toHaveBeenCalledTimes(1);
+    const call = vi.mocked(runUploadFilesWorkflow).mock.calls[0][0];
+    expect(call.files).toHaveLength(1);
+    const { source, translations } = call.files[0];
+
+    expect(source.fileFormat).toBe('LOTTIE');
+    expect(Buffer.from(source.content, 'base64').equals(sourceBytes)).toBe(
+      true
+    );
+
+    expect(translations).toHaveLength(1);
+    expect(translations[0].locale).toBe('es');
+    expect(translations[0].fileFormat).toBe('LOTTIE');
+    expect(
+      Buffer.from(translations[0].content, 'base64').equals(translatedBytes)
+    ).toBe(true);
+    // The translated bundle must never be read as UTF-8 text.
+    expect(readFileSync).not.toHaveBeenCalled();
   });
 });
 

@@ -82,6 +82,19 @@ export function readFile(filePath: string): string {
 }
 
 /**
+ * Read a file as raw bytes and return it base64-encoded. Used for binary
+ * formats (e.g. Lottie zip bundles) whose content must not be decoded as UTF-8.
+ * @param {string} filePath - The path to the file to read.
+ * @returns {string} - The base64-encoded contents, or '' if the file is absent.
+ */
+export function readBinaryFileBase64(filePath: string): string {
+  if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+    return fs.readFileSync(filePath).toString('base64');
+  }
+  return '';
+}
+
+/**
  * Find a file in a directory.
  * @param {string} dir - The directory to search in.
  * @param {string} file - The file to search for.

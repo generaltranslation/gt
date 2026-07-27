@@ -1,7 +1,12 @@
 import { noDefaultLocaleError } from '../../console/index.js';
 import { exitSync, logErrorAndExit } from '../../console/logging.js';
 import { logger } from '../../console/logger.js';
-import { getRelative, readFile } from '../../fs/findFilepath.js';
+import {
+  getRelative,
+  readFile,
+  readBinaryFileBase64,
+} from '../../fs/findFilepath.js';
+import { isBinaryFileFormat } from 'generaltranslation/types';
 import { Settings } from '../../types/index.js';
 import { UploadOptions } from '../base.js';
 import { extractJson } from '../../formats/json/extractJson.js';
@@ -113,11 +118,16 @@ export async function upload(
         // Non-composite: look for separate translation files
         const translatedFileName = fileMapping[locale]?.[file.fileName];
         if (translatedFileName && existsSync(translatedFileName)) {
-          const translatedContent = readFileSync(translatedFileName, 'utf8');
+          const translationFormat = file.transformFormat ?? file.fileFormat;
+          // Binary formats (e.g. LOTTIE zip bundles) travel base64-encoded;
+          // decoding their bytes as UTF-8 would corrupt the archive.
+          const translatedContent = isBinaryFileFormat(translationFormat)
+            ? readBinaryFileBase64(translatedFileName)
+            : readFileSync(translatedFileName, 'utf8');
           translations.push({
             content: translatedContent,
             fileName: translatedFileName,
-            fileFormat: file.transformFormat ?? file.fileFormat,
+            fileFormat: translationFormat,
             dataFormat: file.dataFormat,
             locale,
             fileId: file.fileId,
