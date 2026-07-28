@@ -1,7 +1,6 @@
-// Loads a locale's translation file in the browser at runtime. The path here
-// must match the `files.gt.output` path in gt.config.json. The CLI generates
-// these files when you run `npx gt translate`; this example ships hand-written
-// fixtures so locale switching works without any API access.
+// Loads a locale's translation file in the browser; the path must match
+// `files.gt.output` in gt.config.json. `npx gt translate` generates these files;
+// this example ships hand-written fixtures so switching works without API access.
 export async function loadTranslations(locale: string) {
   try {
     const translations = await import(`./_gt/${locale}.json`);

@@ -3,16 +3,9 @@ import { initializeGTSPA } from 'gt-react';
 import gtConfig from '../gt.config.json';
 import { loadTranslations } from './loadTranslations';
 
-// This is the browser entry point. React Router runs it only in the browser,
-// never during the build-time prerender, which makes it the correct place to
-// initialize gt-react and to import 'gt-react/macros'.
-//
-// Initialization order (from the React SPA Quickstart): initialize gt-react
-// BEFORE the router renders, so that <T>, useLocale, and any t`...` macro
-// resolve against loaded translations. We await initializeGTSPA(), then
-// dynamically import the module that hydrates the router. The dynamic import
-// is what guarantees the app's module graph (and any module-level t`...`) is
-// not evaluated until initialization has finished.
+// Browser entry point: React Router never runs it during the prerender, so gt-react
+// is initialized here. Await initializeGTSPA() before the dynamic import that hydrates
+// the router, so no module-level t`...` evaluates before initialization finishes.
 async function main() {
   await initializeGTSPA({
     ...gtConfig,

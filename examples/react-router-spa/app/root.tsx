@@ -10,11 +10,9 @@ import type { Route } from './+types/root';
 import './app.css';
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  // The Layout wraps every render, including the build-time prerender of the
-  // SPA shell. It must stay free of gt-react calls: gt-react is a browser-only
-  // runtime in this app and is not initialized during the prerender. The lang
-  // attribute is static here; a real app can update it client-side from
-  // useLocale() inside a child route.
+  // Layout wraps every render, including the build-time prerender, so it must stay
+  // free of gt-react calls; gt-react is browser-only here. The lang attribute is
+  // static, and a child route can update it from useLocale().
   return (
     <html lang='en'>
       <head>
