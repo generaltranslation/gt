@@ -1,5 +1,12 @@
 # @generaltranslation/supported-locales
 
+## 2.1.12
+
+### Patch Changes
+
+- Updated dependencies [[`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b)]:
+  - generaltranslation@9.0.5
+
 ## 2.1.11
 
 ### Patch Changes
