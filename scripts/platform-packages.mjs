@@ -1,13 +1,8 @@
 #!/usr/bin/env node
 
-// Generates and publishes the per-platform binary packages that the `bin`
-// release of a CLI package depends on through optionalDependencies. Each
-// generated package wraps a single compiled binary from binaries/, so package
-// managers only download the binary matching the user's platform.
-//
-// Run from the CLI package directory (packages/cli or packages/gtx-cli):
-//   node ../../scripts/platform-packages.mjs generate
-//   node ../../scripts/platform-packages.mjs publish [--dry-run]
+// Generates and publishes the per-platform binary packages that a `bin` release
+// depends on through optionalDependencies. Run from the CLI package directory:
+//   node ../../scripts/platform-packages.mjs generate|publish [--dry-run]
 
 import { execFileSync, spawnSync } from 'child_process';
 import {

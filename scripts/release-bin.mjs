@@ -1,11 +1,8 @@
 #!/usr/bin/env node
 
-// Manual bin release with a guaranteed manifest restore: bin:prep mutates
-// package.json, so bin:restore must run even when a middle step fails.
-// CI inlines the same sequence in release.yml; keep the two in sync.
-//
-// Run from the CLI package directory (packages/cli or packages/gtx-cli):
-//   node ../../scripts/release-bin.mjs
+// Manual bin release with a guaranteed manifest restore: bin:prep mutates package.json,
+// so bin:restore must run even when a middle step fails. CI inlines the same sequence
+// in release.yml; keep the two in sync. Run from the CLI package directory.
 
 import { spawnSync } from 'child_process';
 

@@ -75,11 +75,9 @@ function defaultGetReport(): unknown {
     : undefined;
 }
 
-// Prebuilt Linux binaries are glibc-only. Some package managers (npm 8, and
-// others that ignore the "libc" field) install the glibc package on musl
-// systems anyway, so we must detect musl at runtime and take the JS fallback
-// instead of spawning an incompatible executable. Detection is best-effort:
-// any ambiguity or error resolves to "glibc" so the common case never breaks.
+// Prebuilt Linux binaries are glibc-only, and some package managers install the
+// glibc package on musl systems anyway, so detect musl at runtime and take the JS
+// fallback. Detection is best-effort: any ambiguity resolves to "glibc".
 export function isMuslLinux(
   overrides: {
     platform?: NodeJS.Platform;
@@ -93,20 +91,16 @@ export function isMuslLinux(
   }
 
   try {
-    // Cheap primary check: Alpine, the common musl distro, ships this marker.
-    // The overwhelming majority of Linux hosts run glibc and lack the file, so
-    // they short-circuit here without paying for process.report.getReport()
-    // (measured ~10ms) on every launch.
+    // Cheap primary check: Alpine ships this marker. Most Linux hosts run glibc and
+    // lack the file, so they short-circuit before process.report.getReport() (~10ms).
     const fileExists = overrides.fileExists ?? existsSync;
     if (!fileExists('/etc/alpine-release')) {
       return false;
     }
 
-    // Marker present: distinguish a real Alpine/musl host from a glibc host
-    // that merely carries the marker (glibc-via-gcompat images, mislabeled
-    // bases). Node populates header.glibcVersionRuntime on glibc builds and
-    // omits it on musl builds, so a non-empty string means glibc (not musl).
-    // Any error resolves to musl here since the marker already pointed at it.
+    // Distinguish a real musl host from a glibc host that merely carries the marker.
+    // Node sets header.glibcVersionRuntime on glibc builds and omits it on musl, so a
+    // non-empty string means glibc. Any error resolves to musl; the marker pointed there.
     let glibcVersion: unknown;
     try {
       const getReport = overrides.getReport ?? defaultGetReport;
@@ -193,12 +187,9 @@ function ensureSentence(text: string): string {
 
 export type BinDiagnosticSeverity = 'Error' | 'Warning';
 
-// Launcher-local diagnostic formatter. bin-main is a lean launcher that runs on
-// every invocation, so it deliberately imports only Node built-ins and lazy
-// loads the CLI. Importing createDiagnosticMessage from generaltranslation/
-// internal would pull that whole barrel (and @generaltranslation/format) onto
-// the hot path, so we reproduce its canonical "<source> <Severity>: ..." shape
-// here with zero runtime dependencies.
+// Launcher-local diagnostic formatter. Importing createDiagnosticMessage from
+// generaltranslation/internal would pull that whole barrel onto the hot path, so the
+// canonical "<source> <Severity>: ..." shape is reproduced here with no dependencies.
 export function createBinDiagnostic(input: {
   severity: BinDiagnosticSeverity;
   whatHappened: string;
@@ -297,14 +288,9 @@ function routeToBinary(): void {
   child.on('error', (error) => {
     if (settled) return;
     settled = true;
-    // 'error' fires only when the process could not be spawned at all (for
-    // example execve failing with ENOENT because the ELF interpreter is
-    // missing). The binary never executed, so degrading to the JS fallback
-    // here cannot double-run a side-effecting command. The inverse case is
-    // intentionally NOT masked: a mis-targeted binary that does start and then
-    // exits nonzero (for example exit 127 from a present-but-broken loader on
-    // an undetected musl host) surfaces through 'close', where we propagate the
-    // exit code rather than re-run a binary that already ran.
+    // 'error' fires only when the process could never be spawned, so degrading to the
+    // JS fallback cannot double-run a side-effecting command. A binary that did start
+    // and exited nonzero surfaces through 'close', where the exit code propagates.
     runJsFallback({
       whatHappened: 'The prebuilt gtx-cli binary could not be started',
       details: error instanceof Error ? error.message : String(error),
@@ -314,16 +300,9 @@ function routeToBinary(): void {
   return;
 }
 
-// Returns true when this module is the process entry point (run directly as
-// the CLI) rather than imported by another module such as the test suite.
-//
-// import.meta.main is the reliable signal but only exists on Node >= 24.2.0; on
-// the older supported LTS lines (18/20/22, and 24.0/24.1) it is undefined. When
-// it is missing we fall back to comparing the realpath of the process entry
-// against the realpath of this module. process.argv[1] is frequently an npm
-// .bin symlink while import.meta.url is the installed realpath, so both sides
-// are resolved through realpathSync before comparing; a symlinked launcher
-// still matches. Any resolution error resolves to false.
+// True when this module is the process entry point rather than an import.
+// import.meta.main only exists on Node >= 24.2.0; older lines fall back to comparing
+// realpaths, since process.argv[1] is often an npm .bin symlink. Errors resolve false.
 export function isProcessEntry(
   metaMain: boolean | undefined,
   moduleUrl: string,

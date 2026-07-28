@@ -11,16 +11,13 @@ import {
   createBinDiagnostic,
   isProcessEntry,
 } from '../bin-main.js';
-// Dev-only import of the real core formatter to lock the launcher-local copy to
-// it (see the parity suite below). The launcher never imports this at runtime;
-// the test resolves the built bundle by relative path so it needs no extra
-// dependency on either CLI package.
+// Dev-only import of the real core formatter to lock the launcher-local copy to it.
+// The launcher never imports this at runtime; the test resolves the built bundle by
+// relative path, so it needs no extra dependency on either CLI package.
 import { createDiagnosticMessage } from '../../../../core/dist/internal.mjs';
 
-// Importing bin-main must not spawn a binary or fall back: the module guards
-// its entry point behind isProcessEntry(), so pulling in the exported helpers
-// here is side-effect free. If the guard regressed, this test file would run
-// the launcher on import and these assertions would never be reached.
+// Importing bin-main must not spawn a binary: the module guards its entry point
+// behind isProcessEntry(), so pulling in the exported helpers here is side-effect free.
 
 const launcherPath = fileURLToPath(
   new URL('../../../dist/bin/bin-main.js', import.meta.url)
@@ -272,13 +269,9 @@ describe('createBinDiagnostic', () => {
   });
 });
 
-// The launcher reimplements core's createDiagnosticMessage locally to stay a
-// dependency-free hot path (a static generaltranslation/internal import would
-// pull the whole barrel onto every invocation). This suite locks that copy to
-// core: if core's formatter changes part ordering, punctuation, or the Details
-// prefix, one of these assertions fails so the two drift loudly instead of
-// silently. createBinDiagnostic hardcodes the "gtx-cli" source, so the core call is
-// given the same source.
+// The launcher reimplements core's createDiagnosticMessage locally to keep the hot
+// path dependency-free. This suite locks that copy to core, so a change to part
+// ordering, punctuation, or the Details prefix fails here instead of drifting quietly.
 describe('createBinDiagnostic parity with core createDiagnosticMessage', () => {
   const cases: {
     name: string;
@@ -351,12 +344,9 @@ describe('createBinDiagnostic parity with core createDiagnosticMessage', () => {
   });
 });
 
-// The 17 helper tests above import the module, so isProcessEntry (the entry
-// guard) is never exercised as the *process entry* by them. These tests drive
-// the guard directly, including the pre-Node-24.2 path where import.meta.main
-// is undefined. On commit b63dfe69d the guard was a bare `import.meta.main`
-// with no fallback, so the undefined-metaMain cases below would report "not the
-// entry" and the CLI would silently no-op; here they must report the entry.
+// The helper tests above import the module, so isProcessEntry is never exercised as
+// the process entry by them. These drive the guard directly, including the
+// pre-Node-24.2 path where import.meta.main is undefined.
 describe('isProcessEntry', () => {
   it('uses import.meta.main directly when it is a boolean (Node >= 24.2)', () => {
     expect(isProcessEntry(true, import.meta.url, '/anything')).toBe(true);
@@ -392,12 +382,9 @@ describe('isProcessEntry', () => {
   });
 });
 
-// End-to-end coverage of the actual production wiring: run the BUILT launcher
-// as a subprocess (the shape npm publishes as bin) and confirm it routes. On a
-// box with no platform binary it prints the fallback diagnostic on stderr and
-// hands off to the JS CLI (its usage on stdout). A silent no-op, which is how
-// the pre-24.2 import.meta.main regression manifested, would exit 0 with empty
-// output and fail these assertions.
+// End-to-end coverage of the production wiring: run the built launcher as a
+// subprocess and confirm it routes. With no platform binary it prints the fallback
+// diagnostic on stderr and hands off to the JS CLI; a silent no-op fails here.
 describe('built launcher entry point (integration)', () => {
   beforeAll(() => {
     if (!existsSync(launcherPath) || !existsSync(jsFallbackPath)) {
