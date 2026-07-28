@@ -1,5 +1,18 @@
 # gt-react-native
 
+## 11.1.1
+
+### Patch Changes
+
+- [#1936](https://github.com/generaltranslation/gt/pull/1936) [`f51dde0`](https://github.com/generaltranslation/gt/commit/f51dde0fa13920a962a869ec947ec0a30bd68025) Thanks [@JoshKappler](https://github.com/JoshKappler)! - Guard the native module lookup on web so importing gt-react-native no longer crashes web renders (react-native-web and Expo web). The native TurboModule now resolves to null on web, where the existing Platform.OS guards already handle it, and native platforms are unchanged.
+
+- Updated dependencies [[`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b)]:
+  - generaltranslation@9.0.5
+  - gt-i18n@1.0.9
+  - @generaltranslation/react-core@11.1.1
+  - @generaltranslation/supported-locales@2.1.12
+  - @generaltranslation/format@0.1.4
+
 ## 11.1.0
 
 ### Patch Changes

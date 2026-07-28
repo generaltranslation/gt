@@ -1,5 +1,24 @@
 # gtx-cli
 
+## 2.15.0
+
+### Minor Changes
+
+- [#1920](https://github.com/generaltranslation/gt/pull/1920) [`f2c196b`](https://github.com/generaltranslation/gt/commit/f2c196b6d37c4abb646961826f2a2154f8cabbc8) Thanks [@JoshKappler](https://github.com/JoshKappler)! - Add a global `--quiet` / `-q` flag to the CLI that suppresses informational output. Under `--quiet` the CLI drops the info/step/success/spinner chatter and the ASCII banner in both the default and `GT_LOG_FORMAT=json` paths, while warnings, errors, exit codes, and command results stay the same. In JSON mode the remaining output keeps its shape: only info/debug/trace lines are dropped, and warn/error and above still print. The flag takes precedence over `GT_LOG_LEVEL` without lowering an already-more-restrictive level, and interactive prompts still run when a command genuinely needs input.
+
+### Patch Changes
+
+- [#1889](https://github.com/generaltranslation/gt/pull/1889) [`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b) Thanks [@bgub](https://github.com/bgub)! - Allow `awaitJobs()` to poll job IDs directly and reuse that shared polling implementation for CLI and Sanity project setup.
+
+- [#1886](https://github.com/generaltranslation/gt/pull/1886) [`7cb2dfe`](https://github.com/generaltranslation/gt/commit/7cb2dfef077ee642f211996b0d729844a18258a8) Thanks [@bgub](https://github.com/bgub)! - Flatten the CLI workflow step lifecycle by folding completion behavior into each step's `run()` method and removing the unused shared step protocol.
+
+- Updated dependencies [[`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b), [`e55aaa9`](https://github.com/generaltranslation/gt/commit/e55aaa9cfdf6dfe3ab96d0eea927f255b66cd20d)]:
+  - generaltranslation@9.0.5
+  - @generaltranslation/icu@0.1.1
+  - @generaltranslation/python-extractor@0.2.32
+  - @generaltranslation/supported-locales@2.1.12
+  - @generaltranslation/format@0.1.4
+
 ## 2.14.66
 
 ### Patch Changes

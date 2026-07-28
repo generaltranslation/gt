@@ -1,5 +1,12 @@
 # @generaltranslation/react-core-linter
 
+## 0.1.14
+
+### Patch Changes
+
+- Updated dependencies [[`e55aaa9`](https://github.com/generaltranslation/gt/commit/e55aaa9cfdf6dfe3ab96d0eea927f255b66cd20d)]:
+  - @generaltranslation/icu@0.1.1
+
 ## 0.1.13
 
 ### Patch Changes

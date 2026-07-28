@@ -1,5 +1,11 @@
 # @generaltranslation/icu
 
+## 0.1.1
+
+### Patch Changes
+
+- [#1993](https://github.com/generaltranslation/gt/pull/1993) [`e55aaa9`](https://github.com/generaltranslation/gt/commit/e55aaa9cfdf6dfe3ab96d0eea927f255b66cd20d) Thanks [@bgub](https://github.com/bgub)! - Reduce the shipped ICU runtime bundle and remove unnecessary formatting allocations.
+
 ## 0.1.0
 
 ### Minor Changes

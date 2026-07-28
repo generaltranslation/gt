@@ -1,5 +1,14 @@
 # @generaltranslation/react-core
 
+## 11.1.1
+
+### Patch Changes
+
+- Updated dependencies [[`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b)]:
+  - generaltranslation@9.0.5
+  - gt-i18n@1.0.9
+  - @generaltranslation/format@0.1.4
+
 ## 11.1.0
 
 ### Patch Changes
