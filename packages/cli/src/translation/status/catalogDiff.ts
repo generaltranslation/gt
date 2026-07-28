@@ -9,11 +9,7 @@ export type CatalogDiff = {
   stale: string[];
 };
 
-/**
- * Diffs a translated key/value catalog against its source catalog.
- * Pass `null` for a catalog that does not exist on disk — every source
- * key is then missing.
- */
+/** Diffs a translated catalog against its source; pass `null` when the file is absent. */
 export function diffKeyedCatalog(
   source: Record<string, unknown>,
   translation: Record<string, unknown> | null
@@ -46,12 +42,7 @@ export function diffKeyedCatalog(
 const I18NEXT_PLURAL_SUFFIX = /_(zero|one|two|few|many|other|\d+)$/;
 
 /**
- * Collapses i18next plural-suffixed keys (`item_one`, `item_few`, …) into
- * one `item_[plural]` unit per family. Locales legitimately carry
- * different CLDR plural categories than the source (Russian needs
- * few/many, Japanese only other), so comparing suffixed keys one-to-one
- * produces false missing/stale reports. A family counts as translated
- * when the translation has any form of it.
+ * Collapses i18next plural suffixes into one unit per family; CLDR categories differ by locale.
  */
 export function collapseI18nextPlurals(
   pointers: Record<string, unknown>

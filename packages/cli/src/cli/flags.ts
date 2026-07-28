@@ -162,11 +162,7 @@ export function attachValidateFlags(command: Command) {
   );
 }
 
-/**
- * Attaches flags necessary for reporting translation status
- * @param command
- * @returns The command with the status flags attached
- */
+/** Attaches flags necessary for reporting translation status */
 export function attachStatusFlags(command: Command) {
   return attachValidateFlags(command)
     .option(

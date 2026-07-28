@@ -33,11 +33,7 @@ function escapePointerSegment(segment: string): string {
   return segment.replace(/~/g, '~0').replace(/\//g, '~1');
 }
 
-/**
- * Flattens a parsed JSON value into a map of RFC 6901 JSON pointers to
- * string leaves. Non-string leaves (numbers, booleans, null) are skipped —
- * only strings are translatable.
- */
+/** Flattens JSON into RFC 6901 pointers mapped to string leaves; non-strings are skipped. */
 export function flattenStringLeaves(
   json: unknown,
   pointer: string = '',

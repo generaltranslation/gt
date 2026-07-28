@@ -29,12 +29,7 @@ function pad(cell: Cell, width: number, align: 'left' | 'right'): string {
   return cell.color ? cell.color(text) : text;
 }
 
-/**
- * Renders the per-locale status table:
- * ┌────────┬──────────┬────────────┬─────────┬───────┬────────┐
- * │ Locale │ Coverage │ Translated │ Missing │ Stale │ Errors │
- * └────────┴──────────┴────────────┴─────────┴───────┴────────┘
- */
+/** Renders the per-locale status table (locale, coverage, translated, missing, stale, errors). */
 export function renderStatusTable(
   rows: LocaleStatus[],
   options: { minCoverage: number }
@@ -133,11 +128,7 @@ function renderSection(
   ];
 }
 
-/**
- * Renders detail lines below the table. Validation errors are always
- * listed; missing and stale units only in verbose mode. Returns an empty
- * string when there is nothing to show.
- */
+/** Renders detail lines below the table; missing and stale units only in verbose mode. */
 export function renderStatusIssues(
   rows: LocaleStatus[],
   options: { verbose: boolean }
@@ -171,11 +162,7 @@ export function renderStatusIssues(
   return sections.join('\n').trimEnd();
 }
 
-/**
- * Renders a note listing files whose per-locale coverage cannot be
- * measured locally (composite JSON), deduplicated across locales.
- * Empty string when everything was measurable.
- */
+/** Renders a note listing files whose coverage cannot be measured locally (composite JSON). */
 export function renderUnmeasuredNote(rows: LocaleStatus[]): string {
   const files = new Set<string>(
     rows.flatMap((row) => row.unmeasured.map((unit) => unit.fileName))

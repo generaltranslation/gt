@@ -53,10 +53,7 @@ function kindOf(element: MessageFormatElement): IcuArgumentKind | null {
   }
 }
 
-/**
- * Collects every argument and tag referenced by an ICU message AST,
- * including ones nested inside plural/select options and tag children.
- */
+/** Collects every argument and tag in an ICU AST, including nested plural/select options. */
 function collectMessageArguments(
   elements: MessageFormatElement[],
   collected: MessageArguments = { args: new Map(), tags: new Set() }
@@ -97,12 +94,7 @@ function describeParseError(error: unknown): string {
 }
 
 /**
- * Checks that a translated ICU message is structurally compatible with its
- * source: it must parse (with the same default options the runtime
- * formatter uses) and reference the same argument set with compatible
- * kinds. Plural/select categories are locale-specific and deliberately not
- * compared. A source that does not itself parse as ICU is skipped — there
- * is nothing reliable to compare against.
+ * Checks argument-set compatibility with the source; plural/select categories are not compared.
  */
 export function compareIcuMessages(
   source: string,

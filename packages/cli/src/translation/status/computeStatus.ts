@@ -99,12 +99,7 @@ function entryDataFormat(
   return undefined;
 }
 
-/**
- * Computes per-locale translation status from the current local source of
- * truth: the aggregated source files (collectFiles), the configured output
- * mapping (createFileMapping), the downloaded-versions lockfile, and the
- * translated files on disk. Performs no network requests.
- */
+/** Computes per-locale status from local sources only; performs no network requests. */
 export function computeStatus(input: ComputeStatusInput): LocaleStatus[] {
   return input.locales.map((locale) => computeLocaleStatus(input, locale));
 }

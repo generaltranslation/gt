@@ -43,12 +43,7 @@ export type StatusEvaluation = {
   ok: boolean;
 };
 
-/**
- * Applies the CI gate rules: per-locale coverage, validation errors, and
- * measurability. A zero-total locale reads as 100% through
- * coveragePercent, so it gets its own failing bucket instead of silently
- * passing the gate.
- */
+/** Applies the CI gate; a zero-total locale fails its own bucket, not a false 100%. */
 export function evaluateStatus(
   rows: LocaleStatus[],
   minCoverage: number
@@ -78,12 +73,7 @@ function parseMinCoverage(raw: string | undefined): number {
   return Number(raw ?? 100);
 }
 
-/**
- * Reports per-locale translation coverage and validates translated
- * catalogs against the current local source of truth. Runs fully offline;
- * with --ci it exits non-zero when coverage drops below --min-coverage,
- * any translated catalog fails ICU validation, or nothing was measurable.
- */
+/** Reports per-locale coverage and validates catalogs offline; --ci exits non-zero on failure. */
 export async function handleStatus(
   options: StatusFlags,
   settings: Settings,
@@ -148,10 +138,8 @@ export async function handleStatus(
 
   const evaluation = evaluateStatus(rows, minCoverage);
   if (rows.length === 0 || evaluation.unmeasurableLocales.length > 0) {
-    // A locale that measured nothing must not read as a passing 100% —
-    // it is usually a config problem (broken include glob, wrong
-    // directory) or a setup with no local translations (CDN publish,
-    // composite-only)
+    // A locale that measured nothing must not read as a passing 100%; it usually
+    // means a broken include glob or no local translations (CDN publish, composite-only).
     const which =
       rows.length === 0
         ? 'any locale'
