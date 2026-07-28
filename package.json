@@ -72,5 +72,13 @@
     "onlyBuiltDependencies": [
       "lefthook"
     ]
+  },
+  "@parcel/resolver-default": {
+    "packageExports": true
+  },
+  "alias": {
+    "buffer": false,
+    "react": "./examples/parcel-spa/node_modules/react",
+    "react-dom": "./examples/parcel-spa/node_modules/react-dom"
   }
 }

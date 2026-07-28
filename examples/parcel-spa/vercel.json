@@ -1,0 +1,6 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm exec turbo run build --env-mode=loose",
+  "installCommand": "corepack pnpm install --frozen-lockfile",
+  "outputDirectory": "dist"
+}

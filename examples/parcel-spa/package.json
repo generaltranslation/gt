@@ -1,0 +1,49 @@
+{
+  "name": "parcel-spa",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@10.20.0",
+  "type": "module",
+  "source": "index.html",
+  "scripts": {
+    "dev": "parcel index.html --cache-dir .parcel-cache",
+    "build": "parcel build index.html --cache-dir .parcel-cache",
+    "translate": "gt translate",
+    "preview": "parcel build index.html --cache-dir .parcel-cache && node ./scripts/serve.mjs",
+    "serve": "node ./scripts/serve.mjs",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint --config ../.oxlintrc.react.json .",
+    "clean": "rm -rf dist .parcel-cache"
+  },
+  "dependencies": {
+    "gt-react": "workspace:*",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@generaltranslation/parcel-transformer": "workspace:*",
+    "@parcel/config-default": "2.16.4",
+    "@types/node": "^24.13.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "gt": "workspace:*",
+    "oxlint": "^1.71.0",
+    "parcel": "2.16.4",
+    "typescript": "~6.0.2"
+  },
+  "targets": {
+    "default": {
+      "distDir": "dist",
+      "sourceMap": false
+    }
+  },
+  "@parcel/resolver-default": {
+    "packageExports": true
+  },
+  "browserslist": [
+    "last 2 Chrome versions",
+    "last 2 Edge versions",
+    "last 2 Firefox versions",
+    "last 2 Safari versions"
+  ]
+}
