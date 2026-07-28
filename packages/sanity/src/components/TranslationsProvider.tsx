@@ -514,7 +514,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } finally {
       setIsBusy(false);
     }
-  }, [secrets, documents, locales, translationContext, branchId]);
+  }, [secrets, documents, locales, client, schema, branchId]);
 
   const handleImportAll = useCallback(async () => {
     if (!secrets || documents.length === 0 || !branchId) return;
