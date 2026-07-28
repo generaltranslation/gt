@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1784752888440,
+  "lastUpdate": 1785282492704,
   "repoUrl": "https://github.com/generaltranslation/gt",
   "entries": {
     "Middleware Benchmarks": [
@@ -7656,6 +7656,122 @@ window.BENCHMARK_DATA = {
             "value": 109.20000000001164,
             "unit": "ms",
             "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.0.13\"\n}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "3831c60907f903d44e8f076c4e2a30e973f6f67b",
+          "message": "[ci] release (#1990)\n\nThis PR was opened by the [Changesets\nrelease](https://github.com/changesets/action) GitHub action. When\nyou're ready to do a release, you can merge this and the packages will\nbe published to npm automatically. If you're not ready to do a release\nyet, that's fine, whenever you add more changesets to main, this PR will\nbe updated.\n\n\n# Releases\n## gt@2.15.0\n\n### Minor Changes\n\n- [#1920](https://github.com/generaltranslation/gt/pull/1920)\n[`f2c196b`](https://github.com/generaltranslation/gt/commit/f2c196b6d37c4abb646961826f2a2154f8cabbc8)\nThanks [@JoshKappler](https://github.com/JoshKappler)! - Add a global\n`--quiet` / `-q` flag to the CLI that suppresses informational output.\nUnder `--quiet` the CLI drops the info/step/success/spinner chatter and\nthe ASCII banner in both the default and `GT_LOG_FORMAT=json` paths,\nwhile warnings, errors, exit codes, and command results stay the same.\nIn JSON mode the remaining output keeps its shape: only info/debug/trace\nlines are dropped, and warn/error and above still print. The flag takes\nprecedence over `GT_LOG_LEVEL` without lowering an\nalready-more-restrictive level, and interactive prompts still run when a\ncommand genuinely needs input.\n\n### Patch Changes\n\n- [#1889](https://github.com/generaltranslation/gt/pull/1889)\n[`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b)\nThanks [@bgub](https://github.com/bgub)! - Allow `awaitJobs()` to poll\njob IDs directly and reuse that shared polling implementation for CLI\nand Sanity project setup.\n\n- [#1886](https://github.com/generaltranslation/gt/pull/1886)\n[`7cb2dfe`](https://github.com/generaltranslation/gt/commit/7cb2dfef077ee642f211996b0d729844a18258a8)\nThanks [@bgub](https://github.com/bgub)! - Flatten the CLI workflow step\nlifecycle by folding completion behavior into each step's `run()` method\nand removing the unused shared step protocol.\n\n- Updated dependencies\n[[`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b),\n[`e55aaa9`](https://github.com/generaltranslation/gt/commit/e55aaa9cfdf6dfe3ab96d0eea927f255b66cd20d)]:\n  - generaltranslation@9.0.5\n  - @generaltranslation/icu@0.1.1\n  - @generaltranslation/python-extractor@0.2.32\n  - @generaltranslation/supported-locales@2.1.12\n  - @generaltranslation/format@0.1.4\n## gt-sanity@3.1.0\n\n### Minor Changes\n\n- [#1997](https://github.com/generaltranslation/gt/pull/1997)\n[`d614ee0`](https://github.com/generaltranslation/gt/commit/d614ee07336c8dbad539f7c95403a704d621d83c)\nThanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add\nopt-in preservation of human-edited translations. With the new **Save\nlocal edits** toggle enabled, the translations Sanity already holds are\nuploaded to General Translation before a translation run, so content\nwhose source text did not change keeps its existing wording instead of\nbeing regenerated. Translated documents (via `translation.metadata`,\npreferring drafts) and internationalized-array locale values are both\ncovered.\n\nThe toggle is off by default and shows an explanation before it can be\nenabled — turning it on means local content overwrites whatever General\nTranslation holds for that source version, including a completed\ntranslation that has not been imported yet. Its initial state can be set\nwith the `preserveExistingTranslations` plugin option.\n\nAlso adds a **Save Local Edits** action, which uploads the translations\nalready in Sanity (seeding source files as needed) without enqueueing a\ntranslation, and a **Retranslate from scratch** option in the Translate\nAll dialog for deliberately regenerating translations — the plugin\npreviously had no way to force a retranslation.\n\n### Patch Changes\n\n- [#1889](https://github.com/generaltranslation/gt/pull/1889)\n[`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b)\nThanks [@bgub](https://github.com/bgub)! - Allow `awaitJobs()` to poll\njob IDs directly and reuse that shared polling implementation for CLI\nand Sanity project setup.\n\n- Updated dependencies\n[[`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b)]:\n  - generaltranslation@9.0.5\n## @generaltranslation/compiler@1.3.34\n\n### Patch Changes\n\n- Updated dependencies\n[[`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b)]:\n  - generaltranslation@9.0.5\n  - @generaltranslation/format@0.1.4\n## generaltranslation@9.0.5\n\n### Patch Changes\n\n- [#1889](https://github.com/generaltranslation/gt/pull/1889)\n[`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b)\nThanks [@bgub](https://github.com/bgub)! - Allow `awaitJobs()` to poll\njob IDs directly and reuse that shared polling implementation for CLI\nand Sanity project setup.\n\n- Updated dependencies\n[[`e55aaa9`](https://github.com/generaltranslation/gt/commit/e55aaa9cfdf6dfe3ab96d0eea927f255b66cd20d)]:\n  - @generaltranslation/icu@0.1.1\n  - @generaltranslation/format@0.1.4\n## @generaltranslation/format@0.1.4\n\n### Patch Changes\n\n- Updated dependencies\n[[`e55aaa9`](https://github.com/generaltranslation/gt/commit/e55aaa9cfdf6dfe3ab96d0eea927f255b66cd20d)]:\n  - @generaltranslation/icu@0.1.1\n## gtx-cli@2.15.0\n\n### Patch Changes\n\n- Updated dependencies\n[[`f2c196b`](https://github.com/generaltranslation/gt/commit/f2c196b6d37c4abb646961826f2a2154f8cabbc8),\n[`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b),\n[`7cb2dfe`](https://github.com/generaltranslation/gt/commit/7cb2dfef077ee642f211996b0d729844a18258a8)]:\n  - gt@2.15.0\n## gt-i18n@1.0.9\n\n### Patch Changes\n\n- Updated dependencies\n[[`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b)]:\n  - generaltranslation@9.0.5\n  - @generaltranslation/format@0.1.4\n## @generaltranslation/icu@0.1.1\n\n### Patch Changes\n\n- [#1993](https://github.com/generaltranslation/gt/pull/1993)\n[`e55aaa9`](https://github.com/generaltranslation/gt/commit/e55aaa9cfdf6dfe3ab96d0eea927f255b66cd20d)\nThanks [@bgub](https://github.com/bgub)! - Reduce the shipped ICU\nruntime bundle and remove unnecessary formatting allocations.\n## locadex@1.0.202\n\n### Patch Changes\n\n- Updated dependencies\n[[`f2c196b`](https://github.com/generaltranslation/gt/commit/f2c196b6d37c4abb646961826f2a2154f8cabbc8),\n[`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b),\n[`7cb2dfe`](https://github.com/generaltranslation/gt/commit/7cb2dfef077ee642f211996b0d729844a18258a8)]:\n  - gt@2.15.0\n## gt-next@11.1.1\n\n### Patch Changes\n\n- [#1988](https://github.com/generaltranslation/gt/pull/1988)\n[`9cd206f`](https://github.com/generaltranslation/gt/commit/9cd206fd7708e7abdad7a14687b086dca658fb23)\nThanks [@bgub](https://github.com/bgub)! - Stop inlining server-only\nconfiguration and arbitrary metadata into client bundles.\n\n- [#1986](https://github.com/generaltranslation/gt/pull/1986)\n[`ef82647`](https://github.com/generaltranslation/gt/commit/ef82647a7c776f7cd0b994fe56a35b81885ece03)\nThanks [@bgub](https://github.com/bgub)! - Split browser, request,\nmiddleware, and loader diagnostics into runtime-specific modules.\n\n- Updated dependencies\n[[`132f34f`](https://github.com/generaltranslation/gt/commit/132f34f6512b0fd91b0bc33ef89df0896e41b1fc),\n[`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b)]:\n  - gt-react@11.1.1\n  - generaltranslation@9.0.5\n  - @generaltranslation/compiler@1.3.34\n  - gt-i18n@1.0.9\n  - @generaltranslation/react-core@11.1.1\n  - @generaltranslation/format@0.1.4\n## gt-node@1.0.10\n\n### Patch Changes\n\n- Updated dependencies\n[[`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b)]:\n  - generaltranslation@9.0.5\n  - gt-i18n@1.0.9\n## @generaltranslation/python-extractor@0.2.32\n\n### Patch Changes\n\n- Updated dependencies\n[[`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b)]:\n  - generaltranslation@9.0.5\n## gt-react@11.1.1\n\n### Patch Changes\n\n- [#1987](https://github.com/generaltranslation/gt/pull/1987)\n[`132f34f`](https://github.com/generaltranslation/gt/commit/132f34f6512b0fd91b0bc33ef89df0896e41b1fc)\nThanks [@bgub](https://github.com/bgub)! - Lazy-load the\ndevelopment-only localStorage translation cache from the browser\nentrypoint.\n\n- Updated dependencies\n[[`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b)]:\n  - generaltranslation@9.0.5\n  - gt-i18n@1.0.9\n  - @generaltranslation/react-core@11.1.1\n## @generaltranslation/react-core@11.1.1\n\n### Patch Changes\n\n- Updated dependencies\n[[`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b)]:\n  - generaltranslation@9.0.5\n  - gt-i18n@1.0.9\n  - @generaltranslation/format@0.1.4\n## @generaltranslation/react-core-linter@0.1.14\n\n### Patch Changes\n\n- Updated dependencies\n[[`e55aaa9`](https://github.com/generaltranslation/gt/commit/e55aaa9cfdf6dfe3ab96d0eea927f255b66cd20d)]:\n  - @generaltranslation/icu@0.1.1\n## gt-react-native@11.1.1\n\n### Patch Changes\n\n- [#1936](https://github.com/generaltranslation/gt/pull/1936)\n[`f51dde0`](https://github.com/generaltranslation/gt/commit/f51dde0fa13920a962a869ec947ec0a30bd68025)\nThanks [@JoshKappler](https://github.com/JoshKappler)! - Guard the\nnative module lookup on web so importing gt-react-native no longer\ncrashes web renders (react-native-web and Expo web). The native\nTurboModule now resolves to null on web, where the existing Platform.OS\nguards already handle it, and native platforms are unchanged.\n\n- Updated dependencies\n[[`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b)]:\n  - generaltranslation@9.0.5\n  - gt-i18n@1.0.9\n  - @generaltranslation/react-core@11.1.1\n  - @generaltranslation/supported-locales@2.1.12\n  - @generaltranslation/format@0.1.4\n## @generaltranslation/supported-locales@2.1.12\n\n### Patch Changes\n\n- Updated dependencies\n[[`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b)]:\n  - generaltranslation@9.0.5\n## gt-tanstack-start@11.1.1\n\n### Patch Changes\n\n- Updated dependencies\n[[`132f34f`](https://github.com/generaltranslation/gt/commit/132f34f6512b0fd91b0bc33ef89df0896e41b1fc),\n[`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b)]:\n  - gt-react@11.1.1\n  - generaltranslation@9.0.5\n  - gt-i18n@1.0.9\n  - @generaltranslation/react-core@11.1.1\n\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+          "timestamp": "2026-07-28T23:40:28Z",
+          "url": "https://github.com/generaltranslation/gt/commit/3831c60907f903d44e8f076c4e2a30e973f6f67b"
+        },
+        "date": 1785282492304,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "gt-next > unit > middleware: factory creation latency > createNextMiddleware() (mean)",
+            "value": 0.04376277892525834,
+            "range": "±0.0215",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.1\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > default locale request (/) (mean)",
+            "value": 0.24157838067632678,
+            "range": "±0.0848",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.1\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > non-default locale request (/fr) (mean)",
+            "value": 0.4112407853618409,
+            "range": "±0.09",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.1\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > nested route (/fr/about) (mean)",
+            "value": 0.41101927668308996,
+            "range": "±0.0893",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > ttfb",
+            "value": 129.90000000002328,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > domContentLoaded",
+            "value": 141.70000000001164,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > load",
+            "value": 227.20000000001164,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > elapsed",
+            "value": 99,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > ttfb",
+            "value": 18.89999999999418,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > domContentLoaded",
+            "value": 27.5,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > load",
+            "value": 90.5,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: locale-switch-en-to-fr > elapsed",
+            "value": 615,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > ttfb",
+            "value": 11.199999999982538,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > domContentLoaded",
+            "value": 20.79999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > load",
+            "value": 102,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.1\"\n}"
           }
         ]
       }
