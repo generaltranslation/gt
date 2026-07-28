@@ -87,6 +87,7 @@ interface TranslationsContextType {
   autoImport: boolean;
   autoPatchReferences: boolean;
   autoPublish: boolean;
+  preserveExistingTranslations: boolean;
   loadingDocuments: boolean;
   importProgress: ImportProgress;
   importedTranslations: Set<string>;
@@ -109,6 +110,7 @@ interface TranslationsContextType {
   setAutoImport: (value: boolean) => void;
   setAutoPatchReferences: (value: boolean) => void;
   setAutoPublish: (value: boolean) => void;
+  setPreserveExistingTranslations: (value: boolean) => void;
   handleTranslateAll: (options?: TranslateAllOptions) => Promise<void>;
   handleUploadExistingTranslations: () => Promise<void>;
   handleImportAll: () => Promise<void>;
@@ -194,6 +196,10 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   const [autoImport, setAutoImport] = useState(false);
   const [autoPatchReferences, setAutoPatchReferences] = useState(false);
   const [autoPublish, setAutoPublish] = useState(false);
+  // Seeded from plugin config; opt-in because uploading local translations
+  // overwrites whatever General Translation holds for that source version.
+  const [preserveExistingTranslations, setPreserveExistingTranslations] =
+    useState(() => pluginConfig.getPreserveExistingTranslations());
   const [loadingDocuments, setLoadingDocuments] = useState(false);
   const [importProgress, setImportProgress] = useState<ImportProgress>({
     current: 0,
@@ -406,7 +412,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         // the upload below, which makes the new revision the latest version and
         // would leave the edits attached to nothing. Best-effort: a failure here
         // costs edit preservation, and must not block the translation itself.
-        if (pluginConfig.getPreserveExistingTranslations() && !force) {
+        if (preserveExistingTranslations && !force) {
           try {
             const captured = await captureExistingTranslations({
               documents,
@@ -480,6 +486,8 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       schema,
       client,
       branchId,
+      preserveExistingTranslations,
+      serializeSourceDocuments,
       uploadedVersions,
       uploadedVersionsStorageKey,
     ]
@@ -1227,6 +1235,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     autoImport,
     autoPatchReferences,
     autoPublish,
+    preserveExistingTranslations,
     loadingDocuments,
     importProgress,
     importedTranslations,
@@ -1245,6 +1254,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     setAutoImport,
     setAutoPatchReferences,
     setAutoPublish,
+    setPreserveExistingTranslations,
     handleTranslateAll,
     handleUploadExistingTranslations,
     handleImportAll,

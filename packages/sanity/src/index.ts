@@ -122,13 +122,12 @@ export type GTPluginConfig = Omit<
   // In 'mixed' mode, the document types that use the internationalized-array
   // strategy; everything else stays document-level.
   fieldLevelDocuments?: TranslateDocumentFilter[] | string[];
-  // When true (default), edits made to translated content inside the Studio are
-  // captured and sent back to General Translation as the translation of record
-  // for the previously translated source version, so they survive the next
-  // translation run instead of being overwritten. Escape hatch only — turning
-  // this off restores the old behavior, where every run discards manual edits.
-  // To deliberately discard them for a single run, use "Retranslate from
-  // scratch" (force) instead of disabling this.
+  // Sets the initial state of the "Local translations win" toggle. When on,
+  // the translations currently in Sanity are uploaded to General Translation
+  // before a translation run, so they become the baseline the next translation
+  // reuses. Local content overwrites whatever General Translation holds for
+  // that source version, including a completed translation that has not been
+  // imported yet. Off by default; the toggle can be flipped per session.
   preserveExistingTranslations?: boolean;
 };
 
@@ -170,7 +169,7 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
     fieldLevelLocalization,
     translationLevel = 'document',
     fieldLevelDocuments,
-    preserveExistingTranslations = true,
+    preserveExistingTranslations = false,
   }) => {
     // Resolve sourceLocale: explicit sourceLocale > defaultLocale (from gt.config.json) > library default
     const resolvedSourceLocale =

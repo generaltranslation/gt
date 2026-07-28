@@ -17,6 +17,7 @@ import {
   useToast,
 } from '@sanity/ui';
 import { pluginConfig } from '../../adapter/core';
+import { SaveLocalTranslationsDialog } from '../page/SaveLocalTranslationsDialog';
 import { useTranslations } from '../TranslationsProvider';
 import { LanguageStatus } from '../shared/LanguageStatus';
 import { LocaleCheckbox } from '../shared/LocaleCheckbox';
@@ -26,6 +27,7 @@ import {
   PublishIcon,
   RefreshIcon,
   TranslateIcon,
+  UploadIcon,
 } from '@sanity/icons';
 import {
   createTranslationStatusKey,
@@ -40,6 +42,7 @@ export const TranslationView = () => {
     branchId,
     isBusy,
     handleTranslateAll,
+    handleUploadExistingTranslations,
     handleImportDocument,
     handleRefreshAll,
     isRefreshing,
@@ -55,11 +58,15 @@ export const TranslationView = () => {
     setAutoPatchReferences,
     autoPublish,
     setAutoPublish,
+    preserveExistingTranslations,
+    setPreserveExistingTranslations,
     getVersionId,
   } = useTranslations();
 
   const [isImporting, setIsImporting] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isUploadingExisting, setIsUploadingExisting] = useState(false);
+  const [isSaveLocalDialogOpen, setIsSaveLocalDialogOpen] = useState(false);
 
   const toast = useToast();
 
@@ -282,9 +289,18 @@ export const TranslationView = () => {
           disabled={isBusy || !availableLocales.length}
           icon={TranslateIcon}
           text='Translate'
-          loading={isBusy}
+          loading={isBusy && !isUploadingExisting}
         />
       </Stack>
+
+      <SaveLocalTranslationsDialog
+        isOpen={isSaveLocalDialogOpen}
+        onClose={() => setIsSaveLocalDialogOpen(false)}
+        onConfirm={() => {
+          setPreserveExistingTranslations(true);
+          setIsSaveLocalDialogOpen(false);
+        }}
+      />
 
       {/* Translation Status Section */}
       {documentId && versionId && statusLocales.length > 0 && (
@@ -348,6 +364,39 @@ export const TranslationView = () => {
 
           {/* Import Controls */}
           <Stack space={3}>
+            <Flex gap={2} align='center' justify='flex-start'>
+              <Button
+                mode='ghost'
+                onClick={async () => {
+                  setIsUploadingExisting(true);
+                  try {
+                    await handleUploadExistingTranslations();
+                  } finally {
+                    setIsUploadingExisting(false);
+                  }
+                }}
+                disabled={isBusy || !availableLocales.length}
+                icon={UploadIcon}
+                text='Save Local Edits'
+                loading={isUploadingExisting}
+                style={{ minWidth: '180px' }}
+              />
+              <Flex gap={2} align='center'>
+                <Switch
+                  checked={preserveExistingTranslations}
+                  onChange={() => {
+                    // Turning it on changes what wins on a conflict, so explain
+                    // before enabling; turning it off is safe.
+                    if (preserveExistingTranslations) {
+                      setPreserveExistingTranslations(false);
+                    } else {
+                      setIsSaveLocalDialogOpen(true);
+                    }
+                  }}
+                />
+                <Text size={1}>Save local edits before translating</Text>
+              </Flex>
+            </Flex>
             <Flex gap={3} align='center' justify='space-between'>
               <Flex gap={2} align='center'>
                 <Button

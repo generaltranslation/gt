@@ -57,7 +57,7 @@ export class GTConfig {
     additionalBlockDeserializers: unknown[] = [],
     translationLevel: FieldLevelTranslationMode = 'document',
     fieldLevelDocuments: TranslateDocumentFilter[] = [],
-    preserveExistingTranslations: boolean = true
+    preserveExistingTranslations: boolean = false
   ) {
     this.secretsNamespace = secretsNamespace;
     this.languageField = languageField;
@@ -117,7 +117,7 @@ export class GTConfig {
     additionalBlockDeserializers: unknown[] = [],
     translationLevel: FieldLevelTranslationMode = 'document',
     fieldLevelDocuments: TranslateDocumentFilter[] = [],
-    preserveExistingTranslations: boolean = true
+    preserveExistingTranslations: boolean = false
   ) {
     this.secretsNamespace = secretsNamespace;
     this.languageField = languageField;

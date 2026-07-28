@@ -29,6 +29,7 @@ import { TranslateAllDialog } from './TranslateAllDialog';
 import { ImportAllDialog } from './ImportAllDialog';
 import { ImportMissingDialog } from './ImportMissingDialog';
 import { UploadExistingDialog } from './UploadExistingDialog';
+import { SaveLocalTranslationsDialog } from './SaveLocalTranslationsDialog';
 import { BatchProgress } from './BatchProgress';
 
 const TranslationsToolContent: React.FC = () => {
@@ -39,6 +40,7 @@ const TranslationsToolContent: React.FC = () => {
     useState(false);
   const [isUploadExistingDialogOpen, setIsUploadExistingDialogOpen] =
     useState(false);
+  const [isSaveLocalDialogOpen, setIsSaveLocalDialogOpen] = useState(false);
 
   const {
     isBusy,
@@ -50,6 +52,8 @@ const TranslationsToolContent: React.FC = () => {
     importedTranslations,
     isRefreshing,
     setAutoRefresh,
+    preserveExistingTranslations,
+    setPreserveExistingTranslations,
     handleRefreshAll,
     handlePatchDocumentReferences,
     handlePublishAllTranslations,
@@ -64,7 +68,7 @@ const TranslationsToolContent: React.FC = () => {
         return 'Importing';
       case 'Import Missing':
         return 'Importing missing';
-      case 'Upload Existing':
+      case 'Save Local Edits':
         return 'Uploading existing';
       case 'Patch References':
         return 'Patching';
@@ -124,6 +128,23 @@ const TranslationsToolContent: React.FC = () => {
               </Text>
 
               <Flex gap={3} align='center'>
+                <Flex gap={2} align='center'>
+                  <Text size={1} muted>
+                    Save local edits
+                  </Text>
+                  <Switch
+                    checked={preserveExistingTranslations}
+                    onChange={() => {
+                      // Turning it on changes what wins on a conflict, so
+                      // explain before enabling; turning it off is safe.
+                      if (preserveExistingTranslations) {
+                        setPreserveExistingTranslations(false);
+                      } else {
+                        setIsSaveLocalDialogOpen(true);
+                      }
+                    }}
+                  />
+                </Flex>
                 <Flex gap={2} align='center'>
                   <Text size={1} muted>
                     Auto-refresh
@@ -194,11 +215,11 @@ const TranslationsToolContent: React.FC = () => {
                     mode='ghost'
                     fontSize={1}
                     onClick={() => {
-                      setCurrentOperation('Upload Existing');
+                      setCurrentOperation('Save Local Edits');
                       setIsUploadExistingDialogOpen(true);
                     }}
-                    text='Upload Existing'
-                    loading={isBusy && currentOperation === 'Upload Existing'}
+                    text='Save Local Edits'
+                    loading={isBusy && currentOperation === 'Save Local Edits'}
                     icon={UploadIcon}
                     disabled={actionsDisabled}
                   />
@@ -289,6 +310,14 @@ const TranslationsToolContent: React.FC = () => {
       <ImportMissingDialog
         isOpen={isImportMissingDialogOpen}
         onClose={() => setIsImportMissingDialogOpen(false)}
+      />
+      <SaveLocalTranslationsDialog
+        isOpen={isSaveLocalDialogOpen}
+        onClose={() => setIsSaveLocalDialogOpen(false)}
+        onConfirm={() => {
+          setPreserveExistingTranslations(true);
+          setIsSaveLocalDialogOpen(false);
+        }}
       />
       <UploadExistingDialog
         isOpen={isUploadExistingDialogOpen}

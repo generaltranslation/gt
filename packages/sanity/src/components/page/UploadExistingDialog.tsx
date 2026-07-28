@@ -22,14 +22,14 @@ export const UploadExistingDialog: React.FC<UploadExistingDialogProps> = ({
 
   return (
     <Dialog
-      header='Upload Existing Translations'
+      header='Save local edits'
       id='upload-existing-dialog'
       onClose={onClose}
       footer={
         <Box padding={3}>
           <Flex gap={2}>
             <Button text='Cancel' mode='ghost' onClick={onClose} />
-            <Button text='Upload Existing' onClick={handleConfirm} />
+            <Button text='Save Local Edits' onClick={handleConfirm} />
           </Flex>
         </Box>
       }
@@ -37,13 +37,13 @@ export const UploadExistingDialog: React.FC<UploadExistingDialogProps> = ({
       <Box padding={4}>
         <Stack space={3}>
           <Text>
-            Upload the translations already in Sanity for all {documents.length}{' '}
-            documents?
+            Save the translations currently in Sanity for all {documents.length}{' '}
+            documents to General Translation?
           </Text>
           <Text size={1} muted>
-            The translated content currently in Sanity will be stored on General
-            Translation as the translation for each locale, preserving human
-            edits. Existing translations on the platform are overwritten.
+            They become the stored translation for each locale, so later
+            translation runs reuse them. Anything General Translation already
+            holds for those versions is replaced. No translation is started.
           </Text>
         </Stack>
       </Box>
