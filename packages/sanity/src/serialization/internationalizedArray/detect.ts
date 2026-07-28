@@ -67,3 +67,24 @@ export function findLocaleItem(
 ): InternationalizedArrayItem | undefined {
   return field.find((item) => item.language === locale);
 }
+
+/**
+ * Whether any internationalized-array field anywhere in the value has an item
+ * for the given locale. Used to skip locales with no existing content instead
+ * of uploading an empty translation.
+ */
+export function hasLocaleContent(value: unknown, locale: string): boolean {
+  if (isInternationalizedArrayField(value)) {
+    return findLocaleItem(value, locale) !== undefined;
+  }
+
+  if (Array.isArray(value)) {
+    return value.some((item) => hasLocaleContent(item, locale));
+  }
+
+  if (isRecord(value)) {
+    return Object.values(value).some((item) => hasLocaleContent(item, locale));
+  }
+
+  return false;
+}

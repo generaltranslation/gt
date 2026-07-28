@@ -125,3 +125,31 @@ occurrence of that type (matching the native plugins' "field or type"
 semantics). The legacy `localize: false` field property is still supported. For id-based or
 cross-document rules (e.g. slug deduplication), the plugin-level
 `ignoreFields` / `skipFields` / `dedupeFields` options remain available.
+
+## Preserving Edits to Translations
+
+Translated content often gets touched up in the Studio after it comes back from
+General Translation. By default gt-sanity keeps those edits: before a
+translation run uploads a new revision of a source document, it reads the
+translation each target locale currently holds in Sanity and sends it back to
+GT as the translation of record for the revision it was produced from. Content
+whose source text has not changed is then reused from that edited version
+instead of being regenerated, so the edit survives.
+
+This is on by default and there is nothing to configure. To regenerate
+translations and deliberately discard those edits for a single run, use
+**Retranslate from scratch** in the Translate All dialog.
+
+To seed General Translation with the translations already in Sanity without
+starting a translation run — useful when adopting the plugin on a project that
+was translated elsewhere — use **Upload Existing**.
+
+The behavior can be disabled entirely, but this is an escape hatch rather than
+a preference — with it off, every translation run overwrites manual edits:
+
+```ts
+gtPlugin({
+  // ...
+  preserveExistingTranslations: false,
+});
+```

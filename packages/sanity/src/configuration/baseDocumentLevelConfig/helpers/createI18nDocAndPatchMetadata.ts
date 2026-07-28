@@ -5,6 +5,7 @@ import { pluginConfig } from '../../../adapter/core';
 import { applyDocuments } from '../../../utils/applyDocuments';
 import { getPublishedId } from '../../../utils/documentIds';
 import { randomKey } from '../../../utils/randomKey';
+import { metadataTranslations } from '../../../utils/translationMetadata';
 
 export async function createI18nDocAndPatchMetadata(
   sourceDocument: SanityDocumentLike,
@@ -26,7 +27,7 @@ export async function createI18nDocAndPatchMetadata(
   );
   const operation = existingLocaleKey ? 'replace' : 'after';
   const location = existingLocaleKey
-    ? `translations[language == "${localeId}"]`
+    ? metadataTranslations(`== "${localeId}"`)
     : 'translations[-1]';
 
   //remove system fields

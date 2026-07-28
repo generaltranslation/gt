@@ -1,5 +1,10 @@
 import { SanityClient, SanityDocument } from 'sanity';
 import { pluginConfig } from '../adapter/core';
+import {
+  metadataTranslationRef,
+  metadataTranslations,
+  TRANSLATION_METADATA_TYPE,
+} from '../utils/translationMetadata';
 
 interface Reference {
   _type: 'reference';
@@ -88,9 +93,9 @@ async function resolveTranslatedReferences(
   const sourceLocale = pluginConfig.getSourceLocale();
 
   // Optimized GROQ query that directly returns only the needed translation pairs
-  const query = `*[_type == "translation.metadata" && count(translations[language == $sourceLocale && value._ref in $refIds]) > 0] {
-    "originalRef": translations[language == $sourceLocale][0].value._ref,
-    "translatedRefs": translations[language == $locale].value._ref
+  const query = `*[_type == "${TRANSLATION_METADATA_TYPE}" && count(${metadataTranslations('== $sourceLocale', 'value._ref in $refIds')}) > 0] {
+    "originalRef": ${metadataTranslationRef('$sourceLocale')},
+    "translatedRefs": ${metadataTranslations('== $locale')}.value._ref
   }[defined(originalRef) && count(translatedRefs) > 0]`;
 
   const translationPairs: { originalRef: string; translatedRefs: string[] }[] =

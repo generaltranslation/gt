@@ -2,6 +2,10 @@
 
 import { SanityClient, SanityDocumentLike } from 'sanity';
 import { getPublishedId } from '../../../utils/documentIds';
+import {
+  metadataTranslationRef,
+  TRANSLATION_METADATA_TYPE,
+} from '../../../utils/translationMetadata';
 
 export const getTranslationMetadata = (
   id: string,
@@ -10,8 +14,8 @@ export const getTranslationMetadata = (
 ): Promise<SanityDocumentLike | null> => {
   return client.fetch(
     `*[
-        _type == 'translation.metadata' &&
-        translations[language == $baseLanguage][0].value._ref == $id
+        _type == '${TRANSLATION_METADATA_TYPE}' &&
+        ${metadataTranslationRef('$baseLanguage')} == $id
       ][0]`,
     { baseLanguage, id: getPublishedId(id) }
   );

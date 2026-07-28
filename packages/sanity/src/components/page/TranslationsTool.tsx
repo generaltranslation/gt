@@ -19,6 +19,7 @@ import {
   PublishIcon,
   RefreshIcon,
   TranslateIcon,
+  UploadIcon,
 } from '@sanity/icons';
 import { Link } from 'sanity/router';
 import { BaseTranslationWrapper } from '../shared/BaseTranslationWrapper';
@@ -27,6 +28,7 @@ import { TranslationsTable } from './TranslationsTable';
 import { TranslateAllDialog } from './TranslateAllDialog';
 import { ImportAllDialog } from './ImportAllDialog';
 import { ImportMissingDialog } from './ImportMissingDialog';
+import { UploadExistingDialog } from './UploadExistingDialog';
 import { BatchProgress } from './BatchProgress';
 
 const TranslationsToolContent: React.FC = () => {
@@ -34,6 +36,8 @@ const TranslationsToolContent: React.FC = () => {
     useState(false);
   const [isImportAllDialogOpen, setIsImportAllDialogOpen] = useState(false);
   const [isImportMissingDialogOpen, setIsImportMissingDialogOpen] =
+    useState(false);
+  const [isUploadExistingDialogOpen, setIsUploadExistingDialogOpen] =
     useState(false);
 
   const {
@@ -60,6 +64,8 @@ const TranslationsToolContent: React.FC = () => {
         return 'Importing';
       case 'Import Missing':
         return 'Importing missing';
+      case 'Upload Existing':
+        return 'Uploading existing';
       case 'Patch References':
         return 'Patching';
       case 'Publish Translations':
@@ -182,6 +188,23 @@ const TranslationsToolContent: React.FC = () => {
                 </Tooltip>
                 <Tooltip
                   placement='top'
+                  content='Uploads the translations already in Sanity to General Translation, preserving human edits'
+                >
+                  <Button
+                    mode='ghost'
+                    fontSize={1}
+                    onClick={() => {
+                      setCurrentOperation('Upload Existing');
+                      setIsUploadExistingDialogOpen(true);
+                    }}
+                    text='Upload Existing'
+                    loading={isBusy && currentOperation === 'Upload Existing'}
+                    icon={UploadIcon}
+                    disabled={actionsDisabled}
+                  />
+                </Tooltip>
+                <Tooltip
+                  placement='top'
                   content='Replaces references in documents with the corresponding translated document reference'
                 >
                   <Button
@@ -266,6 +289,10 @@ const TranslationsToolContent: React.FC = () => {
       <ImportMissingDialog
         isOpen={isImportMissingDialogOpen}
         onClose={() => setIsImportMissingDialogOpen(false)}
+      />
+      <UploadExistingDialog
+        isOpen={isUploadExistingDialogOpen}
+        onClose={() => setIsUploadExistingDialogOpen(false)}
       />
     </Container>
   );

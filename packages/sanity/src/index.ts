@@ -122,6 +122,14 @@ export type GTPluginConfig = Omit<
   // In 'mixed' mode, the document types that use the internationalized-array
   // strategy; everything else stays document-level.
   fieldLevelDocuments?: TranslateDocumentFilter[] | string[];
+  // When true (default), edits made to translated content inside the Studio are
+  // captured and sent back to General Translation as the translation of record
+  // for the previously translated source version, so they survive the next
+  // translation run instead of being overwritten. Escape hatch only — turning
+  // this off restores the old behavior, where every run discards manual edits.
+  // To deliberately discard them for a single run, use "Retranslate from
+  // scratch" (force) instead of disabling this.
+  preserveExistingTranslations?: boolean;
 };
 
 /**
@@ -162,6 +170,7 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
     fieldLevelLocalization,
     translationLevel = 'document',
     fieldLevelDocuments,
+    preserveExistingTranslations = true,
   }) => {
     // Resolve sourceLocale: explicit sourceLocale > defaultLocale (from gt.config.json) > library default
     const resolvedSourceLocale =
@@ -203,7 +212,8 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
       additionalDeserializers,
       additionalBlockDeserializers,
       translationLevel,
-      normalizedFieldLevelDocuments
+      normalizedFieldLevelDocuments,
+      preserveExistingTranslations
     );
     gt.setConfig({
       sourceLocale: resolvedSourceLocale,
