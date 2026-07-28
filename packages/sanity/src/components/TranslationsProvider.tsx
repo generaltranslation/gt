@@ -23,6 +23,8 @@ import { uploadFiles } from '../translation/uploadFiles';
 import { initProject } from '../translation/initProject';
 import { createJobs } from '../translation/createJobs';
 import { captureExistingTranslations } from '../translation/captureExistingTranslations';
+import { collectExistingTranslations } from '../translation/collectExistingTranslations';
+import { uploadTranslations } from '../translation/uploadTranslations';
 import { downloadTranslations } from '../translation/downloadTranslations';
 import { checkTranslationStatus } from '../translation/checkTranslationStatus';
 import { importDocument } from '../translation/importDocument';
@@ -360,6 +362,34 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     }
   }, [documents, locales, client]);
 
+  const serializeSourceDocuments = useCallback(
+    () =>
+      documents
+        .map((doc) => {
+          const { [pluginConfig.getLanguageField()]: _, ...cleanDoc } = doc;
+          const baseLanguage = pluginConfig.getSourceLocale();
+          try {
+            const strategy = getTranslationStrategy(doc);
+            return {
+              info: {
+                documentId: getDocumentPublishedId(doc),
+                versionId: doc._rev,
+              },
+              serializedDocument: strategy.serialize(
+                cleanDoc as typeof doc,
+                schema,
+                baseLanguage
+              ),
+            };
+          } catch (error) {
+            console.error('Error transforming document', doc._id, error);
+          }
+          return null;
+        })
+        .filter((doc) => doc !== null),
+    [documents, schema]
+  );
+
   const handleTranslateAll = useCallback(
     async ({ force = false }: TranslateAllOptions = {}) => {
       if (!secrets || documents.length === 0) return;
@@ -406,30 +436,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
           }
         }
 
-        const transformedDocuments = documents
-          .map((doc) => {
-            const { [pluginConfig.getLanguageField()]: _, ...cleanDoc } = doc;
-            const baseLanguage = pluginConfig.getSourceLocale();
-            try {
-              const strategy = getTranslationStrategy(doc);
-              const serialized = strategy.serialize(
-                cleanDoc as typeof doc,
-                schema,
-                baseLanguage
-              );
-              return {
-                info: {
-                  documentId: getDocumentPublishedId(doc),
-                  versionId: doc._rev,
-                },
-                serializedDocument: serialized,
-              };
-            } catch (error) {
-              console.error('Error transforming document', doc._id, error);
-            }
-            return null;
-          })
-          .filter((doc) => doc !== null);
+        const transformedDocuments = serializeSourceDocuments();
 
         const uploadResult = await uploadFiles(transformedDocuments, secrets);
         await initProject(uploadResult, { timeout: 600 }, secrets);
@@ -487,20 +494,35 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         .filter((locale) => locale.enabled !== false)
         .map((locale) => locale.localeId);
 
-      const result = await captureExistingTranslations({
+      const transformedDocuments = serializeSourceDocuments();
+
+      // Seed the source files first. uploadTranslations requires the source to
+      // exist, and this action exists for projects whose translations predate
+      // General Translation, where no source has been uploaded yet. Enqueueing
+      // is deliberately skipped so nothing is retranslated.
+      await uploadFiles(transformedDocuments, secrets);
+
+      const existing = await collectExistingTranslations(
         documents,
-        localeIds: availableLocaleIds,
-        secrets,
-        context: translationContext,
-        branchId,
-      });
+        availableLocaleIds,
+        translationContext
+      );
+      const withTranslations = transformedDocuments
+        .map((document) => ({
+          ...document,
+          translations: existing.get(document.info.documentId) ?? [],
+        }))
+        .filter((document) => document.translations.length > 0);
+
+      const response = await uploadTranslations(withTranslations, secrets);
+      const count = response?.uploadedFiles.length ?? 0;
 
       toast.push({
         title:
-          result.capturedCount > 0
-            ? `Uploaded ${result.capturedCount} existing translation(s) across ${result.documentCount} document(s)`
+          count > 0
+            ? `Uploaded ${count} existing translation(s) across ${withTranslations.length} document(s)`
             : 'No existing translations found to upload',
-        status: result.capturedCount > 0 ? 'success' : 'warning',
+        status: count > 0 ? 'success' : 'warning',
         closable: true,
       });
     } catch (error) {
@@ -514,7 +536,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } finally {
       setIsBusy(false);
     }
-  }, [secrets, documents, locales, client, schema, branchId]);
+  }, [secrets, documents, locales, client, schema, serializeSourceDocuments]);
 
   const handleImportAll = useCallback(async () => {
     if (!secrets || documents.length === 0 || !branchId) return;
