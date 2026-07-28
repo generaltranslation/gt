@@ -144,10 +144,7 @@ function pseudoLocalizePlain(message: string): string {
   return `[${result.text}${expansionPadding(result.letters)}]`;
 }
 
-/**
- * Pseudo-localizes a string message. ICU messages keep their arguments,
- * plural/select structure, and tags intact; only literal text is transformed.
- */
+/** Pseudo-localizes a string message; ICU arguments, plurals, and tags stay intact. */
 export function pseudoLocalizeMessage(
   message: string,
   dataFormat: 'ICU' | 'I18NEXT' | 'STRING'
@@ -220,12 +217,7 @@ function walkJsxElement(
   return walked;
 }
 
-/**
- * Pseudo-localizes JSX content. Text nodes and translatable content props
- * (placeholder, title, alt, aria-*) are transformed; variable nodes, tags,
- * ids, and branch markers pass through untouched. The top level is wrapped
- * in [brackets] with trailing expansion padding.
- */
+/** Pseudo-localizes JSX text and content props; variables, tags, and ids pass through. */
 export function pseudoLocalizeJsx(children: JsxChildren): JsxChildren {
   const counter = { letters: 0 };
   const walked = walkJsxChildren(children, counter);
@@ -233,10 +225,7 @@ export function pseudoLocalizeJsx(children: JsxChildren): JsxChildren {
   return ['[', ...walkedArray, `${expansionPadding(counter.letters)}]`];
 }
 
-/**
- * Builds a hash -> pseudo-localized content map from aggregated updates,
- * in the same shape `gt generate` writes for real locales.
- */
+/** Builds a hash -> pseudo content map in the shape `gt generate` writes for real locales. */
 export function buildPseudoTranslations(updates: Updates): Translations {
   const translations: Translations = {};
   for (const update of updates) {
@@ -250,10 +239,7 @@ export function buildPseudoTranslations(updates: Updates): Translations {
   return translations;
 }
 
-/**
- * Whether a locale carries one of the CLDR pseudo regions (en-XA, ar-XB).
- * Pseudo-region translation files are machine-generated, never hand-managed.
- */
+/** Whether a locale carries a CLDR pseudo region (en-XA, ar-XB). */
 export function isPseudoLocale(locale: string): boolean {
   try {
     const { region } = new Intl.Locale(locale);
@@ -264,10 +250,7 @@ export function isPseudoLocale(locale: string): boolean {
 }
 
 /**
- * Resolves the --pseudo flag to a locale, defaulting to en-XA
- * (CLDR "Pseudo-Accents"). Throws if the locale is invalid or if writing
- * its file would destroy real translations (the default locale's source
- * file, or a configured locale that is not a pseudo-locale).
+ * Resolves --pseudo to a locale, default en-XA; throws if it would overwrite real translations.
  */
 export function resolvePseudoLocale(
   flag: boolean | string,

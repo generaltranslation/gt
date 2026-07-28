@@ -45,11 +45,7 @@ type SimpleFormatStyle = NonNullable<
 >;
 
 type PrintIcuAstOptions = {
-  /**
-   * Escape every literal `#` inside plural options instead of only the
-   * first (the upstream quirk). Output is no longer byte-identical to
-   * FormatJS `printAST`, so never enable this on the hashing path.
-   */
+  /** Escapes every `#` in plural options; breaks printAST byte-identity, keep off when hashing. */
   escapeAllPounds?: boolean;
 };
 
@@ -109,10 +105,8 @@ function printTagElement(
   isInPlural: boolean,
   options: PrintIcuAstOptions
 ): string {
-  // The parser keeps plural context inside tags (a bare `#` in a tag inside
-  // a plural option is a pound element), but upstream's printer resets it.
-  // Preserve the context when escaping all pounds; keep the upstream reset
-  // otherwise so default output stays byte-identical.
+  // The parser keeps plural context inside tags; upstream's printer resets it.
+  // Preserve it when escaping all pounds, reset otherwise for byte-identity.
   const childrenInPlural = options.escapeAllPounds ? isInPlural : false;
   return `<${el.value}>${doPrintAst(el.children, childrenInPlural, options)}</${el.value}>`;
 }
