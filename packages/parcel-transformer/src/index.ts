@@ -238,18 +238,18 @@ export async function transformSource(
  * compiler's own no-op bail (it returns null for files with no GT content) and
  * keeps the transformer from re-lowering every non-GT file in the app graph.
  *
- * The check is deliberately a substring scan, not a parse: it is allowed to
- * yield false positives (a `<Table>` tag or the text "gt-react" in a comment
- * just means the file is lowered and the compiler then finds nothing), but it
- * never yields false negatives for real GT usage, because real usage always
- * carries one of these substrings.
+ * The check is a cheap regex, not a parse: the `<T` arm requires a tag
+ * boundary (`<T>`, `<T ...`, `<T/>`) so `<Table>`-style components do not
+ * force a wasted lowering pass, while "gt-react" in a comment stays an
+ * acceptable false positive. It never yields false negatives for real GT
+ * usage, because a real `<T>` tag always carries one of these boundaries.
  *
  * @internal Exposed for tests and advanced integrations.
  */
+const GT_SIGNAL_RE = /gt-react|gt-next|<T[\s>\/]/;
+
 export function hasGtSignal(code: string): boolean {
-  return (
-    code.includes('gt-react') || code.includes('gt-next') || code.includes('<T')
-  );
+  return GT_SIGNAL_RE.test(code);
 }
 
 // Cache the resolved raw plugin per options signature. Parcel calls transform()

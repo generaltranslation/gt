@@ -153,9 +153,16 @@ describe('@generaltranslation/parcel-transformer', () => {
     expect(hasGtSignal(`import { T } from 'gt-react';`)).toBe(true);
     expect(hasGtSignal(`import { useGT } from 'gt-next';`)).toBe(true);
     expect(hasGtSignal(`const x = <T>hi</T>;`)).toBe(true);
+    expect(hasGtSignal(`const x = <T id='a'>hi</T>;`)).toBe(true);
+    expect(hasGtSignal(`const x = <T/>;`)).toBe(true);
+    expect(hasGtSignal(`const x = <T\n  id='a'\n>hi</T>;`)).toBe(true);
     expect(
       hasGtSignal(`export const add = (a: number, b: number) => a + b;`)
     ).toBe(false);
+    // Multi-letter T components must not trigger the lowering pass.
+    expect(hasGtSignal(`const x = <Typography>hi</Typography>;`)).toBe(false);
+    expect(hasGtSignal(`const x = <Table rows={rows} />;`)).toBe(false);
+    expect(hasGtSignal(`const x = <Tooltip title='hi' />;`)).toBe(false);
   });
 
   it('leaves files without GT usage unchanged (returns null)', async () => {
