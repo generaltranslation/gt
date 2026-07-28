@@ -20,6 +20,8 @@ import {
 import { gt, overrideConfig, pluginConfig } from '../adapter/core';
 import { getTranslationStrategy } from '../translation/strategy';
 import { uploadFiles } from '../translation/uploadFiles';
+import { uploadTranslations } from '../translation/uploadTranslations';
+import { collectExistingTranslations } from '../translation/collectExistingTranslations';
 import { initProject } from '../translation/initProject';
 import { createJobs } from '../translation/createJobs';
 import { downloadTranslations } from '../translation/downloadTranslations';
@@ -43,6 +45,11 @@ import {
   getDocumentPublishedId,
   getPublishedId,
 } from '../utils/documentIds';
+import {
+  metadataTranslationRef,
+  metadataTranslations,
+  TRANSLATION_METADATA_TYPE,
+} from '../utils/translationMetadata';
 
 interface ImportProgress {
   current: number;
@@ -74,6 +81,7 @@ interface TranslationsContextType {
   autoImport: boolean;
   autoPatchReferences: boolean;
   autoPublish: boolean;
+  preserveExistingTranslations: boolean;
   loadingDocuments: boolean;
   importProgress: ImportProgress;
   importedTranslations: Set<string>;
@@ -96,7 +104,9 @@ interface TranslationsContextType {
   setAutoImport: (value: boolean) => void;
   setAutoPatchReferences: (value: boolean) => void;
   setAutoPublish: (value: boolean) => void;
+  setPreserveExistingTranslations: (value: boolean) => void;
   handleTranslateAll: () => Promise<void>;
+  handleUploadExistingTranslations: () => Promise<void>;
   handleImportAll: () => Promise<void>;
   handleImportMissing: () => Promise<void>;
   handleRefreshAll: () => Promise<void>;
@@ -180,6 +190,10 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   const [autoImport, setAutoImport] = useState(false);
   const [autoPatchReferences, setAutoPatchReferences] = useState(false);
   const [autoPublish, setAutoPublish] = useState(false);
+  // Whether Translate uploads the translations already in Sanity before
+  // enqueueing, so human edits take precedence over regenerated content.
+  const [preserveExistingTranslations, setPreserveExistingTranslations] =
+    useState(true);
   const [loadingDocuments, setLoadingDocuments] = useState(false);
   const [importProgress, setImportProgress] = useState<ImportProgress>({
     current: 0,
@@ -306,11 +320,11 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       const documentIds = documents.map(getDocumentPublishedId);
 
       const query = `*[
-        _type == 'translation.metadata' &&
-        translations[language == $sourceLocale][0].value._ref in $documentIds
+        _type == '${TRANSLATION_METADATA_TYPE}' &&
+        ${metadataTranslationRef('$sourceLocale')} in $documentIds
       ] {
-        'sourceDocId': translations[language == $sourceLocale][0].value._ref,
-        'existingTranslations': translations[language in $localeIds].language
+        'sourceDocId': ${metadataTranslationRef('$sourceLocale')},
+        'existingTranslations': ${metadataTranslations('in $localeIds')}.language
       }`;
 
       const existingMetadata = await client.fetch<
@@ -348,6 +362,78 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     }
   }, [documents, locales, client]);
 
+  // Serialize each source document with its strategy, dropping documents
+  // that fail to serialize.
+  const serializeSourceDocuments = useCallback(() => {
+    const baseLanguage = pluginConfig.getSourceLocale();
+    return documents
+      .map((doc) => {
+        const { [pluginConfig.getLanguageField()]: _, ...cleanDoc } = doc;
+        try {
+          const strategy = getTranslationStrategy(doc);
+          const serialized = strategy.serialize(
+            cleanDoc as typeof doc,
+            schema,
+            baseLanguage
+          );
+          return {
+            info: {
+              documentId: getDocumentPublishedId(doc),
+              versionId: doc._rev,
+            },
+            serializedDocument: serialized,
+          };
+        } catch (error) {
+          console.error('Error transforming document', doc._id, error);
+        }
+        return null;
+      })
+      .filter((doc) => doc !== null);
+  }, [documents, schema]);
+
+  // Pin the _rev each file was uploaded under. GT status queries need the
+  // exact uploaded versionId, and the live _rev moves on (in-place array
+  // imports bump it), so status lookups go through getVersionId instead.
+  // Persisted to sessionStorage so the pins survive a page refresh.
+  const pinUploadedVersions = useCallback(
+    (transformedDocuments: { info: GTFile }[]) => {
+      const nextUploadedVersions = new Map(uploadedVersions);
+      for (const { info } of transformedDocuments) {
+        if (info.versionId) {
+          nextUploadedVersions.set(info.documentId, info.versionId);
+        }
+      }
+      writeUploadedVersions(uploadedVersionsStorageKey, nextUploadedVersions);
+      setUploadedVersions(nextUploadedVersions);
+    },
+    [uploadedVersions, uploadedVersionsStorageKey]
+  );
+
+  // Pair each serialized source with the translations that already exist in
+  // Sanity for the enabled target locales; only documents with at least one
+  // existing translation are returned.
+  const collectExistingForUpload = useCallback(
+    async (
+      transformedDocuments: ReturnType<typeof serializeSourceDocuments>
+    ) => {
+      const targetLocaleIds = locales
+        .filter((locale) => locale.enabled !== false)
+        .map((locale) => locale.localeId);
+      const existing = await collectExistingTranslations(
+        documents,
+        targetLocaleIds,
+        translationContext
+      );
+      return transformedDocuments
+        .map((doc) => ({
+          ...doc,
+          translations: existing.get(doc.info.documentId) ?? [],
+        }))
+        .filter((doc) => doc.translations.length > 0);
+    },
+    [documents, locales, translationContext]
+  );
+
   const handleTranslateAll = useCallback(async () => {
     if (!secrets || documents.length === 0) return;
 
@@ -358,50 +444,32 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         .filter((locale) => locale.enabled !== false)
         .map((locale) => locale.localeId);
 
-      const transformedDocuments = documents
-        .map((doc) => {
-          const { [pluginConfig.getLanguageField()]: _, ...cleanDoc } = doc;
-          const baseLanguage = pluginConfig.getSourceLocale();
-          try {
-            const strategy = getTranslationStrategy(doc);
-            const serialized = strategy.serialize(
-              cleanDoc as typeof doc,
-              schema,
-              baseLanguage
-            );
-            return {
-              info: {
-                documentId: getDocumentPublishedId(doc),
-                versionId: doc._rev,
-              },
-              serializedDocument: serialized,
-            };
-          } catch (error) {
-            console.error('Error transforming document', doc._id, error);
-          }
-          return null;
-        })
-        .filter((doc) => doc !== null);
+      const transformedDocuments = serializeSourceDocuments();
 
       const uploadResult = await uploadFiles(transformedDocuments, secrets);
+
+      // Preserve human edits: upsert the translations already in Sanity for
+      // this version before enqueueing, so the platform keeps them instead of
+      // regenerating (and a later import overwriting) human-edited content.
+      let preservedCount = 0;
+      if (preserveExistingTranslations) {
+        const withTranslations =
+          await collectExistingForUpload(transformedDocuments);
+        const response = await uploadTranslations(withTranslations, secrets);
+        preservedCount = response?.uploadedFiles.length ?? 0;
+      }
+
       await initProject(uploadResult, { timeout: 600 }, secrets);
       await createJobs(uploadResult, availableLocaleIds, secrets);
 
-      // Pin the _rev each file was uploaded under. GT status queries need the
-      // exact uploaded versionId, and the live _rev moves on (in-place array
-      // imports bump it), so status lookups go through getVersionId instead.
-      // Persisted to sessionStorage so the pins survive a page refresh.
-      const nextUploadedVersions = new Map(uploadedVersions);
-      for (const { info } of transformedDocuments) {
-        if (info.versionId) {
-          nextUploadedVersions.set(info.documentId, info.versionId);
-        }
-      }
-      writeUploadedVersions(uploadedVersionsStorageKey, nextUploadedVersions);
-      setUploadedVersions(nextUploadedVersions);
+      pinUploadedVersions(transformedDocuments);
 
       toast.push({
-        title: `Translation tasks created for ${documents.length} documents`,
+        title: `Translation tasks created for ${documents.length} documents${
+          preservedCount > 0
+            ? `, preserved ${preservedCount} existing translation${preservedCount === 1 ? '' : 's'}`
+            : ''
+        }`,
         status: 'success',
         closable: true,
       });
@@ -419,9 +487,63 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     secrets,
     documents,
     locales,
-    schema,
-    uploadedVersions,
-    uploadedVersionsStorageKey,
+    preserveExistingTranslations,
+    serializeSourceDocuments,
+    collectExistingForUpload,
+    pinUploadedVersions,
+  ]);
+
+  const handleUploadExistingTranslations = useCallback(async () => {
+    if (!secrets || documents.length === 0) return;
+
+    setIsBusy(true);
+
+    try {
+      const transformedDocuments = serializeSourceDocuments();
+      const withTranslations =
+        await collectExistingForUpload(transformedDocuments);
+
+      if (withTranslations.length === 0) {
+        toast.push({
+          title: 'No existing translations found to upload',
+          status: 'warning',
+          closable: true,
+        });
+        return;
+      }
+
+      // Upload sources first so the translations have a source version to
+      // attach to, then upsert the existing translations against it.
+      await uploadFiles(withTranslations, secrets);
+      const response = await uploadTranslations(withTranslations, secrets);
+
+      pinUploadedVersions(withTranslations);
+
+      // Report the server-confirmed count: the endpoint drops files it failed
+      // to persist without erroring.
+      const uploadedCount = response?.uploadedFiles.length ?? 0;
+      toast.push({
+        title: `Uploaded ${uploadedCount} existing translation${uploadedCount === 1 ? '' : 's'}`,
+        status: uploadedCount > 0 ? 'success' : 'warning',
+        closable: true,
+      });
+    } catch (error) {
+      console.error('Error uploading existing translations:', error);
+      toast.push({
+        title:
+          'Existing translations could not be uploaded. No documents were changed. Try again or check the console for details.',
+        status: 'error',
+        closable: true,
+      });
+    } finally {
+      setIsBusy(false);
+    }
+  }, [
+    secrets,
+    documents,
+    serializeSourceDocuments,
+    collectExistingForUpload,
+    pinUploadedVersions,
   ]);
 
   const handleImportAll = useCallback(async () => {
@@ -512,12 +634,12 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       const sourceLocale = pluginConfig.getSourceLocale();
 
       const query = `*[
-      _type == 'translation.metadata' &&
-      translations[language == $sourceLocale][0].value._ref in $documentIds
+      _type == '${TRANSLATION_METADATA_TYPE}' &&
+      ${metadataTranslationRef('$sourceLocale')} in $documentIds
     ] {
       _rev,
-      'sourceDocId': translations[language == $sourceLocale][0].value._ref,
-      'existingTranslations': translations[language in $localeIds].language
+      'sourceDocId': ${metadataTranslationRef('$sourceLocale')},
+      'existingTranslations': ${metadataTranslations('in $localeIds')}.language
     }`;
 
       const existingMetadata = await client.fetch<
@@ -988,11 +1110,11 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       }
 
       const query = `*[
-        _type == 'translation.metadata' &&
-        translations[language == $sourceLocale][0].value._ref in $publishedDocumentIds
+        _type == '${TRANSLATION_METADATA_TYPE}' &&
+        ${metadataTranslationRef('$sourceLocale')} in $publishedDocumentIds
       ] {
-        'sourceDocId': translations[language == $sourceLocale][0].value._ref,
-        'translationDocs': translations[language != $sourceLocale && defined(value._ref)]{
+        'sourceDocId': ${metadataTranslationRef('$sourceLocale')},
+        'translationDocs': ${metadataTranslations('!= $sourceLocale', 'defined(value._ref)')}{
           _key,
           'docId': value._ref
         }
@@ -1113,6 +1235,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     autoImport,
     autoPatchReferences,
     autoPublish,
+    preserveExistingTranslations,
     loadingDocuments,
     importProgress,
     importedTranslations,
@@ -1131,7 +1254,9 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     setAutoImport,
     setAutoPatchReferences,
     setAutoPublish,
+    setPreserveExistingTranslations,
     handleTranslateAll,
+    handleUploadExistingTranslations,
     handleImportAll,
     handleImportMissing,
     handleRefreshAll,

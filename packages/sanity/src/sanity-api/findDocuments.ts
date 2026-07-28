@@ -1,6 +1,11 @@
 import { SanityClient } from 'sanity';
 import { pluginConfig } from '../adapter/core';
 import { getPublishedId } from '../utils/documentIds';
+import {
+  metadataTranslationRef,
+  metadataTranslations,
+  TRANSLATION_METADATA_TYPE,
+} from '../utils/translationMetadata';
 import { findLatestDraft } from '../configuration/utils/findLatestDraft';
 
 export async function findTranslatedDocuments(
@@ -8,7 +13,7 @@ export async function findTranslatedDocuments(
   client: SanityClient
 ) {
   const documents = await client.fetch(
-    `*[_type == "translation.metadata" && references($documentId)]`
+    `*[_type == "${TRANSLATION_METADATA_TYPE}" && references($documentId)]`
   );
   return documents;
 }
@@ -23,12 +28,12 @@ export async function findTranslatedDocumentForLocale(
   // Use the last locale entry defensively. Older versions could create
   // duplicate locale entries when bulk imports raced.
   const query = `*[
-    _type == "translation.metadata" &&
+    _type == "${TRANSLATION_METADATA_TYPE}" &&
     (
-      translations[language == $sourceLocale][0].value._ref == $cleanDocId
+      ${metadataTranslationRef('$sourceLocale')} == $cleanDocId
     ) &&
-    defined(translations[language == $localeId])
-  ][0].translations[language == $localeId].value._ref`;
+    defined(${metadataTranslations('== $localeId')})
+  ][0].${metadataTranslations('== $localeId')}.value._ref`;
 
   const translatedDocIds = await client.fetch(query, {
     sourceLocale: pluginConfig.getSourceLocale(),

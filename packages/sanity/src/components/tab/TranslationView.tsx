@@ -26,6 +26,7 @@ import {
   PublishIcon,
   RefreshIcon,
   TranslateIcon,
+  UploadIcon,
 } from '@sanity/icons';
 import {
   createTranslationStatusKey,
@@ -40,6 +41,7 @@ export const TranslationView = () => {
     branchId,
     isBusy,
     handleTranslateAll,
+    handleUploadExistingTranslations,
     handleImportDocument,
     handleRefreshAll,
     isRefreshing,
@@ -55,11 +57,14 @@ export const TranslationView = () => {
     setAutoPatchReferences,
     autoPublish,
     setAutoPublish,
+    preserveExistingTranslations,
+    setPreserveExistingTranslations,
     getVersionId,
   } = useTranslations();
 
   const [isImporting, setIsImporting] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isUploadingExisting, setIsUploadingExisting] = useState(false);
 
   const toast = useToast();
 
@@ -282,8 +287,40 @@ export const TranslationView = () => {
           disabled={isBusy || !availableLocales.length}
           icon={TranslateIcon}
           text='Translate'
-          loading={isBusy}
+          loading={isBusy && !isUploadingExisting}
         />
+
+        <Flex gap={2} align='center'>
+          <Switch
+            checked={preserveExistingTranslations}
+            onChange={() =>
+              setPreserveExistingTranslations(!preserveExistingTranslations)
+            }
+            disabled={isBusy}
+          />
+          <Text size={1}>Preserve existing translations (human edits)</Text>
+        </Flex>
+
+        <Tooltip
+          placement='top'
+          content='Uploads the translations already in Sanity to General Translation, preserving human edits'
+        >
+          <Button
+            mode='ghost'
+            onClick={async () => {
+              setIsUploadingExisting(true);
+              try {
+                await handleUploadExistingTranslations();
+              } finally {
+                setIsUploadingExisting(false);
+              }
+            }}
+            disabled={isBusy || !availableLocales.length}
+            icon={UploadIcon}
+            text='Upload Existing Translations'
+            loading={isUploadingExisting}
+          />
+        </Tooltip>
       </Stack>
 
       {/* Translation Status Section */}
