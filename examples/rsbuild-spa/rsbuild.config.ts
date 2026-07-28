@@ -8,9 +8,7 @@ import { rspack as gtCompiler } from '@generaltranslation/compiler';
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 
 // Linked workspace packages (gt-react) must share the app's React instance.
-// Point every `react`/`react-dom` import at the copy hoisted into this app.
-// This alias is only needed inside the GT monorepo; it is safe to remove in a
-// standalone copy of this example.
+// Only needed inside the GT monorepo; safe to remove in a standalone copy.
 const reactDir = fs.realpathSync(path.join(appDir, 'node_modules/react'));
 const reactDomDir = fs.realpathSync(
   path.join(appDir, 'node_modules/react-dom')
