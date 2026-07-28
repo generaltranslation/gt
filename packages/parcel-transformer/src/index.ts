@@ -2,17 +2,10 @@ import { createRequire } from 'node:module';
 import { Transformer } from '@parcel/plugin';
 import type { GTUnpluginOptions } from '@generaltranslation/compiler';
 
-/**
- * A parsed `gt.config.json`, passed straight through to the GT compiler as its
- * `gtConfig` option. Kept intentionally loose: the compiler owns the schema.
- */
+/** A parsed `gt.config.json`, passed through as the compiler's `gtConfig`; it owns the schema. */
 export type GtParcelConfig = GTUnpluginOptions;
 
-/**
- * The subset of the GT compiler's return value we consume. The compiler runs a
- * Babel pipeline and returns Babel's generator result (`{ code, map }`) or
- * `null` when a file needs no changes.
- */
+/** The compiler result we consume: Babel's `{ code, map }`, or `null` when unchanged. */
 type GtTransformResult = { code: string; map?: unknown } | null | undefined;
 
 type GtTransformFn = (
@@ -20,12 +13,7 @@ type GtTransformFn = (
   id: string
 ) => GtTransformResult | Promise<GtTransformResult>;
 
-/**
- * The raw unplugin object the GT compiler produces. unplugin allows a `transform`
- * hook to be either a plain function or a `{ filter, handler }` object, so we
- * accept both shapes for forward compatibility even though the GT compiler
- * currently ships a plain function.
- */
+/** The raw unplugin object the GT compiler produces; both `transform` hook shapes work. */
 type RawGtPlugin = {
   transformInclude?: (id: string) => boolean;
   transform?: GtTransformFn | { handler: GtTransformFn };
@@ -36,10 +24,9 @@ type RawFactory = (
   meta: { framework: string }
 ) => RawGtPlugin;
 
-// The GT compiler and Babel are published as CommonJS. Load them through
-// createRequire so we always get Node's real CommonJS interop: Parcel loads
-// this plugin as ESM, and different ESM<->CJS interop layers (Parcel, Vitest,
-// plain Node) otherwise disagree on where the exports end up.
+// The GT compiler and Babel are published as CommonJS. Load them through createRequire
+// for Node's real CJS interop: Parcel, Vitest, and plain Node otherwise disagree on
+// where the exports land.
 const requireFromHere = createRequire(import.meta.url);
 
 function loadRawFactory(): RawFactory {
@@ -64,11 +51,9 @@ function getRawFactory(): RawFactory {
   return (rawFactory ??= loadRawFactory());
 }
 
-// Babel is used to lower TSX/JSX to the automatic JSX runtime while preserving
-// ES module imports. This is exactly the shape the GT compiler expects: it
-// injects `_hash` values into `jsx(T, ...)` / `jsxs(T, ...)` call expressions
-// and `t()` calls, and it tracks the `react/jsx-runtime` and `gt-react` imports
-// to find them. See the "Why Babel runs first" note in the README.
+// Babel lowers TSX/JSX to the automatic JSX runtime while preserving ES module imports.
+// The GT compiler needs that shape: it injects `_hash` into `jsx(T, ...)` and `t()` calls,
+// tracking the `react/jsx-runtime` and `gt-react` imports. See "Why Babel runs first".
 type BabelModule = {
   transformSync: (
     code: string,
@@ -104,18 +89,7 @@ function loadBabel(): {
 }
 
 /**
- * Lower a TS/TSX/JS/JSX source file to plain ES modules using the automatic JSX
- * runtime, without bundling. TypeScript types are stripped and `<T>` style JSX
- * becomes `jsx(T, ...)` / `jsxs(T, ...)` calls importing from
- * `react/jsx-runtime`.
- *
- * The automatic runtime's non-development form is used unconditionally (even in
- * Parcel dev mode). The GT compiler recognizes `jsx` / `jsxs` but not the
- * development helper `jsxDEV`, so emitting `jsxDEV` would silently skip hash
- * injection. The only cost is the loss of React's `__source` / `__self` debug
- * props, which Parcel does not rely on.
- *
- * @internal Exposed for tests and advanced integrations.
+ * Lowers TS/TSX with the automatic JSX runtime, never `jsxDEV` (the compiler skips it). @internal
  */
 export function compileJsxToEsm(code: string, id: string): string {
   const { babel, presetReact, presetTypescript, decoratorsPlugin } =
@@ -125,12 +99,9 @@ export function compileJsxToEsm(code: string, id: string): string {
     configFile: false,
     babelrc: false,
     sourceMaps: false,
-    // Parse and lower legacy decorators. The GT compiler parses source with the
-    // decorators-legacy plugin, so a decorated file it would otherwise inject
-    // into must survive this lowering step too; without the plugin Babel throws
-    // on the decorator and the transformer skips the file, silently dropping GT
-    // injection. Plugins run before presets, so decorators are handled before
-    // preset-typescript strips the surrounding types.
+    // Parse legacy decorators: the GT compiler uses decorators-legacy, so a decorated
+    // file must survive this lowering too, or Babel throws and the file is skipped.
+    // Plugins run before presets, so decorators are handled before types are stripped.
     plugins: [[decoratorsPlugin, { legacy: true }]],
     // preset order is reverse: preset-react runs first (JSX -> jsx() calls),
     // then preset-typescript strips the remaining type syntax.
@@ -149,16 +120,7 @@ export function compileJsxToEsm(code: string, id: string): string {
 }
 
 /**
- * Build the GT compiler's raw plugin for the given options. Each call re-runs
- * the compiler's config resolution, so callers that transform many files should
- * reuse a single instance (see the module-level cache in the Transformer).
- *
- * unplugin's `.raw()` requires a framework in its meta. The GT compiler
- * transform is bundler-agnostic (it never reads the framework), so any valid
- * value works; 'rollup' is the closest generic to Parcel's compile-then-bundle
- * flow.
- *
- * @internal Exposed for tests and advanced integrations.
+ * Builds the raw GT plugin; reuse it (config re-resolves), `rollup` meta is arbitrary. @internal
  */
 export function createGtRawPlugin(
   options: GTUnpluginOptions = {},
@@ -184,15 +146,7 @@ function getTransformFn(plugin: RawGtPlugin): GtTransformFn | undefined {
   return undefined;
 }
 
-/**
- * Run the GT compiler transform on already-lowered code (jsx() calls, ES module
- * imports). Returns the transformed code, or `null` when the file was left
- * unchanged. This is the same compiler core the webpack/Vite/Rollup adapters
- * use; it does not lower JSX itself, which is why {@link compileJsxToEsm} runs
- * first.
- *
- * @internal Exposed for tests and advanced integrations.
- */
+/** Runs the GT compiler on already-lowered code; `null` when unchanged. @internal */
 export async function runGtCompilerTransform(
   code: string,
   id: string,
@@ -213,14 +167,7 @@ export async function runGtCompilerTransform(
   return null;
 }
 
-/**
- * Full transformer pipeline for one source file: lower JSX/TS with Babel, then
- * run the GT compiler over the result. Returns the compiled + hash-injected
- * code, or `null` when the file has no GT usage (in which case the caller
- * should leave the original source for Parcel's default pipeline to handle).
- *
- * @internal Exposed for tests and advanced integrations.
- */
+/** Lowers one file, then runs the GT compiler; `null` when it has no GT usage. @internal */
 export async function transformSource(
   code: string,
   id: string,
@@ -231,20 +178,7 @@ export async function transformSource(
 }
 
 /**
- * Cheap pre-gate run before the Babel lowering. A source file can only use GT
- * if it imports from `gt-react` / `gt-next` (the only way `t()` and the `<T>`
- * family arrive) or contains a `<T` JSX tag. Everything else cannot produce a
- * hash, so lowering it with Babel would be wasted work. This mirrors the GT
- * compiler's own no-op bail (it returns null for files with no GT content) and
- * keeps the transformer from re-lowering every non-GT file in the app graph.
- *
- * The check is a cheap regex, not a parse: the `<T` arm requires a tag
- * boundary (`<T>`, `<T ...`, `<T/>`) so `<Table>`-style components do not
- * force a wasted lowering pass, while "gt-react" in a comment stays an
- * acceptable false positive. It never yields false negatives for real GT
- * usage, because a real `<T>` tag always carries one of these boundaries.
- *
- * @internal Exposed for tests and advanced integrations.
+ * Cheap regex pre-gate: a gt-react/gt-next import or a `<T` tag boundary, not `<Table>`. @internal
  */
 const GT_SIGNAL_RE = /gt-react|gt-next|<T[\s>\/]/;
 
@@ -266,17 +200,7 @@ function resolveCachedPlugin(options: GTUnpluginOptions): RawGtPlugin {
 }
 
 /**
- * Parcel transformer for the General Translation compiler.
- *
- * It runs ahead of Parcel's default JS/TS handling. Because the GT compiler
- * operates on compiled `jsx()` call expressions rather than raw JSX elements,
- * the transformer first lowers each source file to the automatic JSX runtime
- * (via Babel), then runs the compiler to inject compile-time `_hash` values
- * into `<T>` components and `t()` calls, exactly like the Vite/webpack adapters.
- * Parcel's default transformer then bundles the result.
- *
- * Parcel resolves plugins by package name and requires a default export, so this
- * module intentionally uses `export default` despite the repo convention.
+ * Parcel transformer for the GT compiler. Parcel needs a default export, unlike the repo norm.
  */
 export default new Transformer<GtParcelConfig | null>({
   async loadConfig({ config }) {

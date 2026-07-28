@@ -70,10 +70,8 @@ async function runViaAdapterRaw(
   options: GTUnpluginOptions = {}
 ): Promise<string | null> {
   const plugin = createGtRawPlugin(options, framework);
-  // Resolve both transform hook shapes unplugin allows: a plain function or a
-  // { filter, handler } object. This mirrors getTransformFn in the main source;
-  // if the compiler ever switches to the object shape, this parity test then
-  // still exercises the real handler instead of silently returning null.
+  // Resolve both transform hook shapes unplugin allows (function or { filter, handler }),
+  // mirroring getTransformFn in the source, so a shape switch does not silently return null.
   const transform = plugin.transform;
   const handler =
     typeof transform === 'function'
@@ -116,16 +114,9 @@ describe('@generaltranslation/parcel-transformer', () => {
   });
 
   it('injects the same hashes as the webpack and Vite adapters on identical input', async () => {
-    // Lower the raw TSX through the transformer's own Babel step, then run the
-    // GT compiler on that real lowered output. Feeding the SAME lowered code to
-    // the webpack and Vite adapter paths asserts the shared compiler core is
-    // bundler-agnostic: given identical input it injects identical hashes,
-    // whatever framework tag it is handed.
-    //
-    // This is a parity guarantee about the GT pass, not a claim that webpack
-    // and Vite lower this TSX byte-for-byte the way the transformer does (each
-    // bundler runs its own JSX transform). It verifies the part every adapter
-    // actually shares, on the transformer's genuine lowered output.
+    // Feed the same lowered output to the webpack and Vite adapter paths: identical
+    // input must inject identical hashes, proving the shared compiler core is
+    // bundler-agnostic. This is parity for the GT pass only, not for JSX lowering.
     const id = '/app/src/App.tsx';
     const lowered = compileJsxToEsm(RAW_TSX, id);
     const parcelLike = await runGtCompilerTransform(lowered, id);
