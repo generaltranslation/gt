@@ -45,14 +45,12 @@ export async function runUploadFilesWorkflow({
 
     // Step 1: Resolve branch information
     const branchData = await branchStep.run();
-    await branchStep.wait();
 
     if (!branchData) {
       return logErrorAndExit(branchResolutionError);
     }
 
     await uploadStep.run({ files: files.map((f) => f.source), branchData });
-    await uploadStep.wait();
 
     // Step 3: Upload translations (if any exist)
     const filesWithTranslations = files.filter(
@@ -62,7 +60,6 @@ export async function runUploadFilesWorkflow({
       await uploadTranslationsStep.run({
         files: filesWithTranslations,
       });
-      await uploadTranslationsStep.wait();
     }
 
     logger.success('All files uploaded successfully');

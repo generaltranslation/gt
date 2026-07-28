@@ -1,4 +1,3 @@
-import { WorkflowStep } from './WorkflowStep.js';
 import { logger } from '../../console/logger.js';
 import { GT } from 'generaltranslation';
 import { Settings } from '../../types/index.js';
@@ -57,19 +56,13 @@ export function partitionTranslationsByLockfile(
   return { filesToUpload, skippedCount };
 }
 
-export class UploadTranslationsStep extends WorkflowStep<
-  UploadTranslationsInput,
-  FileReference[]
-> {
+export class UploadTranslationsStep {
   private spinner = logger.createSpinner('dots');
-  private result: FileReference[] = [];
 
   constructor(
     private gt: GT,
     private settings: Settings
-  ) {
-    super();
-  }
+  ) {}
 
   async run({ files }: UploadTranslationsInput): Promise<FileReference[]> {
     // Filter to only files that have translations
@@ -116,10 +109,10 @@ export class UploadTranslationsStep extends WorkflowStep<
       modelProvider: this.settings.modelProvider,
     });
 
-    this.result = response.uploadedFiles;
+    const result = response.uploadedFiles;
     // Report the server-confirmed count, not the attempted count — the
     // endpoint drops files it failed to persist without erroring
-    const uploadedCount = this.result.length;
+    const uploadedCount = result.length;
     this.spinner.stop(
       chalk.green(
         `Uploaded ${uploadedCount} translation file${uploadedCount !== 1 ? 's' : ''}${skippedCount > 0 ? `, skipped ${skippedCount} unchanged` : ''}`
@@ -134,9 +127,9 @@ export class UploadTranslationsStep extends WorkflowStep<
       );
     }
 
-    this.recordUploadedHashes(lockfile, filesToUpload, this.result);
+    this.recordUploadedHashes(lockfile, filesToUpload, result);
 
-    return this.result;
+    return result;
   }
 
   /**
@@ -175,9 +168,5 @@ export class UploadTranslationsStep extends WorkflowStep<
       }
     }
     writeLockfile(lockfile.data, lockfile.originalV1);
-  }
-
-  async wait(): Promise<void> {
-    return;
   }
 }

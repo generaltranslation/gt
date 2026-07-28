@@ -57,7 +57,7 @@ import {
   CheckJobStatusResult,
 } from './translate/checkJobStatus';
 import {
-  _awaitJobs,
+  _awaitJobIds,
   AwaitJobsOptions,
   AwaitJobsResult,
 } from './translate/awaitJobs';
@@ -287,22 +287,19 @@ export class GT extends GTRuntime {
   }
 
   /**
-   * Polls job statuses until all jobs from enqueueFiles are finished or the timeout is reached.
+   * Polls job statuses until all jobs are finished or the timeout is reached.
    *
-   * @param {EnqueueFilesResult} enqueueResult - The result returned from enqueueFiles.
+   * @param {EnqueueFilesResult | string[]} jobs - Job IDs or the result returned from enqueueFiles.
    * @param {AwaitJobsOptions} [options] - Polling configuration (interval, timeout).
    * @returns {Promise<AwaitJobsResult>} The final status of all jobs and whether they all completed.
    */
   async awaitJobs(
-    enqueueResult: EnqueueFilesResult,
+    jobs: EnqueueFilesResult | string[],
     options?: AwaitJobsOptions
   ): Promise<AwaitJobsResult> {
     this._validateAuth('awaitJobs');
-    return await _awaitJobs(
-      enqueueResult,
-      options,
-      this._getTranslationConfig()
-    );
+    const jobIds = Array.isArray(jobs) ? jobs : Object.keys(jobs.jobData);
+    return await _awaitJobIds(jobIds, options, this._getTranslationConfig());
   }
 
   /**

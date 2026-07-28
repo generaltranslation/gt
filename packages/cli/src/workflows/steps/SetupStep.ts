@@ -1,33 +1,26 @@
 import { FileReference } from 'generaltranslation/types';
-import { WorkflowStep } from './WorkflowStep.js';
 import { logger } from '../../console/logger.js';
 import { GT } from 'generaltranslation';
 import { Settings } from '../../types/index.js';
 import chalk from 'chalk';
 
-export class SetupStep extends WorkflowStep<FileReference[], FileReference[]> {
+export class SetupStep {
   private spinner = logger.createSpinner('dots');
-  private setupJobId: string | null = null;
-  private files: FileReference[] | null = null;
-  private completed = false;
 
   constructor(
     private gt: GT,
     private settings: Settings,
     private timeoutMs: number
-  ) {
-    super();
-  }
+  ) {}
 
   async run(
     files: FileReference[],
     force: boolean = false
   ): Promise<FileReference[]> {
-    this.files = files;
     this.spinner.start('Setting up project...');
 
     if (files.length === 0) {
-      this.completed = true;
+      this.spinner.stop(chalk.green('Setup successfully completed'));
       return [];
     }
 
@@ -37,67 +30,40 @@ export class SetupStep extends WorkflowStep<FileReference[], FileReference[]> {
     });
 
     if (result.status === 'completed') {
-      this.completed = true;
-      return files;
-    }
-
-    if (result.status === 'queued') {
-      this.setupJobId = result.setupJobId;
-      return files;
-    }
-
-    // Unknown status
-    this.completed = true;
-    return files;
-  }
-
-  async wait(): Promise<void> {
-    if (this.completed) {
       this.spinner.stop(chalk.green('Setup successfully completed'));
-      return;
+      return files;
     }
 
-    if (!this.setupJobId) {
+    if (result.status !== 'queued' || !result.setupJobId) {
       this.spinner.stop(
         chalk.yellow('Setup status unknown — proceeding without setup')
       );
-      return;
+      return files;
     }
 
-    // Poll for completion
-    const start = Date.now();
-    const pollInterval = 5000; // 5 seconds
+    const { complete, jobs } = await this.gt.awaitJobs([result.setupJobId], {
+      pollingIntervalSeconds: 5,
+      timeoutSeconds: this.timeoutMs / 1000,
+    });
+    const [job] = jobs;
 
-    while (Date.now() - start < this.timeoutMs) {
-      const status = await this.gt.checkJobStatus([this.setupJobId]);
-
-      if (!status[0]) {
-        this.spinner.stop(
-          chalk.yellow('Setup status unknown — proceeding without setup')
-        );
-        return;
-      }
-
-      if (status[0].status === 'completed') {
-        this.spinner.stop(chalk.green('Setup successfully completed'));
-        return;
-      }
-
-      if (status[0].status === 'failed') {
-        this.spinner.stop(
-          chalk.yellow(
-            `Setup failed: ${status[0].error?.message || 'Unknown error'} — proceeding without setup`
-          )
-        );
-        return;
-      }
-
-      await new Promise((r) => setTimeout(r, pollInterval));
+    if (!complete) {
+      this.spinner.stop(
+        chalk.yellow('Setup timed out — proceeding without setup')
+      );
+    } else if (job?.status === 'completed') {
+      this.spinner.stop(chalk.green('Setup successfully completed'));
+    } else if (job?.status === 'failed') {
+      this.spinner.stop(
+        chalk.yellow(
+          `Setup failed: ${job.error?.message || 'Unknown error'} — proceeding without setup`
+        )
+      );
+    } else {
+      this.spinner.stop(
+        chalk.yellow('Setup status unknown — proceeding without setup')
+      );
     }
-
-    // Timeout
-    this.spinner.stop(
-      chalk.yellow('Setup timed out — proceeding without setup')
-    );
+    return files;
   }
 }

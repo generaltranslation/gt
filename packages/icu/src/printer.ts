@@ -10,8 +10,6 @@ import type {
   LiteralElement,
   MessageFormatElement,
   NumberElement,
-  NumberSkeleton,
-  PluralElement,
   SelectElement,
   TimeElement,
 } from './types';
@@ -45,10 +43,14 @@ function printElements(
         case TYPE.time:
         case TYPE.number:
           return printSimpleFormat(element);
-        case TYPE.plural:
-          return printPlural(element);
         case TYPE.select:
-          return printSelect(element);
+          return `{${element.value},select,${printOptions(element.options, false)}}`;
+        case TYPE.plural: {
+          const type =
+            element.pluralType === 'cardinal' ? 'plural' : 'selectordinal';
+          const offset = element.offset ? `offset:${element.offset} ` : '';
+          return `{${element.value},${type},${offset}${printOptions(element.options, true)}}`;
+        }
         case TYPE.pound:
           return '#';
         case TYPE.tag:
@@ -56,30 +58,6 @@ function printElements(
       }
     })
     .join('');
-}
-
-function quoteSyntaxToken(token: string): string {
-  return `'${token.replace(/'/g, "''")}'`;
-}
-
-function isTagSyntaxStart(message: string, index: number): boolean {
-  if (message[index] !== '<') return false;
-  const next = message[index + 1];
-  return next === '/' || isAsciiLetter(next);
-}
-
-function findTagSyntaxEnd(message: string, index: number): number {
-  const closingIndex = message.indexOf('>', index + 1);
-  return closingIndex === -1 ? message.length : closingIndex + 1;
-}
-
-function findBraceSyntaxEnd(message: string, index: number): number {
-  // Preserve the established canonical bytes by quoting from the first brace
-  // through the final brace as one span. Hashes inside that span are already
-  // protected and must not be quoted again.
-  return (
-    Math.max(message.lastIndexOf('{'), message.lastIndexOf('}'), index) + 1
-  );
 }
 
 /**
@@ -116,11 +94,7 @@ function escapeApostropheRuns(
     const length = index - start;
     const next = value[index];
     const introducesQuote =
-      next === '{' ||
-      next === '}' ||
-      next === '<' ||
-      next === '>' ||
-      (isInPlural && next === '#');
+      '{}<>'.includes(next) || (isInPlural && next === '#');
     const touchesSyntax =
       (start === 0 && followsQuotedSyntax) ||
       (index === value.length && precedesSyntax) ||
@@ -154,34 +128,40 @@ function escapeMessage(
   hasPrecedingSyntax: boolean,
   hasFollowingSyntax: boolean
 ): string {
-  const quotedRanges: Array<{ start: number; end: number }> = [];
+  const quotedRanges: Array<[start: number, end: number]> = [];
 
   function quoteToken(start: number, end: number): void {
     const previous = quotedRanges[quotedRanges.length - 1];
     if (
       previous &&
-      (start === previous.end ||
-        /^'+$/u.test(message.slice(previous.end, start)))
+      (start === previous[1] || /^'+$/u.test(message.slice(previous[1], start)))
     ) {
       // Merge across apostrophe-only gaps. Two independently quoted syntax
       // tokens would otherwise make their closing/opening delimiters combine
       // with the literal apostrophes and change the reparsed value.
-      previous.end = end;
+      previous[1] = end;
     } else {
-      quotedRanges.push({ start, end });
+      quotedRanges.push([start, end]);
     }
   }
 
   for (let index = 0; index < message.length; index += 1) {
     const character = message[index];
     if (character === '{') {
-      const end = findBraceSyntaxEnd(message, index);
+      // Quote from the first brace through the final brace as one span so
+      // hashes inside that span are not quoted again.
+      const end =
+        Math.max(message.lastIndexOf('{'), message.lastIndexOf('}'), index) + 1;
       quoteToken(index, end);
       index = end - 1;
     } else if (character === '}') {
       quoteToken(index, index + 1);
-    } else if (isTagSyntaxStart(message, index)) {
-      const end = findTagSyntaxEnd(message, index);
+    } else if (
+      character === '<' &&
+      (message[index + 1] === '/' || isAsciiLetter(message[index + 1]))
+    ) {
+      const closingIndex = message.indexOf('>', index + 1);
+      const end = closingIndex === -1 ? message.length : closingIndex + 1;
       quoteToken(index, end);
       index = end - 1;
     } else if (isInPlural && character === '#') {
@@ -191,16 +171,16 @@ function escapeMessage(
 
   let result = '';
   let literalStart = 0;
-  for (const range of quotedRanges) {
+  for (const [start, end] of quotedRanges) {
     result += escapeApostropheRuns(
-      message.slice(literalStart, range.start),
+      message.slice(literalStart, start),
       isInPlural,
       literalStart !== 0,
       literalStart === 0 && hasPrecedingSyntax,
       true
     );
-    result += quoteSyntaxToken(message.slice(range.start, range.end));
-    literalStart = range.end;
+    result += `'${message.slice(start, end).replace(/'/g, "''")}'`;
+    literalStart = end;
   }
 
   result += escapeApostropheRuns(
@@ -233,18 +213,14 @@ function printLiteral(
 }
 
 function isSelfClosingTagLiteral(value: string): boolean {
-  if (!value.startsWith('<') || !value.endsWith('/>')) return false;
+  if (value[0] !== '<' || value.slice(-2) !== '/>') return false;
   const name = value.slice(1, -2);
-  let first = true;
+  if (!isAsciiLetter(name[0])) return false;
 
-  for (const character of name) {
-    if (first ? !isAsciiLetter(character) : !isTagNameCharacter(character)) {
-      return false;
-    }
-    first = false;
+  for (const character of name.slice(1)) {
+    if (!isTagNameCharacter(character)) return false;
   }
-
-  return !first;
+  return true;
 }
 
 function printSimpleFormat(
@@ -261,14 +237,6 @@ function printSimpleFormat(
   }}`;
 }
 
-function printNumberSkeletonToken(
-  token: NumberSkeleton['tokens'][number]
-): string {
-  return token.options.length === 0
-    ? token.stem
-    : `${token.stem}${token.options.map((option) => `/${option}`).join('')}`;
-}
-
 function printStyle(style: SimpleFormatStyle): string {
   // argStyleText has its own apostrophe semantics, and the compatibility
   // parser can expose unmatched opening braces from FormatJS's scanner quirk.
@@ -276,17 +244,12 @@ function printStyle(style: SimpleFormatStyle): string {
   // unclosed quote, so preserve the parser-produced bytes exactly.
   if (typeof style === 'string') return style;
   if (style.type === SKELETON_TYPE.dateTime) return `::${style.pattern}`;
-  return `::${style.tokens.map(printNumberSkeletonToken).join(' ')}`;
-}
-
-function printSelect(element: SelectElement): string {
-  return `{${element.value},select,${printOptions(element.options, false)}}`;
-}
-
-function printPlural(element: PluralElement): string {
-  const type = element.pluralType === 'cardinal' ? 'plural' : 'selectordinal';
-  const offset = element.offset ? `offset:${element.offset} ` : '';
-  return `{${element.value},${type},${offset}${printOptions(element.options, true)}}`;
+  return `::${style.tokens
+    .map(
+      ({ stem, options }) =>
+        stem + options.map((option) => `/${option}`).join('')
+    )
+    .join(' ')}`;
 }
 
 function printOptions(

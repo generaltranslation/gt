@@ -40,7 +40,6 @@ export async function runEnqueueWorkflow({
 
     // (1) run the branch step
     const branchData = await branchStep.run();
-    await branchStep.wait();
     if (!branchData) {
       return logErrorAndExit(branchResolutionError);
     }
@@ -64,7 +63,6 @@ export async function runEnqueueWorkflow({
     }
 
     const enqueueResult = await enqueueStep.run(filesToEnqueue);
-    await enqueueStep.wait();
 
     logger.debug('Enqueue result: ' + JSON.stringify(enqueueResult, null, 2));
 
