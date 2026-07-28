@@ -81,7 +81,6 @@ interface TranslationsContextType {
   autoImport: boolean;
   autoPatchReferences: boolean;
   autoPublish: boolean;
-  preserveExistingTranslations: boolean;
   loadingDocuments: boolean;
   importProgress: ImportProgress;
   importedTranslations: Set<string>;
@@ -104,7 +103,6 @@ interface TranslationsContextType {
   setAutoImport: (value: boolean) => void;
   setAutoPatchReferences: (value: boolean) => void;
   setAutoPublish: (value: boolean) => void;
-  setPreserveExistingTranslations: (value: boolean) => void;
   handleTranslateAll: () => Promise<void>;
   handleUploadExistingTranslations: () => Promise<void>;
   handleImportAll: () => Promise<void>;
@@ -190,10 +188,6 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   const [autoImport, setAutoImport] = useState(false);
   const [autoPatchReferences, setAutoPatchReferences] = useState(false);
   const [autoPublish, setAutoPublish] = useState(false);
-  // Whether Translate uploads the translations already in Sanity before
-  // enqueueing, so human edits take precedence over regenerated content.
-  const [preserveExistingTranslations, setPreserveExistingTranslations] =
-    useState(true);
   const [loadingDocuments, setLoadingDocuments] = useState(false);
   const [importProgress, setImportProgress] = useState<ImportProgress>({
     current: 0,
@@ -452,7 +446,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       // this version before enqueueing, so the platform keeps them instead of
       // regenerating (and a later import overwriting) human-edited content.
       let preservedCount = 0;
-      if (preserveExistingTranslations) {
+      if (pluginConfig.getPreserveExistingTranslations()) {
         const withTranslations =
           await collectExistingForUpload(transformedDocuments);
         const response = await uploadTranslations(withTranslations, secrets);
@@ -487,7 +481,6 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     secrets,
     documents,
     locales,
-    preserveExistingTranslations,
     serializeSourceDocuments,
     collectExistingForUpload,
     pinUploadedVersions,
@@ -1235,7 +1228,6 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     autoImport,
     autoPatchReferences,
     autoPublish,
-    preserveExistingTranslations,
     loadingDocuments,
     importProgress,
     importedTranslations,
@@ -1254,7 +1246,6 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     setAutoImport,
     setAutoPatchReferences,
     setAutoPublish,
-    setPreserveExistingTranslations,
     handleTranslateAll,
     handleUploadExistingTranslations,
     handleImportAll,

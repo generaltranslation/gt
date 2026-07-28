@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Button, Dialog, Flex, Stack, Switch, Text } from '@sanity/ui';
+import { Box, Button, Dialog, Flex, Stack, Text } from '@sanity/ui';
 import { useTranslations } from '../TranslationsProvider';
 
 interface TranslateAllDialogProps {
@@ -11,12 +11,7 @@ export const TranslateAllDialog: React.FC<TranslateAllDialogProps> = ({
   isOpen,
   onClose,
 }) => {
-  const {
-    documents,
-    handleTranslateAll,
-    preserveExistingTranslations,
-    setPreserveExistingTranslations,
-  } = useTranslations();
+  const { documents, handleTranslateAll } = useTranslations();
 
   const handleConfirm = async () => {
     onClose();
@@ -40,26 +35,15 @@ export const TranslateAllDialog: React.FC<TranslateAllDialogProps> = ({
       }
     >
       <Box padding={4}>
-        <Stack space={4}>
-          <Stack space={3}>
-            <Text>
-              Are you sure you want to create translations for all{' '}
-              {documents.length} documents?
-            </Text>
-            <Text size={1} muted>
-              This will submit all documents to General Translation for
-              processing.
-            </Text>
-          </Stack>
-          <Flex gap={2} align='center'>
-            <Switch
-              checked={preserveExistingTranslations}
-              onChange={() =>
-                setPreserveExistingTranslations(!preserveExistingTranslations)
-              }
-            />
-            <Text size={1}>Preserve existing translations (human edits)</Text>
-          </Flex>
+        <Stack space={3}>
+          <Text>
+            Are you sure you want to create translations for all{' '}
+            {documents.length} documents?
+          </Text>
+          <Text size={1} muted>
+            This will submit all documents to General Translation for
+            processing.
+          </Text>
         </Stack>
       </Box>
     </Dialog>

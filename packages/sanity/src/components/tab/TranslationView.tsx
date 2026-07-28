@@ -57,8 +57,6 @@ export const TranslationView = () => {
     setAutoPatchReferences,
     autoPublish,
     setAutoPublish,
-    preserveExistingTranslations,
-    setPreserveExistingTranslations,
     getVersionId,
   } = useTranslations();
 
@@ -289,17 +287,6 @@ export const TranslationView = () => {
           text='Translate'
           loading={isBusy && !isUploadingExisting}
         />
-
-        <Flex gap={2} align='center'>
-          <Switch
-            checked={preserveExistingTranslations}
-            onChange={() =>
-              setPreserveExistingTranslations(!preserveExistingTranslations)
-            }
-            disabled={isBusy}
-          />
-          <Text size={1}>Preserve existing translations (human edits)</Text>
-        </Flex>
 
         <Tooltip
           placement='top'
