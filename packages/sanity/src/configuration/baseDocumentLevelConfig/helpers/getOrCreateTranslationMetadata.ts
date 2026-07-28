@@ -8,6 +8,11 @@ import {
 } from 'sanity';
 import { randomKey } from '../../../utils/randomKey';
 import { getPublishedId } from '../../../utils/documentIds';
+import {
+  metadataTranslationRef,
+  translationMetadataId,
+  TRANSLATION_METADATA_TYPE,
+} from '../../../utils/translationMetadata';
 
 type TranslationReference = KeyedObject & {
   _type: 'internationalizedArrayReferenceValue';
@@ -25,8 +30,8 @@ export const getOrCreateTranslationMetadata = async (
   // First, try to get existing metadata
   const existingMetadata = await client.fetch(
     `*[
-        _type == 'translation.metadata' &&
-        translations[language == $baseLanguage][0].value._ref == $id
+        _type == '${TRANSLATION_METADATA_TYPE}' &&
+        ${metadataTranslationRef('$baseLanguage')} == $id
       ][0]`,
     { baseLanguage, id: publishedId }
   );
@@ -61,16 +66,16 @@ export const getOrCreateTranslationMetadata = async (
   try {
     // Use createIfNotExists to handle race conditions
     return await client.createIfNotExists({
-      _id: `translation.metadata.${publishedId}`,
-      _type: 'translation.metadata',
+      _id: translationMetadataId(publishedId),
+      _type: TRANSLATION_METADATA_TYPE,
       translations: [baseLangEntry],
     });
   } catch (error) {
     // If creation fails due to race condition, fetch the existing document
     const metadata = await client.fetch(
       `*[
-          _type == 'translation.metadata' &&
-          translations[language == $baseLanguage][0].value._ref == $id
+          _type == '${TRANSLATION_METADATA_TYPE}' &&
+          ${metadataTranslationRef('$baseLanguage')} == $id
         ][0]`,
       { baseLanguage, id: publishedId }
     );

@@ -122,6 +122,13 @@ export type GTPluginConfig = Omit<
   // In 'mixed' mode, the document types that use the internationalized-array
   // strategy; everything else stays document-level.
   fieldLevelDocuments?: TranslateDocumentFilter[] | string[];
+  // Sets the initial state of the "Local translations win" toggle. When on,
+  // the translations currently in Sanity are uploaded to General Translation
+  // before a translation run, so they become the baseline the next translation
+  // reuses. Local content overwrites whatever General Translation holds for
+  // that source version, including a completed translation that has not been
+  // imported yet. Off by default; the toggle can be flipped per session.
+  preserveExistingTranslations?: boolean;
 };
 
 /**
@@ -162,6 +169,7 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
     fieldLevelLocalization,
     translationLevel = 'document',
     fieldLevelDocuments,
+    preserveExistingTranslations = false,
   }) => {
     // Resolve sourceLocale: explicit sourceLocale > defaultLocale (from gt.config.json) > library default
     const resolvedSourceLocale =
@@ -203,7 +211,8 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
       additionalDeserializers,
       additionalBlockDeserializers,
       translationLevel,
-      normalizedFieldLevelDocuments
+      normalizedFieldLevelDocuments,
+      preserveExistingTranslations
     );
     gt.setConfig({
       sourceLocale: resolvedSourceLocale,

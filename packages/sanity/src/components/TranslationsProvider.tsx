@@ -22,6 +22,9 @@ import { getTranslationStrategy } from '../translation/strategy';
 import { uploadFiles } from '../translation/uploadFiles';
 import { initProject } from '../translation/initProject';
 import { createJobs } from '../translation/createJobs';
+import { captureExistingTranslations } from '../translation/captureExistingTranslations';
+import { collectExistingTranslations } from '../translation/collectExistingTranslations';
+import { uploadTranslations } from '../translation/uploadTranslations';
 import { downloadTranslations } from '../translation/downloadTranslations';
 import { checkTranslationStatus } from '../translation/checkTranslationStatus';
 import { importDocument } from '../translation/importDocument';
@@ -65,6 +68,16 @@ type TranslationDocumentMetadata = {
   translationDocs?: { docId?: string }[];
 };
 
+export type TranslateAllOptions = {
+  /**
+   * Discard the translations GT already holds and retranslate from source.
+   * Also skips capturing Studio-side edits — capturing them would immediately
+   * be reused as the baseline, which is the opposite of what a retranslate is
+   * asking for.
+   */
+  force?: boolean;
+};
+
 interface TranslationsContextType {
   // State
   isBusy: boolean;
@@ -74,6 +87,7 @@ interface TranslationsContextType {
   autoImport: boolean;
   autoPatchReferences: boolean;
   autoPublish: boolean;
+  preserveExistingTranslations: boolean;
   loadingDocuments: boolean;
   importProgress: ImportProgress;
   importedTranslations: Set<string>;
@@ -96,7 +110,9 @@ interface TranslationsContextType {
   setAutoImport: (value: boolean) => void;
   setAutoPatchReferences: (value: boolean) => void;
   setAutoPublish: (value: boolean) => void;
-  handleTranslateAll: () => Promise<void>;
+  setPreserveExistingTranslations: (value: boolean) => void;
+  handleTranslateAll: (options?: TranslateAllOptions) => Promise<void>;
+  handleUploadExistingTranslations: () => Promise<void>;
   handleImportAll: () => Promise<void>;
   handleImportMissing: () => Promise<void>;
   handleRefreshAll: () => Promise<void>;
@@ -180,6 +196,10 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   const [autoImport, setAutoImport] = useState(false);
   const [autoPatchReferences, setAutoPatchReferences] = useState(false);
   const [autoPublish, setAutoPublish] = useState(false);
+  // Seeded from plugin config; opt-in because uploading local translations
+  // overwrites whatever General Translation holds for that source version.
+  const [preserveExistingTranslations, setPreserveExistingTranslations] =
+    useState(() => pluginConfig.getPreserveExistingTranslations());
   const [loadingDocuments, setLoadingDocuments] = useState(false);
   const [importProgress, setImportProgress] = useState<ImportProgress>({
     current: 0,
@@ -348,81 +368,183 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     }
   }, [documents, locales, client]);
 
-  const handleTranslateAll = useCallback(async () => {
-    if (!secrets || documents.length === 0) return;
-
-    setIsBusy(true);
-
-    try {
-      const availableLocaleIds = locales
-        .filter((locale) => locale.enabled !== false)
-        .map((locale) => locale.localeId);
-
-      const transformedDocuments = documents
+  const serializeSourceDocuments = useCallback(
+    () =>
+      documents
         .map((doc) => {
           const { [pluginConfig.getLanguageField()]: _, ...cleanDoc } = doc;
           const baseLanguage = pluginConfig.getSourceLocale();
           try {
             const strategy = getTranslationStrategy(doc);
-            const serialized = strategy.serialize(
-              cleanDoc as typeof doc,
-              schema,
-              baseLanguage
-            );
             return {
               info: {
                 documentId: getDocumentPublishedId(doc),
                 versionId: doc._rev,
               },
-              serializedDocument: serialized,
+              serializedDocument: strategy.serialize(
+                cleanDoc as typeof doc,
+                schema,
+                baseLanguage
+              ),
             };
           } catch (error) {
             console.error('Error transforming document', doc._id, error);
           }
           return null;
         })
-        .filter((doc) => doc !== null);
+        .filter((doc) => doc !== null),
+    [documents, schema]
+  );
 
-      const uploadResult = await uploadFiles(transformedDocuments, secrets);
-      await initProject(uploadResult, { timeout: 600 }, secrets);
-      await createJobs(uploadResult, availableLocaleIds, secrets);
+  const handleTranslateAll = useCallback(
+    async ({ force = false }: TranslateAllOptions = {}) => {
+      if (!secrets || documents.length === 0) return;
 
-      // Pin the _rev each file was uploaded under. GT status queries need the
-      // exact uploaded versionId, and the live _rev moves on (in-place array
-      // imports bump it), so status lookups go through getVersionId instead.
-      // Persisted to sessionStorage so the pins survive a page refresh.
-      const nextUploadedVersions = new Map(uploadedVersions);
-      for (const { info } of transformedDocuments) {
-        if (info.versionId) {
-          nextUploadedVersions.set(info.documentId, info.versionId);
+      setIsBusy(true);
+
+      try {
+        const availableLocaleIds = locales
+          .filter((locale) => locale.enabled !== false)
+          .map((locale) => locale.localeId);
+
+        // Send any Studio-side edits to existing translations back to GT first,
+        // pinned to the source version they belong to. This has to happen before
+        // the upload below, which makes the new revision the latest version and
+        // would leave the edits attached to nothing. Best-effort: a failure here
+        // costs edit preservation, and must not block the translation itself.
+        if (preserveExistingTranslations && !force) {
+          try {
+            const captured = await captureExistingTranslations({
+              documents,
+              localeIds: availableLocaleIds,
+              secrets,
+              context: translationContext,
+              branchId,
+            });
+            if (captured.capturedCount > 0) {
+              toast.push({
+                title: `Preserved ${captured.capturedCount} existing translation(s) across ${captured.documentCount} document(s)`,
+                status: 'info',
+                closable: true,
+              });
+            }
+          } catch (error) {
+            console.error(
+              'Could not preserve existing translations. Continuing — edits made to translated documents may be overwritten by this run.',
+              error
+            );
+            toast.push({
+              title:
+                'Existing translations could not be preserved. Translation is continuing, but edits made to translated documents may be overwritten.',
+              status: 'warning',
+              closable: true,
+            });
+          }
         }
-      }
-      writeUploadedVersions(uploadedVersionsStorageKey, nextUploadedVersions);
-      setUploadedVersions(nextUploadedVersions);
 
-      toast.push({
-        title: `Translation tasks created for ${documents.length} documents`,
-        status: 'success',
-        closable: true,
-      });
-    } catch {
+        const transformedDocuments = serializeSourceDocuments();
+
+        const uploadResult = await uploadFiles(transformedDocuments, secrets);
+        await initProject(uploadResult, { timeout: 600 }, secrets);
+        await createJobs(uploadResult, availableLocaleIds, secrets, force);
+
+        // Pin the _rev each file was uploaded under. GT status queries need the
+        // exact uploaded versionId, and the live _rev moves on (in-place array
+        // imports bump it), so status lookups go through getVersionId instead.
+        // Persisted to sessionStorage so the pins survive a page refresh.
+        const nextUploadedVersions = new Map(uploadedVersions);
+        for (const { info } of transformedDocuments) {
+          if (info.versionId) {
+            nextUploadedVersions.set(info.documentId, info.versionId);
+          }
+        }
+        writeUploadedVersions(uploadedVersionsStorageKey, nextUploadedVersions);
+        setUploadedVersions(nextUploadedVersions);
+
+        toast.push({
+          title: force
+            ? `Retranslating ${documents.length} documents from scratch`
+            : `Translation tasks created for ${documents.length} documents`,
+          status: 'success',
+          closable: true,
+        });
+      } catch {
+        toast.push({
+          title:
+            'Translation tasks could not be created. No documents were changed. Try again or check the console for details.',
+          status: 'error',
+          closable: true,
+        });
+      } finally {
+        setIsBusy(false);
+      }
+    },
+    [
+      secrets,
+      documents,
+      locales,
+      schema,
+      client,
+      branchId,
+      preserveExistingTranslations,
+      serializeSourceDocuments,
+      uploadedVersions,
+      uploadedVersionsStorageKey,
+    ]
+  );
+
+  const handleUploadExistingTranslations = useCallback(async () => {
+    if (!secrets || documents.length === 0) return;
+
+    setIsBusy(true);
+    try {
+      const availableLocaleIds = locales
+        .filter((locale) => locale.enabled !== false)
+        .map((locale) => locale.localeId);
+
+      const transformedDocuments = serializeSourceDocuments();
+
+      // Seed the source files first. uploadTranslations requires the source to
+      // exist, and this action exists for projects whose translations predate
+      // General Translation, where no source has been uploaded yet. Enqueueing
+      // is deliberately skipped so nothing is retranslated.
+      await uploadFiles(transformedDocuments, secrets);
+
+      const existing = await collectExistingTranslations(
+        documents,
+        availableLocaleIds,
+        translationContext
+      );
+      const withTranslations = transformedDocuments
+        .map((document) => ({
+          ...document,
+          translations: existing.get(document.info.documentId) ?? [],
+        }))
+        .filter((document) => document.translations.length > 0);
+
+      const response = await uploadTranslations(withTranslations, secrets);
+      const count = response?.uploadedFiles.length ?? 0;
+
       toast.push({
         title:
-          'Translation tasks could not be created. No documents were changed. Try again or check the console for details.',
+          count > 0
+            ? `Uploaded ${count} existing translation(s) across ${withTranslations.length} document(s)`
+            : 'No existing translations found to upload',
+        status: count > 0 ? 'success' : 'warning',
+        closable: true,
+      });
+    } catch (error) {
+      console.error('Error uploading existing translations:', error);
+      toast.push({
+        title:
+          'Existing translations could not be uploaded. No documents were changed. Try again or check the console for details.',
         status: 'error',
         closable: true,
       });
     } finally {
       setIsBusy(false);
     }
-  }, [
-    secrets,
-    documents,
-    locales,
-    schema,
-    uploadedVersions,
-    uploadedVersionsStorageKey,
-  ]);
+  }, [secrets, documents, locales, client, schema, serializeSourceDocuments]);
 
   const handleImportAll = useCallback(async () => {
     if (!secrets || documents.length === 0 || !branchId) return;
@@ -1113,6 +1235,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     autoImport,
     autoPatchReferences,
     autoPublish,
+    preserveExistingTranslations,
     loadingDocuments,
     importProgress,
     importedTranslations,
@@ -1131,7 +1254,9 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     setAutoImport,
     setAutoPatchReferences,
     setAutoPublish,
+    setPreserveExistingTranslations,
     handleTranslateAll,
+    handleUploadExistingTranslations,
     handleImportAll,
     handleImportMissing,
     handleRefreshAll,
