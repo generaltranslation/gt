@@ -36,10 +36,8 @@ async function resolveFile(urlPath) {
     await stat(candidate);
     return candidate;
   } catch {
-    // A request for a path with a file extension (e.g. /main.js,
-    // /favicon.ico) that does not exist is a genuine 404, not a client route.
-    // Only extension-less paths fall back to index.html, which is how a SPA
-    // serves its client-side routes.
+    // A path with a file extension that does not exist is a genuine 404.
+    // Only extension-less paths fall back to index.html, the SPA client routes.
     if (extname(clean)) return null;
     return join(distDir, 'index.html');
   }
