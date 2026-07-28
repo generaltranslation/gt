@@ -176,7 +176,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   const [isBusy, setIsBusy] = useState(false);
   const [documents, setDocuments] = useState<SanityDocument[]>([]);
   const [locales, setLocales] = useState<TranslationLocale[]>([]);
-  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
   const [autoImport, setAutoImport] = useState(false);
   const [autoPatchReferences, setAutoPatchReferences] = useState(false);
   const [autoPublish, setAutoPublish] = useState(false);
@@ -733,7 +733,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       });
 
       toast.push({
-        title: `Refreshed status for ${documents.length} documents`,
+        title: `Refreshed status for ${documents.length} document(s)`,
         status: 'success',
         closable: true,
       });

@@ -1,5 +1,30 @@
 # gt-react
 
+## 11.1.0
+
+### Patch Changes
+
+- Updated dependencies [[`bbf4eb0`](https://github.com/generaltranslation/gt/commit/bbf4eb0cf77160baa615776619acd7afe35697ba), [`f53bb5e`](https://github.com/generaltranslation/gt/commit/f53bb5ea4b4989a2a4ad3aebf464011f01e029ad)]:
+  - generaltranslation@9.0.4
+  - gt-i18n@1.0.8
+  - @generaltranslation/react-core@11.1.0
+
+## 11.0.13
+
+### Patch Changes
+
+- [#1971](https://github.com/generaltranslation/gt/pull/1971) [`f1eb7c4`](https://github.com/generaltranslation/gt/commit/f1eb7c42bebf0eb75e477c700a61ac060924bb30) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Initialize TanStack Start browser condition state from the locale cookie, expose translation helpers from the isomorphic package entry point, and deprecate `parseLocale()` in favor of `getLocale()`. Export the browser condition-store factory from `gt-react` for framework integrations.
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.0.13
+
+## 11.0.12
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.0.12
+
 ## 11.0.11
 
 ### Patch Changes

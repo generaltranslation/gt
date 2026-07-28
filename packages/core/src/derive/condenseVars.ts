@@ -1,6 +1,4 @@
-import { TYPE } from '@formatjs/icu-messageformat-parser';
-import type { ArgumentElement } from '@formatjs/icu-messageformat-parser/types.js';
-import { printIcuAst } from './utils/printIcuAst';
+import { printAST, TYPE, type ArgumentElement } from '@generaltranslation/icu';
 import { traverseIcu } from './utils/traverseIcu';
 import { VAR_IDENTIFIER } from './utils/constants';
 import { GTIndexedSelectElement } from './utils/types';
@@ -39,5 +37,5 @@ export function condenseVars(icuString: string): string {
   });
 
   // Serialize
-  return printIcuAst(ast);
+  return printAST(ast);
 }

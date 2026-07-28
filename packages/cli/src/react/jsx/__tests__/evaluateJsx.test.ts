@@ -6,7 +6,19 @@ import {
   isMeaningful,
   isStaticExpression,
   isStaticValue,
+  isValidIcu,
 } from '../evaluateJsx.js';
+
+describe('isValidIcu', () => {
+  it.each([
+    '{n, number, foo{bar}baz}',
+    '{n, number, ::integer-width/*}',
+    '{n, number, ::integer-width/x*00}',
+    '{n, number, ::currency}',
+  ])('preserves FormatJS acceptance for %j', (message) => {
+    expect(isValidIcu(message)).toEqual({ isValid: true });
+  });
+});
 
 describe('isMeaningful', () => {
   describe('string literals', () => {

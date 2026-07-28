@@ -250,6 +250,7 @@ function LocaleMultiPrompt({
       }
       return next;
     });
+    setQuery('');
     setError(undefined);
   };
 

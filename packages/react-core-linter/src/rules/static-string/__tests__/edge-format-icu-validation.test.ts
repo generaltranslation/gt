@@ -116,6 +116,34 @@ describe('icu-validation: ICU number format with skeleton is valid', () => {
         `,
         options: [{ libs: ['gt-react'] }],
       },
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function C() { const gt = useGT(); return gt("{n, number, ::integer-width/*}"); }
+        `,
+        options: [{ libs: ['gt-react'] }],
+      },
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function C() { const gt = useGT(); return gt("{n, number, ::integer-width/x*00}"); }
+        `,
+        options: [{ libs: ['gt-react'] }],
+      },
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function C() { const gt = useGT(); return gt("{n, number, ::currency}"); }
+        `,
+        options: [{ libs: ['gt-react'] }],
+      },
+      {
+        code: `
+          import { useGT } from 'gt-react';
+          function C() { const gt = useGT(); return gt("{n, number, foo{bar}baz}"); }
+        `,
+        options: [{ libs: ['gt-react'] }],
+      },
     ],
     invalid: [],
   });

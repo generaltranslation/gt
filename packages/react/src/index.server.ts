@@ -14,6 +14,17 @@ export { useLocaleSelector } from './components/useLocaleSelector';
 export { useRegionSelector } from './components/useRegionSelector';
 
 type InitializeGTSPA = typeof import('./setup/initializeGTSPA').initializeGTSPA;
+type CreateOrUpdateBrowserConditionStore =
+  typeof import('./condition-store/createBrowserConditionStore').createOrUpdateBrowserConditionStore;
+
+const createBrowserConditionStoreServerError = createDiagnosticMessage({
+  source: 'gt-react',
+  severity: 'Error',
+  whatHappened:
+    'createOrUpdateBrowserConditionStore() cannot be called from the server runtime entry point',
+  why: 'createOrUpdateBrowserConditionStore() initializes browser-only condition state.',
+  fix: 'Call createOrUpdateBrowserConditionStore() from the browser runtime entry point.',
+});
 
 export const initializeGTSPA: InitializeGTSPA = async () => {
   throw new Error(
@@ -27,6 +38,11 @@ export const initializeGTSPA: InitializeGTSPA = async () => {
     })
   );
 };
+
+export const createOrUpdateBrowserConditionStore: CreateOrUpdateBrowserConditionStore =
+  () => {
+    throw new Error(createBrowserConditionStoreServerError);
+  };
 
 // ===== Components ===== //
 export { ServerGTProvider as GTProvider } from './provider/ServerGTProvider';

@@ -1,5 +1,24 @@
 # gtx-cli
 
+## 2.14.66
+
+### Patch Changes
+
+- [#1929](https://github.com/generaltranslation/gt/pull/1929) [`f53bb5e`](https://github.com/generaltranslation/gt/commit/f53bb5ea4b4989a2a4ad3aebf464011f01e029ad) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Replace the FormatJS ICU parser and runtime formatter dependencies with the new dependency-free `@generaltranslation/icu` package.
+
+- Updated dependencies [[`bbf4eb0`](https://github.com/generaltranslation/gt/commit/bbf4eb0cf77160baa615776619acd7afe35697ba), [`f53bb5e`](https://github.com/generaltranslation/gt/commit/f53bb5ea4b4989a2a4ad3aebf464011f01e029ad)]:
+  - generaltranslation@9.0.4
+  - @generaltranslation/icu@0.1.0
+  - @generaltranslation/format@0.1.3
+  - @generaltranslation/python-extractor@0.2.31
+  - @generaltranslation/supported-locales@2.1.11
+
+## 2.14.65
+
+### Patch Changes
+
+- [#1962](https://github.com/generaltranslation/gt/pull/1962) [`99f63e6`](https://github.com/generaltranslation/gt/commit/99f63e6826244cb07c18382031cce3fd8ca4ffc2) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Clear the locale search query after selecting a locale during setup.
+
 ## 2.14.64
 
 ### Patch Changes

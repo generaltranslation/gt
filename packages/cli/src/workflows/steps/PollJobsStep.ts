@@ -1,5 +1,4 @@
 import chalk from 'chalk';
-import { WorkflowStep } from './WorkflowStep.js';
 import { logger } from '../../console/logger.js';
 import { GT } from 'generaltranslation';
 import { EnqueueFilesResult } from 'generaltranslation/types';
@@ -30,16 +29,11 @@ export type PollJobsOutput = {
   fileTracker: FileStatusTracker;
 };
 
-export class PollTranslationJobsStep extends WorkflowStep<
-  PollJobsInput,
-  PollJobsOutput
-> {
+export class PollTranslationJobsStep {
   private spinner: ReturnType<typeof logger.createProgressBar> | null = null;
   private previousProgress = 0;
 
-  constructor(private gt: GT) {
-    super();
-  }
+  constructor(private gt: GT) {}
 
   async run({
     fileTracker,
@@ -396,9 +390,5 @@ export class PollTranslationJobsStep extends WorkflowStep<
     }
 
     return newSuffixText.join('\n');
-  }
-
-  async wait(): Promise<void> {
-    return;
   }
 }

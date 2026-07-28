@@ -1,5 +1,7 @@
 import React from 'react';
-import { Box, Card, Stack, Text, Flex, Spinner } from '@sanity/ui';
+import { Badge, Box, Card, Flex, Spinner, Stack, Text } from '@sanity/ui';
+import { Preview, useSchema, type SanityDocument } from 'sanity';
+import { useIntentLink } from 'sanity/router';
 import { LanguageStatus } from '../shared/LanguageStatus';
 import { useTranslations } from '../TranslationsProvider';
 import {
@@ -7,11 +9,9 @@ import {
   getDocumentPublishedId,
 } from '../../utils/documentIds';
 
-export const TranslationsTable: React.FC = () => {
+const DocumentRow: React.FC<{ document: SanityDocument }> = ({ document }) => {
   const {
-    documents,
     locales,
-    loadingDocuments,
     translationStatuses,
     downloadStatus,
     importedTranslations,
@@ -19,6 +19,92 @@ export const TranslationsTable: React.FC = () => {
     branchId,
     getVersionId,
   } = useTranslations();
+
+  const schema = useSchema();
+  const schemaType = schema.get(document._type);
+  const publishedId = getDocumentPublishedId(document);
+
+  const editLink = useIntentLink({
+    intent: 'edit',
+    params: { id: publishedId, type: document._type },
+  });
+
+  const enabledLocales = locales.filter((locale) => locale.enabled !== false);
+
+  return (
+    <Card border radius={3} overflow='hidden'>
+      <Card
+        as='a'
+        href={editLink.href}
+        onClick={editLink.onClick}
+        padding={2}
+        radius={0}
+        borderBottom
+        style={{ textDecoration: 'none', color: 'inherit' }}
+        title='Open document'
+      >
+        <Flex align='center' gap={3}>
+          <Box flex={1}>
+            {schemaType ? (
+              <Preview value={document} schemaType={schemaType} />
+            ) : (
+              <Text weight='semibold' size={1}>
+                {publishedId}
+              </Text>
+            )}
+          </Box>
+          <Badge fontSize={0} radius={2}>
+            {schemaType?.title ?? document._type}
+          </Badge>
+        </Flex>
+      </Card>
+
+      <Box paddingY={1}>
+        {enabledLocales.length > 0 ? (
+          <Stack space={1}>
+            {enabledLocales.map((locale) => {
+              const versionId = getVersionId(document);
+              const key = createTranslationStatusKey(
+                branchId,
+                publishedId,
+                versionId,
+                locale.localeId
+              );
+              const status = translationStatuses.get(key);
+              const isDownloaded = downloadStatus.downloaded.has(key);
+              const isImported = importedTranslations.has(key);
+
+              return (
+                <LanguageStatus
+                  key={`${document._id}-${versionId}-${locale.localeId}`}
+                  localeId={locale.localeId}
+                  progress={status?.progress || 0}
+                  isImported={isImported || isDownloaded}
+                  importFile={async () => {
+                    await handleImportDocument(
+                      publishedId,
+                      versionId,
+                      locale.localeId
+                    );
+                  }}
+                />
+              );
+            })}
+          </Stack>
+        ) : (
+          <Box padding={3}>
+            <Text size={1} muted>
+              No locales configured
+            </Text>
+          </Box>
+        )}
+      </Box>
+    </Card>
+  );
+};
+
+export const TranslationsTable: React.FC = () => {
+  const { documents, loadingDocuments } = useTranslations();
 
   if (loadingDocuments) {
     return (
@@ -32,60 +118,7 @@ export const TranslationsTable: React.FC = () => {
     <Box style={{ maxHeight: '60vh', overflowY: 'auto' }}>
       <Stack space={2}>
         {documents.map((document) => (
-          <Card key={document._id} shadow={1} padding={3}>
-            <Stack space={3}>
-              <Flex justify='space-between' align='flex-start'>
-                <Box flex={1}>
-                  <Text weight='semibold' size={1}>
-                    {getDocumentPublishedId(document)}
-                  </Text>
-                  <Text size={0} muted style={{ marginTop: '2px' }}>
-                    {document._type}
-                  </Text>
-                </Box>
-              </Flex>
-
-              <Stack space={2}>
-                {locales.length > 0 ? (
-                  locales
-                    .filter((locale) => locale.enabled !== false)
-                    .map((locale) => {
-                      const documentId = getDocumentPublishedId(document);
-                      const versionId = getVersionId(document);
-                      const key = createTranslationStatusKey(
-                        branchId,
-                        documentId,
-                        versionId,
-                        locale.localeId
-                      );
-                      const status = translationStatuses.get(key);
-                      const isDownloaded = downloadStatus.downloaded.has(key);
-                      const isImported = importedTranslations.has(key);
-
-                      return (
-                        <LanguageStatus
-                          key={`${document._id}-${versionId}-${locale.localeId}`}
-                          title={locale.description || locale.localeId}
-                          progress={status?.progress || 0}
-                          isImported={isImported || isDownloaded}
-                          importFile={async () => {
-                            await handleImportDocument(
-                              documentId,
-                              versionId,
-                              locale.localeId
-                            );
-                          }}
-                        />
-                      );
-                    })
-                ) : (
-                  <Text size={1} muted>
-                    No locales configured
-                  </Text>
-                )}
-              </Stack>
-            </Stack>
-          </Card>
+          <DocumentRow key={document._id} document={document} />
         ))}
       </Stack>
     </Box>

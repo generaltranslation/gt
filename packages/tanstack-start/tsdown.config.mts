@@ -20,26 +20,19 @@ const deps = {
   alwaysBundle: [/^generaltranslation\//],
 };
 
-const entries = ['src/index.ts'];
+const entries = ['src/index.client.ts', 'src/index.server.ts', 'src/server.ts'];
 
 export default defineConfig(
-  entries.flatMap((entry, index) => {
-    const [cjsConfig, esmConfig] = createTsdownConfig([entry], deps);
-    return [
-      {
-        ...cjsConfig,
-        clean: index === 0,
-        define: {
-          'import.meta.env': '{}',
-        },
+  entries.map((entry, index) => {
+    const [, esmConfig] = createTsdownConfig([entry], deps);
+    return {
+      ...esmConfig,
+      clean: index === 0,
+      dts: true,
+      deps: {
+        onlyBundle: false,
+        ...deps,
       },
-      {
-        ...esmConfig,
-        deps: {
-          onlyBundle: false,
-          ...deps,
-        },
-      },
-    ];
+    };
   })
 );

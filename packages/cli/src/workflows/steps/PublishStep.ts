@@ -1,15 +1,12 @@
-import { WorkflowStep } from './WorkflowStep.js';
 import { logger } from '../../console/logger.js';
 import { GT } from 'generaltranslation';
 import type { PublishFileEntry } from 'generaltranslation/types';
 import chalk from 'chalk';
 
-export class PublishStep extends WorkflowStep<PublishFileEntry[], void> {
+export class PublishStep {
   private spinner = logger.createSpinner('dots');
 
-  constructor(private gt: GT) {
-    super();
-  }
+  constructor(private gt: GT) {}
 
   async run(files: PublishFileEntry[]): Promise<void> {
     if (files.length === 0) return;
@@ -40,9 +37,5 @@ export class PublishStep extends WorkflowStep<PublishFileEntry[], void> {
         `Publish error: ${err instanceof Error ? err.message : String(err)}`
       );
     }
-  }
-
-  async wait(): Promise<void> {
-    return;
   }
 }

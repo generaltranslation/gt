@@ -45,7 +45,6 @@ import {
   cacheComponentsDevHotReloadDisabledWarning,
   cacheComponentsMissingLoadTranslationsError,
 } from './errors/cacheComponents';
-import { I18nConfigParams } from 'gt-i18n/internal/types';
 import { getRuntimeCredentials } from './setup/runtimeCredentials';
 
 type AutoderiveConfig = boolean | { jsx?: boolean; strings?: boolean };
@@ -77,7 +76,27 @@ type InternalGTConfigProps = BaseWithGTConfigProps &
     _disableDevHotReload?: boolean;
   };
 
-type WithGTConfigResult<TNextConfig extends object> = TNextConfig & NextConfig;
+type WithGTConfigValue<T> =
+  T extends Promise<infer U>
+    ? Promise<U & NextConfig>
+    : T extends PromiseLike<infer U>
+      ? PromiseLike<U & NextConfig>
+      : T & NextConfig;
+
+type WithGTConfigResult<TNextConfig extends object> = TNextConfig extends (
+  ...args: infer A
+) => infer R
+  ? (...args: A) => WithGTConfigValue<R>
+  : TNextConfig & NextConfig;
+
+function isThenable(value: unknown): value is PromiseLike<NextConfig> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'then' in value &&
+    typeof value.then === 'function'
+  );
+}
 
 /**
  * Initializes General Translation settings for a Next.js application.
@@ -128,6 +147,24 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   nextConfig?: TNextConfig,
   props: withGTConfigProps = {}
 ): WithGTConfigResult<TNextConfig> {
+  // Next also accepts the `(phase, context) => config` function form. When given
+  // one, call it and wrap the resolved config so `withGTConfig` composes with
+  // other Next config plugins that return a config function — matching
+  // `@sentry/nextjs`'s `withSentryConfig`. Without this, a function config would
+  // be spread as a plain object below, silently dropping the user's config.
+  if (typeof nextConfig === 'function') {
+    const configFn = nextConfig as (
+      phase: string,
+      context: { defaultConfig: NextConfig }
+    ) => NextConfig | Promise<NextConfig>;
+    return ((phase: string, context: { defaultConfig: NextConfig }) => {
+      const resolved = configFn(phase, context);
+      return isThenable(resolved)
+        ? resolved.then((resolvedConfig) => withGTConfig(resolvedConfig, props))
+        : withGTConfig(resolved, props);
+    }) as unknown as WithGTConfigResult<TNextConfig>;
+  }
+
   const internalNextConfig = (nextConfig ?? {}) as unknown as NextConfig;
 
   // ---------- LOAD GT CONFIG FILE ---------- //
@@ -558,14 +595,26 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     ...privateConfigParams
   } = mergedConfig;
   const I18NConfigParams = JSON.stringify(privateConfigParams);
-  const publicI18NConfigParams: Omit<
-    I18nConfigParams,
-    'projectId' | 'devApiKey' | 'apiKey'
-  > = {
+  const clientI18NConfigParams = {
     defaultLocale: mergedConfig.defaultLocale,
     locales: mergedConfig.locales,
     customMapping: mergedConfig.customMapping,
     runtimeUrl: mergedConfig.runtimeUrl,
+    cacheUrl: mergedConfig.cacheUrl,
+    cacheExpiryTime: mergedConfig.cacheExpiryTime,
+    maxConcurrentRequests: mergedConfig.maxConcurrentRequests,
+    maxBatchSize: mergedConfig.maxBatchSize,
+    batchInterval: mergedConfig.batchInterval,
+    renderSettings: {
+      timeout: mergedConfig.renderSettings?.timeout,
+    },
+    headersAndCookies: {
+      localeCookieName: mergedConfig.headersAndCookies?.localeCookieName,
+      enableI18nCookieName:
+        mergedConfig.headersAndCookies?.enableI18nCookieName,
+    },
+    _versionId: mergedConfig._versionId,
+    _disableDevHotReload: mergedConfig._disableDevHotReload,
   };
 
   const { type: _type, ...compilerOptions } =
@@ -628,7 +677,7 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
       ...internalNextConfig.env,
       _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams,
       NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS: JSON.stringify(
-        publicI18NConfigParams
+        clientI18NConfigParams
       ),
       ...(resolvedDictionaryFilePathType && {
         _GENERALTRANSLATION_DICTIONARY_FILE_TYPE:
@@ -746,6 +795,59 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
             webpackConfig.context,
             pathString
           );
+        }
+        // Webpack parses .mjs as strict ESM and does not treat require()
+        // calls as dependencies, so the require()-backed internal aliases
+        // above would never apply and their runtime errors are swallowed
+        // (loaders silently no-op). Parse gt-next's ESM dist as
+        // javascript/auto so webpack picks up those require() calls.
+        // Server compilation only: the call sites are server-only, and this
+        // keeps the rule from ever pulling a user's loader file into the
+        // client bundle. Turbopack resolves them through resolveAlias and
+        // needs no rule.
+        // The guard mirrors the alias block above: any configured alias
+        // enables the rule. The request-function aliases are static-imported
+        // (initGT.server), and resolve.alias applies at resolution regardless
+        // of parser mode, so they work without the rule; they gate it anyway
+        // for symmetry and for any future require()-backed consumer.
+        if (
+          options.isServer &&
+          (resolvedDictionaryFilePath ||
+            customLoadTranslationsPath ||
+            customLoadDictionaryPath ||
+            Object.keys(requestFunctionPaths).length > 0)
+        ) {
+          // gt-next normally resolves inside a node_modules dir (app-local,
+          // hoisted monorepo root, or the pnpm store), but symlinked installs
+          // (workspace:*, file:) resolve to a real path with no node_modules
+          // segment — so also match this package's dist dir, where this
+          // compiled file lives.
+          const gtNextDistDirs: (string | RegExp)[] = [
+            /node_modules[\\/]gt-next[\\/]dist[\\/]/,
+          ];
+          try {
+            // Trust __dirname only when it verifiably is gt-next's dist: a
+            // bundler that inlines this file elsewhere would otherwise widen
+            // the rule to every .mjs under its output dir. The compiled
+            // config always sits beside its ESM twin and the internal
+            // modules these aliases target.
+            if (
+              fs.existsSync(path.join(__dirname, 'config.mjs')) &&
+              fs.existsSync(path.join(__dirname, 'internal', '_dictionary.mjs'))
+            ) {
+              gtNextDistDirs.push(__dirname + path.sep);
+            }
+          } catch {
+            // __dirname is undefined when the ESM dist of this module is
+            // loaded natively; the node_modules pattern still applies.
+          }
+          webpackConfig.module ??= {};
+          webpackConfig.module.rules ??= [];
+          webpackConfig.module.rules.push({
+            test: /\.mjs$/,
+            include: gtNextDistDirs,
+            type: 'javascript/auto',
+          });
         }
       }
       if (typeof internalNextConfig?.webpack === 'function') {

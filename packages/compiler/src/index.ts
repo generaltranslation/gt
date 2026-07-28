@@ -330,4 +330,5 @@ export default gtUnplugin;
 export const webpack = gtUnplugin.webpack;
 export const vite = gtUnplugin.vite;
 export const rollup = gtUnplugin.rollup;
+export const rspack = gtUnplugin.rspack;
 export const esbuild = gtUnplugin.esbuild;

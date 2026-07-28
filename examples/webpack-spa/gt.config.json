@@ -1,0 +1,12 @@
+{
+  "defaultLocale": "en",
+  "locales": ["zh", "fr", "es", "ja"],
+  "files": {
+    "gt": {
+      "output": "src/_gt/[locale].json",
+      "parsingFlags": {
+        "devHotReload": true
+      }
+    }
+  }
+}

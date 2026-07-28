@@ -1,5 +1,39 @@
 # gt-tanstack-start
 
+## 11.1.0
+
+### Minor Changes
+
+- [#1974](https://github.com/generaltranslation/gt/pull/1974) [`bbf4eb0`](https://github.com/generaltranslation/gt/commit/bbf4eb0cf77160baa615776619acd7afe35697ba) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add opt-in locale routing for TanStack Start. Setting `localeRouting` in `gt.config.json` makes `gtMiddleware` prioritize locale path prefixes and updates client locale changes to keep the pathname in sync while leaving the default locale unprefixed.
+
+### Patch Changes
+
+- Updated dependencies [[`bbf4eb0`](https://github.com/generaltranslation/gt/commit/bbf4eb0cf77160baa615776619acd7afe35697ba), [`f53bb5e`](https://github.com/generaltranslation/gt/commit/f53bb5ea4b4989a2a4ad3aebf464011f01e029ad)]:
+  - generaltranslation@9.0.4
+  - gt-i18n@1.0.8
+  - gt-react@11.1.0
+  - @generaltranslation/react-core@11.1.0
+
+## 11.0.13
+
+### Patch Changes
+
+- [#1971](https://github.com/generaltranslation/gt/pull/1971) [`f1eb7c4`](https://github.com/generaltranslation/gt/commit/f1eb7c42bebf0eb75e477c700a61ac060924bb30) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Initialize TanStack Start browser condition state from the locale cookie, expose translation helpers from the isomorphic package entry point, and deprecate `parseLocale()` in favor of `getLocale()`. Export the browser condition-store factory from `gt-react` for framework integrations.
+
+- Updated dependencies [[`f1eb7c4`](https://github.com/generaltranslation/gt/commit/f1eb7c42bebf0eb75e477c700a61ac060924bb30)]:
+  - gt-react@11.0.13
+  - @generaltranslation/react-core@11.0.13
+
+## 11.0.12
+
+### Patch Changes
+
+- [#1941](https://github.com/generaltranslation/gt/pull/1941) [`7fef71d`](https://github.com/generaltranslation/gt/commit/7fef71de88a770bd5e14ec9f62cdac91671b3d2f) Thanks [@ErnestM1234](https://github.com/ErnestM1234)! - Add request-scoped server middleware and server-only translation helpers for TanStack Start.
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.0.12
+  - gt-react@11.0.12
+
 ## 11.0.11
 
 ### Patch Changes

@@ -29,11 +29,7 @@ export const ImportMissingDialog: React.FC<ImportMissingDialogProps> = ({
         <Box padding={3}>
           <Flex gap={2}>
             <Button text='Cancel' mode='ghost' onClick={onClose} />
-            <Button
-              text='Import Missing'
-              tone='primary'
-              onClick={handleConfirm}
-            />
+            <Button text='Import Missing' onClick={handleConfirm} />
           </Flex>
         </Box>
       }

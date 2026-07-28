@@ -93,7 +93,7 @@ export const SingleDocumentView: React.FC = () => {
                     return (
                       <LanguageStatus
                         key={`${document._id}-${versionId}-${locale.localeId}`}
-                        title={locale.description || locale.localeId}
+                        localeId={locale.localeId}
                         progress={status?.progress || 0}
                         isImported={isImported || isDownloaded}
                         importFile={async () => {

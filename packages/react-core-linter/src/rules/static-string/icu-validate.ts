@@ -6,7 +6,7 @@
  * Reports parse errors but does not auto-fix.
  */
 
-import { parse } from '@formatjs/icu-messageformat-parser';
+import { parse } from '@generaltranslation/icu';
 
 /**
  * Returns null if the string is valid ICU, or an error message if not.

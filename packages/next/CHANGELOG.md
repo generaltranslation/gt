@@ -1,5 +1,41 @@
 # gt-next
 
+## 11.1.0
+
+### Patch Changes
+
+- [#1909](https://github.com/generaltranslation/gt/pull/1909) [`f351466`](https://github.com/generaltranslation/gt/commit/f35146669f61ff86bd39747f0126ab0e2855e4a4) Thanks [@JoshKappler](https://github.com/JoshKappler)! - Fix loadDictionary, loadTranslations, and the dictionary option silently loading nothing in webpack builds.
+
+  Webpack parses .mjs as strict ESM and does not treat require() calls as dependencies, so the require()-backed gt-next/internal aliases never applied: the aliased user files were not bundled and the runtime ReferenceError was swallowed, leaving every dictionary lookup failing with "Dictionary entry X cannot be found". Turbopack builds were unaffected, which is why apps built with --turbopack never hit this.
+
+  withGTConfig's webpack hook now parses gt-next's ESM dist as javascript/auto whenever any gt-next internal alias is configured, so webpack picks up the require() calls behind the dictionary and loader aliases. Custom getLocale/getRegion paths resolve through static imports and already worked on webpack; they enable the rule only for consistency. Dist output is unchanged and turbopack behavior is untouched.
+
+- Updated dependencies [[`bbf4eb0`](https://github.com/generaltranslation/gt/commit/bbf4eb0cf77160baa615776619acd7afe35697ba), [`d801c41`](https://github.com/generaltranslation/gt/commit/d801c41134554726a0436eaf5b7b3f0242a3a91f), [`f53bb5e`](https://github.com/generaltranslation/gt/commit/f53bb5ea4b4989a2a4ad3aebf464011f01e029ad)]:
+  - generaltranslation@9.0.4
+  - @generaltranslation/compiler@1.3.33
+  - @generaltranslation/format@0.1.3
+  - gt-i18n@1.0.8
+  - gt-react@11.1.0
+  - @generaltranslation/react-core@11.1.0
+
+## 11.0.13
+
+### Patch Changes
+
+- [#1935](https://github.com/generaltranslation/gt/pull/1935) [`ca2d2d7`](https://github.com/generaltranslation/gt/commit/ca2d2d70fb4e58b205cee7a899a6df9fcae3f0dd) Thanks [@pjsny](https://github.com/pjsny)! - Support Next.js's function-form config in `withGTConfig`. When passed a `(phase, context) => NextConfig` function (Next's function config form), `withGTConfig` now calls it and wraps the resolved config instead of spreading the function as a plain object. This lets `withGTConfig` compose with other Next config plugins that return a config function — matching `@sentry/nextjs`'s `withSentryConfig` — for both sync and async config functions.
+
+- Updated dependencies [[`f1eb7c4`](https://github.com/generaltranslation/gt/commit/f1eb7c42bebf0eb75e477c700a61ac060924bb30)]:
+  - gt-react@11.0.13
+  - @generaltranslation/react-core@11.0.13
+
+## 11.0.12
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.0.12
+  - gt-react@11.0.12
+
 ## 11.0.11
 
 ### Patch Changes

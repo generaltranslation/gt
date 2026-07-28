@@ -1,4 +1,4 @@
-import { createInvalidPathRegexError } from '../errors/createErrors';
+import { createInvalidPathRegexError } from '../errors/pathRegex';
 
 export function compilePathRegex(pathRegex?: string): RegExp | undefined {
   if (pathRegex === undefined) return undefined;

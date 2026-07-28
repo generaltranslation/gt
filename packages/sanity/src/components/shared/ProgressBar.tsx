@@ -1,6 +1,6 @@
 // adapted from https://github.com/sanity-io/sanity-translations-tab. See LICENSE.md for more details.
 
-import { Card, Flex, Label } from '@sanity/ui';
+import { Card, Flex, Text } from '@sanity/ui';
 
 export default function ProgressBar({ progress }: { progress: number }) {
   if (typeof progress === 'undefined') {
@@ -9,32 +9,46 @@ export default function ProgressBar({ progress }: { progress: number }) {
   }
 
   return (
-    <Card border radius={2} style={{ width: `100%`, position: `relative` }}>
-      <Flex
-        style={{
-          position: `absolute`,
-          left: 0,
-          right: 0,
-          top: 0,
-          bottom: 0,
-          zIndex: 1,
-        }}
-        align='center'
-        justify='center'
-      >
-        <Label size={1}>{progress}%</Label>
-      </Flex>
+    <Card
+      radius={2}
+      overflow='hidden'
+      style={{ width: '100%', position: 'relative' }}
+    >
+      {/* Fill layer, clipped to the rounded card. */}
       <Card
+        tone='positive'
         style={{
-          width: '100%',
+          position: 'absolute',
+          inset: 0,
           transform: `scaleX(${progress / 100})`,
           transformOrigin: 'left',
           transition: 'transform .2s ease',
-          boxSizing: 'border-box',
         }}
-        padding={2}
-        tone='positive'
       />
+      {/* Border drawn above the fill, following the rounded corners. Uses an
+          inset shadow like @sanity/ui buttons so it adds no height. */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          borderRadius: 'inherit',
+          boxShadow: 'inset 0 0 0 1px var(--card-border-color)',
+          pointerEvents: 'none',
+          zIndex: 2,
+        }}
+      />
+      {/* Same padding + text size as the adjacent Import button, so both
+          render at exactly the same height. */}
+      <Flex
+        align='center'
+        justify='center'
+        padding={2}
+        style={{ position: 'relative', zIndex: 1 }}
+      >
+        <Text size={1} weight='medium'>
+          {progress}%
+        </Text>
+      </Flex>
     </Card>
   );
 }

@@ -34,7 +34,7 @@ export function nativeStoreGet(key: string): string | null {
     }
     return localStorage.getItem(key);
   }
-  return GtReactNative.nativeStoreGet(key);
+  return GtReactNative?.nativeStoreGet(key) ?? null;
 }
 
 /**
@@ -52,5 +52,5 @@ export function nativeStoreSet(key: string, value: string): void {
     localStorage.setItem(key, value);
     return;
   }
-  GtReactNative.nativeStoreSet(key, value);
+  GtReactNative?.nativeStoreSet(key, value);
 }

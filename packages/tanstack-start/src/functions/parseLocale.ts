@@ -1,19 +1,25 @@
 import { createIsomorphicFn } from '@tanstack/react-start';
-import {
-  getRequestHeader,
-  getCookie,
-  setCookie,
-} from '@tanstack/react-start/server';
+import { getRequest } from '@tanstack/react-start/server';
 import { getI18nConfig } from '@generaltranslation/react-core/pure';
-import { getCookieValue, parseAcceptLanguage } from 'gt-i18n/internal';
+import { getCookieValue } from 'gt-i18n/internal';
 import type { LocaleResolverConfig } from 'gt-i18n/internal/types';
+import {
+  getConditionStore,
+  isConditionStoreInitialized,
+} from '../condition-store/singleton';
+import { resolveRequestConditions } from './requestConditions';
+import { getLocale } from './runtime';
 
 export const determineLocale = createIsomorphicFn()
   .server(determineLocaleServer)
-  .client(determineLocaleClient);
+  .client(() => getLocale());
 
 /**
  * Resolve the user's locale for the current TanStack Start request or browser.
+ *
+ * @deprecated Use `getLocale()` with `gtMiddleware` instead. This function is
+ * retained as a fallback for server setups that have not initialized request
+ * scope through the middleware.
  */
 export function parseLocale(): string {
   const i18nConfig = getI18nConfig();
@@ -29,41 +35,26 @@ function determineLocaleServer({
   locales,
   customMapping,
 }: LocaleResolverConfig) {
-  const i18nConfig = getI18nConfig();
-  const localeCookieName = i18nConfig.getLocaleCookieName();
-  const candidates: string[] = [];
-
-  const cookie = getCookie(localeCookieName);
-  if (cookie) candidates.push(cookie);
-
-  candidates.push(...parseAcceptLanguage(getRequestHeader('accept-language')));
-
-  if (candidates.length === 0) {
-    console.warn(
-      'gt-tanstack-start(server): no locales could be determined for this request'
-    );
+  if (isConditionStoreInitialized()) {
+    const conditionStore = getConditionStore();
+    if (conditionStore.hasActiveScope()) {
+      return conditionStore.getLocale();
+    }
   }
 
-  const locale = i18nConfig.resolveSupportedLocale(candidates, {
+  return resolveRequestConditions(getRequest(), {
     defaultLocale,
     locales,
     customMapping,
-  });
-
-  setCookie(localeCookieName, locale, {
-    path: '/',
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 365,
-  });
-
-  return locale;
+  }).locale;
 }
 
-function determineLocaleClient({
+/** Read the server-synchronized locale cookie during client initialization. */
+export function determineLocaleClient({
   defaultLocale,
   locales,
   customMapping,
-}: LocaleResolverConfig) {
+}: LocaleResolverConfig): string {
   const i18nConfig = getI18nConfig();
   const localeCookieName = i18nConfig.getLocaleCookieName();
   const candidates: string[] = [];

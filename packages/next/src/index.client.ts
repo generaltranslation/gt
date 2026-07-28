@@ -14,7 +14,7 @@ import type {
   WithGTStaticProps,
   WithGTStaticPropsFunction,
 } from './pages-dir/withGTStaticProps';
-import { withGTStaticPropsClientError } from './errors/createErrors';
+import { createWithGTStaticPropsClientError } from './errors/client';
 
 // ===== Unsupported Server APIs ===== //
 export function parseLocale<
@@ -39,7 +39,7 @@ export function withGTServerSideProps<
 }
 
 export const withGTStaticProps: WithGTStaticPropsFunction = () => {
-  throw new Error(withGTStaticPropsClientError);
+  throw new Error(createWithGTStaticPropsClientError());
 };
 
 // ===== Components ===== //

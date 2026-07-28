@@ -1,0 +1,20 @@
+{
+  "401ccce7df59ba79": "Publiez votre application React dans toutes les langues",
+  "3b33164d7004d6bc": "Cette application monopage est internationalisée avec gt-react et regroupée par webpack. Les traductions se chargent dans le navigateur au démarrage, il n'y a donc ni provider ni serveur.",
+  "edd2e391c8aba4cb": "Enveloppez n'importe quel texte dans le composant T pour le traduire.",
+  "cc386fe41fd380ce": "Changez de langue avec le sélecteur de langue intégré.",
+  "f0079859dda9c02d": "Prévisualisez les traductions en direct pendant le développement grâce au compilateur GT.",
+  "cc0cf424a526a7c7": {
+    "c": [
+      "Rendu avec une valeur dynamique. L'année en cours est ",
+      {
+        "i": 2,
+        "k": "_gt_value_2",
+        "v": "v"
+      }
+    ],
+    "i": 1,
+    "t": "p"
+  },
+  "322ad35d597b519d": "i18n à l'exécution, regroupée par webpack."
+}

@@ -1,6 +1,6 @@
 {
   "name": "generaltranslation",
-  "version": "9.0.3",
+  "version": "9.0.4",
   "description": "A language toolkit for AI developers",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
@@ -44,7 +44,6 @@
   "homepage": "https://generaltranslation.com/",
   "devDependencies": {
     "@types/node": "catalog:",
-    "intl-messageformat": "^10.7.16",
     "tsdown": "catalog:",
     "typescript": "catalog:"
   },
@@ -52,7 +51,7 @@
     "definition": "dist/index.d.cts"
   },
   "dependencies": {
-    "@formatjs/icu-messageformat-parser": "^2.11.4",
+    "@generaltranslation/icu": "workspace:*",
     "@noble/hashes": "^2.2.0",
     "@generaltranslation/format": "workspace:*"
   },

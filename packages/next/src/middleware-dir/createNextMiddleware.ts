@@ -1,7 +1,7 @@
 import { isSameDialect, standardizeLocale } from '@generaltranslation/format';
 import { GTRuntime } from 'generaltranslation/runtime';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-import { createUnsupportedLocalesWarning } from '../errors/createErrors';
+import { createUnsupportedLocalesWarning } from '../errors/middleware';
 import { NextRequest, NextResponse } from 'next/server';
 import {
   defaultLocaleRoutingEnabledCookieName,

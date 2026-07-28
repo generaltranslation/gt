@@ -11,52 +11,35 @@ export async function initProject(
   // Accept number or numeric string, default to 600s
   const timeoutVal =
     options?.timeout !== undefined ? Number(options.timeout) : 600;
-  const setupTimeoutMs =
-    (Number.isFinite(timeoutVal) ? timeoutVal : 600) * 1000;
+  const setupTimeoutSeconds = Number.isFinite(timeoutVal) ? timeoutVal : 600;
 
   const setupResult = await gt.setupProject(uploadResult.uploadedFiles, {
     locales: pluginConfig.getLocales(),
   });
 
-  if (setupResult?.status === 'queued') {
-    const { setupJobId } = setupResult;
-    const start = Date.now();
-    const pollInterval = 2000;
+  if (setupResult.status === 'queued') {
+    const { complete, jobs } = await gt.awaitJobs([setupResult.setupJobId], {
+      pollingIntervalSeconds: 2,
+      timeoutSeconds: setupTimeoutSeconds,
+    });
+    const [job] = jobs;
 
-    let setupCompleted = false;
-    let setupFailedMessage: string | null = null;
-
-    while (true) {
-      const status = await gt.checkJobStatus([setupJobId]);
-      if (!status[0]) {
-        setupFailedMessage = 'Unknown error';
-        break;
-      }
-      if (status[0].status === 'completed') {
-        setupCompleted = true;
-        break;
-      }
-      if (status[0].status === 'failed') {
-        setupFailedMessage = status[0].error?.message || 'Unknown error';
-        break;
-      }
-      if (Date.now() - start > setupTimeoutMs) {
-        setupFailedMessage = 'Timed out while waiting for setup generation';
-        break;
-      }
-      await new Promise((r) => setTimeout(r, pollInterval));
-    }
-
-    if (setupCompleted) {
+    if (job?.status === 'completed') {
       // eslint-disable-next-line no-console
       console.log('Setup successfully completed');
-    } else {
+    } else if (!complete) {
       // eslint-disable-next-line no-console
       console.log(
-        `Setup ${setupFailedMessage ? 'failed' : 'timed out'} — proceeding without setup${
-          setupFailedMessage ? ` (${setupFailedMessage})` : ''
-        }`
+        'Setup timed out — proceeding without setup (Timed out while waiting for setup generation)'
       );
+    } else if (job?.status === 'failed') {
+      // eslint-disable-next-line no-console
+      console.log(
+        `Setup failed — proceeding without setup (${job.error?.message ?? 'Unknown error'})`
+      );
+    } else {
+      // eslint-disable-next-line no-console
+      console.log('Setup status unknown — proceeding without setup');
     }
   }
 

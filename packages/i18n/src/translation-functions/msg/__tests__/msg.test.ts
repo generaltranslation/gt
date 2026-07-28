@@ -31,6 +31,19 @@ describe('msg function integration', () => {
     const decoded = decodeMsg(result);
     expect(decoded).toBe('5 items');
   });
+
+  it.each([
+    ['2', 'exact'],
+    ['02', '2 items'],
+    ['2.5', '2.5 items'],
+  ])('formats numeric-string plural %j', (count, expected) => {
+    const result = msg(
+      '{count, plural, =2 {exact} one {one item} other {# items}}',
+      { count }
+    );
+
+    expect(decodeMsg(result)).toBe(expected);
+  });
 });
 
 describe('msg function integration with variables', () => {

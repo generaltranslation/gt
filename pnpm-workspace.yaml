@@ -6,6 +6,9 @@ packages:
 enableGlobalVirtualStore: true
 hoist: false
 
+onlyBuiltDependencies:
+  - lefthook
+
 minimumReleaseAge: 2880
 
 minimumReleaseAgeExclude:

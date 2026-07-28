@@ -1,17 +1,37 @@
 import { Schema } from '@sanity/schema';
 import { SanityDocument } from 'sanity';
 import { describe, expect, test } from 'vitest';
-import { createInternationalizedArrayTypes } from '../../../schema/createInternationalizedArrayTypes';
 import {
   deserializeDocument,
   serializeDocument,
 } from '../../../utils/serialize';
 
-const generatedTypes = createInternationalizedArrayTypes({
-  sourceLocale: 'en',
-  locales: ['es'],
-  fieldTypes: ['string', 'text'],
-});
+// Minimal stand-ins for the types sanity-plugin-internationalized-array
+// registers: an array of `{ _key, _type, language, value }` objects.
+const internationalizedArrayType = (fieldType: 'string' | 'text') => {
+  const capitalized = fieldType.charAt(0).toUpperCase() + fieldType.slice(1);
+  const valueTypeName = `internationalizedArray${capitalized}Value`;
+  return [
+    {
+      name: valueTypeName,
+      type: 'object',
+      fields: [
+        { name: 'language', type: 'string' },
+        { name: 'value', type: fieldType },
+      ],
+    },
+    {
+      name: `internationalizedArray${capitalized}`,
+      type: 'array',
+      of: [{ type: valueTypeName }],
+    },
+  ];
+};
+
+const generatedTypes = [
+  ...internationalizedArrayType('string'),
+  ...internationalizedArrayType('text'),
+];
 
 const postType = {
   name: 'post',

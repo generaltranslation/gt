@@ -63,7 +63,6 @@ export async function runDownloadWorkflow({
     // Run the branch step
     const branchStep = new BranchStep(gt, options);
     const branchResult = await branchStep.run();
-    await branchStep.wait();
     if (!branchResult) {
       return logErrorAndExit(branchResolutionError);
     }
@@ -101,7 +100,6 @@ export async function runDownloadWorkflow({
       timeoutDuration,
       forceRetranslation,
     });
-    await pollStep.wait();
 
     if (pollResult.fileTracker.failed.size > 0) {
       logger.error(
@@ -162,7 +160,6 @@ export async function runDownloadWorkflow({
     resolveOutputPath,
     forceDownload,
   });
-  await downloadStep.wait();
 
   // If polling timed out, report failure even though we downloaded what we could
   if (pollTimedOut) {

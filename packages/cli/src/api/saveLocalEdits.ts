@@ -25,7 +25,6 @@ export async function saveLocalEdits(settings: Settings): Promise<void> {
   // Run the branch step
   const branchStep = new BranchStep(gt, settings);
   const branchResult = await branchStep.run();
-  await branchStep.wait();
   if (!branchResult) {
     return logErrorAndExit(branchResolutionError);
   }

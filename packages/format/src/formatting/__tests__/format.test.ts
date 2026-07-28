@@ -1,5 +1,313 @@
 import { describe, it, expect } from 'vitest';
-import { _formatListToParts } from '../format';
+import { formatMessage as publicFormatMessage } from '../../core';
+import { _formatListToParts, _formatMessageICU } from '../format';
+
+describe('_formatMessageICU', () => {
+  it.each([
+    ['plain text', {}, 'plain text'],
+    ['Hello {name}', { name: 'Ada' }, 'Hello Ada'],
+    ['Zero: {value}', { value: 0 }, 'Zero: 0'],
+    ['False: {value}', { value: false }, 'False: '],
+    ['Null: {value}', { value: null }, 'Null: '],
+    [
+      '{kind, select, constructor {ctor} __proto__ {proto} other {fallback}}',
+      { kind: 'constructor' },
+      'ctor',
+    ],
+    [
+      '{kind, select, constructor {ctor} __proto__ {proto} other {fallback}}',
+      { kind: '__proto__' },
+      'proto',
+    ],
+    [
+      '{kind, select, constructor {ctor} __proto__ {proto} other {fallback}}',
+      { kind: 'missing' },
+      'fallback',
+    ],
+    [
+      '{count, plural, =0 {none} one {# item} other {# items}}',
+      { count: 0 },
+      'none',
+    ],
+    [
+      '{count, plural, =0 {none} one {# item} other {# items}}',
+      { count: 1 },
+      '1 item',
+    ],
+    [
+      '{count, plural, =0 {none} one {# item} other {# items}}',
+      { count: 12 },
+      '12 items',
+    ],
+    [
+      '{count, plural, offset:1 =0 {none} one {one guest} other {# guests}}',
+      { count: 5 },
+      '4 guests',
+    ],
+    [
+      '{place, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}',
+      { place: 22 },
+      '22nd',
+    ],
+    [
+      '{outer, select, yes {{count, plural, one {one} other {#}}} other {no}}',
+      { outer: 'yes', count: 4 },
+      '4',
+    ],
+    ["This '{isn''t}' ICU", {}, "This {isn't} ICU"],
+  ])(
+    'formats %j through the public format boundary',
+    (message, variables, expected) => {
+      expect(_formatMessageICU(message, 'en-US', variables)).toBe(expected);
+    }
+  );
+
+  it('passes number skeletons through the package boundary', () => {
+    expect(
+      _formatMessageICU('{value, number, ::currency/USD .00}', 'en-US', {
+        value: 1234.5,
+      })
+    ).toBe('$1,234.50');
+    expect(
+      _formatMessageICU('{value, number, ::scale/0}', 'en-US', {
+        value: 12.34,
+      })
+    ).toBe('12.34');
+  });
+
+  it.each([
+    'constructor',
+    'toString',
+    '__proto__',
+    'valueOf',
+    'hasOwnProperty',
+  ])(
+    'ignores inherited rounding-mode map key %j through the public boundary',
+    (stem) => {
+      expect(
+        _formatMessageICU(`{value, number, ::${stem}}`, 'en-US', {
+          value: 1234.5,
+        })
+      ).toBe('1,234.5');
+    }
+  );
+
+  it.each([
+    ['{value, number, ::integer-width/*}', 1.23456789, '1.235'],
+    ['{value, number, ::integer-width/x*00}', 1.23456789, '01.235'],
+    ['{value, number, ::.00/xyzr}', 1.23456789, '1.23456789'],
+    ['{value, number, foo{bar}baz}', 1234.5, '1,234.5baz}'],
+  ])(
+    'preserves pinned FormatJS formatting for legacy message %j',
+    (message, value, expected) => {
+      expect(_formatMessageICU(message, 'en-US', { value })).toBe(expected);
+    }
+  );
+
+  it('preserves FormatJS parse success before native currency validation', () => {
+    expect(() =>
+      _formatMessageICU('{value, number, ::currency}', 'en-US', { value: 1 })
+    ).toThrow(TypeError);
+  });
+
+  it('preserves numeric-string precision through the public boundary', () => {
+    expect(
+      publicFormatMessage('{value, number}', {
+        locales: 'en-US',
+        variables: { value: '123456789012345678901234567890' },
+      })
+    ).toBe('123,456,789,012,345,678,901,234,567,890');
+  });
+
+  it('preserves inherited and proxy-backed variables through the public boundary', () => {
+    const inherited = Object.create({ name: 'Ada', count: '2' });
+    expect(
+      publicFormatMessage('Hello {name}: {count, plural, other {# items}}', {
+        locales: 'en',
+        variables: inherited,
+      })
+    ).toBe('Hello Ada: 2 items');
+
+    const proxy = new Proxy(
+      {},
+      {
+        get: (_target, key) => (key === 'name' ? 'Grace' : undefined),
+        has: (_target, key) => key === 'name',
+      }
+    );
+    expect(
+      publicFormatMessage('Hello {name}', {
+        locales: 'en',
+        variables: proxy,
+      })
+    ).toBe('Hello Grace');
+  });
+
+  it.each([
+    ['00A0', '\u00A0'],
+    ['1680', '\u1680'],
+    ['2000', '\u2000'],
+    ['2007', '\u2007'],
+    ['202F', '\u202F'],
+    ['205F', '\u205F'],
+    ['3000', '\u3000'],
+  ])(
+    'preserves FormatJS named-style behavior after Unicode space U+%s',
+    (_codePoint, space) => {
+      expect(
+        publicFormatMessage(`{n, number, ${space}percent}`, {
+          locales: 'en-US',
+          variables: { n: 2 },
+        })
+      ).toBe('2');
+    }
+  );
+
+  it('passes date skeletons through the package boundary', () => {
+    const value = new Date('2020-05-06T14:03:02Z');
+    expect(
+      _formatMessageICU('{value, date, ::yyyyMMMdd}', 'en-US', { value })
+    ).toBe(
+      new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+      }).format(value)
+    );
+
+    for (const field of ['C', 'S', 'A']) {
+      expect(
+        _formatMessageICU(`{value, time, ::${field}}`, 'en-US', { value })
+      ).toBe(new Intl.DateTimeFormat('en-US').format(value));
+    }
+  });
+
+  it.each([
+    ['en-US', 'Ch', '2 PM'],
+    ['en-US', 'Cj', '2 PM'],
+    ['en-US', 'Jj', '02 PM'],
+    ['de-DE', 'hj', '14 Uhr'],
+  ])(
+    'preserves FormatJS hour skeleton %s ::%s through the public boundary',
+    (locale, skeleton, expected) => {
+      const value = new Date(2020, 4, 6, 14, 3, 2);
+      expect(
+        publicFormatMessage(`{value, time, ::${skeleton}}`, {
+          locales: locale,
+          variables: { value },
+        })
+      ).toBe(expected);
+    }
+  );
+
+  it('preserves regional hour cycles and sparse locale fallbacks', () => {
+    const value = new Date(2020, 4, 6, 7, 3, 2);
+    expect(
+      publicFormatMessage('{value, time, ::j}', {
+        locales: 'en-u-rg-gbzzzz',
+        variables: { value },
+      })
+    ).toBe('07');
+
+    const locales: string[] = [];
+    locales[1] = 'fr-FR';
+    expect(
+      publicFormatMessage('{value, time, ::j}', {
+        locales,
+        variables: { value },
+      })
+    ).toBe('07 h');
+    expect(() =>
+      publicFormatMessage('{value, time, ::j}', {
+        locales: [],
+        variables: { value },
+      })
+    ).toThrow();
+  });
+
+  it('preserves locale arrays through the package boundary', () => {
+    expect(
+      _formatMessageICU('{value, number}', ['de-DE', 'en-US'], {
+        value: 1234.5,
+      })
+    ).toBe(new Intl.NumberFormat('de-DE').format(1234.5));
+  });
+
+  it('still surfaces missing-variable failures through the package boundary', () => {
+    expect(() => _formatMessageICU('Hello {name}', 'en-US')).toThrow(
+      'variable "name" was not provided'
+    );
+  });
+
+  it('preserves FormatJS SyntaxError metadata through the public boundary', () => {
+    expect.assertions(3);
+    try {
+      publicFormatMessage('{name', { locales: 'en-US' });
+    } catch (error) {
+      const syntaxError = error as SyntaxError & {
+        location?: unknown;
+        originalMessage?: string;
+      };
+      expect(syntaxError.message).toBe('EXPECT_ARGUMENT_CLOSING_BRACE');
+      expect(syntaxError.location).toEqual({
+        start: { offset: 0, line: 1, column: 1 },
+        end: { offset: 5, line: 1, column: 6 },
+      });
+      expect(syntaxError.originalMessage).toBe('{name');
+    }
+  });
+
+  it.each([
+    ['2', 'exact'],
+    ['02', '2 items'],
+    ['2.5', '2.5 items'],
+  ])(
+    'coerces numeric-string plural %j through the public package',
+    (count, expected) => {
+      expect(
+        publicFormatMessage(
+          '{count, plural, =2 {exact} one {one item} other {# items}}',
+          { locales: 'en-US', variables: { count } }
+        )
+      ).toBe(expected);
+    }
+  );
+
+  it.each([
+    [1, 'canonical'],
+    ['1', 'canonical'],
+    ['01', 'leading'],
+    ['+1', 'positive'],
+  ])(
+    'preserves exact selector spelling through the public package for %j',
+    (count, expected) => {
+      expect(
+        publicFormatMessage(
+          '{count, plural, =1 {canonical} =01 {leading} =+1 {positive} other {other}}',
+          { locales: 'en-US', variables: { count } }
+        )
+      ).toBe(expected);
+    }
+  );
+
+  it('preserves boolean interpolation serialization from the previous runtime', () => {
+    const result = publicFormatMessage('before {value} after', {
+      variables: { value: true },
+    });
+
+    expect(result).toBe('before ,true, after');
+  });
+
+  it('preserves Date interpolation serialization from the previous runtime', () => {
+    const value = new Date(0);
+    expect(
+      publicFormatMessage('before {value} after', { variables: { value } })
+    ).toBe(['before ', value, ' after'].toString());
+    expect(publicFormatMessage('{value}', { variables: { value } })).toBe(
+      value.toString()
+    );
+  });
+});
 
 describe('_formatListToParts', () => {
   it('should format empty array', () => {

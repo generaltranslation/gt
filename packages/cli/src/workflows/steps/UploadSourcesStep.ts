@@ -1,5 +1,4 @@
 import type { FileToUpload } from 'generaltranslation/types';
-import { WorkflowStep } from './WorkflowStep.js';
 import { logger } from '../../console/logger.js';
 import { recordWarning } from '../../state/translateWarnings.js';
 import type { GT } from 'generaltranslation';
@@ -27,19 +26,13 @@ type UploadSourcesClient = Pick<
 >;
 type UploadSourcesSettings = Pick<Settings, 'defaultLocale' | 'modelProvider'>;
 
-export class UploadSourcesStep extends WorkflowStep<
-  { files: FileToUpload[]; branchData: BranchData },
-  FileReference[]
-> {
+export class UploadSourcesStep {
   private spinner = logger.createSpinner('dots');
-  private result: FileReference[] | null = null;
 
   constructor(
     private gt: UploadSourcesClient,
     private settings: UploadSourcesSettings
-  ) {
-    super();
-  }
+  ) {}
 
   /**
    * Detects file moves by comparing local files against orphaned files.
@@ -191,7 +184,7 @@ export class UploadSourcesStep extends WorkflowStep<
       files.map((f) => [`${f.fileId}:${f.versionId}`, f])
     );
 
-    this.result = response.uploadedFiles.map((uploadedFile) => {
+    const result = response.uploadedFiles.map((uploadedFile) => {
       const localFile = localFileMap.get(
         `${uploadedFile.fileId}:${uploadedFile.versionId}`
       );
@@ -203,7 +196,7 @@ export class UploadSourcesStep extends WorkflowStep<
     });
 
     // Merge files that were already uploaded into the result
-    this.result.push(
+    result.push(
       ...filesToSkipUpload.map((f) => ({
         fileId: f.fileId,
         versionId: f.versionId,
@@ -219,10 +212,6 @@ export class UploadSourcesStep extends WorkflowStep<
     const moveMsg = moves.length > 0 ? ` (${moves.length} moved)` : '';
     this.spinner.stop(chalk.green(`Files uploaded successfully${moveMsg}`));
 
-    return this.result;
-  }
-
-  async wait(): Promise<void> {
-    return;
+    return result;
   }
 }
