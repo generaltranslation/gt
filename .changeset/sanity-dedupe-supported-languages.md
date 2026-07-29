@@ -16,5 +16,4 @@ Studio with "Maximum update depth exceeded". It also produced duplicate
 initial-value template ids for each translatable document type.
 
 `locales` is now normalized to unique translation targets with the source locale
-removed, and a redundant entry logs a warning instead of being silently
-misapplied.
+removed.

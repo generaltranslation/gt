@@ -179,9 +179,7 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
     // `locales` holds translation targets only. Drop duplicates and the source
     // locale before anything downstream sees them — a repeated locale reaches
     // the Studio as a duplicate language and breaks the translations UI.
-    const { targets: targetLocales, redundant: redundantLocales } =
-      resolveTargetLocales(resolvedSourceLocale, locales);
-    warnOnRedundantLocales(resolvedSourceLocale, redundantLocales);
+    const targetLocales = resolveTargetLocales(resolvedSourceLocale, locales);
 
     // Normalize translateDocuments: string[] → TranslateDocumentFilter[]
     const normalizeFilters = (
@@ -314,23 +312,6 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
     };
   }
 );
-
-function warnOnRedundantLocales(
-  sourceLocale: string,
-  redundant: string[]
-): void {
-  if (redundant.length === 0) return;
-  console.warn(
-    createDiagnosticMessage({
-      source: 'gt-sanity',
-      severity: 'Warning',
-      whatHappened: `Ignored redundant ${redundant.length === 1 ? 'entry' : 'entries'} in locales`,
-      why: `locales lists translation targets, so it should not repeat a locale or include the source locale (${sourceLocale})`,
-      fix: 'Remove them from the gtPlugin configuration',
-      details: redundant,
-    })
-  );
-}
 
 // Options that existed while gt-sanity shipped its own field-level UI (v2.1.x)
 // and have no equivalent in sanity-plugin-internationalized-array.
