@@ -53,6 +53,20 @@
   },
   "exports": {
     ".": {
+      "workerd": {
+        "import": {
+          "types": "./dist/index.server.d.mts",
+          "default": "./dist/index.server.mjs"
+        },
+        "default": "./dist/index.server.mjs"
+      },
+      "worker": {
+        "import": {
+          "types": "./dist/index.server.d.mts",
+          "default": "./dist/index.server.mjs"
+        },
+        "default": "./dist/index.server.mjs"
+      },
       "browser": {
         "import": {
           "types": "./dist/index.client.d.mts",
