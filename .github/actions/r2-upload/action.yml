@@ -1,0 +1,60 @@
+name: Upload directory to Cloudflare R2
+description: Upload a directory to Cloudflare R2 with the AWS CLI
+
+inputs:
+  r2-account-id:
+    description: Cloudflare account ID
+    required: true
+  r2-access-key-id:
+    description: Cloudflare R2 access key ID
+    required: true
+  r2-secret-access-key:
+    description: Cloudflare R2 secret access key
+    required: true
+  r2-bucket:
+    description: Cloudflare R2 bucket name
+    required: true
+  source-dir:
+    description: Local directory whose contents should be uploaded
+    required: true
+  destination-dir:
+    description: Destination prefix within the bucket
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Upload directory
+      shell: bash
+      env:
+        AWS_ACCESS_KEY_ID: ${{ inputs.r2-access-key-id }}
+        AWS_SECRET_ACCESS_KEY: ${{ inputs.r2-secret-access-key }}
+        AWS_DEFAULT_REGION: auto
+        AWS_EC2_METADATA_DISABLED: 'true'
+        AWS_RETRY_MODE: standard
+        AWS_MAX_ATTEMPTS: '5'
+        R2_ACCOUNT_ID: ${{ inputs.r2-account-id }}
+        R2_BUCKET: ${{ inputs.r2-bucket }}
+        SOURCE_DIR: ${{ inputs.source-dir }}
+        DESTINATION_DIR: ${{ inputs.destination-dir }}
+      run: |
+        set -euo pipefail
+
+        if [[ ! -d "$SOURCE_DIR" ]]; then
+          echo "::error::R2 source directory does not exist: $SOURCE_DIR"
+          exit 1
+        fi
+
+        destination_dir="${DESTINATION_DIR#./}"
+        destination_dir="${destination_dir#/}"
+        destination_dir="${destination_dir%/}"
+        destination_uri="s3://${R2_BUCKET}/"
+        if [[ -n "$destination_dir" && "$destination_dir" != "." ]]; then
+          destination_uri="${destination_uri}${destination_dir}/"
+        fi
+
+        aws s3 cp "${SOURCE_DIR%/}/" "$destination_uri" \
+          --recursive \
+          --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com" \
+          --only-show-errors
