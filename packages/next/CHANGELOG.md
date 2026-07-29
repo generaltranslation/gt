@@ -1,5 +1,15 @@
 # gt-next
 
+## 11.1.2
+
+### Patch Changes
+
+- [#2002](https://github.com/generaltranslation/gt/pull/2002) [`11d9a36`](https://github.com/generaltranslation/gt/commit/11d9a36eca6346b5dde2b1f5cb394a4abde625ad) Thanks [@eoinest](https://github.com/eoinest)! - Resolve the server build in worker runtimes by prioritizing `workerd` and `worker` export conditions ahead of `browser`, while preserving the React Server Components entrypoint's precedence.
+
+- Updated dependencies [[`06fbf97`](https://github.com/generaltranslation/gt/commit/06fbf97731178d9892ab0e02b81acb62df8e38c5)]:
+  - gt-react@11.1.2
+  - @generaltranslation/react-core@11.1.2
+
 ## 11.1.1
 
 ### Patch Changes
