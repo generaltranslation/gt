@@ -1,5 +1,12 @@
 # gt-react-native
 
+## 11.1.2
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.1.2
+
 ## 11.1.1
 
 ### Patch Changes
