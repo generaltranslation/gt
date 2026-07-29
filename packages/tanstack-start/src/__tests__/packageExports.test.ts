@@ -103,4 +103,24 @@ describe('gt-tanstack-start package exports', () => {
       `,
     ]);
   });
+
+  it.each(['workerd', 'worker'])(
+    'resolves the server ESM entrypoint when %s and browser conditions are active',
+    (workerCondition) => {
+      node([
+        `--conditions=${workerCondition}`,
+        '--conditions=browser',
+        '--input-type=module',
+        '-e',
+        `
+          import assert from 'node:assert/strict';
+
+          assert.equal(
+            import.meta.resolve('gt-tanstack-start').endsWith('/dist/index.server.mjs'),
+            true
+          );
+        `,
+      ]);
+    }
+  );
 });

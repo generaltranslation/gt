@@ -127,6 +127,39 @@ describe('gt-react package exports', () => {
     ]);
   });
 
+  it.each(['workerd', 'worker'])(
+    'resolves server entrypoints when %s and browser conditions are active',
+    (workerCondition) => {
+      node([
+        `--conditions=${workerCondition}`,
+        '--conditions=browser',
+        '-e',
+        `
+          const assert = require('node:assert/strict');
+
+          assert.equal(
+            require.resolve('gt-react').endsWith('/dist/index.server.cjs'),
+            true
+          );
+        `,
+      ]);
+      node([
+        `--conditions=${workerCondition}`,
+        '--conditions=browser',
+        '--input-type=module',
+        '-e',
+        `
+          import assert from 'node:assert/strict';
+
+          assert.equal(
+            import.meta.resolve('gt-react').endsWith('/dist/index.server.mjs'),
+            true
+          );
+        `,
+      ]);
+    }
+  );
+
   it('throws when the condition-store factory is called from the server entrypoint', () => {
     node([
       '--input-type=module',
@@ -166,9 +199,12 @@ describe('gt-react package exports', () => {
     }
   });
 
-  it('resolves gt-react to the RSC implementation under react-server', () => {
+  it('prefers the RSC implementation over worker and browser conditions', () => {
     node([
       '--conditions=react-server',
+      '--conditions=workerd',
+      '--conditions=worker',
+      '--conditions=browser',
       '-e',
       `
           const assert = require('node:assert/strict');
