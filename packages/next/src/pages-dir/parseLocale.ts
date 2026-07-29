@@ -32,7 +32,7 @@ export function parseLocale<
     return resolveLocaleOrDefault(context.locale);
   }
 
-  return detectLocaleOldWay(context);
+  return detectLocale(context);
 }
 
 export function resolvePagesRouterLocale(
@@ -49,7 +49,10 @@ export function resolvePagesRouterLocale(
   return resolveLocaleOrDefault(locale);
 }
 
-function detectLocaleOldWay<
+/**
+ * @deprecated Retained for backwards compatibility until the next major version.
+ */
+function detectLocale<
   Params extends ParsedUrlQuery = ParsedUrlQuery,
   Preview extends PreviewData = PreviewData,
 >(context: GetServerSidePropsContext<Params, Preview>): string {
