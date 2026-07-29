@@ -1,5 +1,15 @@
 # gt-next
 
+## 11.1.3
+
+### Patch Changes
+
+- [#2004](https://github.com/generaltranslation/gt/pull/2004) [`e54d376`](https://github.com/generaltranslation/gt/commit/e54d376ab948e4081ddc372487918a9155fcb8b2) Thanks [@eoinest](https://github.com/eoinest)! - Delegate Pages Router locale routing and active-locale resolution to Next.js internationalized routing. Pages data wrappers prefer `context.locale` while retaining the previous request detector as a compatibility fallback, `withGTConfig` selects `NEXT_LOCALE` when Next.js locale detection is enabled, and applications can navigate with the Pages Router locale option through the existing provider reload callback. App Router middleware and `GTProvider` behavior are unchanged.
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.1.3
+  - gt-react@11.1.3
+
 ## 11.1.2
 
 ### Patch Changes
