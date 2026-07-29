@@ -1,7 +1,7 @@
 import type { GetServerSidePropsContext } from 'next';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
-import { parseLocale } from '../parseLocale';
+import { parseLocale, resolvePagesRouterLocale } from '../parseLocale';
 
 type TestGlobal = typeof globalThis & {
   __generaltranslation?: unknown;
@@ -158,6 +158,16 @@ describe('parseLocale', () => {
     expect(parseLocale(context)).toBe('en');
     expect(consoleWarnSpy).toHaveBeenCalledWith(
       expect.stringContaining('Locale "de" is not valid or is not supported')
+    );
+  });
+
+  it('reports the resolved fallback when defaultLocale is unsupported', () => {
+    expect(resolvePagesRouterLocale({ defaultLocale: 'de' })).toBe('en');
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('The locale "en" will be used')
+    );
+    expect(consoleWarnSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining('The locale "de" will be used')
     );
   });
 });

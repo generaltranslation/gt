@@ -38,15 +38,16 @@ export function parseLocale<
 export function resolvePagesRouterLocale(
   context: PagesRouterLocaleContext
 ): string {
-  const locale = context.locale ?? context.defaultLocale;
+  const requestedLocale = context.locale ?? context.defaultLocale;
+  const locale = isLocaleSupported(requestedLocale)
+    ? requestedLocale
+    : resolveLocaleOrDefault(requestedLocale);
+
   if (context.locale === undefined) {
-    const fallbackLocale =
-      context.defaultLocale ?? getI18nConfig().getDefaultLocale();
-    console.warn(createMissingPagesRouterLocaleWarning(fallbackLocale));
+    console.warn(createMissingPagesRouterLocaleWarning(locale));
   }
 
-  if (isLocaleSupported(locale)) return locale;
-  return resolveLocaleOrDefault(locale);
+  return locale;
 }
 
 /**
