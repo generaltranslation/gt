@@ -438,6 +438,100 @@ describe('withGTConfig', () => {
       expect(params.locales).toContain('es');
       expect(params.locales).toContain('en');
     });
+
+    it('warns when the GT locale fields differ from Next.js i18n', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {});
+      vi.mocked(fs.existsSync).mockImplementation(
+        (configPath) => configPath === './gt.config.json'
+      );
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        JSON.stringify({
+          defaultLocale: 'en',
+          locales: ['en', 'fr'],
+        })
+      );
+
+      withGTConfig({
+        i18n: {
+          defaultLocale: 'es',
+          locales: ['es', 'de'],
+        },
+      });
+
+      const mismatchWarnings = consoleWarnSpy.mock.calls
+        .map(([message]) => String(message))
+        .filter((message) =>
+          message.includes(
+            'Next.js internationalized routing does not match the GT config file'
+          )
+        );
+      expect(mismatchWarnings).toHaveLength(1);
+      expect(mismatchWarnings[0]).toContain(
+        'defaultLocale: GT has "en"; Next.js has "es"'
+      );
+      expect(mismatchWarnings[0]).toContain(
+        'locales: GT has ["en","fr"]; Next.js has ["es","de"]'
+      );
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('does not warn when locale sets match in a different order', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {});
+      vi.mocked(fs.existsSync).mockImplementation(
+        (configPath) => configPath === './gt.config.json'
+      );
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        JSON.stringify({
+          defaultLocale: 'en',
+          locales: ['fr', 'en'],
+        })
+      );
+
+      withGTConfig({
+        i18n: {
+          defaultLocale: 'en',
+          locales: ['en', 'fr'],
+        },
+      });
+
+      expect(consoleWarnSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining(
+          'Next.js internationalized routing does not match the GT config file'
+        )
+      );
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('does not compare locale fields without Next.js i18n', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {});
+      vi.mocked(fs.existsSync).mockImplementation(
+        (configPath) => configPath === './gt.config.json'
+      );
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        JSON.stringify({
+          defaultLocale: 'en',
+          locales: ['en', 'fr'],
+        })
+      );
+
+      withGTConfig();
+
+      expect(consoleWarnSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining(
+          'Next.js internationalized routing does not match the GT config file'
+        )
+      );
+      consoleWarnSpy.mockRestore();
+    });
   });
 
   // ==============================
