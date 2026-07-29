@@ -1,7 +1,7 @@
 import type { GetServerSidePropsContext } from 'next';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
-import { parseLocale } from '../parseLocale';
+import { parseLocale, resolvePagesRouterLocale } from '../parseLocale';
 
 type TestGlobal = typeof globalThis & {
   __generaltranslation?: unknown;
@@ -23,13 +23,19 @@ const localeConfig = {
 };
 
 function createContext({
+  locale,
+  defaultLocale,
   headers = {},
   cookies = {},
 }: {
+  locale?: string;
+  defaultLocale?: string;
   headers?: Record<string, string | string[] | undefined>;
   cookies?: Record<string, string>;
 }): GetServerSidePropsContext {
   return {
+    locale,
+    defaultLocale,
     req: {
       headers,
       cookies,
@@ -38,17 +44,26 @@ function createContext({
 }
 
 describe('parseLocale', () => {
+  let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
+
   beforeEach(() => {
     resetGTGlobals();
     initializeI18nConfig(localeConfig);
     delete process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS;
+    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
-  it('uses the middleware locale header before cookies and Accept-Language', () => {
+  afterEach(() => {
+    consoleWarnSpy.mockRestore();
+  });
+
+  it('uses context.locale instead of headers, cookies, or Accept-Language', () => {
     const context = createContext({
+      locale: 'fr',
+      defaultLocale: 'en',
       headers: {
-        'x-generaltranslation-locale': 'brand-french',
-        'accept-language': 'es,en;q=0.8',
+        'x-generaltranslation-locale': 'es',
+        'accept-language': 'es',
       },
       cookies: {
         'generaltranslation.locale': 'es',
@@ -56,9 +71,53 @@ describe('parseLocale', () => {
     });
 
     expect(parseLocale(context)).toBe('fr');
+    expect(consoleWarnSpy).not.toHaveBeenCalled();
   });
 
-  it('uses configured header and cookie names', () => {
+  it('preserves a supported Next.js locale alias', () => {
+    const context = createContext({
+      locale: 'brand-french',
+      defaultLocale: 'en',
+    });
+
+    expect(parseLocale(context)).toBe('brand-french');
+  });
+
+  it('falls back to the legacy header detector when context.locale is missing', () => {
+    const context = createContext({
+      defaultLocale: 'es',
+      headers: {
+        'x-generaltranslation-locale': 'brand-french',
+        'accept-language': 'es',
+      },
+      cookies: {
+        'generaltranslation.locale': 'es',
+      },
+    });
+
+    expect(parseLocale(context)).toBe('fr');
+    expect(consoleWarnSpy).not.toHaveBeenCalled();
+  });
+
+  it('falls back through the legacy cookie and Accept-Language detector', () => {
+    expect(
+      parseLocale(
+        createContext({
+          headers: { 'accept-language': 'fr,en;q=0.8' },
+          cookies: { 'generaltranslation.locale': 'es' },
+        })
+      )
+    ).toBe('es');
+    expect(
+      parseLocale(
+        createContext({
+          headers: { 'accept-language': 'fr,en;q=0.8' },
+        })
+      )
+    ).toBe('fr');
+  });
+
+  it('retains configured legacy header and cookie names in the fallback', () => {
     resetGTGlobals();
     initializeI18nConfig({
       ...localeConfig,
@@ -69,26 +128,46 @@ describe('parseLocale', () => {
         localeHeaderName: 'x-custom-locale',
       },
     });
-    const context = createContext({
-      headers: {
-        'x-custom-locale': 'es',
-        'accept-language': 'fr,en;q=0.8',
-      },
-      cookies: {
-        'custom-locale': 'brand-french',
-      },
-    });
 
-    expect(parseLocale(context)).toBe('es');
+    expect(
+      parseLocale(
+        createContext({
+          headers: {
+            'x-custom-locale': 'es',
+            'accept-language': 'fr,en;q=0.8',
+          },
+          cookies: { 'custom-locale': 'brand-french' },
+        })
+      )
+    ).toBe('es');
   });
 
-  it('falls back to Accept-Language', () => {
+  it('falls back to the GT default when legacy detection has no candidates', () => {
+    expect(parseLocale(createContext({}))).toBe('en');
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('No locale could be determined')
+    );
+  });
+
+  it('validates an unsupported context locale before returning it', () => {
     const context = createContext({
-      headers: {
-        'accept-language': 'es,en;q=0.8',
-      },
+      locale: 'de',
+      defaultLocale: 'en',
     });
 
-    expect(parseLocale(context)).toBe('es');
+    expect(parseLocale(context)).toBe('en');
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Locale "de" is not valid or is not supported')
+    );
+  });
+
+  it('reports the resolved fallback when defaultLocale is unsupported', () => {
+    expect(resolvePagesRouterLocale({ defaultLocale: 'de' })).toBe('en');
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('The locale "en" will be used')
+    );
+    expect(consoleWarnSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining('The locale "de" will be used')
+    );
   });
 });

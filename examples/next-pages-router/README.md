@@ -7,13 +7,37 @@
   </a>
 </p>
 
-# gt-react + Next.js Pages Router Example
+# gt-next + Next.js Pages Router Example
 
-A multilingual Next.js app using the Pages Router with `gt-react` for internationalization.
+A multilingual Next.js app using the Pages Router with Next.js internationalized routing and `gt-next` for translations.
 
 [See it live](https://next-pages-router.vercel.app)
 
 ## Quick Start
+
+The example imports `locales` and `defaultLocale` from `gt.config.json` into
+`next.config.ts`. Next.js owns locale-prefixed routing, active-locale context,
+the server-rendered `<html lang>` attribute, and client navigation. gt-next
+wraps `getStaticProps`, supplies translations, and renders them through the
+explicit provider props in `pages/_app.tsx`. The application passes
+`GTProvider._reload` a locale-aware `Router.push()` callback for locale
+selection; `GTProvider` itself remains framework-agnostic.
+
+```ts
+import type { NextConfig } from 'next';
+import { withGTConfig } from 'gt-next/config';
+import gtConfig from './gt.config.json';
+
+const nextConfig: NextConfig = {
+  i18n: {
+    locales: gtConfig.locales,
+    defaultLocale: gtConfig.defaultLocale,
+    // Locale detection is enabled by default. Set localeDetection: false to disable it.
+  },
+};
+
+export default withGTConfig(nextConfig);
+```
 
 ### Clone and install
 
@@ -42,4 +66,4 @@ npm start
 
 ## Documentation
 
-- [gt-react docs](https://generaltranslation.com/docs/react)
+- [Next.js Pages Router internationalization](https://nextjs.org/docs/pages/guides/internationalization)

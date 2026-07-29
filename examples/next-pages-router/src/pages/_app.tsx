@@ -1,15 +1,21 @@
-import * as React from 'react';
 import '@/styles/globals.css';
 import type { AppProps } from 'next/app';
-import { GTProvider } from 'gt-react';
-import gtConfig from '../../gt.config.json';
+import Router from 'next/router';
+import { GTProvider, type WithGTStaticProps } from 'gt-next';
 
-export default function App({ Component, pageProps }: AppProps) {
+export default function App({
+  Component,
+  pageProps,
+}: AppProps<WithGTStaticProps>) {
   return (
-    <>
-      <GTProvider {...gtConfig}>
-        <Component {...pageProps} />
-      </GTProvider>
-    </>
+    <GTProvider
+      locale={pageProps.locale}
+      translations={pageProps.translations}
+      _reload={({ locale }) => {
+        void Router.push(Router.pathname, Router.asPath, { locale });
+      }}
+    >
+      <Component {...pageProps} />
+    </GTProvider>
   );
 }

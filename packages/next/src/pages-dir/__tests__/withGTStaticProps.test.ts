@@ -60,6 +60,28 @@ describe('withGTStaticProps', () => {
     expect(mockGetTranslationsSnapshot).not.toHaveBeenCalled();
   });
 
+  it('falls back to context.defaultLocale when context.locale is unavailable', async () => {
+    const consoleWarnSpy = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => {});
+    const getStaticProps = withGTStaticProps();
+
+    await expect(
+      getStaticProps({ defaultLocale: 'en' } as GetStaticPropsContext)
+    ).resolves.toEqual({
+      props: {
+        locale: 'en',
+        translations: {},
+      },
+    });
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'Next.js did not provide an active Pages Router locale'
+      )
+    );
+    consoleWarnSpy.mockRestore();
+  });
+
   it('generates an isolated translation snapshot for each locale context', async () => {
     const pageGetStaticProps = vi.fn(
       async (currentContext: GetStaticPropsContext) => ({
