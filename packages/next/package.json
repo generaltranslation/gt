@@ -82,6 +82,14 @@
         "import": "./dist/index.rsc.mjs",
         "default": "./dist/index.rsc.js"
       },
+      "workerd": {
+        "import": "./dist/index.server.mjs",
+        "default": "./dist/index.server.js"
+      },
+      "worker": {
+        "import": "./dist/index.server.mjs",
+        "default": "./dist/index.server.js"
+      },
       "browser": {
         "import": "./dist/index.client.mjs",
         "default": "./dist/index.client.js"
