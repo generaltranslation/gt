@@ -25,6 +25,7 @@ import './schema/schemaOptions';
 import TranslationsTool from './components/page/TranslationsTool';
 import { documentInternationalization } from './documentInternationalization';
 import type { CustomDeserializers } from './serialization/types';
+import { resolveTargetLocales } from './utils/locales';
 import { SECRETS_NAMESPACE } from './utils/shared';
 
 // ===== Document Internationalization ===== //
@@ -175,6 +176,11 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
     const resolvedSourceLocale =
       sourceLocale ?? defaultLocale ?? libraryDefaultLocale;
 
+    // `locales` holds translation targets only. Drop duplicates and the source
+    // locale before anything downstream sees them — a repeated locale reaches
+    // the Studio as a duplicate language and breaks the translations UI.
+    const targetLocales = resolveTargetLocales(resolvedSourceLocale, locales);
+
     // Normalize translateDocuments: string[] → TranslateDocumentFilter[]
     const normalizeFilters = (
       entries: (TranslateDocumentFilter | string)[] | undefined
@@ -197,7 +203,7 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
       secretsNamespace,
       languageField,
       resolvedSourceLocale,
-      locales,
+      targetLocales,
       singletons || [],
       // singletons is a string array of singleton document ids
       singletonMapping ||
@@ -246,7 +252,7 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
           .filter((type): type is string => !!type)
           .filter((type) => !arrayLocalizedTypes.has(type)) ?? [];
       if (schemaTypes.length > 0) {
-        const allLocales = [resolvedSourceLocale, ...locales];
+        const allLocales = [resolvedSourceLocale, ...targetLocales];
         const supportedLanguages = allLocales.map((locale) => {
           const props = getLocaleProperties(
             locale,
@@ -281,7 +287,7 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
         buildInternationalizedArrayPlugin(
           fieldLevelConfig,
           resolvedSourceLocale,
-          locales,
+          targetLocales,
           customMapping
         )
       );
