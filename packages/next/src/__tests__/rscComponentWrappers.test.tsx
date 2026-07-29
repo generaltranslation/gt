@@ -1,42 +1,44 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockComponents, mockGetRequestConditions } = vi.hoisted(() => ({
-  mockComponents: {
-    Branch: vi.fn(),
-    createRenderPipeline: vi.fn(() => ({
-      renderPreparedT: vi.fn(),
-    })),
-    Currency: vi.fn(),
-    DateTime: vi.fn(),
-    decodeMsg: vi.fn(),
-    decodeOptions: vi.fn(),
-    decodeVars: vi.fn(),
-    declareVar: vi.fn(),
-    Derive: vi.fn(),
-    derive: vi.fn(),
-    gtFallback: vi.fn(),
-    getDefaultLocale: vi.fn(),
-    getLocaleProperties: vi.fn(),
-    getLocales: vi.fn(),
-    getVersionId: vi.fn(),
-    GtInternalVar: vi.fn(),
-    LocaleSelector: vi.fn(),
-    mFallback: vi.fn(),
-    msg: vi.fn(),
-    Num: vi.fn(),
-    Plural: vi.fn(),
-    ReactI18nCache: class {},
-    RelativeTime: vi.fn(),
-    resolveCanonicalLocale: vi.fn(),
-    RscT: vi.fn(),
-    useDefaultLocale: vi.fn(),
-    useLocaleProperties: vi.fn(),
-    useLocales: vi.fn(),
-    Var: vi.fn(),
-  },
-  mockGetRequestConditions: vi.fn(),
-}));
+const { mockAppRouterGTProvider, mockComponents, mockGetRequestConditions } =
+  vi.hoisted(() => ({
+    mockAppRouterGTProvider: vi.fn(),
+    mockComponents: {
+      Branch: vi.fn(),
+      createRenderPipeline: vi.fn(() => ({
+        renderPreparedT: vi.fn(),
+      })),
+      Currency: vi.fn(),
+      DateTime: vi.fn(),
+      decodeMsg: vi.fn(),
+      decodeOptions: vi.fn(),
+      decodeVars: vi.fn(),
+      declareVar: vi.fn(),
+      Derive: vi.fn(),
+      derive: vi.fn(),
+      gtFallback: vi.fn(),
+      getDefaultLocale: vi.fn(),
+      getLocaleProperties: vi.fn(),
+      getLocales: vi.fn(),
+      getVersionId: vi.fn(),
+      GtInternalVar: vi.fn(),
+      LocaleSelector: vi.fn(),
+      mFallback: vi.fn(),
+      msg: vi.fn(),
+      Num: vi.fn(),
+      Plural: vi.fn(),
+      ReactI18nCache: class {},
+      RelativeTime: vi.fn(),
+      resolveCanonicalLocale: vi.fn(),
+      RscT: vi.fn(),
+      useDefaultLocale: vi.fn(),
+      useLocaleProperties: vi.fn(),
+      useLocales: vi.fn(),
+      Var: vi.fn(),
+    },
+    mockGetRequestConditions: vi.fn(),
+  }));
 
 vi.mock('../request/getRequestConditions', () => ({
   getRequestConditions: mockGetRequestConditions,
@@ -53,7 +55,7 @@ vi.mock('../setup/initGT', () => ({
 }));
 
 vi.mock('../provider/GTProvider', () => ({
-  GTProvider: vi.fn(),
+  GTProvider: mockAppRouterGTProvider,
 }));
 
 vi.mock('gt-react', () => mockComponents);
@@ -117,7 +119,7 @@ describe('rsc component wrappers', () => {
   it('exports the package root RSC surface', async () => {
     const module = await import('../index.rsc');
 
-    expect(module.GTProvider).toBeTypeOf('function');
+    expect(module.GTProvider).toBe(mockAppRouterGTProvider);
     expect(module.T).toBeTypeOf('function');
     expect(module.GtInternalTranslateJsx).toBeTypeOf('function');
     expect(module.GtInternalTranslateJsx._gtt).toBe(

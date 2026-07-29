@@ -107,6 +107,25 @@ describe('withGTConfig', () => {
       expect(result.transpilePackages).toEqual(['existing-package', 'gt-next']);
     });
 
+    it('preserves the user-owned Next.js i18n configuration unchanged', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const i18n = {
+        locales: ['en', 'fr'],
+        defaultLocale: 'en',
+        localeDetection: false,
+        domains: [
+          {
+            domain: 'example.fr',
+            defaultLocale: 'fr',
+          },
+        ],
+      } satisfies NonNullable<NextConfig['i18n']>;
+
+      const result = withGTConfig({ i18n });
+
+      expect(result.i18n).toBe(i18n);
+    });
+
     it('sets _usingPlugin to true in config params', async () => {
       const withGTConfig = await getWithGTConfig();
       const result = withGTConfig();

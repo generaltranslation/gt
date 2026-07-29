@@ -1,5 +1,12 @@
 import { getCookieValue as getCookieValueFromString } from 'gt-i18n/internal';
 
+export type CookieOptions = {
+  maxAge?: number;
+  path?: string;
+  sameSite?: 'lax' | 'strict' | 'none';
+  secure?: boolean;
+};
+
 /**
  * Minimally parses a cookie value for a given cookie name
  * @param cookieName - The name of the cookie
@@ -23,10 +30,37 @@ export function getCookieValue({
 export function setCookieValue({
   cookieName,
   value,
+  options,
 }: {
   cookieName: string;
   value: string;
+  options?: CookieOptions;
 }): void {
   if (typeof document === 'undefined') return;
-  document.cookie = `${cookieName}=${value};path=/`;
+  document.cookie = serializeCookieValue({ cookieName, value, options });
+}
+
+/** @internal */
+export function serializeCookieValue({
+  cookieName,
+  value,
+  options,
+}: {
+  cookieName: string;
+  value: string;
+  options?: CookieOptions;
+}): string {
+  const attributes = [`Path=${options?.path ?? '/'}`];
+  if (options?.maxAge !== undefined) {
+    attributes.push(`Max-Age=${options.maxAge}`);
+  }
+  if (options?.sameSite) {
+    const sameSite =
+      options.sameSite.charAt(0).toUpperCase() + options.sameSite.slice(1);
+    attributes.push(`SameSite=${sameSite}`);
+  }
+  if (options?.secure) {
+    attributes.push('Secure');
+  }
+  return `${cookieName}=${value};${attributes.join(';')}`;
 }

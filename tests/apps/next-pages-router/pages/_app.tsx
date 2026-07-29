@@ -6,11 +6,9 @@ export default function App({
   Component,
   pageProps,
 }: AppProps<WithGTServerSideProps>) {
-  const { locale, translations, ...restPageProps } = pageProps;
-
   return (
-    <GTProvider locale={locale} translations={translations}>
-      <Component {...restPageProps} />
+    <GTProvider locale={pageProps.locale} translations={pageProps.translations}>
+      <Component {...pageProps} />
     </GTProvider>
   );
 }

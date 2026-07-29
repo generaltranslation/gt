@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "gt-react": "workspace:*",
+    "gt-next": "workspace:*",
     "gt": "workspace:*",
     "next": "15.5.9",
     "react": "^19.2.3",

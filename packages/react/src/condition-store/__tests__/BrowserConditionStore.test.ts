@@ -115,4 +115,34 @@ describe('BrowserConditionStore', () => {
       value: 'true',
     });
   });
+
+  it('supports framework-owned locale persistence without a GT reset cookie', () => {
+    const conditionStore = new BrowserConditionStore({
+      locale: 'en',
+      _localeCookieName: 'NEXT_LOCALE',
+      _localeCookieOptions: {
+        maxAge: 31_536_000,
+        path: '/',
+        sameSite: 'lax',
+        secure: true,
+      },
+      _reload: vi.fn(),
+      _resetLocaleCookie: false,
+    });
+    mockSetCookieValue.mockClear();
+
+    conditionStore.setLocale('fr');
+
+    expect(mockSetCookieValue).toHaveBeenCalledOnce();
+    expect(mockSetCookieValue).toHaveBeenCalledWith({
+      cookieName: 'NEXT_LOCALE',
+      value: 'fr',
+      options: {
+        maxAge: 31_536_000,
+        path: '/',
+        sameSite: 'lax',
+        secure: true,
+      },
+    });
+  });
 });

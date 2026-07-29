@@ -3,7 +3,7 @@ import {
   getI18nConfig,
 } from '@generaltranslation/react-core/pure';
 import type { WritableConditionStoreParams } from 'gt-i18n/internal';
-import { getCookieValue, setCookieValue } from './cookies';
+import { getCookieValue, setCookieValue, type CookieOptions } from './cookies';
 import { readBrowserLocale } from './readBrowserLocale';
 import { GetEnableI18n, GetLocale, GetRegion } from '../i18n-cache/types';
 import {
@@ -27,6 +27,12 @@ export type BrowserConditionStoreParams = WritableConditionStoreParams & {
   _getRegion?: GetRegion;
   _getEnableI18n?: GetEnableI18n;
   _reload?: ReloadType;
+  /** @internal Override locale persistence for framework integrations. */
+  _localeCookieName?: string;
+  /** @internal Override locale cookie attributes for framework integrations. */
+  _localeCookieOptions?: CookieOptions;
+  /** @internal Disable the GT middleware reset signal for framework routing. */
+  _resetLocaleCookie?: boolean;
 };
 
 /**
@@ -37,6 +43,9 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
   private customGetLocale?: GetLocale;
   private customGetRegion?: GetRegion;
   private customGetEnableI18n?: GetEnableI18n;
+  private localeCookieName: string;
+  private localeCookieOptions?: CookieOptions;
+  private resetLocaleCookie: boolean;
 
   constructor(config: BrowserConditionStoreParams) {
     const i18nConfig = getI18nConfig();
@@ -47,9 +56,16 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
     this.customGetLocale = config._getLocale;
     this.customGetRegion = config._getRegion;
     this.customGetEnableI18n = config._getEnableI18n;
+    this.localeCookieName =
+      config._localeCookieName ?? i18nConfig.getLocaleCookieName();
+    this.localeCookieOptions = config._localeCookieOptions;
+    this.resetLocaleCookie = config._resetLocaleCookie ?? true;
     setCookieValue({
-      cookieName: i18nConfig.getLocaleCookieName(),
+      cookieName: this.localeCookieName,
       value: i18nConfig.resolveSupportedLocale(config.locale),
+      ...(this.localeCookieOptions && {
+        options: this.localeCookieOptions,
+      }),
     });
     if (config.region !== undefined) {
       setCookieValue({
@@ -61,15 +77,17 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
   }
 
   getLocale = (): string => {
-    return getBrowserLocale(this.customGetLocale);
+    return getBrowserLocale(this.localeCookieName, this.customGetLocale);
   };
 
   setLocale = (locale: LocaleCandidates): void => {
     this.updateLocale(locale);
-    setCookieValue({
-      cookieName: defaultResetLocaleCookieName,
-      value: 'true',
-    });
+    if (this.resetLocaleCookie) {
+      setCookieValue({
+        cookieName: defaultResetLocaleCookieName,
+        value: 'true',
+      });
+    }
     this.reload();
   };
 
@@ -107,8 +125,11 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
   updateLocale = (locale: LocaleCandidates): void => {
     const i18nConfig = getI18nConfig();
     setCookieValue({
-      cookieName: i18nConfig.getLocaleCookieName(),
+      cookieName: this.localeCookieName,
       value: i18nConfig.resolveSupportedLocale(locale),
+      ...(this.localeCookieOptions && {
+        options: this.localeCookieOptions,
+      }),
     });
   };
 
@@ -147,9 +168,12 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
   };
 }
 
-function getBrowserLocale(getLocale?: GetLocale): string {
+function getBrowserLocale(
+  localeCookieName: string,
+  getLocale?: GetLocale
+): string {
   const i18nConfig = getI18nConfig();
-  const candidates = readBrowserLocale(i18nConfig.getLocaleCookieName());
+  const candidates = readBrowserLocale(localeCookieName);
   if (getLocale) candidates.push(getLocale());
   return i18nConfig.resolveSupportedLocale(candidates);
 }

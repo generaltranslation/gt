@@ -18,12 +18,12 @@ export { withGTStaticProps } from './pages-dir/withGTStaticProps';
 export type { WithGTStaticProps } from './pages-dir/withGTStaticProps';
 
 // ===== Components ===== //
+export { GTProvider } from './pages-dir/GTProvider';
 export {
   Branch,
   Currency,
   DateTime,
   Derive,
-  GTProvider,
   GtInternalTranslateJsx,
   GtInternalVar,
   T,

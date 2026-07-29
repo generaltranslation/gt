@@ -16,7 +16,8 @@
   },
   "files": [
     "dist",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "PAGES_ROUTER_I18N_MIGRATION.md"
   ],
   "sideEffects": [
     "./dist/index.server.*",

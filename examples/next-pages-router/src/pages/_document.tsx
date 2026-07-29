@@ -12,7 +12,7 @@ const DocumentNextScript =
 export default class MyDocument extends Document {
   render() {
     return (
-      <Html lang='en'>
+      <Html>
         <DocumentHead />
         <body className='antialiased'>
           <Main />

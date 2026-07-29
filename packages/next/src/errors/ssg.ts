@@ -18,3 +18,12 @@ export const withGTStaticPropsLocaleRoutingError = createGtNextDiagnostic({
   why: 'Without Pages Router locale routing, Next.js generates only one version of this page',
   fix: 'Add i18n locales and defaultLocale to your Next.js configuration',
 });
+
+export const createMissingPagesRouterLocaleWarning = (fallbackLocale: string) =>
+  createGtNextDiagnostic({
+    severity: 'Warning',
+    whatHappened: 'Next.js did not provide an active Pages Router locale',
+    why: 'The locale is normally available when internationalized routing is configured',
+    wayOut: `The locale "${fallbackLocale}" will be used for this request`,
+    fix: 'Add i18n locales and defaultLocale to your Next.js configuration',
+  });
