@@ -8,6 +8,15 @@ const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const distInitGTServerPath = join(packageRoot, 'dist/setup/initGT.server.mjs');
 const distClientPath = join(packageRoot, 'dist/index.client.mjs');
 
+function runNode(args: string[]): void {
+  const result = spawnSync(process.execPath, args, {
+    cwd: packageRoot,
+    encoding: 'utf8',
+  });
+
+  expect(result.status, result.stderr).toBe(0);
+}
+
 function collectStaticModuleGraph(entryPath: string): Set<string> {
   const modules = new Set<string>();
   const pending = [entryPath];
@@ -49,6 +58,69 @@ describe('gt-next package exports', () => {
       './dist/index.rsc.d.ts'
     );
     expect(packageJson.exports['.'].types).toBe('./dist/index.types.d.ts');
+  });
+
+  it.each(['workerd', 'worker'])(
+    'resolves the server entrypoint when %s and browser conditions are active',
+    (workerCondition) => {
+      const packageJson = JSON.parse(
+        readFileSync(join(packageRoot, 'package.json'), 'utf8')
+      ) as {
+        exports: {
+          '.': Record<
+            string,
+            | string
+            | {
+                import?: string;
+                default?: string;
+              }
+          >;
+        };
+      };
+
+      expect(packageJson.exports['.'][workerCondition]).toEqual({
+        import: './dist/index.server.mjs',
+        default: './dist/index.server.js',
+      });
+
+      runNode([
+        `--conditions=${workerCondition}`,
+        '--conditions=browser',
+        '--input-type=module',
+        '--eval',
+        `
+          import assert from 'node:assert/strict';
+          import { basename } from 'node:path';
+          import { fileURLToPath } from 'node:url';
+
+          assert.equal(
+            basename(fileURLToPath(import.meta.resolve('gt-next'))),
+            'index.server.mjs'
+          );
+        `,
+      ]);
+    }
+  );
+
+  it('prefers the RSC entrypoint over worker and browser conditions', () => {
+    runNode([
+      '--conditions=react-server',
+      '--conditions=workerd',
+      '--conditions=worker',
+      '--conditions=browser',
+      '--input-type=module',
+      '--eval',
+      `
+        import assert from 'node:assert/strict';
+        import { basename } from 'node:path';
+        import { fileURLToPath } from 'node:url';
+
+        assert.equal(
+          basename(fileURLToPath(import.meta.resolve('gt-next'))),
+          'index.rsc.mjs'
+        );
+      `,
+    ]);
   });
 
   const distIt = existsSync(distInitGTServerPath) ? it : it.skip;
