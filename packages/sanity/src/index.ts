@@ -25,6 +25,7 @@ import './schema/schemaOptions';
 import TranslationsTool from './components/page/TranslationsTool';
 import { documentInternationalization } from './documentInternationalization';
 import type { CustomDeserializers } from './serialization/types';
+import { resolveTargetLocales } from './utils/locales';
 import { SECRETS_NAMESPACE } from './utils/shared';
 
 // ===== Document Internationalization ===== //
@@ -175,6 +176,13 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
     const resolvedSourceLocale =
       sourceLocale ?? defaultLocale ?? libraryDefaultLocale;
 
+    // `locales` holds translation targets only. Drop duplicates and the source
+    // locale before anything downstream sees them — a repeated locale reaches
+    // the Studio as a duplicate language and breaks the translations UI.
+    const { targets: targetLocales, redundant: redundantLocales } =
+      resolveTargetLocales(resolvedSourceLocale, locales);
+    warnOnRedundantLocales(resolvedSourceLocale, redundantLocales);
+
     // Normalize translateDocuments: string[] → TranslateDocumentFilter[]
     const normalizeFilters = (
       entries: (TranslateDocumentFilter | string)[] | undefined
@@ -197,7 +205,7 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
       secretsNamespace,
       languageField,
       resolvedSourceLocale,
-      locales,
+      targetLocales,
       singletons || [],
       // singletons is a string array of singleton document ids
       singletonMapping ||
@@ -246,7 +254,7 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
           .filter((type): type is string => !!type)
           .filter((type) => !arrayLocalizedTypes.has(type)) ?? [];
       if (schemaTypes.length > 0) {
-        const allLocales = [resolvedSourceLocale, ...locales];
+        const allLocales = [resolvedSourceLocale, ...targetLocales];
         const supportedLanguages = allLocales.map((locale) => {
           const props = getLocaleProperties(
             locale,
@@ -281,7 +289,7 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
         buildInternationalizedArrayPlugin(
           fieldLevelConfig,
           resolvedSourceLocale,
-          locales,
+          targetLocales,
           customMapping
         )
       );
@@ -306,6 +314,23 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
     };
   }
 );
+
+function warnOnRedundantLocales(
+  sourceLocale: string,
+  redundant: string[]
+): void {
+  if (redundant.length === 0) return;
+  console.warn(
+    createDiagnosticMessage({
+      source: 'gt-sanity',
+      severity: 'Warning',
+      whatHappened: `Ignored redundant ${redundant.length === 1 ? 'entry' : 'entries'} in locales`,
+      why: `locales lists translation targets, so it should not repeat a locale or include the source locale (${sourceLocale})`,
+      fix: 'Remove them from the gtPlugin configuration',
+      details: redundant,
+    })
+  );
+}
 
 // Options that existed while gt-sanity shipped its own field-level UI (v2.1.x)
 // and have no equivalent in sanity-plugin-internationalized-array.
