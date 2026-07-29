@@ -59,7 +59,6 @@ export function createOrUpdateBrowserConditionStore(
 
 function determineLocale({
   _getLocale: getLocale,
-  _localeCookieName: localeCookieName,
   locale,
 }: CreateBrowserConditionStoreParams): string {
   const i18nConfig = getI18nConfig();
@@ -68,9 +67,7 @@ function determineLocale({
     candidates.push(...(Array.isArray(locale) ? locale : [locale]));
   }
   if (getLocale) candidates.push(getLocale());
-  candidates.push(
-    ...readBrowserLocale(localeCookieName ?? i18nConfig.getLocaleCookieName())
-  );
+  candidates.push(...readBrowserLocale(i18nConfig.getLocaleCookieName()));
   return i18nConfig.resolveSupportedLocale(candidates);
 }
 

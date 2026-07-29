@@ -43,12 +43,12 @@ export const withGTStaticProps: WithGTStaticPropsFunction = () => {
 };
 
 // ===== Components ===== //
-export { GTProvider } from './pages-dir/GTProvider';
 export {
   Branch,
   Currency,
   DateTime,
   Derive,
+  GTProvider,
   GtInternalTranslateJsx,
   GtInternalVar,
   LocaleSelector,

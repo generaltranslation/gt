@@ -16,6 +16,3 @@ export const defaultReferrerLocaleCookieName =
  * @see https://nextjs.org/docs/pages/guides/internationalization#leveraging-the-next_locale-cookie
  */
 export const nextLocaleCookieName = 'NEXT_LOCALE';
-
-/** Keep the user's Pages Router locale preference for one year. */
-export const nextLocaleCookieMaxAge = 60 * 60 * 24 * 365;

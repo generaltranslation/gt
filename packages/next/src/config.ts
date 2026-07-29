@@ -46,6 +46,7 @@ import {
   cacheComponentsMissingLoadTranslationsError,
 } from './errors/cacheComponents';
 import { getRuntimeCredentials } from './setup/runtimeCredentials';
+import { nextLocaleCookieName } from './utils/cookies';
 
 type AutoderiveConfig = boolean | { jsx?: boolean; strings?: boolean };
 
@@ -257,9 +258,19 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   // ---------- MERGE CONFIGS ---------- //
 
   // Merge cookie and header names
+  const nextLocaleDetectionEnabled =
+    internalNextConfig.i18n !== null &&
+    internalNextConfig.i18n !== undefined &&
+    internalNextConfig.i18n.localeDetection !== false;
   const mergedHeadersAndCookies = {
     ...defaultWithGTConfigProps.headersAndCookies,
     ...props.headersAndCookies,
+    // Next.js internationalized routing only reads its standard preference
+    // cookie. Keep the user's i18n config untouched while aligning GT's
+    // client-side locale persistence with the router.
+    ...(nextLocaleDetectionEnabled && {
+      localeCookieName: nextLocaleCookieName,
+    }),
   };
 
   // Merge compiler options

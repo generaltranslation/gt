@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import type { NextConfig } from 'next';
 import { BABEL_PLUGIN_SUPPORT } from '../plugin/constants';
+import { nextLocaleCookieName } from '../utils/cookies';
 
 // ---- Mocks ---- //
 
@@ -122,8 +123,61 @@ describe('withGTConfig', () => {
       } satisfies NonNullable<NextConfig['i18n']>;
 
       const result = withGTConfig({ i18n });
+      const privateParams = parseConfigParams(result);
+      const clientParams = JSON.parse(
+        result.env!.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS!
+      );
 
       expect(result.i18n).toBe(i18n);
+      expect(privateParams.headersAndCookies.localeCookieName).toBe(
+        'generaltranslation.locale'
+      );
+      expect(clientParams.headersAndCookies.localeCookieName).toBe(
+        'generaltranslation.locale'
+      );
+    });
+
+    it('uses NEXT_LOCALE when Next.js locale detection is enabled', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const result = withGTConfig(
+        {
+          i18n: {
+            locales: ['en', 'fr'],
+            defaultLocale: 'en',
+          },
+        },
+        {
+          headersAndCookies: {
+            localeCookieName: 'custom-locale',
+          },
+        }
+      );
+
+      expect(parseConfigParams(result).headersAndCookies.localeCookieName).toBe(
+        nextLocaleCookieName
+      );
+    });
+
+    it('preserves a custom GT cookie when Next.js locale detection is disabled', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const result = withGTConfig(
+        {
+          i18n: {
+            locales: ['en', 'fr'],
+            defaultLocale: 'en',
+            localeDetection: false,
+          },
+        },
+        {
+          headersAndCookies: {
+            localeCookieName: 'custom-locale',
+          },
+        }
+      );
+
+      expect(parseConfigParams(result).headersAndCookies.localeCookieName).toBe(
+        'custom-locale'
+      );
     });
 
     it('sets _usingPlugin to true in config params', async () => {

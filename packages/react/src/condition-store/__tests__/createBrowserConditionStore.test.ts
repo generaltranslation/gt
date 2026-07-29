@@ -98,23 +98,4 @@ describe('createOrUpdateBrowserConditionStore', () => {
       value: 'true',
     });
   });
-
-  it('ignores a stale GT locale cookie when a framework owns persistence', () => {
-    mockCookieValues.set('generaltranslation.locale', 'es');
-    mockCookieValues.set('NEXT_LOCALE', 'fr');
-
-    createOrUpdateBrowserConditionStore({
-      _localeCookieName: 'NEXT_LOCALE',
-    });
-
-    expect(mockSetCookieValue).toHaveBeenCalledWith({
-      cookieName: 'NEXT_LOCALE',
-      value: 'fr',
-    });
-    expect(mockSetCookieValue).not.toHaveBeenCalledWith(
-      expect.objectContaining({
-        cookieName: 'generaltranslation.locale',
-      })
-    );
-  });
 });

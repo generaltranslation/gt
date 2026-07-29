@@ -19,7 +19,9 @@ The example imports `locales` and `defaultLocale` from `gt.config.json` into
 `next.config.ts`. Next.js owns locale-prefixed routing, active-locale context,
 the server-rendered `<html lang>` attribute, and client navigation. gt-next
 wraps `getStaticProps`, supplies translations, and renders them through the
-explicit provider props in `pages/_app.tsx`.
+explicit provider props in `pages/_app.tsx`. The application passes
+`GTProvider._reload` a locale-aware `Router.push()` callback for locale
+selection; `GTProvider` itself remains framework-agnostic.
 
 ```ts
 import type { NextConfig } from 'next';

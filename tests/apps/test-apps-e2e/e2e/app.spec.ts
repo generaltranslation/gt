@@ -164,25 +164,45 @@ async function testRoutingApp(page: Page, cacheComponents = false) {
 
 async function testPagesApp(page: Page) {
   await page.goto('/');
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(page.getByText('Client locale: en')).toBeVisible();
-  await expect(page.getByText('Cookie locale (SSR): en')).toBeVisible();
+  await expect(page.getByText('NEXT_LOCALE preference: unset')).toBeVisible();
 
   await selectLocale(page, 'fr');
+  await expect(page).toHaveURL(/\/fr\/?$/);
+  await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
   await expect(page.getByText('Client locale: fr')).toBeVisible();
+  await expect(page.getByText('NEXT_LOCALE preference: fr')).toBeVisible();
+  await expectPagesLocaleCookie(page, 'fr');
   await expect(
     page.getByText('Une chaîne traduite avec useGT de gt-next.')
   ).toBeVisible();
   await page.reload();
-  await expect(page.getByText('Cookie locale (SSR): fr')).toBeVisible();
+  await expect(page).toHaveURL(/\/fr\/?$/);
+  await expect(page.getByText('NEXT_LOCALE preference: fr')).toBeVisible();
 
   await selectLocale(page, 'zh');
+  await expect(page).toHaveURL(/\/zh\/?$/);
+  await expect(page.locator('html')).toHaveAttribute('lang', 'zh');
   await expect(page.getByText('Client locale: zh')).toBeVisible();
+  await expectPagesLocaleCookie(page, 'zh');
   await expect(
     page.getByText('用 gt-next 的 useGT 翻译的字符串。')
   ).toBeVisible();
 
   await selectLocale(page, 'en');
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(page.getByText('Client locale: en')).toBeVisible();
+  await expectPagesLocaleCookie(page, 'en');
+}
+
+async function expectPagesLocaleCookie(page: Page, locale: string) {
+  const cookies = await page.context().cookies();
+  expect(cookies.find(({ name }) => name === 'NEXT_LOCALE')?.value).toBe(
+    locale
+  );
 }
 
 async function testTanStackApp(page: Page) {
