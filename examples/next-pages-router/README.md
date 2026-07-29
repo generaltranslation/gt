@@ -67,4 +67,3 @@ npm start
 ## Documentation
 
 - [Next.js Pages Router internationalization](https://nextjs.org/docs/pages/guides/internationalization)
-- [Pages Router migration guide](../../packages/next/PAGES_ROUTER_I18N_MIGRATION.md)
