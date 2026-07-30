@@ -508,6 +508,66 @@ describe('withGTConfig', () => {
       consoleWarnSpy.mockRestore();
     });
 
+    it('does not warn when the GT locale list omits its default locale', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {});
+      vi.mocked(fs.existsSync).mockImplementation(
+        (configPath) => configPath === './gt.config.json'
+      );
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        JSON.stringify({
+          defaultLocale: 'en',
+          locales: ['fr'],
+        })
+      );
+
+      withGTConfig({
+        i18n: {
+          defaultLocale: 'en',
+          locales: ['en', 'fr'],
+        },
+      });
+
+      expect(consoleWarnSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining(
+          'Next.js internationalized routing does not match the GT config file'
+        )
+      );
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('does not warn about locale duplicates removed by GT normalization', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {});
+      vi.mocked(fs.existsSync).mockImplementation(
+        (configPath) => configPath === './gt.config.json'
+      );
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        JSON.stringify({
+          defaultLocale: 'en',
+          locales: ['fr', 'fr'],
+        })
+      );
+
+      withGTConfig({
+        i18n: {
+          defaultLocale: 'en',
+          locales: ['en', 'fr'],
+        },
+      });
+
+      expect(consoleWarnSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining(
+          'Next.js internationalized routing does not match the GT config file'
+        )
+      );
+      consoleWarnSpy.mockRestore();
+    });
+
     it('does not compare locale fields without Next.js i18n', async () => {
       const withGTConfig = await getWithGTConfig();
       const consoleWarnSpy = vi

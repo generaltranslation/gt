@@ -117,7 +117,12 @@ function getNextI18nConfigMismatches(
 
   if (
     gtConfig.locales !== undefined &&
-    !haveSameLocales(gtConfig.locales, nextI18n.locales)
+    !haveSameLocales(
+      gtConfig.defaultLocale === undefined
+        ? gtConfig.locales
+        : [gtConfig.defaultLocale, ...gtConfig.locales],
+      nextI18n.locales
+    )
   ) {
     mismatches.push(
       `locales: GT has ${JSON.stringify(gtConfig.locales)}; Next.js has ${JSON.stringify(nextI18n.locales)}`
@@ -232,6 +237,8 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     console.error('Error reading GT config file:', error);
   }
 
+  // This warning intentionally compares Next.js i18n against explicit values
+  // from the GT config file. Inline props use the conflict and merge paths below.
   const nextI18nConfigMismatches = internalNextConfig.i18n
     ? getNextI18nConfigMismatches(loadedConfig, internalNextConfig.i18n)
     : [];
