@@ -1,5 +1,18 @@
 # gt-next
 
+## 11.1.4
+
+### Patch Changes
+
+- [#2005](https://github.com/generaltranslation/gt/pull/2005) [`6264532`](https://github.com/generaltranslation/gt/commit/62645327e27a6b55cf55c58201dd43a63bf31f53) Thanks [@eoinest](https://github.com/eoinest)! - Warn when locale settings in the GT config file differ from Next.js internationalized routing configuration.
+
+- Updated dependencies [[`bd961d1`](https://github.com/generaltranslation/gt/commit/bd961d1474547f7c6d470583c1b1190dce0112ca)]:
+  - generaltranslation@9.1.0
+  - @generaltranslation/compiler@1.3.35
+  - gt-i18n@1.0.10
+  - gt-react@11.1.4
+  - @generaltranslation/react-core@11.1.4
+
 ## 11.1.3
 
 ### Patch Changes
