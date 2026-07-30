@@ -139,6 +139,16 @@ export const standardizedLocalesWarning = (locales: string[]) =>
 export const standardizedCanonicalLocalesWarning = (locales: string[]) =>
   `gt-next: The following canonical locales were standardized: ${locales.join(', ')}. Use the standardized codes in your config to avoid this warning.`;
 
+export const createNextI18nConfigMismatchWarning = (details: string[]) =>
+  createGtNextPluginDiagnostic({
+    severity: 'Warning',
+    whatHappened:
+      'Next.js internationalized routing does not match the GT config file',
+    why: 'Next.js may select a locale that GT is not configured to translate',
+    fix: 'Use the same defaultLocale and locales values in both configurations',
+    details,
+  });
+
 export const createGTCompilerUnresolvedWarning = (type: 'babel' | 'swc') =>
   createGtNextPluginDiagnostic({
     whatHappened: `The GT ${type} compiler could not be resolved`,
