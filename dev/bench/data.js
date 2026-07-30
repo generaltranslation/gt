@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1785368389227,
+  "lastUpdate": 1785449641098,
   "repoUrl": "https://github.com/generaltranslation/gt",
   "entries": {
     "Middleware Benchmarks": [
@@ -7888,6 +7888,122 @@ window.BENCHMARK_DATA = {
             "value": 90.5,
             "unit": "ms",
             "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.3\"\n}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "05942b93a198456a69798de07d9ce9865edc6e98",
+          "message": "[ci] release (#2008)\n\nThis PR was opened by the [Changesets\nrelease](https://github.com/changesets/action) GitHub action. When\nyou're ready to do a release, you can merge this and the packages will\nbe published to npm automatically. If you're not ready to do a release\nyet, that's fine, whenever you add more changesets to main, this PR will\nbe updated.\n\n\n# Releases\n## gt@2.16.0\n\n### Minor Changes\n\n- [#1994](https://github.com/generaltranslation/gt/pull/1994)\n[`bd961d1`](https://github.com/generaltranslation/gt/commit/bd961d1474547f7c6d470583c1b1190dce0112ca)\nThanks [@logflash](https://github.com/logflash)! - Add Lottie file\nsupport and project font syncing.\n- Support `.lottie` files as a new `LOTTIE` file format. Lottie bundles\nare binary (zip), so their content is carried base64-encoded end-to-end\n— including existing translated `.lottie` targets on `gt upload` — and\nskips the UTF-8 encode/decode and text merge paths (new\n`isBinaryFileFormat` / `BINARY_FILE_FORMATS` exports). Lottie\ntranslations are processed asynchronously and require the `gt stage` +\n`gt download` flow, so `gt translate` now exits with an error pointing\nusers there when a project has Lottie files and staging isn't enabled.\n(As before, enabling staging makes `gt translate` download staged\nresults rather than translating inline.)\n- Reject `.lottie` files that use After Effects expressions (executable\ncode): the upload fails and names every offending file, since\nexpression-driven text can't be translated safely.\n- Add `GT.uploadFonts` and a `fonts` config option (include/exclude\nglobs) so project fonts are synced to the API before translating formats\nthat need them (including during `gt stage`, so async Lottie jobs get\nthe real fonts). Globs resolve from the project root. Font sync is\nidempotent and non-fatal on failure.\n- Keep staged lock entries staged until every configured locale has\ndownloaded, and only require `_versionId` for `gt download` when an\ninline GTJSON template is part of the download and config IDs aren't\nomitted (staged downloads resolve versions from `gt-lock.json`,\nfile-only projects never have a `_versionId`, and `omitConfigIds`\nprojects use the GTJSON's own content-derived version).\n\n### Patch Changes\n\n- Updated dependencies\n[[`bd961d1`](https://github.com/generaltranslation/gt/commit/bd961d1474547f7c6d470583c1b1190dce0112ca)]:\n  - generaltranslation@9.1.0\n  - @generaltranslation/python-extractor@0.2.33\n  - @generaltranslation/supported-locales@2.1.13\n## generaltranslation@9.1.0\n\n### Minor Changes\n\n- [#1994](https://github.com/generaltranslation/gt/pull/1994)\n[`bd961d1`](https://github.com/generaltranslation/gt/commit/bd961d1474547f7c6d470583c1b1190dce0112ca)\nThanks [@logflash](https://github.com/logflash)! - Add Lottie file\nsupport and project font syncing.\n- Support `.lottie` files as a new `LOTTIE` file format. Lottie bundles\nare binary (zip), so their content is carried base64-encoded end-to-end\n— including existing translated `.lottie` targets on `gt upload` — and\nskips the UTF-8 encode/decode and text merge paths (new\n`isBinaryFileFormat` / `BINARY_FILE_FORMATS` exports). Lottie\ntranslations are processed asynchronously and require the `gt stage` +\n`gt download` flow, so `gt translate` now exits with an error pointing\nusers there when a project has Lottie files and staging isn't enabled.\n(As before, enabling staging makes `gt translate` download staged\nresults rather than translating inline.)\n- Reject `.lottie` files that use After Effects expressions (executable\ncode): the upload fails and names every offending file, since\nexpression-driven text can't be translated safely.\n- Add `GT.uploadFonts` and a `fonts` config option (include/exclude\nglobs) so project fonts are synced to the API before translating formats\nthat need them (including during `gt stage`, so async Lottie jobs get\nthe real fonts). Globs resolve from the project root. Font sync is\nidempotent and non-fatal on failure.\n- Keep staged lock entries staged until every configured locale has\ndownloaded, and only require `_versionId` for `gt download` when an\ninline GTJSON template is part of the download and config IDs aren't\nomitted (staged downloads resolve versions from `gt-lock.json`,\nfile-only projects never have a `_versionId`, and `omitConfigIds`\nprojects use the GTJSON's own content-derived version).\n## @generaltranslation/compiler@1.3.35\n\n### Patch Changes\n\n- Updated dependencies\n[[`bd961d1`](https://github.com/generaltranslation/gt/commit/bd961d1474547f7c6d470583c1b1190dce0112ca)]:\n  - generaltranslation@9.1.0\n## gtx-cli@2.16.0\n\n### Patch Changes\n\n- Updated dependencies\n[[`bd961d1`](https://github.com/generaltranslation/gt/commit/bd961d1474547f7c6d470583c1b1190dce0112ca)]:\n  - gt@2.16.0\n## gt-i18n@1.0.10\n\n### Patch Changes\n\n- Updated dependencies\n[[`bd961d1`](https://github.com/generaltranslation/gt/commit/bd961d1474547f7c6d470583c1b1190dce0112ca)]:\n  - generaltranslation@9.1.0\n## locadex@1.0.203\n\n### Patch Changes\n\n- Updated dependencies\n[[`bd961d1`](https://github.com/generaltranslation/gt/commit/bd961d1474547f7c6d470583c1b1190dce0112ca)]:\n  - gt@2.16.0\n## gt-next@11.1.4\n\n### Patch Changes\n\n- [#2005](https://github.com/generaltranslation/gt/pull/2005)\n[`6264532`](https://github.com/generaltranslation/gt/commit/62645327e27a6b55cf55c58201dd43a63bf31f53)\nThanks [@eoinest](https://github.com/eoinest)! - Warn when locale\nsettings in the GT config file differ from Next.js internationalized\nrouting configuration.\n\n- Updated dependencies\n[[`bd961d1`](https://github.com/generaltranslation/gt/commit/bd961d1474547f7c6d470583c1b1190dce0112ca)]:\n  - generaltranslation@9.1.0\n  - @generaltranslation/compiler@1.3.35\n  - gt-i18n@1.0.10\n  - gt-react@11.1.4\n  - @generaltranslation/react-core@11.1.4\n## gt-node@1.0.11\n\n### Patch Changes\n\n- Updated dependencies\n[[`bd961d1`](https://github.com/generaltranslation/gt/commit/bd961d1474547f7c6d470583c1b1190dce0112ca)]:\n  - generaltranslation@9.1.0\n  - gt-i18n@1.0.10\n## @generaltranslation/python-extractor@0.2.33\n\n### Patch Changes\n\n- Updated dependencies\n[[`bd961d1`](https://github.com/generaltranslation/gt/commit/bd961d1474547f7c6d470583c1b1190dce0112ca)]:\n  - generaltranslation@9.1.0\n## gt-react@11.1.4\n\n### Patch Changes\n\n- Updated dependencies\n[[`bd961d1`](https://github.com/generaltranslation/gt/commit/bd961d1474547f7c6d470583c1b1190dce0112ca)]:\n  - generaltranslation@9.1.0\n  - gt-i18n@1.0.10\n  - @generaltranslation/react-core@11.1.4\n## @generaltranslation/react-core@11.1.4\n\n### Patch Changes\n\n- Updated dependencies\n[[`bd961d1`](https://github.com/generaltranslation/gt/commit/bd961d1474547f7c6d470583c1b1190dce0112ca)]:\n  - generaltranslation@9.1.0\n  - gt-i18n@1.0.10\n## gt-react-native@11.1.4\n\n### Patch Changes\n\n- Updated dependencies\n[[`bd961d1`](https://github.com/generaltranslation/gt/commit/bd961d1474547f7c6d470583c1b1190dce0112ca)]:\n  - generaltranslation@9.1.0\n  - gt-i18n@1.0.10\n  - @generaltranslation/react-core@11.1.4\n  - @generaltranslation/supported-locales@2.1.13\n## gt-sanity@3.1.2\n\n### Patch Changes\n\n- Updated dependencies\n[[`bd961d1`](https://github.com/generaltranslation/gt/commit/bd961d1474547f7c6d470583c1b1190dce0112ca)]:\n  - generaltranslation@9.1.0\n## @generaltranslation/supported-locales@2.1.13\n\n### Patch Changes\n\n- Updated dependencies\n[[`bd961d1`](https://github.com/generaltranslation/gt/commit/bd961d1474547f7c6d470583c1b1190dce0112ca)]:\n  - generaltranslation@9.1.0\n## gt-tanstack-start@11.1.4\n\n### Patch Changes\n\n- Updated dependencies\n[[`bd961d1`](https://github.com/generaltranslation/gt/commit/bd961d1474547f7c6d470583c1b1190dce0112ca)]:\n  - generaltranslation@9.1.0\n  - gt-i18n@1.0.10\n  - gt-react@11.1.4\n  - @generaltranslation/react-core@11.1.4\n\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+          "timestamp": "2026-07-30T22:06:10Z",
+          "url": "https://github.com/generaltranslation/gt/commit/05942b93a198456a69798de07d9ce9865edc6e98"
+        },
+        "date": 1785449640525,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "gt-next > unit > middleware: factory creation latency > createNextMiddleware() (mean)",
+            "value": 0.046358081216391046,
+            "range": "±0.0244",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.4\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > default locale request (/) (mean)",
+            "value": 0.24122770236372182,
+            "range": "±0.0805",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.4\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > non-default locale request (/fr) (mean)",
+            "value": 0.4143471971830972,
+            "range": "±0.075",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.4\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > nested route (/fr/about) (mean)",
+            "value": 0.416220902662233,
+            "range": "±0.0815",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.4\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > ttfb",
+            "value": 128.79999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.4\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > domContentLoaded",
+            "value": 140.70000000001164,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.4\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > load",
+            "value": 208.29999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.4\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > elapsed",
+            "value": 100,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.4\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > ttfb",
+            "value": 19,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.4\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > domContentLoaded",
+            "value": 28.899999999965075,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.4\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > load",
+            "value": 92.29999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.4\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: locale-switch-en-to-fr > elapsed",
+            "value": 605,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.4\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > ttfb",
+            "value": 11.899999999965075,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.4\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > domContentLoaded",
+            "value": 28.099999999976717,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.4\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > load",
+            "value": 121.79999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.4\"\n}"
           }
         ]
       }
