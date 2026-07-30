@@ -14,7 +14,25 @@ export type FileFormat =
   | 'JS'
   | 'HTML'
   | 'TXT'
-  | 'TWILIO_CONTENT_JSON';
+  | 'TWILIO_CONTENT_JSON'
+  | 'LOTTIE';
+
+/**
+ * File formats whose content is binary (e.g. zip bundles) rather than text.
+ * Their content travels through the pipeline already base64-encoded, so the
+ * usual UTF-8 encode/decode steps must be skipped to avoid corrupting bytes.
+ */
+export const BINARY_FILE_FORMATS: ReadonlySet<FileFormat> = new Set<FileFormat>(
+  ['LOTTIE']
+);
+
+/**
+ * Whether a file format's content is binary (carried as base64 end-to-end)
+ * rather than a UTF-8 text string.
+ */
+export function isBinaryFileFormat(fileFormat: FileFormat): boolean {
+  return BINARY_FILE_FORMATS.has(fileFormat);
+}
 
 /**
  * Metadata for files or entries.

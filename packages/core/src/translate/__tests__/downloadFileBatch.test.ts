@@ -169,6 +169,38 @@ describe.sequential('_downloadFileBatch', () => {
     expect(result.batchCount).toBe(1);
   });
 
+  it('should keep binary (LOTTIE) content base64-encoded (no decode)', async () => {
+    // Binary bytes that are NOT valid UTF-8; decoding would corrupt them.
+    const zipBytes = Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x00, 0xff, 0x10]);
+    const base64Data = zipBytes.toString('base64');
+    vi.mocked(apiRequest).mockResolvedValue({
+      files: [
+        {
+          id: 'translation-lottie',
+          branchId: 'branch-1',
+          fileId: 'file-lottie',
+          versionId: 'version-lottie',
+          locale: 'es',
+          fileFormat: 'LOTTIE',
+          fileName: 'animation.lottie',
+          data: base64Data,
+          metadata: {},
+        },
+      ],
+      count: 1,
+    });
+
+    const result = await _downloadFileBatch(
+      [{ fileId: 'file-lottie', locale: 'es' }],
+      {},
+      mockConfig
+    );
+
+    // data stays base64 (verbatim), so the writer can recover the exact bytes.
+    expect(result.data[0].data).toBe(base64Data);
+    expect(Buffer.from(result.data[0].data, 'base64')).toEqual(zipBytes);
+  });
+
   it('should use default timeout when not specified', async () => {
     vi.mocked(apiRequest).mockResolvedValue(mockDownloadFileBatchResultBase64);
 

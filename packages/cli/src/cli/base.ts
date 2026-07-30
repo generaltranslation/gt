@@ -16,6 +16,7 @@ import {
   promptGlobPatterns,
 } from '../console/logging.js';
 import { logger } from '../console/logger.js';
+import { lottieTranslateError } from '../console/index.js';
 import { parseGlobPatterns } from '../console/promptParsing.js';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -451,6 +452,13 @@ export class BaseCLI {
     await processSharedStaticAssets(settings);
 
     if (!settings.stageTranslations) {
+      // Lottie translations finish asynchronously server-side (layout
+      // refinement runs after the translation job completes), so the immediate
+      // translate flow would try to download them before they're ready. Only
+      // the stage + download flow supports them.
+      if (settings.files?.resolvedPaths.lottie?.length) {
+        return logErrorAndExit(lottieTranslateError);
+      }
       const results = await handleStage(
         initOptions,
         settings,

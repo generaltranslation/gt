@@ -2,6 +2,7 @@ import { TranslationRequestConfig } from '../types';
 import { apiRequest } from './utils/apiRequest';
 import { encode } from '../utils/base64';
 import { processBatches } from './utils/batch';
+import { isBinaryFileFormat } from '../types-dir/api/file';
 
 import {
   FileUpload,
@@ -28,7 +29,9 @@ export async function _uploadSourceFiles(
       const body = {
         data: batch.map(({ source }) => ({
           source: {
-            content: encode(source.content),
+            content: isBinaryFileFormat(source.fileFormat)
+              ? source.content
+              : encode(source.content),
             fileName: source.fileName,
             fileFormat: source.fileFormat,
             locale: source.locale,

@@ -6,6 +6,7 @@ import {
 } from '../types-dir/api/downloadFileBatch';
 import { apiRequest } from './utils/apiRequest';
 import { decode } from '../utils/base64';
+import { isBinaryFileFormat } from '../types-dir/api/file';
 import { processBatches } from './utils/batch';
 
 /**
@@ -30,10 +31,13 @@ export async function _downloadFileBatch(
         { body: batch, timeout: options.timeout }
       );
 
-      // convert from base64 to string
+      // convert from base64 to string, except binary formats (e.g. LOTTIE zip
+      // bundles) which stay base64 so their bytes survive to the writer.
       const files = result.files.map((file) => ({
         ...file,
-        data: decode(file.data),
+        data: isBinaryFileFormat(file.fileFormat)
+          ? file.data
+          : decode(file.data),
       }));
 
       return files;

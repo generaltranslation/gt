@@ -8,6 +8,7 @@ import {
   RequiredUploadFilesOptions,
 } from '../types-dir/api/uploadFiles';
 import { encode } from '../utils/base64';
+import { isBinaryFileFormat } from '../types-dir/api/file';
 import { validateFileFormatTransforms } from './utils/validateFileFormatTransform';
 
 /**
@@ -34,7 +35,9 @@ export async function _uploadTranslations(
       const body = {
         data: batch.map(({ source, translations }) => ({
           source: {
-            content: encode(source.content),
+            content: isBinaryFileFormat(source.fileFormat)
+              ? source.content
+              : encode(source.content),
             fileName: source.fileName,
             fileFormat: source.fileFormat,
             transformFormat: source.transformFormat,
@@ -46,7 +49,9 @@ export async function _uploadTranslations(
             branchId: source.branchId,
           },
           translations: translations.map((t) => ({
-            content: encode(t.content),
+            content: isBinaryFileFormat(t.fileFormat)
+              ? t.content
+              : encode(t.content),
             fileName: t.fileName,
             fileFormat: t.fileFormat,
             locale: t.locale,

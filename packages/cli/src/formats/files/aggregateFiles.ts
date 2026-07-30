@@ -1,6 +1,13 @@
 import { logger } from '../../console/logger.js';
+import { logErrorAndExit } from '../../console/logging.js';
+import { lottieExpressionsError } from '../../console/index.js';
 import { recordWarning } from '../../state/translateWarnings.js';
-import { getRelative, readFile } from '../../fs/findFilepath.js';
+import { lottieHasExpressions } from './detectLottieExpressions.js';
+import {
+  getRelative,
+  readFile,
+  readBinaryFileBase64,
+} from '../../fs/findFilepath.js';
 import { Settings } from '../../types/index.js';
 import type { FileFormat, DataFormat, FileToUpload } from '../../types/data.js';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
@@ -346,11 +353,54 @@ export async function aggregateFiles(
     files.push(...twilioContentJsonFiles.filter((file) => file !== null));
   }
 
+  // Process Lottie files (binary zip bundles). Content is read as raw bytes and
+  // carried base64-encoded end-to-end; the downloaded translation is written
+  // back as bytes. No text parsing/merge.
+  if (filePaths.lottie) {
+    // Lottie files carrying After Effects expressions (executable JS) are
+    // rejected outright — collect every offender, then fail once with all of
+    // them named rather than aborting on the first.
+    const expressionOffenders: string[] = [];
+    const lottieFiles = filePaths.lottie
+      .map((filePath) => {
+        const content = readBinaryFileBase64(filePath);
+        const relativePath = getRelative(filePath);
+        if (!content) {
+          logger.warn(`Skipping ${relativePath}: file is empty or unreadable`);
+          recordWarning(
+            'skipped_file',
+            relativePath,
+            'File is empty or unreadable'
+          );
+          return null;
+        }
+        if (lottieHasExpressions(content)) {
+          expressionOffenders.push(relativePath);
+          return null;
+        }
+        return {
+          content,
+          fileName: relativePath,
+          fileFormat: 'LOTTIE' as const,
+          ...getTransformFormatProperty(settings, 'lottie'),
+          fileId: hashStringSync(relativePath),
+          versionId: hashStringSync(content),
+          locale: settings.defaultLocale,
+        } satisfies FileToUpload;
+      })
+      .filter((file) => file !== null);
+    if (expressionOffenders.length > 0) {
+      logErrorAndExit(lottieExpressionsError(expressionOffenders));
+    }
+    files.push(...lottieFiles);
+  }
+
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
     if (
       fileType === 'json' ||
       fileType === 'yaml' ||
-      fileType === 'twilioContentJson'
+      fileType === 'twilioContentJson' ||
+      fileType === 'lottie'
     )
       continue;
     if (filePaths[fileType]) {

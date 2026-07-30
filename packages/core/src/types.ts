@@ -59,6 +59,7 @@ export type {
 export type { DownloadedFile } from './types-dir/api/downloadFileBatch';
 export type { DownloadFileOptions } from './types-dir/api/downloadFile';
 export type { FileFormat } from './types-dir/api/file';
+export { isBinaryFileFormat, BINARY_FILE_FORMATS } from './types-dir/api/file';
 export type { TranslateManyResult } from './types-dir/api/translateMany';
 export type {
   TranslationResult,

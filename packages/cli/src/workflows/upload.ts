@@ -4,6 +4,7 @@ import { logger } from '../console/logger.js';
 import { logErrorAndExit } from '../console/logging.js';
 import { Settings } from '../types/index.js';
 import { gt } from '../utils/gt.js';
+import { syncFonts } from './utils/syncFonts.js';
 import { BranchStep } from './steps/BranchStep.js';
 import { UploadSourcesStep } from './steps/UploadSourcesStep.js';
 import { UploadTranslationsStep } from './steps/UploadTranslationsStep.js';
@@ -37,6 +38,10 @@ export async function runUploadFilesWorkflow({
           )
           .join('\n')
     );
+
+    // Sync fonts first (locale-invariant) so they're available when
+    // translating formats that need them.
+    await syncFonts(options);
 
     // Create workflow steps
     const branchStep = new BranchStep(gt, options);
