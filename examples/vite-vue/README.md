@@ -22,6 +22,9 @@ pnpm install
 pnpm --filter vite-vue dev
 ```
 
+The `predev` script builds `gt-vue` and its linked workspace dependencies before
+Vite starts, so the example also works from a fresh monorepo checkout.
+
 Switch between English and French in the app. The French JSON catalog is loaded
 asynchronously on first use and then cached by `gt-vue`.
 
