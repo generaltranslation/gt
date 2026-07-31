@@ -1,6 +1,8 @@
 import type { JsxChildren } from 'generaltranslation/types';
 import { hashSource } from 'generaltranslation/id';
 import {
+  Fragment,
+  createCommentVNode,
   createRenderer,
   createSSRApp,
   defineComponent,
@@ -79,7 +81,9 @@ describe('gt-vue runtime', () => {
 
   it('keeps msg and useMessages context-only and never interpolates', async () => {
     const contextual = msg('Literal {name}: 你好', { $context: 'example' });
-    const messages = msg(['First', 'Second'], { $context: 'list' });
+    const messages: string[] = msg(['First', 'Second'] as const, {
+      $context: 'list',
+    });
     const plugin = createGT({
       loadTranslations: async () => ({
         [stringHash('Literal {name}: 你好', 'example')]:
@@ -152,6 +156,33 @@ describe('gt-vue runtime', () => {
     await nextTick();
     expect(textContent(mounted.root)).toBe('Bonjour, Grace !');
     mounted.app.unmount();
+  });
+
+  it('coalesces text around comments and fragments for stable rich hashes', async () => {
+    const source = 'Hello world';
+    const plugin = createGT({
+      loadTranslations: async () => ({
+        [jsxHash(source)]: 'Bonjour le monde',
+      }),
+    });
+    await plugin.setLocale('fr');
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(T, null, {
+            default: () =>
+              h(Fragment, null, [
+                'Hello',
+                createCommentVNode('translator note'),
+                ' world',
+              ]),
+          });
+      },
+    });
+
+    expect(
+      stripFragmentMarkers(await renderWithPlugin(Root, plugin))
+    ).toContain('Bonjour le monde');
   });
 
   it('numbers variables independently within every plural and branch slot', async () => {
@@ -259,6 +290,50 @@ describe('gt-vue runtime', () => {
     ).toContain('un article / bonjour Ada');
   });
 
+  it('ignores Vue-reserved VNode props when hashing rich branches', async () => {
+    const source: JsxChildren = {
+      t: 'Branch',
+      i: 1,
+      d: { b: { formal: 'Hello' }, t: 'b' },
+      c: 'Fallback',
+    };
+    const target: JsxChildren = {
+      t: 'Branch',
+      i: 1,
+      d: { b: { formal: 'Bonjour' }, t: 'b' },
+      c: 'Repli',
+    };
+    const plugin = createGT({
+      loadTranslations: async () => ({ [jsxHash(source)]: target }),
+    });
+    await plugin.setLocale('fr');
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(T, null, {
+            default: () =>
+              h(
+                Branch,
+                {
+                  branch: 'formal',
+                  key: 'stable',
+                  onVnodeMounted: () => undefined,
+                  ref: () => undefined,
+                  ref_for: true,
+                  ref_key: 'greeting',
+                },
+                {
+                  default: () => 'Fallback',
+                  formal: () => 'Hello',
+                }
+              ),
+          });
+      },
+    });
+
+    expect(await renderWithPlugin(Root, plugin)).toContain('Bonjour');
+  });
+
   it('formats slot children and renders standalone branch components', async () => {
     const plugin = createGT();
     const Root = defineComponent({
@@ -299,6 +374,41 @@ describe('gt-vue runtime', () => {
     const html = await renderWithPlugin(Root, plugin);
 
     expect(html).toContain('1,234.5|$12.00|2024|items|Welcome');
+  });
+
+  it('falls back safely for inherited object-property branch names', async () => {
+    const plugin = createGT();
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h('div', [
+            h(
+              Branch,
+              { branch: 'toString' },
+              { default: () => 'Standalone fallback' }
+            ),
+            '|',
+            h(
+              Branch,
+              { branch: 'missing', missing: undefined },
+              { default: () => 'Undefined fallback' }
+            ),
+            '|',
+            h(T, null, {
+              default: () =>
+                h(
+                  Branch,
+                  { branch: 'constructor' },
+                  { default: () => 'Rich fallback' }
+                ),
+            }),
+          ]);
+      },
+    });
+
+    expect(
+      stripFragmentMarkers(await renderWithPlugin(Root, plugin))
+    ).toContain('Standalone fallback|Undefined fallback|Rich fallback');
   });
 
   it('preserves Vue directives while replacing rich children', async () => {

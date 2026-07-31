@@ -90,7 +90,9 @@ function visitChildren(
   index: { value: number }
 ): SourceNode[] {
   if (Array.isArray(children)) {
-    return children.flatMap((child) => visitChildren(child, index));
+    return mergeAdjacentStrings(
+      children.flatMap((child) => visitChildren(child, index))
+    );
   }
   if (children == null || typeof children === 'boolean') return [];
   if (!isVNode(children)) return [String(children)];
@@ -164,7 +166,7 @@ function getBranches(
   transformation: 'branch' | 'plural',
   branchElementId: number
 ): Record<string, SourceNode[]> {
-  const inputs: Record<string, unknown> = {};
+  const inputs = Object.create(null) as Record<string, unknown>;
   if (isSlots(vnode.children)) {
     for (const [key, slot] of Object.entries(vnode.children)) {
       if (
@@ -181,8 +183,15 @@ function getBranches(
       key !== 'branch' &&
       key !== 'n' &&
       key !== 'locales' &&
+      key !== 'key' &&
+      key !== 'ref' &&
+      key !== 'ref_for' &&
+      key !== 'ref_key' &&
+      key !== 'ref-for' &&
+      key !== 'ref-key' &&
+      !key.startsWith('onVnode') &&
       !key.startsWith('data-') &&
-      !(key in inputs)
+      !Object.hasOwn(inputs, key)
     ) {
       inputs[key] = value;
     }
@@ -386,7 +395,7 @@ function getSelectedSourceBranch(
   source: SourceElement,
   branch?: string
 ): SourceNode[] {
-  return branch && source.branches[branch] !== undefined
+  return branch && Object.hasOwn(source.branches, branch)
     ? source.branches[branch]
     : source.children;
 }
@@ -395,9 +404,22 @@ function getSelectedTargetBranch(
   target: JsxElement,
   branch?: string
 ): JsxChildren | undefined {
-  return branch && target.d?.b?.[branch] !== undefined
+  return branch && target.d?.b && Object.hasOwn(target.d.b, branch)
     ? target.d.b[branch]
     : target.c;
+}
+
+function mergeAdjacentStrings(nodes: SourceNode[]): SourceNode[] {
+  const result: SourceNode[] = [];
+  for (const node of nodes) {
+    const previous = result.at(-1);
+    if (typeof previous === 'string' && typeof node === 'string') {
+      result[result.length - 1] = previous + node;
+    } else {
+      result.push(node);
+    }
+  }
+  return result;
 }
 
 function getTranslatedProps(target: JsxElement): Record<string, string> {

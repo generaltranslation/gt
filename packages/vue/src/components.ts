@@ -6,6 +6,7 @@ import {
   defineComponent,
   isVNode,
   type Component,
+  type DefineComponent,
   type PropType,
   type Slots,
   type VNodeChild,
@@ -13,16 +14,46 @@ import {
 import { translateVueChildren } from './rich';
 import { useGTState } from './state';
 
-type GTComponent<T extends Component> = T & { _gtt: string };
+type GTComponent<Props = {}> = DefineComponent<Props> & { _gtt: string };
 
-function withGTMetadata<T extends Component>(
-  component: T,
+type TProps = {
+  /** @internal Compile-time hash inserted by GT tooling. */
+  _hash?: string;
+  $context?: string;
+  context?: string;
+};
+
+type NumberFormatProps = {
+  locales?: string[];
+  options?: Intl.NumberFormatOptions;
+};
+
+type DateTimeProps = {
+  locales?: string[];
+  options?: Intl.DateTimeFormatOptions;
+};
+
+type CurrencyProps = NumberFormatProps & {
+  currency?: string;
+};
+
+type PluralProps = {
+  locales?: string[];
+  n: number;
+};
+
+type BranchProps = {
+  branch?: string | number | boolean;
+};
+
+function withGTMetadata<Props = {}>(
+  component: Component,
   metadata: string
-): GTComponent<T> {
-  return Object.assign(component, { _gtt: metadata });
+): GTComponent<Props> {
+  return Object.assign(component, { _gtt: metadata }) as GTComponent<Props>;
 }
 
-export const T = withGTMetadata(
+export const T = withGTMetadata<TProps>(
   defineComponent({
     inheritAttrs: false,
     name: 'T',
@@ -55,7 +86,7 @@ export const Var = withGTMetadata(
   'variable-variable'
 );
 
-export const Num = withGTMetadata(
+export const Num = withGTMetadata<NumberFormatProps>(
   defineComponent({
     name: 'Num',
     props: {
@@ -80,7 +111,7 @@ export const Num = withGTMetadata(
   'variable-number'
 );
 
-export const DateTime = withGTMetadata(
+export const DateTime = withGTMetadata<DateTimeProps>(
   defineComponent({
     name: 'DateTime',
     props: {
@@ -106,7 +137,7 @@ export const DateTime = withGTMetadata(
   'variable-datetime'
 );
 
-export const Currency = withGTMetadata(
+export const Currency = withGTMetadata<CurrencyProps>(
   defineComponent({
     name: 'Currency',
     props: {
@@ -139,7 +170,7 @@ export const Currency = withGTMetadata(
   'variable-currency'
 );
 
-export const Plural = withGTMetadata(
+export const Plural = withGTMetadata<PluralProps>(
   defineComponent({
     inheritAttrs: false,
     name: 'Plural',
@@ -168,7 +199,7 @@ export const Plural = withGTMetadata(
   'plural'
 );
 
-export const Branch = withGTMetadata(
+export const Branch = withGTMetadata<BranchProps>(
   defineComponent({
     inheritAttrs: false,
     name: 'Branch',
@@ -228,7 +259,15 @@ function getBranchContent(
   attrs: Record<string, unknown>,
   slots: Slots
 ) {
-  if (branch && slots[branch]) return slots[branch]?.();
-  if (branch && attrs[branch] !== undefined) return String(attrs[branch]);
+  if (
+    branch &&
+    Object.hasOwn(slots, branch) &&
+    typeof slots[branch] === 'function'
+  ) {
+    return slots[branch]();
+  }
+  if (branch && Object.hasOwn(attrs, branch) && attrs[branch] !== undefined) {
+    return String(attrs[branch]);
+  }
   return slots.default?.() ?? null;
 }

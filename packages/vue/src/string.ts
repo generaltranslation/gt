@@ -61,16 +61,16 @@ export function useMessages(): MessagesFunction {
   }) as MessagesFunction;
 }
 
-export function msg<T extends string | string[]>(message: T): T;
-export function msg<T extends string | string[]>(
+export function msg<T extends string | readonly string[]>(message: T): T;
+export function msg<T extends string | readonly string[]>(
   message: T,
   options?: GTStringOptions
-): T;
+): T extends string ? string : string[];
 export function msg(
-  message: string | string[],
+  message: string | readonly string[],
   options?: GTStringOptions
-): string | string[] {
-  if (Array.isArray(message)) {
+): string | readonly string[] {
+  if (typeof message !== 'string') {
     return message.map((entry) => msg(entry, options));
   }
   if (!options) return message;
