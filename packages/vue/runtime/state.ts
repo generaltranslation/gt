@@ -8,10 +8,38 @@ import type {
   GTPlugin,
   GTState,
   TranslationCatalog,
-} from './types';
+} from '../types';
 
 const gtContextKey: InjectionKey<GTState> = Symbol('gt-vue');
 
+/**
+ * Creates an isolated gt-vue plugin with reactive locale state and a
+ * per-locale translation cache.
+ *
+ * Successful catalog loads are cached for the lifetime of this plugin, and
+ * concurrent requests for the same locale share one promise. The plugin
+ * loads an uncached locale before switching reactive consumers to it; when
+ * locale requests overlap, only the latest request is applied.
+ *
+ * Client applications can render source content while the initial catalog is
+ * loading. For SSR, create one plugin per request and await
+ * `loadTranslations(locale)` or `setLocale(locale)` before rendering.
+ *
+ * @param options - Initial locale, fallback locale, and async catalog loader.
+ * @returns A Vue plugin for `app.use()` plus imperative preload and locale
+ * controls.
+ *
+ * @example
+ * ```ts
+ * const gt = createGT({
+ *   defaultLocale: 'en',
+ *   loadTranslations: async (locale) =>
+ *     (await import(`./_gt/${locale}.json`)).default,
+ * });
+ *
+ * createApp(App).use(gt).mount('#app');
+ * ```
+ */
 export function createGT({
   defaultLocale = libraryDefaultLocale,
   loadTranslations,
@@ -76,6 +104,7 @@ export function createGT({
   };
 }
 
+/** @internal Returns the GT state provided to the current Vue component. */
 export function useGTState(): GTState {
   const state = inject(gtContextKey);
   if (state) return state;

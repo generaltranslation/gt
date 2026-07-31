@@ -26,8 +26,8 @@ import {
   useGT,
   useLocale,
   useMessages,
-} from '../index';
-import type { TranslationCatalog } from '../types';
+} from '../src';
+import type { TranslationCatalog } from '../src';
 
 describe('gt-vue runtime', () => {
   it('loads and caches plain STRING translations, then rerenders on locale changes', async () => {
