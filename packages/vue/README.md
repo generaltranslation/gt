@@ -15,6 +15,10 @@
 
 A lightweight General Translation runtime for Vue 3.
 
+> [!WARNING]
+> `gt-vue` is currently unstable. Its API and behavior may change between
+> releases while the package is under active development.
+
 ## Installation
 
 ```bash
