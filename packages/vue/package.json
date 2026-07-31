@@ -37,6 +37,7 @@
   "homepage": "https://generaltranslation.com/",
   "devDependencies": {
     "@types/node": "catalog:",
+    "gt-i18n": "workspace:*",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",

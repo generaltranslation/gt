@@ -86,6 +86,16 @@
         "default": "./dist/internal.mjs"
       }
     },
+    "./internal/string": {
+      "require": {
+        "types": "./dist/internal-string.d.cts",
+        "default": "./dist/internal-string.cjs"
+      },
+      "import": {
+        "types": "./dist/internal-string.d.mts",
+        "default": "./dist/internal-string.mjs"
+      }
+    },
     "./internal/types": {
       "require": {
         "types": "./dist/internal-types.d.cts",
@@ -104,6 +114,9 @@
       ],
       "internal": [
         "./dist/internal.d.cts"
+      ],
+      "internal/string": [
+        "./dist/internal-string.d.cts"
       ],
       "internal/types": [
         "./dist/internal-types.d.cts"

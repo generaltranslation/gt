@@ -1,5 +1,8 @@
 import {
-  decodeMessageOptions,
+  decodeOptions,
+  isEncodedTranslationOptions,
+} from 'gt-i18n/internal/string';
+import {
   translateString,
   type InternalStringOptions,
 } from '../messages/translation';
@@ -43,12 +46,8 @@ export function useMessages(): MessagesFunction {
   ): T extends string ? string : T => {
     if (message == null) return message as T extends string ? string : T;
 
-    const decoded = decodeMessageOptions(message);
-    if (
-      decoded &&
-      typeof decoded.$_source === 'string' &&
-      typeof decoded.$_hash === 'string'
-    ) {
+    const decoded = decodeOptions(message);
+    if (decoded && isEncodedTranslationOptions(decoded)) {
       return translateString(state, decoded.$_source, {
         $context: decoded.$context,
         $_hash: decoded.$_hash,
