@@ -634,12 +634,20 @@ function readBranches(
     if (property.type === NodeTypes.DIRECTIVE && property.name === 'slot') {
       continue;
     }
+    if (property.type === NodeTypes.DIRECTIVE && property.name !== 'bind') {
+      const directive = property.rawName ?? `v-${property.name}`;
+      addVueError(
+        context,
+        property.loc,
+        `Found unsupported directive ${directive} on a gt-vue <${component}> component`,
+        `Move ${directive} to an element outside <${component}>`
+      );
+      continue;
+    }
     const key =
       property.type === NodeTypes.ATTRIBUTE
         ? property.name
-        : property.name === 'bind'
-          ? readDirectiveKey(property)
-          : undefined;
+        : readDirectiveKey(property);
     if (
       !key ||
       RESERVED_BRANCH_PROPS.has(key) ||
@@ -648,15 +656,6 @@ function readBranches(
       key in branches ||
       (component === 'Plural' && !isAcceptedPluralForm(key))
     ) {
-      continue;
-    }
-    if (property.type === NodeTypes.DIRECTIVE && property.name !== 'bind') {
-      addVueError(
-        context,
-        property.loc,
-        `Found dynamic branch prop "${key}" on a gt-vue <${component}> component`,
-        'Use a static branch prop or a named slot'
-      );
       continue;
     }
     const value = readPropertyValue(property, expressionPlugins);
