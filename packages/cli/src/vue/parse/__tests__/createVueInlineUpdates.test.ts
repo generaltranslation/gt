@@ -237,6 +237,7 @@ describe('createVueInlineUpdates', () => {
 
     expect(errors).toContain('unsupported directive @click');
     expect(errors).toContain('unsupported directive v-model');
+    expect(errors).toContain('unsupported directive :foo-bar.camel');
   });
 
   it('keeps component tags separate from v-for and v-slot bindings', async () => {
