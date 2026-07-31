@@ -5,6 +5,7 @@
   "packageManager": "pnpm@10.20.0",
   "type": "module",
   "scripts": {
+    "predev": "pnpm --filter gt-vue... build",
     "dev": "vite",
     "generate": "gt generate && oxfmt src/_gt/*.json",
     "validate": "gt validate",
