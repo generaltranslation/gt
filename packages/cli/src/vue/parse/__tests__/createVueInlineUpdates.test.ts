@@ -207,6 +207,7 @@ describe('createVueInlineUpdates', () => {
     expect(result.errors).toEqual([]);
     expect(result.updates.map((update) => update.source)).toEqual([
       'Composition API',
+      'Setup component',
       'Setup string',
       'Setup message',
       'Setup msg',
