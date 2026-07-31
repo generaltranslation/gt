@@ -282,6 +282,16 @@ function readTContext(
     }
 
     if (property.name !== 'bind') continue;
+    if (property.modifiers.length > 0) {
+      const directive = property.rawName ?? 'v-bind';
+      addVueError(
+        context,
+        property.loc,
+        `Found unsupported directive ${directive} on a gt-vue <T> component`,
+        'Pass context without a v-bind modifier'
+      );
+      continue;
+    }
     const key = readDirectiveKey(property);
     if (!key) {
       addVueError(
