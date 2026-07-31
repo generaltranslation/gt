@@ -158,6 +158,53 @@ describe('gt-vue runtime', () => {
     mounted.app.unmount();
   });
 
+  it('updates multi-root rich children from arrays to scalar text on the client', async () => {
+    const source: JsxChildren = [
+      {
+        t: 'h1',
+        i: 1,
+        c: ['Hello, ', { i: 2, k: '_gt_value_2', v: 'v' }, '!'],
+      },
+      { t: 'p', i: 3, c: 'Source paragraph.' },
+    ];
+    const target: JsxChildren = [
+      {
+        t: 'h1',
+        i: 1,
+        c: ['Bonjour, ', { i: 2, k: '_gt_value_2', v: 'v' }, ' !'],
+      },
+      { t: 'p', i: 3, c: 'Paragraphe traduit.' },
+    ];
+    const plugin = createGT({
+      loadTranslations: async (locale) =>
+        locale === 'fr' ? { [jsxHash(source)]: target } : {},
+    });
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(T, null, {
+            default: () => [
+              h('h1', null, [
+                'Hello, ',
+                h(Var, null, { default: () => 'Ada' }),
+                '!',
+              ]),
+              h('p', null, 'Source paragraph.'),
+            ],
+          });
+      },
+    });
+    const mounted = mount(Root, plugin);
+
+    expect(textContent(mounted.root)).toBe('Hello, Ada!Source paragraph.');
+
+    await plugin.setLocale('fr');
+    await nextTick();
+
+    expect(textContent(mounted.root)).toBe('Bonjour, Ada !Paragraphe traduit.');
+    mounted.app.unmount();
+  });
+
   it('coalesces text around comments and fragments for stable rich hashes', async () => {
     const source = 'Hello world';
     const plugin = createGT({

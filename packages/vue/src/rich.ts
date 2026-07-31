@@ -19,6 +19,7 @@ import {
   Text,
   h,
   isVNode,
+  mergeProps,
   type Component,
   type Slots,
   type VNode,
@@ -57,6 +58,11 @@ type RichTranslationOptions = {
   $context?: string;
   _hash?: string;
   context?: string;
+};
+
+type VNodeWithRenderMetadata = VNode & {
+  ctx?: unknown;
+  slotScopeIds?: string[] | null;
 };
 
 export function translateVueChildren(
@@ -497,15 +503,35 @@ function cloneWithChildren(
   children: VNodeChild,
   extraProps: Record<string, string> = {}
 ): VNode {
-  // Passing the original VNode to h() uses Vue's clone path. Besides
-  // normalizing the replacement children, this preserves directives,
-  // transitions, scope IDs, refs, and app context from the source VNode.
-  // Vue supports this at runtime even though the public h() overloads only
-  // advertise element and component types.
+  if (typeof vnode.type === 'string') {
+    const props = Object.keys(extraProps).length
+      ? mergeProps(vnode.props ?? {}, extraProps)
+      : vnode.props;
+    const cloned = h(vnode.type, props, children ?? undefined);
+
+    // A Vue clone retains the source VNode's child shape flags. Rich
+    // translations can change an element from array children to scalar text,
+    // so create a fresh element with normalized children and copy only the
+    // render metadata that must survive reconstruction.
+    cloned.appContext = vnode.appContext;
+    (cloned as VNodeWithRenderMetadata).ctx = (
+      vnode as VNodeWithRenderMetadata
+    ).ctx;
+    cloned.dirs = vnode.dirs;
+    cloned.ref = vnode.ref;
+    cloned.scopeId = vnode.scopeId;
+    (cloned as VNodeWithRenderMetadata).slotScopeIds = (
+      vnode as VNodeWithRenderMetadata
+    ).slotScopeIds;
+    cloned.transition = vnode.transition;
+    return cloned;
+  }
+
+  // Components need their original slot set and identity. Passing a VNode to
+  // h() uses Vue's clone path even though its public overloads do not expose
+  // that runtime-supported form.
   const type = vnode as unknown as Component;
   const props = Object.keys(extraProps).length ? extraProps : null;
-  if (typeof vnode.type === 'string') return h(type, props, [children]);
-
   const slots = isSlots(vnode.children) ? vnode.children : {};
   return h(type, props, {
     ...slots,
