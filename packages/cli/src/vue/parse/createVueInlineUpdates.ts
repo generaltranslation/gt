@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { parse, type SFCBlock } from '@vue/compiler-sfc';
+import { parse, type SFCBlock } from '#vue-compiler-sfc';
 import type { ParserPlugin } from '@babel/parser';
 import type { Updates } from '../../types/index.js';
 import type { GTParsingFlags } from '../../types/parsing.js';
