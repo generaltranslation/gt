@@ -147,6 +147,19 @@ describe('createVueInlineUpdates', () => {
     expect(messages).toMatch(/invalid\.vue.*\(4:1\)/);
   });
 
+  it('diagnoses context bindings whose modifiers change the runtime prop', async () => {
+    vi.mocked(matchFiles).mockReturnValue([
+      fixturePath('context-modifier.vue'),
+    ]);
+
+    const result = await createVueInlineUpdates(undefined, parsingFlags);
+
+    expect(result.updates).toEqual([]);
+    expect(result.errors.join('\n')).toContain(
+      'unsupported directive :context.prop'
+    );
+  });
+
   it('uses Vue component-name normalization while preserving native tags', async () => {
     vi.mocked(matchFiles).mockReturnValue([fixturePath('normalization.vue')]);
 
