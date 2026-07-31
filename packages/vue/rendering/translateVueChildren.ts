@@ -25,7 +25,7 @@ import {
   type VNode,
   type VNodeChild,
 } from 'vue';
-import type { GTState } from './types';
+import type { GTState } from '../types';
 
 const variableTypes = {
   currency: { name: 'cost', type: 'c' },

@@ -10,4 +10,15 @@ const deps = {
   ],
 };
 
-export default defineConfig(createTsdownConfig(['src/index.ts'], deps));
+const configs = createTsdownConfig(['src/index.ts'], deps).map((config) => ({
+  ...config,
+  outputOptions: {
+    comments: {
+      annotation: true,
+      jsdoc: false,
+      legal: true,
+    },
+  },
+}));
+
+export default defineConfig(configs);
