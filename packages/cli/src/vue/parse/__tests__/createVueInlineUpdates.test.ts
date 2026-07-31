@@ -241,6 +241,32 @@ describe('createVueInlineUpdates', () => {
     );
   });
 
+  it('extracts branch props that match Object.prototype names', async () => {
+    vi.mocked(matchFiles).mockReturnValue([
+      fixturePath('branch-object-keys.vue'),
+    ]);
+
+    const result = await createVueInlineUpdates(undefined, parsingFlags);
+
+    expect(result.errors).toEqual([]);
+    expect(result.updates).toHaveLength(1);
+    expect(result.updates[0]).toMatchObject({
+      dataFormat: 'JSX',
+      source: {
+        t: 'Branch',
+        i: 1,
+        d: {
+          b: {
+            constructor: 'Constructor branch',
+            toString: 'String branch',
+          },
+          t: 'b',
+        },
+        c: 'Fallback',
+      },
+    });
+  });
+
   it('diagnoses directives that would add runtime branch props', async () => {
     vi.mocked(matchFiles).mockReturnValue([
       fixturePath('branch-directives.vue'),
