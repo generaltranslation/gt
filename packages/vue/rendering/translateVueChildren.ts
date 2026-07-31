@@ -17,6 +17,7 @@ import {
   Comment,
   Fragment,
   Text,
+  cloneVNode,
   h,
   isVNode,
   mergeProps,
@@ -528,9 +529,11 @@ function cloneWithChildren(
     return cloned;
   }
 
-  // Components need their original slot set and identity. Passing a VNode to
-  // h() uses Vue's clone path even though its public overloads do not expose
-  // that runtime-supported form.
+  // Components need their original slot set and identity. cloneVNode cannot
+  // safely replace the default slot because it retains optimized block
+  // metadata that can suppress later slot updates. Passing a VNode to h()
+  // takes Vue's clone-and-renormalize path, although its public overloads do
+  // not expose that runtime-supported form.
   const type = vnode as unknown as Component;
   const props = Object.keys(extraProps).length ? extraProps : null;
   const slots = isSlots(vnode.children) ? vnode.children : {};
@@ -544,7 +547,7 @@ function cloneWithProps(
   vnode: VNode,
   extraProps: Record<string, unknown>
 ): VNode {
-  return h(vnode as unknown as Component, extraProps);
+  return cloneVNode(vnode, extraProps);
 }
 
 function isVariable(value: JsxElement | Variable): value is Variable {
