@@ -1,0 +1,52 @@
+import { defineComponent } from 'vue';
+import { translateVueChildren } from '../rendering/translateVueChildren';
+import { useGTState } from '../runtime/state';
+import { withGTMetadata } from './utils';
+
+type TProps = {
+  /** @internal Compile-time hash inserted by GT tooling. */
+  _hash?: string;
+  /** Translation context using the API-parity `$context` spelling. */
+  $context?: string;
+  /** Translation context using a Vue-template-friendly prop name. */
+  context?: string;
+};
+
+/**
+ * Translates rich content from its default slot with the active locale's
+ * catalog. Missing entries render the source slot, and loaded catalogs or
+ * locale changes trigger a reactive rerender.
+ *
+ * Wrap runtime values in {@link Var}; `T` does not interpolate string
+ * placeholders or process ICU syntax.
+ *
+ * @example
+ * ```vue
+ * <T context="welcome">
+ *   Hello, <Var>{{ name }}</Var>!
+ * </T>
+ * ```
+ */
+export const T = withGTMetadata<TProps>(
+  defineComponent({
+    inheritAttrs: false,
+    name: 'T',
+    props: {
+      /** @internal Compile-time hash inserted by GT tooling. */
+      _hash: String,
+      /** Translation context used to disambiguate identical source content. */
+      context: String,
+    },
+    setup(props, { attrs, slots }) {
+      const state = useGTState();
+      return () =>
+        translateVueChildren(slots.default?.() ?? [], state, {
+          ...props,
+          ...(typeof attrs.$context === 'string' && {
+            $context: attrs.$context,
+          }),
+        });
+    },
+  }),
+  'translate-client'
+);
