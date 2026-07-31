@@ -1,4 +1,5 @@
 export { parseLocale } from './functions/parseLocale';
+export { gtMiddleware } from './middleware/gtMiddleware';
 export type { InitializeGTParams } from './types/InitializeGTParams';
 export {
   getLocale,
