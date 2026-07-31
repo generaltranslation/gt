@@ -509,10 +509,11 @@ function cloneWithChildren(
       : vnode.props;
     const cloned = h(vnode.type, props, children ?? undefined);
 
-    // A Vue clone retains the source VNode's child shape flags. Rich
-    // translations can change an element from array children to scalar text,
-    // so create a fresh element with normalized children and copy only the
-    // render metadata that must survive reconstruction.
+    // cloneVNode retains the source VNode's child shape flags and its public
+    // API cannot replace and renormalize children. Rich translations can
+    // change an element from array children to scalar text, so create a fresh
+    // element with normalized children and copy only the render metadata that
+    // must survive reconstruction.
     cloned.appContext = vnode.appContext;
     (cloned as VNodeWithRenderMetadata).ctx = (
       vnode as VNodeWithRenderMetadata
