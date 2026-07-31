@@ -634,7 +634,10 @@ function readBranches(
     if (property.type === NodeTypes.DIRECTIVE && property.name === 'slot') {
       continue;
     }
-    if (property.type === NodeTypes.DIRECTIVE && property.name !== 'bind') {
+    if (
+      property.type === NodeTypes.DIRECTIVE &&
+      (property.name !== 'bind' || property.modifiers.length > 0)
+    ) {
       const directive = property.rawName ?? `v-${property.name}`;
       addVueError(
         context,
