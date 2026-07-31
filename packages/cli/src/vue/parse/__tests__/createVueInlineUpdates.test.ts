@@ -227,6 +227,18 @@ describe('createVueInlineUpdates', () => {
     );
   });
 
+  it('diagnoses directives that would add runtime branch props', async () => {
+    vi.mocked(matchFiles).mockReturnValue([
+      fixturePath('branch-directives.vue'),
+    ]);
+
+    const result = await createVueInlineUpdates(undefined, parsingFlags);
+    const errors = result.errors.join('\n');
+
+    expect(errors).toContain('unsupported directive @click');
+    expect(errors).toContain('unsupported directive v-model');
+  });
+
   it('keeps component tags separate from v-for and v-slot bindings', async () => {
     vi.mocked(matchFiles).mockReturnValue([
       fixturePath('template-namespaces.vue'),
