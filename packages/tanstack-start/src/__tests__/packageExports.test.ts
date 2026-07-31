@@ -95,10 +95,11 @@ describe('gt-tanstack-start package exports', () => {
       '-e',
       `
         import assert from 'node:assert/strict';
-        import { getGT, getLocale, initializeGT } from 'gt-tanstack-start';
+        import { getGT, getLocale, gtMiddleware, initializeGT } from 'gt-tanstack-start';
 
         assert.equal(typeof getGT, 'function');
         assert.equal(typeof getLocale, 'function');
+        assert.equal(typeof gtMiddleware, 'object');
         assert.equal(typeof initializeGT, 'function');
       `,
     ]);
