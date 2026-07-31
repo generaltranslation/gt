@@ -50,10 +50,12 @@ export function getBranchNames(
   slots: Slots
 ): string[] {
   return [
-    ...Object.keys(attrs).filter((key) => !key.startsWith('data-')),
-    ...Object.keys(slots).filter(
-      (key) => key !== 'default' && !key.startsWith('_')
-    ),
+    ...new Set([
+      ...Object.keys(attrs).filter((key) => !key.startsWith('data-')),
+      ...Object.keys(slots).filter(
+        (key) => key !== 'default' && !key.startsWith('_')
+      ),
+    ]),
   ];
 }
 
