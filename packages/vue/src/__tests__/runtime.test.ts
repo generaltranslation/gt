@@ -172,6 +172,81 @@ describe('gt-vue runtime', () => {
     mounted.app.unmount();
   });
 
+  it('preserves component props while replacing translated slot children', async () => {
+    const onNavigate = vi.fn();
+    const Link = defineComponent({
+      emits: ['navigate'],
+      name: 'TestLink',
+      props: {
+        title: { type: String, required: true },
+        to: { type: String, required: true },
+      },
+      setup(props, { emit, slots }) {
+        return () =>
+          h(
+            'a',
+            {
+              href: props.to,
+              onClick: () => emit('navigate'),
+              title: props.title,
+            },
+            slots.default?.()
+          );
+      },
+    });
+    const plugin = createGT({
+      loadTranslations: async () => ({
+        link: {
+          t: 'TestLink',
+          i: 1,
+          d: { ti: 'Titre traduit' },
+          c: 'Lien traduit',
+        },
+      }),
+    });
+    await plugin.setLocale('fr');
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(
+            T,
+            { _hash: 'link' },
+            {
+              default: () =>
+                h(
+                  Link,
+                  {
+                    class: 'source-link',
+                    id: 'docs-link',
+                    onNavigate,
+                    title: 'Source title',
+                    to: '/docs',
+                  },
+                  { default: () => 'Source link' }
+                ),
+            }
+          );
+      },
+    });
+
+    const mounted = mount(Root, plugin);
+    await nextTick();
+
+    const anchor = findElement(mounted.root, 'a');
+    expect(anchor?.props).toMatchObject({
+      class: 'source-link',
+      href: '/docs',
+      id: 'docs-link',
+      title: 'Titre traduit',
+    });
+    expect(textContent(mounted.root)).toBe('Lien traduit');
+    const onClick = anchor?.props.onClick;
+    expect(onClick).toBeTypeOf('function');
+    (onClick as () => void)();
+    expect(onNavigate).toHaveBeenCalledTimes(1);
+    mounted.app.unmount();
+  });
+
   it('updates multi-root rich children from arrays to scalar text on the client', async () => {
     const source: JsxChildren = [
       {
