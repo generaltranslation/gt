@@ -666,7 +666,7 @@ function readBranches(
       RESERVED_BRANCH_PROPS.has(key) ||
       key.startsWith('onVnode') ||
       key.startsWith('data-') ||
-      key in branches ||
+      Object.hasOwn(branches, key) ||
       (component === 'Plural' && !isAcceptedPluralForm(key))
     ) {
       continue;
