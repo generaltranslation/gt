@@ -12,6 +12,8 @@ export function createInlineUpdatesForLibrary(
   parsingOptions: ParsingConfigOptions
 ) {
   if (pkg === Libraries.GT_VUE) {
+    // Vue extraction is source-local and does not use the React package
+    // resolver's conditionNames from parsingOptions.
     return createVueInlineUpdates(filePatterns, parsingFlags);
   }
   return createInlineUpdates(
