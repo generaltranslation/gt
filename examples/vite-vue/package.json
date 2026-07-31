@@ -11,6 +11,7 @@
     "generate": "gt generate && oxfmt src/_gt/*.json",
     "prevalidate": "pnpm exec turbo run build --filter=gt",
     "validate": "gt validate",
+    "pretypecheck": "pnpm exec turbo run build --filter=gt-vue",
     "typecheck": "vue-tsc -b",
     "prebuild": "pnpm exec turbo run build --filter=gt-vue",
     "build": "pnpm generate && vue-tsc -b && vite build",
