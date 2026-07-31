@@ -10,6 +10,12 @@
     "CHANGELOG.md"
   ],
   "type": "module",
+  "imports": {
+    "#vue-compiler-sfc": {
+      "bun": "@vue/compiler-sfc/dist/compiler-sfc.esm-browser.js",
+      "default": "@vue/compiler-sfc"
+    }
+  },
   "scripts": {
     "generate-version": "node scripts/generate-version.js",
     "emit-types": "sh ../../scripts/emit-types.sh",
