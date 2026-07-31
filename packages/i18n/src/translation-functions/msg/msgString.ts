@@ -1,6 +1,6 @@
 import type { GTTranslationOptions } from '../types/options';
 import type { RegisterableMessages } from '../types/message';
-import { hashStringMessage } from '../../utils/hashStringMessage';
+import { hashSource } from 'generaltranslation/id';
 import { encodeMsg } from './encodeMsg';
 
 /**
@@ -33,9 +33,18 @@ export function msgString(
   if (!options) return message;
 
   const stringOptions = { ...options, $format: 'STRING' as const };
+  const $_hash =
+    stringOptions.$_hash ??
+    hashSource({
+      source: message,
+      context: stringOptions.$context,
+      maxChars: stringOptions.$maxChars,
+      requiresReview: stringOptions.$requiresReview,
+      dataFormat: 'STRING',
+    });
   return encodeMsg(message, {
     ...stringOptions,
-    $_hash: hashStringMessage(message, stringOptions),
+    $_hash,
     $_source: message,
   });
 }

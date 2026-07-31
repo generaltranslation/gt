@@ -3,7 +3,6 @@ import { indexVars } from 'generaltranslation/internal';
 import { LookupOptions } from '../translation-functions/types/options';
 import { Translation } from '../types';
 import type { IcuMessage } from '@generaltranslation/format/types';
-import { hashStringMessage } from './hashStringMessage';
 
 /**
  * Hash a message string
@@ -21,9 +20,6 @@ export function hashMessage<T extends Translation>(
   };
   if (metadataOptions.$_hash != null) {
     return metadataOptions.$_hash;
-  }
-  if (options.$format === 'STRING') {
-    return hashStringMessage(message as string, metadataOptions);
   }
 
   return hashSource({
