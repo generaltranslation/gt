@@ -1,0 +1,28 @@
+{
+  "name": "vite-vue",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@10.20.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "generate": "gt generate && oxfmt src/_gt/*.json",
+    "validate": "gt validate",
+    "typecheck": "vue-tsc -b",
+    "build": "pnpm generate && vue-tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "gt-vue": "workspace:*",
+    "vue": "^3.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@vitejs/plugin-vue": "^6.0.3",
+    "gt": "workspace:*",
+    "oxfmt": "catalog:",
+    "typescript": "catalog:",
+    "vite": "^7.0.5",
+    "vue-tsc": "~3.2.0"
+  }
+}
