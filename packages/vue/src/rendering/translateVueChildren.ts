@@ -532,8 +532,9 @@ function cloneWithChildren(
   // Components need their original slot set and identity. cloneVNode cannot
   // safely replace the default slot because it retains optimized block
   // metadata that can suppress later slot updates. Passing a VNode to h()
-  // takes Vue's clone-and-renormalize path, although its public overloads do
-  // not expose that runtime-supported form.
+  // takes Vue's clone-and-renormalize path, preserving the source props and
+  // merging only these translated props. Its public overloads do not expose
+  // that runtime-supported form.
   const type = vnode as unknown as Component;
   const props = Object.keys(extraProps).length ? extraProps : null;
   const slots = isSlots(vnode.children) ? vnode.children : {};
