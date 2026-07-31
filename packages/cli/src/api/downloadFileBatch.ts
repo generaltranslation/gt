@@ -46,7 +46,7 @@ function reportWithheldGtJsonComponents(
   if (withheld > 0) {
     recordWarning(
       'pending_review',
-      '<React Elements>',
+      '<Inline translations>',
       `${withheld} component translation(s) for locale ${locale} require review and are not approved yet`
     );
   }

@@ -432,7 +432,7 @@ export function logCollectedFiles(
       files
         .map((file) => {
           if (file.fileName === TEMPLATE_FILE_NAME) {
-            return `- <React Elements>${reactComponents ? ` (${reactComponents})` : ''}`;
+            return `- <Inline translations>${reactComponents ? ` (${reactComponents})` : ''}`;
           }
           return `- ${file.fileName}`;
         })
