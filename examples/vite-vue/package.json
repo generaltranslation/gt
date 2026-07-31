@@ -5,11 +5,14 @@
   "packageManager": "pnpm@10.20.0",
   "type": "module",
   "scripts": {
-    "predev": "pnpm --filter gt-vue... build",
+    "predev": "pnpm exec turbo run build --filter=gt-vue",
     "dev": "vite",
+    "pregenerate": "pnpm exec turbo run build --filter=gt",
     "generate": "gt generate && oxfmt src/_gt/*.json",
+    "prevalidate": "pnpm exec turbo run build --filter=gt",
     "validate": "gt validate",
     "typecheck": "vue-tsc -b",
+    "prebuild": "pnpm exec turbo run build --filter=gt-vue",
     "build": "pnpm generate && vue-tsc -b && vite build",
     "preview": "vite preview"
   },
