@@ -7,18 +7,10 @@
     "sourceMap": true,
     "declarationMap": true,
     "outDir": "./dist",
-    "rootDir": ".",
+    "rootDir": "./src",
     "composite": true
   },
-  "include": [
-    "components/**/*",
-    "composables/**/*",
-    "messages/**/*",
-    "rendering/**/*",
-    "runtime/**/*",
-    "src/**/*",
-    "types/**/*"
-  ],
+  "include": ["src/**/*"],
   "exclude": ["**/*.test.ts"],
   "references": [
     {
