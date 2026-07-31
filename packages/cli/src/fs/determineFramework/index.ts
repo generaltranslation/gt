@@ -25,7 +25,7 @@ export function determineLibrary(): {
         ...packageJson.devDependencies,
       };
 
-      // Check for gt-next or gt-react in dependencies
+      // Check for GT libraries in dependencies
       if (dependencies[Libraries.GT_NEXT]) {
         library = Libraries.GT_NEXT;
       } else if (dependencies[Libraries.GT_TANSTACK_START]) {
@@ -34,6 +34,8 @@ export function determineLibrary(): {
         library = Libraries.GT_REACT;
       } else if (dependencies[Libraries.GT_REACT_NATIVE]) {
         library = Libraries.GT_REACT_NATIVE;
+      } else if (dependencies[Libraries.GT_VUE]) {
+        library = Libraries.GT_VUE;
       } else if (dependencies[Libraries.GT_NODE]) {
         library = Libraries.GT_NODE;
       } else if (dependencies['next-intl']) {

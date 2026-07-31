@@ -378,7 +378,7 @@ export class PollTranslationJobsStep {
 
       // Format the line
       const prettyFileName =
-        fileName === TEMPLATE_FILE_NAME ? '<React Elements>' : fileName;
+        fileName === TEMPLATE_FILE_NAME ? '<Inline translations>' : fileName;
       newSuffixText.push(`${chalk.bold(prettyFileName)} [${localeString}]`);
     }
 

@@ -16,6 +16,7 @@
   "ignorePatterns": [
     ".changeset/*.md",
     "examples/next-chatbot/lib/db/migrations/**",
+    "packages/cli/src/vue/parse/__tests__/fixtures/**",
     "tests/seeds/*",
     "tests/apps/compiler-cli-parity/**",
     "**/next-env.d.ts",

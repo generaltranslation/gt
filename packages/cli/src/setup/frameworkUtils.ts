@@ -16,6 +16,9 @@ export function getFrameworkDisplayName(
   if (frameworkObject.name === 'vite') {
     return 'Vite + React';
   }
+  if (frameworkObject.name === 'vite-vue') {
+    return 'Vite + Vue';
+  }
   if (frameworkObject.name === 'gatsby') {
     return 'Gatsby';
   }

@@ -37,6 +37,13 @@ export const DEFAULT_SRC_PATTERNS = [
   'components/**/*.{js,jsx,ts,tsx}',
 ];
 
+export const DEFAULT_VUE_SRC_PATTERNS = [
+  'src/**/*.{vue,js,jsx,mjs,cjs,ts,tsx,mts,cts}',
+  'app/**/*.{vue,js,jsx,mjs,cjs,ts,tsx,mts,cts}',
+  'pages/**/*.{vue,js,jsx,mjs,cjs,ts,tsx,mts,cts}',
+  'components/**/*.{vue,js,jsx,mjs,cjs,ts,tsx,mts,cts}',
+];
+
 export const DEFAULT_PYTHON_SRC_PATTERNS = ['**/*.py'];
 export const DEFAULT_PYTHON_SRC_EXCLUDES = [
   'venv/**',

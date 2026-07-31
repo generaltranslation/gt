@@ -50,6 +50,28 @@ describe('determineLibrary', () => {
       expect(result.library).toBe(Libraries.GT_REACT);
     });
 
+    it('detects gt-vue from package.json dependencies', () => {
+      mockExistsSync.mockReturnValue(true);
+      mockReadFileSync.mockReturnValue(
+        JSON.stringify({ dependencies: { 'gt-vue': '1.0.0' } })
+      );
+
+      const result = determineLibrary();
+      expect(result.library).toBe(Libraries.GT_VUE);
+    });
+
+    it('preserves gt-react priority in a hybrid dependency root', () => {
+      mockExistsSync.mockReturnValue(true);
+      mockReadFileSync.mockReturnValue(
+        JSON.stringify({
+          dependencies: { 'gt-react': '1.0.0', 'gt-vue': '1.0.0' },
+        })
+      );
+
+      const result = determineLibrary();
+      expect(result.library).toBe(Libraries.GT_REACT);
+    });
+
     it('detects gt-node from package.json dependencies', () => {
       mockExistsSync.mockReturnValue(true);
       mockReadFileSync.mockReturnValue(

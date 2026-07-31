@@ -195,6 +195,7 @@ function fallbackToGtReact(library: SupportedLibraries): InlineLibrary {
     Libraries.GT_TANSTACK_START,
     Libraries.GT_FLASK,
     Libraries.GT_FASTAPI,
+    Libraries.GT_VUE,
   ].includes(library as Libraries)
     ? (library as
         | typeof Libraries.GT_NEXT
@@ -202,6 +203,7 @@ function fallbackToGtReact(library: SupportedLibraries): InlineLibrary {
         | typeof Libraries.GT_REACT_NATIVE
         | typeof Libraries.GT_TANSTACK_START
         | typeof Libraries.GT_FLASK
-        | typeof Libraries.GT_FASTAPI)
+        | typeof Libraries.GT_FASTAPI
+        | typeof Libraries.GT_VUE)
     : Libraries.GT_REACT;
 }
