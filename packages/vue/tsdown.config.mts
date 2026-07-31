@@ -8,6 +8,7 @@ const deps = {
     /^generaltranslation$/,
     /^generaltranslation\//,
   ],
+  alwaysBundle: [/^gt-i18n\/internal\/string$/],
 };
 
 const configs = createTsdownConfig(['src/index.ts'], deps).map((config) => ({

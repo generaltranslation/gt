@@ -95,6 +95,7 @@ describe('gt-vue runtime', () => {
 
   it('keeps msg and useMessages context-only and never interpolates', async () => {
     const contextual = msg('Literal {name}: 你好', { $context: 'example' });
+    const empty = msg('', { $context: 'empty' });
     const messages: string[] = msg(['First', 'Second'] as const, {
       $context: 'list',
     });
@@ -104,6 +105,7 @@ describe('gt-vue runtime', () => {
           'Littéral {name} : 你好',
         [stringHash('First', 'list')]: 'Premier',
         [stringHash('Second', 'list')]: 'Deuxième',
+        [stringHash('', 'empty')]: 'Vide',
       }),
     });
     await plugin.setLocale('fr');
@@ -115,12 +117,13 @@ describe('gt-vue runtime', () => {
         const m = useMessages();
         nullResult = m(null);
         undefinedResult = m(undefined);
-        return () => h('p', [m(contextual), '|', ...messages.map(m)]);
+        return () =>
+          h('p', [m(contextual), '|', ...messages.map(m), '|', m(empty)]);
       },
     });
     const html = await renderWithPlugin(Root, plugin);
 
-    expect(html).toContain('Littéral {name} : 你好|PremierDeuxième');
+    expect(html).toContain('Littéral {name} : 你好|PremierDeuxième|Vide');
     expect(nullResult!).toBeNull();
     expect(undefinedResult!).toBeUndefined();
   });
