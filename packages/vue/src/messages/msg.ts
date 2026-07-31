@@ -1,5 +1,4 @@
-import { hashSource } from 'generaltranslation/id';
-import { encode } from 'generaltranslation/internal';
+import { msg as registerMessage } from 'gt-i18n/internal/string';
 import type { GTStringOptions } from '../types';
 
 /**
@@ -32,22 +31,5 @@ export function msg(
   message: string | readonly string[],
   options?: GTStringOptions
 ): string | readonly string[] {
-  if (typeof message !== 'string') {
-    return message.map((entry) => msg(entry, options));
-  }
-  if (!options) return message;
-
-  const $_hash = hashSource({
-    context: options.$context,
-    dataFormat: 'STRING',
-    source: message,
-  });
-  const encoded = encode(
-    JSON.stringify({
-      ...options,
-      $_hash,
-      $_source: message,
-    })
-  );
-  return `${message}:${encoded}`;
+  return registerMessage(message, options);
 }
