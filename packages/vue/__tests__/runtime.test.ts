@@ -11,8 +11,10 @@ import {
   ref,
   vShow,
   withDirectives,
+  type Slots,
 } from 'vue';
 import { renderToString } from 'vue/server-renderer';
+import { getBranchNames } from '../components/utils';
 import {
   Branch,
   Currency,
@@ -30,6 +32,18 @@ import {
 import type { TranslationCatalog } from '../src';
 
 describe('gt-vue runtime', () => {
+  it('deduplicates branch names shared by attrs and slots', () => {
+    const slots = {
+      default: () => [],
+      one: () => [],
+      other: () => [],
+    } as Slots;
+
+    expect(
+      getBranchNames({ one: 'attribute', 'data-note': 'ignored' }, slots)
+    ).toEqual(['one', 'other']);
+  });
+
   it('loads and caches plain STRING translations, then rerenders on locale changes', async () => {
     const source = 'Hello, {name}!';
     const encoded = msg('Navigation: home', { $context: 'navigation' });
