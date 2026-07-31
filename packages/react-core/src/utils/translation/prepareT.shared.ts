@@ -34,6 +34,12 @@ type TProps = {
   _locale?: string;
   _enableI18n?: boolean;
   _renderPreparedT?: RenderPreparedT;
+  // Compiler-injected (swc plugin): set when this <T>'s static JSX parent is an
+  // HTML element that can't legally contain a <span> (table/tr/select/ul/...).
+  // The component consumes it to skip the id-tagging span (invalid nesting →
+  // hydration mismatch) — it must be destructured out before params reach
+  // prepareT so it never enters the hashed translation options.
+  _noTag?: boolean;
 } & JsxTranslationOptions;
 
 type ResolvedTProps = TProps & {

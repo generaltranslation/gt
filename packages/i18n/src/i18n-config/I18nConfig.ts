@@ -33,11 +33,17 @@ export type I18nConfigParams = Pick<
   | 'cacheUrl'
   | 'runtimeUrl'
   | '_disableDevHotReload'
+  | '_tagIds'
 >;
 
 type RuntimeConfig = Pick<
   I18nConfigParams,
-  'projectId' | 'devApiKey' | 'apiKey' | 'runtimeUrl' | '_disableDevHotReload'
+  | 'projectId'
+  | 'devApiKey'
+  | 'apiKey'
+  | 'runtimeUrl'
+  | '_disableDevHotReload'
+  | '_tagIds'
 >;
 
 export type LocaleCandidates = string | string[] | undefined;
@@ -56,6 +62,7 @@ export class I18nConfig extends LocaleConfig {
       apiKey: params.apiKey,
       runtimeUrl: params.runtimeUrl,
       _disableDevHotReload: params._disableDevHotReload,
+      _tagIds: params._tagIds,
     };
     this.gtServicesEnabled = gtServicesEnabled;
     this.logLevel = getGeneralTranslationLogLevel();
@@ -142,6 +149,15 @@ export class I18nConfig extends LocaleConfig {
       this.runtimeConfig.runtimeUrl !== '' &&
       getRuntimeEnvironment() === 'development'
     );
+  }
+
+  /**
+   * Opt-in (`_tagIds`): when true, `<T>` output is wrapped in a layout-neutral
+   * span carrying its translation hash (`data-_gt`) so tooling can map a rendered
+   * node back to its published translation. No effect on `gt()` strings.
+   */
+  isIdTaggingEnabled(): boolean {
+    return !!this.runtimeConfig._tagIds;
   }
 
   isGTServicesEnabled(): boolean {

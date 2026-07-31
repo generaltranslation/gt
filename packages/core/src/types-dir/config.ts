@@ -56,6 +56,13 @@ export type GTConfig = {
   runtimeUrl?: string | null;
   modelProvider?: string;
   _disableDevHotReload?: boolean;
+  /**
+   * Opt-in: emit each `<T>`'s translation hash as a `data-_gt` attribute on the
+   * rendered element (wrapped in a `display:contents` span). Off by default. Lets
+   * tooling map a rendered node back to its published translation (localized
+   * replay, in-context QA). No effect on `gt()` string translations.
+   */
+  _tagIds?: boolean;
 
   files?: GTFilesConfig;
 };

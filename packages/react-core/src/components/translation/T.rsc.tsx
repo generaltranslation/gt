@@ -2,6 +2,7 @@ import { getI18nConfig } from 'gt-i18n/internal';
 import type { ReactNode } from 'react';
 import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 import { renderPreparedT } from '../../utils/rendering/renderPipeline.rsc';
+import { computeTagHash } from '../../utils/translation/computeTagHash';
 import {
   prepareT,
   type ResolvedTProps,
@@ -18,6 +19,9 @@ async function RscT({
   _enableI18n,
   // TODO: don't expose to consumer, this should be thru an internal path
   _renderPreparedT = renderPreparedT,
+  // swc-injected: skip the id-tagging span when the static parent can't hold one
+  // (see TProps._noTag). Destructured out so it never reaches the hashed options.
+  _noTag,
   ...params
 }: ResolvedTProps): Promise<ReactNode> {
   const locale = _locale;
@@ -39,6 +43,9 @@ async function RscT({
       defaultLocale,
       enableI18n,
       shouldTranslate,
+      hash: _noTag
+        ? undefined
+        : computeTagHash(prepared.sourceJsxChildren, prepared.targetOptions),
     });
   }
 
@@ -68,6 +75,7 @@ async function RscT({
     defaultLocale,
     enableI18n,
     shouldTranslate,
+    hash: computeTagHash(prepared.sourceJsxChildren, prepared.targetOptions),
   });
 }
 

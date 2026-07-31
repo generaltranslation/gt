@@ -2,6 +2,7 @@ import { getI18nConfig } from 'gt-i18n/internal';
 import type { ReactNode } from 'react';
 import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 import { renderPreparedT } from '../../utils/rendering/renderPipeline.rsc';
+import { computeTagHash } from '../../utils/translation/computeTagHash';
 import {
   prepareT,
   type ResolvedTProps,
@@ -17,6 +18,10 @@ async function RscTx({
   _enableI18n,
   // TODO: don't expose to consumer, this should be thru an internal path
   _renderPreparedT = renderPreparedT,
+  // See TProps._noTag. The swc plugin only injects this on <T>, not <Tx>, so it
+  // is normally undefined here; destructured out regardless so it can never reach
+  // the hashed options, and honored for uniformity if ever set.
+  _noTag,
   ...params
 }: ResolvedTProps): Promise<ReactNode> {
   const locale = _locale;
@@ -38,6 +43,11 @@ async function RscTx({
       defaultLocale,
       enableI18n,
       shouldTranslate,
+      // <Tx> serves published translations keyed by the same hashMessage as <T>,
+      // so tag it too (else id-tagging tooling silently misses all <Tx> content).
+      hash: _noTag
+        ? undefined
+        : computeTagHash(prepared.sourceJsxChildren, prepared.targetOptions),
     });
   }
 
@@ -55,6 +65,9 @@ async function RscTx({
     defaultLocale,
     enableI18n,
     shouldTranslate,
+    hash: _noTag
+      ? undefined
+      : computeTagHash(prepared.sourceJsxChildren, prepared.targetOptions),
   });
 }
 

@@ -2,6 +2,7 @@ import { useTranslate } from '../../hooks/external-store';
 import { getI18nConfig } from 'gt-i18n/internal';
 import { useRef, type ReactNode } from 'react';
 import { renderPreparedT } from '../../utils/rendering/renderPipeline';
+import { computeTagHash } from '../../utils/translation/computeTagHash';
 import type { TProps } from '../../utils/translation/prepareT.shared';
 import { usePrepareT } from '../../utils/translation/usePrepareT';
 
@@ -32,6 +33,9 @@ function useComputeT({
   _locale,
   _enableI18n,
   _renderPreparedT = renderPreparedT,
+  // swc-injected: skip the id-tagging span when the static parent can't hold one
+  // (see TProps._noTag). Destructured out so it never reaches the hashed options.
+  _noTag,
   ...params
 }: TProps): ReactNode {
   // Prepare our source children for rendering
@@ -77,6 +81,12 @@ function useComputeT({
     defaultLocale,
     enableI18n,
     shouldTranslate,
+    // Hash only when id-tagging is on (computeTagHash gates it), so apps not using
+    // the feature pay nothing; and never when the parent can't hold the tagging
+    // span (_noTag, see TProps). PERF FOLLOW-UP: useTranslate's lookup already
+    // computes this exact hash — reuse it once useTranslate exposes it, instead of
+    // hashing a second time here.
+    hash: _noTag ? undefined : computeTagHash(sourceJsxChildren, targetOptions),
   });
 
   // record previous result

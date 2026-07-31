@@ -335,13 +335,38 @@ impl Fold for TransformVisitor {
       && self.traversal_state.in_translation_component
       && !was_in_translation
     {
-      self.inject_hash_attributes(element)
+      // If this <T>'s immediate static JSX parent is an HTML element that can't
+      // legally contain a <span> (table/tr/select/ul/...), mark it so the runtime
+      // skips the opt-in id-tagging span (invalid nesting → hydration mismatch).
+      // The parent is the top of the ancestor stack, pushed by the enclosing
+      // fold_jsx_element before it descended into these children.
+      let parent_span_hostile = self
+        .traversal_state
+        .jsx_ancestor_tags
+        .last()
+        .map(|tag| crate::ast::constants::is_span_hostile_parent(tag))
+        .unwrap_or(false);
+      let element = self.inject_hash_attributes(element);
+      if parent_span_hostile {
+        TransformVisitor::inject_no_tag_attribute(element)
+      } else {
+        element
+      }
     } else {
       element
     };
 
-    // Traverse children
+    // Push this element's tag so descendant <T>s can see their static parent,
+    // traverse children, then pop. (Fragments / member-expr names yield None and
+    // are treated as "no parent".)
+    let this_tag = crate::ast::get_tag_name(&element.opening.name);
+    if let Some(tag) = this_tag.clone() {
+      self.traversal_state.jsx_ancestor_tags.push(tag);
+    }
     let result = element.fold_children_with(self);
+    if this_tag.is_some() {
+      self.traversal_state.jsx_ancestor_tags.pop();
+    }
 
     // Restore state
     self.traversal_state.in_translation_component = was_in_translation;

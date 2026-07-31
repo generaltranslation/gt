@@ -17,6 +17,11 @@ pub struct TraversalState {
   pub in_variable_component: bool,
   /// Track whether we're inside a JSX attribute expression (to ignore them)
   pub in_jsx_attribute: bool,
+  /// Stack of enclosing JSX element tag names (host elements and components), in
+  /// nesting order. The top is the immediate static JSX parent of the element
+  /// currently being folded — used to detect a `<T>` whose parent can't legally
+  /// contain the id-tagging `<span>` (see constants::is_span_hostile_parent).
+  pub jsx_ancestor_tags: Vec<String>,
 }
 
 // For tracking gt-next imports and their aliases

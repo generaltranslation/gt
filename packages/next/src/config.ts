@@ -76,6 +76,7 @@ type InternalGTConfigProps = BaseWithGTConfigProps &
     _dictionaryFileType?: string;
     _cacheComponentsEnabled?: boolean;
     _disableDevHotReload?: boolean;
+    _tagIds?: boolean;
   };
 
 type WithGTConfigValue<T> =
@@ -680,6 +681,7 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     },
     _versionId: mergedConfig._versionId,
     _disableDevHotReload: mergedConfig._disableDevHotReload,
+    _tagIds: mergedConfig._tagIds,
   };
 
   const { type: _type, ...compilerOptions } =
