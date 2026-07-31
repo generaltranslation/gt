@@ -28,8 +28,8 @@ import {
   useGT,
   useLocale,
   useMessages,
-} from '../src';
-import type { TranslationCatalog } from '../src';
+} from '../index';
+import type { TranslationCatalog } from '../index';
 
 describe('gt-vue runtime', () => {
   it('deduplicates branch names shared by attrs and slots', () => {
