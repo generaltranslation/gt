@@ -313,6 +313,10 @@ function exposeOptionsApiBindings(
         const value = unwrapExpression(property.value);
         if (!templateName || value?.type !== 'Identifier') continue;
         const binding = path.scope.getBinding(value.name);
+        const component = binding ? componentBindings.get(binding) : undefined;
+        if (component) {
+          templateBindings.components.set(templateName, component);
+        }
         const kind = binding ? stringBindings.get(binding) : undefined;
         if (kind) templateBindings.stringFunctions.set(templateName, kind);
       }
