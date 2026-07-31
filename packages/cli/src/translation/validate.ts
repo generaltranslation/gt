@@ -5,7 +5,7 @@ import { Framework, Options, Settings, Updates } from '../types/index.js';
 import { logger } from '../console/logger.js';
 
 import { createUpdates } from './parse.js';
-import { createInlineUpdates } from '../react/parse/createInlineUpdates.js';
+import { createInlineUpdatesForLibrary } from '../extraction/createInlineUpdatesForLibrary.js';
 import { InlineLibrary, Libraries } from '../types/libraries.js';
 
 // Types for programmatic validation API
@@ -27,7 +27,7 @@ async function runValidation(
   files?: string[]
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   if (files && files.length > 0) {
-    return createInlineUpdates(
+    return createInlineUpdatesForLibrary(
       pkg,
       true,
       files,
@@ -94,7 +94,8 @@ export async function getValidateJson(
   pkg:
     | `${typeof Libraries.GT_REACT}`
     | `${typeof Libraries.GT_NEXT}`
-    | `${typeof Libraries.GT_REACT_NATIVE}`,
+    | `${typeof Libraries.GT_REACT_NATIVE}`
+    | `${typeof Libraries.GT_VUE}`,
   files?: string[]
 ): Promise<ValidationResult> {
   const validatedPkg: Framework =
@@ -102,7 +103,9 @@ export async function getValidateJson(
       ? Libraries.GT_NEXT
       : pkg === Libraries.GT_REACT_NATIVE
         ? Libraries.GT_REACT_NATIVE
-        : Libraries.GT_REACT;
+        : pkg === Libraries.GT_VUE
+          ? Libraries.GT_VUE
+          : Libraries.GT_REACT;
   const { errors, warnings } = await runValidation(
     settings,
     validatedPkg,

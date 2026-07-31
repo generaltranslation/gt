@@ -5,6 +5,7 @@ import { PythonCLI } from './cli/python.js';
 import { determineLibrary } from './fs/determineFramework/index.js';
 import { Command } from 'commander';
 import { NodeCLI } from './cli/node.js';
+import { VueCLI } from './cli/vue.js';
 import { Libraries, isPythonLibrary } from './types/libraries.js';
 
 export function main(program: Command) {
@@ -20,6 +21,8 @@ export function main(program: Command) {
     library === Libraries.GT_TANSTACK_START
   ) {
     cli = new ReactCLI(program, library, additionalModules);
+  } else if (library === Libraries.GT_VUE) {
+    cli = new VueCLI(program, library, additionalModules);
   } else if (library === Libraries.GT_NODE) {
     cli = new NodeCLI(program, library, additionalModules);
   } else if (isPythonLibrary(library)) {

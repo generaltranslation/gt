@@ -69,7 +69,7 @@ import {
   getFrameworkDisplayName,
   getReactFrameworkLibrary,
 } from '../setup/frameworkUtils.js';
-import { INLINE_LIBRARIES } from '../types/libraries.js';
+import { INLINE_LIBRARIES, Libraries } from '../types/libraries.js';
 import { handleEnqueue } from './commands/enqueue.js';
 import { splitMintlifyLanguageRefs } from '../utils/splitMintlifyLanguageRefs.js';
 import { runMergeDriver, type MergeDriverName } from '../git/mergeDrivers.js';
@@ -595,7 +595,7 @@ export class BaseCLI {
       )
       .option(
         '--src <paths...>',
-        "Space-separated list of glob patterns containing the app's source code, by default 'src/**/*.{js,jsx,ts,tsx}' 'app/**/*.{js,jsx,ts,tsx}' 'pages/**/*.{js,jsx,ts,tsx}' 'components/**/*.{js,jsx,ts,tsx}'"
+        "Space-separated list of glob patterns containing the app's source code; framework-specific source globs are used by default"
       )
       .option(
         '-c, --config <path>',
@@ -634,17 +634,19 @@ export class BaseCLI {
         } else {
           // Get framework display info for the defaults message
           const frameworkDisplayName =
-            framework.type === 'react'
+            framework.type === 'react' || framework.type === 'vue'
               ? getFrameworkDisplayName(framework)
               : null;
           const library =
             framework.type === 'react'
               ? getReactFrameworkLibrary(framework)
-              : null;
+              : framework.type === 'vue'
+                ? Libraries.GT_VUE
+                : null;
 
           // Build defaults description based on detected framework
           const defaultTranslationsDir =
-            framework.name === 'vite'
+            framework.name === 'vite' || framework.name === 'vite-vue'
               ? DEFAULT_VITE_TRANSLATIONS_DIR
               : DEFAULT_TRANSLATIONS_DIR;
 
@@ -653,7 +655,9 @@ export class BaseCLI {
               ? `${library} & initializeGTSPA, ${frameworkDisplayName}, Files saved locally in ${defaultTranslationsDir}`
               : framework.type === 'react'
                 ? `${library} & GTProvider, ${frameworkDisplayName}, Files saved locally in ${defaultTranslationsDir}`
-                : `Files saved locally in ${defaultTranslationsDir}`;
+                : framework.type === 'vue'
+                  ? `${library}, ${frameworkDisplayName}, Files saved locally in ${defaultTranslationsDir}`
+                  : `Files saved locally in ${defaultTranslationsDir}`;
 
           // Ask if user wants to use defaults
           const useDefaults = await promptConfirm({
@@ -662,6 +666,7 @@ export class BaseCLI {
           });
 
           let ranReactSetup = false;
+          let ranVueSetup = false;
 
           // so that people can run init in non-js projects
           if (framework.type === 'react') {
@@ -688,14 +693,42 @@ export class BaseCLI {
             }
           }
 
-          if (ranReactSetup) {
+          if (framework.type === 'vue') {
+            const installVue = useDefaults
+              ? true
+              : await promptConfirm({
+                  message:
+                    'Would you like to install gt-vue? You will still need to add createGT() to your Vue app entry point.',
+                  defaultValue: true,
+                });
+            if (installVue) {
+              const packageJson = await searchForPackageJson();
+              if (
+                packageJson &&
+                !isPackageInstalled(Libraries.GT_VUE, packageJson)
+              ) {
+                const packageManager = await getPackageManager();
+                const spinner = logger.createSpinner('timer');
+                spinner.start(
+                  `Installing ${Libraries.GT_VUE} with ${packageManager.name}...`
+                );
+                await installPackage(Libraries.GT_VUE, packageManager);
+                spinner.stop(
+                  chalk.green(`Automatically installed ${Libraries.GT_VUE}.`)
+                );
+              }
+              ranVueSetup = true;
+            }
+          }
+
+          if (ranReactSetup || ranVueSetup) {
             logger.startCommand('Setting up project config...');
           }
           // Configure gt.config.json
           await this.handleInitCommand(
-            ranReactSetup,
+            ranReactSetup || ranVueSetup,
             useDefaults,
-            framework.name === 'vite'
+            framework.name === 'vite' || framework.name === 'vite-vue'
           );
 
           logger.endCommand(
@@ -721,7 +754,11 @@ export class BaseCLI {
 
         // Configure gt.config.json
         const framework = await detectFramework();
-        await this.handleInitCommand(false, false, framework.name === 'vite');
+        await this.handleInitCommand(
+          false,
+          false,
+          framework.name === 'vite' || framework.name === 'vite-vue'
+        );
 
         logger.endCommand(
           'Done! Make sure you have an API key and project ID to use General Translation. Get them on the dashboard: https://generaltranslation.com/dashboard'

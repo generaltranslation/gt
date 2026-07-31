@@ -5,6 +5,7 @@ import {
   INLINE_LIBRARIES,
   GT_LIBRARIES_UPSTREAM,
   PYTHON_LIBRARIES,
+  REACT_LIBRARIES,
 } from '../libraries.js';
 
 describe('Python library types', () => {
@@ -49,5 +50,13 @@ describe('Python library types', () => {
     expect(PYTHON_LIBRARIES).toContain(Libraries.GT_FLASK);
     expect(PYTHON_LIBRARIES).toContain(Libraries.GT_FASTAPI);
     expect(PYTHON_LIBRARIES).toHaveLength(2);
+  });
+});
+
+describe('Vue library types', () => {
+  it('treats gt-vue as inline but not React', () => {
+    expect(INLINE_LIBRARIES).toContain(Libraries.GT_VUE);
+    expect(REACT_LIBRARIES).not.toContain(Libraries.GT_VUE);
+    expect(GT_LIBRARIES_UPSTREAM[Libraries.GT_VUE]).toEqual([Libraries.GT_VUE]);
   });
 });
