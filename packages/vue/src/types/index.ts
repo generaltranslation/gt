@@ -54,7 +54,10 @@ export type MessagesFunction = <T extends string | null | undefined>(
 
 /** Options used to create an isolated gt-vue plugin instance. */
 export type CreateGTOptions = {
-  /** Source and fallback locale. Defaults to GT's library default locale. */
+  /**
+   * Source and fallback locale. Defaults to GT's library default locale.
+   * Its source text is the catalog, so the loader is never called for it.
+   */
   defaultLocale?: string;
   /** Async loader called once for each uncached locale. */
   loadTranslations?: LoadTranslations;
@@ -73,11 +76,15 @@ export type GTPlugin = {
   getLocale(): string;
   /** Provides the GT state to a Vue application. Usually called by `app.use`. */
   install(app: App): void;
-  /** Preloads and caches a locale without changing the active locale. */
+  /**
+   * Preloads and caches a locale without changing the active locale. The
+   * default locale is already represented by source text and is not loaded.
+   */
   loadTranslations(locale: string): Promise<TranslationCatalog>;
   /**
    * Loads a locale when needed, then switches reactive consumers to it.
-   * Only the latest overlapping locale request is applied.
+   * Only the latest overlapping locale request is applied. Superseded calls
+   * still fulfill after their catalog loads, without changing the locale.
    */
   setLocale(locale: string): Promise<void>;
 };

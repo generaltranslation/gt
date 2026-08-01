@@ -1,5 +1,6 @@
 import type { JsxChildren } from 'generaltranslation/types';
 import { hashSource } from 'generaltranslation/id';
+import * as Vue from 'vue';
 import {
   Fragment,
   createCommentVNode,
@@ -13,8 +14,11 @@ import {
   withDirectives,
   type Slots,
 } from 'vue';
+import { compileTemplate } from 'vue/compiler-sfc';
 import { renderToString } from 'vue/server-renderer';
+import { describe, expect, it, vi } from 'vitest';
 import { getBranchNames } from '../components/utils';
+import { translateVueChildren } from '../rendering/translateVueChildren';
 import {
   Branch,
   Currency,
@@ -91,6 +95,27 @@ describe('gt-vue runtime', () => {
     await plugin.setLocale('fr');
     expect(loadTranslations).toHaveBeenCalledTimes(1);
     mounted.app.unmount();
+  });
+
+  it('renders the default locale before serializing or reading a catalog', () => {
+    const source = h('span');
+    Object.defineProperty(source, 'props', {
+      value: new Proxy(Object.create(null) as object, {
+        get() {
+          throw new Error('default-locale source was serialized');
+        },
+      }),
+    });
+    const state = {
+      defaultLocale: 'en',
+      getCatalog: vi.fn(() => {
+        throw new Error('default-locale catalog was read');
+      }),
+      locale: ref('en'),
+    } as unknown as Parameters<typeof translateVueChildren>[1];
+
+    expect(translateVueChildren([source], state, {})).toEqual([source]);
+    expect(state.getCatalog).not.toHaveBeenCalled();
   });
 
   it('keeps msg and useMessages context-only and never interpolates', async () => {
@@ -175,6 +200,32 @@ describe('gt-vue runtime', () => {
     mounted.app.unmount();
   });
 
+  it('prefers the documented context prop over the internal $context alias', async () => {
+    const source: JsxChildren = { t: 'p', i: 1, c: 'Hello' };
+    const plugin = createGT({
+      loadTranslations: async () => ({
+        [jsxHash(source, 'friendly')]: { t: 'p', i: 1, c: 'Friendly' },
+        [jsxHash(source, 'formal')]: { t: 'p', i: 1, c: 'Formal' },
+      }),
+    });
+    await plugin.setLocale('fr');
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(
+            T,
+            { $context: 'formal', context: 'friendly' },
+            { default: () => h('p', 'Hello') }
+          );
+      },
+    });
+
+    const html = await renderWithPlugin(Root, plugin);
+
+    expect(html).toContain('<p>Friendly</p>');
+    expect(html).not.toContain('Formal');
+  });
+
   it('preserves component props while replacing translated slot children', async () => {
     const onNavigate = vi.fn();
     const Link = defineComponent({
@@ -248,6 +299,144 @@ describe('gt-vue runtime', () => {
     (onClick as () => void)();
     expect(onNavigate).toHaveBeenCalledTimes(1);
     mounted.app.unmount();
+  });
+
+  it('keeps Vue-compiled scoped slots opaque and supplies real props in SSR', async () => {
+    const ScopedCard = defineComponent({
+      name: 'ScopedCard',
+      setup(_props, { slots }) {
+        return () => h('article', slots.default?.({ label: 'Runtime label' }));
+      },
+    });
+    const plugin = createGT({
+      loadTranslations: async () => ({
+        scoped: {
+          t: 'ScopedCard',
+          i: 1,
+          c: 'A translated replacement must not consume a scoped slot',
+        },
+      }),
+    });
+    await plugin.setLocale('fr');
+    const Root = defineComponent({
+      components: { Card: ScopedCard, T },
+      render: compileSfcTemplate(
+        '<T _hash="scoped"><Card v-slot="{ label }"><span>{{ label }}</span></Card></T>'
+      ),
+    });
+
+    const html = await renderWithPlugin(Root, plugin);
+
+    expect(html).toContain('<article><span>Runtime label</span></article>');
+    expect(html).not.toContain('translated replacement');
+  });
+
+  it('omits Vue-compiled scoped named slots safely during branch discovery', async () => {
+    const ScopedBranch = Object.assign(
+      defineComponent({
+        name: 'ScopedBranch',
+        setup(_props, { slots }) {
+          return () => slots.one?.({ label: 'Runtime label' });
+        },
+      }),
+      { _gtt: 'branch-client' }
+    );
+    const plugin = createGT({
+      loadTranslations: async () => ({
+        scopedBranch: {
+          t: 'ScopedBranch',
+          i: 1,
+          d: { b: { one: 'Translated branch' }, t: 'b' },
+        },
+      }),
+    });
+    await plugin.setLocale('fr');
+    const Root = defineComponent({
+      components: { ScopedBranch, T },
+      render: compileSfcTemplate(
+        '<T _hash="scopedBranch"><ScopedBranch branch="one"><template #one="{ label }"><span>{{ label }}</span></template></ScopedBranch></T>'
+      ),
+    });
+
+    await expect(renderWithPlugin(Root, plugin)).resolves.toContain(
+      'Translated branch'
+    );
+  });
+
+  it('reuses explicit source element IDs repeated by a translation', async () => {
+    const target: JsxChildren = [
+      { t: 'a', i: 1, c: 'Premier' },
+      { t: 'a', i: 1, c: 'Encore' },
+    ];
+    const plugin = createGT({
+      loadTranslations: async () => ({ repeated: target }),
+    });
+    await plugin.setLocale('fr');
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(
+            T,
+            { _hash: 'repeated' },
+            {
+              default: () => [
+                h('a', null, 'First'),
+                h('strong', null, 'Second'),
+              ],
+            }
+          );
+      },
+    });
+
+    const html = stripFragmentMarkers(await renderWithPlugin(Root, plugin));
+
+    expect(html).toContain('<a>Premier</a><a>Encore</a>');
+    expect(html).not.toContain('<strong>');
+  });
+
+  it('selects source plural values with the source locale and target branches with the active locale', async () => {
+    const variable = { i: 2, k: '_gt_value_2', v: 'v' } as const;
+    const target: JsxChildren = {
+      t: 'Plural',
+      i: 1,
+      d: {
+        b: {
+          one: ['Cible ', variable],
+          other: ['Cibles ', variable],
+        },
+        t: 'p',
+      },
+    };
+    const plugin = createGT({
+      defaultLocale: 'en',
+      loadTranslations: async () => ({ pluralLocale: target }),
+    });
+    await plugin.setLocale('fr');
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(
+            T,
+            { _hash: 'pluralLocale' },
+            {
+              default: () =>
+                h(
+                  Plural,
+                  { locales: ['en'], n: 0 },
+                  {
+                    one: () => h(Var, null, { default: () => 'ONE' }),
+                    other: () => h(Var, null, { default: () => 'OTHER' }),
+                  }
+                ),
+            }
+          );
+      },
+    });
+
+    const html = stripFragmentMarkers(await renderWithPlugin(Root, plugin));
+
+    expect(html).toContain('Cible OTHER');
+    expect(html).not.toContain('Cible ONE');
   });
 
   it('updates multi-root rich children from arrays to scalar text on the client', async () => {
@@ -708,6 +897,20 @@ function stringHash(source: string, context?: string): string {
 
 function jsxHash(source: JsxChildren, context?: string): string {
   return hashSource({ source, context, dataFormat: 'JSX' });
+}
+
+/** Compiles a template through the same SFC compiler used by Vue tooling. */
+function compileSfcTemplate(template: string): ReturnType<typeof Vue.compile> {
+  const result = compileTemplate({
+    compilerOptions: { mode: 'function' },
+    filename: 'ScopedSlotFixture.vue',
+    id: 'scoped-slot-fixture',
+    source: template,
+  });
+  expect(result.errors).toEqual([]);
+  return new Function('Vue', result.code)(Vue) as ReturnType<
+    typeof Vue.compile
+  >;
 }
 
 function stripFragmentMarkers(html: string): string {

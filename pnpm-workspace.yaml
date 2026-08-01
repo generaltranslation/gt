@@ -15,6 +15,7 @@ minimumReleaseAgeExclude:
   - '@generaltranslation/*'
   - gt-next
   - gt-react
+  - gt-vue
   - gt-sanity
   - '@generaltranslation/format'
   - gt-i18n
