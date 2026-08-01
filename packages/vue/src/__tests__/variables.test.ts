@@ -1,7 +1,7 @@
 import { createSSRApp, defineComponent, h, type Component } from 'vue';
 import { renderToString } from 'vue/server-renderer';
 import { describe, expect, it } from 'vitest';
-import { Currency, DateTime, Num, createGT } from '../index';
+import { Currency, DateTime, Num, Var, createGT } from '../index';
 
 describe('gt-vue formatting components', () => {
   it('formats typed number, currency, Date, and epoch values', async () => {
@@ -88,6 +88,56 @@ describe('gt-vue formatting components', () => {
     });
 
     expect(await render(Root)).toBe('<div><!----><!----><!----></div>');
+  });
+
+  it('ignores fallthrough attributes without warning for unwrapped values', async () => {
+    let listenerCalls = 0;
+    const fallthrough = {
+      class: 'ignored-class',
+      'data-ignored': 'ignored-data',
+      onClick: () => {
+        listenerCalls += 1;
+      },
+      title: 'ignored-title',
+    };
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h('div', [
+            h(Var, fallthrough, { default: () => 'Ada' }),
+            h(Var, fallthrough, {
+              default: () => h('span', { id: 'inner' }, 'Grace'),
+            }),
+            h(Num, { ...fallthrough, locales: ['en-US'], value: 2 }),
+            h(Currency, {
+              ...fallthrough,
+              currency: 'USD',
+              locales: ['en-US'],
+              value: 3,
+            }),
+            h(DateTime, {
+              ...fallthrough,
+              locales: ['en-US'],
+              options: { timeZone: 'UTC', year: 'numeric' },
+              value: 1704067200000,
+            }),
+          ]);
+      },
+    });
+    const warnings: string[] = [];
+    const app = createSSRApp(Root).use(createGT());
+    app.config.warnHandler = (message) => warnings.push(message);
+
+    const html = await renderToString(app);
+
+    expect(html).toContain('Ada');
+    expect(html).toContain('<span id="inner">Grace</span>');
+    expect(html).toContain('2');
+    expect(html).toContain('$3.00');
+    expect(html).toContain('2024');
+    expect(html).not.toContain('ignored-');
+    expect(listenerCalls).toBe(0);
+    expect(warnings).toEqual([]);
   });
 });
 
