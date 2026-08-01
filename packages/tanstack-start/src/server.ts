@@ -8,7 +8,7 @@ import {
   getTranslations as mainGetTranslations,
 } from './functions/runtime';
 
-/** @deprecated Import `gtMiddleware` from `gt-tanstack-start/middleware` instead. */
+/** @deprecated Import `gtMiddleware` from `gt-tanstack-start` instead. */
 export const gtMiddleware: RequestMiddlewareAfterServer<
   {},
   undefined,

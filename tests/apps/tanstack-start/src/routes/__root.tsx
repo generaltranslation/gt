@@ -13,14 +13,6 @@ import {
   parseLocale,
 } from 'gt-tanstack-start';
 import '../styles.css';
-import { initializeGT } from 'gt-tanstack-start';
-import gtConfig from '../../gt.config.json';
-import loadTranslations from '../loadTranslations';
-
-initializeGT({
-  ...gtConfig,
-  loadTranslations,
-});
 
 export const Route = createRootRoute({
   head: () => ({

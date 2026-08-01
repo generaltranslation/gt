@@ -51,19 +51,13 @@ describe('gt-tanstack-start package exports', () => {
       readdirSync(join(packageRoot, 'dist'))
         .filter((file) => /\.(cjs|mjs)$/.test(file))
         .sort()
-    ).toEqual([
-      'index.client.mjs',
-      'index.server.mjs',
-      'middleware.mjs',
-      'server.mjs',
-    ]);
+    ).toEqual(['index.client.mjs', 'index.server.mjs', 'server.mjs']);
   });
 
   it('references only declared dependencies from public declarations', () => {
     for (const file of [
       'index.client.d.mts',
       'index.server.d.mts',
-      'middleware.d.mts',
       'server.d.mts',
     ]) {
       const declaration = readFileSync(join(packageRoot, 'dist', file), 'utf8');
@@ -81,7 +75,6 @@ describe('gt-tanstack-start package exports', () => {
       `
         import assert from 'node:assert/strict';
         import { GTProvider, getGT, getLocale, gtMiddleware, parseLocale } from 'gt-tanstack-start';
-        import { gtMiddleware as dedicatedGtMiddleware } from 'gt-tanstack-start/middleware';
         import { getGT as legacyGetGT, gtMiddleware as legacyGtMiddleware } from 'gt-tanstack-start/server';
 
         assert.equal(typeof GTProvider, 'function');
@@ -89,22 +82,20 @@ describe('gt-tanstack-start package exports', () => {
         assert.equal(typeof getGT, 'function');
         assert.equal(typeof getLocale, 'function');
         assert.equal(typeof gtMiddleware, 'object');
-        assert.equal(typeof dedicatedGtMiddleware, 'object');
         assert.equal(typeof legacyGetGT, 'function');
         assert.equal(typeof legacyGtMiddleware, 'object');
       `,
     ]);
   });
 
-  it('loads isomorphic helpers and middleware under the browser condition', () => {
+  it('loads isomorphic helpers from the browser ESM entrypoint', () => {
     node([
       '--conditions=browser',
       '--input-type=module',
       '-e',
       `
         import assert from 'node:assert/strict';
-        import { getGT, getLocale, initializeGT } from 'gt-tanstack-start';
-        import { gtMiddleware } from 'gt-tanstack-start/middleware';
+        import { getGT, getLocale, gtMiddleware, initializeGT } from 'gt-tanstack-start';
 
         assert.equal(typeof getGT, 'function');
         assert.equal(typeof getLocale, 'function');

@@ -2,4 +2,4 @@
 'gt-tanstack-start': patch
 ---
 
-Add a cycle-safe `gt-tanstack-start/middleware` entrypoint for application setup files that register `gtMiddleware` in both server and client builds.
+Export `gtMiddleware` from the browser condition so TanStack Start client builds can evaluate application setup files that register it.

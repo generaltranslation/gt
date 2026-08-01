@@ -95,7 +95,7 @@ describe.sequential('isomorphic translation functions', () => {
 
   it('requires an active middleware request scope', () => {
     expect(() => getLocale()).toThrow(
-      "Register gtMiddleware from 'gt-tanstack-start/middleware'"
+      "Register gtMiddleware from 'gt-tanstack-start'"
     );
   });
 
