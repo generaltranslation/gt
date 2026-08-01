@@ -1,6 +1,9 @@
 ---
-'gt-i18n': patch
+'gt-i18n': minor
 ---
 
-Add lightweight shared helpers for registering and decoding literal `STRING`
-messages, and validate encoded message fields by type.
+Make `msg(..., { $format: 'STRING' })` preserve source text literally instead
+of applying ICU interpolation. For example, `msg('Hello {name}', {
+$format: 'STRING', name: 'Ada' })` now encodes `Hello {name}` rather than
+`Hello Ada`. Add lightweight shared helpers for registering, hashing, and
+decoding literal STRING messages, and validate encoded fields by type.

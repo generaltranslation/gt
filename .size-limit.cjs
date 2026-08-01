@@ -96,6 +96,7 @@ module.exports = [
   i18n('gt-i18n', 'index'),
   i18n('gt-i18n/types', 'types'),
   i18n('gt-i18n/internal', 'internal'),
+  i18n('gt-i18n/internal/string', 'internal-string'),
   i18n('gt-i18n/internal/types', 'internal-types'),
 
   reactCore('@generaltranslation/react-core/pure', 'pure'),
