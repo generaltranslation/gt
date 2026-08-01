@@ -68,16 +68,26 @@ export function isPackageInstalled(
 ): boolean {
   const devDependencies =
     (packageJson.devDependencies as Record<string, string> | undefined) ?? {};
+  const peerDependencies =
+    (packageJson.peerDependencies as Record<string, string> | undefined) ?? {};
+  const optionalDependencies =
+    (packageJson.optionalDependencies as Record<string, string> | undefined) ??
+    {};
   const prodDependencies =
     (packageJson.dependencies as Record<string, string> | undefined) ?? {};
+  const runtimeDependencies = {
+    ...peerDependencies,
+    ...optionalDependencies,
+    ...prodDependencies,
+  };
   const dependencies = checkBoth
     ? {
         ...devDependencies,
-        ...prodDependencies,
+        ...runtimeDependencies,
       }
     : asDevDependency
       ? devDependencies
-      : prodDependencies;
+      : runtimeDependencies;
 
   if (!dependencies) {
     return false;
@@ -91,9 +101,16 @@ export function getPackageVersion(
 ): string | undefined {
   const devDependencies =
     (packageJson.devDependencies as Record<string, string> | undefined) ?? {};
+  const peerDependencies =
+    (packageJson.peerDependencies as Record<string, string> | undefined) ?? {};
+  const optionalDependencies =
+    (packageJson.optionalDependencies as Record<string, string> | undefined) ??
+    {};
   const prodDependencies =
     (packageJson.dependencies as Record<string, string> | undefined) ?? {};
   const dependencies = {
+    ...peerDependencies,
+    ...optionalDependencies,
     ...prodDependencies,
     ...devDependencies,
   };

@@ -1,15 +1,13 @@
 import { parseExpression, type ParserPlugin } from '@babel/parser';
-import traverseModule from '@babel/traverse';
+import traverseModule, { type Scope } from '@babel/traverse';
 import * as babel from '@babel/types';
-import {
-  ElementTypes,
-  NodeTypes,
-  type DirectiveNode,
-  type ElementNode,
-  type ExpressionNode,
-  type RootNode,
-  type SimpleExpressionNode,
-  type TemplateChildNode,
+import type {
+  DirectiveNode,
+  ElementNode,
+  ExpressionNode,
+  RootNode,
+  SimpleExpressionNode,
+  TemplateChildNode,
 } from '@vue/compiler-dom';
 import {
   HTML_CONTENT_PROPS,
@@ -18,6 +16,7 @@ import {
   type JsxChildren,
 } from '@generaltranslation/format/types';
 import { isAcceptedPluralForm } from 'generaltranslation/internal';
+import { ElementTypes, NodeTypes } from './compilerAst.js';
 import { processVueStringCall } from './stringCalls.js';
 import type {
   ExtractionLocation,
@@ -30,6 +29,7 @@ import {
   createInlineMetadata,
   readStaticPrimitive,
   type StaticPrimitive,
+  unwrapExpression,
 } from './utils.js';
 
 const traverse = traverseModule.default || traverseModule;
@@ -53,8 +53,9 @@ type ForParseResult = {
   value?: SimpleExpressionNode;
 };
 
-const RESERVED_BRANCH_PROPS = new Set([
+const NON_BRANCH_ATTRIBUTE_NAMES = new Set([
   'branch',
+  'class',
   'n',
   'locales',
   'key',
@@ -63,6 +64,7 @@ const RESERVED_BRANCH_PROPS = new Set([
   'ref_key',
   'ref-for',
   'ref-key',
+  'style',
 ]);
 
 const RESERVED_T_PROPS = new Set([
@@ -124,8 +126,50 @@ function visitTemplateChildren(
     const childShadowed = unionSets(shadowed, localBindings);
 
     for (const property of child.props) {
-      if (property.type !== NodeTypes.DIRECTIVE || !property.exp) continue;
-      if (property.name === 'slot') continue;
+      if (property.type !== NodeTypes.DIRECTIVE) continue;
+      if (property.name === 'for') {
+        const parseResult = (
+          property as DirectiveNode & { forParseResult?: ForParseResult }
+        ).forParseResult;
+        for (const alias of [
+          parseResult?.value,
+          parseResult?.key,
+          parseResult?.index,
+        ]) {
+          processBindingDefaults(
+            alias,
+            childShadowed,
+            bindings,
+            expressionPlugins,
+            context
+          );
+        }
+      } else if (property.name === 'slot') {
+        processBindingDefaults(
+          property.exp,
+          childShadowed,
+          bindings,
+          expressionPlugins,
+          context
+        );
+      }
+    }
+
+    for (const property of child.props) {
+      if (property.type !== NodeTypes.DIRECTIVE) continue;
+      if (
+        property.arg?.type === NodeTypes.SIMPLE_EXPRESSION &&
+        !property.arg.isStatic
+      ) {
+        processTemplateExpression(
+          property.arg,
+          childShadowed,
+          bindings,
+          expressionPlugins,
+          context
+        );
+      }
+      if (property.name === 'slot' || !property.exp) continue;
       if (property.name === 'for') {
         const parseResult = (
           property as DirectiveNode & { forParseResult?: ForParseResult }
@@ -143,14 +187,21 @@ function visitTemplateChildren(
       }
       processTemplateExpression(
         property.exp,
-        childShadowed,
+        property.name === 'if' || property.name === 'else-if'
+          ? shadowed
+          : childShadowed,
         bindings,
         expressionPlugins,
         context
       );
     }
 
-    const component = resolveGTComponent(child, bindings);
+    const component = resolveGTComponent(
+      child,
+      bindings,
+      expressionPlugins,
+      childShadowed
+    );
     if (component?.originalName === 'T' && !insideTranslation) {
       extractTranslationComponent(
         child,
@@ -184,35 +235,188 @@ function processTemplateExpression(
   const expressionNode = getExpressionNode(expression, expressionPlugins);
   if (!expressionNode) return;
 
-  const file = wrapForTraversal(expressionNode);
+  processTemplateExpressionNode(
+    expressionNode,
+    expression.loc,
+    shadowed,
+    bindings,
+    context
+  );
+}
+
+function processTemplateExpressionNode(
+  expression: babel.Node,
+  location: ExtractionLocation,
+  shadowed: Set<string>,
+  bindings: TemplateBindings,
+  context: VueExtractionContext
+): void {
+  const file = wrapForTraversal(expression);
   if (!file) return;
 
   traverse(file, {
     CallExpression(path) {
-      if (path.node.callee.type !== 'Identifier') return;
-      const name = path.node.callee.name;
-      const kind = bindings.stringFunctions.get(name);
-      if (!kind || shadowed.has(name) || path.scope.hasBinding(name)) return;
-      processVueStringCall(path.node, kind, expression.loc, context);
+      const kind = resolveTemplateStringFunction(
+        path.node.callee,
+        path.scope,
+        shadowed,
+        bindings
+      );
+      if (!kind) return;
+      processVueStringCall(path.node, kind, location, context, (node) =>
+        readTemplatePrimitive(node, path.scope, shadowed, bindings)
+      );
+    },
+    OptionalCallExpression(path) {
+      const kind = resolveTemplateStringFunction(
+        path.node.callee,
+        path.scope,
+        shadowed,
+        bindings
+      );
+      if (!kind) return;
+      processVueStringCall(path.node, kind, location, context, (node) =>
+        readTemplatePrimitive(node, path.scope, shadowed, bindings)
+      );
     },
     TaggedTemplateExpression(path) {
-      if (path.node.tag.type !== 'Identifier') return;
-      const name = path.node.tag.name;
-      if (
-        !bindings.stringFunctions.has(name) ||
-        shadowed.has(name) ||
-        path.scope.hasBinding(name)
-      ) {
-        return;
-      }
+      const kind = resolveTemplateStringFunction(
+        path.node.tag,
+        path.scope,
+        shadowed,
+        bindings
+      );
+      if (!kind) return;
       addVueError(
         context,
-        expression.loc,
+        location,
         'Found an unsupported tagged template translation in gt-vue',
         'Call the translation function with a string literal instead'
       );
     },
   });
+}
+
+/** Reads a script-exposed primitive unless a Vue or expression scope masks it. */
+function readTemplatePrimitive(
+  input: babel.Node | null | undefined,
+  scope: Scope,
+  shadowed: Set<string>,
+  bindings: TemplateBindings
+) {
+  return readStaticPrimitive(input, (identifier) => {
+    if (shadowed.has(identifier.name) || scope.hasBinding(identifier.name)) {
+      return { ok: false };
+    }
+    const value = bindings.staticValues.get(identifier.name);
+    return bindings.staticValues.has(identifier.name)
+      ? { ok: true, value: value! }
+      : { ok: false };
+  });
+}
+
+/** Resolves a template call back to a statically imported gt-vue function. */
+function resolveTemplateStringFunction(
+  input: babel.Node,
+  scope: Scope,
+  shadowed: Set<string>,
+  bindings: TemplateBindings
+) {
+  const node = unwrapExpression(input);
+  if (!node) return undefined;
+
+  if (node.type === 'Identifier') {
+    if (shadowed.has(node.name) || scope.hasBinding(node.name))
+      return undefined;
+    return bindings.stringFunctions.get(node.name);
+  }
+  if (
+    node.type !== 'MemberExpression' &&
+    node.type !== 'OptionalMemberExpression'
+  ) {
+    return undefined;
+  }
+  const object = unwrapExpression(node.object);
+  if (object?.type !== 'Identifier') return undefined;
+  if (shadowed.has(object.name) || scope.hasBinding(object.name)) {
+    return undefined;
+  }
+  const property =
+    !node.computed && node.property.type === 'Identifier'
+      ? node.property.name
+      : node.computed && node.property.type === 'StringLiteral'
+        ? node.property.value
+        : undefined;
+  return property
+    ? bindings.stringFunctions.get(`${object.name}.${property}`)
+    : undefined;
+}
+
+/** Visits expressions that execute while Vue initializes binding patterns. */
+function processBindingDefaults(
+  expression: ExpressionNode | undefined,
+  shadowed: Set<string>,
+  bindings: TemplateBindings,
+  expressionPlugins: ParserPlugin[],
+  context: VueExtractionContext
+): void {
+  if (
+    !expression ||
+    expression.type !== NodeTypes.SIMPLE_EXPRESSION ||
+    !expression.content
+  ) {
+    return;
+  }
+  try {
+    const arrow = parseExpression(`(${expression.content}) => 0`, {
+      plugins: expressionPlugins,
+    });
+    if (arrow.type !== 'ArrowFunctionExpression') return;
+    for (const parameter of arrow.params) {
+      visitBindingDefaultExpressions(parameter, (node) =>
+        processTemplateExpressionNode(
+          node,
+          expression.loc,
+          shadowed,
+          bindings,
+          context
+        )
+      );
+    }
+  } catch {
+    // The Vue compiler reports malformed v-for/v-slot bindings separately.
+  }
+}
+
+/** Recursively finds default and computed-key expressions in a binding. */
+function visitBindingDefaultExpressions(
+  pattern: babel.Node | null,
+  visit: (expression: babel.Expression) => void
+): void {
+  if (!pattern) return;
+  if (pattern.type === 'AssignmentPattern') {
+    visit(pattern.right);
+    visitBindingDefaultExpressions(pattern.left, visit);
+  } else if (pattern.type === 'RestElement') {
+    visitBindingDefaultExpressions(pattern.argument, visit);
+  } else if (pattern.type === 'ArrayPattern') {
+    for (const element of pattern.elements) {
+      if (element) visitBindingDefaultExpressions(element, visit);
+    }
+  } else if (pattern.type === 'ObjectPattern') {
+    for (const property of pattern.properties) {
+      if (property.type === 'RestElement') {
+        visitBindingDefaultExpressions(property.argument, visit);
+      } else {
+        if (property.computed && babel.isExpression(property.key)) {
+          visit(property.key);
+        }
+        visitBindingDefaultExpressions(property.value, visit);
+      }
+    }
+  } else if (pattern.type === 'TSParameterProperty') {
+    visitBindingDefaultExpressions(pattern.parameter, visit);
+  }
 }
 
 function extractTranslationComponent(
@@ -223,7 +427,13 @@ function extractTranslationComponent(
   context: VueExtractionContext
 ): void {
   const errorCount = context.errors.length;
-  const translationContext = readTContext(element, expressionPlugins, context);
+  const translationContext = readTContext(
+    element,
+    shadowed,
+    bindings,
+    expressionPlugins,
+    context
+  );
   const slots = getSlotLayout(element, shadowed, expressionPlugins, context);
   if (slots.namedSlots.size > 0) {
     addVueError(
@@ -245,7 +455,7 @@ function extractTranslationComponent(
   );
   if (context.errors.length !== errorCount) return;
 
-  context.updates.push({
+  context.results.push({
     dataFormat: 'JSX',
     source: collapseChildren(serialized),
     metadata: createInlineMetadata(context, element.loc, translationContext),
@@ -254,6 +464,8 @@ function extractTranslationComponent(
 
 function readTContext(
   element: ElementNode,
+  shadowed: Set<string>,
+  bindings: TemplateBindings,
   expressionPlugins: ParserPlugin[],
   context: VueExtractionContext
 ): string | undefined {
@@ -261,6 +473,7 @@ function readTContext(
   let hasContext = false;
 
   for (const property of element.props) {
+    if (isDynamicComponentSelector(element, property)) continue;
     if (property.type === NodeTypes.ATTRIBUTE) {
       if (RESERVED_T_PROPS.has(property.name)) continue;
       if (property.name !== 'context' && property.name !== '$context') {
@@ -317,7 +530,12 @@ function readTContext(
       continue;
     }
     hasContext = true;
-    const value = readExpressionPrimitive(property.exp, expressionPlugins);
+    const value = readExpressionPrimitive(
+      property.exp,
+      expressionPlugins,
+      shadowed,
+      bindings
+    );
     if (!value.ok || typeof value.value !== 'string') {
       addVueError(
         context,
@@ -378,7 +596,12 @@ function serializeChild(
   if (child.type === NodeTypes.COMMENT) return [];
   if (child.type === NodeTypes.TEXT) return [child.content];
   if (child.type === NodeTypes.INTERPOLATION) {
-    const value = readExpressionPrimitive(child.content, expressionPlugins);
+    const value = readExpressionPrimitive(
+      child.content,
+      expressionPlugins,
+      shadowed,
+      bindings
+    );
     if (!value.ok) {
       addVueError(
         context,
@@ -419,11 +642,15 @@ function serializeElement(
   expressionPlugins: ParserPlugin[],
   context: VueExtractionContext
 ): JsxChild {
-  validateRichElement(element, context);
-
   counter.value += 1;
   const id = counter.value;
-  const component = resolveGTComponent(element, bindings);
+  const component = resolveGTComponent(
+    element,
+    bindings,
+    expressionPlugins,
+    shadowed
+  );
+  validateRichElement(element, context, Boolean(component));
   const originalName = component?.originalName;
 
   if (originalName === 'T') {
@@ -457,7 +684,13 @@ function serializeElement(
     };
   }
 
-  const data = readContentProps(element, expressionPlugins, context);
+  const data = readContentProps(
+    element,
+    shadowed,
+    bindings,
+    expressionPlugins,
+    context
+  );
   const slotLayout =
     element.tagType === ElementTypes.COMPONENT
       ? getSlotLayout(element, shadowed, expressionPlugins, context)
@@ -494,6 +727,7 @@ function serializeElement(
       slotLayout,
       id,
       originalName,
+      shadowed,
       bindings,
       expressionPlugins,
       context
@@ -514,7 +748,8 @@ function serializeElement(
 
 function validateRichElement(
   element: ElementNode,
-  context: VueExtractionContext
+  context: VueExtractionContext,
+  resolvedDynamicComponent: boolean
 ): void {
   if (element.tagType === ElementTypes.SLOT || element.tag === 'slot') {
     addVueError(
@@ -538,7 +773,7 @@ function validateRichElement(
       'Use an ordinary element or a statically named slot template'
     );
   }
-  if (element.tag.toLowerCase() === 'component') {
+  if (element.tag.toLowerCase() === 'component' && !resolvedDynamicComponent) {
     addVueError(
       context,
       element.loc,
@@ -591,12 +826,20 @@ function validateVarProps(
 
 function readContentProps(
   element: ElementNode,
+  shadowed: Set<string>,
+  bindings: TemplateBindings,
   expressionPlugins: ParserPlugin[],
   context: VueExtractionContext
 ): GTProp {
   const data: GTProp = {};
   for (const [shortName, propName] of Object.entries(HTML_CONTENT_PROPS)) {
-    const property = findElementProperty(element, propName, expressionPlugins);
+    const property = findElementProperty(
+      element,
+      propName,
+      expressionPlugins,
+      shadowed,
+      bindings
+    );
     if (!property.present) continue;
     if (!property.static) {
       addVueError(
@@ -619,6 +862,7 @@ function readBranches(
   slots: SlotLayout,
   branchElementId: number,
   component: 'Branch' | 'Plural',
+  shadowed: Set<string>,
   bindings: TemplateBindings,
   expressionPlugins: ParserPlugin[],
   context: VueExtractionContext
@@ -641,7 +885,26 @@ function readBranches(
   }
 
   for (const property of element.props) {
+    if (isDynamicComponentSelector(element, property)) continue;
     if (property.type === NodeTypes.DIRECTIVE && property.name === 'slot') {
+      continue;
+    }
+    const key =
+      property.type === NodeTypes.ATTRIBUTE
+        ? property.name
+        : readDirectiveKey(property);
+
+    // Vue compiles v-on directives to listener props, which gt-vue always
+    // excludes from branch content regardless of the handler expression.
+    if (property.type === NodeTypes.DIRECTIVE && property.name === 'on') {
+      continue;
+    }
+    if (
+      key &&
+      (!isBranchAttributeName(key) ||
+        Object.prototype.hasOwnProperty.call(branches, key) ||
+        (component === 'Plural' && !isAcceptedPluralForm(key)))
+    ) {
       continue;
     }
     if (
@@ -657,22 +920,24 @@ function readBranches(
       );
       continue;
     }
-    const key =
-      property.type === NodeTypes.ATTRIBUTE
-        ? property.name
-        : readDirectiveKey(property);
-    if (
-      !key ||
-      RESERVED_BRANCH_PROPS.has(key) ||
-      key.startsWith('onVnode') ||
-      key.startsWith('data-') ||
-      Object.hasOwn(branches, key) ||
-      (component === 'Plural' && !isAcceptedPluralForm(key))
-    ) {
-      continue;
-    }
-    const value = readPropertyValue(property, expressionPlugins);
+    if (!key) continue;
+    const value = readPropertyValue(
+      property,
+      expressionPlugins,
+      shadowed,
+      bindings
+    );
     if (!value.ok) {
+      if (
+        isStaticallyNonBranchValue(
+          property,
+          expressionPlugins,
+          shadowed,
+          bindings
+        )
+      ) {
+        continue;
+      }
       addVueError(
         context,
         property.loc,
@@ -691,6 +956,58 @@ function branchPropToChildren(value: StaticPrimitive): JsxChildren {
   return String(value);
 }
 
+/**
+ * Mirrors the attribute-name half of gt-vue's runtime branch predicate.
+ *
+ * Vue combines explicit component props, presentation attributes, and
+ * normalized listeners in one VNode prop record. The extractor must discard
+ * the same names before evaluating values so dynamic class/style/listener
+ * expressions cannot change a published translation hash.
+ */
+function isBranchAttributeName(name: string): boolean {
+  return !(
+    NON_BRANCH_ATTRIBUTE_NAMES.has(name) ||
+    name.startsWith('aria-') ||
+    name.startsWith('data-') ||
+    /^on[^a-z]/.test(name)
+  );
+}
+
+/**
+ * Identifies expressions whose top-level runtime type can never be branch
+ * content. Unknown identifiers and calls deliberately return false so an
+ * arbitrary prop whose runtime type may be primitive still fails closed.
+ */
+function isStaticallyNonBranchValue(
+  property: ElementNode['props'][number],
+  expressionPlugins: ParserPlugin[],
+  shadowed: Set<string>,
+  bindings: TemplateBindings
+): boolean {
+  if (property.type !== NodeTypes.DIRECTIVE || property.name !== 'bind') {
+    return false;
+  }
+  const expression = property.exp
+    ? getExpressionNode(property.exp, expressionPlugins)
+    : undefined;
+  const node = unwrapExpression(expression);
+  if (!node) return false;
+
+  if (babel.isIdentifier(node, { name: 'undefined' })) {
+    return !shadowed.has(node.name) && !bindings.staticValues.has(node.name);
+  }
+  return (
+    babel.isArrayExpression(node) ||
+    babel.isArrowFunctionExpression(node) ||
+    babel.isClassExpression(node) ||
+    babel.isFunctionExpression(node) ||
+    babel.isNewExpression(node) ||
+    babel.isObjectExpression(node) ||
+    babel.isRegExpLiteral(node) ||
+    (babel.isUnaryExpression(node) && node.operator === 'void')
+  );
+}
+
 function getSlotLayout(
   element: ElementNode,
   shadowed: Set<string>,
@@ -699,6 +1016,8 @@ function getSlotLayout(
 ): SlotLayout {
   const namedSlots = new Map<string, SlotContent>();
   let defaultSlot: SlotContent = { children: [], shadowed };
+  let hasExplicitDefaultSlot = false;
+  let reportedDefaultConflict = false;
   const componentSlot = element.props.find(
     (property): property is DirectiveNode =>
       property.type === NodeTypes.DIRECTIVE && property.name === 'slot'
@@ -732,7 +1051,7 @@ function getSlotLayout(
           )
         : undefined;
     if (!slotDirective || child.type !== NodeTypes.ELEMENT) {
-      defaultChildren.push(child);
+      if (isRuntimeSlotContent(child)) defaultChildren.push(child);
       continue;
     }
 
@@ -754,14 +1073,16 @@ function getSlotLayout(
       collectExpressionBindings(slotDirective.exp, expressionPlugins)
     );
     if (slotName === 'default') {
-      if (defaultChildren.length > 0 || defaultSlot.children.length > 0) {
+      if (defaultChildren.length > 0 || hasExplicitDefaultSlot) {
         addVueError(
           context,
           child.loc,
           'Found more than one default slot definition inside a gt-vue translation',
           'Use a single default slot'
         );
+        reportedDefaultConflict = true;
       }
+      hasExplicitDefaultSlot = true;
       defaultSlot = { children: child.children, shadowed: slotShadowed };
     } else if (slotName) {
       if (namedSlots.has(slotName)) {
@@ -779,10 +1100,27 @@ function getSlotLayout(
     }
   }
 
-  if (defaultSlot.children.length === 0 && defaultChildren.length > 0) {
+  if (
+    hasExplicitDefaultSlot &&
+    defaultChildren.length > 0 &&
+    !reportedDefaultConflict
+  ) {
+    addVueError(
+      context,
+      defaultChildren[0].loc,
+      'Found more than one default slot definition inside a gt-vue translation',
+      'Use a single default slot'
+    );
+  } else if (!hasExplicitDefaultSlot && defaultChildren.length > 0) {
     defaultSlot = { children: defaultChildren, shadowed };
   }
   return { defaultSlot, namedSlots };
+}
+
+/** Matches Vue's omission of comments and whitespace-only implicit slots. */
+function isRuntimeSlotContent(child: TemplateChildNode): boolean {
+  if (child.type === NodeTypes.COMMENT) return false;
+  return child.type !== NodeTypes.TEXT || child.content.trim().length > 0;
 }
 
 function addScopedSlotError(
@@ -820,7 +1158,9 @@ function readSlotName(
 function findElementProperty(
   element: ElementNode,
   name: string,
-  expressionPlugins: ParserPlugin[]
+  expressionPlugins: ParserPlugin[],
+  shadowed: Set<string>,
+  bindings: TemplateBindings
 ):
   | { present: false }
   | {
@@ -837,7 +1177,12 @@ function findElementProperty(
           ? readDirectiveKey(property)
           : undefined;
     if (key !== name) continue;
-    const value = readPropertyValue(property, expressionPlugins);
+    const value = readPropertyValue(
+      property,
+      expressionPlugins,
+      shadowed,
+      bindings
+    );
     return {
       location: property.loc,
       present: true,
@@ -850,23 +1195,38 @@ function findElementProperty(
 
 function readPropertyValue(
   property: ElementNode['props'][number],
-  expressionPlugins: ParserPlugin[]
+  expressionPlugins: ParserPlugin[],
+  shadowed: Set<string>,
+  bindings: TemplateBindings
 ): { ok: true; value: StaticPrimitive } | { ok: false } {
   if (property.type === NodeTypes.ATTRIBUTE) {
     return { ok: true, value: property.value?.content ?? '' };
   }
   if (property.name !== 'bind') return { ok: false };
-  return readExpressionPrimitive(property.exp, expressionPlugins);
+  return readExpressionPrimitive(
+    property.exp,
+    expressionPlugins,
+    shadowed,
+    bindings
+  );
 }
 
 function readExpressionPrimitive(
   expression: ExpressionNode | undefined,
-  expressionPlugins: ParserPlugin[]
+  expressionPlugins: ParserPlugin[],
+  shadowed: Set<string>,
+  bindings: TemplateBindings
 ): { ok: true; value: StaticPrimitive } | { ok: false } {
   const node = expression
     ? getExpressionNode(expression, expressionPlugins)
     : undefined;
-  return readStaticPrimitive(node);
+  return readStaticPrimitive(node, (identifier) => {
+    if (shadowed.has(identifier.name)) return { ok: false };
+    const value = bindings.staticValues.get(identifier.name);
+    return bindings.staticValues.has(identifier.name)
+      ? { ok: true, value: value! }
+      : { ok: false };
+  });
 }
 
 function getExpressionNode(
@@ -991,22 +1351,100 @@ function collectPatternNames(
 
 function resolveGTComponent(
   element: ElementNode,
-  bindings: TemplateBindings
+  bindings: TemplateBindings,
+  expressionPlugins: ParserPlugin[],
+  shadowed: Set<string>
 ): { localName: string; originalName: GTComponentName } | undefined {
   if (element.tagType !== ElementTypes.COMPONENT) return undefined;
-  const camelized = element.tag.replace(/-([a-z])/g, (_match, letter: string) =>
+  const selector = readDynamicComponentSelector(element, expressionPlugins);
+  if (
+    selector?.kind === 'expression' &&
+    shadowed.has(selector.expressionName)
+  ) {
+    return undefined;
+  }
+  const sourceName = selector?.name ?? element.tag;
+  const camelized = sourceName.replace(/-(\w)/g, (_match, letter: string) =>
     letter.toUpperCase()
   );
   const pascalized = camelized
     ? camelized[0].toUpperCase() + camelized.slice(1)
     : camelized;
-  for (const localName of new Set([element.tag, camelized, pascalized])) {
+  for (const localName of new Set([sourceName, camelized, pascalized])) {
+    if (
+      selector?.kind === 'string' &&
+      !bindings.registeredComponents.has(localName)
+    ) {
+      continue;
+    }
     const originalName = bindings.components.get(localName);
     if (originalName) {
       return { localName, originalName };
     }
   }
   return undefined;
+}
+
+/** Resolves a statically knowable Vue dynamic-component selector. */
+function readDynamicComponentSelector(
+  element: ElementNode,
+  expressionPlugins: ParserPlugin[]
+):
+  | { kind: 'expression'; expressionName: string; name: string }
+  | { kind: 'string'; name: string }
+  | undefined {
+  if (element.tag.toLowerCase() !== 'component') return undefined;
+  const property = element.props.find((candidate) =>
+    isDynamicComponentSelector(element, candidate)
+  );
+  if (!property) return undefined;
+  if (property.type === NodeTypes.ATTRIBUTE) {
+    return property.value
+      ? { kind: 'string', name: property.value.content }
+      : undefined;
+  }
+  const node = property.exp
+    ? getExpressionNode(property.exp, expressionPlugins)
+    : undefined;
+  const unwrapped = unwrapExpression(node);
+  if (unwrapped?.type === 'Identifier') {
+    return {
+      kind: 'expression',
+      expressionName: unwrapped.name,
+      name: unwrapped.name,
+    };
+  }
+  if (unwrapped?.type === 'StringLiteral') {
+    return { kind: 'string', name: unwrapped.value };
+  }
+  if (
+    (unwrapped?.type === 'MemberExpression' ||
+      unwrapped?.type === 'OptionalMemberExpression') &&
+    unwrapped.object.type === 'Identifier' &&
+    ((!unwrapped.computed && unwrapped.property.type === 'Identifier') ||
+      (unwrapped.computed && unwrapped.property.type === 'StringLiteral'))
+  ) {
+    const property =
+      unwrapped.property.type === 'Identifier'
+        ? unwrapped.property.name
+        : unwrapped.property.value;
+    return {
+      kind: 'expression',
+      expressionName: unwrapped.object.name,
+      name: `${unwrapped.object.name}.${property}`,
+    };
+  }
+  return undefined;
+}
+
+/** Identifies the selector prop that Vue consumes for `<component>`. */
+function isDynamicComponentSelector(
+  element: ElementNode,
+  property: ElementNode['props'][number]
+): boolean {
+  if (element.tag.toLowerCase() !== 'component') return false;
+  if (property.type === NodeTypes.ATTRIBUTE) return property.name === 'is';
+  return property.name === 'bind' && readDirectiveKey(property) === 'is';
 }
 
 function readDirectiveKey(directive: DirectiveNode): string | undefined {
@@ -1021,7 +1459,7 @@ function toDisplayString(value: StaticPrimitive): string {
 }
 
 function appendSerializedChild(result: JsxChild[], value: JsxChild): void {
-  const previous = result.at(-1);
+  const previous = result[result.length - 1];
   if (typeof previous === 'string' && typeof value === 'string') {
     result[result.length - 1] = previous + value;
   } else {

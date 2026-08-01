@@ -11,6 +11,7 @@ import { exitSync, logErrorAndExit } from '../../console/logging.js';
 import { convertToFileTranslationData } from '../../formats/files/convertToFileTranslationData.js';
 import { collectFiles } from '../../formats/files/collectFiles.js';
 import { hasValidCredentials, hasValidLocales } from './utils/validation.js';
+import type { InlineLibrary } from '../../types/libraries.js';
 
 // Downloads translations that were originally staged
 
@@ -22,7 +23,8 @@ import { hasValidCredentials, hasValidLocales } from './utils/validation.js';
 export async function handleDownload(
   options: TranslateFlags,
   settings: Settings,
-  library: SupportedLibraries
+  library: SupportedLibraries,
+  additionalLibraries: readonly InlineLibrary[] = []
 ) {
   if (!hasValidLocales(settings)) return exitSync(1);
   // Validate credentials if not in dry run
@@ -47,7 +49,12 @@ export async function handleDownload(
   if (settings.stageTranslations) {
     fileVersionData = getStagedEntriesFromLockfile(settings);
   } else {
-    const { files } = await collectFiles(options, settings, library);
+    const { files } = await collectFiles(
+      options,
+      settings,
+      library,
+      additionalLibraries
+    );
     // _versionId is only written by stage when an inline GTJSON template was
     // staged, so demand it only when a GTJSON is part of this download —
     // file-only projects never have one and don't need it. (Staged downloads

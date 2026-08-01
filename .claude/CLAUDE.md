@@ -57,6 +57,7 @@ Turbo tasks: `build`, `test`, `lint`, `lint:fix`, `format`, `format:fix`, `trans
 | `@generaltranslation/react-core-linter` | `packages/react-core-linter` | ESLint plugin for react-core                                      |
 | `gt-remark`                             | `packages/remark`            | Remark plugin for MDX escaping                                    |
 | `@generaltranslation/python-extractor`  | `packages/python-extractor`  | Python source extraction (tree-sitter)                            |
+| `@generaltranslation/vue-extractor`     | `packages/vue-extractor`     | Vue SFC and script source extraction                              |
 
 ## Code Conventions
 

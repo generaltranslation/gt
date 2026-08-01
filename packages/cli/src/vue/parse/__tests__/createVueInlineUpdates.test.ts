@@ -1,341 +1,115 @@
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { JsxChildren } from '@generaltranslation/format/types';
-import { hashSource } from 'generaltranslation/id';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { extractFromVueSource } from '@generaltranslation/vue-extractor';
+import { resolveVueCompilerOptions } from '@generaltranslation/vue-extractor/config';
 import { matchFiles } from '../../../fs/matchFiles.js';
 import { createVueInlineUpdates } from '../createVueInlineUpdates.js';
-import type { GTParsingFlags } from '../../../types/parsing.js';
 
-vi.mock('../../../fs/matchFiles.js', () => ({ matchFiles: vi.fn() }));
+vi.mock('@generaltranslation/vue-extractor', () => ({
+  extractFromVueSource: vi.fn(),
+}));
+vi.mock('@generaltranslation/vue-extractor/config', () => ({
+  resolveVueCompilerOptions: vi.fn(),
+}));
+vi.mock('../../../fs/matchFiles.js', () => ({
+  matchFiles: vi.fn(),
+}));
 
-const parsingFlags: GTParsingFlags = {
+const temporaryDirectories: string[] = [];
+const parsingFlags = {
   autoderive: false,
   enableAutoJsxInjection: false,
-  includeSourceCodeContext: false,
+  includeSourceCodeContext: true,
   legacyGtReactImportSource: false,
+  viteConfigPath: 'config/vite.custom.ts',
 };
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(resolveVueCompilerOptions).mockReturnValue({
+    compilerOptions: {},
+    errors: [],
+  });
+});
+
+afterEach(() => {
+  for (const directory of temporaryDirectories.splice(0)) {
+    fs.rmSync(directory, { force: true, recursive: true });
+  }
 });
 
 describe('createVueInlineUpdates', () => {
-  it('extracts context-only strings and a runtime-compatible rich source tree', async () => {
-    const fixture = fixturePath('rich.vue');
-    vi.mocked(matchFiles).mockReturnValue([fixture]);
+  it('keeps discovery and hashing in the CLI while delegating parsing', async () => {
+    const file = createSourceFile('Component.vue', '<template />');
+    vi.mocked(matchFiles).mockReturnValue([file]);
+    vi.mocked(resolveVueCompilerOptions).mockReturnValue({
+      compilerOptions: { whitespace: 'preserve' },
+      errors: [],
+    });
+    vi.mocked(extractFromVueSource).mockResolvedValue({
+      results: [
+        {
+          dataFormat: 'STRING',
+          source: 'Hello',
+          metadata: { context: 'navigation', filePaths: ['Component.vue'] },
+        },
+      ],
+      errors: [],
+      warnings: ['warning'],
+    });
 
-    const result = await createVueInlineUpdates(undefined, {
-      ...parsingFlags,
+    const result = await createVueInlineUpdates(undefined, parsingFlags);
+
+    expect(matchFiles).toHaveBeenCalledWith(process.cwd(), expect.any(Array));
+    expect(resolveVueCompilerOptions).toHaveBeenCalledWith(
+      process.cwd(),
+      undefined,
+      { viteConfigPath: 'config/vite.custom.ts' }
+    );
+    expect(extractFromVueSource).toHaveBeenCalledWith('<template />', file, {
+      compilerOptions: { whitespace: 'preserve' },
       includeSourceCodeContext: true,
+      projectRoot: process.cwd(),
+    });
+    expect(result.errors).toEqual([]);
+    expect(result.warnings).toEqual(['warning']);
+    expect(result.updates).toEqual([
+      expect.objectContaining({
+        dataFormat: 'STRING',
+        source: 'Hello',
+        metadata: expect.objectContaining({
+          context: 'navigation',
+          hash: expect.any(String),
+        }),
+      }),
+    ]);
+  });
+
+  it('does not parse files when compiler options cannot be resolved', async () => {
+    const file = createSourceFile('Component.vue', '<template />');
+    vi.mocked(matchFiles).mockReturnValue([file]);
+    vi.mocked(resolveVueCompilerOptions).mockReturnValue({
+      compilerOptions: {},
+      errors: ['invalid compiler options'],
     });
 
-    expect(result.errors).toEqual([]);
-    expect(result.warnings).toEqual([]);
-    expect(result.updates).toHaveLength(10);
+    const result = await createVueInlineUpdates(undefined, parsingFlags);
 
-    const expectedRichSource: JsxChildren = [
-      {
-        t: 'p',
-        i: 1,
-        d: { ti: 'Greeting' },
-        c: ['Hello ', { i: 2, k: '_gt_value_2', v: 'v' }, '!'],
-      },
-      {
-        t: 'Plural',
-        i: 3,
-        d: {
-          b: {
-            one: ['one ', { i: 4, k: '_gt_value_4', v: 'v' }],
-            other: ['other ', { i: 4, k: '_gt_value_4', v: 'v' }],
-          },
-          t: 'p',
-        },
-        c: ['fallback ', { i: 4, k: '_gt_value_4', v: 'v' }],
-      },
-      {
-        t: 'Branch',
-        i: 5,
-        d: {
-          b: {
-            formal: ['formal ', { i: 6, k: '_gt_value_6', v: 'v' }],
-            casual: ['casual ', { i: 6, k: '_gt_value_6', v: 'v' }],
-          },
-          t: 'b',
-        },
-        c: ['fallback ', { i: 6, k: '_gt_value_6', v: 'v' }],
-      },
-      { t: 'b', i: 7, c: 'end' },
-      { i: 8, k: '_gt_n_8', v: 'n' },
-      { i: 9, k: '_gt_date_9', v: 'd' },
-      { i: 10, k: '_gt_cost_10', v: 'c' },
-      { t: 'var', i: 11, c: 'native' },
-    ];
-    const rich = result.updates.find((update) => update.dataFormat === 'JSX');
-    expect(rich).toMatchObject({
-      dataFormat: 'JSX',
-      metadata: { context: 'hero' },
-      source: expectedRichSource,
+    expect(extractFromVueSource).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      updates: [],
+      errors: ['invalid compiler options'],
+      warnings: [],
     });
-    expect(rich?.metadata.hash).toBe(
-      hashSource({
-        context: 'hero',
-        dataFormat: 'JSX',
-        source: expectedRichSource,
-      })
-    );
-
-    const stringUpdates = result.updates.filter(
-      (update) => update.dataFormat === 'STRING'
-    );
-    expect(stringUpdates.map((update) => update.source)).toEqual([
-      'Normal {literal}',
-      'Hello {name}',
-      'Navigation',
-      'First',
-      'Second',
-      'Aliased call',
-      'Template call',
-      'Encoded message',
-      'Template title',
-    ]);
-    expect(
-      stringUpdates.find((update) => update.source === 'Normal {literal}')
-        ?.metadata
-    ).toMatchObject({ context: 'normal' });
-    expect(
-      stringUpdates.find((update) => update.source === 'First')?.metadata
-    ).toMatchObject({ context: 'list' });
-    expect(
-      stringUpdates.find((update) => update.source === 'Template call')
-        ?.metadata
-    ).toMatchObject({ context: 'template' });
-    expect(
-      stringUpdates.find((update) => update.source === 'Normal {literal}')
-        ?.metadata.sourceCode
-    ).toBeDefined();
-  });
-
-  it('coalesces text separated by Vue comment nodes', async () => {
-    vi.mocked(matchFiles).mockReturnValue([fixturePath('comments.vue')]);
-
-    const result = await createVueInlineUpdates(undefined, parsingFlags);
-
-    expect(result.errors).toEqual([]);
-    expect(result.updates).toHaveLength(1);
-    expect(result.updates[0]).toMatchObject({
-      dataFormat: 'JSX',
-      source: 'Hello world',
-    });
-  });
-
-  it('diagnoses dynamic content and every unsupported metadata field', async () => {
-    vi.mocked(matchFiles).mockReturnValue([fixturePath('invalid.vue')]);
-
-    const result = await createVueInlineUpdates(undefined, parsingFlags);
-    const messages = result.errors.join('\n');
-
-    expect(result.updates).toEqual([]);
-    expect(messages).toContain('dynamic content');
-    expect(messages).toContain('$maxChars');
-    expect(messages).toContain('$format');
-    expect(messages).toContain('"name"');
-    expect(messages).toContain('$id');
-    expect(messages).toContain('dynamic context');
-    expect(messages).toContain('v-if');
-    expect(messages).toContain('dynamic translatable prop "title"');
-    expect(messages).toContain('unsupported value prop');
-    expect(messages).toMatch(/invalid\.vue.*\(4:1\)/);
-  });
-
-  it('diagnoses context bindings whose modifiers change the runtime prop', async () => {
-    vi.mocked(matchFiles).mockReturnValue([
-      fixturePath('context-modifier.vue'),
-    ]);
-
-    const result = await createVueInlineUpdates(undefined, parsingFlags);
-
-    expect(result.updates).toEqual([]);
-    expect(result.errors.join('\n')).toContain(
-      'unsupported directive :context.prop'
-    );
-  });
-
-  it('uses Vue component-name normalization while preserving native tags', async () => {
-    vi.mocked(matchFiles).mockReturnValue([fixturePath('normalization.vue')]);
-
-    const result = await createVueInlineUpdates(undefined, parsingFlags);
-
-    expect(result.errors).toEqual([]);
-    expect(result.updates).toHaveLength(1);
-    expect(result.updates[0].source).toEqual([
-      { i: 1, k: '_gt_date_1', v: 'd' },
-      { t: 'var', i: 2, c: 'native' },
-    ]);
-  });
-
-  it('ignores type-only gt-vue imports', async () => {
-    vi.mocked(matchFiles).mockReturnValue([fixturePath('type-only.vue')]);
-
-    const result = await createVueInlineUpdates(undefined, parsingFlags);
-
-    expect(result.errors).toEqual([]);
-    expect(result.updates).toEqual([]);
-  });
-
-  it('resolves static Options API component registrations', async () => {
-    vi.mocked(matchFiles).mockReturnValue([
-      fixturePath('options-api.vue'),
-      fixturePath('options-api-define-component.vue'),
-    ]);
-
-    const result = await createVueInlineUpdates(undefined, parsingFlags);
-
-    expect(result.errors).toEqual([]);
-    expect(result.updates.map((update) => update.source)).toEqual([
-      'Options API',
-      'Defined component',
-    ]);
-  });
-
-  it('exposes statically returned setup translation functions to templates', async () => {
-    vi.mocked(matchFiles).mockReturnValue([
-      fixturePath('options-api-setup.vue'),
-    ]);
-
-    const result = await createVueInlineUpdates(undefined, parsingFlags);
-
-    expect(result.errors).toEqual([]);
-    expect(result.updates.map((update) => update.source)).toEqual([
-      'Composition API',
-      'Setup component',
-      'Setup string',
-      'Setup message',
-      'Setup msg',
-    ]);
-    expect(result.updates.at(-1)?.metadata).toMatchObject({
-      context: 'classic',
-    });
-  });
-
-  it('propagates top-level component aliases with Branch semantics', async () => {
-    vi.mocked(matchFiles).mockReturnValue([
-      fixturePath('component-aliases.vue'),
-    ]);
-
-    const result = await createVueInlineUpdates(undefined, parsingFlags);
-    const expectedSource: JsxChildren = {
-      t: 'Branch',
-      i: 1,
-      d: { b: { formal: 'Hello' }, t: 'b' },
-      c: 'Fallback',
-    };
-
-    expect(result.errors).toEqual([]);
-    expect(result.updates).toHaveLength(1);
-    expect(result.updates[0]).toMatchObject({
-      dataFormat: 'JSX',
-      source: expectedSource,
-    });
-    expect(result.updates[0].metadata.hash).toBe(
-      hashSource({ dataFormat: 'JSX', source: expectedSource })
-    );
-  });
-
-  it('extracts branch props that match Object.prototype names', async () => {
-    vi.mocked(matchFiles).mockReturnValue([
-      fixturePath('branch-object-keys.vue'),
-    ]);
-
-    const result = await createVueInlineUpdates(undefined, parsingFlags);
-
-    expect(result.errors).toEqual([]);
-    expect(result.updates).toHaveLength(1);
-    expect(result.updates[0]).toMatchObject({
-      dataFormat: 'JSX',
-      source: {
-        t: 'Branch',
-        i: 1,
-        d: {
-          b: {
-            constructor: 'Constructor branch',
-            toString: 'String branch',
-          },
-          t: 'b',
-        },
-        c: 'Fallback',
-      },
-    });
-  });
-
-  it('diagnoses directives that would add runtime branch props', async () => {
-    vi.mocked(matchFiles).mockReturnValue([
-      fixturePath('branch-directives.vue'),
-    ]);
-
-    const result = await createVueInlineUpdates(undefined, parsingFlags);
-    const errors = result.errors.join('\n');
-
-    expect(errors).toContain('unsupported directive @click');
-    expect(errors).toContain('unsupported directive v-model');
-    expect(errors).toContain('unsupported directive :foo-bar.camel');
-  });
-
-  it('keeps component tags separate from v-for and v-slot bindings', async () => {
-    vi.mocked(matchFiles).mockReturnValue([
-      fixturePath('template-namespaces.vue'),
-    ]);
-
-    const result = await createVueInlineUpdates(undefined, parsingFlags);
-
-    expect(result.errors).toEqual([]);
-    expect(result.updates.map((update) => update.source)).toEqual([
-      'Loop scope',
-      'Slot scope',
-    ]);
-  });
-
-  it('extracts a nested translation rendered through an opaque Var slot', async () => {
-    vi.mocked(matchFiles).mockReturnValue([fixturePath('nested-var.vue')]);
-
-    const result = await createVueInlineUpdates(undefined, parsingFlags);
-
-    expect(result.errors).toEqual([]);
-    expect(result.updates.map((update) => update.source)).toEqual([
-      ['Outer ', { i: 1, k: '_gt_value_1', v: 'v' }],
-      'Inner',
-    ]);
-  });
-
-  it('diagnoses rich Vue JSX while retaining string-call extraction', async () => {
-    vi.mocked(matchFiles).mockReturnValue([fixturePath('vue-jsx.tsx')]);
-
-    const result = await createVueInlineUpdates(undefined, parsingFlags);
-
-    expect(result.updates).toHaveLength(1);
-    expect(result.updates[0]).toMatchObject({
-      dataFormat: 'STRING',
-      source: 'TSX string',
-    });
-    expect(result.errors.join('\n')).toContain(
-      'gt-vue <T> component in Vue JSX or TSX'
-    );
-  });
-
-  it('diagnoses named slots on ordinary components and bare templates', async () => {
-    vi.mocked(matchFiles).mockReturnValue([
-      fixturePath('unsupported-slots.vue'),
-    ]);
-
-    const result = await createVueInlineUpdates(undefined, parsingFlags);
-    const errors = result.errors.join('\n');
-
-    expect(result.updates).toEqual([]);
-    expect(errors).toContain('named slots on <Card>');
-    expect(errors).toContain('bare <template>');
-    expect(errors).toContain('nested gt-vue <T>');
   });
 });
 
-function fixturePath(name: string): string {
-  return path.join(__dirname, 'fixtures', name);
+function createSourceFile(filename: string, source: string): string {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-vue-cli-'));
+  temporaryDirectories.push(directory);
+  const file = path.join(directory, filename);
+  fs.writeFileSync(file, source);
+  return file;
 }

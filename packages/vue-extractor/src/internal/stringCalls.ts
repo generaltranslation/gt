@@ -8,19 +8,32 @@ import {
   addVueError,
   createInlineMetadata,
   readStaticPrimitive,
+  type StaticPrimitiveResult,
+  unwrapExpression,
 } from './utils.js';
 
+type VueStringCall = t.CallExpression | t.OptionalCallExpression;
+type StaticPrimitiveReader = (
+  input: t.Node | null | undefined
+) => StaticPrimitiveResult;
+
 export function processVueStringCall(
-  call: t.CallExpression,
+  call: VueStringCall,
   kind: StringFunctionKind,
   location: ExtractionLocation | undefined,
-  context: VueExtractionContext
+  context: VueExtractionContext,
+  readStatic: StaticPrimitiveReader = readStaticPrimitive
 ): void {
   const firstArgument = call.arguments[0];
   const unwrappedFirstArgument = unwrapExpression(firstArgument);
 
   if (kind === 'msg' && unwrappedFirstArgument?.type === 'ArrayExpression') {
-    const options = readContextOptions(call.arguments[1], location, context);
+    const options = readContextOptions(
+      call.arguments[1],
+      location,
+      context,
+      readStatic
+    );
     if (!options.ok) return;
     if (call.arguments.length > 2) {
       addUnsupportedArgumentsError(location, context);
@@ -29,7 +42,7 @@ export function processVueStringCall(
 
     const messages: string[] = [];
     for (const element of unwrappedFirstArgument.elements) {
-      const value = readStaticPrimitive(element);
+      const value = readStatic(element);
       if (!value.ok || typeof value.value !== 'string') {
         addVueError(
           context,
@@ -51,7 +64,7 @@ export function processVueStringCall(
     unwrappedFirstArgument?.type === 'SpreadElement' ||
     unwrappedFirstArgument?.type === 'ArgumentPlaceholder'
       ? { ok: false as const }
-      : readStaticPrimitive(unwrappedFirstArgument);
+      : readStatic(unwrappedFirstArgument);
 
   // useMessages() can receive a previously encoded msg() value. Only direct
   // literal calls register new source content.
@@ -66,7 +79,12 @@ export function processVueStringCall(
     return;
   }
 
-  const options = readContextOptions(call.arguments[1], location, context);
+  const options = readContextOptions(
+    call.arguments[1],
+    location,
+    context,
+    readStatic
+  );
   if (!options.ok) return;
   if (call.arguments.length > 2) {
     addUnsupportedArgumentsError(location, context);
@@ -75,30 +93,13 @@ export function processVueStringCall(
   addStringUpdate(value.value, options.context, location, context);
 }
 
-function unwrapExpression(
-  input: t.CallExpression['arguments'][number] | undefined
-): t.CallExpression['arguments'][number] | undefined {
-  let current = input;
-  while (
-    current &&
-    (current.type === 'TSAsExpression' ||
-      current.type === 'TSTypeAssertion' ||
-      current.type === 'TSNonNullExpression' ||
-      current.type === 'TypeCastExpression' ||
-      current.type === 'ParenthesizedExpression')
-  ) {
-    current = current.expression;
-  }
-  return current;
-}
-
 function addStringUpdate(
   source: string,
   translationContext: string | undefined,
   location: ExtractionLocation | undefined,
   context: VueExtractionContext
 ): void {
-  context.updates.push({
+  context.results.push({
     dataFormat: 'STRING',
     source,
     metadata: createInlineMetadata(context, location, translationContext),
@@ -106,12 +107,14 @@ function addStringUpdate(
 }
 
 function readContextOptions(
-  argument: t.CallExpression['arguments'][number] | undefined,
+  argument: VueStringCall['arguments'][number] | undefined,
   location: ExtractionLocation | undefined,
-  context: VueExtractionContext
+  context: VueExtractionContext,
+  readStatic: StaticPrimitiveReader
 ): { ok: true; context?: string } | { ok: false } {
   if (argument === undefined) return { ok: true };
-  if (argument.type !== 'ObjectExpression') {
+  const options = unwrapExpression(argument);
+  if (options?.type !== 'ObjectExpression') {
     addVueError(
       context,
       location,
@@ -122,8 +125,11 @@ function readContextOptions(
   }
 
   let translationContext: string | undefined;
-  for (const property of argument.properties) {
-    if (property.type !== 'ObjectProperty' || property.computed) {
+  for (const property of options.properties) {
+    if (
+      property.type !== 'ObjectProperty' ||
+      (property.computed && property.key.type !== 'StringLiteral')
+    ) {
       addVueError(
         context,
         location,
@@ -147,7 +153,7 @@ function readContextOptions(
       );
       return { ok: false };
     }
-    const value = readStaticPrimitive(property.value);
+    const value = readStatic(property.value);
     if (!value.ok || typeof value.value !== 'string') {
       addVueError(
         context,

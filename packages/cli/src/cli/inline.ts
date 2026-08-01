@@ -113,7 +113,9 @@ export class InlineCLI extends BaseCLI {
     const updates = await aggregateInlineTranslations(
       initOptions,
       settings,
-      fallbackToGtReact(this.library)
+      fallbackToGtReact(this.library),
+      this.getAdditionalInlineLibraries(),
+      true
     );
 
     // Convert updates to the proper data format
@@ -179,10 +181,20 @@ export class InlineCLI extends BaseCLI {
 
     if (files && files.length > 0) {
       // Validate specific files using createInlineUpdates
-      await validateProject(options, pkg, files);
+      await validateProject(
+        options,
+        pkg,
+        files,
+        this.getAdditionalInlineLibraries()
+      );
     } else {
       // Validate whole project as before
-      await validateProject(options, pkg);
+      await validateProject(
+        options,
+        pkg,
+        undefined,
+        this.getAdditionalInlineLibraries()
+      );
     }
   }
 }

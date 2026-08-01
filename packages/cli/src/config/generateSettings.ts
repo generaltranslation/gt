@@ -5,7 +5,7 @@ import {
   warnApiKeyInConfig,
   warnDeprecatedField,
 } from '../console/logging.js';
-import { loadConfig } from '../fs/config/loadConfig.js';
+import { loadGTConfig } from '../fs/config/loadGTConfig.js';
 import { FilesOptions, Settings } from '../types/index.js';
 import {
   defaultBaseUrl,
@@ -38,10 +38,12 @@ export const DEFAULT_SRC_PATTERNS = [
 ];
 
 export const DEFAULT_VUE_SRC_PATTERNS = [
+  '*.vue',
   'src/**/*.{vue,js,jsx,mjs,cjs,ts,tsx,mts,cts}',
   'app/**/*.{vue,js,jsx,mjs,cjs,ts,tsx,mts,cts}',
   'pages/**/*.{vue,js,jsx,mjs,cjs,ts,tsx,mts,cts}',
   'components/**/*.{vue,js,jsx,mjs,cjs,ts,tsx,mts,cts}',
+  '{composables,layers,layouts,middleware,modules,plugins,server,shared,stores,utils,views}/**/*.{vue,js,jsx,mjs,cjs,ts,tsx,mts,cts}',
 ];
 
 export const DEFAULT_PYTHON_SRC_PATTERNS = ['**/*.py'];
@@ -106,7 +108,7 @@ export async function generateSettings(
     flags.config = `${flags.config}.json`;
   }
   if (flags.config) {
-    gtConfig = loadConfig(flags.config);
+    gtConfig = loadGTConfig(flags.config);
   } else {
     const config = resolveConfig(cwd);
     if (config) {

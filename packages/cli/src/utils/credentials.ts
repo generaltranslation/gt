@@ -141,7 +141,7 @@ export async function setCredentials(
   let prefix = '';
   if (framework === 'next-pages') {
     prefix = 'NEXT_PUBLIC_';
-  } else if (framework === 'vite') {
+  } else if (framework === 'vite' || framework === 'vite-vue') {
     prefix = 'VITE_';
   } else if (framework === 'gatsby') {
     prefix = 'GATSBY_';
