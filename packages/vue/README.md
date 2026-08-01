@@ -17,7 +17,8 @@ A lightweight General Translation runtime for Vue 3.
 
 > [!WARNING]
 > `gt-vue` is currently unstable. Its API and behavior may change between
-> releases while the package is under active development.
+> releases while the package is under active development. Its 0.x releases
+> are versioned independently from the stable React framework packages.
 
 ## Installation
 
@@ -28,7 +29,9 @@ npm install gt-vue
 ## Quick Start
 
 Register one plugin instance with your Vue app. Translation files are loaded
-once per locale and cached for the lifetime of that instance.
+once per locale and cached for the lifetime of that instance. The
+`defaultLocale` uses source text as its catalog, so `loadTranslations` is never
+called for that locale.
 
 ```ts
 // main.ts
@@ -49,7 +52,7 @@ createApp(App)
   .mount('#app');
 ```
 
-Use `<T>` for rich content. Runtime values are provided as slot children, not
+Use `<T>` for rich content. `<Var>` values are provided as slot children, not
 through `name` or `value` props.
 
 ```vue
@@ -81,6 +84,12 @@ const setLocale = useSetLocale();
 `$context`; braces are literal text and no ICU formatting or interpolation is
 applied.
 
+Components whose slots read scoped props are treated as opaque when they are
+placed inside `<T>`. The component and its real runtime slot props are
+preserved, but that scoped-slot content is not part of the surrounding rich
+translation. To translate it, place `<T>` inside the scoped slot and wrap
+runtime values in `<Var>`.
+
 ## Registered Messages
 
 `msg()` marks a string at module scope and `useMessages()` resolves it inside
@@ -103,10 +112,19 @@ const m = useMessages();
 
 - `<T context="...">` translates rich slot content.
 - `<Var>` preserves a dynamic slot value inside `<T>`.
-- `<Num>`, `<DateTime>`, and `<Currency>` format their slot values for the
-  active locale.
+- `<Num>`, `<DateTime>`, and `<Currency>` accept typed runtime values through
+  `:value` and also format static slot text for the active locale.
 - `<Plural :n="count">` selects named slots such as `#one` and `#other`.
 - `<Branch :branch="key">` selects an arbitrary named slot.
+
+Use typed bindings for dynamic formatting values. Slot text is intended for
+static literals.
+
+```vue
+<Num :value="count" />
+<Currency :value="price" currency="USD" />
+<DateTime :value="createdAt" :options="{ dateStyle: 'medium' }" />
+```
 
 `setLocale()` loads a missing catalog, switches the reactive locale, and
 rerenders consumers. Locale persistence and development hot reload are outside

@@ -1,4 +1,4 @@
-import { msg as registerMessage } from 'gt-i18n/internal/string';
+import { msgString as registerMessage } from 'gt-i18n/internal/string';
 import type { GTStringOptions } from '../types';
 
 /**

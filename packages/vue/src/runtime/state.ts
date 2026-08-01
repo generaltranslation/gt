@@ -1,6 +1,7 @@
 import { inject, ref, type InjectionKey } from 'vue';
 import {
   createDiagnosticMessage,
+  formatDiagnosticErrorDetails,
   libraryDefaultLocale,
 } from 'generaltranslation/internal';
 import type {
@@ -62,8 +63,20 @@ export function createGT({
       .then(() => loadTranslations?.(targetLocale) ?? {})
       .then((catalog) => {
         catalogs.set(targetLocale, catalog);
-        revision.value += 1;
+        if (targetLocale === locale.value) revision.value += 1;
         return catalog;
+      })
+      .catch((error: unknown) => {
+        const diagnostic = createDiagnosticMessage({
+          source: 'gt-vue',
+          severity: 'Error',
+          whatHappened: `Translations could not be loaded for "${targetLocale}"`,
+          fix: 'Make sure loadTranslations() resolves to a translation catalog for the requested locale',
+          wayOut: 'Source content will render as a fallback',
+          details: formatDiagnosticErrorDetails(error),
+        });
+        console.error(diagnostic);
+        throw error;
       })
       .finally(() => pending.delete(targetLocale));
 

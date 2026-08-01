@@ -22,10 +22,12 @@ import {
   isVNode,
   mergeProps,
   type Component,
+  type Slot,
   type Slots,
   type VNode,
   type VNodeChild,
 } from 'vue';
+import { isBranchAttribute } from '../components/utils';
 import type { GTState } from '../types';
 
 const variableTypes = {
@@ -41,6 +43,7 @@ type SourceElement = {
   branches: Record<string, SourceNode[]>;
   children: SourceNode[];
   id: number;
+  opaque: boolean;
   transformation: Transformation;
   variableName?: string;
   variableType?: VariableType;
@@ -56,6 +59,7 @@ type ComponentWithGTMetadata = Component & {
 };
 
 type RichTranslationOptions = {
+  /** @internal React-compatible alias accepted for compiler output. */
   $context?: string;
   _hash?: string;
   context?: string;
@@ -72,13 +76,15 @@ export function translateVueChildren(
   options: RichTranslationOptions
 ): VNodeChild {
   const source = createSourceNodes(children);
-  const serialized = serializeNodes(source);
+  if (state.locale.value === state.defaultLocale) {
+    return renderDefaultNodes(source, state, state.defaultLocale);
+  }
   const hash =
     options._hash ??
     hashSource({
-      context: options.$context ?? options.context,
+      context: options.context ?? options.$context,
       dataFormat: 'JSX',
-      source: serialized,
+      source: serializeNodes(source),
     });
   const target = state.getCatalog()[hash];
   if (target == null) {
@@ -115,12 +121,17 @@ function visitChildren(
   const transformation = getTransformation(metadata);
   const variable =
     transformation === 'variable' ? getVariable(metadata, id) : undefined;
+  const defaultSlot = variable
+    ? { children: undefined, opaque: false }
+    : readDefaultSlot(children);
   const source: SourceElement = {
     branches: {},
-    children: variable
-      ? []
-      : visitChildren(getDefaultSlotChildren(children), index),
+    children:
+      variable || defaultSlot.opaque
+        ? []
+        : visitChildren(defaultSlot.children, index),
     id,
+    opaque: defaultSlot.opaque,
     transformation,
     variableName: variable?.name,
     variableType: variable?.type,
@@ -163,9 +174,54 @@ function getVariable(
   };
 }
 
-function getDefaultSlotChildren(vnode: VNode): unknown {
-  if (isSlots(vnode.children)) return vnode.children.default?.();
-  return vnode.children;
+const SCOPED_SLOT_ACCESS = Symbol('gt-vue scoped slot access');
+
+/**
+ * Reads a default slot only while it behaves like source-owned static content.
+ *
+ * Vue's compiled scoped-slot wrappers erase the original function arity, so
+ * they cannot be identified from `slot.length`. A throwing proxy detects the
+ * first read of slot props without inventing runtime values. Such slots stay
+ * opaque and are later rendered by their owning component with real props.
+ */
+function readDefaultSlot(vnode: VNode): {
+  children: unknown;
+  opaque: boolean;
+} {
+  if (!isSlots(vnode.children)) {
+    return { children: vnode.children, opaque: false };
+  }
+  return readSlot(vnode.children.default);
+}
+
+/** Safely probes one compiled slot without supplying invented slot props. */
+function readSlot(slot?: Slot): { children: unknown; opaque: boolean } {
+  if (!slot) return { children: undefined, opaque: false };
+
+  const access = { detected: false };
+  const detectAccess = () => {
+    access.detected = true;
+    throw SCOPED_SLOT_ACCESS;
+  };
+  const probe = new Proxy(Object.create(null) as object, {
+    get: detectAccess,
+    getOwnPropertyDescriptor: detectAccess,
+    getPrototypeOf: detectAccess,
+    has: detectAccess,
+    ownKeys: detectAccess,
+  });
+
+  try {
+    const slotChildren = slot(probe);
+    return access.detected
+      ? { children: undefined, opaque: true }
+      : { children: slotChildren, opaque: false };
+  } catch (error) {
+    if (access.detected || error === SCOPED_SLOT_ACCESS) {
+      return { children: undefined, opaque: true };
+    }
+    throw error;
+  }
 }
 
 function getBranches(
@@ -181,24 +237,15 @@ function getBranches(
         !key.startsWith('_') &&
         typeof slot === 'function'
       ) {
-        inputs[key] = slot();
+        const branch = readSlot(slot);
+        if (!branch.opaque) inputs[key] = branch.children;
       }
     }
   }
   for (const [key, value] of Object.entries(vnode.props ?? {})) {
     if (
-      key !== 'branch' &&
-      key !== 'n' &&
-      key !== 'locales' &&
-      key !== 'key' &&
-      key !== 'ref' &&
-      key !== 'ref_for' &&
-      key !== 'ref_key' &&
-      key !== 'ref-for' &&
-      key !== 'ref-key' &&
-      !key.startsWith('onVnode') &&
-      !key.startsWith('data-') &&
-      !Object.hasOwn(inputs, key)
+      isBranchAttribute(key, value) &&
+      !Object.prototype.hasOwnProperty.call(inputs, key)
     ) {
       inputs[key] = value;
     }
@@ -259,21 +306,27 @@ function serializeNode(node: SourceNode): JsxChild {
   }
 
   return {
-    t: getElementName(node.vnode),
+    t: getElementName(node.vnode, node.id),
     i: node.id,
     ...(Object.keys(data).length && { d: data }),
     ...(node.children.length && { c: serializeNodes(node.children) }),
   };
 }
 
-function getElementName(vnode: VNode): string {
+/**
+ * Returns a readable element label with a deterministic anonymous fallback.
+ * JSX hashing strips element names and IDs, so compiler or minifier naming
+ * differences cannot change the catalog key.
+ */
+function getElementName(vnode: VNode, id: number): string {
+  const fallback = `C${id}`;
   if (typeof vnode.type === 'string') return vnode.type;
-  if (typeof vnode.type === 'function') return vnode.type.name || 'function';
+  if (typeof vnode.type === 'function') return vnode.type.name || fallback;
   if (typeof vnode.type === 'object') {
     const type = vnode.type as ComponentWithGTMetadata;
-    return type.name || type.__name || 'component';
+    return type.name || type.__name || fallback;
   }
-  return 'component';
+  return fallback;
 }
 
 function renderNodes(
@@ -300,6 +353,8 @@ function renderNodes(
   const ordinary = sourceElements.filter(
     (node) => node.transformation !== 'variable'
   );
+  const ordinaryById = new Map(ordinary.map((node) => [node.id, node]));
+  const fallback = [...ordinary];
 
   return targets.map((targetNode) => {
     if (typeof targetNode === 'string') return targetNode;
@@ -308,13 +363,12 @@ function renderNodes(
       return variable ? renderDefaultNode(variable, state) : null;
     }
 
-    const matchingIndex = ordinary.findIndex(
-      (sourceNode) => sourceNode.id === targetNode.i
-    );
+    // An explicit target ID is a reusable reference, while order-based
+    // fallback consumes each source node once. Translations may intentionally
+    // repeat one source element without rebinding later copies to siblings.
     const sourceNode =
-      matchingIndex >= 0
-        ? ordinary.splice(matchingIndex, 1)[0]
-        : ordinary.shift();
+      (targetNode.i == null ? undefined : ordinaryById.get(targetNode.i)) ??
+      fallback.shift();
     return sourceNode ? renderElement(sourceNode, targetNode, state) : null;
   });
 }
@@ -339,7 +393,9 @@ function renderElement(
       n,
       Object.keys(source.branches),
       source,
-      state
+      state,
+      state.defaultLocale,
+      true
     );
     const targetBranches = target.d?.b ?? {};
     const targetBranch = getPluralKey(
@@ -356,6 +412,12 @@ function renderElement(
   }
   if (source.transformation === 'fragment') {
     return renderNodes(source.children, target.c, state);
+  }
+  if (source.opaque) {
+    const translatedProps = getTranslatedProps(target);
+    return Object.keys(translatedProps).length
+      ? cloneWithProps(source.vnode, translatedProps)
+      : source.vnode;
   }
   const translatedProps = getTranslatedProps(target);
   if (target.c == null) {
@@ -383,17 +445,19 @@ function getPluralKey(
   branches: string[],
   source: SourceElement,
   state: GTState,
-  locale = state.locale.value
+  locale = state.locale.value,
+  includeSourceLocales = false
 ): string | undefined {
   const forms = branches.filter(isAcceptedPluralForm);
   if (!forms.length) return undefined;
-  const locales = Array.isArray(source.vnode.props?.locales)
-    ? source.vnode.props.locales.filter(
-        (locale): locale is string => typeof locale === 'string'
-      )
-    : [];
+  const sourceLocales =
+    includeSourceLocales && Array.isArray(source.vnode.props?.locales)
+      ? source.vnode.props.locales.filter(
+          (locale): locale is string => typeof locale === 'string'
+        )
+      : [];
   return (
-    getPluralForm(n, forms, [...locales, locale, state.defaultLocale]) ||
+    getPluralForm(n, forms, [...sourceLocales, locale, state.defaultLocale]) ||
     undefined
   );
 }
@@ -484,7 +548,8 @@ function renderDefaultNode(
       Object.keys(node.branches),
       node,
       state,
-      locale
+      locale,
+      true
     );
     return renderDefaultNodes(
       getSelectedSourceBranch(node, branch),
