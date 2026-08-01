@@ -52,6 +52,25 @@ createApp(App)
   .mount('#app');
 ```
 
+If the app starts Vite with a custom config path, declare the same path so the
+CLI hashes templates with the active Vue compiler options:
+
+```json
+{
+  "files": {
+    "gt": {
+      "output": "src/_gt/[locale].json",
+      "parsingFlags": {
+        "viteConfigPath": "config/vite.custom.ts"
+      }
+    }
+  }
+}
+```
+
+The path is resolved from the project root. Standard `vite.config.*` files are
+detected automatically.
+
 Use `<T>` for rich content. `<Var>` values are provided as slot children, not
 through `name` or `value` props.
 

@@ -16,12 +16,14 @@ import { collectFiles } from '../../formats/files/collectFiles.js';
 import { convertToFileTranslationData } from '../../formats/files/convertToFileTranslationData.js';
 import { hasValidCredentials, hasValidLocales } from './utils/validation.js';
 import { warnManualReviewSetup } from '../../translation/reviewSetupWarning.js';
+import type { InlineLibrary } from '../../types/libraries.js';
 
 export async function handleStage(
   options: TranslateFlags,
   settings: Settings,
   library: SupportedLibraries,
-  stage: boolean
+  stage: boolean,
+  additionalLibraries: readonly InlineLibrary[] = []
 ): Promise<{
   fileVersionData: FileTranslationData | undefined;
   jobData: EnqueueFilesResult | undefined;
@@ -36,7 +38,7 @@ export async function handleStage(
     files: allFiles,
     reactComponents,
     publishMap,
-  } = await collectFiles(options, settings, library);
+  } = await collectFiles(options, settings, library, additionalLibraries);
 
   // Point at dashboard review setup when uploading review-gated content
   await warnManualReviewSetup(settings, allFiles);

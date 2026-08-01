@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { T, Var, msg, useGT } from 'gt-vue';
 const gt = useGT();
+const name = String(Date.now());
+const dynamic = String(Date.now());
 gt(`Dynamic ${name}`);
 gt('Too long', { $maxChars: 12 });
 gt('Formatted', { $format: 'ICU' });
 gt('Interpolated', { name });
 msg('Registered', { $id: 'custom' });
-const name = 'Ada';
-const dynamic = 'hero';
 const visible = true;
 </script>
 

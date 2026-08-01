@@ -5,7 +5,7 @@ import { Framework, Options, Settings, Updates } from '../types/index.js';
 import { logger } from '../console/logger.js';
 
 import { createUpdates } from './parse.js';
-import { createInlineUpdatesForLibrary } from '../extraction/createInlineUpdatesForLibrary.js';
+import { createInlineUpdatesForLibraries } from '../extraction/createInlineUpdatesForLibrary.js';
 import { InlineLibrary, Libraries } from '../types/libraries.js';
 
 // Types for programmatic validation API
@@ -24,11 +24,12 @@ export type ValidationResult = Record<string, ValidationMessage[]>;
 async function runValidation(
   settings: Options & Settings,
   pkg: InlineLibrary,
-  files?: string[]
+  files?: string[],
+  additionalLibraries: readonly InlineLibrary[] = []
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   if (files && files.length > 0) {
-    return createInlineUpdatesForLibrary(
-      pkg,
+    return createInlineUpdatesForLibraries(
+      [pkg, ...additionalLibraries],
       true,
       files,
       settings.files.gtJson.parsingFlags,
@@ -56,7 +57,8 @@ async function runValidation(
     pkg,
     true,
     settings.files.gtJson.parsingFlags,
-    settings.parsingOptions
+    settings.parsingOptions,
+    additionalLibraries
   );
 }
 
@@ -140,12 +142,14 @@ export async function getValidateJson(
 export async function validateProject(
   settings: Options & Settings,
   pkg: InlineLibrary,
-  files?: string[]
+  files?: string[],
+  additionalLibraries: readonly InlineLibrary[] = []
 ): Promise<void> {
   const { updates, errors, warnings } = await runValidation(
     settings,
     pkg,
-    files
+    files,
+    additionalLibraries
   );
 
   if (warnings.length > 0) {
@@ -172,13 +176,19 @@ export async function validateProject(
   }
 
   if (updates.length === 0) {
-    logger.error(
-      chalk.red(
-        `No inline content or dictionaries were found for ${chalk.green(
-          pkg
-        )}. Are you sure you're running this command in the right directory?`
-      )
+    const message = chalk.red(
+      `No inline content or dictionaries were found for ${chalk.green(
+        pkg
+      )}. Are you sure you're running this command in the right directory?`
     );
+    if (
+      pkg === Libraries.GT_VUE ||
+      additionalLibraries.includes(Libraries.GT_VUE)
+    ) {
+      logErrorAndExit(message);
+    } else {
+      logger.error(message);
+    }
   } else {
     logger.success(
       chalk.green(

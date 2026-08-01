@@ -10,12 +10,6 @@
     "CHANGELOG.md"
   ],
   "type": "module",
-  "imports": {
-    "#vue-compiler-sfc": {
-      "bun": "@vue/compiler-sfc/dist/compiler-sfc.esm-browser.js",
-      "default": "@vue/compiler-sfc"
-    }
-  },
   "scripts": {
     "generate-version": "node scripts/generate-version.js",
     "emit-types": "sh ../../scripts/emit-types.sh",
@@ -124,8 +118,7 @@
     "@generaltranslation/format": "workspace:*",
     "@generaltranslation/python-extractor": "workspace:*",
     "@generaltranslation/supported-locales": "workspace:*",
-    "@vue/compiler-dom": "^3.5.0",
-    "@vue/compiler-sfc": "^3.5.0",
+    "@generaltranslation/vue-extractor": "workspace:*",
     "chalk": "^5.4.1",
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
