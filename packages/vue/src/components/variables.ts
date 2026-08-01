@@ -40,6 +40,7 @@ type CurrencyProps = NumberFormatProps & {
  */
 export const Var = withGTMetadata(
   defineComponent({
+    inheritAttrs: false,
     name: 'Var',
     setup(_props, { slots }) {
       return () => slots.default?.() ?? null;
@@ -56,6 +57,7 @@ export const Var = withGTMetadata(
  */
 export const Num = withGTMetadata<NumberFormatProps>(
   defineComponent({
+    inheritAttrs: false,
     name: 'Num',
     props: {
       /** Locale preferences tried before the active GT locale. */
@@ -97,6 +99,7 @@ export const Num = withGTMetadata<NumberFormatProps>(
  */
 export const DateTime = withGTMetadata<DateTimeProps>(
   defineComponent({
+    inheritAttrs: false,
     name: 'DateTime',
     props: {
       /** Locale preferences tried before the active GT locale. */
@@ -139,6 +142,7 @@ export const DateTime = withGTMetadata<DateTimeProps>(
  */
 export const Currency = withGTMetadata<CurrencyProps>(
   defineComponent({
+    inheritAttrs: false,
     name: 'Currency',
     props: {
       /** ISO 4217 currency code. Defaults to `USD`. */
