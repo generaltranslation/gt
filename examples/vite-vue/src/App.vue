@@ -95,7 +95,7 @@ async function selectLocale(nextLocale: string) {
             <template #one>You have one item.</template>
             <template #other>
               You have
-              <Num>{{ itemCount }}</Num>
+              <Num :value="itemCount" />
               items.
             </template>
             You have no items.
@@ -154,22 +154,21 @@ async function selectLocale(nextLocale: string) {
           <div>
             <dt>{{ gt('Budget') }}</dt>
             <dd>
-              <Currency currency="EUR">{{ projectBudget }}</Currency>
+              <Currency :value="projectBudget" currency="EUR" />
             </dd>
           </div>
           <div>
             <dt>{{ gt('Launch date') }}</dt>
             <dd>
               <DateTime
+                :value="launchDate"
                 :options="{
                   day: 'numeric',
                   month: 'long',
                   timeZone: 'UTC',
                   year: 'numeric',
                 }"
-              >
-                {{ launchDate }}
-              </DateTime>
+              />
             </dd>
           </div>
         </dl>

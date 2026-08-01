@@ -39,10 +39,11 @@ pnpm --filter vite-vue generate
 pnpm --filter vite-vue validate
 ```
 
-The app demonstrates `<T>`, child-only `<Var>`, `<Num>`, `<DateTime>`,
-`<Currency>`, `<Plural>`, `<Branch>`, `useGT()`, `msg()` with `useMessages()`,
-and reactive `useLocale()` / `useSetLocale()` locale switching. Plain string
-lookups accept only `$context`; braces are intentionally left uninterpolated.
+The app demonstrates `<T>`, child-only `<Var>`, typed `value` bindings for
+`<Num>`, `<DateTime>`, and `<Currency>`, plus `<Plural>`, `<Branch>`, `useGT()`,
+`msg()` with `useMessages()`, and reactive `useLocale()` / `useSetLocale()`
+locale switching. Plain string lookups accept only `$context`; braces are
+intentionally left uninterpolated.
 
 ## Production Build
 
