@@ -1,4 +1,4 @@
-import { hashSource } from 'generaltranslation/id';
+import { hashStringMessage } from 'gt-i18n/internal/string';
 import type { GTState, GTStringOptions } from '../types';
 
 /** @internal */
@@ -13,13 +13,7 @@ export function translateString(
   message: string,
   options: InternalStringOptions = {}
 ): string {
-  const hash =
-    options.$_hash ??
-    hashSource({
-      context: options.$context,
-      dataFormat: 'STRING',
-      source: message,
-    });
+  const hash = hashStringMessage(message, options);
   const translation = state.getCatalog()[hash];
   return typeof translation === 'string' ? translation : message;
 }

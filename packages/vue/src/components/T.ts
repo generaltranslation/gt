@@ -6,7 +6,7 @@ import { withGTMetadata } from './utils';
 type TProps = {
   /** @internal Compile-time hash inserted by GT tooling. */
   _hash?: string;
-  /** Translation context using the API-parity `$context` spelling. */
+  /** @internal React-compatible alias accepted for compiler output. */
   $context?: string;
   /** Translation context using a Vue-template-friendly prop name. */
   context?: string;
