@@ -5,4 +5,6 @@ const Tr = T;
 const B = Branch;
 </script>
 
-<template><Tr><B :branch="tone" formal="Hello">Fallback</B></Tr></template>
+<template>
+  <Tr><B :branch="tone" formal="Hello">Fallback</B></Tr>
+</template>

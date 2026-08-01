@@ -1,4 +1,7 @@
 import type { SupportedFileExtension } from './index.js';
+import type { VueCompilerOptions } from '@generaltranslation/vue-extractor/types';
+
+export type { VueCompilerOptions } from '@generaltranslation/vue-extractor/types';
 
 /**
  * For monorepo projects, checking for extra exports fields in resolved internal packages.
@@ -37,12 +40,17 @@ export type BaseParsingFlags = Record<string, unknown>;
  * @property {boolean} includeSourceCodeContext - Include surrounding source code lines as context for translations.
  * @property {boolean} enableAutoJsxInjection - Whether to enable auto-jsx injection for the internal <_T> and <_Var> components.
  * @property {boolean} legacyGtReactImportSource - Whether compiler-injected gt-react imports should use gt-react/browser.
+ * @property {VueCompilerOptions} vueCompilerOptions - Serializable Vue template compiler options used for extraction.
+ * @property {string} viteConfigPath - Explicit Vite config path used to resolve Vue compiler options when the application passes `vite --config`.
  */
 export type GTParsingFlags = BaseParsingFlags & {
   autoderive: boolean | { jsx?: boolean; strings?: boolean };
   includeSourceCodeContext: boolean;
   enableAutoJsxInjection: boolean;
   legacyGtReactImportSource: boolean;
+  vueCompilerOptions?: VueCompilerOptions;
+  /** Vite config selected by the application, relative to the project root. */
+  viteConfigPath?: string;
 };
 
 /**

@@ -26,5 +26,15 @@ describe('VueCLI', () => {
     expect(program.commands.map((command) => command.name())).not.toContain(
       'scan'
     );
+
+    const generate = program.commands.find(
+      (command) => command.name() === 'generate'
+    );
+    expect(generate?.helpInformation()).toContain(
+      'framework-specific source globs are used by default'
+    );
+    expect(generate?.helpInformation()).not.toContain(
+      "src/**/*.{js,jsx,ts,tsx}'"
+    );
   });
 });

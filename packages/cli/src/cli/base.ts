@@ -59,6 +59,7 @@ import { displayTranslateSummary } from '../console/displayTranslateSummary.js';
 import updateConfig from '../fs/config/updateConfig.js';
 import { loadConfig } from '../fs/config/loadConfig.js';
 import { createLoadTranslationsFile } from '../fs/createLoadTranslationsFile.js';
+import { createRemoteLoadTranslationsFile } from '../fs/createRemoteLoadTranslationsFile.js';
 import { saveLocalEdits } from '../api/saveLocalEdits.js';
 import processSharedStaticAssets, {
   mirrorAssetsToLocales,
@@ -69,7 +70,12 @@ import {
   getFrameworkDisplayName,
   getReactFrameworkLibrary,
 } from '../setup/frameworkUtils.js';
-import { INLINE_LIBRARIES, Libraries } from '../types/libraries.js';
+import {
+  INLINE_LIBRARIES,
+  Libraries,
+  type InlineLibrary,
+  isInlineLibrary,
+} from '../types/libraries.js';
 import { handleEnqueue } from './commands/enqueue.js';
 import { splitMintlifyLanguageRefs } from '../utils/splitMintlifyLanguageRefs.js';
 import { runMergeDriver, type MergeDriverName } from '../git/mergeDrivers.js';
@@ -428,7 +434,12 @@ export class BaseCLI {
     // Preprocess shared static assets if configured (move + rewrite sources)
     await processSharedStaticAssets(settings);
 
-    await handleSetupProject(initOptions, settings, this.library);
+    await handleSetupProject(
+      initOptions,
+      settings,
+      this.library,
+      this.getAdditionalInlineLibraries()
+    );
   }
 
   protected async handleStage(initOptions: TranslateFlags): Promise<void> {
@@ -446,7 +457,13 @@ export class BaseCLI {
         stageTranslations: true,
       });
     }
-    await handleStage(initOptions, settings, this.library, true);
+    await handleStage(
+      initOptions,
+      settings,
+      this.library,
+      true,
+      this.getAdditionalInlineLibraries()
+    );
   }
 
   /**
@@ -458,7 +475,12 @@ export class BaseCLI {
     const settings = await generateSettings(initOptions, undefined, {
       requireConfig: true,
     });
-    await handleEnqueue(initOptions, settings, this.library);
+    await handleEnqueue(
+      initOptions,
+      settings,
+      this.library,
+      this.getAdditionalInlineLibraries()
+    );
   }
 
   /**
@@ -470,7 +492,12 @@ export class BaseCLI {
     const settings = await generateSettings(initOptions, undefined, {
       requireConfig: true,
     });
-    await handleDownload(initOptions, settings, this.library);
+    await handleDownload(
+      initOptions,
+      settings,
+      this.library,
+      this.getAdditionalInlineLibraries()
+    );
   }
 
   protected async handleTranslate(initOptions: TranslateFlags): Promise<void> {
@@ -493,7 +520,8 @@ export class BaseCLI {
         initOptions,
         settings,
         this.library,
-        false
+        false,
+        this.getAdditionalInlineLibraries()
       );
       if (results) {
         await handleTranslate(
@@ -506,7 +534,12 @@ export class BaseCLI {
         );
       }
     } else {
-      await handleDownload(initOptions, settings, this.library);
+      await handleDownload(
+        initOptions,
+        settings,
+        this.library,
+        this.getAdditionalInlineLibraries()
+      );
     }
     // Only postprocess files downloaded in this run
     const include = getNeedsPostprocessing();
@@ -728,7 +761,8 @@ export class BaseCLI {
           await this.handleInitCommand(
             ranReactSetup || ranVueSetup,
             useDefaults,
-            framework.name === 'vite' || framework.name === 'vite-vue'
+            framework.name === 'vite' || framework.name === 'vite-vue',
+            framework.type === 'vue'
           );
 
           logger.endCommand(
@@ -757,7 +791,8 @@ export class BaseCLI {
         await this.handleInitCommand(
           false,
           false,
-          framework.name === 'vite' || framework.name === 'vite-vue'
+          framework.name === 'vite' || framework.name === 'vite-vue',
+          framework.type === 'vue'
         );
 
         logger.endCommand(
@@ -781,7 +816,8 @@ export class BaseCLI {
   protected async handleInitCommand(
     ranReactSetup: boolean,
     useDefaults: boolean = false,
-    isVite: boolean = false
+    isVite: boolean = false,
+    isVue: boolean = false
   ): Promise<void> {
     const configFilepath =
       !isVite && fs.existsSync('src/gt.config.json')
@@ -841,9 +877,21 @@ export class BaseCLI {
         locales
       );
       logger.message(
-        `Created ${chalk.cyan('loadTranslations.js')} file for local translations.
+        isVue
+          ? `Created ${chalk.cyan('loadTranslations.js')} for local translations.
+Import it in your Vue entry point and pass it to ${chalk.cyan('createGT({ loadTranslations })')}.
+See https://generaltranslation.com/docs/vue`
+          : `Created ${chalk.cyan('loadTranslations.js')} file for local translations.
 Make sure to add this function to your app configuration.
 See https://generaltranslation.com/en/docs/next/guides/local-tx`
+      );
+    } else if (isUsingGT && usingCDN && isVue) {
+      await createRemoteLoadTranslationsFile(process.cwd());
+      logger.message(
+        `Created ${chalk.cyan('loadTranslations.js')} for CDN translations.
+Import it in your Vue entry point and pass it to ${chalk.cyan('createGT({ loadTranslations })')}.
+The loader reads ${chalk.cyan('VITE_GT_PROJECT_ID')} from your Vite environment.
+See https://generaltranslation.com/docs/vue`
       );
     }
 
@@ -895,7 +943,7 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
       defaultLocale,
       locales,
       files: Object.keys(files).length > 0 ? files : undefined,
-      framework: isVite ? 'vite' : undefined,
+      framework: isVite ? 'vite' : isVue ? 'vite-vue' : undefined,
       publish: isUsingGT && usingCDN,
     });
 
@@ -953,10 +1001,19 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
               defaultValue: 'all',
             });
         const credentials = await retrieveCredentials(settings, keyType);
-        await setCredentials(credentials, isVite ? 'vite' : settings.framework);
+        await setCredentials(
+          credentials,
+          isVite ? 'vite' : isVue ? 'vite-vue' : settings.framework
+        );
       }
     }
   }
+
+  /** Returns only additional libraries that participate in inline extraction. */
+  protected getAdditionalInlineLibraries(): InlineLibrary[] {
+    return this.additionalModules.filter(isInlineLibrary);
+  }
+
   protected async handleLoginCommand(options: LoginOptions): Promise<void> {
     const settings = await generateSettings({ config: options.config });
     const keyType = options.keyType || 'all';

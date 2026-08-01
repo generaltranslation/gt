@@ -1,5 +1,6 @@
 ---
-'gt': patch
+'@generaltranslation/vue-extractor': minor
+'gt': minor
 ---
 
-Add context-only string and rich-template extraction for gt-vue single-file components.
+Add a standalone Vue source extractor and integrate context-only string and rich-template extraction into the CLI.

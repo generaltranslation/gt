@@ -4,6 +4,10 @@ import { SupportedLibraries } from '../../types/index.js';
 import { logger } from '../../console/logger.js';
 import { Libraries } from '../../types/libraries.js';
 import { detectPythonLibrary } from './detectPythonLibrary.js';
+import {
+  readDeclaredWorkspaceManifests,
+  type JavaScriptPackageManifest,
+} from './workspacePackages.js';
 
 export function determineLibrary(): {
   library: SupportedLibraries;
@@ -19,11 +23,22 @@ export function determineLibrary(): {
     // Check if package.json exists
     if (fs.existsSync(packageJsonPath)) {
       // Read and parse package.json
-      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-      const dependencies = {
-        ...packageJson.dependencies,
-        ...packageJson.devDependencies,
-      };
+      const packageJson = JSON.parse(
+        fs.readFileSync(packageJsonPath, 'utf8')
+      ) as JavaScriptPackageManifest;
+      const manifests = [
+        packageJson,
+        ...readDeclaredWorkspaceManifests(cwd, packageJson),
+      ];
+      const dependencies = Object.assign(
+        {},
+        ...manifests.map((manifest) => ({
+          ...manifest.peerDependencies,
+          ...manifest.optionalDependencies,
+          ...manifest.dependencies,
+          ...manifest.devDependencies,
+        }))
+      ) as Record<string, string>;
 
       // Check for GT libraries in dependencies
       if (dependencies[Libraries.GT_NEXT]) {
@@ -46,6 +61,9 @@ export function determineLibrary(): {
 
       if (dependencies['i18next-icu']) {
         additionalModules.push('i18next-icu');
+      }
+      if (library !== Libraries.GT_VUE && dependencies[Libraries.GT_VUE]) {
+        additionalModules.push(Libraries.GT_VUE);
       }
     }
 

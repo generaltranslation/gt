@@ -11,13 +11,14 @@ import type { JsxChildren } from '@generaltranslation/format/types';
 import type { FileToUpload } from 'generaltranslation/types';
 import { hashStringSync } from '../../utils/hash.js';
 import { TEMPLATE_FILE_NAME, TEMPLATE_FILE_ID } from '../../utils/constants.js';
-import { isInlineLibrary } from '../../types/libraries.js';
+import { isInlineLibrary, type InlineLibrary } from '../../types/libraries.js';
 import { shouldPublishGt } from '../../utils/resolvePublish.js';
 
 export async function collectFiles(
   options: TranslateFlags,
   settings: Settings,
-  library: SupportedLibraries
+  library: SupportedLibraries,
+  additionalLibraries: readonly InlineLibrary[] = []
 ): Promise<{
   files: FileToUpload[];
   reactComponents: number;
@@ -32,7 +33,8 @@ export async function collectFiles(
     const updates = await aggregateInlineTranslations(
       options,
       settings,
-      library
+      library,
+      additionalLibraries
     );
     if (updates.length > 0) {
       if (!settings.publish && !settings.files?.placeholderPaths.gt) {

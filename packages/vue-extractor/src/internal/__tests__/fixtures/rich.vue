@@ -31,7 +31,43 @@ function shadowed(gt: (value: string) => string) {
 </script>
 
 <template>
-  <Translate context="hero"><p title="Greeting">Hello <!-- note --><Value>{{ name }}</Value>!</p><Plural :n="count"><template #one>one <Value>{{ item }}</Value></template><template #other>other <Value>{{ item }}</Value></template>fallback <Value>{{ item }}</Value></Plural><Branch :branch="tone" key="stable"><template #formal>formal <Value>{{ name }}</Value></template><template #casual>casual <Value>{{ name }}</Value></template>fallback <Value>{{ name }}</Value></Branch><b>end</b><Num>{{ count }}</Num><When>{{ date }}</When><Currency>{{ cost }}</Currency><var>native</var></Translate>
+  <Translate context="hero">
+    <p title="Greeting">
+      Hello
+      <!-- note -->
+      <Value>{{ name }}</Value>
+      !
+    </p>
+    <Plural :n="count">
+      <template #one>
+        one
+        <Value>{{ item }}</Value>
+      </template>
+      <template #other>
+        other
+        <Value>{{ item }}</Value>
+      </template>
+      fallback
+      <Value>{{ item }}</Value>
+    </Plural>
+    <Branch :branch="tone" key="stable">
+      <template #formal>
+        formal
+        <Value>{{ name }}</Value>
+      </template>
+      <template #casual>
+        casual
+        <Value>{{ name }}</Value>
+      </template>
+      fallback
+      <Value>{{ name }}</Value>
+    </Branch>
+    <b>end</b>
+    <Num>{{ count }}</Num>
+    <When>{{ date }}</When>
+    <Currency>{{ cost }}</Currency>
+    <var>native</var>
+  </Translate>
   {{ gt('Template call', { $context: 'template' }) }}
   {{ m(defineMessage('Encoded message', { $context: 'encoded' })) }}
   <p :title="gt('Template title')" />

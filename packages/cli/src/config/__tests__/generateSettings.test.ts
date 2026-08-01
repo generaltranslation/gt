@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { generateSettings } from '../generateSettings';
+import {
+  DEFAULT_VUE_SRC_PATTERNS,
+  generateSettings,
+} from '../generateSettings';
 import { resolveFiles } from '../../fs/config/parseFilesConfig';
 import { determineLibrary } from '../../fs/determineFramework/index.js';
 import { logger } from '../../console/logger.js';
@@ -73,6 +76,19 @@ vi.mock('../optionPresets.js', () => ({
 const mockDetermineLibrary = vi.mocked(determineLibrary);
 const mockLogWarning = vi.mocked(logger.warn);
 const mockResolveConfig = vi.mocked(resolveConfig);
+
+describe('Vue source defaults', () => {
+  it('covers root SFCs and conventional Vue and Nuxt directories', () => {
+    expect(DEFAULT_VUE_SRC_PATTERNS).toContain('*.vue');
+    expect(DEFAULT_VUE_SRC_PATTERNS).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('layouts'),
+        expect.stringContaining('server'),
+        expect.stringContaining('utils'),
+      ])
+    );
+  });
+});
 
 describe('generateSettings - composite patterns', () => {
   beforeEach(() => {

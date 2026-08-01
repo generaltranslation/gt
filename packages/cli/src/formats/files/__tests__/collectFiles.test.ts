@@ -73,4 +73,19 @@ describe('collectFiles', () => {
       },
     });
   });
+
+  it('passes additional inline libraries to mixed-project extraction', async () => {
+    vi.mocked(aggregateInlineTranslations).mockResolvedValue([]);
+
+    await collectFiles(options, settings, Libraries.GT_REACT, [
+      Libraries.GT_VUE,
+    ]);
+
+    expect(aggregateInlineTranslations).toHaveBeenCalledWith(
+      options,
+      settings,
+      Libraries.GT_REACT,
+      [Libraries.GT_VUE]
+    );
+  });
 });

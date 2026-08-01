@@ -166,6 +166,23 @@ describe('parseFilesConfig', () => {
       expect(result.placeholderPaths.gt).toBe('/project/dist/[locale].json');
     });
 
+    it('preserves an explicit Vite config path for Vue extraction', () => {
+      const files = {
+        gt: {
+          output: 'dist/[locale].json',
+          parsingFlags: {
+            viteConfigPath: 'config/vite.custom.ts',
+          },
+        },
+      };
+
+      const result = resolveFiles(files, 'en', defaultLocales, '/project');
+
+      expect(result.gtJson.parsingFlags.viteConfigPath).toBe(
+        'config/vite.custom.ts'
+      );
+    });
+
     it('should handle transform options as string', () => {
       const files = {
         json: {
