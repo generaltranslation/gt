@@ -86,12 +86,22 @@
         "default": "./dist/server.mjs"
       },
       "default": "./dist/server.mjs"
+    },
+    "./middleware": {
+      "import": {
+        "types": "./dist/middleware.d.mts",
+        "default": "./dist/middleware.mjs"
+      },
+      "default": "./dist/middleware.mjs"
     }
   },
   "typesVersions": {
     "*": {
       "server": [
         "./dist/server.d.mts"
+      ],
+      "middleware": [
+        "./dist/middleware.d.mts"
       ]
     }
   },

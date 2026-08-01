@@ -20,7 +20,12 @@ const deps = {
   alwaysBundle: [/^generaltranslation\//],
 };
 
-const entries = ['src/index.client.ts', 'src/index.server.ts', 'src/server.ts'];
+const entries = [
+  'src/index.client.ts',
+  'src/index.server.ts',
+  'src/middleware.ts',
+  'src/server.ts',
+];
 
 export default defineConfig(
   entries.map((entry, index) => {
