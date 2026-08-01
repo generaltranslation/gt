@@ -181,6 +181,11 @@ export async function validateProject(
         pkg
       )}. Are you sure you're running this command in the right directory?`
     );
+    // Validation has no file-upload work to continue after an empty inline
+    // result. Fail closed for Vue so discovery or compiler mismatches cannot
+    // masquerade as a successful validation. Stage remains non-fatal for its
+    // separate file-only workflow unless source-catalog generation requires
+    // inline content.
     if (
       pkg === Libraries.GT_VUE ||
       additionalLibraries.includes(Libraries.GT_VUE)

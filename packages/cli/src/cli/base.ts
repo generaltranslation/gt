@@ -754,12 +754,13 @@ export class BaseCLI {
             }
           }
 
-          if (ranReactSetup || ranVueSetup) {
+          const ranGTSetup = ranReactSetup || ranVueSetup;
+          if (ranGTSetup) {
             logger.startCommand('Setting up project config...');
           }
           // Configure gt.config.json
           await this.handleInitCommand(
-            ranReactSetup || ranVueSetup,
+            ranGTSetup,
             useDefaults,
             framework.name === 'vite' || framework.name === 'vite-vue',
             framework.type === 'vue'
@@ -814,7 +815,7 @@ export class BaseCLI {
 
   // Wizard for configuring gt.config.json
   protected async handleInitCommand(
-    ranReactSetup: boolean,
+    ranGTSetup: boolean,
     useDefaults: boolean = false,
     isVite: boolean = false,
     isVue: boolean = false
@@ -832,7 +833,7 @@ export class BaseCLI {
     const gtInstalled =
       !!packageJson &&
       INLINE_LIBRARIES.some((lib) => isPackageInstalled(lib, packageJson));
-    const isUsingGT = ranReactSetup || gtInstalled;
+    const isUsingGT = ranGTSetup || gtInstalled;
 
     // Ask where the translations are stored
     const usingCDN = await (async () => {
