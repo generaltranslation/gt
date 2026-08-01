@@ -171,7 +171,13 @@ export function readStaticPrimitive(
     return { ok: true, value: null };
   }
   if (expression.type === 'TemplateLiteral') {
-    let value = expression.quasis[0]?.value.cooked ?? '';
+    const firstQuasi = expression.quasis[0]?.value.cooked;
+    // Executable, untagged template literals always have cooked values.
+    // Missing cooked data belongs to malformed or tagged-template ASTs and
+    // must fail closed instead of being interpreted with different raw-text
+    // semantics.
+    if (firstQuasi == null) return { ok: false };
+    let value = firstQuasi;
     for (let index = 0; index < expression.expressions.length; index += 1) {
       const interpolation = readStaticPrimitive(
         expression.expressions[index],
@@ -179,8 +185,9 @@ export function readStaticPrimitive(
       );
       if (!interpolation.ok) return { ok: false };
       value += String(interpolation.value);
-      const quasi = expression.quasis[index + 1];
-      value += quasi?.value.cooked ?? quasi?.value.raw ?? '';
+      const quasi = expression.quasis[index + 1]?.value.cooked;
+      if (quasi == null) return { ok: false };
+      value += quasi;
     }
     return { ok: true, value };
   }
