@@ -3,6 +3,8 @@ export type DiagnosticSeverity = 'Error' | 'Warning';
 /**
  * Text slots follow the five-part error message model:
  * what happened, reassurance, why it happened, how to fix it, and a way out.
+ * Clauses that are combined into another sentence should use their intended
+ * in-sentence casing.
  */
 export type DiagnosticMessageInput = {
   source?: string;
@@ -31,10 +33,6 @@ function stripSentence(text: string): string {
     end -= 1;
   }
   return trimmed.slice(0, end);
-}
-
-function lowercaseFirstWord(text: string): string {
-  return text.replace(/^[A-Z][a-z]/, (match) => match.toLowerCase());
 }
 
 function formatDetails(details: string | string[] | undefined): string {
@@ -70,12 +68,12 @@ export function createDiagnosticMessage({
       ? `${severity}:`
       : '';
   const whatAndWhy = why
-    ? `${stripSentence(whatHappened)} because ${lowercaseFirstWord(stripSentence(why))}`
+    ? `${stripSentence(whatHappened)} because ${stripSentence(why)}`
     : whatHappened;
   const shouldCombineWayOut =
     !!fix && !!wayOut && /^[a-z]/.test(stripSentence(wayOut));
   const fixAndWayOut = shouldCombineWayOut
-    ? `${stripSentence(fix)}, or ${lowercaseFirstWord(stripSentence(wayOut))}`
+    ? `${stripSentence(fix)}, or ${stripSentence(wayOut)}`
     : fix;
   const messageParts = [
     whatAndWhy,
