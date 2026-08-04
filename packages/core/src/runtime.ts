@@ -94,14 +94,6 @@ export class GTRuntime {
   /** API key for accessing the translation service */
   apiKey?: string;
 
-  /** Backwards-compatible development API key alias */
-  get devApiKey() {
-    return this.apiKey;
-  }
-  set devApiKey(apiKey: string | undefined) {
-    this.apiKey = apiKey;
-  }
-
   /** Source locale for translations */
   sourceLocale?: string;
 

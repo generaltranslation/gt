@@ -161,10 +161,16 @@ describe.sequential('GT Translation Methods', () => {
         });
 
         setConfig.setConfig({
+          devApiKey: 'gtx-dev-explicit-key',
+          projectId: 'project-b',
+        });
+        setConfig.setConfig({});
+        await constructorConfig.translate('Hello world', 'fr');
+        await setConfig.translate('Hello world', 'fr');
+        setConfig.setConfig({
           orgApiKey: 'gtx-org-explicit-key',
           projectId: 'test-project',
         });
-        await constructorConfig.translate('Hello world', 'fr');
         await setConfig.translate('Hello world', 'fr');
         await allExplicitKeys.translate('Hello world', 'fr');
 
@@ -175,6 +181,7 @@ describe.sequential('GT Translation Methods', () => {
           ])
         ).toEqual([
           ['gtx-org-explicit-key', 'test-project'],
+          ['gtx-dev-explicit-key', 'project-b'],
           ['gtx-org-explicit-key', 'test-project'],
           ['gtx-api-explicit-key', 'test-project'],
         ]);
@@ -569,22 +576,28 @@ describe.sequential('GT Translation Methods', () => {
     it('should normalize the development API key alias', () => {
       const gt = new GT({
         devApiKey: 'dev-key',
+        orgApiKey: 'gtx-org-test-key',
         projectId: 'test-project',
         baseUrl: 'https://api.test.com',
         targetLocale: 'es',
       });
 
       expect(gt.apiKey).toBe('dev-key');
-      expect(gt.devApiKey).toBe('dev-key');
       expect(gt.projectId).toBe('test-project');
       expect(gt.baseUrl).toBe('https://api.test.com');
       expect(gt.targetLocale).toBe('es');
     });
 
-    it('should read the organization API key from the environment and prefer explicit config', () => {
+    it('should normalize environment keys in priority order and prefer explicit config', () => {
+      vi.stubEnv('GT_API_KEY', 'gtx-api-env-key');
+      vi.stubEnv('GT_DEV_API_KEY', 'gtx-dev-env-key');
       vi.stubEnv('GT_ORG_API_KEY', 'gtx-org-env-key');
 
       try {
+        expect(new GT().apiKey).toBe('gtx-api-env-key');
+        vi.stubEnv('GT_API_KEY', '');
+        expect(new GT().apiKey).toBe('gtx-dev-env-key');
+        vi.stubEnv('GT_DEV_API_KEY', '');
         expect(new GT().apiKey).toBe('gtx-org-env-key');
         expect(new GT({ orgApiKey: 'gtx-org-explicit-key' }).apiKey).toBe(
           'gtx-org-explicit-key'
