@@ -18,18 +18,26 @@ describe('createUpdates', () => {
     vi.clearAllMocks();
   });
 
-  it('rejects duplicate custom ids when entries have distinct hashes', async () => {
+  it('rejects derived <T> entries when one explicit id has distinct hashes', async () => {
     vi.mocked(createInlineUpdates).mockResolvedValue({
       updates: [
         {
           dataFormat: 'ICU',
           source: 'Hello',
-          metadata: { id: 'shared-id', hash: 'first-hash' },
+          metadata: {
+            id: 'landing',
+            hash: 'first-hash',
+            staticId: 'derive-id',
+          },
         },
         {
           dataFormat: 'ICU',
           source: 'Goodbye',
-          metadata: { id: 'shared-id', hash: 'second-hash' },
+          metadata: {
+            id: 'landing',
+            hash: 'second-hash',
+            staticId: 'derive-id',
+          },
         },
       ],
       errors: [],
@@ -46,9 +54,9 @@ describe('createUpdates', () => {
       {} as ParsingConfigOptions
     );
 
-    expect(result.errors).toHaveLength(1);
-    expect(result.errors[0]).toContain('same id');
-    expect(result.errors[0]).toContain('shared-id');
+    expect(result.errors).toEqual([
+      'Explicit id landing cannot map to multiple source messages or hashes because one explicit id must map to exactly one source message and hash. Remove or rename duplicated IDs, or ensure every <T> component and dictionary entry using this id has matching content.',
+    ]);
     expect(result.updates).toEqual([]);
   });
 

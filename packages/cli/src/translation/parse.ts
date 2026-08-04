@@ -10,6 +10,22 @@ import chalk from 'chalk';
 import type { ParsingConfigOptions, GTParsingFlags } from '../types/parsing.js';
 import { exitSync } from '../console/logging.js';
 import { InlineLibrary, isPythonLibrary } from '../types/libraries.js';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
+
+/**
+ * Explains why an explicit id cannot identify multiple source messages.
+ */
+function createDuplicateIdHashDiagnostic(id: string): string {
+  return createDiagnosticMessage({
+    whatHappened: `Explicit id ${chalk.blue(
+      id
+    )} cannot map to multiple source messages or hashes`,
+    why: 'one explicit id must map to exactly one source message and hash',
+    fix: `Remove or rename duplicated IDs, or ensure every ${chalk.green(
+      '<T>'
+    )} component and dictionary entry using this id has matching content`,
+  });
+}
 
 /**
  * Searches for gt-react or gt-next dictionary files and creates updates for them,
@@ -122,13 +138,7 @@ export async function createUpdates(
     const existingHash = idHashMap.get(id);
     if (existingHash !== undefined) {
       if (existingHash !== hash) {
-        errors.push(
-          `Hashes don't match on two components with the same id: ${chalk.blue(
-            id
-          )}. Check your ${chalk.green(
-            '<T>'
-          )} tags and dictionary entries and make sure you're not accidentally duplicating IDs.`
-        );
+        errors.push(createDuplicateIdHashDiagnostic(id));
         duplicateIds.add(id);
       }
     } else {
