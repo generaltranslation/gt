@@ -33,6 +33,7 @@ describe('_createProject', () => {
         name: 'Customer Portal',
         defaultLocale: 'en-US',
       },
+      retryPolicy: 'none',
     });
     expect(result).toEqual(createProjectResult);
   });

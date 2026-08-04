@@ -25,5 +25,6 @@ export async function _createProject(
 ): Promise<CreateProjectResult> {
   return apiRequest<CreateProjectResult>(config, '/v2/projects', {
     body: { name, defaultLocale },
+    retryPolicy: 'none',
   });
 }

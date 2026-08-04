@@ -67,14 +67,6 @@ export const noApiKeyProvidedError = (functionName: string) =>
     fix: `Pass an API key to \`${functionName}\` or specify apiKey in the GT constructor`,
   });
 
-export const noOrgApiKeyProvidedError = (functionName: string) =>
-  createDiagnosticMessage({
-    source: GT_SOURCE,
-    severity: 'Error',
-    whatHappened: `Cannot call \`${functionName}\` without a specified organization API key`,
-    fix: 'Specify orgApiKey in the GT constructor or set GT_ORG_API_KEY in the environment',
-  });
-
 export const invalidLocaleError = (locale: string) =>
   createDiagnosticMessage({
     source: GT_SOURCE,
