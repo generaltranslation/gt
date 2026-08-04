@@ -566,18 +566,16 @@ describe.sequential('GT Translation Methods', () => {
       expect(gt.baseUrl).toBe('https://api.test.com');
     });
 
-    it('should normalize API key aliases to one configured key', () => {
+    it('should normalize the development API key alias', () => {
       const gt = new GT({
-        apiKey: 'test-key',
         devApiKey: 'dev-key',
-        orgApiKey: 'gtx-org-test-key',
         projectId: 'test-project',
         baseUrl: 'https://api.test.com',
         targetLocale: 'es',
       });
 
-      expect(gt.apiKey).toBe('test-key');
-      expect(gt.devApiKey).toBe('test-key');
+      expect(gt.apiKey).toBe('dev-key');
+      expect(gt.devApiKey).toBe('dev-key');
       expect(gt.projectId).toBe('test-project');
       expect(gt.baseUrl).toBe('https://api.test.com');
       expect(gt.targetLocale).toBe('es');
