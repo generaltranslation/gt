@@ -574,7 +574,7 @@ describe.sequential('GT Translation Methods', () => {
       expect(gt.baseUrl).toBe('https://api.test.com');
     });
 
-    it('should handle GT configuration with all options', () => {
+    it('should normalize API key aliases to one configured key', () => {
       const gt = new GT({
         apiKey: 'test-key',
         devApiKey: 'dev-key',
@@ -585,8 +585,7 @@ describe.sequential('GT Translation Methods', () => {
       });
 
       expect(gt.apiKey).toBe('test-key');
-      expect(gt.devApiKey).toBe('dev-key');
-      expect(gt.orgApiKey).toBe('gtx-org-test-key');
+      expect(gt.devApiKey).toBe('test-key');
       expect(gt.projectId).toBe('test-project');
       expect(gt.baseUrl).toBe('https://api.test.com');
       expect(gt.targetLocale).toBe('es');
@@ -596,8 +595,8 @@ describe.sequential('GT Translation Methods', () => {
       vi.stubEnv('GT_ORG_API_KEY', 'gtx-org-env-key');
 
       try {
-        expect(new GT().orgApiKey).toBe('gtx-org-env-key');
-        expect(new GT({ orgApiKey: 'gtx-org-explicit-key' }).orgApiKey).toBe(
+        expect(new GT().apiKey).toBe('gtx-org-env-key');
+        expect(new GT({ orgApiKey: 'gtx-org-explicit-key' }).apiKey).toBe(
           'gtx-org-explicit-key'
         );
       } finally {
