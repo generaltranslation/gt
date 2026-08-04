@@ -12,10 +12,10 @@ import {
 } from './types';
 import { libraryDefaultLocale } from './settings/settings';
 import {
+  noApiKeyProvidedError,
   noSourceLocaleProvidedError,
   noTargetLocaleProvidedError,
 } from './logging/errors';
-import { createDiagnosticMessage } from './logging/diagnostics';
 import { gtInstanceLogger } from './logging/logger';
 import {
   _setupProject,
@@ -115,14 +115,6 @@ export {
   type LocaleConfigConstructorParams,
 } from '@generaltranslation/format';
 
-const noOrgApiKeyProvidedError = createDiagnosticMessage({
-  source: 'GT',
-  severity: 'Error',
-  whatHappened:
-    'Cannot call `createProject` without a specified organization API key',
-  fix: 'Specify orgApiKey in the GT constructor or set GT_ORG_API_KEY in the environment',
-});
-
 export {
   determineLocale,
   formatCurrency,
@@ -176,7 +168,7 @@ export class GT extends GTRuntime {
   // -------------- Project Methods -------------- //
 
   /**
-   * Creates a project in the organization associated with the configured organization API key.
+   * Creates a project in the organization associated with the configured API key.
    *
    * @param name - The project name.
    * @param defaultLocale - The project's default locale. Defaults to the library default locale.
@@ -186,13 +178,13 @@ export class GT extends GTRuntime {
     name: string,
     defaultLocale: string = libraryDefaultLocale
   ): Promise<CreateProjectResult> {
-    if (!this.orgApiKey) {
-      throw new Error(noOrgApiKeyProvidedError);
+    if (!this.apiKey) {
+      throw new Error(noApiKeyProvidedError('createProject'));
     }
     return await _createProject(
       name,
       this.resolveCanonicalLocale(defaultLocale),
-      { baseUrl: this.baseUrl, apiKey: this.orgApiKey }
+      { baseUrl: this.baseUrl, apiKey: this.apiKey }
     );
   }
 

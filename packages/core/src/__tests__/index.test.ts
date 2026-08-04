@@ -775,7 +775,7 @@ describe.sequential('GT Project Methods', () => {
     expect(result).toEqual(createProjectResult);
   });
 
-  it('should canonicalize an explicit default locale and use only the organization key', async () => {
+  it('should canonicalize an explicit default locale and use the selected key', async () => {
     const gt = new GT({
       apiKey: 'test-api-key',
       devApiKey: 'gtx-dev-test-key',
@@ -793,21 +793,18 @@ describe.sequential('GT Project Methods', () => {
 
     expect(_createProject).toHaveBeenCalledWith('Customer Portal', 'fr-FR', {
       baseUrl: undefined,
-      apiKey: 'gtx-org-test-key',
+      apiKey: 'test-api-key',
     });
   });
 
-  it.each([{ apiKey: 'test-api-key' }, { devApiKey: 'gtx-dev-test-key' }])(
-    'should reject project-scoped credentials without an organization key',
-    async (credentials) => {
-      const gt = new GT(credentials);
+  it('should require an API key', async () => {
+    const gt = new GT();
 
-      await expect(gt.createProject('Customer Portal')).rejects.toThrow(
-        'GT Error: Cannot call `createProject` without a specified organization API key.'
-      );
-      expect(_createProject).not.toHaveBeenCalled();
-    }
-  );
+    await expect(gt.createProject('Customer Portal')).rejects.toThrow(
+      'GT Error: Cannot call `createProject` without a specified API key.'
+    );
+    expect(_createProject).not.toHaveBeenCalled();
+  });
 });
 
 describe('LocaleConfig', () => {
