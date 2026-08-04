@@ -1432,6 +1432,30 @@ function processDeriveExpression({
       state,
       output,
     });
+  } else if (
+    t.isLogicalExpression(expressionNodePath.node) &&
+    expressionNodePath.node.operator === '&&'
+  ) {
+    // ex: return condition && <div>Jsx content</div>
+    // React renders nothing when the condition is falsy, so this derives to
+    // the right-hand content plus an empty branch
+    const rightResult = processDeriveExpression({
+      config,
+      state,
+      output,
+      scopeNode,
+      expressionNodePath: expressionNodePath.get(
+        'right'
+      ) as NodePath<t.Expression>,
+    });
+    const result: MultiplicationNode = {
+      nodeType: 'multiplication' as const,
+      branches: [
+        ...(Array.isArray(rightResult) ? rightResult : [rightResult]),
+        null,
+      ],
+    };
+    return result;
   } else if (t.isConditionalExpression(expressionNodePath.node)) {
     // ex: return condition ? <div>Jsx content</div> : <div>Jsx content</div>
     // since two options here we must construct a new multiplication node
