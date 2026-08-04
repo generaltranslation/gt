@@ -263,6 +263,38 @@ describe('Derive with logical && expressions in JSX', () => {
     expect(sources).toContainEqual(['Hello ', { t: 'Derive', i: 1 }]);
   });
 
+  it('derives && alongside static sibling content inside Derive', () => {
+    const source = `
+      import { T, Derive } from "gt-next";
+
+      export default function Page({ cond }) {
+        return (
+          <T>
+            Hello
+            <Derive>prefix {cond && "x"}</Derive>
+          </T>
+        );
+      }
+    `;
+
+    const { updates, errors } = parseDerive(source);
+
+    expect(errors).toHaveLength(0);
+    expect(updates).toHaveLength(2);
+
+    const sources = updates.map((u) => u.source);
+    expect(sources).toContainEqual([
+      'Hello',
+      { t: 'Derive', i: 1, c: ['prefix ', 'x'] },
+    ]);
+    // The empty variant drops the falsy child but keeps the static sibling,
+    // matching the runtime serialization of <Derive>prefix {false}</Derive>
+    expect(sources).toContainEqual([
+      'Hello',
+      { t: 'Derive', i: 1, c: ['prefix '] },
+    ]);
+  });
+
   it('still errors when the right side of && is dynamic', () => {
     const source = `
       import { T, Derive } from "gt-next";
