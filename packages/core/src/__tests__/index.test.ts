@@ -109,6 +109,54 @@ describe.sequential('GT Translation Methods', () => {
       );
     });
 
+    it('should use an organization API key with a project ID', async () => {
+      const mockTranslateMany = vi.mocked(_translateMany);
+      mockTranslateMany.mockResolvedValue([mockTranslationResult]);
+      const gtWithOrgKey = new GT({
+        orgApiKey: 'gtx-org-test-key',
+        projectId: 'test-project',
+        baseUrl: 'https://api.test.com',
+      });
+
+      await gtWithOrgKey.translate('Hello world', 'fr');
+
+      expect(mockTranslateMany).toHaveBeenCalledWith(
+        ['Hello world'],
+        expect.objectContaining({
+          targetLocale: 'fr',
+          sourceLocale: 'en',
+        }),
+        {
+          baseUrl: 'https://api.test.com',
+          apiKey: 'gtx-org-test-key',
+          projectId: 'test-project',
+        },
+        undefined
+      );
+    });
+
+    it('should require a project ID with an organization API key', async () => {
+      const gtNoProject = new GT({
+        orgApiKey: 'gtx-org-test-key',
+        baseUrl: 'https://api.test.com',
+      });
+
+      await expect(gtNoProject.translate('Hello world', 'es')).rejects.toThrow(
+        'GT Error: Cannot call `translate` without a specified project ID.'
+      );
+    });
+
+    it('should require an API key with a project ID', async () => {
+      const gtNoKey = new GT({
+        projectId: 'test-project',
+        baseUrl: 'https://api.test.com',
+      });
+
+      await expect(gtNoKey.translate('Hello world', 'es')).rejects.toThrow(
+        'GT Error: Cannot call `translate` without a specified API key.'
+      );
+    });
+
     it('should handle empty metadata', async () => {
       const mockTranslateMany = vi.mocked(_translateMany);
       mockTranslateMany.mockResolvedValue([mockTranslationResult]);
@@ -474,6 +522,7 @@ describe.sequential('GT Translation Methods', () => {
       const gt = new GT({
         apiKey: 'test-key',
         devApiKey: 'dev-key',
+        orgApiKey: 'gtx-org-test-key',
         projectId: 'test-project',
         baseUrl: 'https://api.test.com',
         targetLocale: 'es',
@@ -481,9 +530,23 @@ describe.sequential('GT Translation Methods', () => {
 
       expect(gt.apiKey).toBe('test-key');
       expect(gt.devApiKey).toBe('dev-key');
+      expect(gt.orgApiKey).toBe('gtx-org-test-key');
       expect(gt.projectId).toBe('test-project');
       expect(gt.baseUrl).toBe('https://api.test.com');
       expect(gt.targetLocale).toBe('es');
+    });
+
+    it('should read the organization API key from the environment and prefer explicit config', () => {
+      vi.stubEnv('GT_ORG_API_KEY', 'gtx-org-env-key');
+
+      try {
+        expect(new GT().orgApiKey).toBe('gtx-org-env-key');
+        expect(new GT({ orgApiKey: 'gtx-org-explicit-key' }).orgApiKey).toBe(
+          'gtx-org-explicit-key'
+        );
+      } finally {
+        vi.unstubAllEnvs();
+      }
     });
   });
 
@@ -667,6 +730,7 @@ describe('GT LocaleConfig delegation', () => {
     expect(gt.localeConfig).toBeInstanceOf(LocaleConfig);
     expect('apiKey' in gt.localeConfig).toBe(false);
     expect('devApiKey' in gt.localeConfig).toBe(false);
+    expect('orgApiKey' in gt.localeConfig).toBe(false);
     expect('projectId' in gt.localeConfig).toBe(false);
 
     gt.setConfig({
