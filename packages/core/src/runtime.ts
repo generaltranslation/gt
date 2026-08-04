@@ -91,8 +91,31 @@ export class GTRuntime {
   /** Project ID for the translation service */
   projectId?: string;
 
+  /** Active API key for accessing the translation service */
+  private _apiKey?: string;
+
+  /** Whether the active API key was configured through the development alias */
+  private _isDevApiKey = false;
+
   /** API key for accessing the translation service */
-  apiKey?: string;
+  get apiKey() {
+    return this._apiKey;
+  }
+
+  set apiKey(apiKey: string | undefined) {
+    this._apiKey = apiKey;
+    this._isDevApiKey = false;
+  }
+
+  /** Development API key compatibility alias */
+  get devApiKey() {
+    return this._isDevApiKey ? this._apiKey : undefined;
+  }
+
+  set devApiKey(devApiKey: string | undefined) {
+    this._apiKey = devApiKey;
+    this._isDevApiKey = true;
+  }
 
   /** Source locale for translations */
   sourceLocale?: string;
@@ -138,10 +161,11 @@ export class GTRuntime {
   constructor(params: GTConstructorParams = {}) {
     // Read environment
     if (typeof process !== 'undefined') {
-      this.apiKey ||=
-        process.env?.GT_API_KEY ||
-        process.env?.GT_DEV_API_KEY ||
-        process.env?.GT_ORG_API_KEY;
+      this._setApiKey(
+        process.env?.GT_API_KEY,
+        process.env?.GT_DEV_API_KEY,
+        process.env?.GT_ORG_API_KEY
+      );
       this.projectId ||= process.env?.GT_PROJECT_ID;
     }
     // Set up config
@@ -160,7 +184,7 @@ export class GTRuntime {
     baseUrl,
   }: GTConstructorParams) {
     // ----- Environment properties ----- //
-    this.apiKey = apiKey || devApiKey || orgApiKey || this.apiKey;
+    this._setApiKey(apiKey, devApiKey, orgApiKey);
     if (projectId) this.projectId = projectId;
 
     // ----- Standardize locales ----- //
@@ -217,6 +241,12 @@ export class GTRuntime {
   }
 
   // -------------- Private Methods -------------- //
+
+  private _setApiKey(apiKey?: string, devApiKey?: string, orgApiKey?: string) {
+    if (apiKey) this.apiKey = apiKey;
+    else if (devApiKey) this.devApiKey = devApiKey;
+    else if (orgApiKey) this.apiKey = orgApiKey;
+  }
 
   protected _getTranslationConfig(): TranslationRequestConfig {
     return {
