@@ -92,6 +92,7 @@ export type {
   SubmitUserEditDiff,
   SubmitUserEditDiffsPayload,
 } from './translate/submitUserEditDiffs';
+export type { CreateProjectResult } from './projects/createProject';
 
 export type {
   Transformation,
@@ -118,15 +119,22 @@ export type Metadata = {
 
 // ----- TRANSLATION REQUEST TYPES ----- //
 
-/**
- * TranslationRequestConfig is used to configure the translation request.
- *
- * @param projectId - The project ID of the translation request.
- * @param baseUrl - The base URL of the translation request.
- * @param apiKey - The API key of the translation request.
- */
-export type TranslationRequestConfig = {
-  projectId: string;
+type BaseRequestConfig = {
   baseUrl?: string;
   apiKey?: string;
 };
+
+/** Configuration for a project-scoped API request. */
+export type TranslationRequestConfig = BaseRequestConfig & {
+  projectId: string;
+};
+
+/** Configuration for an organization-scoped API request. */
+export type OrganizationRequestConfig = BaseRequestConfig & {
+  projectId?: never;
+};
+
+/** Configuration for an API request at either supported scope. */
+export type ApiRequestConfig =
+  | TranslationRequestConfig
+  | OrganizationRequestConfig;

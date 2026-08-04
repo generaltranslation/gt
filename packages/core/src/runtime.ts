@@ -25,6 +25,7 @@ import {
   TranslateManyResult,
   TranslationError,
   TranslationRequestConfig,
+  OrganizationRequestConfig,
   TranslationResult,
   TranslateManyEntry,
 } from './types';
@@ -36,6 +37,7 @@ import {
   invalidLocalesError,
   noProjectIdProvidedError,
   noApiKeyProvidedError,
+  noOrgApiKeyProvidedError,
 } from './logging/errors';
 import { gtInstanceLogger } from './logging/logger';
 import { _translateMany } from './translate/translateMany';
@@ -233,6 +235,13 @@ export class GTRuntime {
     };
   }
 
+  protected _getOrganizationConfig(): OrganizationRequestConfig {
+    return {
+      baseUrl: this.baseUrl,
+      apiKey: this.orgApiKey,
+    };
+  }
+
   protected _validateAuth(functionName: string) {
     const errors: string[] = [];
     if (!this.apiKey && !this.devApiKey && !this.orgApiKey) {
@@ -245,6 +254,12 @@ export class GTRuntime {
     }
     if (errors.length) {
       throw new Error(errors.join('\n'));
+    }
+  }
+
+  protected _validateOrgAuth(functionName: string) {
+    if (!this.orgApiKey) {
+      throw new Error(noOrgApiKeyProvidedError(functionName));
     }
   }
 
