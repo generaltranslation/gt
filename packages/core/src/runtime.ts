@@ -102,6 +102,9 @@ export class GTRuntime {
   /** Organization API key for accessing the translation service */
   orgApiKey?: string;
 
+  /** API key selected by the latest explicit configuration */
+  private _configuredApiKey?: string;
+
   /** Source locale for translations */
   sourceLocale?: string;
 
@@ -167,6 +170,8 @@ export class GTRuntime {
     baseUrl,
   }: GTConstructorParams) {
     // ----- Environment properties ----- //
+    this._configuredApiKey =
+      apiKey || devApiKey || orgApiKey || this._configuredApiKey;
     if (apiKey) this.apiKey = apiKey;
     if (devApiKey) this.devApiKey = devApiKey;
     if (orgApiKey) this.orgApiKey = orgApiKey;
@@ -230,7 +235,11 @@ export class GTRuntime {
   protected _getTranslationConfig(): TranslationRequestConfig {
     return {
       baseUrl: this.baseUrl,
-      apiKey: this.apiKey || this.devApiKey || this.orgApiKey,
+      apiKey:
+        this._configuredApiKey ||
+        this.apiKey ||
+        this.devApiKey ||
+        this.orgApiKey,
       projectId: this.projectId || '',
     };
   }
