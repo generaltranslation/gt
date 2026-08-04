@@ -135,6 +135,54 @@ describe.sequential('GT Translation Methods', () => {
       );
     });
 
+    it('should prefer explicitly configured API keys over environment fallbacks', async () => {
+      vi.stubEnv('GT_API_KEY', 'gtx-api-env-key');
+      vi.stubEnv('GT_DEV_API_KEY', 'gtx-dev-env-key');
+
+      try {
+        const mockTranslateMany = vi.mocked(_translateMany);
+        mockTranslateMany.mockResolvedValue([mockTranslationResult]);
+        const constructorConfig = new GT({
+          orgApiKey: 'gtx-org-explicit-key',
+          projectId: 'test-project',
+          baseUrl: 'https://api.test.com',
+        });
+        const setConfig = new GT({
+          apiKey: 'gtx-api-project-a-key',
+          projectId: 'project-a',
+          baseUrl: 'https://api.test.com',
+        });
+        const allExplicitKeys = new GT({
+          apiKey: 'gtx-api-explicit-key',
+          devApiKey: 'gtx-dev-explicit-key',
+          orgApiKey: 'gtx-org-explicit-key',
+          projectId: 'test-project',
+          baseUrl: 'https://api.test.com',
+        });
+
+        setConfig.setConfig({
+          orgApiKey: 'gtx-org-explicit-key',
+          projectId: 'test-project',
+        });
+        await constructorConfig.translate('Hello world', 'fr');
+        await setConfig.translate('Hello world', 'fr');
+        await allExplicitKeys.translate('Hello world', 'fr');
+
+        expect(
+          mockTranslateMany.mock.calls.map(([, , config]) => [
+            config.apiKey,
+            config.projectId,
+          ])
+        ).toEqual([
+          ['gtx-org-explicit-key', 'test-project'],
+          ['gtx-org-explicit-key', 'test-project'],
+          ['gtx-api-explicit-key', 'test-project'],
+        ]);
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    });
+
     it('should require a project ID with an organization API key', async () => {
       const gtNoProject = new GT({
         orgApiKey: 'gtx-org-test-key',
