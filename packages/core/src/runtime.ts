@@ -94,14 +94,13 @@ export class GTRuntime {
   /** API key for accessing the translation service */
   apiKey?: string;
 
-  /** Development API key for accessing the translation service */
-  devApiKey?: string;
-
-  /** Organization API key for accessing the translation service */
-  orgApiKey?: string;
-
-  /** API key selected by the latest explicit configuration */
-  private _configuredApiKey?: string;
+  /** Backwards-compatible development API key alias */
+  get devApiKey() {
+    return this.apiKey;
+  }
+  set devApiKey(apiKey: string | undefined) {
+    this.apiKey = apiKey;
+  }
 
   /** Source locale for translations */
   sourceLocale?: string;
@@ -147,9 +146,10 @@ export class GTRuntime {
   constructor(params: GTConstructorParams = {}) {
     // Read environment
     if (typeof process !== 'undefined') {
-      this.apiKey ||= process.env?.GT_API_KEY;
-      this.devApiKey ||= process.env?.GT_DEV_API_KEY;
-      this.orgApiKey ||= process.env?.GT_ORG_API_KEY;
+      this.apiKey ||=
+        process.env?.GT_API_KEY ||
+        process.env?.GT_DEV_API_KEY ||
+        process.env?.GT_ORG_API_KEY;
       this.projectId ||= process.env?.GT_PROJECT_ID;
     }
     // Set up config
@@ -168,11 +168,7 @@ export class GTRuntime {
     baseUrl,
   }: GTConstructorParams) {
     // ----- Environment properties ----- //
-    this._configuredApiKey =
-      apiKey || devApiKey || orgApiKey || this._configuredApiKey;
-    if (apiKey) this.apiKey = apiKey;
-    if (devApiKey) this.devApiKey = devApiKey;
-    if (orgApiKey) this.orgApiKey = orgApiKey;
+    this.apiKey = apiKey || devApiKey || orgApiKey || this.apiKey;
     if (projectId) this.projectId = projectId;
 
     // ----- Standardize locales ----- //
@@ -233,18 +229,14 @@ export class GTRuntime {
   protected _getTranslationConfig(): TranslationRequestConfig {
     return {
       baseUrl: this.baseUrl,
-      apiKey:
-        this._configuredApiKey ||
-        this.apiKey ||
-        this.devApiKey ||
-        this.orgApiKey,
+      apiKey: this.apiKey,
       projectId: this.projectId || '',
     };
   }
 
   protected _validateAuth(functionName: string) {
     const errors: string[] = [];
-    if (!this.apiKey && !this.devApiKey && !this.orgApiKey) {
+    if (!this.apiKey) {
       const error = noApiKeyProvidedError(functionName);
       errors.push(error);
     }
