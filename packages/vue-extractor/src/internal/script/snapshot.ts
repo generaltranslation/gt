@@ -118,6 +118,13 @@ export function createSnapshotAnalysis({
     scope: Scope,
     state: ScriptState
   ): FinalContainerSnapshot | undefined {
+    if (state.analysis.stats) {
+      state.analysis.stats.finalContainerSnapshotReads += 1;
+    }
+    // A resolved GT/Vue identity or string function is an exact scalar, not a
+    // finite container. This shortcut is especially important for immutable
+    // alias chains whose final value is later stored in a mutable registry.
+    if (resolveKnownExpression(node, scope, state, new Set())) return undefined;
     const array = collectTransformArrayEntries(
       node,
       scope,
