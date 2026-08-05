@@ -23,6 +23,24 @@ export type FieldLevelTranslationMode =
   | 'internationalizedArray'
   | 'mixed';
 
+/**
+ * What the translations UI remembers for the user. Plugin config supplies the
+ * defaults; a change the user makes in the Studio is persisted locally and
+ * preferred over them.
+ */
+export type TranslationPreferences = {
+  /** Poll for completed translations. */
+  autoRefresh: boolean;
+  /** Import a translation as soon as it completes. */
+  autoImport: boolean;
+  /** Repoint references to their translated counterparts after import. */
+  autoPatchReferences: boolean;
+  /** Publish translated documents after import. */
+  autoPublish: boolean;
+  /** Send the translations Sanity holds to GT before a run, so they win. */
+  preserveExistingTranslations: boolean;
+};
+
 export type FileProperties = {
   versionId: string;
   fileId: string;

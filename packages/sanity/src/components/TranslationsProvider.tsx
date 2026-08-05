@@ -28,7 +28,7 @@ import { uploadTranslations } from '../translation/uploadTranslations';
 import { downloadTranslations } from '../translation/downloadTranslations';
 import { checkTranslationStatus } from '../translation/checkTranslationStatus';
 import { importDocument } from '../translation/importDocument';
-import { resolveRefs } from '../sanity-api/resolveRefs';
+import { commitResolvedRefs, resolveRefs } from '../sanity-api/resolveRefs';
 import { findTranslatedDocumentForLocale } from '../sanity-api/findDocuments';
 import {
   getReadyFilesForImport,
@@ -38,7 +38,11 @@ import {
 import { processBatch } from '../utils/batchProcessor';
 import { publishTranslations } from '../sanity-api/publishDocuments';
 import { getLocales } from '../adapter/getLocales';
-import type { FileProperties, TranslationStatus } from '../adapter/types';
+import type {
+  FileProperties,
+  TranslationPreferences,
+  TranslationStatus,
+} from '../adapter/types';
 import {
   createStableTranslationKey,
   createTranslationStatusKey,
@@ -46,6 +50,11 @@ import {
   getDocumentPublishedId,
   getPublishedId,
 } from '../utils/documentIds';
+import {
+  getPreferencesStorageKey,
+  readPreferences,
+  writePreferences,
+} from '../utils/translationPreferences';
 
 interface ImportProgress {
   current: number;
@@ -94,6 +103,12 @@ interface TranslationsContextType {
   existingTranslations: Set<string>;
   downloadStatus: DownloadStatus;
   translationStatuses: Map<string, TranslationStatus>;
+  /**
+   * Status keys enqueued this session and not yet reported ready. Non-empty
+   * means General Translation is still working, which nothing else in the
+   * status map distinguishes from "never translated" — both read as 0%.
+   */
+  pendingTranslations: Set<string>;
   isRefreshing: boolean;
   loadingSecrets: boolean;
   secrets: Secrets | null;
@@ -115,7 +130,7 @@ interface TranslationsContextType {
   handleUploadExistingTranslations: () => Promise<void>;
   handleImportAll: () => Promise<void>;
   handleImportMissing: () => Promise<void>;
-  handleRefreshAll: () => Promise<void>;
+  handleRefreshAll: (options?: { silent?: boolean }) => Promise<void>;
   handleImportDocument: (
     documentId: string,
     versionId: string,
@@ -192,14 +207,6 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   const [isBusy, setIsBusy] = useState(false);
   const [documents, setDocuments] = useState<SanityDocument[]>([]);
   const [locales, setLocales] = useState<TranslationLocale[]>([]);
-  const [autoRefresh, setAutoRefresh] = useState(true);
-  const [autoImport, setAutoImport] = useState(false);
-  const [autoPatchReferences, setAutoPatchReferences] = useState(false);
-  const [autoPublish, setAutoPublish] = useState(false);
-  // Seeded from plugin config; opt-in because uploading local translations
-  // overwrites whatever General Translation holds for that source version.
-  const [preserveExistingTranslations, setPreserveExistingTranslations] =
-    useState(() => pluginConfig.getPreserveExistingTranslations());
   const [loadingDocuments, setLoadingDocuments] = useState(false);
   const [importProgress, setImportProgress] = useState<ImportProgress>({
     current: 0,
@@ -221,6 +228,9 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   const [translationStatuses, setTranslationStatuses] = useState<
     Map<string, TranslationStatus>
   >(new Map());
+  const [pendingTranslations, setPendingTranslations] = useState<Set<string>>(
+    new Set()
+  );
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const client = useClient();
@@ -231,6 +241,48 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   );
   const [uploadedVersions, setUploadedVersions] = useState<Map<string, string>>(
     () => readUploadedVersions(uploadedVersionsStorageKey)
+  );
+  const preferencesStorageKey = getPreferencesStorageKey(projectId, dataset);
+  const [preferences, setPreferences] = useState<TranslationPreferences>(() =>
+    readPreferences(preferencesStorageKey, pluginConfig.getPreferences())
+  );
+  const {
+    autoRefresh,
+    autoImport,
+    autoPatchReferences,
+    autoPublish,
+    preserveExistingTranslations,
+  } = preferences;
+
+  // Persist from the event handler rather than an effect: these only ever
+  // change in response to the user flipping a switch.
+  const setPreference = useCallback(
+    (key: keyof TranslationPreferences, value: boolean) => {
+      const next = { ...preferences, [key]: value };
+      setPreferences(next);
+      writePreferences(preferencesStorageKey, next);
+    },
+    [preferences, preferencesStorageKey]
+  );
+  const setAutoRefresh = useCallback(
+    (value: boolean) => setPreference('autoRefresh', value),
+    [setPreference]
+  );
+  const setAutoImport = useCallback(
+    (value: boolean) => setPreference('autoImport', value),
+    [setPreference]
+  );
+  const setAutoPatchReferences = useCallback(
+    (value: boolean) => setPreference('autoPatchReferences', value),
+    [setPreference]
+  );
+  const setAutoPublish = useCallback(
+    (value: boolean) => setPreference('autoPublish', value),
+    [setPreference]
+  );
+  const setPreserveExistingTranslations = useCallback(
+    (value: boolean) => setPreference('preserveExistingTranslations', value),
+    [setPreference]
   );
   const schema = useSchema();
   const translationContext: TranslationFunctionContext = { client, schema };
@@ -460,6 +512,26 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         }
         writeUploadedVersions(uploadedVersionsStorageKey, nextUploadedVersions);
         setUploadedVersions(nextUploadedVersions);
+
+        // Everything just enqueued is outstanding until a refresh reports it
+        // ready. Without this the UI cannot tell "General Translation is
+        // working on it" from "never translated" — both sit at 0%.
+        setPendingTranslations((prev) => {
+          const next = new Set(prev);
+          for (const { info } of transformedDocuments) {
+            for (const localeId of availableLocaleIds) {
+              next.add(
+                createTranslationStatusKey(
+                  branchId,
+                  info.documentId,
+                  info.versionId ?? '',
+                  localeId
+                )
+              );
+            }
+          }
+          return next;
+        });
 
         toast.push({
           title: force
@@ -785,92 +857,109 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     [secrets]
   );
 
-  const handleRefreshAll = useCallback(async () => {
-    if (!secrets || documents.length === 0 || !branchId) return;
-    setIsRefreshing(true);
+  // `silent` suppresses the success toast. The poll runs every 10 seconds, so
+  // only a refresh the user asked for should announce itself.
+  const handleRefreshAll = useCallback(
+    async ({ silent = false }: { silent?: boolean } = {}) => {
+      if (!secrets || documents.length === 0 || !branchId) return;
+      setIsRefreshing(true);
 
-    try {
-      const availableLocaleIds = locales
-        .filter((locale) => locale.enabled !== false)
-        .map((locale) => locale.localeId);
+      try {
+        const availableLocaleIds = locales
+          .filter((locale) => locale.enabled !== false)
+          .map((locale) => locale.localeId);
 
-      const fileQueryData: FileProperties[] = [];
-      for (const doc of documents) {
-        for (const localeId of availableLocaleIds) {
-          const documentId = getDocumentPublishedId(doc);
-          fileQueryData.push({
-            versionId: getVersionId(doc),
-            fileId: documentId,
-            branchId: branchId,
-            locale: localeId,
-          });
-        }
-      }
-
-      const readyTranslations = await checkTranslationStatus(
-        fileQueryData,
-        downloadStatusRef.current,
-        secrets
-      );
-
-      setTranslationStatuses(() => {
-        const newStatuses = new Map();
-
+        const fileQueryData: FileProperties[] = [];
         for (const doc of documents) {
           for (const localeId of availableLocaleIds) {
             const documentId = getDocumentPublishedId(doc);
-            const versionId = getVersionId(doc);
-            const key = createTranslationStatusKey(
-              branchId,
-              documentId,
-              versionId,
-              localeId
-            );
-            newStatuses.set(key, { progress: 0, isReady: false });
-          }
-        }
-
-        if (Array.isArray(readyTranslations)) {
-          for (const translation of readyTranslations) {
-            const key = createTranslationStatusKey(
-              branchId,
-              translation.fileId,
-              translation.versionId,
-              translation.locale
-            );
-            newStatuses.set(key, {
-              progress: 100,
-              isReady: true,
-              fileData: {
-                versionId: translation.versionId,
-                fileId: translation.fileId,
-                branchId: translation.branchId,
-                locale: translation.locale,
-              },
+            fileQueryData.push({
+              versionId: getVersionId(doc),
+              fileId: documentId,
+              branchId: branchId,
+              locale: localeId,
             });
           }
         }
 
-        return newStatuses;
-      });
+        const readyTranslations = await checkTranslationStatus(
+          fileQueryData,
+          downloadStatusRef.current,
+          secrets
+        );
 
-      toast.push({
-        title: `Refreshed status for ${documents.length} document(s)`,
-        status: 'success',
-        closable: true,
-      });
-    } catch (error) {
-      console.error('Error refreshing translation status:', error);
-      toast.push({
-        title:
-          'Translation status could not be refreshed. Try again before importing.',
-        status: 'error',
-        closable: true,
-      });
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [secrets, documents, locales, branchId, getVersionId]);
+        setTranslationStatuses(() => {
+          const newStatuses = new Map();
+
+          for (const doc of documents) {
+            for (const localeId of availableLocaleIds) {
+              const documentId = getDocumentPublishedId(doc);
+              const versionId = getVersionId(doc);
+              const key = createTranslationStatusKey(
+                branchId,
+                documentId,
+                versionId,
+                localeId
+              );
+              newStatuses.set(key, { progress: 0, isReady: false });
+            }
+          }
+
+          if (Array.isArray(readyTranslations)) {
+            for (const translation of readyTranslations) {
+              const key = createTranslationStatusKey(
+                branchId,
+                translation.fileId,
+                translation.versionId,
+                translation.locale
+              );
+              newStatuses.set(key, {
+                progress: 100,
+                isReady: true,
+                fileData: {
+                  versionId: translation.versionId,
+                  fileId: translation.fileId,
+                  branchId: translation.branchId,
+                  locale: translation.locale,
+                },
+              });
+            }
+          }
+
+          // A translation that has arrived is no longer outstanding.
+          setPendingTranslations((prev) => {
+            if (prev.size === 0) return prev;
+            const next = new Set(prev);
+            for (const [key, status] of newStatuses) {
+              if (status.isReady) next.delete(key);
+            }
+            return next.size === prev.size ? prev : next;
+          });
+
+          return newStatuses;
+        });
+
+        if (!silent) {
+          toast.push({
+            title: `Refreshed status for ${documents.length} document(s)`,
+            status: 'success',
+            closable: true,
+          });
+        }
+      } catch (error) {
+        console.error('Error refreshing translation status:', error);
+        toast.push({
+          title:
+            'Translation status could not be refreshed. Try again before importing.',
+          status: 'error',
+          closable: true,
+        });
+      } finally {
+        setIsRefreshing(false);
+      }
+    },
+    [secrets, documents, locales, branchId, getVersionId]
+  );
 
   const handleImportDocument = useCallback(
     async (documentId: string, versionId: string, localeId: string) => {
@@ -1030,14 +1119,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
           );
 
           if (resolvedDoc !== translatedDoc) {
-            const mutation = {
-              patch: {
-                id: translatedDoc._id,
-                set: resolvedDoc,
-              },
-            };
-
-            await client.mutate([mutation]);
+            await commitResolvedRefs(translatedDoc, resolvedDoc, client);
             return { patched: true, doc: translatedDoc, localeId };
           }
           return { patched: false, doc: translatedDoc, localeId };
@@ -1195,7 +1277,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       !loadingDocuments &&
       branchId
     ) {
-      handleRefreshAll();
+      handleRefreshAll({ silent: true });
     }
   }, [
     documents,
@@ -1210,7 +1292,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     if (!autoRefresh || documents.length === 0 || !secrets) return;
 
     const interval = setInterval(async () => {
-      await handleRefreshAll();
+      await handleRefreshAll({ silent: true });
     }, 10000);
 
     return () => clearInterval(interval);
@@ -1242,6 +1324,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     existingTranslations,
     downloadStatus,
     translationStatuses,
+    pendingTranslations,
     isRefreshing,
     loadingSecrets,
     secrets,

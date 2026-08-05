@@ -8,7 +8,11 @@ import { formatLocalePropertiesLabel } from './utils/localeDisplay';
 import { definePlugin } from 'sanity';
 import { route } from 'sanity/router';
 import { translateAction } from './actions/translateAction';
-import { gt, pluginConfig } from './adapter/core';
+import {
+  DEFAULT_TRANSLATION_PREFERENCES,
+  gt,
+  pluginConfig,
+} from './adapter/core';
 import type {
   DedupeFields,
   IgnoreFields,
@@ -42,6 +46,13 @@ export type {
   Metadata,
   TranslationReference,
 } from './documentInternationalization';
+
+// ===== Studio Structure ===== //
+// Grouping translations by locale is opt-in: the structure tool's layout is
+// owned by `structureTool({ structure })` in the Studio config, which a plugin
+// cannot set on the user's behalf.
+export { gtStructure, gtStructureItems } from './structure/localizedStructure';
+export type { GTStructureOptions } from './structure/localizedStructure';
 
 // ===== Serialization Helpers ===== //
 export { default as TranslationsTab } from './components/tab/TranslationsTab';
@@ -130,6 +141,20 @@ export type GTPluginConfig = Omit<
   // that source version, including a completed translation that has not been
   // imported yet. Off by default; the toggle can be flipped per session.
   preserveExistingTranslations?: boolean;
+  // Starting state of the automatic actions in the translations UI. These are
+  // defaults, not locks: a change the user makes in the Studio is remembered in
+  // localStorage (per project and dataset) and preferred on their next visit.
+  // Defaults to true.
+  autoRefresh?: boolean;
+  // Import a translation as soon as it completes. Defaults to true.
+  autoImport?: boolean;
+  // Repoint references to their translated counterparts after import.
+  // Defaults to true.
+  autoPatchReferences?: boolean;
+  // Publish translated documents after import. Defaults to FALSE — publishing
+  // is the one automatic action that puts content in front of readers and
+  // cannot be undone by turning the switch back off.
+  autoPublish?: boolean;
 };
 
 /**
@@ -170,7 +195,11 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
     fieldLevelLocalization,
     translationLevel = 'document',
     fieldLevelDocuments,
-    preserveExistingTranslations = false,
+    preserveExistingTranslations = DEFAULT_TRANSLATION_PREFERENCES.preserveExistingTranslations,
+    autoRefresh = DEFAULT_TRANSLATION_PREFERENCES.autoRefresh,
+    autoImport = DEFAULT_TRANSLATION_PREFERENCES.autoImport,
+    autoPatchReferences = DEFAULT_TRANSLATION_PREFERENCES.autoPatchReferences,
+    autoPublish = DEFAULT_TRANSLATION_PREFERENCES.autoPublish,
   }) => {
     // Resolve sourceLocale: explicit sourceLocale > defaultLocale (from gt.config.json) > library default
     const resolvedSourceLocale =
@@ -218,7 +247,13 @@ export const gtPlugin = definePlugin<GTPluginConfig>(
       additionalBlockDeserializers,
       translationLevel,
       normalizedFieldLevelDocuments,
-      preserveExistingTranslations
+      {
+        autoRefresh,
+        autoImport,
+        autoPatchReferences,
+        autoPublish,
+        preserveExistingTranslations,
+      }
     );
     gt.setConfig({
       sourceLocale: resolvedSourceLocale,
