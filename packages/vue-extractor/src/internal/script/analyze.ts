@@ -46,6 +46,7 @@ import {
   knownValueKey,
   ORDINARY_GLOBAL_VALUES,
   READONLY_ARRAY_TRANSFORMS,
+  VUE_BUILTIN_IMPORTS,
 } from './knownValues.js';
 import {
   extractVueJSXTranslation,
@@ -1185,10 +1186,12 @@ function exposeKnownValue(
       'msg'
     );
   } else if (value.type === 'namespace' && value.source === 'vue') {
-    templateBindings.vueBuiltins.set(
-      appendTemplatePath(localName, 'Suspense'),
-      'Suspense'
-    );
+    for (const builtin of VUE_BUILTIN_IMPORTS) {
+      templateBindings.vueBuiltins.set(
+        appendTemplatePath(localName, builtin),
+        builtin
+      );
+    }
     templateBindings.identityFunctions.add(
       appendTemplatePath(localName, 'markRaw')
     );
@@ -1266,7 +1269,9 @@ function exposeUncertainKnownValue(
     }
     uncertainStringFunctions.add(appendTemplatePath(localName, 'msg'));
   } else if (value.type === 'namespace' && value.source === 'vue') {
-    uncertainComponents.add(appendTemplatePath(localName, 'Suspense'));
+    for (const builtin of VUE_BUILTIN_IMPORTS) {
+      uncertainComponents.add(appendTemplatePath(localName, builtin));
+    }
   }
 }
 
@@ -1823,7 +1828,9 @@ function collectNamespaceRestMemberCandidates(
           ),
           { type: 'string', kind: 'msg' },
         ]
-      : [{ type: 'vue-builtin', name: 'Suspense' }];
+      : [...VUE_BUILTIN_IMPORTS].map(
+          (name): TemplateKnownValue => ({ type: 'vue-builtin', name })
+        );
   return exports
     .filter((entry) => {
       const name =

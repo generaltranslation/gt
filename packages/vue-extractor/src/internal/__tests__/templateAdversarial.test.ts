@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { JsxChildren } from '@generaltranslation/format/types';
 import { describe, expect, it } from 'vitest';
-import { extractFromVueSource } from '../../index.js';
+import { extractFromVueSource } from './testVueCompiler.js';
 
 describe('Vue template extraction', () => {
   it('ports the React rich-content matrix with Vue slot semantics', async () => {

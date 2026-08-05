@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
+import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { extractFromVueSource } from '@generaltranslation/vue-extractor';
 
-const samePath = '/virtual/project/src/App.vue';
-const projectRoot = '/virtual/project';
+const projectRoot = process.cwd();
+const samePath = path.join(projectRoot, 'src/VirtualApp.vue');
 
 /** Returns only extracted source values, excluding file metadata. */
 function sources(output) {
@@ -75,11 +76,29 @@ const custom2 = await extract(delimiterSource, samePath, {
 assert.notDeepEqual(sources(custom1), sources(standard));
 assert.equal(canonical(custom2), canonical(custom1));
 
+const structuralDelimiterSource = setupFixture(
+  "import { T } from 'gt-vue';",
+  `<T>[[ '</template>' ]] after</T>`
+);
+const structuralCustom1 = await extract(structuralDelimiterSource, samePath, {
+  compilerOptions: { delimiters: ['[[', ']]'] },
+});
+const structuralStandard = await extract(structuralDelimiterSource);
+const structuralCustom2 = await extract(structuralDelimiterSource, samePath, {
+  compilerOptions: { delimiters: ['[[', ']]'] },
+});
+assert.deepEqual(structuralCustom1.errors, []);
+assert.deepEqual(sources(structuralCustom1), ['</template> after']);
+assert.ok(structuralStandard.errors.length > 0);
+assert.equal(canonical(structuralCustom2), canonical(structuralCustom1));
+
 const concurrent = await Promise.all(
   Array.from({ length: 80 }, (_, index) =>
     extract(
       stringFixture(`concurrent-${index}`),
-      index % 2 === 0 ? samePath : `/virtual/project/src/${index}.vue`
+      index % 2 === 0
+        ? samePath
+        : path.join(projectRoot, `src/Virtual${index}.vue`)
     )
   )
 );
@@ -94,6 +113,64 @@ const invalid2 = await extract(invalidSource);
 assert.ok(invalid1.errors.length > 0);
 assert.deepEqual(sources(valid), ['valid-between-invalid']);
 assert.equal(canonical(invalid2), canonical(invalid1));
+
+const sourceLocationFixture = [
+  '<script setup>',
+  "import { T, useGT } from 'gt-vue';",
+  'const gt = useGT();',
+  '</script>',
+  '<template>',
+  '  <section>',
+  '    <T context="location">',
+  '      Full file location',
+  '    </T>',
+  `    <p :title="gt('Attribute location')">Probe</p>`,
+  '  </section>',
+  '</template>',
+].join('\n');
+const sourceLocations = await extract(sourceLocationFixture, samePath, {
+  includeSourceCodeContext: true,
+  surroundingLineCount: 1,
+});
+assert.deepEqual(sourceLocations.errors, []);
+const richLocation = sourceLocations.results.find(
+  (result) => result.metadata.context === 'location'
+);
+const attributeLocation = sourceLocations.results.find(
+  (result) => result.source === 'Attribute location'
+);
+assert.deepEqual(richLocation?.metadata.sourceCode?.['src/VirtualApp.vue'], [
+  {
+    before: '  <section>',
+    target: '    <T context="location">\n      Full file location\n    </T>',
+    after: `    <p :title="gt('Attribute location')">Probe</p>`,
+  },
+]);
+assert.deepEqual(
+  attributeLocation?.metadata.sourceCode?.['src/VirtualApp.vue'],
+  [
+    {
+      before: '    </T>',
+      target: `    <p :title="gt('Attribute location')">Probe</p>`,
+      after: '  </section>',
+    },
+  ]
+);
+
+const shiftedDiagnostic = await extract(
+  [
+    '<script setup>',
+    "import { T } from 'gt-vue';",
+    'const dynamicContext = getContext();',
+    '</script>',
+    '<template>',
+    '  <section>',
+    '    <T :context="dynamicContext">Invalid</T>',
+    '  </section>',
+    '</template>',
+  ].join('\n')
+);
+assert.match(shiftedDiagnostic.errors.join('\n'), /\(7:\d+\).*dynamic context/);
 
 const numericSource = setupFixture(
   `
@@ -139,7 +216,7 @@ const performanceSource = setupFixture(
 const performanceStart = performance.now();
 const performanceOutput = await extract(
   performanceSource,
-  '/virtual/project/src/Performance.vue'
+  path.join(projectRoot, 'src/VirtualPerformance.vue')
 );
 const performanceMs = performance.now() - performanceStart;
 assert.equal(performanceOutput.results.length, 0);
@@ -160,7 +237,7 @@ if (typeof globalThis.gc === 'function') {
   for (let index = 0; index < 100; index += 1) {
     await extract(
       stringFixture(`warmup-${index}`),
-      `/virtual/project/src/Warmup${index}.vue`
+      path.join(projectRoot, `src/VirtualWarmup${index}.vue`)
     );
   }
   forceGC();
@@ -168,7 +245,7 @@ if (typeof globalThis.gc === 'function') {
   for (let index = 0; index < 750; index += 1) {
     const output = await extract(
       stringFixture(`unique-${index}`),
-      `/virtual/project/src/Unique${index}.vue`
+      path.join(projectRoot, `src/VirtualUnique${index}.vue`)
     );
     assert.deepEqual(sources(output), [`unique-${index}`]);
     if ((index + 1) % 250 === 0) forceGC();
@@ -185,6 +262,7 @@ process.stdout.write(
   `${JSON.stringify({
     cacheStateProbe: 'passed',
     concurrencyCalls: concurrent.length,
+    fullSfcLocations: 'passed',
     heapDeltaMiB:
       heapDeltaMiB == null ? 'gc unavailable' : Number(heapDeltaMiB.toFixed(2)),
     performanceMs: Number(performanceMs.toFixed(2)),

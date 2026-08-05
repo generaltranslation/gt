@@ -1,6 +1,7 @@
 import { extname } from 'node:path';
 import type { ParserPlugin } from '@babel/parser';
-import { parse, type SFCBlock } from '#vue-compiler-sfc';
+import type { SFCBlock, TemplateCompiler } from '#vue-compiler-sfc';
+import type { RootNode } from '@vue/compiler-dom';
 import type {
   VueCompilerOptions,
   VueExtractionOptions,
@@ -16,6 +17,11 @@ import {
 import { parseVueTemplate } from './template.js';
 import type { TemplateBindings, VueExtractionContext } from './types.js';
 import { addVueError, createVueExtractionContext } from './utils.js';
+import {
+  inspectVueCompiler,
+  resolveVueCompiler,
+  type ResolvedVueCompiler,
+} from './vueCompiler.js';
 
 const DEFAULT_SURROUNDING_LINE_COUNT = 5;
 
@@ -47,10 +53,26 @@ export async function extractFromVueSource(
   const extension = extname(filePath).toLowerCase();
 
   if (extension === '.vue') {
+    const compilerResolution =
+      options.compiler !== undefined
+        ? inspectVueCompiler(options.compiler)
+        : resolveVueCompiler(filePath, options.projectRoot ?? process.cwd());
+    if (!compilerResolution.ok) {
+      addVueError(
+        context,
+        undefined,
+        'Could not load the Vue compiler used by this single-file component',
+        `Install a supported Vue 3 compiler beside the app. ${compilerResolution.details}`
+      );
+      return { results, errors, warnings: [...warnings] };
+    }
+    context.implicitSlotWhitespace =
+      compilerResolution.value.implicitSlotWhitespace;
     parseVueSingleFileComponent(
       sourceCode,
       context,
-      options.compilerOptions ?? {}
+      options.compilerOptions ?? {},
+      compilerResolution.value
     );
   } else {
     parseVueScript(
@@ -70,12 +92,34 @@ export async function extractFromVueSource(
 function parseVueSingleFileComponent(
   source: string,
   context: VueExtractionContext,
-  compilerOptions: VueCompilerOptions
+  compilerOptions: VueCompilerOptions,
+  resolvedCompiler: ResolvedVueCompiler
 ): void {
+  const { compiler } = resolvedCompiler;
+  if (
+    compilerOptions.delimiters &&
+    !resolvedCompiler.templateCompiler &&
+    !resolvedCompiler.templateParseOptionsSupported
+  ) {
+    addVueError(
+      context,
+      undefined,
+      'Could not safely apply custom Vue template delimiters with the supplied compiler',
+      'Let the extractor resolve the consuming app compiler, or supply a Vue compiler that applies templateParseOptions during SFC parsing'
+    );
+    return;
+  }
   const expressionPlugins: ParserPlugin[] = sourceUsesTypeScript(source)
     ? ['typescript']
     : [];
-  const result = parse(source, {
+  const templateCompiler = createConfiguredTemplateCompiler(
+    resolvedCompiler,
+    compilerOptions,
+    expressionPlugins,
+    true
+  );
+  const result = compiler.parse(source, {
+    ...(templateCompiler && { compiler: templateCompiler }),
     filename: context.file,
     pad: 'space',
     sourceMap: false,
@@ -155,10 +199,21 @@ function parseVueSingleFileComponent(
     context.results.length = 0;
     return;
   }
-  if (template.ast) {
+  const templateAst = resolvedCompiler.parseTemplate
+    ? parseTemplateWithCompiler(
+        template.content,
+        compilerOptions,
+        expressionPlugins,
+        true,
+        context,
+        resolvedCompiler.parseTemplate,
+        template.loc.start
+      )
+    : template.ast;
+  if (templateAst) {
     const templateResultStart = context.results.length;
     const templateErrorStart = context.errors.length;
-    parseVueTemplate(template.ast, bindings, expressionPlugins, context);
+    parseVueTemplate(templateAst, bindings, expressionPlugins, context);
     if (
       context.errors.length === templateErrorStart &&
       template.content.includes('<!--') &&
@@ -168,7 +223,8 @@ function parseVueSingleFileComponent(
         expressionPlugins,
         bindings,
         context,
-        templateResultStart
+        templateResultStart,
+        resolvedCompiler
       )
     ) {
       context.results.length = templateResultStart;
@@ -196,9 +252,18 @@ function matchesProductionTemplate(
   expressionPlugins: ParserPlugin[],
   bindings: TemplateBindings,
   context: VueExtractionContext,
-  developmentResultStart: number
+  developmentResultStart: number,
+  resolvedCompiler: ResolvedVueCompiler
 ): boolean {
-  const production = parse(source, {
+  const { compiler } = resolvedCompiler;
+  const templateCompiler = createConfiguredTemplateCompiler(
+    resolvedCompiler,
+    compilerOptions,
+    expressionPlugins,
+    false
+  );
+  const production = compiler.parse(source, {
+    ...(templateCompiler && { compiler: templateCompiler }),
     filename: context.file,
     pad: 'space',
     sourceMap: false,
@@ -209,7 +274,7 @@ function matchesProductionTemplate(
     },
   });
   const template = production.descriptor.template;
-  if (production.errors.length > 0 || !template?.ast) return false;
+  if (production.errors.length > 0 || !template) return false;
 
   const productionContext: VueExtractionContext = {
     ...context,
@@ -217,18 +282,196 @@ function matchesProductionTemplate(
     results: [],
     warnings: new Set(),
   };
-  parseVueTemplate(
-    template.ast,
-    bindings,
-    expressionPlugins,
-    productionContext
-  );
+  const templateAst = resolvedCompiler.parseTemplate
+    ? parseTemplateWithCompiler(
+        template.content,
+        compilerOptions,
+        expressionPlugins,
+        false,
+        productionContext,
+        resolvedCompiler.parseTemplate,
+        template.loc.start
+      )
+    : template.ast;
+  if (!templateAst) return false;
+  parseVueTemplate(templateAst, bindings, expressionPlugins, productionContext);
   if (productionContext.errors.length > 0) return false;
 
   const developmentResults = context.results.slice(developmentResultStart);
   return (
     comparableTemplateResults(developmentResults) ===
     comparableTemplateResults(productionContext.results)
+  );
+}
+
+/**
+ * Applies hash-affecting options during compiler-sfc's structural parse.
+ *
+ * Vue 3.3 ignores `templateParseOptions`, which can make delimiter-shaped text
+ * close an SFC block before the exact template-content parse runs. Supplying
+ * the adjacent compiler-dom parser makes the descriptor structural parse use
+ * the same delimiters and whitespace. Vue 3.3 caches SFC parses using the
+ * parser function's string form, so its deterministic identity includes every
+ * closure-captured option to prevent cross-option cache poisoning.
+ */
+function createConfiguredTemplateCompiler(
+  resolvedCompiler: ResolvedVueCompiler,
+  compilerOptions: VueCompilerOptions,
+  expressionPlugins: ParserPlugin[],
+  comments: boolean
+): TemplateCompiler | undefined {
+  const templateCompiler = resolvedCompiler.templateCompiler;
+  if (!templateCompiler) return undefined;
+
+  const parse: TemplateCompiler['parse'] = (source, baseOptions) =>
+    templateCompiler.parse(source, {
+      ...baseOptions,
+      ...compilerOptions,
+      comments,
+      expressionPlugins,
+    });
+  const identity = JSON.stringify({
+    comments,
+    delimiters: compilerOptions.delimiters,
+    expressionPlugins,
+    version: resolvedCompiler.version,
+    whitespace: compilerOptions.whitespace,
+  });
+  Object.defineProperty(parse, 'toString', {
+    value: () => `gtVueTemplateParse:${identity}`,
+  });
+
+  return { compile: templateCompiler.compile, parse };
+}
+
+/** Parses template content with the exact compiler-dom beside consumer Vue. */
+function parseTemplateWithCompiler(
+  source: string,
+  compilerOptions: VueCompilerOptions,
+  expressionPlugins: ParserPlugin[],
+  comments: boolean,
+  context: VueExtractionContext,
+  parseTemplate: NonNullable<ResolvedVueCompiler['parseTemplate']>,
+  origin: CompilerPosition
+): RootNode | undefined {
+  const errors: Array<SyntaxError & { loc?: ExtractionLocationLike }> = [];
+  const ast = parseTemplate(source, {
+    ...compilerOptions,
+    comments,
+    expressionPlugins,
+    onError(error) {
+      errors.push(error as SyntaxError & { loc?: ExtractionLocationLike });
+    },
+  });
+  if (errors.length === 0) {
+    shiftCompilerAstLocations(ast, origin);
+    return ast;
+  }
+  const shiftedErrorPositions = new WeakSet<object>();
+  for (const error of errors) {
+    if (error.loc) {
+      shiftCompilerLocation(error.loc, origin, shiftedErrorPositions);
+    }
+    addVueError(
+      context,
+      error.loc ? normalizeCompilerLocation(error.loc) : undefined,
+      `Could not parse a gt-vue template: ${error.message}`,
+      'Fix the Vue template syntax before extracting translations'
+    );
+  }
+  return undefined;
+}
+
+type ExtractionLocationLike = Parameters<typeof normalizeCompilerLocation>[0];
+type CompilerPosition = {
+  column: number;
+  line: number;
+  offset: number;
+};
+
+/**
+ * Rebases the consumer compiler-dom AST from template-content coordinates to
+ * full-SFC coordinates. Vue 3.3 ignores SFC `templateParseOptions`, so we must
+ * parse the block content directly with its adjacent compiler-dom. Its AST and
+ * errors otherwise point at line 1/offset 0 of the block, which corrupts source
+ * metadata and diagnostics for every template after script/style blocks.
+ */
+export function shiftCompilerAstLocations(
+  ast: RootNode,
+  origin: CompilerPosition
+): void {
+  const seen = new WeakSet<object>();
+  const shiftedPositions = new WeakSet<object>();
+
+  const visit = (value: unknown): void => {
+    if (!value || typeof value !== 'object' || seen.has(value)) return;
+    seen.add(value);
+
+    if (isCompilerLocation(value)) {
+      shiftCompilerLocation(value, origin, shiftedPositions);
+      return;
+    }
+    if (Array.isArray(value)) {
+      for (const child of value) visit(child);
+      return;
+    }
+    for (const child of Object.values(value)) visit(child);
+  };
+
+  visit(ast);
+}
+
+/** Rebases one Vue compiler source range without changing its source text. */
+function shiftCompilerLocation(
+  location: ExtractionLocationLike,
+  origin: CompilerPosition,
+  shiftedPositions = new WeakSet<object>()
+): void {
+  if (location.start) {
+    shiftCompilerPosition(location.start, origin, shiftedPositions);
+  }
+  if (location.end) {
+    shiftCompilerPosition(location.end, origin, shiftedPositions);
+  }
+}
+
+/** Rebases a template-relative position to the containing SFC. */
+function shiftCompilerPosition(
+  position: { column?: number; line?: number; offset?: number },
+  origin: CompilerPosition,
+  shiftedPositions: WeakSet<object>
+): void {
+  if (shiftedPositions.has(position)) return;
+  shiftedPositions.add(position);
+  const line = position.line ?? 1;
+  const column = position.column ?? 1;
+  const offset = position.offset ?? 0;
+  position.line = origin.line + line - 1;
+  position.column = line === 1 ? origin.column + column - 1 : column;
+  position.offset = origin.offset + offset;
+}
+
+/** Identifies Vue compiler source locations while skipping Babel AST ranges. */
+function isCompilerLocation(value: object): value is ExtractionLocationLike {
+  if (!('start' in value) || !('end' in value) || !('source' in value)) {
+    return false;
+  }
+  const start = value.start;
+  const end = value.end;
+  return isCompilerPosition(start) && isCompilerPosition(end);
+}
+
+/** Returns whether a value has Vue compiler line, column, and offset fields. */
+function isCompilerPosition(value: unknown): value is CompilerPosition {
+  return (
+    !!value &&
+    typeof value === 'object' &&
+    'line' in value &&
+    typeof value.line === 'number' &&
+    'column' in value &&
+    typeof value.column === 'number' &&
+    'offset' in value &&
+    typeof value.offset === 'number'
   );
 }
 

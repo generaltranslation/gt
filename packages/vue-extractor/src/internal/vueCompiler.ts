@@ -1,0 +1,417 @@
+import { createRequire } from 'node:module';
+import fs from 'node:fs';
+import path from 'node:path';
+import type { parse as parseVueTemplate } from '@vue/compiler-dom';
+import type * as VueCompilerModule from '@vue/compiler-sfc';
+import type { TemplateCompiler } from '@vue/compiler-sfc';
+import type { VueCompiler } from '../types.js';
+
+/** Whitespace test used by Vue when it constructs an implicit default slot. */
+export type ImplicitSlotWhitespace = 'ecmascript' | 'html';
+
+export type ResolvedVueCompiler = {
+  compiler: ExactVueCompiler;
+  implicitSlotWhitespace: ImplicitSlotWhitespace;
+  parseTemplate?: typeof parseVueTemplate;
+  templateCompiler?: TemplateCompiler;
+  templateParseOptionsSupported: boolean;
+  version: string;
+};
+
+type CompilerResolution =
+  | { ok: true; value: ResolvedVueCompiler }
+  | { ok: false; details: string };
+
+const resolvedCompilers = new Map<string, CompilerResolution>();
+const inspectedCompilers = new WeakMap<object, CompilerResolution>();
+
+type ExactVueCompiler = Pick<
+  typeof VueCompilerModule,
+  'compileTemplate' | 'parse' | 'version'
+> & {
+  parseTemplate?: typeof parseVueTemplate;
+};
+
+/**
+ * Resolves the exact Vue compiler selected by the consuming source file.
+ *
+ * The `vue/compiler-sfc` export is version-locked to that installation's Vue
+ * runtime. Resolving from the SFC first is important in workspaces where apps
+ * intentionally use different Vue versions.
+ */
+export function resolveVueCompiler(
+  file: string,
+  projectRoot: string
+): CompilerResolution {
+  const absoluteFile = path.isAbsolute(file)
+    ? file
+    : path.resolve(projectRoot, file);
+  const anchors = [absoluteFile, path.join(projectRoot, 'package.json')];
+
+  for (const anchor of anchors) {
+    const requireFromConsumer = createRequire(anchor);
+    let vueManifestPath: string;
+    try {
+      vueManifestPath = requireFromConsumer.resolve('vue/package.json');
+    } catch (error) {
+      if (isMissingModule(error)) continue;
+      return {
+        ok: false,
+        details: formatResolutionError(error),
+      };
+    }
+
+    let compilerPath: string;
+    try {
+      compilerPath = requireFromConsumer.resolve('vue/compiler-sfc');
+    } catch (error) {
+      return {
+        ok: false,
+        details: `Resolved the app's Vue package at ${vueManifestPath}, but its compiler-sfc export could not be loaded: ${formatResolutionError(error)}`,
+      };
+    }
+
+    const cached = resolvedCompilers.get(compilerPath);
+    if (cached) return cached;
+
+    const resolution = loadCompiler(
+      requireFromConsumer,
+      compilerPath,
+      readVueVersion(requireFromConsumer, vueManifestPath)
+    );
+    resolvedCompilers.set(compilerPath, resolution);
+    return resolution;
+  }
+
+  const declaredVersion = findDeclaredVueVersion(absoluteFile, projectRoot);
+  if (declaredVersion) {
+    return {
+      ok: false,
+      details: `The project declares Vue ${JSON.stringify(declaredVersion)} but vue/compiler-sfc could not be resolved from ${absoluteFile}.`,
+    };
+  }
+
+  return {
+    ok: false,
+    details: `Could not resolve vue/compiler-sfc from ${absoluteFile}.`,
+  };
+}
+
+/** Validates an explicitly supplied compiler before extraction uses it. */
+export function inspectVueCompiler(compiler: VueCompiler): CompilerResolution {
+  if (!compiler || typeof compiler !== 'object') {
+    return {
+      ok: false,
+      details: 'The supplied Vue compiler is not an object.',
+    };
+  }
+  const cached = inspectedCompilers.get(compiler);
+  if (cached) return cached;
+  const exactCompiler = compiler as ExactVueCompiler;
+  const resolution = isVueCompiler(compiler)
+    ? inspectCompiler(exactCompiler, exactCompiler.parseTemplate)
+    : {
+        ok: false as const,
+        details:
+          'The supplied object does not expose the Vue compiler-sfc API.',
+      };
+  inspectedCompilers.set(compiler, resolution);
+  return resolution;
+}
+
+function loadCompiler(
+  requireFromConsumer: NodeRequire,
+  compilerPath: string,
+  vueVersion: string | undefined
+): CompilerResolution {
+  try {
+    const loaded = requireFromConsumer(compilerPath) as unknown;
+    const defaultExport = readDefaultExport(loaded);
+    const compiler = isVueCompiler(loaded)
+      ? (loaded as ExactVueCompiler)
+      : isVueCompiler(defaultExport)
+        ? (defaultExport as ExactVueCompiler)
+        : undefined;
+    if (!compiler) {
+      return {
+        ok: false,
+        details: `The module at ${compilerPath} does not expose the Vue compiler-sfc API.`,
+      };
+    }
+    if (vueVersion && compiler.version !== vueVersion) {
+      return {
+        ok: false,
+        details: `The app resolves Vue ${vueVersion} but vue/compiler-sfc ${compiler.version}. Install one matching Vue package version.`,
+      };
+    }
+    if (!isSupportedVueVersion(compiler.version)) {
+      return {
+        ok: false,
+        details: `Resolved Vue compiler version ${JSON.stringify(compiler.version)}; gt-vue supports Vue 3.3 through Vue 3.x.`,
+      };
+    }
+    const requireFromCompiler = createRequire(compilerPath);
+    const compilerDomPath = requireFromCompiler.resolve('@vue/compiler-dom');
+    const compilerDom = requireFromCompiler(compilerDomPath) as {
+      compile?: TemplateCompiler['compile'];
+      parse?: typeof parseVueTemplate;
+    };
+    const compilerDomVersion = readVueVersion(
+      requireFromCompiler,
+      requireFromCompiler.resolve('@vue/compiler-dom/package.json')
+    );
+    if (compilerDomVersion !== compiler.version) {
+      return {
+        ok: false,
+        details: `vue/compiler-sfc ${compiler.version} resolves @vue/compiler-dom ${String(compilerDomVersion)}. Install matching Vue compiler packages.`,
+      };
+    }
+    if (typeof compilerDom.parse !== 'function') {
+      return {
+        ok: false,
+        details: `The template compiler at ${compilerDomPath} does not expose parse().`,
+      };
+    }
+    if (typeof compilerDom.compile !== 'function') {
+      return {
+        ok: false,
+        details: `The template compiler at ${compilerDomPath} does not expose compile().`,
+      };
+    }
+    return inspectCompiler(compiler, compilerDom.parse, {
+      compile: compilerDom.compile,
+      parse: compilerDom.parse,
+    });
+  } catch (error) {
+    return { ok: false, details: formatResolutionError(error) };
+  }
+}
+
+function readVueVersion(
+  requireFromConsumer: NodeRequire,
+  manifestPath: string
+): string | undefined {
+  try {
+    const manifest = requireFromConsumer(manifestPath) as { version?: unknown };
+    return typeof manifest.version === 'string' ? manifest.version : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Finds an installed-but-missing declaration that bundled fallback could hide. */
+function findDeclaredVueVersion(
+  absoluteFile: string,
+  projectRoot: string
+): string | undefined {
+  const stop = path.resolve(projectRoot);
+  let directory = path.dirname(absoluteFile);
+  while (true) {
+    const version = readDeclaredVueVersion(
+      path.join(directory, 'package.json')
+    );
+    if (version) return version;
+    if (directory === stop || directory === path.dirname(directory)) break;
+    directory = path.dirname(directory);
+  }
+  return readDeclaredVueVersion(path.join(stop, 'package.json'));
+}
+
+function readDeclaredVueVersion(manifestPath: string): string | undefined {
+  try {
+    const manifest = JSON.parse(
+      fs.readFileSync(manifestPath, 'utf8')
+    ) as Record<string, unknown>;
+    for (const section of [
+      'dependencies',
+      'devDependencies',
+      'peerDependencies',
+      'optionalDependencies',
+    ]) {
+      const dependencies = manifest[section];
+      if (
+        dependencies &&
+        typeof dependencies === 'object' &&
+        'vue' in dependencies
+      ) {
+        const version = (dependencies as Record<string, unknown>).vue;
+        return typeof version === 'string' ? version : 'an unknown version';
+      }
+    }
+  } catch (error) {
+    if (
+      !error ||
+      typeof error !== 'object' ||
+      !('code' in error) ||
+      error.code !== 'ENOENT'
+    ) {
+      throw error;
+    }
+  }
+  return undefined;
+}
+
+function inspectCompiler(
+  compiler: ExactVueCompiler,
+  parseTemplate?: typeof parseVueTemplate,
+  templateCompiler?: TemplateCompiler
+): CompilerResolution {
+  const version = compiler.version;
+  if (!isSupportedVueVersion(version)) {
+    return {
+      ok: false,
+      details: `Resolved Vue compiler version ${JSON.stringify(version)}; gt-vue supports Vue 3.3 through Vue 3.x.`,
+    };
+  }
+
+  try {
+    const templateParseOptionsSupported =
+      supportsTemplateParseOptions(compiler);
+    if (!parseTemplate && !templateParseOptionsSupported) {
+      return {
+        ok: false,
+        details:
+          'The supplied compiler does not expose exact template parser options. Let the extractor resolve vue/compiler-sfc from the consuming app instead.',
+      };
+    }
+    return {
+      ok: true,
+      value: {
+        compiler,
+        implicitSlotWhitespace: detectImplicitSlotWhitespace(compiler),
+        parseTemplate,
+        templateCompiler,
+        templateParseOptionsSupported,
+        version,
+      },
+    };
+  } catch (error) {
+    return { ok: false, details: formatResolutionError(error) };
+  }
+}
+
+/** Detects the SFC parser option added after Vue 3.4. */
+function supportsTemplateParseOptions(compiler: ExactVueCompiler): boolean {
+  const source = '<template><Probe>First\n  second</Probe></template>';
+  const parseText = (whitespace: 'condense' | 'preserve') => {
+    const result = compiler.parse(source, {
+      templateParseOptions: { whitespace },
+    });
+    return collectText(result.descriptor.template?.ast);
+  };
+  return parseText('condense') !== parseText('preserve');
+}
+
+function collectText(value: unknown): string {
+  if (!value || typeof value !== 'object') return '';
+  let output = '';
+  if ('type' in value && value.type === 2 && 'content' in value) {
+    output += String(value.content);
+  }
+  if ('children' in value && Array.isArray(value.children)) {
+    for (const child of value.children) output += collectText(child);
+  }
+  return output;
+}
+
+/**
+ * Detects the compiler's slot-whitespace semantics instead of inferring them
+ * from a semver range. Vue 3.3/3.4 use ECMAScript `trim()`, while Vue 3.5 uses
+ * the HTML parser's ASCII whitespace set. A behavior probe remains exact if a
+ * later Vue 3.x release backports or revises that implementation.
+ */
+function detectImplicitSlotWhitespace(
+  compiler: ExactVueCompiler
+): ImplicitSlotWhitespace {
+  const result = compiler.compileTemplate({
+    filename: 'gt-vue-compiler-probe.vue',
+    id: 'gt-vue-compiler-probe',
+    source: '<Probe><template #named>x</template>&nbsp;</Probe>',
+  });
+  if (result.errors.length > 0) {
+    throw new Error(
+      `The Vue compiler compatibility probe failed: ${result.errors.map(String).join('; ')}`
+    );
+  }
+
+  const component = result.ast?.children.find(
+    (node) =>
+      typeof node === 'object' &&
+      node !== null &&
+      'tag' in node &&
+      node.tag === 'Probe'
+  );
+  const codegen =
+    component && 'codegenNode' in component ? component.codegenNode : undefined;
+  const children =
+    codegen &&
+    typeof codegen === 'object' &&
+    'children' in codegen &&
+    codegen.children &&
+    typeof codegen.children === 'object'
+      ? codegen.children
+      : undefined;
+  const properties =
+    children && 'properties' in children && Array.isArray(children.properties)
+      ? children.properties
+      : undefined;
+  if (!properties) {
+    throw new Error(
+      'The Vue compiler compatibility probe returned an unknown slot AST.'
+    );
+  }
+
+  const hasImplicitDefault = properties.some((property) => {
+    if (!property || typeof property !== 'object' || !('key' in property)) {
+      return false;
+    }
+    const key = property.key;
+    return (
+      key != null &&
+      typeof key === 'object' &&
+      'content' in key &&
+      key.content === 'default'
+    );
+  });
+  return hasImplicitDefault ? 'html' : 'ecmascript';
+}
+
+function isVueCompiler(value: unknown): value is VueCompiler {
+  if (!value || typeof value !== 'object') return false;
+  return (
+    'compileTemplate' in value &&
+    typeof value.compileTemplate === 'function' &&
+    'parse' in value &&
+    typeof value.parse === 'function' &&
+    'version' in value &&
+    typeof value.version === 'string'
+  );
+}
+
+/** Reads a possible CommonJS-interoperability default export. */
+function readDefaultExport(value: unknown): unknown {
+  return value && typeof value === 'object' && 'default' in value
+    ? value.default
+    : undefined;
+}
+
+function isSupportedVueVersion(version: string): boolean {
+  const match = /^(\d+)\.(\d+)(?:\.|$)/.exec(version);
+  if (!match) return false;
+  const major = Number(match[1]);
+  const minor = Number(match[2]);
+  return major === 3 && minor >= 3;
+}
+
+function isMissingModule(error: unknown): boolean {
+  return (
+    !!error &&
+    typeof error === 'object' &&
+    'code' in error &&
+    error.code === 'MODULE_NOT_FOUND'
+  );
+}
+
+function formatResolutionError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}

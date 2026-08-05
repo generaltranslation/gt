@@ -27,6 +27,7 @@ import type {
   ExtractionLocation,
   GTComponentName,
   TemplateBindings,
+  VueBuiltinName,
   VueExtractionContext,
 } from './types.js';
 import {
@@ -303,6 +304,12 @@ function visitTemplateChildren(
       expressionPlugins,
       childShadowed
     );
+    const fragment = resolveFragmentComponent(
+      child,
+      childBindings,
+      expressionPlugins,
+      childShadowed
+    );
     const uncertainGTComponent = resolveUncertainComponentBinding(
       child,
       childBindings,
@@ -349,7 +356,8 @@ function visitTemplateChildren(
 
     const childInsideTranslation =
       component?.originalName === 'Var' ||
-      (insideTranslation && isOpaqueComponent(child, component, suspense))
+      (insideTranslation &&
+        isOpaqueComponent(child, component, suspense ?? fragment))
         ? false
         : insideTranslation || component?.originalName === 'T';
     if (childInsideTranslation && suspense) {
@@ -1429,6 +1437,22 @@ function serializeChild(
     );
     return [];
   }
+  const fragment = resolveFragmentComponent(
+    child,
+    bindings,
+    expressionPlugins,
+    shadowed
+  );
+  if (fragment) {
+    return serializeFragmentElement(
+      child,
+      counter,
+      shadowed,
+      bindings,
+      expressionPlugins,
+      context
+    );
+  }
   return [
     serializeElement(
       child,
@@ -1439,6 +1463,35 @@ function serializeChild(
       context
     ),
   ];
+}
+
+/** Flattens an exact Vue Fragment default slot without consuming an ID. */
+function serializeFragmentElement(
+  element: ElementNode,
+  counter: Counter,
+  shadowed: Set<string>,
+  bindings: TemplateBindings,
+  expressionPlugins: ParserPlugin[],
+  context: VueExtractionContext
+): JsxChild[] {
+  validateRichElement(element, context, true);
+  const slots = getSlotLayout(element, shadowed, expressionPlugins, context);
+  if (slots.namedSlots.size > 0) {
+    addVueError(
+      context,
+      element.loc,
+      'Found a named slot on Vue Fragment inside a gt-vue <T> component',
+      'Keep Fragment content in its default slot'
+    );
+  }
+  return serializeChildren(
+    slots.defaultSlot.children,
+    counter,
+    slots.defaultSlot.shadowed,
+    bindings,
+    expressionPlugins,
+    context
+  );
 }
 
 function serializeElement(
@@ -1607,9 +1660,11 @@ function serializeElement(
 function isOpaqueComponent(
   element: ElementNode,
   component?: { localName: string; originalName: GTComponentName },
-  suspense?: { localName: string; originalName: 'Suspense' }
+  vueBuiltin?: { localName: string; originalName: VueBuiltinName }
 ): boolean {
-  return element.tagType === ElementTypes.COMPONENT && !component && !suspense;
+  return (
+    element.tagType === ElementTypes.COMPONENT && !component && !vueBuiltin
+  );
 }
 
 /** Resolves literal Suspense and statically proven aliases of Vue's builtin. */
@@ -1625,7 +1680,43 @@ function resolveSuspenseComponent(
   ) {
     return { localName: element.tag, originalName: 'Suspense' };
   }
-  const resolved = resolveComponentBinding(
+  const builtin = resolveVueBuiltinComponent(
+    element,
+    bindings,
+    expressionPlugins,
+    shadowed
+  );
+  return builtin?.originalName === 'Suspense'
+    ? { localName: builtin.localName, originalName: 'Suspense' }
+    : undefined;
+}
+
+/** Resolves an imported Vue Fragment alias without matching an ordinary tag. */
+function resolveFragmentComponent(
+  element: ElementNode,
+  bindings: TemplateBindings,
+  expressionPlugins: ParserPlugin[],
+  shadowed: Set<string>
+): { localName: string; originalName: 'Fragment' } | undefined {
+  const builtin = resolveVueBuiltinComponent(
+    element,
+    bindings,
+    expressionPlugins,
+    shadowed
+  );
+  return builtin?.originalName === 'Fragment'
+    ? { localName: builtin.localName, originalName: 'Fragment' }
+    : undefined;
+}
+
+/** Resolves a statically proven Vue builtin through direct or registered use. */
+function resolveVueBuiltinComponent(
+  element: ElementNode,
+  bindings: TemplateBindings,
+  expressionPlugins: ParserPlugin[],
+  shadowed: Set<string>
+): { localName: string; originalName: VueBuiltinName } | undefined {
+  return resolveComponentBinding(
     element,
     bindings,
     bindings.vueBuiltins,
@@ -1634,9 +1725,6 @@ function resolveSuspenseComponent(
     expressionPlugins,
     shadowed
   );
-  return resolved?.originalName === 'Suspense'
-    ? { localName: resolved.localName, originalName: 'Suspense' }
-    : undefined;
 }
 
 /** Resolves a component-shaped binding whose exact identity is uncertain. */
@@ -1835,7 +1923,7 @@ function validateVariableComponentShape(
         `Pass the runtime value through <${component} :value="value" />`
       );
     }
-    if (hasMeaningfulSlotContent(element.children)) {
+    if (hasMeaningfulSlotContent(element.children, context)) {
       addVueError(
         context,
         element.loc,
@@ -2141,7 +2229,10 @@ function getSlotLayout(
       collectExpressionBindings(slotDirective.exp, expressionPlugins)
     );
     if (slotName === 'default') {
-      if (hasMeaningfulSlotContent(defaultChildren) || hasExplicitDefaultSlot) {
+      if (
+        hasMeaningfulSlotContent(defaultChildren, context) ||
+        hasExplicitDefaultSlot
+      ) {
         addVueError(
           context,
           child.loc,
@@ -2173,7 +2264,10 @@ function getSlotLayout(
     }
   }
 
-  const hasMeaningfulDefault = hasMeaningfulSlotContent(defaultChildren);
+  const hasMeaningfulDefault = hasMeaningfulSlotContent(
+    defaultChildren,
+    context
+  );
   if (
     hasExplicitDefaultSlot &&
     hasMeaningfulDefault &&
@@ -2200,12 +2294,29 @@ function getSlotLayout(
 }
 
 /** Matches Vue's test for an implicit slot containing more than separators. */
-function hasMeaningfulSlotContent(children: TemplateChildNode[]): boolean {
+function hasMeaningfulSlotContent(
+  children: TemplateChildNode[],
+  context: VueExtractionContext
+): boolean {
   return children.some(
     (child) =>
       child.type !== NodeTypes.COMMENT &&
-      (child.type !== NodeTypes.TEXT || child.content.trim().length > 0)
+      (child.type !== NodeTypes.TEXT ||
+        !isImplicitSlotWhitespace(
+          child.content,
+          context.implicitSlotWhitespace
+        ))
   );
+}
+
+/** Mirrors the exact whitespace predicate detected from consumer compiler. */
+function isImplicitSlotWhitespace(
+  value: string,
+  semantics: VueExtractionContext['implicitSlotWhitespace']
+): boolean {
+  return semantics === 'ecmascript'
+    ? value.trim().length === 0
+    : /^[\t\n\f\r ]*$/.test(value);
 }
 
 /** Counts roots in a complete Vue slot before Suspense normalizes the array. */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { extractFromVueSource } from '../extractFromVueSource.js';
 import { collectAnalyzerStats } from './analyzerPerformance.js';
+import { extractFromVueSource } from './testVueCompiler.js';
 
 function createContainerAliasScript(aliasCount: number): string {
   const declarations = [
@@ -13,7 +13,6 @@ function createContainerAliasScript(aliasCount: number): string {
   declarations.push('const selected = getIndex();');
   return declarations.join('\n');
 }
-
 describe('Vue extractor performance', () => {
   it('keeps analyzer visits linear for immutable container aliases', () => {
     const smaller = collectAnalyzerStats(createContainerAliasScript(500));

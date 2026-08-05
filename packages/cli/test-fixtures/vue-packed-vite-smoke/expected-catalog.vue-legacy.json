@@ -1,0 +1,22 @@
+{
+  "3d17680dac9794c6": {
+    "t": "Branch",
+    "i": 1,
+    "d": {
+      "b": {
+        "formal": "Formal branch"
+      },
+      "t": "b"
+    }
+  },
+  "22fd85d9bff0c69e": {
+    "t": "Plural",
+    "i": 1,
+    "d": {
+      "b": {
+        "one": "One plural"
+      },
+      "t": "p"
+    }
+  }
+}

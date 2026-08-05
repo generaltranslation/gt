@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { compileScript, compileTemplate, parse } from '@vue/compiler-sfc';
 import { describe, expect, it } from 'vitest';
-import { extractFromVueSource } from '../../index.js';
+import { extractFromVueSource } from './testVueCompiler.js';
 
 describe('Vue script extraction', () => {
   it('resolves static TypeScript expressions and safe binding flows', async () => {

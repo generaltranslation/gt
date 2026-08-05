@@ -5,7 +5,7 @@ import { compileScript, compileTemplate, parse } from '@vue/compiler-sfc';
 import type { JsxChildren } from '@generaltranslation/format/types';
 import { afterEach, describe, expect, it } from 'vitest';
 import { resolveVueCompilerOptions } from '../../config.js';
-import { extractFromVueSource } from '../../index.js';
+import { extractFromVueSource } from './testVueCompiler.js';
 import type { VueCompilerOptions, VueExtractionOutput } from '../../types.js';
 
 type TemplateAuditCase = {
@@ -563,6 +563,35 @@ describe('template/package audit wave 2: compiler config boundary', () => {
 });
 
 describe('template/package audit wave 2: metadata and public boundary', () => {
+  it('rebases direct compiler-dom ranges to full-SFC source positions', async () => {
+    const source = [
+      '<script setup>',
+      "import { T } from 'gt-vue';",
+      'const dynamicContext = getContext();',
+      '</script>',
+      '<template>',
+      '  <section>',
+      '    <T :context="dynamicContext">Invalid</T>',
+      '  </section>',
+      '</template>',
+    ].join('\n');
+    const output = await extractFromVueSource(
+      source,
+      '/project/src/Rebased.vue',
+      {
+        includeSourceCodeContext: true,
+        projectRoot: '/project',
+        surroundingLineCount: 0,
+      }
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors.join('\n')).toContain(
+      '/project/src/Rebased.vue (7:8)'
+    );
+    expect(output.errors.join('\n')).toContain('dynamic context');
+  });
+
   it('captures exact source context for script, rich, and template calls', async () => {
     const source = `<script setup>\nimport { T, useGT } from 'gt-vue';\nconst gt = useGT();\ngt('Script source');\n</script>\n<template>\n  <T>Template source</T>\n  {{ gt('Template call') }}\n</template>`;
     const output = await extractFromVueSource(

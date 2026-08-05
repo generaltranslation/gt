@@ -27,6 +27,11 @@
   ],
   "65af5ab03513eadf": "Exact component",
   "ca3a117bb98f45fb": "\n      Registered component\n    ",
+  "9917ba49392d4ea4": {
+    "t": "strong",
+    "i": 1,
+    "c": "Fragment child"
+  },
   "6d1f42ab4a227610": "Direct GT",
   "6b5a5ba614bd6f61": "Nested GT",
   "55590298c27a6411": "Ref GT",
