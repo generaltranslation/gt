@@ -2,4 +2,4 @@
 'gt': patch
 ---
 
-Pass package manager workspace and build-policy flags when the setup wizard installs dependencies.
+Stop the setup wizard at monorepo workspace roots and direct users to run it from the app they want to localize.

@@ -1,54 +1,7 @@
 import chalk from 'chalk';
 import { spawn } from 'child_process';
-import fs from 'node:fs';
-import path from 'node:path';
-import YAML from 'yaml';
 import { logger } from '../console/logger.js';
 import { PackageManager } from './packageManager.js';
-
-const PNPM_GT_BUILD_DEPENDENCY = 'tree-sitter-python';
-
-function getPackageInstallFlags(
-  packageName: string,
-  packageManager: PackageManager,
-  cwd: string
-): string[] {
-  if (packageName !== 'gt' || packageManager.id !== 'pnpm') {
-    return [];
-  }
-
-  const workspaceConfigPath = path.join(cwd, 'pnpm-workspace.yaml');
-  if (!fs.existsSync(workspaceConfigPath)) {
-    return [];
-  }
-
-  try {
-    const workspaceConfig = YAML.parse(
-      fs.readFileSync(workspaceConfigPath, 'utf8')
-    ) as { allowBuilds?: unknown };
-    const allowBuilds = workspaceConfig?.allowBuilds;
-    if (
-      !allowBuilds ||
-      typeof allowBuilds !== 'object' ||
-      Array.isArray(allowBuilds)
-    ) {
-      return [];
-    }
-
-    const buildDecision = (allowBuilds as Record<string, unknown>)[
-      PNPM_GT_BUILD_DEPENDENCY
-    ];
-    if (typeof buildDecision === 'boolean') {
-      return [];
-    }
-
-    // GT's Python extractor depends on this package, which declares an install
-    // script. pnpm's allowBuilds policy requires an explicit decision for it.
-    return [`--allow-build=${PNPM_GT_BUILD_DEPENDENCY}`];
-  } catch {
-    return [];
-  }
-}
 
 export async function installPackage(
   packageName: string,
@@ -63,11 +16,6 @@ export async function installPackage(
     if (asDevDependency) {
       args.push(packageManager.devDependencyFlag);
     }
-
-    args.push(
-      ...packageManager.flags,
-      ...getPackageInstallFlags(packageName, packageManager, cwd)
-    );
 
     const childProcess = spawn(command, args, {
       stdio: ['pipe', 'ignore', 'pipe'],

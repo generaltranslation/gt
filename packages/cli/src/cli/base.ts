@@ -74,6 +74,7 @@ import { splitMintlifyLanguageRefs } from '../utils/splitMintlifyLanguageRefs.js
 import { runMergeDriver, type MergeDriverName } from '../git/mergeDrivers.js';
 import { setupGitMergeDrivers } from '../git/setupMergeDrivers.js';
 import { warnReactPackageCompatibility } from '../utils/reactPackageCompatibility.js';
+import { getWorkspaceRootSetupError } from '../utils/workspaceRoot.js';
 
 const ID_COMPATIBILITY_WARNING_COMMANDS = new Set([
   'download',
@@ -84,6 +85,7 @@ const ID_COMPATIBILITY_WARNING_COMMANDS = new Set([
   'translate',
   'validate',
 ]);
+const WORKSPACE_ROOT_SETUP_COMMANDS = new Set(['init', 'configure']);
 
 export type UploadOptions = {
   config?: string;
@@ -136,6 +138,15 @@ export class BaseCLI {
     // nested commands (e.g. `gt git setup --quiet`).
     this.program.hook('preAction', () => {
       logger.setQuiet(Boolean(this.program.opts().quiet));
+    });
+    this.program.hook('preAction', (thisCommand, actionCommand) => {
+      if (actionCommand.parent !== thisCommand) return;
+      if (!WORKSPACE_ROOT_SETUP_COMMANDS.has(actionCommand.name())) return;
+
+      const workspaceRootError = getWorkspaceRootSetupError();
+      if (workspaceRootError) {
+        logErrorAndExit(workspaceRootError);
+      }
     });
     this.program.hook('preAction', async (thisCommand, actionCommand) => {
       // Nested commands (e.g. `gt git setup`) can share leaf names with
