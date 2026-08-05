@@ -90,7 +90,24 @@ so the component and its real runtime slots are preserved, but their content is
 not part of the surrounding rich translation. To translate slot content, place
 `<T>` inside the slot and wrap runtime values in `<Var>`. Native elements and
 the slots owned by GT's `<Branch>` and `<Plural>` components remain part of the
-surrounding translation.
+surrounding translation. Component tags inside `<T>` must resolve at runtime;
+an unresolved component warning from Vue is a configuration error and is not a
+supported translation source.
+
+Vue `<Suspense>` is the one built-in whose default content participates in an
+outer `<T>`. Prefer literal `<Suspense>` and use a single default root. Immutable
+aliases that the extractor can trace directly to `vue` are also supported; the
+fallback slot is preserved but excluded from the outer translation. Re-exported,
+globally registered, ref/computed-held, and other runtime-wrapped Suspense
+aliases are not supported inside an outer `<T>`. Put `<T>` inside those
+boundaries instead:
+
+```vue
+<Suspense>
+  <T>Translatable content</T>
+  <template #fallback><T>Loading…</T></template>
+</Suspense>
+```
 
 ## Registered Messages
 
