@@ -1,5 +1,18 @@
 # gtx-cli
 
+## 2.16.1
+
+### Patch Changes
+
+- [#2019](https://github.com/generaltranslation/gt/pull/2019) [`60d154c`](https://github.com/generaltranslation/gt/commit/60d154c851d6ae0510447b7d66ec5e12104f0d1b) Thanks [@eoinest](https://github.com/eoinest)! - Save local edits before translation by default, with a `--no-save-local` flag to opt out.
+
+- [#2028](https://github.com/generaltranslation/gt/pull/2028) [`8066d0a`](https://github.com/generaltranslation/gt/commit/8066d0ad64d4f9c3475a935e6bbb27d9f7389b20) Thanks [@eoinest](https://github.com/eoinest)! - Stop the setup wizard at monorepo workspace roots and direct users to run it from the app they want to localize.
+
+- Updated dependencies [[`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9)]:
+  - generaltranslation@9.1.1
+  - @generaltranslation/python-extractor@0.2.34
+  - @generaltranslation/supported-locales@2.1.14
+
 ## 2.16.0
 
 ### Minor Changes

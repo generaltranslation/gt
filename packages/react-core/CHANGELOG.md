@@ -1,5 +1,15 @@
 # @generaltranslation/react-core
 
+## 11.1.5
+
+### Patch Changes
+
+- [#2018](https://github.com/generaltranslation/gt/pull/2018) [`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9) Thanks [@eoinest](https://github.com/eoinest)! - Preserve proper-noun casing when diagnostic reasons are combined into user-facing messages.
+
+- Updated dependencies [[`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9)]:
+  - generaltranslation@9.1.1
+  - gt-i18n@1.0.11
+
 ## 11.1.4
 
 ### Patch Changes
