@@ -263,6 +263,59 @@ describe('Derive with logical && expressions in JSX', () => {
     expect(sources).toContainEqual(['Hello ', { t: 'Derive', i: 1 }]);
   });
 
+  it('does not duplicate the empty branch for nested parenthesized &&', () => {
+    const source = `
+      import { T, Derive } from "gt-next";
+
+      export default function Page({ a, b }) {
+        return (
+          <T>
+            Hello
+            <Derive>{a && (b && <li>Both true</li>)}</Derive>
+          </T>
+        );
+      }
+    `;
+
+    const { updates, errors } = parseDerive(source);
+
+    expect(errors).toHaveLength(0);
+    expect(updates).toHaveLength(2);
+
+    const sources = updates.map((u) => u.source);
+    expect(sources).toContainEqual([
+      'Hello',
+      { t: 'Derive', i: 1, c: { t: 'li', i: 2, c: 'Both true' } },
+    ]);
+    expect(sources).toContainEqual(['Hello', { t: 'Derive', i: 1 }]);
+  });
+
+  it('does not duplicate the empty branch for && wrapping a ternary with a null branch', () => {
+    const source = `
+      import { T, Derive } from "gt-next";
+
+      export default function Page({ cond, flag }) {
+        return (
+          <T>
+            Hello <Derive>{cond && (flag ? "text" : null)}</Derive>
+          </T>
+        );
+      }
+    `;
+
+    const { updates, errors } = parseDerive(source);
+
+    expect(errors).toHaveLength(0);
+    expect(updates).toHaveLength(2);
+
+    const sources = updates.map((u) => u.source);
+    expect(sources).toContainEqual([
+      'Hello ',
+      { t: 'Derive', i: 1, c: 'text' },
+    ]);
+    expect(sources).toContainEqual(['Hello ', { t: 'Derive', i: 1 }]);
+  });
+
   it('derives && alongside static sibling content inside Derive', () => {
     const source = `
       import { T, Derive } from "gt-next";

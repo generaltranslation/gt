@@ -97,4 +97,62 @@ describe('<Derive> logical && hash parity with the CLI', () => {
     ] as JsxChildren;
     expect(runtimeHash(runtimeChildren)).toBe(cliHash(cliSource));
   });
+
+  // `cond && x` returns the left operand when falsy, so at runtime the Derive
+  // children can be any falsy value, not just false. As the sole child, every
+  // falsy value fails the props.children truthiness checks in addGTIdentifier
+  // and writeChildrenAsObjects, so `c` is omitted and the hash matches the
+  // registered empty branch — even for 0 and NaN, which React would render
+  it.each([
+    ['false', false],
+    ['null', null],
+    ['undefined', undefined],
+    ['zero', 0],
+    ['empty string', ''],
+    ['NaN', NaN],
+  ])(
+    'sole-child falsy guard result (%s) hashes to the CLI empty-branch entry',
+    (_label, value) => {
+      const runtimeChildren = childrenOf(
+        <>
+          Hello
+          <Derive>{value as ReactNode}</Derive>
+        </>
+      );
+      expect(runtimeHash(runtimeChildren)).toBe(cliHash(CLI_EMPTY_SOURCE));
+    }
+  );
+
+  // KNOWN LIMITATION: beside sibling content, falsy-but-renderable guard
+  // results ('' stays in the runtime children array; 0/NaN serialize as
+  // "0"/"NaN") do not match either registered variant, so lookup falls back
+  // to the untranslated source. This mirrors React's own guidance against
+  // non-boolean && guards; guards must be falsy-safe (boolean/null/undefined)
+  // when the Derive has sibling content. If serialization of falsy children
+  // is ever normalized, update these expectations.
+  it.each([
+    ['zero', 0],
+    ['empty string', ''],
+    ['NaN', NaN],
+  ])(
+    'sibling-content non-boolean falsy guard (%s) misses both registered variants',
+    (_label, value) => {
+      const runtimeChildren = childrenOf(
+        <>
+          Hello
+          <Derive>prefix {value as ReactNode}</Derive>
+        </>
+      );
+      const cliEmptySource = [
+        'Hello',
+        { t: 'Derive', i: 1, c: ['prefix '] },
+      ] as JsxChildren;
+      const cliContentSource = [
+        'Hello',
+        { t: 'Derive', i: 1, c: ['prefix ', 'x'] },
+      ] as JsxChildren;
+      expect(runtimeHash(runtimeChildren)).not.toBe(cliHash(cliEmptySource));
+      expect(runtimeHash(runtimeChildren)).not.toBe(cliHash(cliContentSource));
+    }
+  );
 });
