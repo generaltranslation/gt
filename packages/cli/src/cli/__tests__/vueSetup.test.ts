@@ -5,7 +5,8 @@ import { createOrUpdateConfig } from '../../fs/config/setupConfig.js';
 import { createLoadTranslationsFile } from '../../fs/createLoadTranslationsFile.js';
 import { createRemoteLoadTranslationsFile } from '../../fs/createRemoteLoadTranslationsFile.js';
 import { logger } from '../../console/logger.js';
-import { promptSelect } from '../../console/logging.js';
+import { logErrorAndExit, promptSelect } from '../../console/logging.js';
+import { getDesiredLocales } from '../../setup/userInput.js';
 import { VueCLI } from '../vue.js';
 
 vi.mock('../../setup/userInput.js', () => ({
@@ -62,7 +63,17 @@ vi.mock('../../utils/credentials.js', () => ({
 
 class TestVueCLI extends VueCLI {
   runVueInit(useDefaults: boolean): Promise<void> {
-    return this.handleInitCommand(true, useDefaults, true, true);
+    return this.handleInitCommand(true, useDefaults, {
+      name: 'vite-vue',
+      type: 'vue',
+    });
+  }
+
+  runNuxtInit(useDefaults: boolean): Promise<void> {
+    return this.handleInitCommand(true, useDefaults, {
+      name: 'nuxt',
+      type: 'vue',
+    });
   }
 }
 
@@ -70,6 +81,22 @@ describe('Vue setup translation loaders', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(promptSelect).mockResolvedValue('local');
+  });
+
+  it('stops Nuxt setup before locale prompts or file writes', async () => {
+    vi.mocked(logErrorAndExit).mockImplementationOnce((message): never => {
+      throw new Error(message);
+    });
+    const cli = new TestVueCLI(new Command(), Libraries.GT_VUE);
+
+    await expect(cli.runNuxtInit(true)).rejects.toThrow(
+      /Automatic gt-vue setup is not available for Nuxt yet/u
+    );
+
+    expect(getDesiredLocales).not.toHaveBeenCalled();
+    expect(createLoadTranslationsFile).not.toHaveBeenCalled();
+    expect(createRemoteLoadTranslationsFile).not.toHaveBeenCalled();
+    expect(createOrUpdateConfig).not.toHaveBeenCalled();
   });
 
   it('creates a local loader and explains createGT wiring with Vue docs', async () => {

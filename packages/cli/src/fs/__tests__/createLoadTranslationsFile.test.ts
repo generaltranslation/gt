@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { createLoadTranslationsFile } from '../createLoadTranslationsFile.js';
 import {
@@ -10,6 +11,7 @@ import {
 describe('createLoadTranslationsFile', () => {
   const tmpDir = path.join(__dirname, '__tmp_test_create_load_translations__');
   let originalCwd: string;
+  const outsideDirectories: string[] = [];
 
   beforeEach(() => {
     originalCwd = process.cwd();
@@ -19,8 +21,12 @@ describe('createLoadTranslationsFile', () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     process.chdir(originalCwd);
     fs.rmSync(tmpDir, { recursive: true, force: true });
+    for (const directory of outsideDirectories.splice(0)) {
+      fs.rmSync(directory, { recursive: true, force: true });
+    }
   });
 
   it('creates loadTranslations.js in src/ when src directory exists', async () => {
@@ -146,6 +152,47 @@ describe('createLoadTranslationsFile', () => {
     expect(content).toEqual({ hello: 'hola' });
   });
 
+  it('does not overwrite a locale catalog created at the publication boundary', async () => {
+    const translationsPath = path.resolve(tmpDir, DEFAULT_TRANSLATIONS_DIR);
+    const catalogPath = path.join(translationsPath, 'es.json');
+    const realLink = fs.promises.link.bind(fs.promises);
+    vi.spyOn(fs.promises, 'link').mockImplementation(
+      async (temporaryPath, destinationPath) => {
+        if (destinationPath === catalogPath) {
+          fs.writeFileSync(catalogPath, '{"hello":"hola"}');
+        }
+        return realLink(temporaryPath, destinationPath);
+      }
+    );
+
+    await createLoadTranslationsFile(tmpDir, DEFAULT_TRANSLATIONS_DIR, ['es']);
+
+    expect(JSON.parse(fs.readFileSync(catalogPath, 'utf8'))).toEqual({
+      hello: 'hola',
+    });
+    expect(
+      fs.readdirSync(translationsPath).filter((name) => name.includes('.tmp'))
+    ).toEqual([]);
+  });
+
+  it('does not overwrite a loader created at the publication boundary', async () => {
+    const loaderPath = path.join(tmpDir, 'loadTranslations.js');
+    const realLink = fs.promises.link.bind(fs.promises);
+    vi.spyOn(fs.promises, 'link').mockImplementationOnce(
+      async (temporaryPath, destinationPath) => {
+        fs.writeFileSync(destinationPath, '// application loader');
+        return realLink(temporaryPath, destinationPath);
+      }
+    );
+
+    await createLoadTranslationsFile(tmpDir, DEFAULT_TRANSLATIONS_DIR, ['es']);
+
+    expect(fs.readFileSync(loaderPath, 'utf8')).toBe('// application loader');
+    expect(
+      fs.readdirSync(tmpDir).filter((name) => name.includes('.tmp'))
+    ).toEqual([]);
+  });
+
   it('defaults to ./public/_gt when no translationsDir is provided', async () => {
     await createLoadTranslationsFile(tmpDir, undefined as unknown, ['es']);
 
@@ -155,4 +202,56 @@ describe('createLoadTranslationsFile', () => {
     const content = fs.readFileSync(filePath, 'utf-8');
     expect(content).toContain('import(`./public/_gt/${locale}.json`)');
   });
+
+  it.skipIf(process.platform === 'win32')(
+    'does not write through a linked source directory',
+    async () => {
+      const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-loader-src-'));
+      outsideDirectories.push(outside);
+      fs.symlinkSync(outside, path.join(tmpDir, 'src'), 'dir');
+
+      await expect(
+        createLoadTranslationsFile(tmpDir, './src/_gt', ['fr'])
+      ).rejects.toThrow(/symbolic link/);
+      expect(fs.existsSync(path.join(outside, 'loadTranslations.js'))).toBe(
+        false
+      );
+      expect(fs.existsSync(path.join(outside, '_gt', 'fr.json'))).toBe(false);
+    }
+  );
+
+  it.skipIf(process.platform === 'win32')(
+    'does not write through a linked catalog directory',
+    async () => {
+      const outside = fs.mkdtempSync(
+        path.join(os.tmpdir(), 'gt-loader-catalog-')
+      );
+      outsideDirectories.push(outside);
+      fs.symlinkSync(outside, path.join(tmpDir, '_gt'), 'dir');
+
+      await expect(
+        createLoadTranslationsFile(tmpDir, './_gt', ['fr'])
+      ).rejects.toThrow(/symbolic-link path/);
+      expect(fs.existsSync(path.join(tmpDir, 'loadTranslations.js'))).toBe(
+        false
+      );
+      expect(fs.existsSync(path.join(outside, 'fr.json'))).toBe(false);
+    }
+  );
+
+  it.skipIf(process.platform === 'win32')(
+    'does not overwrite through a linked loader file',
+    async () => {
+      const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-loader-file-'));
+      outsideDirectories.push(outside);
+      const outsideFile = path.join(outside, 'loadTranslations.js');
+      fs.writeFileSync(outsideFile, '// outside');
+      fs.symlinkSync(outsideFile, path.join(tmpDir, 'loadTranslations.js'));
+
+      await expect(
+        createLoadTranslationsFile(tmpDir, './_gt', ['fr'])
+      ).rejects.toThrow(/loader file is a symbolic link/);
+      expect(fs.readFileSync(outsideFile, 'utf8')).toBe('// outside');
+    }
+  );
 });
