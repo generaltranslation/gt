@@ -151,7 +151,7 @@ import gtConfig from '${configImport}';
 ${loadTranslationsImport}
 await initializeGTSPA(${loadTranslationsOption});
 
-await import('${entryImport}'); // render the app only after GT is ready
+await import('${entryImport}');
 `
   );
 
