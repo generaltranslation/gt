@@ -22,6 +22,7 @@ export function createVueExtractionContext(
     results,
     source,
     surroundingLineCount,
+    validatedVariableComponents: new WeakSet(),
     warnings,
   };
 }

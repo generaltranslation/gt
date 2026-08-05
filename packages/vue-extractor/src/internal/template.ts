@@ -329,6 +329,14 @@ function visitTemplateChildren(
         'Use a direct gt-vue import or an immutable alias that does not escape static analysis'
       );
     }
+    if (
+      component?.originalName === 'Var' ||
+      component?.originalName === 'Num' ||
+      component?.originalName === 'DateTime' ||
+      component?.originalName === 'Currency'
+    ) {
+      validateVariableComponentShape(child, component.originalName, context);
+    }
     if (component?.originalName === 'T' && !insideTranslation) {
       extractTranslationComponent(
         child,
@@ -1494,7 +1502,7 @@ function serializeElement(
     originalName === 'DateTime' ||
     originalName === 'Currency'
   ) {
-    if (originalName === 'Var') validateVarProps(element, context);
+    validateVariableComponentShape(element, originalName, context);
     const variable =
       originalName === 'Num'
         ? { name: 'n', type: 'n' as const }
@@ -1617,7 +1625,7 @@ function resolveSuspenseComponent(
   ) {
     return { localName: element.tag, originalName: 'Suspense' };
   }
-  return resolveComponentBinding(
+  const resolved = resolveComponentBinding(
     element,
     bindings,
     bindings.vueBuiltins,
@@ -1626,6 +1634,9 @@ function resolveSuspenseComponent(
     expressionPlugins,
     shadowed
   );
+  return resolved?.originalName === 'Suspense'
+    ? { localName: resolved.localName, originalName: 'Suspense' }
+    : undefined;
 }
 
 /** Resolves a component-shaped binding whose exact identity is uncertain. */
@@ -1806,10 +1817,35 @@ function validateRichElement(
   }
 }
 
-function validateVarProps(
+/** Enforces the one supported public shape for every variable component. */
+function validateVariableComponentShape(
   element: ElementNode,
+  component: 'Currency' | 'DateTime' | 'Num' | 'Var',
   context: VueExtractionContext
 ): void {
+  if (context.validatedVariableComponents.has(element)) return;
+  context.validatedVariableComponents.add(element);
+
+  if (component !== 'Var') {
+    if (!hasTemplateProp(element, 'value')) {
+      addVueError(
+        context,
+        element.loc,
+        `Found a gt-vue <${component}> component without a value prop`,
+        `Pass the runtime value through <${component} :value="value" />`
+      );
+    }
+    if (hasMeaningfulSlotContent(element.children)) {
+      addVueError(
+        context,
+        element.loc,
+        `Found children on a gt-vue <${component}> component`,
+        `Use only the required value prop: <${component} :value="value" />`
+      );
+    }
+    return;
+  }
+
   for (const property of element.props) {
     const key =
       property.type === NodeTypes.ATTRIBUTE
@@ -1824,8 +1860,29 @@ function validateVarProps(
         `Found unsupported ${key} prop on a gt-vue <Var> component`,
         'Pass the variable as the default child of <Var>'
       );
+    } else if (
+      property.type === NodeTypes.DIRECTIVE &&
+      property.name === 'bind' &&
+      !property.arg
+    ) {
+      addVueError(
+        context,
+        property.loc,
+        'Found a spread v-bind on a gt-vue <Var> component',
+        'Pass the variable only as the default child of <Var>'
+      );
     }
   }
+}
+
+/** Returns whether a statically named template prop is explicitly present. */
+function hasTemplateProp(element: ElementNode, expected: string): boolean {
+  return element.props.some((property) => {
+    if (property.type === NodeTypes.ATTRIBUTE) {
+      return property.name === expected;
+    }
+    return property.name === 'bind' && readDirectiveKey(property) === expected;
+  });
 }
 
 function readContentProps(

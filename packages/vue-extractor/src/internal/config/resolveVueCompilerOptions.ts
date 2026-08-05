@@ -78,6 +78,7 @@ type ScopedPluginCall = {
 };
 
 type VitePluginContext = {
+  moduleSource: '@vitejs/plugin-vue' | '@vitejs/plugin-vue-jsx';
   namespaceBindings: Set<Binding>;
   pluginBindings: Set<Binding>;
   referencePositions: number[];
@@ -308,6 +309,8 @@ function readViteConfig(
 
   const pluginBindings = new Set<Binding>();
   const namespaceBindings = new Set<Binding>();
+  const jsxPluginBindings = new Set<Binding>();
+  const jsxNamespaceBindings = new Set<Binding>();
   const defineConfigBindings = new Set<Binding>();
 
   traverse(ast, {
@@ -328,13 +331,27 @@ function readViteConfig(
         }
         return;
       }
-      if (importPath.node.source.value !== '@vitejs/plugin-vue') return;
+      const moduleSource = importPath.node.source.value;
+      if (
+        moduleSource !== '@vitejs/plugin-vue' &&
+        moduleSource !== '@vitejs/plugin-vue-jsx'
+      ) {
+        return;
+      }
+      const targetPluginBindings =
+        moduleSource === '@vitejs/plugin-vue-jsx'
+          ? jsxPluginBindings
+          : pluginBindings;
+      const targetNamespaceBindings =
+        moduleSource === '@vitejs/plugin-vue-jsx'
+          ? jsxNamespaceBindings
+          : namespaceBindings;
       for (const specifierPath of importPath.get('specifiers')) {
         const specifier = specifierPath.node;
         const binding = specifierPath.scope.getBinding(specifier.local.name);
         if (!binding) continue;
         if (specifier.type === 'ImportNamespaceSpecifier') {
-          namespaceBindings.add(binding);
+          targetNamespaceBindings.add(binding);
         } else if (
           specifier.type === 'ImportDefaultSpecifier' ||
           (specifier.type === 'ImportSpecifier' &&
@@ -342,7 +359,7 @@ function readViteConfig(
               ? specifier.imported.name
               : specifier.imported.value) === 'default')
         ) {
-          pluginBindings.add(binding);
+          targetPluginBindings.add(binding);
         }
       }
     },
@@ -351,23 +368,43 @@ function readViteConfig(
       if (
         reference.type !== 'TSExternalModuleReference' ||
         reference.expression.type !== 'StringLiteral' ||
-        reference.expression.value !== '@vitejs/plugin-vue'
+        (reference.expression.value !== '@vitejs/plugin-vue' &&
+          reference.expression.value !== '@vitejs/plugin-vue-jsx')
       ) {
         return;
       }
       const binding = importPath.scope.getBinding(importPath.node.id.name);
-      if (binding) namespaceBindings.add(binding);
+      if (!binding) return;
+      if (reference.expression.value === '@vitejs/plugin-vue-jsx') {
+        jsxNamespaceBindings.add(binding);
+      } else {
+        namespaceBindings.add(binding);
+      }
     },
     VariableDeclarator(variablePath) {
-      const requireKind = getPluginVueRequireKind(variablePath.node.init);
+      const vueRequireKind = getPluginVueRequireKind(
+        variablePath.node.init,
+        '@vitejs/plugin-vue'
+      );
+      const jsxRequireKind = getPluginVueRequireKind(
+        variablePath.node.init,
+        '@vitejs/plugin-vue-jsx'
+      );
+      const requireKind = vueRequireKind ?? jsxRequireKind;
       if (!requireKind) return;
+      const targetPluginBindings = jsxRequireKind
+        ? jsxPluginBindings
+        : pluginBindings;
+      const targetNamespaceBindings = jsxRequireKind
+        ? jsxNamespaceBindings
+        : namespaceBindings;
       if (variablePath.node.id.type === 'Identifier') {
         const binding = variablePath.scope.getBinding(
           variablePath.node.id.name
         );
         if (!binding) return;
-        if (requireKind === 'namespace') namespaceBindings.add(binding);
-        else pluginBindings.add(binding);
+        if (requireKind === 'namespace') targetNamespaceBindings.add(binding);
+        else targetPluginBindings.add(binding);
         return;
       }
       if (
@@ -387,7 +424,7 @@ function readViteConfig(
         const binding = localName
           ? variablePath.scope.getBinding(localName)
           : undefined;
-        if (binding) pluginBindings.add(binding);
+        if (binding) targetPluginBindings.add(binding);
       }
     },
   });
@@ -421,6 +458,7 @@ function readViteConfig(
   if (!plugins) return;
 
   const pluginContext: VitePluginContext = {
+    moduleSource: '@vitejs/plugin-vue',
     namespaceBindings,
     pluginBindings,
     referencePositions: [...pluginBindings, ...namespaceBindings].flatMap(
@@ -447,25 +485,196 @@ function readViteConfig(
     return;
   }
   const call = calls[0];
-  if (!call) return;
+  if (call) {
+    const argument = call.node.arguments[0];
+    if (
+      argument?.type === 'SpreadElement' ||
+      argument?.type === 'ArgumentPlaceholder'
+    ) {
+      errors.push(dynamicConfigError(file, argument));
+      return;
+    }
+    if (argument) {
+      readNestedCompilerOptions(
+        argument,
+        call.scope,
+        ['template', 'compilerOptions'],
+        file,
+        true,
+        state,
+        errors
+      );
+    }
+  }
+
+  const jsxPluginContext: VitePluginContext = {
+    moduleSource: '@vitejs/plugin-vue-jsx',
+    namespaceBindings: jsxNamespaceBindings,
+    pluginBindings: jsxPluginBindings,
+    referencePositions: [...jsxPluginBindings, ...jsxNamespaceBindings].flatMap(
+      (binding) =>
+        binding.referencePaths
+          .map((reference) => reference.node.start)
+          .filter((position): position is number => position !== null)
+    ),
+  };
+  const jsxCalls: ScopedPluginCall[] = [];
+  const unresolvedJSX = collectActiveVuePluginCalls(
+    plugins.node,
+    plugins.scope,
+    jsxPluginContext,
+    jsxCalls,
+    new Set()
+  );
+  if (unresolvedJSX) {
+    errors.push(dynamicVueJSXConfigError(file, unresolvedJSX));
+    return;
+  }
+  if (jsxCalls.length > 1) {
+    errors.push(dynamicVueJSXConfigError(file, jsxCalls[1]!.node));
+    return;
+  }
+  if (jsxCalls[0]) readVueJSXPluginOptions(jsxCalls[0], file, errors);
+}
+
+/** Rejects Vite JSX options that can invalidate source-to-VNode parity. */
+function readVueJSXPluginOptions(
+  call: ScopedPluginCall,
+  file: string,
+  errors: string[]
+): void {
   const argument = call.node.arguments[0];
   if (!argument) return;
   if (
     argument.type === 'SpreadElement' ||
     argument.type === 'ArgumentPlaceholder'
   ) {
-    errors.push(dynamicConfigError(file, argument));
+    errors.push(dynamicVueJSXConfigError(file, argument));
     return;
   }
-  readNestedCompilerOptions(
-    argument,
-    call.scope,
-    ['template', 'compilerOptions'],
-    file,
-    true,
-    state,
-    errors
+  const options = resolveStaticObject(argument, call.scope, new Set());
+  if (!options.ok) {
+    errors.push(dynamicVueJSXConfigError(file, options.node));
+    return;
+  }
+
+  for (const [name, entry] of options.value.entries) {
+    let supported = false;
+    if (name === 'optimize') {
+      // Optimization changes patch metadata only. The real dev/production
+      // oracle proves both values preserve GT source data.
+      supported =
+        resolveStaticBoolean(entry.node, entry.scope, new Set()) !== undefined;
+    } else if (name === 'transformOn') {
+      supported =
+        resolveStaticBoolean(entry.node, entry.scope, new Set()) === false;
+    } else if (name === 'enableObjectSlots' || name === 'mergeProps') {
+      supported =
+        resolveStaticBoolean(entry.node, entry.scope, new Set()) === true;
+    } else if (name === 'resolveType') {
+      supported =
+        resolveStaticBoolean(entry.node, entry.scope, new Set()) === false;
+    } else if (name === 'pragma') {
+      supported =
+        resolveStaticString(entry.node, entry.scope, new Set()) === '';
+    } else if (name === 'defineComponentName') {
+      supported = isDefaultDefineComponentNames(
+        entry.node,
+        entry.scope,
+        new Set()
+      );
+    } else if (name === 'babelPlugins') {
+      supported = isDefinitelyEmptyArray(entry.node, entry.scope, new Set());
+    } else if (name === 'tsPluginOptions') {
+      const resolved = resolveStaticObject(entry.node, entry.scope, new Set());
+      supported = resolved.ok && resolved.value.entries.size === 0;
+    }
+    if (supported) continue;
+    errors.push(
+      locatedOptionError(
+        file,
+        entry.node,
+        `Found unsupported @vitejs/plugin-vue-jsx option "${name}"`,
+        'Use default-equivalent Vue JSX options; only a static optimize value may differ in files containing gt-vue translations'
+      )
+    );
+  }
+}
+
+/** Resolves an immutable boolean option without coercing another type. */
+function resolveStaticBoolean(
+  input: t.Node,
+  scope: Scope,
+  seen: Set<Binding>
+): boolean | undefined {
+  const node = unwrapExpression(input);
+  if (node.type === 'BooleanLiteral') return node.value;
+  if (node.type !== 'Identifier') return undefined;
+  const binding = scope.getBinding(node.name);
+  if (!binding?.constant || bindingHasMutation(binding) || seen.has(binding)) {
+    return undefined;
+  }
+  const declaration = binding.path.node;
+  if (declaration.type !== 'VariableDeclarator' || !declaration.init) {
+    return undefined;
+  }
+  const nextSeen = new Set(seen);
+  nextSeen.add(binding);
+  return resolveStaticBoolean(declaration.init, binding.path.scope, nextSeen);
+}
+
+/** Proves the explicit component-name option equals the plugin default. */
+function isDefaultDefineComponentNames(
+  input: t.Node,
+  scope: Scope,
+  seen: Set<Binding>
+): boolean {
+  const node = unwrapExpression(input);
+  if (node.type === 'ArrayExpression') {
+    return (
+      node.elements.length === 1 &&
+      node.elements[0]?.type === 'StringLiteral' &&
+      node.elements[0].value === 'defineComponent'
+    );
+  }
+  if (node.type !== 'Identifier') return false;
+  const binding = scope.getBinding(node.name);
+  if (!binding?.constant || bindingHasMutation(binding) || seen.has(binding)) {
+    return false;
+  }
+  const declaration = binding.path.node;
+  if (declaration.type !== 'VariableDeclarator' || !declaration.init) {
+    return false;
+  }
+  const nextSeen = new Set(seen);
+  nextSeen.add(binding);
+  return isDefaultDefineComponentNames(
+    declaration.init,
+    binding.path.scope,
+    nextSeen
   );
+}
+
+/** Proves an immutable config value is an empty array. */
+function isDefinitelyEmptyArray(
+  input: t.Node,
+  scope: Scope,
+  seen: Set<Binding>
+): boolean {
+  const node = unwrapExpression(input);
+  if (node.type === 'ArrayExpression') return node.elements.length === 0;
+  if (node.type !== 'Identifier') return false;
+  const binding = scope.getBinding(node.name);
+  if (!binding?.constant || bindingHasMutation(binding) || seen.has(binding)) {
+    return false;
+  }
+  const declaration = binding.path.node;
+  if (declaration.type !== 'VariableDeclarator' || !declaration.init) {
+    return false;
+  }
+  const nextSeen = new Set(seen);
+  nextSeen.add(binding);
+  return isDefinitelyEmptyArray(declaration.init, binding.path.scope, nextSeen);
 }
 
 function readNuxtConfig(
@@ -865,6 +1074,7 @@ function collectActiveVuePluginCalls(
       scope,
       context.pluginBindings,
       context.namespaceBindings,
+      context.moduleSource,
       new Set()
     );
     if (value === 'dynamic' || value === 'default') return node;
@@ -924,6 +1134,7 @@ function collectActiveVuePluginCalls(
       scope,
       context.pluginBindings,
       context.namespaceBindings,
+      context.moduleSource,
       new Set()
     );
     if (value === 'dynamic') return node.callee;
@@ -1306,7 +1517,8 @@ function readPropertyKey(
 }
 
 function getPluginVueRequireKind(
-  input: t.Expression | null | undefined
+  input: t.Expression | null | undefined,
+  moduleSource: '@vitejs/plugin-vue' | '@vitejs/plugin-vue-jsx'
 ): 'default' | 'namespace' | undefined {
   if (!input) return undefined;
   const node = unwrapExpression(input);
@@ -1315,7 +1527,7 @@ function getPluginVueRequireKind(
     node.callee.type === 'Identifier' &&
     node.callee.name === 'require' &&
     node.arguments[0]?.type === 'StringLiteral' &&
-    node.arguments[0].value === '@vitejs/plugin-vue'
+    node.arguments[0].value === moduleSource
   ) {
     return 'namespace';
   }
@@ -1324,7 +1536,7 @@ function getPluginVueRequireKind(
       node.type === 'OptionalMemberExpression') &&
     isDefaultMember(node)
   ) {
-    return getPluginVueRequireKind(node.object as t.Expression)
+    return getPluginVueRequireKind(node.object as t.Expression, moduleSource)
       ? 'default'
       : undefined;
   }
@@ -1337,6 +1549,7 @@ function resolvePluginVueValue(
   scope: Scope,
   pluginBindings: Set<Binding>,
   namespaceBindings: Set<Binding>,
+  moduleSource: '@vitejs/plugin-vue' | '@vitejs/plugin-vue-jsx',
   seen: Set<Binding>
 ): 'default' | 'dynamic' | 'namespace' | undefined {
   const node = unwrapExpression(input);
@@ -1344,7 +1557,7 @@ function resolvePluginVueValue(
     node.type === 'CallExpression' ||
     node.type === 'MemberExpression' ||
     node.type === 'OptionalMemberExpression'
-      ? getPluginVueRequireKind(node)
+      ? getPluginVueRequireKind(node, moduleSource)
       : undefined;
   if (requireKind) return requireKind;
 
@@ -1365,6 +1578,7 @@ function resolvePluginVueValue(
       binding.path.scope,
       pluginBindings,
       namespaceBindings,
+      moduleSource,
       nextSeen
     );
     return !binding.constant && initialValue ? 'dynamic' : initialValue;
@@ -1379,6 +1593,7 @@ function resolvePluginVueValue(
       scope,
       pluginBindings,
       namespaceBindings,
+      moduleSource,
       seen
     );
     if (objectValue === 'dynamic') return 'dynamic';
@@ -1656,7 +1871,8 @@ function resolveKnownConfigConsumer(
       const declaration = binding.path.parentPath;
       return (
         declaration.isImportDeclaration() &&
-        declaration.node.source.value === '@vitejs/plugin-vue'
+        (declaration.node.source.value === '@vitejs/plugin-vue' ||
+          declaration.node.source.value === '@vitejs/plugin-vue-jsx')
       );
     }
     if (binding.path.isImportSpecifier()) {
@@ -1667,7 +1883,9 @@ function resolveKnownConfigConsumer(
         imported.type === 'Identifier' ? imported.name : imported.value;
       const source = declaration.node.source.value;
       return (
-        (source === '@vitejs/plugin-vue' && name === 'default') ||
+        ((source === '@vitejs/plugin-vue' ||
+          source === '@vitejs/plugin-vue-jsx') &&
+          name === 'default') ||
         (source === 'vite' && name === 'defineConfig') ||
         ((source === 'nuxt' ||
           source === 'nuxt/config' ||
@@ -1695,7 +1913,12 @@ function resolveKnownConfigConsumer(
     (node.type === 'MemberExpression' ||
       node.type === 'OptionalMemberExpression') &&
     isDefaultMember(node) &&
-    getPluginVueRequireKind(node as t.Expression) === 'default'
+    (getPluginVueRequireKind(node as t.Expression, '@vitejs/plugin-vue') ===
+      'default' ||
+      getPluginVueRequireKind(
+        node as t.Expression,
+        '@vitejs/plugin-vue-jsx'
+      ) === 'default')
   );
 }
 
@@ -1707,7 +1930,13 @@ function parseConfig(file: string, errors: string[]): t.File | undefined {
       plugins: parserPlugins(file),
     });
   } catch (error) {
-    if (!/compilerOptions|whitespace|delimiters/.test(source)) return undefined;
+    if (
+      !/compilerOptions|whitespace|delimiters|@vitejs\/plugin-vue-jsx|babelPlugins|pragma/.test(
+        source
+      )
+    ) {
+      return undefined;
+    }
     const syntaxError = error as SyntaxError & {
       loc?: { column: number; line: number };
     };
@@ -1796,6 +2025,15 @@ function dynamicConfigError(file: string, node: t.Node): string {
     node,
     'Could not statically resolve Vue compiler options',
     'Use static object and string literals for Vue whitespace and delimiters compiler options so extraction hashes match the compiled app'
+  );
+}
+
+function dynamicVueJSXConfigError(file: string, node: t.Node): string {
+  return locatedOptionError(
+    file,
+    node,
+    'Could not statically resolve @vitejs/plugin-vue-jsx options',
+    'Use one statically configured Vue JSX plugin with the default VNode transform so extraction hashes match the compiled app'
   );
 }
 

@@ -26,9 +26,9 @@ const tone = 'formal';
       !
       <input placeholder="Your name" />
       <img alt="Portrait" aria-describedby="hint" />
-      <Num>{{ count }}</Num>
-      <When>{{ date }}</When>
-      <Currency>{{ cost }}</Currency>
+      <Num :value="count" />
+      <When :value="date" />
+      <Currency :value="cost" />
       <var>native</var>
       <Choose :branch="tone" formal="Ignored because the slot wins">
         <template #formal>

@@ -338,7 +338,7 @@ describe('Vue template extraction', () => {
       name: 'normalizes numeric kebab-case component aliases',
       imports: 'DateTime as D2, T',
       setup: "const date = new Date('2026-01-01');",
-      template: '<T><d-2>{{ date }}</d-2><var>native</var></T>',
+      template: '<T><d-2 :value="date" /><var>native</var></T>',
       expected: [
         [
           { i: 1, k: '_gt_date_1', v: 'd' },

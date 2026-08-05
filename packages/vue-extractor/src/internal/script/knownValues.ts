@@ -116,8 +116,8 @@ export function knownExport(
         writePolicy: 'forward',
       };
     }
-    return name === 'Suspense'
-      ? { type: 'vue-builtin', name: 'Suspense' }
+    return name === 'Fragment' || name === 'Suspense'
+      ? { type: 'vue-builtin', name }
       : undefined;
   }
   if (COMPONENT_IMPORTS.has(name as GTComponentName)) {

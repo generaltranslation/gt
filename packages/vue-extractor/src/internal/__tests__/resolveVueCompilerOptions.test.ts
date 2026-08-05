@@ -53,6 +53,147 @@ describe('resolveVueCompilerOptions', () => {
     });
   });
 
+  it('accepts Vue JSX options that do not affect supported source hashes', () => {
+    const root = createProject({
+      'vite.config.ts': `
+        import vueJsx from '@vitejs/plugin-vue-jsx';
+        const plugin = vueJsx;
+        export default { plugins: [plugin({
+          babelPlugins: [],
+          defineComponentName: ['defineComponent'],
+          enableObjectSlots: true,
+          mergeProps: true,
+          optimize: true,
+          pragma: '',
+          resolveType: false,
+          transformOn: false,
+          tsPluginOptions: {},
+        })] };
+      `,
+    });
+
+    expect(resolveVueCompilerOptions(root, undefined)).toEqual({
+      compilerOptions: {},
+      errors: [],
+    });
+  });
+
+  it.each([
+    {
+      name: 'a replacement VNode pragma',
+      options: `pragma: 'customVNode'`,
+      diagnostic: 'option "pragma"',
+    },
+    {
+      name: 'custom Babel transforms',
+      options: `babelPlugins: [customPlugin]`,
+      diagnostic: 'option "babelPlugins"',
+    },
+    {
+      name: 'a custom include filter',
+      options: `include: /src/`,
+      diagnostic: 'option "include"',
+    },
+    {
+      name: 'a custom exclude filter',
+      options: `exclude: /generated/`,
+      diagnostic: 'option "exclude"',
+    },
+    {
+      name: 'custom TypeScript transforms',
+      options: `tsPluginOptions: { optimizeConstEnums: true }`,
+      diagnostic: 'option "tsPluginOptions"',
+    },
+    {
+      name: 'custom-element classification',
+      options: `isCustomElement: (tag) => tag.startsWith('x-')`,
+      diagnostic: 'option "isCustomElement"',
+    },
+    {
+      name: 'disabled object-slot normalization',
+      options: `enableObjectSlots: false`,
+      diagnostic: 'option "enableObjectSlots"',
+    },
+    {
+      name: 'disabled prop merging',
+      options: `mergeProps: false`,
+      diagnostic: 'option "mergeProps"',
+    },
+    {
+      name: 'listener-object transformation',
+      options: `transformOn: true`,
+      diagnostic: 'option "transformOn"',
+    },
+    {
+      name: 'runtime type inference',
+      options: `resolveType: true`,
+      diagnostic: 'option "resolveType"',
+    },
+    {
+      name: 'custom component factory names',
+      options: `defineComponentName: ['component']`,
+      diagnostic: 'option "defineComponentName"',
+    },
+    {
+      name: 'a future unknown option',
+      options: `futureVNodeMode: true`,
+      diagnostic: 'option "futureVNodeMode"',
+    },
+    {
+      name: 'a dynamic optimization option',
+      options: `optimize: process.env.OPTIMIZE === '1'`,
+      diagnostic: 'option "optimize"',
+    },
+  ])(
+    'fails closed for $name in the Vue JSX plugin',
+    ({ options, diagnostic }) => {
+      const root = createProject({
+        'vite.config.ts': `
+        import * as pluginVueJsx from '@vitejs/plugin-vue-jsx';
+        const customPlugin = () => ({ visitor: {} });
+        const jsx = pluginVueJsx.default;
+        export default { plugins: [jsx({ ${options} })] };
+      `,
+      });
+
+      const result = resolveVueCompilerOptions(root, undefined);
+
+      expect(result.compilerOptions).toEqual({});
+      expect(result.errors.join('\n')).toContain(diagnostic);
+    }
+  );
+
+  it('fails closed when active Vue JSX plugin options are dynamic', () => {
+    const root = createProject({
+      'vite.config.ts': `
+        import vueJsx from '@vitejs/plugin-vue-jsx';
+        const options = getOptions();
+        export default { plugins: [vueJsx(options)] };
+      `,
+    });
+
+    const result = resolveVueCompilerOptions(root, undefined);
+
+    expect(result.compilerOptions).toEqual({});
+    expect(result.errors.join('\n')).toContain(
+      'Could not statically resolve @vitejs/plugin-vue-jsx options'
+    );
+  });
+
+  it('tracks CommonJS Vue JSX plugin imports before auditing options', () => {
+    const root = createProject({
+      'vite.config.cjs': `
+        const vueJsx = require('@vitejs/plugin-vue-jsx').default;
+        module.exports = { plugins: [vueJsx({ mergeProps: false })] };
+      `,
+    });
+
+    const result = resolveVueCompilerOptions(root, undefined);
+
+    expect(result.compilerOptions).toEqual({});
+    expect(result.errors.join('\n')).toContain('option "mergeProps"');
+  });
+
   it('resolves static Nuxt compiler options', () => {
     const root = createProject({
       'nuxt.config.ts': `

@@ -58,6 +58,8 @@ export async function extractFromVueSource(
       languageFromExtension(extension),
       context,
       createTemplateBindings(),
+      false,
+      createVueScriptAnalysis(),
       false
     );
   }
