@@ -4,11 +4,19 @@ import fg from 'fast-glob';
 import { parse as parseYaml } from 'yaml';
 
 export type JavaScriptPackageManifest = {
+  name?: string;
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
   optionalDependencies?: Record<string, string>;
   peerDependencies?: Record<string, string>;
   workspaces?: string[] | { packages?: string[] };
+};
+
+export type DeclaredWorkspacePackage = {
+  /** Absolute directory containing the workspace package manifest. */
+  directory: string;
+  /** Parsed workspace package manifest. */
+  manifest: JavaScriptPackageManifest;
 };
 
 /**
@@ -30,6 +38,22 @@ export function readDeclaredWorkspaceManifests(
   cwd: string,
   rootManifest: JavaScriptPackageManifest
 ): JavaScriptPackageManifest[] {
+  return readDeclaredWorkspacePackages(cwd, rootManifest).map(
+    ({ manifest }) => manifest
+  );
+}
+
+/**
+ * Reads declared workspace manifests together with their package directories.
+ *
+ * Source discovery needs the directory associated with each dependency
+ * declaration; returning it from the same validated traversal keeps framework
+ * detection and default globs in agreement.
+ */
+export function readDeclaredWorkspacePackages(
+  cwd: string,
+  rootManifest: JavaScriptPackageManifest
+): DeclaredWorkspacePackage[] {
   const patterns = [
     ...getPackageJsonWorkspacePatterns(rootManifest),
     ...getPnpmWorkspacePatterns(cwd),
@@ -73,7 +97,10 @@ export function readDeclaredWorkspaceManifests(
     ) {
       return [];
     }
-    return readPackageManifest(realPackagePath);
+    const manifest = readJavaScriptPackageManifest(realPackagePath);
+    return manifest
+      ? [{ directory: path.dirname(absolutePath), manifest }]
+      : [];
   });
 }
 
@@ -123,7 +150,7 @@ function toManifestPattern(pattern: string): string | null {
     path.posix.isAbsolute(normalized) ||
     path.win32.isAbsolute(normalized) ||
     /^[A-Za-z]:/.test(normalized) ||
-    normalized.split('/').some((segment) => segment.includes('..')) ||
+    containsParentTraversal(normalized) ||
     normalized === '..' ||
     normalized.startsWith('../')
   ) {
@@ -135,6 +162,11 @@ function toManifestPattern(pattern: string): string | null {
     ? withoutTrailingSlash
     : `${withoutTrailingSlash}/package.json`;
   return negated ? `!${manifestPattern}` : manifestPattern;
+}
+
+/** Rejects parent segments, including those hidden inside glob alternatives. */
+function containsParentTraversal(pattern: string): boolean {
+  return /(^|[/{,(|])\.\.(?=$|[/},)|])/.test(pattern);
 }
 
 function readRealPath(filepath: string): string | undefined {
@@ -155,13 +187,34 @@ function isWithinRoot(root: string, candidate: string): boolean {
   );
 }
 
-function readPackageManifest(packagePath: string): JavaScriptPackageManifest[] {
+/**
+ * Reads one JavaScript package manifest without throwing for malformed input.
+ *
+ * @param packagePath - Absolute path to a package.json file.
+ * @returns The parsed object, or undefined when the file is missing or invalid.
+ */
+export function readJavaScriptPackageManifest(
+  packagePath: string
+): JavaScriptPackageManifest | undefined {
   try {
     const parsed = JSON.parse(fs.readFileSync(packagePath, 'utf8')) as unknown;
-    return isRecord(parsed) ? [parsed as JavaScriptPackageManifest] : [];
+    return isRecord(parsed) ? (parsed as JavaScriptPackageManifest) : undefined;
   } catch {
-    return [];
+    return undefined;
   }
+}
+
+/** Checks every dependency field used by CLI framework detection. */
+export function declaresJavaScriptDependency(
+  manifest: JavaScriptPackageManifest,
+  packageName: string
+): boolean {
+  return [
+    manifest.dependencies,
+    manifest.devDependencies,
+    manifest.optionalDependencies,
+    manifest.peerDependencies,
+  ].some((dependencies) => dependencies?.[packageName] !== undefined);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
