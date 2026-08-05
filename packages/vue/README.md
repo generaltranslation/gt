@@ -146,7 +146,10 @@ Use the required `value` prop for every formatting value.
 
 When the active locale is the configured default, formatting ignores explicit
 `locales` and uses only that default locale. Otherwise, an explicit `locales`
-list is tried first, followed by the active locale and then the default locale.
+list on a standalone formatter is tried first, followed by the active locale
+and then the default locale. Inside `<T>`, the rich translation pipeline owns
+formatting locales: source fallbacks use the default locale, while translated
+content uses the active locale followed by the default.
 
 `setLocale()` loads a missing catalog, switches the reactive locale, and
 rerenders consumers. Locale persistence and development hot reload are outside
