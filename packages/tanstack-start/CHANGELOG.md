@@ -1,5 +1,17 @@
 # gt-tanstack-start
 
+## 11.1.5
+
+### Patch Changes
+
+- [#2010](https://github.com/generaltranslation/gt/pull/2010) [`8436d54`](https://github.com/generaltranslation/gt/commit/8436d5446e47d9a7947b6b29256dc9294316e176) Thanks [@eoinest](https://github.com/eoinest)! - Export `gtMiddleware` from the browser condition so TanStack Start client builds can evaluate application setup files that register it.
+
+- Updated dependencies [[`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9)]:
+  - generaltranslation@9.1.1
+  - @generaltranslation/react-core@11.1.5
+  - gt-i18n@1.0.11
+  - gt-react@11.1.5
+
 ## 11.1.4
 
 ### Patch Changes
