@@ -74,7 +74,7 @@ import { splitMintlifyLanguageRefs } from '../utils/splitMintlifyLanguageRefs.js
 import { runMergeDriver, type MergeDriverName } from '../git/mergeDrivers.js';
 import { setupGitMergeDrivers } from '../git/setupMergeDrivers.js';
 import { warnReactPackageCompatibility } from '../utils/reactPackageCompatibility.js';
-import { getWorkspaceRootSetupError } from '../utils/workspaceRoot.js';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 
 const ID_COMPATIBILITY_WARNING_COMMANDS = new Set([
   'download',
@@ -85,7 +85,23 @@ const ID_COMPATIBILITY_WARNING_COMMANDS = new Set([
   'translate',
   'validate',
 ]);
-const WORKSPACE_ROOT_SETUP_COMMANDS = new Set(['init', 'configure']);
+const workspaceRootSetupError = createDiagnosticMessage({
+  source: 'gt',
+  severity: 'Error',
+  whatHappened: 'The setup wizard cannot run from a monorepo workspace root',
+  why: 'GT must be configured in the specific app you want to localize',
+  fix: "Change to that app's directory and rerun `npx gt@latest`",
+});
+
+async function exitIfWorkspaceRoot(): Promise<void> {
+  const packageJson = await searchForPackageJson();
+  if (
+    fs.existsSync(path.join(process.cwd(), 'pnpm-workspace.yaml')) ||
+    packageJson?.workspaces
+  ) {
+    logErrorAndExit(workspaceRootSetupError);
+  }
+}
 
 export type UploadOptions = {
   config?: string;
@@ -138,15 +154,6 @@ export class BaseCLI {
     // nested commands (e.g. `gt git setup --quiet`).
     this.program.hook('preAction', () => {
       logger.setQuiet(Boolean(this.program.opts().quiet));
-    });
-    this.program.hook('preAction', (thisCommand, actionCommand) => {
-      if (actionCommand.parent !== thisCommand) return;
-      if (!WORKSPACE_ROOT_SETUP_COMMANDS.has(actionCommand.name())) return;
-
-      const workspaceRootError = getWorkspaceRootSetupError();
-      if (workspaceRootError) {
-        logErrorAndExit(workspaceRootError);
-      }
     });
     this.program.hook('preAction', async (thisCommand, actionCommand) => {
       // Nested commands (e.g. `gt git setup`) can share leaf names with
@@ -584,6 +591,7 @@ export class BaseCLI {
         findFilepath(['gt.config.json'])
       )
       .action(async (options: SetupOptions) => {
+        await exitIfWorkspaceRoot();
         const settings = await generateSettings(options);
         displayHeader('Running setup wizard...');
 
@@ -687,6 +695,7 @@ export class BaseCLI {
         'Configure your project for General Translation. This will create a gt.config.json file in your codebase.'
       )
       .action(async () => {
+        await exitIfWorkspaceRoot();
         displayHeader('Configuring project...');
 
         logger.info(
