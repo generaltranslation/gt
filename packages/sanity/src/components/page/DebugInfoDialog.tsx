@@ -1,9 +1,14 @@
-import React, { useMemo, useState } from 'react';
-import { Box, Button, Card, Code, Dialog, Flex, Stack, Text } from '@sanity/ui';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Box, Button, Card, Code, Dialog, Flex, Stack } from '@sanity/ui';
 import { ClipboardIcon } from '@sanity/icons';
 import { useClient } from '../../hooks/useClient';
 import { useTranslations } from '../TranslationsProvider';
 import { buildDebugInfo, formatDebugInfo } from '../../utils/debugInfo';
+import {
+  collectTranslationSummary,
+  EMPTY_TRANSLATION_SUMMARY,
+  type TranslationSummary,
+} from '../../utils/translationSummary';
 
 interface DebugInfoDialogProps {
   isOpen: boolean;
@@ -16,6 +21,7 @@ export const DebugInfoDialog: React.FC<DebugInfoDialogProps> = ({
 }) => {
   const {
     secrets,
+    documents,
     branchId,
     autoRefresh,
     autoImport,
@@ -25,6 +31,9 @@ export const DebugInfoDialog: React.FC<DebugInfoDialogProps> = ({
   } = useTranslations();
   const client = useClient();
   const [copied, setCopied] = useState(false);
+  const [translations, setTranslations] = useState<TranslationSummary>(
+    EMPTY_TRANSLATION_SUMMARY
+  );
 
   const { projectId, dataset } = client.config();
 
@@ -40,6 +49,7 @@ export const DebugInfoDialog: React.FC<DebugInfoDialogProps> = ({
             autoPublish,
             preserveExistingTranslations,
           },
+          translations,
           sanityProjectId: projectId,
           sanityDataset: dataset,
           branchId,
@@ -47,6 +57,7 @@ export const DebugInfoDialog: React.FC<DebugInfoDialogProps> = ({
       ),
     [
       secrets,
+      translations,
       branchId,
       projectId,
       dataset,
@@ -57,6 +68,24 @@ export const DebugInfoDialog: React.FC<DebugInfoDialogProps> = ({
       preserveExistingTranslations,
     ]
   );
+
+  // Reads the dataset, so it runs when the dialog opens rather than on every
+  // status poll. Failures leave the zeroed summary rather than blocking the
+  // rest of the debug output.
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    collectTranslationSummary(documents, client)
+      .then((summary) => {
+        if (!cancelled) setTranslations(summary);
+      })
+      .catch(() => {
+        if (!cancelled) setTranslations(EMPTY_TRANSLATION_SUMMARY);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, documents, client]);
 
   if (!isOpen) return null;
 

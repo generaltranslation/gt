@@ -888,55 +888,56 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
           secrets
         );
 
-        setTranslationStatuses(() => {
-          const newStatuses = new Map();
+        // Built here rather than inside an updater: it derives from the
+        // response, not from previous state, and a state updater has to stay
+        // pure — React may run it more than once.
+        const newStatuses = new Map<string, TranslationStatus>();
 
-          for (const doc of documents) {
-            for (const localeId of availableLocaleIds) {
-              const documentId = getDocumentPublishedId(doc);
-              const versionId = getVersionId(doc);
-              const key = createTranslationStatusKey(
-                branchId,
-                documentId,
-                versionId,
-                localeId
-              );
-              newStatuses.set(key, { progress: 0, isReady: false });
-            }
+        for (const doc of documents) {
+          for (const localeId of availableLocaleIds) {
+            const documentId = getDocumentPublishedId(doc);
+            const versionId = getVersionId(doc);
+            const key = createTranslationStatusKey(
+              branchId,
+              documentId,
+              versionId,
+              localeId
+            );
+            newStatuses.set(key, { progress: 0, isReady: false });
           }
+        }
 
-          if (Array.isArray(readyTranslations)) {
-            for (const translation of readyTranslations) {
-              const key = createTranslationStatusKey(
-                branchId,
-                translation.fileId,
-                translation.versionId,
-                translation.locale
-              );
-              newStatuses.set(key, {
-                progress: 100,
-                isReady: true,
-                fileData: {
-                  versionId: translation.versionId,
-                  fileId: translation.fileId,
-                  branchId: translation.branchId,
-                  locale: translation.locale,
-                },
-              });
-            }
+        if (Array.isArray(readyTranslations)) {
+          for (const translation of readyTranslations) {
+            const key = createTranslationStatusKey(
+              branchId,
+              translation.fileId,
+              translation.versionId,
+              translation.locale
+            );
+            newStatuses.set(key, {
+              progress: 100,
+              isReady: true,
+              fileData: {
+                versionId: translation.versionId,
+                fileId: translation.fileId,
+                branchId: translation.branchId,
+                locale: translation.locale,
+              },
+            });
           }
+        }
 
-          // A translation that has arrived is no longer outstanding.
-          setPendingTranslations((prev) => {
-            if (prev.size === 0) return prev;
-            const next = new Set(prev);
-            for (const [key, status] of newStatuses) {
-              if (status.isReady) next.delete(key);
-            }
-            return next.size === prev.size ? prev : next;
-          });
+        setTranslationStatuses(newStatuses);
 
-          return newStatuses;
+        // A translation that has arrived is no longer outstanding.
+        setPendingTranslations((prev) => {
+          if (prev.size === 0) return prev;
+          const next = new Set(prev);
+          for (const [key, status] of newStatuses) {
+            if (status.isReady) next.delete(key);
+          }
+          return next.size === prev.size ? prev : next;
         });
 
         if (!silent) {

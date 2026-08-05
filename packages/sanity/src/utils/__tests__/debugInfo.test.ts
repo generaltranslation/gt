@@ -3,8 +3,11 @@ import { pluginConfig } from '../../adapter/core';
 import type { TranslationPreferences } from '../../adapter/types';
 import type { Secrets } from '../../types';
 import { buildDebugInfo, formatDebugInfo } from '../debugInfo';
+import { EMPTY_TRANSLATION_SUMMARY } from '../translationSummary';
 
 const API_KEY = 'gtx-super-secret-api-key';
+
+const translations = EMPTY_TRANSLATION_SUMMARY;
 
 const secrets: Secrets = {
   organization: 'org',
@@ -30,6 +33,7 @@ describe('buildDebugInfo', () => {
       buildDebugInfo({
         secrets,
         preferences,
+        translations,
         sanityProjectId: 'sanity-project',
         sanityDataset: 'production',
         branchId: 'branch-1',
@@ -45,24 +49,25 @@ describe('buildDebugInfo', () => {
 
   it('reports whether an API key is set without revealing it', () => {
     expect(
-      buildDebugInfo({ secrets, preferences }).generalTranslation
+      buildDebugInfo({ secrets, preferences, translations }).generalTranslation
         .apiKeyConfigured
     ).toBe(true);
     expect(
       buildDebugInfo({
         secrets: { ...secrets, secret: undefined },
         preferences,
+        translations,
       }).generalTranslation.apiKeyConfigured
     ).toBe(false);
   });
 
   it('distinguishes a missing secrets document from one without a key', () => {
     expect(
-      buildDebugInfo({ secrets: null, preferences }).generalTranslation
-        .secretsDocumentFound
+      buildDebugInfo({ secrets: null, preferences, translations })
+        .generalTranslation.secretsDocumentFound
     ).toBe(false);
     expect(
-      buildDebugInfo({ secrets, preferences }).generalTranslation
+      buildDebugInfo({ secrets, preferences, translations }).generalTranslation
         .secretsDocumentFound
     ).toBe(true);
   });
@@ -75,7 +80,7 @@ describe('buildDebugInfo', () => {
       { type: 'landingPage' },
     ]);
 
-    const info = buildDebugInfo({ secrets, preferences });
+    const info = buildDebugInfo({ secrets, preferences, translations });
 
     expect(info.locales).toEqual({
       sourceLocale: 'en-US',
@@ -98,7 +103,7 @@ describe('buildDebugInfo', () => {
       {},
     ]);
 
-    const info = buildDebugInfo({ secrets, preferences });
+    const info = buildDebugInfo({ secrets, preferences, translations });
 
     expect(info.customization.additionalSerializers).toEqual(['myBlock']);
     expect(info.customization.additionalBlockDeserializers).toBe(2);

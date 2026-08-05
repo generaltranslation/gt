@@ -148,8 +148,10 @@ export type GTPluginConfig = Omit<
   autoRefresh?: boolean;
   // Import a translation as soon as it completes. Defaults to true.
   autoImport?: boolean;
-  // Repoint references to their translated counterparts after import.
-  // Defaults to true.
+  // Repoint references to their translated counterparts after import. Defaults
+  // to FALSE — when a translated document has already been published and has no
+  // draft, the rewrite is applied to a draft seeded from it, so this edits
+  // documents you may consider finished.
   autoPatchReferences?: boolean;
   // Publish translated documents after import. Defaults to FALSE — publishing
   // is the one automatic action that puts content in front of readers and

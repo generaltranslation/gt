@@ -50,5 +50,9 @@ export type FileProperties = {
 export type TranslationStatus = {
   progress: number;
   isReady: boolean;
-  fileData: FileProperties;
+  /**
+   * What to download. Absent until the translation is ready, which is why
+   * every read of it is guarded.
+   */
+  fileData?: FileProperties;
 };

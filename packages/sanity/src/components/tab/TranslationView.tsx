@@ -18,6 +18,8 @@ import {
 } from '@sanity/ui';
 import { pluginConfig } from '../../adapter/core';
 import { SaveLocalTranslationsDialog } from '../page/SaveLocalTranslationsDialog';
+import { DebugInfoDialog } from '../page/DebugInfoDialog';
+import { version as PACKAGE_VERSION } from '../../../package.json';
 import { useTranslations } from '../TranslationsProvider';
 import { LanguageStatus } from '../shared/LanguageStatus';
 import { resolveLanguageStatusState } from '../../utils/languageStatusState';
@@ -69,6 +71,7 @@ export const TranslationView = () => {
   const [isPublishing, setIsPublishing] = useState(false);
   const [isUploadingExisting, setIsUploadingExisting] = useState(false);
   const [isSaveLocalDialogOpen, setIsSaveLocalDialogOpen] = useState(false);
+  const [isDebugInfoDialogOpen, setIsDebugInfoDialogOpen] = useState(false);
 
   const toast = useToast();
 
@@ -543,6 +546,26 @@ export const TranslationView = () => {
           </Stack>
         </Stack>
       )}
+
+      <Card borderTop paddingTop={3}>
+        <Flex align='center' justify='flex-end' gap={2}>
+          <Text size={1} muted>
+            gt-sanity v{PACKAGE_VERSION}
+          </Text>
+          <Button
+            fontSize={1}
+            padding={2}
+            mode='bleed'
+            text='Debug info'
+            onClick={() => setIsDebugInfoDialogOpen(true)}
+          />
+        </Flex>
+      </Card>
+
+      <DebugInfoDialog
+        isOpen={isDebugInfoDialogOpen}
+        onClose={() => setIsDebugInfoDialogOpen(false)}
+      />
     </Stack>
   );
 };

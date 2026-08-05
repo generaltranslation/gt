@@ -2,6 +2,7 @@ import { pluginConfig } from '../adapter/core';
 import { version as PACKAGE_VERSION } from '../../package.json';
 import type { Secrets } from '../types';
 import type { TranslationPreferences } from '../adapter/types';
+import type { TranslationSummary } from './translationSummary';
 
 export type DebugInfo = {
   package: { name: 'gt-sanity'; version: string };
@@ -28,6 +29,12 @@ export type DebugInfo = {
     skipFields: unknown[];
     additionalStopTypes: string[];
   };
+  /**
+   * Where the translations actually are. A high `draftOnly` with `published`
+   * at zero means they exist but are invisible to anything reading the
+   * published perspective.
+   */
+  translations: TranslationSummary;
   /** Effective values, after any stored user choice overrides plugin config. */
   preferences: TranslationPreferences;
   customization: {
@@ -40,6 +47,7 @@ export type DebugInfo = {
 export type BuildDebugInfoInput = {
   secrets: Secrets | null;
   preferences: TranslationPreferences;
+  translations: TranslationSummary;
   sanityProjectId?: string;
   sanityDataset?: string;
   branchId?: string;
@@ -55,6 +63,7 @@ export type BuildDebugInfoInput = {
 export function buildDebugInfo({
   secrets,
   preferences,
+  translations,
   sanityProjectId,
   sanityDataset,
   branchId,
@@ -89,6 +98,7 @@ export function buildDebugInfo({
       skipFields: pluginConfig.getSkipFields(),
       additionalStopTypes: pluginConfig.getAdditionalStopTypes(),
     },
+    translations,
     preferences,
     customization: {
       additionalSerializers: Object.keys(
