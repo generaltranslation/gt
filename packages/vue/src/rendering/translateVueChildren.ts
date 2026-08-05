@@ -27,7 +27,7 @@ import {
   type VNode,
   type VNodeChild,
 } from 'vue';
-import { isBranchAttribute } from '../components/utils';
+import { getFormatLocales, isBranchAttribute } from '../components/utils';
 import type { GTState } from '../types';
 
 const variableTypes = {
@@ -656,8 +656,11 @@ function getPluralKey(
         )
       : [];
   return (
-    getPluralForm(n, forms, [...sourceLocales, locale, state.defaultLocale]) ||
-    undefined
+    getPluralForm(
+      n,
+      forms,
+      getFormatLocales(sourceLocales, locale, state.defaultLocale)
+    ) || undefined
   );
 }
 

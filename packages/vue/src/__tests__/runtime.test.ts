@@ -1521,28 +1521,21 @@ describe('gt-vue runtime', () => {
     expect(await renderWithPlugin(Root, plugin)).toContain('Bonjour');
   });
 
-  it('formats slot children and renders standalone branch components', async () => {
+  it('formats required values and renders standalone branch components', async () => {
     const plugin = createGT();
     const Root = defineComponent({
       setup() {
         return () =>
           h('div', [
-            h(Num, { locales: ['en-US'] }, { default: () => '1234.5' }),
+            h(Num, { locales: ['en-US'], value: '1234.5' }),
             '|',
-            h(
-              Currency,
-              { currency: 'USD', locales: ['en-US'] },
-              { default: () => '12' }
-            ),
+            h(Currency, { currency: 'USD', locales: ['en-US'], value: '12' }),
             '|',
-            h(
-              DateTime,
-              {
-                locales: ['en-US'],
-                options: { timeZone: 'UTC', year: 'numeric' },
-              },
-              { default: () => '2024-01-01T00:00:00.000Z' }
-            ),
+            h(DateTime, {
+              locales: ['en-US'],
+              options: { timeZone: 'UTC', year: 'numeric' },
+              value: '2024-01-01T00:00:00.000Z',
+            }),
             '|',
             h(
               Plural,
@@ -1560,7 +1553,54 @@ describe('gt-vue runtime', () => {
     });
     const html = await renderWithPlugin(Root, plugin);
 
-    expect(html).toContain('1,234.5|$12.00|2024|items|Welcome');
+    expect(stripFragmentMarkers(html)).toContain(
+      '1,234.5|$12.00|2024|items|Welcome'
+    );
+  });
+
+  it('emits stable SSR boundaries for every scalar GT component root', async () => {
+    const plugin = createGT({
+      loadTranslations: async () => ({ translated: 'target' }),
+    });
+    await plugin.setLocale('fr');
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h('div', [
+            'A',
+            h(T, { _hash: 'translated' }, { default: () => 'source' }),
+            'B',
+            h(T, { _hash: 'missing' }, { default: () => 'source' }),
+            'C',
+            h(Num, { value: 'number' }),
+            'D',
+            h(Num, { value: null }),
+            'E',
+            h(Currency, { value: 'currency' }),
+            'F',
+            h(Currency, { value: null }),
+            'G',
+            h(DateTime, { value: 'date' }),
+            'H',
+            h(DateTime, { value: null }),
+            'I',
+            h(Branch, { branch: 'yes', yes: 'branch' }),
+            'J',
+            h(Branch, { branch: 'empty', empty: null }),
+            'K',
+            h(Plural, { n: 2, other: 'plural' }),
+            'L',
+            h(Plural, { n: 2, other: null }),
+            'M',
+            h(Var, null, { default: () => 'variable' }),
+            'N',
+          ]);
+      },
+    });
+
+    expect(await renderWithPlugin(Root, plugin)).toBe(
+      '<div>A<!--[-->target<!--]-->B<!--[-->source<!--]-->C<!--[-->number<!--]-->D<!--[--><!--]-->E<!--[-->currency<!--]-->F<!--[--><!--]-->G<!--[-->date<!--]-->H<!--[--><!--]-->I<!--[-->branch<!--]-->J<!--[--><!--]-->K<!--[-->plural<!--]-->L<!--[--><!--]-->M<!--[-->variable<!--]-->N</div>'
+    );
   });
 
   it('falls back safely for inherited object-property branch names', async () => {
@@ -1660,7 +1700,7 @@ describe('gt-vue runtime', () => {
                 }
               ),
               '|',
-              h(Num, null, { default: () => '1234.5' }),
+              h(Num, { value: '1234.5' }),
             ],
           });
       },
@@ -1698,19 +1738,40 @@ describe('gt-vue runtime', () => {
     expect(await renderWithPlugin(Root, plugin)).toContain('Bonjour');
   });
 
-  it('keeps app caches isolated during concurrent SSR', async () => {
+  it('keeps locale and catalog state isolated during interleaved SSR requests', async () => {
     const source = 'Hello';
+    const richSource: JsxChildren = { t: 'span', i: 1, c: 'World' };
+    const pending = new Map<string, (catalog: TranslationCatalog) => void>();
     const french = createGT({
-      loadTranslations: async () => ({ [stringHash(source)]: 'Bonjour' }),
+      loadTranslations: (locale) =>
+        new Promise((resolve) => pending.set(`fr:${locale}`, resolve)),
     });
     const chinese = createGT({
-      loadTranslations: async () => ({ [stringHash(source)]: '你好' }),
+      loadTranslations: (locale) =>
+        new Promise((resolve) => pending.set(`zh:${locale}`, resolve)),
     });
-    await Promise.all([french.setLocale('fr'), chinese.setLocale('zh')]);
+    const frenchReady = french.setLocale('fr');
+    const chineseReady = chinese.setLocale('zh');
+    await vi.waitFor(() => expect(pending.size).toBe(2));
+    pending.get('zh:zh')?.({
+      [jsxHash(richSource)]: { t: 'span', i: 1, c: '世界' },
+      [stringHash(source)]: '你好',
+    });
+    await chineseReady;
+    pending.get('fr:fr')?.({
+      [jsxHash(richSource)]: { t: 'span', i: 1, c: 'Monde' },
+      [stringHash(source)]: 'Bonjour',
+    });
+    await frenchReady;
     const Root = defineComponent({
       setup() {
         const gt = useGT();
-        return () => h('p', gt(source));
+        const locale = useLocale();
+        return () =>
+          h('p', [
+            `${locale.value}|${gt(source)}|`,
+            h(T, null, { default: () => h('span', 'World') }),
+          ]);
       },
     });
 
@@ -1718,8 +1779,12 @@ describe('gt-vue runtime', () => {
       renderWithPlugin(Root, french),
       renderWithPlugin(Root, chinese),
     ]);
-    expect(fr).toContain('Bonjour');
-    expect(zh).toContain('你好');
+    expect(stripFragmentMarkers(fr)).toContain(
+      '<p>fr|Bonjour|<span>Monde</span></p>'
+    );
+    expect(stripFragmentMarkers(zh)).toContain(
+      '<p>zh|你好|<span>世界</span></p>'
+    );
   });
 
   it('applies only the latest concurrent locale request', async () => {
