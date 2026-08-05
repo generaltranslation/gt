@@ -41,7 +41,8 @@ function recordScopedSlot(slotProps) {
 
 <template>
   <main>
-    <T context="safe-comment">Hello<!-- translator note -->world</T>
+    <!-- Translator note for the following message. -->
+    <T context="safe-comment">Helloworld</T>
 
     <T context="preserved-whitespace">First second</T>
 
