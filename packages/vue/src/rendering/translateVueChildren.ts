@@ -499,7 +499,12 @@ function renderNodes(
       return variable
         ? keySourceResult(
             variable,
-            renderDefaultNode(variable, state, identityCache),
+            renderDefaultNode(
+              variable,
+              state,
+              identityCache,
+              state.locale.value
+            ),
             occurrences,
             identityCache
           )
@@ -585,7 +590,12 @@ function renderElement(
   if (source.transformation === 'plural') {
     const n = source.vnode.props?.n;
     if (typeof n !== 'number') {
-      return renderDefaultNode(source, state, identityCache);
+      return renderDefaultNode(
+        source,
+        state,
+        identityCache,
+        state.locale.value
+      );
     }
     const sourceBranch = getPluralKey(
       n,
@@ -620,9 +630,20 @@ function renderElement(
   }
   const translatedProps = getTranslatedProps(target);
   if (target.c == null) {
-    return Object.keys(translatedProps).length
-      ? cloneWithProps(source.vnode, translatedProps)
-      : renderDefaultNode(source, state, identityCache);
+    return source.children.length
+      ? cloneWithChildren(
+          source.vnode,
+          renderDefaultNodes(
+            source.children,
+            state,
+            identityCache,
+            state.locale.value
+          ),
+          translatedProps
+        )
+      : Object.keys(translatedProps).length
+        ? cloneWithProps(source.vnode, translatedProps)
+        : source.vnode;
   }
 
   return cloneWithChildren(
@@ -708,7 +729,7 @@ function renderDefaultNodes(
   nodes: SourceNode[],
   state: GTState,
   identityCache: TranslationIdentityCache,
-  locale = state.defaultLocale
+  locale: string
 ): VNodeChild[] {
   const occurrences = new Map<SourceElement, number>();
   return nodes.map((node) =>
@@ -727,19 +748,12 @@ function renderDefaultNode(
   node: SourceNode,
   state: GTState,
   identityCache: TranslationIdentityCache,
-  locale?: string
+  locale: string
 ): VNodeChild {
   if (typeof node === 'string') return node;
   if (node.transformation === 'variable') {
-    return locale && node.variableType !== 'v'
-      ? cloneWithProps(node.vnode, {
-          locales: [
-            ...(Array.isArray(node.vnode.props?.locales)
-              ? node.vnode.props.locales
-              : []),
-            locale,
-          ],
-        })
+    return node.variableType !== 'v'
+      ? cloneWithProps(node.vnode, { _locale: locale })
       : node.vnode;
   }
   if (node.transformation === 'fragment') {
