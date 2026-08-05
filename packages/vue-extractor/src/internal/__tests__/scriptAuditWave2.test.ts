@@ -467,17 +467,6 @@ const ignoredCases: AuditCase[] = [
     sources: [],
   },
   {
-    name: 'dynamic gt-vue import',
-    source: setup(
-      `const load = async () => {
-         const GT = await import('gt-vue');
-         GT.msg('Dynamic import');
-       };
-       void load;`
-    ),
-    sources: [],
-  },
-  {
     name: 'multiple late assignments',
     source: setup(
       `import { useGT } from 'gt-vue';
@@ -491,6 +480,18 @@ const ignoredCases: AuditCase[] = [
 ];
 
 const diagnosticCases: Array<AuditCase & { diagnostic: string }> = [
+  {
+    name: 'dynamic gt-vue import',
+    source: setup(
+      `const load = async () => {
+         const GT = await import('gt-vue');
+         GT.msg('Dynamic import');
+       };
+       void load;`
+    ),
+    sources: [],
+    diagnostic: 'possible gt-vue string function alias',
+  },
   {
     name: 'Options API setup may fall through without returning bindings',
     source: options(

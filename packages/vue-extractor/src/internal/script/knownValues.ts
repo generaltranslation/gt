@@ -74,6 +74,13 @@ export function knownExport(
   name: string
 ): KnownValue | undefined {
   if (source === 'vue') {
+    if (
+      name === 'createVNode' ||
+      name === 'defineAsyncComponent' ||
+      name === 'h'
+    ) {
+      return { type: 'vue-call', name };
+    }
     if (name === 'defineComponent') return { type: 'defineComponent' };
     if (name === 'markRaw') return { type: 'identity' };
     if (name === 'unref') {
@@ -141,7 +148,11 @@ export function knownValueKey(value: KnownValue): string {
   if (value.type === 'hook') return `hook:${value.kind}`;
   if (value.type === 'string') return `string:${value.kind}`;
   if (value.type === 'namespace') return `namespace:${value.source}`;
+  if (value.type === 'local-namespace') {
+    return `local-namespace:${value.modulePath}`;
+  }
   if (value.type === 'vue-builtin') return `vue-builtin:${value.name}`;
+  if (value.type === 'vue-call') return `vue-call:${value.name}`;
   if (value.type === 'vue-wrapper') return `vue-wrapper:${value.kind}`;
   if (value.type === 'container-wrapper') {
     return `container-wrapper:${value.kind}`;

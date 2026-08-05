@@ -427,7 +427,7 @@ const ignoredScriptCases: ScriptMatrixCase[] = [
   {
     name: 'translator passed as callback',
     script: `import { useGT } from 'gt-vue'; const gt = useGT(); function helper(translator: typeof gt) { translator('Passed callback'); } helper(gt);`,
-    sources: [],
+    sources: ['Passed callback'],
   },
   {
     name: 'dynamic useMessages input',

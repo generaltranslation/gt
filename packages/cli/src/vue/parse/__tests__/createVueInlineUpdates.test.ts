@@ -76,6 +76,7 @@ describe('createVueInlineUpdates', () => {
       compilerOptions: { whitespace: 'preserve' },
       includeSourceCodeContext: true,
       projectRoot: process.cwd(),
+      resolveModule: expect.any(Function),
     });
     expect(result.errors).toEqual([]);
     expect(result.warnings).toEqual(['warning']);

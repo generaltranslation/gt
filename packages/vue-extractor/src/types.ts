@@ -63,6 +63,20 @@ export type VueExtractionOptions = {
   includeSourceCodeContext?: boolean;
   /** Root used to make metadata file paths relative. Defaults to `process.cwd()`. */
   projectRoot?: string;
+  /**
+   * Resolves a static module specifier to a source file without loading or
+   * executing that module. Relative source files and index barrels are
+   * resolved automatically; provide this hook for aliases or workspace
+   * package exports that use application-specific resolution rules.
+   *
+   * The hook is consulted first for every specifier, including relative ones,
+   * so a project can preserve its compiler's source-over-build precedence.
+   *
+   * Returning `undefined` leaves the import unresolved and makes GT-shaped
+   * uses fail closed. The returned path must identify a readable local source
+   * file.
+   */
+  resolveModule?: (specifier: string, importer: string) => string | undefined;
   /** Number of source lines captured before and after a translation. */
   surroundingLineCount?: number;
 };

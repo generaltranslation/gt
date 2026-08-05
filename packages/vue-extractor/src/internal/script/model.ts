@@ -6,6 +6,7 @@ import type {
   TemplateContainerKind,
   VueBuiltinName,
 } from '../types.js';
+import type { LocalModuleResolver } from './localModules.js';
 
 /** A statically recognized value that affects Vue translation extraction. */
 export type KnownValue =
@@ -18,7 +19,16 @@ export type KnownValue =
       /** CommonJS namespace objects can be mutated through member writes. */
       mutable: boolean;
     }
+  | {
+      /** Immutable ESM namespace imported from a statically resolved barrel. */
+      type: 'local-namespace';
+      modulePath: string;
+    }
   | { type: 'vue-builtin'; name: VueBuiltinName }
+  | {
+      type: 'vue-call';
+      name: 'createVNode' | 'defineAsyncComponent' | 'h';
+    }
   | {
       type: 'container-wrapper';
       kind: ContainerWrapperKind;
@@ -45,6 +55,10 @@ export type ContainerWrapperKind =
 export type VueScriptAnalysis = {
   /** Optional visit counters used by deterministic complexity regressions. */
   stats?: VueScriptAnalysisStats;
+  /** Absolute path of the source file currently being extracted. */
+  entryFile?: string;
+  /** Read-only local ESM graph used to resolve application barrels. */
+  localModules?: LocalModuleResolver;
   /** Lengths of statically known, non-mutated normal-script arrays. */
   arrayLengths: Map<string, number>;
   /** Normal-script callables that may return a GT or Vue component. */
@@ -70,6 +84,8 @@ export type VueScriptAnalysis = {
   uncertainGTComponents: Set<string>;
   /** Cross-block aliases that may resolve to a gt-vue string function. */
   uncertainStringFunctions: Set<string>;
+  /** Mutable local helpers that are unsafe only when passed a translator. */
+  uncertainTranslationHelpers: Set<string>;
   values: Map<string, KnownValue>;
 };
 
@@ -275,7 +291,9 @@ export type ScriptState = {
   activeComponentFunctions: Set<t.Function>;
   activeReplayFunctions: Set<t.Function>;
   activeStringFunctions: Set<t.Function>;
+  activeTranslationFunctions: Set<t.Function>;
   analysis: VueScriptAnalysis;
+  attachedLocalModules: Set<string>;
   arrayEntries: Map<Binding, Array<ScopedExpression | undefined> | null>;
   arrayEntriesInProgress: Set<Binding>;
   componentPossibilities: Map<Binding, Map<ComponentKind | 'any', boolean>>;
@@ -295,12 +313,14 @@ export type ScriptState = {
   /** Immutable aliases proven to hold a non-callable or known non-string value. */
   definiteNonStringFunctionBindings: Set<Binding>;
   definiteNonStringFunctionBindingsInProgress: Set<Binding>;
+  entryProgram: t.Program;
   finalContainerSnapshots: Map<Binding, FinalContainerSnapshot>;
   finalContainerSnapshotsInProgress: Set<Binding>;
   gtContainerPossibilities: Map<Binding, boolean>;
   gtContainerPossibilitiesInProgress: Set<Binding>;
   gtContainerPaths: Map<Binding, Set<string>>;
   gtContainerPathsInProgress: Set<Binding>;
+  localCallableBindings: Map<Binding, ScopedExpression & { node: t.Function }>;
   mutationGTContainerPaths: Map<Binding, Set<string>>;
   mutationGTContainerPathsInProgress: Set<Binding>;
   mutationPossibleStaticStrings: Map<Binding, Map<string, Set<string>>>;
@@ -324,5 +344,7 @@ export type ScriptState = {
     Array<ScopedExpression | undefined> | null
   >;
   transformArrayEntriesInProgress: Set<Binding>;
+  /** Import and alias bindings that may call a forwarded translator. */
+  uncertainTranslationHelperBindings: Set<Binding>;
   unsafeMutableNamespaceSources: Set<'gt-vue' | 'vue'>;
 };
