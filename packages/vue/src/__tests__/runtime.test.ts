@@ -873,6 +873,96 @@ describe('gt-vue runtime', () => {
     expect(fallbackCalls).toHaveBeenCalledTimes(2);
   });
 
+  it('renders Vue-compiled text-only Suspense source content in SSR', async () => {
+    const plugin = createGT({ loadTranslations: async () => ({}) });
+    const Root = defineComponent({
+      components: { T },
+      render: compileSfcTemplate('<T><Suspense>Hello world</Suspense></T>'),
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    try {
+      const defaultHtml = stripFragmentMarkers(
+        await renderWithPlugin(Root, plugin)
+      );
+      expect(defaultHtml).toContain('Hello world');
+
+      await plugin.setLocale('fr');
+      const fallbackHtml = stripFragmentMarkers(
+        await renderWithPlugin(Root, plugin)
+      );
+      expect(fallbackHtml).toContain('Hello world');
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('renders translated text-only Suspense content in SSR', async () => {
+    const plugin = createGT({
+      loadTranslations: async () => ({
+        textSuspense: {
+          t: 'Suspense',
+          i: 1,
+          c: ['Bonjour le monde'],
+        },
+      }),
+    });
+    await plugin.setLocale('fr');
+    const Root = defineComponent({
+      components: { T },
+      render: compileSfcTemplate(
+        '<T _hash="textSuspense"><Suspense>Hello world</Suspense></T>'
+      ),
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    try {
+      const html = stripFragmentMarkers(await renderWithPlugin(Root, plugin));
+      expect(html).toContain('Bonjour le monde');
+      expect(html).not.toContain('Hello world');
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('updates Vue-compiled text-only Suspense content on the client', async () => {
+    const plugin = createGT({
+      loadTranslations: async () => ({
+        textSuspense: {
+          t: 'Suspense',
+          i: 1,
+          c: ['Bonjour le monde'],
+        },
+      }),
+    });
+    const Root = defineComponent({
+      components: { T },
+      render: compileSfcTemplate(
+        '<T _hash="textSuspense"><Suspense>Hello world</Suspense></T>'
+      ),
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const mounted = mount(Root, plugin);
+
+    try {
+      expect(textContent(mounted.root)).toBe('Hello world');
+
+      await plugin.setLocale('fr');
+      await nextTick();
+      expect(textContent(mounted.root)).toBe('Bonjour le monde');
+
+      await plugin.setLocale('en');
+      await nextTick();
+      expect(textContent(mounted.root)).toBe('Hello world');
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      mounted.app.unmount();
+      warn.mockRestore();
+    }
+  });
+
   it('preserves an async Suspense fallback before rendering translated content', async () => {
     const fallbackCalls = vi.fn();
     let resolveGate!: () => void;

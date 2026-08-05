@@ -788,7 +788,7 @@ function cloneWithChildren(
     const normalizedFallback = (vnode as VNodeWithRenderMetadata).ssFallback;
     const cloned = h(vnode.type, props, {
       ...slots,
-      default: () => children,
+      default: () => unwrapSingleSuspenseChild(children),
       // Vue already invoked and normalized the fallback when it created the
       // source Suspense VNode. Reuse that VNode instead of running user slot
       // code a second time while rebuilding the translated boundary.
@@ -814,6 +814,21 @@ function cloneWithChildren(
     ...slots,
     default: () => children,
   });
+}
+
+/**
+ * Returns a single rebuilt Suspense root without an artificial array wrapper.
+ *
+ * Vue accepts a primitive returned directly from a Suspense slot and
+ * normalizes it into a Text VNode. Inside an array, however, that same
+ * primitive fails Vue's single-root check and becomes an empty comment. Rich
+ * rendering naturally produces child arrays, so unwrap only the singleton
+ * case and leave genuinely multi-root content for Vue to validate.
+ */
+function unwrapSingleSuspenseChild(children: VNodeChild): VNodeChild {
+  return Array.isArray(children) && children.length === 1
+    ? children[0]
+    : children;
 }
 
 /** Copies render metadata without retaining mounted or normalized child state. */
