@@ -35,6 +35,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   for (const directory of temporaryDirectories.splice(0)) {
     fs.rmSync(directory, { force: true, recursive: true });
   }
@@ -62,7 +63,10 @@ describe('createVueInlineUpdates', () => {
 
     const result = await createVueInlineUpdates(undefined, parsingFlags);
 
-    expect(matchFiles).toHaveBeenCalledWith(process.cwd(), expect.any(Array));
+    expect(matchFiles).toHaveBeenCalledWith(process.cwd(), expect.any(Array), {
+      followSymbolicLinks: false,
+      stayWithinCwd: true,
+    });
     expect(resolveVueCompilerOptions).toHaveBeenCalledWith(
       process.cwd(),
       undefined,
@@ -103,6 +107,51 @@ describe('createVueInlineUpdates', () => {
       errors: ['invalid compiler options'],
       warnings: [],
     });
+  });
+
+  it('discovers sources in workspace packages that declare gt-vue', async () => {
+    const projectRoot = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'gt-vue-workspace-')
+    );
+    temporaryDirectories.push(projectRoot);
+    const appDirectory = path.join(projectRoot, 'apps', 'vue');
+    const sourceFile = path.join(appDirectory, 'src', 'App.vue');
+    fs.mkdirSync(path.dirname(sourceFile), { recursive: true });
+    fs.writeFileSync(
+      path.join(projectRoot, 'package.json'),
+      JSON.stringify({ private: true, workspaces: ['apps/*'] })
+    );
+    fs.writeFileSync(
+      path.join(appDirectory, 'package.json'),
+      JSON.stringify({ dependencies: { 'gt-vue': '0.0.0' } })
+    );
+    fs.writeFileSync(sourceFile, '<template><T>Workspace</T></template>');
+    vi.spyOn(process, 'cwd').mockReturnValue(projectRoot);
+    vi.mocked(matchFiles).mockReturnValue([sourceFile]);
+    vi.mocked(extractFromVueSource).mockResolvedValue({
+      results: [],
+      errors: [],
+      warnings: [],
+    });
+
+    await createVueInlineUpdates(undefined, {
+      ...parsingFlags,
+      viteConfigPath: undefined,
+    });
+
+    expect(matchFiles).toHaveBeenCalledWith(
+      projectRoot,
+      expect.arrayContaining([
+        'apps/vue/*.vue',
+        'apps/vue/src/**/*.{vue,js,jsx,mjs,cjs,ts,tsx,mts,cts}',
+      ]),
+      { followSymbolicLinks: false, stayWithinCwd: true }
+    );
+    expect(extractFromVueSource).toHaveBeenCalledWith(
+      '<template><T>Workspace</T></template>',
+      sourceFile,
+      expect.objectContaining({ projectRoot })
+    );
   });
 });
 

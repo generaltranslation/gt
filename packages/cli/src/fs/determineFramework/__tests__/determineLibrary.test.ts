@@ -129,6 +129,26 @@ describe('determineLibrary', () => {
       );
     });
 
+    it('accepts legal workspace directory names containing consecutive dots', () => {
+      mockExistsSync.mockImplementation(
+        (filePath) => String(filePath) === '/test-project/package.json'
+      );
+      mockReadFileSync.mockImplementation((filePath) =>
+        String(filePath) === '/test-project/package.json'
+          ? JSON.stringify({ workspaces: ['packages/foo..bar'] })
+          : JSON.stringify({ dependencies: { 'gt-vue': '1.0.0' } })
+      );
+      mockFgSync.mockReturnValue([
+        '/test-project/packages/foo..bar/package.json',
+      ]);
+
+      expect(determineLibrary().library).toBe(Libraries.GT_VUE);
+      expect(mockFgSync).toHaveBeenCalledWith(
+        ['packages/foo..bar/package.json'],
+        expect.any(Object)
+      );
+    });
+
     it('preserves framework priority and mixed Vue handling across Yarn object workspaces', () => {
       mockExistsSync.mockImplementation(
         (filePath) => String(filePath) === '/test-project/package.json'
