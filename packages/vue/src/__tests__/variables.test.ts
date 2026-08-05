@@ -149,6 +149,21 @@ describe('gt-vue formatting components', () => {
     expect(stripFragmentMarkers(await render(Root))).toBe('1,234.5');
   });
 
+  it('prefers explicit locales for standalone formatters at a non-default locale', async () => {
+    const Root = defineComponent({
+      setup() {
+        return () => h(Num, { locales: ['de'], value: 1234.5 });
+      },
+    });
+    const app = createSSRApp(Root).use(
+      createGT({ defaultLocale: 'en', locale: 'fr' })
+    );
+
+    expect(stripFragmentMarkers(await renderToString(app))).toBe(
+      new Intl.NumberFormat('de').format(1234.5)
+    );
+  });
+
   it('tries explicit, active, and default locales once while translating', () => {
     expect(getFormatLocales(['fr-CA', 'fr', 'en'], 'fr', 'en')).toEqual([
       'fr-CA',
