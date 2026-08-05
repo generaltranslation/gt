@@ -240,17 +240,19 @@ describe('extractFromVueSource', () => {
     ]);
   });
 
-  it('diagnoses rich Vue JSX while retaining string-call extraction', async () => {
+  it('extracts rich Vue JSX alongside string calls', async () => {
     const result = await extractFixtures(['vue-jsx.tsx']);
 
-    expect(result.updates).toHaveLength(1);
+    expect(result.errors).toEqual([]);
+    expect(result.updates).toHaveLength(2);
     expect(result.updates[0]).toMatchObject({
       dataFormat: 'STRING',
       source: 'TSX string',
     });
-    expect(result.errors.join('\n')).toContain(
-      'gt-vue <T> component in Vue JSX or TSX'
-    );
+    expect(result.updates[1]).toMatchObject({
+      dataFormat: 'JSX',
+      source: 'Rich TSX',
+    });
   });
 
   it('keeps ordinary component slots opaque while diagnosing invalid T content', async () => {

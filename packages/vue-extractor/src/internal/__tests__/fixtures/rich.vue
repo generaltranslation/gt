@@ -62,9 +62,9 @@ function shadowed(gt: (value: string) => string) {
       <Value>{{ name }}</Value>
     </Branch>
     <b>end</b>
-    <Num>{{ count }}</Num>
-    <When>{{ date }}</When>
-    <Currency>{{ cost }}</Currency>
+    <Num :value="count" />
+    <When :value="date" />
+    <Currency :value="cost" />
     <var>native</var>
   </Translate>
   {{ gt('Template call', { $context: 'template' }) }}

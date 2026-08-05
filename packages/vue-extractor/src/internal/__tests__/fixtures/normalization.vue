@@ -4,7 +4,7 @@ import { DateTime, T as Translation } from 'gt-vue';
 
 <template>
   <translation>
-    <date-time>{{ date }}</date-time>
+    <date-time :value="date" />
     <var>native</var>
   </translation>
 </template>
