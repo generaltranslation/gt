@@ -27,6 +27,25 @@ function toRelativeImport(fromDirectory: string, toPath: string): string {
   return relativePath.startsWith('.') ? relativePath : `./${relativePath}`;
 }
 
+function getEntryImport(
+  appDirectory: string,
+  sourceDirectory: string,
+  source: string
+): string {
+  const sourcePath = source.replace(/[?#].*$/, '');
+  const entryPath = sourcePath.startsWith('/')
+    ? path.resolve(appDirectory, `.${sourcePath}`)
+    : path.resolve(appDirectory, sourcePath);
+  return toRelativeImport(sourceDirectory, entryPath).replace(
+    /\.(?:[cm]?[jt]sx?)$/i,
+    ''
+  );
+}
+
+function getBootstrapEntry(bootstrap: string): string | undefined {
+  return bootstrap.match(/await\s+import\(\s*(['"])([^'"]+)\1\s*\)/)?.[2];
+}
+
 function getModuleEntry(indexHtml: string): {
   script: string;
   source: string;
@@ -62,12 +81,27 @@ export async function setupViteSPA({
   const indexHtml = await fs.promises.readFile(indexHtmlPath, 'utf8');
   const { script, source } = getModuleEntry(indexHtml);
   const isAlreadyConfigured = /^\/?src\/index\.ts(?:[?#].*)?$/.test(source);
+  let existingBootstrap: string | undefined;
 
   if (fs.existsSync(bootstrapPath)) {
-    const bootstrap = await fs.promises.readFile(bootstrapPath, 'utf8');
-    if (!bootstrap.includes('initializeGTSPA')) {
+    existingBootstrap = await fs.promises.readFile(bootstrapPath, 'utf8');
+    if (!existingBootstrap.includes('initializeGTSPA')) {
       throw new Error(bootstrapConflictError);
     }
+  }
+
+  const entryImport = isAlreadyConfigured
+    ? existingBootstrap && getBootstrapEntry(existingBootstrap)
+    : getEntryImport(appDirectory, sourceDirectory, source);
+  if (!entryImport) {
+    throw new Error(
+      createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Error',
+        whatHappened: 'The existing Vite bootstrap has no app entry import',
+        fix: 'Restore the app entry import and rerun `npx gt@latest`',
+      })
+    );
   }
 
   await fs.promises.mkdir(sourceDirectory, { recursive: true });
@@ -106,22 +140,20 @@ export async function setupViteSPA({
     loadTranslationsOption = '{ ...gtConfig, loadTranslations }';
   }
 
-  if (!fs.existsSync(bootstrapPath)) {
-    const configImport = toRelativeImport(
-      sourceDirectory,
-      path.resolve(appDirectory, configFilepath)
-    );
-    await fs.promises.writeFile(
-      bootstrapPath,
-      `import { initializeGTSPA } from 'gt-react';
+  const configImport = toRelativeImport(
+    sourceDirectory,
+    path.resolve(appDirectory, configFilepath)
+  );
+  await fs.promises.writeFile(
+    bootstrapPath,
+    `import { initializeGTSPA } from 'gt-react';
 import gtConfig from '${configImport}';
 ${loadTranslationsImport}
 await initializeGTSPA(${loadTranslationsOption});
 
-await import('./main'); // render the app only after GT is ready
+await import('${entryImport}'); // render the app only after GT is ready
 `
-    );
-  }
+  );
 
   if (!isAlreadyConfigured) {
     const updatedScript = script.replace(source, '/src/index.ts');

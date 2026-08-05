@@ -77,6 +77,7 @@ import { setupGitMergeDrivers } from '../git/setupMergeDrivers.js';
 import { warnReactPackageCompatibility } from '../utils/reactPackageCompatibility.js';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { setupViteSPA } from '../setup/setupViteSPA.js';
+import { resolveSetupDirectory } from '../setup/resolveSetupDirectory.js';
 
 const ID_COMPATIBILITY_WARNING_COMMANDS = new Set([
   'download',
@@ -593,6 +594,10 @@ export class BaseCLI {
         findFilepath(['gt.config.json'])
       )
       .action(async (options: SetupOptions) => {
+        const setupDirectory = await resolveSetupDirectory();
+        if (setupDirectory !== process.cwd()) {
+          process.chdir(setupDirectory);
+        }
         await exitIfWorkspaceRoot();
         const settings = await generateSettings(options);
         displayHeader('Running setup wizard...');

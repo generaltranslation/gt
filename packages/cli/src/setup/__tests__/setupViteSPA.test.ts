@@ -106,6 +106,50 @@ await import('./main'); // render the app only after GT is ready
     expect(bootstrap).not.toContain('loadTranslations');
   });
 
+  it('imports the app entry declared in index.html', async () => {
+    fs.writeFileSync(
+      path.join(appDirectory, 'index.html'),
+      '<script type="module" src="/src/app.tsx"></script>\n'
+    );
+    fs.writeFileSync(path.join(appDirectory, 'src', 'app.tsx'), '// app');
+
+    await setupViteSPA({
+      appDirectory,
+      configFilepath: 'gt.config.json',
+      defaultLocale: 'en',
+      locales: ['fr'],
+    });
+
+    expect(
+      fs.readFileSync(path.join(appDirectory, 'src', 'index.ts'), 'utf8')
+    ).toContain("await import('./app');");
+  });
+
+  it('updates the bootstrap when switching to bundled translations', async () => {
+    await setupViteSPA({
+      appDirectory,
+      configFilepath: 'gt.config.json',
+      defaultLocale: 'en',
+      locales: ['fr'],
+    });
+    await setupViteSPA({
+      appDirectory,
+      configFilepath: 'gt.config.json',
+      defaultLocale: 'en',
+      locales: ['fr'],
+      translationsDir: 'src/_gt',
+    });
+
+    const bootstrap = fs.readFileSync(
+      path.join(appDirectory, 'src', 'index.ts'),
+      'utf8'
+    );
+    expect(bootstrap).toContain(
+      'await initializeGTSPA({ ...gtConfig, loadTranslations });'
+    );
+    expect(bootstrap).toContain("await import('./main');");
+  });
+
   it('does not overwrite an existing non-GT bootstrap', async () => {
     fs.writeFileSync(path.join(appDirectory, 'src', 'index.ts'), '// custom');
 
