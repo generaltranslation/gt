@@ -641,6 +641,7 @@ export class BaseCLI {
         displayHeader('Running setup wizard...');
 
         const framework = await detectFramework();
+        rejectUnsupportedNuxtSetup(framework);
 
         const useAgent = await (async () => {
           let useAgentMessage;
@@ -759,12 +760,7 @@ export class BaseCLI {
             logger.startCommand('Setting up project config...');
           }
           // Configure gt.config.json
-          await this.handleInitCommand(
-            ranGTSetup,
-            useDefaults,
-            framework.name === 'vite' || framework.name === 'vite-vue',
-            framework.type === 'vue'
-          );
+          await this.handleInitCommand(ranGTSetup, useDefaults, framework);
 
           logger.endCommand(
             'Done! Check out our docs for more information on how to use General Translation: https://generaltranslation.com/docs'
@@ -789,12 +785,8 @@ export class BaseCLI {
 
         // Configure gt.config.json
         const framework = await detectFramework();
-        await this.handleInitCommand(
-          false,
-          false,
-          framework.name === 'vite' || framework.name === 'vite-vue',
-          framework.type === 'vue'
-        );
+        rejectUnsupportedNuxtSetup(framework);
+        await this.handleInitCommand(false, false, framework);
 
         logger.endCommand(
           'Done! Make sure you have an API key and project ID to use General Translation. Get them on the dashboard: https://generaltranslation.com/dashboard'
@@ -817,9 +809,14 @@ export class BaseCLI {
   protected async handleInitCommand(
     ranGTSetup: boolean,
     useDefaults: boolean = false,
-    isVite: boolean = false,
-    isVue: boolean = false
+    framework: Awaited<ReturnType<typeof detectFramework>> = {
+      name: undefined,
+    }
   ): Promise<void> {
+    rejectUnsupportedNuxtSetup(framework);
+    const isVite = framework.name === 'vite' || framework.name === 'vite-vue';
+    const isVue = framework.type === 'vue';
+    const ranReactSetup = ranGTSetup && framework.type === 'react';
     const configFilepath =
       !isVite && fs.existsSync('src/gt.config.json')
         ? 'src/gt.config.json'
@@ -870,7 +867,7 @@ export class BaseCLI {
     const finalTranslationsDir =
       translationsDir?.trim() || defaultTranslationsDir;
 
-    if (isUsingGT && !usingCDN && !isVite) {
+    if (isUsingGT && !usingCDN && (!isVite || isVue)) {
       // Create loadTranslations.js file for local translations
       await createLoadTranslationsFile(
         process.cwd(),
@@ -944,7 +941,7 @@ See https://generaltranslation.com/docs/vue`
       defaultLocale,
       locales,
       files: Object.keys(files).length > 0 ? files : undefined,
-      framework: isVite ? 'vite' : isVue ? 'vite-vue' : undefined,
+      framework: isVue ? 'vite-vue' : isVite ? 'vite' : undefined,
       publish: isUsingGT && usingCDN,
     });
 
@@ -969,7 +966,7 @@ See https://generaltranslation.com/docs/vue`
       ? isPackageInstalled('gt', packageJson, true, true)
       : true; // if no package.json, we can't install it
 
-    if (!isCLIInstalled && !(isUsingGT && isVite)) {
+    if (!isCLIInstalled && !(isUsingGT && isVite && !isVue)) {
       const packageManager = await getPackageManager();
       const spinner = logger.createSpinner();
       spinner.start(
@@ -980,7 +977,7 @@ See https://generaltranslation.com/docs/vue`
     }
 
     // Set credentials
-    if ((!isVite || !isUsingGT || usingCDN) && !areCredentialsSet()) {
+    if ((isVue || !isVite || !isUsingGT || usingCDN) && !areCredentialsSet()) {
       const loginQuestion = useDefaults
         ? true
         : await promptConfirm({
@@ -1004,7 +1001,7 @@ See https://generaltranslation.com/docs/vue`
         const credentials = await retrieveCredentials(settings, keyType);
         await setCredentials(
           credentials,
-          isVite ? 'vite' : isVue ? 'vite-vue' : settings.framework
+          isVue ? 'vite-vue' : isVite ? 'vite' : settings.framework
         );
       }
     }
@@ -1021,4 +1018,21 @@ See https://generaltranslation.com/docs/vue`
     const credentials = await retrieveCredentials(settings, keyType);
     await setCredentials(credentials, settings.framework);
   }
+}
+
+/** Stops the setup wizard before it makes unsupported Nuxt project changes. */
+function rejectUnsupportedNuxtSetup(
+  framework: Awaited<ReturnType<typeof detectFramework>>
+): void {
+  if (framework.name !== 'nuxt') return;
+  logErrorAndExit(
+    createDiagnosticMessage({
+      source: 'gt',
+      severity: 'Error',
+      whatHappened: 'Automatic gt-vue setup is not available for Nuxt yet',
+      reassurance: 'Vue extraction from Nuxt projects remains supported',
+      fix: 'Configure createGT and your translation loader manually using the Vue guide',
+      docsUrl: 'https://generaltranslation.com/docs/vue',
+    })
+  );
 }

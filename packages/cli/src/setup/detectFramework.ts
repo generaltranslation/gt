@@ -10,7 +10,7 @@ import path from 'node:path';
  * Detects the frontend framework used in the current project.
  *
  * Analyzes the project structure and dependencies to identify the framework.
- * Detection order: Mintlify → Next.js (App/Pages Router) → Gatsby → RedwoodJS → Vue + Vite → Vite → React.
+ * Detection order: Mintlify → Next.js (App/Pages Router) → Gatsby → RedwoodJS → Nuxt → Vue + Vite → Vite → React.
  *
  * For Next.js projects, further determines whether it uses App Router or Pages Router
  * by checking for the presence of `app/` or `pages/` directories.
@@ -80,6 +80,9 @@ export async function detectFramework(): Promise<
     false,
     true
   );
+  if (isPackageInstalled('nuxt', packageJson, false, true)) {
+    return { name: 'nuxt', type: 'vue' };
+  }
   if (
     hasVue &&
     isPackageInstalled('vite', packageJson, false, true) &&

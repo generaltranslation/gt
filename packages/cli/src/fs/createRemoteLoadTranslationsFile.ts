@@ -6,6 +6,7 @@ import {
   defaultCacheUrl,
 } from 'generaltranslation/internal';
 import { logger } from '../console/logger.js';
+import { publishNewFile } from './publishNewFile.js';
 
 /**
  * Creates the lightweight CDN loader expected by `gt-vue`'s `createGT()`.
@@ -21,12 +22,39 @@ import { logger } from '../console/logger.js';
 export async function createRemoteLoadTranslationsFile(
   appDirectory: string
 ): Promise<string> {
-  const usingSrcDirectory = fs.existsSync(path.join(appDirectory, 'src'));
+  const realProjectRoot = requireRealDirectory(appDirectory);
+  const srcDirectory = path.join(appDirectory, 'src');
+  const srcStat = tryLstat(srcDirectory);
+  if (srcStat?.isSymbolicLink()) {
+    throw unsafeRemoteLoaderPathError(
+      'The source directory for the CDN loader is a symbolic link'
+    );
+  }
+  if (srcStat && !srcStat.isDirectory()) {
+    throw unsafeRemoteLoaderPathError(
+      'The source path for the CDN loader is not a directory'
+    );
+  }
+  const usingSrcDirectory = srcStat?.isDirectory() ?? false;
+  const loaderDirectory = usingSrcDirectory ? srcDirectory : appDirectory;
+  requireWithinProject(realProjectRoot, fs.realpathSync(loaderDirectory));
   const filePath = usingSrcDirectory
-    ? path.join(appDirectory, 'src', 'loadTranslations.js')
+    ? path.join(srcDirectory, 'loadTranslations.js')
     : path.join(appDirectory, 'loadTranslations.js');
+  const loaderStat = tryLstat(filePath);
 
-  if (fs.existsSync(filePath)) {
+  if (loaderStat?.isSymbolicLink()) {
+    throw unsafeRemoteLoaderPathError(
+      'The CDN translation loader file is a symbolic link'
+    );
+  }
+  if (loaderStat && !loaderStat.isFile()) {
+    throw unsafeRemoteLoaderPathError(
+      'The CDN translation loader path is not a file'
+    );
+  }
+
+  if (loaderStat) {
     logger.info(
       `Found ${chalk.cyan('loadTranslations.js')} file at ${chalk.cyan(
         filePath
@@ -67,11 +95,78 @@ export default async function loadTranslations(locale) {
 }
 `;
 
-  await fs.promises.writeFile(filePath, content);
+  const created = await publishNewFile(filePath, content, () =>
+    requireSafeExistingLoader(filePath)
+  );
   logger.info(
-    `Created ${chalk.cyan('loadTranslations.js')} file at ${chalk.cyan(
-      filePath
-    )}.`
+    created
+      ? `Created ${chalk.cyan('loadTranslations.js')} file at ${chalk.cyan(
+          filePath
+        )}.`
+      : `Found ${chalk.cyan('loadTranslations.js')} file at ${chalk.cyan(
+          filePath
+        )}. Skipping creation...`
   );
   return filePath;
+}
+
+function tryLstat(filepath: string): fs.Stats | undefined {
+  try {
+    return fs.lstatSync(filepath);
+  } catch {
+    return undefined;
+  }
+}
+
+function requireSafeExistingLoader(filePath: string): void {
+  const stat = tryLstat(filePath);
+  if (stat?.isSymbolicLink()) {
+    throw unsafeRemoteLoaderPathError(
+      'The CDN translation loader file is a symbolic link'
+    );
+  }
+  if (!stat?.isFile()) {
+    throw unsafeRemoteLoaderPathError(
+      'The CDN translation loader path is not a file'
+    );
+  }
+}
+
+function requireRealDirectory(filepath: string): string {
+  try {
+    const realPath = fs.realpathSync(filepath);
+    if (!fs.statSync(realPath).isDirectory()) throw new Error();
+    return realPath;
+  } catch {
+    throw unsafeRemoteLoaderPathError(
+      'The project root for the CDN loader is not a safe directory'
+    );
+  }
+}
+
+function requireWithinProject(
+  realProjectRoot: string,
+  candidate: string
+): void {
+  const relativePath = path.relative(realProjectRoot, candidate);
+  if (
+    relativePath === '..' ||
+    relativePath.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relativePath)
+  ) {
+    throw unsafeRemoteLoaderPathError(
+      'The CDN translation loader path resolves outside the project root'
+    );
+  }
+}
+
+function unsafeRemoteLoaderPathError(whatHappened: string): Error {
+  return new Error(
+    createDiagnosticMessage({
+      source: 'gt',
+      severity: 'Error',
+      whatHappened,
+      fix: 'Use a real source directory and loader file inside the project, then run setup again',
+    })
+  );
 }
