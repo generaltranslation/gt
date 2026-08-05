@@ -3,6 +3,7 @@ import type { InlineLibrary } from '../types/libraries.js';
 import { Libraries } from '../types/libraries.js';
 import { createInlineUpdates } from '../react/parse/createInlineUpdates.js';
 import { dedupeUpdates } from './postProcess.js';
+import { readDefaultInlineSourcePatterns } from './inlineSourceScopes.js';
 
 /**
  * Extracts one framework's inline translations with its package-specific
@@ -25,10 +26,12 @@ export async function createInlineUpdatesForLibrary(
       await import('../vue/parse/createVueInlineUpdates.js');
     return createVueInlineUpdates(filePatterns, parsingFlags);
   }
+  const resolvedFilePatterns =
+    filePatterns ?? readDefaultInlineSourcePatterns(process.cwd(), pkg);
   return createInlineUpdates(
     pkg,
     validate,
-    filePatterns,
+    resolvedFilePatterns,
     parsingFlags,
     parsingOptions
   );
