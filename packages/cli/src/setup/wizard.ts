@@ -13,7 +13,6 @@ import { getPackageManager } from '../utils/packageManager.js';
 import { installPackage } from '../utils/installPackage.js';
 import { createOrUpdateConfig } from '../fs/config/setupConfig.js';
 import { loadConfig } from '../fs/config/loadConfig.js';
-import { addVitePlugin } from '../react/parse/addVitePlugin/index.js';
 import { exitSync } from '../console/logging.js';
 import { ReactFrameworkObject } from '../types/index.js';
 import { getFrameworkDisplayName } from './frameworkUtils.js';
@@ -70,10 +69,12 @@ Please let us know what you would like to see added at https://github.com/genera
     exitSync(0);
   }
 
-  // ----- Create a starter gt.config.json file -----
-  await createOrUpdateConfig(options.config || 'gt.config.json', {
-    framework: frameworkType as SupportedReactFrameworks,
-  });
+  // Vite setup writes its complete config after locales are collected.
+  if (frameworkType !== 'vite') {
+    await createOrUpdateConfig(options.config || 'gt.config.json', {
+      framework: frameworkType as SupportedReactFrameworks,
+    });
+  }
 
   const packageJson = await getPackageJson();
   if (!packageJson) {
@@ -168,17 +169,6 @@ Please let us know what you would like to see added at https://github.com/genera
     logger.step(
       chalk.green(`Added withGTConfig() to your ${nextConfigPath} file.`)
     );
-  }
-
-  // Add gt compiler plugin
-  if (frameworkType === 'vite') {
-    await addVitePlugin({
-      errors,
-      warnings,
-      filesUpdated,
-      packageJson,
-      tsconfigJson,
-    });
   }
 
   if (errors.length > 0) {
