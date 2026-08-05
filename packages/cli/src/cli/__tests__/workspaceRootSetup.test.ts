@@ -76,4 +76,38 @@ describe('workspace root setup guard', () => {
       ).toBe(packageJsonContents);
     }
   );
+
+  it.each(['init', 'configure'])(
+    'stops %s for Electron applications',
+    async (command) => {
+      packageJsonContents = JSON.stringify({
+        name: 'example-electron-app',
+        devDependencies: { electron: '^40.0.0' },
+      });
+      writeFileSync(
+        path.join(workspaceRoot, 'package.json'),
+        packageJsonContents
+      );
+      rmSync(path.join(workspaceRoot, 'pnpm-workspace.yaml'));
+
+      const program = new Command();
+      new BaseCLI(program, 'base');
+
+      await expect(
+        program.parseAsync([command], { from: 'user' })
+      ).rejects.toThrow(
+        'The automatic setup wizard is not ready for Electron applications'
+      );
+
+      expect(logErrorAndExit).toHaveBeenCalledWith(
+        expect.stringContaining('https://generaltranslation.com/docs/react')
+      );
+      expect(existsSync(path.join(workspaceRoot, 'gt.config.json'))).toBe(
+        false
+      );
+      expect(
+        readFileSync(path.join(workspaceRoot, 'package.json'), 'utf8')
+      ).toBe(packageJsonContents);
+    }
+  );
 });

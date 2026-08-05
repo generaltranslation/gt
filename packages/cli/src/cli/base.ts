@@ -77,7 +77,6 @@ import { setupGitMergeDrivers } from '../git/setupMergeDrivers.js';
 import { warnReactPackageCompatibility } from '../utils/reactPackageCompatibility.js';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { setupViteSPA } from '../setup/setupViteSPA.js';
-import { resolveSetupDirectory } from '../setup/resolveSetupDirectory.js';
 
 const ID_COMPATIBILITY_WARNING_COMMANDS = new Set([
   'download',
@@ -95,9 +94,19 @@ const workspaceRootSetupError = createDiagnosticMessage({
   why: 'GT must be configured in the specific app you want to localize',
   fix: "Change to that app's directory and rerun `npx gt@latest`",
 });
+const electronSetupError = createDiagnosticMessage({
+  source: 'gt',
+  severity: 'Error',
+  whatHappened:
+    'The automatic setup wizard is not ready for Electron applications',
+  docsUrl: 'https://generaltranslation.com/docs/react',
+});
 
-async function exitIfWorkspaceRoot(): Promise<void> {
+async function exitIfUnsupportedSetupTarget(): Promise<void> {
   const packageJson = await searchForPackageJson();
+  if (packageJson && isPackageInstalled('electron', packageJson, false, true)) {
+    logErrorAndExit(electronSetupError);
+  }
   if (
     fs.existsSync(path.join(process.cwd(), 'pnpm-workspace.yaml')) ||
     packageJson?.workspaces
@@ -594,11 +603,7 @@ export class BaseCLI {
         findFilepath(['gt.config.json'])
       )
       .action(async (options: SetupOptions) => {
-        const setupDirectory = await resolveSetupDirectory();
-        if (setupDirectory !== process.cwd()) {
-          process.chdir(setupDirectory);
-        }
-        await exitIfWorkspaceRoot();
+        await exitIfUnsupportedSetupTarget();
         const settings = await generateSettings(options);
         displayHeader('Running setup wizard...');
 
@@ -707,7 +712,7 @@ export class BaseCLI {
         'Configure your project for General Translation. This will create a gt.config.json file in your codebase.'
       )
       .action(async () => {
-        await exitIfWorkspaceRoot();
+        await exitIfUnsupportedSetupTarget();
         displayHeader('Configuring project...');
 
         logger.info(
