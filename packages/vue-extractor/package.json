@@ -67,6 +67,7 @@
     "@babel/types": "^7.25.7",
     "@generaltranslation/format": "workspace:*",
     "@vue/compiler-sfc": "^3.5.0",
+    "@vue/shared": "^3.5.0",
     "generaltranslation": "workspace:*"
   },
   "devDependencies": {

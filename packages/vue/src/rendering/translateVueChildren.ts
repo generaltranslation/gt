@@ -122,6 +122,18 @@ export function translateVueChildren(
   return renderNodes(source, target, state, identityCache);
 }
 
+/**
+ * Serializes normalized Vue children exactly as `T` does before hashing.
+ *
+ * @internal This narrow seam exists for compiler/runtime parity tests. It is
+ * intentionally not exported from the public `gt-vue` entry point.
+ */
+export function serializeVueChildren(children: VNode[]): JsxChildren {
+  return serializeNodes(
+    createSourceNodes(children, createTranslationIdentityCache())
+  );
+}
+
 /** Creates the per-T reconciliation cache shared by each reactive render. */
 export function createTranslationIdentityCache(): TranslationIdentityCache {
   return {

@@ -46,6 +46,13 @@ import {
   ORDINARY_GLOBAL_VALUES,
   READONLY_ARRAY_TRANSFORMS,
 } from './knownValues.js';
+import {
+  extractVueJSXTranslation,
+  isNestedInVueJSXTranslation,
+  resolveVueJSXElementIdentity,
+  validateVueJSXVariableComponent,
+  type VueJSXAnalysis,
+} from './jsx.js';
 import { parseScriptAst } from './parser.js';
 import {
   isAssignmentTargetWrapper,
@@ -165,7 +172,8 @@ export function parseVueScript(
   context: VueExtractionContext,
   templateBindings: TemplateBindings,
   exposeToTemplate: boolean,
-  analysis: VueScriptAnalysis = createVueScriptAnalysis()
+  analysis: VueScriptAnalysis = createVueScriptAnalysis(),
+  analyzeOptionsApi = true
 ): boolean {
   if (!source.trim()) return true;
 
@@ -202,12 +210,38 @@ export function parseVueScript(
   collectImports(ast, state);
   analyzeMutableNamespaceSafety(ast, state);
 
+  const jsxAnalysis: VueJSXAnalysis = {
+    customPragma: ast.comments?.find((comment) =>
+      /\*?\s*@jsx\s+([^\s]+)/.test(comment.value)
+    ),
+    readStaticPrimitive: (expression, scope) =>
+      readStaticFromScope(
+        expression,
+        scope,
+        new Set(),
+        expression.start ?? Number.POSITIVE_INFINITY,
+        state.analysis
+      ),
+    resolveKnownValue: (expression, scope) =>
+      resolveKnownExpression(expression, scope, state, new Set()),
+    resolveStaticObject: (expression, scope) =>
+      resolveObjectExpression(
+        expression,
+        scope,
+        new Set(),
+        expression.start ?? Number.POSITIVE_INFINITY
+      ),
+    scopeForNode: (node, fallback) => state.scopes.get(node) ?? fallback,
+  };
+
   if (exposeToTemplate) {
     recordCrossBlockWrites(ast, state, templateBindings);
     exposeProgramBindings(ast, state, templateBindings);
   } else {
     recordProgramAnalysis(ast, state);
-    exposeOptionsApiBindings(ast, state, templateBindings, context);
+    if (analyzeOptionsApi) {
+      exposeOptionsApiBindings(ast, state, templateBindings, context);
+    }
   }
 
   const processCall = (path: {
@@ -316,19 +350,23 @@ export function parseVueScript(
       );
     },
     JSXElement(path) {
-      const name = path.node.openingElement.name;
-      if (name.type !== 'JSXIdentifier') return;
-      const binding = path.scope.getBinding(name.name);
-      const value = binding
-        ? resolveKnownBinding(binding, state, new Set())
-        : state.analysis.values.get(name.name);
-      if (value?.type !== 'component' || value.name !== 'T') return;
-      addVueError(
-        context,
-        babelLocation(path.node.loc),
-        'Found a gt-vue <T> component in Vue JSX or TSX',
-        'Move the rich translation into a Vue single-file component template'
+      const value = resolveVueJSXElementIdentity(
+        path.node.openingElement.name,
+        path.scope,
+        jsxAnalysis
       );
+      if (
+        value?.type === 'component' &&
+        (value.name === 'Var' ||
+          value.name === 'Num' ||
+          value.name === 'DateTime' ||
+          value.name === 'Currency')
+      ) {
+        validateVueJSXVariableComponent(path.node, value.name, context);
+      }
+      if (value?.type !== 'component' || value.name !== 'T') return;
+      if (isNestedInVueJSXTranslation(path, jsxAnalysis)) return;
+      extractVueJSXTranslation(path, context, jsxAnalysis);
     },
   });
   return true;
@@ -1137,7 +1175,11 @@ function exposeKnownValue(
       appendTemplatePath(localName, 'markRaw')
     );
   } else if (value.type === 'vue-builtin') {
-    templateBindings.vueBuiltins.set(localName, value.name);
+    // Fragment identity is used by JSX extraction. Vue SFC template fragment
+    // traversal is intentionally handled separately from the Suspense map.
+    if (value.name === 'Suspense') {
+      templateBindings.vueBuiltins.set(localName, value.name);
+    }
   } else if (value.type === 'identity') {
     templateBindings.identityFunctions.add(localName);
   }
@@ -5666,9 +5708,12 @@ function exposeConsistentSetupReturns(
   hasFallthrough: boolean,
   source: 'data' | 'setup'
 ): void {
-  const returnValues = returns.map((entry) =>
-    entry ? collectTemplateExposures(entry, state, context) : new Map()
-  );
+  const returnValues = returns.map((entry) => {
+    if (!entry || (source === 'setup' && isSetupRenderReturn(entry))) {
+      return new Map<string, TemplateExposure | undefined>();
+    }
+    return collectTemplateExposures(entry, state, context);
+  });
   if (hasFallthrough) returnValues.push(new Map());
   const first = returnValues[0];
   if (!first) return;
@@ -5699,6 +5744,15 @@ function exposeConsistentSetupReturns(
     clearTemplateBinding(name, templateBindings);
     exposeTemplateExposure(name, exposure, templateBindings);
   }
+}
+
+/** Recognizes the render-function form of an Options API setup return. */
+function isSetupRenderReturn(entry: ScopedExpression): boolean {
+  const expression = unwrapExpression(entry.node);
+  return (
+    expression?.type === 'ArrowFunctionExpression' ||
+    expression?.type === 'FunctionExpression'
+  );
 }
 
 /** Identifies exposures that can affect extraction or rich-content traversal. */

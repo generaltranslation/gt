@@ -10,7 +10,7 @@ export type GTComponentName =
   | 'Branch';
 
 /** Vue builtins whose runtime identity changes rich-content traversal. */
-export type VueBuiltinName = 'Suspense';
+export type VueBuiltinName = 'Fragment' | 'Suspense';
 
 export type StringFunctionKind = 'gt' | 'messages' | 'msg';
 export type TemplateContainerKind = 'array' | 'object';
@@ -74,5 +74,7 @@ export type VueExtractionContext = {
   results: VueExtractionResult[];
   source: string;
   surroundingLineCount: number;
+  /** Variable component nodes whose public shape was already validated. */
+  validatedVariableComponents: WeakSet<object>;
   warnings: Set<string>;
 };

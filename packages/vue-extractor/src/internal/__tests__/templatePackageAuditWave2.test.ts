@@ -212,7 +212,7 @@ const richCases: RichAuditCase[] = [
   {
     name: 'depth-first native and variable numbering',
     script: `import { Num, T, Var } from 'gt-vue';`,
-    template: `<T><b>A</b><i><Var>x</Var><Num>1</Num></i></T>`,
+    template: `<T><b>A</b><i><Var>x</Var><Num :value="1" /></i></T>`,
     source: [
       { t: 'b', i: 1, c: 'A' },
       {

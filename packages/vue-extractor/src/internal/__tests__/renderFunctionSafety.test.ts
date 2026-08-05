@@ -13,10 +13,10 @@ type RenderSafetyProbe = {
 /**
  * Safety cases for programmatic rich `<T>` rendering.
  *
- * Rich translation extraction currently belongs in an SFC template. JSX and
- * TSX already diagnose this boundary. Render functions, createVNode helpers,
- * and async component wrappers that visibly receive imported `<T>` must follow
- * the same fail-closed policy instead of silently producing an empty catalog.
+ * Rich translation extraction supports declarative SFC templates and Vue
+ * JSX/TSX. Programmatic `h()` and `createVNode()` calls, plus async component
+ * wrappers that visibly receive imported `<T>`, must still fail closed instead
+ * of silently producing an empty catalog.
  */
 const renderSafetyProbes: RenderSafetyProbe[] = [
   {
@@ -86,14 +86,6 @@ const renderSafetyProbes: RenderSafetyProbe[] = [
     </script>
     <template><component :is="selected">Hello</component></template>`,
     diagnostic: 'gt-vue',
-  },
-  {
-    name: 'Vue TSX renders T directly',
-    source: `<script setup lang="tsx">
-      import { T } from 'gt-vue';
-      const vnode = <T>Hello</T>;
-    </script>`,
-    diagnostic: 'gt-vue <T> component in Vue JSX or TSX',
   },
 ];
 
