@@ -18,13 +18,12 @@ export async function createInlineUpdatesForLibrary(
   parsingOptions: ParsingConfigOptions
 ) {
   if (pkg === Libraries.GT_VUE) {
-    // Vue extraction is source-local and does not use the React package
-    // resolver's conditionNames from parsingOptions. Loading it only for Vue
-    // also keeps the Vue compiler and extractor graph out of React-only CLI
-    // startup.
+    // Loading the adapter only for Vue keeps the compiler and extractor graph
+    // out of React-only CLI startup. The shared resolver supplies tsconfig and
+    // package-export semantics without moving parsing back into the CLI.
     const { createVueInlineUpdates } =
       await import('../vue/parse/createVueInlineUpdates.js');
-    return createVueInlineUpdates(filePatterns, parsingFlags);
+    return createVueInlineUpdates(filePatterns, parsingFlags, parsingOptions);
   }
   const resolvedFilePatterns =
     filePatterns ?? readDefaultInlineSourcePatterns(process.cwd(), pkg);

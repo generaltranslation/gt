@@ -64,6 +64,45 @@ describe('workspace Vue extraction', () => {
     ]);
   });
 
+  it('resolves gt-vue reexports through a workspace tsconfig path alias', async () => {
+    const projectRoot = createWorkspaceRoot();
+    const appDirectory = path.join(projectRoot, 'apps', 'vue');
+    const sourceDirectory = path.join(appDirectory, 'src');
+    fs.mkdirSync(path.join(sourceDirectory, 'i18n'), { recursive: true });
+    writeJson(path.join(appDirectory, 'package.json'), {
+      dependencies: { 'gt-vue': '0.0.0' },
+    });
+    writeJson(path.join(appDirectory, 'tsconfig.json'), {
+      compilerOptions: {
+        baseUrl: '.',
+        paths: { '@i18n': ['src/i18n/index.ts'] },
+      },
+    });
+    fs.writeFileSync(
+      path.join(sourceDirectory, 'i18n', 'index.ts'),
+      `export { T as Translate, msg as defineMessage } from 'gt-vue';`
+    );
+    fs.writeFileSync(
+      path.join(sourceDirectory, 'App.vue'),
+      `<script setup>
+import { Translate, defineMessage } from '@i18n';
+defineMessage('CLI alias message');
+</script>
+<template><Translate>CLI alias rich text</Translate></template>`
+    );
+    vi.spyOn(process, 'cwd').mockReturnValue(projectRoot);
+
+    const output = await createVueInlineUpdates(undefined, parsingFlags, {
+      conditionNames: ['import', 'default'],
+    });
+
+    expect(output.errors).toEqual([]);
+    expect(output.updates.map(({ source }) => source)).toEqual([
+      'CLI alias message',
+      'CLI alias rich text',
+    ]);
+  });
+
   it('uses the compiler options owned by each Vue workspace', async () => {
     const projectRoot = createWorkspaceRoot();
     const appDirectory = path.join(projectRoot, 'apps', 'vue');

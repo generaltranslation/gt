@@ -14,6 +14,7 @@ import {
   parseVueScript,
   type VueScriptAnalysis,
 } from './script.js';
+import { createLocalModuleResolver } from './script/localModules.js';
 import { parseVueTemplate } from './template.js';
 import type { TemplateBindings, VueExtractionContext } from './types.js';
 import { addVueError, createVueExtractionContext } from './utils.js';
@@ -51,6 +52,11 @@ export async function extractFromVueSource(
     warnings
   );
   const extension = extname(filePath).toLowerCase();
+  const scriptAnalysis = createVueScriptAnalysis();
+  scriptAnalysis.entryFile = filePath;
+  scriptAnalysis.localModules = createLocalModuleResolver(
+    options.resolveModule
+  );
 
   if (extension === '.vue') {
     const compilerResolution =
@@ -72,7 +78,8 @@ export async function extractFromVueSource(
       sourceCode,
       context,
       options.compilerOptions ?? {},
-      compilerResolution.value
+      compilerResolution.value,
+      scriptAnalysis
     );
   } else {
     parseVueScript(
@@ -81,7 +88,7 @@ export async function extractFromVueSource(
       context,
       createTemplateBindings(),
       false,
-      createVueScriptAnalysis(),
+      scriptAnalysis,
       false
     );
   }
@@ -93,7 +100,8 @@ function parseVueSingleFileComponent(
   source: string,
   context: VueExtractionContext,
   compilerOptions: VueCompilerOptions,
-  resolvedCompiler: ResolvedVueCompiler
+  resolvedCompiler: ResolvedVueCompiler,
+  scriptAnalysis: VueScriptAnalysis
 ): void {
   const { compiler } = resolvedCompiler;
   if (
@@ -152,7 +160,6 @@ function parseVueSingleFileComponent(
   if (result.errors.length > 0) return;
 
   const bindings = createTemplateBindings();
-  const scriptAnalysis = createVueScriptAnalysis();
   collectScriptBlockImports(result.descriptor.script, scriptAnalysis);
   collectScriptBlockImports(result.descriptor.scriptSetup, scriptAnalysis);
   const scriptValid = parseScriptBlock(
