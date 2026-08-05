@@ -132,7 +132,7 @@ export type FrameworkObject =
       type: 'react';
     }
   | {
-      name: 'vite-vue';
+      name: 'nuxt' | 'vite-vue';
       type: 'vue';
     };
 export type ReactFrameworkObject = Extract<FrameworkObject, { type: 'react' }>;

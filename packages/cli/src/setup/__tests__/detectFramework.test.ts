@@ -34,6 +34,39 @@ describe('detectFramework Vue support', () => {
     }
   });
 
+  it('detects Nuxt without requiring a direct Vite dependency', async () => {
+    vi.mocked(searchForPackageJson).mockResolvedValue(
+      packageJson('nuxt', 'vue')
+    );
+
+    const result = await detectFramework();
+
+    expect(result).toEqual({ name: 'nuxt', type: 'vue' });
+    if (result.name) {
+      expect(getFrameworkDisplayName(result)).toBe('Nuxt');
+    }
+  });
+
+  it('detects Nuxt without requiring a direct Vue dependency', async () => {
+    vi.mocked(searchForPackageJson).mockResolvedValue(packageJson('nuxt'));
+
+    await expect(detectFramework()).resolves.toEqual({
+      name: 'nuxt',
+      type: 'vue',
+    });
+  });
+
+  it('detects Nuxt without interpreting dependency ranges', async () => {
+    vi.mocked(searchForPackageJson).mockResolvedValue({
+      dependencies: { nuxt: 'workspace:*', vue: 'catalog:' },
+    });
+
+    await expect(detectFramework()).resolves.toEqual({
+      name: 'nuxt',
+      type: 'vue',
+    });
+  });
+
   it('does not classify an ambiguous React and Vue root as Vue', async () => {
     vi.mocked(searchForPackageJson).mockResolvedValue(
       packageJson('vite', 'vue', 'react')
@@ -77,7 +110,14 @@ describe('detectFramework Vue support', () => {
 function packageJson(...dependencies: string[]): Record<string, unknown> {
   return {
     dependencies: Object.fromEntries(
-      dependencies.map((dependency) => [dependency, '1.0.0'])
+      dependencies.map((dependency) => [
+        dependency,
+        dependency === 'nuxt'
+          ? '^4.0.0'
+          : dependency === 'vue'
+            ? '^3.5.0'
+            : '1.0.0',
+      ])
     ),
   };
 }

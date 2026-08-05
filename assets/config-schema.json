@@ -87,7 +87,16 @@
     "framework": {
       "type": "string",
       "description": "The framework being used in the project",
-      "enum": ["next-app", "next-pages", "vite", "gatsby", "react", "redwood"]
+      "enum": [
+        "next-app",
+        "next-pages",
+        "vite",
+        "vite-vue",
+        "nuxt",
+        "gatsby",
+        "react",
+        "redwood"
+      ]
     },
     "version": {
       "type": "string",
