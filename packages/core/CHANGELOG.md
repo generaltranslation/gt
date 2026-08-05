@@ -1,5 +1,11 @@
 # generaltranslation
 
+## 9.1.1
+
+### Patch Changes
+
+- [#2018](https://github.com/generaltranslation/gt/pull/2018) [`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9) Thanks [@eoinest](https://github.com/eoinest)! - Preserve proper-noun casing when diagnostic reasons are combined into user-facing messages.
+
 ## 9.1.0
 
 ### Minor Changes
