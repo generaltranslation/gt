@@ -35,6 +35,27 @@ describe('renderPreparedT id-tagging', () => {
     expect(el.props.children).toEqual(untagged);
   });
 
+  it('annotates a single host element directly (no wrapper span), preserving its props', () => {
+    // When <T> renders a single host element, the hash goes ON that element —
+    // no span. This keeps <T> copying the source 1:1 and stays valid inside
+    // parents that reject a span (<tr>/<select>/<ul>).
+    const singleEl = React.createElement(
+      'b',
+      { id: 'x' },
+      'Hi'
+    ) as unknown as TaggedChildren;
+    const tagged = renderPreparedT({
+      ...base,
+      taggedSourceChildren: singleEl,
+      hash: 'abc123',
+    });
+    expect(React.isValidElement(tagged)).toBe(true);
+    const el = tagged as React.ReactElement<TagProps & { id?: string }>;
+    expect(el.type).toBe('b'); // the element itself, NOT a span wrapper
+    expect(el.props['data-_gt-hash']).toBe('abc123');
+    expect(el.props.id).toBe('x'); // existing props preserved
+  });
+
   it('does not wrap, and is identical to the untagged baseline, when no hash', () => {
     const baseline = renderPreparedT({ ...base });
     const undef = renderPreparedT({ ...base, hash: undefined });
@@ -47,7 +68,7 @@ describe('renderPreparedT id-tagging', () => {
 });
 
 // Regression guard for the wiring that the isolated renderPreparedT tests above
-// CANNOT catch: the <T> layer must COMPUTE a real hash (via computeTagHash) and
+// CANNOT catch: the <T> layer must COMPUTE a real hash (via resolveTagHash) and
 // pass it down. The original bug shipped `hash: undefined` here while typecheck +
 // the isolated tests stayed green. We drive RscT with an injected _renderPreparedT
 // spy and force `requiresTranslation:false` so the no-translate path is taken (no
@@ -99,23 +120,44 @@ describe('<T> (RSC) id-tagging wiring', () => {
     const arg = spy.mock.calls[0][0];
     expect(arg.hash).toBeUndefined();
   });
+});
 
-  it('passes no hash when _noTag is set (span-hostile parent), even with id-tagging on', async () => {
-    // The swc plugin injects _noTag on a <T> whose static parent can't legally
-    // contain the tagging <span> (table/tr/select/...). Even with tagging enabled,
-    // that <T> must render untagged to avoid invalid nesting / hydration mismatch.
+// resolveTagHash must produce a SINGLE hash shared with the translation lookup:
+// it reuses a precomputed $_hash (compiler-injected) and, when it does compute,
+// caches the result on options.$_hash so the lookup (which hashes the same
+// options) short-circuits instead of hashing again.
+describe('resolveTagHash single-hash reuse', () => {
+  it('reuses a precomputed $_hash without recomputing', async () => {
     cfg.tagIds = true;
-    const { RscT } = await import('../../../components/translation/T.rsc');
-    const spy = vi.fn((_p: Record<string, unknown>) => null);
+    const { resolveTagHash } = await import('../../translation/resolveTagHash');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (RscT as any)({
-      children: 'Hello',
-      _locale: 'en',
-      _enableI18n: true,
-      _renderPreparedT: spy,
-      _noTag: true,
-    });
-    const arg = spy.mock.calls[0][0];
-    expect(arg.hash).toBeUndefined();
+    const options = { $format: 'JSX', $_hash: 'precomputed' } as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const out = resolveTagHash('Hello' as any, options);
+    expect(out).toBe('precomputed'); // returned as-is, not recomputed
+    expect(options.$_hash).toBe('precomputed');
+  });
+
+  it('computes once and caches on options so the lookup reuses it', async () => {
+    cfg.tagIds = true;
+    const { resolveTagHash } = await import('../../translation/resolveTagHash');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const options = { $format: 'JSX' } as any; // no $_hash yet
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const out = resolveTagHash('Hello' as any, options);
+    expect(typeof out).toBe('string');
+    expect((out as string).length).toBeGreaterThan(0);
+    expect(options.$_hash).toBe(out); // cached → lookup will short-circuit to it
+  });
+
+  it('returns undefined and leaves options untouched when disabled', async () => {
+    cfg.tagIds = false;
+    const { resolveTagHash } = await import('../../translation/resolveTagHash');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const options = { $format: 'JSX' } as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const out = resolveTagHash('Hello' as any, options);
+    expect(out).toBeUndefined();
+    expect(options.$_hash).toBeUndefined(); // pays nothing
   });
 });

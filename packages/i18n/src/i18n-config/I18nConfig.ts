@@ -152,9 +152,11 @@ export class I18nConfig extends LocaleConfig {
   }
 
   /**
-   * Opt-in (`_tagIds`): when true, `<T>` output is wrapped in a layout-neutral
-   * span carrying its translation hash (`data-_gt`) so tooling can map a rendered
-   * node back to its published translation. No effect on `gt()` strings.
+   * Opt-in (`_tagIds`, off by default): when true, each `<T>`'s translation hash
+   * is exposed as a `data-_gt-hash` attribute — placed on the rendered element
+   * when there is one, otherwise on a layout-neutral `display:contents` span
+   * wrapping bare text / fragments — so tooling can map a rendered node back to
+   * its published translation. No effect on `gt()` strings.
    */
   isIdTaggingEnabled(): boolean {
     return !!this.runtimeConfig._tagIds;

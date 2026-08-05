@@ -742,38 +742,6 @@ pub fn validate_string_literal_or_derive(&self,expr: &Expr, errors: &mut Vec<Str
     })
   }
 
-  /// Whether the element already carries a `_noTag` marker attribute.
-  pub fn determine_has_no_tag_attr(element: &JSXElement) -> bool {
-    element.opening.attrs.iter().any(|attr| {
-      if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
-        if let JSXAttrName::Ident(ident) = &jsx_attr.name {
-          return ident.sym.as_ref() == "_noTag";
-        }
-      }
-      false
-    })
-  }
-
-  /// Injects a valueless `_noTag` marker (`<T _noTag>` → the prop is `true`) so
-  /// the runtime skips the opt-in id-tagging span for this `<T>`: its immediate
-  /// static parent is an HTML element that can't legally contain a `<span>`
-  /// (see constants::is_span_hostile_parent). Idempotent. The translation lookup
-  /// is untouched — only the DOM-tooling attribute is suppressed.
-  pub fn inject_no_tag_attribute(mut element: JSXElement) -> JSXElement {
-    if TransformVisitor::determine_has_no_tag_attr(&element) {
-      return element;
-    }
-    element.opening.attrs.push(JSXAttrOrSpread::JSXAttr(JSXAttr {
-      span: element.opening.span,
-      name: JSXAttrName::Ident(
-        Ident::new("_noTag".into(), element.opening.span, SyntaxContext::empty())
-          .into(),
-      ),
-      value: None,
-    }));
-    element
-  }
-
   pub fn create_attr(element: &JSXElement, value: &str, attribute_name: &str) -> JSXAttrOrSpread {
     JSXAttrOrSpread::JSXAttr(JSXAttr {
       span: element.opening.span,
@@ -2936,68 +2904,6 @@ mod tests {
       // Test warning generation
       let warning = create_dynamic_content_warning(Some("test.tsx"), "T");
       assert!(warning.contains("in test.tsx"));
-    }
-
-    // ── id-tagging denylist: _noTag marker for span-hostile parents ──
-
-    #[test]
-    fn t_under_span_hostile_parent_gets_no_tag_marker() {
-      use swc_core::ecma::visit::Fold;
-
-      // Build <PARENT><T>Hello</T></PARENT> and run the Fold pass. The _noTag
-      // marker is injected purely from the ancestor stack (independent of the
-      // hash collector), so driving fold alone exercises the denylist.
-      fn fold_t_under(parent_tag: &str) -> JSXElement {
-        let mut visitor = TransformVisitor::new(
-          LogLevel::Silent,
-          true, // compile_time_hash
-          None,
-          false,
-          false,
-          false,
-          StringCollector::new(),
-        );
-        visitor
-          .import_tracker
-          .scope_tracker
-          .track_translation_variable(Atom::new("T"), Atom::new("T"), 0);
-
-        let mut t_element = create_jsx_element("T", vec![]);
-        t_element.children = vec![JSXElementChild::JSXText(JSXText {
-          span: DUMMY_SP,
-          value: Atom::new("Hello"),
-          raw: Atom::new("Hello"),
-        })];
-
-        let mut outer = create_jsx_element(parent_tag, vec![]);
-        outer.children = vec![JSXElementChild::JSXElement(Box::new(t_element))];
-        visitor.fold_jsx_element(outer)
-      }
-
-      fn inner_t_has_no_tag(outer: &JSXElement) -> bool {
-        match &outer.children[0] {
-          JSXElementChild::JSXElement(t) => {
-            TransformVisitor::determine_has_no_tag_attr(t)
-          }
-          _ => panic!("expected <T> child"),
-        }
-      }
-
-      // Span-hostile parents → marked.
-      for parent in ["tr", "table", "tbody", "select", "optgroup", "ul", "ol"] {
-        assert!(
-          inner_t_has_no_tag(&fold_t_under(parent)),
-          "<T> directly inside <{parent}> should get the _noTag marker"
-        );
-      }
-
-      // Ordinary parents → not marked (the tagging span is valid there).
-      for parent in ["div", "span", "td", "li", "p", "section"] {
-        assert!(
-          !inner_t_has_no_tag(&fold_t_under(parent)),
-          "<T> inside <{parent}> should NOT be marked (span nesting is valid)"
-        );
-      }
     }
   }
 }

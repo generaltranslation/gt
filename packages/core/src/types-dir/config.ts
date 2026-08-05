@@ -57,10 +57,18 @@ export type GTConfig = {
   modelProvider?: string;
   _disableDevHotReload?: boolean;
   /**
-   * Opt-in: emit each `<T>`'s translation hash as a `data-_gt` attribute on the
-   * rendered element (wrapped in a `display:contents` span). Off by default. Lets
-   * tooling map a rendered node back to its published translation (localized
-   * replay, in-context QA). No effect on `gt()` string translations.
+   * Opt-in id-tagging — **off by default**. When true, each `<T>`'s translation
+   * hash is exposed on the DOM as a `data-_gt-hash` attribute so tooling
+   * (localized replay, in-context QA) can map a rendered node back to its
+   * published translation. No effect on `gt()` string translations; DOM-only
+   * (skipped on React Native).
+   *
+   * ⚠️ Read before enabling — this injects markup. To carry the attribute, GT
+   * puts it directly on the element a `<T>` renders when there is one, but a `<T>`
+   * that renders bare text or a fragment has no element to hold it, so its output
+   * is wrapped in a layout-neutral `display:contents` `<span>`. Enabling this
+   * therefore adds `<span>`s around text/fragment `<T>`s — which is why it is not
+   * on by default. It is never enabled implicitly.
    */
   _tagIds?: boolean;
 

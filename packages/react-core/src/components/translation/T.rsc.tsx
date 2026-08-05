@@ -2,7 +2,7 @@ import { getI18nConfig } from 'gt-i18n/internal';
 import type { ReactNode } from 'react';
 import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 import { renderPreparedT } from '../../utils/rendering/renderPipeline.rsc';
-import { computeTagHash } from '../../utils/translation/computeTagHash';
+import { resolveTagHash } from '../../utils/translation/resolveTagHash';
 import {
   prepareT,
   type ResolvedTProps,
@@ -19,9 +19,6 @@ async function RscT({
   _enableI18n,
   // TODO: don't expose to consumer, this should be thru an internal path
   _renderPreparedT = renderPreparedT,
-  // swc-injected: skip the id-tagging span when the static parent can't hold one
-  // (see TProps._noTag). Destructured out so it never reaches the hashed options.
-  _noTag,
   ...params
 }: ResolvedTProps): Promise<ReactNode> {
   const locale = _locale;
@@ -35,6 +32,14 @@ async function RscT({
     locale,
   });
 
+  // Resolve the id-tagging hash once and cache it on targetOptions BEFORE the
+  // lookup below, so the lookup reuses it (single hash, or zero when the compiler
+  // injected $_hash). undefined when id-tagging is off — no hashing, pays nothing.
+  const hash = resolveTagHash(
+    prepared.sourceJsxChildren,
+    prepared.targetOptions
+  );
+
   if (!shouldTranslate) {
     return _renderPreparedT({
       ...prepared,
@@ -43,9 +48,7 @@ async function RscT({
       defaultLocale,
       enableI18n,
       shouldTranslate,
-      hash: _noTag
-        ? undefined
-        : computeTagHash(prepared.sourceJsxChildren, prepared.targetOptions),
+      hash,
     });
   }
 
@@ -75,7 +78,7 @@ async function RscT({
     defaultLocale,
     enableI18n,
     shouldTranslate,
-    hash: computeTagHash(prepared.sourceJsxChildren, prepared.targetOptions),
+    hash,
   });
 }
 

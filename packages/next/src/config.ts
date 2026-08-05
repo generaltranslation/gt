@@ -76,6 +76,13 @@ type InternalGTConfigProps = BaseWithGTConfigProps &
     _dictionaryFileType?: string;
     _cacheComponentsEnabled?: boolean;
     _disableDevHotReload?: boolean;
+    /**
+     * Opt-in id-tagging (off by default): exposes each `<T>`'s translation hash as
+     * a `data-_gt-hash` attribute for tooling (localized replay, in-context QA).
+     * ⚠️ Enabling this injects a `display:contents` `<span>` around any `<T>` that
+     * renders bare text or a fragment (elements are annotated in place, no
+     * wrapper). See the `_tagIds` doc on GTProps for details.
+     */
     _tagIds?: boolean;
   };
 
