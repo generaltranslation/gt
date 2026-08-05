@@ -133,6 +133,19 @@ export function createTranslationIdentityCache(): TranslationIdentityCache {
   };
 }
 
+/**
+ * Serializes compiled Vue slot children into the complete persisted GT source.
+ *
+ * This internal seam exists so compiler/extractor parity tests can compare
+ * element IDs, variable names, and branches before `hashSource()` deliberately
+ * removes identity-only fields.
+ */
+export function serializeVueChildren(children: VNode[]): JsxChildren {
+  return serializeNodes(
+    createSourceNodes(children, createTranslationIdentityCache())
+  );
+}
+
 function createSourceNodes(
   children: unknown,
   identityCache: TranslationIdentityCache
@@ -168,9 +181,12 @@ function visitChildren(
   if (children.type === Comment) return [];
   if (children.type === Text) return [String(children.children ?? '')];
   if (children.type === Fragment) {
+    const fragmentChildren = isSlots(children.children)
+      ? children.children.default?.()
+      : children.children;
     if (children.key != null) {
       return visitChildren(
-        children.children,
+        fragmentChildren,
         index,
         getExplicitIdentityScope(identityScope, children.key, identityCache),
         identityCache,
@@ -179,7 +195,7 @@ function visitChildren(
       );
     }
     return visitChildren(
-      children.children,
+      fragmentChildren,
       index,
       identityScope,
       identityCache,
