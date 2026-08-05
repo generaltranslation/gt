@@ -1,0 +1,138 @@
+{
+  "00cfc4a5e80ea2a4": "Portail développeurs",
+  "00b9e24db838e584": "Navigation principale",
+  "51afdf0a32c1d6d1": "Guides",
+  "150126ae0f1fc166": "Référence de l’API",
+  "c627e7a94d768fec": "Ouvrir la recherche",
+  "0d7d9bbd91f8b2d0": "Rechercher",
+  "d0e4315ff74c2dbd": "Langue",
+  "83911e47c91906b7": "Masquer les liens rapides",
+  "89829f8e417b6af7": "Afficher les liens rapides",
+  "224e5d6b189247e7": "Liens rapides",
+  "d9d5d3049be20ca2": "Vue d’ensemble",
+  "6b05641ddbc5b497": "Points de terminaison",
+  "3a8cbf22f92f978b": "Chargement de la page…",
+  "e12516280916c994": "Copier le lien de la page",
+  "29791eae3a17d39c": "Le lien de la page a été copié.",
+  "7e86516155c311c5": "Recherche dans la documentation",
+  "bb1a8e721dd8462d": "Fermer la recherche",
+  "2e8d6c5fc414c783": [
+    {
+      "t": "h2",
+      "i": 1,
+      "c": "Rechercher dans la documentation"
+    },
+    {
+      "t": "p",
+      "i": 2,
+      "c": "Trouvez n’importe quel guide ou point de terminaison d’API."
+    }
+  ],
+  "0897fb5aa03e5b33": "Rechercher dans toute la documentation",
+  "6d1358e69d516304": {
+    "t": "Plural",
+    "i": 1,
+    "d": {
+      "b": {
+        "zero": "Aucun résultat pour le moment",
+        "one": "Un résultat",
+        "other": [
+          {
+            "i": 2,
+            "k": "_gt_n_2",
+            "v": "n"
+          },
+          " résultats "
+        ]
+      },
+      "t": "p"
+    }
+  },
+  "3537261f4c26e6b1": [
+    {
+      "t": "h1",
+      "i": 1,
+      "c": "Documentation pour les développeurs"
+    },
+    {
+      "t": "p",
+      "i": 2,
+      "c": [
+        " Créez des intégrations fiables avec ",
+        {
+          "i": 3,
+          "k": "_gt_value_3",
+          "v": "v"
+        },
+        " . "
+      ]
+    }
+  ],
+  "34c87fdd94f5666c": "Sections du guide",
+  "baa652b34a69daee": "Démarrage rapide",
+  "1db9c6007dcc3049": "Concepts fondamentaux",
+  "4469015d81667495": [
+    {
+      "t": "h2",
+      "i": 1,
+      "c": "Effectuez votre première requête"
+    },
+    {
+      "t": "p",
+      "i": 2,
+      "c": "Créez un client et envoyez une requête en quelques lignes de code."
+    }
+  ],
+  "faea24374a2abceb": [
+    {
+      "t": "h2",
+      "i": 1,
+      "c": "Comprendre la plateforme"
+    },
+    {
+      "t": "p",
+      "i": 2,
+      "c": "Découvrez comment les projets, les environnements et les versions s’articulent."
+    }
+  ],
+  "c60b089f22c5a09b": [
+    {
+      "t": "h1",
+      "i": 1,
+      "c": [
+        " Explorez l’API ",
+        {
+          "i": 2,
+          "k": "_gt_value_2",
+          "v": "v"
+        }
+      ]
+    },
+    {
+      "t": "p",
+      "i": 3,
+      "c": "Utilisez cette référence pour comprendre chaque point de terminaison et chaque réponse."
+    }
+  ],
+  "29ae9c1245dc3e0b": "Opérations disponibles",
+  "e355b5d9202b7339": {
+    "t": "Plural",
+    "i": 1,
+    "d": {
+      "b": {
+        "one": "Une opération documentée",
+        "other": [
+          {
+            "i": 2,
+            "k": "_gt_n_2",
+            "v": "n"
+          },
+          " opérations documentées "
+        ]
+      },
+      "t": "p"
+    },
+    "c": " Aucune opération documentée "
+  },
+  "7a7a261e449598de": "Dernière mise à jour"
+}

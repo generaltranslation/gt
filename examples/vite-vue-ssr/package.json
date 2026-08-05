@@ -1,0 +1,42 @@
+{
+  "name": "vite-vue-ssr",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@10.20.0",
+  "type": "module",
+  "scripts": {
+    "predev": "pnpm exec turbo run build --filter=gt-vue",
+    "dev": "tsx server.ts",
+    "pregenerate": "pnpm exec turbo run build --filter=gt",
+    "generate": "gt generate && oxfmt src/_gt/*.json",
+    "prevalidate": "pnpm exec turbo run build --filter=gt",
+    "validate": "gt validate",
+    "pretypecheck": "pnpm exec turbo run build --filter=gt-vue",
+    "typecheck": "vue-tsc -b",
+    "pretest": "pnpm exec turbo run build --filter=gt-vue",
+    "test": "vitest run",
+    "prebuild": "pnpm exec turbo run build --filter=gt-vue",
+    "build": "pnpm generate && vue-tsc -b && pnpm build:client && pnpm build:server",
+    "build:client": "vite build --outDir dist/client",
+    "build:server": "vite build --ssr src/entry-server.ts --outDir dist/server",
+    "start": "NODE_ENV=production tsx server.ts"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "gt-vue": "workspace:*",
+    "vue": "^3.5.0",
+    "vue-router": "5.0.4"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "catalog:",
+    "@vitejs/plugin-vue": "^6.0.3",
+    "gt": "workspace:*",
+    "oxfmt": "catalog:",
+    "tsx": "^4.20.6",
+    "typescript": "catalog:",
+    "vite": "^8.0.16",
+    "vitest": "catalog:",
+    "vue-tsc": "~3.2.0"
+  }
+}

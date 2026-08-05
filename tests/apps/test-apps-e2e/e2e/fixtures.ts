@@ -11,7 +11,13 @@ export const test = base.extend<{ runtimeErrors: void }>({
         errors.push(`pageerror: ${error.message}`);
       });
       page.on('console', (message) => {
-        if (message.type() !== 'error' || isIgnoredFaviconError(message)) {
+        const capturesVueWarning =
+          message.type() === 'warning' &&
+          process.env.GT_TEST_APP?.startsWith('vite-vue');
+        if (
+          (message.type() !== 'error' && !capturesVueWarning) ||
+          isIgnoredFaviconError(message)
+        ) {
           return;
         }
         errors.push(`console: ${message.text()}`);

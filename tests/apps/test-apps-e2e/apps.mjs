@@ -65,6 +65,22 @@ export const apps = Object.freeze({
     command: 'pnpm --filter gt-test-vite-react dev',
     readyPath: '/',
   },
+  'vite-vue': {
+    packageName: 'vite-vue',
+    entryPackage: 'gt-vue',
+    kind: 'vue-spa',
+    baseURL: 'http://localhost:5180',
+    command: 'pnpm --filter vite-vue exec vite --port 5180 --strictPort',
+    readyPath: '/',
+  },
+  'vite-vue-ssr': {
+    packageName: 'vite-vue-ssr',
+    entryPackage: 'gt-vue',
+    kind: 'vue-ssr',
+    baseURL: 'http://localhost:5181',
+    command: 'pnpm --filter vite-vue-ssr dev',
+    readyPath: '/fr/reference',
+  },
   'webpack-react': {
     packageName: 'gt-test-webpack-react',
     entryPackage: 'gt-react',
