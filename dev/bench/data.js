@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1785449641098,
+  "lastUpdate": 1785903682549,
   "repoUrl": "https://github.com/generaltranslation/gt",
   "entries": {
     "Middleware Benchmarks": [
@@ -8004,6 +8004,122 @@ window.BENCHMARK_DATA = {
             "value": 121.79999999998836,
             "unit": "ms",
             "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.4\"\n}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "7896b07246df216a12465a8ae0bf828a62df6647",
+          "message": "[ci] release (#2011)\n\nThis PR was opened by the [Changesets\nrelease](https://github.com/changesets/action) GitHub action. When\nyou're ready to do a release, you can merge this and the packages will\nbe published to npm automatically. If you're not ready to do a release\nyet, that's fine, whenever you add more changesets to main, this PR will\nbe updated.\n\n\n# Releases\n## gt@2.16.1\n\n### Patch Changes\n\n- [#2019](https://github.com/generaltranslation/gt/pull/2019)\n[`60d154c`](https://github.com/generaltranslation/gt/commit/60d154c851d6ae0510447b7d66ec5e12104f0d1b)\nThanks [@eoinest](https://github.com/eoinest)! - Save local edits before\ntranslation by default, with a `--no-save-local` flag to opt out.\n\n- [#2028](https://github.com/generaltranslation/gt/pull/2028)\n[`8066d0a`](https://github.com/generaltranslation/gt/commit/8066d0ad64d4f9c3475a935e6bbb27d9f7389b20)\nThanks [@eoinest](https://github.com/eoinest)! - Stop the setup wizard\nat monorepo workspace roots and direct users to run it from the app they\nwant to localize.\n\n- Updated dependencies\n[[`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9)]:\n  - generaltranslation@9.1.1\n  - @generaltranslation/python-extractor@0.2.34\n  - @generaltranslation/supported-locales@2.1.14\n## @generaltranslation/compiler@1.3.36\n\n### Patch Changes\n\n- Updated dependencies\n[[`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9)]:\n  - generaltranslation@9.1.1\n## generaltranslation@9.1.1\n\n### Patch Changes\n\n- [#2018](https://github.com/generaltranslation/gt/pull/2018)\n[`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9)\nThanks [@eoinest](https://github.com/eoinest)! - Preserve proper-noun\ncasing when diagnostic reasons are combined into user-facing messages.\n## gtx-cli@2.16.1\n\n### Patch Changes\n\n- Updated dependencies\n[[`60d154c`](https://github.com/generaltranslation/gt/commit/60d154c851d6ae0510447b7d66ec5e12104f0d1b),\n[`8066d0a`](https://github.com/generaltranslation/gt/commit/8066d0ad64d4f9c3475a935e6bbb27d9f7389b20)]:\n  - gt@2.16.1\n## gt-i18n@1.0.11\n\n### Patch Changes\n\n- Updated dependencies\n[[`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9)]:\n  - generaltranslation@9.1.1\n## locadex@1.0.204\n\n### Patch Changes\n\n- Updated dependencies\n[[`60d154c`](https://github.com/generaltranslation/gt/commit/60d154c851d6ae0510447b7d66ec5e12104f0d1b),\n[`8066d0a`](https://github.com/generaltranslation/gt/commit/8066d0ad64d4f9c3475a935e6bbb27d9f7389b20)]:\n  - gt@2.16.1\n## gt-next@11.1.5\n\n### Patch Changes\n\n- [#2018](https://github.com/generaltranslation/gt/pull/2018)\n[`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9)\nThanks [@eoinest](https://github.com/eoinest)! - Preserve proper-noun\ncasing when diagnostic reasons are combined into user-facing messages.\n\n- Updated dependencies\n[[`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9)]:\n  - generaltranslation@9.1.1\n  - @generaltranslation/react-core@11.1.5\n  - @generaltranslation/compiler@1.3.36\n  - gt-i18n@1.0.11\n  - gt-react@11.1.5\n## gt-node@1.0.12\n\n### Patch Changes\n\n- Updated dependencies\n[[`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9)]:\n  - generaltranslation@9.1.1\n  - gt-i18n@1.0.11\n## @generaltranslation/python-extractor@0.2.34\n\n### Patch Changes\n\n- Updated dependencies\n[[`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9)]:\n  - generaltranslation@9.1.1\n## gt-react@11.1.5\n\n### Patch Changes\n\n- Updated dependencies\n[[`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9)]:\n  - generaltranslation@9.1.1\n  - @generaltranslation/react-core@11.1.5\n  - gt-i18n@1.0.11\n## @generaltranslation/react-core@11.1.5\n\n### Patch Changes\n\n- [#2018](https://github.com/generaltranslation/gt/pull/2018)\n[`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9)\nThanks [@eoinest](https://github.com/eoinest)! - Preserve proper-noun\ncasing when diagnostic reasons are combined into user-facing messages.\n\n- Updated dependencies\n[[`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9)]:\n  - generaltranslation@9.1.1\n  - gt-i18n@1.0.11\n## gt-react-native@11.1.5\n\n### Patch Changes\n\n- Updated dependencies\n[[`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9)]:\n  - generaltranslation@9.1.1\n  - @generaltranslation/react-core@11.1.5\n  - gt-i18n@1.0.11\n  - @generaltranslation/supported-locales@2.1.14\n## gt-sanity@3.1.3\n\n### Patch Changes\n\n- Updated dependencies\n[[`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9)]:\n  - generaltranslation@9.1.1\n## @generaltranslation/supported-locales@2.1.14\n\n### Patch Changes\n\n- Updated dependencies\n[[`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9)]:\n  - generaltranslation@9.1.1\n## gt-tanstack-start@11.1.5\n\n### Patch Changes\n\n- [#2010](https://github.com/generaltranslation/gt/pull/2010)\n[`8436d54`](https://github.com/generaltranslation/gt/commit/8436d5446e47d9a7947b6b29256dc9294316e176)\nThanks [@eoinest](https://github.com/eoinest)! - Export `gtMiddleware`\nfrom the browser condition so TanStack Start client builds can evaluate\napplication setup files that register it.\n\n- Updated dependencies\n[[`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9)]:\n  - generaltranslation@9.1.1\n  - @generaltranslation/react-core@11.1.5\n  - gt-i18n@1.0.11\n  - gt-react@11.1.5\n\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+          "timestamp": "2026-08-05T04:13:36Z",
+          "url": "https://github.com/generaltranslation/gt/commit/7896b07246df216a12465a8ae0bf828a62df6647"
+        },
+        "date": 1785903681903,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "gt-next > unit > middleware: factory creation latency > createNextMiddleware() (mean)",
+            "value": 0.03368009719789838,
+            "range": "±0.0194",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.5\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > default locale request (/) (mean)",
+            "value": 0.20024693952743025,
+            "range": "±0.0819",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.5\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > non-default locale request (/fr) (mean)",
+            "value": 0.3490967878576529,
+            "range": "±0.0782",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.5\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > nested route (/fr/about) (mean)",
+            "value": 0.3533098870056499,
+            "range": "±0.1018",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.5\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > ttfb",
+            "value": 140,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.5\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > domContentLoaded",
+            "value": 173.69999999998254,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.5\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > load",
+            "value": 259.1000000000058,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.5\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > elapsed",
+            "value": 101,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.5\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > ttfb",
+            "value": 18.800000000017462,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.5\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > domContentLoaded",
+            "value": 27.5,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.5\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > load",
+            "value": 93.80000000001746,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.5\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: locale-switch-en-to-fr > elapsed",
+            "value": 611,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.5\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > ttfb",
+            "value": 10.60000000000582,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.5\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > domContentLoaded",
+            "value": 19.5,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.5\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > load",
+            "value": 98.89999999999418,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.5\"\n}"
           }
         ]
       }
