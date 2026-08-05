@@ -94,11 +94,6 @@ export const DebugInfoDialog: React.FC<DebugInfoDialogProps> = ({
     >
       <Box padding={4}>
         <Stack space={4}>
-          <Text size={1} muted>
-            The plugin&apos;s effective configuration. Copy this into a support
-            request to show how the Studio is set up. Your API key is not
-            included.
-          </Text>
           <Card
             padding={3}
             radius={2}
