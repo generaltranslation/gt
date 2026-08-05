@@ -84,11 +84,13 @@ const setLocale = useSetLocale();
 `$context`; braces are literal text and no ICU formatting or interpolation is
 applied.
 
-Components whose slots read scoped props are treated as opaque when they are
-placed inside `<T>`. The component and its real runtime slot props are
-preserved, but that scoped-slot content is not part of the surrounding rich
-translation. To translate it, place `<T>` inside the scoped slot and wrap
-runtime values in `<Var>`.
+Arbitrary component slots are opaque when placed inside `<T>`. Vue does not
+expose a reliable way to inspect a component slot without executing user code,
+so the component and its real runtime slots are preserved, but their content is
+not part of the surrounding rich translation. To translate slot content, place
+`<T>` inside the slot and wrap runtime values in `<Var>`. Native elements and
+the slots owned by GT's `<Branch>` and `<Plural>` components remain part of the
+surrounding translation.
 
 ## Registered Messages
 
