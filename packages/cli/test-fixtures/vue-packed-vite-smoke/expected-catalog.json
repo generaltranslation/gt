@@ -1,7 +1,7 @@
 {
   "cd500549c652beb2": "Registered message",
   "2b653b4429bca0b0": "Helloworld",
-  "1c4f7543bf1c2797": "First\n      second",
+  "81022e6e31c764a6": "First second",
   "e035b02680cfa3f1": [
     {
       "t": "Card",
@@ -25,7 +25,7 @@
       "v": "v"
     }
   ],
-  "1ea3ea16648b1dff": "\n      Exact component\n    ",
+  "65af5ab03513eadf": "Exact component",
   "ca3a117bb98f45fb": "\n      Registered component\n    ",
   "6d1f42ab4a227610": "Direct GT",
   "6b5a5ba614bd6f61": "Nested GT",
