@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { determineLibrary } from '../../fs/determineFramework/index.js';
 import { Libraries } from '../../types/libraries.js';
 import { createInlineUpdatesForLibraries } from '../createInlineUpdatesForLibrary.js';
+import { linkTestVueInstallation } from '../../vue/parse/__tests__/testVueInstallation.js';
 
 const temporaryDirectories: string[] = [];
 
@@ -21,6 +22,7 @@ describe('workspace inline source discovery', () => {
       path.join(os.tmpdir(), 'gt-mixed-workspace-')
     );
     temporaryDirectories.push(projectRoot);
+    linkTestVueInstallation(projectRoot);
     writeJson(path.join(projectRoot, 'package.json'), {
       private: true,
       workspaces: ['apps/*'],

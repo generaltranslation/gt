@@ -172,6 +172,7 @@
     "tsdown": "catalog:",
     "tslib": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "vue": "^3.5.0"
   }
 }

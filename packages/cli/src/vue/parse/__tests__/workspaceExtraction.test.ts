@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createVueInlineUpdates } from '../createVueInlineUpdates.js';
+import { linkTestVueInstallation } from './testVueInstallation.js';
 
 const temporaryDirectories: string[] = [];
 const parsingFlags = {
@@ -25,6 +26,7 @@ describe('workspace Vue extraction', () => {
       path.join(os.tmpdir(), 'gt-vue-workspace-integration-')
     );
     temporaryDirectories.push(projectRoot);
+    linkTestVueInstallation(projectRoot);
     const appDirectory = path.join(projectRoot, 'apps', 'vue');
     const sourceFile = path.join(appDirectory, 'src', 'App.vue');
     fs.mkdirSync(path.dirname(sourceFile), { recursive: true });
@@ -356,6 +358,7 @@ function createWorkspaceRoot(): string {
     path.join(os.tmpdir(), 'gt-vue-workspace-integration-')
   );
   temporaryDirectories.push(projectRoot);
+  linkTestVueInstallation(projectRoot);
   writeJson(path.join(projectRoot, 'package.json'), {
     private: true,
     workspaces: ['apps/*'],
