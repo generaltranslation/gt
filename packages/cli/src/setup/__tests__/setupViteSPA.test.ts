@@ -33,9 +33,10 @@ describe('setupViteSPA', () => {
 
     expect(
       fs.readFileSync(path.join(appDirectory, 'index.html'), 'utf8')
-    ).toContain('src="/src/index.ts"');
-    expect(fs.readFileSync(path.join(appDirectory, 'src', 'index.ts'), 'utf8'))
-      .toBe(`import { initializeGTSPA } from 'gt-react';
+    ).toContain('src="/src/gt-entry.ts"');
+    expect(
+      fs.readFileSync(path.join(appDirectory, 'src', 'gt-entry.ts'), 'utf8')
+    ).toBe(`import { initializeGTSPA } from 'gt-react';
 import gtConfig from '../gt.config.json';
 import loadTranslations from './loadTranslations';
 
@@ -99,7 +100,7 @@ await import('./main');
     });
 
     const bootstrap = fs.readFileSync(
-      path.join(appDirectory, 'src', 'index.ts'),
+      path.join(appDirectory, 'src', 'gt-entry.ts'),
       'utf8'
     );
     expect(bootstrap).toContain('await initializeGTSPA(gtConfig);');
@@ -121,9 +122,34 @@ await import('./main');
     });
 
     expect(
-      fs.readFileSync(path.join(appDirectory, 'src', 'index.ts'), 'utf8')
+      fs.readFileSync(path.join(appDirectory, 'src', 'gt-entry.ts'), 'utf8')
     ).toContain("await import('./app');");
   });
+
+  it.each(['index.tsx', 'index.jsx', 'index.js'])(
+    'does not collide with an %s app entry',
+    async (entry) => {
+      fs.writeFileSync(
+        path.join(appDirectory, 'index.html'),
+        `<script type="module" src="/src/${entry}"></script>\n`
+      );
+      fs.writeFileSync(path.join(appDirectory, 'src', entry), '// app');
+
+      await setupViteSPA({
+        appDirectory,
+        configFilepath: 'gt.config.json',
+        defaultLocale: 'en',
+        locales: ['fr'],
+      });
+
+      expect(
+        fs.readFileSync(path.join(appDirectory, 'src', 'gt-entry.ts'), 'utf8')
+      ).toContain("await import('./index');");
+      expect(
+        fs.readFileSync(path.join(appDirectory, 'src', entry), 'utf8')
+      ).toBe('// app');
+    }
+  );
 
   it('updates the bootstrap when switching to bundled translations', async () => {
     await setupViteSPA({
@@ -141,7 +167,7 @@ await import('./main');
     });
 
     const bootstrap = fs.readFileSync(
-      path.join(appDirectory, 'src', 'index.ts'),
+      path.join(appDirectory, 'src', 'gt-entry.ts'),
       'utf8'
     );
     expect(bootstrap).toContain(
@@ -150,8 +176,35 @@ await import('./main');
     expect(bootstrap).toContain("await import('./main');");
   });
 
+  it('updates a generated loader when the translations directory changes', async () => {
+    await setupViteSPA({
+      appDirectory,
+      configFilepath: 'gt.config.json',
+      defaultLocale: 'en',
+      locales: ['fr'],
+      translationsDir: 'src/_gt',
+    });
+    await setupViteSPA({
+      appDirectory,
+      configFilepath: 'gt.config.json',
+      defaultLocale: 'en',
+      locales: ['fr'],
+      translationsDir: 'src/translations',
+    });
+
+    const loader = fs.readFileSync(
+      path.join(appDirectory, 'src', 'loadTranslations.ts'),
+      'utf8'
+    );
+    expect(loader).toContain('import(`./translations/${locale}.json`)');
+    expect(loader).not.toContain('import(`./_gt/${locale}.json`)');
+  });
+
   it('does not overwrite an existing non-GT bootstrap', async () => {
-    fs.writeFileSync(path.join(appDirectory, 'src', 'index.ts'), '// custom');
+    fs.writeFileSync(
+      path.join(appDirectory, 'src', 'gt-entry.ts'),
+      '// custom'
+    );
 
     await expect(
       setupViteSPA({
@@ -161,7 +214,7 @@ await import('./main');
         locales: ['fr'],
         translationsDir: 'src/_gt',
       })
-    ).rejects.toThrow('GT will not overwrite an existing src/index.ts file');
+    ).rejects.toThrow('GT will not overwrite an existing src/gt-entry.ts file');
     expect(
       fs.readFileSync(path.join(appDirectory, 'index.html'), 'utf8')
     ).toContain('src="/src/main.tsx"');

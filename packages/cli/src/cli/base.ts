@@ -867,7 +867,7 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
       )} to customize your translation setup. Docs: https://generaltranslation.com/docs/cli/reference/config`
     );
 
-    if (isUsingGT && isVite) {
+    if (ranReactSetup && isVite) {
       await setupViteSPA({
         appDirectory: process.cwd(),
         configFilepath,
@@ -915,7 +915,7 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
               defaultValue: 'all',
             });
         const credentials = await retrieveCredentials(settings, keyType);
-        await setCredentials(credentials, settings.framework);
+        await setCredentials(credentials, isVite ? 'vite' : settings.framework);
       }
     }
   }

@@ -15,9 +15,23 @@ const bootstrapConflictError = createDiagnosticMessage({
   source: 'gt',
   severity: 'Error',
   whatHappened: 'The Vite bootstrap file already exists',
-  why: 'GT will not overwrite an existing src/index.ts file',
+  why: 'GT will not overwrite an existing src/gt-entry.ts file',
   fix: 'Move or rename that file and rerun `npx gt@latest`',
 });
+
+function getLoaderContent(translationsImport: string): string {
+  return `export default async function loadTranslations(locale: string) {
+  const translations = await import(\`${translationsImport}/\${locale}.json\`);
+  return translations.default;
+}
+`;
+}
+
+function isGeneratedLoader(content: string): boolean {
+  return /^export default async function loadTranslations\(locale: string\) \{\r?\n  const translations = await import\(`[^`]+\/\$\{locale\}\.json`\);\r?\n  return translations\.default;\r?\n\}\r?\n?$/.test(
+    content
+  );
+}
 
 function toRelativeImport(fromDirectory: string, toPath: string): string {
   const relativePath = path
@@ -77,10 +91,10 @@ export async function setupViteSPA({
 }: SetupViteSPAOptions): Promise<void> {
   const indexHtmlPath = path.join(appDirectory, 'index.html');
   const sourceDirectory = path.join(appDirectory, 'src');
-  const bootstrapPath = path.join(sourceDirectory, 'index.ts');
+  const bootstrapPath = path.join(sourceDirectory, 'gt-entry.ts');
   const indexHtml = await fs.promises.readFile(indexHtmlPath, 'utf8');
   const { script, source } = getModuleEntry(indexHtml);
-  const isAlreadyConfigured = /^\/?src\/index\.ts(?:[?#].*)?$/.test(source);
+  const isAlreadyConfigured = /^\/?src\/gt-entry\.ts(?:[?#].*)?$/.test(source);
   let existingBootstrap: string | undefined;
 
   if (fs.existsSync(bootstrapPath)) {
@@ -115,14 +129,13 @@ export async function setupViteSPA({
       sourceDirectory,
       translationsPath
     );
-    if (!fs.existsSync(loaderPath)) {
+    const existingLoader = fs.existsSync(loaderPath)
+      ? await fs.promises.readFile(loaderPath, 'utf8')
+      : undefined;
+    if (!existingLoader || isGeneratedLoader(existingLoader)) {
       await fs.promises.writeFile(
         loaderPath,
-        `export default async function loadTranslations(locale: string) {
-  const translations = await import(\`${translationsImport}/\${locale}.json\`);
-  return translations.default;
-}
-`
+        getLoaderContent(translationsImport)
       );
     }
 
@@ -156,7 +169,7 @@ await import('${entryImport}');
   );
 
   if (!isAlreadyConfigured) {
-    const updatedScript = script.replace(source, '/src/index.ts');
+    const updatedScript = script.replace(source, '/src/gt-entry.ts');
     await fs.promises.writeFile(
       indexHtmlPath,
       indexHtml.replace(script, updatedScript)
