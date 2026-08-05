@@ -3,6 +3,7 @@ import { hashSource } from 'generaltranslation/id';
 import * as Vue from 'vue';
 import {
   Fragment,
+  Suspense,
   createCommentVNode,
   createRenderer,
   createSSRApp,
@@ -101,7 +102,15 @@ describe('gt-vue runtime', () => {
     const source = h('span');
     Object.defineProperty(source, 'props', {
       value: new Proxy(Object.create(null) as object, {
-        get() {
+        get(_target, property) {
+          if (
+            property === 'key' ||
+            property === 'ref' ||
+            property === 'ref_for' ||
+            property === 'ref_key'
+          ) {
+            return undefined;
+          }
           throw new Error('default-locale source was serialized');
         },
       }),
@@ -114,7 +123,10 @@ describe('gt-vue runtime', () => {
       locale: ref('en'),
     } as unknown as Parameters<typeof translateVueChildren>[1];
 
-    expect(translateVueChildren([source], state, {})).toEqual([source]);
+    const rendered = translateVueChildren([source], state, {});
+    expect(Array.isArray(rendered) && rendered[0]).toMatchObject({
+      type: 'span',
+    });
     expect(state.getCatalog).not.toHaveBeenCalled();
   });
 
@@ -226,7 +238,7 @@ describe('gt-vue runtime', () => {
     expect(html).not.toContain('Formal');
   });
 
-  it('preserves component props while replacing translated slot children', async () => {
+  it('translates supported component props while preserving opaque slots', async () => {
     const onNavigate = vi.fn();
     const Link = defineComponent({
       emits: ['navigate'],
@@ -293,7 +305,7 @@ describe('gt-vue runtime', () => {
       id: 'docs-link',
       title: 'Titre traduit',
     });
-    expect(textContent(mounted.root)).toBe('Lien traduit');
+    expect(textContent(mounted.root)).toBe('Source link');
     const onClick = anchor?.props.onClick;
     expect(onClick).toBeTypeOf('function');
     (onClick as () => void)();
@@ -331,22 +343,106 @@ describe('gt-vue runtime', () => {
     expect(html).not.toContain('translated replacement');
   });
 
-  it('omits Vue-compiled scoped named slots safely during branch discovery', async () => {
-    const ScopedBranch = Object.assign(
-      defineComponent({
-        name: 'ScopedBranch',
-        setup(_props, { slots }) {
-          return () => slots.one?.({ label: 'Runtime label' });
-        },
+  it('never probes direct, ignored, or forwarded custom component slots', async () => {
+    const directCalls = vi.fn();
+    const ignoredCalls = vi.fn();
+    const forwardedCalls = vi.fn();
+    const scope = { label: 'Runtime label' };
+    const DeferredReader = defineComponent({
+      name: 'DeferredReader',
+      props: { payload: { required: true, type: Object } },
+      setup(props) {
+        return () => h('span', String(props.payload.label));
+      },
+    });
+    const DirectOwner = defineComponent({
+      name: 'DirectOwner',
+      setup(_props, { slots }) {
+        return () => h('section', slots.default?.(scope));
+      },
+    });
+    const IgnoredOwner = defineComponent({
+      name: 'IgnoredOwner',
+      setup() {
+        return () => h('aside', 'Ignored safely');
+      },
+    });
+    const ForwardingOwner = defineComponent({
+      name: 'ForwardingOwner',
+      setup(_props, { slots }) {
+        return () => h('div', slots.default?.(scope));
+      },
+    });
+    const plugin = createGT({
+      loadTranslations: async () => ({
+        opaqueSlots: [
+          { t: 'DirectOwner', i: 1, c: 'Wrong direct replacement' },
+          { t: 'IgnoredOwner', i: 2, c: 'Wrong ignored replacement' },
+          { t: 'ForwardingOwner', i: 3, c: 'Wrong forwarded replacement' },
+        ],
       }),
-      { _gtt: 'branch-client' }
-    );
+    });
+    await plugin.setLocale('fr');
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(
+            T,
+            { _hash: 'opaqueSlots' },
+            {
+              default: () => [
+                h(DirectOwner, null, {
+                  default: (slotScope: typeof scope) => {
+                    directCalls(slotScope);
+                    return slotScope === scope
+                      ? 'Exact scope object'
+                      : 'Synthetic scope object';
+                  },
+                }),
+                h(IgnoredOwner, null, {
+                  default: () => {
+                    ignoredCalls();
+                    return 'Never rendered';
+                  },
+                }),
+                h(ForwardingOwner, null, {
+                  default: (slotScope: typeof scope) => {
+                    forwardedCalls(slotScope);
+                    return h(DeferredReader, { payload: slotScope });
+                  },
+                }),
+              ],
+            }
+          );
+      },
+    });
+
+    const html = await renderWithPlugin(Root, plugin);
+
+    expect(html).toContain('Exact scope object');
+    expect(html).toContain('Ignored safely');
+    expect(html).toContain('Runtime label');
+    expect(html).not.toContain('Wrong');
+    expect(directCalls).toHaveBeenCalledOnce();
+    expect(directCalls).toHaveBeenCalledWith(scope);
+    expect(ignoredCalls).not.toHaveBeenCalled();
+    expect(forwardedCalls).toHaveBeenCalledOnce();
+    expect(forwardedCalls).toHaveBeenCalledWith(scope);
+  });
+
+  it('preserves arbitrary scoped named slots without invoking them', async () => {
+    const ScopedBranch = defineComponent({
+      name: 'ScopedBranch',
+      setup(_props, { slots }) {
+        return () => slots.one?.({ label: 'Runtime label' });
+      },
+    });
     const plugin = createGT({
       loadTranslations: async () => ({
         scopedBranch: {
           t: 'ScopedBranch',
           i: 1,
-          d: { b: { one: 'Translated branch' }, t: 'b' },
+          c: 'Translated replacement',
         },
       }),
     });
@@ -354,13 +450,14 @@ describe('gt-vue runtime', () => {
     const Root = defineComponent({
       components: { ScopedBranch, T },
       render: compileSfcTemplate(
-        '<T _hash="scopedBranch"><ScopedBranch branch="one"><template #one="{ label }"><span>{{ label }}</span></template></ScopedBranch></T>'
+        '<T _hash="scopedBranch"><ScopedBranch><template #one="{ label }"><span>{{ label }}</span></template></ScopedBranch></T>'
       ),
     });
 
-    await expect(renderWithPlugin(Root, plugin)).resolves.toContain(
-      'Translated branch'
-    );
+    const html = await renderWithPlugin(Root, plugin);
+
+    expect(html).toContain('<span>Runtime label</span>');
+    expect(html).not.toContain('Translated replacement');
   });
 
   it('reuses explicit source element IDs repeated by a translation', async () => {
@@ -392,6 +489,274 @@ describe('gt-vue runtime', () => {
 
     expect(html).toContain('<a>Premier</a><a>Encore</a>');
     expect(html).not.toContain('<strong>');
+  });
+
+  it('keeps stateful component identity through translated reorder and repetition', async () => {
+    let setupCount = 0;
+    const Stateful = defineComponent({
+      name: 'Stateful',
+      props: { label: { required: true, type: String } },
+      setup(props) {
+        const initialLabel = props.label;
+        const instance = ++setupCount;
+        return () => h('span', `${props.label}:${initialLabel}:${instance}|`);
+      },
+    });
+    const plugin = createGT({
+      loadTranslations: async (locale) => ({
+        identity:
+          locale === 'fr'
+            ? [
+                { t: 'Stateful', i: 2 },
+                { t: 'Stateful', i: 1 },
+              ]
+            : [
+                { t: 'Stateful', i: 1 },
+                { t: 'Stateful', i: 1 },
+                { t: 'Stateful', i: 2 },
+              ],
+      }),
+    });
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(
+            T,
+            { _hash: 'identity' },
+            {
+              default: () => [
+                h(Stateful, { label: 'a' }),
+                h(Stateful, { label: 'b' }),
+              ],
+            }
+          );
+      },
+    });
+    const mounted = mount(Root, plugin);
+
+    expect(textContent(mounted.root)).toBe('a:a:1|b:b:2|');
+    await plugin.setLocale('fr');
+    await nextTick();
+    expect(textContent(mounted.root)).toBe('b:b:2|a:a:1|');
+    expect(setupCount).toBe(2);
+
+    await plugin.setLocale('de');
+    await nextTick();
+    expect(textContent(mounted.root)).toBe('a:a:1|a:a:3|b:b:2|');
+    expect(setupCount).toBe(3);
+
+    await plugin.setLocale('fr');
+    await nextTick();
+    expect(textContent(mounted.root)).toBe('b:b:2|a:a:1|');
+
+    await plugin.setLocale('en');
+    await nextTick();
+    expect(textContent(mounted.root)).toBe('a:a:1|b:b:2|');
+    mounted.app.unmount();
+  });
+
+  it('preserves explicit string, number, and symbol keys during translation reorder', async () => {
+    let setupCount = 0;
+    const symbolKey = Symbol('source-key');
+    const Stateful = defineComponent({
+      name: 'ExplicitlyKeyedStateful',
+      props: { label: { required: true, type: String } },
+      setup(props) {
+        const instance = ++setupCount;
+        return () => h('span', `${props.label}:${instance}|`);
+      },
+    });
+    const plugin = createGT({
+      loadTranslations: async () => ({
+        explicitKeys: [
+          { t: 'Stateful', i: 3 },
+          { t: 'Stateful', i: 1 },
+          { t: 'Stateful', i: 2 },
+        ],
+      }),
+    });
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(
+            T,
+            { _hash: 'explicitKeys' },
+            {
+              default: () => [
+                h(Stateful, { key: 'alpha', label: 'a' }),
+                h(Stateful, { key: 2, label: 'b' }),
+                h(Stateful, { key: symbolKey, label: 'c' }),
+              ],
+            }
+          );
+      },
+    });
+    const mounted = mount(Root, plugin);
+
+    expect(textContent(mounted.root)).toBe('a:1|b:2|c:3|');
+    await plugin.setLocale('fr');
+    await nextTick();
+    expect(textContent(mounted.root)).toBe('c:3|a:1|b:2|');
+    expect(setupCount).toBe(3);
+    mounted.app.unmount();
+  });
+
+  it('keeps Branch and Plural descendants isolated by named slot', async () => {
+    let setupCount = 0;
+    const branch = ref('formal');
+    const n = ref(1);
+    const Stateful = defineComponent({
+      name: 'BranchStateful',
+      props: { label: { required: true, type: String } },
+      setup(props) {
+        const initialLabel = props.label;
+        const instance = ++setupCount;
+        return () => h('span', `${props.label}:${initialLabel}:${instance}|`);
+      },
+    });
+    const plugin = createGT();
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(T, null, {
+            default: () => [
+              h(
+                Branch,
+                { branch: branch.value },
+                {
+                  casual: () => h(Stateful, { label: 'casual' }),
+                  formal: () => h(Stateful, { label: 'formal' }),
+                }
+              ),
+              h(
+                Plural,
+                { n: n.value },
+                {
+                  one: () => h(Stateful, { label: 'one' }),
+                  other: () => h(Stateful, { label: 'other' }),
+                }
+              ),
+            ],
+          });
+      },
+    });
+    const mounted = mount(Root, plugin);
+
+    expect(textContent(mounted.root)).toBe('formal:formal:1|one:one:2|');
+    branch.value = 'casual';
+    n.value = 2;
+    await nextTick();
+    expect(textContent(mounted.root)).toBe('casual:casual:3|other:other:4|');
+    expect(setupCount).toBe(4);
+    mounted.app.unmount();
+  });
+
+  it('rebuilds Suspense content instead of retaining stale normalized children', async () => {
+    const fallbackCalls = vi.fn();
+    const plugin = createGT({
+      loadTranslations: async () => ({
+        suspense: {
+          t: 'Suspense',
+          i: 1,
+          c: { t: 'span', i: 2, c: 'TARGET' },
+        },
+      }),
+    });
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(
+            T,
+            { _hash: 'suspense' },
+            {
+              default: () =>
+                h(Suspense, null, {
+                  default: () => h('span', 'SOURCE'),
+                  fallback: () => {
+                    fallbackCalls();
+                    return h('span', 'FALLBACK');
+                  },
+                }),
+            }
+          );
+      },
+    });
+
+    const sourceHtml = stripFragmentMarkers(
+      await renderWithPlugin(Root, plugin)
+    );
+    expect(sourceHtml).toContain('<span>SOURCE</span>');
+    expect(fallbackCalls).toHaveBeenCalledTimes(1);
+
+    await plugin.setLocale('fr');
+    const targetHtml = stripFragmentMarkers(
+      await renderWithPlugin(Root, plugin)
+    );
+
+    expect(targetHtml).toContain('<span>TARGET</span>');
+    expect(targetHtml).not.toContain('SOURCE');
+    expect(fallbackCalls).toHaveBeenCalledTimes(2);
+  });
+
+  it('preserves an async Suspense fallback before rendering translated content', async () => {
+    const fallbackCalls = vi.fn();
+    let resolveGate!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      resolveGate = resolve;
+    });
+    const AsyncGate = defineComponent({
+      name: 'AsyncGate',
+      async setup() {
+        await gate;
+        return () => h('i', 'READY');
+      },
+    });
+    const plugin = createGT({
+      loadTranslations: async () => ({
+        asyncSuspense: {
+          t: 'Suspense',
+          i: 1,
+          c: {
+            t: 'div',
+            i: 2,
+            c: [
+              { t: 'AsyncGate', i: 3 },
+              { t: 'span', i: 4, c: 'TARGET' },
+            ],
+          },
+        },
+      }),
+    });
+    await plugin.setLocale('fr');
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(
+            T,
+            { _hash: 'asyncSuspense' },
+            {
+              default: () =>
+                h(Suspense, null, {
+                  default: () => h('div', [h(AsyncGate), h('span', 'SOURCE')]),
+                  fallback: () => {
+                    fallbackCalls();
+                    return h('span', 'FALLBACK');
+                  },
+                }),
+            }
+          );
+      },
+    });
+    const mounted = mount(Root, plugin);
+
+    expect(textContent(mounted.root)).toBe('FALLBACK');
+    expect(fallbackCalls).toHaveBeenCalledOnce();
+    resolveGate();
+    await gate;
+    await nextTick();
+    await nextTick();
+    expect(textContent(mounted.root)).toBe('READYTARGET');
+    mounted.app.unmount();
   });
 
   it('selects source plural values with the source locale and target branches with the active locale', async () => {
@@ -939,6 +1304,10 @@ const renderer = createRenderer<HostNode, HostNode>({
   createElement: (type) => createHostNode(type),
   createText: (text) => createHostNode('#text', text),
   insert(child, parent, anchor) {
+    if (child.parent) {
+      const previousIndex = child.parent.children.indexOf(child);
+      if (previousIndex >= 0) child.parent.children.splice(previousIndex, 1);
+    }
     child.parent = parent;
     const index = anchor ? parent.children.indexOf(anchor) : -1;
     if (index < 0) parent.children.push(child);
@@ -957,6 +1326,7 @@ const renderer = createRenderer<HostNode, HostNode>({
     if (!child.parent) return;
     const index = child.parent.children.indexOf(child);
     if (index >= 0) child.parent.children.splice(index, 1);
+    child.parent = undefined;
   },
   setElementText(element, text) {
     const child = createHostNode('#text', text);
@@ -984,6 +1354,7 @@ function mount(
 }
 
 function textContent(node: HostNode): string {
+  if (node.type === '#comment') return '';
   return node.text ?? node.children.map(textContent).join('');
 }
 

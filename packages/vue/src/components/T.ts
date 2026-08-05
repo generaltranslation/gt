@@ -39,13 +39,21 @@ export const T = withGTMetadata<TProps>(
     },
     setup(props, { attrs, slots }) {
       const state = useGTState();
+      // Translation IDs can reorder or repeat source VNodes. Stable Symbols
+      // preserve component identity without colliding with user-provided keys.
+      const identityCache = new Map<string, symbol>();
       return () =>
-        translateVueChildren(slots.default?.() ?? [], state, {
-          ...props,
-          ...(typeof attrs.$context === 'string' && {
-            $context: attrs.$context,
-          }),
-        });
+        translateVueChildren(
+          slots.default?.() ?? [],
+          state,
+          {
+            ...props,
+            ...(typeof attrs.$context === 'string' && {
+              $context: attrs.$context,
+            }),
+          },
+          identityCache
+        );
     },
   }),
   'translate-client'
