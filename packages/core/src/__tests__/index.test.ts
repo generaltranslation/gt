@@ -583,15 +583,9 @@ describe.sequential('GT Translation Methods', () => {
       });
 
       expect(gt.apiKey).toBe('dev-key');
-      expect(gt.devApiKey).toBe('dev-key');
       expect(gt.projectId).toBe('test-project');
       expect(gt.baseUrl).toBe('https://api.test.com');
       expect(gt.targetLocale).toBe('es');
-
-      gt.apiKey = 'api-key';
-      expect(gt.devApiKey).toBeUndefined();
-      gt.devApiKey = 'next-dev-key';
-      expect(gt.apiKey).toBe('next-dev-key');
     });
 
     it('should normalize environment keys in priority order and prefer explicit config', () => {
@@ -600,17 +594,11 @@ describe.sequential('GT Translation Methods', () => {
       vi.stubEnv('GT_ORG_API_KEY', 'gtx-org-env-key');
 
       try {
-        const apiConfig = new GT();
-        expect(apiConfig.apiKey).toBe('gtx-api-env-key');
-        expect(apiConfig.devApiKey).toBeUndefined();
+        expect(new GT().apiKey).toBe('gtx-api-env-key');
         vi.stubEnv('GT_API_KEY', '');
-        const devConfig = new GT();
-        expect(devConfig.apiKey).toBe('gtx-dev-env-key');
-        expect(devConfig.devApiKey).toBe('gtx-dev-env-key');
+        expect(new GT().apiKey).toBe('gtx-dev-env-key');
         vi.stubEnv('GT_DEV_API_KEY', '');
-        const orgConfig = new GT();
-        expect(orgConfig.apiKey).toBe('gtx-org-env-key');
-        expect(orgConfig.devApiKey).toBeUndefined();
+        expect(new GT().apiKey).toBe('gtx-org-env-key');
         expect(new GT({ orgApiKey: 'gtx-org-explicit-key' }).apiKey).toBe(
           'gtx-org-explicit-key'
         );
