@@ -114,7 +114,7 @@ const templateExpressionCases: TemplateAuditCase[] = [
   },
   {
     name: 'nested expression callback shadow',
-    script: `import { useGT } from 'gt-vue'; const gt = useGT(); const rows = [gt];`,
+    script: `import { useGT } from 'gt-vue'; const gt = useGT(); const rows = [String];`,
     template: `{{ rows.map((gt) => gt('Callback shadow')) }}`,
     sources: [],
   },

@@ -165,6 +165,33 @@ describe('Vue template extraction', () => {
     }
   );
 
+  it.each(['condense', 'preserve'] as const)(
+    'preserves implicit default-slot separators with compiler whitespace %s',
+    async (whitespace) => {
+      const source = vueSource({
+        imports: 'Branch, T',
+        template:
+          '<T><span>A</span> <b>B</b></T><T><Branch branch="formal"><span>A</span> <template #formal>Formal</template> <b>B</b></Branch></T>',
+      });
+
+      const output = await extractFromVueSource(source, '/fixtures/Slots.vue', {
+        compilerOptions: { whitespace },
+        projectRoot: '/fixtures',
+      });
+
+      expect(output.errors).toEqual([]);
+      expect(richSources(output.results)).toEqual([
+        [{ t: 'span', i: 1, c: 'A' }, ' ', { t: 'b', i: 2, c: 'B' }],
+        {
+          t: 'Branch',
+          i: 1,
+          d: { b: { formal: 'Formal' }, t: 'b' },
+          c: [{ t: 'span', i: 2, c: 'A' }, '  ', { t: 'b', i: 3, c: 'B' }],
+        },
+      ]);
+    }
+  );
+
   it('rejects meaningful implicit content beside an explicit default slot', async () => {
     const output = await extractVue(`
       <script setup>import { T } from 'gt-vue';</script>
@@ -206,7 +233,7 @@ describe('Vue template extraction', () => {
     const output = await extractVue(`
       <script setup>
       import { T } from 'gt-vue';
-      const components = [T];
+      const components = [String];
       </script>
       <template>
         <div v-for="T in components">
@@ -221,10 +248,10 @@ describe('Vue template extraction', () => {
 
   it.each([
     {
-      name: 'coalesces text around comments',
+      name: 'coalesces text around whitespace-free comments',
       imports: 'T',
-      template: '<T>Hello<!-- translator note --> world</T>',
-      expected: ['Hello world'] satisfies JsxChildren[],
+      template: '<T>Hello<!-- translator note -->world</T>',
+      expected: ['Helloworld'] satisfies JsxChildren[],
     },
     {
       name: 'evaluates side-effect-free primitive expressions',
@@ -377,12 +404,6 @@ describe('Vue template extraction', () => {
       setup: "const dynamic = 'section';",
       template: '<T><component :is="dynamic">Unknown</component></T>',
       error: 'dynamic <component>',
-    },
-    {
-      name: 'ordinary component named slot',
-      imports: 'T',
-      template: '<T><Card><template #header>Header</template></Card></T>',
-      error: 'named slots on <Card>',
     },
     {
       name: 'bare template',

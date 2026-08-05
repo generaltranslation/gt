@@ -54,6 +54,47 @@ describe('Vue compiler option parity', () => {
       }),
     ]);
   });
+
+  it.each(['condense', 'preserve'] as const)(
+    'rejects comment-driven %s whitespace that changes in production',
+    async (whitespace) => {
+      const source = `
+        <script setup>import { T } from 'gt-vue';</script>
+        <template>
+          <T><i>First</i> <!-- separator --> <b>Second</b></T>
+          <T><p><i>Nested</i> <!-- separator --> <b>content</b></p></T>
+        </template>
+      `;
+
+      const result = await extractFromVueSource(source, 'Component.vue', {
+        compilerOptions: { whitespace },
+      });
+
+      expect(result.results).toEqual([]);
+      expect(result.errors.join('\n')).toContain(
+        'comment adjacent to translatable whitespace'
+      );
+    }
+  );
+
+  it.each(['condense', 'preserve'] as const)(
+    'allows comments that do not change %s translation content',
+    async (whitespace) => {
+      const source = `
+        <script setup>import { T } from 'gt-vue';</script>
+        <template><T>Hello<!-- translator note -->world</T></template>
+      `;
+
+      const result = await extractFromVueSource(source, 'Component.vue', {
+        compilerOptions: { whitespace },
+      });
+
+      expect(result.errors).toEqual([]);
+      expect(result.results.map(({ source }) => source)).toEqual([
+        'Helloworld',
+      ]);
+    }
+  );
 });
 
 function hashFor(

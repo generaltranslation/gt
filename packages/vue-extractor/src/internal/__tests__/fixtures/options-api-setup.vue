@@ -13,7 +13,7 @@ export default {
 
 <template>
   <T>Composition API</T>
-  <LocalT>Setup component</LocalT>
+  <component :is="LocalT">Setup component</component>
   {{ gt('Setup string') }}
   {{ m('Setup message') }}
   {{ register('Setup msg', { $context: 'classic' }) }}
