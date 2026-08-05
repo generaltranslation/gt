@@ -601,6 +601,181 @@ describe('gt-vue runtime', () => {
     mounted.app.unmount();
   });
 
+  it('preserves keys on GT transformations that render fragment children', async () => {
+    let setupCount = 0;
+    const order = ref(['a', 'b']);
+    const Stateful = defineComponent({
+      name: 'KeyedBranchStateful',
+      props: { label: { required: true, type: String } },
+      setup(props) {
+        const initialLabel = props.label;
+        const instance = ++setupCount;
+        return () => h('span', `${props.label}:${initialLabel}:${instance}|`);
+      },
+    });
+    const plugin = createGT();
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(T, null, {
+            default: () =>
+              order.value.map((label) =>
+                h(
+                  Branch,
+                  { key: label, branch: 'show' },
+                  { show: () => h(Stateful, { label }) }
+                )
+              ),
+          });
+      },
+    });
+    const mounted = mount(Root, plugin);
+
+    expect(textContent(mounted.root)).toBe('a:a:1|b:b:2|');
+    order.value = ['b', 'a'];
+    await nextTick();
+    expect(textContent(mounted.root)).toBe('b:b:2|a:a:1|');
+    expect(setupCount).toBe(2);
+    mounted.app.unmount();
+  });
+
+  it('anchors descendant identity to keyed native containers', async () => {
+    let setupCount = 0;
+    const order = ref(['a', 'b']);
+    const Stateful = defineComponent({
+      name: 'KeyedContainerStateful',
+      props: { label: { required: true, type: String } },
+      setup(props) {
+        const initialLabel = props.label;
+        const instance = ++setupCount;
+        return () => h('span', `${props.label}:${initialLabel}:${instance}|`);
+      },
+    });
+    const plugin = createGT();
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(T, null, {
+            default: () =>
+              order.value.map((label) =>
+                h('section', { key: label }, [h(Stateful, { label })])
+              ),
+          });
+      },
+    });
+    const mounted = mount(Root, plugin);
+
+    expect(textContent(mounted.root)).toBe('a:a:1|b:b:2|');
+    order.value = ['b', 'a'];
+    await nextTick();
+    expect(textContent(mounted.root)).toBe('b:b:2|a:a:1|');
+    expect(setupCount).toBe(2);
+    mounted.app.unmount();
+  });
+
+  it('does not let keyed siblings shift unkeyed component identity', async () => {
+    let setupCount = 0;
+    const showKeyedSibling = ref(true);
+    const Stateful = defineComponent({
+      name: 'UnkeyedSiblingStateful',
+      setup() {
+        const instance = ++setupCount;
+        return () => h('span', `${instance}|`);
+      },
+    });
+    const plugin = createGT();
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(T, null, {
+            default: () => [
+              ...(showKeyedSibling.value
+                ? [h('i', { key: 'fixed' }, 'keyed')]
+                : []),
+              h(Stateful),
+            ],
+          });
+      },
+    });
+    const mounted = mount(Root, plugin);
+
+    expect(textContent(mounted.root)).toBe('keyed1|');
+    showKeyedSibling.value = false;
+    await nextTick();
+    expect(textContent(mounted.root)).toBe('1|');
+    expect(setupCount).toBe(1);
+    mounted.app.unmount();
+  });
+
+  it('matches unkeyed components by VNode type across unrelated siblings', async () => {
+    let setupCount = 0;
+    const showUnrelatedSibling = ref(true);
+    const Stateful = defineComponent({
+      name: 'TypeMatchedStateful',
+      setup() {
+        const instance = ++setupCount;
+        return () => h('span', `${instance}|`);
+      },
+    });
+    const plugin = createGT();
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(T, null, {
+            default: () => [
+              ...(showUnrelatedSibling.value ? [h('i', 'unrelated')] : []),
+              h(Stateful),
+            ],
+          });
+      },
+    });
+    const mounted = mount(Root, plugin);
+
+    expect(textContent(mounted.root)).toBe('unrelated1|');
+    showUnrelatedSibling.value = false;
+    await nextTick();
+    expect(textContent(mounted.root)).toBe('1|');
+    expect(setupCount).toBe(1);
+    mounted.app.unmount();
+  });
+
+  it('retains keyed Fragment scopes while keeping their wire shape flat', async () => {
+    let setupCount = 0;
+    const order = ref(['a', 'b']);
+    const Stateful = defineComponent({
+      name: 'KeyedFragmentStateful',
+      props: { label: { required: true, type: String } },
+      setup(props) {
+        const initialLabel = props.label;
+        const instance = ++setupCount;
+        return () => h('span', `${props.label}:${initialLabel}:${instance}|`);
+      },
+    });
+    const plugin = createGT();
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(T, null, {
+            default: () =>
+              order.value.map((label) =>
+                h(Fragment, { key: label }, [
+                  h(Stateful, { key: 'shared-child-key', label }),
+                  h('i', `${label}!`),
+                ])
+              ),
+          });
+      },
+    });
+    const mounted = mount(Root, plugin);
+
+    expect(textContent(mounted.root)).toBe('a:a:1|a!b:b:2|b!');
+    order.value = ['b', 'a'];
+    await nextTick();
+    expect(textContent(mounted.root)).toBe('b:b:2|b!a:a:1|a!');
+    expect(setupCount).toBe(2);
+    mounted.app.unmount();
+  });
+
   it('keeps Branch and Plural descendants isolated by named slot', async () => {
     let setupCount = 0;
     const branch = ref('formal');
