@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.16.2
+
+### Patch Changes
+
+- [#2029](https://github.com/generaltranslation/gt/pull/2029) [`c1fd8a0`](https://github.com/generaltranslation/gt/commit/c1fd8a05c5325775e3ec8104e2d48d35da864de6) Thanks [@eoinest](https://github.com/eoinest)! - Configure Vite React apps with `initializeGTSPA` and bundled translation loading without adding the compiler.
+
 ## 2.16.1
 
 ### Patch Changes
