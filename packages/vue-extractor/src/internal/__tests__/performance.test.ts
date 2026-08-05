@@ -1,32 +1,46 @@
 import { describe, expect, it } from 'vitest';
 import { extractFromVueSource } from '../extractFromVueSource.js';
+import { collectAnalyzerStats } from './analyzerPerformance.js';
+
+function createContainerAliasScript(aliasCount: number): string {
+  const declarations = [
+    "import { T } from 'gt-vue';",
+    'const components0 = [T];',
+  ];
+  for (let index = 1; index <= aliasCount; index += 1) {
+    declarations.push(`const components${index} = components${index - 1};`);
+  }
+  declarations.push('const selected = getIndex();');
+  return declarations.join('\n');
+}
 
 describe('Vue extractor performance', () => {
-  it('keeps long immutable alias chains bounded', async () => {
-    const aliasCount = 200;
-    const declarations = [
-      "import { T } from 'gt-vue';",
-      'const components0 = [T];',
-    ];
-    for (let index = 1; index <= aliasCount; index += 1) {
-      declarations.push(`const components${index} = components${index - 1};`);
+  it('keeps analyzer visits linear for immutable container aliases', () => {
+    const smaller = collectAnalyzerStats(createContainerAliasScript(500));
+    const larger = collectAnalyzerStats(createContainerAliasScript(1_000));
+
+    for (const key of Object.keys(larger) as Array<keyof typeof larger>) {
+      expect(larger[key], key).toBeLessThanOrEqual(smaller[key] * 2 + 10);
     }
-    declarations.push('const selected = getIndex();');
-    const source = `<script setup>${declarations.join('\n')}</script>
+
+    expect(
+      Object.values(larger).reduce((total, visits) => total + visits, 0)
+    ).toBeLessThanOrEqual(4_000);
+  });
+
+  it('fails closed for a thousand container aliases', async () => {
+    const source = `<script setup>${createContainerAliasScript(1_000)}</script>
         <template>
-          <component :is="components${aliasCount}[selected]">Hidden</component>
+          <component :is="components1000[selected]">Hidden</component>
         </template>`;
 
-    const start = performance.now();
     const output = await extractFromVueSource(source, '/tmp/AliasChain.vue', {
       projectRoot: '/tmp',
     });
-    const duration = performance.now() - start;
 
     expect(output.results).toEqual([]);
     expect(output.errors.join('\n')).toContain(
       'Could not statically resolve possible gt-vue component alias'
     );
-    expect(duration).toBeLessThan(5_000);
-  }, 10_000);
+  });
 });

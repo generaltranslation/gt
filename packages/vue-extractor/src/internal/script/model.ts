@@ -43,6 +43,8 @@ export type ContainerWrapperKind =
 
 /** Import information shared by the two script blocks of one Vue SFC. */
 export type VueScriptAnalysis = {
+  /** Optional visit counters used by deterministic complexity regressions. */
+  stats?: VueScriptAnalysisStats;
   /** Lengths of statically known, non-mutated normal-script arrays. */
   arrayLengths: Map<string, number>;
   /** Normal-script callables that may return a GT or Vue component. */
@@ -69,6 +71,16 @@ export type VueScriptAnalysis = {
   /** Cross-block aliases that may resolve to a gt-vue string function. */
   uncertainStringFunctions: Set<string>;
   values: Map<string, KnownValue>;
+};
+
+/** Internal analyzer visits whose growth should remain bounded by source size. */
+export type VueScriptAnalysisStats = {
+  arrayEntryVisits: number;
+  containerKindVisits: number;
+  finalContainerSnapshotReads: number;
+  knownExpressionVisits: number;
+  stringFunctionVisits: number;
+  transformArrayEntryVisits: number;
 };
 
 /** Babel expression paired with the lexical scope in which it is evaluated. */
@@ -280,6 +292,9 @@ export type ScriptState = {
   containerKindSnapshotsInProgress: Set<Binding>;
   containerIdentityReplays: WeakMap<t.Node, ContainerIdentityReplay>;
   containerWritePolicies: Map<Binding, ContainerWritePolicy | undefined>;
+  /** Immutable aliases proven to hold a non-callable or known non-string value. */
+  definiteNonStringFunctionBindings: Set<Binding>;
+  definiteNonStringFunctionBindingsInProgress: Set<Binding>;
   finalContainerSnapshots: Map<Binding, FinalContainerSnapshot>;
   finalContainerSnapshotsInProgress: Set<Binding>;
   gtContainerPossibilities: Map<Binding, boolean>;

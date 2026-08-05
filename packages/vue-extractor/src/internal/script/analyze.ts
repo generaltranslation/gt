@@ -36,6 +36,7 @@ import type {
   TemplateExposure,
   TemplateKnownValue,
   VueScriptAnalysis,
+  VueScriptAnalysisStats,
 } from './model.js';
 import { createReplayAnalysis } from './replay.js';
 import { createSnapshotAnalysis } from './snapshot.js';
@@ -64,7 +65,7 @@ import {
   readPropertyKey,
 } from './syntax.js';
 
-export type { VueScriptAnalysis } from './model.js';
+export type { VueScriptAnalysis, VueScriptAnalysisStats } from './model.js';
 
 const traverse = traverseModule.default || traverseModule;
 
@@ -77,9 +78,24 @@ const staticBindingsInProgress = new WeakMap<
   Map<Binding, Set<boolean>>
 >();
 
-/** Creates the per-SFC state used to resolve cross-block imports safely. */
-export function createVueScriptAnalysis(): VueScriptAnalysis {
+/** Creates opt-in counters for deterministic analyzer complexity tests. */
+export function createVueScriptAnalysisStats(): VueScriptAnalysisStats {
   return {
+    arrayEntryVisits: 0,
+    containerKindVisits: 0,
+    finalContainerSnapshotReads: 0,
+    knownExpressionVisits: 0,
+    stringFunctionVisits: 0,
+    transformArrayEntryVisits: 0,
+  };
+}
+
+/** Creates the per-SFC state used to resolve cross-block imports safely. */
+export function createVueScriptAnalysis(
+  stats?: VueScriptAnalysisStats
+): VueScriptAnalysis {
+  return {
+    ...(stats && { stats }),
     arrayLengths: new Map(),
     componentFactories: new Set(),
     containerKinds: new Map(),
@@ -392,6 +408,8 @@ function createScriptState(
     containerKindSnapshotsInProgress: new Set(),
     containerIdentityReplays: new WeakMap(),
     containerWritePolicies: new Map(),
+    definiteNonStringFunctionBindings: new Set(),
+    definiteNonStringFunctionBindingsInProgress: new Set(),
     finalContainerSnapshots: new Map(),
     finalContainerSnapshotsInProgress: new Set(),
     gtContainerPossibilities: new Map(),
@@ -751,7 +769,7 @@ function exposeProgramBindings(
           templateBindings.uncertainGTComponents.add(name);
         }
         if (
-          value?.type !== 'string' &&
+          !value &&
           !exactReplayLeaf &&
           replayLeaf?.status !== 'unsafe' &&
           bindingMayReferenceStringFunction(binding, state)
@@ -1105,7 +1123,7 @@ function recordProgramAnalysis(ast: t.File, state: ScriptState): void {
           state.analysis.uncertainGTComponents.add(name);
         }
         if (
-          templateValue?.type !== 'string' &&
+          !templateValue &&
           !exactReplayLeaf &&
           replayLeaf?.status !== 'unsafe' &&
           bindingMayReferenceStringFunction(binding, state)
@@ -3341,9 +3359,17 @@ function collectContainerKinds(
   atPosition: number,
   arrayLengths?: Map<string, number>
 ): Map<string, TemplateContainerKind> {
+  if (state.analysis.stats) state.analysis.stats.containerKindVisits += 1;
   const result = new Map<string, TemplateContainerKind>();
   const expression = unwrapExpression(node);
   if (!expression || seenNodes.has(expression)) return result;
+  // Exact GT/Vue identities and string functions are scalar values. Direct
+  // aliases can legitimately be inserted into a mutable container, which
+  // makes the conservative container-use cache ineligible; resolving the
+  // already memoized scalar identity avoids re-walking the full alias prefix.
+  if (resolveKnownExpression(expression, scope, state, new Set())) {
+    return result;
+  }
   const nextNodes = new Set(seenNodes).add(expression);
   if (expression.type === 'Identifier') {
     const binding = scope.getBinding(expression.name);
@@ -4102,6 +4128,7 @@ function resolveKnownExpression(
   state: ScriptState,
   seen: Set<Binding>
 ): KnownValue | undefined {
+  if (state.analysis.stats) state.analysis.stats.knownExpressionVisits += 1;
   const expression = unwrapExpression(node);
   if (!expression) return undefined;
 
@@ -8045,11 +8072,73 @@ function bindingMayReferenceComponent(
   return result;
 }
 
+/**
+ * Proves a const direct-alias chain cannot itself be a string translator.
+ *
+ * Container contents may still mutate, but an array or object never becomes
+ * callable. Caching only this positive proof avoids memoizing an unresolved
+ * false result that could depend on cross-block or callback analysis.
+ */
+function bindingIsDefinitelyNotStringFunction(
+  binding: Binding,
+  state: ScriptState,
+  seen: Set<Binding>
+): boolean {
+  if (state.definiteNonStringFunctionBindings.has(binding)) return true;
+  if (
+    !binding.constant ||
+    seen.has(binding) ||
+    state.parameterSubstitutions.length > 0 ||
+    state.definiteNonStringFunctionBindingsInProgress.has(binding)
+  ) {
+    return false;
+  }
+  const source = getBindingSource(binding);
+  if (source?.pattern.type !== 'Identifier') return false;
+  const expression = unwrapExpression(source.expression.node);
+  if (!expression) return false;
+
+  state.definiteNonStringFunctionBindingsInProgress.add(binding);
+  try {
+    const known = resolveKnownExpression(
+      expression,
+      source.expression.scope,
+      state,
+      new Set([binding])
+    );
+    let result = Boolean(known && known.type !== 'string');
+    if (!known && expression.type === 'Identifier') {
+      const target = source.expression.scope.getBinding(expression.name);
+      result = Boolean(
+        target &&
+        bindingIsDefinitelyNotStringFunction(
+          target,
+          state,
+          new Set(seen).add(binding)
+        )
+      );
+    } else if (
+      !known &&
+      (expression.type === 'ArrayExpression' ||
+        expression.type === 'ObjectExpression')
+    ) {
+      result = true;
+    }
+    if (result) state.definiteNonStringFunctionBindings.add(binding);
+    return result;
+  } finally {
+    state.definiteNonStringFunctionBindingsInProgress.delete(binding);
+  }
+}
+
 /** Detects a string translator alias whose value escaped exact analysis. */
 function bindingMayReferenceStringFunction(
   binding: Binding,
   state: ScriptState
 ): boolean {
+  if (bindingIsDefinitelyNotStringFunction(binding, state, new Set())) {
+    return false;
+  }
   const finalAssignment = readDefiniteFinalBindingAssignment(binding);
   if (finalAssignment) {
     return expressionMayProduceStringFunction(
@@ -8094,6 +8183,7 @@ function expressionMayProduceStringFunction(
   state: ScriptState,
   seen: Set<Binding>
 ): boolean {
+  if (state.analysis.stats) state.analysis.stats.stringFunctionVisits += 1;
   const expression = unwrapExpression(node);
   if (!expression) return false;
   const resolved = resolveKnownExpression(expression, scope, state, new Set());
@@ -8115,6 +8205,9 @@ function expressionMayProduceStringFunction(
         state,
         seen
       );
+    }
+    if (bindingIsDefinitelyNotStringFunction(binding, state, seen)) {
+      return false;
     }
     if (seen.has(binding)) return false;
     const nextSeen = new Set(seen).add(binding);
@@ -10161,8 +10254,15 @@ function collectArrayEntries(
   atPosition: number,
   state?: ScriptState
 ): Array<ScopedExpression | undefined> | undefined {
+  if (state?.analysis.stats) state.analysis.stats.arrayEntryVisits += 1;
   const expression = unwrapExpression(node);
   if (!expression || seen.has(expression)) return undefined;
+  if (
+    state &&
+    resolveKnownExpression(expression, scope, state, new Set()) !== undefined
+  ) {
+    return undefined;
+  }
   const nextSeen = new Set(seen).add(expression);
   if (expression.type === 'Identifier') {
     const binding = scope.getBinding(expression.name);
@@ -10242,9 +10342,18 @@ function collectTransformArrayEntries(
   seen: Set<t.Node>,
   atPosition = node.end ?? Number.POSITIVE_INFINITY
 ): Array<ScopedExpression | undefined> | undefined {
+  if (state.analysis.stats) {
+    state.analysis.stats.transformArrayEntryVisits += 1;
+  }
   const direct = collectArrayEntries(node, scope, seen, atPosition, state);
   if (direct) return direct;
   const expression = unwrapExpression(node);
+  if (
+    expression &&
+    resolveKnownExpression(expression, scope, state, new Set()) !== undefined
+  ) {
+    return undefined;
+  }
   if (expression?.type === 'Identifier' && !seen.has(expression)) {
     const binding = scope.getBinding(expression.name);
     const source = binding ? getBindingSource(binding) : undefined;
