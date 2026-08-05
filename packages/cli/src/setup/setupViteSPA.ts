@@ -11,13 +11,18 @@ type SetupViteSPAOptions = {
   translationsDir?: string;
 };
 
-const bootstrapConflictError = createDiagnosticMessage({
-  source: 'gt',
-  severity: 'Error',
-  whatHappened: 'The Vite bootstrap file already exists',
-  why: 'GT will not overwrite an existing src/gt-entry.ts file',
-  fix: 'Move or rename that file and rerun `npx gt@latest`',
-});
+const defaultBootstrapFilename = 'gt-entry.ts';
+const alternateBootstrapFilename = 'gt-bootstrap.ts';
+
+function getBootstrapConflictError(filename: string): string {
+  return createDiagnosticMessage({
+    source: 'gt',
+    severity: 'Error',
+    whatHappened: 'The Vite bootstrap file already exists',
+    why: `GT will not overwrite an existing src/${filename} file`,
+    fix: 'Move or rename that file and rerun `npx gt@latest`',
+  });
+}
 
 function getLoaderContent(translationsImport: string): string {
   return `export default async function loadTranslations(locale: string) {
@@ -91,22 +96,35 @@ export async function setupViteSPA({
 }: SetupViteSPAOptions): Promise<void> {
   const indexHtmlPath = path.join(appDirectory, 'index.html');
   const sourceDirectory = path.join(appDirectory, 'src');
-  const bootstrapPath = path.join(sourceDirectory, 'gt-entry.ts');
   const indexHtml = await fs.promises.readFile(indexHtmlPath, 'utf8');
   const { script, source } = getModuleEntry(indexHtml);
-  const isAlreadyConfigured = /^\/?src\/gt-entry\.ts(?:[?#].*)?$/.test(source);
+  const declaredEntryImport = getEntryImport(
+    appDirectory,
+    sourceDirectory,
+    source
+  );
+  const configuredBootstrap = source.match(
+    /^\/?src\/(gt-entry\.ts|gt-bootstrap\.ts)(?:[?#].*)?$/
+  )?.[1];
+  const isAlreadyConfigured = configuredBootstrap !== undefined;
+  const bootstrapFilename =
+    configuredBootstrap ??
+    (declaredEntryImport === './gt-entry'
+      ? alternateBootstrapFilename
+      : defaultBootstrapFilename);
+  const bootstrapPath = path.join(sourceDirectory, bootstrapFilename);
   let existingBootstrap: string | undefined;
 
   if (fs.existsSync(bootstrapPath)) {
     existingBootstrap = await fs.promises.readFile(bootstrapPath, 'utf8');
     if (!existingBootstrap.includes('initializeGTSPA')) {
-      throw new Error(bootstrapConflictError);
+      throw new Error(getBootstrapConflictError(bootstrapFilename));
     }
   }
 
   const entryImport = isAlreadyConfigured
     ? existingBootstrap && getBootstrapEntry(existingBootstrap)
-    : getEntryImport(appDirectory, sourceDirectory, source);
+    : declaredEntryImport;
   if (!entryImport) {
     throw new Error(
       createDiagnosticMessage({
@@ -169,7 +187,7 @@ await import('${entryImport}');
   );
 
   if (!isAlreadyConfigured) {
-    const updatedScript = script.replace(source, '/src/gt-entry.ts');
+    const updatedScript = script.replace(source, `/src/${bootstrapFilename}`);
     await fs.promises.writeFile(
       indexHtmlPath,
       indexHtml.replace(script, updatedScript)

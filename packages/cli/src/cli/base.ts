@@ -858,6 +858,7 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
       defaultLocale,
       locales,
       files: Object.keys(files).length > 0 ? files : undefined,
+      framework: isVite ? 'vite' : undefined,
       publish: isUsingGT && usingCDN,
     });
 

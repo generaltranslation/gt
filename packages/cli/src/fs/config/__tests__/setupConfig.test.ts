@@ -28,11 +28,13 @@ describe('createOrUpdateConfig', () => {
 
     await createOrUpdateConfig(configPath, {
       files: { gt: { output: 'src/_gt/[locale].json' } },
+      framework: 'vite',
     });
 
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
     expect(config.defaultLocale).toBe('en');
     expect(config.locales).toEqual(['fr']);
+    expect(config.framework).toBe('vite');
     expect(config.files.md).toEqual({ include: ['docs/**/*.md'] });
     expect(config.files.gt).toEqual({
       parsingFlags: { devHotReload: true },

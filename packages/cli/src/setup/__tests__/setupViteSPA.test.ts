@@ -151,6 +151,37 @@ await import('./main');
     }
   );
 
+  it.each(['gt-entry.tsx', 'gt-entry.jsx', 'gt-entry.js'])(
+    'does not self-import when the app entry is %s',
+    async (entry) => {
+      fs.writeFileSync(
+        path.join(appDirectory, 'index.html'),
+        `<script type="module" src="/src/${entry}"></script>\n`
+      );
+      fs.writeFileSync(path.join(appDirectory, 'src', entry), '// app');
+
+      await setupViteSPA({
+        appDirectory,
+        configFilepath: 'gt.config.json',
+        defaultLocale: 'en',
+        locales: ['fr'],
+      });
+
+      expect(
+        fs.readFileSync(path.join(appDirectory, 'index.html'), 'utf8')
+      ).toContain('src="/src/gt-bootstrap.ts"');
+      expect(
+        fs.readFileSync(
+          path.join(appDirectory, 'src', 'gt-bootstrap.ts'),
+          'utf8'
+        )
+      ).toContain("await import('./gt-entry');");
+      expect(
+        fs.readFileSync(path.join(appDirectory, 'src', entry), 'utf8')
+      ).toBe('// app');
+    }
+  );
+
   it('updates the bootstrap when switching to bundled translations', async () => {
     await setupViteSPA({
       appDirectory,
