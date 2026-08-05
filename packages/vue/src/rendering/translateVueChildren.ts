@@ -785,10 +785,11 @@ function cloneWithChildren(
       ? mergeProps(vnode.props ?? {}, extraProps)
       : vnode.props;
     const slots = isSlots(vnode.children) ? vnode.children : {};
+    const normalizedContent = (vnode as VNodeWithRenderMetadata).ssContent;
     const normalizedFallback = (vnode as VNodeWithRenderMetadata).ssFallback;
     const cloned = h(vnode.type, props, {
       ...slots,
-      default: () => unwrapSingleSuspenseChild(children),
+      default: () => rebuildSuspenseContent(children, normalizedContent),
       // Vue already invoked and normalized the fallback when it created the
       // source Suspense VNode. Reuse that VNode instead of running user slot
       // code a second time while rebuilding the translated boundary.
@@ -817,18 +818,26 @@ function cloneWithChildren(
 }
 
 /**
- * Returns a single rebuilt Suspense root without an artificial array wrapper.
+ * Rebuilds translated Suspense content with its normalized source root shape.
  *
- * Vue accepts a primitive returned directly from a Suspense slot and
- * normalizes it into a Text VNode. Inside an array, however, that same
- * primitive fails Vue's single-root check and becomes an empty comment. Rich
- * rendering naturally produces child arrays, so unwrap only the singleton
- * case and leave genuinely multi-root content for Vue to validate.
+ * Vue rejects raw primitives inside a slot array, while translations may
+ * change a singleton source root into repeated siblings. Use one invisible
+ * Fragment for every rebuilt shape so Vue always receives a valid root and
+ * keyed source children retain their component identity across locale
+ * transitions. When Vue already normalized the source to a Fragment (for
+ * example, a multi-node `template v-if`), preserve its render metadata.
  */
-function unwrapSingleSuspenseChild(children: VNodeChild): VNodeChild {
-  return Array.isArray(children) && children.length === 1
-    ? children[0]
-    : children;
+function rebuildSuspenseContent(
+  children: VNodeChild,
+  source?: VNode
+): VNodeChild {
+  const sourceFragment = source?.type === Fragment ? source : undefined;
+  const fragmentChildren =
+    children == null ? [] : Array.isArray(children) ? children : [children];
+  const fragment = h(Fragment, sourceFragment?.props, fragmentChildren);
+  return sourceFragment
+    ? copyRenderMetadata(fragment, sourceFragment)
+    : fragment;
 }
 
 /** Copies render metadata without retaining mounted or normalized child state. */

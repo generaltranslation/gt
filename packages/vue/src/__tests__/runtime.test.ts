@@ -963,6 +963,214 @@ describe('gt-vue runtime', () => {
     }
   });
 
+  it('preserves Vue-compiled Fragment roots while rebuilding Suspense', async () => {
+    const source: JsxChildren = {
+      t: 'Suspense',
+      i: 1,
+      c: [
+        { t: 'span', i: 2, c: 'A' },
+        { t: 'span', i: 3, c: 'B' },
+      ],
+    };
+    const plugin = createGT({
+      loadTranslations: async () => ({
+        [jsxHash(source)]: {
+          t: 'Suspense',
+          i: 1,
+          c: [
+            { t: 'span', i: 2, c: 'C' },
+            { t: 'span', i: 3, c: 'D' },
+          ],
+        },
+      }),
+    });
+    const Root = defineComponent({
+      components: { T },
+      render: compileSfcTemplate(
+        '<T><Suspense><template v-if="true"><span>A</span><span>B</span></template></Suspense></T>'
+      ),
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    try {
+      const sourceHtml = stripFragmentMarkers(
+        await renderWithPlugin(Root, plugin)
+      );
+      expect(sourceHtml).toContain('<span>A</span><span>B</span>');
+
+      await plugin.setLocale('fr');
+      const translatedHtml = stripFragmentMarkers(
+        await renderWithPlugin(Root, plugin)
+      );
+      expect(translatedHtml).toContain('<span>C</span><span>D</span>');
+      expect(translatedHtml).not.toContain('<span>A</span>');
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('rebuilds nested Suspense roots without rerunning fallback slots', async () => {
+    const outerFallback = vi.fn(() => h('b', 'Outer fallback'));
+    const innerFallback = vi.fn(() => h('i', 'Inner fallback'));
+    const plugin = createGT({
+      loadTranslations: async () => ({
+        nestedSuspense: {
+          t: 'Suspense',
+          i: 1,
+          c: {
+            t: 'Suspense',
+            i: 2,
+            c: [
+              { t: 'span', i: 3, c: 'C' },
+              { t: 'span', i: 4, c: 'D' },
+            ],
+          },
+        },
+      }),
+    });
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(
+            T,
+            { _hash: 'nestedSuspense' },
+            {
+              default: () =>
+                h(Suspense, null, {
+                  default: () =>
+                    h(Suspense, null, {
+                      default: () =>
+                        h(Fragment, null, [h('span', 'A'), h('span', 'B')]),
+                      fallback: innerFallback,
+                    }),
+                  fallback: outerFallback,
+                }),
+            }
+          );
+      },
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    try {
+      const sourceHtml = stripFragmentMarkers(
+        await renderWithPlugin(Root, plugin)
+      );
+      expect(sourceHtml).toContain('<span>A</span><span>B</span>');
+      expect(outerFallback).toHaveBeenCalledTimes(1);
+      expect(innerFallback).toHaveBeenCalledTimes(1);
+
+      await plugin.setLocale('fr');
+      const translatedHtml = stripFragmentMarkers(
+        await renderWithPlugin(Root, plugin)
+      );
+      expect(translatedHtml).toContain('<span>C</span><span>D</span>');
+      expect(outerFallback).toHaveBeenCalledTimes(2);
+      expect(innerFallback).toHaveBeenCalledTimes(2);
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('renders repeated translated Suspense roots through a Fragment', async () => {
+    const plugin = createGT({
+      loadTranslations: async () => ({
+        repeatedSuspense: {
+          t: 'Suspense',
+          i: 1,
+          c: [
+            { t: 'span', i: 2, c: 'Premier' },
+            { t: 'span', i: 2, c: 'Deuxième' },
+          ],
+        },
+      }),
+    });
+    await plugin.setLocale('fr');
+    const Root = defineComponent({
+      components: { T },
+      render: compileSfcTemplate(
+        '<T _hash="repeatedSuspense"><Suspense><span>Source</span></Suspense></T>'
+      ),
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    let mounted: ReturnType<typeof mount> | undefined;
+
+    try {
+      const html = stripFragmentMarkers(await renderWithPlugin(Root, plugin));
+      expect(html).toContain('<span>Premier</span><span>Deuxième</span>');
+
+      mounted = mount(Root, plugin);
+      expect(textContent(mounted.root)).toBe('PremierDeuxième');
+      await plugin.setLocale('en');
+      await nextTick();
+      expect(textContent(mounted.root)).toBe('Source');
+      await plugin.setLocale('fr');
+      await nextTick();
+      expect(textContent(mounted.root)).toBe('PremierDeuxième');
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      mounted?.app.unmount();
+      warn.mockRestore();
+    }
+  });
+
+  it('preserves the first repeated Suspense root across locale transitions', async () => {
+    let setupCount = 0;
+    const Stateful = defineComponent({
+      name: 'SuspenseStateful',
+      props: { title: { required: true, type: String } },
+      setup(props) {
+        const instance = ++setupCount;
+        return () => h('span', `${props.title}:${instance}|`);
+      },
+    });
+    const plugin = createGT({
+      loadTranslations: async () => ({
+        statefulSuspense: {
+          t: 'Suspense',
+          i: 1,
+          c: [
+            { t: 'SuspenseStateful', i: 2, d: { ti: 'Premier' } },
+            { t: 'SuspenseStateful', i: 2, d: { ti: 'Deuxième' } },
+          ],
+        },
+      }),
+    });
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(
+            T,
+            { _hash: 'statefulSuspense' },
+            {
+              default: () =>
+                h(Suspense, null, {
+                  default: () => h(Stateful, { title: 'Source' }),
+                }),
+            }
+          );
+      },
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const mounted = mount(Root, plugin);
+
+    try {
+      expect(textContent(mounted.root)).toBe('Source:1|');
+      await plugin.setLocale('fr');
+      await nextTick();
+      expect(textContent(mounted.root)).toBe('Premier:1|Deuxième:2|');
+      await plugin.setLocale('en');
+      await nextTick();
+      expect(textContent(mounted.root)).toBe('Source:1|');
+      expect(setupCount).toBe(2);
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      mounted.app.unmount();
+      warn.mockRestore();
+    }
+  });
+
   it('preserves an async Suspense fallback before rendering translated content', async () => {
     const fallbackCalls = vi.fn();
     let resolveGate!: () => void;
