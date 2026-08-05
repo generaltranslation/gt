@@ -13,7 +13,7 @@ export interface PackageManager {
   buildCommand: string;
   /* The command that the package manager uses to run a script from package.json */
   runScriptCommand: string;
-  flags: string;
+  flags: string[];
   forceInstallFlag: string;
   devDependencyFlag: string;
   registry?: string;
@@ -36,7 +36,7 @@ export const BUN: PackageManager = {
   installAllCommand: 'bun install',
   buildCommand: 'bun run build',
   runScriptCommand: 'bun run',
-  flags: '',
+  flags: [],
   forceInstallFlag: '--force',
   devDependencyFlag: '--dev',
   detect: (cwd: string) =>
@@ -71,7 +71,7 @@ export const DENO: PackageManager = {
   installAllCommand: 'deno install',
   buildCommand: 'deno task build',
   runScriptCommand: 'deno task',
-  flags: '',
+  flags: [],
   forceInstallFlag: '--force',
   devDependencyFlag: '--dev',
   registry: 'npm',
@@ -106,7 +106,7 @@ export const YARN_V1: PackageManager = {
   installAllCommand: 'yarn install',
   buildCommand: 'yarn build',
   runScriptCommand: 'yarn',
-  flags: '--ignore-workspace-root-check',
+  flags: ['--ignore-workspace-root-check'],
   forceInstallFlag: '--force',
   devDependencyFlag: '--dev',
   detect: (cwd: string) => {
@@ -144,7 +144,7 @@ export const YARN_V2: PackageManager = {
   installAllCommand: 'yarn install',
   buildCommand: 'yarn build',
   runScriptCommand: 'yarn',
-  flags: '',
+  flags: [],
   forceInstallFlag: '--force',
   devDependencyFlag: '--dev',
   detect: (cwd: string) => {
@@ -181,7 +181,7 @@ export const PNPM: PackageManager = {
   installAllCommand: 'pnpm install',
   buildCommand: 'pnpm build',
   runScriptCommand: 'pnpm',
-  flags: '--ignore-workspace-root-check',
+  flags: ['--ignore-workspace-root-check'],
   forceInstallFlag: '--force',
   devDependencyFlag: '--save-dev',
   detect: (cwd: string) => {
@@ -222,7 +222,7 @@ export const NPM: PackageManager = {
   installAllCommand: 'npm ci',
   buildCommand: 'npm run build',
   runScriptCommand: 'npm run',
-  flags: '',
+  flags: [],
   forceInstallFlag: '--force',
   devDependencyFlag: '--save-dev',
   detect: (cwd: string) => {
