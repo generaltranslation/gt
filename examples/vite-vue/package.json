@@ -24,6 +24,7 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "@vitejs/plugin-vue": "^6.0.3",
+    "@vitejs/plugin-vue-jsx": "5.0.0",
     "gt": "workspace:*",
     "oxfmt": "catalog:",
     "typescript": "catalog:",

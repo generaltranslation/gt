@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
+import { TsxCompatibilityCard } from './components/TsxCompatibilityCard';
 import {
   Branch,
   Currency,
@@ -184,6 +185,8 @@ async function selectLocale(nextLocale: string) {
           }}
         </p>
       </article>
+
+      <TsxCompatibilityCard />
     </section>
   </main>
 </template>

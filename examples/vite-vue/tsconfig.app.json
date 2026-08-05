@@ -12,10 +12,12 @@
     "moduleDetection": "force",
     "noEmit": true,
     "strict": true,
+    "jsx": "preserve",
+    "jsxImportSource": "vue",
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "types": ["vite/client"]
   },
-  "include": ["src/**/*.ts", "src/**/*.vue"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
 }

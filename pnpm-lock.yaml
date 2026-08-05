@@ -726,6 +726,9 @@ importers:
       '@vitejs/plugin-vue':
         specifier: ^6.0.3
         version: 6.0.8(vite@7.3.1(@types/node@22.13.10)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.44.0)(tsx@4.21.0)(yaml@2.8.3))(vue@3.5.40(typescript@5.9.3))
+      '@vitejs/plugin-vue-jsx':
+        specifier: 5.0.0
+        version: 5.0.0(vite@7.3.1(@types/node@22.13.10)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.44.0)(tsx@4.21.0)(yaml@2.8.3))(vue@3.5.40(typescript@5.9.3))
       gt:
         specifier: workspace:*
         version: link:../../packages/cli

@@ -10,8 +10,8 @@
 # gt-vue + Vite Example
 
 A production Vite app showing the complete lightweight `gt-vue` API. It uses
-Vue's standard Vite plugin only: there is no GT compiler plugin, server, or
-development hot-reload integration.
+Vue's standard SFC and JSX Vite plugins: there is no GT compiler plugin, server,
+or development hot-reload integration.
 
 ## Quick Start
 
@@ -44,6 +44,11 @@ The app demonstrates `<T>`, child-only `<Var>`, typed `value` bindings for
 `msg()` with `useMessages()`, and reactive `useLocale()` / `useSetLocale()`
 locale switching. Plain string lookups accept only `$context`; braces are
 intentionally left uninterpolated.
+
+`TsxCompatibilityCard.tsx` also exercises Vue TSX with `<GT.T>`, a `<T>` and
+`Vue.Fragment` imported through a local ESM barrel, and a translator passed to
+an imported helper. The same catalog therefore release-gates both SFC and TSX
+extraction against the linked runtime.
 
 ## Production Build
 

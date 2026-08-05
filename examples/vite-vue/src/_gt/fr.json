@@ -65,5 +65,16 @@
   "9ed7179a22363eaf": "Budget",
   "d88372c9c1e9e4f5": "Date de lancement",
   "0d013c8f6ffd22a8": "Les chaînes simples restent simples",
-  "5fb10dc1bf5106d9": "Les accolades restent littérales : {name}"
+  "5fb10dc1bf5106d9": "Les accolades restent littérales : {name}",
+  "9b8297df593df5ad": {
+    "t": "h2",
+    "i": 1,
+    "c": "Les réexportations locales fonctionnent en TSX"
+  },
+  "c7d97d97d0769df7": {
+    "t": "p",
+    "i": 1,
+    "c": "Les composants avec espace de noms fonctionnent en TSX."
+  },
+  "ac1d0e7941fbc48f": "Le transfert du traducteur fonctionne en TSX."
 }
