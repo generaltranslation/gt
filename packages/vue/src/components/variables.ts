@@ -3,8 +3,6 @@ import { useGTState } from '../runtime/state';
 import { asFragmentRoot, getFormatLocales, withGTMetadata } from './utils';
 
 type NumberFormatProps = {
-  /** @internal Locale selected by an owning rich translation pipeline. */
-  _locale?: string;
   /** Locale preferences tried before active and default locales in translation. */
   locales?: string[];
   /** Options forwarded to `Intl.NumberFormat`. */
@@ -14,8 +12,6 @@ type NumberFormatProps = {
 };
 
 type DateTimeProps = {
-  /** @internal Locale selected by an owning rich translation pipeline. */
-  _locale?: string;
   /** Locale preferences tried before active and default locales in translation. */
   locales?: string[];
   /** Options forwarded to `Intl.DateTimeFormat`. */
