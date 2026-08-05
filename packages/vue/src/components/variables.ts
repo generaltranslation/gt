@@ -79,12 +79,13 @@ export const Num = withGTMetadata<NumberFormatProps>(
           return null;
         }
         const number = typeof value === 'number' ? value : Number(value);
-        return Number.isNaN(number)
+        const formatted = Number.isNaN(number)
           ? String(value)
           : new Intl.NumberFormat(
               getFormatLocales(props.locales, state.locale.value),
               props.options
             ).format(number);
+        return textFragment(formatted);
       };
     },
   }),
@@ -121,13 +122,14 @@ export const DateTime = withGTMetadata<DateTimeProps>(
           return null;
         }
         const date = value instanceof Date ? value : new Date(value);
-        if (Number.isNaN(date.getTime())) return String(value);
-        return new Intl.DateTimeFormat(
+        if (Number.isNaN(date.getTime())) return textFragment(String(value));
+        const formatted = new Intl.DateTimeFormat(
           getFormatLocales(props.locales, state.locale.value),
           props.options
         )
           .format(date)
           .replace(/[\u200F\u202B\u202E]/g, '');
+        return textFragment(formatted);
       };
     },
   }),
@@ -169,7 +171,7 @@ export const Currency = withGTMetadata<CurrencyProps>(
           return null;
         }
         const number = typeof value === 'number' ? value : Number(value);
-        return Number.isNaN(number)
+        const formatted = Number.isNaN(number)
           ? String(value)
           : new Intl.NumberFormat(
               getFormatLocales(props.locales, state.locale.value),
@@ -179,8 +181,18 @@ export const Currency = withGTMetadata<CurrencyProps>(
                 style: 'currency',
               }
             ).format(number);
+        return textFragment(formatted);
       };
     },
   }),
   'variable-currency'
 );
+
+/**
+ * Preserves a component boundary around formatter text. Vue otherwise merges
+ * adjacent text during SSR, leaving hydration unable to distinguish the
+ * formatter's root from text rendered by its parent.
+ */
+function textFragment(value: string): string[] {
+  return [value];
+}

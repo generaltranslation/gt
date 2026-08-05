@@ -4,6 +4,36 @@ import { describe, expect, it } from 'vitest';
 import { Currency, DateTime, Num, Var, createGT } from '../index';
 
 describe('gt-vue formatting components', () => {
+  it('preserves SSR boundaries around formatter text', async () => {
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h('p', [
+            'Count: ',
+            h(Num, { locales: ['en-US'], value: 1234 }),
+            ' · Date: ',
+            h(DateTime, {
+              locales: ['en-US'],
+              options: { timeZone: 'UTC', year: 'numeric' },
+              value: new Date('2026-08-01T12:00:00.000Z'),
+            }),
+            ' · Total: ',
+            h(Currency, {
+              currency: 'USD',
+              locales: ['en-US'],
+              value: 12,
+            }),
+          ]);
+      },
+    });
+
+    const html = await render(Root);
+
+    expect(html).toContain('Count: <!--[-->1,234<!--]--> · Date: ');
+    expect(html).toContain('<!--[-->2026<!--]--> · Total: ');
+    expect(html).toContain('<!--[-->$12.00<!--]-->');
+  });
+
   it('formats typed number, currency, Date, and epoch values', async () => {
     const Root = defineComponent({
       setup() {
@@ -32,7 +62,9 @@ describe('gt-vue formatting components', () => {
       },
     });
 
-    expect(await render(Root)).toContain('1,234.5|$12.00|2024|2024');
+    expect(stripFragmentMarkers(await render(Root))).toContain(
+      '1,234.5|$12.00|2024|2024'
+    );
   });
 
   it('gives value props precedence over static slot text', async () => {
@@ -43,7 +75,7 @@ describe('gt-vue formatting components', () => {
       },
     });
 
-    expect(await render(Root)).toBe('2');
+    expect(stripFragmentMarkers(await render(Root))).toBe('2');
   });
 
   it('returns partially parseable slot text unchanged', async () => {
@@ -62,7 +94,9 @@ describe('gt-vue formatting components', () => {
       },
     });
 
-    expect(await render(Root)).toContain('1,234.5|12 dollars');
+    expect(stripFragmentMarkers(await render(Root))).toContain(
+      '1,234.5|12 dollars'
+    );
   });
 
   it('returns invalid dates unchanged', async () => {
@@ -143,4 +177,8 @@ describe('gt-vue formatting components', () => {
 
 async function render(root: Component): Promise<string> {
   return renderToString(createSSRApp(root).use(createGT()));
+}
+
+function stripFragmentMarkers(html: string): string {
+  return html.replaceAll('<!--[-->', '').replaceAll('<!--]-->', '');
 }

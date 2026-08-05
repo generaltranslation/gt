@@ -173,7 +173,7 @@ static literals.
 rerenders consumers. Locale persistence and development hot reload are outside
 this package; applications can persist their chosen locale separately.
 
-For SSR, call and await `plugin.loadTranslations(locale)` or
-`plugin.setLocale(locale)` before rendering the app, and create a fresh
-`createGT()` instance for each request so locale and catalog state stay
-request-scoped.
+For SSR, either create the plugin with the request locale and await
+`plugin.loadTranslations(locale)`, or await `plugin.setLocale(locale)` before
+rendering the app. Create a fresh `createGT()` instance for each concurrent
+request so locale and catalog state stay request-scoped.

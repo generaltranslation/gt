@@ -1539,7 +1539,9 @@ describe('gt-vue runtime', () => {
     });
     const html = await renderWithPlugin(Root, plugin);
 
-    expect(html).toContain('1,234.5|$12.00|2024|items|Welcome');
+    expect(stripFragmentMarkers(html)).toContain(
+      '1,234.5|$12.00|2024|items|Welcome'
+    );
   });
 
   it('falls back safely for inherited object-property branch names', async () => {
