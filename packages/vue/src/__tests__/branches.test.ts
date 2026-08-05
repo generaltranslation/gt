@@ -123,7 +123,7 @@ describe('Branch and Plural attributes', () => {
         `<div>before<Branch branch="flag" ${attribute}>Fallback</Branch>after</div>`
       );
 
-      expect(html).toContain('before<!---->after');
+      expect(html).toContain('beforeafter');
       expect(html).not.toContain('Fallback');
       expect(html).not.toContain(`>${label}<`);
     }
@@ -211,7 +211,7 @@ describe('Branch and Plural attributes', () => {
         `<div>before<Plural :n="1" ${attribute}>Fallback</Plural>after</div>`
       );
 
-      expect(html).toContain('before<!---->after');
+      expect(html).toContain('beforeafter');
       expect(html).not.toContain('Fallback');
       expect(html).not.toContain(`>${label}<`);
     }
@@ -225,6 +225,30 @@ describe('Branch and Plural attributes', () => {
     expect(html).toContain('Slot');
     expect(html).not.toContain('Attribute');
     expect(html).not.toContain('Fallback');
+  });
+
+  it('uses the default plural rules when the default locale is active', async () => {
+    const html = await renderTemplate(
+      '<Plural :n="0" :locales="[\'fr\']"><template #one>French one</template><template #other>English other</template></Plural>',
+      () => ({}),
+      createGT({ defaultLocale: 'en' })
+    );
+
+    expect(html).toContain('English other');
+    expect(html).not.toContain('French one');
+  });
+
+  it('uses the active locale plural rules before the default locale', async () => {
+    const plugin = createGT({ defaultLocale: 'en' });
+    await plugin.setLocale('fr');
+    const html = await renderTemplate(
+      '<Plural :n="0"><template #one>French one</template><template #other>English other</template></Plural>',
+      () => ({}),
+      plugin
+    );
+
+    expect(html).toContain('French one');
+    expect(html).not.toContain('English other');
   });
 
   it('uses the same filtered inputs for a rich Plural hash', async () => {

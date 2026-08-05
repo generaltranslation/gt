@@ -5,6 +5,7 @@ import {
 import { defineComponent, type PropType } from 'vue';
 import { useGTState } from '../runtime/state';
 import {
+  asFragmentRoot,
   getBranchContent,
   getBranchNames,
   getFormatLocales,
@@ -12,7 +13,7 @@ import {
 } from './utils';
 
 type PluralProps = {
-  /** Locale preferences tried before the active GT locale. */
+  /** Locale preferences tried before active and default locales in translation. */
   locales?: string[];
   /** Numeric value used to select a plural category. */
   n: number;
@@ -27,14 +28,15 @@ type BranchProps = {
  * Selects a named plural slot such as `one` or `other` from `n` and the active
  * locale's plural rules. Missing categories fall back to the default slot.
  *
- * Explicit `locales` are tried before the active GT locale.
+ * At the default locale, explicit `locales` are ignored. Otherwise, they are
+ * tried before the active and default GT locales.
  */
 export const Plural = withGTMetadata<PluralProps>(
   defineComponent({
     inheritAttrs: false,
     name: 'Plural',
     props: {
-      /** Locale preferences tried before the active GT locale. */
+      /** Locale preferences tried before active and default locales in translation. */
       locales: Array as PropType<string[]>,
       /** Numeric value used to select a plural category. */
       n: {
@@ -51,9 +53,13 @@ export const Plural = withGTMetadata<PluralProps>(
         const branch = getPluralForm(
           props.n,
           branches,
-          getFormatLocales(props.locales, state.locale.value)
+          getFormatLocales(
+            props.locales,
+            state.locale.value,
+            state.defaultLocale
+          )
         );
-        return getBranchContent(branch, attrs, slots);
+        return asFragmentRoot(getBranchContent(branch, attrs, slots));
       };
     },
   }),
@@ -78,10 +84,12 @@ export const Branch = withGTMetadata<BranchProps>(
     setup(props, { attrs, slots }) {
       return () => {
         const branch = props.branch?.toString();
-        return getBranchContent(
-          branch && !branch.startsWith('data-') ? branch : undefined,
-          attrs,
-          slots
+        return asFragmentRoot(
+          getBranchContent(
+            branch && !branch.startsWith('data-') ? branch : undefined,
+            attrs,
+            slots
+          )
         );
       };
     },
