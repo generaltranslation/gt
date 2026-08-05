@@ -17,6 +17,10 @@ export async function installPackage(
       args.push(packageManager.devDependencyFlag);
     }
 
+    if (packageManager.flags) {
+      args.push(packageManager.flags);
+    }
+
     const childProcess = spawn(command, args, {
       stdio: ['pipe', 'ignore', 'pipe'],
       cwd,
