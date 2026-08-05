@@ -18,8 +18,9 @@ The initial `gt-vue` API intentionally does not port React-only behavior:
 - rich/ICU string interpolation and derived runtime placeholders;
 - metadata other than `$context`, including `$id`, `$maxChars`, and formatting;
 - `getGT`, async translator creation, tagged templates, or React JSX extraction;
-- interprocedural propagation when a translator is passed as a callback,
-  conditional translator selection, or arbitrary cross-file data flow.
+- extraction through arbitrary callbacks or cross-file data flow. When a
+  local callback or conditional value can still be a translator, extraction
+  fails closed instead of silently omitting a catalog entry.
 
 Unsupported dynamic `gt()`/`msg()` content receives an extraction diagnostic.
 Dynamic `useMessages()` input remains unreported because it may be an encoded

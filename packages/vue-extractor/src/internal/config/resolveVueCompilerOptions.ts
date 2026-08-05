@@ -521,6 +521,44 @@ function readNuxtConfig(
     errors.push(dynamicConfigError(file, configRoot.node));
     return;
   }
+  const configObject = resolveStaticObject(
+    configRoot.value.node,
+    configRoot.value.scope,
+    new Set()
+  );
+  if (!configObject.ok) {
+    errors.push(dynamicConfigError(file, configObject.node));
+    return;
+  }
+  const extendsEntry = configObject.value.entries.get('extends');
+  if (
+    extendsEntry &&
+    !isDefinitelyEmptyNuxtExtends(extendsEntry.node, extendsEntry.scope)
+  ) {
+    errors.push(
+      locatedOptionError(
+        file,
+        extendsEntry.node,
+        'Found Nuxt layer inheritance that could change Vue compiler options',
+        'Run extraction from a Nuxt configuration without inherited layers until gt-vue can resolve the complete layer chain safely'
+      )
+    );
+    return;
+  }
+  const unsupportedSourceLayout = findUnsupportedNuxtSourceLayout(
+    configObject.value
+  );
+  if (unsupportedSourceLayout) {
+    errors.push(
+      locatedOptionError(
+        file,
+        unsupportedSourceLayout,
+        'Found custom Nuxt source directories that default Vue discovery cannot scan safely',
+        'Use Nuxt source directories covered by the default app, src, pages, layouts, plugins, and related globs until custom directory discovery is supported'
+      )
+    );
+    return;
+  }
   readNestedCompilerOptions(
     configRoot.value.node,
     configRoot.value.scope,
@@ -529,6 +567,54 @@ function readNuxtConfig(
     true,
     state,
     errors
+  );
+}
+
+/** Finds a Nuxt source-layout override not covered by default CLI globs. */
+function findUnsupportedNuxtSourceLayout(
+  config: StaticObject
+): t.Node | undefined {
+  const srcDir = config.entries.get('srcDir');
+  if (srcDir) {
+    const value = resolveStaticString(srcDir.node, srcDir.scope, new Set());
+    const normalized = value
+      ? path.posix.normalize(value.replaceAll('\\', '/')).replace(/\/+$/, '') ||
+        '.'
+      : undefined;
+    if (!normalized || !['.', 'app', 'src'].includes(normalized)) {
+      return srcDir.node;
+    }
+  }
+
+  const directoryOptions = config.entries.get('dir');
+  if (directoryOptions) {
+    const resolved = resolveStaticObject(
+      directoryOptions.node,
+      directoryOptions.scope,
+      new Set()
+    );
+    if (!resolved.ok || resolved.value.entries.size > 0) {
+      return directoryOptions.node;
+    }
+  }
+  return undefined;
+}
+
+/** Returns true only when a Nuxt extends value provably selects no layers. */
+function isDefinitelyEmptyNuxtExtends(input: t.Node, scope: Scope): boolean {
+  const node = unwrapExpression(input);
+  if (node.type === 'NullLiteral') return true;
+  if (node.type === 'ArrayExpression') return node.elements.length === 0;
+  if (node.type !== 'Identifier') return false;
+  if (node.name === 'undefined' && !scope.getBinding(node.name)) return true;
+  const binding = scope.getBinding(node.name);
+  const declaration = binding?.path.node;
+  return !!(
+    binding?.constant &&
+    !bindingHasMutation(binding) &&
+    declaration?.type === 'VariableDeclarator' &&
+    declaration.init &&
+    isDefinitelyEmptyNuxtExtends(declaration.init, binding.path.scope)
   );
 }
 

@@ -182,6 +182,15 @@ const positiveCases: AuditCase[] = [
     sources: ['Optional namespace member'],
   },
   {
+    name: 'statically computed namespace member call in a template',
+    source: setup(
+      `import * as GT from 'gt-vue';
+       const key = 'msg';`,
+      `{{ GT[key]('Computed namespace member') }} {{ GT['m' + 'sg']('Concatenated namespace member') }}`
+    ),
+    sources: ['Computed namespace member', 'Concatenated namespace member'],
+  },
+  {
     extension: '.cjs',
     name: 'direct CommonJS member hook chain',
     source: `require('gt-vue').useGT()('Direct require chain');`,
@@ -409,47 +418,6 @@ const positiveCases: AuditCase[] = [
 
 const ignoredCases: AuditCase[] = [
   {
-    name: 'Options API setup may fall through without returning bindings',
-    source: options(
-      `import { useGT } from 'gt-vue';
-       export default {
-         setup() {
-           if (Math.random() > 0.5) return { translate: useGT() };
-         },
-       };`,
-      `{{ translate('Fallthrough return') }}`
-    ),
-    sources: [],
-  },
-  {
-    name: 'inconsistent Options API setup return values',
-    source: options(
-      `import { useGT } from 'gt-vue';
-       export default {
-         setup() {
-           if (Math.random() > 0.5) return { translate: useGT() };
-           return { translate: String };
-         },
-       };`,
-      `{{ translate('Inconsistent return') }}`
-    ),
-    sources: [],
-  },
-  {
-    name: 'Options API setup key absent from one return',
-    source: options(
-      `import { useGT } from 'gt-vue';
-       export default {
-         setup() {
-           if (Math.random() > 0.5) return { translate: useGT() };
-           return {};
-         },
-       };`,
-      `{{ translate('Missing return key') }}`
-    ),
-    sources: [],
-  },
-  {
     name: 'object default bypassed by supplied non-GT value',
     source: setup(
       `import { useGT } from 'gt-vue';
@@ -464,16 +432,6 @@ const ignoredCases: AuditCase[] = [
       `import { useGT } from 'gt-vue';
        const [translate = useGT()] = [String];
        translate('Supplied array value');`
-    ),
-    sources: [],
-  },
-  {
-    name: 'dynamic computed Options API component key',
-    source: options(
-      `import { T } from 'gt-vue';
-       const key = String(Date.now());
-       export default { components: { [key]: T } };`,
-      `<LocalT>Dynamic registration key</LocalT>`
     ),
     sources: [],
   },
@@ -533,6 +491,64 @@ const ignoredCases: AuditCase[] = [
 ];
 
 const diagnosticCases: Array<AuditCase & { diagnostic: string }> = [
+  {
+    name: 'Options API setup may fall through without returning bindings',
+    source: options(
+      `import { useGT } from 'gt-vue';
+       export default {
+         setup() {
+           if (Math.random() > 0.5) return { translate: useGT() };
+         },
+       };`,
+      `{{ translate('Fallthrough return') }}`
+    ),
+    sources: [],
+    diagnostic:
+      'Could not statically resolve consistent Options API setup returns',
+  },
+  {
+    name: 'inconsistent Options API setup return values',
+    source: options(
+      `import { useGT } from 'gt-vue';
+       export default {
+         setup() {
+           if (Math.random() > 0.5) return { translate: useGT() };
+           return { translate: String };
+         },
+       };`,
+      `{{ translate('Inconsistent return') }}`
+    ),
+    sources: [],
+    diagnostic:
+      'Could not statically resolve consistent Options API setup returns',
+  },
+  {
+    name: 'Options API setup key absent from one return',
+    source: options(
+      `import { useGT } from 'gt-vue';
+       export default {
+         setup() {
+           if (Math.random() > 0.5) return { translate: useGT() };
+           return {};
+         },
+       };`,
+      `{{ translate('Missing return key') }}`
+    ),
+    sources: [],
+    diagnostic:
+      'Could not statically resolve consistent Options API setup returns',
+  },
+  {
+    name: 'dynamic computed Options API component key',
+    source: options(
+      `import { T } from 'gt-vue';
+       const key = String(Date.now());
+       export default { components: { [key]: T } };`,
+      `<LocalT>Dynamic registration key</LocalT>`
+    ),
+    sources: [],
+    diagnostic: 'Could not statically resolve the Vue Options API components',
+  },
   {
     name: 'msg without arguments',
     source: setup(`import { msg } from 'gt-vue'; msg();`),

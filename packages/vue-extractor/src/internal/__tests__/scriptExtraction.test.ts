@@ -79,9 +79,12 @@ describe('Vue script extraction', () => {
   it('diagnoses dynamic calls without following unsupported callbacks', async () => {
     const result = await extractFixture('script-react-parity-dynamic.vue');
 
-    expect(result.errors).toHaveLength(2);
+    expect(result.errors).toHaveLength(3);
     expect(result.errors[0]).toContain('dynamic content');
     expect(result.errors[1]).toContain('dynamic options');
+    expect(result.errors[2]).toContain(
+      'Could not statically resolve possible gt-vue string function alias'
+    );
     expect(result.results.map(({ source }) => source)).toEqual([
       'Optional direct msg',
     ]);
@@ -412,11 +415,6 @@ const ignoredScriptCases: ScriptMatrixCase[] = [
     sources: [],
   },
   {
-    name: 'call before a late assignment',
-    script: `import { useGT } from 'gt-vue'; let gt; gt('Before assignment'); gt = useGT(); gt('After unsafe assignment');`,
-    sources: [],
-  },
-  {
     name: 'unrelated same-named function',
     script: `const useGT = () => String; useGT()('Unrelated function');`,
     sources: [],
@@ -429,11 +427,6 @@ const ignoredScriptCases: ScriptMatrixCase[] = [
   {
     name: 'translator passed as callback',
     script: `import { useGT } from 'gt-vue'; const gt = useGT(); function helper(translator: typeof gt) { translator('Passed callback'); } helper(gt);`,
-    sources: [],
-  },
-  {
-    name: 'conditional translator selection',
-    script: `import { useGT } from 'gt-vue'; const gt = useGT(); const callback = Date.now() > 0 ? gt : String; callback('Conditional callback');`,
     sources: [],
   },
   {
@@ -541,6 +534,40 @@ describe('Vue script extraction parity matrix', () => {
     );
     expect(result.errors).toHaveLength(1);
     expect(result.errors[0]).toContain(testCase.diagnostic);
+  });
+
+  it('diagnoses a call before a late assignment and extracts the later call', async () => {
+    const result = await extractInlineScript({
+      name: 'call before a late assignment',
+      script: `import { useGT } from 'gt-vue'; let gt; gt('Before assignment'); gt = useGT(); gt('After unsafe assignment');`,
+      sources: [],
+    });
+
+    expect(result.results.map(({ source }) => source)).toEqual([
+      'After unsafe assignment',
+    ]);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining(
+          'Could not statically resolve possible gt-vue string function alias'
+        ),
+      ])
+    );
+  });
+
+  it('fails closed for a conditional translator selection', async () => {
+    const result = await extractInlineScript({
+      name: 'conditional translator selection',
+      script: `import { useGT } from 'gt-vue'; const gt = useGT(); const callback = Date.now() > 0 ? gt : String; callback('Conditional callback');`,
+      sources: [],
+    });
+
+    expect(result.results).toEqual([]);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0]).toContain(
+      'Could not statically resolve possible gt-vue string function alias'
+    );
   });
 });
 

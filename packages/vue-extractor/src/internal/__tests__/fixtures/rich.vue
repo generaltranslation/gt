@@ -34,7 +34,6 @@ function shadowed(gt: (value: string) => string) {
   <Translate context="hero">
     <p title="Greeting">
       Hello
-      <!-- note -->
       <Value>{{ name }}</Value>
       !
     </p>

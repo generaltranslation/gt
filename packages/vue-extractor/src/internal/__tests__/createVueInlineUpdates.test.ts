@@ -90,15 +90,13 @@ describe('extractFromVueSource', () => {
     ).toBeDefined();
   });
 
-  it('coalesces text separated by Vue comment nodes', async () => {
+  it('rejects comments that make whitespace hashes build-dependent', async () => {
     const result = await extractFixtures(['comments.vue']);
 
-    expect(result.errors).toEqual([]);
-    expect(result.updates).toHaveLength(1);
-    expect(result.updates[0]).toMatchObject({
-      dataFormat: 'JSX',
-      source: ' Hello  world ',
-    });
+    expect(result.updates).toEqual([]);
+    expect(result.errors.join('\n')).toContain(
+      'comment adjacent to translatable whitespace'
+    );
   });
 
   it('diagnoses dynamic content and every unsupported metadata field', async () => {
@@ -255,12 +253,12 @@ describe('extractFromVueSource', () => {
     );
   });
 
-  it('diagnoses named slots on ordinary components and bare templates', async () => {
+  it('keeps ordinary component slots opaque while diagnosing invalid T content', async () => {
     const result = await extractFixtures(['unsupported-slots.vue']);
     const errors = result.errors.join('\n');
 
-    expect(result.updates).toEqual([]);
-    expect(errors).toContain('named slots on <Card>');
+    expect(result.updates).toHaveLength(1);
+    expect(result.updates[0]?.source).toEqual({ t: 'Card', i: 1 });
     expect(errors).toContain('bare <template>');
     expect(errors).toContain('nested gt-vue <T>');
   });
