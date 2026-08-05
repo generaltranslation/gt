@@ -81,6 +81,82 @@ gt('Vue workspace');
     ]);
   });
 
+  it('does not return a partial catalog for a Vue workspace using a local barrel', async () => {
+    const projectRoot = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'gt-vue-barrel-workspace-')
+    );
+    temporaryDirectories.push(projectRoot);
+    linkTestVueInstallation(projectRoot);
+    writeJson(path.join(projectRoot, 'package.json'), {
+      private: true,
+      workspaces: ['apps/*', 'packages/*'],
+    });
+
+    const barrelDirectory = path.join(projectRoot, 'packages', 'i18n');
+    fs.mkdirSync(path.join(barrelDirectory, 'src'), { recursive: true });
+    writeJson(path.join(barrelDirectory, 'package.json'), {
+      name: '@fixture/vue-i18n',
+      dependencies: { 'gt-vue': '0.0.0' },
+    });
+    fs.writeFileSync(
+      path.join(barrelDirectory, 'src', 'index.ts'),
+      `import { msg } from 'gt-vue';
+export { T, useGT } from 'gt-vue';
+export const barrelMessage = msg('Barrel marker');`
+    );
+
+    const appDirectory = path.join(projectRoot, 'apps', 'docs');
+    fs.mkdirSync(path.join(appDirectory, 'src'), { recursive: true });
+    writeJson(path.join(appDirectory, 'package.json'), {
+      name: '@fixture/docs',
+      dependencies: { '@fixture/vue-i18n': 'workspace:*' },
+    });
+    writeJson(path.join(appDirectory, 'tsconfig.json'), {
+      compilerOptions: {
+        baseUrl: '.',
+        paths: {
+          '@fixture/vue-i18n': ['../../packages/i18n/src/index.ts'],
+        },
+      },
+    });
+    fs.writeFileSync(
+      path.join(appDirectory, 'src', 'App.vue'),
+      `<script setup>
+import { T, useGT } from '@fixture/vue-i18n';
+const gt = useGT();
+</script>
+<template><T>Consumer rich text</T><p>{{ gt('Consumer string') }}</p></template>`
+    );
+    vi.spyOn(process, 'cwd').mockReturnValue(projectRoot);
+
+    expect(determineLibrary()).toEqual({
+      library: Libraries.GT_VUE,
+      additionalModules: [],
+    });
+
+    const output = await createInlineUpdatesForLibraries(
+      [Libraries.GT_VUE],
+      false,
+      undefined,
+      {
+        autoderive: false,
+        enableAutoJsxInjection: false,
+        includeSourceCodeContext: false,
+        legacyGtReactImportSource: false,
+      },
+      { conditionNames: ['import', 'default'] }
+    );
+
+    expect(output.errors).toEqual([]);
+    // Before transitive Vue workspace discovery this returned only the barrel
+    // marker: a non-empty partial catalog that could replace both app entries.
+    expect(output.updates.map((update) => update.source).sort()).toEqual([
+      'Barrel marker',
+      'Consumer rich text',
+      'Consumer string',
+    ]);
+  });
+
   it.skipIf(process.platform === 'win32')(
     'does not read React workspace sources through outside symlinks',
     async () => {
