@@ -19,7 +19,10 @@ import { compileTemplate } from 'vue/compiler-sfc';
 import { renderToString } from 'vue/server-renderer';
 import { describe, expect, it, vi } from 'vitest';
 import { getBranchNames } from '../components/utils';
-import { translateVueChildren } from '../rendering/translateVueChildren';
+import {
+  serializeVueChildren,
+  translateVueChildren,
+} from '../rendering/translateVueChildren';
 import {
   Branch,
   Currency,
@@ -37,6 +40,24 @@ import {
 import type { TranslationCatalog } from '../index';
 
 describe('gt-vue runtime', () => {
+  it('flattens only the default slot of a compiled Vue Fragment', () => {
+    const defaultSlot = vi.fn(() => [h('span', 'Fragment child')]);
+    const ignoredSlot = vi.fn(() => [h('span', 'Ignored child')]);
+    const fragment = h(Fragment, null, {
+      _: 1,
+      default: defaultSlot,
+      ignored: ignoredSlot,
+    });
+
+    expect(serializeVueChildren([fragment])).toEqual({
+      t: 'span',
+      i: 1,
+      c: 'Fragment child',
+    });
+    expect(defaultSlot).toHaveBeenCalledOnce();
+    expect(ignoredSlot).not.toHaveBeenCalled();
+  });
+
   it('deduplicates branch names shared by attrs and slots', () => {
     const slots = {
       default: () => [],
