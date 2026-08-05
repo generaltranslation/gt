@@ -5,7 +5,10 @@ import { resolveVueCompilerOptions } from '@generaltranslation/vue-extractor/con
 import type { VueCompilerOptions } from '@generaltranslation/vue-extractor/types';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import type { Updates } from '../../types/index.js';
-import type { GTParsingFlags } from '../../types/parsing.js';
+import type {
+  GTParsingFlags,
+  ParsingConfigOptions,
+} from '../../types/parsing.js';
 import { matchFiles } from '../../fs/matchFiles.js';
 import {
   findInlineSourceScope,
@@ -18,6 +21,7 @@ import {
   dedupeUpdates,
 } from '../../extraction/postProcess.js';
 import { Libraries } from '../../types/libraries.js';
+import { resolveImportPath } from '../../react/jsx/utils/resolveImportPath.js';
 
 const SCRIPT_EXTENSIONS = new Set([
   '.js',
@@ -36,12 +40,14 @@ const SCRIPT_EXTENSIONS = new Set([
  */
 export async function createVueInlineUpdates(
   filePatterns: string[] | undefined,
-  parsingFlags: GTParsingFlags
+  parsingFlags: GTParsingFlags,
+  parsingOptions: ParsingConfigOptions = { conditionNames: [] }
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   const updates: Updates = [];
   const errors: string[] = [];
   const warnings: string[] = [];
   const projectRoot = process.cwd();
+  const moduleResolutionCache = new Map<string, string | null>();
   const scopes = readInlineSourceScopes(projectRoot, Libraries.GT_VUE);
   const files = matchFiles(
     projectRoot,
@@ -75,6 +81,13 @@ export async function createVueInlineUpdates(
         compilerOptionsByScope.get(fileScopes.get(file)?.directory ?? '') ?? {},
       includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
       projectRoot,
+      resolveModule: (specifier, importer) =>
+        resolveImportPath(
+          importer,
+          specifier,
+          parsingOptions,
+          moduleResolutionCache
+        ) ?? undefined,
     });
     updates.push(...result.results);
     errors.push(...result.errors);

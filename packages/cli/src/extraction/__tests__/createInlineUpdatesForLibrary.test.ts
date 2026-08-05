@@ -66,7 +66,8 @@ describe('createInlineUpdatesForLibrary', () => {
 
     expect(vueExtractorMock.createVueInlineUpdates).toHaveBeenCalledWith(
       ['src/**/*.vue'],
-      parsingFlags
+      parsingFlags,
+      parsingOptions
     );
     expect(createInlineUpdates).not.toHaveBeenCalled();
   });
@@ -110,7 +111,8 @@ describe('createInlineUpdatesForLibrary', () => {
     );
     expect(vueExtractorMock.createVueInlineUpdates).toHaveBeenCalledWith(
       patterns,
-      parsingFlags
+      parsingFlags,
+      parsingOptions
     );
   });
 
