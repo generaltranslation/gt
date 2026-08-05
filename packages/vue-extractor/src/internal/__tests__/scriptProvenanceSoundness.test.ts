@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractFromVueSource } from '../../index.js';
+import { extractFromVueSource } from './testVueCompiler.js';
 
 describe('Vue script provenance soundness', () => {
   it('extracts nested translators and script-side ref/computed msg aliases', async () => {

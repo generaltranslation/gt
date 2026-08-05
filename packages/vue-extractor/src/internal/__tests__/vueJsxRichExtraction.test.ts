@@ -1,6 +1,6 @@
 import { hashSource } from 'generaltranslation/id';
 import { describe, expect, it } from 'vitest';
-import { extractFromVueSource } from '../../index.js';
+import { extractFromVueSource } from './testVueCompiler.js';
 
 describe('Vue JSX rich extraction', () => {
   it('extracts a direct T import into the runtime wire format', async () => {

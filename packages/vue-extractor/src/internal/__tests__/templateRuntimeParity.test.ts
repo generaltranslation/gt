@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { JsxChildren } from '@generaltranslation/format/types';
-import { extractFromVueSource } from '../../index.js';
+import { extractFromVueSource } from './testVueCompiler.js';
 
 describe('Vue template runtime parity', () => {
   it('matches Vue directive scope, slot, and component-name behavior', async () => {

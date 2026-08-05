@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { hashSource } from 'generaltranslation/id';
-import { extractFromVueSource } from '../../index.js';
+import { extractFromVueSource } from './testVueCompiler.js';
 
 describe('opaque component runtime parity', () => {
   it('does not inspect comment whitespace outside serialized component slots', async () => {

@@ -1,4 +1,4 @@
-import type { GTComponentName } from '../types.js';
+import type { GTComponentName, VueBuiltinName } from '../types.js';
 import type { KnownValue } from './model.js';
 
 /** Public gt-vue component exports recognized by script analysis. */
@@ -10,6 +10,12 @@ export const COMPONENT_IMPORTS = new Set<GTComponentName>([
   'Currency',
   'Plural',
   'Branch',
+]);
+
+/** Vue exports whose exact runtime identity changes rich traversal. */
+export const VUE_BUILTIN_IMPORTS = new Set<VueBuiltinName>([
+  'Fragment',
+  'Suspense',
 ]);
 
 /** Array methods that do not mutate the receiver's retained identity. */
@@ -116,8 +122,8 @@ export function knownExport(
         writePolicy: 'forward',
       };
     }
-    return name === 'Fragment' || name === 'Suspense'
-      ? { type: 'vue-builtin', name }
+    return VUE_BUILTIN_IMPORTS.has(name as VueBuiltinName)
+      ? { type: 'vue-builtin', name: name as VueBuiltinName }
       : undefined;
   }
   if (COMPONENT_IMPORTS.has(name as GTComponentName)) {

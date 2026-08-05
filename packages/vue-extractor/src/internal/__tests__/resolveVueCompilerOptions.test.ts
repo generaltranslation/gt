@@ -393,13 +393,25 @@ describe('resolveVueCompilerOptions', () => {
     );
   });
 
-  it('fails closed for unsupported compiler options', () => {
+  it.each([
+    'nodeTransforms',
+    'directiveTransforms',
+    'isCustomElement',
+    'getNamespace',
+    'getTextMode',
+    'decodeEntities',
+    'comments',
+    'prefixIdentifiers',
+    'hoistStatic',
+    'cacheHandlers',
+    'scopeId',
+  ])('fails closed for the Vite compiler option %s', (option) => {
     const root = createProject({
       'vite.config.js': `
         import vue from '@vitejs/plugin-vue';
         export default { plugins: [vue({ template: { compilerOptions: {
           whitespace: 'preserve',
-          isCustomElement: (tag) => tag.startsWith('x-'),
+          ${option}: true,
         } } })] };
       `,
     });
@@ -408,8 +420,44 @@ describe('resolveVueCompilerOptions', () => {
 
     expect(result.compilerOptions).toEqual({ whitespace: 'preserve' });
     expect(result.errors.join('\n')).toContain(
-      'unsupported Vue compiler option "isCustomElement"'
+      `unsupported Vue compiler option "${option}"`
     );
+  });
+
+  it.each(['nodeTransforms', 'directiveTransforms', 'isCustomElement'])(
+    'fails closed for the Nuxt compiler option %s',
+    (option) => {
+      const root = createProject({
+        'nuxt.config.ts': `
+          export default defineNuxtConfig({ vue: { compilerOptions: {
+            delimiters: ['[[', ']]'],
+            ${option}: true,
+          } } });
+        `,
+      });
+
+      const result = resolveVueCompilerOptions(root, undefined);
+
+      expect(result.compilerOptions).toEqual({ delimiters: ['[[', ']]'] });
+      expect(result.errors.join('\n')).toContain(
+        `unsupported Vue compiler option "${option}"`
+      );
+    }
+  );
+
+  it('fails closed for a custom Vite compiler-sfc instance', () => {
+    const root = createProject({
+      'vite.config.ts': `
+        import vue from '@vitejs/plugin-vue';
+        import * as compiler from './custom-compiler';
+        export default { plugins: [vue({ compiler })] };
+      `,
+    });
+
+    const result = resolveVueCompilerOptions(root, undefined);
+
+    expect(result.compilerOptions).toEqual({});
+    expect(result.errors.join('\n')).toContain('custom Vue compiler instance');
   });
 
   it('reports syntax errors only when a config references compiler options', () => {

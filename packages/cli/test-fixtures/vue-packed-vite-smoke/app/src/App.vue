@@ -1,6 +1,6 @@
 <script setup>
-import { T, Var, msg, useGT, useMessages } from 'gt-vue';
-import { computed, defineComponent, h, ref } from 'vue';
+import { Branch, Plural, T, Var, msg, useGT, useMessages } from 'gt-vue';
+import { computed, defineComponent, Fragment as F, h, ref } from 'vue';
 
 const gt = useGT();
 const m = useMessages();
@@ -65,6 +65,29 @@ function recordScopedSlot(slotProps) {
     >
       Registered component
     </component>
+
+    <p id="fragment">
+      <T context="fragment">
+        <F><strong>Fragment child</strong></F>
+      </T>
+    </p>
+
+    <p id="implicit-branch">
+      <T context="implicit-nbsp-branch">
+        <Branch branch="formal">
+          <template #formal>Formal branch</template>
+          &nbsp;
+        </Branch>
+      </T>
+    </p>
+    <p id="implicit-plural">
+      <T context="implicit-nbsp-plural">
+        <Plural :n="1">
+          <template #one>One plural</template>
+          &nbsp;
+        </Plural>
+      </T>
+    </p>
 
     <p id="direct-gt">{{ gt('Direct GT') }}</p>
     <p id="nested-gt">{{ nested.deep.gt('Nested GT') }}</p>

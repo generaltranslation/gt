@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { JsxChildren } from '@generaltranslation/format/types';
-import { extractFromVueSource } from '../../index.js';
+import { extractFromVueSource } from './testVueCompiler.js';
 import type { VueCompilerOptions, VueExtractionResult } from '../../types.js';
 
 describe('extractFromVueSource', () => {

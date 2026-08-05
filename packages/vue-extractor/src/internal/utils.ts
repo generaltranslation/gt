@@ -17,6 +17,10 @@ export function createVueExtractionContext(
   return {
     errors,
     file,
+    // Script-only extraction never reads this field. Vue SFC extraction
+    // replaces it with the resolved consumer compiler's behavior before
+    // traversing the template.
+    implicitSlotWhitespace: 'ecmascript',
     includeSourceCodeContext,
     relativeFile: path.relative(projectRoot, file),
     results,
