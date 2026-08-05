@@ -30,6 +30,7 @@
     "vite-create-app",
     "rollup-spa",
     "vite-spa",
+    "vite-vue",
     "webpack-spa",
     "cli-test-app",
     "compiler-cli-parity",
