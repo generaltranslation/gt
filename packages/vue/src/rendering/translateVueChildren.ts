@@ -16,13 +16,13 @@ import { hashSource } from 'generaltranslation/id';
 import {
   Comment,
   Fragment,
+  Suspense,
   Text,
   cloneVNode,
   h,
   isVNode,
   mergeProps,
   type Component,
-  type Slot,
   type Slots,
   type VNode,
   type VNodeChild,
@@ -43,6 +43,7 @@ type SourceElement = {
   branches: Record<string, SourceNode[]>;
   children: SourceNode[];
   id: number;
+  identity: string;
   opaque: boolean;
   transformation: Transformation;
   variableName?: string;
@@ -65,19 +66,29 @@ type RichTranslationOptions = {
   context?: string;
 };
 
+type TranslationIdentityCache = Map<string, symbol>;
+
 type VNodeWithRenderMetadata = VNode & {
   ctx?: unknown;
   slotScopeIds?: string[] | null;
+  ssContent?: VNode;
+  ssFallback?: VNode;
 };
 
 export function translateVueChildren(
   children: VNode[],
   state: GTState,
-  options: RichTranslationOptions
+  options: RichTranslationOptions,
+  identityCache: TranslationIdentityCache = new Map()
 ): VNodeChild {
   const source = createSourceNodes(children);
   if (state.locale.value === state.defaultLocale) {
-    return renderDefaultNodes(source, state, state.defaultLocale);
+    return renderDefaultNodes(
+      source,
+      state,
+      identityCache,
+      state.defaultLocale
+    );
   }
   const hash =
     options._hash ??
@@ -88,23 +99,29 @@ export function translateVueChildren(
     });
   const target = state.getCatalog()[hash];
   if (target == null) {
-    return renderDefaultNodes(source, state, state.defaultLocale);
+    return renderDefaultNodes(
+      source,
+      state,
+      identityCache,
+      state.defaultLocale
+    );
   }
-  return renderNodes(source, target, state);
+  return renderNodes(source, target, state, identityCache);
 }
 
 function createSourceNodes(children: unknown): SourceNode[] {
   const index = { value: 0 };
-  return visitChildren(children, index);
+  return visitChildren(children, index, 'root');
 }
 
 function visitChildren(
   children: unknown,
-  index: { value: number }
+  index: { value: number },
+  identityScope: string
 ): SourceNode[] {
   if (Array.isArray(children)) {
     return mergeAdjacentStrings(
-      children.flatMap((child) => visitChildren(child, index))
+      children.flatMap((child) => visitChildren(child, index, identityScope))
     );
   }
   if (children == null || typeof children === 'boolean') return [];
@@ -112,25 +129,33 @@ function visitChildren(
   if (children.type === Comment) return [];
   if (children.type === Text) return [String(children.children ?? '')];
   if (children.type === Fragment) {
-    return visitChildren(children.children, index);
+    return visitChildren(children.children, index, identityScope);
   }
 
   index.value += 1;
   const id = index.value;
+  const identity = `${identityScope}/e:${id}`;
   const metadata = getGTMetadata(children);
   const transformation = getTransformation(metadata);
   const variable =
     transformation === 'variable' ? getVariable(metadata, id) : undefined;
   const defaultSlot = variable
     ? { children: undefined, opaque: false }
-    : readDefaultSlot(children);
+    : readDefaultSlot(children, transformation);
   const source: SourceElement = {
     branches: {},
     children:
       variable || defaultSlot.opaque
         ? []
-        : visitChildren(defaultSlot.children, index),
+        : visitChildren(
+            defaultSlot.children,
+            index,
+            transformation === 'branch' || transformation === 'plural'
+              ? `${identity}/default`
+              : identity
+          ),
     id,
+    identity,
     opaque: defaultSlot.opaque,
     transformation,
     variableName: variable?.name,
@@ -139,7 +164,7 @@ function visitChildren(
   };
 
   if (transformation === 'branch' || transformation === 'plural') {
-    source.branches = getBranches(children, transformation, id);
+    source.branches = getBranches(children, transformation, id, identity);
   }
   return [source];
 }
@@ -174,60 +199,43 @@ function getVariable(
   };
 }
 
-const SCOPED_SLOT_ACCESS = Symbol('gt-vue scoped slot access');
-
 /**
- * Reads a default slot only while it behaves like source-owned static content.
+ * Reads source-owned content without speculatively invoking user components.
  *
- * Vue's compiled scoped-slot wrappers erase the original function arity, so
- * they cannot be identified from `slot.length`. A throwing proxy detects the
- * first read of slot props without inventing runtime values. Such slots stay
- * opaque and are later rendered by their owning component with real props.
+ * Vue represents both scoped and unscoped component slots as indistinguishable
+ * functions. Calling an arbitrary slot to discover which kind it is can run
+ * ignored slots, duplicate side effects, or let synthetic props escape. Keep
+ * custom component slots opaque and traverse only GT-owned slots whose
+ * no-argument contract is known. Suspense is read from Vue's already-normalized
+ * content so its slot is not invoked a second time.
  */
-function readDefaultSlot(vnode: VNode): {
+function readDefaultSlot(
+  vnode: VNode,
+  transformation: Transformation
+): {
   children: unknown;
   opaque: boolean;
 } {
+  if (vnode.type === Suspense) {
+    return {
+      children: (vnode as VNodeWithRenderMetadata).ssContent,
+      opaque: false,
+    };
+  }
+  if (transformation === undefined && typeof vnode.type !== 'string') {
+    return { children: undefined, opaque: true };
+  }
   if (!isSlots(vnode.children)) {
     return { children: vnode.children, opaque: false };
   }
-  return readSlot(vnode.children.default);
-}
-
-/** Safely probes one compiled slot without supplying invented slot props. */
-function readSlot(slot?: Slot): { children: unknown; opaque: boolean } {
-  if (!slot) return { children: undefined, opaque: false };
-
-  const access = { detected: false };
-  const detectAccess = () => {
-    access.detected = true;
-    throw SCOPED_SLOT_ACCESS;
-  };
-  const probe = new Proxy(Object.create(null) as object, {
-    get: detectAccess,
-    getOwnPropertyDescriptor: detectAccess,
-    getPrototypeOf: detectAccess,
-    has: detectAccess,
-    ownKeys: detectAccess,
-  });
-
-  try {
-    const slotChildren = slot(probe);
-    return access.detected
-      ? { children: undefined, opaque: true }
-      : { children: slotChildren, opaque: false };
-  } catch (error) {
-    if (access.detected || error === SCOPED_SLOT_ACCESS) {
-      return { children: undefined, opaque: true };
-    }
-    throw error;
-  }
+  return { children: vnode.children.default?.(), opaque: false };
 }
 
 function getBranches(
   vnode: VNode,
   transformation: 'branch' | 'plural',
-  branchElementId: number
+  branchElementId: number,
+  identity: string
 ): Record<string, SourceNode[]> {
   const inputs = Object.create(null) as Record<string, unknown>;
   if (isSlots(vnode.children)) {
@@ -237,8 +245,7 @@ function getBranches(
         !key.startsWith('_') &&
         typeof slot === 'function'
       ) {
-        const branch = readSlot(slot);
-        if (!branch.opaque) inputs[key] = branch.children;
+        inputs[key] = slot();
       }
     }
   }
@@ -261,7 +268,11 @@ function getBranches(
       // siblings, matching the React renderer.
       .map(([key, value]) => [
         key,
-        visitChildren(value, { value: branchElementId }),
+        visitChildren(
+          value,
+          { value: branchElementId },
+          `${identity}/branch:${key.length}:${key}`
+        ),
       ])
   );
 }
@@ -332,12 +343,13 @@ function getElementName(vnode: VNode, id: number): string {
 function renderNodes(
   source: SourceNode[],
   target: JsxChildren | undefined,
-  state: GTState
+  state: GTState,
+  identityCache: TranslationIdentityCache
 ): VNodeChild {
   if (target == null) {
     // A partial translated tree falls back within the active locale. A wholly
     // missing catalog entry is handled above using the source/default locale.
-    return renderDefaultNodes(source, state, state.locale.value);
+    return renderDefaultNodes(source, state, identityCache, state.locale.value);
   }
   if (typeof target === 'string') return target;
 
@@ -355,12 +367,20 @@ function renderNodes(
   );
   const ordinaryById = new Map(ordinary.map((node) => [node.id, node]));
   const fallback = [...ordinary];
+  const occurrences = new Map<SourceElement, number>();
 
   return targets.map((targetNode) => {
     if (typeof targetNode === 'string') return targetNode;
     if (isVariable(targetNode)) {
       const variable = variables.get(targetNode.k);
-      return variable ? renderDefaultNode(variable, state) : null;
+      return variable
+        ? keySourceResult(
+            variable,
+            renderDefaultNode(variable, state, identityCache),
+            occurrences,
+            identityCache
+          )
+        : null;
     }
 
     // An explicit target ID is a reusable reference, while order-based
@@ -369,26 +389,76 @@ function renderNodes(
     const sourceNode =
       (targetNode.i == null ? undefined : ordinaryById.get(targetNode.i)) ??
       fallback.shift();
-    return sourceNode ? renderElement(sourceNode, targetNode, state) : null;
+    return sourceNode
+      ? keySourceResult(
+          sourceNode,
+          renderElement(sourceNode, targetNode, state, identityCache),
+          occurrences,
+          identityCache
+        )
+      : null;
   });
+}
+
+/**
+ * Gives every source-backed sibling a stable reconciliation identity.
+ *
+ * Catalogs may reorder, omit, or repeat a source ID. The occurrence suffix
+ * keeps repeated references unique, while the first occurrence retains the
+ * same key as the default tree. Explicit user keys remain authoritative;
+ * generated Symbols cannot collide with them.
+ */
+function keySourceResult(
+  source: SourceElement,
+  rendered: VNodeChild,
+  occurrences: Map<SourceElement, number>,
+  identityCache: TranslationIdentityCache
+): VNode {
+  const occurrence = occurrences.get(source) ?? 0;
+  occurrences.set(source, occurrence + 1);
+
+  if (occurrence === 0 && isVNode(rendered) && rendered.key != null) {
+    return rendered;
+  }
+
+  const cacheKey = `${source.identity}/occurrence:${occurrence}`;
+  let key = identityCache.get(cacheKey);
+  if (!key) {
+    key = Symbol(cacheKey);
+    identityCache.set(cacheKey, key);
+  }
+
+  if (isVNode(rendered)) {
+    const cloned = cloneVNode(rendered);
+    cloned.key = key;
+    return cloned;
+  }
+
+  const children =
+    rendered == null ? [] : Array.isArray(rendered) ? rendered : [rendered];
+  return h(Fragment, { key }, children);
 }
 
 function renderElement(
   source: SourceElement,
   target: JsxElement,
-  state: GTState
+  state: GTState,
+  identityCache: TranslationIdentityCache
 ): VNodeChild {
   if (source.transformation === 'branch') {
     const branch = getBranchKey(source.vnode);
     return renderNodes(
       getSelectedSourceBranch(source, branch),
       getSelectedTargetBranch(target, branch),
-      state
+      state,
+      identityCache
     );
   }
   if (source.transformation === 'plural') {
     const n = source.vnode.props?.n;
-    if (typeof n !== 'number') return renderDefaultNode(source, state);
+    if (typeof n !== 'number') {
+      return renderDefaultNode(source, state, identityCache);
+    }
     const sourceBranch = getPluralKey(
       n,
       Object.keys(source.branches),
@@ -407,11 +477,12 @@ function renderElement(
     return renderNodes(
       getSelectedSourceBranch(source, sourceBranch),
       (targetBranch && targetBranches[targetBranch]) ?? target.c,
-      state
+      state,
+      identityCache
     );
   }
   if (source.transformation === 'fragment') {
-    return renderNodes(source.children, target.c, state);
+    return renderNodes(source.children, target.c, state, identityCache);
   }
   if (source.opaque) {
     const translatedProps = getTranslatedProps(target);
@@ -423,12 +494,12 @@ function renderElement(
   if (target.c == null) {
     return Object.keys(translatedProps).length
       ? cloneWithProps(source.vnode, translatedProps)
-      : renderDefaultNode(source, state);
+      : renderDefaultNode(source, state, identityCache);
   }
 
   return cloneWithChildren(
     source.vnode,
-    renderNodes(source.children, target.c, state),
+    renderNodes(source.children, target.c, state, identityCache),
     translatedProps
   );
 }
@@ -505,14 +576,26 @@ function getTranslatedProps(target: JsxElement): Record<string, string> {
 function renderDefaultNodes(
   nodes: SourceNode[],
   state: GTState,
+  identityCache: TranslationIdentityCache,
   locale = state.defaultLocale
 ): VNodeChild[] {
-  return nodes.map((node) => renderDefaultNode(node, state, locale));
+  const occurrences = new Map<SourceElement, number>();
+  return nodes.map((node) =>
+    typeof node === 'string'
+      ? node
+      : keySourceResult(
+          node,
+          renderDefaultNode(node, state, identityCache, locale),
+          occurrences,
+          identityCache
+        )
+  );
 }
 
 function renderDefaultNode(
   node: SourceNode,
   state: GTState,
+  identityCache: TranslationIdentityCache,
   locale?: string
 ): VNodeChild {
   if (typeof node === 'string') return node;
@@ -529,19 +612,20 @@ function renderDefaultNode(
       : node.vnode;
   }
   if (node.transformation === 'fragment') {
-    return renderDefaultNodes(node.children, state, locale);
+    return renderDefaultNodes(node.children, state, identityCache, locale);
   }
   if (node.transformation === 'branch') {
     return renderDefaultNodes(
       getSelectedSourceBranch(node, getBranchKey(node.vnode)),
       state,
+      identityCache,
       locale
     );
   }
   if (node.transformation === 'plural') {
     const n = node.vnode.props?.n;
     if (typeof n !== 'number') {
-      return renderDefaultNodes(node.children, state, locale);
+      return renderDefaultNodes(node.children, state, identityCache, locale);
     }
     const branch = getPluralKey(
       n,
@@ -554,13 +638,14 @@ function renderDefaultNode(
     return renderDefaultNodes(
       getSelectedSourceBranch(node, branch),
       state,
+      identityCache,
       locale
     );
   }
   if (!node.children.length) return node.vnode;
   return cloneWithChildren(
     node.vnode,
-    renderDefaultNodes(node.children, state, locale)
+    renderDefaultNodes(node.children, state, identityCache, locale)
   );
 }
 
@@ -580,18 +665,28 @@ function cloneWithChildren(
     // change an element from array children to scalar text, so create a fresh
     // element with normalized children and copy only the render metadata that
     // must survive reconstruction.
-    cloned.appContext = vnode.appContext;
-    (cloned as VNodeWithRenderMetadata).ctx = (
-      vnode as VNodeWithRenderMetadata
-    ).ctx;
-    cloned.dirs = vnode.dirs;
-    cloned.ref = vnode.ref;
-    cloned.scopeId = vnode.scopeId;
-    (cloned as VNodeWithRenderMetadata).slotScopeIds = (
-      vnode as VNodeWithRenderMetadata
-    ).slotScopeIds;
-    cloned.transition = vnode.transition;
-    return cloned;
+    return copyRenderMetadata(cloned, vnode);
+  }
+
+  if (vnode.type === Suspense) {
+    const props = Object.keys(extraProps).length
+      ? mergeProps(vnode.props ?? {}, extraProps)
+      : vnode.props;
+    const slots = isSlots(vnode.children) ? vnode.children : {};
+    const normalizedFallback = (vnode as VNodeWithRenderMetadata).ssFallback;
+    const cloned = h(vnode.type, props, {
+      ...slots,
+      default: () => children,
+      // Vue already invoked and normalized the fallback when it created the
+      // source Suspense VNode. Reuse that VNode instead of running user slot
+      // code a second time while rebuilding the translated boundary.
+      ...(normalizedFallback && { fallback: () => normalizedFallback }),
+    });
+
+    // Vue's VNode clone path preserves already-normalized ssContent and
+    // ssFallback from the source. Reconstructing from the public Suspense type
+    // recomputes both branches from the replacement slots.
+    return copyRenderMetadata(cloned, vnode);
   }
 
   // Components need their original slot set and identity. cloneVNode cannot
@@ -607,6 +702,22 @@ function cloneWithChildren(
     ...slots,
     default: () => children,
   });
+}
+
+/** Copies render metadata without retaining mounted or normalized child state. */
+function copyRenderMetadata(cloned: VNode, source: VNode): VNode {
+  cloned.appContext = source.appContext;
+  (cloned as VNodeWithRenderMetadata).ctx = (
+    source as VNodeWithRenderMetadata
+  ).ctx;
+  cloned.dirs = source.dirs;
+  cloned.ref = source.ref;
+  cloned.scopeId = source.scopeId;
+  (cloned as VNodeWithRenderMetadata).slotScopeIds = (
+    source as VNodeWithRenderMetadata
+  ).slotScopeIds;
+  cloned.transition = source.transition;
+  return cloned;
 }
 
 function cloneWithProps(
