@@ -1,23 +1,27 @@
 import { defineComponent, type PropType } from 'vue';
 import { useGTState } from '../runtime/state';
-import { getFormatLocales, readSlotText, withGTMetadata } from './utils';
+import { asFragmentRoot, getFormatLocales, withGTMetadata } from './utils';
 
 type NumberFormatProps = {
-  /** Locale preferences tried before the active GT locale. */
+  /** @internal Locale selected by an owning rich translation pipeline. */
+  _locale?: string;
+  /** Locale preferences tried before active and default locales in translation. */
   locales?: string[];
   /** Options forwarded to `Intl.NumberFormat`. */
   options?: Intl.NumberFormatOptions;
-  /** Runtime value. When provided, this takes precedence over slot text. */
-  value?: number | string | null;
+  /** Runtime value to format. */
+  value: number | string | null;
 };
 
 type DateTimeProps = {
-  /** Locale preferences tried before the active GT locale. */
+  /** @internal Locale selected by an owning rich translation pipeline. */
+  _locale?: string;
+  /** Locale preferences tried before active and default locales in translation. */
   locales?: string[];
   /** Options forwarded to `Intl.DateTimeFormat`. */
   options?: Intl.DateTimeFormatOptions;
-  /** Runtime value. When provided, this takes precedence over slot text. */
-  value?: Date | number | string | null;
+  /** Runtime value to format. */
+  value: Date | number | string | null;
 };
 
 type CurrencyProps = NumberFormatProps & {
@@ -43,48 +47,55 @@ export const Var = withGTMetadata(
     inheritAttrs: false,
     name: 'Var',
     setup(_props, { slots }) {
-      return () => slots.default?.() ?? null;
+      return () => asFragmentRoot(slots.default?.() ?? null);
     },
   }),
   'variable-variable'
 );
 
 /**
- * Formats a number with `Intl.NumberFormat` for the active locale. Pass
- * runtime values through `value`; static default-slot text remains supported.
- * Explicit `locales` are tried first, and text that is not an entire numeric
- * value is returned unchanged.
+ * Formats the required `value` prop with `Intl.NumberFormat`. When rendered
+ * outside {@link T}, explicit `locales` are tried before the
+ * active and default GT locales while translating. Text that is not an entire
+ * numeric value is returned unchanged.
  */
 export const Num = withGTMetadata<NumberFormatProps>(
   defineComponent({
     inheritAttrs: false,
     name: 'Num',
     props: {
-      /** Locale preferences tried before the active GT locale. */
+      /** @internal Locale selected by an owning rich translation pipeline. */
+      _locale: String,
+      /** Locale preferences tried before active and default locales in translation. */
       locales: Array as PropType<string[]>,
       /** Options forwarded to `Intl.NumberFormat`. */
       options: Object as PropType<Intl.NumberFormatOptions>,
-      /** Runtime value. When provided, this takes precedence over slot text. */
-      value: [Number, String] as PropType<number | string | null>,
+      /** Runtime value to format. */
+      value: {
+        required: true,
+        type: [Number, String, null] as unknown as PropType<
+          number | string | null
+        >,
+      },
     },
-    setup(props, { slots }) {
+    setup(props) {
       const state = useGTState();
       return () => {
-        const value =
-          props.value !== undefined ? props.value : readSlotText(slots);
+        const value = props.value;
         if (
           value == null ||
           (typeof value === 'string' && value.trim() === '')
         ) {
-          return null;
+          return asFragmentRoot(null);
         }
         const number = typeof value === 'number' ? value : Number(value);
-        return Number.isNaN(number)
+        const formatted = Number.isNaN(number)
           ? String(value)
           : new Intl.NumberFormat(
-              getFormatLocales(props.locales, state.locale.value),
+              getVariableFormatLocales(props, state),
               props.options
             ).format(number);
+        return asFragmentRoot(formatted);
       };
     },
   }),
@@ -92,42 +103,51 @@ export const Num = withGTMetadata<NumberFormatProps>(
 );
 
 /**
- * Formats a date with `Intl.DateTimeFormat` for the active locale. Pass
- * `Date` objects and epoch numbers through `value`; static default-slot text
- * remains supported. Explicit `locales` are tried first, and invalid values
- * are returned unchanged.
+ * Formats the required `value` prop with `Intl.DateTimeFormat`. `Date`
+ * objects, epoch numbers, and date strings are supported. When rendered
+ * outside {@link T}, explicit `locales` are tried before the active and
+ * default GT locales while translating. Invalid values are returned
+ * unchanged.
  */
 export const DateTime = withGTMetadata<DateTimeProps>(
   defineComponent({
     inheritAttrs: false,
     name: 'DateTime',
     props: {
-      /** Locale preferences tried before the active GT locale. */
+      /** @internal Locale selected by an owning rich translation pipeline. */
+      _locale: String,
+      /** Locale preferences tried before active and default locales in translation. */
       locales: Array as PropType<string[]>,
       /** Options forwarded to `Intl.DateTimeFormat`. */
       options: Object as PropType<Intl.DateTimeFormatOptions>,
-      /** Runtime value. When provided, this takes precedence over slot text. */
-      value: [Date, Number, String] as PropType<Date | number | string | null>,
+      /** Runtime value to format. */
+      value: {
+        required: true,
+        type: [Date, Number, String, null] as unknown as PropType<
+          Date | number | string | null
+        >,
+      },
     },
-    setup(props, { slots }) {
+    setup(props) {
       const state = useGTState();
       return () => {
-        const value =
-          props.value !== undefined ? props.value : readSlotText(slots);
+        const value = props.value;
         if (
           value == null ||
           (typeof value === 'string' && value.trim() === '')
         ) {
-          return null;
+          return asFragmentRoot(null);
         }
         const date = value instanceof Date ? value : new Date(value);
-        if (Number.isNaN(date.getTime())) return String(value);
-        return new Intl.DateTimeFormat(
-          getFormatLocales(props.locales, state.locale.value),
-          props.options
-        )
-          .format(date)
-          .replace(/[\u200F\u202B\u202E]/g, '');
+        const formatted = Number.isNaN(date.getTime())
+          ? String(value)
+          : new Intl.DateTimeFormat(
+              getVariableFormatLocales(props, state),
+              props.options
+            )
+              .format(date)
+              .replace(/[\u200F\u202B\u202E]/g, '');
+        return asFragmentRoot(formatted);
       };
     },
   }),
@@ -135,52 +155,66 @@ export const DateTime = withGTMetadata<DateTimeProps>(
 );
 
 /**
- * Formats a number as currency for the active locale. Pass runtime values
- * through `value`; static default-slot text remains supported. `currency`
- * defaults to `USD`, and text that is not an entire numeric value is returned
- * unchanged.
+ * Formats the required `value` prop as currency. `currency` defaults to
+ * `USD`. When rendered outside {@link T}, explicit `locales` are tried before
+ * the active and default GT locales while translating. Text that is not an
+ * entire numeric value is returned unchanged.
  */
 export const Currency = withGTMetadata<CurrencyProps>(
   defineComponent({
     inheritAttrs: false,
     name: 'Currency',
     props: {
+      /** @internal Locale selected by an owning rich translation pipeline. */
+      _locale: String,
       /** ISO 4217 currency code. Defaults to `USD`. */
       currency: {
         default: 'USD',
         type: String,
       },
-      /** Locale preferences tried before the active GT locale. */
+      /** Locale preferences tried before active and default locales in translation. */
       locales: Array as PropType<string[]>,
       /** Additional options forwarded to `Intl.NumberFormat`. */
       options: Object as PropType<Intl.NumberFormatOptions>,
-      /** Runtime value. When provided, this takes precedence over slot text. */
-      value: [Number, String] as PropType<number | string | null>,
+      /** Runtime value to format. */
+      value: {
+        required: true,
+        type: [Number, String, null] as unknown as PropType<
+          number | string | null
+        >,
+      },
     },
-    setup(props, { slots }) {
+    setup(props) {
       const state = useGTState();
       return () => {
-        const value =
-          props.value !== undefined ? props.value : readSlotText(slots);
+        const value = props.value;
         if (
           value == null ||
           (typeof value === 'string' && value.trim() === '')
         ) {
-          return null;
+          return asFragmentRoot(null);
         }
         const number = typeof value === 'number' ? value : Number(value);
-        return Number.isNaN(number)
+        const formatted = Number.isNaN(number)
           ? String(value)
-          : new Intl.NumberFormat(
-              getFormatLocales(props.locales, state.locale.value),
-              {
-                ...props.options,
-                currency: props.currency,
-                style: 'currency',
-              }
-            ).format(number);
+          : new Intl.NumberFormat(getVariableFormatLocales(props, state), {
+              ...props.options,
+              currency: props.currency,
+              style: 'currency',
+            }).format(number);
+        return asFragmentRoot(formatted);
       };
     },
   }),
   'variable-currency'
 );
+
+/** Uses a rich pipeline override without changing standalone locale options. */
+function getVariableFormatLocales(
+  props: { _locale?: string; locales?: string[] },
+  state: ReturnType<typeof useGTState>
+): string[] {
+  return props._locale === undefined
+    ? getFormatLocales(props.locales, state.locale.value, state.defaultLocale)
+    : getFormatLocales(undefined, props._locale, state.defaultLocale);
+}

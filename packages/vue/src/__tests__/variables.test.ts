@@ -1,6 +1,8 @@
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { createSSRApp, defineComponent, h, type Component } from 'vue';
 import { renderToString } from 'vue/server-renderer';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { getFormatLocales } from '../components/utils';
 import { Currency, DateTime, Num, Var, createGT } from '../index';
 
 describe('gt-vue formatting components', () => {
@@ -32,37 +34,55 @@ describe('gt-vue formatting components', () => {
       },
     });
 
-    expect(await render(Root)).toContain('1,234.5|$12.00|2024|2024');
+    expect(stripFragmentMarkers(await render(Root))).toContain(
+      '1,234.5|$12.00|2024|2024'
+    );
   });
 
-  it('gives value props precedence over static slot text', async () => {
-    const Root = defineComponent({
-      setup() {
-        return () =>
-          h(Num, { locales: ['en-US'], value: 2 }, { default: () => '999' });
-      },
-    });
-
-    expect(await render(Root)).toBe('2');
-  });
-
-  it('returns partially parseable slot text unchanged', async () => {
+  it('does not treat formatter slot children as values', async () => {
+    const slot = vi.fn(() => '999');
     const Root = defineComponent({
       setup() {
         return () =>
           h('div', [
-            h(Num, { locales: ['en-US'] }, { default: () => '1,234.5' }),
-            '|',
+            h(Num, { locales: ['en-US'], value: 2 }, { default: slot }),
+            h(Currency, { locales: ['en-US'], value: 3 }, { default: slot }),
             h(
-              Currency,
-              { currency: 'USD', locales: ['en-US'] },
-              { default: () => '12 dollars' }
+              DateTime,
+              {
+                locales: ['en-US'],
+                options: { timeZone: 'UTC', year: 'numeric' },
+                value: 1704067200000,
+              },
+              { default: slot }
             ),
           ]);
       },
     });
 
-    expect(await render(Root)).toContain('1,234.5|12 dollars');
+    expect(stripFragmentMarkers(await render(Root))).toContain('2$3.002024');
+    expect(slot).not.toHaveBeenCalled();
+  });
+
+  it('returns partially parseable value strings unchanged', async () => {
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h('div', [
+            h(Num, { locales: ['en-US'], value: '1,234.5' }),
+            '|',
+            h(Currency, {
+              currency: 'USD',
+              locales: ['en-US'],
+              value: '12 dollars',
+            }),
+          ]);
+      },
+    });
+
+    expect(stripFragmentMarkers(await render(Root))).toContain(
+      '1,234.5|12 dollars'
+    );
   });
 
   it('returns invalid dates unchanged', async () => {
@@ -75,19 +95,66 @@ describe('gt-vue formatting components', () => {
     expect(await render(Root)).toContain('definitely-not-a-date');
   });
 
-  it('does not interpret whitespace-only slot text as zero or a date', async () => {
+  it('does not interpret nullish or whitespace-only values as zero or a date', async () => {
     const Root = defineComponent({
       setup() {
         return () =>
           h('div', [
-            h(Num, null, { default: () => '   ' }),
-            h(Currency, null, { default: () => '\n' }),
-            h(DateTime, null, { default: () => '\t' }),
+            h(Num, { value: '   ' }),
+            h(Currency, { value: '\n' }),
+            h(DateTime, { value: '\t' }),
+            h(Num, { value: null }),
+            h(Currency, { value: null }),
+            h(DateTime, { value: null }),
           ]);
       },
     });
 
-    expect(await render(Root)).toBe('<div><!----><!----><!----></div>');
+    expect(stripFragmentMarkers(await render(Root))).toBe('<div></div>');
+  });
+
+  it('accepts explicit null values without required or type warnings', async () => {
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h('div', [
+            h(Num, { value: null }),
+            h(Currency, { value: null }),
+            h(DateTime, { value: null }),
+          ]);
+      },
+    });
+    const warnings: string[] = [];
+    const app = createSSRApp(Root).use(createGT());
+    app.config.warnHandler = (message) => warnings.push(message);
+
+    expect(stripFragmentMarkers(await renderToString(app))).toBe('<div></div>');
+    expect(warnings).toEqual([]);
+  });
+
+  it('uses only the default locale when it is active', () => {
+    expect(getFormatLocales(['fr-CA'], 'en', 'en')).toEqual(['en']);
+    expect(getFormatLocales(['fr-CA'], libraryDefaultLocale)).toEqual([
+      libraryDefaultLocale,
+    ]);
+  });
+
+  it('ignores explicit formatter locales when the default locale is active', async () => {
+    const Root = defineComponent({
+      setup() {
+        return () => h(Num, { locales: ['de-DE'], value: 1234.5 });
+      },
+    });
+
+    expect(stripFragmentMarkers(await render(Root))).toBe('1,234.5');
+  });
+
+  it('tries explicit, active, and default locales once while translating', () => {
+    expect(getFormatLocales(['fr-CA', 'fr', 'en'], 'fr', 'en')).toEqual([
+      'fr-CA',
+      'fr',
+      'en',
+    ]);
   });
 
   it('ignores fallthrough attributes without warning for unwrapped values', async () => {
@@ -143,4 +210,8 @@ describe('gt-vue formatting components', () => {
 
 async function render(root: Component): Promise<string> {
   return renderToString(createSSRApp(root).use(createGT()));
+}
+
+function stripFragmentMarkers(html: string): string {
+  return html.replaceAll('<!--[-->', '').replaceAll('<!--]-->', '');
 }

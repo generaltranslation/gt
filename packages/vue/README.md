@@ -155,19 +155,25 @@ const m = useMessages();
 
 - `<T context="...">` translates rich slot content.
 - `<Var>` preserves a dynamic slot value inside `<T>`.
-- `<Num>`, `<DateTime>`, and `<Currency>` accept typed runtime values through
-  `:value` and also format static slot text for the active locale.
+- `<Num>`, `<DateTime>`, and `<Currency>` require typed runtime values through
+  `:value`; formatter slot children are not supported.
 - `<Plural :n="count">` selects named slots such as `#one` and `#other`.
 - `<Branch :branch="key">` selects an arbitrary named slot.
 
-Use typed bindings for dynamic formatting values. Slot text is intended for
-static literals.
+Use the required `value` prop for every formatting value.
 
 ```vue
 <Num :value="count" />
 <Currency :value="price" currency="USD" />
 <DateTime :value="createdAt" :options="{ dateStyle: 'medium' }" />
 ```
+
+When the active locale is the configured default, formatting ignores explicit
+`locales` and uses only that default locale. Otherwise, an explicit `locales`
+list on a standalone formatter is tried first, followed by the active locale
+and then the default locale. Inside `<T>`, the rich translation pipeline owns
+formatting locales: source fallbacks use the default locale, while translated
+content uses the active locale followed by the default.
 
 `setLocale()` loads a missing catalog, switches the reactive locale, and
 rerenders consumers. Locale persistence and development hot reload are outside

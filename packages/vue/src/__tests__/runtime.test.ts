@@ -19,7 +19,10 @@ import { compileTemplate } from 'vue/compiler-sfc';
 import { renderToString } from 'vue/server-renderer';
 import { describe, expect, it, vi } from 'vitest';
 import { getBranchNames } from '../components/utils';
-import { translateVueChildren } from '../rendering/translateVueChildren';
+import {
+  serializeVueChildren,
+  translateVueChildren,
+} from '../rendering/translateVueChildren';
 import {
   Branch,
   Currency,
@@ -37,6 +40,24 @@ import {
 import type { TranslationCatalog } from '../index';
 
 describe('gt-vue runtime', () => {
+  it('flattens only the default slot of a compiled Vue Fragment', () => {
+    const defaultSlot = vi.fn(() => [h('span', 'Fragment child')]);
+    const ignoredSlot = vi.fn(() => [h('span', 'Ignored child')]);
+    const fragment = h(Fragment, null, {
+      _: 1,
+      default: defaultSlot,
+      ignored: ignoredSlot,
+    });
+
+    expect(serializeVueChildren([fragment])).toEqual({
+      t: 'span',
+      i: 1,
+      c: 'Fragment child',
+    });
+    expect(defaultSlot).toHaveBeenCalledOnce();
+    expect(ignoredSlot).not.toHaveBeenCalled();
+  });
+
   it('deduplicates branch names shared by attrs and slots', () => {
     const slots = {
       default: () => [],
@@ -1500,28 +1521,21 @@ describe('gt-vue runtime', () => {
     expect(await renderWithPlugin(Root, plugin)).toContain('Bonjour');
   });
 
-  it('formats slot children and renders standalone branch components', async () => {
+  it('formats required values and renders standalone branch components', async () => {
     const plugin = createGT();
     const Root = defineComponent({
       setup() {
         return () =>
           h('div', [
-            h(Num, { locales: ['en-US'] }, { default: () => '1234.5' }),
+            h(Num, { locales: ['en-US'], value: '1234.5' }),
             '|',
-            h(
-              Currency,
-              { currency: 'USD', locales: ['en-US'] },
-              { default: () => '12' }
-            ),
+            h(Currency, { currency: 'USD', locales: ['en-US'], value: '12' }),
             '|',
-            h(
-              DateTime,
-              {
-                locales: ['en-US'],
-                options: { timeZone: 'UTC', year: 'numeric' },
-              },
-              { default: () => '2024-01-01T00:00:00.000Z' }
-            ),
+            h(DateTime, {
+              locales: ['en-US'],
+              options: { timeZone: 'UTC', year: 'numeric' },
+              value: '2024-01-01T00:00:00.000Z',
+            }),
             '|',
             h(
               Plural,
@@ -1539,7 +1553,54 @@ describe('gt-vue runtime', () => {
     });
     const html = await renderWithPlugin(Root, plugin);
 
-    expect(html).toContain('1,234.5|$12.00|2024|items|Welcome');
+    expect(stripFragmentMarkers(html)).toContain(
+      '1,234.5|$12.00|2024|items|Welcome'
+    );
+  });
+
+  it('emits stable SSR boundaries for every scalar GT component root', async () => {
+    const plugin = createGT({
+      loadTranslations: async () => ({ translated: 'target' }),
+    });
+    await plugin.setLocale('fr');
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h('div', [
+            'A',
+            h(T, { _hash: 'translated' }, { default: () => 'source' }),
+            'B',
+            h(T, { _hash: 'missing' }, { default: () => 'source' }),
+            'C',
+            h(Num, { value: 'number' }),
+            'D',
+            h(Num, { value: null }),
+            'E',
+            h(Currency, { value: 'currency' }),
+            'F',
+            h(Currency, { value: null }),
+            'G',
+            h(DateTime, { value: 'date' }),
+            'H',
+            h(DateTime, { value: null }),
+            'I',
+            h(Branch, { branch: 'yes', yes: 'branch' }),
+            'J',
+            h(Branch, { branch: 'empty', empty: null }),
+            'K',
+            h(Plural, { n: 2, other: 'plural' }),
+            'L',
+            h(Plural, { n: 2, other: null }),
+            'M',
+            h(Var, null, { default: () => 'variable' }),
+            'N',
+          ]);
+      },
+    });
+
+    expect(await renderWithPlugin(Root, plugin)).toBe(
+      '<div>A<!--[-->target<!--]-->B<!--[-->source<!--]-->C<!--[-->number<!--]-->D<!--[--><!--]-->E<!--[-->currency<!--]-->F<!--[--><!--]-->G<!--[-->date<!--]-->H<!--[--><!--]-->I<!--[-->branch<!--]-->J<!--[--><!--]-->K<!--[-->plural<!--]-->L<!--[--><!--]-->M<!--[-->variable<!--]-->N</div>'
+    );
   });
 
   it('falls back safely for inherited object-property branch names', async () => {
@@ -1619,35 +1680,118 @@ describe('gt-vue runtime', () => {
     expect(html).not.toContain('alt="Source portrait"');
   });
 
-  it('uses the default locale for untranslated rich source fallbacks', async () => {
-    const plugin = createGT({
+  it('uses pipeline locales instead of public preferences for rich formatters', async () => {
+    const date = new Date('2024-01-02T00:00:00.000Z');
+    const dateOptions = {
+      day: 'numeric',
+      month: 'long',
+      timeZone: 'UTC',
+      year: 'numeric',
+    } as const;
+    const renderFormatters = () => [
+      h(Num, { locales: ['de-DE'], value: 1234.5 }),
+      '|',
+      h(Currency, {
+        currency: 'EUR',
+        locales: ['de-DE'],
+        value: 1234.5,
+      }),
+      '|',
+      h(DateTime, {
+        locales: ['de-DE'],
+        options: dateOptions,
+        value: date,
+      }),
+    ];
+    const expected = (locale: string) =>
+      [
+        new Intl.NumberFormat(locale).format(1234.5),
+        new Intl.NumberFormat(locale, {
+          currency: 'EUR',
+          style: 'currency',
+        }).format(1234.5),
+        new Intl.DateTimeFormat(locale, dateOptions)
+          .format(date)
+          .replace(/[\u200F\u202B\u202E]/g, ''),
+      ].join('|');
+
+    const missingPlugin = createGT({
       defaultLocale: 'en-US',
       loadTranslations: async () => ({}),
     });
-    await plugin.setLocale('fr-FR');
-    const Root = defineComponent({
+    await missingPlugin.setLocale('fr-FR');
+    const MissingRoot = defineComponent({
       setup() {
         return () =>
-          h(T, null, {
-            default: () => [
-              h(
-                Plural,
-                { n: 0 },
-                {
-                  one: () => 'one',
-                  other: () => 'other',
-                }
-              ),
-              '|',
-              h(Num, null, { default: () => '1234.5' }),
-            ],
-          });
+          h(
+            T,
+            { _hash: 'missing' },
+            {
+              default: () => [
+                h(
+                  Plural,
+                  { n: 0 },
+                  {
+                    one: () => 'one',
+                    other: () => 'other',
+                  }
+                ),
+                '|',
+                ...renderFormatters(),
+              ],
+            }
+          );
       },
     });
 
     expect(
-      stripFragmentMarkers(await renderWithPlugin(Root, plugin))
-    ).toContain('other|1,234.5');
+      stripFragmentMarkers(await renderWithPlugin(MissingRoot, missingPlugin))
+    ).toBe(`other|${expected('en-US')}`);
+
+    const translatedPlugin = createGT({
+      defaultLocale: 'en-US',
+      loadTranslations: async () => ({
+        formatters: [
+          { i: 1, k: '_gt_n_1', v: 'n' },
+          '|',
+          { i: 2, k: '_gt_cost_2', v: 'c' },
+          '|',
+          { i: 3, k: '_gt_date_3', v: 'd' },
+        ],
+        partial: { d: { ti: 'Titre' }, i: 1, t: 'span' },
+      }),
+    });
+    await translatedPlugin.setLocale('fr-FR');
+    const TranslatedRoot = defineComponent({
+      setup() {
+        return () =>
+          h(T, { _hash: 'formatters' }, { default: renderFormatters });
+      },
+    });
+    const PartialRoot = defineComponent({
+      setup() {
+        return () =>
+          h(
+            T,
+            { _hash: 'partial' },
+            {
+              default: () =>
+                h('span', { title: 'Source title' }, renderFormatters()),
+            }
+          );
+      },
+    });
+
+    expect(
+      stripFragmentMarkers(
+        await renderWithPlugin(TranslatedRoot, translatedPlugin)
+      )
+    ).toBe(expected('fr-FR'));
+    expect(
+      stripFragmentMarkers(
+        await renderWithPlugin(PartialRoot, translatedPlugin)
+      )
+    ).toBe(`<span title="Titre">${expected('fr-FR')}</span>`);
   });
 
   it('requires explicit preloading for an asynchronous SSR locale', async () => {
@@ -1677,19 +1821,40 @@ describe('gt-vue runtime', () => {
     expect(await renderWithPlugin(Root, plugin)).toContain('Bonjour');
   });
 
-  it('keeps app caches isolated during concurrent SSR', async () => {
+  it('keeps locale and catalog state isolated during interleaved SSR requests', async () => {
     const source = 'Hello';
+    const richSource: JsxChildren = { t: 'span', i: 1, c: 'World' };
+    const pending = new Map<string, (catalog: TranslationCatalog) => void>();
     const french = createGT({
-      loadTranslations: async () => ({ [stringHash(source)]: 'Bonjour' }),
+      loadTranslations: (locale) =>
+        new Promise((resolve) => pending.set(`fr:${locale}`, resolve)),
     });
     const chinese = createGT({
-      loadTranslations: async () => ({ [stringHash(source)]: '你好' }),
+      loadTranslations: (locale) =>
+        new Promise((resolve) => pending.set(`zh:${locale}`, resolve)),
     });
-    await Promise.all([french.setLocale('fr'), chinese.setLocale('zh')]);
+    const frenchReady = french.setLocale('fr');
+    const chineseReady = chinese.setLocale('zh');
+    await vi.waitFor(() => expect(pending.size).toBe(2));
+    pending.get('zh:zh')?.({
+      [jsxHash(richSource)]: { t: 'span', i: 1, c: '世界' },
+      [stringHash(source)]: '你好',
+    });
+    await chineseReady;
+    pending.get('fr:fr')?.({
+      [jsxHash(richSource)]: { t: 'span', i: 1, c: 'Monde' },
+      [stringHash(source)]: 'Bonjour',
+    });
+    await frenchReady;
     const Root = defineComponent({
       setup() {
         const gt = useGT();
-        return () => h('p', gt(source));
+        const locale = useLocale();
+        return () =>
+          h('p', [
+            `${locale.value}|${gt(source)}|`,
+            h(T, null, { default: () => h('span', 'World') }),
+          ]);
       },
     });
 
@@ -1697,8 +1862,12 @@ describe('gt-vue runtime', () => {
       renderWithPlugin(Root, french),
       renderWithPlugin(Root, chinese),
     ]);
-    expect(fr).toContain('Bonjour');
-    expect(zh).toContain('你好');
+    expect(stripFragmentMarkers(fr)).toContain(
+      '<p>fr|Bonjour|<span>Monde</span></p>'
+    );
+    expect(stripFragmentMarkers(zh)).toContain(
+      '<p>zh|你好|<span>世界</span></p>'
+    );
   });
 
   it('applies only the latest concurrent locale request', async () => {
