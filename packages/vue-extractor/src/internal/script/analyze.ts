@@ -1196,11 +1196,7 @@ function exposeKnownValue(
       appendTemplatePath(localName, 'markRaw')
     );
   } else if (value.type === 'vue-builtin') {
-    // Fragment identity is used by JSX extraction. Vue SFC template fragment
-    // traversal is intentionally handled separately from the Suspense map.
-    if (value.name === 'Suspense') {
-      templateBindings.vueBuiltins.set(localName, value.name);
-    }
+    templateBindings.vueBuiltins.set(localName, value.name);
   } else if (value.type === 'identity') {
     templateBindings.identityFunctions.add(localName);
   }
