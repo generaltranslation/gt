@@ -45,6 +45,7 @@ type SourceElement = {
   id: number;
   identity: string;
   opaque: boolean;
+  preserveExplicitKey: boolean;
   transformation: Transformation;
   variableName?: string;
   variableType?: VariableType;
@@ -66,7 +67,19 @@ type RichTranslationOptions = {
   context?: string;
 };
 
-type TranslationIdentityCache = Map<string, symbol>;
+/** Runtime-only reconciliation state owned by one mounted `T` instance. */
+export type TranslationIdentityCache = {
+  /** Stable scope tokens for user-authored Vue keys, without coercion. */
+  explicitScopes: Map<PropertyKey, string>;
+  /** Stable Vue keys generated for source identities and repeated references. */
+  generatedKeys: Map<string, symbol>;
+  /** Monotonic token source for explicit keys first observed by this `T`. */
+  nextExplicitScope: number;
+  /** Monotonic token source for VNode types first observed by this `T`. */
+  nextTypeScope: number;
+  /** Stable scope tokens for component objects, functions, and native tags. */
+  typeScopes: Map<unknown, string>;
+};
 
 type VNodeWithRenderMetadata = VNode & {
   ctx?: unknown;
@@ -79,9 +92,9 @@ export function translateVueChildren(
   children: VNode[],
   state: GTState,
   options: RichTranslationOptions,
-  identityCache: TranslationIdentityCache = new Map()
+  identityCache: TranslationIdentityCache = createTranslationIdentityCache()
 ): VNodeChild {
-  const source = createSourceNodes(children);
+  const source = createSourceNodes(children, identityCache);
   if (state.locale.value === state.defaultLocale) {
     return renderDefaultNodes(
       source,
@@ -109,19 +122,45 @@ export function translateVueChildren(
   return renderNodes(source, target, state, identityCache);
 }
 
-function createSourceNodes(children: unknown): SourceNode[] {
+/** Creates the per-T reconciliation cache shared by each reactive render. */
+export function createTranslationIdentityCache(): TranslationIdentityCache {
+  return {
+    explicitScopes: new Map(),
+    generatedKeys: new Map(),
+    nextExplicitScope: 0,
+    nextTypeScope: 0,
+    typeScopes: new Map(),
+  };
+}
+
+function createSourceNodes(
+  children: unknown,
+  identityCache: TranslationIdentityCache
+): SourceNode[] {
   const index = { value: 0 };
-  return visitChildren(children, index, 'root');
+  return visitChildren(children, index, 'root', identityCache);
 }
 
 function visitChildren(
   children: unknown,
   index: { value: number },
-  identityScope: string
+  identityScope: string,
+  identityCache: TranslationIdentityCache,
+  identityOccurrences: Map<string, number> = new Map(),
+  transparentKeyScope = false
 ): SourceNode[] {
   if (Array.isArray(children)) {
     return mergeAdjacentStrings(
-      children.flatMap((child) => visitChildren(child, index, identityScope))
+      children.flatMap((child) =>
+        visitChildren(
+          child,
+          index,
+          identityScope,
+          identityCache,
+          identityOccurrences,
+          transparentKeyScope
+        )
+      )
     );
   }
   if (children == null || typeof children === 'boolean') return [];
@@ -129,12 +168,41 @@ function visitChildren(
   if (children.type === Comment) return [];
   if (children.type === Text) return [String(children.children ?? '')];
   if (children.type === Fragment) {
-    return visitChildren(children.children, index, identityScope);
+    if (children.key != null) {
+      return visitChildren(
+        children.children,
+        index,
+        getExplicitIdentityScope(identityScope, children.key, identityCache),
+        identityCache,
+        new Map(),
+        true
+      );
+    }
+    return visitChildren(
+      children.children,
+      index,
+      identityScope,
+      identityCache,
+      identityOccurrences,
+      transparentKeyScope
+    );
   }
 
   index.value += 1;
   const id = index.value;
-  const identity = `${identityScope}/e:${id}`;
+  let identity: string;
+  if (children.key == null) {
+    const typeScope = getVNodeTypeScope(children.type, identityCache);
+    const occurrence = (identityOccurrences.get(typeScope) ?? 0) + 1;
+    identityOccurrences.set(typeScope, occurrence);
+    identity = `${identityScope}/${typeScope}/o:${occurrence}`;
+  } else {
+    identity = getExplicitIdentityScope(
+      identityScope,
+      children.key,
+      identityCache
+    );
+  }
   const metadata = getGTMetadata(children);
   const transformation = getTransformation(metadata);
   const variable =
@@ -152,11 +220,13 @@ function visitChildren(
             index,
             transformation === 'branch' || transformation === 'plural'
               ? `${identity}/default`
-              : identity
+              : identity,
+            identityCache
           ),
     id,
     identity,
     opaque: defaultSlot.opaque,
+    preserveExplicitKey: !transparentKeyScope,
     transformation,
     variableName: variable?.name,
     variableType: variable?.type,
@@ -164,9 +234,44 @@ function visitChildren(
   };
 
   if (transformation === 'branch' || transformation === 'plural') {
-    source.branches = getBranches(children, transformation, id, identity);
+    source.branches = getBranches(
+      children,
+      transformation,
+      id,
+      identity,
+      identityCache
+    );
   }
   return [source];
+}
+
+/** Gives each distinct Vue VNode type a stable per-T identity token. */
+function getVNodeTypeScope(
+  type: unknown,
+  identityCache: TranslationIdentityCache
+): string {
+  let scope = identityCache.typeScopes.get(type);
+  if (!scope) {
+    identityCache.nextTypeScope += 1;
+    scope = `t:${identityCache.nextTypeScope}`;
+    identityCache.typeScopes.set(type, scope);
+  }
+  return scope;
+}
+
+/** Anchors descendant identity to an explicit Vue key without string coercion. */
+function getExplicitIdentityScope(
+  parentScope: string,
+  key: PropertyKey,
+  identityCache: TranslationIdentityCache
+): string {
+  let scope = identityCache.explicitScopes.get(key);
+  if (!scope) {
+    identityCache.nextExplicitScope += 1;
+    scope = `k:${identityCache.nextExplicitScope}`;
+    identityCache.explicitScopes.set(key, scope);
+  }
+  return `${parentScope}/${scope}`;
 }
 
 function getGTMetadata(vnode: VNode): string | undefined {
@@ -235,7 +340,8 @@ function getBranches(
   vnode: VNode,
   transformation: 'branch' | 'plural',
   branchElementId: number,
-  identity: string
+  identity: string,
+  identityCache: TranslationIdentityCache
 ): Record<string, SourceNode[]> {
   const inputs = Object.create(null) as Record<string, unknown>;
   if (isSlots(vnode.children)) {
@@ -271,7 +377,8 @@ function getBranches(
         visitChildren(
           value,
           { value: branchElementId },
-          `${identity}/branch:${key.length}:${key}`
+          `${identity}/branch:${key.length}:${key}`,
+          identityCache
         ),
       ])
   );
@@ -417,18 +524,23 @@ function keySourceResult(
   const occurrence = occurrences.get(source) ?? 0;
   occurrences.set(source, occurrence + 1);
 
-  if (occurrence === 0 && isVNode(rendered) && rendered.key != null) {
-    return rendered;
-  }
-
+  const explicitKey =
+    occurrence === 0 && source.preserveExplicitKey ? source.vnode.key : null;
   const cacheKey = `${source.identity}/occurrence:${occurrence}`;
-  let key = identityCache.get(cacheKey);
-  if (!key) {
-    key = Symbol(cacheKey);
-    identityCache.set(cacheKey, key);
+  let key: PropertyKey;
+  if (explicitKey != null) {
+    key = explicitKey;
+  } else {
+    let generatedKey = identityCache.generatedKeys.get(cacheKey);
+    if (!generatedKey) {
+      generatedKey = Symbol(cacheKey);
+      identityCache.generatedKeys.set(cacheKey, generatedKey);
+    }
+    key = generatedKey;
   }
 
   if (isVNode(rendered)) {
+    if (rendered.key === key) return rendered;
     const cloned = cloneVNode(rendered);
     cloned.key = key;
     return cloned;

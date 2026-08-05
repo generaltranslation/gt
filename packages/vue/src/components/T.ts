@@ -1,5 +1,8 @@
 import { defineComponent } from 'vue';
-import { translateVueChildren } from '../rendering/translateVueChildren';
+import {
+  createTranslationIdentityCache,
+  translateVueChildren,
+} from '../rendering/translateVueChildren';
 import { useGTState } from '../runtime/state';
 import { withGTMetadata } from './utils';
 
@@ -41,7 +44,7 @@ export const T = withGTMetadata<TProps>(
       const state = useGTState();
       // Translation IDs can reorder or repeat source VNodes. Stable Symbols
       // preserve component identity without colliding with user-provided keys.
-      const identityCache = new Map<string, symbol>();
+      const identityCache = createTranslationIdentityCache();
       return () =>
         translateVueChildren(
           slots.default?.() ?? [],
