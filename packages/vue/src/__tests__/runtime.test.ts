@@ -1680,35 +1680,118 @@ describe('gt-vue runtime', () => {
     expect(html).not.toContain('alt="Source portrait"');
   });
 
-  it('uses the default locale for untranslated rich source fallbacks', async () => {
-    const plugin = createGT({
+  it('uses pipeline locales instead of public preferences for rich formatters', async () => {
+    const date = new Date('2024-01-02T00:00:00.000Z');
+    const dateOptions = {
+      day: 'numeric',
+      month: 'long',
+      timeZone: 'UTC',
+      year: 'numeric',
+    } as const;
+    const renderFormatters = () => [
+      h(Num, { locales: ['de-DE'], value: 1234.5 }),
+      '|',
+      h(Currency, {
+        currency: 'EUR',
+        locales: ['de-DE'],
+        value: 1234.5,
+      }),
+      '|',
+      h(DateTime, {
+        locales: ['de-DE'],
+        options: dateOptions,
+        value: date,
+      }),
+    ];
+    const expected = (locale: string) =>
+      [
+        new Intl.NumberFormat(locale).format(1234.5),
+        new Intl.NumberFormat(locale, {
+          currency: 'EUR',
+          style: 'currency',
+        }).format(1234.5),
+        new Intl.DateTimeFormat(locale, dateOptions)
+          .format(date)
+          .replace(/[\u200F\u202B\u202E]/g, ''),
+      ].join('|');
+
+    const missingPlugin = createGT({
       defaultLocale: 'en-US',
       loadTranslations: async () => ({}),
     });
-    await plugin.setLocale('fr-FR');
-    const Root = defineComponent({
+    await missingPlugin.setLocale('fr-FR');
+    const MissingRoot = defineComponent({
       setup() {
         return () =>
-          h(T, null, {
-            default: () => [
-              h(
-                Plural,
-                { n: 0 },
-                {
-                  one: () => 'one',
-                  other: () => 'other',
-                }
-              ),
-              '|',
-              h(Num, { value: '1234.5' }),
-            ],
-          });
+          h(
+            T,
+            { _hash: 'missing' },
+            {
+              default: () => [
+                h(
+                  Plural,
+                  { n: 0 },
+                  {
+                    one: () => 'one',
+                    other: () => 'other',
+                  }
+                ),
+                '|',
+                ...renderFormatters(),
+              ],
+            }
+          );
       },
     });
 
     expect(
-      stripFragmentMarkers(await renderWithPlugin(Root, plugin))
-    ).toContain('other|1,234.5');
+      stripFragmentMarkers(await renderWithPlugin(MissingRoot, missingPlugin))
+    ).toBe(`other|${expected('en-US')}`);
+
+    const translatedPlugin = createGT({
+      defaultLocale: 'en-US',
+      loadTranslations: async () => ({
+        formatters: [
+          { i: 1, k: '_gt_n_1', v: 'n' },
+          '|',
+          { i: 2, k: '_gt_cost_2', v: 'c' },
+          '|',
+          { i: 3, k: '_gt_date_3', v: 'd' },
+        ],
+        partial: { d: { ti: 'Titre' }, i: 1, t: 'span' },
+      }),
+    });
+    await translatedPlugin.setLocale('fr-FR');
+    const TranslatedRoot = defineComponent({
+      setup() {
+        return () =>
+          h(T, { _hash: 'formatters' }, { default: renderFormatters });
+      },
+    });
+    const PartialRoot = defineComponent({
+      setup() {
+        return () =>
+          h(
+            T,
+            { _hash: 'partial' },
+            {
+              default: () =>
+                h('span', { title: 'Source title' }, renderFormatters()),
+            }
+          );
+      },
+    });
+
+    expect(
+      stripFragmentMarkers(
+        await renderWithPlugin(TranslatedRoot, translatedPlugin)
+      )
+    ).toBe(expected('fr-FR'));
+    expect(
+      stripFragmentMarkers(
+        await renderWithPlugin(PartialRoot, translatedPlugin)
+      )
+    ).toBe(`<span title="Titre">${expected('fr-FR')}</span>`);
   });
 
   it('requires explicit preloading for an asynchronous SSR locale', async () => {
