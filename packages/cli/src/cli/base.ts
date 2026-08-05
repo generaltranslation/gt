@@ -57,6 +57,7 @@ import {
 import { clearWarnings } from '../state/translateWarnings.js';
 import { displayTranslateSummary } from '../console/displayTranslateSummary.js';
 import updateConfig from '../fs/config/updateConfig.js';
+import { loadConfig } from '../fs/config/loadConfig.js';
 import { createLoadTranslationsFile } from '../fs/createLoadTranslationsFile.js';
 import { saveLocalEdits } from '../api/saveLocalEdits.js';
 import processSharedStaticAssets, {
@@ -75,6 +76,7 @@ import { runMergeDriver, type MergeDriverName } from '../git/mergeDrivers.js';
 import { setupGitMergeDrivers } from '../git/setupMergeDrivers.js';
 import { warnReactPackageCompatibility } from '../utils/reactPackageCompatibility.js';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { setupViteSPA } from '../setup/setupViteSPA.js';
 
 const ID_COMPATIBILITY_WARNING_COMMANDS = new Set([
   'download',
@@ -637,9 +639,11 @@ export class BaseCLI {
               : DEFAULT_TRANSLATIONS_DIR;
 
           const defaultsDescription =
-            framework.type === 'react'
-              ? `${library} & GTProvider, ${frameworkDisplayName}, Files saved locally in ${defaultTranslationsDir}`
-              : `Files saved locally in ${defaultTranslationsDir}`;
+            framework.name === 'vite'
+              ? `${library} & initializeGTSPA, ${frameworkDisplayName}, Files saved locally in ${defaultTranslationsDir}`
+              : framework.type === 'react'
+                ? `${library} & GTProvider, ${frameworkDisplayName}, Files saved locally in ${defaultTranslationsDir}`
+                : `Files saved locally in ${defaultTranslationsDir}`;
 
           // Ask if user wants to use defaults
           const useDefaults = await promptConfirm({
@@ -654,7 +658,10 @@ export class BaseCLI {
             const wrap = useDefaults
               ? true
               : await promptConfirm({
-                  message: `Would you like to install ${library} and add the GTProvider? See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`,
+                  message:
+                    framework.name === 'vite'
+                      ? `Would you like to install ${library} and configure initializeGTSPA? See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`
+                      : `Would you like to install ${library} and add the GTProvider? See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`,
                   defaultValue: true,
                 });
 
@@ -729,7 +736,12 @@ export class BaseCLI {
     useDefaults: boolean = false,
     isVite: boolean = false
   ): Promise<void> {
-    const { defaultLocale, locales } = await getDesiredLocales(); // Locales should still be asked for even if using defaults
+    const configFilepath =
+      !isVite && fs.existsSync('src/gt.config.json')
+        ? 'src/gt.config.json'
+        : 'gt.config.json';
+    const existingConfig = loadConfig(configFilepath);
+    const { defaultLocale, locales } = await getDesiredLocales(existingConfig);
 
     const packageJson = await searchForPackageJson();
 
@@ -774,7 +786,7 @@ export class BaseCLI {
     const finalTranslationsDir =
       translationsDir?.trim() || defaultTranslationsDir;
 
-    if (isUsingGT && !usingCDN) {
+    if (isUsingGT && !usingCDN && !isVite) {
       // Create loadTranslations.js file for local translations
       await createLoadTranslationsFile(
         process.cwd(),
@@ -831,11 +843,6 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
       };
     }
 
-    let configFilepath = 'gt.config.json';
-    if (fs.existsSync('src/gt.config.json')) {
-      configFilepath = 'src/gt.config.json';
-    }
-
     // Create gt.config.json
     await createOrUpdateConfig(configFilepath, {
       defaultLocale,
@@ -850,12 +857,22 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
       )} to customize your translation setup. Docs: https://generaltranslation.com/docs/cli/reference/config`
     );
 
+    if (isUsingGT && isVite) {
+      await setupViteSPA({
+        appDirectory: process.cwd(),
+        configFilepath,
+        defaultLocale,
+        locales,
+        translationsDir: usingCDN ? undefined : finalTranslationsDir,
+      });
+    }
+
     // Install gt if not installed
     const isCLIInstalled = packageJson
       ? isPackageInstalled('gt', packageJson, true, true)
       : true; // if no package.json, we can't install it
 
-    if (!isCLIInstalled) {
+    if (!isCLIInstalled && !(isUsingGT && isVite)) {
       const packageManager = await getPackageManager();
       const spinner = logger.createSpinner();
       spinner.start(
@@ -866,7 +883,7 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
     }
 
     // Set credentials
-    if (!areCredentialsSet()) {
+    if ((!isVite || !isUsingGT || usingCDN) && !areCredentialsSet()) {
       const loginQuestion = useDefaults
         ? true
         : await promptConfirm({

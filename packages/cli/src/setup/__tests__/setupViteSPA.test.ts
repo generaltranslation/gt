@@ -1,0 +1,125 @@
+import fs from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { setupViteSPA } from '../setupViteSPA.js';
+
+describe('setupViteSPA', () => {
+  let appDirectory: string;
+
+  beforeEach(() => {
+    appDirectory = fs.mkdtempSync(path.join(tmpdir(), 'gt-vite-spa-'));
+    fs.mkdirSync(path.join(appDirectory, 'src'));
+    fs.writeFileSync(
+      path.join(appDirectory, 'index.html'),
+      '<div id="root"></div>\n<script>document.documentElement.dataset.theme = "dark";</script>\n<script type="module" src="/src/main.tsx"></script>\n'
+    );
+    fs.writeFileSync(path.join(appDirectory, 'src', 'main.tsx'), '// app');
+    fs.writeFileSync(path.join(appDirectory, 'gt.config.json'), '{}');
+  });
+
+  afterEach(() => {
+    fs.rmSync(appDirectory, { recursive: true, force: true });
+  });
+
+  it('configures bundled translations before rendering the app', async () => {
+    await setupViteSPA({
+      appDirectory,
+      configFilepath: 'gt.config.json',
+      defaultLocale: 'en',
+      locales: ['fr', 'zh', 'en'],
+      translationsDir: 'src/_gt',
+    });
+
+    expect(
+      fs.readFileSync(path.join(appDirectory, 'index.html'), 'utf8')
+    ).toContain('src="/src/index.ts"');
+    expect(fs.readFileSync(path.join(appDirectory, 'src', 'index.ts'), 'utf8'))
+      .toBe(`import { initializeGTSPA } from 'gt-react';
+import gtConfig from '../gt.config.json';
+import loadTranslations from './loadTranslations';
+
+await initializeGTSPA({ ...gtConfig, loadTranslations });
+
+await import('./main'); // render the app only after GT is ready
+`);
+    expect(
+      fs.readFileSync(
+        path.join(appDirectory, 'src', 'loadTranslations.ts'),
+        'utf8'
+      )
+    ).toContain('import(`./_gt/${locale}.json`)');
+    expect(
+      fs.readFileSync(path.join(appDirectory, 'src', '_gt', 'fr.json'), 'utf8')
+    ).toBe('{}\n');
+    expect(
+      fs.existsSync(path.join(appDirectory, 'src', '_gt', 'zh.json'))
+    ).toBe(true);
+    expect(
+      fs.existsSync(path.join(appDirectory, 'src', '_gt', 'en.json'))
+    ).toBe(false);
+  });
+
+  it('preserves existing translation files and custom loaders', async () => {
+    fs.mkdirSync(path.join(appDirectory, 'src', '_gt'));
+    fs.writeFileSync(
+      path.join(appDirectory, 'src', '_gt', 'fr.json'),
+      '{"hello":"bonjour"}'
+    );
+    fs.writeFileSync(
+      path.join(appDirectory, 'src', 'loadTranslations.ts'),
+      '// custom loader'
+    );
+
+    await setupViteSPA({
+      appDirectory,
+      configFilepath: 'gt.config.json',
+      defaultLocale: 'en',
+      locales: ['fr'],
+      translationsDir: 'src/_gt',
+    });
+
+    expect(
+      fs.readFileSync(path.join(appDirectory, 'src', '_gt', 'fr.json'), 'utf8')
+    ).toBe('{"hello":"bonjour"}');
+    expect(
+      fs.readFileSync(
+        path.join(appDirectory, 'src', 'loadTranslations.ts'),
+        'utf8'
+      )
+    ).toBe('// custom loader');
+  });
+
+  it('uses CDN loading when no translations directory is configured', async () => {
+    await setupViteSPA({
+      appDirectory,
+      configFilepath: 'gt.config.json',
+      defaultLocale: 'en',
+      locales: ['fr'],
+    });
+
+    const bootstrap = fs.readFileSync(
+      path.join(appDirectory, 'src', 'index.ts'),
+      'utf8'
+    );
+    expect(bootstrap).toContain('await initializeGTSPA(gtConfig);');
+    expect(bootstrap).not.toContain('loadTranslations');
+  });
+
+  it('does not overwrite an existing non-GT bootstrap', async () => {
+    fs.writeFileSync(path.join(appDirectory, 'src', 'index.ts'), '// custom');
+
+    await expect(
+      setupViteSPA({
+        appDirectory,
+        configFilepath: 'gt.config.json',
+        defaultLocale: 'en',
+        locales: ['fr'],
+        translationsDir: 'src/_gt',
+      })
+    ).rejects.toThrow('GT will not overwrite an existing src/index.ts file');
+    expect(
+      fs.readFileSync(path.join(appDirectory, 'index.html'), 'utf8')
+    ).toContain('src="/src/main.tsx"');
+  });
+});
