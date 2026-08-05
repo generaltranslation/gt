@@ -73,6 +73,61 @@ describe('resolveVueCompilerOptions', () => {
     });
   });
 
+  it('fails closed when Nuxt layers can contribute compiler options', () => {
+    const root = createProject({
+      'nuxt.config.ts': `
+        export default defineNuxtConfig({ extends: ['./layers/base'] });
+      `,
+      'layers/base/nuxt.config.ts': `
+        export default defineNuxtConfig({
+          vue: { compilerOptions: { delimiters: ['[[', ']]'] } },
+        });
+      `,
+    });
+
+    const result = resolveVueCompilerOptions(root, undefined);
+
+    expect(result.compilerOptions).toEqual({});
+    expect(result.errors.join('\n')).toContain('Nuxt layer inheritance');
+  });
+
+  it.each([
+    {
+      name: 'a custom srcDir',
+      config: `export default defineNuxtConfig({ srcDir: 'client/' });`,
+    },
+    {
+      name: 'custom directory overrides',
+      config: `export default defineNuxtConfig({ dir: { pages: 'screens' } });`,
+    },
+  ])(
+    'fails closed for $name that default discovery cannot scan',
+    ({ config }) => {
+      const root = createProject({ 'nuxt.config.ts': config });
+
+      const result = resolveVueCompilerOptions(root, undefined);
+
+      expect(result.compilerOptions).toEqual({});
+      expect(result.errors.join('\n')).toContain(
+        'custom Nuxt source directories'
+      );
+    }
+  );
+
+  it.each(['.', './', 'app/', 'src/'])(
+    'accepts the covered Nuxt srcDir %s',
+    (srcDir) => {
+      const root = createProject({
+        'nuxt.config.ts': `export default defineNuxtConfig({ srcDir: ${JSON.stringify(srcDir)} });`,
+      });
+
+      expect(resolveVueCompilerOptions(root, undefined)).toEqual({
+        compilerOptions: {},
+        errors: [],
+      });
+    }
+  );
+
   it('resolves a Vue plugin namespace import', () => {
     const root = createProject({
       'vite.config.mjs': `

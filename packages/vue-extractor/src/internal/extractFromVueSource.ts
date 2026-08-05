@@ -77,7 +77,11 @@ function parseVueSingleFileComponent(
     filename: context.file,
     pad: 'space',
     sourceMap: false,
-    templateParseOptions: { ...compilerOptions, expressionPlugins },
+    templateParseOptions: {
+      ...compilerOptions,
+      comments: true,
+      expressionPlugins,
+    },
   });
 
   for (const error of result.errors) {
@@ -150,8 +154,93 @@ function parseVueSingleFileComponent(
     return;
   }
   if (template.ast) {
+    const templateResultStart = context.results.length;
+    const templateErrorStart = context.errors.length;
     parseVueTemplate(template.ast, bindings, expressionPlugins, context);
+    if (
+      context.errors.length === templateErrorStart &&
+      template.content.includes('<!--') &&
+      !matchesProductionTemplate(
+        source,
+        compilerOptions,
+        expressionPlugins,
+        bindings,
+        context,
+        templateResultStart
+      )
+    ) {
+      context.results.length = templateResultStart;
+      addVueError(
+        context,
+        template.loc,
+        'Found translatable Vue content whose hash changes between development and production',
+        'Remove comments that split translatable text or whitespace, or move those comments outside gt-vue <T> components'
+      );
+    }
   }
+}
+
+/**
+ * Verifies that Vite's production comment stripping preserves extracted data.
+ *
+ * Vue parses templates with comments in development and without them in
+ * production. Removing a comment can renormalize adjacent whitespace, so a
+ * single persisted catalog key cannot serve both builds. The second parse is
+ * limited to templates that contain comments and never executes project code.
+ */
+function matchesProductionTemplate(
+  source: string,
+  compilerOptions: VueCompilerOptions,
+  expressionPlugins: ParserPlugin[],
+  bindings: TemplateBindings,
+  context: VueExtractionContext,
+  developmentResultStart: number
+): boolean {
+  const production = parse(source, {
+    filename: context.file,
+    pad: 'space',
+    sourceMap: false,
+    templateParseOptions: {
+      ...compilerOptions,
+      comments: false,
+      expressionPlugins,
+    },
+  });
+  const template = production.descriptor.template;
+  if (production.errors.length > 0 || !template?.ast) return false;
+
+  const productionContext: VueExtractionContext = {
+    ...context,
+    errors: [],
+    results: [],
+    warnings: new Set(),
+  };
+  parseVueTemplate(
+    template.ast,
+    bindings,
+    expressionPlugins,
+    productionContext
+  );
+  if (productionContext.errors.length > 0) return false;
+
+  const developmentResults = context.results.slice(developmentResultStart);
+  return (
+    comparableTemplateResults(developmentResults) ===
+    comparableTemplateResults(productionContext.results)
+  );
+}
+
+/** Omits location-only metadata while comparing persisted template content. */
+function comparableTemplateResults(
+  results: VueExtractionOutput['results']
+): string {
+  return JSON.stringify(
+    results.map((result) => ({
+      dataFormat: result.dataFormat,
+      context: result.metadata.context,
+      source: result.source,
+    }))
+  );
 }
 
 function collectScriptBlockImports(
@@ -201,10 +290,26 @@ function parseScriptBlock(
 
 function createTemplateBindings(): TemplateBindings {
   return {
+    arrayLengths: new Map(),
+    componentFactories: new Set(),
     components: new Map(),
-    registeredComponents: new Set(),
+    containerKinds: new Map(),
+    possibleGTContainers: new Set(),
+    gtContainerFactories: new Set(),
+    directBindings: new Set(),
+    registeredComponents: new Map(),
+    registeredVueBuiltins: new Map(),
     staticValues: new Map(),
+    identityFunctions: new Set(),
+    possibleStaticStrings: new Map(),
     stringFunctions: new Map(),
+    uncertainStringFunctions: new Set(),
+    uncertainComponents: new Set(),
+    uncertainGTComponents: new Set(),
+    gtComponentFactories: new Set(),
+    uncertainRegisteredComponents: new Set(),
+    uncertainRegisteredGTComponents: new Set(),
+    vueBuiltins: new Map(),
   };
 }
 

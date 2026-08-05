@@ -128,6 +128,11 @@ boundaries instead:
 </Suspense>
 ```
 
+CLI extraction currently supports static `whitespace` and `delimiters` Vue
+compiler options. Custom `isCustomElement` predicates and other compiler
+callbacks are not supported. The CLI fails closed when it finds one rather than
+generating a catalog with hashes that may differ from the application compiler.
+
 ## Registered Messages
 
 `msg()` marks a string at module scope and `useMessages()` resolves it inside
