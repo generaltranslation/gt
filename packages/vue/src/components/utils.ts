@@ -1,5 +1,5 @@
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 import {
-  isVNode,
   type Component,
   type DefineComponent,
   type Slots,
@@ -37,17 +37,40 @@ export function withGTMetadata<Props = {}>(
   return Object.assign(component, { _gtt: metadata }) as GTComponent<Props>;
 }
 
-/** @internal */
+/**
+ * Builds the locale fallback list used by formatters and plural selection.
+ *
+ * When the active locale equals the configured default locale, explicit
+ * preferences are intentionally ignored and only the default locale is used,
+ * matching the React runtime. Otherwise, explicit preferences are tried first,
+ * then the active locale, and finally the default locale. Duplicate entries
+ * are removed without changing that order.
+ *
+ * @internal
+ */
 export function getFormatLocales(
   locales: string[] | undefined,
-  locale: string
+  locale: string,
+  defaultLocale: string = libraryDefaultLocale
 ): string[] {
-  return [...(locales ?? []), locale];
+  if (locale === defaultLocale) return [defaultLocale];
+  return [...new Set([...(locales ?? []), locale, defaultLocale])];
 }
 
-/** @internal */
-export function readSlotText(slots: Slots): string {
-  return (slots.default?.() ?? []).map(readVNodeText).join('');
+/**
+ * Normalizes a render result to a Fragment component root.
+ *
+ * Vue's server renderer concatenates adjacent scalar component roots into one
+ * text node. Returning an array makes Vue emit Fragment anchors, so hydration
+ * can recover each GT-owned boundary even when several components render next
+ * to plain text or change between source and translated content.
+ *
+ * @internal
+ */
+export function asFragmentRoot(children: VNodeChild): VNodeChild[] {
+  if (Array.isArray(children)) return children;
+  if (children == null || typeof children === 'boolean') return [];
+  return [children];
 }
 
 /**
@@ -84,17 +107,6 @@ export function isBranchAttribute(
     typeof value === 'bigint' ||
     typeof value === 'boolean'
   );
-}
-
-function readVNodeText(node: VNodeChild): string {
-  if (node == null || typeof node === 'boolean') return '';
-  if (Array.isArray(node)) return node.map(readVNodeText).join('');
-  if (!isVNode(node)) return String(node);
-  if (typeof node.children === 'string') return node.children;
-  if (Array.isArray(node.children)) {
-    return node.children.map(readVNodeText).join('');
-  }
-  return '';
 }
 
 /** @internal */

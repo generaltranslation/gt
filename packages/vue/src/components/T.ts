@@ -4,7 +4,7 @@ import {
   translateVueChildren,
 } from '../rendering/translateVueChildren';
 import { useGTState } from '../runtime/state';
-import { withGTMetadata } from './utils';
+import { asFragmentRoot, withGTMetadata } from './utils';
 
 type TProps = {
   /** @internal Compile-time hash inserted by GT tooling. */
@@ -46,16 +46,18 @@ export const T = withGTMetadata<TProps>(
       // preserve component identity without colliding with user-provided keys.
       const identityCache = createTranslationIdentityCache();
       return () =>
-        translateVueChildren(
-          slots.default?.() ?? [],
-          state,
-          {
-            ...props,
-            ...(typeof attrs.$context === 'string' && {
-              $context: attrs.$context,
-            }),
-          },
-          identityCache
+        asFragmentRoot(
+          translateVueChildren(
+            slots.default?.() ?? [],
+            state,
+            {
+              ...props,
+              ...(typeof attrs.$context === 'string' && {
+                $context: attrs.$context,
+              }),
+            },
+            identityCache
+          )
         );
     },
   }),
