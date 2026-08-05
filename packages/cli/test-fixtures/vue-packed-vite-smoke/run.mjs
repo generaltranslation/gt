@@ -71,6 +71,12 @@ try {
     printOutput: true,
   });
 
+  writeStatus('Typechecking the packed extractor public API');
+  await runChecked('pnpm', ['exec', 'tsc', '-p', 'tsconfig.json'], {
+    cwd: appRoot,
+    printOutput: true,
+  });
+
   writeStatus('Validating and generating the packed app catalog');
   await runChecked('pnpm', ['exec', 'gt', 'validate'], {
     cwd: appRoot,
@@ -87,9 +93,20 @@ try {
   const expectedCatalog = JSON.parse(
     await readFile(expectedCatalogPath, 'utf8')
   );
+  const versionSpecificCatalog = JSON.parse(
+    await readFile(
+      join(
+        fixtureRoot,
+        Number(options.vue.split('.')[1]) >= 5
+          ? 'expected-catalog.vue-modern.json'
+          : 'expected-catalog.vue-legacy.json'
+      ),
+      'utf8'
+    )
+  );
   assert.deepEqual(
     catalog,
-    expectedCatalog,
+    { ...expectedCatalog, ...versionSpecificCatalog },
     'generated source catalog changed from the cross-version fixture'
   );
   assert.ok(
@@ -376,6 +393,7 @@ async function writeConsumerPackageJson(artifacts) {
       'gt-vue': localDependency('gt-vue'),
       gt: localDependency('gt'),
       playwright: '1.57.0',
+      typescript: '5.9.3',
       vite: options.vite,
       vue: options.vue,
     },
@@ -474,6 +492,27 @@ function translateCatalogValue(value) {
   if (Object.hasOwn(translated, 'c')) {
     translated.c = translateCatalogValue(translated.c);
   }
+  if (
+    Object.hasOwn(translated, 'd') &&
+    translated.d != null &&
+    typeof translated.d === 'object'
+  ) {
+    translated.d = Object.fromEntries(
+      Object.entries(translated.d).map(([key, data]) => [
+        key,
+        key === 't'
+          ? data
+          : key === 'b' && data != null && typeof data === 'object'
+            ? Object.fromEntries(
+                Object.entries(data).map(([branch, value]) => [
+                  branch,
+                  translateCatalogValue(value),
+                ])
+              )
+            : translateCatalogValue(data),
+      ])
+    );
+  }
   if (Object.hasOwn(translated, 'b')) {
     translated.b = Object.fromEntries(
       Object.entries(translated.b).map(([key, branch]) => [
@@ -569,6 +608,13 @@ async function verifyBrowserBuild(chromium, mode) {
             .querySelector('#computed-m')
             ?.textContent?.trim(),
           direct: document.querySelector('#direct-gt')?.textContent?.trim(),
+          fragment: document.querySelector('#fragment')?.textContent?.trim(),
+          implicitBranch: document
+            .querySelector('#implicit-branch')
+            ?.textContent?.trim(),
+          implicitPlural: document
+            .querySelector('#implicit-plural')
+            ?.textContent?.trim(),
           nested: document.querySelector('#nested-gt')?.textContent?.trim(),
           nestedMessage: document
             .querySelector('#nested-m')
@@ -589,6 +635,9 @@ async function verifyBrowserBuild(chromium, mode) {
       assert.deepEqual(result.text, {
         computedMessage: '[fr] Computed raw message',
         direct: '[fr] Direct GT',
+        fragment: '[fr] Fragment child',
+        implicitBranch: '[fr] Formal branch',
+        implicitPlural: '[fr] One plural',
         nested: '[fr] Nested GT',
         nestedMessage: '[fr] Nested raw message',
         reference: '[fr] Ref GT',

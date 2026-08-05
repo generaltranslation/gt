@@ -1,4 +1,5 @@
 import type { VueExtractionResult } from '../types.js';
+import type { ImplicitSlotWhitespace } from './vueCompiler.js';
 
 export type GTComponentName =
   | 'T'
@@ -69,6 +70,8 @@ export type ExtractionLocation = {
 export type VueExtractionContext = {
   errors: string[];
   file: string;
+  /** Whitespace predicate used by the resolved consumer Vue compiler. */
+  implicitSlotWhitespace: ImplicitSlotWhitespace;
   includeSourceCodeContext: boolean;
   relativeFile: string;
   results: VueExtractionResult[];

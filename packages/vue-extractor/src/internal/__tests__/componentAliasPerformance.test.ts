@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { extractFromVueSource } from '../../index.js';
 import { collectAnalyzerStats } from './analyzerPerformance.js';
+import { extractFromVueSource } from './testVueCompiler.js';
 
 function createScalarAliasScript(aliasCount: number): string {
   const declarations = ["import { T } from 'gt-vue';", 'const Component0 = T;'];
@@ -11,7 +11,6 @@ function createScalarAliasScript(aliasCount: number): string {
   declarations.push('const key = getIndex();');
   return declarations.join('\n');
 }
-
 describe('direct component alias performance', () => {
   it('keeps analyzer visits linear for a long scalar alias chain', () => {
     const smaller = collectAnalyzerStats(createScalarAliasScript(500));

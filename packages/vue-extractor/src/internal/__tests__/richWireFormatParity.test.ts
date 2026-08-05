@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import type { JsxChildren } from '@generaltranslation/format/types';
 import { hashSource } from 'generaltranslation/id';
 import { describe, expect, it } from 'vitest';
-import { extractFromVueSource } from '../../index.js';
+import { extractFromVueSource } from './testVueCompiler.js';
 
 type WireFormatFixture = {
   description: string;

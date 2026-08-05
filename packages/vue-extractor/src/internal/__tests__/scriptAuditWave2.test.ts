@@ -1,6 +1,6 @@
 import { compileScript, compileTemplate, parse } from '@vue/compiler-sfc';
 import { describe, expect, it } from 'vitest';
-import { extractFromVueSource } from '../../index.js';
+import { extractFromVueSource } from './testVueCompiler.js';
 
 type AuditCase = {
   extension?: string;

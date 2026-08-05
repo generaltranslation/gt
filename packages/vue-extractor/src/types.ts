@@ -1,5 +1,23 @@
 import type { JsxChildren } from '@generaltranslation/format/types';
 
+/**
+ * Version-neutral Vue compiler surface accepted by programmatic extraction.
+ *
+ * Vue's compiler AST types are nominally incompatible across even patch
+ * releases. Keeping the callable members opaque lets an app pass its exact
+ * `vue/compiler-sfc` module while runtime validation protects the boundary.
+ */
+export type VueCompiler = {
+  /** Compiles one Vue SFC template. */
+  compileTemplate: (...args: never[]) => unknown;
+  /** Parses one Vue single-file component. */
+  parse: (...args: never[]) => unknown;
+  /** Optional exact compiler-dom parser for older Vue 3 releases. */
+  parseTemplate?: (...args: never[]) => unknown;
+  /** Exact Vue compiler release. */
+  version: string;
+};
+
 /** Vue template compiler options that can change extracted source hashes. */
 export type VueCompilerOptions = {
   /** Controls how Vue normalizes whitespace between template children. */
@@ -37,6 +55,8 @@ export type VueExtractionResult =
 
 /** Options that control extraction from one Vue source file. */
 export type VueExtractionOptions = {
+  /** Exact compiler used by the consuming Vue application. */
+  compiler?: VueCompiler;
   /** Vue compiler options used by the consuming application. */
   compilerOptions?: VueCompilerOptions;
   /** Includes surrounding source lines in result metadata. */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractFromVueSource } from '../../index.js';
+import { extractFromVueSource } from './testVueCompiler.js';
 
 const POSSIBLE_ALIAS_DIAGNOSTIC =
   'Could not statically resolve possible gt-vue component alias';

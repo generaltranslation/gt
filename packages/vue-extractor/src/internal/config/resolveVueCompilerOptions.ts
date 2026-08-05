@@ -495,6 +495,7 @@ function readViteConfig(
       return;
     }
     if (argument) {
+      rejectCustomVueCompiler(argument, call.scope, file, errors);
       readNestedCompilerOptions(
         argument,
         call.scope,
@@ -675,6 +676,30 @@ function isDefinitelyEmptyArray(
   const nextSeen = new Set(seen);
   nextSeen.add(binding);
   return isDefinitelyEmptyArray(declaration.init, binding.path.scope, nextSeen);
+}
+
+/**
+ * Rejects Vite's custom compiler override because source-file resolution can
+ * only prove parity with that app's `vue/compiler-sfc` export.
+ */
+function rejectCustomVueCompiler(
+  root: t.Node,
+  scope: Scope,
+  file: string,
+  errors: string[]
+): void {
+  const rootObject = resolveStaticObject(root, scope, new Set());
+  if (!rootObject.ok) return;
+  const compiler = rootObject.value.entries.get('compiler');
+  if (!compiler) return;
+  errors.push(
+    locatedOptionError(
+      file,
+      compiler.node,
+      'Found a custom Vue compiler instance in the Vite plugin',
+      "Remove the compiler override so extraction and Vite both use the app's vue/compiler-sfc version"
+    )
+  );
 }
 
 function readNuxtConfig(

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractFromVueSource } from '../../index.js';
+import { extractFromVueSource } from './testVueCompiler.js';
 
 describe('Vue variable component interface validation', () => {
   it('accepts explicit dynamic value props outside T in SFC templates', async () => {

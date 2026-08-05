@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractFromVueSource } from '../../index.js';
+import { extractFromVueSource } from './testVueCompiler.js';
 
 type SourcePositionProbe = {
   /** Human-readable JavaScript data flow exercised by the probe. */

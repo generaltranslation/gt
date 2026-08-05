@@ -1,7 +1,7 @@
 import { compileScript, compileTemplate, parse } from '@vue/compiler-sfc';
 import type { JsxChildren } from '@generaltranslation/format/types';
 import { describe, expect, it } from 'vitest';
-import { extractFromVueSource } from '../../index.js';
+import { extractFromVueSource } from './testVueCompiler.js';
 
 describe('React CLI parity audit: rich Vue content', () => {
   it('serializes nested branches and public formatter value props', async () => {

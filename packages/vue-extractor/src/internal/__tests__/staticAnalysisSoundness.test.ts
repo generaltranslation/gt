@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractFromVueSource } from '../../index.js';
+import { extractFromVueSource } from './testVueCompiler.js';
 
 describe('Vue static-analysis soundness', () => {
   it.each([
