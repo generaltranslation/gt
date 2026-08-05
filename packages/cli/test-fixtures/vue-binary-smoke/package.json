@@ -1,0 +1,9 @@
+{
+  "name": "vue-binary-smoke",
+  "private": true,
+  "version": "0.0.0",
+  "dependencies": {
+    "gt-vue": "0.0.0",
+    "vue": "^3.5.0"
+  }
+}
