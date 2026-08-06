@@ -158,7 +158,7 @@ const gt = useGT();
   });
 
   it.skipIf(process.platform === 'win32')(
-    'does not read React workspace sources through outside symlinks',
+    'preserves React workspace source symlink discovery',
     async () => {
       const projectRoot = fs.mkdtempSync(
         path.join(os.tmpdir(), 'gt-react-symlink-workspace-')
@@ -213,7 +213,12 @@ const gt = useGT();
         { conditionNames: ['import', 'default'] }
       );
 
-      expect(output).toEqual({ updates: [], errors: [], warnings: [] });
+      expect(output.errors).toEqual([]);
+      expect(output.warnings).toEqual([]);
+      expect(output.updates.map((update) => update.source).sort()).toEqual([
+        'Outside directory',
+        'Outside file',
+      ]);
     }
   );
 });
