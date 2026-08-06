@@ -330,6 +330,46 @@ describe('determineLibrary', () => {
       expect(result.library).toBe(Libraries.GT_NODE);
     });
 
+    it('preserves gt-node extraction when Vue is the primary framework', () => {
+      mockExistsSync.mockReturnValue(true);
+      mockReadFileSync.mockReturnValue(
+        JSON.stringify({
+          dependencies: { 'gt-node': '1.0.0', 'gt-vue': '1.0.0' },
+        })
+      );
+
+      expect(determineLibrary()).toEqual({
+        library: Libraries.GT_VUE,
+        additionalModules: [Libraries.GT_NODE],
+      });
+    });
+
+    it.each([
+      Libraries.GT_NEXT,
+      Libraries.GT_TANSTACK_START,
+      Libraries.GT_REACT,
+      Libraries.GT_REACT_NATIVE,
+    ])(
+      'preserves gt-node extraction when %s is primary alongside Vue',
+      (primaryLibrary) => {
+        mockExistsSync.mockReturnValue(true);
+        mockReadFileSync.mockReturnValue(
+          JSON.stringify({
+            dependencies: {
+              [primaryLibrary]: '1.0.0',
+              'gt-node': '1.0.0',
+              'gt-vue': '1.0.0',
+            },
+          })
+        );
+
+        expect(determineLibrary()).toEqual({
+          library: primaryLibrary,
+          additionalModules: [Libraries.GT_NODE, Libraries.GT_VUE],
+        });
+      }
+    );
+
     it("returns 'base' when package.json has no GT dependencies", () => {
       mockExistsSync.mockImplementation((path) => {
         if (String(path).endsWith('package.json')) return true;

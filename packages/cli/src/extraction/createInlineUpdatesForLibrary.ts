@@ -25,12 +25,10 @@ export async function createInlineUpdatesForLibrary(
       await import('../vue/parse/createVueInlineUpdates.js');
     return createVueInlineUpdates(filePatterns, parsingFlags, parsingOptions);
   }
-  const resolvedFilePatterns =
-    filePatterns ?? readDefaultInlineSourcePatterns(process.cwd(), pkg);
   return createInlineUpdates(
     pkg,
     validate,
-    resolvedFilePatterns,
+    filePatterns,
     parsingFlags,
     parsingOptions
   );
@@ -53,17 +51,23 @@ export async function createInlineUpdatesForLibraries(
   const uniqueLibraries = [...new Set(libraries)];
   const includesVue = uniqueLibraries.includes(Libraries.GT_VUE);
   const results = await Promise.all(
-    uniqueLibraries.map((library) =>
-      createInlineUpdatesForLibrary(
+    uniqueLibraries.map((library) => {
+      let libraryFilePatterns = filePatterns;
+      if (includesVue && library !== Libraries.GT_VUE) {
+        libraryFilePatterns = [
+          ...(filePatterns ??
+            readDefaultInlineSourcePatterns(process.cwd(), library)),
+          '!**/*.vue',
+        ];
+      }
+      return createInlineUpdatesForLibrary(
         library,
         validate,
-        includesVue && library !== Libraries.GT_VUE && filePatterns
-          ? [...filePatterns, '!**/*.vue']
-          : filePatterns,
+        libraryFilePatterns,
         parsingFlags,
         parsingOptions
-      )
-    )
+      );
+    })
   );
 
   const updates = results.flatMap((result) => result.updates);

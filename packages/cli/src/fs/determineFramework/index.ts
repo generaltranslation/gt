@@ -62,6 +62,17 @@ export function determineLibrary(): {
       if (dependencies['i18next-icu']) {
         additionalModules.push('i18next-icu');
       }
+      // Vue is selected ahead of gt-node so Vue projects receive the
+      // framework-specific CLI. Preserve the existing gt-node extraction
+      // surface when both runtimes are declared by running it as an
+      // additional inline module.
+      if (
+        library !== Libraries.GT_NODE &&
+        dependencies[Libraries.GT_VUE] &&
+        dependencies[Libraries.GT_NODE]
+      ) {
+        additionalModules.push(Libraries.GT_NODE);
+      }
       if (library !== Libraries.GT_VUE && dependencies[Libraries.GT_VUE]) {
         additionalModules.push(Libraries.GT_VUE);
       }
