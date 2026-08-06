@@ -52,11 +52,7 @@ export async function createInlineUpdates(
   const autoderive = resolveAutoderive(parsingFlags.autoderive);
 
   // Use the provided app directory or default to the current directory
-  const files = matchFiles(
-    process.cwd(),
-    filePatterns || DEFAULT_SRC_PATTERNS,
-    { followSymbolicLinks: false, stayWithinCwd: true }
-  );
+  const files = matchFiles(process.cwd(), filePatterns || DEFAULT_SRC_PATTERNS);
 
   for (const file of files) {
     const code = await fs.promises.readFile(file, 'utf8');
