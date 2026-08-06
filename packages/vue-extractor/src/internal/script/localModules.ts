@@ -121,6 +121,8 @@ export type LocalModuleResolver = {
   getRecord(filePath: string): LocalModuleRecord | undefined;
   /** Whether the caller supplied project-specific bare-specifier semantics. */
   hasCustomResolver: boolean;
+  /** Whether a resolved module belongs to project source rather than an install. */
+  isProjectModule(filePath: string): boolean;
   listExportNames(filePath: string): string[];
   resolveExport(filePath: string, exportName: string): LocalExportResolution;
   resolveModule(importer: string, specifier: string): string | undefined;
@@ -137,6 +139,15 @@ export function createLocalModuleResolver(
 ): LocalModuleResolver {
   const records = new Map<string, LocalModuleRecord | null>();
   const resolutions = new Map<string, LocalExportResolution>();
+
+  const isProjectModule = (filePath: string): boolean => {
+    const realPath = readRealPath(path.resolve(filePath));
+    // The caller's resolver contract accepts local workspace source even when
+    // it sits above the metadata project root. Resolve symlinks before checking
+    // the package boundary so linked workspaces remain local while installed
+    // package implementations stay opaque.
+    return !realPath.split(path.sep).includes('node_modules');
+  };
 
   const resolveModule = (
     importer: string,
@@ -170,6 +181,7 @@ export function createLocalModuleResolver(
 
   const getRecord = (filePath: string): LocalModuleRecord | undefined => {
     const normalized = path.resolve(filePath);
+    if (!isProjectModule(normalized)) return undefined;
     const cached = records.get(normalized);
     if (cached !== undefined) return cached ?? undefined;
     // The sentinel also makes self-imports and parse-time cycles fail closed.
@@ -185,6 +197,15 @@ export function createLocalModuleResolver(
     seen: Set<string>
   ): LocalExportResolution => {
     const normalized = path.resolve(filePath);
+    if (!isProjectModule(normalized)) {
+      return {
+        status: 'resolved',
+        target: {
+          originKey: `${normalized}#${exportName}`,
+          type: 'ordinary-external',
+        },
+      };
+    }
     const cycleKey = `${normalized}\0${exportName}`;
     if (seen.has(cycleKey)) return { status: 'absent' };
     const record = getRecord(normalized);
@@ -243,9 +264,17 @@ export function createLocalModuleResolver(
         : { status: 'absent' };
     }
     const modulePath = resolveModule(record.filePath, source);
-    return modulePath
-      ? resolveExportInternal(modulePath, exportName, seen)
-      : { status: 'invalid' };
+    if (!modulePath) return { status: 'invalid' };
+    if (!isProjectModule(modulePath)) {
+      return {
+        status: 'resolved',
+        target: {
+          originKey: `${modulePath}#${exportName}`,
+          type: 'ordinary-external',
+        },
+      };
+    }
+    return resolveExportInternal(modulePath, exportName, seen);
   };
 
   const resolveDeclaredExport = (
@@ -283,6 +312,15 @@ export function createLocalModuleResolver(
         };
       }
       const modulePath = resolveModule(record.filePath, declared.source);
+      if (modulePath && !isProjectModule(modulePath)) {
+        return {
+          status: 'resolved',
+          target: {
+            originKey: `${modulePath}#namespace`,
+            type: 'ordinary-external',
+          },
+        };
+      }
       return modulePath
         ? {
             status: 'resolved',
@@ -318,6 +356,15 @@ export function createLocalModuleResolver(
             };
           }
           const modulePath = resolveModule(record.filePath, imported.source);
+          if (modulePath && !isProjectModule(modulePath)) {
+            return {
+              status: 'resolved',
+              target: {
+                originKey: `${modulePath}#namespace`,
+                type: 'ordinary-external',
+              },
+            };
+          }
           return modulePath
             ? {
                 status: 'resolved',
@@ -392,7 +439,7 @@ export function createLocalModuleResolver(
         continue;
       } else {
         const modulePath = resolveModule(record.filePath, source);
-        if (!modulePath) continue;
+        if (!modulePath || !isProjectModule(modulePath)) continue;
         for (const name of collectExportNames(modulePath, nextSeen)) {
           if (name !== 'default') names.add(name);
         }
@@ -404,6 +451,7 @@ export function createLocalModuleResolver(
   return {
     getRecord,
     hasCustomResolver: resolveModuleOption !== undefined,
+    isProjectModule,
     listExportNames,
     resolveExport,
     resolveModule,
@@ -434,6 +482,15 @@ function isReadableFile(filePath: string): boolean {
     return fs.statSync(filePath).isFile();
   } catch {
     return false;
+  }
+}
+
+/** Resolves symlinks when possible while retaining missing-path diagnostics. */
+function readRealPath(filePath: string): string {
+  try {
+    return fs.realpathSync.native(filePath);
+  } catch {
+    return filePath;
   }
 }
 

@@ -3,7 +3,10 @@ import type { InlineLibrary } from '../types/libraries.js';
 import { Libraries } from '../types/libraries.js';
 import { createInlineUpdates } from '../react/parse/createInlineUpdates.js';
 import { dedupeUpdates } from './postProcess.js';
-import { readDefaultInlineSourcePatterns } from './inlineSourceScopes.js';
+import {
+  readDefaultInlineSourcePatterns,
+  readInlineSourceScopes,
+} from './inlineSourceScopes.js';
 
 /**
  * Extracts one framework's inline translations with its package-specific
@@ -53,9 +56,19 @@ export async function createInlineUpdatesForLibraries(
   const results = await Promise.all(
     uniqueLibraries.map((library) => {
       let libraryFilePatterns = filePatterns;
+      if (
+        library !== Libraries.GT_VUE &&
+        libraryFilePatterns === undefined &&
+        readInlineSourceScopes(process.cwd(), library).length > 1
+      ) {
+        libraryFilePatterns = readDefaultInlineSourcePatterns(
+          process.cwd(),
+          library
+        );
+      }
       if (includesVue && library !== Libraries.GT_VUE) {
         libraryFilePatterns = [
-          ...(filePatterns ??
+          ...(libraryFilePatterns ??
             readDefaultInlineSourcePatterns(process.cwd(), library)),
           '!**/*.vue',
         ];

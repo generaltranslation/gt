@@ -64,6 +64,16 @@ export type VueExtractionOptions = {
   /** Root used to make metadata file paths relative. Defaults to `process.cwd()`. */
   projectRoot?: string;
   /**
+   * Skips standalone script files that have no proven or conservatively
+   * possible gt-vue provenance. Vue single-file components are always parsed.
+   *
+   * This is useful when a framework dispatcher sends the same JavaScript and
+   * TypeScript files to multiple extractors. A permissive, read-only preflight
+   * recognizes gt-vue imports through local barrels before the normal parser
+   * applies the source file's declared language.
+   */
+  requireGTProvenance?: boolean;
+  /**
    * Resolves a static module specifier to a source file without loading or
    * executing that module. Relative source files and index barrels are
    * resolved automatically; provide this hook for aliases or workspace

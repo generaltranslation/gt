@@ -824,6 +824,9 @@ function recordDynamicImportPattern(
       : undefined;
   if (source === 'vue') return;
   if (source && source !== 'gt-vue' && !modulePath) return;
+  if (modulePath && resolver && !resolver.isProjectModule(modulePath)) {
+    return;
+  }
   if (pattern.type === 'Identifier') {
     if (modulePath && resolver) {
       for (const exportName of [
@@ -920,7 +923,10 @@ function registerLocalImportDeclaration(
     resolver && importerFile
       ? resolver.resolveModule(importerFile, source)
       : undefined;
-  if (!modulePath || !resolver?.getRecord(modulePath)) {
+  if (modulePath && resolver && !resolver.isProjectModule(modulePath)) return;
+  const moduleRecord =
+    modulePath && resolver ? resolver.getRecord(modulePath) : undefined;
+  if (!resolver || !modulePath || !moduleRecord) {
     recordUnresolvedTranslationHelperImports(declaration, scope, state);
     if (
       source.startsWith('.') ||

@@ -27,7 +27,9 @@ export type InlineSourceScope = {
  * Workspace directories come from the same realpath-validated traversal used
  * by library detection, keeping package selection and source discovery aligned.
  * Vue selection also includes local dependents of a gt-vue owner so an app can
- * consume the runtime exclusively through a workspace barrel.
+ * consume the runtime exclusively through a workspace barrel. Other runtimes
+ * retain their historical root-only defaults when the root declares them;
+ * workspace owners are selected only for an aggregator root.
  */
 export function readInlineSourceScopes(
   projectRoot: string,
@@ -49,9 +51,11 @@ export function readInlineSourceScopes(
   const selectedWorkspacePackages =
     library === Libraries.GT_VUE
       ? selectVueWorkspacePackages(workspacePackages, rootManifest)
-      : workspacePackages.filter(({ manifest }) =>
-          declaresJavaScriptDependency(manifest, library)
-        );
+      : declaresJavaScriptDependency(rootManifest, library)
+        ? []
+        : workspacePackages.filter(({ manifest }) =>
+            declaresJavaScriptDependency(manifest, library)
+          );
   const workspaceScopes = selectedWorkspacePackages
     .map(({ directory }) => ({
       directory,
@@ -172,13 +176,11 @@ export function readDefaultInlineSourcePatterns(
     library === Libraries.GT_VUE
       ? DEFAULT_VUE_SRC_PATTERNS
       : DEFAULT_SRC_PATTERNS;
-  const workspacePatterns = readInlineSourceScopes(projectRoot, library)
-    .slice(1)
-    .flatMap(({ relativeDirectory }) => {
-      const literalDirectory = fg.escapePath(relativeDirectory);
-      return sourcePatterns.map((pattern) => `${literalDirectory}/${pattern}`);
-    });
-
+  const scopes = readInlineSourceScopes(projectRoot, library);
+  const workspacePatterns = scopes.slice(1).flatMap(({ relativeDirectory }) => {
+    const literalDirectory = fg.escapePath(relativeDirectory);
+    return sourcePatterns.map((pattern) => `${literalDirectory}/${pattern}`);
+  });
   return [...new Set([...sourcePatterns, ...workspacePatterns])];
 }
 

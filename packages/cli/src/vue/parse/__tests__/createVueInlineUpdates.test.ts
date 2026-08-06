@@ -76,6 +76,7 @@ describe('createVueInlineUpdates', () => {
       compilerOptions: { whitespace: 'preserve' },
       includeSourceCodeContext: true,
       projectRoot: process.cwd(),
+      requireGTProvenance: true,
       resolveModule: expect.any(Function),
     });
     expect(result.errors).toEqual([]);
@@ -162,6 +163,7 @@ describe('createVueInlineUpdates', () => {
       compilerOptions: {},
       includeSourceCodeContext: true,
       projectRoot: process.cwd(),
+      requireGTProvenance: true,
       resolveModule: expect.any(Function),
     });
     expect(result.errors).toEqual([]);

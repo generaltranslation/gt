@@ -8,6 +8,9 @@ function getParserPlugins(language: string | undefined): ParserPlugin[] {
   if (normalizedLanguage === 'ts' || normalizedLanguage === 'tsx') {
     plugins.push('typescript');
   }
+  if (normalizedLanguage === 'flow') {
+    plugins.push('flow');
+  }
   // JavaScript files commonly contain JSX without using a .jsx extension.
   // TypeScript retains its explicit .tsx contract to avoid interpreting type
   // syntax as JSX.
@@ -15,6 +18,7 @@ function getParserPlugins(language: string | undefined): ParserPlugin[] {
     normalizedLanguage === undefined ||
     normalizedLanguage === 'js' ||
     normalizedLanguage === 'jsx' ||
+    normalizedLanguage === 'flow' ||
     normalizedLanguage === 'tsx'
   ) {
     plugins.push('jsx');

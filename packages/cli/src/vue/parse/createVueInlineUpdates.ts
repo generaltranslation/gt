@@ -83,6 +83,7 @@ export async function createVueInlineUpdates(
         compilerOptionsByScope.get(fileScopes.get(file)?.directory ?? '') ?? {},
       includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
       projectRoot,
+      requireGTProvenance: true,
       resolveModule: (specifier, importer) =>
         resolveImportPath(
           importer,

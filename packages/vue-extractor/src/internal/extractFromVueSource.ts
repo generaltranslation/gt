@@ -86,6 +86,12 @@ export async function extractFromVueSource(
       scriptAnalysis
     );
   } else {
+    if (
+      options.requireGTProvenance &&
+      !hasPossibleStandaloneGTProvenance(sourceCode, filePath, options)
+    ) {
+      return { results, errors, warnings: [...warnings] };
+    }
     parseVueScript(
       sourceCode,
       languageFromExtension(extension),
@@ -98,6 +104,107 @@ export async function extractFromVueSource(
   }
 
   return { results, errors, warnings: [...warnings] };
+}
+
+/**
+ * Uses the declared language, then permissive TSX and Flow, to classify
+ * gt-vue ownership without changing the grammar used for extraction.
+ *
+ * The normal extraction pass still parses the file according to its extension.
+ * A source no probe understands remains owned because gt-vue may be reachable
+ * through a local alias; this prevents an incomplete catalog from publishing.
+ */
+function hasPossibleStandaloneGTProvenance(
+  sourceCode: string,
+  filePath: string,
+  options: VueExtractionOptions
+): boolean {
+  const extension = extname(filePath).toLowerCase();
+  const probeLanguages = new Set<StandaloneProbeLanguage>([
+    languageFromExtension(extension),
+    'tsx',
+    'flow',
+  ]);
+  for (const language of probeLanguages) {
+    const probe = probeStandaloneGTProvenance(
+      sourceCode,
+      filePath,
+      options,
+      language
+    );
+    if (probe.parsed) return probe.hasProvenance;
+  }
+
+  // An unclassifiable file can still import gt-vue through a local barrel.
+  // Fail closed rather than silently publishing an incomplete catalog.
+  return true;
+}
+
+type StandaloneProbeLanguage = 'flow' | 'js' | 'jsx' | 'ts' | 'tsx';
+
+/** Runs one syntax-tolerant, read-only provenance classification pass. */
+function probeStandaloneGTProvenance(
+  sourceCode: string,
+  filePath: string,
+  options: VueExtractionOptions,
+  language: StandaloneProbeLanguage
+): { hasProvenance: boolean; parsed: boolean } {
+  const results: VueExtractionOutput['results'] = [];
+  const errors: string[] = [];
+  const warnings = new Set<string>();
+  const projectRoot = options.projectRoot ?? process.cwd();
+  const context = createVueExtractionContext(
+    filePath,
+    sourceCode,
+    projectRoot,
+    false,
+    options.surroundingLineCount ?? DEFAULT_SURROUNDING_LINE_COUNT,
+    results,
+    errors,
+    warnings
+  );
+  const analysis = createVueScriptAnalysis();
+  analysis.entryFile = filePath;
+  analysis.localModules = createLocalModuleResolver(options.resolveModule);
+  const parsed = parseVueScript(
+    sourceCode,
+    language,
+    context,
+    createTemplateBindings(),
+    false,
+    analysis,
+    false
+  );
+  return {
+    hasProvenance:
+      results.length > 0 ||
+      errors.length > 0 ||
+      warnings.size > 0 ||
+      analysisHasPossibleGTProvenance(analysis),
+    parsed,
+  };
+}
+
+/** Returns whether permissive analysis found a gt-vue identity or uncertainty. */
+function analysisHasPossibleGTProvenance(analysis: VueScriptAnalysis): boolean {
+  const knownValues = [
+    ...analysis.values.values(),
+    ...analysis.templateValues.values(),
+  ];
+  return (
+    knownValues.some(
+      (value) =>
+        value.type === 'component' ||
+        value.type === 'hook' ||
+        value.type === 'string' ||
+        (value.type === 'namespace' && value.source === 'gt-vue')
+    ) ||
+    analysis.gtComponentFactories.size > 0 ||
+    analysis.gtContainerFactories.size > 0 ||
+    analysis.possibleGTContainers.size > 0 ||
+    analysis.uncertainGTComponents.size > 0 ||
+    analysis.uncertainStringFunctions.size > 0
+  );
 }
 
 function parseVueSingleFileComponent(
@@ -585,7 +692,9 @@ function readOpeningTagAttribute(
   return undefined;
 }
 
-function languageFromExtension(extension: string): string {
+function languageFromExtension(
+  extension: string
+): Exclude<StandaloneProbeLanguage, 'flow'> {
   if (extension === '.ts' || extension === '.mts' || extension === '.cts') {
     return 'ts';
   }

@@ -197,6 +197,30 @@ describe('determineLibrary', () => {
       expect(determineLibrary().library).toBe(Libraries.GT_TANSTACK_START);
     });
 
+    it.each([
+      {
+        fallbackField: 'peerDependencies',
+        primaryField: 'dependencies',
+      },
+      {
+        fallbackField: 'optionalDependencies',
+        primaryField: 'devDependencies',
+      },
+    ] as const)(
+      'prefers a runtime in $primaryField over a higher-priority declaration in $fallbackField',
+      ({ fallbackField, primaryField }) => {
+        mockExistsSync.mockReturnValue(true);
+        mockReadFileSync.mockReturnValue(
+          JSON.stringify({
+            [fallbackField]: { 'gt-next': '1.0.0' },
+            [primaryField]: { 'gt-tanstack-start': '1.0.0' },
+          })
+        );
+
+        expect(determineLibrary().library).toBe(Libraries.GT_TANSTACK_START);
+      }
+    );
+
     it('detects a workspace framework when the root declares none', () => {
       mockExistsSync.mockImplementation(
         (filePath) => String(filePath) === '/test-project/package.json'
@@ -211,6 +235,30 @@ describe('determineLibrary', () => {
       expect(determineLibrary()).toEqual({
         library: Libraries.GT_NEXT,
         additionalModules: [],
+      });
+    });
+
+    it('returns every React-family runtime from a workspace-only aggregator', () => {
+      mockExistsSync.mockImplementation(
+        (filePath) => String(filePath) === '/test-project/package.json'
+      );
+      mockReadFileSync.mockImplementation((filePath) => {
+        const filename = String(filePath);
+        if (filename === '/test-project/package.json') {
+          return JSON.stringify({ workspaces: ['apps/*'] });
+        }
+        return filename.includes('/next/')
+          ? JSON.stringify({ dependencies: { 'gt-next': '1.0.0' } })
+          : JSON.stringify({ dependencies: { 'gt-tanstack-start': '1.0.0' } });
+      });
+      mockFgSync.mockReturnValue([
+        '/test-project/apps/next/package.json',
+        '/test-project/apps/tanstack/package.json',
+      ]);
+
+      expect(determineLibrary()).toEqual({
+        library: Libraries.GT_NEXT,
+        additionalModules: [Libraries.GT_TANSTACK_START],
       });
     });
 

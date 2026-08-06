@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createInlineUpdates } from '../../react/parse/createInlineUpdates.js';
 import { Libraries } from '../../types/libraries.js';
@@ -92,13 +93,22 @@ describe('createInlineUpdatesForLibrary', () => {
   });
 
   it('preserves implicit React defaults when Vue is not selected', async () => {
-    await createInlineUpdatesForLibraries(
-      [Libraries.GT_REACT],
-      true,
-      undefined,
-      parsingFlags,
-      parsingOptions
+    const missingProjectRoot = path.join(
+      process.cwd(),
+      '__gt_missing_project_root__'
     );
+    const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(missingProjectRoot);
+    try {
+      await createInlineUpdatesForLibraries(
+        [Libraries.GT_REACT],
+        true,
+        undefined,
+        parsingFlags,
+        parsingOptions
+      );
+    } finally {
+      cwdSpy.mockRestore();
+    }
 
     expect(createInlineUpdates).toHaveBeenCalledWith(
       Libraries.GT_REACT,
