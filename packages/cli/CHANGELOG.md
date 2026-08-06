@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.16.3
+
+### Patch Changes
+
+- [#2040](https://github.com/generaltranslation/gt/pull/2040) [`79e6836`](https://github.com/generaltranslation/gt/commit/79e6836349191220ee8f5848b5e6ff287246f162) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Use the locale exactly as configured when substituting `{locale}` in file and JSON transforms, instead of canonicalizing it. Projects that configure a non-canonical tag such as `fr-ca` or `ja-jp` were getting content written to `docs/fr-CA/` while `[locale]` substitution and localized URLs used `docs/fr-ca/`, so every internal link in the translated output pointed at a directory that did not exist.
+
 ## 2.16.2
 
 ### Patch Changes
