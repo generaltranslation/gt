@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.16.3-iris.0
+
+### Patch Changes
+
+- 01ba884: Exercise Iris prerelease publishing for the CLI.
+
 ## 2.16.2
 
 ### Patch Changes

@@ -54,5 +54,7 @@
     "gt-test-vite-react": "0.1.1",
     "gt-test-webpack-react": "0.1.1"
   },
-  "changesets": []
+  "changesets": [
+    "test-iris-gt-patch"
+  ]
 }
