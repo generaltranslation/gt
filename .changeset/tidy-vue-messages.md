@@ -1,5 +1,5 @@
 ---
-'gt-i18n': minor
+'gt-i18n': patch
 ---
 
 Make `msg(..., { $format: 'STRING' })` preserve source text literally instead
