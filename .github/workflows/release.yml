@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - iris
 
 permissions:
   id-token: write # Required for OIDC
@@ -299,9 +300,32 @@ jobs:
           pnpm --filter gtx-cli run bin:restore
           pnpm --filter gtx-cli run build:clean
 
-  odysseus-release:
-    if: github.ref_name == 'odysseus'
-    name: Odysseus Release
+  iris-prerelease-state:
+    if: github.ref_name == 'iris'
+    name: Detect Iris prerelease state
+    runs-on: ubuntu-latest
+    outputs:
+      active: ${{ steps.prerelease.outputs.active }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Detect Iris prerelease mode
+        id: prerelease
+        run: |
+          if [ ! -f .changeset/pre.json ]; then
+            echo 'active=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          test "$(jq -r '.mode' .changeset/pre.json)" = "pre"
+          test "$(jq -r '.tag' .changeset/pre.json)" = "iris"
+          echo 'active=true' >> "$GITHUB_OUTPUT"
+
+  iris-release:
+    needs: iris-prerelease-state
+    if: needs.iris-prerelease-state.outputs.active == 'true'
+    name: Iris Prerelease
     runs-on: ubuntu-latest
     environment:
       name: 'release'
@@ -309,21 +333,20 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
 
-      - name: Verify Odysseus prerelease mode
-        run: |
-          test -f .changeset/pre.json
-          test "$(jq -r '.mode' .changeset/pre.json)" = "pre"
-          test "$(jq -r '.tag' .changeset/pre.json)" = "odysseus"
-
       - uses: pnpm/action-setup@v4
         name: Install pnpm
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 24.18.0
           cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -339,13 +362,15 @@ jobs:
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
-      - name: Create Odysseus Release Pull Request or Publish to npm
+      # Iris publishes npm prereleases only. Stable CLI binary aliases, R2
+      # uploads, and PyPI releases remain exclusive to the main release job.
+      - name: Create Iris release pull request or publish to npm
         id: changesets
         uses: changesets/action@v1
         with:
-          version: bash scripts/version-packages-odysseus.sh
+          version: bash scripts/version-packages-iris.sh
           publish: pnpm run release
-          commit: '[ci] odysseus release'
-          title: '[ci] odysseus release'
+          commit: '[ci] iris release'
+          title: '[ci] iris release'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
