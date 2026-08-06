@@ -83,6 +83,29 @@ describe('renderPreparedT id-tagging', () => {
       expect(out).toBe(empty); // returned unchanged
     }
   });
+
+  it('does NOT wrap empty arrays / arrays of empties / empty fragments (e.g. {items.map()} over []) with a hash', () => {
+    // TaggedChildren accepts arrays; an empty `{items.map(...)}` renders no DOM and
+    // must not become an empty hash span (nor `[null, false]` or nested empties).
+    const emptyRenders = [
+      [], // {items.map()} over an empty list
+      [null, false], // array of non-renderers
+      [[], [null, undefined]], // nested empties
+      React.createElement(React.Fragment, null), // empty fragment
+      React.createElement(React.Fragment, null, null, false), // fragment of empties
+    ];
+    for (const empty of emptyRenders) {
+      const out = renderPreparedT({
+        ...base,
+        taggedSourceChildren: empty as unknown as TaggedChildren,
+        hash: 'abc123',
+      });
+      const isSpan =
+        React.isValidElement(out) &&
+        (out as React.ReactElement).type === 'span';
+      expect(isSpan).toBe(false); // no empty hash span injected
+    }
+  });
 });
 
 // Regression guard for the wiring that the isolated renderPreparedT tests above

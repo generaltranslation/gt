@@ -4,6 +4,7 @@ import type { JsxChildren } from 'generaltranslation/types';
 import {
   cloneElement,
   createElement,
+  Fragment,
   isValidElement,
   type ReactElement,
   type ReactNode,
@@ -30,6 +31,23 @@ const TAG_STYLE = { display: 'contents' } as const;
 const IS_REACT_NATIVE =
   (globalThis as { navigator?: { product?: string } }).navigator?.product ===
   'ReactNative';
+
+// Whether a rendered node produces NO DOM — so id-tagging must leave it untouched
+// (wrapping it in a hash span would create an empty <span>, altering :empty/child
+// structure and injecting an invalid span under restricted parents). Covers the
+// scalar non-renderers (null / undefined / booleans / ''), arrays whose every
+// element renders nothing (`items.map(...)` over an empty list, `[null, false]`,
+// nested empties — TaggedChildren accepts arrays), and empty React fragments.
+// NB: 0 and NaN DO render text, so they are intentionally NOT treated as empty.
+function rendersNothing(node: ReactNode): boolean {
+  if (node == null || typeof node === 'boolean' || node === '') return true;
+  if (Array.isArray(node)) return node.every(rendersNothing);
+  if (isValidElement(node) && node.type === Fragment) {
+    const children = (node.props as { children?: ReactNode }).children;
+    return children == null || rendersNothing(children);
+  }
+  return false;
+}
 
 // Shared rendering logic. The child renderers are injected so the RSC code path
 // never statically imports the hook-based variable components, and so the
@@ -91,15 +109,12 @@ function createRenderPreparedT({
           'data-_gt-hash': hash,
         });
       }
-      // React renders nothing for null/undefined/booleans/'' — do NOT wrap those:
-      // an empty <span data-_gt-hash> would change :empty/child structure and inject
-      // an (invalid, under restricted parents) span even for an empty branch. A
-      // conditional <T> that renders no content must keep rendering no DOM.
-      if (
-        rendered == null ||
-        typeof rendered === 'boolean' ||
-        rendered === ''
-      ) {
+      // Do NOT wrap output that renders no DOM (scalars like null/''/booleans, AND
+      // empty arrays / arrays of empties from `{items.map(...)}`, and empty
+      // fragments): an empty <span data-_gt-hash> would change :empty/child
+      // structure and inject an (invalid, under restricted parents) span even for
+      // an empty branch. A conditional <T> that renders nothing must stay no-DOM.
+      if (rendersNothing(rendered)) {
         return rendered;
       }
       // No element to carry the attribute (bare text / fragment / component root)
