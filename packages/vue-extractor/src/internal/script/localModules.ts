@@ -33,6 +33,7 @@ const GT_EXPORT_NAMES = [
   'Plural',
   'Branch',
   'msg',
+  't',
   'useGT',
   'useMessages',
 ] as const;

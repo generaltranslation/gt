@@ -103,6 +103,56 @@ const setLocale = useSetLocale();
 `$context`; braces are literal text and no ICU formatting or interpolation is
 applied.
 
+## Module-level translations in a Vite SPA
+
+Browser-only SPAs can call `t()` at module scope after `initializeGTSPA()` has
+loaded the active locale. Use a bootstrap module with top-level `await`, and
+dynamically import the rest of the application only after initialization.
+
+```ts
+// src/index.ts
+import { initializeGTSPA } from 'gt-vue';
+import gtConfig from '../gt.config.json';
+import loadTranslations from './loadTranslations';
+
+const gt = await initializeGTSPA({ ...gtConfig, loadTranslations });
+const { mount } = await import('./main');
+mount(gt);
+```
+
+```ts
+// src/main.ts
+import { createApp } from 'vue';
+import type { GTPlugin } from 'gt-vue';
+import App from './App.vue';
+
+export function mount(gt: GTPlugin) {
+  createApp(App).use(gt).mount('#app');
+}
+```
+
+Install the plugin returned by `initializeGTSPA()` rather than creating a
+second plugin. The returned instance is already preloaded and is the exact
+runtime used by `t()`.
+
+```ts
+// src/navigation.ts (loaded by the dynamic application import)
+import { t } from 'gt-vue';
+
+export const navigation = [
+  t('Documentation', { $context: 'primary navigation' }),
+];
+```
+
+Like `useGT()`, `t()` supports only plain STRING content and static `$context`.
+It does not support ICU syntax, interpolation, tagged templates, `$format`, or
+`$maxChars`. The extractor registers static `t()` calls in the catalog.
+
+SPA locale changes write the locale cookie and reload the page. Reloading is
+intentional: it lets every module-level translation execute again after the
+new locale catalog is preloaded. `initializeGTSPA()` and `t()` are not valid in
+SSR; use one request-scoped `createGT({ locale })` instance there.
+
 Arbitrary component slots are opaque when placed inside `<T>`. Vue does not
 expose a reliable way to inspect a component slot without executing user code,
 so the component and its real runtime slots are preserved, but their content is

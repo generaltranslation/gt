@@ -11,7 +11,7 @@ import type { LocalModuleResolver } from './localModules.js';
 /** A statically recognized value that affects Vue translation extraction. */
 export type KnownValue =
   | { type: 'component'; name: GTComponentName }
-  | { type: 'hook'; kind: Exclude<StringFunctionKind, 'msg'> }
+  | { type: 'hook'; kind: Exclude<StringFunctionKind, 'msg' | 't'> }
   | { type: 'string'; kind: StringFunctionKind }
   | {
       type: 'namespace';

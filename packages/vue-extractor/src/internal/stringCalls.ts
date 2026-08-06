@@ -73,7 +73,7 @@ export function processVueStringCall(
     addVueError(
       context,
       location,
-      `Found dynamic content in a gt-vue ${kind === 'gt' ? 'gt()' : 'msg()'} call`,
+      `Found dynamic content in a gt-vue ${stringFunctionName(kind)} call`,
       'Use a string literal or a template literal without expressions'
     );
     return;
@@ -91,6 +91,11 @@ export function processVueStringCall(
     return;
   }
   addStringUpdate(value.value, options.context, location, context);
+}
+
+/** Returns the public callable name represented by one extraction identity. */
+function stringFunctionName(kind: Exclude<StringFunctionKind, 'messages'>) {
+  return kind === 'gt' ? 'gt()' : kind === 'msg' ? 'msg()' : 't()';
 }
 
 function addStringUpdate(

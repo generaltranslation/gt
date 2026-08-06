@@ -66,6 +66,9 @@
   "d88372c9c1e9e4f5": "Date de lancement",
   "0d013c8f6ffd22a8": "Les chaînes simples restent simples",
   "5fb10dc1bf5106d9": "Les accolades restent littérales : {name}",
+  "36661841f7767590": "Cette phrase provient de t() au niveau du module.",
+  "3506e66a7d20769d": "Les réexportations locales fonctionnent aussi avec t() au niveau du module.",
+  "88ffa4d5e03ad6c4": "Les appels d’espace de noms fonctionnent aussi avec t() au niveau du module.",
   "9b8297df593df5ad": {
     "t": "h2",
     "i": 1,

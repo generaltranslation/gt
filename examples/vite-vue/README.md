@@ -25,8 +25,9 @@ pnpm --filter vite-vue dev
 Lifecycle scripts build the linked GT runtime and CLI dependencies needed by
 each command, so the example also works from a fresh monorepo checkout.
 
-Switch between English and French in the app. The French JSON catalog is loaded
-asynchronously on first use and then cached by `gt-vue`.
+Switch between English and French in the app. The active JSON catalog is loaded
+before the application graph is evaluated. Locale changes persist in a cookie
+and reload the page so module-level translations are evaluated again.
 
 ## Translation Workflow
 
@@ -41,9 +42,14 @@ pnpm --filter vite-vue validate
 
 The app demonstrates `<T>`, child-only `<Var>`, typed `value` bindings for
 `<Num>`, `<DateTime>`, and `<Currency>`, plus `<Plural>`, `<Branch>`, `useGT()`,
-`msg()` with `useMessages()`, and reactive `useLocale()` / `useSetLocale()`
-locale switching. Plain string lookups accept only `$context`; braces are
-intentionally left uninterpolated.
+`msg()` with `useMessages()`, module-level `t()`, and `useLocale()` /
+`useSetLocale()` locale switching. Plain string lookups accept only `$context`;
+braces are intentionally left uninterpolated.
+
+The SPA bootstrap calls `initializeGTSPA()` with top-level `await`, then
+dynamically imports the app entry point. This ordering guarantees that `t()`
+calls in ordinary application modules run only after the active catalog is
+available. The returned plugin is the same runtime installed on the Vue app.
 
 `TsxCompatibilityCard.tsx` also exercises Vue TSX with `<GT.T>`, a `<T>` and
 `Vue.Fragment` imported through a local ESM barrel, and a translator passed to
