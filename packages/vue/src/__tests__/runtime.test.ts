@@ -142,7 +142,7 @@ describe('gt-vue runtime', () => {
       getCatalog: vi.fn(() => {
         throw new Error('default-locale catalog was read');
       }),
-      locale: ref('en'),
+      getLocale: () => 'en',
     } as unknown as Parameters<typeof translateVueChildren>[1];
 
     const rendered = translateVueChildren([source], state, {});
@@ -582,7 +582,7 @@ describe('gt-vue runtime', () => {
     const state = {
       defaultLocale: 'en',
       getCatalog: () => ({}),
-      locale: ref('en'),
+      getLocale: () => 'en',
     } as unknown as Parameters<typeof translateVueChildren>[1];
     const Child = defineComponent({
       name: 'ChurnedKeyChild',
@@ -613,7 +613,7 @@ describe('gt-vue runtime', () => {
     const state = {
       defaultLocale: 'en',
       getCatalog: () => ({}),
-      locale: ref('en'),
+      getLocale: () => 'en',
     } as unknown as Parameters<typeof translateVueChildren>[1];
     const Stable = defineComponent({
       name: 'StableType',
@@ -643,12 +643,12 @@ describe('gt-vue runtime', () => {
 
   it('rolls back identities allocated by an incomplete render', () => {
     const identityCache = createTranslationIdentityCache();
-    const locale = ref('en');
+    let locale = 'en';
     let target: JsxChildren = 'Unused';
     const state = {
       defaultLocale: 'en',
       getCatalog: () => ({ broken: target }),
-      locale,
+      getLocale: () => locale,
     } as unknown as Parameters<typeof translateVueChildren>[1];
     const Stable = defineComponent({
       name: 'StableCompletedType',
@@ -662,7 +662,7 @@ describe('gt-vue runtime', () => {
       identityCache
     );
     const stableGeneratedKeys = [...identityCache.generatedKeys.keys()];
-    locale.value = 'fr';
+    locale = 'fr';
 
     for (let index = 0; index < 32; index += 1) {
       const Changing = defineComponent({
@@ -706,7 +706,7 @@ describe('gt-vue runtime', () => {
     const state = {
       defaultLocale: 'en',
       getCatalog: () => ({ repeated: target }),
-      locale: ref('fr'),
+      getLocale: () => 'fr',
     } as unknown as Parameters<typeof translateVueChildren>[1];
 
     translateVueChildren(

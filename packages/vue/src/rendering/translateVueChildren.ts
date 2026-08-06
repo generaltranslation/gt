@@ -109,7 +109,7 @@ export function translateVueChildren(
   let rendered: VNodeChild;
   try {
     const source = createSourceNodes(children, identityRender);
-    if (state.locale.value === state.defaultLocale) {
+    if (state.getLocale() === state.defaultLocale) {
       rendered = renderDefaultNodes(
         source,
         state,
@@ -556,12 +556,7 @@ function renderNodes(
   if (target == null) {
     // A partial translated tree falls back within the active locale. A wholly
     // missing catalog entry is handled above using the source/default locale.
-    return renderDefaultNodes(
-      source,
-      state,
-      identityRender,
-      state.locale.value
-    );
+    return renderDefaultNodes(source, state, identityRender, state.getLocale());
   }
   if (typeof target === 'string') return target;
 
@@ -592,7 +587,7 @@ function renderNodes(
               variable,
               state,
               identityRender,
-              state.locale.value
+              state.getLocale()
             ),
             occurrences,
             identityRender
@@ -686,7 +681,7 @@ function renderElement(
         source,
         state,
         identityRender,
-        state.locale.value
+        state.getLocale()
       );
     }
     const sourceBranch = getPluralKey(
@@ -729,7 +724,7 @@ function renderElement(
             source.children,
             state,
             identityRender,
-            state.locale.value
+            state.getLocale()
           ),
           translatedProps
         )
@@ -757,7 +752,7 @@ function getPluralKey(
   branches: string[],
   source: SourceElement,
   state: GTState,
-  locale = state.locale.value,
+  locale = state.getLocale(),
   includeSourceLocales = false
 ): string | undefined {
   const forms = branches.filter(isAcceptedPluralForm);

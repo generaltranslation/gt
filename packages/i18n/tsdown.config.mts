@@ -4,6 +4,7 @@ import { createTsdownConfig } from '../../tsdown.preset.mts';
 export default defineConfig(
   createTsdownConfig([
     'src/index.ts',
+    'src/internal-cookies.ts',
     'src/internal-string.ts',
     'src/types.ts',
     'src/internal.ts',

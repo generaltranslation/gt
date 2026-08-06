@@ -86,6 +86,16 @@
         "default": "./dist/internal.mjs"
       }
     },
+    "./internal/cookies": {
+      "require": {
+        "types": "./dist/internal-cookies.d.cts",
+        "default": "./dist/internal-cookies.cjs"
+      },
+      "import": {
+        "types": "./dist/internal-cookies.d.mts",
+        "default": "./dist/internal-cookies.mjs"
+      }
+    },
     "./internal/string": {
       "require": {
         "types": "./dist/internal-string.d.cts",
@@ -114,6 +124,9 @@
       ],
       "internal": [
         "./dist/internal.d.cts"
+      ],
+      "internal/cookies": [
+        "./dist/internal-cookies.d.cts"
       ],
       "internal/string": [
         "./dist/internal-string.d.cts"

@@ -61,8 +61,17 @@ export type CreateGTOptions = {
   defaultLocale?: string;
   /** Async loader called once for each uncached locale. */
   loadTranslations?: LoadTranslations;
-  /** Initial active locale. Defaults to `defaultLocale`. */
+  /**
+   * Server-provided or explicit initial locale. It wins over the browser
+   * cookie during hydration. When omitted, the cookie wins over
+   * `defaultLocale`.
+   */
   locale?: string;
+  /**
+   * Browser cookie used to persist the active locale. Defaults to
+   * `generaltranslation.locale`.
+   */
+  localeCookieName?: string;
 };
 
 /**
@@ -72,7 +81,7 @@ export type CreateGTOptions = {
  * to that plugin instance.
  */
 export type GTPlugin = {
-  /** Returns a non-reactive snapshot of the active locale. */
+  /** Returns the active locale from its cookie-backed accessor. */
   getLocale(): string;
   /** Provides the GT state to a Vue application. Usually called by `app.use`. */
   install(app: App): void;
@@ -93,8 +102,8 @@ export type GTPlugin = {
 export type GTState = {
   defaultLocale: string;
   getCatalog(): TranslationCatalog;
+  getLocale(): string;
   loadTranslations(locale: string): Promise<TranslationCatalog>;
-  locale: Ref<string>;
   revision: Ref<number>;
   setLocale(locale: string): Promise<void>;
 };

@@ -55,7 +55,7 @@ export const Plural = withGTMetadata<PluralProps>(
           branches,
           getFormatLocales(
             props.locales,
-            state.locale.value,
+            state.getLocale(),
             state.defaultLocale
           )
         );

@@ -151,11 +151,25 @@ and then the default locale. Inside `<T>`, the rich translation pipeline owns
 formatting locales: source fallbacks use the default locale, while translated
 content uses the active locale followed by the default.
 
-`setLocale()` loads a missing catalog, switches the reactive locale, and
-rerenders consumers. Locale persistence and development hot reload are outside
-this package; applications can persist their chosen locale separately.
+In a browser, gt-vue persists the active locale in the
+`generaltranslation.locale` path-wide session cookie. When `locale` is omitted
+from `createGT()`, that cookie wins over `defaultLocale`. Use
+`localeCookieName` to share a different cookie with your routing or server
+integration.
 
-For SSR, call and await `plugin.loadTranslations(locale)` or
-`plugin.setLocale(locale)` before rendering the app, and create a fresh
-`createGT()` instance for each request so locale and catalog state stay
+`setLocale()` loads a missing catalog before writing the cookie and rerendering
+consumers. A failed or superseded request leaves both the cookie and rendered
+locale unchanged. Direct changes to `document.cookie` are reflected by
+`plugin.getLocale()` and the next Vue render, but browsers do not emit cookie
+change events, so they do not schedule a render by themselves. Use gt-vue's
+setter for reactive locale changes.
+
+For SSR, resolve the request locale on the server and pass it as
+`createGT({ locale })`. An explicit locale wins over a stale browser cookie,
+which keeps hydration consistent and synchronizes the client cookie. Call and
+await `plugin.loadTranslations(locale)` or `plugin.setLocale(locale)` before
+server rendering. Create and preload the client plugin with the same locale
+before hydrating; starting hydration before its asynchronous catalog is ready
+can produce source text and a hydration mismatch. Create a fresh `createGT()`
+instance for every server request so locale and catalog state remain
 request-scoped.

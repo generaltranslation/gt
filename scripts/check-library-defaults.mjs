@@ -114,22 +114,22 @@ export const defaultGroups = [
   },
   {
     name: 'defaultLocaleCookieName',
-    declarations: ['packages/react-core/src/setup/cookieNames.ts'],
+    declarations: ['packages/i18n/src/utils/cookieNames.ts'],
     exceptions: [],
   },
   {
     name: 'defaultRegionCookieName',
-    declarations: ['packages/react-core/src/setup/cookieNames.ts'],
+    declarations: ['packages/i18n/src/utils/cookieNames.ts'],
     exceptions: [],
   },
   {
     name: 'defaultEnableI18nCookieName',
-    declarations: ['packages/react-core/src/setup/cookieNames.ts'],
+    declarations: ['packages/i18n/src/utils/cookieNames.ts'],
     exceptions: [],
   },
   {
     name: 'defaultResetLocaleCookieName',
-    declarations: ['packages/react-core/src/setup/cookieNames.ts'],
+    declarations: ['packages/i18n/src/utils/cookieNames.ts'],
     exceptions: [],
   },
   {

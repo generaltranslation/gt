@@ -1,4 +1,5 @@
 import { inject, ref, type InjectionKey } from 'vue';
+import { defaultLocaleCookieName } from 'gt-i18n/internal/cookies';
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
@@ -10,6 +11,7 @@ import type {
   GTState,
   TranslationCatalog,
 } from '../types';
+import { createCookieBackedLocale } from './localeCookie';
 
 const gtContextKey: InjectionKey<GTState> = Symbol('gt-vue');
 
@@ -44,9 +46,14 @@ const gtContextKey: InjectionKey<GTState> = Symbol('gt-vue');
 export function createGT({
   defaultLocale = libraryDefaultLocale,
   loadTranslations,
-  locale: initialLocale = defaultLocale,
+  locale: explicitLocale,
+  localeCookieName = defaultLocaleCookieName,
 }: CreateGTOptions = {}): GTPlugin {
-  const locale = ref(initialLocale);
+  const localeAccessor = createCookieBackedLocale({
+    defaultLocale,
+    locale: explicitLocale,
+    localeCookieName,
+  });
   const revision = ref(0);
   const catalogs = new Map<string, TranslationCatalog>([[defaultLocale, {}]]);
   const pending = new Map<string, Promise<TranslationCatalog>>();
@@ -63,7 +70,7 @@ export function createGT({
       .then(() => loadTranslations?.(targetLocale) ?? {})
       .then((catalog) => {
         catalogs.set(targetLocale, catalog);
-        if (targetLocale === locale.value) revision.value += 1;
+        if (targetLocale === getLocale()) revision.value += 1;
         return catalog;
       })
       .catch((error: unknown) => {
@@ -87,7 +94,20 @@ export function createGT({
   const setLocale = async (targetLocale: string): Promise<void> => {
     const request = ++localeRequest;
     await load(targetLocale);
-    if (request === localeRequest) locale.value = targetLocale;
+    if (request !== localeRequest) return;
+
+    localeAccessor.setLocale(targetLocale);
+    // Cookie APIs have no reactive event, so every successful setter call
+    // explicitly invalidates consumers, including after an external cookie
+    // write that Vue could not observe.
+    revision.value += 1;
+  };
+
+  const getLocale = (): string => {
+    // Cookie APIs have no reactive event. This counter invalidates Vue
+    // consumers after this plugin writes a successfully loaded locale.
+    void revision.value;
+    return localeAccessor.getLocale();
   };
 
   const state: GTState = {
@@ -96,21 +116,21 @@ export function createGT({
       // The Map intentionally stays non-reactive. This counter makes newly
       // loaded catalogs invalidate any render that performed a lookup.
       void revision.value;
-      return catalogs.get(locale.value) ?? {};
+      return catalogs.get(getLocale()) ?? {};
     },
+    getLocale,
     loadTranslations: load,
-    locale,
     revision,
     setLocale,
   };
 
   return {
-    getLocale: () => locale.value,
+    getLocale,
     install(app) {
       app.provide(gtContextKey, state);
       // Client apps may mount immediately and render source content until the
       // initial asynchronous catalog arrives. Its revision update rerenders.
-      void load(initialLocale).catch(() => undefined);
+      void load(getLocale()).catch(() => undefined);
     },
     loadTranslations: load,
     setLocale,

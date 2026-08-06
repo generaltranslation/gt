@@ -3,16 +3,24 @@ import {
   defineComponent,
   h,
   nextTick,
+  ref,
   type Component,
 } from 'vue';
+import { hashSource } from 'generaltranslation/id';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createGT, useGT, useLocale } from '../index';
 import type { GTPlugin, TranslationCatalog } from '../index';
 
 describe('gt-vue runtime state', () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
 
   it('rejects failed locale changes, preserves the locale, and retries', async () => {
+    const cookieDocument = installCookieDocument(
+      'generaltranslation.locale=en'
+    );
     const error = new Error('catalog unavailable');
     const loadTranslations = vi.fn(async () => {
       throw error;
@@ -24,6 +32,7 @@ describe('gt-vue runtime state', () => {
 
     await expect(plugin.setLocale('fr')).rejects.toBe(error);
     expect(plugin.getLocale()).toBe('en');
+    expect(cookieDocument.get('generaltranslation.locale')).toBe('en');
     await expect(plugin.setLocale('fr')).rejects.toBe(error);
 
     expect(loadTranslations).toHaveBeenCalledTimes(2);
@@ -62,6 +71,204 @@ describe('gt-vue runtime state', () => {
 
     expect(plugin.getLocale()).toBe('en');
     expect(consoleError).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses a browser cookie before the default locale and persists it', () => {
+    const cookieDocument = installCookieDocument(
+      'generaltranslation.locale=fr'
+    );
+
+    const firstPlugin = createGT({ defaultLocale: 'en' });
+    expect(firstPlugin.getLocale()).toBe('fr');
+
+    cookieDocument.cookie = 'generaltranslation.locale=es;path=/';
+    const secondPlugin = createGT({ defaultLocale: 'en' });
+    expect(secondPlugin.getLocale()).toBe('es');
+  });
+
+  it('persists the default locale when the browser has no locale cookie', () => {
+    const cookieDocument = installCookieDocument();
+
+    const plugin = createGT({ defaultLocale: 'en' });
+
+    expect(plugin.getLocale()).toBe('en');
+    expect(cookieDocument.get('generaltranslation.locale')).toBe('en');
+  });
+
+  it('falls back instead of retaining client state when the cookie is removed', async () => {
+    const cookieDocument = installCookieDocument(
+      'generaltranslation.locale=fr'
+    );
+    const plugin = createGT({ defaultLocale: 'en' });
+
+    expect(plugin.getLocale()).toBe('fr');
+    cookieDocument.delete('generaltranslation.locale');
+    expect(plugin.getLocale()).toBe('en');
+
+    await plugin.setLocale('de');
+    expect(plugin.getLocale()).toBe('de');
+    cookieDocument.delete('generaltranslation.locale');
+    expect(plugin.getLocale()).toBe('en');
+  });
+
+  it('uses an explicit hydration locale before a stale browser cookie', () => {
+    const cookieDocument = installCookieDocument(
+      'generaltranslation.locale=fr'
+    );
+
+    const plugin = createGT({ defaultLocale: 'en', locale: 'de' });
+
+    expect(plugin.getLocale()).toBe('de');
+    expect(cookieDocument.get('generaltranslation.locale')).toBe('de');
+  });
+
+  it('supports a custom locale cookie name', async () => {
+    const cookieDocument = installCookieDocument(
+      'generaltranslation.locale=fr; custom-locale=es'
+    );
+    const plugin = createGT({ localeCookieName: 'custom-locale' });
+
+    expect(plugin.getLocale()).toBe('es');
+    await plugin.setLocale('de');
+
+    expect(cookieDocument.get('custom-locale')).toBe('de');
+    expect(cookieDocument.get('generaltranslation.locale')).toBe('fr');
+  });
+
+  it('writes a loaded locale to the cookie and rerenders consumers', async () => {
+    const cookieDocument = installCookieDocument(
+      'generaltranslation.locale=en'
+    );
+    let resolveCatalog!: (catalog: TranslationCatalog) => void;
+    const loadTranslations = vi.fn(
+      () =>
+        new Promise<TranslationCatalog>((resolve) => {
+          resolveCatalog = resolve;
+        })
+    );
+    const plugin = createGT({ loadTranslations });
+    const Root = defineComponent({
+      setup() {
+        const locale = useLocale();
+        return () => h('p', locale.value);
+      },
+    });
+    const mounted = mount(Root, plugin);
+    cookieDocument.writes.length = 0;
+
+    const switching = plugin.setLocale('fr');
+    await vi.waitFor(() => expect(loadTranslations).toHaveBeenCalledOnce());
+
+    expect(plugin.getLocale()).toBe('en');
+    expect(textContent(mounted.root)).toBe('en');
+    expect(cookieDocument.writes).toEqual([]);
+
+    resolveCatalog({});
+    await switching;
+    await nextTick();
+
+    expect(plugin.getLocale()).toBe('fr');
+    expect(textContent(mounted.root)).toBe('fr');
+    expect(cookieDocument.writes).toEqual([
+      'generaltranslation.locale=fr;path=/',
+    ]);
+    mounted.app.unmount();
+  });
+
+  it('keeps the cookie aligned with the latest concurrent locale request', async () => {
+    const cookieDocument = installCookieDocument(
+      'generaltranslation.locale=en'
+    );
+    const pending = new Map<string, (catalog: TranslationCatalog) => void>();
+    const plugin = createGT({
+      loadTranslations: (locale) =>
+        new Promise((resolve) => pending.set(locale, resolve)),
+    });
+
+    const french = plugin.setLocale('fr');
+    const chinese = plugin.setLocale('zh');
+    await vi.waitFor(() => expect(pending.size).toBe(2));
+
+    pending.get('zh')?.({});
+    await chinese;
+    expect(cookieDocument.get('generaltranslation.locale')).toBe('zh');
+
+    pending.get('fr')?.({});
+    await french;
+    expect(plugin.getLocale()).toBe('zh');
+    expect(cookieDocument.get('generaltranslation.locale')).toBe('zh');
+  });
+
+  it('reads an external cookie write and rerenders when setLocale is called', async () => {
+    const cookieDocument = installCookieDocument(
+      'generaltranslation.locale=en'
+    );
+    const plugin = createGT();
+    const Root = defineComponent({
+      setup() {
+        const locale = useLocale();
+        return () => h('p', locale.value);
+      },
+    });
+    const mounted = mount(Root, plugin);
+
+    cookieDocument.cookie = 'generaltranslation.locale=fr;path=/';
+
+    expect(plugin.getLocale()).toBe('fr');
+    expect(textContent(mounted.root)).toBe('en');
+
+    await plugin.setLocale('fr');
+    await nextTick();
+
+    expect(textContent(mounted.root)).toBe('fr');
+    mounted.app.unmount();
+  });
+
+  it('keeps useLocale and translations aligned on unrelated rerenders', async () => {
+    const cookieDocument = installCookieDocument(
+      'generaltranslation.locale=en'
+    );
+    const source = 'Hello';
+    const plugin = createGT({
+      loadTranslations: async (locale) =>
+        locale === 'fr'
+          ? {
+              [hashSource({
+                dataFormat: 'STRING',
+                source,
+              })]: 'Bonjour',
+            }
+          : {},
+    });
+    await plugin.loadTranslations('fr');
+    const counter = ref(0);
+    const Root = defineComponent({
+      setup() {
+        const gt = useGT();
+        const locale = useLocale();
+        return () => h('p', `${locale.value}|${gt(source)}|${counter.value}`);
+      },
+    });
+    const mounted = mount(Root, plugin);
+
+    expect(textContent(mounted.root)).toBe('en|Hello|0');
+    cookieDocument.cookie = 'generaltranslation.locale=fr;path=/';
+    counter.value += 1;
+    await nextTick();
+
+    expect(textContent(mounted.root)).toBe('fr|Bonjour|1');
+    mounted.app.unmount();
+  });
+
+  it('uses the explicit locale without browser globals during SSR', async () => {
+    const plugin = createGT({
+      locale: 'fr',
+      loadTranslations: async () => ({}),
+    });
+
+    expect(plugin.getLocale()).toBe('fr');
+    await plugin.setLocale('de');
+    expect(plugin.getLocale()).toBe('de');
   });
 
   it('does not rerender active consumers when another locale is preloaded', async () => {
@@ -158,4 +365,55 @@ function mount(rootComponent: Component, plugin?: GTPlugin) {
 
 function createHostNode(type: string, text = ''): HostNode {
   return { children: [], parent: null, props: {}, text, type };
+}
+
+function textContent(node: HostNode): string {
+  return node.text + node.children.map(textContent).join('');
+}
+
+class TestCookieDocument {
+  readonly writes: string[] = [];
+  private readonly values = new Map<string, string>();
+
+  constructor(cookieHeader = '') {
+    for (const cookie of cookieHeader.split(';')) {
+      const separator = cookie.indexOf('=');
+      if (separator < 0) continue;
+      this.values.set(
+        cookie.slice(0, separator).trim(),
+        cookie.slice(separator + 1).trim()
+      );
+    }
+  }
+
+  get cookie(): string {
+    return [...this.values]
+      .map(([name, value]) => `${name}=${value}`)
+      .join('; ');
+  }
+
+  set cookie(serializedCookie: string) {
+    this.writes.push(serializedCookie);
+    const [cookie = ''] = serializedCookie.split(';');
+    const separator = cookie.indexOf('=');
+    if (separator < 0) return;
+    this.values.set(
+      cookie.slice(0, separator).trim(),
+      cookie.slice(separator + 1).trim()
+    );
+  }
+
+  get(cookieName: string): string | undefined {
+    return this.values.get(cookieName);
+  }
+
+  delete(cookieName: string): void {
+    this.values.delete(cookieName);
+  }
+}
+
+function installCookieDocument(cookieHeader = ''): TestCookieDocument {
+  const cookieDocument = new TestCookieDocument(cookieHeader);
+  vi.stubGlobal('document', cookieDocument);
+  return cookieDocument;
 }

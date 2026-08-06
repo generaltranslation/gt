@@ -1,4 +1,4 @@
-import { readonly, type DeepReadonly, type Ref } from 'vue';
+import { toRef, type Ref } from 'vue';
 import { useGTState } from '../runtime/state';
 
 /**
@@ -10,8 +10,9 @@ import { useGTState } from '../runtime/state';
  *
  * @returns A readonly reactive locale ref.
  */
-export function useLocale(): DeepReadonly<Ref<string>> {
-  return readonly(useGTState().locale);
+export function useLocale(): Readonly<Ref<string>> {
+  const state = useGTState();
+  return toRef(state.getLocale);
 }
 
 /**
