@@ -48,6 +48,17 @@
       "t": "p"
     }
   },
+  "9b8297df593df5ad": {
+    "t": "h2",
+    "i": 1,
+    "c": "Local re-exports work in TSX"
+  },
+  "c7d97d97d0769df7": {
+    "t": "p",
+    "i": 1,
+    "c": "Namespace components work in TSX."
+  },
+  "ac1d0e7941fbc48f": "Translator forwarding works in TSX.",
   "3537261f4c26e6b1": [
     {
       "t": "h1",

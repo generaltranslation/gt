@@ -31,6 +31,7 @@
     "@types/express": "^5.0.6",
     "@types/node": "catalog:",
     "@vitejs/plugin-vue": "^6.0.3",
+    "@vitejs/plugin-vue-jsx": "5.1.6",
     "gt": "workspace:*",
     "oxfmt": "catalog:",
     "tsx": "^4.20.6",

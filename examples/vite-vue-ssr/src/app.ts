@@ -8,7 +8,7 @@ import './style.css';
 export async function createDocsApp(
   url: string,
   server: boolean,
-  gt = createDocsGT(getLocaleFromUrl(url))
+  gt: GTPlugin
 ) {
   const app = createSSRApp(App);
   const router = createDocsRouter(server);
@@ -29,7 +29,7 @@ export async function createDocsApp(
   return { app, gt, router };
 }
 
-/** Creates an isolated translation cache for one SSR request or worker. */
+/** Creates isolated translation state for one SSR request or client app. */
 export function createDocsGT(locale: string): GTPlugin {
   return createGT({
     defaultLocale: 'en',

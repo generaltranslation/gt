@@ -4,6 +4,7 @@ import { RouterLink, RouterView, useRoute } from 'vue-router';
 import { useGT, useLocale, useMessages } from 'gt-vue';
 import DisclosurePanel from './components/DisclosurePanel.vue';
 import SearchDialog from './components/SearchDialog.vue';
+import { TsxCompatibilityCard } from './components/TsxCompatibilityCard';
 import { linkCopiedMessage } from './messages';
 
 const gt = useGT();
@@ -113,6 +114,7 @@ function copyPageLink() {
           </button>
           <p v-if="toast" class="toast" role="status">{{ toast }}</p>
         </div>
+        <TsxCompatibilityCard />
       </main>
     </div>
 

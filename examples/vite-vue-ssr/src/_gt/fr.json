@@ -48,6 +48,17 @@
       "t": "p"
     }
   },
+  "9b8297df593df5ad": {
+    "t": "h2",
+    "i": 1,
+    "c": "Les réexportations locales fonctionnent en TSX"
+  },
+  "c7d97d97d0769df7": {
+    "t": "p",
+    "i": 1,
+    "c": "Les composants avec espace de noms fonctionnent en TSX."
+  },
+  "ac1d0e7941fbc48f": "Le transfert du traducteur fonctionne en TSX.",
   "3537261f4c26e6b1": [
     {
       "t": "h1",

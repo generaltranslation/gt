@@ -7,8 +7,14 @@ example's scope.
 
 The example covers lazy routes, `RouterView` scoped slots, async SSR,
 `Suspense`, `Transition`, a client-side `Teleport`, module-scope `msg()`
-records, accessibility attributes, locale-prefixed routes, and repeatable
-server rendering. It uses local catalogs, so no GT API key is required.
+records, accessibility attributes, locale-prefixed routes, Vue TSX, and
+repeatable server rendering. It uses local catalogs, so no GT API key is
+required.
+
+`TsxCompatibilityCard.tsx` exercises local ESM re-exports, `<T>`, `<GT.T>`,
+`<Vue.Fragment>`, and a translator forwarded into a cross-file helper. The
+SPA and SSR examples intentionally use the same source strings and contexts,
+so extraction and runtime behavior can be compared against identical hashes.
 
 ## Development
 
@@ -24,16 +30,17 @@ Open `http://localhost:5181` or the French deep link
 
 ## SSR bootstrap requirement
 
-The server creates an isolated GT plugin and router, selects the route locale,
-and awaits its catalog before `renderToString()`. The client reads the locale
-serialized into the HTML and awaits the same catalog before `app.mount()`.
-That ordering is required to prevent translated server HTML from hydrating
-against source-language client VNodes.
+The server's `render()` entry point creates a fresh GT plugin, Vue app, and
+router for every request, selects the route locale, and awaits its catalog
+before `renderToString()`. Never hoist or reuse the GT plugin across requests:
+its active locale is mutable request state. A translation loader may maintain
+an outer cache of immutable catalog data, but that does not make the plugin
+itself safe to share.
 
-A translation cache reused across sequential renders must call `setLocale()`
-for every route. Each render still creates a fresh app and router. Concurrent
-requests must use separate GT plugin instances because their active locale is
-mutable request state.
+The server serializes the locale reported by that request's GT plugin into the
+HTML. The client creates its own plugin from the serialized locale and awaits
+the same catalog before `app.mount()`. That ordering prevents translated
+server HTML from hydrating against source-language client VNodes.
 
 ## Verification
 
@@ -46,5 +53,5 @@ pnpm --filter vite-vue-ssr build
 ```
 
 The repository's app browser suite also checks translated server responses,
-hydration without console warnings, lazy navigation, locale switching,
-deep-link reloads, scoped slots, and the teleported search dialog.
+TSX output, hydration without console warnings, lazy navigation, locale
+switching, deep-link reloads, scoped slots, and the teleported search dialog.

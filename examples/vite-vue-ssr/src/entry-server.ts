@@ -8,20 +8,17 @@ export interface RenderResult {
   teleports: string;
 }
 
+/**
+ * Renders one request with a fresh app, router, and GT plugin.
+ *
+ * A GT plugin owns mutable locale state, so it must never be shared between
+ * concurrent server requests. Translation data may be cached by an outer
+ * loader, but each request still needs its own plugin instance.
+ */
 export async function render(url: string): Promise<RenderResult> {
-  const { app } = await createDocsApp(url, true);
-  return renderApp(app, getLocaleFromUrl(url));
-}
-
-export async function createReusableRenderer() {
-  const gt = createDocsGT('en');
-
-  return async (url: string): Promise<RenderResult> => {
-    const locale = getLocaleFromUrl(url);
-    await gt.setLocale(locale);
-    const { app } = await createDocsApp(url, true, gt);
-    return renderApp(app, locale);
-  };
+  const gt = createDocsGT(getLocaleFromUrl(url));
+  const { app } = await createDocsApp(url, true, gt);
+  return renderApp(app, gt.getLocale());
 }
 
 async function renderApp(
