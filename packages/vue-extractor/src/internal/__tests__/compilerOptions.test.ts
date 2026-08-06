@@ -1,10 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import * as testVueCompiler from '#vue-compiler-sfc';
-import type { RootNode } from '@vue/compiler-dom';
 import { parse as parseTemplate } from '@vue/compiler-dom';
 import { hashSource } from 'generaltranslation/id';
 import type { VueCompiler } from '../../types.js';
-import { shiftCompilerAstLocations } from '../extractFromVueSource.js';
 import { extractFromVueSource } from './testVueCompiler.js';
 
 describe('Vue compiler option parity', () => {
@@ -35,29 +33,45 @@ describe('Vue compiler option parity', () => {
     );
   });
 
-  it('rebases shared compiler positions only once across nested locations', () => {
-    const sharedStart = { column: 2, line: 1, offset: 1 };
-    const sharedEnd = { column: 4, line: 2, offset: 8 };
-    const ast = {
-      children: [
-        {
-          loc: { end: sharedEnd, source: 'outer', start: sharedStart },
-          nested: {
-            loc: { end: sharedEnd, source: 'inner', start: sharedStart },
-          },
-        },
-      ],
-      loc: {
-        end: { column: 1, line: 3, offset: 9 },
-        source: 'root',
-        start: { column: 1, line: 1, offset: 0 },
-      },
-    } as unknown as RootNode;
+  it('recovers v-for scopes when compiler metadata is absent', async () => {
+    const compiler = {
+      ...testVueCompiler,
+      parseTemplate: parseTemplateWithoutForMetadata,
+    } as unknown as VueCompiler;
+    const source = `<script setup>import { Fragment as F } from 'vue'; import { T } from 'gt-vue'; const choices = [String];</script><template><div v-for="F in choices"><T><component :is="F"><span>Opaque child</span></component><b>After</b></T></div></template>`;
 
-    shiftCompilerAstLocations(ast, { column: 7, line: 5, offset: 100 });
+    const output = await extractFromVueSource(
+      source,
+      '/fixtures/vue-3.3-v-for.vue',
+      { compiler }
+    );
 
-    expect(sharedStart).toEqual({ column: 8, line: 5, offset: 101 });
-    expect(sharedEnd).toEqual({ column: 4, line: 6, offset: 108 });
+    expect(output.errors).toHaveLength(1);
+    expect(output.errors[0]).toContain(
+      'Found a dynamic <component> inside a gt-vue <T> component'
+    );
+    expect(output.results).toEqual([]);
+  });
+
+  it('recovers v-for sources, defaults, and iterators without metadata', async () => {
+    const compiler = {
+      ...testVueCompiler,
+      parseTemplate: parseTemplateWithoutForMetadata,
+    } as unknown as VueCompiler;
+    const source = `<script setup>import { useGT } from 'gt-vue'; const gt = useGT(); const rows = [];</script><template><div v-for="{ value = gt('VFor default') } in gt('VFor source')" :title="value" /><div v-for="(value, gt, index) in rows" :title="gt('Shadowed iterator')" /></template>`;
+
+    const output = await extractFromVueSource(
+      source,
+      '/fixtures/vue-3.3-v-for-expressions.vue',
+      { compiler }
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(
+      output.results
+        .filter((result) => result.dataFormat === 'STRING')
+        .map((result) => result.source)
+    ).toEqual(['VFor default', 'VFor source']);
   });
 
   it('uses custom delimiters while locating the SFC template boundary', async () => {
@@ -179,4 +193,23 @@ function hashFor(
     source: result.source,
     ...(result.metadata.context && { context: result.metadata.context }),
   });
+}
+
+/** Simulates Vue 3.3's compiler AST without installing a second Vue copy. */
+function parseTemplateWithoutForMetadata(
+  ...args: Parameters<typeof parseTemplate>
+): ReturnType<typeof parseTemplate> {
+  const ast = parseTemplate(...args);
+  removeForParseResults(ast);
+  return ast;
+}
+
+/** Removes only the normalized field that Vue added after the 3.3 line. */
+function removeForParseResults(value: unknown, seen = new WeakSet<object>()) {
+  if (!value || typeof value !== 'object' || seen.has(value)) return;
+  seen.add(value);
+  if ('forParseResult' in value) delete value.forParseResult;
+  for (const child of Object.values(value)) {
+    removeForParseResults(child, seen);
+  }
 }

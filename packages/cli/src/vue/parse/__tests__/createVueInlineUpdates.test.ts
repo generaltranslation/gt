@@ -110,6 +110,70 @@ describe('createVueInlineUpdates', () => {
     });
   });
 
+  it('rejects unsafe Vue JSX config for a TSX-only source scope', async () => {
+    const file = createSourceFile(
+      'Component.tsx',
+      `import { T } from 'gt-vue'; export const View = () => <T>Hello</T>;`
+    );
+    vi.mocked(matchFiles).mockReturnValue([file]);
+    vi.mocked(resolveVueCompilerOptions).mockReturnValue({
+      compilerOptions: {},
+      errors: ['unsupported Vue JSX transform'],
+    });
+
+    const result = await createVueInlineUpdates(undefined, parsingFlags);
+
+    expect(resolveVueCompilerOptions).toHaveBeenCalledWith(
+      process.cwd(),
+      undefined,
+      { viteConfigPath: 'config/vite.custom.ts' }
+    );
+    expect(extractFromVueSource).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      updates: [],
+      errors: ['unsupported Vue JSX transform'],
+      warnings: [],
+    });
+  });
+
+  it('preserves TSX extraction with supported Vue JSX config', async () => {
+    const source = `import { T } from 'gt-vue'; export const View = () => <T>Hello</T>;`;
+    const file = createSourceFile('Component.tsx', source);
+    vi.mocked(matchFiles).mockReturnValue([file]);
+    vi.mocked(resolveVueCompilerOptions).mockReturnValue({
+      compilerOptions: {},
+      errors: [],
+    });
+    vi.mocked(extractFromVueSource).mockResolvedValue({
+      results: [
+        {
+          dataFormat: 'JSX',
+          source: 'Hello',
+          metadata: { filePaths: ['Component.tsx'] },
+        },
+      ],
+      errors: [],
+      warnings: [],
+    });
+
+    const result = await createVueInlineUpdates(undefined, parsingFlags);
+
+    expect(extractFromVueSource).toHaveBeenCalledWith(source, file, {
+      compilerOptions: {},
+      includeSourceCodeContext: true,
+      projectRoot: process.cwd(),
+      resolveModule: expect.any(Function),
+    });
+    expect(result.errors).toEqual([]);
+    expect(result.updates).toEqual([
+      expect.objectContaining({
+        dataFormat: 'JSX',
+        source: 'Hello',
+        metadata: expect.objectContaining({ hash: expect.any(String) }),
+      }),
+    ]);
+  });
+
   it('discovers sources in workspace packages that declare gt-vue', async () => {
     const projectRoot = fs.mkdtempSync(
       path.join(os.tmpdir(), 'gt-vue-workspace-')

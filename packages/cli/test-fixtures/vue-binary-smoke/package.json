@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "dependencies": {
-    "gt-vue": "0.0.0",
+    "gt-vue": "link:../../../vue",
     "vue": "^3.5.0"
   }
 }
