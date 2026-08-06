@@ -1,5 +1,12 @@
 # locadex
 
+## 1.0.206-iris.0
+
+### Patch Changes
+
+- Updated dependencies [01ba884]
+  - gt@2.16.3-iris.0
+
 ## 1.0.205
 
 ### Patch Changes

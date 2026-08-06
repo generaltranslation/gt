@@ -1,5 +1,12 @@
 # gtx-cli
 
+## 2.16.3-iris.0
+
+### Patch Changes
+
+- Updated dependencies [01ba884]
+  - gt@2.16.3-iris.0
+
 ## 2.16.2
 
 ### Patch Changes
