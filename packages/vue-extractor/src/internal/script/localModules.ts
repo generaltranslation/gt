@@ -4,6 +4,7 @@ import traverseModule, { type Scope } from '@babel/traverse';
 import type * as t from '@babel/types';
 import type { VueExtractionOptions } from '../../types.js';
 import { parseScriptAst } from './parser.js';
+import { isKnownNonVueGTRuntime } from './runtimeModules.js';
 
 const traverse = traverseModule.default || traverseModule;
 
@@ -98,6 +99,11 @@ export type LocalExportTarget =
       originKey: string;
       source: ExternalModuleName;
       type: 'external-namespace';
+    }
+  | {
+      /** A statically proven export from an official non-Vue GT runtime. */
+      originKey: string;
+      type: 'ordinary-external';
     }
   | {
       modulePath: string;
@@ -214,6 +220,15 @@ export function createLocalModuleResolver(
     exportName: string,
     seen: Set<string>
   ): LocalExportResolution => {
+    if (isKnownNonVueGTRuntime(source)) {
+      return {
+        status: 'resolved',
+        target: {
+          originKey: `${source}#${exportName}`,
+          type: 'ordinary-external',
+        },
+      };
+    }
     if (isExternalModule(source)) {
       return knownExternalExport(source, exportName)
         ? {
@@ -248,6 +263,15 @@ export function createLocalModuleResolver(
       );
     }
     if (declared.type === 'namespace') {
+      if (isKnownNonVueGTRuntime(declared.source)) {
+        return {
+          status: 'resolved',
+          target: {
+            originKey: `${declared.source}#namespace`,
+            type: 'ordinary-external',
+          },
+        };
+      }
       if (isExternalModule(declared.source)) {
         return {
           status: 'resolved',
@@ -274,6 +298,15 @@ export function createLocalModuleResolver(
       const imported = record.imports.get(declared.name);
       if (imported) {
         if (imported.importedName === '*') {
+          if (isKnownNonVueGTRuntime(imported.source)) {
+            return {
+              status: 'resolved',
+              target: {
+                originKey: `${imported.source}#namespace`,
+                type: 'ordinary-external',
+              },
+            };
+          }
           if (isExternalModule(imported.source)) {
             return {
               status: 'resolved',
@@ -355,6 +388,8 @@ export function createLocalModuleResolver(
         for (const name of GT_EXPORT_NAMES) names.add(name);
       } else if (source === 'vue') {
         for (const name of VUE_EXPORT_NAMES) names.add(name);
+      } else if (isKnownNonVueGTRuntime(source)) {
+        continue;
       } else {
         const modulePath = resolveModule(record.filePath, source);
         if (!modulePath) continue;

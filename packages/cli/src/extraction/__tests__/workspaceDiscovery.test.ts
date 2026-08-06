@@ -65,6 +65,113 @@ describe('workspace inline source discovery', () => {
     ]);
   });
 
+  it('preserves root React-family extraction when a workspace declares Next.js', async () => {
+    const projectRoot = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'gt-root-tanstack-workspace-next-')
+    );
+    temporaryDirectories.push(projectRoot);
+    writeJson(path.join(projectRoot, 'package.json'), {
+      private: true,
+      workspaces: ['apps/*'],
+      dependencies: {
+        'gt-react': '0.0.0',
+        'gt-tanstack-start': '0.0.0',
+      },
+    });
+
+    fs.mkdirSync(path.join(projectRoot, 'src'), { recursive: true });
+    fs.writeFileSync(
+      path.join(projectRoot, 'src', 'ReactMessage.tsx'),
+      `import { T } from 'gt-react'; export const ReactMessage = () => <T>React root</T>;`
+    );
+    fs.writeFileSync(
+      path.join(projectRoot, 'src', 'TanStackMessage.tsx'),
+      `import { T } from 'gt-tanstack-start'; export const TanStackMessage = () => <T>TanStack root</T>;`
+    );
+
+    const nextWorkspace = path.join(projectRoot, 'apps', 'next');
+    fs.mkdirSync(nextWorkspace, { recursive: true });
+    writeJson(path.join(nextWorkspace, 'package.json'), {
+      dependencies: { 'gt-next': '0.0.0' },
+    });
+    vi.spyOn(process, 'cwd').mockReturnValue(projectRoot);
+
+    const detected = determineLibrary();
+    expect(detected.library).toBe(Libraries.GT_TANSTACK_START);
+
+    const output = await createInlineUpdatesForLibraries(
+      [detected.library, ...detected.additionalModules].filter(isInlineLibrary),
+      false,
+      undefined,
+      {
+        autoderive: false,
+        enableAutoJsxInjection: false,
+        includeSourceCodeContext: false,
+        legacyGtReactImportSource: false,
+      },
+      { conditionNames: ['import', 'default'] }
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(output.warnings).toEqual([]);
+    expect(output.updates.map((update) => update.source).sort()).toEqual([
+      'React root',
+      'TanStack root',
+    ]);
+  });
+
+  it('keeps React JSX and string extraction clean when Vue is also detected', async () => {
+    const projectRoot = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'gt-mixed-react-vue-js-')
+    );
+    temporaryDirectories.push(projectRoot);
+    writeJson(path.join(projectRoot, 'package.json'), {
+      dependencies: {
+        'gt-react': '0.0.0',
+        'gt-vue': '0.0.0',
+      },
+    });
+
+    fs.mkdirSync(path.join(projectRoot, 'src'), { recursive: true });
+    fs.writeFileSync(
+      path.join(projectRoot, 'src', 'App.js'),
+      `import { T, msg, useGT, useMessages } from 'gt-react';
+const gt = useGT();
+const m = useMessages();
+gt('React string');
+m(msg('React message'));
+export const App = () => <T>React rich text</T>;`
+    );
+    vi.spyOn(process, 'cwd').mockReturnValue(projectRoot);
+
+    const detected = determineLibrary();
+    expect(detected).toEqual({
+      library: Libraries.GT_REACT,
+      additionalModules: [Libraries.GT_VUE],
+    });
+
+    const output = await createInlineUpdatesForLibraries(
+      [detected.library, ...detected.additionalModules].filter(isInlineLibrary),
+      true,
+      undefined,
+      {
+        autoderive: false,
+        enableAutoJsxInjection: false,
+        includeSourceCodeContext: false,
+        legacyGtReactImportSource: false,
+      },
+      { conditionNames: ['import', 'default'] }
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(output.warnings).toEqual([]);
+    expect(output.updates.map((update) => update.source).sort()).toEqual([
+      'React message',
+      'React rich text',
+      'React string',
+    ]);
+  });
+
   it('extracts every framework selected from declared workspace packages', async () => {
     const projectRoot = fs.mkdtempSync(
       path.join(os.tmpdir(), 'gt-mixed-workspace-')
