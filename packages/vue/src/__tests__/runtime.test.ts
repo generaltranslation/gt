@@ -20,6 +20,7 @@ import { renderToString } from 'vue/server-renderer';
 import { describe, expect, it, vi } from 'vitest';
 import { getBranchNames } from '../components/utils';
 import {
+  createTranslationIdentityCache,
   serializeVueChildren,
   translateVueChildren,
 } from '../rendering/translateVueChildren';
@@ -576,6 +577,156 @@ describe('gt-vue runtime', () => {
     mounted.app.unmount();
   });
 
+  it('bounds reconciliation identities to the current keyed source tree', () => {
+    const identityCache = createTranslationIdentityCache();
+    const state = {
+      defaultLocale: 'en',
+      getCatalog: () => ({}),
+      locale: ref('en'),
+    } as unknown as Parameters<typeof translateVueChildren>[1];
+    const Child = defineComponent({
+      name: 'ChurnedKeyChild',
+      setup: () => () => h('span', 'child'),
+    });
+
+    for (let index = 0; index < 128; index += 1) {
+      translateVueChildren(
+        [index, index + 1].map((key) =>
+          h(Fragment, { key: `key-${key}` }, [h(Child)])
+        ),
+        state,
+        {},
+        identityCache
+      );
+
+      expect(identityCache.explicitScopes.size).toBe(2);
+      expect(identityCache.generatedKeys.size).toBe(2);
+      expect(identityCache.typeScopes.size).toBe(1);
+    }
+
+    expect(identityCache.nextExplicitScope).toBe(129);
+    expect(identityCache.nextTypeScope).toBe(1);
+  });
+
+  it('releases component types removed from the current source tree', () => {
+    const identityCache = createTranslationIdentityCache();
+    const state = {
+      defaultLocale: 'en',
+      getCatalog: () => ({}),
+      locale: ref('en'),
+    } as unknown as Parameters<typeof translateVueChildren>[1];
+    const Stable = defineComponent({
+      name: 'StableType',
+      setup: () => () => h('span', 'stable'),
+    });
+    let previousChangingType: ReturnType<typeof defineComponent> | undefined;
+
+    for (let index = 0; index < 128; index += 1) {
+      const Changing = defineComponent({
+        name: `ChangingType${index}`,
+        setup: () => () => h('span', 'changing'),
+      });
+      translateVueChildren([h(Stable), h(Changing)], state, {}, identityCache);
+
+      expect(identityCache.typeScopes.size).toBe(2);
+      expect(identityCache.generatedKeys.size).toBe(2);
+      expect(identityCache.typeScopes.has(Stable)).toBe(true);
+      expect(identityCache.typeScopes.has(Changing)).toBe(true);
+      if (previousChangingType) {
+        expect(identityCache.typeScopes.has(previousChangingType)).toBe(false);
+      }
+      previousChangingType = Changing;
+    }
+
+    expect(identityCache.nextTypeScope).toBe(129);
+  });
+
+  it('rolls back identities allocated by an incomplete render', () => {
+    const identityCache = createTranslationIdentityCache();
+    const locale = ref('en');
+    let target: JsxChildren = 'Unused';
+    const state = {
+      defaultLocale: 'en',
+      getCatalog: () => ({ broken: target }),
+      locale,
+    } as unknown as Parameters<typeof translateVueChildren>[1];
+    const Stable = defineComponent({
+      name: 'StableCompletedType',
+      setup: () => () => h('span', 'stable'),
+    });
+
+    translateVueChildren(
+      [h(Fragment, { key: 'stable-key' }, [h(Stable)])],
+      state,
+      {},
+      identityCache
+    );
+    const stableGeneratedKeys = [...identityCache.generatedKeys.keys()];
+    locale.value = 'fr';
+
+    for (let index = 0; index < 32; index += 1) {
+      const Changing = defineComponent({
+        name: `IncompleteType${index}`,
+        setup: () => () => h('span', 'changing'),
+      });
+      const throwingTarget = Object.defineProperty(
+        { t: 'IncompleteType' },
+        'i',
+        {
+          get() {
+            throw new Error('incomplete target');
+          },
+        }
+      );
+      target = [{ t: 'IncompleteType', i: 1 }, throwingTarget] as JsxChildren;
+
+      expect(() =>
+        translateVueChildren(
+          [h(Fragment, { key: `incomplete-key-${index}` }, [h(Changing)])],
+          state,
+          { _hash: 'broken' },
+          identityCache
+        )
+      ).toThrow('incomplete target');
+      expect([...identityCache.explicitScopes.keys()]).toEqual(['stable-key']);
+      expect([...identityCache.generatedKeys.keys()]).toEqual(
+        stableGeneratedKeys
+      );
+      expect([...identityCache.typeScopes.keys()]).toEqual([Stable]);
+    }
+  });
+
+  it('releases generated identities when a translation stops repeating an element', () => {
+    const identityCache = createTranslationIdentityCache();
+    let target: JsxChildren = [
+      { t: 'span', i: 1, c: 'First' },
+      { t: 'span', i: 1, c: 'Second' },
+      { t: 'span', i: 1, c: 'Third' },
+    ];
+    const state = {
+      defaultLocale: 'en',
+      getCatalog: () => ({ repeated: target }),
+      locale: ref('fr'),
+    } as unknown as Parameters<typeof translateVueChildren>[1];
+
+    translateVueChildren(
+      [h('span', 'Source')],
+      state,
+      { _hash: 'repeated' },
+      identityCache
+    );
+    expect(identityCache.generatedKeys.size).toBe(3);
+
+    target = { t: 'span', i: 1, c: 'Only' };
+    translateVueChildren(
+      [h('span', 'Source')],
+      state,
+      { _hash: 'repeated' },
+      identityCache
+    );
+    expect(identityCache.generatedKeys.size).toBe(1);
+  });
+
   it('preserves explicit string, number, and symbol keys during translation reorder', async () => {
     let setupCount = 0;
     const symbolKey = Symbol('source-key');
@@ -687,10 +838,13 @@ describe('gt-vue runtime', () => {
     const mounted = mount(Root, plugin);
 
     expect(textContent(mounted.root)).toBe('a:a:1|b:b:2|');
-    order.value = ['b', 'a'];
+    order.value = ['b', 'c'];
     await nextTick();
-    expect(textContent(mounted.root)).toBe('b:b:2|a:a:1|');
-    expect(setupCount).toBe(2);
+    expect(textContent(mounted.root)).toBe('b:b:2|c:c:3|');
+    order.value = ['c', 'a'];
+    await nextTick();
+    expect(textContent(mounted.root)).toBe('c:c:3|a:a:4|');
+    expect(setupCount).toBe(4);
     mounted.app.unmount();
   });
 
@@ -724,6 +878,9 @@ describe('gt-vue runtime', () => {
     showKeyedSibling.value = false;
     await nextTick();
     expect(textContent(mounted.root)).toBe('1|');
+    showKeyedSibling.value = true;
+    await nextTick();
+    expect(textContent(mounted.root)).toBe('keyed1|');
     expect(setupCount).toBe(1);
     mounted.app.unmount();
   });
@@ -756,6 +913,9 @@ describe('gt-vue runtime', () => {
     showUnrelatedSibling.value = false;
     await nextTick();
     expect(textContent(mounted.root)).toBe('1|');
+    showUnrelatedSibling.value = true;
+    await nextTick();
+    expect(textContent(mounted.root)).toBe('unrelated1|');
     expect(setupCount).toBe(1);
     mounted.app.unmount();
   });
