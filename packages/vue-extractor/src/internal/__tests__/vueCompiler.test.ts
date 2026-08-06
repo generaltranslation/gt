@@ -62,6 +62,57 @@ describe('consumer Vue compiler resolution', () => {
     );
   });
 
+  it('loads the consumer compiler browser distributions when Bun cannot follow the Vue proxy', () => {
+    const root = createProject({ vue: '3.5.40' });
+    writeBunIsolatedVuePackage(root, '3.5.40');
+    Object.defineProperty(process.versions, 'bun', {
+      configurable: true,
+      value: '1.3.14',
+    });
+
+    try {
+      const resolution = resolveVueCompiler(
+        path.join(root, 'src/App.vue'),
+        root
+      );
+
+      expect(resolution).toEqual({
+        ok: true,
+        value: expect.objectContaining({
+          implicitSlotWhitespace: 'ecmascript',
+          templateParseOptionsSupported: true,
+          version: '3.5.40',
+        }),
+      });
+    } finally {
+      delete process.versions.bun;
+    }
+  });
+
+  it('rejects unsupported consumer compiler versions through the Bun fallback', () => {
+    const root = createProject({ vue: '3.2.47' });
+    writeBunIsolatedVuePackage(root, '3.2.47');
+    Object.defineProperty(process.versions, 'bun', {
+      configurable: true,
+      value: '1.3.14',
+    });
+
+    try {
+      const resolution = resolveVueCompiler(
+        path.join(root, 'src/App.vue'),
+        root
+      );
+
+      expect(resolution).toEqual({
+        ok: false,
+        details:
+          'Resolved Vue compiler version "3.2.47"; gt-vue supports Vue 3.3 through Vue 3.x.',
+      });
+    } finally {
+      delete process.versions.bun;
+    }
+  });
+
   it('does not let bundled fallback hide a declared but missing Vue install', () => {
     const root = createProject({ vue: '^3.3.0' });
     const resolution = resolveVueCompiler(path.join(root, 'src/App.vue'), root);
@@ -165,6 +216,62 @@ function writeVuePackage(
   fs.writeFileSync(
     path.join(directory, 'compiler-sfc.cjs'),
     `module.exports = { compileTemplate() {}, parse() {}, version: ${JSON.stringify(compilerVersion)} };\n`
+  );
+}
+
+function writeBunIsolatedVuePackage(root: string, version: string): void {
+  writeVuePackage(root, { version });
+  fs.writeFileSync(
+    path.join(root, 'node_modules/vue/compiler-sfc.cjs'),
+    `module.exports = require('@vue/compiler-sfc');\n`
+  );
+
+  const compilerSfcRoot = path.join(root, 'node_modules/@vue/compiler-sfc');
+  const compilerDomRoot = path.join(root, 'node_modules/@vue/compiler-dom');
+  fs.mkdirSync(path.join(compilerSfcRoot, 'dist'), { recursive: true });
+  fs.mkdirSync(path.join(compilerDomRoot, 'dist'), { recursive: true });
+  fs.writeFileSync(
+    path.join(compilerSfcRoot, 'package.json'),
+    JSON.stringify({ name: '@vue/compiler-sfc', version })
+  );
+  fs.writeFileSync(
+    path.join(compilerDomRoot, 'package.json'),
+    JSON.stringify({ name: '@vue/compiler-dom', version })
+  );
+  fs.writeFileSync(
+    path.join(compilerSfcRoot, 'dist/compiler-sfc.esm-browser.js'),
+    `module.exports = {
+  compileTemplate() {
+    return {
+      errors: [],
+      ast: {
+        children: [{
+          tag: 'Probe',
+          codegenNode: { children: { properties: [] } }
+        }]
+      }
+    };
+  },
+  parse(_source, options) {
+    return {
+      descriptor: {
+        template: {
+          ast: {
+            children: [{
+              type: 2,
+              content: options.templateParseOptions.whitespace
+            }]
+          }
+        }
+      }
+    };
+  },
+  version: ${JSON.stringify(version)}
+};\n`
+  );
+  fs.writeFileSync(
+    path.join(compilerDomRoot, 'dist/compiler-dom.esm-browser.js'),
+    `module.exports = { compile() {}, parse() {} };\n`
   );
 }
 

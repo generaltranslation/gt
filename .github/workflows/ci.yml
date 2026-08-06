@@ -323,6 +323,7 @@ jobs:
           cli_binary="$PWD/packages/cli/binaries/${{ matrix.binary }}"
           "$cli_binary" --help
           cd packages/cli/test-fixtures/vue-binary-smoke
+          pnpm install --ignore-workspace --config.enable-global-virtual-store=false --config.hoist=false --lockfile=false
           "$cli_binary" generate
           node verify.mjs
 

@@ -34,6 +34,8 @@ const SCRIPT_EXTENSIONS = new Set([
   '.cts',
 ]);
 
+const CONFIG_AFFECTED_EXTENSIONS = new Set(['.vue', '.jsx', '.tsx']);
+
 /**
  * Discovers Vue source files and adapts package-owned extraction results to
  * the CLI update pipeline.
@@ -99,7 +101,7 @@ export async function createVueInlineUpdates(
   return { updates, errors, warnings: [...new Set(warnings)] };
 }
 
-/** Resolves hash-affecting compiler settings within each owning Vue package. */
+/** Resolves hash-affecting SFC and JSX settings within each Vue package. */
 function resolveCompilerOptionsByScope(
   projectRoot: string,
   files: readonly string[],
@@ -111,7 +113,9 @@ function resolveCompilerOptionsByScope(
   const optionsByScope = new Map<string, VueCompilerOptions>();
   const vueScopes = new Map<string, InlineSourceScope>();
   for (const file of files) {
-    if (path.extname(file).toLowerCase() !== '.vue') continue;
+    if (!CONFIG_AFFECTED_EXTENSIONS.has(path.extname(file).toLowerCase())) {
+      continue;
+    }
     const scope = fileScopes.get(file);
     if (scope) vueScopes.set(scope.directory, scope);
   }
@@ -143,8 +147,8 @@ function resolveCompilerOptionsByScope(
           source: 'gt',
           severity: 'Error',
           whatHappened:
-            'The configured Vite config does not own any matched Vue files',
-          fix: 'Run extraction from that application root, include its Vue files in src, or remove files.gt.parsingFlags.viteConfigPath',
+            'The configured Vite config does not own any matched Vue sources',
+          fix: 'Run extraction from that application root, include its Vue SFC or JSX sources, or remove files.gt.parsingFlags.viteConfigPath',
           details: parsingFlags.viteConfigPath,
         })
       );

@@ -290,7 +290,7 @@ export default { plugins: [vue({ template: { compilerOptions: { delimiters: ['[[
 
     expect(output.updates).toEqual([]);
     expect(output.errors.join('\n')).toContain(
-      'does not own any matched Vue files'
+      'does not own any matched Vue sources'
     );
   });
 
@@ -314,6 +314,64 @@ gt('Script only');`
     expect(output.errors).toEqual([]);
     expect(output.updates).toEqual([
       expect.objectContaining({ source: 'Script only' }),
+    ]);
+  });
+
+  it('rejects unsupported JSX transforms in a TSX-only Vue workspace', async () => {
+    const projectRoot = createWorkspaceRoot();
+    const appDirectory = path.join(projectRoot, 'apps', 'vue');
+    fs.mkdirSync(path.join(appDirectory, 'src'), { recursive: true });
+    writeJson(path.join(appDirectory, 'package.json'), {
+      dependencies: { 'gt-vue': '0.0.0' },
+    });
+    fs.writeFileSync(
+      path.join(appDirectory, 'vite.config.ts'),
+      `import vueJsx from '@vitejs/plugin-vue-jsx';
+export default { plugins: [vueJsx({ babelPlugins: [rewriteJSXText] })] };`
+    );
+    fs.writeFileSync(
+      path.join(appDirectory, 'src', 'View.tsx'),
+      `import { T } from 'gt-vue';
+export const View = () => <T>Must not publish</T>;`
+    );
+    vi.spyOn(process, 'cwd').mockReturnValue(projectRoot);
+
+    const output = await createVueInlineUpdates(undefined, parsingFlags);
+
+    expect(output.updates).toEqual([]);
+    expect(output.errors.join('\n')).toContain(
+      'unsupported @vitejs/plugin-vue-jsx option "babelPlugins"'
+    );
+  });
+
+  it('preserves TSX extraction for supported Vue JSX options', async () => {
+    const projectRoot = createWorkspaceRoot();
+    const appDirectory = path.join(projectRoot, 'apps', 'vue');
+    fs.mkdirSync(path.join(appDirectory, 'src'), { recursive: true });
+    writeJson(path.join(appDirectory, 'package.json'), {
+      dependencies: { 'gt-vue': '0.0.0' },
+    });
+    fs.writeFileSync(
+      path.join(appDirectory, 'vite.config.ts'),
+      `import vueJsx from '@vitejs/plugin-vue-jsx';
+export default { plugins: [vueJsx({ babelPlugins: [], optimize: true })] };`
+    );
+    fs.writeFileSync(
+      path.join(appDirectory, 'src', 'View.tsx'),
+      `import { T } from 'gt-vue';
+export const View = () => <T context="card">Supported TSX</T>;`
+    );
+    vi.spyOn(process, 'cwd').mockReturnValue(projectRoot);
+
+    const output = await createVueInlineUpdates(undefined, parsingFlags);
+
+    expect(output.errors).toEqual([]);
+    expect(output.updates).toEqual([
+      expect.objectContaining({
+        dataFormat: 'JSX',
+        source: 'Supported TSX',
+        metadata: expect.objectContaining({ context: 'card' }),
+      }),
     ]);
   });
 

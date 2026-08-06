@@ -77,6 +77,7 @@ export function resolveVueCompiler(
     const resolution = loadCompiler(
       requireFromConsumer,
       compilerPath,
+      vueManifestPath,
       readVueVersion(requireFromConsumer, vueManifestPath)
     );
     resolvedCompilers.set(compilerPath, resolution);
@@ -122,6 +123,7 @@ export function inspectVueCompiler(compiler: VueCompiler): CompilerResolution {
 function loadCompiler(
   requireFromConsumer: NodeRequire,
   compilerPath: string,
+  vueManifestPath: string,
   vueVersion: string | undefined
 ): CompilerResolution {
   try {
@@ -183,7 +185,134 @@ function loadCompiler(
       parse: compilerDom.parse,
     });
   } catch (error) {
+    const bunResolution = loadBunCompiler(
+      requireFromConsumer,
+      vueManifestPath,
+      vueVersion
+    );
+    if (bunResolution) return bunResolution;
     return { ok: false, details: formatResolutionError(error) };
+  }
+}
+
+/** Loads exact, self-contained Vue browser compilers in a compiled Bun CLI. */
+function loadBunCompiler(
+  requireFromConsumer: NodeRequire,
+  vueManifestPath: string,
+  vueVersion: string | undefined
+): CompilerResolution | undefined {
+  if (typeof process.versions.bun !== 'string') return undefined;
+
+  try {
+    const compilerSfcRoot = findInstalledPackageRoot(
+      vueManifestPath,
+      '@vue/compiler-sfc'
+    );
+    const compilerDomRoot = findInstalledPackageRoot(
+      vueManifestPath,
+      '@vue/compiler-dom'
+    );
+    if (!compilerSfcRoot || !compilerDomRoot) {
+      return {
+        ok: false,
+        details:
+          'The Vue installation does not contain its compiler-sfc and compiler-dom dependencies.',
+      };
+    }
+
+    const compilerPath = path.join(
+      compilerSfcRoot,
+      'dist/compiler-sfc.esm-browser.js'
+    );
+    const compilerDomPath = path.join(
+      compilerDomRoot,
+      'dist/compiler-dom.esm-browser.js'
+    );
+    const loaded = requireFromConsumer(compilerPath) as unknown;
+    const defaultExport = readDefaultExport(loaded);
+    const compiler = isVueCompiler(loaded)
+      ? (loaded as ExactVueCompiler)
+      : isVueCompiler(defaultExport)
+        ? (defaultExport as ExactVueCompiler)
+        : undefined;
+    if (!compiler) {
+      return {
+        ok: false,
+        details: `The module at ${compilerPath} does not expose the Vue compiler-sfc API.`,
+      };
+    }
+    if (vueVersion && compiler.version !== vueVersion) {
+      return {
+        ok: false,
+        details: `The app resolves Vue ${vueVersion} but vue/compiler-sfc ${compiler.version}. Install one matching Vue package version.`,
+      };
+    }
+    if (!isSupportedVueVersion(compiler.version)) {
+      return {
+        ok: false,
+        details: `Resolved Vue compiler version ${JSON.stringify(compiler.version)}; gt-vue supports Vue 3.3 through Vue 3.x.`,
+      };
+    }
+
+    const compilerDom = requireFromConsumer(compilerDomPath) as {
+      compile?: TemplateCompiler['compile'];
+      parse?: typeof parseVueTemplate;
+    };
+    const compilerDomVersion = readPackageVersion(compilerDomRoot);
+    if (compilerDomVersion !== compiler.version) {
+      return {
+        ok: false,
+        details: `vue/compiler-sfc ${compiler.version} resolves @vue/compiler-dom ${String(compilerDomVersion)}. Install matching Vue compiler packages.`,
+      };
+    }
+    if (typeof compilerDom.parse !== 'function') {
+      return {
+        ok: false,
+        details: `The template compiler at ${compilerDomPath} does not expose parse().`,
+      };
+    }
+    if (typeof compilerDom.compile !== 'function') {
+      return {
+        ok: false,
+        details: `The template compiler at ${compilerDomPath} does not expose compile().`,
+      };
+    }
+    return inspectCompiler(compiler, compilerDom.parse, {
+      compile: compilerDom.compile,
+      parse: compilerDom.parse,
+    });
+  } catch (error) {
+    return { ok: false, details: formatResolutionError(error) };
+  }
+}
+
+/** Finds one dependency relative to the physical Vue installation on disk. */
+function findInstalledPackageRoot(
+  vueManifestPath: string,
+  packageName: string
+): string | undefined {
+  const packageSegments = packageName.split('/');
+  let directory = path.dirname(vueManifestPath);
+  while (true) {
+    const candidate =
+      path.basename(directory) === 'node_modules'
+        ? path.join(directory, ...packageSegments)
+        : path.join(directory, 'node_modules', ...packageSegments);
+    if (fs.existsSync(path.join(candidate, 'package.json'))) return candidate;
+    const parent = path.dirname(directory);
+    if (parent === directory) return undefined;
+    directory = parent;
+  }
+}
+
+function readPackageVersion(packageRoot: string): string | undefined {
+  try {
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(packageRoot, 'package.json'), 'utf8')
+    ) as { version?: unknown };
+    return typeof manifest.version === 'string' ? manifest.version : undefined;
+  } catch {
+    return undefined;
   }
 }
 

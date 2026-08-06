@@ -14,6 +14,10 @@ import {
   parseVueScript,
   type VueScriptAnalysis,
 } from './script.js';
+import {
+  shiftCompilerAstLocations,
+  shiftCompilerLocation,
+} from './compilerAst.js';
 import { createLocalModuleResolver } from './script/localModules.js';
 import { parseVueTemplate } from './template.js';
 import type { TemplateBindings, VueExtractionContext } from './types.js';
@@ -395,92 +399,6 @@ type CompilerPosition = {
   line: number;
   offset: number;
 };
-
-/**
- * Rebases the consumer compiler-dom AST from template-content coordinates to
- * full-SFC coordinates. Vue 3.3 ignores SFC `templateParseOptions`, so we must
- * parse the block content directly with its adjacent compiler-dom. Its AST and
- * errors otherwise point at line 1/offset 0 of the block, which corrupts source
- * metadata and diagnostics for every template after script/style blocks.
- */
-export function shiftCompilerAstLocations(
-  ast: RootNode,
-  origin: CompilerPosition
-): void {
-  const seen = new WeakSet<object>();
-  const shiftedPositions = new WeakSet<object>();
-
-  const visit = (value: unknown): void => {
-    if (!value || typeof value !== 'object' || seen.has(value)) return;
-    seen.add(value);
-
-    if (isCompilerLocation(value)) {
-      shiftCompilerLocation(value, origin, shiftedPositions);
-      return;
-    }
-    if (Array.isArray(value)) {
-      for (const child of value) visit(child);
-      return;
-    }
-    for (const child of Object.values(value)) visit(child);
-  };
-
-  visit(ast);
-}
-
-/** Rebases one Vue compiler source range without changing its source text. */
-function shiftCompilerLocation(
-  location: ExtractionLocationLike,
-  origin: CompilerPosition,
-  shiftedPositions = new WeakSet<object>()
-): void {
-  if (location.start) {
-    shiftCompilerPosition(location.start, origin, shiftedPositions);
-  }
-  if (location.end) {
-    shiftCompilerPosition(location.end, origin, shiftedPositions);
-  }
-}
-
-/** Rebases a template-relative position to the containing SFC. */
-function shiftCompilerPosition(
-  position: { column?: number; line?: number; offset?: number },
-  origin: CompilerPosition,
-  shiftedPositions: WeakSet<object>
-): void {
-  if (shiftedPositions.has(position)) return;
-  shiftedPositions.add(position);
-  const line = position.line ?? 1;
-  const column = position.column ?? 1;
-  const offset = position.offset ?? 0;
-  position.line = origin.line + line - 1;
-  position.column = line === 1 ? origin.column + column - 1 : column;
-  position.offset = origin.offset + offset;
-}
-
-/** Identifies Vue compiler source locations while skipping Babel AST ranges. */
-function isCompilerLocation(value: object): value is ExtractionLocationLike {
-  if (!('start' in value) || !('end' in value) || !('source' in value)) {
-    return false;
-  }
-  const start = value.start;
-  const end = value.end;
-  return isCompilerPosition(start) && isCompilerPosition(end);
-}
-
-/** Returns whether a value has Vue compiler line, column, and offset fields. */
-function isCompilerPosition(value: unknown): value is CompilerPosition {
-  return (
-    !!value &&
-    typeof value === 'object' &&
-    'line' in value &&
-    typeof value.line === 'number' &&
-    'column' in value &&
-    typeof value.column === 'number' &&
-    'offset' in value &&
-    typeof value.offset === 'number'
-  );
-}
 
 /** Omits location-only metadata while comparing persisted template content. */
 function comparableTemplateResults(

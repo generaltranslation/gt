@@ -103,6 +103,13 @@ const COMPONENT_PRESERVING_ARRAY_METHODS = new Set([
   'toSpliced',
 ]);
 
+// Vue 3.3 does not attach `forParseResult` to compiler-dom directive nodes.
+// These expressions match Vue's own stable v-for grammar and are used only as
+// a compatibility fallback when the consuming compiler omits that metadata.
+const FOR_ALIAS_EXPRESSION = /([\s\S]*?)\s+(?:in|of)\s+([\s\S]*)/;
+const FOR_ITERATOR_EXPRESSION = /,([^,}\]]*)(?:,([^,}\]]*))?$/;
+const FOR_STRIP_PARENS = /^\(|\)$/g;
+
 type ForParseResult = {
   index?: SimpleExpressionNode;
   key?: SimpleExpressionNode;
@@ -222,9 +229,7 @@ function visitTemplateChildren(
     for (const property of child.props) {
       if (property.type !== NodeTypes.DIRECTIVE) continue;
       if (property.name === 'for') {
-        const parseResult = (
-          property as DirectiveNode & { forParseResult?: ForParseResult }
-        ).forParseResult;
+        const parseResult = readForParseResult(property);
         for (const alias of [
           parseResult?.value,
           parseResult?.key,
@@ -265,9 +270,7 @@ function visitTemplateChildren(
       }
       if (property.name === 'slot' || !property.exp) continue;
       if (property.name === 'for') {
-        const parseResult = (
-          property as DirectiveNode & { forParseResult?: ForParseResult }
-        ).forParseResult;
+        const parseResult = readForParseResult(property);
         if (parseResult?.source) {
           processTemplateExpression(
             parseResult.source,
@@ -398,9 +401,7 @@ function collectPossibleScopedComponentAliases(
   for (const property of element.props) {
     if (property.type !== NodeTypes.DIRECTIVE) continue;
     if (property.name === 'for') {
-      const parseResult = (
-        property as DirectiveNode & { forParseResult?: ForParseResult }
-      ).forParseResult;
+      const parseResult = readForParseResult(property);
       const pattern = parseResult?.value
         ? parseTemplateBindingPattern(parseResult.value, expressionPlugins)
         : undefined;
@@ -465,9 +466,7 @@ function collectPossibleScopedContainerAliases(
     if (property.type !== NodeTypes.DIRECTIVE || property.name !== 'for') {
       continue;
     }
-    const parseResult = (
-      property as DirectiveNode & { forParseResult?: ForParseResult }
-    ).forParseResult;
+    const parseResult = readForParseResult(property);
     const pattern = parseResult?.value
       ? parseTemplateBindingPattern(parseResult.value, expressionPlugins)
       : undefined;
@@ -2505,9 +2504,7 @@ function collectElementScopeBindings(
   for (const property of element.props) {
     if (property.type !== NodeTypes.DIRECTIVE) continue;
     if (property.name === 'for') {
-      const parseResult = (
-        property as DirectiveNode & { forParseResult?: ForParseResult }
-      ).forParseResult;
+      const parseResult = readForParseResult(property);
       for (const alias of [
         parseResult?.value,
         parseResult?.key,
@@ -2530,6 +2527,65 @@ function collectElementScopeBindings(
     }
   }
   return result;
+}
+
+/**
+ * Reads Vue's normalized v-for fields across every supported Vue 3 release.
+ *
+ * Vue 3.4+ supplies `forParseResult`; Vue 3.3 exposes only the original
+ * directive expression. The fallback deliberately mirrors Vue's own alias,
+ * iterator, and parenthesis expressions so scope tracking sees the same value,
+ * key, index, and source fields without depending on a second compiler copy.
+ */
+function readForParseResult(
+  property: DirectiveNode
+): ForParseResult | undefined {
+  const compilerResult = (
+    property as DirectiveNode & { forParseResult?: ForParseResult }
+  ).forParseResult;
+  if (compilerResult) return compilerResult;
+  if (
+    property.exp?.type !== NodeTypes.SIMPLE_EXPRESSION ||
+    !property.exp.content
+  ) {
+    return undefined;
+  }
+
+  const match = property.exp.content.match(FOR_ALIAS_EXPRESSION);
+  if (!match) return undefined;
+  const source = match[2]?.trim();
+  const aliases = match[1]?.trim().replace(FOR_STRIP_PARENS, '').trim();
+  if (!source || !aliases) return undefined;
+
+  const iteratorMatch = aliases.match(FOR_ITERATOR_EXPRESSION);
+  const value = iteratorMatch
+    ? aliases.replace(FOR_ITERATOR_EXPRESSION, '').trim()
+    : aliases;
+  if (!value) return undefined;
+
+  return {
+    source: cloneForExpression(property.exp, source),
+    value: cloneForExpression(property.exp, value),
+    ...(iteratorMatch?.[1]?.trim() && {
+      key: cloneForExpression(property.exp, iteratorMatch[1].trim()),
+    }),
+    ...(iteratorMatch?.[2]?.trim() && {
+      index: cloneForExpression(property.exp, iteratorMatch[2].trim()),
+    }),
+  };
+}
+
+/** Creates one parser-neutral v-for field from Vue's original expression. */
+function cloneForExpression(
+  expression: SimpleExpressionNode,
+  content: string
+): SimpleExpressionNode {
+  return {
+    ...expression,
+    ast: undefined,
+    content,
+    loc: { ...expression.loc, source: content },
+  };
 }
 
 function collectExpressionBindings(
