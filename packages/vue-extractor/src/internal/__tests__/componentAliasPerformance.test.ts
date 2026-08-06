@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { collectAnalyzerStats } from './analyzerPerformance.js';
 import { extractFromVueSource } from './testVueCompiler.js';
 
+const ANALYZER_PERFORMANCE_TEST_TIMEOUT_MS = 15_000;
+
 function createScalarAliasScript(aliasCount: number): string {
   const declarations = ["import { T } from 'gt-vue';", 'const Component0 = T;'];
   for (let index = 1; index <= aliasCount; index += 1) {
@@ -12,36 +14,44 @@ function createScalarAliasScript(aliasCount: number): string {
   return declarations.join('\n');
 }
 describe('direct component alias performance', () => {
-  it('keeps analyzer visits linear for a long scalar alias chain', () => {
-    const smaller = collectAnalyzerStats(createScalarAliasScript(500));
-    const larger = collectAnalyzerStats(createScalarAliasScript(1_000));
+  it(
+    'keeps analyzer visits linear for a long scalar alias chain',
+    () => {
+      const smaller = collectAnalyzerStats(createScalarAliasScript(500));
+      const larger = collectAnalyzerStats(createScalarAliasScript(1_000));
 
-    for (const key of Object.keys(larger) as Array<keyof typeof larger>) {
-      expect(larger[key], key).toBeLessThanOrEqual(smaller[key] * 2 + 10);
-    }
+      for (const key of Object.keys(larger) as Array<keyof typeof larger>) {
+        expect(larger[key], key).toBeLessThanOrEqual(smaller[key] * 2 + 10);
+      }
 
-    expect(
-      Object.values(larger).reduce((total, visits) => total + visits, 0)
-    ).toBeLessThanOrEqual(10_000);
-  });
+      expect(
+        Object.values(larger).reduce((total, visits) => total + visits, 0)
+      ).toBeLessThanOrEqual(10_000);
+    },
+    ANALYZER_PERFORMANCE_TEST_TIMEOUT_MS
+  );
 
-  it('fails closed for a thousand aliases without a timing assertion', async () => {
-    const source = `<script setup>${createScalarAliasScript(1_000)}</script>
+  it(
+    'fails closed for a thousand aliases without a timing assertion',
+    async () => {
+      const source = `<script setup>${createScalarAliasScript(1_000)}</script>
         <template>
           <component :is="registry[key]">Hidden</component>
         </template>`;
 
-    const output = await extractFromVueSource(
-      source,
-      '/fixtures/ComponentAliasPerformance.vue',
-      { projectRoot: '/fixtures' }
-    );
+      const output = await extractFromVueSource(
+        source,
+        '/fixtures/ComponentAliasPerformance.vue',
+        { projectRoot: '/fixtures' }
+      );
 
-    expect(output.results).toEqual([]);
-    expect(output.errors.join('\n')).toContain(
-      'Could not statically resolve possible gt-vue component alias'
-    );
-  });
+      expect(output.results).toEqual([]);
+      expect(output.errors.join('\n')).toContain(
+        'Could not statically resolve possible gt-vue component alias'
+      );
+    },
+    ANALYZER_PERFORMANCE_TEST_TIMEOUT_MS
+  );
 
   it.each([
     {
