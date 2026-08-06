@@ -139,6 +139,56 @@ describe('Branch and Plural attributes', () => {
     expect(html).not.toContain('Fallback');
   });
 
+  it('selects a data-* named slot without treating the matching attribute as content', async () => {
+    const html = await renderTemplate(
+      '<Branch branch="data-note" data-note="Attribute"><template #data-note>Named slot</template>Fallback</Branch>'
+    );
+
+    expect(html).toContain('Named slot');
+    expect(html).not.toContain('Attribute');
+    expect(html).not.toContain('Fallback');
+  });
+
+  it('selects a data-* named slot inside default-locale rich content', async () => {
+    const html = await renderTemplate(
+      '<T><Branch branch="data-note" data-note="Attribute"><template #data-note>Source named slot</template>Source fallback</Branch></T>'
+    );
+
+    expect(html).toContain('Source named slot');
+    expect(html).not.toContain('Attribute');
+    expect(html).not.toContain('Source fallback');
+  });
+
+  it('selects a translated data-* named slot inside rich content', async () => {
+    const source: JsxChildren = {
+      t: 'Branch',
+      i: 1,
+      d: { b: { 'data-note': 'Source named slot' }, t: 'b' },
+      c: 'Source fallback',
+    };
+    const target: JsxChildren = {
+      t: 'Branch',
+      i: 1,
+      d: { b: { 'data-note': 'Translated named slot' }, t: 'b' },
+      c: 'Translated fallback',
+    };
+    const plugin = createGT({
+      loadTranslations: async () => ({ [jsxHash(source)]: target }),
+    });
+    await plugin.setLocale('fr');
+
+    const html = await renderTemplate(
+      '<T><Branch branch="data-note" data-note="Attribute"><template #data-note>Source named slot</template>Source fallback</Branch></T>',
+      undefined,
+      plugin
+    );
+
+    expect(html).toContain('Translated named slot');
+    expect(html).not.toContain('Attribute');
+    expect(html).not.toContain('Source named slot');
+    expect(html).not.toContain('Translated fallback');
+  });
+
   it('uses the same filtered inputs for a rich Branch hash', async () => {
     const source: JsxChildren = {
       t: 'Branch',
