@@ -300,31 +300,8 @@ jobs:
           pnpm --filter gtx-cli run bin:restore
           pnpm --filter gtx-cli run build:clean
 
-  iris-prerelease-state:
-    if: github.ref_name == 'iris'
-    name: Detect Iris prerelease state
-    runs-on: ubuntu-latest
-    outputs:
-      active: ${{ steps.prerelease.outputs.active }}
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-
-      - name: Detect Iris prerelease mode
-        id: prerelease
-        run: |
-          if [ ! -f .changeset/pre.json ]; then
-            echo 'active=false' >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          test "$(jq -r '.mode' .changeset/pre.json)" = "pre"
-          test "$(jq -r '.tag' .changeset/pre.json)" = "iris"
-          echo 'active=true' >> "$GITHUB_OUTPUT"
-
   iris-release:
-    needs: iris-prerelease-state
-    if: needs.iris-prerelease-state.outputs.active == 'true'
+    if: github.ref_name == 'iris'
     name: Iris Prerelease
     runs-on: ubuntu-latest
     environment:
@@ -332,6 +309,12 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
+
+      - name: Verify Iris prerelease mode
+        run: |
+          test -f .changeset/pre.json
+          test "$(jq -r '.mode' .changeset/pre.json)" = "pre"
+          test "$(jq -r '.tag' .changeset/pre.json)" = "iris"
 
       - uses: pnpm/action-setup@v4
         name: Install pnpm
