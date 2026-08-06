@@ -353,6 +353,7 @@ jobs:
         with:
           version: bash scripts/version-packages-iris.sh
           publish: pnpm run release
+          branch: iris
           commit: '[ci] iris release'
           title: '[ci] iris release'
         env:
