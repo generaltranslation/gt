@@ -136,7 +136,7 @@ Translation before a translation run, so content whose source text has not
 changed is reused from the Sanity version instead of being regenerated.
 
 This is **off by default**; turning it on shows an explanation of the trade-off
-first, and the choice lasts for the Studio session. Turning it on means local
+first, and the choice is remembered for that project and dataset. Turning it on means local
 content overwrites whatever General Translation holds for that source version —
 including a completed translation that has not been imported into Sanity yet.
 Import pending translations before enabling it if that matters to you.
@@ -157,3 +157,89 @@ enqueue any translation.
 
 To regenerate translations and deliberately discard existing ones for a single
 run, use **Retranslate from scratch** in the Translate All dialog.
+
+## Automatic Actions
+
+The Translate dialog on a document can refresh status, import a translation as
+soon as it lands, repoint references, and publish the result. Each is a switch
+in that dialog, and each has a plugin-level default:
+
+```ts
+gtPlugin({
+  // ...
+  autoRefresh: true, // poll for completed translations
+  autoImport: true, // import a translation as soon as it completes
+  autoPatchReferences: false, // repoint references after import
+  autoPublish: false, // publish translated documents after import
+});
+```
+
+The defaults turn on what only reads or writes drafts, and leave off anything
+that can reach readers:
+
+- `autoRefresh` only polls for status, and auto-import depends on it.
+- `autoImport` writes drafts, which are cheap to discard.
+- `autoPatchReferences` usually writes a draft too, but when a translated
+  document is already published and has no draft, the reference rewrite is
+  applied to a draft seeded from it rather than to the published document.
+  Still opt-in, because it edits documents you may consider finished.
+- `autoPublish` publishes, and turning the switch back off unpublishes nothing.
+
+These are starting points, not locks. Whatever the user sets in the Studio is
+remembered in `localStorage` for that project and dataset, and is preferred
+over the config on their next visit. The **Save local edits** toggle
+(`preserveExistingTranslations`) is remembered the same way; enabling it still
+shows its explanation first.
+
+Translated documents are always created as **drafts**. With `autoPublish` off
+they stay that way until someone publishes them — so if a translation seems
+missing after a run, check the Drafts perspective before assuming it wasn't
+created.
+
+## Browsing Translations by Locale
+
+By default a translated document sits in the same list as its source, so a
+type's list grows by one entry per locale. `gtStructureItems` groups them
+instead: each translatable type expands into a pane per locale.
+
+```ts
+import { structureTool } from 'sanity/structure';
+import { gtStructureItems } from 'gt-sanity';
+
+structureTool({
+  structure: (S, context) =>
+    S.list()
+      .title('Content')
+      .items([
+        ...gtStructureItems(S, context),
+        S.divider(),
+        ...S.documentTypeListItems(),
+      ]),
+});
+```
+
+This is opt-in: the structure tool's layout belongs to `structureTool()` in
+your Studio config, so a plugin cannot set it for you. Use `gtStructure()` for
+the whole structure when you have no other list items:
+
+```ts
+import { gtStructure } from 'gt-sanity';
+
+structureTool({ structure: gtStructure() });
+```
+
+The source pane includes documents whose language field is unset, since content
+that predates the plugin has no language. Types localized in place with
+internationalized arrays are skipped — their translations live inside the source
+document, so there is nothing to group. Pass `types` to override which types are
+grouped, and `sourceTitle` / `localeTitle` to change the pane titles.
+
+## Debug Info
+
+The Translations tool footer shows the installed plugin version and a **Debug
+info** button. It opens the plugin's effective configuration — resolved source
+and target locales, `translationLevel`, which documents are matched, field
+rules, the active preferences, and whether the secrets document was found — with
+a button to copy it for a support request.
+
+The API key is never included, only whether one is set.

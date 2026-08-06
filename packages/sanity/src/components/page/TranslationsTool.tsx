@@ -30,7 +30,9 @@ import { ImportAllDialog } from './ImportAllDialog';
 import { ImportMissingDialog } from './ImportMissingDialog';
 import { UploadExistingDialog } from './UploadExistingDialog';
 import { SaveLocalTranslationsDialog } from './SaveLocalTranslationsDialog';
+import { DebugInfoDialog } from './DebugInfoDialog';
 import { BatchProgress } from './BatchProgress';
+import { version as PACKAGE_VERSION } from '../../../package.json';
 
 const TranslationsToolContent: React.FC = () => {
   const [isTranslateAllDialogOpen, setIsTranslateAllDialogOpen] =
@@ -41,6 +43,7 @@ const TranslationsToolContent: React.FC = () => {
   const [isUploadExistingDialogOpen, setIsUploadExistingDialogOpen] =
     useState(false);
   const [isSaveLocalDialogOpen, setIsSaveLocalDialogOpen] = useState(false);
+  const [isDebugInfoDialogOpen, setIsDebugInfoDialogOpen] = useState(false);
 
   const {
     isBusy,
@@ -161,7 +164,7 @@ const TranslationsToolContent: React.FC = () => {
                   icon={RefreshIcon}
                   text='Refresh'
                   loading={isRefreshing}
-                  onClick={handleRefreshAll}
+                  onClick={() => handleRefreshAll()}
                   disabled={isRefreshing || actionsDisabled}
                 />
               </Flex>
@@ -288,13 +291,27 @@ const TranslationsToolContent: React.FC = () => {
           </Stack>
 
           <Card borderTop paddingTop={4}>
-            <Text size={1} muted>
-              For more information, see the{' '}
-              <Link href='https://dash.generaltranslation.com'>
-                General Translation Dashboard
-              </Link>
-              .
-            </Text>
+            <Flex align='center' justify='space-between' gap={3} wrap='wrap'>
+              <Text size={1} muted>
+                For more information, see the{' '}
+                <Link href='https://dash.generaltranslation.com'>
+                  General Translation Dashboard
+                </Link>
+                .
+              </Text>
+              <Flex align='center' gap={2}>
+                <Text size={1} muted>
+                  gt-sanity v{PACKAGE_VERSION}
+                </Text>
+                <Button
+                  fontSize={1}
+                  padding={2}
+                  mode='bleed'
+                  text='Debug info'
+                  onClick={() => setIsDebugInfoDialogOpen(true)}
+                />
+              </Flex>
+            </Flex>
           </Card>
         </Stack>
       </Box>
@@ -322,6 +339,10 @@ const TranslationsToolContent: React.FC = () => {
       <UploadExistingDialog
         isOpen={isUploadExistingDialogOpen}
         onClose={() => setIsUploadExistingDialogOpen(false)}
+      />
+      <DebugInfoDialog
+        isOpen={isDebugInfoDialogOpen}
+        onClose={() => setIsDebugInfoDialogOpen(false)}
       />
     </Container>
   );
