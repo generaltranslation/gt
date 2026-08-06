@@ -57,6 +57,7 @@ import {
 } from './jsx.js';
 import type { LocalExportTarget, LocalModuleRecord } from './localModules.js';
 import { parseScriptAst } from './parser.js';
+import { isKnownNonVueGTRuntime } from './runtimeModules.js';
 import {
   isAssignmentTargetWrapper,
   isBindingPattern,
@@ -815,6 +816,7 @@ function recordDynamicImportPattern(
   state: ScriptState
 ): void {
   if (pattern.type === 'VoidPattern') return;
+  if (source && isKnownNonVueGTRuntime(source)) return;
   const resolver = state.analysis.localModules;
   const modulePath =
     source && source !== 'gt-vue' && source !== 'vue' && importerFile
@@ -913,6 +915,7 @@ function registerLocalImportDeclaration(
 ): void {
   const resolver = state.analysis.localModules;
   const source = declaration.source.value;
+  if (isKnownNonVueGTRuntime(source)) return;
   const modulePath =
     resolver && importerFile
       ? resolver.resolveModule(importerFile, source)
@@ -1024,6 +1027,7 @@ function materializeLocalExport(
   unsafeCallable?: boolean;
   value?: KnownValue;
 } {
+  if (target.type === 'ordinary-external') return {};
   if (target.type === 'external') {
     return { value: knownExport(target.source, target.exportName) };
   }

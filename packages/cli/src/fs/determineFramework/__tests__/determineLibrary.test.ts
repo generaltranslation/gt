@@ -176,6 +176,44 @@ describe('determineLibrary', () => {
       expect(result.additionalModules).toContain(Libraries.GT_VUE);
     });
 
+    it('preserves a root framework when a workspace declares a higher-priority framework', () => {
+      mockExistsSync.mockImplementation(
+        (filePath) => String(filePath) === '/test-project/package.json'
+      );
+      mockReadFileSync.mockImplementation((filePath) => {
+        if (String(filePath) === '/test-project/package.json') {
+          return JSON.stringify({
+            workspaces: ['apps/*'],
+            dependencies: {
+              'gt-react': '1.0.0',
+              'gt-tanstack-start': '1.0.0',
+            },
+          });
+        }
+        return JSON.stringify({ dependencies: { 'gt-next': '1.0.0' } });
+      });
+      mockFgSync.mockReturnValue(['/test-project/apps/next/package.json']);
+
+      expect(determineLibrary().library).toBe(Libraries.GT_TANSTACK_START);
+    });
+
+    it('detects a workspace framework when the root declares none', () => {
+      mockExistsSync.mockImplementation(
+        (filePath) => String(filePath) === '/test-project/package.json'
+      );
+      mockReadFileSync.mockImplementation((filePath) =>
+        String(filePath) === '/test-project/package.json'
+          ? JSON.stringify({ workspaces: ['apps/*'] })
+          : JSON.stringify({ dependencies: { 'gt-next': '1.0.0' } })
+      );
+      mockFgSync.mockReturnValue(['/test-project/apps/next/package.json']);
+
+      expect(determineLibrary()).toEqual({
+        library: Libraries.GT_NEXT,
+        additionalModules: [],
+      });
+    });
+
     it('detects gt-vue from pnpm workspace declarations', () => {
       mockExistsSync.mockImplementation((filePath) =>
         [
@@ -406,6 +444,48 @@ describe('determineLibrary', () => {
   });
 
   describe('Python detection (integration)', () => {
+    it('prefers a root Python framework over a workspace JS framework', () => {
+      mockExistsSync.mockImplementation((filePath) =>
+        ['/test-project/package.json', '/test-project/pyproject.toml'].includes(
+          String(filePath)
+        )
+      );
+      mockReadFileSync.mockImplementation((filePath) => {
+        const filename = String(filePath);
+        if (filename === '/test-project/package.json') {
+          return JSON.stringify({ workspaces: ['apps/*'] });
+        }
+        if (filename === '/test-project/pyproject.toml') {
+          return '[project]\ndependencies = ["gt-flask"]';
+        }
+        return JSON.stringify({ dependencies: { 'gt-next': '1.0.0' } });
+      });
+      mockFgSync.mockReturnValue(['/test-project/apps/next/package.json']);
+
+      expect(determineLibrary()).toEqual({
+        library: Libraries.GT_FLASK,
+        additionalModules: [],
+      });
+    });
+
+    it('preserves a root i18next-icu module when Python is primary', () => {
+      mockExistsSync.mockImplementation((filePath) =>
+        ['/test-project/package.json', '/test-project/pyproject.toml'].includes(
+          String(filePath)
+        )
+      );
+      mockReadFileSync.mockImplementation((filePath) =>
+        String(filePath) === '/test-project/package.json'
+          ? JSON.stringify({ dependencies: { 'i18next-icu': '2.0.0' } })
+          : '[project]\ndependencies = ["gt-flask"]'
+      );
+
+      expect(determineLibrary()).toEqual({
+        library: Libraries.GT_FLASK,
+        additionalModules: ['i18next-icu'],
+      });
+    });
+
     it('detects gt-flask from pyproject.toml', () => {
       mockExistsSync.mockImplementation((path) => {
         if (String(path).endsWith('pyproject.toml')) return true;
