@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { determineLibrary } from '../../fs/determineFramework/index.js';
-import { Libraries } from '../../types/libraries.js';
+import { isInlineLibrary, Libraries } from '../../types/libraries.js';
 import { createInlineUpdatesForLibraries } from '../createInlineUpdatesForLibrary.js';
 import { linkTestVueInstallation } from '../../vue/parse/__tests__/testVueInstallation.js';
 
@@ -17,6 +17,54 @@ afterEach(() => {
 });
 
 describe('workspace inline source discovery', () => {
+  it('preserves root-only implicit defaults for pure React workspaces', async () => {
+    const projectRoot = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'gt-react-workspace-defaults-')
+    );
+    temporaryDirectories.push(projectRoot);
+    writeJson(path.join(projectRoot, 'package.json'), {
+      private: true,
+      workspaces: ['apps/*'],
+      dependencies: { 'gt-react': '0.0.0' },
+    });
+
+    fs.mkdirSync(path.join(projectRoot, 'src'), { recursive: true });
+    fs.writeFileSync(
+      path.join(projectRoot, 'src', 'Root.tsx'),
+      `import { T } from 'gt-react'; export const Root = () => <T>Root message</T>;`
+    );
+
+    const workspaceDirectory = path.join(projectRoot, 'apps', 'web');
+    fs.mkdirSync(path.join(workspaceDirectory, 'src'), { recursive: true });
+    writeJson(path.join(workspaceDirectory, 'package.json'), {
+      dependencies: { 'gt-react': '0.0.0' },
+    });
+    fs.writeFileSync(
+      path.join(workspaceDirectory, 'src', 'App.tsx'),
+      `import { T } from 'gt-react'; export const App = () => <T>Workspace message</T>;`
+    );
+    vi.spyOn(process, 'cwd').mockReturnValue(projectRoot);
+
+    const detected = determineLibrary();
+    const output = await createInlineUpdatesForLibraries(
+      [detected.library, ...detected.additionalModules].filter(isInlineLibrary),
+      false,
+      undefined,
+      {
+        autoderive: false,
+        enableAutoJsxInjection: false,
+        includeSourceCodeContext: false,
+        legacyGtReactImportSource: false,
+      },
+      { conditionNames: ['import', 'default'] }
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(output.updates.map((update) => update.source)).toEqual([
+      'Root message',
+    ]);
+  });
+
   it('extracts every framework selected from declared workspace packages', async () => {
     const projectRoot = fs.mkdtempSync(
       path.join(os.tmpdir(), 'gt-mixed-workspace-')
@@ -54,15 +102,26 @@ const gt = useGT();
 gt('Vue workspace');
 </script>`
     );
+
+    const nodeDirectory = path.join(projectRoot, 'apps', 'server');
+    fs.mkdirSync(path.join(nodeDirectory, 'src'), { recursive: true });
+    writeJson(path.join(nodeDirectory, 'package.json'), {
+      dependencies: { 'gt-node': '0.0.0' },
+    });
+    fs.writeFileSync(
+      path.join(nodeDirectory, 'src', 'server.ts'),
+      `import { msg } from 'gt-node'; export const message = msg('Node workspace');`
+    );
     vi.spyOn(process, 'cwd').mockReturnValue(projectRoot);
 
-    expect(determineLibrary()).toEqual({
+    const detected = determineLibrary();
+    expect(detected).toEqual({
       library: Libraries.GT_REACT,
-      additionalModules: [Libraries.GT_VUE],
+      additionalModules: [Libraries.GT_NODE, Libraries.GT_VUE],
     });
 
     const output = await createInlineUpdatesForLibraries(
-      [Libraries.GT_REACT, Libraries.GT_VUE],
+      [detected.library, ...detected.additionalModules].filter(isInlineLibrary),
       false,
       undefined,
       {
@@ -76,7 +135,70 @@ gt('Vue workspace');
 
     expect(output.errors).toEqual([]);
     expect(output.updates.map((update) => update.source).sort()).toEqual([
+      'Node workspace',
       'React workspace',
+      'Vue workspace',
+    ]);
+  });
+
+  it('preserves gt-node extraction in mixed Vue workspaces', async () => {
+    const projectRoot = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'gt-vue-node-workspace-')
+    );
+    temporaryDirectories.push(projectRoot);
+    linkTestVueInstallation(projectRoot);
+    writeJson(path.join(projectRoot, 'package.json'), {
+      private: true,
+      workspaces: ['apps/*'],
+    });
+
+    const vueDirectory = path.join(projectRoot, 'apps', 'vue');
+    fs.mkdirSync(path.join(vueDirectory, 'src'), { recursive: true });
+    writeJson(path.join(vueDirectory, 'package.json'), {
+      dependencies: { 'gt-vue': '0.0.0' },
+    });
+    fs.writeFileSync(
+      path.join(vueDirectory, 'src', 'App.vue'),
+      `<script setup>
+import { useGT } from 'gt-vue';
+const gt = useGT();
+gt('Vue workspace');
+</script>`
+    );
+
+    const nodeDirectory = path.join(projectRoot, 'apps', 'server');
+    fs.mkdirSync(path.join(nodeDirectory, 'src'), { recursive: true });
+    writeJson(path.join(nodeDirectory, 'package.json'), {
+      dependencies: { 'gt-node': '0.0.0' },
+    });
+    fs.writeFileSync(
+      path.join(nodeDirectory, 'src', 'server.ts'),
+      `import { msg } from 'gt-node'; export const message = msg('Node workspace');`
+    );
+    vi.spyOn(process, 'cwd').mockReturnValue(projectRoot);
+
+    const detected = determineLibrary();
+    expect(detected).toEqual({
+      library: Libraries.GT_VUE,
+      additionalModules: [Libraries.GT_NODE],
+    });
+
+    const output = await createInlineUpdatesForLibraries(
+      [detected.library, ...detected.additionalModules].filter(isInlineLibrary),
+      false,
+      undefined,
+      {
+        autoderive: false,
+        enableAutoJsxInjection: false,
+        includeSourceCodeContext: false,
+        legacyGtReactImportSource: false,
+      },
+      { conditionNames: ['import', 'default'] }
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(output.updates.map((update) => update.source).sort()).toEqual([
+      'Node workspace',
       'Vue workspace',
     ]);
   });
@@ -158,46 +280,42 @@ const gt = useGT();
   });
 
   it.skipIf(process.platform === 'win32')(
-    'preserves React workspace source symlink discovery',
+    'preserves React root source symlink discovery',
     async () => {
       const projectRoot = fs.mkdtempSync(
-        path.join(os.tmpdir(), 'gt-react-symlink-workspace-')
+        path.join(os.tmpdir(), 'gt-react-symlink-root-')
       );
       const outsideDirectory = fs.mkdtempSync(
         path.join(os.tmpdir(), 'gt-react-outside-')
       );
-      temporaryDirectories.push(projectRoot, outsideDirectory);
+      const outsideFileDirectory = fs.mkdtempSync(
+        path.join(os.tmpdir(), 'gt-react-outside-file-')
+      );
+      temporaryDirectories.push(
+        projectRoot,
+        outsideDirectory,
+        outsideFileDirectory
+      );
       writeJson(path.join(projectRoot, 'package.json'), {
-        private: true,
-        workspaces: ['apps/*'],
-      });
-
-      const directoryLinkApp = path.join(projectRoot, 'apps', 'directory');
-      fs.mkdirSync(directoryLinkApp, { recursive: true });
-      writeJson(path.join(directoryLinkApp, 'package.json'), {
         dependencies: { 'gt-react': '0.0.0' },
       });
+
       fs.writeFileSync(
         path.join(outsideDirectory, 'Directory.tsx'),
         `import { T } from 'gt-react'; export const App = () => <T>Outside directory</T>;`
       );
-      fs.symlinkSync(
-        outsideDirectory,
-        path.join(directoryLinkApp, 'src'),
-        'dir'
-      );
+      fs.symlinkSync(outsideDirectory, path.join(projectRoot, 'src'), 'dir');
 
-      const fileLinkApp = path.join(projectRoot, 'apps', 'file');
-      fs.mkdirSync(path.join(fileLinkApp, 'src'), { recursive: true });
-      writeJson(path.join(fileLinkApp, 'package.json'), {
-        dependencies: { 'gt-react': '0.0.0' },
-      });
-      const outsideFile = path.join(outsideDirectory, 'File.tsx');
+      fs.mkdirSync(path.join(projectRoot, 'components'), { recursive: true });
+      const outsideFile = path.join(outsideFileDirectory, 'File.tsx');
       fs.writeFileSync(
         outsideFile,
         `import { T } from 'gt-react'; export const App = () => <T>Outside file</T>;`
       );
-      fs.symlinkSync(outsideFile, path.join(fileLinkApp, 'src', 'App.tsx'));
+      fs.symlinkSync(
+        outsideFile,
+        path.join(projectRoot, 'components', 'App.tsx')
+      );
       vi.spyOn(process, 'cwd').mockReturnValue(projectRoot);
 
       const output = await createInlineUpdatesForLibraries(
