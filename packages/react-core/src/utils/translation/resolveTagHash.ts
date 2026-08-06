@@ -14,7 +14,16 @@ import { getI18nConfig, hashMessage } from 'gt-i18n/internal';
 export function resolveTagHash(
   ...args: Parameters<typeof hashMessage>
 ): string | undefined {
-  if (!getI18nConfig().isIdTaggingEnabled()) {
+  // Capability-check the method: I18nConfig is a first-writer-wins singleton
+  // shared across bundled package copies, so an OLDER gt-i18n/react-core copy —
+  // which has no isIdTaggingEnabled method — can win initialization. Calling it
+  // unconditionally would throw a TypeError on EVERY <T>/<Tx> render. Treat a
+  // missing method as tagging-disabled instead.
+  const config = getI18nConfig() as { isIdTaggingEnabled?: () => boolean };
+  if (
+    typeof config.isIdTaggingEnabled !== 'function' ||
+    !config.isIdTaggingEnabled()
+  ) {
     return undefined;
   }
   const hash = hashMessage(...args); // reuses args[1].$_hash when already set

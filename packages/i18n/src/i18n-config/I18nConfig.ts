@@ -159,7 +159,10 @@ export class I18nConfig extends LocaleConfig {
    * its published translation. No effect on `gt()` strings.
    */
   isIdTaggingEnabled(): boolean {
-    return !!this.runtimeConfig._tagIds;
+    // Require literal `true`: withGTConfig accepts arbitrary keys and the JSON
+    // config isn't validated for this field, so a truthy-but-malformed value
+    // (e.g. the string "false") must NOT implicitly enable DOM injection.
+    return this.runtimeConfig._tagIds === true;
   }
 
   isGTServicesEnabled(): boolean {

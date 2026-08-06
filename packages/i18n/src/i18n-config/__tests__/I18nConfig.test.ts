@@ -176,4 +176,25 @@ describe('I18nConfig', () => {
 
     expect(new I18nConfig(config).isDevHotReloadEnabled()).toBe(false);
   });
+
+  it('id-tagging is disabled by default', () => {
+    expect(new I18nConfig().isIdTaggingEnabled()).toBe(false);
+  });
+
+  it('enables id-tagging only for a literal true _tagIds', () => {
+    expect(new I18nConfig({ _tagIds: true }).isIdTaggingEnabled()).toBe(true);
+  });
+
+  it('does not enable id-tagging for truthy-but-malformed _tagIds', () => {
+    // withGTConfig accepts arbitrary keys and the JSON config isn't validated for
+    // this field, so a truthy-but-non-true value (e.g. the string "false") must
+    // NOT implicitly turn on DOM injection.
+    for (const bad of ['false', 'true', 1, {}, []]) {
+      expect(
+        new I18nConfig({
+          _tagIds: bad as unknown as boolean,
+        }).isIdTaggingEnabled()
+      ).toBe(false);
+    }
+  });
 });

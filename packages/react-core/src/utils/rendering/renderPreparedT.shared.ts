@@ -91,6 +91,17 @@ function createRenderPreparedT({
           'data-_gt-hash': hash,
         });
       }
+      // React renders nothing for null/undefined/booleans/'' — do NOT wrap those:
+      // an empty <span data-_gt-hash> would change :empty/child structure and inject
+      // an (invalid, under restricted parents) span even for an empty branch. A
+      // conditional <T> that renders no content must keep rendering no DOM.
+      if (
+        rendered == null ||
+        typeof rendered === 'boolean' ||
+        rendered === ''
+      ) {
+        return rendered;
+      }
       // No element to carry the attribute (bare text / fragment / component root)
       // → wrap in a layout-neutral span. This is the only case that injects one.
       return createElement(

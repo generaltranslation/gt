@@ -65,6 +65,24 @@ describe('renderPreparedT id-tagging', () => {
     expect(isSpan).toBe(false);
     expect(undef).toEqual(baseline);
   });
+
+  it('does NOT wrap values that render no DOM (null/undefined/booleans/"") even with a hash', () => {
+    // A conditional <T> whose branch renders nothing must keep rendering nothing —
+    // an empty <span data-_gt-hash> would change :empty/child structure and inject
+    // an invalid span under restricted parents even for an empty branch.
+    for (const empty of [null, undefined, true, false, '']) {
+      const out = renderPreparedT({
+        ...base,
+        taggedSourceChildren: empty as unknown as TaggedChildren,
+        hash: 'abc123',
+      });
+      const isSpan =
+        React.isValidElement(out) &&
+        (out as React.ReactElement).type === 'span';
+      expect(isSpan).toBe(false);
+      expect(out).toBe(empty); // returned unchanged
+    }
+  });
 });
 
 // Regression guard for the wiring that the isolated renderPreparedT tests above
@@ -73,17 +91,22 @@ describe('renderPreparedT id-tagging', () => {
 // the isolated tests stayed green. We drive RscT with an injected _renderPreparedT
 // spy and force `requiresTranslation:false` so the no-translate path is taken (no
 // i18n cache needed), then assert what actually reaches the renderer.
-const cfg = vi.hoisted(() => ({ tagIds: true }));
+const cfg = vi.hoisted(() => ({ tagIds: true, legacy: false }));
 vi.mock('gt-i18n/internal', async (importOriginal) => {
   const actual = await importOriginal<typeof import('gt-i18n/internal')>();
   return {
     ...actual, // keep the REAL hashMessage so we verify a genuine hash
-    getI18nConfig: () => ({
-      getDefaultLocale: () => 'en',
-      requiresTranslation: () => false,
-      isDevHotReloadEnabled: () => false,
-      isIdTaggingEnabled: () => cfg.tagIds,
-    }),
+    getI18nConfig: () => {
+      const c: Record<string, unknown> = {
+        getDefaultLocale: () => 'en',
+        requiresTranslation: () => false,
+        isDevHotReloadEnabled: () => false,
+      };
+      // cfg.legacy simulates an OLDER shared-config copy (predating id-tagging, so
+      // no isIdTaggingEnabled method) winning the first-writer singleton.
+      if (!cfg.legacy) c.isIdTaggingEnabled = () => cfg.tagIds;
+      return c;
+    },
   };
 });
 
@@ -159,5 +182,25 @@ describe('resolveTagHash single-hash reuse', () => {
     const out = resolveTagHash('Hello' as any, options);
     expect(out).toBeUndefined();
     expect(options.$_hash).toBeUndefined(); // pays nothing
+  });
+
+  it('treats an older shared config (no isIdTaggingEnabled method) as disabled — never throws', async () => {
+    // I18nConfig is a first-writer-wins singleton shared across bundled copies; an
+    // older copy without isIdTaggingEnabled must not crash every <T> render.
+    const { resolveTagHash } = await import('../../translation/resolveTagHash');
+    cfg.legacy = true;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const options = { $format: 'JSX' } as any;
+      let out;
+      expect(() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        out = resolveTagHash('Hello' as any, options);
+      }).not.toThrow();
+      expect(out).toBeUndefined();
+      expect(options.$_hash).toBeUndefined();
+    } finally {
+      cfg.legacy = false; // reset so later tests see the modern config
+    }
   });
 });
