@@ -14,6 +14,7 @@ import {
 import {
   createSSRApp,
   isVNode,
+  version,
   type Component,
   type Slots,
   type VNode,
@@ -23,6 +24,10 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { serializeVueChildren } from '../rendering/translateVueChildren';
 
 const temporaryDirectories: string[] = [];
+
+// Each case starts a real Vite pipeline and can exceed Vitest's 5-second
+// default when the full CI matrix is contending for CPU and filesystem I/O.
+const RUNTIME_ORACLE_TIMEOUT_MS = 15_000;
 
 const oracleSource = `
 import { defineComponent, Suspense, Transition } from 'vue';
@@ -296,12 +301,13 @@ const oracleCases: OracleCase[] = [
       { d: { ti: 'Box title' }, i: 1, t: 'InfoBox' },
       { i: 2, t: 'Transition' },
     ],
-    // Vue's Transition type is anonymous. The runtime therefore uses its
-    // deterministic C{id} fallback, while extraction retains the source tag
-    // for catalog readability. IDs and hashes must still match exactly.
+    // Vue 3.3/3.4 names this builtin while Vue 3.5 leaves it anonymous. The
+    // runtime uses a deterministic C{id} fallback only for the latter;
+    // extraction retains the source tag for readability in both cases. Names
+    // remain hash-neutral, and the exact hash assertion below is unchanged.
     runtimeSource: [
       { d: { ti: 'Box title' }, i: 1, t: 'InfoBox' },
-      { i: 2, t: 'C2' },
+      { i: 2, t: minorVersion(version) >= 5 ? 'C2' : 'Transition' },
     ],
     target: [
       {
@@ -558,7 +564,12 @@ describe.each(['development', 'production'] as const)(
         } finally {
           await loaded.close();
         }
-      }
+      },
+      RUNTIME_ORACLE_TIMEOUT_MS
     );
   }
 );
+
+function minorVersion(value: string): number {
+  return Number(value.split('.')[1]);
+}
