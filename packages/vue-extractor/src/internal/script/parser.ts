@@ -8,7 +8,15 @@ function getParserPlugins(language: string | undefined): ParserPlugin[] {
   if (normalizedLanguage === 'ts' || normalizedLanguage === 'tsx') {
     plugins.push('typescript');
   }
-  if (normalizedLanguage === 'jsx' || normalizedLanguage === 'tsx') {
+  // JavaScript files commonly contain JSX without using a .jsx extension.
+  // TypeScript retains its explicit .tsx contract to avoid interpreting type
+  // syntax as JSX.
+  if (
+    normalizedLanguage === undefined ||
+    normalizedLanguage === 'js' ||
+    normalizedLanguage === 'jsx' ||
+    normalizedLanguage === 'tsx'
+  ) {
     plugins.push('jsx');
   }
   return plugins;

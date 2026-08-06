@@ -9,16 +9,28 @@ import {
   type JavaScriptPackageManifest,
 } from './workspacePackages.js';
 
+const JAVASCRIPT_LIBRARY_PRIORITY = [
+  Libraries.GT_NEXT,
+  Libraries.GT_TANSTACK_START,
+  Libraries.GT_REACT,
+  Libraries.GT_REACT_NATIVE,
+  Libraries.GT_VUE,
+  Libraries.GT_NODE,
+  'next-intl',
+  'i18next',
+] as const satisfies readonly SupportedLibraries[];
+
 export function determineLibrary(): {
   library: SupportedLibraries;
   additionalModules: SupportedLibraries[];
 } {
-  let library: SupportedLibraries = 'base';
-  const additionalModules: SupportedLibraries[] = [];
   try {
     // Get the current working directory (where the CLI is being run)
     const cwd = process.cwd();
     const packageJsonPath = path.join(cwd, 'package.json');
+    let rootDependencies: Record<string, string> = {};
+    let rootJavaScriptLibrary: SupportedLibraries | undefined;
+    let aggregateDependencies: Record<string, string> = {};
 
     // Check if package.json exists
     if (fs.existsSync(packageJsonPath)) {
@@ -26,70 +38,98 @@ export function determineLibrary(): {
       const packageJson = JSON.parse(
         fs.readFileSync(packageJsonPath, 'utf8')
       ) as JavaScriptPackageManifest;
-      const manifests = [
-        packageJson,
-        ...readDeclaredWorkspaceManifests(cwd, packageJson),
-      ];
-      const dependencies = Object.assign(
+      rootDependencies = getJavaScriptDependencies(packageJson);
+      const manifests = readDeclaredWorkspaceManifests(cwd, packageJson);
+      aggregateDependencies = Object.assign(
         {},
-        ...manifests.map((manifest) => ({
-          ...manifest.peerDependencies,
-          ...manifest.optionalDependencies,
-          ...manifest.dependencies,
-          ...manifest.devDependencies,
-        }))
+        rootDependencies,
+        ...manifests.map(getJavaScriptDependencies)
       ) as Record<string, string>;
-
-      // Check for GT libraries in dependencies
-      if (dependencies[Libraries.GT_NEXT]) {
-        library = Libraries.GT_NEXT;
-      } else if (dependencies[Libraries.GT_TANSTACK_START]) {
-        library = Libraries.GT_TANSTACK_START;
-      } else if (dependencies[Libraries.GT_REACT]) {
-        library = Libraries.GT_REACT;
-      } else if (dependencies[Libraries.GT_REACT_NATIVE]) {
-        library = Libraries.GT_REACT_NATIVE;
-      } else if (dependencies[Libraries.GT_VUE]) {
-        library = Libraries.GT_VUE;
-      } else if (dependencies[Libraries.GT_NODE]) {
-        library = Libraries.GT_NODE;
-      } else if (dependencies['next-intl']) {
-        library = 'next-intl';
-      } else if (dependencies['i18next']) {
-        library = 'i18next';
-      }
-
-      if (dependencies['i18next-icu']) {
-        additionalModules.push('i18next-icu');
-      }
-      // Vue is selected ahead of gt-node so Vue projects receive the
-      // framework-specific CLI. Preserve the existing gt-node extraction
-      // surface when both runtimes are declared by running it as an
-      // additional inline module.
-      if (
-        library !== Libraries.GT_NODE &&
-        dependencies[Libraries.GT_VUE] &&
-        dependencies[Libraries.GT_NODE]
-      ) {
-        additionalModules.push(Libraries.GT_NODE);
-      }
-      if (library !== Libraries.GT_VUE && dependencies[Libraries.GT_VUE]) {
-        additionalModules.push(Libraries.GT_VUE);
-      }
+      rootJavaScriptLibrary = detectJavaScriptLibrary(rootDependencies);
     }
 
-    // If no JS library found, check for Python project files
-    if (library === 'base') {
-      const pythonLibrary = detectPythonLibrary(cwd);
-      if (pythonLibrary) {
-        library = pythonLibrary;
-      }
+    if (rootJavaScriptLibrary) {
+      return {
+        library: rootJavaScriptLibrary,
+        additionalModules: detectAdditionalModules(
+          rootJavaScriptLibrary,
+          aggregateDependencies
+        ),
+      };
+    }
+
+    // Root Python projects remain authoritative over unrelated JS workspaces.
+    const pythonLibrary = detectPythonLibrary(cwd);
+    if (pythonLibrary) {
+      return {
+        library: pythonLibrary,
+        additionalModules: rootDependencies['i18next-icu']
+          ? ['i18next-icu']
+          : [],
+      };
+    }
+
+    const workspaceJavaScriptLibrary = detectJavaScriptLibrary(
+      aggregateDependencies
+    );
+    if (workspaceJavaScriptLibrary) {
+      return {
+        library: workspaceJavaScriptLibrary,
+        additionalModules: detectAdditionalModules(
+          workspaceJavaScriptLibrary,
+          aggregateDependencies
+        ),
+      };
     }
 
     // Fallback to base if neither is found
-    return { library, additionalModules };
+    return { library: 'base', additionalModules: [] };
   } catch (error) {
     logger.error('Error determining framework: ' + String(error));
     return { library: 'base', additionalModules: [] };
   }
+}
+
+function getJavaScriptDependencies(
+  manifest: JavaScriptPackageManifest
+): Record<string, string> {
+  return {
+    ...manifest.peerDependencies,
+    ...manifest.optionalDependencies,
+    ...manifest.dependencies,
+    ...manifest.devDependencies,
+  };
+}
+
+function detectJavaScriptLibrary(
+  dependencies: Record<string, string>
+): SupportedLibraries | undefined {
+  return JAVASCRIPT_LIBRARY_PRIORITY.find((name) => dependencies[name]);
+}
+
+function detectAdditionalModules(
+  library: SupportedLibraries,
+  dependencies: Record<string, string>
+): SupportedLibraries[] {
+  const additionalModules: SupportedLibraries[] = [];
+
+  if (dependencies['i18next-icu']) {
+    additionalModules.push('i18next-icu');
+  }
+
+  // Vue is selected ahead of gt-node so Vue projects receive the
+  // framework-specific CLI. Preserve the existing gt-node extraction surface
+  // when both runtimes are declared by running it as an additional module.
+  if (
+    library !== Libraries.GT_NODE &&
+    dependencies[Libraries.GT_VUE] &&
+    dependencies[Libraries.GT_NODE]
+  ) {
+    additionalModules.push(Libraries.GT_NODE);
+  }
+  if (library !== Libraries.GT_VUE && dependencies[Libraries.GT_VUE]) {
+    additionalModules.push(Libraries.GT_VUE);
+  }
+
+  return additionalModules;
 }
