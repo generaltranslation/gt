@@ -84,13 +84,7 @@ export const Branch = withGTMetadata<BranchProps>(
     setup(props, { attrs, slots }) {
       return () => {
         const branch = props.branch?.toString();
-        return asFragmentRoot(
-          getBranchContent(
-            branch && !branch.startsWith('data-') ? branch : undefined,
-            attrs,
-            slots
-          )
-        );
+        return asFragmentRoot(getBranchContent(branch, attrs, slots));
       };
     },
   }),

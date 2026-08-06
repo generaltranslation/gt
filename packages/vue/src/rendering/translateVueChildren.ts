@@ -81,6 +81,17 @@ export type TranslationIdentityCache = {
   typeScopes: Map<unknown, string>;
 };
 
+/** Identities observed while constructing one complete translated render. */
+type TranslationIdentityRender = {
+  cache: TranslationIdentityCache;
+  createdExplicitScopes?: PropertyKey[];
+  createdGeneratedKeys?: string[];
+  createdTypeScopes?: unknown[];
+  explicitScopes: Set<PropertyKey>;
+  generatedKeys: Set<string>;
+  typeScopes: Set<unknown>;
+};
+
 type VNodeWithRenderMetadata = VNode & {
   ctx?: unknown;
   slotScopeIds?: string[] | null;
@@ -94,32 +105,42 @@ export function translateVueChildren(
   options: RichTranslationOptions,
   identityCache: TranslationIdentityCache = createTranslationIdentityCache()
 ): VNodeChild {
-  const source = createSourceNodes(children, identityCache);
-  if (state.locale.value === state.defaultLocale) {
-    return renderDefaultNodes(
-      source,
-      state,
-      identityCache,
-      state.defaultLocale
-    );
+  const identityRender = createTranslationIdentityRender(identityCache);
+  let rendered: VNodeChild;
+  try {
+    const source = createSourceNodes(children, identityRender);
+    if (state.locale.value === state.defaultLocale) {
+      rendered = renderDefaultNodes(
+        source,
+        state,
+        identityRender,
+        state.defaultLocale
+      );
+    } else {
+      const hash =
+        options._hash ??
+        hashSource({
+          context: options.context ?? options.$context,
+          dataFormat: 'JSX',
+          source: serializeNodes(source),
+        });
+      const target = state.getCatalog()[hash];
+      rendered =
+        target == null
+          ? renderDefaultNodes(
+              source,
+              state,
+              identityRender,
+              state.defaultLocale
+            )
+          : renderNodes(source, target, state, identityRender);
+    }
+  } catch (error) {
+    rollbackTranslationIdentityCache(identityRender);
+    throw error;
   }
-  const hash =
-    options._hash ??
-    hashSource({
-      context: options.context ?? options.$context,
-      dataFormat: 'JSX',
-      source: serializeNodes(source),
-    });
-  const target = state.getCatalog()[hash];
-  if (target == null) {
-    return renderDefaultNodes(
-      source,
-      state,
-      identityCache,
-      state.defaultLocale
-    );
-  }
-  return renderNodes(source, target, state, identityCache);
+  sweepTranslationIdentityCache(identityRender);
+  return rendered;
 }
 
 /** Creates the per-T reconciliation cache shared by each reactive render. */
@@ -133,6 +154,62 @@ export function createTranslationIdentityCache(): TranslationIdentityCache {
   };
 }
 
+/** Creates the usage ledger for one synchronous `T` render. */
+function createTranslationIdentityRender(
+  cache: TranslationIdentityCache
+): TranslationIdentityRender {
+  return {
+    cache,
+    explicitScopes: new Set(),
+    generatedKeys: new Set(),
+    typeScopes: new Set(),
+  };
+}
+
+/**
+ * Drops reconciliation identities that were absent from a completed render.
+ *
+ * An absent VNode has already left the returned tree, so Vue will remount it
+ * if it later returns. Monotonic scope counters intentionally remain intact to
+ * prevent new identities from colliding with scopes retained by this render.
+ */
+function sweepTranslationIdentityCache(
+  identityRender: TranslationIdentityRender
+): void {
+  const { cache } = identityRender;
+  for (const key of cache.explicitScopes.keys()) {
+    if (!identityRender.explicitScopes.has(key)) {
+      cache.explicitScopes.delete(key);
+    }
+  }
+  for (const key of cache.generatedKeys.keys()) {
+    if (!identityRender.generatedKeys.has(key)) {
+      cache.generatedKeys.delete(key);
+    }
+  }
+  for (const type of cache.typeScopes.keys()) {
+    if (!identityRender.typeScopes.has(type)) {
+      cache.typeScopes.delete(type);
+    }
+  }
+}
+
+/** Removes only identities first allocated by a render that did not finish. */
+function rollbackTranslationIdentityCache(
+  identityRender: TranslationIdentityRender
+): void {
+  const { cache } = identityRender;
+  for (const key of identityRender.createdExplicitScopes ?? []) {
+    cache.explicitScopes.delete(key);
+  }
+  for (const key of identityRender.createdGeneratedKeys ?? []) {
+    cache.generatedKeys.delete(key);
+  }
+  for (const type of identityRender.createdTypeScopes ?? []) {
+    cache.typeScopes.delete(type);
+  }
+}
+
 /**
  * Serializes compiled Vue slot children into the complete persisted GT source.
  *
@@ -141,24 +218,25 @@ export function createTranslationIdentityCache(): TranslationIdentityCache {
  * removes identity-only fields.
  */
 export function serializeVueChildren(children: VNode[]): JsxChildren {
+  const identityCache = createTranslationIdentityCache();
   return serializeNodes(
-    createSourceNodes(children, createTranslationIdentityCache())
+    createSourceNodes(children, createTranslationIdentityRender(identityCache))
   );
 }
 
 function createSourceNodes(
   children: unknown,
-  identityCache: TranslationIdentityCache
+  identityRender: TranslationIdentityRender
 ): SourceNode[] {
   const index = { value: 0 };
-  return visitChildren(children, index, 'root', identityCache);
+  return visitChildren(children, index, 'root', identityRender);
 }
 
 function visitChildren(
   children: unknown,
   index: { value: number },
   identityScope: string,
-  identityCache: TranslationIdentityCache,
+  identityRender: TranslationIdentityRender,
   identityOccurrences: Map<string, number> = new Map(),
   transparentKeyScope = false
 ): SourceNode[] {
@@ -169,7 +247,7 @@ function visitChildren(
           child,
           index,
           identityScope,
-          identityCache,
+          identityRender,
           identityOccurrences,
           transparentKeyScope
         )
@@ -188,8 +266,8 @@ function visitChildren(
       return visitChildren(
         fragmentChildren,
         index,
-        getExplicitIdentityScope(identityScope, children.key, identityCache),
-        identityCache,
+        getExplicitIdentityScope(identityScope, children.key, identityRender),
+        identityRender,
         new Map(),
         true
       );
@@ -198,7 +276,7 @@ function visitChildren(
       fragmentChildren,
       index,
       identityScope,
-      identityCache,
+      identityRender,
       identityOccurrences,
       transparentKeyScope
     );
@@ -208,7 +286,7 @@ function visitChildren(
   const id = index.value;
   let identity: string;
   if (children.key == null) {
-    const typeScope = getVNodeTypeScope(children.type, identityCache);
+    const typeScope = getVNodeTypeScope(children.type, identityRender);
     const occurrence = (identityOccurrences.get(typeScope) ?? 0) + 1;
     identityOccurrences.set(typeScope, occurrence);
     identity = `${identityScope}/${typeScope}/o:${occurrence}`;
@@ -216,7 +294,7 @@ function visitChildren(
     identity = getExplicitIdentityScope(
       identityScope,
       children.key,
-      identityCache
+      identityRender
     );
   }
   const metadata = getGTMetadata(children);
@@ -237,7 +315,7 @@ function visitChildren(
             transformation === 'branch' || transformation === 'plural'
               ? `${identity}/default`
               : identity,
-            identityCache
+            identityRender
           ),
     id,
     identity,
@@ -255,7 +333,7 @@ function visitChildren(
       transformation,
       id,
       identity,
-      identityCache
+      identityRender
     );
   }
   return [source];
@@ -264,13 +342,16 @@ function visitChildren(
 /** Gives each distinct Vue VNode type a stable per-T identity token. */
 function getVNodeTypeScope(
   type: unknown,
-  identityCache: TranslationIdentityCache
+  identityRender: TranslationIdentityRender
 ): string {
-  let scope = identityCache.typeScopes.get(type);
+  const { cache } = identityRender;
+  identityRender.typeScopes.add(type);
+  let scope = cache.typeScopes.get(type);
   if (!scope) {
-    identityCache.nextTypeScope += 1;
-    scope = `t:${identityCache.nextTypeScope}`;
-    identityCache.typeScopes.set(type, scope);
+    cache.nextTypeScope += 1;
+    scope = `t:${cache.nextTypeScope}`;
+    cache.typeScopes.set(type, scope);
+    (identityRender.createdTypeScopes ??= []).push(type);
   }
   return scope;
 }
@@ -279,13 +360,16 @@ function getVNodeTypeScope(
 function getExplicitIdentityScope(
   parentScope: string,
   key: PropertyKey,
-  identityCache: TranslationIdentityCache
+  identityRender: TranslationIdentityRender
 ): string {
-  let scope = identityCache.explicitScopes.get(key);
+  const { cache } = identityRender;
+  identityRender.explicitScopes.add(key);
+  let scope = cache.explicitScopes.get(key);
   if (!scope) {
-    identityCache.nextExplicitScope += 1;
-    scope = `k:${identityCache.nextExplicitScope}`;
-    identityCache.explicitScopes.set(key, scope);
+    cache.nextExplicitScope += 1;
+    scope = `k:${cache.nextExplicitScope}`;
+    cache.explicitScopes.set(key, scope);
+    (identityRender.createdExplicitScopes ??= []).push(key);
   }
   return `${parentScope}/${scope}`;
 }
@@ -357,7 +441,7 @@ function getBranches(
   transformation: 'branch' | 'plural',
   branchElementId: number,
   identity: string,
-  identityCache: TranslationIdentityCache
+  identityRender: TranslationIdentityRender
 ): Record<string, SourceNode[]> {
   const inputs = Object.create(null) as Record<string, unknown>;
   if (isSlots(vnode.children)) {
@@ -394,7 +478,7 @@ function getBranches(
           value,
           { value: branchElementId },
           `${identity}/branch:${key.length}:${key}`,
-          identityCache
+          identityRender
         ),
       ])
   );
@@ -467,12 +551,17 @@ function renderNodes(
   source: SourceNode[],
   target: JsxChildren | undefined,
   state: GTState,
-  identityCache: TranslationIdentityCache
+  identityRender: TranslationIdentityRender
 ): VNodeChild {
   if (target == null) {
     // A partial translated tree falls back within the active locale. A wholly
     // missing catalog entry is handled above using the source/default locale.
-    return renderDefaultNodes(source, state, identityCache, state.locale.value);
+    return renderDefaultNodes(
+      source,
+      state,
+      identityRender,
+      state.locale.value
+    );
   }
   if (typeof target === 'string') return target;
 
@@ -502,11 +591,11 @@ function renderNodes(
             renderDefaultNode(
               variable,
               state,
-              identityCache,
+              identityRender,
               state.locale.value
             ),
             occurrences,
-            identityCache
+            identityRender
           )
         : null;
     }
@@ -520,9 +609,9 @@ function renderNodes(
     return sourceNode
       ? keySourceResult(
           sourceNode,
-          renderElement(sourceNode, targetNode, state, identityCache),
+          renderElement(sourceNode, targetNode, state, identityRender),
           occurrences,
-          identityCache
+          identityRender
         )
       : null;
   });
@@ -540,7 +629,7 @@ function keySourceResult(
   source: SourceElement,
   rendered: VNodeChild,
   occurrences: Map<SourceElement, number>,
-  identityCache: TranslationIdentityCache
+  identityRender: TranslationIdentityRender
 ): VNode {
   const occurrence = occurrences.get(source) ?? 0;
   occurrences.set(source, occurrence + 1);
@@ -552,10 +641,13 @@ function keySourceResult(
   if (explicitKey != null) {
     key = explicitKey;
   } else {
-    let generatedKey = identityCache.generatedKeys.get(cacheKey);
+    const { cache } = identityRender;
+    identityRender.generatedKeys.add(cacheKey);
+    let generatedKey = cache.generatedKeys.get(cacheKey);
     if (!generatedKey) {
       generatedKey = Symbol(cacheKey);
-      identityCache.generatedKeys.set(cacheKey, generatedKey);
+      cache.generatedKeys.set(cacheKey, generatedKey);
+      (identityRender.createdGeneratedKeys ??= []).push(cacheKey);
     }
     key = generatedKey;
   }
@@ -576,7 +668,7 @@ function renderElement(
   source: SourceElement,
   target: JsxElement,
   state: GTState,
-  identityCache: TranslationIdentityCache
+  identityRender: TranslationIdentityRender
 ): VNodeChild {
   if (source.transformation === 'branch') {
     const branch = getBranchKey(source.vnode);
@@ -584,7 +676,7 @@ function renderElement(
       getSelectedSourceBranch(source, branch),
       getSelectedTargetBranch(target, branch),
       state,
-      identityCache
+      identityRender
     );
   }
   if (source.transformation === 'plural') {
@@ -593,7 +685,7 @@ function renderElement(
       return renderDefaultNode(
         source,
         state,
-        identityCache,
+        identityRender,
         state.locale.value
       );
     }
@@ -616,11 +708,11 @@ function renderElement(
       getSelectedSourceBranch(source, sourceBranch),
       (targetBranch && targetBranches[targetBranch]) ?? target.c,
       state,
-      identityCache
+      identityRender
     );
   }
   if (source.transformation === 'fragment') {
-    return renderNodes(source.children, target.c, state, identityCache);
+    return renderNodes(source.children, target.c, state, identityRender);
   }
   if (source.opaque) {
     const translatedProps = getTranslatedProps(target);
@@ -636,7 +728,7 @@ function renderElement(
           renderDefaultNodes(
             source.children,
             state,
-            identityCache,
+            identityRender,
             state.locale.value
           ),
           translatedProps
@@ -648,7 +740,7 @@ function renderElement(
 
   return cloneWithChildren(
     source.vnode,
-    renderNodes(source.children, target.c, state, identityCache),
+    renderNodes(source.children, target.c, state, identityRender),
     translatedProps
   );
 }
@@ -657,7 +749,7 @@ function getBranchKey(source: VNode): string | undefined {
   const branch = source.props?.branch;
   if (branch == null) return undefined;
   const key = String(branch);
-  return key && !key.startsWith('data-') ? key : undefined;
+  return key || undefined;
 }
 
 function getPluralKey(
@@ -728,7 +820,7 @@ function getTranslatedProps(target: JsxElement): Record<string, string> {
 function renderDefaultNodes(
   nodes: SourceNode[],
   state: GTState,
-  identityCache: TranslationIdentityCache,
+  identityRender: TranslationIdentityRender,
   locale: string
 ): VNodeChild[] {
   const occurrences = new Map<SourceElement, number>();
@@ -737,9 +829,9 @@ function renderDefaultNodes(
       ? node
       : keySourceResult(
           node,
-          renderDefaultNode(node, state, identityCache, locale),
+          renderDefaultNode(node, state, identityRender, locale),
           occurrences,
-          identityCache
+          identityRender
         )
   );
 }
@@ -747,7 +839,7 @@ function renderDefaultNodes(
 function renderDefaultNode(
   node: SourceNode,
   state: GTState,
-  identityCache: TranslationIdentityCache,
+  identityRender: TranslationIdentityRender,
   locale: string
 ): VNodeChild {
   if (typeof node === 'string') return node;
@@ -757,20 +849,20 @@ function renderDefaultNode(
       : node.vnode;
   }
   if (node.transformation === 'fragment') {
-    return renderDefaultNodes(node.children, state, identityCache, locale);
+    return renderDefaultNodes(node.children, state, identityRender, locale);
   }
   if (node.transformation === 'branch') {
     return renderDefaultNodes(
       getSelectedSourceBranch(node, getBranchKey(node.vnode)),
       state,
-      identityCache,
+      identityRender,
       locale
     );
   }
   if (node.transformation === 'plural') {
     const n = node.vnode.props?.n;
     if (typeof n !== 'number') {
-      return renderDefaultNodes(node.children, state, identityCache, locale);
+      return renderDefaultNodes(node.children, state, identityRender, locale);
     }
     const branch = getPluralKey(
       n,
@@ -783,14 +875,14 @@ function renderDefaultNode(
     return renderDefaultNodes(
       getSelectedSourceBranch(node, branch),
       state,
-      identityCache,
+      identityRender,
       locale
     );
   }
   if (!node.children.length) return node.vnode;
   return cloneWithChildren(
     node.vnode,
-    renderDefaultNodes(node.children, state, identityCache, locale)
+    renderDefaultNodes(node.children, state, identityRender, locale)
   );
 }
 
