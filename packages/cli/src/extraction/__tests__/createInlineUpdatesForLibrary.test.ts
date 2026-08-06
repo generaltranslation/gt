@@ -91,6 +91,24 @@ describe('createInlineUpdatesForLibrary', () => {
     expect(vueExtractorMock.createVueInlineUpdates).not.toHaveBeenCalled();
   });
 
+  it('preserves implicit React defaults when Vue is not selected', async () => {
+    await createInlineUpdatesForLibraries(
+      [Libraries.GT_REACT],
+      true,
+      undefined,
+      parsingFlags,
+      parsingOptions
+    );
+
+    expect(createInlineUpdates).toHaveBeenCalledWith(
+      Libraries.GT_REACT,
+      true,
+      undefined,
+      parsingFlags,
+      parsingOptions
+    );
+  });
+
   it('routes mixed React and Vue files without passing Vue SFCs to React', async () => {
     const patterns = ['src/**/*.{tsx,vue}'];
 

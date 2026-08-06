@@ -15,7 +15,12 @@ import loadJSON from '../fs/loadJSON.js';
 import { generateSettings } from '../config/generateSettings.js';
 import { aggregateInlineTranslations } from '../translation/stage.js';
 import { validateProject } from '../translation/validate.js';
-import { Libraries, InlineLibrary } from '../types/libraries.js';
+import {
+  Libraries,
+  InlineLibrary,
+  NODE_LIBRARIES,
+} from '../types/libraries.js';
+import { checkMonorepoVersionConsistency } from '../utils/monorepoVersionCheck.js';
 
 /**
  * Stand in for a CLI tool that does any sort of inline content translations
@@ -27,6 +32,17 @@ export class InlineCLI extends BaseCLI {
     additionalModules?: SupportedLibraries[]
   ) {
     super(command, library, additionalModules);
+
+    if (
+      library === Libraries.GT_NODE ||
+      additionalModules?.includes(Libraries.GT_NODE)
+    ) {
+      this.program.hook('preAction', (_thisCommand, actionCommand) => {
+        if (this.program.opts().skipVersionCheck) return;
+        if (actionCommand.parent?.name() === 'git') return;
+        checkMonorepoVersionConsistency(NODE_LIBRARIES);
+      });
+    }
   }
   public init() {
     this.setupStageCommand();

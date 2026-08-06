@@ -122,6 +122,75 @@
                 "translations/[locale].json"
               ]
             },
+            "parsingFlags": {
+              "type": "object",
+              "description": "Options controlling source-code extraction and development translation behavior",
+              "properties": {
+                "autoderive": {
+                  "oneOf": [
+                    { "type": "boolean" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "jsx": { "type": "boolean" },
+                        "strings": { "type": "boolean" }
+                      },
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "includeSourceCodeContext": {
+                  "type": "boolean"
+                },
+                "enableAutoJsxInjection": {
+                  "type": "boolean"
+                },
+                "legacyGtReactImportSource": {
+                  "type": "boolean"
+                },
+                "devHotReload": {
+                  "oneOf": [
+                    { "type": "boolean" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "jsx": { "type": "boolean" },
+                        "strings": { "type": "boolean" }
+                      },
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "viteConfigPath": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S",
+                  "description": "Vite config path relative to the project root"
+                },
+                "vueCompilerOptions": {
+                  "type": "object",
+                  "description": "Hash-affecting Vue template compiler options",
+                  "properties": {
+                    "whitespace": {
+                      "type": "string",
+                      "enum": ["condense", "preserve"]
+                    },
+                    "delimiters": {
+                      "type": "array",
+                      "items": [
+                        { "type": "string", "minLength": 1 },
+                        { "type": "string", "minLength": 1 }
+                      ],
+                      "additionalItems": false,
+                      "minItems": 2,
+                      "maxItems": 2
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
             "includeSourceCodeContext": {
               "type": "boolean",
               "description": "Include surrounding source code lines as context for translations. Only applies to library users that send GT JSON for translation.",
