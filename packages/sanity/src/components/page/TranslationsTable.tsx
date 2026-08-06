@@ -3,6 +3,7 @@ import { Badge, Box, Card, Flex, Spinner, Stack, Text } from '@sanity/ui';
 import { Preview, useSchema, type SanityDocument } from 'sanity';
 import { useIntentLink } from 'sanity/router';
 import { LanguageStatus } from '../shared/LanguageStatus';
+import { resolveLanguageStatusState } from '../../utils/languageStatusState';
 import { useTranslations } from '../TranslationsProvider';
 import {
   createTranslationStatusKey,
@@ -13,6 +14,7 @@ const DocumentRow: React.FC<{ document: SanityDocument }> = ({ document }) => {
   const {
     locales,
     translationStatuses,
+    pendingTranslations,
     downloadStatus,
     importedTranslations,
     handleImportDocument,
@@ -78,8 +80,11 @@ const DocumentRow: React.FC<{ document: SanityDocument }> = ({ document }) => {
                 <LanguageStatus
                   key={`${document._id}-${versionId}-${locale.localeId}`}
                   localeId={locale.localeId}
-                  progress={status?.progress || 0}
-                  isImported={isImported || isDownloaded}
+                  state={resolveLanguageStatusState({
+                    status,
+                    isImported: isImported || isDownloaded,
+                    isPending: pendingTranslations.has(key),
+                  })}
                   importFile={async () => {
                     await handleImportDocument(
                       publishedId,

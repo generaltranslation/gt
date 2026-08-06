@@ -7,11 +7,35 @@ import type {
   IgnoreFields,
   SkipFields,
   FieldLevelTranslationMode,
+  TranslationPreferences,
 } from './types';
 import { SECRETS_NAMESPACE } from '../utils/shared';
 import type { PortableTextHtmlComponents } from '@portabletext/to-html';
 import type { CustomDeserializers } from '../serialization/types';
 export const gt = new GT();
+
+/**
+ * Built-in defaults for the automatic actions.
+ *
+ * The line is whether an action can put content in front of readers, or write
+ * to something already in front of them:
+ * - `autoRefresh` only polls for status, and auto-import depends on it.
+ * - `autoImport` writes drafts, which are cheap to discard.
+ * - `autoPatchReferences` normally writes a draft too, but rewrites references
+ *   on an already-published translation when that document has no draft, so it
+ *   is opt-in.
+ * - `autoPublish` publishes, which no switch can undo.
+ */
+export const DEFAULT_TRANSLATION_PREFERENCES: TranslationPreferences = {
+  autoRefresh: true,
+  autoImport: true,
+  autoPatchReferences: false,
+  autoPublish: false,
+  // Opt-in: turning this on means Sanity overwrites whatever General
+  // Translation holds for that source version, including a completed
+  // translation that has not been imported yet.
+  preserveExistingTranslations: false,
+};
 
 export function overrideConfig(secrets: Secrets | null) {
   gt.setConfig({
@@ -37,7 +61,7 @@ export class GTConfig {
   additionalBlockDeserializers: unknown[];
   translationLevel: FieldLevelTranslationMode;
   fieldLevelDocuments: TranslateDocumentFilter[];
-  preserveExistingTranslations: boolean;
+  preferences: TranslationPreferences;
 
   private static instance: GTConfig;
   constructor(
@@ -57,7 +81,7 @@ export class GTConfig {
     additionalBlockDeserializers: unknown[] = [],
     translationLevel: FieldLevelTranslationMode = 'document',
     fieldLevelDocuments: TranslateDocumentFilter[] = [],
-    preserveExistingTranslations: boolean = false
+    preferences: TranslationPreferences = DEFAULT_TRANSLATION_PREFERENCES
   ) {
     this.secretsNamespace = secretsNamespace;
     this.languageField = languageField;
@@ -75,7 +99,7 @@ export class GTConfig {
     this.additionalBlockDeserializers = additionalBlockDeserializers;
     this.translationLevel = translationLevel;
     this.fieldLevelDocuments = fieldLevelDocuments;
-    this.preserveExistingTranslations = preserveExistingTranslations;
+    this.preferences = preferences;
   }
 
   static getInstance() {
@@ -117,7 +141,7 @@ export class GTConfig {
     additionalBlockDeserializers: unknown[] = [],
     translationLevel: FieldLevelTranslationMode = 'document',
     fieldLevelDocuments: TranslateDocumentFilter[] = [],
-    preserveExistingTranslations: boolean = false
+    preferences: TranslationPreferences = DEFAULT_TRANSLATION_PREFERENCES
   ) {
     this.secretsNamespace = secretsNamespace;
     this.languageField = languageField;
@@ -135,7 +159,7 @@ export class GTConfig {
     this.additionalBlockDeserializers = additionalBlockDeserializers;
     this.translationLevel = translationLevel;
     this.fieldLevelDocuments = fieldLevelDocuments;
-    this.preserveExistingTranslations = preserveExistingTranslations;
+    this.preferences = preferences;
   }
 
   getSecretsNamespace() {
@@ -188,8 +212,8 @@ export class GTConfig {
   getFieldLevelDocuments() {
     return this.fieldLevelDocuments;
   }
-  getPreserveExistingTranslations() {
-    return this.preserveExistingTranslations;
+  getPreferences() {
+    return this.preferences;
   }
 }
 export const pluginConfig = GTConfig.getInstance();
