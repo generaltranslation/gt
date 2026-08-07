@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
   createPythonInlineUpdates: vi.fn(),
   extractFromVueProject: vi.fn(),
   mergeVueProjectExtraction: vi.fn(),
-  inspectVueProject: vi.fn(),
+  inspectVueProjectAsync: vi.fn(),
   readVueSfcExclusionPatterns: vi.fn(),
   projectModuleLoads: 0,
 }));
@@ -25,7 +25,7 @@ vi.mock('@generaltranslation/vue-extractor/project', () => {
 });
 
 vi.mock('@generaltranslation/vue-extractor/inspect', () => ({
-  inspectVueProject: mocks.inspectVueProject,
+  inspectVueProjectAsync: mocks.inspectVueProjectAsync,
   readVueSfcExclusionPatterns: mocks.readVueSfcExclusionPatterns,
 }));
 
@@ -68,7 +68,7 @@ describe('extractInlineFromProject', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.readVueSfcExclusionPatterns.mockReturnValue([]);
-    mocks.inspectVueProject.mockReturnValue({
+    mocks.inspectVueProjectAsync.mockResolvedValue({
       projectRoot: '/fixture',
       rootOwnsVue: false,
       hasVueScopes: false,
@@ -104,9 +104,90 @@ describe('extractInlineFromProject', () => {
       parsingFlags,
       parsingOptions
     );
-    expect(mocks.inspectVueProject).toHaveBeenCalledOnce();
+    expect(mocks.inspectVueProjectAsync).toHaveBeenCalledOnce();
     expect(mocks.projectModuleLoads).toBe(0);
     expect(mocks.extractFromVueProject).not.toHaveBeenCalled();
+  });
+
+  it('runs default historical extraction while workspace inspection is pending', async () => {
+    const inspection = deferred<{
+      projectRoot: string;
+      rootOwnsVue: boolean;
+      hasVueScopes: boolean;
+    }>();
+    const historicalResult = {
+      updates: [update('React', 'react-hash', ['src/App.tsx'])],
+      errors: [],
+      warnings: [],
+    };
+    mocks.inspectVueProjectAsync.mockReturnValue(inspection.promise);
+    mocks.createInlineUpdates.mockResolvedValue(historicalResult);
+
+    const resultPromise = extractInlineFromProject(
+      Libraries.GT_REACT,
+      false,
+      undefined,
+      parsingFlags,
+      parsingOptions
+    );
+
+    await vi.waitFor(() => {
+      expect(mocks.createInlineUpdates).toHaveBeenCalledOnce();
+    });
+    inspection.resolve({
+      projectRoot: '/fixture',
+      rootOwnsVue: false,
+      hasVueScopes: false,
+    });
+
+    await expect(resultPromise).resolves.toBe(historicalResult);
+  });
+
+  it('waits for workspace inspection before partitioning explicit patterns', async () => {
+    const inspection = deferred<{
+      projectRoot: string;
+      rootOwnsVue: boolean;
+      hasVueScopes: boolean;
+    }>();
+    mocks.inspectVueProjectAsync.mockReturnValue(inspection.promise);
+    mocks.readVueSfcExclusionPatterns.mockReturnValue(['!src/App.vue']);
+    mocks.createInlineUpdates.mockResolvedValue({
+      updates: [],
+      errors: [],
+      warnings: [],
+    });
+    mocks.extractFromVueProject.mockResolvedValue({
+      updates: [],
+      errors: [],
+      warnings: [],
+    });
+
+    const resultPromise = extractInlineFromProject(
+      Libraries.GT_REACT,
+      false,
+      patterns,
+      parsingFlags,
+      parsingOptions
+    );
+
+    await vi.waitFor(() => {
+      expect(mocks.inspectVueProjectAsync).toHaveBeenCalledOnce();
+    });
+    expect(mocks.createInlineUpdates).not.toHaveBeenCalled();
+    inspection.resolve({
+      projectRoot: '/fixture',
+      rootOwnsVue: true,
+      hasVueScopes: true,
+    });
+    await resultPromise;
+
+    expect(mocks.createInlineUpdates).toHaveBeenCalledWith(
+      Libraries.GT_REACT,
+      false,
+      [...patterns, '!src/App.vue'],
+      parsingFlags,
+      parsingOptions
+    );
   });
 
   it.each([
@@ -175,7 +256,7 @@ describe('extractInlineFromProject', () => {
 
   it('partitions explicit SFCs owned by a discovered Vue scope', async () => {
     mocks.readVueSfcExclusionPatterns.mockReturnValue(['!src/App.vue']);
-    mocks.inspectVueProject.mockReturnValue({
+    mocks.inspectVueProjectAsync.mockResolvedValue({
       projectRoot: '/fixture',
       rootOwnsVue: true,
       hasVueScopes: true,
@@ -230,7 +311,7 @@ describe('extractInlineFromProject', () => {
       rootOwnsVue: false,
       hasVueScopes: true,
     } as const;
-    mocks.inspectVueProject.mockReturnValue(inspection);
+    mocks.inspectVueProjectAsync.mockResolvedValue(inspection);
     mocks.createInlineUpdates.mockResolvedValue({
       updates: [update('Legacy React', 'react-hash', ['src/Legacy.vue'])],
       errors: [],
@@ -263,7 +344,7 @@ describe('extractInlineFromProject', () => {
   });
 
   it('appends Vue results while preserving primary ordering and combining diagnostics', async () => {
-    mocks.inspectVueProject.mockReturnValue({
+    mocks.inspectVueProjectAsync.mockResolvedValue({
       projectRoot: '/fixture',
       rootOwnsVue: true,
       hasVueScopes: true,
@@ -338,3 +419,14 @@ describe('extractInlineFromProject', () => {
     expect(result).toEqual(vueResult);
   });
 });
+
+function deferred<T>(): {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+} {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
+}

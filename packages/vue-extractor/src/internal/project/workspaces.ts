@@ -7,6 +7,8 @@ import {
   type JavaScriptPackageManifest,
 } from './manifest.js';
 
+const ASYNC_WORKSPACE_READ_CONCURRENCY = 64;
+
 /** A validated workspace package and its parsed manifest. */
 export type DeclaredWorkspacePackage = {
   directory: string;
@@ -72,6 +74,7 @@ export function readDeclaredWorkspacePackages(
   } catch {
     return cacheWorkspacePackages(cache, cacheKey, manifestWorkspaces, []);
   }
+  packagePaths.sort(comparePaths);
 
   const rootPackagePath = path.resolve(cwd, 'package.json');
   const packages = packagePaths.flatMap((packagePath) => {
@@ -97,6 +100,92 @@ export function readDeclaredWorkspacePackages(
       ? [{ directory: path.dirname(absolutePath), manifest }]
       : [];
   });
+  return cacheWorkspacePackages(cache, cacheKey, manifestWorkspaces, packages);
+}
+
+/**
+ * Reads declared workspace packages without blocking on every manifest.
+ *
+ * The returned packages and cache entry are identical to the synchronous
+ * implementation. Project inspection can populate this cache concurrently
+ * with a host framework's existing extraction, then reuse the established
+ * synchronous ownership logic without traversing the workspace twice.
+ */
+export async function readDeclaredWorkspacePackagesAsync(
+  cwd: string,
+  rootManifest: JavaScriptPackageManifest,
+  cache: WorkspaceDiscoveryCache
+): Promise<DeclaredWorkspacePackage[]> {
+  const cacheKey = path.resolve(cwd);
+  const manifestWorkspaces = JSON.stringify(rootManifest.workspaces ?? null);
+  const cached = cache.get(cacheKey);
+  if (cached?.manifestWorkspaces === manifestWorkspaces) {
+    return cached.packages;
+  }
+
+  const pnpmPatterns = await getPnpmWorkspacePatternsAsync(cwd);
+  const patterns =
+    pnpmPatterns ?? getPackageJsonWorkspacePatterns(rootManifest);
+  const manifestPatterns = [...new Set(patterns.map(toManifestPattern))].filter(
+    (pattern): pattern is string => pattern !== null
+  );
+  if (!manifestPatterns.some((pattern) => !pattern.startsWith('!'))) {
+    return cacheWorkspacePackages(cache, cacheKey, manifestWorkspaces, []);
+  }
+
+  const realRoot = await readRealPathAsync(cwd);
+  if (!realRoot) {
+    return cacheWorkspacePackages(cache, cacheKey, manifestWorkspaces, []);
+  }
+
+  let packagePaths: string[];
+  try {
+    packagePaths = await fg(manifestPatterns, {
+      absolute: true,
+      cwd,
+      followSymbolicLinks: false,
+      ignore: ['**/node_modules/**'],
+      onlyFiles: true,
+      unique: true,
+    });
+  } catch {
+    return cacheWorkspacePackages(cache, cacheKey, manifestWorkspaces, []);
+  }
+  packagePaths.sort(comparePaths);
+
+  const rootPackagePath = path.resolve(cwd, 'package.json');
+  const packageResults = await mapWithConcurrency(
+    packagePaths,
+    ASYNC_WORKSPACE_READ_CONCURRENCY,
+    async (packagePath) => {
+      const absolutePath = path.resolve(packagePath);
+      if (
+        absolutePath === rootPackagePath ||
+        !isWithinRoot(cwd, absolutePath) ||
+        absolutePath.split(path.sep).includes('node_modules')
+      ) {
+        return undefined;
+      }
+
+      const realPackagePath = await readRealPathAsync(absolutePath);
+      if (
+        !realPackagePath ||
+        !isWithinRoot(realRoot, realPackagePath) ||
+        realPackagePath.split(path.sep).includes('node_modules')
+      ) {
+        return undefined;
+      }
+      const manifest =
+        await readJavaScriptPackageManifestAsync(realPackagePath);
+      return manifest
+        ? { directory: path.dirname(absolutePath), manifest }
+        : undefined;
+    }
+  );
+  const packages = packageResults.filter(
+    (workspacePackage): workspacePackage is DeclaredWorkspacePackage =>
+      workspacePackage !== undefined
+  );
   return cacheWorkspacePackages(cache, cacheKey, manifestWorkspaces, packages);
 }
 
@@ -148,6 +237,28 @@ function getPnpmWorkspacePatterns(cwd: string): string[] | undefined {
   }
 }
 
+async function getPnpmWorkspacePatternsAsync(
+  cwd: string
+): Promise<string[] | undefined> {
+  const workspacePath = path.join(cwd, 'pnpm-workspace.yaml');
+  if (!fs.existsSync(workspacePath)) return undefined;
+
+  try {
+    const parsed = parseYaml(
+      await fs.promises.readFile(workspacePath, 'utf8')
+    ) as unknown;
+    if (parsed == null) return [];
+    if (!isRecord(parsed)) return [];
+    if (parsed.packages == null) return [];
+    if (!Array.isArray(parsed.packages)) return [];
+    return parsed.packages.filter(
+      (pattern): pattern is string => typeof pattern === 'string'
+    );
+  } catch {
+    return [];
+  }
+}
+
 function toManifestPattern(pattern: string): string | null {
   const trimmed = pattern.trim();
   const negated = trimmed.startsWith('!');
@@ -186,6 +297,50 @@ function readRealPath(filePath: string): string | undefined {
   }
 }
 
+async function readRealPathAsync(
+  filePath: string
+): Promise<string | undefined> {
+  try {
+    return await fs.promises.realpath(filePath);
+  } catch {
+    return undefined;
+  }
+}
+
+async function readJavaScriptPackageManifestAsync(
+  packagePath: string
+): Promise<JavaScriptPackageManifest | undefined> {
+  try {
+    const parsed = JSON.parse(
+      await fs.promises.readFile(packagePath, 'utf8')
+    ) as unknown;
+    return isRecord(parsed) ? (parsed as JavaScriptPackageManifest) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Maps filesystem work concurrently without exhausting file descriptors. */
+async function mapWithConcurrency<Input, Output>(
+  values: readonly Input[],
+  concurrency: number,
+  mapper: (value: Input) => Promise<Output>
+): Promise<Output[]> {
+  const results = Array.from({ length: values.length }) as Output[];
+  let nextIndex = 0;
+  const worker = async () => {
+    while (nextIndex < values.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      results[index] = await mapper(values[index]!);
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, values.length) }, () => worker())
+  );
+  return results;
+}
+
 function isWithinRoot(root: string, candidate: string): boolean {
   const relativePath = path.relative(path.resolve(root), candidate);
   return (
@@ -198,4 +353,8 @@ function isWithinRoot(root: string, candidate: string): boolean {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function comparePaths(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
 }

@@ -53,6 +53,14 @@ describe('isVueSfcSource', () => {
       '<T>Message</T>; <template><T>Nested</T></template>;',
     ],
     [
+      'a leading standard-named JSX expression followed by module syntax',
+      "<template><T>Message</T></template>; import { T } from 'gt-react';",
+    ],
+    [
+      'a directive before a standard-named JSX expression',
+      "'Copyright 2026'; <template><T>Message</T></template>; import { T } from 'gt-react';",
+    ],
+    [
       'a parenthesized standard-named JSX expression',
       '(<template><T>Message</T></template>);',
     ],

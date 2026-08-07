@@ -7,6 +7,7 @@ import {
   readVueSfcExclusionPatterns,
 } from '../../inspect.js';
 import { extractFromVueProject } from '../../project.js';
+import { parseLocalDependencyPath } from '../project/manifest.js';
 import {
   createProjectFixture,
   linkInstalledVue,
@@ -64,7 +65,7 @@ describe('detectVueProject', () => {
           name: 'gt-vue',
           version: '0.1.0',
           type: 'module',
-          main: 'index.js',
+          exports: { '.': { import: './index.js' } },
         }),
         'node_modules/gt-vue/index.js': 'export const T = {}\n',
       });
@@ -237,6 +238,181 @@ import { WrapperT } from '@fixture/root-vue-wrapper';
     ]);
   });
 
+  it.each(['dependencies', 'devDependencies'] as const)(
+    'detects a root that consumes a local gt-vue wrapper through %s',
+    (field) => {
+      const root = createFixture({
+        'package.json': JSON.stringify({
+          name: '@fixture/docs',
+          private: true,
+          workspaces: ['packages/*'],
+          [field]: { '@fixture/vue-wrapper': 'workspace:*' },
+        }),
+        'packages/vue-wrapper/package.json': JSON.stringify({
+          name: '@fixture/vue-wrapper',
+          version: '1.0.0',
+          dependencies: { 'gt-vue': 'workspace:*' },
+        }),
+      });
+      linkWorkspaceBinding(
+        root,
+        '',
+        '@fixture/vue-wrapper',
+        'packages/vue-wrapper'
+      );
+
+      expect(detectVueProject(root)).toBe(true);
+      expect(inspectVueProject(root)).toMatchObject({
+        rootOwnsVue: true,
+        hasVueScopes: true,
+      });
+    }
+  );
+
+  it('keeps a local development-only gt-vue owner scoped to itself', async () => {
+    const root = createFixture({
+      'package.json': JSON.stringify({
+        name: '@fixture/file-only-root',
+        private: true,
+        workspaces: ['packages/*'],
+        dependencies: { ordinary: 'workspace:*' },
+      }),
+      'app.vue': translatableSfc('Unowned root message'),
+      'packages/ordinary/package.json': JSON.stringify({
+        name: 'ordinary',
+        version: '1.0.0',
+        devDependencies: { 'gt-vue': '*' },
+      }),
+      'packages/ordinary/src/App.vue': translatableSfc(
+        'Development owner message'
+      ),
+    });
+    linkWorkspaceBinding(root, '', 'ordinary', 'packages/ordinary');
+    linkInstalledVue(root);
+
+    expect(detectVueProject(root)).toBe(false);
+    expect(inspectVueProject(root)).toMatchObject({
+      rootOwnsVue: false,
+      hasVueScopes: true,
+    });
+    const output = await extractFromVueProject({ cwd: root });
+
+    expect(output.errors).toEqual([]);
+    expect(output.updates.map(({ source }) => source)).toEqual([
+      'Development owner message',
+    ]);
+  });
+
+  it('does not propagate a wrapper consumer reached only through a development edge', async () => {
+    const root = createFixture({
+      'package.json': JSON.stringify({
+        name: '@fixture/file-only-root',
+        private: true,
+        workspaces: ['packages/*'],
+        dependencies: { middle: 'workspace:*' },
+      }),
+      'app.vue': translatableSfc('Unowned root message'),
+      'packages/wrapper/package.json': JSON.stringify({
+        name: 'wrapper',
+        version: '1.0.0',
+        dependencies: { 'gt-vue': '*' },
+      }),
+      'packages/middle/package.json': JSON.stringify({
+        name: 'middle',
+        version: '1.0.0',
+        devDependencies: { wrapper: 'workspace:*' },
+      }),
+      'packages/middle/src/App.vue': translatableSfc(
+        'Development consumer message'
+      ),
+    });
+    linkWorkspaceBinding(root, '', 'middle', 'packages/middle');
+    linkWorkspaceBinding(
+      root,
+      'packages/middle',
+      'wrapper',
+      'packages/wrapper'
+    );
+    linkInstalledVue(root);
+
+    expect(detectVueProject(root)).toBe(false);
+    expect(inspectVueProject(root)).toMatchObject({
+      rootOwnsVue: false,
+      hasVueScopes: true,
+    });
+    const output = await extractFromVueProject({ cwd: root });
+
+    expect(output.errors).toEqual([]);
+    expect(output.updates.map(({ source }) => source)).toEqual([
+      'Development consumer message',
+    ]);
+  });
+
+  it.each(['file:', 'link:', 'portal:'])(
+    'extracts a root that consumes an explicit %s wrapper outside workspaces',
+    async (protocol) => {
+      const root = createFixture({
+        'package.json': JSON.stringify({
+          name: '@fixture/docs',
+          private: true,
+          dependencies: {
+            '@fixture/vue-wrapper': `${protocol}./vendor/vue-wrapper`,
+          },
+        }),
+        'vendor/vue-wrapper/package.json': JSON.stringify({
+          name: '@fixture/vue-wrapper',
+          version: '1.0.0',
+          dependencies: { 'gt-vue': '*' },
+        }),
+        'vendor/vue-wrapper/index.js':
+          "export { T as WrapperT } from 'gt-vue';\n",
+        'src/App.vue': `<script setup>
+import { WrapperT } from '@fixture/vue-wrapper';
+</script>
+<template><WrapperT>Local wrapper root message</WrapperT></template>`,
+      });
+      linkWorkspaceBinding(
+        root,
+        '',
+        '@fixture/vue-wrapper',
+        'vendor/vue-wrapper'
+      );
+      linkInstalledVue(root);
+
+      expect(detectVueProject(root)).toBe(true);
+      expect(inspectVueProject(root)).toMatchObject({
+        rootOwnsVue: true,
+        hasVueScopes: true,
+      });
+      const output = await extractFromVueProject({ cwd: root });
+
+      expect(output.errors).toEqual([]);
+      expect(output.updates.map(({ source }) => source)).toEqual([
+        'Local wrapper root message',
+      ]);
+    }
+  );
+
+  it.each(['dependencies', 'devDependencies'] as const)(
+    'does not classify a root from an external package %s on gt-vue',
+    (field) => {
+      const root = createFixture({
+        'package.json': JSON.stringify({
+          name: 'file-only-root',
+          dependencies: { ordinary: '1.0.0' },
+        }),
+        'node_modules/ordinary/package.json': JSON.stringify({
+          name: 'ordinary',
+          version: '1.0.0',
+          [field]: { 'gt-vue': '1.0.0' },
+        }),
+        'node_modules/ordinary/index.js': 'export const ordinary = true;\n',
+      });
+
+      expect(detectVueProject(root)).toBe(false);
+    }
+  );
+
   it('does not select consumers whose range excludes the local wrapper', async () => {
     const root = createFixture({
       'package.json': JSON.stringify({
@@ -262,7 +438,14 @@ import { WrapperT } from '@fixture/root-vue-wrapper';
     expect(output).toEqual({ updates: [], errors: [], warnings: [] });
   });
 
-  it.each(['^1.0.0', 'workspace:^', 'workspace:*'])(
+  it.each([
+    '^1.0.0',
+    'latest',
+    'workspace:^',
+    'workspace:*',
+    'workspace:',
+    'workspace:latest',
+  ])(
     'selects a consumer whose %s range includes the local wrapper',
     async (specifier) => {
       const root = createFixture({
@@ -282,6 +465,14 @@ import { WrapperT } from '@fixture/root-vue-wrapper';
         }),
         'apps/docs/src/App.vue': translatableSfc('Compatible wrapper version'),
       });
+      if (!specifier.startsWith('workspace:')) {
+        linkWorkspaceBinding(
+          root,
+          'apps/docs',
+          '@fixture/vue-wrapper',
+          'packages/vue-wrapper'
+        );
+      }
       linkInstalledVue(root);
 
       const output = await extractFromVueProject({ cwd: root });
@@ -293,8 +484,47 @@ import { WrapperT } from '@fixture/root-vue-wrapper';
     }
   );
 
+  it('does not select a compatible bare range without an installed local binding', async () => {
+    const root = createFixture({
+      'package.json': JSON.stringify({
+        name: 'workspace-root',
+        private: true,
+        workspaces: ['packages/*', 'apps/*'],
+      }),
+      'packages/vue-wrapper/package.json': JSON.stringify({
+        name: '@fixture/vue-wrapper',
+        version: '1.4.0',
+        dependencies: { 'gt-vue': 'workspace:*' },
+      }),
+      'apps/docs/package.json': JSON.stringify({
+        name: '@fixture/docs',
+        dependencies: { '@fixture/vue-wrapper': '^1.0.0' },
+      }),
+      'apps/docs/src/App.vue': translatableSfc(
+        'Registry-selected wrapper version'
+      ),
+      'apps/docs/node_modules/@fixture/vue-wrapper/package.json':
+        JSON.stringify({
+          name: '@fixture/vue-wrapper',
+          version: '1.4.0',
+          type: 'module',
+          exports: './index.js',
+        }),
+      'apps/docs/node_modules/@fixture/vue-wrapper/index.js':
+        "export { T as WrapperT } from 'gt-vue';\n",
+    });
+    linkInstalledVue(root);
+
+    await expect(extractFromVueProject({ cwd: root })).resolves.toEqual({
+      updates: [],
+      errors: [],
+      warnings: [],
+    });
+  });
+
   it.each([
     ['*', false],
+    ['>=0.0.0', false],
     ['^1.0.0-beta.1', true],
     ['workspace:*', true],
   ])(
@@ -317,6 +547,14 @@ import { WrapperT } from '@fixture/root-vue-wrapper';
         }),
         'apps/docs/src/App.vue': translatableSfc('Prerelease wrapper message'),
       });
+      if (!specifier.startsWith('workspace:')) {
+        linkWorkspaceBinding(
+          root,
+          'apps/docs',
+          '@fixture/vue-wrapper',
+          'packages/vue-wrapper'
+        );
+      }
       linkInstalledVue(root);
 
       const output = await extractFromVueProject({ cwd: root });
@@ -325,6 +563,152 @@ import { WrapperT } from '@fixture/root-vue-wrapper';
       expect(output.updates.map(({ source }) => source)).toEqual(
         selected ? ['Prerelease wrapper message'] : []
       );
+    }
+  );
+
+  it.each([
+    ['vue-alias', 'workspace:@fixture/vue-wrapper@*', true],
+    ['@fixture/vue-alias', 'workspace:@fixture/vue-wrapper@^1.0.0', true],
+    ['relative-alias', 'workspace:../../packages/vue-wrapper', true],
+    ['tagged-alias', 'workspace:@fixture/vue-wrapper@latest', true],
+    ['stale-alias', 'workspace:@fixture/vue-wrapper@^2.0.0', false],
+  ])(
+    'selects a consumer of workspace alias %s',
+    async (bindingName, specifier, selected) => {
+      const root = createFixture({
+        'package.json': JSON.stringify({
+          name: 'workspace-root',
+          private: true,
+          workspaces: ['packages/*', 'apps/*'],
+        }),
+        'packages/vue-wrapper/package.json': JSON.stringify({
+          name: '@fixture/vue-wrapper',
+          version: '1.4.0',
+          dependencies: { 'gt-vue': 'workspace:*' },
+        }),
+        'packages/vue-wrapper/index.js':
+          "export { T as WrapperT } from 'gt-vue';\n",
+        'apps/docs/package.json': JSON.stringify({
+          name: '@fixture/docs',
+          dependencies: { [bindingName]: specifier },
+        }),
+        'apps/docs/src/App.vue': `<script setup>
+import { WrapperT } from '${bindingName}';
+</script>
+<template><WrapperT>Workspace alias message</WrapperT></template>`,
+      });
+      linkWorkspaceBinding(
+        root,
+        'apps/docs',
+        bindingName,
+        'packages/vue-wrapper'
+      );
+      linkInstalledVue(root);
+
+      const output = await extractFromVueProject({ cwd: root });
+
+      expect(output.errors).toEqual([]);
+      expect(output.updates.map(({ source }) => source)).toEqual(
+        selected ? ['Workspace alias message'] : []
+      );
+    }
+  );
+
+  it.each([
+    ['npm:@fixture/vue-wrapper@^1.0.0', true],
+    ['npm:@fixture/vue-wrapper', true],
+    ['npm:@fixture/vue-wrapper@latest', true],
+    ['npm:@fixture/vue-wrapper@^2.0.0', false],
+  ])(
+    'validates the installed npm alias range %s',
+    async (specifier, selected) => {
+      const bindingName = 'vue-alias';
+      const root = createFixture({
+        'package.json': JSON.stringify({
+          name: 'workspace-root',
+          private: true,
+          workspaces: ['packages/*', 'apps/*'],
+        }),
+        'packages/vue-wrapper/package.json': JSON.stringify({
+          name: '@fixture/vue-wrapper',
+          version: '1.4.0',
+          dependencies: { 'gt-vue': 'workspace:*' },
+        }),
+        'packages/vue-wrapper/index.js':
+          "export { T as WrapperT } from 'gt-vue';\n",
+        'apps/docs/package.json': JSON.stringify({
+          name: '@fixture/docs',
+          dependencies: { [bindingName]: specifier },
+        }),
+        'apps/docs/src/App.vue': `<script setup>
+import { WrapperT } from '${bindingName}';
+</script>
+<template><WrapperT>Npm alias message</WrapperT></template>`,
+      });
+      linkWorkspaceBinding(
+        root,
+        'apps/docs',
+        bindingName,
+        'packages/vue-wrapper'
+      );
+      linkInstalledVue(root);
+
+      const output = await extractFromVueProject({ cwd: root });
+
+      expect(output.errors).toEqual([]);
+      expect(output.updates.map(({ source }) => source)).toEqual(
+        selected ? ['Npm alias message'] : []
+      );
+    }
+  );
+
+  it.each([
+    ['@fixture/vue-wrapper', "'@fixture/vue-wrapper': ^1.0.0"],
+    ['vue-alias', 'vue-alias: npm:@fixture/vue-wrapper@^1.0.0'],
+  ])(
+    'selects the local catalog binding %s',
+    async (bindingName, catalogEntry) => {
+      const root = createFixture({
+        'package.json': JSON.stringify({
+          name: 'workspace-root',
+          private: true,
+        }),
+        'pnpm-workspace.yaml': `packages:
+  - 'packages/*'
+  - 'apps/*'
+catalog:
+  ${catalogEntry}
+`,
+        'packages/vue-wrapper/package.json': JSON.stringify({
+          name: '@fixture/vue-wrapper',
+          version: '1.4.0',
+          dependencies: { 'gt-vue': 'workspace:*' },
+        }),
+        'packages/vue-wrapper/index.js':
+          "export { T as WrapperT } from 'gt-vue';\n",
+        'apps/docs/package.json': JSON.stringify({
+          name: '@fixture/docs',
+          dependencies: { [bindingName]: 'catalog:' },
+        }),
+        'apps/docs/src/App.vue': `<script setup>
+import { WrapperT } from '${bindingName}';
+</script>
+<template><WrapperT>Catalog-selected wrapper</WrapperT></template>`,
+      });
+      linkWorkspaceBinding(
+        root,
+        'apps/docs',
+        bindingName,
+        'packages/vue-wrapper'
+      );
+      linkInstalledVue(root);
+
+      const output = await extractFromVueProject({ cwd: root });
+
+      expect(output.errors).toEqual([]);
+      expect(output.updates.map(({ source }) => source)).toEqual([
+        'Catalog-selected wrapper',
+      ]);
     }
   );
 
@@ -384,11 +768,26 @@ import { WrapperT } from '@fixture/root-vue-wrapper';
         dependencies: { 'gt-vue': 'workspace:*' },
       }),
     });
+    linkWorkspaceBinding(
+      root,
+      '',
+      '@fixture/vue-wrapper',
+      'packages/vue-wrapper'
+    );
     linkInstalledVue(root);
 
+    expect(detectVueProject(root)).toBe(false);
     const output = await extractFromVueProject({ cwd: root });
 
     expect(output).toEqual({ updates: [], errors: [], warnings: [] });
+  });
+
+  it.each([
+    ['workspace:.', '.'],
+    ['workspace:..', '..'],
+    ['workspace:../wrapper', '../wrapper'],
+  ])('parses the local workspace path %s', (specifier, localPath) => {
+    expect(parseLocalDependencyPath(specifier)).toBe(localPath);
   });
 
   it('does not select installed optional Vue workspace integrations', async () => {
@@ -414,7 +813,7 @@ import { WrapperT } from '@fixture/root-vue-wrapper';
         name: 'gt-vue',
         version: '0.1.0',
         type: 'module',
-        main: 'index.js',
+        exports: { '.': { import: './index.js' } },
       }),
       'node_modules/gt-vue/index.js': 'export const T = {}\n',
     });
@@ -470,7 +869,8 @@ import { WrapperT } from '@fixture/root-vue-wrapper';
       'packages/vue-wrapper/package.json': JSON.stringify({
         name: '@fixture/vue-wrapper',
         version: '1.0.0',
-        main: 'index.js',
+        type: 'module',
+        exports: { '.': { import: './index.js' } },
         dependencies: { 'gt-vue': '*' },
       }),
       'packages/vue-wrapper/index.js':
@@ -494,6 +894,78 @@ import { WrapperT } from '@fixture/vue-wrapper';
     expect(output.errors).toEqual([]);
     expect(output.updates.map(({ source }) => source)).toEqual([
       'Required wrapper peer message',
+    ]);
+  });
+
+  it('rejects an installed local wrapper outside a required peer range', async () => {
+    const root = createFixture({
+      'package.json': JSON.stringify({
+        name: 'workspace-root',
+        private: true,
+        workspaces: ['packages/*', 'apps/*'],
+      }),
+      'packages/vue-wrapper/package.json': JSON.stringify({
+        name: '@fixture/vue-wrapper',
+        version: '1.0.0',
+        dependencies: { 'gt-vue': '*' },
+      }),
+      'apps/docs/package.json': JSON.stringify({
+        name: '@fixture/docs',
+        peerDependencies: { '@fixture/vue-wrapper': '^2.0.0' },
+      }),
+      'apps/docs/src/App.vue': translatableSfc(
+        'Incompatible required wrapper peer'
+      ),
+    });
+    linkWorkspaceBinding(
+      root,
+      '',
+      '@fixture/vue-wrapper',
+      'packages/vue-wrapper'
+    );
+    linkInstalledVue(root);
+
+    await expect(extractFromVueProject({ cwd: root })).resolves.toEqual({
+      updates: [],
+      errors: [],
+      warnings: [],
+    });
+  });
+
+  it('selects an installed required peer through a workspace alias', async () => {
+    const bindingName = 'vue-peer-alias';
+    const root = createFixture({
+      'package.json': JSON.stringify({
+        name: 'workspace-root',
+        private: true,
+        workspaces: ['packages/*', 'apps/*'],
+      }),
+      'packages/vue-wrapper/package.json': JSON.stringify({
+        name: '@fixture/vue-wrapper',
+        version: '1.0.0',
+        dependencies: { 'gt-vue': '*' },
+      }),
+      'packages/vue-wrapper/index.js':
+        "export { T as WrapperT } from 'gt-vue';\n",
+      'apps/docs/package.json': JSON.stringify({
+        name: '@fixture/docs',
+        peerDependencies: {
+          [bindingName]: 'workspace:@fixture/vue-wrapper@*',
+        },
+      }),
+      'apps/docs/src/App.vue': `<script setup>
+import { WrapperT } from '${bindingName}';
+</script>
+<template><WrapperT>Required peer alias message</WrapperT></template>`,
+    });
+    linkWorkspaceBinding(root, '', bindingName, 'packages/vue-wrapper');
+    linkInstalledVue(root);
+
+    const output = await extractFromVueProject({ cwd: root });
+
+    expect(output.errors).toEqual([]);
+    expect(output.updates.map(({ source }) => source)).toEqual([
+      'Required peer alias message',
     ]);
   });
 
@@ -626,7 +1098,7 @@ import { WrapperT } from '@fixture/vue-wrapper';
       ])
     );
     expect(graphSource).not.toMatch(
-      /from ['"](?:@babel|@vue|fast-glob|semver|yaml|#vue-compiler-sfc|\.\/internal\/extractFromVueSource)/
+      /from ['"](?:@babel|@vue|fast-glob|yaml|#vue-compiler-sfc|\.\/internal\/extractFromVueSource)/
     );
   });
 });
@@ -635,6 +1107,22 @@ function createFixture(files: Record<string, string>): string {
   const root = createProjectFixture(files);
   temporaryDirectories.push(root);
   return root;
+}
+
+function linkWorkspaceBinding(
+  root: string,
+  consumerDirectory: string,
+  bindingName: string,
+  targetDirectory: string
+): void {
+  const destination = path.join(
+    root,
+    consumerDirectory,
+    'node_modules',
+    ...bindingName.split('/')
+  );
+  fs.mkdirSync(path.dirname(destination), { recursive: true });
+  fs.symlinkSync(path.join(root, targetDirectory), destination, 'dir');
 }
 
 function collectLocalModuleGraph(entry: string): Set<string> {

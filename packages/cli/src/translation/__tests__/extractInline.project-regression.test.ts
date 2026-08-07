@@ -263,6 +263,45 @@ describe('project-level Vue CLI regression boundary', () => {
     expect(sources(output)).toEqual(['Legacy React module']);
   });
 
+  it('preserves Babel-valid standard-tag legacy .vue modules', async () => {
+    createVueFixture({
+      'package.json': packageJson({
+        dependencies: { 'gt-react': '*', 'gt-vue': '*' },
+      }),
+      'src/Leading.vue': `
+        <template><T>Leading standard-tag module</T></template>;
+        import { T } from 'gt-react';
+      `,
+      'src/TextPrefixed.vue': `
+        'Copyright 2026';
+        <template><T>Text-prefixed standard-tag module</T></template>;
+        import { T } from 'gt-react';
+      `,
+    });
+    const patterns = ['src/*.vue'];
+    const historical = await createInlineUpdates(
+      Libraries.GT_REACT,
+      false,
+      patterns,
+      GT_PARSING_FLAGS_DEFAULT,
+      parsingOptions
+    );
+    const output = await extractInlineFromProject(
+      Libraries.GT_REACT,
+      false,
+      patterns,
+      GT_PARSING_FLAGS_DEFAULT,
+      parsingOptions
+    );
+
+    expect(output).toEqual(historical);
+    expect(output.errors).toEqual([]);
+    expect(sources(output).sort()).toEqual([
+      'Leading standard-tag module',
+      'Text-prefixed standard-tag module',
+    ]);
+  });
+
   it('partitions real SFCs from legacy JSX across explicit mixed patterns', async () => {
     createVueFixture({
       'package.json': packageJson({

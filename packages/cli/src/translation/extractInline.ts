@@ -36,24 +36,36 @@ export async function extractInlineFromProject(
     return extractVueProject(filePatterns, parsingFlags, parsingOptions);
   }
 
-  const inspection = await inspectVueProject();
-  const vueSfcExclusions =
-    filePatterns && inspection.hasVueScopes
+  const inspectionPromise = inspectVueProject();
+  const extractPrimary = (primaryPatterns: string[] | undefined) =>
+    isPythonLibrary(pkg)
+      ? createPythonInlineUpdates(primaryPatterns)
+      : createInlineUpdates(
+          pkg,
+          validate,
+          primaryPatterns,
+          parsingFlags,
+          parsingOptions
+        );
+
+  let inspection: VueProjectInspection;
+  let primary: InlineExtractionOutput;
+  if (filePatterns) {
+    inspection = await inspectionPromise;
+    const vueSfcExclusions = inspection.hasVueScopes
       ? await readVueSfcExclusionPatterns(inspection, filePatterns)
       : [];
-  const primaryPatterns =
-    filePatterns && vueSfcExclusions.length > 0
-      ? [...filePatterns, ...vueSfcExclusions]
-      : filePatterns;
-  const primary = isPythonLibrary(pkg)
-    ? await createPythonInlineUpdates(primaryPatterns)
-    : await createInlineUpdates(
-        pkg,
-        validate,
-        primaryPatterns,
-        parsingFlags,
-        parsingOptions
-      );
+    const primaryPatterns =
+      vueSfcExclusions.length > 0
+        ? [...filePatterns, ...vueSfcExclusions]
+        : filePatterns;
+    primary = await extractPrimary(primaryPatterns);
+  } else {
+    [inspection, primary] = await Promise.all([
+      inspectionPromise,
+      extractPrimary(filePatterns),
+    ]);
+  }
   if (!inspection.hasVueScopes) return primary;
 
   const vue = await extractVueProject(
@@ -87,9 +99,9 @@ async function extractVueProject(
   return output;
 }
 
-/** Loads workspace inspection without loading the Vue source parser. */
+/** Loads workspace inspection without loading the Vue compiler or analyzer. */
 async function inspectVueProject(): Promise<VueProjectInspection> {
-  const { inspectVueProject: inspect } =
+  const { inspectVueProjectAsync: inspect } =
     await import('@generaltranslation/vue-extractor/inspect');
   return inspect();
 }

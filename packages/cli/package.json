@@ -27,6 +27,7 @@
     "build:bin:linux-arm64": "bash scripts/build-exe.sh linux-arm64",
     "build:bin:windows-x64": "bash scripts/build-exe.sh windows-x64",
     "test": "pnpm run generate-version && vitest run --config=./vitest.config.ts",
+    "test:bin:vue": "node scripts/test-vue-binary-extraction.mjs",
     "test:watch": "pnpm run generate-version && vitest --config=./vitest.config.ts",
     "release": "pnpm run release:normal && pnpm run release:bin",
     "release:normal": "pnpm run build:clean && pnpm publish",

@@ -295,6 +295,14 @@ jobs:
         shell: bash
         run: cd tests/apps/cli-test-app && pnpm install && pnpm gt --help
 
+      - name: Test compiled CLI Vue extraction
+        if: >-
+          steps.gt_cli_changed.outputs.changed == 'true' &&
+          ((matrix.arch == 'x64' && runner.arch == 'X64') ||
+          (matrix.arch == 'arm64' && runner.arch == 'ARM64'))
+        shell: bash
+        run: pnpm --filter gt test:bin:vue
+
   size:
     runs-on: ubuntu-latest
     permissions:

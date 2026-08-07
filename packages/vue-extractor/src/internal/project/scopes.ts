@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import fg from 'fast-glob';
-import { satisfies as satisfiesSemver, valid as validSemver } from 'semver';
 import {
   createWorkspaceDiscoveryCache,
   readDeclaredWorkspacePackages,
@@ -9,14 +8,23 @@ import {
   type WorkspaceDiscoveryCache,
 } from './workspaces.js';
 import {
+  dependencyBindingAcceptsPackageVersion,
   declaresAvailableJavaScriptDependency,
+  declaresPropagatingJavaScriptDependency,
   declaresWorkspaceJavaScriptDependency,
   GT_VUE_PACKAGE,
+  parseLocalDependencyPath,
+  parseNpmDependencyAlias,
+  parseWorkspaceDependencyAlias,
+  readPropagatingDependencyBindings,
+  readWorkspaceDependencyBindings,
   readWorkspaceDependencyNames,
-  readWorkspaceDependencySpecifiers,
   readJavaScriptPackageManifest,
+  resolveInstalledJavaScriptPackage,
+  type JavaScriptDependencyBinding,
   type JavaScriptPackageManifest,
 } from './manifest.js';
+import { localDependencyGraphDeclaresVue } from './detectVueProject.js';
 
 /** Default Vue source patterns, including conventional Vue and Nuxt folders. */
 export const DEFAULT_VUE_SOURCE_PATTERNS = [
@@ -47,9 +55,9 @@ export type VueProjectDiscovery = {
  * Discovers only packages that own gt-vue or consume a selected local wrapper.
  *
  * An aggregator root is not scanned merely because one child uses Vue. It is
- * included only when it directly declares gt-vue or depends on a selected
- * workspace wrapper. This is the boundary that prevents Vue support from
- * broadening existing React source discovery.
+ * included only when it directly declares gt-vue or depends on a proven local
+ * wrapper. This is the boundary that prevents Vue support from broadening
+ * existing React source discovery.
  */
 export function discoverVueProject(
   cwd: string,
@@ -68,23 +76,32 @@ export function discoverVueProject(
     rootManifest,
     cache
   );
-  const selectedWorkspacePackages = selectVueWorkspacePackages(
+  const workspaceSelection = selectVueWorkspacePackages(
     workspacePackages,
     rootManifest,
     projectRoot
   );
-  const rootOwnsVue = declaresAvailableJavaScriptDependency(
+  const selectedWorkspacePackages = workspaceSelection.packages;
+  const rootDeclaresVue = declaresAvailableJavaScriptDependency(
     rootManifest,
     GT_VUE_PACKAGE,
     projectRoot
   );
   const rootConsumesVueWrapper = consumesSelectedWorkspace(
     { directory: projectRoot, manifest: rootManifest },
-    selectedWorkspacePackages
+    selectedWorkspacePackages.filter(({ directory }) =>
+      workspaceSelection.propagatingDirectories.has(directory)
+    )
+  );
+  const rootConsumesLocalVueWrapper = localDependencyGraphDeclaresVue(
+    rootManifest,
+    projectRoot
   );
   const scopes: VueSourceScope[] = [];
 
-  if (rootOwnsVue || rootConsumesVueWrapper) {
+  const rootOwnsVue =
+    rootDeclaresVue || rootConsumesVueWrapper || rootConsumesLocalVueWrapper;
+  if (rootOwnsVue) {
     scopes.push({
       directory: projectRoot,
       includeByDefault: true,
@@ -150,24 +167,24 @@ function selectVueWorkspacePackages(
   workspacePackages: readonly DeclaredWorkspacePackage[],
   rootManifest: JavaScriptPackageManifest,
   projectRoot: string
-): DeclaredWorkspacePackage[] {
-  const selectedDirectories = new Set(
-    workspacePackages
-      .filter(({ directory, manifest }) =>
-        declaresWorkspaceJavaScriptDependency(
-          manifest,
-          GT_VUE_PACKAGE,
-          directory
-        )
-      )
-      .map(({ directory }) => directory)
-  );
-  const selectedNames = new Set<string>();
+): {
+  packages: DeclaredWorkspacePackage[];
+  propagatingDirectories: Set<string>;
+} {
+  const selectedDirectories = new Set<string>();
+  const propagatingDirectories = new Set<string>();
+  const queuedPropagators = new Set<string>();
   const pendingPackages: DeclaredWorkspacePackage[] = [];
-  const selectPackage = (selectedPackage: DeclaredWorkspacePackage) => {
-    const packageName = readPackageName(selectedPackage.manifest);
-    if (!packageName || selectedNames.has(packageName)) return;
-    selectedNames.add(packageName);
+  const selectPackage = (
+    selectedPackage: DeclaredWorkspacePackage,
+    propagates: boolean
+  ) => {
+    selectedDirectories.add(selectedPackage.directory);
+    if (!propagates || queuedPropagators.has(selectedPackage.directory)) {
+      return;
+    }
+    propagatingDirectories.add(selectedPackage.directory);
+    queuedPropagators.add(selectedPackage.directory);
     pendingPackages.push(selectedPackage);
   };
   if (
@@ -177,12 +194,33 @@ function selectVueWorkspacePackages(
       projectRoot
     )
   ) {
-    selectPackage({ directory: projectRoot, manifest: rootManifest });
+    selectPackage(
+      { directory: projectRoot, manifest: rootManifest },
+      declaresPropagatingJavaScriptDependency(
+        rootManifest,
+        GT_VUE_PACKAGE,
+        projectRoot
+      )
+    );
   }
   for (const workspacePackage of workspacePackages) {
-    if (selectedDirectories.has(workspacePackage.directory)) {
-      selectPackage(workspacePackage);
+    if (
+      !declaresWorkspaceJavaScriptDependency(
+        workspacePackage.manifest,
+        GT_VUE_PACKAGE,
+        workspacePackage.directory
+      )
+    ) {
+      continue;
     }
+    selectPackage(
+      workspacePackage,
+      declaresPropagatingJavaScriptDependency(
+        workspacePackage.manifest,
+        GT_VUE_PACKAGE,
+        workspacePackage.directory
+      )
+    );
   }
 
   const consumersByDependency = new Map<string, DeclaredWorkspacePackage[]>();
@@ -202,18 +240,23 @@ function selectVueWorkspacePackages(
     const selectedName = readPackageName(selectedPackage.manifest);
     if (!selectedName) continue;
     for (const consumer of consumersByDependency.get(selectedName) ?? []) {
-      if (selectedDirectories.has(consumer.directory)) continue;
+      if (propagatingDirectories.has(consumer.directory)) continue;
       if (!dependsOnCompatibleWorkspace(consumer, selectedPackage)) {
         continue;
       }
-      selectedDirectories.add(consumer.directory);
-      selectPackage(consumer);
+      selectPackage(
+        consumer,
+        dependsOnCompatibleWorkspace(consumer, selectedPackage, true)
+      );
     }
   }
 
-  return workspacePackages.filter(({ directory }) =>
-    selectedDirectories.has(directory)
-  );
+  return {
+    packages: workspacePackages.filter(({ directory }) =>
+      selectedDirectories.has(directory)
+    ),
+    propagatingDirectories,
+  };
 }
 
 function consumesSelectedWorkspace(
@@ -228,64 +271,78 @@ function consumesSelectedWorkspace(
 /** Checks that a consumer's declared range can resolve to the local package. */
 function dependsOnCompatibleWorkspace(
   consumer: DeclaredWorkspacePackage,
-  selected: DeclaredWorkspacePackage
+  selected: DeclaredWorkspacePackage,
+  propagatingOnly = false
 ): boolean {
   const packageName = readPackageName(selected.manifest);
   if (!packageName) return false;
-  return readWorkspaceDependencySpecifiers(
-    consumer.manifest,
-    packageName,
-    consumer.directory
-  ).some((specifier) =>
-    workspaceSpecifierMatches(
-      specifier,
-      selected.manifest.version,
-      consumer.directory,
-      selected.directory
+  const bindings = propagatingOnly
+    ? readPropagatingDependencyBindings(consumer.manifest, consumer.directory)
+    : readWorkspaceDependencyBindings(consumer.manifest, consumer.directory);
+  return bindings.some((binding) =>
+    dependencyBindingMatchesWorkspace(
+      binding,
+      packageName,
+      selected,
+      consumer.directory
     )
   );
 }
 
-function workspaceSpecifierMatches(
-  specifier: string,
-  workspaceVersion: string | undefined,
-  consumerDirectory: string,
-  selectedDirectory: string
+function dependencyBindingMatchesWorkspace(
+  binding: JavaScriptDependencyBinding,
+  workspaceName: string,
+  selected: DeclaredWorkspacePackage,
+  consumerDirectory: string
 ): boolean {
-  const normalized = specifier.trim();
-  if (!normalized) return false;
-  const localPath = normalized.match(/^(?:file|link|portal):(.+)$/)?.[1];
+  const workspaceAlias = parseWorkspaceDependencyAlias(binding.specifier);
+  const npmAlias = parseNpmDependencyAlias(binding.specifier);
+  const catalogPackage = binding.specifier.startsWith('catalog:')
+    ? resolveInstalledJavaScriptPackage(consumerDirectory, binding.name)
+    : undefined;
+  const namesWorkspace = binding.name === workspaceName;
+  const aliasesWorkspace =
+    workspaceAlias?.packageName === workspaceName ||
+    npmAlias?.packageName === workspaceName ||
+    catalogPackage?.manifest.name === workspaceName;
+  const localPath = parseLocalDependencyPath(binding.specifier);
+
   if (localPath) {
     return pathsIdentifySameDirectory(
       path.resolve(consumerDirectory, localPath),
-      selectedDirectory
+      selected.directory
     );
+  }
+  if (!namesWorkspace && !aliasesWorkspace) return false;
+  if (
+    !dependencyBindingAcceptsPackageVersion(
+      binding,
+      workspaceName,
+      selected.manifest.version
+    )
+  ) {
+    return false;
   }
 
-  const usesWorkspaceProtocol = normalized.startsWith('workspace:');
-  const workspaceRange = usesWorkspaceProtocol
-    ? normalized.slice('workspace:'.length)
-    : normalized;
-  if (usesWorkspaceProtocol && /^\.{1,2}(?:\/|$)/.test(workspaceRange)) {
-    return pathsIdentifySameDirectory(
-      path.resolve(consumerDirectory, workspaceRange),
-      selectedDirectory
-    );
-  }
+  const installed =
+    catalogPackage ??
+    resolveInstalledJavaScriptPackage(consumerDirectory, binding.name);
   if (
-    usesWorkspaceProtocol &&
-    (workspaceRange === '*' || workspaceRange === '^' || workspaceRange === '~')
+    installed &&
+    pathsIdentifySameDirectory(installed.directory, selected.directory)
   ) {
     return true;
   }
 
-  const version = workspaceVersion ? validSemver(workspaceVersion) : null;
-  if (!version) return false;
-  try {
-    return satisfiesSemver(version, workspaceRange);
-  } catch {
-    return false;
+  if (workspaceAlias?.packageName === workspaceName) {
+    return true;
   }
+  if (namesWorkspace && binding.specifier.startsWith('workspace:')) {
+    return true;
+  }
+  // Bare semver, catalogs, and npm aliases may resolve to a registry package.
+  // They select a local wrapper only when the installed binding proves it.
+  return false;
 }
 
 function pathsIdentifySameDirectory(left: string, right: string): boolean {

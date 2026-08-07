@@ -1,6 +1,6 @@
 import fs from 'node:fs';
-import { createRequire } from 'node:module';
 import path from 'node:path';
+import { parse as parseLegacyModule } from '@babel/parser';
 import fg from 'fast-glob';
 import type { VueProjectInspection } from '../../types.js';
 import {
@@ -9,19 +9,49 @@ import {
   resolveProjectDirectory,
   type VueProjectDiscovery,
 } from './scopes.js';
+import { readJavaScriptPackageManifest } from './manifest.js';
+import {
+  createWorkspaceDiscoveryCache,
+  readDeclaredWorkspacePackagesAsync,
+} from './workspaces.js';
 
 const discoveryByInspection = new WeakMap<
   VueProjectInspection,
   VueProjectDiscovery
 >();
-const requireFromInspection = createRequire(import.meta.url);
-let parseLegacyModule: typeof import('@babel/parser').parse | undefined;
 
 /** Discovers Vue workspace ownership once and returns a reusable opaque plan. */
 export function inspectVueProject(
   cwd: string = process.cwd()
 ): VueProjectInspection {
-  const discovery = discoverVueProject(cwd);
+  return createVueProjectInspection(discoverVueProject(cwd));
+}
+
+/**
+ * Discovers Vue ownership while reading declared workspace manifests with
+ * bounded asynchronous I/O.
+ *
+ * The asynchronous traversal pre-populates the same per-inspection cache used
+ * by `discoverVueProject`, preserving its ownership semantics while allowing a
+ * host framework to continue its existing extraction concurrently.
+ */
+export async function inspectVueProjectAsync(
+  cwd: string = process.cwd()
+): Promise<VueProjectInspection> {
+  const projectRoot = resolveProjectDirectory(cwd);
+  const rootManifest = readJavaScriptPackageManifest(
+    path.join(projectRoot, 'package.json')
+  );
+  const cache = createWorkspaceDiscoveryCache();
+  if (rootManifest) {
+    await readDeclaredWorkspacePackagesAsync(projectRoot, rootManifest, cache);
+  }
+  return createVueProjectInspection(discoverVueProject(projectRoot, cache));
+}
+
+function createVueProjectInspection(
+  discovery: VueProjectDiscovery
+): VueProjectInspection {
   const inspection = Object.freeze({
     projectRoot: discovery.projectRoot,
     rootOwnsVue: discovery.rootOwnsVue,
@@ -107,8 +137,8 @@ export function readVueProjectInspection(
  *
  * Vue tolerates arbitrary text before its first block, but treating every such
  * file as an SFC would hide Babel-valid legacy modules from the existing
- * parser. Common SFC forms stay on the lightweight path. Only an ambiguous
- * text prefix lazily invokes the parser already used by source extraction.
+ * parser. A complete JavaScript module wins even when its first JSX expression
+ * uses a standard SFC tag; lone standard-tag expressions remain Vue blocks.
  */
 export function isVueSfcSource(source: string): boolean {
   let remainder = source.replace(/^\uFEFF/, '').trimStart();
@@ -130,7 +160,13 @@ export function isVueSfcSource(source: string): boolean {
       remainder = remainder.slice(nextBlock);
       continue;
     }
-    if (STANDARD_SFC_BLOCKS.has(openingTag.name.toLowerCase())) return true;
+    if (STANDARD_SFC_BLOCKS.has(openingTag.name.toLowerCase())) {
+      if (!checkedLegacyModule) {
+        checkedLegacyModule = true;
+        if (isLegacyJavaScriptModule(source)) return false;
+      }
+      return true;
+    }
 
     if (openingTag.selfClosing) {
       remainder = remainder.slice(openingTag.end).trimStart();
@@ -186,12 +222,9 @@ function stripLeadingSfcPrelude(source: string): string | undefined {
   return remainder;
 }
 
-/** Uses the historical parser only for ambiguous text-prefixed `.vue` files. */
+/** Distinguishes complete legacy modules from lone standard-tag JSX blocks. */
 function isLegacyJavaScriptModule(source: string): boolean {
   try {
-    parseLegacyModule ??= (
-      requireFromInspection('@babel/parser') as typeof import('@babel/parser')
-    ).parse;
     const ast = parseLegacyModule(source, {
       plugins: ['jsx', 'typescript'],
       sourceType: 'module',
