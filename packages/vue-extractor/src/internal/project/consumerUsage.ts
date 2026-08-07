@@ -17,6 +17,7 @@ import {
   readPublicImportEntries,
   type PublicGTImport,
 } from './wrapperProvenance.js';
+import { classifyVueSource } from './vueSourceClassification.js';
 
 const traverse = traverseModule.default || traverseModule;
 
@@ -36,13 +37,20 @@ const IGNORED_CONSUMER_DIRECTORIES = new Set([
   'build',
   'coverage',
   'dist',
-  'lib',
   'node_modules',
   'out',
   'storybook-static',
   'target',
   'temp',
   'tmp',
+]);
+
+const GENERATED_CONSUMER_ROOT_DIRECTORIES = new Set([
+  'cjs',
+  'esm',
+  'generated',
+  'lib',
+  'lib-esm',
 ]);
 
 /** Prevents wrapper-use detection from walking an unbounded package tree. */
@@ -326,13 +334,17 @@ function isIgnoredConsumerPath(root: string, file: string): boolean {
   if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) {
     return true;
   }
-  return relative
-    .split(path.sep)
-    .slice(0, -1)
-    .some(
-      (segment) =>
-        segment.startsWith('.') || IGNORED_CONSUMER_DIRECTORIES.has(segment)
-    );
+  const directories = relative.split(path.sep).slice(0, -1);
+  const rootDirectory = directories[0]?.toLowerCase();
+  return Boolean(
+    (rootDirectory && GENERATED_CONSUMER_ROOT_DIRECTORIES.has(rootDirectory)) ||
+    directories.some((segment) => {
+      const normalized = segment.toLowerCase();
+      return (
+        segment.startsWith('.') || IGNORED_CONSUMER_DIRECTORIES.has(normalized)
+      );
+    })
+  );
 }
 
 /** Parses regular modules and the executable script blocks of Vue SFCs. */
@@ -345,6 +357,9 @@ function readConsumerImports(file: string): ConsumerImport[] {
   }
   const extension = path.extname(file).toLowerCase();
   if (extension === '.vue') {
+    if (classifyVueSource(source) === 'non-sfc') {
+      return readScriptImports(source, 'tsx');
+    }
     const { blocks, templateSource } = readVueScriptBlocks(source);
     return blocks.flatMap(({ language, source }) =>
       readScriptImports(source, language, templateSource)
@@ -538,7 +553,11 @@ function readScriptImports(
 ): ConsumerImport[] {
   const languages = new Set<string | undefined>([declaredLanguage]);
   languages.add('tsx');
-  if (declaredLanguage === 'js' || declaredLanguage === 'jsx') {
+  if (
+    declaredLanguage === 'js' ||
+    declaredLanguage === 'jsx' ||
+    declaredLanguage === 'tsx'
+  ) {
     languages.add('flow');
   }
 
@@ -826,12 +845,9 @@ const VUE_BUILTIN_TEMPLATE_TAGS = new Set([
   'transition-group',
 ]);
 
-const VUE_RAW_TEXT_TEMPLATE_TAGS = new Set([
-  'script',
-  'style',
-  'textarea',
-  'title',
-]);
+const VUE_RAW_TEXT_TEMPLATE_TAGS = new Set(['script', 'style']);
+
+const VUE_RCDATA_TEMPLATE_TAGS = new Set(['textarea', 'title']);
 
 const VUE_VOID_TEMPLATE_TAGS = new Set(
   'area,base,br,col,embed,hr,img,input,link,meta,param,source,track,wbr'.split(
@@ -882,7 +898,8 @@ function readTemplateUsage(templateSource: string): TemplateUsage {
     namespaceMembers: new Map(),
   };
   const activeBindings = new Map<string, number>();
-  const elementStack: Array<{ bindings: Set<string>; name: string }> = [];
+  const elementStack: TemplateElementScope[] = [];
+  let vPreDepth = 0;
   let index = 0;
   while (index < templateSource.length) {
     if (templateSource.startsWith('<!--', index)) {
@@ -890,6 +907,10 @@ function readTemplateUsage(templateSource: string): TemplateUsage {
       continue;
     }
     if (templateSource.startsWith('{{', index)) {
+      if (vPreDepth > 0) {
+        index += 2;
+        continue;
+      }
       const interpolation = readTemplateInterpolation(templateSource, index);
       if (interpolation.ast) {
         collectTemplateAstUsage(interpolation.ast, usage, activeBindings);
@@ -906,17 +927,39 @@ function readTemplateUsage(templateSource: string): TemplateUsage {
       index += 1;
       continue;
     }
-    recordTemplateTagUsage(tag.name, usage);
+    const normalizedTagName = tag.name.toLowerCase();
     if (tag.closing) {
-      closeTemplateElementScope(tag.name, elementStack, activeBindings);
+      vPreDepth = Math.max(
+        0,
+        vPreDepth -
+          closeTemplateElementScope(
+            normalizedTagName,
+            elementStack,
+            activeBindings
+          )
+      );
       index = tag.end;
       continue;
     }
-    const declaredBindings = collectTemplateDirectiveUsage(
-      tag.attributes,
-      usage,
-      activeBindings
+    const attributes = readTemplateAttributes(tag.attributes);
+    const introducesVPre = attributes.some(({ name }) =>
+      isTemplateVPreDirective(name)
     );
+    const suppressUsage = vPreDepth > 0 || introducesVPre;
+    let descendantBindings = new Set<string>();
+    if (!suppressUsage) {
+      const directiveUsage = collectTemplateDirectiveUsage(
+        attributes,
+        usage,
+        activeBindings
+      );
+      descendantBindings = directiveUsage.descendantBindings;
+      const elementBindings = new Map(activeBindings);
+      for (const binding of directiveUsage.elementBindings) {
+        elementBindings.set(binding, (elementBindings.get(binding) ?? 0) + 1);
+      }
+      recordTemplateTagUsage(tag.name, usage, elementBindings, attributes);
+    }
     const rawTextClosingTag =
       !tag.selfClosing && VUE_RAW_TEXT_TEMPLATE_TAGS.has(tag.name)
         ? findRawBlockClosingTag(templateSource, tag.name, tag.end)
@@ -925,22 +968,52 @@ function readTemplateUsage(templateSource: string): TemplateUsage {
       index = rawTextClosingTag.end;
       continue;
     }
+    const rcdataClosingTag =
+      !tag.selfClosing && VUE_RCDATA_TEMPLATE_TAGS.has(tag.name)
+        ? findRawBlockClosingTag(templateSource, tag.name, tag.end)
+        : undefined;
+    if (rcdataClosingTag) {
+      if (!suppressUsage) {
+        const rcdataBindings = new Map(activeBindings);
+        for (const binding of descendantBindings) {
+          rcdataBindings.set(binding, (rcdataBindings.get(binding) ?? 0) + 1);
+        }
+        collectTemplateRcdataUsage(
+          templateSource.slice(tag.end, rcdataClosingTag.start),
+          usage,
+          rcdataBindings
+        );
+      }
+      index = rcdataClosingTag.end;
+      continue;
+    }
     if (!tag.selfClosing && !VUE_VOID_TEMPLATE_TAGS.has(tag.name)) {
-      elementStack.push({ bindings: declaredBindings, name: tag.name });
-      for (const binding of declaredBindings) {
+      elementStack.push({
+        bindings: descendantBindings,
+        name: normalizedTagName,
+        vPre: introducesVPre,
+      });
+      for (const binding of descendantBindings) {
         activeBindings.set(binding, (activeBindings.get(binding) ?? 0) + 1);
       }
+      if (introducesVPre) vPreDepth += 1;
     }
     index = tag.end;
   }
   return usage;
 }
 
+type TemplateElementScope = {
+  bindings: Set<string>;
+  name: string;
+  vPre: boolean;
+};
+
 function closeTemplateElementScope(
   name: string,
-  elementStack: Array<{ bindings: Set<string>; name: string }>,
+  elementStack: TemplateElementScope[],
   activeBindings: Map<string, number>
-): void {
+): number {
   let matchingIndex = -1;
   for (let index = elementStack.length - 1; index >= 0; index -= 1) {
     if (elementStack[index]?.name === name) {
@@ -948,14 +1021,34 @@ function closeTemplateElementScope(
       break;
     }
   }
-  if (matchingIndex < 0) return;
+  if (matchingIndex < 0) return 0;
+  let closedVPreScopes = 0;
   while (elementStack.length > matchingIndex) {
     const element = elementStack.pop()!;
+    if (element.vPre) closedVPreScopes += 1;
     for (const binding of element.bindings) {
       const remaining = (activeBindings.get(binding) ?? 1) - 1;
       if (remaining > 0) activeBindings.set(binding, remaining);
       else activeBindings.delete(binding);
     }
+  }
+  return closedVPreScopes;
+}
+
+/** Records executable Vue interpolations while keeping RCDATA tags opaque. */
+function collectTemplateRcdataUsage(
+  source: string,
+  usage: TemplateUsage,
+  shadowedBindings: ReadonlyMap<string, number>
+): void {
+  let index = source.indexOf('{{');
+  while (index >= 0) {
+    const interpolation = readTemplateInterpolation(source, index);
+    if (interpolation.ast) {
+      collectTemplateAstUsage(interpolation.ast, usage, shadowedBindings);
+    }
+    if (interpolation.end >= source.length) return;
+    index = source.indexOf('{{', interpolation.end);
   }
 }
 
@@ -1009,29 +1102,62 @@ function readTemplateMarkupTag(
   return undefined;
 }
 
-function recordTemplateTagUsage(tag: string, usage: TemplateUsage): void {
-  const member = /^([A-Za-z_$][\w$]*)\.([A-Za-z_$][\w$]*)$/.exec(tag);
+function recordTemplateTagUsage(
+  tag: string,
+  usage: TemplateUsage,
+  shadowedBindings: ReadonlyMap<string, number>,
+  attributes: readonly TemplateAttribute[]
+): void {
+  if (isDynamicComponentTag(tag, attributes)) return;
+  const member = /^([A-Za-z_$][\w$-]*)\.([A-Za-z_$][\w$]*)$/.exec(tag);
   if (member?.[1] && member[2]) {
-    usage.identifiers.add(member[1]);
-    addTemplateNamespaceMember(usage, member[1], member[2]);
+    for (const namespace of normalizeTemplateBindingNames(member[1])) {
+      if (shadowedBindings.has(namespace)) continue;
+      usage.identifiers.add(namespace);
+      addTemplateNamespaceMember(usage, namespace, member[2]);
+    }
     return;
   }
   if (VUE_BUILTIN_TEMPLATE_TAGS.has(tag) || VUE_NATIVE_TEMPLATE_TAGS.has(tag)) {
     return;
   }
   for (const name of normalizeTemplateBindingNames(tag)) {
-    usage.identifiers.add(name);
+    if (!shadowedBindings.has(name)) usage.identifiers.add(name);
   }
+}
+
+function isDynamicComponentTag(
+  tag: string,
+  attributes: readonly TemplateAttribute[]
+): boolean {
+  if (tag !== 'component' && tag !== 'Component') return false;
+  return attributes.some(({ name, value }) => {
+    // No-value bind shorthand resolves differently in Vue 3.3 and 3.5. Keep
+    // the static tag candidate as well as collecting the shorthand expression,
+    // so neither supported runtime can silently lose real wrapper usage.
+    if (value === undefined) return false;
+    const baseName = name.split('.')[0];
+    return (
+      baseName === 'is' ||
+      baseName === ':is' ||
+      baseName === 'v-bind:is' ||
+      name === '.is' ||
+      name.startsWith('.is.')
+    );
+  });
 }
 
 /** Collects dynamic directive arguments and executable directive values. */
 function collectTemplateDirectiveUsage(
-  attributes: string,
+  attributes: readonly TemplateAttribute[],
   usage: TemplateUsage,
   shadowedBindings: ReadonlyMap<string, number>
-): Set<string> {
-  const directives = readTemplateDirectives(attributes);
-  const declaredBindings = new Set<string>();
+): TemplateDirectiveUsage {
+  const directives = attributes.filter(({ name }) =>
+    isTemplateDirectiveName(name)
+  );
+  const elementBindings = new Set<string>();
+  const descendantBindings = new Set<string>();
   for (const directive of directives.filter(({ name }) =>
     isTemplateForDirective(name)
   )) {
@@ -1041,7 +1167,8 @@ function collectTemplateDirectiveUsage(
       usage,
       shadowedBindings
     )) {
-      declaredBindings.add(binding);
+      elementBindings.add(binding);
+      descendantBindings.add(binding);
     }
   }
   for (const directive of directives.filter(({ name }) =>
@@ -1055,7 +1182,7 @@ function collectTemplateDirectiveUsage(
     );
   }
   const loopBindings = new Map(shadowedBindings);
-  for (const binding of declaredBindings) {
+  for (const binding of elementBindings) {
     loopBindings.set(binding, (loopBindings.get(binding) ?? 0) + 1);
   }
   for (const directive of directives) {
@@ -1071,24 +1198,29 @@ function collectTemplateDirectiveUsage(
       usage,
       loopBindings
     )) {
-      declaredBindings.add(binding);
+      descendantBindings.add(binding);
     }
   }
-  return declaredBindings;
+  return { descendantBindings, elementBindings };
 }
 
-type TemplateDirective = {
+type TemplateDirectiveUsage = {
+  descendantBindings: Set<string>;
+  elementBindings: Set<string>;
+};
+
+type TemplateAttribute = {
   name: string;
   value: string | undefined;
 };
 
-function readTemplateDirectives(attributes: string): TemplateDirective[] {
-  const directives: TemplateDirective[] = [];
+function readTemplateAttributes(attributes: string): TemplateAttribute[] {
+  const parsedAttributes: TemplateAttribute[] = [];
   let index = 0;
   while (index < attributes.length) {
     while (/\s/.test(attributes[index] ?? '')) index += 1;
     if (index >= attributes.length || attributes[index] === '/') {
-      return directives;
+      return parsedAttributes;
     }
     const nameStart = index;
     while (index < attributes.length && !/[\s=]/.test(attributes[index]!)) {
@@ -1118,9 +1250,17 @@ function readTemplateDirectives(attributes: string): TemplateDirective[] {
         value = attributes.slice(valueStart, index);
       }
     }
-    if (/^[:@#]|^v-/.test(name)) directives.push({ name, value });
+    parsedAttributes.push({ name, value });
   }
-  return directives;
+  return parsedAttributes;
+}
+
+function isTemplateDirectiveName(name: string): boolean {
+  return /^[.:@#]|^v-/.test(name);
+}
+
+function isTemplateVPreDirective(name: string): boolean {
+  return /^v-pre(?:$|[:.])/.test(name);
 }
 
 function isTemplateForDirective(name: string): boolean {
@@ -1137,13 +1277,13 @@ function collectTemplateDirective(
   usage: TemplateUsage,
   shadowedBindings: ReadonlyMap<string, number>
 ): Set<string> {
-  if (!/^[:@#]|^v-/.test(name)) return new Set();
+  if (!/^[.:@#]|^v-/.test(name)) return new Set();
   const argument = readDynamicDirectiveArgument(name);
   if (argument) {
     collectTemplateExpressionUsage(argument, usage, shadowedBindings);
   }
   if (value === undefined) {
-    if (name.startsWith(':') && !argument) {
+    if ((name.startsWith(':') || name.startsWith('.')) && !argument) {
       collectTemplateExpressionUsage(
         name.slice(1).split('.')[0] ?? '',
         usage,
@@ -1215,7 +1355,13 @@ function collectTemplateForUsage(
   }
   const left = source.slice(0, separator.index).trim();
   const right = source.slice(separator.index + separator[0].length).trim();
-  const bindings = collectTemplateBindingUsage(left, usage, shadowedBindings);
+  const unwrappedLeft =
+    left.startsWith('(') && left.endsWith(')') ? left.slice(1, -1) : left;
+  const bindings = collectTemplateBindingUsage(
+    unwrappedLeft,
+    usage,
+    shadowedBindings
+  );
   collectTemplateExpressionUsage(right, usage, shadowedBindings);
   return bindings;
 }

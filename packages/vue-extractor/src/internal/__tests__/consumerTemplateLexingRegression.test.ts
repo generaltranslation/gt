@@ -151,10 +151,6 @@ describe('Vue wrapper use in consumer templates', () => {
       template: '<Mixed.VueT>Active</Mixed.VueT>',
     },
     {
-      name: 'a namespace component tag beneath a same-named slot binding',
-      template: `<Child v-slot="{ Mixed }"><Mixed.VueT /></Child>`,
-    },
-    {
       name: 'an outer namespace beneath an unrelated loop binding',
       template: `<main v-for="item in values"><component :is="Mixed.VueT" /></main>`,
     },
