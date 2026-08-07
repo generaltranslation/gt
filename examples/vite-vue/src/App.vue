@@ -15,6 +15,11 @@ import {
   useMessages,
   useSetLocale,
 } from 'gt-vue';
+import {
+  moduleGreeting,
+  namespacedModuleGreeting,
+  reexportedModuleGreeting,
+} from './moduleMessages';
 
 const gt = useGT();
 const m = useMessages();
@@ -86,6 +91,9 @@ async function selectLocale(nextLocale: string) {
         {{ gt('This sentence comes from useGT().', { $context: 'demo' }) }}
       </p>
       <p class="status" role="status">{{ m(savedMessage) }}</p>
+      <p class="module-lookup">{{ moduleGreeting }}</p>
+      <p class="module-reexport-lookup">{{ reexportedModuleGreeting }}</p>
+      <p class="module-namespace-lookup">{{ namespacedModuleGreeting }}</p>
     </section>
 
     <section class="demo-grid" aria-label="Translation examples">

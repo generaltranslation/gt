@@ -1,6 +1,7 @@
 import type { GTFunction } from 'gt-vue';
 
 export { T } from 'gt-vue';
+export { t as translateNow } from 'gt-vue';
 export * as GT from 'gt-vue';
 export * as Vue from 'vue';
 

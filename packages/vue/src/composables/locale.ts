@@ -4,9 +4,11 @@ import { useGTState } from '../runtime/state';
 /**
  * Returns a readonly ref for the active locale.
  *
- * Components, computed values, and render effects that read this ref update
- * after {@link useSetLocale} finishes switching locales. Vue templates unwrap
- * the ref automatically.
+ * With a {@link createGT} plugin, components, computed values, and render
+ * effects that read this ref update after {@link useSetLocale} finishes
+ * switching locales. An `initializeGTSPA()` plugin reloads the page instead so
+ * module-level translations are evaluated again. Vue templates unwrap the ref
+ * automatically.
  *
  * @returns A readonly reactive locale ref.
  */
@@ -18,9 +20,9 @@ export function useLocale(): Readonly<Ref<string>> {
 /**
  * Returns the active plugin's asynchronous locale setter.
  *
- * The setter loads and caches a missing catalog before updating the reactive
- * locale. It rejects when the configured loader rejects, and only the latest
- * overlapping request is applied.
+ * A {@link createGT} plugin loads and caches a missing catalog before updating
+ * reactive consumers. An `initializeGTSPA()` plugin writes the locale cookie
+ * and reloads the page without loading the target catalog on the current page.
  *
  * @returns An async function that switches to the requested locale.
  */

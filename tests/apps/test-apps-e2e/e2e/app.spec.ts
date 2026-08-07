@@ -79,6 +79,15 @@ async function testVueSpa(page: Page) {
     page.getByText('This sentence comes from useGT().')
   ).toBeVisible();
   await expect(
+    page.getByText('This sentence comes from module-level t().')
+  ).toBeVisible();
+  await expect(
+    page.getByText('Local re-exports also work with module-level t().')
+  ).toBeVisible();
+  await expect(
+    page.getByText('Namespace calls also work with module-level t().')
+  ).toBeVisible();
+  await expect(
     page.getByRole('heading', { name: 'Local re-exports work in TSX' })
   ).toBeVisible();
   await expect(
@@ -94,6 +103,19 @@ async function testVueSpa(page: Page) {
   ).toBeVisible();
   await expect(
     page.getByText('Cette phrase provient de useGT().')
+  ).toBeVisible();
+  await expect(
+    page.getByText('Cette phrase provient de t() au niveau du module.')
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      'Les réexportations locales fonctionnent aussi avec t() au niveau du module.'
+    )
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      'Les appels d’espace de noms fonctionnent aussi avec t() au niveau du module.'
+    )
   ).toBeVisible();
   await expect(
     page.getByRole('heading', {
@@ -116,6 +138,19 @@ async function testVueSpa(page: Page) {
     page.getByRole('heading', { name: 'Local re-exports work in TSX' })
   ).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+
+  await page.evaluate(() => {
+    document.cookie = 'generaltranslation.locale=es;path=/';
+  });
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(
+    page.getByText('This sentence comes from module-level t().')
+  ).toBeVisible();
+  const localeCookie = (await page.context().cookies()).find(
+    ({ name }) => name === 'generaltranslation.locale'
+  );
+  expect(localeCookie?.value).toBe('en');
 }
 
 async function testVueSsr(page: Page, request: APIRequestContext) {

@@ -1,12 +1,9 @@
 import { createApp } from 'vue';
-import { createGT } from 'gt-vue';
+import type { GTPlugin } from 'gt-vue';
 import App from './App.vue';
-import { loadTranslations } from './translations';
 import './style.css';
 
-const gt = createGT({
-  defaultLocale: 'en',
-  loadTranslations,
-});
-
-createApp(App).use(gt).mount('#app');
+/** Mounts the app with the preloaded GT SPA runtime. */
+export function mount(gt: GTPlugin): void {
+  createApp(App).use(gt).mount('#app');
+}

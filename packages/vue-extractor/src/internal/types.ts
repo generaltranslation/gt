@@ -13,7 +13,7 @@ export type GTComponentName =
 /** Vue builtins whose runtime identity changes rich-content traversal. */
 export type VueBuiltinName = 'Fragment' | 'Suspense';
 
-export type StringFunctionKind = 'gt' | 'messages' | 'msg';
+export type StringFunctionKind = 'gt' | 'messages' | 'msg' | 't';
 export type TemplateContainerKind = 'array' | 'object';
 
 export type TemplateBindings = {
