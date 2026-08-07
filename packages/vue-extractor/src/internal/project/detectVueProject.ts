@@ -11,7 +11,11 @@ import {
   type JavaScriptDependencyBinding,
   type JavaScriptPackageManifest,
 } from './manifest.js';
-import { packageConsumesPublicGT } from './consumerUsage.js';
+import {
+  createConsumerUsageCache,
+  packageConsumesPublicGT,
+  type ConsumerUsageCache,
+} from './consumerUsage.js';
 
 /**
  * Returns whether the root package owns gt-vue directly or through local code.
@@ -37,7 +41,11 @@ export function detectVueProject(cwd: string = process.cwd()): boolean {
     ) {
       return true;
     }
-    return localDependencyGraphDeclaresVue(rootManifest, projectRoot);
+    return localDependencyGraphDeclaresVue(
+      rootManifest,
+      projectRoot,
+      createConsumerUsageCache()
+    );
   } catch {
     return false;
   }
@@ -46,7 +54,8 @@ export function detectVueProject(cwd: string = process.cwd()): boolean {
 /** Checks only installed project-local dependency edges for a Vue wrapper. */
 export function localDependencyGraphDeclaresVue(
   rootManifest: JavaScriptPackageManifest,
-  projectRoot: string
+  projectRoot: string,
+  consumerUsageCache: ConsumerUsageCache = createConsumerUsageCache()
 ): boolean {
   for (const binding of readWorkspaceDependencyBindings(
     rootManifest,
@@ -84,7 +93,8 @@ export function localDependencyGraphDeclaresVue(
         projectRoot,
         binding.name,
         sourceDirectory,
-        sourceManifest
+        sourceManifest,
+        consumerUsageCache
       )
     ) {
       return true;

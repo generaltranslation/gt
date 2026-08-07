@@ -132,6 +132,112 @@ describe('project-level Vue CLI regression boundary', () => {
     expect(sources(output)).toEqual(['Stable React message']);
   });
 
+  it.each([
+    {
+      files: {
+        'src/generated.d.ts': `
+          import { VueT } from '@fixture/multi/vue';
+          export declare const component: typeof VueT;
+        `,
+      },
+      name: 'an ambient declaration import',
+      packageFields: {},
+    },
+    {
+      files: {
+        'lib/index.js': "export { VueT } from '@fixture/multi/vue';\n",
+      },
+      name: 'a stale generated public entry',
+      packageFields: { main: './lib/index.js' },
+    },
+    {
+      files: {
+        'src/types.ts': `
+          import { VueT } from '@fixture/multi/vue';
+          export type Component = typeof VueT;
+        `,
+      },
+      name: 'a type-only wrapper reference',
+      packageFields: {},
+    },
+    {
+      files: {
+        'src/Commented.vue': `
+          <!--
+          <script setup>
+          import { VueT } from '@fixture/multi/vue';
+          </script>
+          -->
+          <template><main>Unrelated fixture</main></template>
+        `,
+      },
+      name: 'an HTML-commented SFC import',
+      packageFields: {},
+    },
+    {
+      files: {
+        'src/StringData.vue': `
+          <script setup>
+          import * as Mixed from '@fixture/multi/vue';
+          </script>
+          <template><main :title="'Mixed.VueT'">Unrelated fixture</main></template>
+        `,
+      },
+      name: 'a namespace name inside template string data',
+      packageFields: {},
+    },
+  ])(
+    'keeps React extraction unchanged with $name',
+    async ({ files, packageFields }) => {
+      const root = createFixture({
+        'package.json': packageJson({
+          ...packageFields,
+          dependencies: {
+            '@fixture/multi': 'file:./vendor/multi',
+            'gt-react': '*',
+          },
+        }),
+        'src/App.tsx': reactMessage('Stable React boundary'),
+        'vendor/multi/package.json': JSON.stringify({
+          name: '@fixture/multi',
+          version: '1.0.0',
+          exports: {
+            '.': './src/react.ts',
+            './vue': './src/vue.ts',
+          },
+          dependencies: { 'gt-vue': '*' },
+        }),
+        'vendor/multi/src/react.ts':
+          "export { T as ReactT } from 'gt-react';\n",
+        'vendor/multi/src/vue.ts': "export { T as VueT } from 'gt-vue';\n",
+        ...files,
+      });
+      const destination = path.join(root, 'node_modules/@fixture/multi');
+      fs.mkdirSync(path.dirname(destination), { recursive: true });
+      fs.symlinkSync(path.join(root, 'vendor/multi'), destination, 'dir');
+
+      const historical = await createInlineUpdates(
+        Libraries.GT_REACT,
+        false,
+        undefined,
+        GT_PARSING_FLAGS_DEFAULT,
+        parsingOptions
+      );
+      const output = await extractInlineFromProject(
+        Libraries.GT_REACT,
+        false,
+        undefined,
+        GT_PARSING_FLAGS_DEFAULT,
+        parsingOptions
+      );
+
+      expect(detectVueProject()).toBe(false);
+      expect(output).toEqual(historical);
+      expect(output.errors).toEqual([]);
+      expect(sources(output)).toEqual(['Stable React boundary']);
+    }
+  );
+
   it('appends only owned descendant Vue sources to the unchanged React scope', async () => {
     createVueFixture({
       'package.json': packageJson({

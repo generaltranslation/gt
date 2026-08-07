@@ -24,9 +24,13 @@ import {
   type JavaScriptPackageManifest,
 } from './manifest.js';
 import { localDependencyGraphDeclaresVue } from './detectVueProject.js';
-import { packageConsumesPublicGT } from './consumerUsage.js';
+import {
+  createConsumerUsageCache,
+  packageConsumesPublicGT,
+  packageExposesPublicGT,
+  type ConsumerUsageCache,
+} from './consumerUsage.js';
 import { DEFAULT_VUE_SOURCE_PATTERNS } from './sourcePatterns.js';
-import { packagePubliclyExposesGT } from './wrapperProvenance.js';
 
 export { DEFAULT_VUE_SOURCE_PATTERNS } from './sourcePatterns.js';
 
@@ -70,10 +74,12 @@ export function discoverVueProject(
     rootManifest,
     cache
   );
+  const consumerUsageCache = createConsumerUsageCache();
   const workspaceSelection = selectVueWorkspacePackages(
     workspacePackages,
     rootManifest,
-    projectRoot
+    projectRoot,
+    consumerUsageCache
   );
   const selectedWorkspacePackages = workspaceSelection.packages;
   const rootDeclaresVue = declaresAvailableJavaScriptDependency(
@@ -85,11 +91,13 @@ export function discoverVueProject(
     { directory: projectRoot, manifest: rootManifest },
     selectedWorkspacePackages.filter(({ directory }) =>
       workspaceSelection.propagatingDirectories.has(directory)
-    )
+    ),
+    consumerUsageCache
   );
   const rootConsumesLocalVueWrapper = localDependencyGraphDeclaresVue(
     rootManifest,
-    projectRoot
+    projectRoot,
+    consumerUsageCache
   );
   const scopes: VueSourceScope[] = [];
 
@@ -160,7 +168,8 @@ export function findVueSourceScope(
 function selectVueWorkspacePackages(
   workspacePackages: readonly DeclaredWorkspacePackage[],
   rootManifest: JavaScriptPackageManifest,
-  projectRoot: string
+  projectRoot: string,
+  consumerUsageCache: ConsumerUsageCache
 ): {
   packages: DeclaredWorkspacePackage[];
   propagatingDirectories: Set<string>;
@@ -176,7 +185,11 @@ function selectVueWorkspacePackages(
   }: DeclaredWorkspacePackage): boolean => {
     const cached = publicGTByDirectory.get(directory);
     if (cached !== undefined) return cached;
-    const exposesGT = packagePubliclyExposesGT(directory, manifest);
+    const exposesGT = packageExposesPublicGT(
+      directory,
+      manifest,
+      consumerUsageCache
+    );
     publicGTByDirectory.set(directory, exposesGT);
     return exposesGT;
   };
@@ -247,13 +260,24 @@ function selectVueWorkspacePackages(
     if (!selectedName) continue;
     for (const consumer of consumersByDependency.get(selectedName) ?? []) {
       if (propagatingDirectories.has(consumer.directory)) continue;
-      if (!consumesCompatibleWorkspace(consumer, selectedPackage)) {
+      if (
+        !consumesCompatibleWorkspace(
+          consumer,
+          selectedPackage,
+          false,
+          consumerUsageCache
+        )
+      ) {
         continue;
       }
       selectPackage(
         consumer,
-        consumesCompatibleWorkspace(consumer, selectedPackage, true) &&
-          publiclyExposesGT(consumer)
+        consumesCompatibleWorkspace(
+          consumer,
+          selectedPackage,
+          true,
+          consumerUsageCache
+        ) && publiclyExposesGT(consumer)
       );
     }
   }
@@ -268,10 +292,16 @@ function selectVueWorkspacePackages(
 
 function consumesSelectedWorkspace(
   consumer: DeclaredWorkspacePackage,
-  selectedPackages: readonly DeclaredWorkspacePackage[]
+  selectedPackages: readonly DeclaredWorkspacePackage[],
+  consumerUsageCache: ConsumerUsageCache
 ): boolean {
   return selectedPackages.some((selectedPackage) =>
-    consumesCompatibleWorkspace(consumer, selectedPackage)
+    consumesCompatibleWorkspace(
+      consumer,
+      selectedPackage,
+      false,
+      consumerUsageCache
+    )
   );
 }
 
@@ -279,7 +309,8 @@ function consumesSelectedWorkspace(
 function consumesCompatibleWorkspace(
   consumer: DeclaredWorkspacePackage,
   selected: DeclaredWorkspacePackage,
-  propagatingOnly = false
+  propagatingOnly: boolean,
+  consumerUsageCache: ConsumerUsageCache
 ): boolean {
   const packageName = readPackageName(selected.manifest);
   if (!packageName) return false;
@@ -298,7 +329,8 @@ function consumesCompatibleWorkspace(
         consumer.directory,
         binding.name,
         selected.directory,
-        selected.manifest
+        selected.manifest,
+        consumerUsageCache
       )
   );
 }
