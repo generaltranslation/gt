@@ -1,5 +1,16 @@
 # gt-i18n
 
+## 1.0.12-iris.0
+
+### Patch Changes
+
+- 8d376e2: Make `msg(..., { $format: 'STRING' })` preserve source text literally instead
+  of applying ICU interpolation. For example, `msg('Hello {name}', {
+$format: 'STRING', name: 'Ada' })` now encodes `Hello {name}` rather than
+  `Hello Ada`. Add lightweight shared helpers for registering, hashing, and
+  decoding literal STRING messages, browser cookie access, and canonical GT
+  cookie names, and validate encoded fields by type.
+
 ## 1.0.11
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @generaltranslation/react-core
 
+## 11.1.6-iris.0
+
+### Patch Changes
+
+- Updated dependencies [8d376e2]
+  - gt-i18n@1.0.12-iris.0
+
 ## 11.1.5
 
 ### Patch Changes

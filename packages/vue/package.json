@@ -1,6 +1,6 @@
 {
   "name": "gt-vue",
-  "version": "0.0.0",
+  "version": "0.1.0-iris.0",
   "description": "A lightweight Vue internationalization library for General Translation.",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",

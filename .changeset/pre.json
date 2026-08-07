@@ -52,7 +52,12 @@
     "gt-test-tanstack-start": "0.1.1",
     "gt-test-apps-e2e": "0.1.0",
     "gt-test-vite-react": "0.1.1",
-    "gt-test-webpack-react": "0.1.1"
+    "gt-test-webpack-react": "0.1.1",
+    "gt-vue": "0.0.0"
   },
-  "changesets": ["test-iris-gt-patch"]
+  "changesets": [
+    "calm-pandas-translate",
+    "test-iris-gt-patch",
+    "tidy-vue-messages"
+  ]
 }
