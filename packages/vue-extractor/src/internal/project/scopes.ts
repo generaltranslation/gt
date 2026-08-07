@@ -217,6 +217,18 @@ function selectVueWorkspacePackages(
     selectPackage(workspacePackage, publiclyExposesGT(workspacePackage));
   }
 
+  // A pure non-Vue workspace has no ownership seed to propagate. Avoid
+  // walking every dependency edge after the manifest scan has already proved
+  // that no package directly owns gt-vue.
+  if (pendingPackages.length === 0) {
+    return {
+      packages: workspacePackages.filter(({ directory }) =>
+        selectedDirectories.has(directory)
+      ),
+      propagatingDirectories,
+    };
+  }
+
   const consumersByDependency = new Map<string, DeclaredWorkspacePackage[]>();
   for (const workspacePackage of workspacePackages) {
     for (const dependencyName of readWorkspaceDependencyNames(
