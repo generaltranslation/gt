@@ -173,11 +173,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check if gt-vue changed
+      - name: Check if gt-vue or the Vue extractor changed
         id: gt_vue_changed
         shell: bash
         run: |
-          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "^packages/vue/"; then
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -qE "^packages/(vue|vue-extractor)/"; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
             echo "changed=false" >> $GITHUB_OUTPUT
@@ -200,14 +200,16 @@ jobs:
 
       - name: Use Vue ${{ matrix.vue }}
         if: steps.gt_vue_changed.outputs.changed == 'true'
-        run: pnpm --filter gt-vue add --save-dev --save-exact --lockfile=false vue@${{ matrix.vue }}
+        run: pnpm --filter gt-vue --filter @generaltranslation/vue-extractor add --save-dev --save-exact --lockfile=false vue@${{ matrix.vue }}
 
-      - name: Build and test gt-vue
+      - name: Build and test gt-vue and the Vue extractor
         if: steps.gt_vue_changed.outputs.changed == 'true'
         run: |
-          pnpm exec turbo build --filter=gt-vue...
+          pnpm exec turbo build --filter=gt-vue... --filter=@generaltranslation/vue-extractor...
           pnpm --filter gt-vue typecheck
           pnpm --filter gt-vue test
+          pnpm --filter @generaltranslation/vue-extractor typecheck
+          pnpm --filter @generaltranslation/vue-extractor test
 
   test-cli-binaries:
     strategy:
