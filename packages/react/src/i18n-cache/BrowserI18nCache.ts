@@ -2,7 +2,8 @@ import type {
   I18nCacheConstructorParams,
   TranslationsLoader,
 } from 'gt-i18n/internal/types';
-import { getI18nConfig, I18nCache } from 'gt-i18n/internal';
+import { getI18nConfig } from 'gt-i18n/internal';
+import { I18nCache } from 'gt-i18n/internal/i18n-cache';
 import type { HtmlTagOptions } from './types';
 import type { Translation } from 'gt-i18n/types';
 import { DEFAULT_HTML_TAG_OPTIONS } from './constants';

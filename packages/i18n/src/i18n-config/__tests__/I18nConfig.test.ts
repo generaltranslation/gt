@@ -24,6 +24,12 @@ describe('I18nConfig', () => {
     expect(config.getLocales()).toEqual(['fr']);
   });
 
+  it('owns the configured source version', () => {
+    const config = new I18nConfig({ _versionId: 'version-1' });
+
+    expect(config.getVersionId()).toBe('version-1');
+  });
+
   it('skips locale validation when GT services are disabled', () => {
     const config = new I18nConfig({
       defaultLocale: 'invalid-locale',

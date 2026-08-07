@@ -1,10 +1,7 @@
 import { setAsyncConditionStore } from '../async-i18n-cache/singleton-operations';
 import type { InitializeGTParams } from './types';
-import {
-  I18nCache,
-  initializeI18nConfig,
-  setI18nCache,
-} from 'gt-i18n/internal';
+import { initializeI18nConfig, setI18nCache } from 'gt-i18n/internal';
+import { I18nCache } from 'gt-i18n/internal/i18n-cache';
 import { AsyncConditionStore } from '../async-i18n-cache/AsyncConditionStore';
 import { addRuntimeCredentials } from './runtimeCredentials';
 

@@ -29,6 +29,7 @@ export function getParams(): {
     devApiKey,
     apiKey,
     cacheUrl: clientConfig.cacheUrl,
+    _versionId: clientConfig._versionId,
     _disableDevHotReload: clientConfig._disableDevHotReload,
     localeCookieName: clientConfig.headersAndCookies?.localeCookieName,
     enableI18nCookieName: clientConfig.headersAndCookies?.enableI18nCookieName,

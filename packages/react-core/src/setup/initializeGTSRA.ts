@@ -6,6 +6,8 @@ import { initializeI18nConfig, type ReactI18nConfigParams } from './i18nConfig';
 export type ReactInitializeGTParams = ReactI18nConfigParams &
   ReactI18nCacheParams;
 
+export type ReactInitializeGTClientParams = ReactInitializeGTParams;
+
 /**
  * Validation and setup for read only properties
  */

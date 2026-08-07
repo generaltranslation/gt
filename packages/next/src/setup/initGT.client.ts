@@ -1,4 +1,4 @@
-import { internalInitializeGTSRA } from '@generaltranslation/react-core/pure';
+import { internalInitializeGTClient } from '@generaltranslation/react-core/pure';
 import { getParams } from './shared';
 import type { NextSetupI18nConfigParams } from './shared';
 import type { NextI18nCacheParams } from '../i18n-cache/NextI18nCache';
@@ -15,14 +15,8 @@ export function initializeGTClient(
     nextI18nCacheParams: NextI18nCacheParams;
   } = getParams()
 ): void {
-  internalInitializeGTSRA({
+  internalInitializeGTClient({
     ...i18nConfigParams,
     ...nextI18nCacheParams,
-    /**
-     * Always disable cache expiry for client-side lookups.
-     * Translations and dictionaries are exclusively passed from server to
-     * client, so the client has no loader to refresh expired entries.
-     */
-    cacheExpiryTime: null,
   });
 }

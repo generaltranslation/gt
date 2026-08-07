@@ -3,7 +3,6 @@ import {
   type LocaleConfigConstructorParams,
 } from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
-import { GTRuntime } from 'generaltranslation/runtime';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import type { GTConfig } from '../config/types';
 import {
@@ -33,11 +32,16 @@ export type I18nConfigParams = Pick<
   | 'cacheUrl'
   | 'runtimeUrl'
   | '_disableDevHotReload'
+  | '_versionId'
 >;
 
 type RuntimeConfig = Pick<
   I18nConfigParams,
-  'projectId' | 'devApiKey' | 'apiKey' | 'runtimeUrl' | '_disableDevHotReload'
+  | 'projectId'
+  | 'devApiKey'
+  | 'runtimeUrl'
+  | '_disableDevHotReload'
+  | '_versionId'
 >;
 
 export type LocaleCandidates = string | string[] | undefined;
@@ -53,9 +57,9 @@ export class I18nConfig extends LocaleConfig {
     this.runtimeConfig = {
       projectId: params.projectId,
       devApiKey: params.devApiKey,
-      apiKey: params.apiKey,
       runtimeUrl: params.runtimeUrl,
       _disableDevHotReload: params._disableDevHotReload,
+      _versionId: params._versionId,
     };
     this.gtServicesEnabled = gtServicesEnabled;
     this.logLevel = getGeneralTranslationLogLevel();
@@ -77,16 +81,8 @@ export class I18nConfig extends LocaleConfig {
     return this.runtimeConfig.projectId;
   }
 
-  /**
-   * Get a GT instance bound to the resolved target locale. When omitted, the
-   * instance is locale agnostic.
-   *
-   * TODO: keep a cache to avoid creating new instances unnecessarily.
-   */
-  getGTClass(locale?: string): GTRuntime {
-    return this.getGTClassClean(
-      locale ? this.resolveLocale(locale) : undefined
-    );
+  getVersionId(): string | undefined {
+    return this.runtimeConfig._versionId;
   }
 
   determineLocale(
@@ -150,28 +146,6 @@ export class I18nConfig extends LocaleConfig {
 
   isDebugLoggingEnabled(): boolean {
     return isDebugLogLevel(this.logLevel);
-  }
-
-  /**
-   * Create a GT instance without resolving the target locale first.
-   */
-  private getGTClassClean(locale?: string) {
-    return new GTRuntime({
-      sourceLocale: this.getDefaultLocale(),
-      targetLocale: locale,
-      // GT validates approved locales before constructing its LocaleConfig, so
-      // pass canonical locales here while preserving alias target locales.
-      locales: Array.from(
-        new Set(
-          this.getLocales().map((locale) => this.resolveCanonicalLocale(locale))
-        )
-      ),
-      customMapping: this.getCustomMapping(),
-      projectId: this.runtimeConfig.projectId,
-      baseUrl: this.runtimeConfig.runtimeUrl || undefined,
-      apiKey: this.runtimeConfig.apiKey,
-      devApiKey: this.runtimeConfig.devApiKey,
-    });
   }
 
   private getLocaleConfig(config?: I18nConfigParams): LocaleConfig {

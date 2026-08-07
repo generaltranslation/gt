@@ -15,14 +15,18 @@ export {
 export { createLookupOptions } from './translation-functions/internal/helpers';
 export { renderDictionaryEntry } from './translation-functions/internal/renderDictionaryEntry';
 export { renderDictionaryObject } from './translation-functions/internal/renderDictionaryObject';
-export { I18nCache } from './i18n-cache/I18nCache';
-export type { TranslationsCacheMissEvent } from './i18n-cache/I18nCache';
+export { DictionarySourceNotFoundError } from './i18n-cache/translations-manager/utils/DictionarySourceNotFoundError';
 export { ReadonlyConditionStore } from './condition-store/ReadonlyConditionStore';
 export type { ReadonlyConditionStoreParams } from './condition-store/ReadonlyConditionStore';
 export { WritableConditionStore } from './condition-store/WritableConditionStore';
 export type { WritableConditionStoreParams } from './condition-store/WritableConditionStore';
 export type { LocaleCandidates } from './i18n-config/I18nConfig';
-export { getI18nCache, setI18nCache } from './i18n-cache/singleton-operations';
+export {
+  getI18nCache,
+  isI18nCacheInitialized,
+  setI18nCache,
+} from './i18n-cache/singleton-operations';
+export type { I18nCacheInstance } from './i18n-cache/singleton-operations';
 export { getVersionId } from './helpers/versionId';
 export { interpolateMessage } from './translation-functions/utils/interpolation/interpolateMessage';
 export { isEncodedTranslationOptions } from './translation-functions/utils/isEncodedTranslationOptions';
@@ -53,5 +57,7 @@ export { createConditionStoreSingleton } from './condition-store/createCondition
 export { createGlobalSingleton } from './globals/createGlobalSingleton';
 export type { GlobalSingleton } from './globals/createGlobalSingleton';
 export { getRuntimeEnvironment } from './utils/getRuntimeEnvironment';
+export { resolveCacheLocale } from './i18n-cache/utils/resolveCacheLocale';
+export { dedupePending } from './i18n-cache/translations-manager/utils/dedupePending';
 export { hashMessage } from './utils/hashMessage';
 export { getCookieValue, parseAcceptLanguage } from './utils/request';
