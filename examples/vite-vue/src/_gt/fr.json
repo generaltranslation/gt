@@ -1,0 +1,80 @@
+{
+  "66f5915ccc76af67": "Vos préférences sont enregistrées.",
+  "d0e4315ff74c2dbd": "Langue",
+  "2e0703058b1b24d8": [
+    {
+      "t": "h1",
+      "i": 1,
+      "c": [
+        " Bonjour, ",
+        {
+          "i": 2,
+          "k": "_gt_value_2",
+          "v": "v"
+        },
+        " ! "
+      ]
+    },
+    {
+      "t": "p",
+      "i": 3,
+      "c": "Une petite application Vue fondée sur de simples recherches de traduction."
+    }
+  ],
+  "4d1d2cf71724ed0e": "Cette phrase provient de useGT().",
+  "df7d087dcc38e44a": "Pluriel et nombre",
+  "a7dde4d7243f916e": {
+    "t": "Plural",
+    "i": 1,
+    "d": {
+      "b": {
+        "one": "Vous avez un article.",
+        "other": [
+          " Vous avez ",
+          {
+            "i": 2,
+            "k": "_gt_n_2",
+            "v": "n"
+          },
+          " articles. "
+        ]
+      },
+      "t": "p"
+    },
+    "c": " Vous n’avez aucun article. "
+  },
+  "45fb6ab4ee60997d": "Retirer un article",
+  "1caf7a41a09d361f": "Nombre d’articles",
+  "08bd07d186d6ef9c": "Ajouter un article",
+  "0810b57eb8f7cbb7": "Sélection de branche",
+  "14e7b0f19c19b16a": {
+    "t": "Branch",
+    "i": 1,
+    "d": {
+      "b": {
+        "formal": "Nous avons le plaisir de vous accueillir.",
+        "casual": "Ravi de vous voir !"
+      },
+      "t": "b"
+    },
+    "c": " Bienvenue. "
+  },
+  "1bfea8e931bd6c6e": "Formel",
+  "c874c19f8a9f5e49": "Décontracté",
+  "40bee04f09f65f7d": "Valeurs adaptées à la langue",
+  "9ed7179a22363eaf": "Budget",
+  "d88372c9c1e9e4f5": "Date de lancement",
+  "0d013c8f6ffd22a8": "Les chaînes simples restent simples",
+  "5fb10dc1bf5106d9": "Les accolades restent littérales : {name}",
+  "9b8297df593df5ad": {
+    "t": "h2",
+    "i": 1,
+    "c": "Les réexportations locales fonctionnent en TSX"
+  },
+  "c7d97d97d0769df7": {
+    "t": "p",
+    "i": 1,
+    "c": "Les composants avec espace de noms fonctionnent en TSX."
+  },
+  "ac1d0e7941fbc48f": "Le transfert du traducteur fonctionne en TSX."
+}

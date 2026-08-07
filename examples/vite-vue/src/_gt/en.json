@@ -1,0 +1,80 @@
+{
+  "66f5915ccc76af67": "Your preferences are saved.",
+  "d0e4315ff74c2dbd": "Language",
+  "2e0703058b1b24d8": [
+    {
+      "t": "h1",
+      "i": 1,
+      "c": [
+        " Hello, ",
+        {
+          "i": 2,
+          "k": "_gt_value_2",
+          "v": "v"
+        },
+        " ! "
+      ]
+    },
+    {
+      "t": "p",
+      "i": 3,
+      "c": "A small Vue app powered by lightweight translation lookups."
+    }
+  ],
+  "4d1d2cf71724ed0e": "This sentence comes from useGT().",
+  "df7d087dcc38e44a": "Plural and number",
+  "a7dde4d7243f916e": {
+    "t": "Plural",
+    "i": 1,
+    "d": {
+      "b": {
+        "one": "You have one item.",
+        "other": [
+          " You have ",
+          {
+            "i": 2,
+            "k": "_gt_n_2",
+            "v": "n"
+          },
+          " items. "
+        ]
+      },
+      "t": "p"
+    },
+    "c": " You have no items. "
+  },
+  "45fb6ab4ee60997d": "Remove one item",
+  "1caf7a41a09d361f": "Item count",
+  "08bd07d186d6ef9c": "Add one item",
+  "0810b57eb8f7cbb7": "Branch selection",
+  "14e7b0f19c19b16a": {
+    "t": "Branch",
+    "i": 1,
+    "d": {
+      "b": {
+        "formal": "It is a pleasure to welcome you.",
+        "casual": "Great to see you!"
+      },
+      "t": "b"
+    },
+    "c": " Welcome. "
+  },
+  "1bfea8e931bd6c6e": "Formal",
+  "c874c19f8a9f5e49": "Casual",
+  "40bee04f09f65f7d": "Locale-aware values",
+  "9ed7179a22363eaf": "Budget",
+  "d88372c9c1e9e4f5": "Launch date",
+  "0d013c8f6ffd22a8": "Plain strings stay plain",
+  "5fb10dc1bf5106d9": "Braces are literal: {name}",
+  "9b8297df593df5ad": {
+    "t": "h2",
+    "i": 1,
+    "c": "Local re-exports work in TSX"
+  },
+  "c7d97d97d0769df7": {
+    "t": "p",
+    "i": 1,
+    "c": "Namespace components work in TSX."
+  },
+  "ac1d0e7941fbc48f": "Translator forwarding works in TSX."
+}
