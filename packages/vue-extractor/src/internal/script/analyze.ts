@@ -1126,6 +1126,12 @@ function recordDynamicImportBinding(
   if (!resolution || resolution.status === 'absent') return;
   if (resolution.status !== 'resolved') {
     if (
+      resolution.status === 'invalid' &&
+      materializeRecoveredOrdinaryResolution(resolution, state) !== undefined
+    ) {
+      return;
+    }
+    if (
       establishesEntryProvenance &&
       resolution.status === 'invalid' &&
       resolution.hasGTSourceReference
@@ -1203,37 +1209,48 @@ function registerLocalImportDeclaration(
           ? specifier.imported.name
           : specifier.imported.value;
     const resolution = resolver.resolveExport(modulePath, exportName);
+    let materialized: MaterializedLocalExport | undefined;
     if (resolution.status !== 'resolved') {
-      if (
-        importerFile === state.analysis.entryFile &&
-        resolution.status === 'invalid' &&
-        resolution.hasGTSourceReference
-      ) {
-        state.analysis.hasGTSourceReference = true;
-        state.unsupportedMalformedGTReference = true;
-      }
-      recordUncertainTranslationHelperBinding(
-        specifier.local.name,
-        scope,
-        state
-      );
-      if (resolution.status === 'ambiguous') {
-        recordAmbiguousLocalBinding(specifier.local.name, state);
-      } else if (
-        resolution.status === 'invalid' &&
-        resolution.hasGTSourceReference
-      ) {
-        recordInvalidGTResolution(specifier.local.name, resolution, state);
-      } else {
-        recordUnresolvedGTShapedBinding(
-          specifier.local.name,
-          exportName,
-          state
+      if (resolution.status === 'invalid') {
+        materialized = materializeRecoveredOrdinaryResolution(
+          resolution,
+          state,
+          true
         );
       }
-      continue;
+      if (!materialized) {
+        if (
+          importerFile === state.analysis.entryFile &&
+          resolution.status === 'invalid' &&
+          resolution.hasGTSourceReference
+        ) {
+          state.analysis.hasGTSourceReference = true;
+          state.unsupportedMalformedGTReference = true;
+        }
+        recordUncertainTranslationHelperBinding(
+          specifier.local.name,
+          scope,
+          state
+        );
+        if (resolution.status === 'ambiguous') {
+          recordAmbiguousLocalBinding(specifier.local.name, state);
+        } else if (
+          resolution.status === 'invalid' &&
+          resolution.hasGTSourceReference
+        ) {
+          recordInvalidGTResolution(specifier.local.name, resolution, state);
+        } else {
+          recordUnresolvedGTShapedBinding(
+            specifier.local.name,
+            exportName,
+            state
+          );
+        }
+        continue;
+      }
+    } else {
+      materialized = materializeLocalExport(resolution.target, state);
     }
-    const materialized = materializeLocalExport(resolution.target, state);
     if (
       importerFile === state.analysis.entryFile &&
       materialized.hasGTSourceReference
@@ -1396,6 +1413,123 @@ function isKnownGTValue(value: KnownValue | undefined): boolean {
   );
 }
 
+/** Materializes the one ordinary origin proven through a malformed module. */
+function materializeRecoveredOrdinaryResolution(
+  resolution: Extract<LocalExportResolution, { status: 'invalid' }>,
+  state: ScriptState,
+  preserveLocalIdentity = false
+): MaterializedLocalExport | undefined {
+  if (
+    resolution.hasGTSourceReference ||
+    resolution.gtExportName ||
+    resolution.recoveredTargets?.length !== 1
+  ) {
+    return undefined;
+  }
+  const target = resolution.recoveredTargets[0];
+  if (target.type === 'ordinary-external') return {};
+  if (target.type === 'external' || target.type === 'external-namespace') {
+    return target.source === 'vue'
+      ? materializeLocalExport(target, state)
+      : undefined;
+  }
+  // A recovered local namespace can hide renamed GT exports. The resolver
+  // cannot enumerate that shape exhaustively after syntax recovery, so keep
+  // the whole namespace fail-closed rather than proving selected names only.
+  if (target.type === 'namespace') return undefined;
+
+  const materialized = materializeLocalExport(target, state);
+  if (
+    materialized.hasGTSourceReference ||
+    materialized.possibleGTComponent ||
+    materialized.possibleStringFunction ||
+    materialized.unsafeCallable ||
+    isKnownGTValue(materialized.value)
+  ) {
+    return undefined;
+  }
+  if (localTargetAliasesKnownNonVueRuntime(target)) return materialized;
+  return preserveLocalIdentity &&
+    materialized.callable &&
+    isOrdinaryIdentityFunction(materialized.callable.node)
+    ? materialized
+    : undefined;
+}
+
+/** Proves a direct immutable alias back to an official non-Vue GT runtime. */
+function localTargetAliasesKnownNonVueRuntime(
+  target: Extract<LocalExportTarget, { type: 'expression' | 'local' }>
+): boolean {
+  if (target.type === 'expression') {
+    return expressionAliasesKnownNonVueRuntime(
+      target.node,
+      target.record.programScope,
+      new Set()
+    );
+  }
+  const binding = target.record.programScope.getBinding(target.exportName);
+  if (!binding) return false;
+  const source = getBindingSource(binding);
+  if (!source || source.pattern.type !== 'Identifier') return false;
+  return expressionAliasesKnownNonVueRuntime(
+    source.expression.node,
+    source.expression.scope,
+    new Set([binding])
+  );
+}
+
+/** Follows only immutable identifier aliases to named or default imports. */
+function expressionAliasesKnownNonVueRuntime(
+  node: t.Node,
+  scope: Scope,
+  seen: Set<Binding>
+): boolean {
+  const expression = unwrapExpression(node);
+  if (expression?.type !== 'Identifier') return false;
+  const binding = scope.getBinding(expression.name);
+  if (!binding || seen.has(binding)) return false;
+  const declaration = binding.path.parentPath;
+  if (
+    declaration?.isImportDeclaration() &&
+    isKnownNonVueGTRuntime(declaration.node.source.value)
+  ) {
+    return true;
+  }
+  const source = getBindingSource(binding);
+  return Boolean(
+    source &&
+    source.pattern.type === 'Identifier' &&
+    expressionAliasesKnownNonVueRuntime(
+      source.expression.node,
+      source.expression.scope,
+      new Set(seen).add(binding)
+    )
+  );
+}
+
+/** Proves the narrow local helper form without following unknown dependencies. */
+function isOrdinaryIdentityFunction(node: t.Function): boolean {
+  if (
+    node.async ||
+    node.generator ||
+    node.params.length !== 1 ||
+    node.params[0]?.type !== 'Identifier'
+  ) {
+    return false;
+  }
+  const returned =
+    node.body.type === 'BlockStatement'
+      ? node.body.body.length === 1 &&
+        node.body.body[0]?.type === 'ReturnStatement'
+        ? node.body.body[0].argument
+        : undefined
+      : node.body;
+  const expression = unwrapExpression(returned);
+  return (
+    expression?.type === 'Identifier' && expression.name === node.params[0].name
+  );
+}
+
 /** Makes statically known members of a local namespace visible to templates. */
 function recordLocalNamespaceMembers(
   localName: string,
@@ -1417,6 +1551,12 @@ function recordLocalNamespaceMembers(
     const resolution = resolver.resolveExport(modulePath, exportName);
     if (resolution.status === 'absent') continue;
     if (resolution.status !== 'resolved') {
+      if (
+        resolution.status === 'invalid' &&
+        materializeRecoveredOrdinaryResolution(resolution, state) !== undefined
+      ) {
+        continue;
+      }
       if (
         resolution.status === 'invalid' &&
         resolution.hasGTSourceReference &&

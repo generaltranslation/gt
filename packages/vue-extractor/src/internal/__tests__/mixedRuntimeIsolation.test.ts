@@ -1194,6 +1194,242 @@ describe('standalone script provenance gating', () => {
     expect(output.errors).toEqual([]);
   });
 
+  it.each(
+    REACT_FAMILY_RUNTIMES.flatMap((runtime) => [
+      {
+        barrel: `export { T, msg, useGT } from '${runtime}'; const broken = @;`,
+        consumer: `import { T, msg, useGT } from './malformed-runtime';
+          msg('Malformed named React message');
+          useGT()('Malformed named React function');
+          export const View = () => <T>Malformed named React rich text</T>;`,
+        route: 'named',
+        runtime,
+      },
+      {
+        barrel: `export * from '${runtime}'; const broken = @;`,
+        consumer: `import { T, msg, useGT } from './malformed-runtime';
+          msg('Malformed star React message');
+          useGT()('Malformed star React function');
+          export const View = () => <T>Malformed star React rich text</T>;`,
+        route: 'star',
+        runtime,
+      },
+      {
+        barrel: `export * as Runtime from '${runtime}'; const broken = @;`,
+        consumer: `import { Runtime } from './malformed-runtime';
+          Runtime.msg('Malformed namespace React message');
+          Runtime.useGT()('Malformed namespace React function');
+          export const View = () => (
+            <Runtime.T>Malformed namespace React rich text</Runtime.T>
+          );`,
+        route: 'namespace',
+        runtime,
+      },
+    ])
+  )(
+    'preserves ordinary $runtime provenance through a malformed $route re-export',
+    async ({ barrel, consumer }) => {
+      write('malformed-runtime.ts', barrel);
+      const output = await extractFromVueSource(
+        `import { msg as vueMsg } from 'gt-vue';
+         void vueMsg;
+         ${consumer}`,
+        path.join(fixtureRoot, 'malformed-runtime-consumer.tsx'),
+        {
+          projectRoot: fixtureRoot,
+          requireGTProvenance: true,
+        }
+      );
+
+      expect(output.results).toEqual([]);
+      expect(output.errors).toEqual([]);
+    }
+  );
+
+  it.each([
+    {
+      barrel: `export { msg } from './ordinary-runtime'; const broken = @;`,
+      route: 'named',
+    },
+    {
+      barrel: `export * from './ordinary-runtime'; const broken = @;`,
+      route: 'star',
+    },
+  ])(
+    'preserves a local exact identity through a malformed $route re-export',
+    async ({ barrel }) => {
+      write('ordinary-runtime.ts', `export const msg = (source) => source;`);
+      write('malformed-ordinary.ts', barrel);
+      const output = await extractFromVueSource(
+        `import { T as VueT } from 'gt-vue';
+         import { msg } from './malformed-ordinary';
+         void VueT;
+         msg('Malformed ordinary message');`,
+        path.join(fixtureRoot, 'malformed-ordinary-consumer.ts'),
+        {
+          projectRoot: fixtureRoot,
+          requireGTProvenance: true,
+        }
+      );
+
+      expect(output.results).toEqual([]);
+      expect(output.errors).toEqual([]);
+    }
+  );
+
+  it('preserves recovered identity-helper semantics for a proven translator', async () => {
+    write('identity-helper.ts', `export const pass = (value) => value;`);
+    write(
+      'malformed-identity-helper.ts',
+      `export { pass } from './identity-helper'; const broken = @;`
+    );
+    const output = await extractFromVueSource(
+      `import { useGT } from 'gt-vue';
+       import { pass } from './malformed-identity-helper';
+       const gt = useGT();
+       [gt].map(pass)[0]('Recovered identity callback');`,
+      path.join(fixtureRoot, 'malformed-identity-helper-consumer.ts'),
+      {
+        projectRoot: fixtureRoot,
+        requireGTProvenance: true,
+      }
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(output.results.map(({ source }) => source)).toEqual([
+      'Recovered identity callback',
+    ]);
+  });
+
+  it.each(REACT_FAMILY_RUNTIMES)(
+    'preserves an immutable local msg alias to %s through a malformed re-export',
+    async (runtime) => {
+      write(
+        'aliased-runtime.ts',
+        `import { msg as runtimeMsg } from '${runtime}';
+         export const msg = runtimeMsg;`
+      );
+      write(
+        'malformed-aliased-runtime.ts',
+        `export { msg } from './aliased-runtime'; const broken = @;`
+      );
+      const output = await extractFromVueSource(
+        `import { T as VueT } from 'gt-vue';
+         import { msg } from './malformed-aliased-runtime';
+         void VueT;
+         msg('Malformed aliased React message');`,
+        path.join(fixtureRoot, 'malformed-aliased-runtime-consumer.ts'),
+        {
+          projectRoot: fixtureRoot,
+          requireGTProvenance: true,
+        }
+      );
+
+      expect(output.results).toEqual([]);
+      expect(output.errors).toEqual([]);
+    }
+  );
+
+  it.each([
+    {
+      module: `import { msg as runtimeMsg } from 'gt-vue';
+        export const msg = runtimeMsg;`,
+      title: 'gt-vue alias',
+    },
+    {
+      module: `import { msg as runtimeMsg } from '@missing/runtime';
+        export const msg = runtimeMsg;`,
+      title: 'unresolved alias',
+    },
+    {
+      module: `import { msg as runtimeMsg } from 'gt-react';
+        export let msg = runtimeMsg;
+        msg = (source) => source;`,
+      title: 'mutable React-family alias',
+    },
+    {
+      module: `import * as ReactGT from 'gt-react';
+        import { msg as vueMsg } from 'gt-vue';
+        export const msg = ReactGT[vueMsg('Hidden key')];`,
+      title: 'computed React-family namespace member',
+    },
+  ])(
+    'keeps a local $title behind a malformed barrel fail-closed',
+    async ({ module }) => {
+      write('unsafe-aliased-runtime.ts', module);
+      write(
+        'malformed-unsafe-alias.ts',
+        `export { msg } from './unsafe-aliased-runtime'; const broken = @;`
+      );
+      const output = await extractFromVueSource(
+        `import { T as VueT } from 'gt-vue';
+         import { msg } from './malformed-unsafe-alias';
+         void VueT;
+         msg('Unsafe malformed alias');`,
+        path.join(fixtureRoot, 'malformed-unsafe-alias-consumer.ts'),
+        {
+          projectRoot: fixtureRoot,
+          requireGTProvenance: true,
+        }
+      );
+
+      expect(output.results).toEqual([]);
+      expect(output.errors).toEqual([
+        expect.stringContaining('possible gt-vue string function alias'),
+      ]);
+    }
+  );
+
+  it.each([
+    {
+      expectError: false,
+      malformed: `export * from './ordinary-star-source'; const broken = @;`,
+      title: 'all-ordinary contributors',
+    },
+    {
+      expectError: true,
+      malformed: `export { msg } from 'gt-vue'; const broken = @;`,
+      title: 'an ordinary and a gt-vue contributor',
+    },
+    {
+      expectError: true,
+      malformed: `export * from '@missing/runtime'; const broken = @;`,
+      title: 'an ordinary and an unknown contributor',
+    },
+  ])(
+    'keeps a valid outer star barrel sound with $title',
+    async ({ expectError, malformed }) => {
+      write(
+        'ordinary-star-source.ts',
+        `export const msg = (source) => source;`
+      );
+      write('malformed-star-source.ts', malformed);
+      write(
+        'valid-outer-star.ts',
+        `export * from './ordinary-star-source';
+         export * from './malformed-star-source';`
+      );
+      const output = await extractFromVueSource(
+        `import { T as VueT } from 'gt-vue';
+         import { msg } from './valid-outer-star';
+         void VueT;
+         msg('Valid outer star message');`,
+        path.join(fixtureRoot, 'valid-outer-star-consumer.ts'),
+        {
+          projectRoot: fixtureRoot,
+          requireGTProvenance: true,
+        }
+      );
+
+      expect(output.results).toEqual([]);
+      expect(output.errors).toEqual(
+        expectError
+          ? [expect.stringContaining('possible gt-vue string function alias')]
+          : []
+      );
+    }
+  );
+
   it.each(['ts', 'mts', 'cts'])(
     'recognizes a local barrel before an angle-bracket assertion in .%s',
     async (extension) => {

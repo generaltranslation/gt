@@ -132,6 +132,8 @@ export type LocalExportResolution =
   | {
       gtExportName?: string | '*';
       hasGTSourceReference?: boolean;
+      /** Fully resolved targets recovered from an otherwise invalid module. */
+      recoveredTargets?: LocalExportTarget[];
       status: 'invalid';
     }
   | { status: 'resolved'; target: LocalExportTarget };
@@ -259,36 +261,66 @@ export function createLocalModuleResolver(
     if (exportName === 'default') return { status: 'absent' };
 
     const candidates: LocalExportTarget[] = [];
+    let ambiguous = false;
     let invalid = false;
     let invalidGTExportName: string | '*' | undefined;
     let invalidGTSourceReference = false;
+    let recoveredTargets: LocalExportTarget[] | undefined = [];
     for (const source of record.starExports) {
       const candidate = resolveFromSource(record, source, exportName, nextSeen);
-      if (candidate.status === 'resolved') candidates.push(candidate.target);
-      if (candidate.status === 'ambiguous') return candidate;
+      if (candidate.status === 'absent') continue;
+      const candidateGTExportName = readGTExportName(candidate, nextSeen);
+      invalidGTSourceReference ||= candidateGTExportName !== undefined;
+      invalidGTExportName ??= candidateGTExportName;
+      if (candidate.status === 'resolved') {
+        candidates.push(candidate.target);
+        recoveredTargets?.push(candidate.target);
+      }
+      if (candidate.status === 'ambiguous') {
+        ambiguous = true;
+        recoveredTargets = undefined;
+      }
       if (candidate.status === 'invalid') {
         invalid = true;
         invalidGTSourceReference ||= candidate.hasGTSourceReference === true;
         invalidGTExportName ??= candidate.gtExportName;
+        if (recoveredTargets && candidate.recoveredTargets) {
+          recoveredTargets.push(...candidate.recoveredTargets);
+        } else {
+          recoveredTargets = undefined;
+        }
       }
     }
-    if (candidates.length === 0) {
-      return invalid
-        ? {
-            ...(invalidGTSourceReference && {
-              hasGTSourceReference: true,
-            }),
-            ...(invalidGTExportName && {
-              gtExportName: invalidGTExportName,
-            }),
-            status: 'invalid',
-          }
-        : { status: 'absent' };
-    }
     const origins = new Set(candidates.map(({ originKey }) => originKey));
-    return origins.size === 1
-      ? { status: 'resolved', target: candidates[0]! }
-      : { status: 'ambiguous' };
+    if (origins.size > 1) {
+      ambiguous = true;
+      recoveredTargets = undefined;
+    }
+    if (
+      recoveredTargets &&
+      new Set(recoveredTargets.map(({ originKey }) => originKey)).size > 1
+    ) {
+      ambiguous = true;
+      recoveredTargets = undefined;
+    }
+    if (invalid) {
+      return {
+        ...(invalidGTSourceReference && {
+          hasGTSourceReference: true,
+        }),
+        ...(invalidGTExportName && {
+          gtExportName: invalidGTExportName,
+        }),
+        ...(recoveredTargets?.length && {
+          recoveredTargets: uniqueRecoveredTargets(recoveredTargets),
+        }),
+        status: 'invalid',
+      };
+    }
+    if (ambiguous) return { status: 'ambiguous' };
+    return candidates.length === 0
+      ? { status: 'absent' }
+      : { status: 'resolved', target: candidates[0]! };
   };
 
   const resolveRecoveredExport = (
@@ -313,15 +345,36 @@ export function createLocalModuleResolver(
     if (exportName === 'default') return { status: 'invalid' };
 
     let gtExportName: string | '*' | undefined;
+    let recoveredTargets: LocalExportTarget[] | undefined = [];
     for (const source of record.starExports) {
       const candidate = resolveFromSource(record, source, exportName, seen);
       if (candidate.status === 'absent') continue;
       gtExportName ??= readGTExportName(candidate, seen);
+      if (recoveredTargets && candidate.status === 'resolved') {
+        recoveredTargets.push(candidate.target);
+      } else if (
+        recoveredTargets &&
+        candidate.status === 'invalid' &&
+        candidate.recoveredTargets
+      ) {
+        recoveredTargets.push(...candidate.recoveredTargets);
+      } else {
+        recoveredTargets = undefined;
+      }
+    }
+    if (
+      recoveredTargets &&
+      new Set(recoveredTargets.map(({ originKey }) => originKey)).size > 1
+    ) {
+      recoveredTargets = undefined;
     }
     return {
       ...(gtExportName && {
         gtExportName,
         hasGTSourceReference: true,
+      }),
+      ...(recoveredTargets?.length && {
+        recoveredTargets: uniqueRecoveredTargets(recoveredTargets),
       }),
       status: 'invalid',
     };
@@ -381,6 +434,11 @@ export function createLocalModuleResolver(
         gtExportName,
         hasGTSourceReference: true,
       }),
+      ...(resolution.status === 'resolved'
+        ? { recoveredTargets: [resolution.target] }
+        : resolution.status === 'invalid' && resolution.recoveredTargets
+          ? { recoveredTargets: resolution.recoveredTargets }
+          : {}),
       status: 'invalid',
     };
   };
@@ -654,6 +712,15 @@ export function createLocalModuleResolver(
     resolveExport,
     resolveModule,
   };
+}
+
+/** Deduplicates recovered graph targets without discarding their identities. */
+function uniqueRecoveredTargets(
+  targets: LocalExportTarget[]
+): LocalExportTarget[] {
+  return [
+    ...new Map(targets.map((target) => [target.originKey, target])).values(),
+  ];
 }
 
 function resolveSourceFile(requested: string): string | undefined {
