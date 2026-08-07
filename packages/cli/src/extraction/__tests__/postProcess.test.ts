@@ -99,6 +99,74 @@ describe('dedupeUpdates', () => {
 
     expect(updates).toHaveLength(2);
   });
+
+  it('preserves repeated source context for one extraction runtime', () => {
+    const shared = { after: 'after', before: 'before', target: 'target' };
+    const distinct = {
+      after: 'different after',
+      before: 'before',
+      target: 'target',
+    };
+    const updates: Updates = [
+      {
+        dataFormat: 'STRING',
+        source: 'hello',
+        metadata: {
+          hash: 'h1',
+          sourceCode: { 'src/shared.ts': [shared] },
+        },
+      },
+      {
+        dataFormat: 'STRING',
+        source: 'hello',
+        metadata: {
+          hash: 'h1',
+          sourceCode: { 'src/shared.ts': [{ ...shared }, distinct] },
+        },
+      },
+    ];
+
+    dedupeUpdates(updates);
+
+    expect(updates).toHaveLength(1);
+    expect(updates[0].metadata.sourceCode).toEqual({
+      'src/shared.ts': [shared, { ...shared }, distinct],
+    });
+  });
+
+  it('deduplicates incoming cross-runtime context while preserving distinct context', () => {
+    const shared = { after: 'after', before: 'before', target: 'target' };
+    const distinct = {
+      after: 'different after',
+      before: 'before',
+      target: 'target',
+    };
+    const updates: Updates = [
+      {
+        dataFormat: 'STRING',
+        source: 'hello',
+        metadata: {
+          hash: 'h1',
+          sourceCode: { 'src/shared.ts': [shared, { ...shared }] },
+        },
+      },
+      {
+        dataFormat: 'STRING',
+        source: 'hello',
+        metadata: {
+          hash: 'h1',
+          sourceCode: { 'src/shared.ts': [{ ...shared }, distinct] },
+        },
+      },
+    ];
+
+    dedupeUpdates(updates, { dedupeIncomingSourceCode: true });
+
+    expect(updates).toHaveLength(1);
+    expect(updates[0].metadata.sourceCode).toEqual({
+      'src/shared.ts': [shared, { ...shared }, distinct],
+    });
+  });
 });
 
 describe('linkDeriveUpdates', () => {

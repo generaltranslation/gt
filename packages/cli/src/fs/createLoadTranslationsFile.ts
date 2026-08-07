@@ -47,15 +47,6 @@ export async function createLoadTranslationsFile(
 
   const loadTranslationsDir = usingSrcDirectory ? srcDirectory : appDirectory;
   requireWithinProject(realProjectRoot, fs.realpathSync(loadTranslationsDir));
-  const resolvedTranslationsDir = path.resolve(appDirectory, translationsDir);
-  requireLexicallyWithinProject(appDirectory, resolvedTranslationsDir);
-  rejectLinkedPathSegments(appDirectory, resolvedTranslationsDir);
-  const relativePath = path.relative(
-    loadTranslationsDir,
-    resolvedTranslationsDir
-  );
-  const publicPath = toRelativeImportPath(relativePath);
-
   const filePath = usingSrcDirectory
     ? path.join(srcDirectory, 'loadTranslations.js')
     : path.join(appDirectory, 'loadTranslations.js');
@@ -68,32 +59,48 @@ export async function createLoadTranslationsFile(
   if (loaderStat && !loaderStat.isFile()) {
     throw unsafeLoaderPathError('The translation loader path is not a file');
   }
-
-  if (!loaderStat) {
-    await fs.promises.mkdir(resolvedTranslationsDir, { recursive: true });
-    requireWithinProject(
-      realProjectRoot,
-      fs.realpathSync(resolvedTranslationsDir)
+  if (loaderStat) {
+    logger.info(
+      `Found ${chalk.cyan('loadTranslations.js')} file at ${chalk.cyan(
+        filePath
+      )}. Skipping creation...`
     );
-    const localeFiles = locales.map((locale) => ({
-      file: path.join(resolvedTranslationsDir, `${locale}.json`),
-      locale,
-    }));
-    for (const { file, locale } of localeFiles) {
-      const localeStat = tryLstat(file);
-      if (localeStat?.isSymbolicLink()) {
-        throw unsafeLoaderPathError(
-          `The ${locale} translation catalog is a symbolic link`
-        );
-      }
-      if (localeStat && !localeStat.isFile()) {
-        throw unsafeLoaderPathError(
-          `The ${locale} translation catalog path is not a file`
-        );
-      }
-    }
+    return filePath;
+  }
 
-    const loadTranslationsContent = `
+  const resolvedTranslationsDir = path.resolve(appDirectory, translationsDir);
+  requireLexicallyWithinProject(appDirectory, resolvedTranslationsDir);
+  rejectLinkedPathSegments(appDirectory, resolvedTranslationsDir);
+  const relativePath = path.relative(
+    loadTranslationsDir,
+    resolvedTranslationsDir
+  );
+  const publicPath = toRelativeImportPath(relativePath);
+
+  await fs.promises.mkdir(resolvedTranslationsDir, { recursive: true });
+  requireWithinProject(
+    realProjectRoot,
+    fs.realpathSync(resolvedTranslationsDir)
+  );
+  const localeFiles = locales.map((locale) => ({
+    file: path.join(resolvedTranslationsDir, `${locale}.json`),
+    locale,
+  }));
+  for (const { file, locale } of localeFiles) {
+    const localeStat = tryLstat(file);
+    if (localeStat?.isSymbolicLink()) {
+      throw unsafeLoaderPathError(
+        `The ${locale} translation catalog is a symbolic link`
+      );
+    }
+    if (localeStat && !localeStat.isFile()) {
+      throw unsafeLoaderPathError(
+        `The ${locale} translation catalog path is not a file`
+      );
+    }
+  }
+
+  const loadTranslationsContent = `
 export default async function loadTranslations(locale) {
   try {
     // Load translations from ${translationsDir} directory
@@ -106,35 +113,28 @@ export default async function loadTranslations(locale) {
   }
 }
 `;
-    const loaderCreated = await publishNewFile(
-      filePath,
-      loadTranslationsContent,
-      () => requireRegularGeneratedFile(filePath, 'translation loader')
-    );
-    logger.info(
-      loaderCreated
-        ? `Created ${chalk.cyan(
-            'loadTranslations.js'
-          )} file at ${chalk.cyan(filePath)}.`
-        : `Found ${chalk.cyan('loadTranslations.js')} file at ${chalk.cyan(
-            filePath
-          )}. Skipping creation...`
-    );
-    for (const { file, locale } of localeFiles) {
-      const currentStat = tryLstat(file);
-      if (currentStat) {
-        requireRegularGeneratedFile(file, `${locale} translation catalog`);
-        continue;
-      }
-      await publishNewFile(file, '{}', () =>
-        requireRegularGeneratedFile(file, `${locale} translation catalog`)
-      );
+  const loaderCreated = await publishNewFile(
+    filePath,
+    loadTranslationsContent,
+    () => requireRegularGeneratedFile(filePath, 'translation loader')
+  );
+  logger.info(
+    loaderCreated
+      ? `Created ${chalk.cyan(
+          'loadTranslations.js'
+        )} file at ${chalk.cyan(filePath)}.`
+      : `Found ${chalk.cyan('loadTranslations.js')} file at ${chalk.cyan(
+          filePath
+        )}. Skipping creation...`
+  );
+  for (const { file, locale } of localeFiles) {
+    const currentStat = tryLstat(file);
+    if (currentStat) {
+      requireRegularGeneratedFile(file, `${locale} translation catalog`);
+      continue;
     }
-  } else {
-    logger.info(
-      `Found ${chalk.cyan('loadTranslations.js')} file at ${chalk.cyan(
-        filePath
-      )}. Skipping creation...`
+    await publishNewFile(file, '{}', () =>
+      requireRegularGeneratedFile(file, `${locale} translation catalog`)
     );
   }
 

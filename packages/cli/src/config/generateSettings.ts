@@ -20,6 +20,7 @@ import {
 import { resolveProjectId } from '../fs/utils.js';
 import crypto from 'node:crypto';
 import { execSync } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 import chalk from 'chalk';
 import { resolveConfig } from './resolveConfig.js';
@@ -27,7 +28,6 @@ import { gt } from '../utils/gt.js';
 import { generatePreset } from './optionPresets.js';
 import { GT_PARSING_FLAGS_DEFAULT } from './defaults.js';
 import { normalizeFilesOptions } from '../formats/files/transformFormat.js';
-import { determineLibrary } from '../fs/determineFramework/index.js';
 import { logger } from '../console/logger.js';
 
 export const DEFAULT_SRC_PATTERNS = [
@@ -86,6 +86,16 @@ function hasConfiguredTranslationFiles(files: unknown): boolean {
     return false;
   }
   return Object.keys(files).some((key) => key !== 'gt');
+}
+
+/** Checks the root files named by the accompanying user-facing warning. */
+function hasProjectManifest(cwd: string): boolean {
+  return [
+    'package.json',
+    'pyproject.toml',
+    'requirements.txt',
+    'setup.py',
+  ].some((filename) => fs.existsSync(path.join(cwd, filename)));
 }
 
 /**
@@ -190,7 +200,7 @@ export async function generateSettings(
   const mergedOptions: Settings = { ...gtConfig, ...flags } as Settings;
 
   if (
-    determineLibrary().library === 'base' &&
+    !hasProjectManifest(cwd) &&
     !hasConfiguredTranslationFiles(mergedOptions.files)
   ) {
     logger.warn(

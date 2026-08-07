@@ -37,4 +37,18 @@ describe('VueCLI', () => {
       "src/**/*.{js,jsx,ts,tsx}'"
     );
   });
+
+  it('retains a file-format primary while selecting gt-vue for inline commands', () => {
+    class TestVueCLI extends VueCLI {
+      readInlineLibraries() {
+        return this.getInlineExtractionLibraries();
+      }
+    }
+    const cli = new TestVueCLI(new Command(), 'i18next', [
+      'i18next-icu',
+      Libraries.GT_VUE,
+    ]);
+
+    expect(cli.readInlineLibraries()).toEqual([Libraries.GT_VUE, []]);
+  });
 });

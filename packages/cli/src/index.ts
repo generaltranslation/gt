@@ -6,10 +6,22 @@ import { determineLibrary } from './fs/determineFramework/index.js';
 import { Command } from 'commander';
 import { NodeCLI } from './cli/node.js';
 import { VueCLI } from './cli/vue.js';
-import { Libraries, isPythonLibrary } from './types/libraries.js';
+import {
+  Libraries,
+  isInlineLibrary,
+  isPythonLibrary,
+} from './types/libraries.js';
+import {
+  beginWorkspaceDiscoverySession,
+  endWorkspaceDiscoverySession,
+} from './fs/determineFramework/workspacePackages.js';
 
 export function main(program: Command) {
   program.name('gt');
+  beginWorkspaceDiscoverySession();
+  program.hook('postAction', () => {
+    endWorkspaceDiscoverySession();
+  });
 
   const { library, additionalModules } = determineLibrary();
   let cli: BaseCLI;
@@ -21,7 +33,10 @@ export function main(program: Command) {
     library === Libraries.GT_TANSTACK_START
   ) {
     cli = new ReactCLI(program, library, additionalModules);
-  } else if (library === Libraries.GT_VUE) {
+  } else if (
+    library === Libraries.GT_VUE ||
+    (!isInlineLibrary(library) && additionalModules.includes(Libraries.GT_VUE))
+  ) {
     cli = new VueCLI(program, library, additionalModules);
   } else if (library === Libraries.GT_NODE) {
     cli = new NodeCLI(program, library, additionalModules);

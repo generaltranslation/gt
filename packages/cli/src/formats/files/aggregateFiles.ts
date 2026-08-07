@@ -8,7 +8,7 @@ import {
   readFile,
   readBinaryFileBase64,
 } from '../../fs/findFilepath.js';
-import { Settings } from '../../types/index.js';
+import { Settings, SupportedLibraries } from '../../types/index.js';
 import type { FileFormat, DataFormat, FileToUpload } from '../../types/data.js';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
 import { parseJson } from '../json/parseJson.js';
@@ -53,7 +53,11 @@ function isCompanionMetadataFile(
 }
 
 export async function aggregateFiles(
-  settings: Settings
+  settings: Settings,
+  detectedLibraries?: {
+    library: SupportedLibraries;
+    additionalModules: readonly SupportedLibraries[];
+  }
 ): Promise<{ files: FileToUpload[]; publishMap: Map<string, boolean> }> {
   // Aggregate all files to translate
   const files: FileToUpload[] = [];
@@ -76,7 +80,8 @@ export async function aggregateFiles(
 
   // Process JSON files
   if (filePaths.json) {
-    const { library, additionalModules } = determineLibrary();
+    const { library, additionalModules } =
+      detectedLibraries ?? determineLibrary();
 
     // Determine dataFormat for JSONs
     let dataFormat: DataFormat;

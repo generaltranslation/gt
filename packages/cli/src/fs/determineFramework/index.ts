@@ -33,6 +33,7 @@ export function determineLibrary(): {
     const cwd = process.cwd();
     const packageJsonPath = path.join(cwd, 'package.json');
     let rootDependencies: Record<string, string> = {};
+    let rootPrimaryDependencies: Record<string, string> = {};
     let aggregatePrimaryDependencies: Record<string, string> = {};
     let rootJavaScriptLibrary: SupportedLibraries | undefined;
     let aggregateDependencies: Record<string, string> = {};
@@ -43,9 +44,11 @@ export function determineLibrary(): {
       const packageJson = JSON.parse(
         fs.readFileSync(packageJsonPath, 'utf8')
       ) as JavaScriptPackageManifest;
-      const rootPrimaryDependencies =
-        getPrimaryJavaScriptDependencies(packageJson);
+      rootPrimaryDependencies = getPrimaryJavaScriptDependencies(packageJson);
       rootDependencies = getJavaScriptDependencies(packageJson);
+      rootJavaScriptLibrary =
+        detectJavaScriptLibrary(rootPrimaryDependencies) ??
+        detectDeclaredVueLibrary(rootDependencies);
       const manifests = readDeclaredWorkspaceManifests(cwd, packageJson);
       aggregatePrimaryDependencies = Object.assign(
         {},
@@ -57,12 +60,6 @@ export function determineLibrary(): {
         rootDependencies,
         ...manifests.map(getJavaScriptDependencies)
       ) as Record<string, string>;
-      // Preserve the historical authority of dependencies/devDependencies.
-      // Peer and optional declarations remain a fallback so package-only Vue
-      // consumers are still detected without overriding an installed runtime.
-      rootJavaScriptLibrary =
-        detectJavaScriptLibrary(rootPrimaryDependencies) ??
-        detectJavaScriptLibrary(rootDependencies);
     }
 
     if (rootJavaScriptLibrary) {
@@ -70,7 +67,11 @@ export function determineLibrary(): {
         library: rootJavaScriptLibrary,
         additionalModules: detectAdditionalModules(
           rootJavaScriptLibrary,
-          aggregateDependencies
+          rootPrimaryDependencies,
+          includeDeclaredVue(
+            aggregatePrimaryDependencies,
+            aggregateDependencies
+          )
         ),
       };
     }
@@ -80,21 +81,28 @@ export function determineLibrary(): {
     if (pythonLibrary) {
       return {
         library: pythonLibrary,
-        additionalModules: rootDependencies['i18next-icu']
+        additionalModules: rootPrimaryDependencies['i18next-icu']
           ? ['i18next-icu']
           : [],
       };
     }
 
-    const workspaceJavaScriptLibrary =
-      detectJavaScriptLibrary(aggregatePrimaryDependencies) ??
-      detectJavaScriptLibrary(aggregateDependencies);
+    // Workspace discovery exists to add Vue extraction without changing the
+    // CLI mode of existing file-only or React-only monorepos. A workspace
+    // graph with no gt-vue declaration retains the historical root result.
+    const workspaceJavaScriptLibrary = aggregateDependencies[Libraries.GT_VUE]
+      ? (detectJavaScriptLibrary(aggregatePrimaryDependencies) ??
+        detectDeclaredVueLibrary(aggregateDependencies))
+      : undefined;
     if (workspaceJavaScriptLibrary) {
       return {
         library: workspaceJavaScriptLibrary,
         additionalModules: detectWorkspaceAdditionalModules(
           workspaceJavaScriptLibrary,
-          aggregateDependencies
+          includeDeclaredVue(
+            aggregatePrimaryDependencies,
+            aggregateDependencies
+          )
         ),
       };
     }
@@ -134,13 +142,34 @@ function detectJavaScriptLibrary(
   return JAVASCRIPT_LIBRARY_PRIORITY.find((name) => dependencies[name]);
 }
 
+/** Allows gt-vue peer/optional declarations without widening legacy runtimes. */
+function detectDeclaredVueLibrary(
+  dependencies: Record<string, string>
+): typeof Libraries.GT_VUE | undefined {
+  return dependencies[Libraries.GT_VUE] ? Libraries.GT_VUE : undefined;
+}
+
+/** Adds only gt-vue from non-primary dependency fields. */
+function includeDeclaredVue(
+  primaryDependencies: Record<string, string>,
+  allDependencies: Record<string, string>
+): Record<string, string> {
+  return allDependencies[Libraries.GT_VUE]
+    ? {
+        ...primaryDependencies,
+        [Libraries.GT_VUE]: allDependencies[Libraries.GT_VUE],
+      }
+    : primaryDependencies;
+}
+
 function detectAdditionalModules(
   library: SupportedLibraries,
-  dependencies: Record<string, string>
+  primaryDependencies: Record<string, string>,
+  aggregateDependencies: Record<string, string> = primaryDependencies
 ): SupportedLibraries[] {
   const additionalModules: SupportedLibraries[] = [];
 
-  if (dependencies['i18next-icu']) {
+  if (primaryDependencies['i18next-icu']) {
     additionalModules.push('i18next-icu');
   }
 
@@ -149,12 +178,12 @@ function detectAdditionalModules(
   // when both runtimes are declared by running it as an additional module.
   if (
     library !== Libraries.GT_NODE &&
-    dependencies[Libraries.GT_VUE] &&
-    dependencies[Libraries.GT_NODE]
+    aggregateDependencies[Libraries.GT_VUE] &&
+    aggregateDependencies[Libraries.GT_NODE]
   ) {
     additionalModules.push(Libraries.GT_NODE);
   }
-  if (library !== Libraries.GT_VUE && dependencies[Libraries.GT_VUE]) {
+  if (library !== Libraries.GT_VUE && aggregateDependencies[Libraries.GT_VUE]) {
     additionalModules.push(Libraries.GT_VUE);
   }
 

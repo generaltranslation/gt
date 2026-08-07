@@ -33,6 +33,7 @@ import chalk from 'chalk';
 import { FILE_EXT_TO_EXT_LABEL } from '../formats/files/supportedFiles.js';
 import { handleSetupReactCommand } from '../setup/wizard.js';
 import {
+  isPackageDeclared,
   isPackageInstalled,
   searchForPackageJson,
 } from '../utils/packageJson.js';
@@ -296,7 +297,10 @@ export class BaseCLI {
         const settings = await generateSettings(initOptions, undefined, {
           requireConfig: true,
         });
-        await saveLocalEdits(settings);
+        await saveLocalEdits(settings, {
+          library: this.library,
+          additionalModules: this.additionalModules,
+        });
         logger.endCommand('Saved local edits');
       });
   }
@@ -438,7 +442,8 @@ export class BaseCLI {
       initOptions,
       settings,
       this.library,
-      this.getAdditionalInlineLibraries()
+      this.getAdditionalInlineLibraries(),
+      this.additionalModules
     );
   }
 
@@ -462,7 +467,8 @@ export class BaseCLI {
       settings,
       this.library,
       true,
-      this.getAdditionalInlineLibraries()
+      this.getAdditionalInlineLibraries(),
+      this.additionalModules
     );
   }
 
@@ -479,7 +485,8 @@ export class BaseCLI {
       initOptions,
       settings,
       this.library,
-      this.getAdditionalInlineLibraries()
+      this.getAdditionalInlineLibraries(),
+      this.additionalModules
     );
   }
 
@@ -496,7 +503,8 @@ export class BaseCLI {
       initOptions,
       settings,
       this.library,
-      this.getAdditionalInlineLibraries()
+      this.getAdditionalInlineLibraries(),
+      this.additionalModules
     );
   }
 
@@ -521,7 +529,8 @@ export class BaseCLI {
         settings,
         this.library,
         false,
-        this.getAdditionalInlineLibraries()
+        this.getAdditionalInlineLibraries(),
+        this.additionalModules
       );
       if (results) {
         await handleTranslate(
@@ -538,7 +547,8 @@ export class BaseCLI {
         initOptions,
         settings,
         this.library,
-        this.getAdditionalInlineLibraries()
+        this.getAdditionalInlineLibraries(),
+        this.additionalModules
       );
     }
     // Only postprocess files downloaded in this run
@@ -739,7 +749,7 @@ export class BaseCLI {
               const packageJson = await searchForPackageJson();
               if (
                 packageJson &&
-                !isPackageInstalled(Libraries.GT_VUE, packageJson)
+                !isPackageDeclared(Libraries.GT_VUE, packageJson)
               ) {
                 const packageManager = await getPackageManager();
                 const spinner = logger.createSpinner('timer');
@@ -802,7 +812,10 @@ export class BaseCLI {
     }
 
     // Process all file types at once with a single call
-    await upload(settings);
+    await upload(settings, {
+      library: this.library,
+      additionalModules: this.additionalModules,
+    });
   }
 
   // Wizard for configuring gt.config.json
@@ -829,7 +842,11 @@ export class BaseCLI {
     // Ask if using another i18n library
     const gtInstalled =
       !!packageJson &&
-      INLINE_LIBRARIES.some((lib) => isPackageInstalled(lib, packageJson));
+      INLINE_LIBRARIES.some((lib) =>
+        lib === Libraries.GT_VUE
+          ? isPackageDeclared(lib, packageJson)
+          : isPackageInstalled(lib, packageJson)
+      );
     const isUsingGT = ranGTSetup || gtInstalled;
 
     // Ask where the translations are stored

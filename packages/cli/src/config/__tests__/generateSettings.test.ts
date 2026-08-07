@@ -1,23 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import {
   DEFAULT_VUE_SRC_PATTERNS,
   generateSettings,
 } from '../generateSettings';
 import { resolveFiles } from '../../fs/config/parseFilesConfig';
-import { determineLibrary } from '../../fs/determineFramework/index.js';
 import { logger } from '../../console/logger.js';
 import { resolveConfig } from '../resolveConfig.js';
 
 // Mock resolveFiles
 vi.mock('../../fs/config/parseFilesConfig', () => ({
   resolveFiles: vi.fn(),
-}));
-
-vi.mock('../../fs/determineFramework/index.js', () => ({
-  determineLibrary: vi.fn(() => ({
-    library: 'base',
-    additionalModules: [],
-  })),
 }));
 
 // Mock other dependencies
@@ -73,7 +68,6 @@ vi.mock('../optionPresets.js', () => ({
   generatePreset: vi.fn(),
 }));
 
-const mockDetermineLibrary = vi.mocked(determineLibrary);
 const mockLogWarning = vi.mocked(logger.warn);
 const mockResolveConfig = vi.mocked(resolveConfig);
 
@@ -109,10 +103,6 @@ describe('generateSettings - composite patterns', () => {
       unpublishPaths: new Set(),
       parsingFlags: {},
       gtJson: { parsingFlags: {} as unknown },
-    });
-    mockDetermineLibrary.mockReturnValue({
-      library: 'base',
-      additionalModules: [],
     });
   });
 
@@ -189,6 +179,21 @@ describe('generateSettings - composite patterns', () => {
     expect(mockLogWarning).toHaveBeenCalledWith(
       expect.stringContaining('No package.json or Python project file found')
     );
+  });
+
+  it('suppresses the project-root warning when package.json exists', async () => {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-settings-root-'));
+    try {
+      fs.writeFileSync(path.join(cwd, 'package.json'), '{}');
+
+      await generateSettings({}, cwd);
+
+      expect(mockLogWarning).not.toHaveBeenCalledWith(
+        expect.stringContaining('No package.json')
+      );
+    } finally {
+      fs.rmSync(cwd, { force: true, recursive: true });
+    }
   });
 
   it('suppresses the warning when file translation config is present', async () => {

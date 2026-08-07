@@ -16,7 +16,8 @@ export async function handleSetupProject(
   options: TranslateFlags,
   settings: Settings,
   library: SupportedLibraries,
-  additionalLibraries: readonly InlineLibrary[] = []
+  additionalLibraries: readonly InlineLibrary[] = [],
+  detectedAdditionalModules?: readonly SupportedLibraries[]
 ): Promise<{
   fileVersionData: FileTranslationData | undefined;
   branchData: BranchData | undefined;
@@ -29,7 +30,8 @@ export async function handleSetupProject(
     options,
     settings,
     library,
-    additionalLibraries
+    additionalLibraries,
+    detectedAdditionalModules
   );
 
   // Dry run

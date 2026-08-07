@@ -23,7 +23,8 @@ export async function handleStage(
   settings: Settings,
   library: SupportedLibraries,
   stage: boolean,
-  additionalLibraries: readonly InlineLibrary[] = []
+  additionalLibraries: readonly InlineLibrary[] = [],
+  detectedAdditionalModules?: readonly SupportedLibraries[]
 ): Promise<{
   fileVersionData: FileTranslationData | undefined;
   jobData: EnqueueFilesResult | undefined;
@@ -38,7 +39,13 @@ export async function handleStage(
     files: allFiles,
     reactComponents,
     publishMap,
-  } = await collectFiles(options, settings, library, additionalLibraries);
+  } = await collectFiles(
+    options,
+    settings,
+    library,
+    additionalLibraries,
+    detectedAdditionalModules
+  );
 
   // Point at dashboard review setup when uploading review-gated content
   await warnManualReviewSetup(settings, allFiles);

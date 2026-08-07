@@ -2,6 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import traverseModule, { type Scope } from '@babel/traverse';
 import type * as t from '@babel/types';
+import {
+  initSync as initModuleLexer,
+  parse as parseModuleImports,
+} from 'es-module-lexer';
 import type { VueExtractionOptions } from '../../types.js';
 import { parseScriptAst } from './parser.js';
 import { isKnownNonVueGTRuntime } from './runtimeModules.js';
@@ -60,6 +64,17 @@ type DeclaredExport =
   | { type: 'namespace'; source: string }
   | { type: 'reexport'; importedName: string; source: string };
 
+type RecoveredDeclaredExport = Extract<
+  DeclaredExport,
+  { type: 'namespace' | 'reexport' }
+>;
+
+type RecoveredModuleRecord = {
+  explicitExports: Map<string, RecoveredDeclaredExport | 'ambiguous'>;
+  filePath: string;
+  starExports: string[];
+};
+
 type ImportedBinding = {
   importedName: string | '*';
   source: string;
@@ -113,7 +128,12 @@ export type LocalExportTarget =
 
 /** Result of resolving one named export through a local ESM graph. */
 export type LocalExportResolution =
-  | { status: 'absent' | 'ambiguous' | 'invalid' }
+  | { status: 'absent' | 'ambiguous' }
+  | {
+      gtExportName?: string | '*';
+      hasGTSourceReference?: boolean;
+      status: 'invalid';
+    }
   | { status: 'resolved'; target: LocalExportTarget };
 
 /** Read-only local source resolver used by the Vue script analyzer. */
@@ -124,6 +144,8 @@ export type LocalModuleResolver = {
   /** Whether a resolved module belongs to project source rather than an install. */
   isProjectModule(filePath: string): boolean;
   listExportNames(filePath: string): string[];
+  /** Whether a named export is statically connected to the gt-vue runtime. */
+  hasGTExportReference(filePath: string, exportName: string): boolean;
   resolveExport(filePath: string, exportName: string): LocalExportResolution;
   resolveModule(importer: string, specifier: string): string | undefined;
 };
@@ -138,6 +160,7 @@ export function createLocalModuleResolver(
   resolveModuleOption: VueExtractionOptions['resolveModule']
 ): LocalModuleResolver {
   const records = new Map<string, LocalModuleRecord | null>();
+  const recoveredRecords = new Map<string, RecoveredModuleRecord | null>();
   const resolutions = new Map<string, LocalExportResolution>();
 
   const isProjectModule = (filePath: string): boolean => {
@@ -191,6 +214,18 @@ export function createLocalModuleResolver(
     return parsed;
   };
 
+  const getRecoveredRecord = (
+    filePath: string
+  ): RecoveredModuleRecord | undefined => {
+    const normalized = path.resolve(filePath);
+    if (!isProjectModule(normalized)) return undefined;
+    const cached = recoveredRecords.get(normalized);
+    if (cached !== undefined) return cached ?? undefined;
+    const recovered = recoverMalformedModuleExports(normalized);
+    recoveredRecords.set(normalized, recovered ?? null);
+    return recovered;
+  };
+
   const resolveExportInternal = (
     filePath: string,
     exportName: string,
@@ -208,9 +243,14 @@ export function createLocalModuleResolver(
     }
     const cycleKey = `${normalized}\0${exportName}`;
     if (seen.has(cycleKey)) return { status: 'absent' };
-    const record = getRecord(normalized);
-    if (!record) return { status: 'invalid' };
     const nextSeen = new Set(seen).add(cycleKey);
+    const record = getRecord(normalized);
+    if (!record) {
+      const recovered = getRecoveredRecord(normalized);
+      return recovered
+        ? resolveRecoveredExport(recovered, exportName, nextSeen)
+        : { status: 'invalid' };
+    }
     const explicit = record.explicitExports.get(exportName);
     if (explicit === 'ambiguous') return { status: 'ambiguous' };
     if (explicit) {
@@ -220,14 +260,30 @@ export function createLocalModuleResolver(
 
     const candidates: LocalExportTarget[] = [];
     let invalid = false;
+    let invalidGTExportName: string | '*' | undefined;
+    let invalidGTSourceReference = false;
     for (const source of record.starExports) {
       const candidate = resolveFromSource(record, source, exportName, nextSeen);
       if (candidate.status === 'resolved') candidates.push(candidate.target);
       if (candidate.status === 'ambiguous') return candidate;
-      if (candidate.status === 'invalid') invalid = true;
+      if (candidate.status === 'invalid') {
+        invalid = true;
+        invalidGTSourceReference ||= candidate.hasGTSourceReference === true;
+        invalidGTExportName ??= candidate.gtExportName;
+      }
     }
     if (candidates.length === 0) {
-      return { status: invalid ? 'invalid' : 'absent' };
+      return invalid
+        ? {
+            ...(invalidGTSourceReference && {
+              hasGTSourceReference: true,
+            }),
+            ...(invalidGTExportName && {
+              gtExportName: invalidGTExportName,
+            }),
+            status: 'invalid',
+          }
+        : { status: 'absent' };
     }
     const origins = new Set(candidates.map(({ originKey }) => originKey));
     return origins.size === 1
@@ -235,8 +291,137 @@ export function createLocalModuleResolver(
       : { status: 'ambiguous' };
   };
 
+  const resolveRecoveredExport = (
+    record: RecoveredModuleRecord,
+    exportName: string,
+    seen: Set<string>
+  ): LocalExportResolution => {
+    const explicit = record.explicitExports.get(exportName);
+    if (explicit === 'ambiguous') return { status: 'ambiguous' };
+    if (explicit) {
+      const resolution =
+        explicit.type === 'reexport'
+          ? resolveFromSource(
+              record,
+              explicit.source,
+              explicit.importedName,
+              seen
+            )
+          : resolveRecoveredNamespace(record, explicit.source);
+      return invalidateRecoveredResolution(resolution, seen);
+    }
+    if (exportName === 'default') return { status: 'invalid' };
+
+    let gtExportName: string | '*' | undefined;
+    for (const source of record.starExports) {
+      const candidate = resolveFromSource(record, source, exportName, seen);
+      if (candidate.status === 'absent') continue;
+      gtExportName ??= readGTExportName(candidate, seen);
+    }
+    return {
+      ...(gtExportName && {
+        gtExportName,
+        hasGTSourceReference: true,
+      }),
+      status: 'invalid',
+    };
+  };
+
+  const resolveRecoveredNamespace = (
+    record: RecoveredModuleRecord,
+    source: string
+  ): LocalExportResolution => {
+    if (isKnownNonVueGTRuntime(source)) {
+      return {
+        status: 'resolved',
+        target: {
+          originKey: `${source}#namespace`,
+          type: 'ordinary-external',
+        },
+      };
+    }
+    if (isExternalModule(source)) {
+      return {
+        status: 'resolved',
+        target: {
+          originKey: `${source}#namespace`,
+          source,
+          type: 'external-namespace',
+        },
+      };
+    }
+    const modulePath = resolveModule(record.filePath, source);
+    if (!modulePath) return { status: 'invalid' };
+    if (!isProjectModule(modulePath)) {
+      return {
+        status: 'resolved',
+        target: {
+          originKey: `${modulePath}#namespace`,
+          type: 'ordinary-external',
+        },
+      };
+    }
+    return {
+      status: 'resolved',
+      target: {
+        modulePath,
+        originKey: `${modulePath}#namespace`,
+        type: 'namespace',
+      },
+    };
+  };
+
+  const invalidateRecoveredResolution = (
+    resolution: LocalExportResolution,
+    seen: Set<string>
+  ): LocalExportResolution => {
+    const gtExportName = readGTExportName(resolution, seen);
+    return {
+      ...(gtExportName && {
+        gtExportName,
+        hasGTSourceReference: true,
+      }),
+      status: 'invalid',
+    };
+  };
+
+  const readGTExportName = (
+    resolution: LocalExportResolution,
+    seen: Set<string>
+  ): string | '*' | undefined => {
+    if (resolution.status === 'invalid') {
+      return resolution.gtExportName;
+    }
+    if (resolution.status !== 'resolved') return undefined;
+    const { target } = resolution;
+    if (target.type === 'external') {
+      return target.source === 'gt-vue' ? target.exportName : undefined;
+    }
+    if (target.type === 'external-namespace') {
+      return target.source === 'gt-vue' ? '*' : undefined;
+    }
+    if (target.type !== 'namespace') return undefined;
+    return GT_EXPORT_NAMES.some((name) =>
+      Boolean(
+        readGTExportName(
+          resolveExportInternal(target.modulePath, name, seen),
+          seen
+        )
+      )
+    )
+      ? '*'
+      : undefined;
+  };
+
+  const resolutionReferencesGT = (
+    resolution: LocalExportResolution,
+    seen: Set<string>
+  ): boolean => {
+    return readGTExportName(resolution, seen) !== undefined;
+  };
+
   const resolveFromSource = (
-    record: LocalModuleRecord,
+    record: Pick<LocalModuleRecord, 'filePath'>,
     source: string,
     exportName: string,
     seen: Set<string>
@@ -427,10 +612,12 @@ export function createLocalModuleResolver(
     const normalized = path.resolve(filePath);
     if (seen.has(normalized)) return new Set();
     const record = getRecord(normalized);
-    if (!record) return new Set();
+    const recovered = record ? undefined : getRecoveredRecord(normalized);
+    if (!record && !recovered) return new Set();
+    const moduleRecord = record ?? recovered!;
     const nextSeen = new Set(seen).add(normalized);
-    const names = new Set(record.explicitExports.keys());
-    for (const source of record.starExports) {
+    const names = new Set(moduleRecord.explicitExports.keys());
+    for (const source of moduleRecord.starExports) {
       if (source === 'gt-vue') {
         for (const name of GT_EXPORT_NAMES) names.add(name);
       } else if (source === 'vue') {
@@ -438,7 +625,7 @@ export function createLocalModuleResolver(
       } else if (isKnownNonVueGTRuntime(source)) {
         continue;
       } else {
-        const modulePath = resolveModule(record.filePath, source);
+        const modulePath = resolveModule(moduleRecord.filePath, source);
         if (!modulePath || !isProjectModule(modulePath)) continue;
         for (const name of collectExportNames(modulePath, nextSeen)) {
           if (name !== 'default') names.add(name);
@@ -448,9 +635,20 @@ export function createLocalModuleResolver(
     return names;
   };
 
+  const hasGTExportReference = (
+    filePath: string,
+    exportName: string
+  ): boolean => {
+    return resolutionReferencesGT(
+      resolveExportInternal(filePath, exportName, new Set()),
+      new Set()
+    );
+  };
+
   return {
     getRecord,
     hasCustomResolver: resolveModuleOption !== undefined,
+    hasGTExportReference,
     isProjectModule,
     listExportNames,
     resolveExport,
@@ -542,19 +740,163 @@ function parseLocalModule(filePath: string): LocalModuleRecord | undefined {
   return record;
 }
 
+let moduleLexerInitialized = false;
+
+/**
+ * Recovers only source-bound runtime exports from an otherwise invalid module.
+ *
+ * The recovered declarations establish provenance, but never become executable
+ * analyzer input. Their resolutions remain invalid so consumers fail closed
+ * while type-only and unrelated module references stay invisible.
+ */
+function recoverMalformedModuleExports(
+  filePath: string
+): RecoveredModuleRecord | undefined {
+  const extension = path.extname(filePath).toLowerCase();
+  if (extension === '.cjs' || extension === '.cts' || extension === '.vue') {
+    return undefined;
+  }
+  let source: string;
+  try {
+    source = fs.readFileSync(filePath, 'utf8');
+  } catch {
+    return undefined;
+  }
+  if (!moduleLexerInitialized) {
+    initModuleLexer();
+    moduleLexerInitialized = true;
+  }
+  let moduleImports: ReturnType<typeof parseModuleImports>[0];
+  try {
+    [moduleImports] = parseModuleImports(source);
+  } catch {
+    return undefined;
+  }
+
+  const record: RecoveredModuleRecord = {
+    explicitExports: new Map(),
+    filePath,
+    starExports: [],
+  };
+  const statements = new Set<string>();
+  for (const moduleImport of moduleImports) {
+    if (
+      moduleImport.d !== -1 ||
+      moduleImport.ss < 0 ||
+      moduleImport.se <= moduleImport.ss
+    ) {
+      continue;
+    }
+    statements.add(source.slice(moduleImport.ss, moduleImport.se));
+  }
+
+  for (const statementSource of statements) {
+    const statement = parseRecoveredModuleStatement(statementSource, extension);
+    if (!statement) continue;
+    collectRecoveredExport(record, statement);
+  }
+  return record.explicitExports.size > 0 || record.starExports.length > 0
+    ? record
+    : undefined;
+}
+
+/** Parses one lexed declaration under the source file's supported grammars. */
+function parseRecoveredModuleStatement(
+  source: string,
+  extension: string
+): t.Statement | undefined {
+  const declaredLanguage =
+    extension === '.mjs'
+      ? 'js'
+      : extension === '.mts'
+        ? 'ts'
+        : extension.slice(1);
+  const languages = new Set<string>([declaredLanguage]);
+  if (declaredLanguage === 'js' || declaredLanguage === 'jsx') {
+    languages.add('flow');
+  }
+  languages.add('tsx');
+  for (const language of languages) {
+    try {
+      const ast = parseScriptAst(source, language);
+      if (ast.program.body.length === 1) return ast.program.body[0];
+    } catch {
+      // Try the next project-compatible grammar for this isolated statement.
+    }
+  }
+  return undefined;
+}
+
+/** Adds runtime re-exports without trusting declarations around the syntax error. */
+function collectRecoveredExport(
+  record: RecoveredModuleRecord,
+  statement: t.Statement
+): void {
+  if (statement.type === 'ExportAllDeclaration') {
+    if (statement.exportKind !== 'type') {
+      record.starExports.push(statement.source.value);
+    }
+    return;
+  }
+  if (
+    statement.type !== 'ExportNamedDeclaration' ||
+    statement.exportKind === 'type' ||
+    !statement.source
+  ) {
+    return;
+  }
+  for (const specifier of statement.specifiers) {
+    if (
+      specifier.type === 'ExportSpecifier' &&
+      specifier.exportKind === 'type'
+    ) {
+      continue;
+    }
+    const exportedName =
+      specifier.exported.type === 'Identifier'
+        ? specifier.exported.name
+        : specifier.exported.value;
+    if (specifier.type === 'ExportNamespaceSpecifier') {
+      addRecoveredExplicitExport(record, exportedName, {
+        source: statement.source.value,
+        type: 'namespace',
+      });
+      continue;
+    }
+    if (specifier.type !== 'ExportSpecifier') continue;
+    addRecoveredExplicitExport(record, exportedName, {
+      importedName: specifier.local.name,
+      source: statement.source.value,
+      type: 'reexport',
+    });
+  }
+}
+
+/** Preserves ambiguity instead of selecting an arbitrary recovered identity. */
+function addRecoveredExplicitExport(
+  record: RecoveredModuleRecord,
+  name: string,
+  value: RecoveredDeclaredExport
+): void {
+  record.explicitExports.set(
+    name,
+    record.explicitExports.has(name) ? 'ambiguous' : value
+  );
+}
+
 function collectImportedBindings(ast: t.File): Map<string, ImportedBinding> {
   const imports = new Map<string, ImportedBinding>();
   for (const statement of ast.program.body) {
     if (
       statement.type !== 'ImportDeclaration' ||
-      statement.importKind === 'type'
+      isTypeOnlyImportKind(statement.importKind)
     ) {
       continue;
     }
     for (const specifier of statement.specifiers) {
       if (
         specifier.type === 'ImportSpecifier' &&
-        specifier.importKind !== 'type'
+        !isTypeOnlyImportKind(specifier.importKind)
       ) {
         imports.set(specifier.local.name, {
           importedName:
@@ -577,6 +919,11 @@ function collectImportedBindings(ast: t.File): Map<string, ImportedBinding> {
     }
   }
   return imports;
+}
+
+/** Returns whether Babel classified an ESM binding as type-only. */
+function isTypeOnlyImportKind(kind: string | null | undefined): boolean {
+  return kind === 'type' || kind === 'typeof';
 }
 
 function collectExports(record: LocalModuleRecord): void {

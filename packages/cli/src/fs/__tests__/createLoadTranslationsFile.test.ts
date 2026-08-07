@@ -136,6 +136,23 @@ describe('createLoadTranslationsFile', () => {
     expect(content).toBe('// custom content');
   });
 
+  it('keeps an existing loader before validating a generated catalog path', async () => {
+    fs.mkdirSync(path.join(tmpDir, 'src'), { recursive: true });
+    const filePath = path.join(tmpDir, 'src', 'loadTranslations.js');
+    fs.writeFileSync(filePath, '// shared catalog loader');
+    const outside = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'gt-loader-external-catalog-')
+    );
+    outsideDirectories.push(outside);
+
+    await expect(
+      createLoadTranslationsFile(tmpDir, outside, ['es'])
+    ).resolves.toBe(filePath);
+
+    expect(fs.readFileSync(filePath, 'utf8')).toBe('// shared catalog loader');
+    expect(fs.existsSync(path.join(outside, 'es.json'))).toBe(false);
+  });
+
   it('does not overwrite existing locale JSON files', async () => {
     const translationsPath = path.resolve(tmpDir, DEFAULT_TRANSLATIONS_DIR);
     fs.mkdirSync(translationsPath, { recursive: true });

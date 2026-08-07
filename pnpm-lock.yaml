@@ -1694,6 +1694,9 @@ importers:
       '@vue/shared':
         specifier: ^3.5.0
         version: 3.5.40
+      es-module-lexer:
+        specifier: ^2.3.1
+        version: 2.3.1
       generaltranslation:
         specifier: workspace:*
         version: link:../core

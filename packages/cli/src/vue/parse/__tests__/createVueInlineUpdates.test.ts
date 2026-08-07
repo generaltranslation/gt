@@ -28,6 +28,11 @@ const parsingFlags = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(extractFromVueSource).mockResolvedValue({
+    results: [],
+    errors: [],
+    warnings: [],
+  });
   vi.mocked(resolveVueCompilerOptions).mockReturnValue({
     compilerOptions: {},
     errors: [],
@@ -121,6 +126,17 @@ describe('createVueInlineUpdates', () => {
       compilerOptions: {},
       errors: ['unsupported Vue JSX transform'],
     });
+    vi.mocked(extractFromVueSource).mockResolvedValue({
+      results: [
+        {
+          dataFormat: 'JSX',
+          source: 'Hello',
+          metadata: { filePaths: ['Component.tsx'] },
+        },
+      ],
+      errors: [],
+      warnings: [],
+    });
 
     const result = await createVueInlineUpdates(undefined, parsingFlags);
 
@@ -129,7 +145,7 @@ describe('createVueInlineUpdates', () => {
       undefined,
       { viteConfigPath: 'config/vite.custom.ts' }
     );
-    expect(extractFromVueSource).not.toHaveBeenCalled();
+    expect(extractFromVueSource).toHaveBeenCalledOnce();
     expect(result).toEqual({
       updates: [],
       errors: ['unsupported Vue JSX transform'],

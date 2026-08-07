@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { collectFiles } from '../collectFiles.js';
+import { aggregateFiles } from '../aggregateFiles.js';
 import { aggregateInlineTranslations } from '../../../translation/stage.js';
 import type { Settings, TranslateFlags } from '../../../types/index.js';
 import { Libraries } from '../../../types/libraries.js';
@@ -87,5 +88,68 @@ describe('collectFiles', () => {
       Libraries.GT_REACT,
       [Libraries.GT_VUE]
     );
+    expect(aggregateFiles).toHaveBeenCalledWith(settings, undefined);
   });
+
+  it('reuses an explicit command-level library snapshot for file formats', async () => {
+    vi.mocked(aggregateInlineTranslations).mockResolvedValue([]);
+
+    await collectFiles(
+      options,
+      settings,
+      Libraries.GT_REACT,
+      [Libraries.GT_VUE],
+      [Libraries.GT_VUE, 'i18next-icu']
+    );
+
+    expect(aggregateFiles).toHaveBeenCalledWith(settings, {
+      library: Libraries.GT_REACT,
+      additionalModules: [Libraries.GT_VUE, 'i18next-icu'],
+    });
+  });
+
+  it('extracts an inline additional runtime for a file-format primary', async () => {
+    vi.mocked(aggregateInlineTranslations).mockResolvedValue([]);
+
+    await collectFiles(
+      options,
+      settings,
+      'i18next',
+      [Libraries.GT_VUE],
+      ['i18next-icu', Libraries.GT_VUE]
+    );
+
+    expect(aggregateInlineTranslations).toHaveBeenCalledWith(
+      options,
+      settings,
+      Libraries.GT_VUE,
+      []
+    );
+    expect(aggregateFiles).toHaveBeenCalledWith(settings, {
+      library: 'i18next',
+      additionalModules: ['i18next-icu', Libraries.GT_VUE],
+    });
+  });
+
+  it.each([undefined, true])(
+    'does not infer inline collection for a base file project with publish=%s',
+    async (publish) => {
+      vi.mocked(aggregateInlineTranslations).mockResolvedValue([
+        {
+          dataFormat: 'STRING',
+          source: 'Unintended workspace source',
+          metadata: { hash: 'workspace-hash' },
+        },
+      ]);
+
+      const { files } = await collectFiles(
+        options,
+        { ...settings, publish },
+        'base'
+      );
+
+      expect(files).toEqual([]);
+      expect(aggregateInlineTranslations).not.toHaveBeenCalled();
+    }
+  );
 });

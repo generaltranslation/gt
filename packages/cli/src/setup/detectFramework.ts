@@ -1,5 +1,5 @@
 import { FrameworkObject } from '../types/index.js';
-import { isPackageInstalled } from '../utils/packageJson.js';
+import { isPackageDeclared, isPackageInstalled } from '../utils/packageJson.js';
 import { searchForPackageJson } from '../utils/packageJson.js';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -66,20 +66,32 @@ export async function detectFramework(): Promise<
   }
 
   // Check for Vue before treating a Vite project as React.
-  const hasVue = isPackageInstalled('vue', packageJson, false, true);
-  const hasReact = isPackageInstalled('react', packageJson, false, true);
+  const hasInstalledVue = isPackageInstalled('vue', packageJson, false, true);
+  const hasDeclaredVue = isPackageDeclared('vue', packageJson);
+  const hasDeclaredReact = isPackageDeclared('react', packageJson);
+  const hasInstalledReact = isPackageInstalled(
+    'react',
+    packageJson,
+    false,
+    true
+  );
   const hasVuePlugin = isPackageInstalled(
     '@vitejs/plugin-vue',
     packageJson,
     false,
     true
   );
-  const hasReactPlugin = isPackageInstalled(
+  const hasReactPlugin = [
     '@vitejs/plugin-react',
-    packageJson,
-    false,
-    true
+    '@vitejs/plugin-react-swc',
+  ].some((packageName) =>
+    isPackageInstalled(packageName, packageJson, false, true)
   );
+  const hasVue =
+    hasInstalledVue ||
+    (hasDeclaredVue &&
+      (!hasDeclaredReact || (hasVuePlugin && !hasReactPlugin)));
+  const hasReact = hasInstalledReact || (hasDeclaredReact && hasReactPlugin);
   if (isPackageInstalled('nuxt', packageJson, false, true)) {
     return { name: 'nuxt', type: 'vue' };
   }

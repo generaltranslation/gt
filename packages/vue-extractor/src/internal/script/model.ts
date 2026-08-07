@@ -57,6 +57,8 @@ export type VueScriptAnalysis = {
   stats?: VueScriptAnalysisStats;
   /** Absolute path of the source file currently being extracted. */
   entryFile?: string;
+  /** Whether static analysis reached the gt-vue package through source code. */
+  hasGTSourceReference: boolean;
   /** Read-only local ESM graph used to resolve application barrels. */
   localModules?: LocalModuleResolver;
   /** Lengths of statically known, non-mutated normal-script arrays. */
@@ -346,5 +348,9 @@ export type ScriptState = {
   transformArrayEntriesInProgress: Set<Binding>;
   /** Import and alias bindings that may call a forwarded translator. */
   uncertainTranslationHelperBindings: Set<Binding>;
+  /** Whether this block uses GT through an unsupported dynamic import. */
+  unsupportedDynamicGTReference: boolean;
+  /** Whether a used GT reference came through a malformed local module. */
+  unsupportedMalformedGTReference: boolean;
   unsafeMutableNamespaceSources: Set<'gt-vue' | 'vue'>;
 };

@@ -64,8 +64,8 @@ export type VueExtractionOptions = {
   /** Root used to make metadata file paths relative. Defaults to `process.cwd()`. */
   projectRoot?: string;
   /**
-   * Skips standalone script files that have no proven or conservatively
-   * possible gt-vue provenance. Vue single-file components are always parsed.
+   * Skips standalone script files that have no statically proven gt-vue
+   * provenance. Vue single-file components are always parsed.
    *
    * This is useful when a framework dispatcher sends the same JavaScript and
    * TypeScript files to multiple extractors. A permissive, read-only preflight
@@ -82,8 +82,9 @@ export type VueExtractionOptions = {
    * The hook is consulted first for every specifier, including relative ones,
    * so a project can preserve its compiler's source-over-build precedence.
    *
-   * Returning `undefined` leaves the import unresolved and makes GT-shaped
-   * uses fail closed. The returned path must identify a readable local source
+   * Returning `undefined` leaves the import unresolved. GT-shaped uses fail
+   * closed only inside Vue SFCs or standalone files with separate proven
+   * gt-vue provenance. The returned path must identify a readable local source
    * file.
    */
   resolveModule?: (specifier: string, importer: string) => string | undefined;

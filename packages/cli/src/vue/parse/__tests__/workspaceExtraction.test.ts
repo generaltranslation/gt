@@ -64,6 +64,79 @@ describe('workspace Vue extraction', () => {
     ]);
   });
 
+  it('does not resolve a React root Vite config for an unowned TSX file', async () => {
+    const projectRoot = createWorkspaceRoot();
+    writeJson(path.join(projectRoot, 'package.json'), {
+      dependencies: {
+        '@vitejs/plugin-react': '^5.0.0',
+        'gt-react': '0.0.0',
+        react: '^19.0.0',
+        vite: '^7.0.0',
+      },
+      private: true,
+      workspaces: ['apps/*'],
+    });
+    fs.mkdirSync(path.join(projectRoot, 'src'), { recursive: true });
+    fs.writeFileSync(
+      path.join(projectRoot, 'src', 'App.tsx'),
+      `import { T } from 'gt-react';
+       export const App = () => <T>React root</T>;`
+    );
+    fs.writeFileSync(
+      path.join(projectRoot, 'vite.config.ts'),
+      `import react from '@vitejs/plugin-react';
+       import { defineConfig } from 'vite';
+       export default defineConfig(({ command }) => {
+         if (command === 'serve') return { plugins: [react()] };
+         return { build: { sourcemap: true }, plugins: [react()] };
+       });`
+    );
+    writeVueWorkspace(
+      path.join(projectRoot, 'apps', 'vue'),
+      'Vue workspace survives',
+      true
+    );
+    vi.spyOn(process, 'cwd').mockReturnValue(projectRoot);
+
+    const output = await createVueInlineUpdates(undefined, parsingFlags);
+
+    expect(output.errors).toEqual([]);
+    expect(output.warnings).toEqual([]);
+    expect(output.updates.map(({ source }) => source)).toEqual([
+      'Vue workspace survives',
+    ]);
+  });
+
+  it('does not scan unrelated root SFCs for a child Vue workspace', async () => {
+    const projectRoot = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'gt-vue-child-only-')
+    );
+    temporaryDirectories.push(projectRoot);
+    writeJson(path.join(projectRoot, 'package.json'), {
+      dependencies: { 'gt-react': '0.0.0' },
+      private: true,
+      workspaces: ['apps/*'],
+    });
+    fs.mkdirSync(path.join(projectRoot, 'src'), { recursive: true });
+    fs.writeFileSync(
+      path.join(projectRoot, 'src', 'Legacy.vue'),
+      `<template><p>Ordinary root SFC</p></template>`
+    );
+
+    const appDirectory = path.join(projectRoot, 'apps', 'vue');
+    writeVueWorkspace(appDirectory, 'Child Vue message', true);
+    linkTestVueInstallation(appDirectory);
+    vi.spyOn(process, 'cwd').mockReturnValue(projectRoot);
+
+    const output = await createVueInlineUpdates(undefined, parsingFlags);
+
+    expect(output.errors).toEqual([]);
+    expect(output.warnings).toEqual([]);
+    expect(output.updates.map(({ source }) => source)).toEqual([
+      'Child Vue message',
+    ]);
+  });
+
   it('resolves gt-vue reexports through a workspace tsconfig path alias', async () => {
     const projectRoot = createWorkspaceRoot();
     const appDirectory = path.join(projectRoot, 'apps', 'vue');
@@ -296,6 +369,11 @@ export default { plugins: [vue({ template: { compilerOptions: { delimiters: ['[[
 
   it('does not require compiler config resolution for script-only extraction', async () => {
     const projectRoot = createWorkspaceRoot();
+    writeJson(path.join(projectRoot, 'package.json'), {
+      dependencies: { 'gt-vue': '0.0.0' },
+      private: true,
+      workspaces: ['apps/*'],
+    });
     const sourceDirectory = path.join(projectRoot, 'src');
     fs.mkdirSync(sourceDirectory);
     fs.writeFileSync(

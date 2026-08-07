@@ -17,6 +17,8 @@ import { Libraries, type InlineLibrary } from '../types/libraries.js';
 export type InlineSourceScope = {
   /** Absolute package directory. */
   directory: string;
+  /** Whether implicit source discovery should scan this package. */
+  includeByDefault: boolean;
   /** Project-root-relative package directory, or an empty string for root. */
   relativeDirectory: string;
 };
@@ -37,12 +39,20 @@ export function readInlineSourceScopes(
 ): InlineSourceScope[] {
   const rootScope: InlineSourceScope = {
     directory: projectRoot,
+    includeByDefault: true,
     relativeDirectory: '',
   };
   const rootManifest = readJavaScriptPackageManifest(
     path.join(projectRoot, 'package.json')
   );
   if (!rootManifest) return [rootScope];
+
+  if (
+    library !== Libraries.GT_VUE &&
+    declaresJavaScriptDependency(rootManifest, library)
+  ) {
+    return [rootScope];
+  }
 
   const workspacePackages = readDeclaredWorkspacePackages(
     projectRoot,
@@ -56,9 +66,14 @@ export function readInlineSourceScopes(
         : workspacePackages.filter(({ manifest }) =>
             declaresJavaScriptDependency(manifest, library)
           );
+  rootScope.includeByDefault =
+    declaresJavaScriptDependency(rootManifest, library) ||
+    (library === Libraries.GT_VUE &&
+      rootConsumesSelectedVuePackage(rootManifest, selectedWorkspacePackages));
   const workspaceScopes = selectedWorkspacePackages
     .map(({ directory }) => ({
       directory,
+      includeByDefault: true,
       relativeDirectory: toPosixPath(path.relative(projectRoot, directory)),
     }))
     .filter(
@@ -69,6 +84,21 @@ export function readInlineSourceScopes(
     );
 
   return [rootScope, ...workspaceScopes];
+}
+
+/** Returns whether the root consumes a selected local gt-vue wrapper. */
+function rootConsumesSelectedVuePackage(
+  rootManifest: JavaScriptPackageManifest,
+  selectedPackages: readonly DeclaredWorkspacePackage[]
+): boolean {
+  const selectedNames = new Set(
+    selectedPackages
+      .map(({ manifest }) => readPackageName(manifest))
+      .filter((name): name is string => name !== undefined)
+  );
+  return readDeclaredDependencyNames(rootManifest).some((name) =>
+    selectedNames.has(name)
+  );
 }
 
 /**
@@ -170,18 +200,24 @@ function readDeclaredDependencyNames(
  */
 export function readDefaultInlineSourcePatterns(
   projectRoot: string,
-  library: InlineLibrary
+  library: InlineLibrary,
+  scopes: readonly InlineSourceScope[] = readInlineSourceScopes(
+    projectRoot,
+    library
+  )
 ): string[] {
   const sourcePatterns =
     library === Libraries.GT_VUE
       ? DEFAULT_VUE_SRC_PATTERNS
       : DEFAULT_SRC_PATTERNS;
-  const scopes = readInlineSourceScopes(projectRoot, library);
-  const workspacePatterns = scopes.slice(1).flatMap(({ relativeDirectory }) => {
-    const literalDirectory = fg.escapePath(relativeDirectory);
-    return sourcePatterns.map((pattern) => `${literalDirectory}/${pattern}`);
-  });
-  return [...new Set([...sourcePatterns, ...workspacePatterns])];
+  const patterns = scopes
+    .filter(({ includeByDefault }) => includeByDefault)
+    .flatMap(({ relativeDirectory }) => {
+      if (!relativeDirectory) return sourcePatterns;
+      const literalDirectory = fg.escapePath(relativeDirectory);
+      return sourcePatterns.map((pattern) => `${literalDirectory}/${pattern}`);
+    });
+  return [...new Set(patterns)];
 }
 
 /** Selects the deepest declared package scope containing a source file. */

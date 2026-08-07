@@ -19,6 +19,7 @@ import {
   Libraries,
   InlineLibrary,
   NODE_LIBRARIES,
+  isInlineLibrary,
 } from '../types/libraries.js';
 import { checkMonorepoVersionConsistency } from '../utils/monorepoVersionCheck.js';
 
@@ -28,7 +29,7 @@ import { checkMonorepoVersionConsistency } from '../utils/monorepoVersionCheck.j
 export class InlineCLI extends BaseCLI {
   constructor(
     command: Command,
-    library: InlineLibrary,
+    library: SupportedLibraries,
     additionalModules?: SupportedLibraries[]
   ) {
     super(command, library, additionalModules);
@@ -126,11 +127,13 @@ export class InlineCLI extends BaseCLI {
       requireConfig: true,
     });
 
+    const [inlineLibrary, additionalInlineLibraries] =
+      this.getInlineExtractionLibraries();
     const updates = await aggregateInlineTranslations(
       initOptions,
       settings,
-      fallbackToGtReact(this.library),
-      this.getAdditionalInlineLibraries(),
+      inlineLibrary,
+      additionalInlineLibraries,
       true
     );
 
@@ -192,46 +195,34 @@ export class InlineCLI extends BaseCLI {
     // First run the base class's handleTranslate method
     const options = { ...initOptions, ...settings };
 
-    // Fallback to gt-react
-    const pkg = fallbackToGtReact(this.library);
+    const [inlineLibrary, additionalInlineLibraries] =
+      this.getInlineExtractionLibraries();
 
     if (files && files.length > 0) {
       // Validate specific files using createInlineUpdates
       await validateProject(
         options,
-        pkg,
+        inlineLibrary,
         files,
-        this.getAdditionalInlineLibraries()
+        additionalInlineLibraries
       );
     } else {
       // Validate whole project as before
       await validateProject(
         options,
-        pkg,
+        inlineLibrary,
         undefined,
-        this.getAdditionalInlineLibraries()
+        additionalInlineLibraries
       );
     }
   }
-}
 
-function fallbackToGtReact(library: SupportedLibraries): InlineLibrary {
-  return [
-    Libraries.GT_NEXT,
-    Libraries.GT_NODE,
-    Libraries.GT_REACT_NATIVE,
-    Libraries.GT_TANSTACK_START,
-    Libraries.GT_FLASK,
-    Libraries.GT_FASTAPI,
-    Libraries.GT_VUE,
-  ].includes(library as Libraries)
-    ? (library as
-        | typeof Libraries.GT_NEXT
-        | typeof Libraries.GT_NODE
-        | typeof Libraries.GT_REACT_NATIVE
-        | typeof Libraries.GT_TANSTACK_START
-        | typeof Libraries.GT_FLASK
-        | typeof Libraries.GT_FASTAPI
-        | typeof Libraries.GT_VUE)
-    : Libraries.GT_REACT;
+  /** Selects the inline runtime while retaining a file-format CLI primary. */
+  protected getInlineExtractionLibraries(): [InlineLibrary, InlineLibrary[]] {
+    const inlineLibraries = [
+      this.library,
+      ...this.getAdditionalInlineLibraries(),
+    ].filter(isInlineLibrary);
+    return [inlineLibraries[0] ?? Libraries.GT_REACT, inlineLibraries.slice(1)];
+  }
 }

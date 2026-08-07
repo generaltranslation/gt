@@ -25,6 +25,10 @@ vi.mock('../../../console/logger.js', () => ({
 import fs from 'node:fs';
 import fg from 'fast-glob';
 import { determineLibrary } from '../index.js';
+import {
+  beginWorkspaceDiscoverySession,
+  endWorkspaceDiscoverySession,
+} from '../workspacePackages.js';
 import { logger } from '../../../console/logger.js';
 
 const mockExistsSync = vi.mocked(fs.existsSync);
@@ -104,6 +108,26 @@ describe('determineLibrary', () => {
       expect(result.library).toBe(Libraries.GT_VUE);
     });
 
+    it.each([
+      Libraries.GT_NEXT,
+      Libraries.GT_TANSTACK_START,
+      Libraries.GT_REACT,
+      Libraries.GT_REACT_NATIVE,
+      Libraries.GT_NODE,
+      'i18next',
+      'next-intl',
+    ] as const)(
+      'does not widen root detection for a peer-only %s declaration',
+      (library) => {
+        mockExistsSync.mockReturnValue(true);
+        mockReadFileSync.mockReturnValue(
+          JSON.stringify({ peerDependencies: { [library]: '1.0.0' } })
+        );
+
+        expect(determineLibrary().library).toBe('base');
+      }
+    );
+
     it('detects gt-vue from npm and Yarn array workspaces', () => {
       mockExistsSync.mockImplementation(
         (filePath) => String(filePath) === '/test-project/package.json'
@@ -127,6 +151,28 @@ describe('determineLibrary', () => {
           ignore: ['**/node_modules/**'],
         })
       );
+    });
+
+    it('reuses workspace discovery during one CLI command', () => {
+      mockExistsSync.mockImplementation(
+        (filePath) => String(filePath) === '/test-project/package.json'
+      );
+      mockReadFileSync.mockImplementation((filePath) =>
+        String(filePath) === '/test-project/package.json'
+          ? JSON.stringify({ workspaces: ['apps/*'] })
+          : JSON.stringify({ dependencies: { 'gt-vue': '1.0.0' } })
+      );
+      mockFgSync.mockReturnValue(['/test-project/apps/vue/package.json']);
+
+      beginWorkspaceDiscoverySession();
+      try {
+        expect(determineLibrary().library).toBe(Libraries.GT_VUE);
+        expect(determineLibrary().library).toBe(Libraries.GT_VUE);
+      } finally {
+        endWorkspaceDiscoverySession();
+      }
+
+      expect(mockFgSync).toHaveBeenCalledOnce();
     });
 
     it('accepts legal workspace directory names containing consecutive dots', () => {
@@ -221,7 +267,7 @@ describe('determineLibrary', () => {
       }
     );
 
-    it('detects a workspace framework when the root declares none', () => {
+    it('does not promote a workspace-only React framework into the root CLI', () => {
       mockExistsSync.mockImplementation(
         (filePath) => String(filePath) === '/test-project/package.json'
       );
@@ -233,12 +279,12 @@ describe('determineLibrary', () => {
       mockFgSync.mockReturnValue(['/test-project/apps/next/package.json']);
 
       expect(determineLibrary()).toEqual({
-        library: Libraries.GT_NEXT,
+        library: 'base',
         additionalModules: [],
       });
     });
 
-    it('returns every React-family runtime from a workspace-only aggregator', () => {
+    it('does not enable inline mode for a React-only workspace aggregator', () => {
       mockExistsSync.mockImplementation(
         (filePath) => String(filePath) === '/test-project/package.json'
       );
@@ -257,9 +303,133 @@ describe('determineLibrary', () => {
       ]);
 
       expect(determineLibrary()).toEqual({
-        library: Libraries.GT_NEXT,
-        additionalModules: [Libraries.GT_TANSTACK_START],
+        library: 'base',
+        additionalModules: [],
       });
+    });
+
+    it.each(['i18next', 'next-intl'] as const)(
+      'does not let workspace-only %s change root file semantics',
+      (library) => {
+        mockExistsSync.mockImplementation(
+          (filePath) => String(filePath) === '/test-project/package.json'
+        );
+        mockReadFileSync.mockImplementation((filePath) =>
+          String(filePath) === '/test-project/package.json'
+            ? JSON.stringify({ workspaces: ['apps/*'] })
+            : JSON.stringify({ dependencies: { [library]: '1.0.0' } })
+        );
+        mockFgSync.mockReturnValue([
+          `/test-project/apps/${library}/package.json`,
+        ]);
+
+        expect(determineLibrary()).toEqual({
+          library: 'base',
+          additionalModules: [],
+        });
+      }
+    );
+
+    it('preserves a root runtime when optional workspace traversal fails', () => {
+      mockExistsSync.mockImplementation(
+        (filePath) => String(filePath) === '/test-project/package.json'
+      );
+      mockReadFileSync.mockReturnValue(
+        JSON.stringify({
+          dependencies: { 'gt-react': '1.0.0' },
+          workspaces: ['apps/*'],
+        })
+      );
+      mockFgSync.mockImplementation(() => {
+        throw new Error('EACCES');
+      });
+
+      expect(determineLibrary()).toEqual({
+        library: Libraries.GT_REACT,
+        additionalModules: [],
+      });
+    });
+
+    it('treats an empty pnpm package list as authoritative', () => {
+      mockExistsSync.mockImplementation((filePath) =>
+        [
+          '/test-project/package.json',
+          '/test-project/pnpm-workspace.yaml',
+        ].includes(String(filePath))
+      );
+      mockReadFileSync.mockImplementation((filePath) =>
+        String(filePath).endsWith('pnpm-workspace.yaml')
+          ? 'packages: []\n'
+          : JSON.stringify({ workspaces: ['stale'] })
+      );
+
+      expect(determineLibrary().library).toBe('base');
+      expect(mockFgSync).not.toHaveBeenCalled();
+    });
+
+    it('treats a catalog-only pnpm workspace as root-only', () => {
+      mockExistsSync.mockImplementation((filePath) =>
+        [
+          '/test-project/package.json',
+          '/test-project/pnpm-workspace.yaml',
+        ].includes(String(filePath))
+      );
+      mockReadFileSync.mockImplementation((filePath) =>
+        String(filePath).endsWith('pnpm-workspace.yaml')
+          ? "catalog:\n  vue: '^3.5.0'\n"
+          : JSON.stringify({ workspaces: ['stale'] })
+      );
+      mockFgSync.mockReturnValue(['/test-project/stale/package.json']);
+
+      expect(determineLibrary().library).toBe('base');
+      expect(mockFgSync).not.toHaveBeenCalled();
+    });
+
+    it.each(['# root-only workspace\n', 'packages: null\n'])(
+      'treats root-only pnpm content as authoritative: %s',
+      (workspaceYaml) => {
+        mockExistsSync.mockImplementation((filePath) =>
+          [
+            '/test-project/package.json',
+            '/test-project/pnpm-workspace.yaml',
+          ].includes(String(filePath))
+        );
+        mockReadFileSync.mockImplementation((filePath) =>
+          String(filePath).endsWith('pnpm-workspace.yaml')
+            ? workspaceYaml
+            : JSON.stringify({ workspaces: ['stale'] })
+        );
+        mockFgSync.mockReturnValue(['/test-project/stale/package.json']);
+
+        expect(determineLibrary().library).toBe('base');
+        expect(mockFgSync).not.toHaveBeenCalled();
+      }
+    );
+
+    it('uses pnpm workspace patterns instead of stale package.json patterns', () => {
+      mockExistsSync.mockImplementation((filePath) =>
+        [
+          '/test-project/package.json',
+          '/test-project/pnpm-workspace.yaml',
+        ].includes(String(filePath))
+      );
+      mockReadFileSync.mockImplementation((filePath) => {
+        const filename = String(filePath);
+        if (filename.endsWith('pnpm-workspace.yaml')) {
+          return "packages:\n  - 'apps/*'\n";
+        }
+        if (filename === '/test-project/package.json') {
+          return JSON.stringify({ workspaces: ['stale'] });
+        }
+        return JSON.stringify({ dependencies: { 'gt-vue': '1.0.0' } });
+      });
+      mockFgSync.mockReturnValue(['/test-project/apps/vue/package.json']);
+
+      expect(determineLibrary().library).toBe(Libraries.GT_VUE);
+      expect(mockFgSync).toHaveBeenCalledWith(
+        ['apps/*/package.json'],
+        expect.any(Object)
+      );
     });
 
     it('detects gt-vue from pnpm workspace declarations', () => {

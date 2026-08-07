@@ -75,6 +75,16 @@ describe('aggregateFiles - Empty File Handling', () => {
     vi.clearAllMocks();
   });
 
+  it('does not detect a library when no configured file needs it', async () => {
+    await aggregateTestFiles({
+      files: {
+        placeholderPaths: { gt: 'src/_gt/[locale].json' },
+      },
+    });
+
+    expect(mockDetermineLibrary).not.toHaveBeenCalled();
+  });
+
   describe('JSON files', () => {
     it('detects JSON data format without project warnings', async () => {
       mockDetermineLibrary.mockReturnValueOnce({
@@ -101,6 +111,29 @@ describe('aggregateFiles - Empty File Handling', () => {
       expect(mockLogWarning).not.toHaveBeenCalledWith(
         expect.stringContaining('No package.json')
       );
+    });
+
+    it('uses an existing library snapshot for JSON format inference', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            json: ['/full/path/valid.json'],
+          },
+          placeholderPaths: {},
+        },
+        options: {},
+        defaultLocale: 'en',
+      } as Settings;
+      mockReadFile.mockReturnValueOnce('{"key": "value"}');
+
+      const { files } = await aggregateFiles(settings, {
+        library: 'i18next',
+        additionalModules: ['i18next-icu'],
+      });
+
+      expect(mockDetermineLibrary).not.toHaveBeenCalled();
+      expect(files).toHaveLength(1);
+      expect(files[0].dataFormat).toBe('ICU');
     });
 
     it('should skip empty JSON files and log warning', async () => {

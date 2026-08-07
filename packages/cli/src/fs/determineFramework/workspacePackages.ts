@@ -19,6 +19,25 @@ export type DeclaredWorkspacePackage = {
   manifest: JavaScriptPackageManifest;
 };
 
+type WorkspaceDiscoveryCacheEntry = {
+  manifestWorkspaces: string;
+  packages: DeclaredWorkspacePackage[];
+};
+
+let workspaceDiscoveryCache:
+  | Map<string, WorkspaceDiscoveryCacheEntry>
+  | undefined;
+
+/** Starts one CLI-command cache for validated workspace package discovery. */
+export function beginWorkspaceDiscoverySession(): void {
+  workspaceDiscoveryCache = new Map();
+}
+
+/** Clears the workspace package cache after the active CLI command. */
+export function endWorkspaceDiscoverySession(): void {
+  workspaceDiscoveryCache = undefined;
+}
+
 /**
  * Reads package manifests selected by workspace patterns declared at the
  * current project root.
@@ -54,32 +73,46 @@ export function readDeclaredWorkspacePackages(
   cwd: string,
   rootManifest: JavaScriptPackageManifest
 ): DeclaredWorkspacePackage[] {
-  const patterns = [
-    ...getPackageJsonWorkspacePatterns(rootManifest),
-    ...getPnpmWorkspacePatterns(cwd),
-  ];
+  const cacheKey = path.resolve(cwd);
+  const manifestWorkspaces = JSON.stringify(rootManifest.workspaces ?? null);
+  const cached = workspaceDiscoveryCache?.get(cacheKey);
+  if (cached?.manifestWorkspaces === manifestWorkspaces) {
+    return cached.packages;
+  }
+
+  const pnpmPatterns = getPnpmWorkspacePatterns(cwd);
+  const patterns =
+    pnpmPatterns ?? getPackageJsonWorkspacePatterns(rootManifest);
   const manifestPatterns = [...new Set(patterns.map(toManifestPattern))].filter(
     (pattern): pattern is string => pattern !== null
   );
 
   if (!manifestPatterns.some((pattern) => !pattern.startsWith('!'))) {
-    return [];
+    return cacheWorkspacePackages(cacheKey, manifestWorkspaces, []);
   }
 
   const realRoot = readRealPath(cwd);
-  if (!realRoot) return [];
+  if (!realRoot) {
+    return cacheWorkspacePackages(cacheKey, manifestWorkspaces, []);
+  }
 
   const rootPackagePath = path.resolve(cwd, 'package.json');
-  const packagePaths = fg.sync(manifestPatterns, {
-    absolute: true,
-    cwd,
-    followSymbolicLinks: false,
-    ignore: ['**/node_modules/**'],
-    onlyFiles: true,
-    unique: true,
-  });
+  let packagePaths: string[];
+  try {
+    packagePaths = fg.sync(manifestPatterns, {
+      absolute: true,
+      cwd,
+      followSymbolicLinks: false,
+      ignore: ['**/node_modules/**'],
+      onlyFiles: true,
+      unique: true,
+    });
+  } catch {
+    // Optional workspace discovery must not disable a known root runtime.
+    return cacheWorkspacePackages(cacheKey, manifestWorkspaces, []);
+  }
 
-  return packagePaths.flatMap((packagePath) => {
+  const packages = packagePaths.flatMap((packagePath) => {
     const absolutePath = path.resolve(packagePath);
     if (
       absolutePath === rootPackagePath ||
@@ -102,6 +135,17 @@ export function readDeclaredWorkspacePackages(
       ? [{ directory: path.dirname(absolutePath), manifest }]
       : [];
   });
+  return cacheWorkspacePackages(cacheKey, manifestWorkspaces, packages);
+}
+
+/** Stores one immutable-by-convention discovery result for the active command. */
+function cacheWorkspacePackages(
+  cacheKey: string,
+  manifestWorkspaces: string,
+  packages: DeclaredWorkspacePackage[]
+): DeclaredWorkspacePackage[] {
+  workspaceDiscoveryCache?.set(cacheKey, { manifestWorkspaces, packages });
+  return packages;
 }
 
 function getPackageJsonWorkspacePatterns(
@@ -124,18 +168,21 @@ function getPackageJsonWorkspacePatterns(
   return [];
 }
 
-function getPnpmWorkspacePatterns(cwd: string): string[] {
+function getPnpmWorkspacePatterns(cwd: string): string[] | undefined {
   const workspacePath = path.join(cwd, 'pnpm-workspace.yaml');
-  if (!fs.existsSync(workspacePath)) return [];
+  if (!fs.existsSync(workspacePath)) return undefined;
 
   try {
     const parsed = parseYaml(fs.readFileSync(workspacePath, 'utf8')) as unknown;
-    if (!isRecord(parsed) || !Array.isArray(parsed.packages)) return [];
+    if (parsed == null) return [];
+    if (!isRecord(parsed)) return undefined;
+    if (parsed.packages == null) return [];
+    if (!Array.isArray(parsed.packages)) return undefined;
     return parsed.packages.filter(
       (pattern): pattern is string => typeof pattern === 'string'
     );
   } catch {
-    return [];
+    return undefined;
   }
 }
 

@@ -68,26 +68,16 @@ export function isPackageInstalled(
 ): boolean {
   const devDependencies =
     (packageJson.devDependencies as Record<string, string> | undefined) ?? {};
-  const peerDependencies =
-    (packageJson.peerDependencies as Record<string, string> | undefined) ?? {};
-  const optionalDependencies =
-    (packageJson.optionalDependencies as Record<string, string> | undefined) ??
-    {};
   const prodDependencies =
     (packageJson.dependencies as Record<string, string> | undefined) ?? {};
-  const runtimeDependencies = {
-    ...peerDependencies,
-    ...optionalDependencies,
-    ...prodDependencies,
-  };
   const dependencies = checkBoth
     ? {
         ...devDependencies,
-        ...runtimeDependencies,
+        ...prodDependencies,
       }
     : asDevDependency
       ? devDependencies
-      : runtimeDependencies;
+      : prodDependencies;
 
   if (!dependencies) {
     return false;
@@ -101,18 +91,29 @@ export function getPackageVersion(
 ): string | undefined {
   const devDependencies =
     (packageJson.devDependencies as Record<string, string> | undefined) ?? {};
-  const peerDependencies =
-    (packageJson.peerDependencies as Record<string, string> | undefined) ?? {};
-  const optionalDependencies =
-    (packageJson.optionalDependencies as Record<string, string> | undefined) ??
-    {};
   const prodDependencies =
     (packageJson.dependencies as Record<string, string> | undefined) ?? {};
   const dependencies = {
-    ...peerDependencies,
-    ...optionalDependencies,
     ...prodDependencies,
     ...devDependencies,
   };
   return dependencies[packageName] ?? undefined;
+}
+
+/** Checks every manifest field without changing installed-package semantics. */
+export function isPackageDeclared(
+  packageName: string,
+  packageJson: Record<string, unknown>
+): boolean {
+  return [
+    packageJson.dependencies,
+    packageJson.devDependencies,
+    packageJson.peerDependencies,
+    packageJson.optionalDependencies,
+  ].some(
+    (dependencies) =>
+      typeof dependencies === 'object' &&
+      dependencies !== null &&
+      Object.prototype.hasOwnProperty.call(dependencies, packageName)
+  );
 }

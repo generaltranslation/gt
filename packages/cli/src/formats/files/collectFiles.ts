@@ -18,23 +18,36 @@ export async function collectFiles(
   options: TranslateFlags,
   settings: Settings,
   library: SupportedLibraries,
-  additionalLibraries: readonly InlineLibrary[] = []
+  additionalLibraries: readonly InlineLibrary[] = [],
+  detectedAdditionalModules?: readonly SupportedLibraries[]
 ): Promise<{
   files: FileToUpload[];
   reactComponents: number;
   publishMap: Map<string, boolean>;
 }> {
   // Aggregate files
-  const { files, publishMap } = await aggregateFiles(settings);
+  const { files, publishMap } = await aggregateFiles(
+    settings,
+    detectedAdditionalModules === undefined
+      ? undefined
+      : {
+          library,
+          additionalModules: detectedAdditionalModules,
+        }
+  );
 
   // Parse for React components
   let reactComponents = 0;
-  if (isInlineLibrary(library)) {
+  const inlineLibraries = [library, ...additionalLibraries].filter(
+    isInlineLibrary
+  );
+  const inlineLibrary = inlineLibraries[0];
+  if (inlineLibrary) {
     const updates = await aggregateInlineTranslations(
       options,
       settings,
-      library,
-      additionalLibraries
+      inlineLibrary,
+      inlineLibraries.slice(1)
     );
     if (updates.length > 0) {
       if (!settings.publish && !settings.files?.placeholderPaths.gt) {

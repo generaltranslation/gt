@@ -7,6 +7,7 @@ import { createRemoteLoadTranslationsFile } from '../../fs/createRemoteLoadTrans
 import { logger } from '../../console/logger.js';
 import { logErrorAndExit, promptSelect } from '../../console/logging.js';
 import { getDesiredLocales } from '../../setup/userInput.js';
+import { searchForPackageJson } from '../../utils/packageJson.js';
 import { VueCLI } from '../vue.js';
 
 vi.mock('../../setup/userInput.js', () => ({
@@ -75,12 +76,23 @@ class TestVueCLI extends VueCLI {
       type: 'vue',
     });
   }
+
+  runExistingVueInit(useDefaults: boolean): Promise<void> {
+    return this.handleInitCommand(false, useDefaults, {
+      name: 'vite-vue',
+      type: 'vue',
+    });
+  }
 }
 
 describe('Vue setup translation loaders', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(promptSelect).mockResolvedValue('local');
+    vi.mocked(searchForPackageJson).mockResolvedValue({
+      dependencies: { 'gt-vue': '0.0.0' },
+      devDependencies: { gt: '2.16.0' },
+    });
   });
 
   it('stops Nuxt setup before locale prompts or file writes', async () => {
@@ -151,4 +163,23 @@ describe('Vue setup translation loaders', () => {
       expect.stringContaining('VITE_GT_PROJECT_ID')
     );
   });
+
+  it.each(['peerDependencies', 'optionalDependencies'] as const)(
+    'recognizes an existing gt-vue declaration in %s',
+    async (field) => {
+      vi.mocked(searchForPackageJson).mockResolvedValue({
+        devDependencies: { gt: '2.16.0' },
+        [field]: { 'gt-vue': '0.0.0' },
+      });
+      const cli = new TestVueCLI(new Command(), Libraries.GT_VUE);
+
+      await cli.runExistingVueInit(true);
+
+      expect(createLoadTranslationsFile).toHaveBeenCalledWith(
+        process.cwd(),
+        './src/_gt',
+        ['fr']
+      );
+    }
+  );
 });

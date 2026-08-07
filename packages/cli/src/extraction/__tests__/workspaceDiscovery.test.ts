@@ -65,7 +65,7 @@ describe('workspace inline source discovery', () => {
     ]);
   });
 
-  it('extracts a React-family workspace when the root is only an aggregator', async () => {
+  it('does not promote a React-family workspace into an aggregator root', async () => {
     const projectRoot = fs.mkdtempSync(
       path.join(os.tmpdir(), 'gt-tanstack-workspace-aggregator-')
     );
@@ -87,7 +87,7 @@ describe('workspace inline source discovery', () => {
     vi.spyOn(process, 'cwd').mockReturnValue(projectRoot);
 
     const detected = determineLibrary();
-    expect(detected.library).toBe(Libraries.GT_TANSTACK_START);
+    expect(detected.library).toBe('base');
 
     const output = await createInlineUpdatesForLibraries(
       [detected.library, ...detected.additionalModules].filter(isInlineLibrary),
@@ -104,12 +104,10 @@ describe('workspace inline source discovery', () => {
 
     expect(output.errors).toEqual([]);
     expect(output.warnings).toEqual([]);
-    expect(output.updates.map((update) => update.source)).toEqual([
-      'TanStack workspace message',
-    ]);
+    expect(output.updates).toEqual([]);
   });
 
-  it('extracts every React-family runtime from a workspace-only aggregator', async () => {
+  it('does not change a root CLI for multiple React-family workspaces', async () => {
     const projectRoot = fs.mkdtempSync(
       path.join(os.tmpdir(), 'gt-multi-react-workspace-aggregator-')
     );
@@ -142,8 +140,8 @@ describe('workspace inline source discovery', () => {
 
     const detected = determineLibrary();
     expect(detected).toEqual({
-      library: Libraries.GT_NEXT,
-      additionalModules: [Libraries.GT_TANSTACK_START],
+      library: 'base',
+      additionalModules: [],
     });
 
     const output = await createInlineUpdatesForLibraries(
@@ -161,10 +159,7 @@ describe('workspace inline source discovery', () => {
 
     expect(output.errors).toEqual([]);
     expect(output.warnings).toEqual([]);
-    expect(output.updates.map((update) => update.source).sort()).toEqual([
-      'Next workspace message',
-      'TanStack workspace message',
-    ]);
+    expect(output.updates).toEqual([]);
   });
 
   it('preserves root React-family extraction when a workspace declares Next.js', async () => {
@@ -314,6 +309,53 @@ export const App = () => <T>React rich text</T>;`
     ]);
   });
 
+  it('deduplicates source context shared by React and Node extraction', async () => {
+    const projectRoot = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'gt-mixed-source-context-')
+    );
+    temporaryDirectories.push(projectRoot);
+    writeJson(path.join(projectRoot, 'package.json'), {
+      dependencies: {
+        'gt-i18n': '0.0.0',
+        'gt-node': '0.0.0',
+        'gt-react': '0.0.0',
+        'gt-vue': '0.0.0',
+      },
+    });
+    fs.mkdirSync(path.join(projectRoot, 'src'), { recursive: true });
+    fs.writeFileSync(
+      path.join(projectRoot, 'src', 'shared.ts'),
+      `import { msg } from 'gt-i18n';
+export const shared = msg('Shared source context');`
+    );
+    vi.spyOn(process, 'cwd').mockReturnValue(projectRoot);
+
+    const detected = determineLibrary();
+    expect(detected).toEqual({
+      library: Libraries.GT_REACT,
+      additionalModules: [Libraries.GT_NODE, Libraries.GT_VUE],
+    });
+
+    const output = await createInlineUpdatesForLibraries(
+      [detected.library, ...detected.additionalModules].filter(isInlineLibrary),
+      false,
+      undefined,
+      {
+        autoderive: false,
+        enableAutoJsxInjection: false,
+        includeSourceCodeContext: true,
+        legacyGtReactImportSource: false,
+      },
+      { conditionNames: ['import', 'default'] }
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(output.updates).toHaveLength(1);
+    expect(output.updates[0].source).toBe('Shared source context');
+    const sourceCode = output.updates[0].metadata.sourceCode ?? {};
+    expect(Object.values(sourceCode).flat()).toHaveLength(1);
+  });
+
   it('extracts every framework selected from declared workspace packages', async () => {
     const projectRoot = fs.mkdtempSync(
       path.join(os.tmpdir(), 'gt-mixed-workspace-')
@@ -399,13 +441,27 @@ gt('Vue workspace');
     writeJson(path.join(projectRoot, 'package.json'), {
       private: true,
       workspaces: ['apps/*'],
-      dependencies: { 'gt-react': '0.0.0' },
+      dependencies: {
+        '@vitejs/plugin-react': '^5.0.0',
+        'gt-react': '0.0.0',
+        react: '^19.0.0',
+        vite: '^7.0.0',
+      },
     });
 
     fs.mkdirSync(path.join(projectRoot, 'src'), { recursive: true });
     fs.writeFileSync(
       path.join(projectRoot, 'src', 'Root.tsx'),
       `import { T } from 'gt-react'; export const Root = () => <T>Root React message</T>;`
+    );
+    fs.writeFileSync(
+      path.join(projectRoot, 'vite.config.ts'),
+      `import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
+export default defineConfig(({ command }) => {
+  if (command === 'serve') return { plugins: [react()] };
+  return { build: { sourcemap: true }, plugins: [react()] };
+});`
     );
 
     const reactDirectory = path.join(projectRoot, 'apps', 'react');
@@ -605,6 +661,7 @@ const gt = useGT();
     temporaryDirectories.push(projectRoot);
     linkTestVueInstallation(projectRoot);
     writeJson(path.join(projectRoot, 'package.json'), {
+      dependencies: { '@fixture/vue-i18n': 'workspace:*' },
       private: true,
       workspaces: ['packages/*'],
     });

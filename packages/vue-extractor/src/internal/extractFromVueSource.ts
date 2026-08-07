@@ -1,4 +1,8 @@
 import { extname } from 'node:path';
+import {
+  init as initModuleLexer,
+  parse as parseModuleImports,
+} from 'es-module-lexer';
 import type { ParserPlugin } from '@babel/parser';
 import type { SFCBlock, TemplateCompiler } from '#vue-compiler-sfc';
 import type { RootNode } from '@vue/compiler-dom';
@@ -14,11 +18,15 @@ import {
   parseVueScript,
   type VueScriptAnalysis,
 } from './script.js';
+import { parseScriptAst } from './script/parser.js';
 import {
   shiftCompilerAstLocations,
   shiftCompilerLocation,
 } from './compilerAst.js';
-import { createLocalModuleResolver } from './script/localModules.js';
+import {
+  createLocalModuleResolver,
+  type LocalModuleResolver,
+} from './script/localModules.js';
 import { parseVueTemplate } from './template.js';
 import type { TemplateBindings, VueExtractionContext } from './types.js';
 import { addVueError, createVueExtractionContext } from './utils.js';
@@ -29,6 +37,7 @@ import {
 } from './vueCompiler.js';
 
 const DEFAULT_SURROUNDING_LINE_COUNT = 5;
+const MAX_MALFORMED_SUFFIX_RECOVERIES = 64;
 
 /**
  * Extracts General Translation content from one Vue SFC or JavaScript file.
@@ -88,7 +97,7 @@ export async function extractFromVueSource(
   } else {
     if (
       options.requireGTProvenance &&
-      !hasPossibleStandaloneGTProvenance(sourceCode, filePath, options)
+      !(await hasStandaloneGTProvenance(sourceCode, filePath, options))
     ) {
       return { results, errors, warnings: [...warnings] };
     }
@@ -107,37 +116,150 @@ export async function extractFromVueSource(
 }
 
 /**
- * Uses the declared language, then permissive TSX and Flow, to classify
- * gt-vue ownership without changing the grammar used for extraction.
+ * Uses the declared language, then permissive TSX and Flow, to prove gt-vue
+ * ownership without changing the grammar used for extraction.
  *
  * The normal extraction pass still parses the file according to its extension.
- * A source no probe understands remains owned because gt-vue may be reachable
- * through a local alias; this prevents an incomplete catalog from publishing.
+ * Diagnostics caused only by GT-shaped names do not establish ownership. This
+ * keeps mixed-framework dispatch from making otherwise valid React files fatal.
  */
-function hasPossibleStandaloneGTProvenance(
+async function hasStandaloneGTProvenance(
   sourceCode: string,
   filePath: string,
   options: VueExtractionOptions
-): boolean {
+): Promise<boolean> {
   const extension = extname(filePath).toLowerCase();
   const probeLanguages = new Set<StandaloneProbeLanguage>([
     languageFromExtension(extension),
     'tsx',
     'flow',
   ]);
+  const localModules = createLocalModuleResolver(options.resolveModule);
   for (const language of probeLanguages) {
     const probe = probeStandaloneGTProvenance(
       sourceCode,
       filePath,
       options,
-      language
+      language,
+      localModules
     );
-    if (probe.parsed) return probe.hasProvenance;
+    if (probe.hasProvenance) return true;
+    if (probe.parsed) return false;
+  }
+  const suffixSelection = selectMalformedSuffixLanguage(
+    sourceCode,
+    probeLanguages
+  );
+  const moduleRecovery = suffixSelection?.recoverable
+    ? await recoverMalformedModuleReferences(
+        sourceCode,
+        filePath,
+        options,
+        probeLanguages,
+        localModules
+      )
+    : { hasProvenance: false, preamble: '' };
+  if (moduleRecovery.hasProvenance) {
+    return true;
+  }
+  return hasMalformedStandaloneGTProvenance(
+    sourceCode,
+    filePath,
+    options,
+    probeLanguages,
+    localModules,
+    moduleRecovery.preamble
+  );
+}
+
+/**
+ * Recovers static module ownership without reparsing an entire malformed file.
+ *
+ * es-module-lexer ignores comments and literal contents while continuing past
+ * unrelated syntax errors. Each declaration is then analyzed on its own,
+ * preserving type-only and binding-specific local-barrel semantics. Parseable
+ * declarations are also returned as a preamble for later recovered uses.
+ */
+async function recoverMalformedModuleReferences(
+  sourceCode: string,
+  filePath: string,
+  options: VueExtractionOptions,
+  languages: ReadonlySet<StandaloneProbeLanguage>,
+  localModules: LocalModuleResolver
+): Promise<{ hasProvenance: boolean; preamble: string }> {
+  await initModuleLexer;
+  let imports: ReturnType<typeof parseModuleImports>[0];
+  try {
+    [imports] = parseModuleImports(sourceCode);
+  } catch {
+    imports = [];
   }
 
-  // An unclassifiable file can still import gt-vue through a local barrel.
-  // Fail closed rather than silently publishing an incomplete catalog.
-  return true;
+  const declarations = new Set<string>();
+  for (const moduleImport of imports) {
+    if (!moduleImport.n) continue;
+    for (const declaration of readModuleStatementCandidates(
+      sourceCode,
+      moduleImport.ss,
+      moduleImport.se
+    )) {
+      for (const language of languages) {
+        const probe = probeStandaloneGTProvenance(
+          declaration,
+          filePath,
+          options,
+          language,
+          localModules
+        );
+        if (probe.hasProvenance) {
+          return { hasProvenance: true, preamble: '' };
+        }
+        if (probe.parsed) {
+          declarations.add(declaration);
+          break;
+        }
+      }
+      if (declarations.has(declaration)) break;
+    }
+  }
+  return {
+    hasProvenance: false,
+    preamble: [...declarations].join('\n'),
+  };
+}
+
+/** Returns small statement slices enclosing one lexed module reference. */
+function readModuleStatementCandidates(
+  sourceCode: string,
+  statementStart: number,
+  specifierEnd: number
+): string[] {
+  const precedingBoundaries = [';', '\n', '{', '}']
+    .map((separator) => sourceCode.lastIndexOf(separator, statementStart - 1))
+    .filter((offset) => offset >= 0)
+    .map((offset) => offset + 1);
+  precedingBoundaries.push(0);
+  const followingBoundaries = [';', '\n', '}']
+    .map((separator) => sourceCode.indexOf(separator, specifierEnd))
+    .filter((offset) => offset >= 0)
+    .map((offset) => offset + 1);
+  const starts = [
+    ...precedingBoundaries.sort((left, right) => right - left),
+    statementStart,
+  ];
+  const ends = [
+    ...followingBoundaries.sort((left, right) => left - right),
+    specifierEnd,
+  ];
+  const candidates = new Set<string>();
+  for (const start of starts) {
+    for (const end of ends) {
+      if (end <= start) continue;
+      const candidate = sourceCode.slice(start, end).trim();
+      if (candidate) candidates.add(candidate);
+    }
+  }
+  return [...candidates];
 }
 
 type StandaloneProbeLanguage = 'flow' | 'js' | 'jsx' | 'ts' | 'tsx';
@@ -147,7 +269,8 @@ function probeStandaloneGTProvenance(
   sourceCode: string,
   filePath: string,
   options: VueExtractionOptions,
-  language: StandaloneProbeLanguage
+  language: StandaloneProbeLanguage,
+  localModules: LocalModuleResolver
 ): { hasProvenance: boolean; parsed: boolean } {
   const results: VueExtractionOutput['results'] = [];
   const errors: string[] = [];
@@ -165,7 +288,7 @@ function probeStandaloneGTProvenance(
   );
   const analysis = createVueScriptAnalysis();
   analysis.entryFile = filePath;
-  analysis.localModules = createLocalModuleResolver(options.resolveModule);
+  analysis.localModules = localModules;
   const parsed = parseVueScript(
     sourceCode,
     language,
@@ -175,36 +298,233 @@ function probeStandaloneGTProvenance(
     analysis,
     false
   );
+  if (results.length > 0 || analysisHasGTProvenance(analysis)) {
+    return { hasProvenance: true, parsed };
+  }
+  return { hasProvenance: false, parsed };
+}
+
+/**
+ * Finds concrete module references when malformed syntax prevents a full AST.
+ *
+ * Each supported grammar recovers a complete prefix, then the grammar that
+ * parsed furthest gets a bounded suffix search. Unterminated literal errors
+ * never receive suffix recovery, so literal contents cannot become code.
+ */
+function hasMalformedStandaloneGTProvenance(
+  sourceCode: string,
+  filePath: string,
+  options: VueExtractionOptions,
+  languages: ReadonlySet<StandaloneProbeLanguage>,
+  localModules: LocalModuleResolver,
+  recoveredPreamble: string
+): boolean {
+  for (const language of languages) {
+    if (
+      leadingStatementPrefixHasGTProvenance(
+        sourceCode,
+        filePath,
+        options,
+        language,
+        localModules
+      )
+    ) {
+      return true;
+    }
+  }
+  const suffixSelection = selectMalformedSuffixLanguage(sourceCode, languages);
+  return Boolean(
+    suffixSelection?.recoverable &&
+    malformedSuffixHasGTProvenance(
+      sourceCode,
+      filePath,
+      options,
+      suffixSelection.language,
+      localModules,
+      recoveredPreamble
+    )
+  );
+}
+
+/** Preserves CommonJS and TypeScript import ownership before a syntax error. */
+function leadingStatementPrefixHasGTProvenance(
+  sourceCode: string,
+  filePath: string,
+  options: VueExtractionOptions,
+  language: StandaloneProbeLanguage,
+  localModules: LocalModuleResolver
+): boolean {
+  let errorOffset: number;
+  try {
+    parseScriptAst(sourceCode, language);
+    return false;
+  } catch (error) {
+    const offset = (error as { pos?: unknown }).pos;
+    if (typeof offset !== 'number') return false;
+    errorOffset = offset;
+  }
+  const boundary = Math.max(
+    sourceCode.lastIndexOf(';', errorOffset - 1) + 1,
+    sourceCode.lastIndexOf('\n', errorOffset - 1) + 1,
+    sourceCode.lastIndexOf('}', errorOffset - 1) + 1
+  );
+  if (boundary <= 0) return false;
+  const prefix = sourceCode.slice(0, boundary).trimEnd();
+  if (!prefix) return false;
+  const probe = probeStandaloneGTProvenance(
+    prefix,
+    filePath,
+    options,
+    language,
+    localModules
+  );
+  return probe.hasProvenance;
+}
+
+/** Recovers later imports and CommonJS calls after a bounded number of errors. */
+function malformedSuffixHasGTProvenance(
+  sourceCode: string,
+  filePath: string,
+  options: VueExtractionOptions,
+  language: StandaloneProbeLanguage,
+  localModules: LocalModuleResolver,
+  recoveredPreamble: string
+): boolean {
+  let remaining = sourceCode;
+  for (let attempt = 0; attempt < MAX_MALFORMED_SUFFIX_RECOVERIES; attempt++) {
+    let errorOffset: number;
+    try {
+      parseScriptAst(remaining, language);
+      const recoveredSource = recoveredPreamble
+        ? `${recoveredPreamble}\n${remaining}`
+        : remaining;
+      const recoveredProbe = probeStandaloneGTProvenance(
+        recoveredSource,
+        filePath,
+        options,
+        language,
+        localModules
+      );
+      if (recoveredProbe.parsed) return recoveredProbe.hasProvenance;
+      // The remaining suffix may already contain the declaration retained in
+      // the preamble. Probe it alone to avoid a duplicate-binding parse error.
+      return probeStandaloneGTProvenance(
+        remaining,
+        filePath,
+        options,
+        language,
+        localModules
+      ).hasProvenance;
+    } catch (error) {
+      const parseError = readRecoverableParseError(error);
+      if (!parseError) return false;
+      errorOffset = parseError.offset;
+    }
+    const boundary = findMalformedRecoveryBoundary(remaining, errorOffset);
+    if (boundary <= 0 || boundary >= remaining.length) return false;
+    remaining = remaining.slice(boundary);
+    const recoveredSource = recoveredPreamble
+      ? `${recoveredPreamble}\n${remaining}`
+      : remaining;
+    let probe = probeStandaloneGTProvenance(
+      recoveredSource,
+      filePath,
+      options,
+      language,
+      localModules
+    );
+    if (!probe.parsed && recoveredPreamble) {
+      const trimmedRemaining = trimTrailingRecoveryClosers(remaining);
+      if (trimmedRemaining !== remaining) {
+        probe = probeStandaloneGTProvenance(
+          `${recoveredPreamble}\n${trimmedRemaining}`,
+          filePath,
+          options,
+          language,
+          localModules
+        );
+      }
+    }
+    if (probe.hasProvenance) return true;
+    if (probe.parsed) return false;
+  }
+  return false;
+}
+
+/** Removes block closers orphaned when recovery starts inside a function. */
+function trimTrailingRecoveryClosers(sourceCode: string): string {
+  return sourceCode.replace(/(?:\s*\}\s*)+$/u, '').trimEnd();
+}
+
+/** Chooses the grammar that parsed furthest before a recoverable error. */
+function selectMalformedSuffixLanguage(
+  sourceCode: string,
+  languages: ReadonlySet<StandaloneProbeLanguage>
+): { language: StandaloneProbeLanguage; recoverable: boolean } | undefined {
+  let selected:
+    | { language: StandaloneProbeLanguage; recoverable: boolean }
+    | undefined;
+  let furthestOffset = -1;
+  for (const language of languages) {
+    try {
+      parseScriptAst(sourceCode, language);
+    } catch (error) {
+      const parseError = readParseError(error);
+      if (parseError && parseError.offset > furthestOffset) {
+        selected = {
+          language,
+          recoverable: parseError.recoverable,
+        };
+        furthestOffset = parseError.offset;
+      }
+    }
+  }
+  return selected;
+}
+
+/** Rejects recovery that could reinterpret unterminated literal contents. */
+function readRecoverableParseError(
+  error: unknown
+): { offset: number } | undefined {
+  const parsed = readParseError(error);
+  return parsed?.recoverable ? { offset: parsed.offset } : undefined;
+}
+
+/** Reads one Babel parser error without trusting unterminated literal state. */
+function readParseError(
+  error: unknown
+): { offset: number; recoverable: boolean } | undefined {
+  const parsed = error as { pos?: unknown; reasonCode?: unknown };
+  if (typeof parsed.pos !== 'number') return undefined;
+  const unsafeReasonCodes = new Set([
+    'UnterminatedComment',
+    'UnterminatedJsxContent',
+    'UnterminatedRegExp',
+    'UnterminatedString',
+    'UnterminatedTemplate',
+  ]);
   return {
-    hasProvenance:
-      results.length > 0 ||
-      errors.length > 0 ||
-      warnings.size > 0 ||
-      analysisHasPossibleGTProvenance(analysis),
-    parsed,
+    offset: parsed.pos,
+    recoverable:
+      typeof parsed.reasonCode !== 'string' ||
+      !unsafeReasonCodes.has(parsed.reasonCode),
   };
 }
 
-/** Returns whether permissive analysis found a gt-vue identity or uncertainty. */
-function analysisHasPossibleGTProvenance(analysis: VueScriptAnalysis): boolean {
-  const knownValues = [
-    ...analysis.values.values(),
-    ...analysis.templateValues.values(),
-  ];
-  return (
-    knownValues.some(
-      (value) =>
-        value.type === 'component' ||
-        value.type === 'hook' ||
-        value.type === 'string' ||
-        (value.type === 'namespace' && value.source === 'gt-vue')
-    ) ||
-    analysis.gtComponentFactories.size > 0 ||
-    analysis.gtContainerFactories.size > 0 ||
-    analysis.possibleGTContainers.size > 0 ||
-    analysis.uncertainGTComponents.size > 0 ||
-    analysis.uncertainStringFunctions.size > 0
-  );
+/** Selects the first statement-like boundary after a parser error. */
+function findMalformedRecoveryBoundary(
+  sourceCode: string,
+  errorOffset: number
+): number {
+  const candidates = [';', '\n', '}']
+    .map((separator) => sourceCode.indexOf(separator, errorOffset))
+    .filter((offset) => offset >= 0);
+  return candidates.length > 0 ? Math.min(...candidates) + 1 : -1;
+}
+
+/** Returns whether permissive analysis reached a concrete gt-vue identity. */
+function analysisHasGTProvenance(analysis: VueScriptAnalysis): boolean {
+  return analysis.hasGTSourceReference;
 }
 
 function parseVueSingleFileComponent(

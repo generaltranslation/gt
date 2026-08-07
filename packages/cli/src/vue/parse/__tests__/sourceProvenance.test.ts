@@ -33,7 +33,45 @@ describe('Vue CLI source provenance', () => {
        m(msg('React message'));
        export const View = () => <T>React rich text</T>;`
     );
-    write(projectRoot, 'src/typed.js', `export const label: string = 'React';`);
+    write(
+      projectRoot,
+      'src/typed.js',
+      `import { useGT } from 'gt-react';
+       const gt = useGT();
+       export const label: string = gt('React typed JavaScript');`
+    );
+    write(
+      projectRoot,
+      'src/theme.tsx',
+      `import { useGT as useThemeGT } from '@theme/gt';
+       const themeGT = useThemeGT();
+       themeGT('Ordinary aliased helper');
+       export const Theme = () => <div>Theme</div>;`
+    );
+    const themeHelperPath = path.join(projectRoot, 'src', 'theme-gt.ts');
+    write(
+      projectRoot,
+      'src/theme-gt.ts',
+      `export function useGT() {
+         return (source: string) => source;
+       }`
+    );
+    write(
+      projectRoot,
+      'vite.config.ts',
+      `import react from '@vitejs/plugin-react';
+       import { defineConfig } from 'vite';
+       export default defineConfig(({ command }) => {
+         const config = {
+           plugins: [react()],
+           resolve: {
+             alias: { '@theme/gt': ${JSON.stringify(themeHelperPath)} },
+           },
+         };
+         if (command === 'serve') return config;
+         return { ...config, build: { sourcemap: true } };
+       });`
+    );
     write(
       projectRoot,
       'src/ordinary.ts',
@@ -79,6 +117,28 @@ describe('Vue CLI source provenance', () => {
     );
     write(
       projectRoot,
+      'src/mixed-runtime.ts',
+      `import { msg } from 'gt-vue';
+       void msg;
+       export function ordinary() { return 'ordinary'; }`
+    );
+    write(
+      projectRoot,
+      'src/mixed-consumer.tsx',
+      `import { ordinary } from './mixed-runtime';
+       import { useGT } from '@missing/gt';
+       ordinary();
+       const gt = useGT();
+       gt('Ordinary mixed-module helper');`
+    );
+    write(
+      projectRoot,
+      'src/mixed-typed.js',
+      `import { ordinary } from './mixed-runtime';
+       export const label: string = ordinary();`
+    );
+    write(
+      projectRoot,
       'src/vue-message.ts',
       `import { defineMessage } from './i18n';
        defineMessage('Vue message');`
@@ -94,12 +154,33 @@ describe('Vue CLI source provenance', () => {
     expect(output.updates.map(({ source }) => source)).toEqual(['Vue message']);
   });
 
-  it('keeps unresolved possible gt-vue aliases fail-closed', async () => {
+  it('ignores unresolved GT-shaped aliases without file-level ownership', async () => {
     const projectRoot = createProject();
     write(
       projectRoot,
       'src/unresolved.ts',
       `import { useGT } from '@missing/gt';
+       const gt = useGT();
+       gt('Unresolved');`
+    );
+    vi.spyOn(process, 'cwd').mockReturnValue(projectRoot);
+
+    const output = await createVueInlineUpdates(undefined, parsingFlags, {
+      conditionNames: ['import', 'default'],
+    });
+
+    expect(output.updates).toEqual([]);
+    expect(output.errors).toEqual([]);
+  });
+
+  it('keeps unresolved aliases fail-closed in a proven gt-vue file', async () => {
+    const projectRoot = createProject();
+    write(
+      projectRoot,
+      'src/unresolved.ts',
+      `import { msg } from 'gt-vue';
+       import { useGT } from '@missing/gt';
+       void msg;
        const gt = useGT();
        gt('Unresolved');`
     );
@@ -125,7 +206,14 @@ function createProject(): string {
   write(
     projectRoot,
     'package.json',
-    JSON.stringify({ dependencies: { 'gt-vue': '0.0.0' }, private: true })
+    JSON.stringify({
+      dependencies: { 'gt-vue': '0.0.0' },
+      devDependencies: {
+        '@vitejs/plugin-react': 'latest',
+        vite: 'latest',
+      },
+      private: true,
+    })
   );
   return projectRoot;
 }

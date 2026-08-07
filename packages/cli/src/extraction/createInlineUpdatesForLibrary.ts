@@ -56,20 +56,32 @@ export async function createInlineUpdatesForLibraries(
   const results = await Promise.all(
     uniqueLibraries.map((library) => {
       let libraryFilePatterns = filePatterns;
+      const sourceScopes =
+        library !== Libraries.GT_VUE && libraryFilePatterns === undefined
+          ? readInlineSourceScopes(process.cwd(), library)
+          : undefined;
       if (
         library !== Libraries.GT_VUE &&
         libraryFilePatterns === undefined &&
-        readInlineSourceScopes(process.cwd(), library).length > 1
+        sourceScopes?.some(
+          ({ includeByDefault, relativeDirectory }) =>
+            includeByDefault && relativeDirectory !== ''
+        )
       ) {
         libraryFilePatterns = readDefaultInlineSourcePatterns(
           process.cwd(),
-          library
+          library,
+          sourceScopes
         );
       }
       if (includesVue && library !== Libraries.GT_VUE) {
         libraryFilePatterns = [
           ...(libraryFilePatterns ??
-            readDefaultInlineSourcePatterns(process.cwd(), library)),
+            readDefaultInlineSourcePatterns(
+              process.cwd(),
+              library,
+              sourceScopes
+            )),
           '!**/*.vue',
         ];
       }
@@ -85,7 +97,7 @@ export async function createInlineUpdatesForLibraries(
 
   const updates = results.flatMap((result) => result.updates);
   if (uniqueLibraries.length > 1) {
-    dedupeUpdates(updates);
+    dedupeUpdates(updates, { dedupeIncomingSourceCode: true });
   }
 
   return {

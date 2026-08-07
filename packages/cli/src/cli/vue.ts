@@ -1,6 +1,5 @@
 import type { Command } from 'commander';
 import type { SupportedLibraries, TranslateFlags } from '../types/index.js';
-import { Libraries } from '../types/libraries.js';
 import { displayHeader } from '../console/logging.js';
 import { logger } from '../console/logger.js';
 import { attachInlineTranslateFlags, attachTranslateFlags } from './flags.js';
@@ -13,7 +12,7 @@ import { InlineCLI } from './inline.js';
 export class VueCLI extends InlineCLI {
   constructor(
     command: Command,
-    library: typeof Libraries.GT_VUE,
+    library: SupportedLibraries,
     additionalModules?: SupportedLibraries[]
   ) {
     super(command, library, additionalModules);

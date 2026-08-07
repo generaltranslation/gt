@@ -24,7 +24,8 @@ export async function handleDownload(
   options: TranslateFlags,
   settings: Settings,
   library: SupportedLibraries,
-  additionalLibraries: readonly InlineLibrary[] = []
+  additionalLibraries: readonly InlineLibrary[] = [],
+  detectedAdditionalModules?: readonly SupportedLibraries[]
 ) {
   if (!hasValidLocales(settings)) return exitSync(1);
   // Validate credentials if not in dry run
@@ -53,7 +54,8 @@ export async function handleDownload(
       options,
       settings,
       library,
-      additionalLibraries
+      additionalLibraries,
+      detectedAdditionalModules
     );
     // _versionId is only written by stage when an inline GTJSON template was
     // staged, so demand it only when a GTJSON is part of this download —

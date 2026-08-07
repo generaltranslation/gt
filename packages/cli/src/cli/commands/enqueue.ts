@@ -22,7 +22,8 @@ export async function handleEnqueue(
   options: TranslateFlags,
   settings: Settings,
   library: SupportedLibraries,
-  additionalLibraries: readonly InlineLibrary[] = []
+  additionalLibraries: readonly InlineLibrary[] = [],
+  detectedAdditionalModules?: readonly SupportedLibraries[]
 ): Promise<EnqueueFilesResult> {
   if (!hasValidLocales(settings)) return exitSync(1);
   // Validate credentials if not in dry run
@@ -36,7 +37,8 @@ export async function handleEnqueue(
     options,
     settings,
     library,
-    additionalLibraries
+    additionalLibraries,
+    detectedAdditionalModules
   );
 
   // Point at dashboard review setup when uploading review-gated content

@@ -64,6 +64,7 @@
     "@babel/types": "^7.25.7",
     "@generaltranslation/format": "workspace:*",
     "@vue/shared": "^3.5.0",
+    "es-module-lexer": "^2.3.1",
     "generaltranslation": "workspace:*"
   },
   "devDependencies": {

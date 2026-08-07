@@ -55,7 +55,11 @@ import {
   validateVueJSXVariableComponent,
   type VueJSXAnalysis,
 } from './jsx.js';
-import type { LocalExportTarget, LocalModuleRecord } from './localModules.js';
+import type {
+  LocalExportResolution,
+  LocalExportTarget,
+  LocalModuleRecord,
+} from './localModules.js';
 import { parseScriptAst } from './parser.js';
 import { isKnownNonVueGTRuntime } from './runtimeModules.js';
 import {
@@ -105,6 +109,7 @@ export function createVueScriptAnalysis(
     directBindings: new Set(),
     gtComponentFactories: new Set(),
     gtContainerFactories: new Set(),
+    hasGTSourceReference: false,
     possibleGTContainers: new Set(),
     possibleStaticStrings: new Map(),
     staticValues: new Map(),
@@ -196,6 +201,7 @@ export function parseVueScript(
   analyzeOptionsApi = true
 ): boolean {
   if (!source.trim()) return true;
+  const initialErrorCount = context.errors.length;
 
   let ast: t.File;
   try {
@@ -298,6 +304,7 @@ export function parseVueScript(
       firstArgument.type !== 'SpreadElement' &&
       expressionContainsGTReference(firstArgument, path.scope, state)
     ) {
+      state.analysis.hasGTSourceReference = true;
       addVueError(
         context,
         consumerLocation,
@@ -312,6 +319,7 @@ export function parseVueScript(
       firstArgument.type !== 'SpreadElement' &&
       expressionContainsGTReference(firstArgument, path.scope, state)
     ) {
+      state.analysis.hasGTSourceReference = true;
       addVueError(
         context,
         consumerLocation,
@@ -371,6 +379,7 @@ export function parseVueScript(
       processForwardedTranslationCalls(path, consumerLocation);
       return;
     }
+    state.analysis.hasGTSourceReference = true;
     processVueStringCall(
       path.node,
       value.kind,
@@ -454,6 +463,7 @@ export function parseVueScript(
         new Set()
       );
       if (value?.type !== 'string') return;
+      state.analysis.hasGTSourceReference = true;
       addVueError(
         context,
         babelLocation(path.node.loc),
@@ -467,6 +477,9 @@ export function parseVueScript(
         path.scope,
         jsxAnalysis
       );
+      if (value?.type === 'component') {
+        state.analysis.hasGTSourceReference = true;
+      }
       if (
         value?.type === 'component' &&
         (value.name === 'Var' ||
@@ -481,6 +494,28 @@ export function parseVueScript(
       extractVueJSXTranslation(path, context, jsxAnalysis);
     },
   });
+  if (
+    state.unsupportedDynamicGTReference &&
+    context.errors.length === initialErrorCount
+  ) {
+    addVueError(
+      context,
+      undefined,
+      'Could not statically resolve possible gt-vue string function alias from a dynamic import',
+      'Use a static gt-vue import so translation ownership can be extracted deterministically'
+    );
+  }
+  if (
+    state.unsupportedMalformedGTReference &&
+    context.errors.length === initialErrorCount
+  ) {
+    addVueError(
+      context,
+      undefined,
+      'Could not statically resolve a gt-vue reference imported through a malformed local module',
+      'Fix the local module syntax so translation ownership can be extracted deterministically'
+    );
+  }
   return true;
 }
 
@@ -537,6 +572,8 @@ function createScriptState(
     transformArrayEntries: new Map(),
     transformArrayEntriesInProgress: new Set(),
     uncertainTranslationHelperBindings: new Set(),
+    unsupportedDynamicGTReference: false,
+    unsupportedMalformedGTReference: false,
     unsafeMutableNamespaceSources: new Set(),
   };
   traverse(ast, {
@@ -641,8 +678,15 @@ function collectImports(
 ): void {
   traverse(ast, {
     ImportDeclaration(path) {
-      if (path.node.importKind === 'type') return;
+      if (isTypeOnlyImportKind(path.node.importKind)) return;
       const source = path.node.source.value;
+      if (
+        source === 'gt-vue' &&
+        hasRuntimeImport(path.node) &&
+        importerFile === state.analysis.entryFile
+      ) {
+        state.analysis.hasGTSourceReference = true;
+      }
       if (source !== 'gt-vue' && source !== 'vue') {
         registerLocalImportDeclaration(
           path.node,
@@ -666,7 +710,7 @@ function collectImports(
         }
         if (
           specifier.type !== 'ImportSpecifier' ||
-          specifier.importKind === 'type'
+          isTypeOnlyImportKind(specifier.importKind)
         ) {
           continue;
         }
@@ -685,7 +729,43 @@ function collectImports(
         }
       }
     },
+    ExportNamedDeclaration(path) {
+      if (
+        path.node.exportKind === 'type' ||
+        !path.node.source ||
+        importerFile !== state.analysis.entryFile
+      ) {
+        return;
+      }
+      const exportNames = path.node.specifiers.flatMap((specifier) => {
+        if (
+          specifier.type === 'ExportSpecifier' &&
+          isTypeOnlyImportKind(specifier.exportKind)
+        ) {
+          return [];
+        }
+        if (specifier.type === 'ExportNamespaceSpecifier') return ['*'];
+        if (specifier.type !== 'ExportSpecifier') return [];
+        return [specifier.local.name];
+      });
+      recordRuntimeReexport(
+        path.node.source.value,
+        exportNames,
+        importerFile,
+        state
+      );
+    },
+    ExportAllDeclaration(path) {
+      if (
+        path.node.exportKind === 'type' ||
+        importerFile !== state.analysis.entryFile
+      ) {
+        return;
+      }
+      recordRuntimeReexport(path.node.source.value, ['*'], importerFile, state);
+    },
     TSImportEqualsDeclaration(path) {
+      if (path.node.importKind === 'type') return;
       const reference = path.node.moduleReference;
       if (
         reference.type !== 'TSExternalModuleReference' ||
@@ -695,6 +775,9 @@ function collectImports(
       }
       const source = reference.expression.value;
       if (source !== 'gt-vue' && source !== 'vue') return;
+      if (source === 'gt-vue' && importerFile === state.analysis.entryFile) {
+        state.analysis.hasGTSourceReference = true;
+      }
       registerImport(
         path.node.id.name,
         { type: 'namespace', source, mutable: true },
@@ -716,10 +799,63 @@ function collectImports(
       }
       const namespace = readRequireNamespace(path.node.init, path.scope);
       if (!namespace) return;
+      if (
+        namespace.source === 'gt-vue' &&
+        importerFile === state.analysis.entryFile
+      ) {
+        state.analysis.hasGTSourceReference = true;
+      }
       registerRequirePattern(path.node.id, namespace, path.scope, state);
     },
   });
   propagateUncertainTranslationHelperAliases(ast, state);
+}
+
+/** Marks only runtime re-exports statically connected to gt-vue. */
+function recordRuntimeReexport(
+  source: string,
+  exportNames: string[],
+  importerFile: string | undefined,
+  state: ScriptState
+): void {
+  if (!importerFile || exportNames.length === 0) return;
+  if (source === 'gt-vue') {
+    state.analysis.hasGTSourceReference = true;
+    return;
+  }
+  if (source === 'vue' || isKnownNonVueGTRuntime(source)) return;
+  const resolver = state.analysis.localModules;
+  const modulePath = resolver?.resolveModule(importerFile, source);
+  if (!resolver || !modulePath || !resolver.isProjectModule(modulePath)) {
+    return;
+  }
+  const candidateNames = exportNames.includes('*')
+    ? [...COMPONENT_IMPORTS, 'msg', 'useGT', 'useMessages']
+    : exportNames;
+  if (
+    candidateNames.some((name) =>
+      resolver.hasGTExportReference(modulePath, name)
+    )
+  ) {
+    state.analysis.hasGTSourceReference = true;
+  }
+}
+
+/** Returns whether an import causes a runtime module reference. */
+function hasRuntimeImport(declaration: t.ImportDeclaration): boolean {
+  return (
+    declaration.specifiers.length === 0 ||
+    declaration.specifiers.some(
+      (specifier) =>
+        specifier.type !== 'ImportSpecifier' ||
+        !isTypeOnlyImportKind(specifier.importKind)
+    )
+  );
+}
+
+/** Returns whether Babel classified an ESM binding as type-only. */
+function isTypeOnlyImportKind(kind: string | null | undefined): boolean {
+  return kind === 'type' || kind === 'typeof';
 }
 
 /** Retains unresolved-helper provenance through simple immutable aliases. */
@@ -817,6 +953,10 @@ function recordDynamicImportPattern(
 ): void {
   if (pattern.type === 'VoidPattern') return;
   if (source && isKnownNonVueGTRuntime(source)) return;
+  if (source === 'gt-vue' && importerFile === state.analysis.entryFile) {
+    state.analysis.hasGTSourceReference = true;
+    state.unsupportedDynamicGTReference = true;
+  }
   const resolver = state.analysis.localModules;
   const modulePath =
     source && source !== 'gt-vue' && source !== 'vue' && importerFile
@@ -829,6 +969,7 @@ function recordDynamicImportPattern(
   }
   if (pattern.type === 'Identifier') {
     if (modulePath && resolver) {
+      const binding = scope.getBinding(pattern.name);
       for (const exportName of [
         ...COMPONENT_IMPORTS,
         'msg',
@@ -839,7 +980,8 @@ function recordDynamicImportPattern(
           appendTemplatePath(pattern.name, exportName),
           exportName,
           modulePath,
-          state
+          state,
+          bindingReferencesNamespaceMember(binding, exportName, state)
         );
       }
     } else {
@@ -863,7 +1005,13 @@ function recordDynamicImportPattern(
     const localName = readPatternIdentifier(property.value);
     if (exportedName && localName) {
       if (modulePath) {
-        recordDynamicImportBinding(localName, exportedName, modulePath, state);
+        recordDynamicImportBinding(
+          localName,
+          exportedName,
+          modulePath,
+          state,
+          importerFile === state.analysis.entryFile
+        );
       } else {
         recordUnresolvedGTShapedBinding(localName, exportedName, state);
       }
@@ -877,7 +1025,13 @@ function recordDynamicImportPattern(
     const localName = readPatternIdentifier(property.value);
     if (exportedName && localName) {
       if (modulePath) {
-        recordDynamicImportBinding(localName, exportedName, modulePath, state);
+        recordDynamicImportBinding(
+          localName,
+          exportedName,
+          modulePath,
+          state,
+          importerFile === state.analysis.entryFile
+        );
       } else {
         recordUnresolvedGTShapedBinding(localName, exportedName, state);
       }
@@ -885,12 +1039,85 @@ function recordDynamicImportPattern(
   }
 }
 
+/** Returns whether one namespace binding is used through a static member. */
+function bindingReferencesNamespaceMember(
+  binding: Binding | undefined,
+  memberName: string,
+  state: ScriptState,
+  seen: Set<Binding> = new Set()
+): boolean {
+  if (!binding || seen.has(binding)) return false;
+  const nextSeen = new Set(seen).add(binding);
+  return Boolean(
+    binding.referencePaths.some((referencePath) => {
+      let reference: NodePath<t.Node> = referencePath;
+      while (
+        reference.parentPath &&
+        unwrapExpression(reference.parentPath.node) === reference.node
+      ) {
+        reference = reference.parentPath;
+      }
+      const parent = reference.parentPath;
+      if (
+        parent?.isMemberExpression() ||
+        parent?.isOptionalMemberExpression()
+      ) {
+        return (
+          parent.node.object === reference.node &&
+          readResolvedMemberProperty(parent.node, parent.scope, state) ===
+            memberName
+        );
+      }
+      if (parent?.isJSXMemberExpression()) {
+        return (
+          parent.node.object === reference.node &&
+          parent.node.property.name === memberName
+        );
+      }
+      if (
+        parent?.isVariableDeclarator() &&
+        parent.node.init === reference.node
+      ) {
+        if (parent.node.id.type === 'Identifier') {
+          return bindingReferencesNamespaceMember(
+            parent.scope.getBinding(parent.node.id.name),
+            memberName,
+            state,
+            nextSeen
+          );
+        }
+        if (parent.node.id.type === 'ObjectPattern') {
+          return parent.node.id.properties.some(
+            (property) =>
+              property.type === 'RestElement' ||
+              (property.type === 'ObjectProperty' &&
+                readResolvedPropertyKey(property, parent.scope, state) ===
+                  memberName)
+          );
+        }
+      }
+      if (
+        parent?.isCallExpression() ||
+        parent?.isNewExpression() ||
+        parent?.isReturnStatement() ||
+        parent?.isSpreadElement() ||
+        parent?.isArrayExpression() ||
+        parent?.isObjectProperty()
+      ) {
+        return true;
+      }
+      return false;
+    })
+  );
+}
+
 /** Marks only GT roles proven reachable from one static dynamic import. */
 function recordDynamicImportBinding(
   localName: string,
   exportName: string,
   modulePath: string,
-  state: ScriptState
+  state: ScriptState,
+  establishesEntryProvenance: boolean
 ): void {
   const resolution = state.analysis.localModules?.resolveExport(
     modulePath,
@@ -898,15 +1125,28 @@ function recordDynamicImportBinding(
   );
   if (!resolution || resolution.status === 'absent') return;
   if (resolution.status !== 'resolved') {
-    recordUnresolvedGTShapedBinding(localName, exportName, state);
+    if (
+      establishesEntryProvenance &&
+      resolution.status === 'invalid' &&
+      resolution.hasGTSourceReference
+    ) {
+      state.analysis.hasGTSourceReference = true;
+      state.unsupportedDynamicGTReference = true;
+      state.unsupportedMalformedGTReference = true;
+    }
+    if (resolution.status === 'invalid' && resolution.hasGTSourceReference) {
+      recordInvalidGTResolution(localName, resolution, state);
+    } else {
+      recordUnresolvedGTShapedBinding(localName, exportName, state);
+    }
     return;
   }
-  recordMaterializedLocalUncertainty(
-    localName,
-    materializeLocalExport(resolution.target, state),
-    state,
-    true
-  );
+  const materialized = materializeLocalExport(resolution.target, state);
+  if (establishesEntryProvenance && materialized.hasGTSourceReference) {
+    state.analysis.hasGTSourceReference = true;
+    state.unsupportedDynamicGTReference = true;
+  }
+  recordMaterializedLocalUncertainty(localName, materialized, state, true);
 }
 
 /** Resolves one ESM import through a local, read-only source module graph. */
@@ -924,9 +1164,7 @@ function registerLocalImportDeclaration(
       ? resolver.resolveModule(importerFile, source)
       : undefined;
   if (modulePath && resolver && !resolver.isProjectModule(modulePath)) return;
-  const moduleRecord =
-    modulePath && resolver ? resolver.getRecord(modulePath) : undefined;
-  if (!resolver || !modulePath || !moduleRecord) {
+  if (!resolver || !modulePath) {
     recordUnresolvedTranslationHelperImports(declaration, scope, state);
     if (
       source.startsWith('.') ||
@@ -941,7 +1179,7 @@ function registerLocalImportDeclaration(
   for (const specifier of declaration.specifiers) {
     if (
       specifier.type === 'ImportSpecifier' &&
-      specifier.importKind === 'type'
+      isTypeOnlyImportKind(specifier.importKind)
     ) {
       continue;
     }
@@ -949,7 +1187,12 @@ function registerLocalImportDeclaration(
       const value: KnownValue = { type: 'local-namespace', modulePath };
       registerImport(specifier.local.name, value, scope, state);
       if (importerFile === state.analysis.entryFile) {
-        recordLocalNamespaceMembers(specifier.local.name, modulePath, state);
+        recordLocalNamespaceMembers(
+          specifier.local.name,
+          modulePath,
+          state,
+          scope.getBinding(specifier.local.name)
+        );
       }
       continue;
     }
@@ -961,6 +1204,14 @@ function registerLocalImportDeclaration(
           : specifier.imported.value;
     const resolution = resolver.resolveExport(modulePath, exportName);
     if (resolution.status !== 'resolved') {
+      if (
+        importerFile === state.analysis.entryFile &&
+        resolution.status === 'invalid' &&
+        resolution.hasGTSourceReference
+      ) {
+        state.analysis.hasGTSourceReference = true;
+        state.unsupportedMalformedGTReference = true;
+      }
       recordUncertainTranslationHelperBinding(
         specifier.local.name,
         scope,
@@ -968,6 +1219,11 @@ function registerLocalImportDeclaration(
       );
       if (resolution.status === 'ambiguous') {
         recordAmbiguousLocalBinding(specifier.local.name, state);
+      } else if (
+        resolution.status === 'invalid' &&
+        resolution.hasGTSourceReference
+      ) {
+        recordInvalidGTResolution(specifier.local.name, resolution, state);
       } else {
         recordUnresolvedGTShapedBinding(
           specifier.local.name,
@@ -978,6 +1234,12 @@ function registerLocalImportDeclaration(
       continue;
     }
     const materialized = materializeLocalExport(resolution.target, state);
+    if (
+      importerFile === state.analysis.entryFile &&
+      materialized.hasGTSourceReference
+    ) {
+      state.analysis.hasGTSourceReference = true;
+    }
     const binding = scope.getBinding(specifier.local.name);
     if (materialized.value) {
       registerImport(specifier.local.name, materialized.value, scope, state);
@@ -988,7 +1250,8 @@ function registerLocalImportDeclaration(
         recordLocalNamespaceMembers(
           specifier.local.name,
           materialized.value.modulePath,
-          state
+          state,
+          binding
         );
       }
     }
@@ -1023,22 +1286,29 @@ function attachLocalModule(
 }
 
 /** Converts a graph export into an analyzer identity or callable. */
-function materializeLocalExport(
-  target: LocalExportTarget,
-  state: ScriptState
-): {
+type MaterializedLocalExport = {
   callable?: ScopedExpression & { node: t.Function };
+  hasGTSourceReference?: boolean;
   possibleGTComponent?: boolean;
   possibleStringFunction?: boolean;
   unsafeCallable?: boolean;
   value?: KnownValue;
-} {
+};
+
+function materializeLocalExport(
+  target: LocalExportTarget,
+  state: ScriptState
+): MaterializedLocalExport {
   if (target.type === 'ordinary-external') return {};
   if (target.type === 'external') {
-    return { value: knownExport(target.source, target.exportName) };
+    return {
+      hasGTSourceReference: target.source === 'gt-vue',
+      value: knownExport(target.source, target.exportName),
+    };
   }
   if (target.type === 'external-namespace') {
     return {
+      hasGTSourceReference: target.source === 'gt-vue',
       value: { mutable: false, source: target.source, type: 'namespace' },
     };
   }
@@ -1049,7 +1319,7 @@ function materializeLocalExport(
   }
   attachLocalModule(target.record, state);
   if (target.type === 'expression') {
-    return {
+    const materialized: MaterializedLocalExport = {
       callable: resolveCalledFunction(
         target.node,
         target.record.programScope,
@@ -1076,6 +1346,8 @@ function materializeLocalExport(
         new Set()
       ),
     };
+    materialized.hasGTSourceReference = isKnownGTValue(materialized.value);
+    return materialized;
   }
   const binding = target.record.programScope.getBinding(target.exportName);
   if (!binding) return {};
@@ -1099,7 +1371,7 @@ function materializeLocalExport(
       unsafeCallable: bindingMayReferenceLocalCallable(binding, state),
     };
   }
-  return {
+  const materialized: MaterializedLocalExport = {
     callable: resolveCalledFunction(
       binding.identifier,
       target.record.programScope,
@@ -1110,13 +1382,26 @@ function materializeLocalExport(
     possibleStringFunction,
     value: resolveKnownBinding(binding, state, new Set()),
   };
+  materialized.hasGTSourceReference = isKnownGTValue(materialized.value);
+  return materialized;
+}
+
+/** Returns whether an exact analyzer identity came from gt-vue. */
+function isKnownGTValue(value: KnownValue | undefined): boolean {
+  return (
+    value?.type === 'component' ||
+    value?.type === 'hook' ||
+    value?.type === 'string' ||
+    (value?.type === 'namespace' && value.source === 'gt-vue')
+  );
 }
 
 /** Makes statically known members of a local namespace visible to templates. */
 function recordLocalNamespaceMembers(
   localName: string,
   modulePath: string,
-  state: ScriptState
+  state: ScriptState,
+  binding?: Binding
 ): void {
   const resolver = state.analysis.localModules;
   if (!resolver) return;
@@ -1132,9 +1417,22 @@ function recordLocalNamespaceMembers(
     const resolution = resolver.resolveExport(modulePath, exportName);
     if (resolution.status === 'absent') continue;
     if (resolution.status !== 'resolved') {
+      if (
+        resolution.status === 'invalid' &&
+        resolution.hasGTSourceReference &&
+        bindingReferencesNamespaceMember(binding, exportName, state)
+      ) {
+        state.analysis.hasGTSourceReference = true;
+        state.unsupportedMalformedGTReference = true;
+      }
       state.analysis.uncertainTranslationHelpers.add(memberPath);
       if (resolution.status === 'ambiguous') {
         recordAmbiguousLocalBinding(memberPath, state);
+      } else if (
+        resolution.status === 'invalid' &&
+        resolution.hasGTSourceReference
+      ) {
+        recordInvalidGTResolution(memberPath, resolution, state);
       } else {
         recordUnresolvedGTShapedBinding(memberPath, exportName, state);
       }
@@ -1145,6 +1443,40 @@ function recordLocalNamespaceMembers(
       state.analysis.values.set(memberPath, materialized.value);
     }
     recordMaterializedLocalUncertainty(memberPath, materialized, state);
+  }
+}
+
+/** Retains the original gt-vue role hidden by a malformed re-export alias. */
+function recordInvalidGTResolution(
+  localName: string,
+  resolution: Extract<LocalExportResolution, { status: 'invalid' }>,
+  state: ScriptState
+): void {
+  if (resolution.gtExportName === '*') {
+    recordUnresolvedGTNamespace(localName, state);
+    return;
+  }
+  if (resolution.gtExportName) {
+    recordUnresolvedGTShapedBinding(localName, resolution.gtExportName, state);
+    return;
+  }
+  state.analysis.uncertainTranslationHelpers.add(localName);
+}
+
+/** Marks the GT-shaped members of one unresolved namespace path. */
+function recordUnresolvedGTNamespace(
+  localName: string,
+  state: ScriptState
+): void {
+  for (const component of COMPONENT_IMPORTS) {
+    const componentPath = appendTemplatePath(localName, component);
+    state.analysis.uncertainComponents.add(componentPath);
+    state.analysis.uncertainGTComponents.add(componentPath);
+  }
+  for (const name of ['msg', 'useGT', 'useMessages']) {
+    state.analysis.uncertainStringFunctions.add(
+      appendTemplatePath(localName, name)
+    );
   }
 }
 
@@ -1211,21 +1543,12 @@ function recordUnresolvedGTShapedImports(
 ): void {
   for (const specifier of declaration.specifiers) {
     if (specifier.type === 'ImportNamespaceSpecifier') {
-      for (const component of COMPONENT_IMPORTS) {
-        const path = appendTemplatePath(specifier.local.name, component);
-        state.analysis.uncertainComponents.add(path);
-        state.analysis.uncertainGTComponents.add(path);
-      }
-      for (const name of ['msg', 'useGT', 'useMessages']) {
-        state.analysis.uncertainStringFunctions.add(
-          appendTemplatePath(specifier.local.name, name)
-        );
-      }
+      recordUnresolvedGTNamespace(specifier.local.name, state);
       continue;
     }
     if (
       specifier.type === 'ImportSpecifier' &&
-      specifier.importKind === 'type'
+      isTypeOnlyImportKind(specifier.importKind)
     ) {
       continue;
     }
@@ -1248,7 +1571,7 @@ function recordUnresolvedTranslationHelperImports(
   for (const specifier of declaration.specifiers) {
     if (
       specifier.type === 'ImportSpecifier' &&
-      specifier.importKind === 'type'
+      isTypeOnlyImportKind(specifier.importKind)
     ) {
       continue;
     }

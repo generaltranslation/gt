@@ -106,7 +106,7 @@ describe('mixed-runtime isolation', () => {
     }
   );
 
-  it('keeps unknown custom GT-shaped aliases fail-closed', async () => {
+  it('ignores unresolved GT-shaped aliases without gt-vue ownership', async () => {
     const output = await extractFromVueSource(
       `
         import { T as Translate, msg as defineMessage } from '@missing/gt';
@@ -122,8 +122,218 @@ describe('mixed-runtime isolation', () => {
     );
 
     expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([]);
+  });
+
+  it.each(['cjs', 'cts'])(
+    'ignores an ordinary helper imported from a local .%s module',
+    async (extension) => {
+      write(
+        `ordinary.${extension}`,
+        `exports.useGT = () => (source) => source;`
+      );
+      const output = await extractFromVueSource(
+        `import { useGT } from './ordinary.${extension}';
+         const gt = useGT();
+         gt('Ordinary CommonJS string');`,
+        path.join(fixtureRoot, 'ReactView.tsx'),
+        {
+          projectRoot: fixtureRoot,
+          requireGTProvenance: true,
+        }
+      );
+
+      expect(output.results).toEqual([]);
+      expect(output.errors).toEqual([]);
+    }
+  );
+
+  it.each([
+    {
+      entry: `import { ordinary } from './mixed';
+        import { useGT } from '@missing/gt';
+        ordinary();
+        const gt = useGT();
+        gt('Ordinary named import');`,
+      filename: 'NamedConsumer.tsx',
+      module: `import { msg } from 'gt-vue';
+        void msg;
+        export function ordinary() { return 'ordinary'; }`,
+    },
+    {
+      entry: `import * as mixed from './mixed';
+        import { useGT } from '@missing/gt';
+        mixed.ordinary();
+        const gt = useGT();
+        gt('Ordinary namespace import');`,
+      filename: 'NamespaceConsumer.tsx',
+      module: `export { msg } from 'gt-vue';
+        export function ordinary() { return 'ordinary'; }`,
+    },
+    {
+      entry: `import { ordinary } from './mixed';
+        import { useGT } from '@missing/gt';
+        const label: string = ordinary();
+        const gt = useGT();
+        gt(label);`,
+      filename: 'TypedConsumer.js',
+      module: `import { msg } from 'gt-vue';
+        void msg;
+        export function ordinary() { return 'ordinary'; }`,
+    },
+  ])(
+    'does not inherit gt-vue ownership from an unrelated local export ($filename)',
+    async ({ entry, filename, module }) => {
+      write('mixed.ts', module);
+      const output = await extractFromVueSource(
+        entry,
+        path.join(fixtureRoot, filename),
+        {
+          projectRoot: fixtureRoot,
+          requireGTProvenance: true,
+          resolveModule: () => undefined,
+        }
+      );
+
+      expect(output.results).toEqual([]);
+      expect(output.errors).toEqual([]);
+    }
+  );
+
+  it.each([
+    {
+      expected: 'Found conditional JSX content',
+      source: `const condition = true;
+        export const View = () => (
+          <mixed.T>{condition ? 'First' : 'Second'}</mixed.T>
+        );`,
+    },
+    {
+      expected: 'Vue render function',
+      source: `export const View = () =>
+        mixed.h(mixed.T, null, 'Render text');`,
+    },
+  ])(
+    'preserves the $expected diagnostic for a used GT member of a mixed namespace',
+    async ({ expected, source }) => {
+      write(
+        'mixed.ts',
+        `export { T } from 'gt-vue';
+         export { h } from 'vue';
+         export function ordinary() { return 'ordinary'; }`
+      );
+      const output = await extractFromVueSource(
+        `import * as mixed from './mixed'; ${source}`,
+        path.join(fixtureRoot, 'NamespaceError.tsx'),
+        {
+          projectRoot: fixtureRoot,
+          requireGTProvenance: true,
+        }
+      );
+
+      expect(output.results).toEqual([]);
+      expect(output.errors).toEqual([expect.stringContaining(expected)]);
+    }
+  );
+
+  it('keeps unresolved aliases fail-closed after gt-vue ownership is proven', async () => {
+    const output = await extractFromVueSource(
+      `
+        import { msg } from 'gt-vue';
+        import { useGT } from '@missing/gt';
+        void msg;
+        const gt = useGT();
+        gt('Unresolved message');
+      `,
+      path.join(fixtureRoot, 'OwnedUnresolved.ts'),
+      {
+        projectRoot: fixtureRoot,
+        requireGTProvenance: true,
+        resolveModule: () => undefined,
+      }
+    );
+
+    expect(output.results).toEqual([]);
     expect(output.errors).toEqual([
       expect.stringContaining('possible gt-vue string function alias'),
+    ]);
+  });
+
+  it('does not treat a type-only gt-vue import as runtime ownership', async () => {
+    const output = await extractFromVueSource(
+      `
+        import { type GTFunction } from 'gt-vue';
+        import { useGT } from '@theme/gt';
+        const gt: GTFunction = useGT();
+        gt('Ordinary theme string');
+      `,
+      path.join(fixtureRoot, 'TypeOnly.tsx'),
+      {
+        projectRoot: fixtureRoot,
+        requireGTProvenance: true,
+        resolveModule: () => undefined,
+      }
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([]);
+  });
+
+  it('does not treat a Flow typeof gt-vue import as runtime ownership', async () => {
+    const output = await extractFromVueSource(
+      `
+        import typeof { GTFunction } from 'gt-vue';
+        import { useGT } from '@theme/gt';
+        const gt: GTFunction = useGT();
+        gt('Ordinary Flow theme string');
+      `,
+      path.join(fixtureRoot, 'TypeOnlyFlow.js'),
+      {
+        projectRoot: fixtureRoot,
+        requireGTProvenance: true,
+        resolveModule: () => undefined,
+      }
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([]);
+  });
+
+  it('does not treat a type-only import-equals as runtime ownership', async () => {
+    const output = await extractFromVueSource(
+      `import type GT = require('gt-vue');
+       import { useGT } from '@theme/gt';
+       const gt = useGT();
+       gt('Ordinary import-equals theme string');
+       void (0 as unknown as GT.GTFunction);`,
+      path.join(fixtureRoot, 'TypeOnlyImportEquals.ts'),
+      {
+        projectRoot: fixtureRoot,
+        requireGTProvenance: true,
+        resolveModule: () => undefined,
+      }
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([]);
+  });
+
+  it('keeps mixed type and value gt-vue imports runtime-owned', async () => {
+    const output = await extractFromVueSource(
+      `import { type GTFunction, msg } from 'gt-vue';
+       const message: GTFunction | string = msg('Mixed import message');
+       void message;`,
+      path.join(fixtureRoot, 'MixedTypeValue.ts'),
+      {
+        projectRoot: fixtureRoot,
+        requireGTProvenance: true,
+        resolveModule: () => undefined,
+      }
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(output.results.map(({ source }) => source)).toEqual([
+      'Mixed import message',
     ]);
   });
 
@@ -230,6 +440,77 @@ describe('standalone script provenance gating', () => {
     ]);
   });
 
+  it('does not hide a used gt-vue member from a dynamic local namespace', async () => {
+    write(
+      'dynamic-barrel.ts',
+      `export { msg } from 'gt-vue';
+       export function ordinary() { return 'ordinary'; }`
+    );
+    const output = await extractFromVueSource(
+      `const GT = await import('./dynamic-barrel');
+       GT.msg('Dynamic local string');`,
+      path.join(fixtureRoot, 'dynamic-local.ts'),
+      {
+        projectRoot: fixtureRoot,
+        requireGTProvenance: true,
+      }
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([
+      expect.stringContaining('possible gt-vue string function alias'),
+    ]);
+  });
+
+  it.each([
+    `const key = 'msg'; GT[key]('Computed dynamic local');`,
+    `const Alias = GT; Alias.msg('Aliased dynamic local');`,
+    `const { msg } = GT; msg('Destructured dynamic local');`,
+    `const consume = (value) => value.msg('Forwarded dynamic local'); consume(GT);`,
+  ])(
+    'retains ownership through a proven dynamic namespace flow',
+    async (usage) => {
+      write(
+        'dynamic-flow.ts',
+        `export { msg } from 'gt-vue';
+         export function ordinary() { return 'ordinary'; }`
+      );
+      const output = await extractFromVueSource(
+        `const GT = await import('./dynamic-flow'); ${usage}`,
+        path.join(fixtureRoot, 'dynamic-flow-consumer.ts'),
+        {
+          projectRoot: fixtureRoot,
+          requireGTProvenance: true,
+        }
+      );
+
+      expect(output.results).toEqual([]);
+      expect(output.errors).toEqual([
+        expect.stringContaining('possible gt-vue string function alias'),
+      ]);
+    }
+  );
+
+  it('does not inherit ownership from an unused dynamic namespace member', async () => {
+    write(
+      'dynamic-mixed.ts',
+      `export { msg } from 'gt-vue';
+       export function ordinary() { return 'ordinary'; }`
+    );
+    const output = await extractFromVueSource(
+      `const mixed = await import('./dynamic-mixed');
+       mixed.ordinary();`,
+      path.join(fixtureRoot, 'dynamic-ordinary.ts'),
+      {
+        projectRoot: fixtureRoot,
+        requireGTProvenance: true,
+      }
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([]);
+  });
+
   it.each([
     {
       expected: 'Direct require message',
@@ -307,6 +588,27 @@ describe('standalone script provenance gating', () => {
     expect(output.errors).toEqual([]);
   });
 
+  it.each(REACT_FAMILY_RUNTIMES)(
+    'does not let a %s call opt TypeScript-in-JavaScript into Vue parsing',
+    async (runtime) => {
+      const output = await extractFromVueSource(
+        `import { useGT } from '${runtime}';
+        const gt = useGT();
+        const label: string = gt('React typed JavaScript');
+        void label;`,
+        path.join(fixtureRoot, 'typed.js'),
+        {
+          projectRoot: fixtureRoot,
+          requireGTProvenance: true,
+          resolveModule: () => undefined,
+        }
+      );
+
+      expect(output.results).toEqual([]);
+      expect(output.errors).toEqual([]);
+    }
+  );
+
   it('keeps an unparseable direct gt-vue import fail-closed', async () => {
     const output = await extractFromVueSource(
       `import { msg } from 'gt-vue'; msg('Owned'); const broken = @;`,
@@ -323,6 +625,299 @@ describe('standalone script provenance gating', () => {
       expect.stringContaining('Could not parse a gt-vue script block'),
     ]);
   });
+
+  it('keeps a gt-vue import after malformed syntax fail-closed', async () => {
+    const output = await extractFromVueSource(
+      `const broken = @;
+       import { msg } from 'gt-vue';
+       msg('Owned after syntax error');`,
+      path.join(fixtureRoot, 'broken-before-import.js'),
+      {
+        projectRoot: fixtureRoot,
+        requireGTProvenance: true,
+        resolveModule: () => undefined,
+      }
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([
+      expect.stringContaining('Could not parse a gt-vue script block'),
+    ]);
+  });
+
+  it('keeps a gt-vue import before a multiline syntax error fail-closed', async () => {
+    const output = await extractFromVueSource(
+      `import { msg } from 'gt-vue';
+       const broken = (
+         @
+       );`,
+      path.join(fixtureRoot, 'multiline-error-after-import.js'),
+      {
+        projectRoot: fixtureRoot,
+        requireGTProvenance: true,
+      }
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([
+      expect.stringContaining('Could not parse a gt-vue script block'),
+    ]);
+  });
+
+  it.each([
+    `import * as GT from './multiline-barrel';
+     const broken = (\n@\n);
+     GT.msg('Static namespace after error');`,
+    `const GT = await import('./multiline-barrel');
+     const broken = (\n@\n);
+     GT.msg('Dynamic namespace after error');`,
+    `const { msg } = await import('./multiline-barrel');
+     const broken = (\n@\n);
+     msg('Dynamic binding after error');`,
+  ])(
+    'retains local-barrel ownership across a later multiline syntax error',
+    async (source) => {
+      write(
+        'multiline-barrel.ts',
+        `export { msg } from 'gt-vue';
+         export function ordinary() { return 'ordinary'; }`
+      );
+      const output = await extractFromVueSource(
+        source,
+        path.join(fixtureRoot, 'multiline-local-error.ts'),
+        {
+          projectRoot: fixtureRoot,
+          requireGTProvenance: true,
+        }
+      );
+
+      expect(output.results).toEqual([]);
+      expect(output.errors).toEqual([
+        expect.stringContaining('Could not parse a gt-vue script block'),
+      ]);
+    }
+  );
+
+  it.each(['static import', 'local barrel'])(
+    'does not exhaust malformed ownership recovery before a later %s',
+    async (kind) => {
+      const barrelPath = write(
+        'src/many-errors-barrel.ts',
+        `export { msg as defineMessage } from 'gt-vue';`
+      );
+      const reference =
+        kind === 'static import'
+          ? `import { msg } from 'gt-vue'; msg('Owned after many errors');`
+          : `import { defineMessage } from '@app/many-errors';
+             defineMessage('Owned local after many errors');`;
+      const malformed = Array.from(
+        { length: 20 },
+        (_, index) => `const broken${index} = @;`
+      ).join('\n');
+      const output = await extractFromVueSource(
+        `${malformed}\n${reference}`,
+        path.join(fixtureRoot, 'src', `many-errors-${kind}.js`),
+        {
+          projectRoot: fixtureRoot,
+          requireGTProvenance: true,
+          resolveModule(specifier) {
+            return specifier === '@app/many-errors' ? barrelPath : undefined;
+          },
+        }
+      );
+
+      expect(output.results).toEqual([]);
+      expect(output.errors).toEqual([
+        expect.stringContaining('Could not parse a gt-vue script block'),
+      ]);
+    }
+  );
+
+  it('keeps a direct CommonJS call after malformed syntax fail-closed', async () => {
+    const malformed = Array.from(
+      { length: 20 },
+      (_, index) => `const broken${index} = @;`
+    ).join('\n');
+    const output = await extractFromVueSource(
+      `${malformed}
+       require('gt-vue').msg('Owned CommonJS call');`,
+      path.join(fixtureRoot, 'broken-before-require.js'),
+      {
+        projectRoot: fixtureRoot,
+        requireGTProvenance: true,
+        resolveModule: () => undefined,
+      }
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([
+      expect.stringContaining('Could not parse a gt-vue script block'),
+    ]);
+  });
+
+  it.each(['direct import', 'dynamic import', 'local barrel'])(
+    'recovers a later %s after malformed TSX',
+    async (kind) => {
+      const barrelPath = write(
+        'src/tsx-recovery-barrel.ts',
+        `export { msg as defineMessage } from 'gt-vue';`
+      );
+      const reference =
+        kind === 'direct import'
+          ? `import { msg } from 'gt-vue'; msg('Owned direct import');`
+          : kind === 'dynamic import'
+            ? `const { msg } = await import('gt-vue'); msg('Owned dynamic import');`
+            : `import { defineMessage } from '@app/tsx-recovery';
+               defineMessage('Owned local barrel');`;
+      const output = await extractFromVueSource(
+        `type Props = { label: string };
+         const View = (props: Props) => <div>{props.label}</div>;
+         const broken = @;
+         ${reference}`,
+        path.join(
+          fixtureRoot,
+          'src',
+          `broken-${kind.replaceAll(' ', '-')}.tsx`
+        ),
+        {
+          projectRoot: fixtureRoot,
+          requireGTProvenance: true,
+          resolveModule(specifier) {
+            return specifier === '@app/tsx-recovery' ? barrelPath : undefined;
+          },
+        }
+      );
+
+      expect(output.results).toEqual([]);
+      expect(output.errors).toEqual([
+        expect.stringContaining('Could not parse a gt-vue script block'),
+      ]);
+    }
+  );
+
+  it('keeps a local gt-vue barrel after malformed syntax fail-closed', async () => {
+    const barrelPath = write(
+      'src/later-barrel.ts',
+      `export { msg as defineMessage } from 'gt-vue';`
+    );
+    const output = await extractFromVueSource(
+      `const broken = @;
+       import { defineMessage } from '@app/later-i18n';
+       defineMessage('Owned through later barrel');`,
+      path.join(fixtureRoot, 'src', 'broken-before-barrel.ts'),
+      {
+        projectRoot: fixtureRoot,
+        requireGTProvenance: true,
+        resolveModule(specifier) {
+          return specifier === '@app/later-i18n' ? barrelPath : undefined;
+        },
+      }
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([
+      expect.stringContaining('Could not parse a gt-vue script block'),
+    ]);
+  });
+
+  it.each([
+    `import * as GT from './later-namespace-barrel'; GT.msg('Static namespace');`,
+    `const GT = await import('./later-namespace-barrel'); GT.msg('Dynamic namespace');`,
+  ])(
+    'keeps a local namespace declared after malformed syntax fail-closed',
+    async (reference) => {
+      write(
+        'later-namespace-barrel.ts',
+        `export { msg } from 'gt-vue'; export const ordinary = 'ordinary';`
+      );
+      const output = await extractFromVueSource(
+        `const broken = @; ${reference}`,
+        path.join(fixtureRoot, 'broken-before-namespace.ts'),
+        {
+          projectRoot: fixtureRoot,
+          requireGTProvenance: true,
+        }
+      );
+
+      expect(output.results).toEqual([]);
+      expect(output.errors).toEqual([
+        expect.stringContaining('Could not parse a gt-vue script block'),
+      ]);
+    }
+  );
+
+  it('keeps a nested dynamic local namespace around malformed syntax fail-closed', async () => {
+    write(
+      'nested-dynamic-barrel.ts',
+      `export { msg } from 'gt-vue'; export const ordinary = 'ordinary';`
+    );
+    const output = await extractFromVueSource(
+      `async function load() {
+         const GT = await import('./nested-dynamic-barrel');
+         const broken = @;
+         GT.msg('Nested dynamic namespace');
+       }`,
+      path.join(fixtureRoot, 'broken-nested-dynamic.ts'),
+      {
+        projectRoot: fixtureRoot,
+        requireGTProvenance: true,
+      }
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([
+      expect.stringContaining('Could not parse a gt-vue script block'),
+    ]);
+  });
+
+  it('bounds ownership recovery for a long malformed statement', async () => {
+    const malformedEntries = Array.from(
+      { length: 1_000 },
+      (_, index) => `${index};`
+    ).join('\n');
+    const output = await extractFromVueSource(
+      `const broken = (\n${malformedEntries}\n@\n);
+       import { msg } from 'gt-vue';`,
+      path.join(fixtureRoot, 'long-broken.js'),
+      {
+        projectRoot: fixtureRoot,
+        requireGTProvenance: true,
+        resolveModule: () => undefined,
+      }
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([
+      expect.stringContaining('Could not parse a gt-vue script block'),
+    ]);
+  });
+
+  it.each([
+    `// import { msg } from 'gt-vue'\nconst broken = @;`,
+    `const text = "import { msg } from 'gt-vue'"; const broken = @;`,
+    "const pattern = /import { msg } from 'gt-vue'/; const broken = @;",
+    "const text = `import { msg } from 'gt-vue'`; const broken = @;",
+    `const text = "unterminated\nimport { msg } from 'gt-vue';`,
+    "const text = `unterminated\nimport { msg } from 'gt-vue';",
+    `/* unterminated\nimport { msg } from 'gt-vue';`,
+    `const view = <div>unterminated\nimport { msg } from 'gt-vue';`,
+  ])(
+    'ignores a malformed module with only a GT import lookalike',
+    async (source) => {
+      const output = await extractFromVueSource(
+        source,
+        path.join(fixtureRoot, 'lookalike.js'),
+        {
+          projectRoot: fixtureRoot,
+          requireGTProvenance: true,
+          resolveModule: () => undefined,
+        }
+      );
+
+      expect(output.results).toEqual([]);
+      expect(output.errors).toEqual([]);
+    }
+  );
 
   it('keeps an unparseable local gt-vue barrel fail-closed', async () => {
     const barrelPath = write(
@@ -347,6 +942,256 @@ describe('standalone script provenance gating', () => {
     expect(output.errors).toEqual([
       expect.stringContaining('Could not parse a gt-vue script block'),
     ]);
+  });
+
+  it.each([
+    `export { msg } from 'gt-vue';`,
+    `export * from 'gt-vue';`,
+    `export * as GT from 'gt-vue';`,
+  ])(
+    'keeps a malformed runtime re-export fail-closed: %s',
+    async (runtimeExport) => {
+      const source = `${runtimeExport} const broken = @;`;
+      const output = await extractFromVueSource(
+        source,
+        path.join(fixtureRoot, 'malformed-runtime-barrel.ts'),
+        {
+          projectRoot: fixtureRoot,
+          requireGTProvenance: true,
+        }
+      );
+
+      expect(output.results).toEqual([]);
+      expect(output.errors).toEqual([
+        expect.stringContaining('Could not parse a gt-vue script block'),
+      ]);
+    }
+  );
+
+  it.each([
+    `export type { GTFunction } from 'gt-vue';`,
+    `export { type GTFunction } from 'gt-vue';`,
+  ])(
+    'ignores a malformed TypeScript barrel with only a type re-export: %s',
+    async (typeExport) => {
+      const source = `${typeExport} const broken = @;`;
+      const output = await extractFromVueSource(
+        source,
+        path.join(fixtureRoot, 'malformed-type-barrel.ts'),
+        {
+          projectRoot: fixtureRoot,
+          requireGTProvenance: true,
+        }
+      );
+
+      expect(output.results).toEqual([]);
+      expect(output.errors).toEqual([]);
+    }
+  );
+
+  it('ignores a malformed Flow barrel with only a type re-export', async () => {
+    const source = `export type { GTFunction } from 'gt-vue'; const broken = @;`;
+    const output = await extractFromVueSource(
+      source,
+      path.join(fixtureRoot, 'malformed-flow-barrel.js'),
+      {
+        projectRoot: fixtureRoot,
+        requireGTProvenance: true,
+      }
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([]);
+  });
+
+  it('fails closed through a malformed gt-vue re-export barrel', async () => {
+    write(
+      'malformed-import-barrel.ts',
+      `export { msg } from 'gt-vue'; const broken = @;`
+    );
+    const source = `import { msg } from './malformed-import-barrel';
+      msg('Owned through a malformed barrel');`;
+    const output = await extractFromVueSource(
+      source,
+      path.join(fixtureRoot, 'malformed-barrel-consumer.ts'),
+      {
+        projectRoot: fixtureRoot,
+        requireGTProvenance: true,
+      }
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([
+      expect.stringContaining('possible gt-vue string function alias'),
+    ]);
+  });
+
+  it('fails closed through a local malformed re-export chain', async () => {
+    write('runtime-base.ts', `export { msg } from 'gt-vue';`);
+    write(
+      'malformed-chain-barrel.ts',
+      `export { msg as defineMessage } from './runtime-base'; const broken = @;`
+    );
+    const source = `import { defineMessage } from './malformed-chain-barrel';
+      defineMessage('Owned through a malformed chain');`;
+    const output = await extractFromVueSource(
+      source,
+      path.join(fixtureRoot, 'malformed-chain-consumer.ts'),
+      {
+        projectRoot: fixtureRoot,
+        requireGTProvenance: true,
+      }
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([
+      expect.stringContaining('possible gt-vue string function alias'),
+    ]);
+  });
+
+  it('fails closed through a malformed namespace re-export', async () => {
+    write(
+      'malformed-namespace-barrel.ts',
+      `export * as GT from 'gt-vue'; const broken = @;`
+    );
+    const source = `import { GT } from './malformed-namespace-barrel';
+      GT.msg('Owned through a malformed namespace');`;
+    const output = await extractFromVueSource(
+      source,
+      path.join(fixtureRoot, 'malformed-namespace-consumer.ts'),
+      {
+        projectRoot: fixtureRoot,
+        requireGTProvenance: true,
+      }
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([
+      expect.stringContaining('possible gt-vue string function alias'),
+    ]);
+  });
+
+  it('does not inherit malformed namespace ownership from an unused GT member', async () => {
+    write(
+      'malformed-mixed-barrel.ts',
+      `export { msg } from 'gt-vue';
+       export function ordinary() { return 'ordinary'; }
+       const broken = @;`
+    );
+    const source = `import * as mixed from './malformed-mixed-barrel';
+      import { useGT } from '@ordinary/hooks';
+      mixed.ordinary();
+      const gt = useGT();
+      gt('Ordinary unresolved message');`;
+    const output = await extractFromVueSource(
+      source,
+      path.join(fixtureRoot, 'malformed-mixed-consumer.ts'),
+      {
+        projectRoot: fixtureRoot,
+        requireGTProvenance: true,
+        resolveModule: () => undefined,
+      }
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([]);
+  });
+
+  it.each([
+    `const alias = mixed; alias.msg('Aliased malformed namespace');`,
+    `const { msg } = mixed; msg('Destructured malformed namespace');`,
+    `function consume(value) { value.msg('Forwarded malformed namespace'); }
+     consume(mixed);`,
+  ])(
+    'fails closed when a malformed static namespace escapes direct analysis',
+    async (usage) => {
+      write(
+        'malformed-static-namespace.ts',
+        `export { msg } from 'gt-vue'; const broken = @;`
+      );
+      const source = `import * as mixed from './malformed-static-namespace';
+        ${usage}`;
+      const output = await extractFromVueSource(
+        source,
+        path.join(fixtureRoot, 'malformed-static-namespace-consumer.ts'),
+        {
+          projectRoot: fixtureRoot,
+          requireGTProvenance: true,
+        }
+      );
+
+      expect(output.results).toEqual([]);
+      expect(output.errors).toEqual([
+        expect.stringContaining('malformed local module'),
+      ]);
+    }
+  );
+
+  it('fails closed for a component renamed by a malformed barrel', async () => {
+    write(
+      'malformed-component-barrel.ts',
+      `export { T as Translate } from 'gt-vue'; const broken = @;`
+    );
+    const source = `import { Translate } from './malformed-component-barrel';
+      export const View = () => <Translate>Malformed component</Translate>;`;
+    const output = await extractFromVueSource(
+      source,
+      path.join(fixtureRoot, 'malformed-component-consumer.tsx'),
+      {
+        projectRoot: fixtureRoot,
+        requireGTProvenance: true,
+      }
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors.length).toBeGreaterThan(0);
+  });
+
+  it.each([
+    `export const View = () => <mixed.T>Direct namespace JSX</mixed.T>;`,
+    `const alias = mixed;
+     export const View = () => <alias.T>Aliased namespace JSX</alias.T>;`,
+  ])(
+    'fails closed for JSX reached through a malformed static namespace',
+    async (usage) => {
+      write(
+        'malformed-jsx-namespace.ts',
+        `export { T } from 'gt-vue'; const broken = @;`
+      );
+      const source = `import * as mixed from './malformed-jsx-namespace';
+        ${usage}`;
+      const output = await extractFromVueSource(
+        source,
+        path.join(fixtureRoot, 'malformed-jsx-namespace-consumer.tsx'),
+        {
+          projectRoot: fixtureRoot,
+          requireGTProvenance: true,
+        }
+      );
+
+      expect(output.results).toEqual([]);
+      expect(output.errors.length).toBeGreaterThan(0);
+    }
+  );
+
+  it('does not inherit ownership from a malformed React re-export', async () => {
+    write(
+      'malformed-react-barrel.ts',
+      `export { msg } from 'gt-react'; const broken = @;`
+    );
+    const source = `import { msg } from './malformed-react-barrel';
+      msg('React message through malformed barrel');`;
+    const output = await extractFromVueSource(
+      source,
+      path.join(fixtureRoot, 'malformed-react-consumer.ts'),
+      {
+        projectRoot: fixtureRoot,
+        requireGTProvenance: true,
+      }
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([]);
   });
 
   it.each(['ts', 'mts', 'cts'])(

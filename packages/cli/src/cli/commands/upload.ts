@@ -7,7 +7,7 @@ import {
   readBinaryFileBase64,
 } from '../../fs/findFilepath.js';
 import { isBinaryFileFormat } from 'generaltranslation/types';
-import { Settings } from '../../types/index.js';
+import { Settings, SupportedLibraries } from '../../types/index.js';
 import { UploadOptions } from '../base.js';
 import { extractJson } from '../../formats/json/extractJson.js';
 import { validateJsonSchema } from '../../formats/json/utils.js';
@@ -25,7 +25,11 @@ import { aggregateFiles } from '../../formats/files/aggregateFiles.js';
  * @returns Promise that resolves when translation is complete
  */
 export async function upload(
-  settings: Settings & UploadOptions
+  settings: Settings & UploadOptions,
+  detectedLibraries?: {
+    library: SupportedLibraries;
+    additionalModules: readonly SupportedLibraries[];
+  }
 ): Promise<void> {
   if (!settings.files) {
     return;
@@ -41,7 +45,10 @@ export async function upload(
 
   // Reuse the same source aggregation path as translate/stage so source
   // parsing behavior stays consistent across commands.
-  const { files: allFiles, publishMap } = await aggregateFiles(settings);
+  const { files: allFiles, publishMap } = await aggregateFiles(
+    settings,
+    detectedLibraries
+  );
   const compositeJsonFiles = new Map<
     string,
     { filePath: string; content: string }
