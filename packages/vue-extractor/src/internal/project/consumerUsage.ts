@@ -47,6 +47,7 @@ const IGNORED_CONSUMER_DIRECTORIES = new Set([
 
 const GENERATED_CONSUMER_ROOT_DIRECTORIES = new Set([
   'cjs',
+  'es',
   'esm',
   'generated',
   'lib',
@@ -361,8 +362,26 @@ function readConsumerImports(file: string): ConsumerImport[] {
       return readScriptImports(source, 'tsx');
     }
     const { blocks, templateSource } = readVueScriptBlocks(source);
-    return blocks.flatMap(({ language, source }) =>
-      readScriptImports(source, language, templateSource)
+    const parsedBlocks = blocks.map((block) => ({
+      ...block,
+      ast: parseConsumerScript(block.source, block.language),
+    }));
+    const hasScriptSetup = parsedBlocks.some(
+      ({ ast, setup, source }) =>
+        setup && Boolean(ast) && Boolean(source.trim())
+    );
+    const templateBindings = hasScriptSetup
+      ? readTemplateBindingMetadata(parsedBlocks)
+      : undefined;
+    const setupExternalUsage = readSetupExternalUsage(parsedBlocks);
+    return parsedBlocks.flatMap(({ ast, setup }) =>
+      ast
+        ? collectStaticImports(ast, {
+            externalUsage: setup ? undefined : setupExternalUsage,
+            templateBindings,
+            templateSource: hasScriptSetup ? templateSource : undefined,
+          })
+        : []
     );
   }
   const language =
@@ -376,10 +395,10 @@ function readConsumerImports(file: string): ConsumerImport[] {
 
 /** Reads SFC script blocks without loading a project Vue compiler. */
 function readVueScriptBlocks(source: string): {
-  blocks: Array<{ language: string | undefined; source: string }>;
+  blocks: ConsumerScriptBlock[];
   templateSource: string;
 } {
-  const blocks: Array<{ language: string | undefined; source: string }> = [];
+  const blocks: ConsumerScriptBlock[] = [];
   const templateSources: string[] = [];
   for (const block of readTopLevelSfcBlocks(source)) {
     if (block.name === 'template') {
@@ -387,17 +406,38 @@ function readVueScriptBlocks(source: string): {
       continue;
     }
     if (block.name !== 'script') continue;
-    const attributes = block.attributes;
-    const quotedLanguage = /\blang\s*=\s*(["'])([^"']+)\1/i.exec(
-      attributes
-    )?.[2];
-    const bareLanguage = /\blang\s*=\s*([^\s>]+)/i.exec(attributes)?.[1];
+    const attributes = readTemplateAttributes(block.attributes);
     blocks.push({
-      language: quotedLanguage ?? bareLanguage,
+      language: attributes.find(({ name }) => name === 'lang')?.value,
+      setup: attributes.some(({ name }) => name === 'setup'),
       source: block.source,
     });
   }
   return { blocks, templateSource: templateSources.join('\n') };
+}
+
+type ConsumerScriptBlock = {
+  language: string | undefined;
+  setup: boolean;
+  source: string;
+};
+
+type ParsedConsumerScriptBlock = ConsumerScriptBlock & {
+  ast: t.File | undefined;
+};
+
+/** Collects ordinary-script bindings referenced from a sibling setup block. */
+function readSetupExternalUsage(
+  blocks: readonly ParsedConsumerScriptBlock[]
+): TemplateUsage | undefined {
+  const usage = createTemplateUsage();
+  let parsedSetup = false;
+  for (const block of blocks) {
+    if (!block.setup || !block.ast) continue;
+    parsedSetup = true;
+    collectTemplateAstUsage(block.ast, usage, new Map());
+  }
+  return parsedSetup ? usage : undefined;
 }
 
 type SfcBlock = {
@@ -548,9 +588,17 @@ function readHtmlCommentEnd(source: string, start: number): number {
 /** Accepts project-compatible syntax while extracting only static ESM edges. */
 function readScriptImports(
   source: string,
-  declaredLanguage: string | undefined,
-  templateSource?: string
+  declaredLanguage: string | undefined
 ): ConsumerImport[] {
+  const ast = parseConsumerScript(source, declaredLanguage);
+  return ast ? collectStaticImports(ast) : [];
+}
+
+/** Parses syntax accepted by consumer discovery without requiring Vue. */
+function parseConsumerScript(
+  source: string,
+  declaredLanguage: string | undefined
+): t.File | undefined {
   const languages = new Set<string | undefined>([declaredLanguage]);
   languages.add('tsx');
   if (
@@ -563,20 +611,530 @@ function readScriptImports(
 
   for (const language of languages) {
     try {
-      return collectStaticImports(
-        parseScriptAst(source, language),
-        templateSource
-      );
+      return parseScriptAst(source, language);
     } catch {
       // Try the next syntax accepted by source extraction.
     }
   }
-  return [];
+  return undefined;
 }
+
+type TemplateBindingType =
+  | 'setup-const'
+  | 'setup-reactive-const'
+  | 'literal-const'
+  | 'setup-let'
+  | 'setup-ref'
+  | 'setup-maybe-ref'
+  | 'props';
+
+type TemplateBinding = {
+  owner: t.Program;
+  type: TemplateBindingType;
+};
+
+const TEMPLATE_BINDING_RESOLUTION_ORDER: readonly TemplateBindingType[] = [
+  'setup-const',
+  'setup-reactive-const',
+  'literal-const',
+  'setup-let',
+  'setup-ref',
+  'setup-maybe-ref',
+  'props',
+];
+
+/**
+ * Reproduces the binding metadata needed by Vue's component-tag resolver.
+ *
+ * Project detection cannot load a consumer's Vue compiler before ownership is
+ * proven. This self-contained model lets the detector choose one setup binding
+ * with Vue's type and spelling precedence without introducing a compiler
+ * dependency into the lightweight entrypoint. Where supported Vue versions or
+ * compiler options differ, the stronger local binding wins so ambiguous source
+ * cannot activate Vue in an existing non-Vue project.
+ */
+function readTemplateBindingMetadata(
+  blocks: readonly ParsedConsumerScriptBlock[]
+): Map<string, TemplateBinding> {
+  const bindings = new Map<string, TemplateBinding>();
+  const normalBlocks = blocks.filter(({ setup }) => !setup);
+  const setupBlocks = blocks.filter(({ setup }) => setup);
+  const vueImportAliases = new Map<t.Program, Map<string, string>>();
+
+  for (const block of [...normalBlocks, ...setupBlocks]) {
+    if (!block.ast) continue;
+    const aliases = new Map<string, string>();
+    registerTemplateImportBindings(block.ast, bindings, aliases);
+    vueImportAliases.set(block.ast.program, aliases);
+  }
+  for (const block of normalBlocks) {
+    if (!block.ast) continue;
+    registerTemplateDeclarationBindings(
+      block.ast,
+      bindings,
+      vueImportAliases.get(block.ast.program) ?? new Map(),
+      'script',
+      true
+    );
+  }
+  for (const block of setupBlocks) {
+    if (!block.ast) continue;
+    registerTemplateDeclarationBindings(
+      block.ast,
+      bindings,
+      vueImportAliases.get(block.ast.program) ?? new Map(),
+      'script-setup',
+      normalBlocks.length === 0
+    );
+  }
+  return bindings;
+}
+
+function registerTemplateImportBindings(
+  ast: t.File,
+  bindings: Map<string, TemplateBinding>,
+  vueImportAliases: Map<string, string>
+): void {
+  for (const statement of ast.program.body) {
+    if (
+      statement.type !== 'ImportDeclaration' ||
+      statement.importKind === 'type' ||
+      statement.importKind === 'typeof'
+    ) {
+      continue;
+    }
+    const source = statement.source.value;
+    for (const specifier of statement.specifiers) {
+      if (
+        specifier.type === 'ImportSpecifier' &&
+        (specifier.importKind === 'type' || specifier.importKind === 'typeof')
+      ) {
+        continue;
+      }
+      const imported =
+        specifier.type === 'ImportDefaultSpecifier'
+          ? 'default'
+          : specifier.type === 'ImportNamespaceSpecifier'
+            ? '*'
+            : readModuleName(specifier.imported);
+      if (source === 'vue') {
+        vueImportAliases.set(imported, specifier.local.name);
+      }
+      if (!bindings.has(specifier.local.name)) {
+        setTemplateBinding(
+          bindings,
+          specifier.local.name,
+          imported === '*' ||
+            (imported === 'default' && source.endsWith('.vue')) ||
+            source === 'vue'
+            ? 'setup-const'
+            : 'setup-maybe-ref',
+          ast.program
+        );
+      }
+    }
+  }
+}
+
+/** Adds script declarations after imports in compiler-sfc's merge order. */
+function registerTemplateDeclarationBindings(
+  ast: t.File,
+  bindings: Map<string, TemplateBinding>,
+  vueImportAliases: ReadonlyMap<string, string>,
+  source: 'script' | 'script-setup',
+  hoistStatic: boolean
+): void {
+  for (const statement of ast.program.body) {
+    const declaration =
+      statement.type === 'ExportNamedDeclaration' && statement.declaration
+        ? statement.declaration
+        : statement;
+    if (
+      (declaration.type === 'VariableDeclaration' ||
+        declaration.type === 'FunctionDeclaration' ||
+        declaration.type === 'ClassDeclaration' ||
+        declaration.type === 'TSEnumDeclaration') &&
+      !declaration.declare
+    ) {
+      walkTemplateDeclaration(
+        declaration,
+        bindings,
+        vueImportAliases,
+        ast.program,
+        source,
+        hoistStatic
+      );
+    }
+  }
+}
+
+type TemplateDeclaration =
+  | t.VariableDeclaration
+  | t.FunctionDeclaration
+  | t.ClassDeclaration
+  | t.TSEnumDeclaration;
+
+/** Mirrors compiler-sfc's binding-type analysis used by component lookup. */
+function walkTemplateDeclaration(
+  declaration: TemplateDeclaration,
+  bindings: Map<string, TemplateBinding>,
+  vueImportAliases: ReadonlyMap<string, string>,
+  owner: t.Program,
+  source: 'script' | 'script-setup',
+  hoistStatic: boolean
+): void {
+  if (declaration.type === 'VariableDeclaration') {
+    const isConst = declaration.kind === 'const';
+    const isAllLiteral =
+      isConst &&
+      declaration.declarations.every(
+        ({ id, init }) =>
+          id.type === 'Identifier' && isStaticTemplateBinding(init)
+      );
+    for (const { id, init: wrappedInitializer } of declaration.declarations) {
+      const initializer = unwrapTemplateBindingExpression(wrappedInitializer);
+      const isConstMacroCall =
+        isConst &&
+        isTemplateCallOf(initializer, [
+          'defineProps',
+          'defineEmits',
+          'defineSlots',
+          'withDefaults',
+        ]);
+      if (id.type === 'Identifier') {
+        let type: TemplateBindingType;
+        const reactiveImport = vueImportAliases.get('reactive');
+        if (
+          (hoistStatic || source === 'script') &&
+          (isAllLiteral || (isConst && isStaticTemplateBinding(initializer)))
+        ) {
+          type = 'literal-const';
+        } else if (isTemplateCallOf(initializer, reactiveImport)) {
+          type = isConst ? 'setup-reactive-const' : 'setup-let';
+        } else if (
+          isConstMacroCall ||
+          (isConst && canNeverBeTemplateRef(initializer, reactiveImport))
+        ) {
+          type = isTemplateCallOf(initializer, 'defineProps')
+            ? 'setup-reactive-const'
+            : 'setup-const';
+        } else if (isConst) {
+          type = isTemplateCallOf(initializer, [
+            vueImportAliases.get('ref'),
+            vueImportAliases.get('computed'),
+            vueImportAliases.get('shallowRef'),
+            vueImportAliases.get('customRef'),
+            vueImportAliases.get('toRef'),
+            vueImportAliases.get('useTemplateRef'),
+            'defineModel',
+          ])
+            ? 'setup-ref'
+            : 'setup-maybe-ref';
+        } else {
+          type = 'setup-let';
+        }
+        setTemplateBinding(bindings, id.name, type, owner);
+        continue;
+      }
+      if (
+        id.type === 'ObjectPattern' &&
+        isTemplateCallOf(initializer, 'defineProps')
+      ) {
+        registerTemplatePropsDestructure(id, bindings, owner);
+      } else {
+        walkTemplateBindingPattern(
+          id,
+          bindings,
+          owner,
+          isConst,
+          isConstMacroCall
+        );
+      }
+    }
+    return;
+  }
+  if (declaration.type === 'TSEnumDeclaration') {
+    const isAllLiteral = declaration.members.every(
+      ({ initializer }) => !initializer || isStaticTemplateBinding(initializer)
+    );
+    setTemplateBinding(
+      bindings,
+      declaration.id.name,
+      isAllLiteral ? 'literal-const' : 'setup-const',
+      owner
+    );
+    return;
+  }
+  if (declaration.id) {
+    setTemplateBinding(bindings, declaration.id.name, 'setup-const', owner);
+  }
+}
+
+/**
+ * Registers the conservative union of reactive and legacy prop destructuring.
+ *
+ * Vue 3.3/3.5 and `propsDestructure: false` disagree about these local binding
+ * types. Compiler configuration cannot be loaded safely before Vue ownership
+ * is established, so a local destructure takes the strongest possible type.
+ * This may defer an ambiguous wrapper-only project, but it cannot make that
+ * ambiguity poison an otherwise valid React extraction.
+ */
+function registerTemplatePropsDestructure(
+  pattern: t.ObjectPattern,
+  bindings: Map<string, TemplateBinding>,
+  owner: t.Program
+): void {
+  for (const property of pattern.properties) {
+    if (property.type === 'RestElement') {
+      for (const identifier of Object.values(
+        t.getBindingIdentifiers(property.argument)
+      )) {
+        setTemplateBinding(
+          bindings,
+          identifier.name,
+          'setup-reactive-const',
+          owner
+        );
+      }
+      continue;
+    }
+    const publicName = readStaticPatternPropertyName(property);
+    if (!publicName) continue;
+    setTemplateBinding(bindings, publicName, 'props', owner);
+    const value =
+      property.value.type === 'AssignmentPattern'
+        ? property.value.left
+        : property.value;
+    if (value.type === 'Identifier') {
+      setTemplateBinding(bindings, value.name, 'setup-const', owner);
+    }
+  }
+}
+
+function readStaticPatternPropertyName(
+  property: t.ObjectProperty
+): string | undefined {
+  if (property.computed) return undefined;
+  if (property.key.type === 'Identifier') return property.key.name;
+  if (
+    property.key.type === 'StringLiteral' ||
+    property.key.type === 'NumericLiteral'
+  ) {
+    return String(property.key.value);
+  }
+  return undefined;
+}
+
+function walkTemplateBindingPattern(
+  pattern: t.VariableDeclarator['id'],
+  bindings: Map<string, TemplateBinding>,
+  owner: t.Program,
+  isConst: boolean,
+  isDefineCall = false
+): void {
+  if (pattern.type === 'ObjectPattern') {
+    for (const property of pattern.properties) {
+      if (property.type === 'RestElement') {
+        registerTemplatePatternIdentifiers(
+          property.argument,
+          bindings,
+          owner,
+          isConst ? 'setup-const' : 'setup-let'
+        );
+      } else if (
+        property.key.type === 'Identifier' &&
+        property.shorthand &&
+        property.value.type === 'Identifier'
+      ) {
+        setTemplateBinding(
+          bindings,
+          property.value.name,
+          isDefineCall
+            ? 'setup-const'
+            : isConst
+              ? 'setup-maybe-ref'
+              : 'setup-let',
+          owner
+        );
+      } else {
+        walkTemplatePattern(
+          property.value,
+          bindings,
+          owner,
+          isConst,
+          isDefineCall
+        );
+      }
+    }
+    return;
+  }
+  if (pattern.type === 'ArrayPattern') {
+    for (const element of pattern.elements) {
+      if (element) {
+        walkTemplatePattern(element, bindings, owner, isConst, isDefineCall);
+      }
+    }
+  }
+}
+
+/** Applies compiler-sfc's recursive destructuring binding classification. */
+function walkTemplatePattern(
+  pattern: t.Node,
+  bindings: Map<string, TemplateBinding>,
+  owner: t.Program,
+  isConst: boolean,
+  isDefineCall = false
+): void {
+  if (pattern.type === 'Identifier') {
+    setTemplateBinding(
+      bindings,
+      pattern.name,
+      isDefineCall ? 'setup-const' : isConst ? 'setup-maybe-ref' : 'setup-let',
+      owner
+    );
+  } else if (pattern.type === 'RestElement') {
+    registerTemplatePatternIdentifiers(
+      pattern.argument,
+      bindings,
+      owner,
+      isConst ? 'setup-const' : 'setup-let'
+    );
+  } else if (
+    pattern.type === 'ObjectPattern' ||
+    pattern.type === 'ArrayPattern'
+  ) {
+    walkTemplateBindingPattern(pattern, bindings, owner, isConst);
+  } else if (pattern.type === 'AssignmentPattern') {
+    walkTemplatePattern(pattern.left, bindings, owner, isConst, isDefineCall);
+  }
+}
+
+function registerTemplatePatternIdentifiers(
+  pattern: t.LVal,
+  bindings: Map<string, TemplateBinding>,
+  owner: t.Program,
+  type: TemplateBindingType
+): void {
+  for (const identifier of Object.values(t.getBindingIdentifiers(pattern))) {
+    setTemplateBinding(bindings, identifier.name, type, owner);
+  }
+}
+
+function setTemplateBinding(
+  bindings: Map<string, TemplateBinding>,
+  name: string,
+  type: TemplateBindingType,
+  owner: t.Program
+): void {
+  bindings.set(name, { owner, type });
+}
+
+function unwrapTemplateBindingExpression(
+  input: t.Node | null | undefined
+): t.Node | undefined {
+  let current = input ?? undefined;
+  while (
+    current &&
+    (current.type === 'TSAsExpression' ||
+      current.type === 'TSTypeAssertion' ||
+      current.type === 'TSNonNullExpression' ||
+      current.type === 'TSSatisfiesExpression' ||
+      current.type === 'TSInstantiationExpression' ||
+      current.type === 'TypeCastExpression' ||
+      current.type === 'ParenthesizedExpression')
+  ) {
+    current = current.expression;
+  }
+  return current;
+}
+
+/** Matches direct compiler macros and locally aliased Vue helper calls. */
+function isTemplateCallOf(
+  node: t.Node | null | undefined,
+  names: string | readonly (string | undefined)[] | undefined
+): boolean {
+  if (!node || !names || node.type !== 'CallExpression') return false;
+  const callee = unwrapTemplateBindingExpression(node.callee);
+  if (callee?.type !== 'Identifier') return false;
+  return typeof names === 'string'
+    ? callee.name === names
+    : names.some((name) => Boolean(name) && name === callee.name);
+}
+
+/** Returns whether compiler-sfc can prove that a value will never be a ref. */
+function canNeverBeTemplateRef(
+  node: t.Node | null | undefined,
+  reactiveImport: string | undefined
+): boolean {
+  const expression = unwrapTemplateBindingExpression(node);
+  if (!expression) return false;
+  if (isTemplateCallOf(expression, reactiveImport)) return true;
+  if (
+    expression.type === 'UnaryExpression' ||
+    expression.type === 'BinaryExpression' ||
+    expression.type === 'ArrayExpression' ||
+    expression.type === 'ObjectExpression' ||
+    expression.type === 'FunctionExpression' ||
+    expression.type === 'ArrowFunctionExpression' ||
+    expression.type === 'UpdateExpression' ||
+    expression.type === 'ClassExpression' ||
+    expression.type === 'TaggedTemplateExpression'
+  ) {
+    return true;
+  }
+  if (expression.type === 'SequenceExpression') {
+    return canNeverBeTemplateRef(expression.expressions.at(-1), reactiveImport);
+  }
+  return expression.type.endsWith('Literal');
+}
+
+/** Reproduces compiler-sfc's static-expression predicate for hoisted bindings. */
+function isStaticTemplateBinding(node: t.Node | null | undefined): boolean {
+  const expression = unwrapTemplateBindingExpression(node);
+  if (!expression) return false;
+  if (expression.type === 'UnaryExpression') {
+    return isStaticTemplateBinding(expression.argument);
+  }
+  if (
+    expression.type === 'LogicalExpression' ||
+    expression.type === 'BinaryExpression'
+  ) {
+    return (
+      isStaticTemplateBinding(expression.left) &&
+      isStaticTemplateBinding(expression.right)
+    );
+  }
+  if (expression.type === 'ConditionalExpression') {
+    return (
+      isStaticTemplateBinding(expression.test) &&
+      isStaticTemplateBinding(expression.consequent) &&
+      isStaticTemplateBinding(expression.alternate)
+    );
+  }
+  if (
+    expression.type === 'SequenceExpression' ||
+    expression.type === 'TemplateLiteral'
+  ) {
+    return expression.expressions.every(isStaticTemplateBinding);
+  }
+  return (
+    expression.type === 'StringLiteral' ||
+    expression.type === 'NumericLiteral' ||
+    expression.type === 'BooleanLiteral' ||
+    expression.type === 'NullLiteral' ||
+    expression.type === 'BigIntLiteral'
+  );
+}
+
+type StaticImportUsageOptions = {
+  externalUsage?: TemplateUsage;
+  templateBindings?: ReadonlyMap<string, TemplateBinding>;
+  templateSource?: string;
+};
 
 function collectStaticImports(
   ast: t.File,
-  templateSource?: string
+  options: StaticImportUsageOptions = {}
 ): ConsumerImport[] {
   let programScope: Scope | undefined;
   traverse(ast, {
@@ -586,9 +1144,13 @@ function collectStaticImports(
     },
   });
   if (!programScope) return [];
-  const templateUsage = templateSource
-    ? readTemplateUsage(templateSource)
-    : undefined;
+  const templateUsage =
+    options.templateSource && options.templateBindings
+      ? readTemplateUsage(options.templateSource, options.templateBindings)
+      : undefined;
+  const runtimeUsages = [templateUsage, options.externalUsage].filter(
+    (usage): usage is TemplateUsage => Boolean(usage)
+  );
 
   const imports: ConsumerImport[] = [];
   for (const statement of ast.program.body) {
@@ -604,7 +1166,8 @@ function collectStaticImports(
             bindingHasRuntimeUsage(
               programScope,
               specifier.local.name,
-              templateUsage
+              runtimeUsages,
+              ast.program
             )
           ) {
             importedNames.add('default');
@@ -613,7 +1176,8 @@ function collectStaticImports(
           for (const name of readUsedNamespaceMembers(
             programScope,
             specifier.local.name,
-            templateUsage
+            runtimeUsages,
+            ast.program
           )) {
             importedNames.add(name);
           }
@@ -623,7 +1187,8 @@ function collectStaticImports(
           bindingHasRuntimeUsage(
             programScope,
             specifier.local.name,
-            templateUsage
+            runtimeUsages,
+            ast.program
           )
         ) {
           importedNames.add(readModuleName(specifier.imported));
@@ -677,13 +1242,17 @@ function readModuleName(node: t.Identifier | t.StringLiteral): string {
 function bindingHasRuntimeUsage(
   scope: Scope,
   localName: string,
-  templateUsage: TemplateUsage | undefined
+  runtimeUsages: readonly TemplateUsage[],
+  owner: t.Program
 ): boolean {
   const binding = scope.getBinding(localName);
   return Boolean(
     binding?.referencePaths.some(
       (reference) => !isTypeOnlyReference(reference)
-    ) || templateUsage?.identifiers.has(localName)
+    ) ||
+    runtimeUsages.some((usage) =>
+      templateUsageMatchesBinding(usage, localName, owner)
+    )
   );
 }
 
@@ -710,7 +1279,8 @@ function isTypeOnlyReference(reference: NodePath<t.Node>): boolean {
 function readUsedNamespaceMembers(
   scope: Scope,
   localName: string,
-  templateUsage?: TemplateUsage
+  runtimeUsages: readonly TemplateUsage[],
+  owner: t.Program
 ): Set<string> {
   const names = new Set<string>();
   const bindings = new Set<Binding>();
@@ -784,9 +1354,12 @@ function readUsedNamespaceMembers(
       }
     }
   }
-  if (templateUsage) {
+  for (const runtimeUsage of runtimeUsages) {
     for (const templateName of templateNames) {
-      for (const name of templateUsage.namespaceMembers.get(templateName) ??
+      if (!templateUsageMatchesBinding(runtimeUsage, templateName, owner)) {
+        continue;
+      }
+      for (const name of runtimeUsage.namespaceMembers.get(templateName) ??
         []) {
         if (!writtenMembers.has(name)) names.add(name);
       }
@@ -824,9 +1397,30 @@ function isMemberWrite(
 }
 
 type TemplateUsage = {
+  bindingOwners?: ReadonlyMap<string, t.Program>;
   identifiers: Set<string>;
   namespaceMembers: Map<string, Set<string>>;
 };
+
+function createTemplateUsage(
+  bindingOwners?: ReadonlyMap<string, t.Program>
+): TemplateUsage {
+  return {
+    bindingOwners,
+    identifiers: new Set(),
+    namespaceMembers: new Map(),
+  };
+}
+
+function templateUsageMatchesBinding(
+  usage: TemplateUsage,
+  name: string,
+  owner: t.Program
+): boolean {
+  if (!usage.identifiers.has(name)) return false;
+  const expectedOwner = usage.bindingOwners?.get(name);
+  return !expectedOwner || expectedOwner === owner;
+}
 
 const VUE_BUILTIN_TEMPLATE_TAGS = new Set([
   'BaseTransition',
@@ -892,11 +1486,13 @@ const VUE_NATIVE_TEMPLATE_TAGS = new Set(
 );
 
 /** Parses component tags and executable expressions without raw-text guesses. */
-function readTemplateUsage(templateSource: string): TemplateUsage {
-  const usage: TemplateUsage = {
-    identifiers: new Set(),
-    namespaceMembers: new Map(),
-  };
+function readTemplateUsage(
+  templateSource: string,
+  scriptBindings: ReadonlyMap<string, TemplateBinding>
+): TemplateUsage {
+  const usage = createTemplateUsage(
+    new Map([...scriptBindings].map(([name, binding]) => [name, binding.owner]))
+  );
   const activeBindings = new Map<string, number>();
   const elementStack: TemplateElementScope[] = [];
   let vPreDepth = 0;
@@ -958,7 +1554,13 @@ function readTemplateUsage(templateSource: string): TemplateUsage {
       for (const binding of directiveUsage.elementBindings) {
         elementBindings.set(binding, (elementBindings.get(binding) ?? 0) + 1);
       }
-      recordTemplateTagUsage(tag.name, usage, elementBindings, attributes);
+      recordTemplateTagUsage(
+        tag.name,
+        usage,
+        elementBindings,
+        attributes,
+        scriptBindings
+      );
     }
     const rawTextClosingTag =
       !tag.selfClosing && VUE_RAW_TEXT_TEMPLATE_TAGS.has(tag.name)
@@ -1106,13 +1708,18 @@ function recordTemplateTagUsage(
   tag: string,
   usage: TemplateUsage,
   shadowedBindings: ReadonlyMap<string, number>,
-  attributes: readonly TemplateAttribute[]
+  attributes: readonly TemplateAttribute[],
+  scriptBindings: ReadonlyMap<string, TemplateBinding>
 ): void {
   if (isDynamicComponentTag(tag, attributes)) return;
   const member = /^([A-Za-z_$][\w$-]*)\.([A-Za-z_$][\w$]*)$/.exec(tag);
   if (member?.[1] && member[2]) {
-    for (const namespace of normalizeTemplateBindingNames(member[1])) {
-      if (shadowedBindings.has(namespace)) continue;
+    const namespace = resolveTemplateTagBinding(
+      member[1],
+      shadowedBindings,
+      scriptBindings
+    );
+    if (namespace) {
       usage.identifiers.add(namespace);
       addTemplateNamespaceMember(usage, namespace, member[2]);
     }
@@ -1121,9 +1728,24 @@ function recordTemplateTagUsage(
   if (VUE_BUILTIN_TEMPLATE_TAGS.has(tag) || VUE_NATIVE_TEMPLATE_TAGS.has(tag)) {
     return;
   }
-  for (const name of normalizeTemplateBindingNames(tag)) {
-    if (!shadowedBindings.has(name)) usage.identifiers.add(name);
+  const name = resolveTemplateTagBinding(tag, shadowedBindings, scriptBindings);
+  if (name) usage.identifiers.add(name);
+}
+
+/** Selects the first lexical or setup binding in Vue's tag lookup order. */
+function resolveTemplateTagBinding(
+  sourceName: string,
+  shadowedBindings: ReadonlyMap<string, number>,
+  scriptBindings: ReadonlyMap<string, TemplateBinding>
+): string | undefined {
+  const candidates = [...normalizeTemplateBindingNames(sourceName)];
+  for (const bindingType of TEMPLATE_BINDING_RESOLUTION_ORDER) {
+    for (const candidate of candidates) {
+      if (scriptBindings.get(candidate)?.type !== bindingType) continue;
+      return shadowedBindings.has(candidate) ? undefined : candidate;
+    }
   }
+  return undefined;
 }
 
 function isDynamicComponentTag(
@@ -1420,6 +2042,19 @@ function collectTemplateAstUsage(
     },
     OptionalMemberExpression(path) {
       collectTemplateMemberUsage(path, usage, shadowedBindings);
+    },
+    JSXMemberExpression(path) {
+      const object = path.node.object;
+      if (
+        object.type !== 'JSXIdentifier' ||
+        shadowedBindings.has(object.name) ||
+        path.scope.getBinding(object.name) ||
+        path.node.property.type !== 'JSXIdentifier'
+      ) {
+        return;
+      }
+      usage.identifiers.add(object.name);
+      addTemplateNamespaceMember(usage, object.name, path.node.property.name);
     },
   });
 }

@@ -146,6 +146,42 @@ describe('Vue wrapper use in lexically scoped component tags', () => {
       imports: "import { VueT } from '@fixture/multi/vue';",
       template: '<Child v-slot="{ VueT = VueT }"><VueT /></Child>',
     },
+    {
+      name: 'a Pascal import when a camel setup binding has precedence',
+      imports:
+        "import { VueT } from '@fixture/multi/vue'; const vueT = 'section';",
+      template: '<vue-t />',
+    },
+    {
+      name: 'a Pascal namespace when a camel setup binding has precedence',
+      imports:
+        "import * as Mixed from '@fixture/multi/vue'; const mixed = { VueT: 'section' };",
+      template: '<mixed.VueT />',
+    },
+    {
+      name: 'an exact camel import when a Pascal literal has type precedence',
+      imports:
+        "import { VueT as vueT } from '@fixture/multi/vue'; const VueT = 'section';",
+      template: '<vue-t />',
+    },
+    {
+      name: 'an exact camel import when a static template has type precedence',
+      imports:
+        "import { VueT as vueT } from '@fixture/multi/vue'; const VueT = `section${1}`;",
+      template: '<vue-t />',
+    },
+    {
+      name: 'an exact camel import when an object rest binding has type precedence',
+      imports:
+        "import { VueT as vueT } from '@fixture/multi/vue'; const { ...VueT } = source;",
+      template: '<vue-t />',
+    },
+    {
+      name: 'an exact camel import when a RegExp binding has type precedence',
+      imports:
+        "import { VueT as vueT } from '@fixture/multi/vue'; const VueT = /section/;",
+      template: '<vue-t />',
+    },
   ])(
     'does not attribute $name to the wrapper import',
     ({ imports, template }) => {
@@ -192,6 +228,18 @@ describe('Vue wrapper use in lexically scoped component tags', () => {
       name: 'a camel namespace rendered through kebab casing',
       imports: "import * as myComponents from '@fixture/multi/vue';",
       template: '<my-components.VueT />',
+    },
+    {
+      name: 'a Pascal namespace with type precedence over a camel binding',
+      imports:
+        "import * as MyComponents from '@fixture/multi/vue'; const myComponents = getComponents();",
+      template: '<my-components.VueT />',
+    },
+    {
+      name: 'a camel import ahead of a Pascal member-call binding',
+      imports:
+        "import { VueT as vueT } from '@fixture/multi/vue'; const VueT = factory.make();",
+      template: '<vue-t />',
     },
   ])('retains $name as a wrapper import use', ({ imports, template }) => {
     const root = createConsumerFixture(template, imports);
@@ -246,6 +294,54 @@ describe('Vue wrapper use in lexically scoped component tags', () => {
     expect(output).toContain("_resolveDynamicComponent('div')");
     expect(output).not.toContain('_unref(component)');
   });
+
+  it('matches Vue component lookup precedence for camel setup bindings', () => {
+    const output = compileInlineTemplate(
+      '<vue-t />',
+      "import { VueT } from '@fixture/multi/vue'; const vueT = 'section';"
+    );
+
+    expect(output).toContain('_createBlock(vueT)');
+    expect(output).not.toContain('_unref(VueT)');
+  });
+
+  it('matches Vue binding-type precedence ahead of normalized spelling', () => {
+    const literalOutput = compileInlineTemplate(
+      '<vue-t />',
+      "import { VueT as vueT } from '@fixture/multi/vue'; const VueT = 'section';"
+    );
+    const namespaceOutput = compileInlineTemplate(
+      '<my-components.VueT />',
+      "import * as MyComponents from '@fixture/multi/vue'; const myComponents = getComponents();"
+    );
+    const restOutput = compileInlineTemplate(
+      '<vue-t />',
+      "import { VueT as vueT } from '@fixture/multi/vue'; const { ...VueT } = source;"
+    );
+    const memberCallOutput = compileInlineTemplate(
+      '<vue-t />',
+      "import { VueT as vueT } from '@fixture/multi/vue'; const VueT = factory.make();"
+    );
+
+    expect(literalOutput).toContain('_createBlock(VueT)');
+    expect(literalOutput).not.toContain('_unref(vueT)');
+    expect(namespaceOutput).toContain('MyComponents.VueT');
+    expect(namespaceOutput).not.toContain('myComponents.VueT');
+    expect(restOutput).toContain('_createBlock(VueT)');
+    expect(restOutput).not.toContain('_unref(vueT)');
+    expect(memberCallOutput).toContain('_createBlock(_unref(vueT))');
+    expect(memberCallOutput).not.toContain('_unref(VueT)');
+  });
+
+  it('selects a setup binding before applying lexical shadowing', () => {
+    const output = compileInlineTemplate(
+      '<main v-for="vueT in rows"><vue-t /></main>',
+      "import { VueT } from '@fixture/multi/vue';"
+    );
+
+    expect(output).toContain('_unref(VueT)');
+    expect(output).not.toContain('_createVNode(vueT)');
+  });
 });
 
 function createConsumerFixture(
@@ -274,8 +370,11 @@ function createConsumerFixture(
   return root;
 }
 
-function compileInlineTemplate(template: string): string {
-  const { descriptor, errors } = parse(createSfc(template), {
+function compileInlineTemplate(
+  template: string,
+  imports = defaultImports
+): string {
+  const { descriptor, errors } = parse(createSfc(template, imports), {
     filename: 'Scope.vue',
   });
   expect(errors).toEqual([]);

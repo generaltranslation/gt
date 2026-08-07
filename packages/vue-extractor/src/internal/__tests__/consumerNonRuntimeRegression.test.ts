@@ -154,6 +154,123 @@ describe('non-runtime local Vue wrapper references', () => {
     expect(detectVueProject(root)).toBe(false);
   });
 
+  it.each([
+    {
+      importSource: "import { VueT } from '@fixture/multi/vue';",
+      name: 'a named ordinary-script import',
+      template: '<VueT />',
+    },
+    {
+      importSource: "import VueT from '@fixture/multi/vue';",
+      name: 'a default ordinary-script import',
+      template: '<VueT />',
+    },
+    {
+      importSource: "import * as Mixed from '@fixture/multi/vue';",
+      name: 'a namespace ordinary-script import',
+      template: '<Mixed.VueT />',
+    },
+  ])('does not expose $name to the template', ({ importSource, template }) => {
+    const root = createConsumerFixture({
+      'src/App.vue': `<script>
+${importSource}
+export default {};
+</script>
+<template>${template}</template>`,
+    });
+
+    expect(detectVueProject(root)).toBe(false);
+  });
+
+  it.each([
+    {
+      importSource: "import { VueT } from '@fixture/multi/vue';",
+      name: 'a named import shadowed by a camel setup binding',
+      setupSource: "const vueT = 'section';",
+      template: '<vue-t />',
+    },
+    {
+      importSource: "import VueT from '@fixture/multi/vue';",
+      name: 'a default import shadowed by a camel setup binding',
+      setupSource: "const vueT = 'section';",
+      template: '<vue-t />',
+    },
+    {
+      importSource: "import * as Mixed from '@fixture/multi/vue';",
+      name: 'a namespace import shadowed by a camel setup binding',
+      setupSource: "const mixed = { VueT: 'section' };",
+      template: '<mixed.VueT />',
+    },
+    {
+      importSource: "import { VueT as LocalT } from '@fixture/multi/vue';",
+      name: 'a named import shadowed by an exact setup binding',
+      setupSource: "const LocalT = 'section';",
+      template: '<LocalT />',
+    },
+    {
+      importSource: "import LocalT from '@fixture/multi/vue';",
+      name: 'a default import shadowed by an exact setup binding',
+      setupSource: "const LocalT = 'section';",
+      template: '<LocalT />',
+    },
+    {
+      importSource: "import * as Mixed from '@fixture/multi/vue';",
+      name: 'a namespace import shadowed by an exact setup binding',
+      setupSource: "const Mixed = { VueT: 'section' };",
+      template: '<Mixed.VueT />',
+    },
+  ])(
+    'does not expose $name to the template',
+    ({ importSource, setupSource, template }) => {
+      const root = createConsumerFixture({
+        'src/App.vue': `<script>
+${importSource}
+export default {};
+</script>
+<script setup>${setupSource}</script>
+<template>${template}</template>`,
+      });
+
+      expect(detectVueProject(root)).toBe(false);
+    }
+  );
+
+  it('does not treat an uppercase SETUP attribute as script setup', () => {
+    const root = createConsumerFixture({
+      'src/App.vue': `<script SETUP>
+import { VueT } from '@fixture/multi/vue';
+export default {};
+</script>
+<template><VueT /></template>`,
+    });
+
+    expect(detectVueProject(root)).toBe(false);
+  });
+
+  it('does not activate Vue for a compiler-option-ambiguous props binding', () => {
+    const root = createConsumerFixture({
+      'src/App.vue': `<script setup>
+import { VueT } from '@fixture/multi/vue';
+const { vueT } = defineProps(['vueT']);
+</script>
+<template><vue-t /></template>`,
+    });
+
+    expect(detectVueProject(root)).toBe(false);
+  });
+
+  it('does not activate Vue for a version-ambiguous slots binding', () => {
+    const root = createConsumerFixture({
+      'src/App.vue': `<script setup>
+import { VueT as vueT } from '@fixture/multi/vue';
+const VueT = defineSlots();
+</script>
+<template><vue-t /></template>`,
+    });
+
+    expect(detectVueProject(root)).toBe(false);
+  });
+
   it('does not make an unrelated SFC require a Vue compiler', async () => {
     const root = createConsumerFixture({
       'src/index.d.ts': `
@@ -172,6 +289,109 @@ describe('non-runtime local Vue wrapper references', () => {
 });
 
 describe('runtime local Vue wrapper references', () => {
+  it('preserves an ordinary-script import registered as a component', () => {
+    const root = createConsumerFixture({
+      'src/App.vue': `<script>
+import { VueT } from '@fixture/multi/vue';
+export default { components: { VueT } };
+</script>
+<template><VueT /></template>`,
+    });
+
+    expect(detectVueProject(root)).toBe(true);
+  });
+
+  it('preserves an ordinary-script import referenced from script setup', () => {
+    const root = createConsumerFixture({
+      'src/App.vue': `<script>
+import { VueT } from '@fixture/multi/vue';
+export default {};
+</script>
+<script setup>
+const component = VueT;
+</script>
+<template><component :is="component" /></template>`,
+    });
+
+    expect(detectVueProject(root)).toBe(true);
+  });
+
+  it('preserves an ordinary namespace member referenced from script setup', () => {
+    const root = createConsumerFixture({
+      'src/App.vue': `<script>
+import * as Mixed from '@fixture/multi/vue';
+export default {};
+</script>
+<script setup>
+const component = Mixed.VueT;
+</script>
+<template><component :is="component" /></template>`,
+    });
+
+    expect(detectVueProject(root)).toBe(true);
+  });
+
+  it('preserves an ordinary namespace member rendered from script-setup TSX', () => {
+    const root = createConsumerFixture({
+      'src/App.vue': `<script lang="tsx">
+import * as Mixed from '@fixture/multi/vue';
+export default {};
+</script>
+<script setup lang="tsx">
+const view = () => <Mixed.VueT />;
+</script>
+<template><component :is="view" /></template>`,
+    });
+
+    expect(detectVueProject(root)).toBe(true);
+  });
+
+  it.each([
+    {
+      importSource: "import { VueT } from '@fixture/multi/vue';",
+      name: 'a named ordinary import',
+      template: '<VueT />',
+    },
+    {
+      importSource: "import VueT from '@fixture/multi/vue';",
+      name: 'a default ordinary import',
+      template: '<VueT />',
+    },
+    {
+      importSource: "import * as Mixed from '@fixture/multi/vue';",
+      name: 'an ordinary namespace import',
+      template: '<Mixed.VueT />',
+    },
+  ])(
+    'preserves $name when a script-setup block exposes it',
+    ({ importSource, template }) => {
+      const root = createConsumerFixture({
+        'src/App.vue': `<script>
+${importSource}
+export default {};
+</script>
+<script setup>const ready = true;</script>
+<template>${template}</template>`,
+      });
+
+      expect(detectVueProject(root)).toBe(true);
+    }
+  );
+
+  it.each(['setup', 'setup=""', 'setup="false"'])(
+    'recognizes the lowercase script attribute %s',
+    (setupAttribute) => {
+      const root = createConsumerFixture({
+        'src/App.vue': `<script ${setupAttribute}>
+import { VueT } from '@fixture/multi/vue';
+</script>
+<template><VueT /></template>`,
+      });
+
+      expect(detectVueProject(root)).toBe(true);
+    }
+  );
+
   it('preserves a named wrapper used in TSX', () => {
     const root = createConsumerFixture({
       'src/App.tsx': `
@@ -235,6 +455,20 @@ type Component = typeof VueT;
         `,
       },
       { main: './lib/index.js' }
+    );
+
+    expect(detectVueProject(root)).toBe(true);
+  });
+
+  it('preserves source usage in a nested src/es directory', () => {
+    const root = createConsumerFixture(
+      {
+        'src/es/index.ts': `
+          import { VueT } from '@fixture/multi/vue';
+          export const component = VueT;
+        `,
+      },
+      { module: './src/es/index.ts' }
     );
 
     expect(detectVueProject(root)).toBe(true);

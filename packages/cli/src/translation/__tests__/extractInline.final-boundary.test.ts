@@ -73,7 +73,90 @@ describe('final React/Vue ownership boundary', () => {
     }
   );
 
-  it.each(['cjs', 'esm', 'generated', 'lib', 'lib-esm'])(
+  it.each([
+    {
+      name: 'an unused ordinary named import',
+      vueSource: `<script>
+        import { VueT } from '@fixture/multi/vue';
+        export default {};
+      </script><template><VueT /></template>`,
+    },
+    {
+      name: 'an unused ordinary default import',
+      vueSource: `<script>
+        import VueT from '@fixture/multi/vue';
+        export default {};
+      </script><template><VueT /></template>`,
+    },
+    {
+      name: 'an unused ordinary namespace import',
+      vueSource: `<script>
+        import * as Mixed from '@fixture/multi/vue';
+        export default {};
+      </script><template><Mixed.VueT /></template>`,
+    },
+    {
+      name: 'a normalized tag resolved to a camel setup binding',
+      vueSource: `<script setup>
+        import { VueT } from '@fixture/multi/vue';
+        const vueT = 'section';
+      </script><template><vue-t /></template>`,
+    },
+    {
+      name: 'a namespace tag resolved to a camel setup binding',
+      vueSource: `<script setup>
+        import * as Mixed from '@fixture/multi/vue';
+        const mixed = { VueT: 'section' };
+      </script><template><mixed.VueT /></template>`,
+    },
+    {
+      name: 'an ordinary named import shadowed by an exact setup binding',
+      vueSource: `<script>
+        import { VueT as LocalT } from '@fixture/multi/vue';
+        export default {};
+      </script><script setup>
+        const LocalT = 'section';
+      </script><template><LocalT /></template>`,
+    },
+    {
+      name: 'an ordinary default import shadowed by an exact setup binding',
+      vueSource: `<script>
+        import LocalT from '@fixture/multi/vue';
+        export default {};
+      </script><script setup>
+        const LocalT = 'section';
+      </script><template><LocalT /></template>`,
+    },
+    {
+      name: 'an ordinary namespace import shadowed by an exact setup binding',
+      vueSource: `<script>
+        import * as Mixed from '@fixture/multi/vue';
+        export default {};
+      </script><script setup>
+        const Mixed = { VueT: 'section' };
+      </script><template><Mixed.VueT /></template>`,
+    },
+  ])(
+    'does not let $name activate Vue during React dispatch',
+    async ({ vueSource }) => {
+      createReactWrapperFixture({
+        'src/App.tsx': reactMessage('Stable component-boundary message'),
+        'src/Unrelated.vue': vueSource,
+      });
+
+      const historical = await extractHistorical();
+      const dispatched = await extractDispatched();
+
+      expect(dispatched).toEqual(historical);
+      expect(dispatched.errors).toEqual([]);
+      expect(dispatched.updates.map(({ source }) => source)).toEqual([
+        'Stable component-boundary message',
+      ]);
+      expect(detectVueProject()).toBe(false);
+    }
+  );
+
+  it.each(['cjs', 'es', 'esm', 'generated', 'lib', 'lib-esm'])(
     'ignores a stale public entry in the root %s output directory',
     async (outputDirectory) => {
       createReactWrapperFixture(
@@ -142,25 +225,28 @@ describe('final React/Vue ownership boundary', () => {
     }
   );
 
-  it('retains legitimate wrapper usage in a nested src/lib directory', async () => {
-    createReactWrapperFixture({
-      'src/App.tsx': reactMessage('Stable nested-lib message'),
-      'src/lib/vue.ts': `
+  it.each(['es', 'lib'])(
+    'retains legitimate wrapper usage in a nested src/%s directory',
+    async (sourceDirectory) => {
+      createReactWrapperFixture({
+        'src/App.tsx': reactMessage('Stable nested-lib message'),
+        [`src/${sourceDirectory}/vue.ts`]: `
         import { VueT } from '@fixture/multi/vue';
         export const component = VueT;
       `,
-    });
+      });
 
-    const historical = await extractHistorical();
-    const dispatched = await extractDispatched();
+      const historical = await extractHistorical();
+      const dispatched = await extractDispatched();
 
-    expect(dispatched).toEqual(historical);
-    expect(dispatched.errors).toEqual([]);
-    expect(dispatched.updates.map(({ source }) => source)).toEqual([
-      'Stable nested-lib message',
-    ]);
-    expect(detectVueProject()).toBe(true);
-  });
+      expect(dispatched).toEqual(historical);
+      expect(dispatched.errors).toEqual([]);
+      expect(dispatched.updates.map(({ source }) => source)).toEqual([
+        'Stable nested-lib message',
+      ]);
+      expect(detectVueProject()).toBe(true);
+    }
+  );
 
   it.each([
     {
