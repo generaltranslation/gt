@@ -1,0 +1,149 @@
+{
+  "00cfc4a5e80ea2a4": "Developer hub",
+  "00b9e24db838e584": "Primary navigation",
+  "51afdf0a32c1d6d1": "Guides",
+  "150126ae0f1fc166": "API reference",
+  "c627e7a94d768fec": "Open search",
+  "0d7d9bbd91f8b2d0": "Search",
+  "d0e4315ff74c2dbd": "Language",
+  "83911e47c91906b7": "Hide quick links",
+  "89829f8e417b6af7": "Show quick links",
+  "224e5d6b189247e7": "Quick links",
+  "d9d5d3049be20ca2": "Overview",
+  "6b05641ddbc5b497": "Endpoints",
+  "3a8cbf22f92f978b": "Loading page…",
+  "e12516280916c994": "Copy page link",
+  "29791eae3a17d39c": "The page link was copied.",
+  "7e86516155c311c5": "Documentation search",
+  "bb1a8e721dd8462d": "Close search",
+  "2e8d6c5fc414c783": [
+    {
+      "t": "h2",
+      "i": 1,
+      "c": "Search documentation"
+    },
+    {
+      "t": "p",
+      "i": 2,
+      "c": "Find any guide or API endpoint."
+    }
+  ],
+  "0897fb5aa03e5b33": "Search all documentation",
+  "6d1358e69d516304": {
+    "t": "Plural",
+    "i": 1,
+    "d": {
+      "b": {
+        "zero": "No results yet",
+        "one": "One result",
+        "other": [
+          {
+            "i": 2,
+            "k": "_gt_n_2",
+            "v": "n"
+          },
+          " results "
+        ]
+      },
+      "t": "p"
+    }
+  },
+  "9b8297df593df5ad": {
+    "t": "h2",
+    "i": 1,
+    "c": "Local re-exports work in TSX"
+  },
+  "c7d97d97d0769df7": {
+    "t": "p",
+    "i": 1,
+    "c": "Namespace components work in TSX."
+  },
+  "ac1d0e7941fbc48f": "Translator forwarding works in TSX.",
+  "3537261f4c26e6b1": [
+    {
+      "t": "h1",
+      "i": 1,
+      "c": "Developer documentation"
+    },
+    {
+      "t": "p",
+      "i": 2,
+      "c": [
+        " Build reliable integrations with ",
+        {
+          "i": 3,
+          "k": "_gt_value_3",
+          "v": "v"
+        },
+        " . "
+      ]
+    }
+  ],
+  "34c87fdd94f5666c": "Guide sections",
+  "baa652b34a69daee": "Quickstart",
+  "1db9c6007dcc3049": "Core concepts",
+  "4469015d81667495": [
+    {
+      "t": "h2",
+      "i": 1,
+      "c": "Make your first request"
+    },
+    {
+      "t": "p",
+      "i": 2,
+      "c": "Create a client and send a request in a few lines of code."
+    }
+  ],
+  "faea24374a2abceb": [
+    {
+      "t": "h2",
+      "i": 1,
+      "c": "Understand the platform"
+    },
+    {
+      "t": "p",
+      "i": 2,
+      "c": "Learn how projects, environments, and releases fit together."
+    }
+  ],
+  "c60b089f22c5a09b": [
+    {
+      "t": "h1",
+      "i": 1,
+      "c": [
+        " Explore the ",
+        {
+          "i": 2,
+          "k": "_gt_value_2",
+          "v": "v"
+        }
+      ]
+    },
+    {
+      "t": "p",
+      "i": 3,
+      "c": "Use this reference to understand every endpoint and response."
+    }
+  ],
+  "29ae9c1245dc3e0b": "Available operations",
+  "e355b5d9202b7339": {
+    "t": "Plural",
+    "i": 1,
+    "d": {
+      "b": {
+        "one": "One documented operation",
+        "other": [
+          {
+            "i": 2,
+            "k": "_gt_n_2",
+            "v": "n"
+          },
+          " documented operations "
+        ]
+      },
+      "t": "p"
+    },
+    "c": " No documented operations "
+  },
+  "7a7a261e449598de": "Last updated"
+}

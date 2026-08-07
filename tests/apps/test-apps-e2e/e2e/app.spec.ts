@@ -15,6 +15,12 @@ test(`${appName} renders local translations and switches locales`, async ({
     case 'react':
       await testReactApp(page);
       break;
+    case 'vue-spa':
+      await testVueSpa(page);
+      break;
+    case 'vue-ssr':
+      await testVueSsr(page, request);
+      break;
     case 'next':
       await testNextApp(page);
       break;
@@ -62,6 +68,176 @@ async function testReactApp(page: Page) {
   await selectLocale(page, 'en');
   await expect(page.getByText('Locale: en')).toBeVisible();
   await expect(page.getByText('A string translated with useGT.')).toBeVisible();
+}
+
+async function testVueSpa(page: Page) {
+  await page.goto('/');
+  await expect(
+    page.getByRole('heading', { name: /Hello,\s*Ada\s*!/ })
+  ).toBeVisible();
+  await expect(
+    page.getByText('This sentence comes from useGT().')
+  ).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Local re-exports work in TSX' })
+  ).toBeVisible();
+  await expect(
+    page.getByText('Namespace components work in TSX.')
+  ).toBeVisible();
+  await expect(
+    page.getByText('Translator forwarding works in TSX.')
+  ).toBeVisible();
+
+  await page.getByRole('button', { name: 'Français' }).click();
+  await expect(
+    page.getByRole('heading', { name: /Bonjour,\s*Ada\s*!/ })
+  ).toBeVisible();
+  await expect(
+    page.getByText('Cette phrase provient de useGT().')
+  ).toBeVisible();
+  await expect(
+    page.getByRole('heading', {
+      name: 'Les réexportations locales fonctionnent en TSX',
+    })
+  ).toBeVisible();
+  await expect(
+    page.getByText('Les composants avec espace de noms fonctionnent en TSX.')
+  ).toBeVisible();
+  await expect(
+    page.getByText('Le transfert du traducteur fonctionne en TSX.')
+  ).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+
+  await page.getByRole('button', { name: 'English' }).click();
+  await expect(
+    page.getByRole('heading', { name: /Hello,\s*Ada\s*!/ })
+  ).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Local re-exports work in TSX' })
+  ).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+}
+
+async function testVueSsr(page: Page, request: APIRequestContext) {
+  const serverResponse = await request.get('/fr/reference');
+  expect(serverResponse.ok()).toBe(true);
+  const serverHtml = await serverResponse.text();
+  expect(serverHtml).toContain('<html lang="fr"');
+  expect(serverHtml).toContain('Référence de l’API');
+  expect(serverHtml).toContain('Opérations disponibles');
+  expect(serverHtml).toContain(
+    'Les réexportations locales fonctionnent en TSX'
+  );
+  expect(serverHtml).toContain(
+    'Les composants avec espace de noms fonctionnent en TSX.'
+  );
+  expect(serverHtml).toContain('Le transfert du traducteur fonctionne en TSX.');
+
+  const isolatedResponses = await Promise.all(
+    Array.from({ length: 8 }, (_, index) =>
+      request.get(index % 2 === 0 ? '/reference' : '/fr/reference')
+    )
+  );
+  for (const [index, response] of isolatedResponses.entries()) {
+    const html = await response.text();
+    if (index % 2 === 0) {
+      expect(html).toContain('Available operations');
+      expect(html).toContain('Local re-exports work in TSX');
+      expect(html).not.toContain('Opérations disponibles');
+      expect(html).not.toContain(
+        'Les réexportations locales fonctionnent en TSX'
+      );
+    } else {
+      expect(html).toContain('Opérations disponibles');
+      expect(html).toContain('Les réexportations locales fonctionnent en TSX');
+      expect(html).not.toContain('Available operations');
+      expect(html).not.toContain('Local re-exports work in TSX');
+    }
+  }
+
+  await page.goto('/fr/reference');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+  await expect(page.locator('html')).toHaveAttribute('data-hydrated', 'true');
+  await expect(
+    page.getByRole('heading', { name: 'Opérations disponibles' })
+  ).toBeVisible();
+  await expect(page.getByText('12 opérations documentées')).toBeVisible();
+  await expect(
+    page.getByRole('heading', {
+      name: 'Les réexportations locales fonctionnent en TSX',
+    })
+  ).toBeVisible();
+  await expect(
+    page.getByText('Les composants avec espace de noms fonctionnent en TSX.')
+  ).toBeVisible();
+  await expect(
+    page.getByText('Le transfert du traducteur fonctionne en TSX.')
+  ).toBeVisible();
+
+  await page.getByRole('button', { name: 'Ouvrir la recherche' }).click();
+  const dialog = page.getByRole('dialog', {
+    name: 'Recherche dans la documentation',
+  });
+  await expect(dialog).toBeVisible();
+  await expect(
+    dialog.getByRole('heading', {
+      name: 'Rechercher dans la documentation',
+    })
+  ).toBeVisible();
+  await expect(dialog.getByText('Aucun résultat pour le moment')).toBeVisible();
+  await dialog
+    .getByPlaceholder('Rechercher dans toute la documentation')
+    .fill('launch');
+  await expect(dialog.getByText('2 résultats')).toBeVisible();
+  await dialog.getByRole('button', { name: 'Fermer la recherche' }).click();
+  await expect(dialog).toBeHidden();
+
+  await page.getByRole('button', { name: 'Masquer les liens rapides' }).click();
+  await expect(
+    page.getByRole('button', { name: 'Afficher les liens rapides' })
+  ).toBeVisible();
+
+  await page.getByRole('button', { name: 'Copier le lien de la page' }).click();
+  await expect(page.getByText('Le lien de la page a été copié.')).toBeVisible();
+
+  await page.getByRole('link', { name: 'English', exact: true }).click();
+  await expect(page).toHaveURL(/\/reference$/);
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(
+    page.getByRole('heading', { name: 'Available operations' })
+  ).toBeVisible();
+  await expect(page.getByText('12 documented operations')).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Local re-exports work in TSX' })
+  ).toBeVisible();
+  await expect(
+    page.getByText('Namespace components work in TSX.')
+  ).toBeVisible();
+  await expect(
+    page.getByText('Translator forwarding works in TSX.')
+  ).toBeVisible();
+
+  await page.goBack();
+  await expect(page).toHaveURL(/\/fr\/reference$/);
+  await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+  await expect(
+    page.getByRole('heading', { name: 'Opérations disponibles' })
+  ).toBeVisible();
+  await expect(
+    page.getByRole('heading', {
+      name: 'Les réexportations locales fonctionnent en TSX',
+    })
+  ).toBeVisible();
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-hydrated', 'true');
+  await expect(
+    page.getByRole('heading', { name: 'Opérations disponibles' })
+  ).toBeVisible();
+  await expect(
+    page.getByRole('heading', {
+      name: 'Les réexportations locales fonctionnent en TSX',
+    })
+  ).toBeVisible();
 }
 
 async function testNextApp(page: Page) {
