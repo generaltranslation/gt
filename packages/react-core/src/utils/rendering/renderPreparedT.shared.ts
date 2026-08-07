@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from 'react';
 import type { TaggedChildren } from '../types';
+import { idTaggingEnabled } from '../translation/resolveTagHash';
 
 // Opt-in id-tagging: when a `hash` is provided, the translation hash is exposed
 // on the DOM as `data-_gt-hash` so tooling can map a rendered node back to its
@@ -41,12 +42,42 @@ const IS_REACT_NATIVE =
 // NB: 0 and NaN DO render text, so they are intentionally NOT treated as empty.
 function rendersNothing(node: ReactNode): boolean {
   if (node == null || typeof node === 'boolean' || node === '') return true;
-  if (Array.isArray(node)) return node.every(rendersNothing);
+  if (Array.isArray(node)) return !node.some((n) => !rendersNothing(n));
   if (isValidElement(node) && node.type === Fragment) {
     const children = (node.props as { children?: ReactNode }).children;
     return children == null || rendersNothing(children);
   }
   return false;
+}
+
+// Opt-in id-tagging (powers RRWeb localized replay / in-context tooling): expose
+// the translation hash on the DOM as `data-_gt-hash`. Factored out of the render
+// path so it's clear this whole block is dedicated to id-tagging, not core <T>
+// behavior. Called only when a `hash` was produced (see resolveTagHash).
+function applyIdTag(rendered: ReactNode, hash: string): ReactNode {
+  // `hash` is only produced when tagging is on, but re-assert the config here so a
+  // stray hash can never inject DOM; and never on React Native (no span/DOM attr
+  // analog — IS_REACT_NATIVE is checked first so the config isn't read there).
+  if (IS_REACT_NATIVE || !idTaggingEnabled()) return rendered;
+  // Single host element (e.g. `<T><td>…</td></T>`) → annotate it directly, no
+  // wrapper. Valid wherever the element itself is valid — including inside
+  // <tr>/<select>/<ul> — and avoids the span entirely.
+  if (isValidElement(rendered) && typeof rendered.type === 'string') {
+    return cloneElement(rendered as ReactElement<Record<string, unknown>>, {
+      'data-_gt-hash': hash,
+    });
+  }
+  // Output that renders no DOM stays no-DOM: an empty <span data-_gt-hash> would
+  // change :empty/child structure and inject an (invalid, under restricted
+  // parents) span even for an empty branch.
+  if (rendersNothing(rendered)) return rendered;
+  // No element to carry the attribute (bare text / fragment / component root) →
+  // wrap in a layout-neutral span. This is the only case that injects one.
+  return createElement(
+    'span',
+    { 'data-_gt-hash': hash, style: TAG_STYLE },
+    rendered
+  );
 }
 
 // Shared rendering logic. The child renderers are injected so the RSC code path
@@ -98,35 +129,9 @@ function createRenderPreparedT({
             enableI18n,
           });
 
-    // Opt-in: expose the translation hash on the DOM (web only) so tooling can
-    // map a rendered node back to its published translation (see the header note).
-    if (hash && !IS_REACT_NATIVE) {
-      // Single host element (e.g. `<T><td>…</td></T>`) → annotate it directly,
-      // no wrapper. This is valid wherever the element itself is valid — including
-      // inside <tr>/<select>/<ul> — and avoids the span entirely.
-      if (isValidElement(rendered) && typeof rendered.type === 'string') {
-        return cloneElement(rendered as ReactElement<Record<string, unknown>>, {
-          'data-_gt-hash': hash,
-        });
-      }
-      // Do NOT wrap output that renders no DOM (scalars like null/''/booleans, AND
-      // empty arrays / arrays of empties from `{items.map(...)}`, and empty
-      // fragments): an empty <span data-_gt-hash> would change :empty/child
-      // structure and inject an (invalid, under restricted parents) span even for
-      // an empty branch. A conditional <T> that renders nothing must stay no-DOM.
-      if (rendersNothing(rendered)) {
-        return rendered;
-      }
-      // No element to carry the attribute (bare text / fragment / component root)
-      // → wrap in a layout-neutral span. This is the only case that injects one.
-      return createElement(
-        'span',
-        { 'data-_gt-hash': hash, style: TAG_STYLE },
-        rendered
-      );
-    }
-
-    return rendered;
+    // Opt-in id-tagging is entirely handled by applyIdTag; `hash` presence is the
+    // enable signal (produced by resolveTagHash only when tagging is on).
+    return hash ? applyIdTag(rendered, hash) : rendered;
   }
 
   function renderSource({

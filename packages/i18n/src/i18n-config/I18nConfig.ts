@@ -49,7 +49,9 @@ type RuntimeConfig = Pick<
 export type LocaleCandidates = string | string[] | undefined;
 
 export class I18nConfig extends LocaleConfig {
-  private runtimeConfig: RuntimeConfig;
+  // protected so subclasses (e.g. react-core's ReactI18nConfig) can read runtime
+  // flags such as `_tagIds` without I18nConfig owning renderer-specific accessors.
+  protected runtimeConfig: RuntimeConfig;
   private gtServicesEnabled: boolean;
   private logLevel: GeneralTranslationLogLevel;
 
@@ -151,19 +153,9 @@ export class I18nConfig extends LocaleConfig {
     );
   }
 
-  /**
-   * Opt-in (`_tagIds`, off by default): when true, each `<T>`'s translation hash
-   * is exposed as a `data-_gt-hash` attribute — placed on the rendered element
-   * when there is one, otherwise on a layout-neutral `display:contents` span
-   * wrapping bare text / fragments — so tooling can map a rendered node back to
-   * its published translation. No effect on `gt()` strings.
-   */
-  isIdTaggingEnabled(): boolean {
-    // Require literal `true`: withGTConfig accepts arbitrary keys and the JSON
-    // config isn't validated for this field, so a truthy-but-malformed value
-    // (e.g. the string "false") must NOT implicitly enable DOM injection.
-    return this.runtimeConfig._tagIds === true;
-  }
+  // NB: id-tagging (`isIdTaggingEnabled`) is a renderer concern and lives on the
+  // react layer (react-core's ReactI18nConfig), not here — this package stays
+  // runtime-agnostic. `_tagIds` is still stored in runtimeConfig (config data).
 
   isGTServicesEnabled(): boolean {
     return this.gtServicesEnabled;

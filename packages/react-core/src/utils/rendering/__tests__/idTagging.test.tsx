@@ -1,5 +1,5 @@
 import React from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderPreparedT } from '../renderPipeline';
 import type { TaggedChildren } from '../../types';
 
@@ -106,6 +106,16 @@ describe('renderPreparedT id-tagging', () => {
       expect(isSpan).toBe(false); // no empty hash span injected
     }
   });
+
+  it('does not tag when id-tagging is disabled, even if a hash is passed', () => {
+    // applyIdTag re-checks the config, so a stray hash can never inject DOM.
+    cfg.tagIds = false;
+    const out = renderPreparedT({ ...base, hash: 'abc123' });
+    const isSpan =
+      React.isValidElement(out) && (out as React.ReactElement).type === 'span';
+    expect(isSpan).toBe(false);
+    expect(out).toEqual(renderPreparedT({ ...base })); // identical to untagged
+  });
 });
 
 // Regression guard for the wiring that the isolated renderPreparedT tests above
@@ -131,6 +141,14 @@ vi.mock('gt-i18n/internal', async (importOriginal) => {
       return c;
     },
   };
+});
+
+// renderPreparedT now routes id-tagging through applyIdTag, which re-checks the
+// config, so reset to the modern, enabled config before each test; cases that
+// need it off/legacy set that explicitly.
+beforeEach(() => {
+  cfg.tagIds = true;
+  cfg.legacy = false;
 });
 
 describe('<T> (RSC) id-tagging wiring', () => {

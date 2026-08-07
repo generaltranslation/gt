@@ -66,6 +66,23 @@ export class ReactI18nConfig extends I18nConfig {
   getEnableI18nCookieName(): string {
     return this.enableI18nCookieName;
   }
+
+  /**
+   * Opt-in id-tagging (`_tagIds`, off by default): when true, each `<T>`'s
+   * translation hash is exposed as a `data-_gt-hash` attribute — on the rendered
+   * element when there is one, otherwise on a layout-neutral `display:contents`
+   * span wrapping bare text / fragments — so tooling (localized replay, in-context
+   * QA) can map a rendered node back to its published translation. No effect on
+   * `gt()` strings. This lives on the react layer (a renderer/DOM concern); the
+   * runtime-agnostic base config only stores the `_tagIds` flag.
+   *
+   * Requires the literal `true`: withGTConfig accepts arbitrary keys and the JSON
+   * config isn't validated for this field, so a truthy-but-malformed value (e.g.
+   * the string "false") must NOT implicitly enable DOM injection.
+   */
+  isIdTaggingEnabled(): boolean {
+    return this.runtimeConfig._tagIds === true;
+  }
 }
 
 export function getI18nConfig(): ReactI18nConfig {

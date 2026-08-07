@@ -2,7 +2,6 @@ import { useTranslate } from '../../hooks/external-store';
 import { getI18nConfig } from 'gt-i18n/internal';
 import { useRef, type ReactNode } from 'react';
 import { renderPreparedT } from '../../utils/rendering/renderPipeline';
-import { resolveTagHash } from '../../utils/translation/resolveTagHash';
 import type { TProps } from '../../utils/translation/prepareT.shared';
 import { usePrepareT } from '../../utils/translation/usePrepareT';
 
@@ -35,7 +34,9 @@ function useComputeT({
   _renderPreparedT = renderPreparedT,
   ...params
 }: TProps): ReactNode {
-  // Prepare our source children for rendering
+  // Prepare our source children for rendering. usePrepareT (via prepareT)
+  // resolves the id-tagging hash (`hash`) and caches it on targetOptions.$_hash,
+  // so the useTranslate lookup below reuses it rather than hashing again.
   const {
     defaultLocale,
     locale,
@@ -44,17 +45,13 @@ function useComputeT({
     taggedSourceChildren,
     sourceJsxChildren,
     shouldTranslate,
+    hash,
   } = usePrepareT({
     sourceChildren,
     params,
     _locale,
     _enableI18n,
   });
-
-  // Resolve the id-tagging hash once and cache it on targetOptions BEFORE the
-  // lookup, so useTranslate reuses it instead of hashing again (single hash, or
-  // zero when the compiler injected $_hash). undefined when id-tagging is off.
-  const hash = resolveTagHash(sourceJsxChildren, targetOptions);
 
   // Lookup translation in cache
   const targetJsxChildren = useTranslate({

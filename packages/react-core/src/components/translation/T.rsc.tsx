@@ -2,7 +2,6 @@ import { getI18nConfig } from 'gt-i18n/internal';
 import type { ReactNode } from 'react';
 import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 import { renderPreparedT } from '../../utils/rendering/renderPipeline.rsc';
-import { resolveTagHash } from '../../utils/translation/resolveTagHash';
 import {
   prepareT,
   type ResolvedTProps,
@@ -26,19 +25,13 @@ async function RscT({
   const defaultLocale = getI18nConfig().getDefaultLocale();
   const shouldTranslate =
     enableI18n && getI18nConfig().requiresTranslation(locale);
+  // prepareT resolves the id-tagging hash (prepared.hash) and caches it on
+  // targetOptions.$_hash, so the lookup below reuses it (no double hashing).
   const prepared = prepareT({
     sourceChildren,
     params,
     locale,
   });
-
-  // Resolve the id-tagging hash once and cache it on targetOptions BEFORE the
-  // lookup below, so the lookup reuses it (single hash, or zero when the compiler
-  // injected $_hash). undefined when id-tagging is off — no hashing, pays nothing.
-  const hash = resolveTagHash(
-    prepared.sourceJsxChildren,
-    prepared.targetOptions
-  );
 
   if (!shouldTranslate) {
     return _renderPreparedT({
@@ -48,7 +41,6 @@ async function RscT({
       defaultLocale,
       enableI18n,
       shouldTranslate,
-      hash,
     });
   }
 
@@ -78,7 +70,6 @@ async function RscT({
     defaultLocale,
     enableI18n,
     shouldTranslate,
-    hash,
   });
 }
 
