@@ -615,6 +615,29 @@ import { LocalT } from '@local/gt';
     ]);
   });
 
+  it('follows a package self-reference whose emitted export has only TypeScript source', async () => {
+    const root = createFixture({
+      'package.json': JSON.stringify({
+        name: '@fixture/self-vue-app',
+        private: true,
+        dependencies: { 'gt-vue': 'workspace:*', vue: '^3.5.0' },
+        exports: { './runtime': './dist/runtime.js' },
+      }),
+      'dist/runtime.ts': "export { T as LocalT } from 'gt-vue';\n",
+      'src/App.tsx': `
+        import { LocalT } from '@fixture/self-vue-app/runtime';
+        export const App = () => <LocalT>Self-reference message</LocalT>;
+      `,
+    });
+
+    const output = await extractFromVueProject({ cwd: root });
+
+    expect(output.errors).toEqual([]);
+    expect(output.updates.map(({ source }) => source)).toEqual([
+      'Self-reference message',
+    ]);
+  });
+
   it('establishes provenance through a static Vite alias before extraction', async () => {
     const root = createVueFixture({
       'vite.config.ts': `

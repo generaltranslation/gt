@@ -8,6 +8,7 @@
 export {
   inspectVueProject,
   inspectVueProjectAsync,
+  partitionVueSourcePatterns,
   readVueSfcExclusionPatterns,
 } from './internal/project/inspectVueProject.js';
 export type { VueProjectInspection } from './types.js';

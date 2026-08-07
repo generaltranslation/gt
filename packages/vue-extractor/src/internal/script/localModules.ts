@@ -37,6 +37,14 @@ const GT_EXPORT_NAMES = [
   'useMessages',
 ] as const;
 
+/** Complete public value surface currently exported by the gt-vue runtime. */
+const GT_RUNTIME_EXPORT_NAMES = [
+  ...GT_EXPORT_NAMES,
+  'createGT',
+  'useLocale',
+  'useSetLocale',
+] as const;
+
 const VUE_EXPORT_NAMES = [
   'Suspense',
   'computed',
@@ -152,6 +160,12 @@ export type LocalModuleResolver = {
   resolveModule(importer: string, specifier: string): string | undefined;
 };
 
+/** Package-provenance behavior that is broader than source extraction. */
+export type LocalModuleResolverOptions = {
+  /** Includes gt-vue setup and locale APIs that extraction never calls. */
+  recognizeAllGTRuntimeExports?: boolean;
+};
+
 /**
  * Creates a cycle-safe ESM resolver for local source files and index barrels.
  *
@@ -159,7 +173,8 @@ export type LocalModuleResolver = {
  * Bare aliases are accepted only through the caller's explicit resolver hook.
  */
 export function createLocalModuleResolver(
-  resolveModuleOption: VueExtractionOptions['resolveModule']
+  resolveModuleOption: VueExtractionOptions['resolveModule'],
+  options: LocalModuleResolverOptions = {}
 ): LocalModuleResolver {
   const records = new Map<string, LocalModuleRecord | null>();
   const recoveredRecords = new Map<string, RecoveredModuleRecord | null>();
@@ -459,7 +474,10 @@ export function createLocalModuleResolver(
       return target.source === 'gt-vue' ? '*' : undefined;
     }
     if (target.type !== 'namespace') return undefined;
-    return GT_EXPORT_NAMES.some((name) =>
+    const candidateNames = options.recognizeAllGTRuntimeExports
+      ? [...GT_RUNTIME_EXPORT_NAMES]
+      : [...GT_EXPORT_NAMES];
+    return candidateNames.some((name) =>
       Boolean(
         readGTExportName(
           resolveExportInternal(target.modulePath, name, seen),
@@ -494,7 +512,11 @@ export function createLocalModuleResolver(
       };
     }
     if (isExternalModule(source)) {
-      return knownExternalExport(source, exportName)
+      return knownExternalExport(
+        source,
+        exportName,
+        options.recognizeAllGTRuntimeExports === true
+      )
         ? {
             status: 'resolved',
             target: {
@@ -1103,9 +1125,14 @@ function isExternalModule(source: string): source is ExternalModuleName {
 
 function knownExternalExport(
   source: ExternalModuleName,
-  exportName: string
+  exportName: string,
+  recognizeAllGTRuntimeExports: boolean
 ): boolean {
-  return source === 'gt-vue'
-    ? (GT_EXPORT_NAMES as readonly string[]).includes(exportName)
-    : (VUE_EXPORT_NAMES as readonly string[]).includes(exportName);
+  if (source === 'vue') {
+    return (VUE_EXPORT_NAMES as readonly string[]).includes(exportName);
+  }
+  const recognizedNames = recognizeAllGTRuntimeExports
+    ? GT_RUNTIME_EXPORT_NAMES
+    : GT_EXPORT_NAMES;
+  return (recognizedNames as readonly string[]).includes(exportName);
 }

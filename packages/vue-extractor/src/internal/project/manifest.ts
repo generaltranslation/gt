@@ -58,7 +58,9 @@ export function declaresInstalledJavaScriptDependency(
   packageName: string
 ): boolean {
   return INSTALLED_DEPENDENCY_FIELDS.some(
-    (field) => manifest[field]?.[packageName] !== undefined
+    (field) =>
+      readEffectiveDependencySpecifier(manifest, field, packageName) !==
+      undefined
   );
 }
 
@@ -68,9 +70,31 @@ export function declaresAvailableJavaScriptDependency(
   packageName: string,
   packageDirectory: string
 ): boolean {
-  if (declaresInstalledJavaScriptDependency(manifest, packageName)) return true;
-  if (manifest.optionalDependencies?.[packageName] !== undefined) {
-    return canResolvePackage(packageDirectory, packageName);
+  if (
+    readEffectiveDependencySpecifier(
+      manifest,
+      'devDependencies',
+      packageName
+    ) !== undefined
+  ) {
+    return true;
+  }
+  const optionalSpecifier = readDependencySpecifier(
+    manifest,
+    'optionalDependencies',
+    packageName
+  );
+  if (optionalSpecifier !== undefined) {
+    return canResolveDependencyBinding(packageDirectory, {
+      name: packageName,
+      specifier: optionalSpecifier,
+    });
+  }
+  if (
+    readEffectiveDependencySpecifier(manifest, 'dependencies', packageName) !==
+    undefined
+  ) {
+    return true;
   }
   return declaresAvailableRequiredPeerDependency(
     manifest,
@@ -87,22 +111,6 @@ export function declaresWorkspaceJavaScriptDependency(
 ): boolean {
   return (
     declaresInstalledJavaScriptDependency(manifest, packageName) ||
-    declaresAvailableRequiredPeerDependency(
-      manifest,
-      packageName,
-      packageDirectory
-    )
-  );
-}
-
-/** Checks dependencies that may propagate wrapper ownership to consumers. */
-export function declaresPropagatingJavaScriptDependency(
-  manifest: JavaScriptPackageManifest,
-  packageName: string,
-  packageDirectory: string
-): boolean {
-  return (
-    manifest.dependencies?.[packageName] !== undefined ||
     declaresAvailableRequiredPeerDependency(
       manifest,
       packageName,
@@ -178,8 +186,9 @@ function readDependencyBindings(
     bindings.push({ name, specifier });
   };
   for (const field of fields) {
-    for (const [name, specifier] of Object.entries(manifest[field] ?? {})) {
-      if (typeof specifier === 'string') addBinding(name, specifier);
+    for (const name of Object.keys(manifest[field] ?? {})) {
+      const specifier = readEffectiveDependencySpecifier(manifest, field, name);
+      if (specifier !== undefined) addBinding(name, specifier);
     }
   }
   for (const [name, specifier] of Object.entries(
@@ -226,7 +235,8 @@ export function resolveInstalledJavaScriptPackage(
       const manifest = readJavaScriptPackageManifest(
         path.join(packageDirectory, 'package.json')
       );
-      if (manifest) return { directory: packageDirectory, manifest };
+      if (!manifest) return undefined;
+      return { directory: packageDirectory, manifest };
     }
     try {
       const resolvedEntry = localRequire.resolve(bindingName);
@@ -234,10 +244,64 @@ export function resolveInstalledJavaScriptPackage(
     } catch {
       // ESM-only packages can omit a `require` export.
     }
+    const pnpLocation = resolvePnpPackageLocation(
+      localRequire,
+      bindingName,
+      path.join(path.resolve(directory), 'package.json')
+    );
+    if (pnpLocation) return readPackageAtLocation(pnpLocation);
   } catch {
     return undefined;
   }
   return undefined;
+}
+
+/** Resolves a package location through Yarn Plug'n'Play when it is active. */
+function resolvePnpPackageLocation(
+  localRequire: ReturnType<typeof createRequire>,
+  bindingName: string,
+  issuer: string
+): string | undefined {
+  if (process.versions.pnp === undefined) return undefined;
+  try {
+    const pnpApi = localRequire('pnpapi') as {
+      resolveToUnqualified?: (request: string, issuer: string) => string | null;
+    };
+    const location = pnpApi.resolveToUnqualified?.(bindingName, issuer);
+    return typeof location === 'string' ? location : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Reads a package whose resolver may return either its root or an entrypoint. */
+function readPackageAtLocation(
+  location: string
+): InstalledJavaScriptPackage | undefined {
+  try {
+    if (fs.statSync(location).isDirectory()) {
+      const packageDirectory = fs.realpathSync(location);
+      const manifest = readJavaScriptPackageManifest(
+        path.join(packageDirectory, 'package.json')
+      );
+      return manifest ? { directory: packageDirectory, manifest } : undefined;
+    }
+  } catch {
+    return undefined;
+  }
+
+  let packageDirectory: string;
+  try {
+    packageDirectory = fs.realpathSync(location);
+  } catch {
+    packageDirectory = path.resolve(location);
+  }
+  const manifest = readJavaScriptPackageManifest(
+    path.join(packageDirectory, 'package.json')
+  );
+  return manifest
+    ? { directory: packageDirectory, manifest }
+    : findPackageBoundary(location);
 }
 
 function findPackageBoundary(
@@ -329,9 +393,28 @@ export function dependencyBindingAcceptsPackageVersion(
   return semverRangeAcceptsVersion(binding.specifier, packageVersion, true);
 }
 
-function canResolvePackage(directory: string, packageName: string): boolean {
-  const installed = resolveInstalledJavaScriptPackage(directory, packageName);
-  return installed?.manifest.name === packageName;
+function canResolveDependencyBinding(
+  directory: string,
+  binding: JavaScriptDependencyBinding
+): boolean {
+  const installed = resolveInstalledJavaScriptPackage(directory, binding.name);
+  const installedName = installed?.manifest.name;
+  if (!installed || typeof installedName !== 'string') return false;
+
+  const expectedName = binding.specifier.startsWith('catalog:')
+    ? installedName
+    : (parseWorkspaceDependencyAlias(binding.specifier)?.packageName ??
+      parseNpmDependencyAlias(binding.specifier)?.packageName ??
+      readLocalDependencyPackageName(binding.specifier, directory) ??
+      binding.name);
+  return (
+    installedName === expectedName &&
+    dependencyBindingAcceptsPackageVersion(
+      binding,
+      installedName,
+      installed.manifest.version
+    )
+  );
 }
 
 function declaresAvailableRequiredPeerDependency(
@@ -346,20 +429,38 @@ function declaresAvailableRequiredPeerDependency(
   ) {
     return false;
   }
-  const installed = resolveInstalledJavaScriptPackage(
-    packageDirectory,
-    packageName
-  );
-  if (!installed) return false;
-  const expectedName =
-    parseWorkspaceDependencyAlias(specifier)?.packageName ??
-    parseNpmDependencyAlias(specifier)?.packageName ??
-    readLocalDependencyPackageName(specifier, packageDirectory);
-  if (expectedName) return installed.manifest.name === expectedName;
-  if (specifier.startsWith('catalog:')) {
-    return typeof installed.manifest.name === 'string';
+  return canResolveDependencyBinding(packageDirectory, {
+    name: packageName,
+    specifier,
+  });
+}
+
+function readDependencySpecifier(
+  manifest: JavaScriptPackageManifest,
+  field: (typeof INSTALLED_DEPENDENCY_FIELDS)[number] | 'optionalDependencies',
+  packageName: string
+): string | undefined {
+  const specifier = manifest[field]?.[packageName];
+  return typeof specifier === 'string' ? specifier : undefined;
+}
+
+/** Applies npm's rule that an optional dependency replaces the same dependency. */
+function readEffectiveDependencySpecifier(
+  manifest: JavaScriptPackageManifest,
+  field: (typeof INSTALLED_DEPENDENCY_FIELDS)[number],
+  packageName: string
+): string | undefined {
+  if (
+    field === 'dependencies' &&
+    manifest.optionalDependencies !== undefined &&
+    Object.prototype.hasOwnProperty.call(
+      manifest.optionalDependencies,
+      packageName
+    )
+  ) {
+    return undefined;
   }
-  return installed.manifest.name === packageName;
+  return readDependencySpecifier(manifest, field, packageName);
 }
 
 function readPackageNameSegments(packageName: string): string[] | undefined {

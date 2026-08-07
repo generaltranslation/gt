@@ -72,11 +72,35 @@ export function readVueSfcExclusionPatterns(
   inspection: VueProjectInspection,
   filePatterns: readonly string[]
 ): string[] {
+  return partitionVueSourcePatterns(inspection, filePatterns)
+    .primaryExclusionPatterns;
+}
+
+/**
+ * Partitions explicitly selected `.vue` files between a historical parser and
+ * the companion Vue extractor.
+ *
+ * A lone `<template>`, `<script>`, or `<style>` expression is valid both as a
+ * Vue block and as a Babel JSX module. Those ambiguous files stay with the
+ * historical parser so adding Vue support cannot remove existing messages,
+ * while the companion Vue pass skips them to avoid duplicate or invalid SFC
+ * diagnostics. Vue-primary and default Vue discovery do not use this explicit
+ * mixed-framework partition and continue to accept template-only SFCs.
+ */
+export function partitionVueSourcePatterns(
+  inspection: VueProjectInspection,
+  filePatterns: readonly string[]
+): {
+  primaryExclusionPatterns: string[];
+  vueExclusionPatterns: string[];
+} {
   const discovery = readVueProjectInspection(
     inspection,
     inspection.projectRoot
   );
-  if (!discovery) return [];
+  if (!discovery) {
+    return { primaryExclusionPatterns: [], vueExclusionPatterns: [] };
+  }
 
   let matches: string[];
   try {
@@ -89,32 +113,42 @@ export function readVueSfcExclusionPatterns(
       unique: true,
     });
   } catch {
-    return [];
+    return { primaryExclusionPatterns: [], vueExclusionPatterns: [] };
   }
 
-  const exclusions = matches.flatMap((file) => {
+  const primaryExclusionPatterns: string[] = [];
+  const vueExclusionPatterns: string[] = [];
+  for (const file of matches) {
     let realFile: string;
     try {
       realFile = fs.realpathSync(file);
     } catch {
-      return [];
+      continue;
     }
     if (
       path.extname(realFile).toLowerCase() !== '.vue' ||
       !findVueSourceScope(realFile, discovery.scopes)
     ) {
-      return [];
+      continue;
     }
     let source: string;
     try {
       source = fs.readFileSync(realFile, 'utf8');
     } catch {
-      return [];
+      continue;
     }
-    if (!isVueSfcSource(source)) return [];
-    return [`!${fg.escapePath(toPosixPath(path.resolve(file)))}`];
-  });
-  return [...new Set(exclusions)];
+    const classification = classifyVueSource(source);
+    const exclusion = `!${fg.escapePath(toPosixPath(path.resolve(file)))}`;
+    if (classification === 'definitive-sfc') {
+      primaryExclusionPatterns.push(exclusion);
+    } else if (classification === 'ambiguous-standard-tag-jsx') {
+      vueExclusionPatterns.push(exclusion);
+    }
+  }
+  return {
+    primaryExclusionPatterns: [...new Set(primaryExclusionPatterns)],
+    vueExclusionPatterns: [...new Set(vueExclusionPatterns)],
+  };
 }
 
 /** Returns the package-private discovery carried by a valid inspection. */
@@ -141,31 +175,42 @@ export function readVueProjectInspection(
  * uses a standard SFC tag; lone standard-tag expressions remain Vue blocks.
  */
 export function isVueSfcSource(source: string): boolean {
+  return classifyVueSource(source) !== 'non-sfc';
+}
+
+type VueSourceClassification =
+  | 'definitive-sfc'
+  | 'ambiguous-standard-tag-jsx'
+  | 'non-sfc';
+
+/** Classifies standard-tag JSX separately from unambiguous Vue SFC source. */
+function classifyVueSource(source: string): VueSourceClassification {
   let remainder = source.replace(/^\uFEFF/, '').trimStart();
-  let checkedLegacyModule = false;
+  let javascriptClassification: JavaScriptModuleClassification | undefined;
+  const readJavaScriptClassification = () => {
+    javascriptClassification ??= classifyJavaScriptModule(source);
+    return javascriptClassification;
+  };
   while (remainder) {
     const afterPrelude = stripLeadingSfcPrelude(remainder);
-    if (afterPrelude === undefined) return false;
+    if (afterPrelude === undefined) return 'non-sfc';
     remainder = afterPrelude;
-    if (!remainder) return false;
+    if (!remainder) return 'non-sfc';
 
     const openingTag = readLeadingBlockTag(remainder);
     if (!openingTag) {
-      if (!checkedLegacyModule) {
-        checkedLegacyModule = true;
-        if (isLegacyJavaScriptModule(source)) return false;
-      }
+      if (readJavaScriptClassification() === 'module') return 'non-sfc';
       const nextBlock = findNextBlockStart(remainder);
-      if (nextBlock < 0) return false;
+      if (nextBlock < 0) return 'non-sfc';
       remainder = remainder.slice(nextBlock);
       continue;
     }
     if (STANDARD_SFC_BLOCKS.has(openingTag.name.toLowerCase())) {
-      if (!checkedLegacyModule) {
-        checkedLegacyModule = true;
-        if (isLegacyJavaScriptModule(source)) return false;
-      }
-      return true;
+      const classification = readJavaScriptClassification();
+      if (classification === 'module') return 'non-sfc';
+      return classification === 'ambiguous-standard-tag-jsx'
+        ? 'ambiguous-standard-tag-jsx'
+        : 'definitive-sfc';
     }
 
     if (openingTag.selfClosing) {
@@ -176,12 +221,12 @@ export function isVueSfcSource(source: string): boolean {
       `</${escapeRegularExpression(openingTag.name)}\\s*>`,
       'i'
     ).exec(remainder.slice(openingTag.end));
-    if (!closingTag) return false;
+    if (!closingTag) return 'non-sfc';
     remainder = remainder
       .slice(openingTag.end + closingTag.index + closingTag[0].length)
       .trimStart();
   }
-  return false;
+  return 'non-sfc';
 }
 
 const STANDARD_SFC_BLOCKS = new Set(['template', 'script', 'style']);
@@ -222,14 +267,21 @@ function stripLeadingSfcPrelude(source: string): string | undefined {
   return remainder;
 }
 
-/** Distinguishes complete legacy modules from lone standard-tag JSX blocks. */
-function isLegacyJavaScriptModule(source: string): boolean {
+type JavaScriptModuleClassification =
+  | 'ambiguous-standard-tag-jsx'
+  | 'invalid'
+  | 'module';
+
+/** Distinguishes complete modules from lone standard-tag JSX expressions. */
+function classifyJavaScriptModule(
+  source: string
+): JavaScriptModuleClassification {
   try {
     const ast = parseLegacyModule(source, {
       plugins: ['jsx', 'typescript'],
       sourceType: 'module',
     });
-    if (ast.program.directives.length > 0) return true;
+    if (ast.program.directives.length > 0) return 'module';
 
     let foundStandardBlock = false;
     for (const statement of ast.program.body) {
@@ -246,11 +298,11 @@ function isLegacyJavaScriptModule(source: string): boolean {
         foundStandardBlock = true;
         continue;
       }
-      return true;
+      return 'module';
     }
-    return !foundStandardBlock;
+    return foundStandardBlock ? 'ambiguous-standard-tag-jsx' : 'module';
   } catch {
-    return false;
+    return 'invalid';
   }
 }
 

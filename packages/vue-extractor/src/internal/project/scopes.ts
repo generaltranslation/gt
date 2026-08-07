@@ -10,7 +10,6 @@ import {
 import {
   dependencyBindingAcceptsPackageVersion,
   declaresAvailableJavaScriptDependency,
-  declaresPropagatingJavaScriptDependency,
   declaresWorkspaceJavaScriptDependency,
   GT_VUE_PACKAGE,
   parseLocalDependencyPath,
@@ -25,6 +24,7 @@ import {
   type JavaScriptPackageManifest,
 } from './manifest.js';
 import { localDependencyGraphDeclaresVue } from './detectVueProject.js';
+import { packagePubliclyExposesGT } from './wrapperProvenance.js';
 
 /** Default Vue source patterns, including conventional Vue and Nuxt folders. */
 export const DEFAULT_VUE_SOURCE_PATTERNS = [
@@ -175,6 +175,17 @@ function selectVueWorkspacePackages(
   const propagatingDirectories = new Set<string>();
   const queuedPropagators = new Set<string>();
   const pendingPackages: DeclaredWorkspacePackage[] = [];
+  const publicGTByDirectory = new Map<string, boolean>();
+  const publiclyExposesGT = ({
+    directory,
+    manifest,
+  }: DeclaredWorkspacePackage): boolean => {
+    const cached = publicGTByDirectory.get(directory);
+    if (cached !== undefined) return cached;
+    const exposesGT = packagePubliclyExposesGT(directory, manifest);
+    publicGTByDirectory.set(directory, exposesGT);
+    return exposesGT;
+  };
   const selectPackage = (
     selectedPackage: DeclaredWorkspacePackage,
     propagates: boolean
@@ -196,11 +207,7 @@ function selectVueWorkspacePackages(
   ) {
     selectPackage(
       { directory: projectRoot, manifest: rootManifest },
-      declaresPropagatingJavaScriptDependency(
-        rootManifest,
-        GT_VUE_PACKAGE,
-        projectRoot
-      )
+      publiclyExposesGT({ directory: projectRoot, manifest: rootManifest })
     );
   }
   for (const workspacePackage of workspacePackages) {
@@ -213,14 +220,7 @@ function selectVueWorkspacePackages(
     ) {
       continue;
     }
-    selectPackage(
-      workspacePackage,
-      declaresPropagatingJavaScriptDependency(
-        workspacePackage.manifest,
-        GT_VUE_PACKAGE,
-        workspacePackage.directory
-      )
-    );
+    selectPackage(workspacePackage, publiclyExposesGT(workspacePackage));
   }
 
   const consumersByDependency = new Map<string, DeclaredWorkspacePackage[]>();
@@ -246,7 +246,8 @@ function selectVueWorkspacePackages(
       }
       selectPackage(
         consumer,
-        dependsOnCompatibleWorkspace(consumer, selectedPackage, true)
+        dependsOnCompatibleWorkspace(consumer, selectedPackage, true) &&
+          publiclyExposesGT(consumer)
       );
     }
   }

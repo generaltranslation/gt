@@ -2,6 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import enhancedResolve, { type FileSystem } from 'enhanced-resolve';
 import { createMatchPath, loadConfig } from 'tsconfig-paths';
+import {
+  readJavaScriptPackageManifest,
+  resolveInstalledJavaScriptPackage,
+  type JavaScriptPackageManifest,
+} from './manifest.js';
 
 const { ResolverFactory } = enhancedResolve;
 
@@ -45,15 +50,29 @@ export const DEFAULT_RESOLUTION_CONDITIONS = [
   'development|production',
 ] as const;
 
+type ProjectModuleResolverOptions = {
+  /** Package currently being inspected, for standards-compliant self imports. */
+  selfPackage?: {
+    directory: string;
+    manifest: JavaScriptPackageManifest;
+  };
+};
+
 /** Creates a deterministic, source-first resolver scoped to one extraction. */
 export function createProjectModuleResolver(
-  conditionNames: readonly string[] = DEFAULT_RESOLUTION_CONDITIONS
+  conditionNames: readonly string[] = DEFAULT_RESOLUTION_CONDITIONS,
+  options: ProjectModuleResolverOptions = {}
 ): (specifier: string, importer: string) => string | undefined {
   const cache = new Map<string, string | undefined>();
   return (specifier, importer) => {
     const cacheKey = `${importer}::${specifier}`;
     if (cache.has(cacheKey)) return cache.get(cacheKey);
-    const result = resolveProjectModule(specifier, importer, conditionNames);
+    const result = resolveProjectModule(
+      specifier,
+      importer,
+      conditionNames,
+      options
+    );
     cache.set(cacheKey, result);
     return result;
   };
@@ -63,14 +82,20 @@ export function createProjectModuleResolver(
 function resolveProjectModule(
   specifier: string,
   importer: string,
-  conditionNames: readonly string[]
+  conditionNames: readonly string[],
+  options: ProjectModuleResolverOptions
 ): string | undefined {
   const basedir = path.dirname(importer);
   const extensions = [...SOURCE_EXTENSIONS];
   const isRequire = COMMONJS_SOURCE_EXTENSIONS.has(
     path.extname(importer).toLowerCase()
   );
-  const mainFields = resolveViteMainFields(specifier, basedir, isRequire);
+  const mainFields = resolveViteMainFields(
+    specifier,
+    basedir,
+    isRequire,
+    options
+  );
   const resolvedConditions = resolveConditionsForImporter(
     conditionNames,
     isRequire
@@ -124,7 +149,8 @@ function resolveProjectModule(
   return resolvePackageExportSourceAlternative(
     specifier,
     basedir,
-    resolvedConditions
+    resolvedConditions,
+    options
   );
 }
 
@@ -150,10 +176,11 @@ function resolveConditionsForImporter(
 function resolveViteMainFields(
   specifier: string,
   basedir: string,
-  isRequire: boolean
+  isRequire: boolean,
+  options: ProjectModuleResolverOptions
 ): string[] {
   if (isRequire) return [...VITE_MAIN_FIELDS];
-  const packageData = readImportedPackageData(specifier, basedir);
+  const packageData = readImportedPackageData(specifier, basedir, options);
   if (!packageData) return [...VITE_MAIN_FIELDS];
   const { directory, manifest } = packageData;
   const browserEntry =
@@ -193,21 +220,45 @@ type ImportedPackageData = {
 /** Reads the package selected by Node's nearest-node_modules precedence. */
 function readImportedPackageData(
   specifier: string,
-  basedir: string
+  basedir: string,
+  options: ProjectModuleResolverOptions = {}
 ): ImportedPackageData | undefined {
   const packageName = readPackageName(specifier);
   if (!packageName) return undefined;
+  const selfPackage = options.selfPackage;
+  if (
+    selfPackage?.manifest.name === packageName &&
+    isWithinDirectory(selfPackage.directory, basedir)
+  ) {
+    return {
+      directory: selfPackage.directory,
+      manifest: selfPackage.manifest as Record<string, unknown>,
+    };
+  }
+  const nearestPackage = readNearestPackageData(basedir);
+  if (nearestPackage?.manifest.name === packageName) return nearestPackage;
+  const installed = resolveInstalledJavaScriptPackage(basedir, packageName);
+  return installed
+    ? {
+        directory: installed.directory,
+        manifest: installed.manifest as Record<string, unknown>,
+      }
+    : undefined;
+}
+
+/** Reads only the importer's nearest package scope for self-reference lookup. */
+function readNearestPackageData(
+  basedir: string
+): ImportedPackageData | undefined {
   let current = path.resolve(basedir);
-  for (;;) {
-    const candidate = path.join(current, 'node_modules', packageName);
-    const packageData = readPackageData(candidate);
-    if (packageData) return packageData;
-
-    // Match Vite's package self-reference behavior without searching outside
-    // the importer's nearest package boundary first.
-    const selfPackage = readPackageData(current);
-    if (selfPackage?.manifest.name === packageName) return selfPackage;
-
+  while (true) {
+    const manifestPath = path.join(current, 'package.json');
+    if (fs.existsSync(manifestPath)) {
+      const manifest = readJavaScriptPackageManifest(manifestPath);
+      return manifest
+        ? { directory: current, manifest: manifest as Record<string, unknown> }
+        : undefined;
+    }
     const parent = path.dirname(current);
     if (parent === current) return undefined;
     current = parent;
@@ -224,10 +275,11 @@ function readImportedPackageData(
 function resolvePackageExportSourceAlternative(
   specifier: string,
   basedir: string,
-  conditions: readonly string[]
+  conditions: readonly string[],
+  options: ProjectModuleResolverOptions
 ): string | undefined {
   const packageName = readPackageName(specifier);
-  const packageData = readImportedPackageData(specifier, basedir);
+  const packageData = readImportedPackageData(specifier, basedir, options);
   if (
     !packageName ||
     !packageData ||
@@ -255,6 +307,18 @@ function resolvePackageExportSourceAlternative(
     return undefined;
   }
   return resolveSourceOutputPath(candidate);
+}
+
+function isWithinDirectory(directory: string, candidate: string): boolean {
+  const relative = path.relative(
+    path.resolve(directory),
+    path.resolve(candidate)
+  );
+  return (
+    relative !== '..' &&
+    !relative.startsWith(`..${path.sep}`) &&
+    !path.isAbsolute(relative)
+  );
 }
 
 /** Resolves the exact or best-pattern subpath before evaluating conditions. */
@@ -377,17 +441,6 @@ function resolveSourceOutputPath(candidate: string): string | undefined {
     }
   }
   return undefined;
-}
-
-function readPackageData(directory: string): ImportedPackageData | undefined {
-  try {
-    const manifest = JSON.parse(
-      fs.readFileSync(path.join(directory, 'package.json'), 'utf8')
-    ) as unknown;
-    return isUnknownRecord(manifest) ? { directory, manifest } : undefined;
-  } catch {
-    return undefined;
-  }
 }
 
 function readPackageName(specifier: string): string | undefined {

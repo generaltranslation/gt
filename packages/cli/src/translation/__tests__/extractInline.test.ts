@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
   extractFromVueProject: vi.fn(),
   mergeVueProjectExtraction: vi.fn(),
   inspectVueProjectAsync: vi.fn(),
-  readVueSfcExclusionPatterns: vi.fn(),
+  partitionVueSourcePatterns: vi.fn(),
   projectModuleLoads: 0,
 }));
 
@@ -26,7 +26,7 @@ vi.mock('@generaltranslation/vue-extractor/project', () => {
 
 vi.mock('@generaltranslation/vue-extractor/inspect', () => ({
   inspectVueProjectAsync: mocks.inspectVueProjectAsync,
-  readVueSfcExclusionPatterns: mocks.readVueSfcExclusionPatterns,
+  partitionVueSourcePatterns: mocks.partitionVueSourcePatterns,
 }));
 
 vi.mock('../../react/parse/createInlineUpdates.js', () => ({
@@ -51,6 +51,7 @@ const parsingOptions: ParsingConfigOptions = {
   conditionNames: ['browser', 'import'],
 };
 const patterns = ['src/**/*.{ts,tsx,vue}', '!src/vendor/**'];
+const cwd = process.cwd();
 
 function update(
   source: string,
@@ -67,7 +68,10 @@ function update(
 describe('extractInlineFromProject', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.readVueSfcExclusionPatterns.mockReturnValue([]);
+    mocks.partitionVueSourcePatterns.mockReturnValue({
+      primaryExclusionPatterns: [],
+      vueExclusionPatterns: [],
+    });
     mocks.inspectVueProjectAsync.mockResolvedValue({
       projectRoot: '/fixture',
       rootOwnsVue: false,
@@ -104,7 +108,7 @@ describe('extractInlineFromProject', () => {
       parsingFlags,
       parsingOptions
     );
-    expect(mocks.inspectVueProjectAsync).toHaveBeenCalledOnce();
+    expect(mocks.inspectVueProjectAsync).toHaveBeenCalledWith(cwd);
     expect(mocks.projectModuleLoads).toBe(0);
     expect(mocks.extractFromVueProject).not.toHaveBeenCalled();
   });
@@ -150,7 +154,10 @@ describe('extractInlineFromProject', () => {
       hasVueScopes: boolean;
     }>();
     mocks.inspectVueProjectAsync.mockReturnValue(inspection.promise);
-    mocks.readVueSfcExclusionPatterns.mockReturnValue(['!src/App.vue']);
+    mocks.partitionVueSourcePatterns.mockReturnValue({
+      primaryExclusionPatterns: ['!src/App.vue'],
+      vueExclusionPatterns: [],
+    });
     mocks.createInlineUpdates.mockResolvedValue({
       updates: [],
       errors: [],
@@ -255,7 +262,10 @@ describe('extractInlineFromProject', () => {
   );
 
   it('partitions explicit SFCs owned by a discovered Vue scope', async () => {
-    mocks.readVueSfcExclusionPatterns.mockReturnValue(['!src/App.vue']);
+    mocks.partitionVueSourcePatterns.mockReturnValue({
+      primaryExclusionPatterns: ['!src/App.vue'],
+      vueExclusionPatterns: [],
+    });
     mocks.inspectVueProjectAsync.mockResolvedValue({
       projectRoot: '/fixture',
       rootOwnsVue: true,
@@ -288,6 +298,7 @@ describe('extractInlineFromProject', () => {
       parsingOptions
     );
     expect(mocks.extractFromVueProject).toHaveBeenCalledWith({
+      cwd,
       filePatterns: patterns,
       inspection: {
         projectRoot: '/fixture',
@@ -303,6 +314,53 @@ describe('extractInlineFromProject', () => {
       'Primary',
       'Vue',
     ]);
+  });
+
+  it('keeps ambiguous JSX modules on the primary pass only', async () => {
+    const ambiguousExclusion = '!src/Ambiguous.vue';
+    mocks.partitionVueSourcePatterns.mockReturnValue({
+      primaryExclusionPatterns: [],
+      vueExclusionPatterns: [ambiguousExclusion],
+    });
+    const inspection = {
+      projectRoot: '/fixture',
+      rootOwnsVue: true,
+      hasVueScopes: true,
+    } as const;
+    mocks.inspectVueProjectAsync.mockResolvedValue(inspection);
+    mocks.createInlineUpdates.mockResolvedValue({
+      updates: [update('Historical', 'historical-hash', ['src/Ambiguous.vue'])],
+      errors: [],
+      warnings: [],
+    });
+    mocks.extractFromVueProject.mockResolvedValue({
+      updates: [],
+      errors: [],
+      warnings: [],
+    });
+
+    await extractInlineFromProject(
+      Libraries.GT_REACT,
+      false,
+      patterns,
+      parsingFlags,
+      parsingOptions
+    );
+
+    expect(mocks.createInlineUpdates).toHaveBeenCalledWith(
+      Libraries.GT_REACT,
+      false,
+      patterns,
+      parsingFlags,
+      parsingOptions
+    );
+    expect(mocks.extractFromVueProject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cwd,
+        filePatterns: [...patterns, ambiguousExclusion],
+        inspection,
+      })
+    );
   });
 
   it('preserves exact historical patterns for descendant-only Vue scopes', async () => {
@@ -410,6 +468,7 @@ describe('extractInlineFromProject', () => {
     expect(mocks.createPythonInlineUpdates).not.toHaveBeenCalled();
     expect(mocks.extractFromVueProject).toHaveBeenCalledOnce();
     expect(mocks.extractFromVueProject).toHaveBeenCalledWith({
+      cwd,
       filePatterns: patterns,
       includeSourceCodeContext: true,
       conditionNames: parsingOptions.conditionNames,

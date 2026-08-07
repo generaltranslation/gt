@@ -302,6 +302,45 @@ describe('project-level Vue CLI regression boundary', () => {
     ]);
   });
 
+  it('preserves auto-JSX messages in ambiguous standard-tag .vue modules', async () => {
+    createVueFixture({
+      'package.json': packageJson({
+        dependencies: { 'gt-react': '*', 'gt-vue': '*' },
+      }),
+      'src/Template.vue': '<template>Template auto JSX message</template>;',
+      'src/Script.vue': '<script>Script auto JSX message</script>;',
+      'src/Style.vue': '<style>Style auto JSX message</style>;',
+    });
+    const patterns = ['src/*.vue'];
+    const flags = {
+      ...GT_PARSING_FLAGS_DEFAULT,
+      enableAutoJsxInjection: true,
+    };
+    const historical = await createInlineUpdates(
+      Libraries.GT_REACT,
+      false,
+      patterns,
+      flags,
+      parsingOptions
+    );
+
+    const output = await extractInlineFromProject(
+      Libraries.GT_REACT,
+      false,
+      patterns,
+      flags,
+      parsingOptions
+    );
+
+    expect(output).toEqual(historical);
+    expect(output.errors).toEqual([]);
+    expect(sources(output).sort()).toEqual([
+      'Script auto JSX message',
+      'Style auto JSX message',
+      'Template auto JSX message',
+    ]);
+  });
+
   it('partitions real SFCs from legacy JSX across explicit mixed patterns', async () => {
     createVueFixture({
       'package.json': packageJson({
@@ -407,6 +446,108 @@ ${translatableSfc('Text-prefixed Vue SFC message')}`,
 
     expect(output.errors).toEqual([]);
     expect(sources(output)).toEqual(['Targeted React message']);
+  });
+
+  it('keeps one project root when cwd changes while extraction starts', async () => {
+    const projectA = createProjectFixture({
+      'package.json': packageJson({ dependencies: { 'gt-react': '*' } }),
+      'src/App.tsx': reactMessage('Project A React message'),
+    });
+    const projectB = createProjectFixture({
+      'package.json': packageJson({ dependencies: { 'gt-vue': '*' } }),
+      'src/App.vue': translatableSfc('Project B Vue message'),
+    });
+    temporaryDirectories.push(projectA, projectB);
+    linkInstalledVue(projectB);
+    process.chdir(projectA);
+
+    const outputPromise = extractInlineFromProject(
+      Libraries.GT_REACT,
+      false,
+      undefined,
+      GT_PARSING_FLAGS_DEFAULT,
+      parsingOptions
+    );
+    process.chdir(projectB);
+    const output = await outputPromise;
+
+    expect(output.errors).toEqual([]);
+    expect(sources(output)).toEqual(['Project A React message']);
+  });
+
+  it('anchors explicit patterns when cwd changes during Vue inspection', async () => {
+    const projectA = createProjectFixture({
+      'package.json': packageJson({ dependencies: { 'gt-react': '*' } }),
+      'src/App.tsx': reactMessage('Project A explicit message'),
+      'src/Excluded.tsx': reactMessage('Project A excluded message'),
+    });
+    const projectB = createProjectFixture({
+      'package.json': packageJson({ dependencies: { 'gt-react': '*' } }),
+      'src/App.tsx': reactMessage('Project B explicit message'),
+    });
+    temporaryDirectories.push(projectA, projectB);
+    const explicitPatterns = ['src/**/*.{ts,tsx}', '!src/**/Excluded.tsx'];
+
+    process.chdir(projectA);
+    const historicalPromise = createInlineUpdates(
+      Libraries.GT_REACT,
+      false,
+      explicitPatterns,
+      GT_PARSING_FLAGS_DEFAULT,
+      parsingOptions
+    );
+    process.chdir(projectB);
+    const historical = await historicalPromise;
+
+    process.chdir(projectA);
+    const outputPromise = extractInlineFromProject(
+      Libraries.GT_REACT,
+      false,
+      explicitPatterns,
+      GT_PARSING_FLAGS_DEFAULT,
+      parsingOptions
+    );
+    process.chdir(projectB);
+    const output = await outputPromise;
+
+    expect(output).toEqual(historical);
+    expect(output.errors).toEqual([]);
+    expect(sources(output)).toEqual(['Project A explicit message']);
+  });
+
+  it('anchors the historical half of an explicitly selected mixed project', async () => {
+    const projectA = createProjectFixture({
+      'package.json': packageJson({
+        dependencies: { 'gt-react': '*', 'gt-vue': '*' },
+      }),
+      'src/App.tsx': reactMessage('Project A mixed React message'),
+      'src/Excluded.tsx': reactMessage('Project A mixed excluded message'),
+      'src/App.vue': translatableSfc('Project A mixed Vue message'),
+    });
+    const projectB = createProjectFixture({
+      'package.json': packageJson({ dependencies: { 'gt-react': '*' } }),
+      'src/App.tsx': reactMessage('Project B mixed-race message'),
+    });
+    temporaryDirectories.push(projectA, projectB);
+    linkInstalledVue(projectA);
+    const explicitPatterns = ['src/**/*.{ts,tsx,vue}', '!src/**/Excluded.tsx'];
+    process.chdir(projectA);
+
+    const outputPromise = extractInlineFromProject(
+      Libraries.GT_REACT,
+      false,
+      explicitPatterns,
+      GT_PARSING_FLAGS_DEFAULT,
+      parsingOptions
+    );
+    process.chdir(projectB);
+    const output = await outputPromise;
+
+    expect(output.errors).toEqual([]);
+    expect(sources(output)).toEqual([
+      'Project A mixed React message',
+      'Project A mixed Vue message',
+    ]);
   });
 
   it('does not resolve Vue config before proving ownership in a mixed root', async () => {

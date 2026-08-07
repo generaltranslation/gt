@@ -3,22 +3,15 @@ import path from 'node:path';
 import {
   dependencyBindingAcceptsPackageVersion,
   declaresAvailableJavaScriptDependency,
-  declaresPropagatingJavaScriptDependency,
   GT_VUE_PACKAGE,
   parseLocalDependencyPath,
   readJavaScriptPackageManifest,
-  readPropagatingDependencyBindings,
   readWorkspaceDependencyBindings,
   resolveInstalledJavaScriptPackage,
-  type InstalledJavaScriptPackage,
   type JavaScriptDependencyBinding,
   type JavaScriptPackageManifest,
 } from './manifest.js';
-
-type LocalPackage = InstalledJavaScriptPackage & {
-  includeDevelopmentBindings: boolean;
-  sourceDirectory: string;
-};
+import { packagePubliclyExposesGT } from './wrapperProvenance.js';
 
 /**
  * Returns whether the root package owns gt-vue directly or through local code.
@@ -55,65 +48,38 @@ export function localDependencyGraphDeclaresVue(
   rootManifest: JavaScriptPackageManifest,
   projectRoot: string
 ): boolean {
-  const pending: LocalPackage[] = [
-    {
-      directory: projectRoot,
-      includeDevelopmentBindings: true,
-      manifest: rootManifest,
-      sourceDirectory: projectRoot,
-    },
-  ];
-  const visited = new Set<string>([projectRoot]);
-  for (let index = 0; index < pending.length; index += 1) {
-    const current = pending[index]!;
-    const bindings = current.includeDevelopmentBindings
-      ? readWorkspaceDependencyBindings(current.manifest, current.directory)
-      : readPropagatingDependencyBindings(current.manifest, current.directory);
-    for (const binding of bindings) {
-      const installed = resolveInstalledJavaScriptPackage(
-        current.directory,
-        binding.name
-      );
-      if (!installed) continue;
-      const sourceDirectory = findLocalSourceDirectory(
+  for (const binding of readWorkspaceDependencyBindings(
+    rootManifest,
+    projectRoot
+  )) {
+    const installed = resolveInstalledJavaScriptPackage(
+      projectRoot,
+      binding.name
+    );
+    if (!installed) continue;
+    const sourceDirectory = findLocalSourceDirectory(
+      binding,
+      projectRoot,
+      installed.directory,
+      projectRoot
+    );
+    if (!sourceDirectory) continue;
+    const sourceManifest = readJavaScriptPackageManifest(
+      path.join(sourceDirectory, 'package.json')
+    );
+    const packageName = readPackageName(sourceManifest);
+    if (
+      !sourceManifest ||
+      !packageName ||
+      !dependencyBindingAcceptsPackageVersion(
         binding,
-        current.sourceDirectory,
-        installed.directory,
-        projectRoot
-      );
-      if (!sourceDirectory || visited.has(sourceDirectory)) continue;
-      const sourceManifest = readJavaScriptPackageManifest(
-        path.join(sourceDirectory, 'package.json')
-      );
-      const packageName = readPackageName(sourceManifest);
-      if (
-        !sourceManifest ||
-        !packageName ||
-        !dependencyBindingAcceptsPackageVersion(
-          binding,
-          packageName,
-          sourceManifest.version
-        )
-      ) {
-        continue;
-      }
-      if (
-        declaresPropagatingJavaScriptDependency(
-          sourceManifest,
-          GT_VUE_PACKAGE,
-          installed.directory
-        )
-      ) {
-        return true;
-      }
-      visited.add(sourceDirectory);
-      pending.push({
-        directory: installed.directory,
-        includeDevelopmentBindings: false,
-        manifest: sourceManifest,
-        sourceDirectory,
-      });
+        packageName,
+        sourceManifest.version
+      )
+    ) {
+      continue;
     }
+    if (packagePubliclyExposesGT(sourceDirectory, sourceManifest)) return true;
   }
   return false;
 }

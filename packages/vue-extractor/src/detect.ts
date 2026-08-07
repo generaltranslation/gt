@@ -1,7 +1,8 @@
 /**
- * Detects declared gt-vue ownership without loading the parser or Vue compiler.
+ * Detects declared or publicly re-exported gt-vue ownership without loading
+ * the Vue compiler.
  *
- * This lightweight entrypoint is safe for host CLIs to import during command
- * routing; the heavier project extractor remains behind the `project` export.
+ * Local wrapper packages are parsed only to prove their public provenance.
+ * The full template and project extractor remains behind the `project` export.
  */
 export { detectVueProject } from './internal/project/detectVueProject.js';

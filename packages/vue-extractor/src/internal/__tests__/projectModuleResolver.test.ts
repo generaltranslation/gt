@@ -195,6 +195,46 @@ describe('project module resolution', () => {
     );
   });
 
+  it('maps emitted self-reference exports back to package TypeScript source', () => {
+    const root = createFixture({
+      'package.json': JSON.stringify({
+        name: '@fixture/self-package',
+        exports: { './runtime': './dist/runtime.js' },
+      }),
+      'src/importer.ts': '',
+      'dist/runtime.ts': '',
+    });
+    const resolveModule = createProjectModuleResolver();
+
+    expectResolved(
+      resolveModule(
+        '@fixture/self-package/runtime',
+        path.join(root, 'src/importer.ts')
+      ),
+      path.join(root, 'dist/runtime.ts')
+    );
+  });
+
+  it('does not treat an ancestor beyond a malformed package boundary as self', () => {
+    const root = createFixture({
+      'package.json': JSON.stringify({
+        name: '@fixture/outer-package',
+        exports: { './runtime': './dist/runtime.js' },
+      }),
+      'dist/runtime.ts': '',
+      'nested/package.json': '{ malformed',
+      'nested/src/importer.ts': '',
+    });
+    const resolveModule = createProjectModuleResolver();
+
+    expect(
+      resolveModule(
+        '@fixture/outer-package/runtime',
+        path.join(root, 'nested/src/importer.ts')
+      )
+    ).toBeUndefined();
+  });
+
   it('expands Vite mode conditions deterministically', () => {
     const root = createFixture({
       'src/importer.ts': '',
