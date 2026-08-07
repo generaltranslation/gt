@@ -80,6 +80,58 @@ describe('project-level Vue CLI regression boundary', () => {
     expect(sources(dispatched)).toEqual(['Pure React message']);
   });
 
+  it('ignores an unused Vue subpath in a local multi-framework dependency', async () => {
+    const root = createFixture({
+      'package.json': packageJson({
+        dependencies: {
+          '@fixture/multi': 'file:./vendor/multi',
+          'gt-react': '*',
+        },
+      }),
+      'src/App.tsx': `
+        import { ordinary } from '@fixture/multi';
+        import { T } from 'gt-react';
+        void ordinary;
+        export const App = () => <T>Stable React message</T>;
+      `,
+      'src/Unrelated.vue': '<template>Unrelated fixture</template>',
+      'vendor/multi/package.json': JSON.stringify({
+        name: '@fixture/multi',
+        version: '1.0.0',
+        exports: {
+          '.': './src/index.ts',
+          './vue': './src/vue.ts',
+        },
+        dependencies: { 'gt-vue': '*' },
+      }),
+      'vendor/multi/src/index.ts': 'export const ordinary = true;\n',
+      'vendor/multi/src/vue.ts': "export { T as VueT } from 'gt-vue';\n",
+    });
+    const destination = path.join(root, 'node_modules/@fixture/multi');
+    fs.mkdirSync(path.dirname(destination), { recursive: true });
+    fs.symlinkSync(path.join(root, 'vendor/multi'), destination, 'dir');
+
+    const historical = await createInlineUpdates(
+      Libraries.GT_REACT,
+      false,
+      undefined,
+      GT_PARSING_FLAGS_DEFAULT,
+      parsingOptions
+    );
+    const output = await extractInlineFromProject(
+      Libraries.GT_REACT,
+      false,
+      undefined,
+      GT_PARSING_FLAGS_DEFAULT,
+      parsingOptions
+    );
+
+    expect(detectVueProject()).toBe(false);
+    expect(output).toEqual(historical);
+    expect(output.errors).toEqual([]);
+    expect(sources(output)).toEqual(['Stable React message']);
+  });
+
   it('appends only owned descendant Vue sources to the unchanged React scope', async () => {
     createVueFixture({
       'package.json': packageJson({

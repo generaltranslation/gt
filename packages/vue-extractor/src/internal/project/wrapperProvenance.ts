@@ -34,6 +34,15 @@ type PublicPackageManifest = JavaScriptPackageManifest & {
   module?: string;
 };
 
+export type PublicImportEntry = {
+  entry: string;
+  specifier: string;
+};
+
+export type PublicGTImport = PublicImportEntry & {
+  exportNames: ReadonlySet<string>;
+};
+
 /**
  * Returns whether a local package publicly exposes a gt-vue-derived value.
  *
@@ -46,6 +55,14 @@ export function packagePubliclyExposesGT(
   packageDirectory: string,
   manifest: JavaScriptPackageManifest
 ): boolean {
+  return readPublicGTImports(packageDirectory, manifest).length > 0;
+}
+
+/** Resolves every public import entry and retains its GT-derived export names. */
+export function readPublicGTImports(
+  packageDirectory: string,
+  manifest: JavaScriptPackageManifest
+): PublicGTImport[] {
   const resolveModule = createProjectModuleResolver(undefined, {
     selfPackage: { directory: packageDirectory, manifest },
   });
@@ -54,20 +71,39 @@ export function packagePubliclyExposesGT(
     manifest,
     resolveModule
   );
-  if (entries.length === 0) return false;
+  if (entries.length === 0) return [];
 
   const localModules = createLocalModuleResolver(resolveModule, {
     recognizeAllGTRuntimeExports: true,
   });
-  return entries.some((entry) => {
+  return entries.flatMap(({ entry, specifier }) => {
     // Invalid entrypoints fail closed. The source analyzer can recover enough
     // provenance from malformed modules to emit diagnostics, but malformed
     // package code must not establish project ownership by itself.
-    if (!localModules.getRecord(entry)) return false;
-    return localModules
+    if (!localModules.getRecord(entry)) return [];
+    const exportNames = localModules
       .listExportNames(entry)
-      .some((name) => localModules.hasGTExportReference(entry, name));
+      .filter(
+        (name) => localModules.getGTExportName(entry, name) !== undefined
+      );
+    return exportNames.length > 0
+      ? [{ entry, exportNames: new Set(exportNames), specifier }]
+      : [];
   });
+}
+
+/** Resolves a package's public ESM import entries without executing code. */
+export function readPublicImportEntries(
+  packageDirectory: string,
+  manifest: JavaScriptPackageManifest
+): PublicImportEntry[] {
+  return resolvePublicImportEntries(
+    packageDirectory,
+    manifest,
+    createProjectModuleResolver(undefined, {
+      selfPackage: { directory: packageDirectory, manifest },
+    })
+  );
 }
 
 /** Resolves root and exact-subpath import entrypoints without executing code. */
@@ -75,11 +111,11 @@ function resolvePublicImportEntries(
   packageDirectory: string,
   manifest: JavaScriptPackageManifest,
   resolveModule: ReturnType<typeof createProjectModuleResolver>
-): string[] {
+): PublicImportEntry[] {
   const publicManifest = manifest as PublicPackageManifest;
   const packageName = readPackageName(manifest);
   const importer = path.join(packageDirectory, '__gt_vue_entry_probe__.mjs');
-  const entries = new Set<string>();
+  const entries = new Map<string, PublicImportEntry>();
 
   if (packageName && publicManifest.exports !== undefined) {
     for (const specifier of readExactPublicSpecifiers(
@@ -88,7 +124,7 @@ function resolvePublicImportEntries(
     )) {
       const entry = resolveModule(specifier, importer);
       if (entry && isWithinPackage(packageDirectory, entry)) {
-        entries.add(resolveRealPath(entry));
+        entries.set(specifier, { entry: resolveRealPath(entry), specifier });
       }
     }
     for (const entry of resolveWildcardPublicEntries(
@@ -98,11 +134,11 @@ function resolvePublicImportEntries(
       importer,
       resolveModule
     )) {
-      entries.add(entry);
+      entries.set(entry.specifier, entry);
     }
     // An exports map encapsulates the package. Never fall back to private main
     // fields when none of its public import conditions can be resolved.
-    return [...entries];
+    return [...entries.values()];
   }
 
   const browserEntry =
@@ -124,12 +160,14 @@ function resolvePublicImportEntries(
     if (typeof candidate !== 'string') continue;
     const entry = resolveSourceEntry(packageDirectory, candidate);
     if (entry) {
-      entries.add(entry);
+      if (packageName) {
+        entries.set(packageName, { entry, specifier: packageName });
+      }
       // Match package entry selection: the first resolvable main field wins.
       break;
     }
   }
-  return [...entries];
+  return [...entries.values()];
 }
 
 /**
@@ -146,9 +184,9 @@ function resolveWildcardPublicEntries(
   exportsField: unknown,
   importer: string,
   resolveModule: ReturnType<typeof createProjectModuleResolver>
-): string[] {
+): PublicImportEntry[] {
   if (!isRecord(exportsField) || isConditionalExports(exportsField)) return [];
-  const entries = new Set<string>();
+  const entries = new Map<string, PublicImportEntry>();
   const fileBudget = { remaining: MAX_PATTERN_FILES };
   for (const [subpath, target] of Object.entries(exportsField)) {
     if (!subpath.startsWith('./') || !subpath.includes('*')) continue;
@@ -172,11 +210,15 @@ function resolveWildcardPublicEntries(
         ) {
           continue;
         }
-        entries.add(resolveRealPath(resolved));
+        const specifier = `${packageName}${publicSubpath.slice(1)}`;
+        entries.set(specifier, {
+          entry: resolveRealPath(resolved),
+          specifier,
+        });
       }
     }
   }
-  return [...entries];
+  return [...entries.values()];
 }
 
 /** Selects conditional targets using the same default ESM conditions. */

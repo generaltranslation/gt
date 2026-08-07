@@ -2,10 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import fg from 'fast-glob';
 import { parse as parseYaml } from 'yaml';
-import {
-  readJavaScriptPackageManifest,
-  type JavaScriptPackageManifest,
-} from './manifest.js';
+import type { JavaScriptPackageManifest } from './manifest.js';
 
 const ASYNC_WORKSPACE_READ_CONCURRENCY = 64;
 
@@ -61,17 +58,15 @@ export function readDeclaredWorkspacePackages(
     return cacheWorkspacePackages(cache, cacheKey, manifestWorkspaces, []);
   }
 
-  let packagePaths: string[];
-  try {
-    packagePaths = fg.sync(manifestPatterns, {
-      absolute: true,
-      cwd,
-      followSymbolicLinks: false,
-      ignore: ['**/node_modules/**'],
-      onlyFiles: true,
-      unique: true,
-    });
-  } catch {
+  const shallowPackagePaths = readShallowWorkspaceManifestPaths(
+    cwd,
+    realRoot,
+    manifestPatterns
+  );
+  const packagePaths =
+    shallowPackagePaths ??
+    readWorkspaceManifestPathsWithGlob(cwd, manifestPatterns);
+  if (!packagePaths) {
     return cacheWorkspacePackages(cache, cacheKey, manifestWorkspaces, []);
   }
   packagePaths.sort(comparePaths);
@@ -87,15 +82,11 @@ export function readDeclaredWorkspacePackages(
       return [];
     }
 
-    const realPackagePath = readRealPath(absolutePath);
-    if (
-      !realPackagePath ||
-      !isWithinRoot(realRoot, realPackagePath) ||
-      realPackagePath.split(path.sep).includes('node_modules')
-    ) {
-      return [];
-    }
-    const manifest = readJavaScriptPackageManifest(realPackagePath);
+    const manifestPath = shallowPackagePaths
+      ? absolutePath
+      : readValidatedManifestPath(realRoot, absolutePath);
+    if (!manifestPath) return [];
+    const manifest = readWorkspacePackageManifest(manifestPath);
     return manifest
       ? [{ directory: path.dirname(absolutePath), manifest }]
       : [];
@@ -138,17 +129,22 @@ export async function readDeclaredWorkspacePackagesAsync(
     return cacheWorkspacePackages(cache, cacheKey, manifestWorkspaces, []);
   }
 
-  let packagePaths: string[];
-  try {
-    packagePaths = await fg(manifestPatterns, {
-      absolute: true,
-      cwd,
-      followSymbolicLinks: false,
-      ignore: ['**/node_modules/**'],
-      onlyFiles: true,
-      unique: true,
-    });
-  } catch {
+  const shallowPackagePaths = await readShallowWorkspaceManifestPathsAsync(
+    cwd,
+    realRoot,
+    manifestPatterns
+  );
+  let packagePaths: string[] | undefined;
+  if (shallowPackagePaths) {
+    packagePaths = shallowPackagePaths;
+  } else {
+    try {
+      packagePaths = await fg([...manifestPatterns], workspaceGlobOptions(cwd));
+    } catch {
+      packagePaths = undefined;
+    }
+  }
+  if (!packagePaths) {
     return cacheWorkspacePackages(cache, cacheKey, manifestWorkspaces, []);
   }
   packagePaths.sort(comparePaths);
@@ -167,16 +163,11 @@ export async function readDeclaredWorkspacePackagesAsync(
         return undefined;
       }
 
-      const realPackagePath = await readRealPathAsync(absolutePath);
-      if (
-        !realPackagePath ||
-        !isWithinRoot(realRoot, realPackagePath) ||
-        realPackagePath.split(path.sep).includes('node_modules')
-      ) {
-        return undefined;
-      }
-      const manifest =
-        await readJavaScriptPackageManifestAsync(realPackagePath);
+      const manifestPath = shallowPackagePaths
+        ? absolutePath
+        : await readValidatedManifestPathAsync(realRoot, absolutePath);
+      if (!manifestPath) return undefined;
+      const manifest = await readJavaScriptPackageManifestAsync(manifestPath);
       return manifest
         ? { directory: path.dirname(absolutePath), manifest }
         : undefined;
@@ -187,6 +178,147 @@ export async function readDeclaredWorkspacePackagesAsync(
       workspacePackage !== undefined
   );
   return cacheWorkspacePackages(cache, cacheKey, manifestWorkspaces, packages);
+}
+
+/**
+ * Finds workspace manifests, optimizing only the common shallow-positive form.
+ *
+ * A pattern such as `packages/<child>/package.json` can be resolved with one
+ * directory read instead of traversing every child directory. All negative,
+ * nested, or otherwise dynamic patterns keep fast-glob's existing behavior.
+ */
+function readShallowWorkspaceManifestPaths(
+  cwd: string,
+  realRoot: string,
+  manifestPatterns: readonly string[]
+): string[] | undefined {
+  const shallowBases = readShallowPositiveBases(manifestPatterns);
+  if (!shallowBases) return undefined;
+
+  try {
+    const paths = shallowBases.flatMap((base) => {
+      const baseDirectory = path.resolve(cwd, base);
+      if (!isSafeShallowBase(realRoot, readRealPath(baseDirectory))) return [];
+      try {
+        return fs
+          .readdirSync(baseDirectory, { withFileTypes: true })
+          .filter(isVisibleDirectoryEntry)
+          .map((entry) => path.join(baseDirectory, entry.name, 'package.json'));
+      } catch {
+        return [];
+      }
+    });
+    return [...new Set(paths)];
+  } catch {
+    return undefined;
+  }
+}
+
+/** Asynchronous counterpart to {@link readShallowWorkspaceManifestPaths}. */
+async function readShallowWorkspaceManifestPathsAsync(
+  cwd: string,
+  realRoot: string,
+  manifestPatterns: readonly string[]
+): Promise<string[] | undefined> {
+  const shallowBases = readShallowPositiveBases(manifestPatterns);
+  if (!shallowBases) return undefined;
+
+  try {
+    const entriesByBase = await Promise.all(
+      shallowBases.map(async (base) => {
+        const baseDirectory = path.resolve(cwd, base);
+        const realBase = await readRealPathAsync(baseDirectory);
+        if (!isSafeShallowBase(realRoot, realBase)) {
+          return { baseDirectory, entries: [] };
+        }
+        try {
+          return {
+            baseDirectory,
+            entries: await fs.promises.readdir(baseDirectory, {
+              withFileTypes: true,
+            }),
+          };
+        } catch {
+          return { baseDirectory, entries: [] };
+        }
+      })
+    );
+    const paths = entriesByBase.flatMap(({ baseDirectory, entries }) =>
+      entries
+        .filter(isVisibleDirectoryEntry)
+        .map((entry) => path.join(baseDirectory, entry.name, 'package.json'))
+    );
+    return [...new Set(paths)];
+  } catch {
+    return undefined;
+  }
+}
+
+/** Uses fast-glob for workspace layouts outside the bounded shallow form. */
+function readWorkspaceManifestPathsWithGlob(
+  cwd: string,
+  manifestPatterns: readonly string[]
+): string[] | undefined {
+  try {
+    return fg.sync([...manifestPatterns], workspaceGlobOptions(cwd));
+  } catch {
+    return undefined;
+  }
+}
+
+/** Shared options preserve the historical fast-glob matching semantics. */
+function workspaceGlobOptions(
+  cwd: string
+): NonNullable<Parameters<typeof fg.sync>[1]> {
+  return {
+    absolute: true,
+    cwd,
+    followSymbolicLinks: false,
+    ignore: ['**/node_modules/**'],
+    onlyFiles: true,
+    unique: true,
+  };
+}
+
+/**
+ * Reads literal bases from patterns shaped like `<base>/<child>/package.json`.
+ * Hidden child directories are intentionally excluded to match fast-glob's
+ * default `dot: false` behavior.
+ */
+function readShallowPositiveBases(
+  manifestPatterns: readonly string[]
+): string[] | undefined {
+  const bases: string[] = [];
+  for (const pattern of manifestPatterns) {
+    if (pattern.startsWith('!')) return undefined;
+    const segments = pattern.split('/');
+    if (
+      segments.length < 2 ||
+      segments.at(-1) !== 'package.json' ||
+      segments.at(-2) !== '*'
+    ) {
+      return undefined;
+    }
+    const base = segments.slice(0, -2).join('/') || '.';
+    if (fg.isDynamicPattern(base)) return undefined;
+    bases.push(base);
+  }
+  return [...new Set(bases)];
+}
+
+/** Matches only visible physical directories, excluding symlinked workspaces. */
+function isVisibleDirectoryEntry(entry: fs.Dirent): boolean {
+  return !entry.name.startsWith('.') && entry.isDirectory();
+}
+
+/** Validates one physical shallow base before skipping per-manifest realpath. */
+function isSafeShallowBase(
+  realRoot: string,
+  realBase: string | undefined
+): boolean {
+  if (!realBase || !isWithinOrEqualRoot(realRoot, realBase)) return false;
+  const relative = path.relative(realRoot, realBase);
+  return !relative.split(path.sep).includes('node_modules');
 }
 
 function cacheWorkspacePackages(
@@ -307,17 +439,69 @@ async function readRealPathAsync(
   }
 }
 
+/** Preserves the historical physical containment check for glob fallbacks. */
+function readValidatedManifestPath(
+  realRoot: string,
+  packagePath: string
+): string | undefined {
+  const realPackagePath = readRealPath(packagePath);
+  return realPackagePath &&
+    isWithinRoot(realRoot, realPackagePath) &&
+    !realPackagePath.split(path.sep).includes('node_modules')
+    ? realPackagePath
+    : undefined;
+}
+
+/** Asynchronous counterpart to {@link readValidatedManifestPath}. */
+async function readValidatedManifestPathAsync(
+  realRoot: string,
+  packagePath: string
+): Promise<string | undefined> {
+  const realPackagePath = await readRealPathAsync(packagePath);
+  return realPackagePath &&
+    isWithinRoot(realRoot, realPackagePath) &&
+    !realPackagePath.split(path.sep).includes('node_modules')
+    ? realPackagePath
+    : undefined;
+}
+
 async function readJavaScriptPackageManifestAsync(
   packagePath: string
 ): Promise<JavaScriptPackageManifest | undefined> {
+  let file: fs.promises.FileHandle | undefined;
   try {
-    const parsed = JSON.parse(
-      await fs.promises.readFile(packagePath, 'utf8')
-    ) as unknown;
+    const stats = await fs.promises.lstat(packagePath);
+    if (!stats.isFile()) return undefined;
+    file = await fs.promises.open(packagePath, workspaceManifestOpenFlags());
+    const parsed = JSON.parse(await file.readFile('utf8')) as unknown;
     return isRecord(parsed) ? (parsed as JavaScriptPackageManifest) : undefined;
   } catch {
     return undefined;
+  } finally {
+    await file?.close();
   }
+}
+
+/** Reads a workspace manifest without following a manifest-file symlink. */
+function readWorkspacePackageManifest(
+  packagePath: string
+): JavaScriptPackageManifest | undefined {
+  let descriptor: number | undefined;
+  try {
+    if (!fs.lstatSync(packagePath).isFile()) return undefined;
+    descriptor = fs.openSync(packagePath, workspaceManifestOpenFlags());
+    const parsed = JSON.parse(fs.readFileSync(descriptor, 'utf8')) as unknown;
+    return isRecord(parsed) ? (parsed as JavaScriptPackageManifest) : undefined;
+  } catch {
+    return undefined;
+  } finally {
+    if (descriptor !== undefined) fs.closeSync(descriptor);
+  }
+}
+
+/** Prevents a shallow workspace candidate from redirecting its manifest. */
+function workspaceManifestOpenFlags(): number {
+  return fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0);
 }
 
 /** Maps filesystem work concurrently without exhausting file descriptors. */
@@ -348,6 +532,14 @@ function isWithinRoot(root: string, candidate: string): boolean {
     relativePath !== '..' &&
     !relativePath.startsWith(`..${path.sep}`) &&
     !path.isAbsolute(relativePath)
+  );
+}
+
+/** Checks physical containment while allowing the project root itself. */
+function isWithinOrEqualRoot(root: string, candidate: string): boolean {
+  return (
+    path.resolve(root) === path.resolve(candidate) ||
+    isWithinRoot(root, candidate)
   );
 }
 

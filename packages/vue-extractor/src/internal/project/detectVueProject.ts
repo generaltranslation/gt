@@ -11,7 +11,7 @@ import {
   type JavaScriptDependencyBinding,
   type JavaScriptPackageManifest,
 } from './manifest.js';
-import { packagePubliclyExposesGT } from './wrapperProvenance.js';
+import { packageConsumesPublicGT } from './consumerUsage.js';
 
 /**
  * Returns whether the root package owns gt-vue directly or through local code.
@@ -79,7 +79,16 @@ export function localDependencyGraphDeclaresVue(
     ) {
       continue;
     }
-    if (packagePubliclyExposesGT(sourceDirectory, sourceManifest)) return true;
+    if (
+      packageConsumesPublicGT(
+        projectRoot,
+        binding.name,
+        sourceDirectory,
+        sourceManifest
+      )
+    ) {
+      return true;
+    }
   }
   return false;
 }

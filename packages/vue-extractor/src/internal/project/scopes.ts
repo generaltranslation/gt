@@ -24,17 +24,11 @@ import {
   type JavaScriptPackageManifest,
 } from './manifest.js';
 import { localDependencyGraphDeclaresVue } from './detectVueProject.js';
+import { packageConsumesPublicGT } from './consumerUsage.js';
+import { DEFAULT_VUE_SOURCE_PATTERNS } from './sourcePatterns.js';
 import { packagePubliclyExposesGT } from './wrapperProvenance.js';
 
-/** Default Vue source patterns, including conventional Vue and Nuxt folders. */
-export const DEFAULT_VUE_SOURCE_PATTERNS = [
-  '*.vue',
-  'src/**/*.{vue,js,jsx,mjs,cjs,ts,tsx,mts,cts}',
-  'app/**/*.{vue,js,jsx,mjs,cjs,ts,tsx,mts,cts}',
-  'pages/**/*.{vue,js,jsx,mjs,cjs,ts,tsx,mts,cts}',
-  'components/**/*.{vue,js,jsx,mjs,cjs,ts,tsx,mts,cts}',
-  '{composables,layers,layouts,middleware,modules,plugins,server,shared,stores,utils,views}/**/*.{vue,js,jsx,mjs,cjs,ts,tsx,mts,cts}',
-] as const;
+export { DEFAULT_VUE_SOURCE_PATTERNS } from './sourcePatterns.js';
 
 /** One package boundary whose sources share Vue build configuration. */
 export type VueSourceScope = {
@@ -241,12 +235,12 @@ function selectVueWorkspacePackages(
     if (!selectedName) continue;
     for (const consumer of consumersByDependency.get(selectedName) ?? []) {
       if (propagatingDirectories.has(consumer.directory)) continue;
-      if (!dependsOnCompatibleWorkspace(consumer, selectedPackage)) {
+      if (!consumesCompatibleWorkspace(consumer, selectedPackage)) {
         continue;
       }
       selectPackage(
         consumer,
-        dependsOnCompatibleWorkspace(consumer, selectedPackage, true) &&
+        consumesCompatibleWorkspace(consumer, selectedPackage, true) &&
           publiclyExposesGT(consumer)
       );
     }
@@ -265,12 +259,12 @@ function consumesSelectedWorkspace(
   selectedPackages: readonly DeclaredWorkspacePackage[]
 ): boolean {
   return selectedPackages.some((selectedPackage) =>
-    dependsOnCompatibleWorkspace(consumer, selectedPackage)
+    consumesCompatibleWorkspace(consumer, selectedPackage)
   );
 }
 
-/** Checks that a consumer's declared range can resolve to the local package. */
-function dependsOnCompatibleWorkspace(
+/** Checks that a compatible dependency edge is used by consumer source. */
+function consumesCompatibleWorkspace(
   consumer: DeclaredWorkspacePackage,
   selected: DeclaredWorkspacePackage,
   propagatingOnly = false
@@ -280,13 +274,20 @@ function dependsOnCompatibleWorkspace(
   const bindings = propagatingOnly
     ? readPropagatingDependencyBindings(consumer.manifest, consumer.directory)
     : readWorkspaceDependencyBindings(consumer.manifest, consumer.directory);
-  return bindings.some((binding) =>
-    dependencyBindingMatchesWorkspace(
-      binding,
-      packageName,
-      selected,
-      consumer.directory
-    )
+  return bindings.some(
+    (binding) =>
+      dependencyBindingMatchesWorkspace(
+        binding,
+        packageName,
+        selected,
+        consumer.directory
+      ) &&
+      packageConsumesPublicGT(
+        consumer.directory,
+        binding.name,
+        selected.directory,
+        selected.manifest
+      )
   );
 }
 

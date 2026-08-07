@@ -50,6 +50,246 @@ describe('local Vue wrapper provenance', () => {
     }
   );
 
+  it('follows an immutable local alias exported under a wrapper name', () => {
+    const root = createPackage({
+      'package.json': JSON.stringify({
+        name: '@fixture/derived-wrapper',
+        exports: './src/index.ts',
+      }),
+      'src/index.ts': `
+        import { T } from 'gt-vue';
+        export const WrapperT = T;
+      `,
+    });
+
+    expect(exposesGT(root)).toBe(true);
+  });
+
+  it.each([
+    "import { T } from 'gt-vue'; export default T;",
+    "import { T } from 'gt-vue'; const Alias = T; export default Alias;",
+    "import { T } from 'gt-vue'; const Alias = T; export { Alias as default };",
+  ])('follows a default alias: %s', (source) => {
+    const root = createPackage({
+      'package.json': JSON.stringify({
+        name: '@fixture/default-wrapper',
+        exports: './src/index.ts',
+      }),
+      'src/index.ts': source,
+    });
+
+    expect(exposesGT(root)).toBe(true);
+  });
+
+  it.each([
+    `
+      import { T } from 'gt-vue';
+      import { h } from 'vue';
+      export const WrapperT = (props) => h(T, props);
+    `,
+    `
+      import { T } from 'gt-vue';
+      import { defineComponent, h } from 'vue';
+      export const WrapperT = defineComponent({
+        setup(props) {
+          return () => h(T, props);
+        },
+      });
+    `,
+    `
+      import { T } from 'gt-vue';
+      export const WrapperT = (props) => <T>{props.children}</T>;
+    `,
+    `
+      import * as GT from 'gt-vue';
+      export const WrapperT = (props) => <GT.T>{props.children}</GT.T>;
+    `,
+  ])('recognizes a public wrapper component: %s', (source) => {
+    const root = createPackage({
+      'package.json': JSON.stringify({
+        name: '@fixture/component-wrapper',
+        exports: './src/index.tsx',
+      }),
+      'src/index.tsx': source,
+    });
+
+    expect(exposesGT(root)).toBe(true);
+  });
+
+  it.each([
+    `
+      import { T } from 'gt-vue';
+      import * as Vue from 'vue';
+      export const WrapperT = (props) => Vue.h(T, props);
+    `,
+    `
+      import { T } from 'gt-vue';
+      import * as Vue from 'vue';
+      export const WrapperT = (props) => Vue.createVNode(T, props);
+    `,
+    `
+      import { T } from 'gt-vue';
+      import * as Vue from 'vue';
+      export const WrapperT = Vue.defineComponent({
+        setup(props) {
+          return () => Vue.h(T, props);
+        },
+      });
+    `,
+  ])('recognizes a namespace-imported Vue helper: %s', (source) => {
+    const root = createPackage({
+      'package.json': JSON.stringify({
+        name: '@fixture/vue-namespace-wrapper',
+        exports: './src/index.ts',
+      }),
+      'src/index.ts': source,
+    });
+
+    expect(exposesGT(root)).toBe(true);
+  });
+
+  it('follows an exact leaf destructured from an imported GT namespace', () => {
+    const root = createPackage({
+      'package.json': JSON.stringify({
+        name: '@fixture/destructured-wrapper',
+        exports: './src/index.ts',
+      }),
+      'src/index.ts': `
+        import * as GT from 'gt-vue';
+        const { T: WrapperT } = GT;
+        export { WrapperT };
+      `,
+    });
+
+    expect(exposesGT(root)).toBe(true);
+  });
+
+  it.each(['gt-react', 'gt-next', 'gt-react-native', 'gt-tanstack-start'])(
+    'does not treat the %s namespace as gt-vue wrapper provenance',
+    (runtime) => {
+      const root = createPackage({
+        'package.json': JSON.stringify({
+          name: '@fixture/react-family-wrapper',
+          exports: './src/index.tsx',
+        }),
+        'src/index.tsx': `
+          import * as GT from '${runtime}';
+          export const WrapperT = () => <GT.T>React wrapper</GT.T>;
+        `,
+      });
+
+      expect(exposesGT(root)).toBe(false);
+    }
+  );
+
+  it.each([
+    `
+      import { T } from 'gt-vue';
+      export const ordinary = (T) => T;
+    `,
+    `
+      import { T } from 'gt-vue';
+      export const ordinary = () => {
+        void T;
+        return 'ordinary';
+      };
+    `,
+    `
+      import { T } from 'gt-vue';
+      let Alias = T;
+      Alias = String;
+      export { Alias };
+    `,
+    `
+      import { T } from 'gt-vue';
+      export const ordinary = unknownFactory(T);
+    `,
+    `
+      import * as GT from 'gt-vue';
+      export const WrapperT = (GT) => <GT.T>Shadowed wrapper</GT.T>;
+    `,
+    `
+      import * as GT from 'gt-vue';
+      const { ...Rest } = GT;
+      export const WrapperT = Rest.T;
+    `,
+    `
+      import * as GT from 'gt-vue';
+      const key = 'T';
+      const { [key]: WrapperT } = GT;
+      export { WrapperT };
+    `,
+    `
+      import * as GT from 'gt-vue';
+      let { T: WrapperT } = GT;
+      WrapperT = String;
+      export { WrapperT };
+    `,
+    `
+      import * as GT from 'gt-vue';
+      GT.T = String;
+      const { T: WrapperT } = GT;
+      export { WrapperT };
+    `,
+    `
+      import * as GT from 'gt-react';
+      const { T: WrapperT } = GT;
+      export { WrapperT };
+    `,
+    `
+      import { T } from 'gt-vue';
+      import * as Vue from 'vue';
+      Vue.h = unknownFactory;
+      export const WrapperT = () => Vue.h(T);
+    `,
+    `
+      import { T } from 'gt-vue';
+      import * as Vue from 'react';
+      export const WrapperT = () => Vue.h(T);
+    `,
+  ])(
+    'does not infer wrapper provenance from an unsafe derivation: %s',
+    (source) => {
+      const root = createPackage({
+        'package.json': JSON.stringify({
+          name: '@fixture/unsafe-wrapper',
+          exports: './src/index.tsx',
+        }),
+        'src/index.tsx': source,
+      });
+
+      expect(exposesGT(root)).toBe(false);
+    }
+  );
+
+  it.each([
+    "export * as Components from 'gt-vue';",
+    "import * as GT from 'gt-vue'; export const Components = GT;",
+  ])('does not promote a namespace container to a GT leaf: %s', (source) => {
+    const root = createPackage({
+      'package.json': JSON.stringify({
+        name: '@fixture/namespace-container',
+        exports: './src/index.ts',
+      }),
+      'src/index.ts': source,
+    });
+
+    expect(exposesGT(root)).toBe(false);
+  });
+
+  it('retains an exact primitive selected from a namespace', () => {
+    const root = createPackage({
+      'package.json': JSON.stringify({
+        name: '@fixture/namespace-leaf',
+        exports: './src/index.ts',
+      }),
+      'src/index.ts':
+        "import * as GT from 'gt-vue'; export const WrapperT = GT.T;",
+    });
+
+    expect(exposesGT(root)).toBe(true);
+  });
+
   it('rejects nonexistent gt-vue value exports', () => {
     const root = createPackage({
       'package.json': JSON.stringify({

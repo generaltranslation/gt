@@ -1,6 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import traverseModule, { type Scope } from '@babel/traverse';
+import traverseModule, {
+  type Binding,
+  type NodePath,
+  type Scope,
+} from '@babel/traverse';
 import type * as t from '@babel/types';
 import {
   initSync as initModuleLexer,
@@ -149,6 +153,11 @@ export type LocalExportResolution =
 /** Read-only local source resolver used by the Vue script analyzer. */
 export type LocalModuleResolver = {
   getRecord(filePath: string): LocalModuleRecord | undefined;
+  /** Returns the exact GT leaf behind an export, excluding namespace containers. */
+  getGTExportName(
+    filePath: string,
+    exportName: string
+  ): string | '*' | undefined;
   /** Whether the caller supplied project-specific bare-specifier semantics. */
   hasCustomResolver: boolean;
   /** Whether a resolved module belongs to project source rather than an install. */
@@ -179,6 +188,10 @@ export function createLocalModuleResolver(
   const records = new Map<string, LocalModuleRecord | null>();
   const recoveredRecords = new Map<string, RecoveredModuleRecord | null>();
   const resolutions = new Map<string, LocalExportResolution>();
+  const recordPaths = new WeakMap<
+    LocalModuleRecord,
+    WeakMap<t.Node, NodePath<t.Node>>
+  >();
 
   const isProjectModule = (filePath: string): boolean => {
     const realPath = readRealPath(path.resolve(filePath));
@@ -460,10 +473,13 @@ export function createLocalModuleResolver(
 
   const readGTExportName = (
     resolution: LocalExportResolution,
-    seen: Set<string>
+    seen: Set<string>,
+    allowNamespaceContainers = true
   ): string | '*' | undefined => {
     if (resolution.status === 'invalid') {
-      return resolution.gtExportName;
+      return allowNamespaceContainers || resolution.gtExportName !== '*'
+        ? resolution.gtExportName
+        : undefined;
     }
     if (resolution.status !== 'resolved') return undefined;
     const { target } = resolution;
@@ -471,21 +487,487 @@ export function createLocalModuleResolver(
       return target.source === 'gt-vue' ? target.exportName : undefined;
     }
     if (target.type === 'external-namespace') {
-      return target.source === 'gt-vue' ? '*' : undefined;
+      return allowNamespaceContainers && target.source === 'gt-vue'
+        ? '*'
+        : undefined;
     }
-    if (target.type !== 'namespace') return undefined;
-    const candidateNames = options.recognizeAllGTRuntimeExports
-      ? [...GT_RUNTIME_EXPORT_NAMES]
-      : [...GT_EXPORT_NAMES];
-    return candidateNames.some((name) =>
-      Boolean(
-        readGTExportName(
-          resolveExportInternal(target.modulePath, name, seen),
-          seen
+    if (target.type === 'namespace') {
+      if (!allowNamespaceContainers) return undefined;
+      const candidateNames = options.recognizeAllGTRuntimeExports
+        ? [...GT_RUNTIME_EXPORT_NAMES]
+        : [...GT_EXPORT_NAMES];
+      return candidateNames.some((name) =>
+        Boolean(
+          readGTExportName(
+            resolveExportInternal(target.modulePath, name, seen),
+            seen,
+            allowNamespaceContainers
+          )
         )
       )
-    )
-      ? '*'
+        ? '*'
+        : undefined;
+    }
+    if (target.type === 'ordinary-external') return undefined;
+    const state: DerivedGTState = {
+      bindings: new Set(),
+      nodes: new Set(),
+      record: target.record,
+      resolutions: seen,
+      allowNamespaceContainers,
+    };
+    if (target.type === 'expression') {
+      return readDerivedGT(target.node, state);
+    }
+    const binding = target.record.programScope.getBinding(target.exportName);
+    return binding ? readDerivedGTBinding(binding, state) : undefined;
+  };
+
+  type DerivedGTState = {
+    allowNamespaceContainers: boolean;
+    bindings: Set<Binding>;
+    nodes: Set<t.Node>;
+    record: LocalModuleRecord;
+    resolutions: Set<string>;
+  };
+
+  /** Lazily indexes lexical paths only when package provenance needs them. */
+  const readNodePath = (
+    record: LocalModuleRecord,
+    node: t.Node
+  ): NodePath<t.Node> | undefined => {
+    let paths = recordPaths.get(record);
+    if (!paths) {
+      paths = new WeakMap();
+      traverse(record.ast, {
+        enter(nodePath) {
+          paths!.set(nodePath.node, nodePath as NodePath<t.Node>);
+        },
+      });
+      recordPaths.set(record, paths);
+    }
+    return paths.get(node);
+  };
+
+  /** Rejects a namespace member whose value is overwritten in this module. */
+  const namespaceMemberIsWritten = (
+    binding: Binding,
+    exportName: string
+  ): boolean => {
+    return binding.referencePaths.some((reference) => {
+      const member = reference.parentPath;
+      if (
+        (!member?.isMemberExpression() &&
+          !member?.isOptionalMemberExpression()) ||
+        member.node.object !== reference.node ||
+        readStaticMemberName(member.node) !== exportName
+      ) {
+        return false;
+      }
+      const parent = member.parentPath?.node;
+      return Boolean(
+        (parent?.type === 'AssignmentExpression' &&
+          parent.left === member.node) ||
+        (parent?.type === 'UpdateExpression' &&
+          parent.argument === member.node) ||
+        (parent?.type === 'UnaryExpression' &&
+          parent.operator === 'delete' &&
+          parent.argument === member.node) ||
+        ((parent?.type === 'ForInStatement' ||
+          parent?.type === 'ForOfStatement') &&
+          parent.left === member.node)
+      );
+    });
+  };
+
+  /** Follows immutable aliases while rejecting mutation and lexical shadows. */
+  const readDerivedGTBinding = (
+    binding: Binding,
+    state: DerivedGTState
+  ): string | '*' | undefined => {
+    if (!binding.constant || state.bindings.has(binding)) return undefined;
+    const next = {
+      ...state,
+      bindings: new Set(state.bindings).add(binding),
+    };
+    if (binding.kind === 'module') {
+      const imported = state.record.imports.get(binding.identifier.name);
+      if (!imported) return undefined;
+      if (imported.importedName === '*') {
+        return state.allowNamespaceContainers && imported.source === 'gt-vue'
+          ? '*'
+          : undefined;
+      }
+      return readGTExportName(
+        resolveFromSource(
+          state.record,
+          imported.source,
+          imported.importedName,
+          state.resolutions
+        ),
+        state.resolutions,
+        state.allowNamespaceContainers
+      );
+    }
+    const declaration = binding.path.node;
+    if (declaration.type === 'VariableDeclarator') {
+      if (declaration.id.type === 'Identifier') {
+        return readDerivedGT(declaration.init, next);
+      }
+      return readDestructuredGTBinding(binding, declaration, next);
+    }
+    return declaration.type === 'FunctionDeclaration'
+      ? readDerivedGT(declaration, next)
+      : undefined;
+  };
+
+  /** Resolves one exact leaf destructured from a direct gt-vue namespace. */
+  const readDestructuredGTBinding = (
+    binding: Binding,
+    declaration: t.VariableDeclarator,
+    state: DerivedGTState
+  ): string | undefined => {
+    if (
+      declaration.id.type !== 'ObjectPattern' ||
+      declaration.id.properties.some(
+        (property) => property.type === 'RestElement'
+      )
+    ) {
+      return undefined;
+    }
+    const property = declaration.id.properties.find(
+      (candidate): candidate is t.ObjectProperty =>
+        candidate.type === 'ObjectProperty' &&
+        !candidate.computed &&
+        candidate.value.type === 'Identifier' &&
+        candidate.value === binding.identifier
+    );
+    const exportName = property ? readStaticObjectKey(property) : undefined;
+    if (
+      !exportName ||
+      !knownExternalExport(
+        'gt-vue',
+        exportName,
+        options.recognizeAllGTRuntimeExports === true
+      )
+    ) {
+      return undefined;
+    }
+
+    const namespace = unwrapLocalExpression(declaration.init);
+    if (!namespace || namespace.type !== 'Identifier') return undefined;
+    const namespaceBinding = readNodePath(
+      state.record,
+      namespace
+    )?.scope.getBinding(namespace.name);
+    const imported = namespaceBinding
+      ? state.record.imports.get(namespaceBinding.identifier.name)
+      : undefined;
+    return namespaceBinding?.kind === 'module' &&
+      namespaceBinding.constant &&
+      imported?.source === 'gt-vue' &&
+      imported.importedName === '*' &&
+      !namespaceMemberIsWritten(namespaceBinding, exportName)
+      ? exportName
+      : undefined;
+  };
+
+  /** Resolves a direct gt-vue value, including immutable local aliases. */
+  const readDirectGT = (
+    node: t.Node | null | undefined,
+    state: DerivedGTState
+  ): string | '*' | undefined => {
+    const expression = unwrapLocalExpression(node);
+    if (!expression || state.nodes.has(expression)) return undefined;
+    const next = { ...state, nodes: new Set(state.nodes).add(expression) };
+    if (expression.type === 'Identifier') {
+      const binding = readNodePath(state.record, expression)?.scope.getBinding(
+        expression.name
+      );
+      return binding ? readDerivedGTBinding(binding, next) : undefined;
+    }
+    if (
+      expression.type !== 'MemberExpression' &&
+      expression.type !== 'OptionalMemberExpression'
+    ) {
+      return undefined;
+    }
+    const property = readStaticMemberName(expression);
+    const object = unwrapLocalExpression(expression.object);
+    if (!property || object?.type !== 'Identifier') return undefined;
+    const binding = readNodePath(state.record, object)?.scope.getBinding(
+      object.name
+    );
+    if (!binding || binding.kind !== 'module' || !binding.constant) {
+      return undefined;
+    }
+    const imported = state.record.imports.get(binding.identifier.name);
+    if (!imported || imported.importedName !== '*') return undefined;
+    if (namespaceMemberIsWritten(binding, property)) return undefined;
+    if (imported.source === 'gt-vue') {
+      return knownExternalExport(
+        imported.source,
+        property,
+        options.recognizeAllGTRuntimeExports === true
+      )
+        ? property
+        : undefined;
+    }
+    const modulePath = resolveModule(state.record.filePath, imported.source);
+    return modulePath && isProjectModule(modulePath)
+      ? readGTExportName(
+          resolveExportInternal(modulePath, property, state.resolutions),
+          state.resolutions,
+          state.allowNamespaceContainers
+        )
+      : undefined;
+  };
+
+  /** Recognizes only explicit aliases and Vue component wrapper forms. */
+  const readDerivedGT = (
+    node: t.Node | null | undefined,
+    state: DerivedGTState
+  ): string | '*' | undefined => {
+    const direct = readDirectGT(node, state);
+    if (direct) return direct;
+    const expression = unwrapLocalExpression(node);
+    if (!expression || state.nodes.has(expression)) return undefined;
+    const next = { ...state, nodes: new Set(state.nodes).add(expression) };
+    if (
+      expression.type === 'ArrowFunctionExpression' ||
+      expression.type === 'FunctionExpression' ||
+      expression.type === 'FunctionDeclaration' ||
+      expression.type === 'ObjectMethod'
+    ) {
+      return readFunctionRenderedGT(expression, next);
+    }
+    if (expression.type === 'ObjectExpression') {
+      return readComponentObjectGT(expression, next);
+    }
+    if (
+      (expression.type === 'CallExpression' ||
+        expression.type === 'OptionalCallExpression') &&
+      isVueHelper(expression.callee, state, 'defineComponent')
+    ) {
+      const component = expression.arguments[0];
+      return component &&
+        component.type !== 'SpreadElement' &&
+        component.type !== 'ArgumentPlaceholder'
+        ? readDerivedGT(component, next)
+        : undefined;
+    }
+    return readRenderedGT(expression, state);
+  };
+
+  /** Checks only return values owned by the wrapper function itself. */
+  const readFunctionRenderedGT = (
+    fn: t.Function,
+    state: DerivedGTState
+  ): string | '*' | undefined => {
+    if (
+      fn.type === 'ArrowFunctionExpression' &&
+      fn.body.type !== 'BlockStatement'
+    ) {
+      return readRenderedGT(fn.body, state);
+    }
+    const functionPath = readNodePath(state.record, fn);
+    if (!functionPath) return undefined;
+    let result: string | '*' | undefined;
+    functionPath.traverse({
+      ReturnStatement(returnPath) {
+        if (result || returnPath.getFunctionParent()?.node !== fn) return;
+        result = readRenderedGT(returnPath.node.argument, state);
+      },
+    });
+    return result;
+  };
+
+  /** Checks the two component options that can directly produce rendered output. */
+  const readComponentObjectGT = (
+    object: t.ObjectExpression,
+    state: DerivedGTState
+  ): string | '*' | undefined => {
+    for (const property of object.properties) {
+      if (property.type === 'SpreadElement') continue;
+      const name = readStaticObjectKey(property);
+      if (name !== 'render' && name !== 'setup') continue;
+      const value =
+        property.type === 'ObjectProperty' ? property.value : property;
+      const result = readDerivedGT(value, state);
+      if (result) return result;
+    }
+    return undefined;
+  };
+
+  /** Recognizes GT only in returned JSX or the h/createVNode component slot. */
+  const readRenderedGT = (
+    node: t.Node | null | undefined,
+    state: DerivedGTState
+  ): string | '*' | undefined => {
+    const expression = unwrapLocalExpression(node);
+    if (!expression || state.nodes.has(expression)) return undefined;
+    const next = { ...state, nodes: new Set(state.nodes).add(expression) };
+    if (
+      expression.type === 'ArrowFunctionExpression' ||
+      expression.type === 'FunctionExpression'
+    ) {
+      return readFunctionRenderedGT(expression, next);
+    }
+    if (expression.type === 'JSXElement') {
+      const component = readJSXComponentGT(
+        expression.openingElement.name,
+        next
+      );
+      if (component) return component;
+      for (const child of expression.children) {
+        const value =
+          child.type === 'JSXExpressionContainer'
+            ? child.expression.type === 'JSXEmptyExpression'
+              ? undefined
+              : child.expression
+            : child;
+        const result = readRenderedGT(value, next);
+        if (result) return result;
+      }
+      return undefined;
+    }
+    if (expression.type === 'JSXFragment') {
+      for (const child of expression.children) {
+        const value =
+          child.type === 'JSXExpressionContainer'
+            ? child.expression.type === 'JSXEmptyExpression'
+              ? undefined
+              : child.expression
+            : child;
+        const result = readRenderedGT(value, next);
+        if (result) return result;
+      }
+      return undefined;
+    }
+    if (expression.type === 'ConditionalExpression') {
+      return (
+        readRenderedGT(expression.consequent, next) ??
+        readRenderedGT(expression.alternate, next)
+      );
+    }
+    if (expression.type === 'LogicalExpression') {
+      return (
+        readRenderedGT(expression.left, next) ??
+        readRenderedGT(expression.right, next)
+      );
+    }
+    if (
+      (expression.type !== 'CallExpression' &&
+        expression.type !== 'OptionalCallExpression') ||
+      (!isVueHelper(expression.callee, state, 'h') &&
+        !isVueHelper(expression.callee, state, 'createVNode'))
+    ) {
+      return undefined;
+    }
+    const component = expression.arguments[0];
+    return component &&
+      component.type !== 'SpreadElement' &&
+      component.type !== 'ArgumentPlaceholder'
+      ? readDirectGT(component, next)
+      : undefined;
+  };
+
+  /** Resolves an imported GT component used as a JSX element name. */
+  const readJSXComponentGT = (
+    name: t.JSXIdentifier | t.JSXMemberExpression | t.JSXNamespacedName,
+    state: DerivedGTState
+  ): string | '*' | undefined => {
+    if (name.type === 'JSXMemberExpression') {
+      if (name.object.type !== 'JSXIdentifier') return undefined;
+      const binding = readNodePath(state.record, name.object)?.scope.getBinding(
+        name.object.name
+      );
+      if (!binding || binding.kind !== 'module' || !binding.constant) {
+        return undefined;
+      }
+      const imported = state.record.imports.get(binding.identifier.name);
+      if (!imported || imported.importedName !== '*') return undefined;
+      const property = name.property.name;
+      if (namespaceMemberIsWritten(binding, property)) return undefined;
+      if (imported.source === 'gt-vue') {
+        return knownExternalExport(
+          imported.source,
+          property,
+          options.recognizeAllGTRuntimeExports === true
+        )
+          ? property
+          : undefined;
+      }
+      const modulePath = resolveModule(state.record.filePath, imported.source);
+      return modulePath && isProjectModule(modulePath)
+        ? readGTExportName(
+            resolveExportInternal(modulePath, property, state.resolutions),
+            state.resolutions,
+            state.allowNamespaceContainers
+          )
+        : undefined;
+    }
+    if (name.type !== 'JSXIdentifier' || /^[a-z]/.test(name.name)) return;
+    const binding = readNodePath(state.record, name)?.scope.getBinding(
+      name.name
+    );
+    return binding ? readDerivedGTBinding(binding, state) : undefined;
+  };
+
+  /** Matches a direct or namespace ESM import from Vue without evaluating calls. */
+  const isVueHelper = (
+    node: t.Node,
+    state: DerivedGTState,
+    exportName: 'createVNode' | 'defineComponent' | 'h'
+  ): boolean => {
+    const expression = unwrapLocalExpression(node);
+    if (!expression) return false;
+    const identifier =
+      expression.type === 'Identifier'
+        ? expression
+        : (expression.type === 'MemberExpression' ||
+              expression.type === 'OptionalMemberExpression') &&
+            readStaticMemberName(expression) === exportName
+          ? unwrapLocalExpression(expression.object)
+          : undefined;
+    if (!identifier || identifier.type !== 'Identifier') return false;
+    const binding = readNodePath(state.record, identifier)?.scope.getBinding(
+      identifier.name
+    );
+    const imported =
+      binding?.kind === 'module'
+        ? state.record.imports.get(binding.identifier.name)
+        : undefined;
+    const expectedImport = expression.type === 'Identifier' ? exportName : '*';
+    return (
+      binding?.constant === true &&
+      imported?.source === 'vue' &&
+      imported.importedName === expectedImport &&
+      (expectedImport !== '*' || !namespaceMemberIsWritten(binding, exportName))
+    );
+  };
+
+  const readStaticMemberName = (
+    member: t.MemberExpression | t.OptionalMemberExpression
+  ): string | undefined => {
+    if (!member.computed && member.property.type === 'Identifier') {
+      return member.property.name;
+    }
+    return member.computed && member.property.type === 'StringLiteral'
+      ? member.property.value
+      : undefined;
+  };
+
+  const readStaticObjectKey = (property: {
+    computed?: boolean;
+    key?: t.Node;
+  }): string | undefined => {
+    if (!property.key) return undefined;
+    if (!property.computed && property.key.type === 'Identifier') {
+      return property.key.name;
+    }
+    return property.key.type === 'StringLiteral'
+      ? property.key.value
       : undefined;
   };
 
@@ -725,8 +1207,19 @@ export function createLocalModuleResolver(
     );
   };
 
+  const getGTExportName = (
+    filePath: string,
+    exportName: string
+  ): string | '*' | undefined => {
+    const resolution = resolveExportInternal(filePath, exportName, new Set());
+    return resolution.status === 'resolved'
+      ? readGTExportName(resolution, new Set(), false)
+      : undefined;
+  };
+
   return {
     getRecord,
+    getGTExportName,
     hasCustomResolver: resolveModuleOption !== undefined,
     hasGTExportReference,
     isProjectModule,
@@ -734,6 +1227,26 @@ export function createLocalModuleResolver(
     resolveExport,
     resolveModule,
   };
+}
+
+/** Removes syntax-only wrappers without importing the compiler-facing utilities. */
+function unwrapLocalExpression(
+  input: t.Node | null | undefined
+): t.Node | undefined {
+  let current = input ?? undefined;
+  while (
+    current &&
+    (current.type === 'TSAsExpression' ||
+      current.type === 'TSTypeAssertion' ||
+      current.type === 'TSNonNullExpression' ||
+      current.type === 'TSSatisfiesExpression' ||
+      current.type === 'TSInstantiationExpression' ||
+      current.type === 'TypeCastExpression' ||
+      current.type === 'ParenthesizedExpression')
+  ) {
+    current = current.expression;
+  }
+  return current;
 }
 
 /** Deduplicates recovered graph targets without discarding their identities. */

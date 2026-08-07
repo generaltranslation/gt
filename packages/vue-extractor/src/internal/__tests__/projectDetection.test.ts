@@ -383,6 +383,10 @@ import { WrapperT } from '@fixture/root-vue-wrapper';
         }),
         'packages/vue-wrapper/index.js':
           "export { T as WrapperT } from 'gt-vue';\n",
+        'src/App.ts': `
+          import { WrapperT } from '@fixture/vue-wrapper';
+          void WrapperT;
+        `,
       });
       linkWorkspaceBinding(
         root,
@@ -415,6 +419,10 @@ import { WrapperT } from '@fixture/root-vue-wrapper';
       }),
       'packages/vue-wrapper/src/runtime.ts':
         "export { createGT } from 'gt-vue';\n",
+      'src/App.ts': `
+        import { createGT } from '@fixture/vue-wrapper/runtime';
+        void createGT;
+      `,
     });
     linkWorkspaceBinding(
       root,
@@ -491,8 +499,9 @@ import { WrapperT } from '@fixture/root-vue-wrapper';
         version: '1.0.0',
         devDependencies: { wrapper: 'workspace:*' },
       }),
-      'packages/middle/src/App.vue': translatableSfc(
-        'Development consumer message'
+      'packages/middle/src/App.vue': wrapperSfc(
+        'Development consumer message',
+        'wrapper'
       ),
     });
     linkWorkspaceBinding(root, '', 'middle', 'packages/middle');
@@ -635,16 +644,14 @@ import { WrapperT } from '@fixture/vue-wrapper';
           name: '@fixture/docs',
           dependencies: { '@fixture/vue-wrapper': specifier },
         }),
-        'apps/docs/src/App.vue': translatableSfc('Compatible wrapper version'),
+        'apps/docs/src/App.vue': wrapperSfc('Compatible wrapper version'),
       });
-      if (!specifier.startsWith('workspace:')) {
-        linkWorkspaceBinding(
-          root,
-          'apps/docs',
-          '@fixture/vue-wrapper',
-          'packages/vue-wrapper'
-        );
-      }
+      linkWorkspaceBinding(
+        root,
+        'apps/docs',
+        '@fixture/vue-wrapper',
+        'packages/vue-wrapper'
+      );
       linkInstalledVue(root);
 
       const output = await extractFromVueProject({ cwd: root });
@@ -720,9 +727,9 @@ import { WrapperT } from '@fixture/vue-wrapper';
           name: '@fixture/docs',
           dependencies: { '@fixture/vue-wrapper': specifier },
         }),
-        'apps/docs/src/App.vue': translatableSfc('Prerelease wrapper message'),
+        'apps/docs/src/App.vue': wrapperSfc('Prerelease wrapper message'),
       });
-      if (!specifier.startsWith('workspace:')) {
+      if (selected) {
         linkWorkspaceBinding(
           root,
           'apps/docs',
@@ -918,8 +925,16 @@ import { WrapperT } from '${bindingName}';
           name: '@fixture/docs',
           dependencies: { '@fixture/vue-wrapper': specifier },
         }),
-        'apps/docs/src/App.vue': translatableSfc('Path-selected wrapper'),
+        'apps/docs/src/App.vue': wrapperSfc('Path-selected wrapper'),
       });
+      if (selected) {
+        linkWorkspaceBinding(
+          root,
+          'apps/docs',
+          '@fixture/vue-wrapper',
+          'packages/vue-wrapper'
+        );
+      }
       linkInstalledVue(root);
 
       const output = await extractFromVueProject({ cwd: root });
@@ -1326,6 +1341,14 @@ function createFixture(files: Record<string, string>): string {
   const root = createProjectFixture(files);
   temporaryDirectories.push(root);
   return root;
+}
+
+function wrapperSfc(message: string, source = '@fixture/vue-wrapper'): string {
+  return `<script setup lang="ts">
+import { WrapperT } from '${source}';
+</script>
+<template><WrapperT>${message}</WrapperT></template>
+`;
 }
 
 function linkWorkspaceBinding(
