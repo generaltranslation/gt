@@ -38,6 +38,11 @@ const react = (name, file, limit = '50 kB') =>
     ignore: reactPeerIgnore,
   });
 
+const vue = (name, file, limit = '15 kB') =>
+  entry(name, `packages/vue/dist/${file}.mjs`, limit, {
+    ignore: ['vue'],
+  });
+
 const reactNode = (name, file, limit = '50 kB') =>
   nodeEntry(name, `packages/react/dist/${file}.mjs`, limit, {
     ignore: reactPeerIgnore,
@@ -91,6 +96,8 @@ module.exports = [
   i18n('gt-i18n', 'index'),
   i18n('gt-i18n/types', 'types'),
   i18n('gt-i18n/internal', 'internal'),
+  i18n('gt-i18n/internal/cookies', 'internal-cookies'),
+  i18n('gt-i18n/internal/string', 'internal-string'),
   i18n('gt-i18n/internal/types', 'internal-types'),
 
   reactCore('@generaltranslation/react-core/pure', 'pure'),
@@ -102,6 +109,8 @@ module.exports = [
   reactNode('gt-react (rsc)', 'index.rsc'),
   reactNode('gt-react (server)', 'index.server', '55 kB'),
   react('gt-react/macros', 'macros'),
+
+  vue('gt-vue', 'index'),
 
   next('gt-next (client)', 'index.client', '75 kB'),
   nextNode('gt-next (rsc)', 'index.rsc', '85 kB'),

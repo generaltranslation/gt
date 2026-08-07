@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { msg } from '../msg';
 import { decodeMsg } from '../decodeMsg';
+import { decodeOptions } from '../decodeOptions';
 import { derive, declareVar } from 'generaltranslation/internal';
 import type { RegisterableMessages } from '../../types/message';
 
@@ -15,6 +16,20 @@ describe('msg function integration', () => {
     const result = msg('Hello {name}', { name: 'World' });
     const decoded = decodeMsg(result);
     expect(decoded).toBe('Hello World');
+  });
+
+  it('preserves literal braces for STRING messages', () => {
+    const result = msg('Hello {name}', {
+      $context: 'literal example',
+      $format: 'STRING',
+    });
+
+    expect(decodeMsg(result)).toBe('Hello {name}');
+    expect(decodeOptions(result)).toMatchObject({
+      $context: 'literal example',
+      $format: 'STRING',
+      $_source: 'Hello {name}',
+    });
   });
 
   it('should not format variables in quoted text', () => {
