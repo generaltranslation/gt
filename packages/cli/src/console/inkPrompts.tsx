@@ -114,7 +114,8 @@ function LocalePrompt({
   const [error, setError] = useState<string | undefined>();
   const filteredOptions = getFilteredLocaleOptions(query);
   const activeIndex = getSafeIndex(index, filteredOptions.length);
-  const visibleCount = getVisibleCount(rows, 14);
+  const showRemaining = rows >= 16 && !error;
+  const visibleCount = getVisibleCount(rows, rows < 16 ? 12 : 14);
   const { start, visibleItems: visibleOptions } = getScrollWindow({
     items: filteredOptions,
     index: activeIndex,
@@ -181,7 +182,12 @@ function LocalePrompt({
         activeIndex={activeIndex - start}
         width={optionWidth}
       />
-      <RemainingMatches total={filteredOptions.length} visible={visibleCount} />
+      {showRemaining ? (
+        <RemainingMatches
+          total={filteredOptions.length}
+          visible={visibleCount}
+        />
+      ) : null}
       {error ? <Text color='red'>{error}</Text> : null}
     </PromptFrame>
   );
@@ -204,7 +210,11 @@ function LocaleMultiPrompt({
     (option) => !selected.has(option.code)
   );
   const activeOptionIndex = getSafeIndex(index, filteredOptions.length);
-  const visibleCount = getVisibleCount(rows, 16);
+  const showRemaining = rows >= 16 && !error;
+  const visibleCount = getVisibleCount(
+    rows,
+    rows < 16 ? 13 : selectedLocales.length > 0 ? 16 : 15
+  );
   const { start, visibleItems: visibleOptions } = getScrollWindow({
     items: filteredOptions,
     index: activeOptionIndex,
@@ -346,7 +356,7 @@ function LocaleMultiPrompt({
         width={inputWidth}
         placeholder='Search locales...'
       />
-      <Box marginTop={1}>
+      <Box marginTop={selectedLocales.length > 0 ? 1 : 0}>
         <SelectedTags
           selectedLocales={selectedLocales}
           active={index === SELECTED_TAG_ROW_INDEX}
@@ -363,7 +373,12 @@ function LocaleMultiPrompt({
         }
         width={optionWidth}
       />
-      <RemainingMatches total={filteredOptions.length} visible={visibleCount} />
+      {showRemaining ? (
+        <RemainingMatches
+          total={filteredOptions.length}
+          visible={visibleCount}
+        />
+      ) : null}
       {error ? <Text color='red'>{error}</Text> : null}
     </PromptFrame>
   );
