@@ -9,19 +9,25 @@ import type {
 const mocks = vi.hoisted(() => ({
   createInlineUpdates: vi.fn(),
   createPythonInlineUpdates: vi.fn(),
-  detectVueProject: vi.fn(),
   extractFromVueProject: vi.fn(),
+  mergeVueProjectExtraction: vi.fn(),
+  inspectVueProject: vi.fn(),
+  readVueSfcExclusionPatterns: vi.fn(),
   projectModuleLoads: 0,
-}));
-
-vi.mock('@generaltranslation/vue-extractor/detect', () => ({
-  detectVueProject: mocks.detectVueProject,
 }));
 
 vi.mock('@generaltranslation/vue-extractor/project', () => {
   mocks.projectModuleLoads += 1;
-  return { extractFromVueProject: mocks.extractFromVueProject };
+  return {
+    extractFromVueProject: mocks.extractFromVueProject,
+    mergeVueProjectExtraction: mocks.mergeVueProjectExtraction,
+  };
 });
+
+vi.mock('@generaltranslation/vue-extractor/inspect', () => ({
+  inspectVueProject: mocks.inspectVueProject,
+  readVueSfcExclusionPatterns: mocks.readVueSfcExclusionPatterns,
+}));
 
 vi.mock('../../react/parse/createInlineUpdates.js', () => ({
   createInlineUpdates: mocks.createInlineUpdates,
@@ -61,7 +67,17 @@ function update(
 describe('extractInlineFromProject', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.detectVueProject.mockReturnValue(false);
+    mocks.readVueSfcExclusionPatterns.mockReturnValue([]);
+    mocks.inspectVueProject.mockReturnValue({
+      projectRoot: '/fixture',
+      rootOwnsVue: false,
+      hasVueScopes: false,
+    });
+    mocks.mergeVueProjectExtraction.mockImplementation((primary, vue) => ({
+      updates: [...primary.updates, ...vue.updates],
+      errors: [...primary.errors, ...vue.errors],
+      warnings: [...new Set([...primary.warnings, ...vue.warnings])],
+    }));
   });
 
   it('does not load or call the Vue project extractor when Vue is absent', async () => {
@@ -88,6 +104,7 @@ describe('extractInlineFromProject', () => {
       parsingFlags,
       parsingOptions
     );
+    expect(mocks.inspectVueProject).toHaveBeenCalledOnce();
     expect(mocks.projectModuleLoads).toBe(0);
     expect(mocks.extractFromVueProject).not.toHaveBeenCalled();
   });
@@ -156,8 +173,13 @@ describe('extractInlineFromProject', () => {
     }
   );
 
-  it('keeps explicit patterns intact for Vue and excludes only .vue from the legacy parser', async () => {
-    mocks.detectVueProject.mockReturnValue(true);
+  it('partitions explicit SFCs owned by a discovered Vue scope', async () => {
+    mocks.readVueSfcExclusionPatterns.mockReturnValue(['!src/App.vue']);
+    mocks.inspectVueProject.mockReturnValue({
+      projectRoot: '/fixture',
+      rootOwnsVue: true,
+      hasVueScopes: true,
+    });
     mocks.createInlineUpdates.mockResolvedValue({
       updates: [update('Primary', 'primary-hash', ['src/App.tsx'])],
       errors: [],
@@ -180,12 +202,17 @@ describe('extractInlineFromProject', () => {
     expect(mocks.createInlineUpdates).toHaveBeenCalledWith(
       Libraries.GT_REACT,
       true,
-      [...patterns, '!**/*.vue'],
+      [...patterns, '!src/App.vue'],
       parsingFlags,
       parsingOptions
     );
     expect(mocks.extractFromVueProject).toHaveBeenCalledWith({
       filePatterns: patterns,
+      inspection: {
+        projectRoot: '/fixture',
+        rootOwnsVue: true,
+        hasVueScopes: true,
+      },
       includeSourceCodeContext: true,
       conditionNames: parsingOptions.conditionNames,
       vueCompilerOptions: parsingFlags.vueCompilerOptions,
@@ -197,8 +224,50 @@ describe('extractInlineFromProject', () => {
     ]);
   });
 
+  it('preserves exact historical patterns for descendant-only Vue scopes', async () => {
+    const inspection = {
+      projectRoot: '/fixture',
+      rootOwnsVue: false,
+      hasVueScopes: true,
+    } as const;
+    mocks.inspectVueProject.mockReturnValue(inspection);
+    mocks.createInlineUpdates.mockResolvedValue({
+      updates: [update('Legacy React', 'react-hash', ['src/Legacy.vue'])],
+      errors: [],
+      warnings: [],
+    });
+    mocks.extractFromVueProject.mockResolvedValue({
+      updates: [update('Child Vue', 'vue-hash', ['apps/vue/App.vue'])],
+      errors: [],
+      warnings: [],
+    });
+
+    await extractInlineFromProject(
+      Libraries.GT_REACT,
+      false,
+      patterns,
+      parsingFlags,
+      parsingOptions
+    );
+
+    expect(mocks.createInlineUpdates).toHaveBeenCalledWith(
+      Libraries.GT_REACT,
+      false,
+      patterns,
+      parsingFlags,
+      parsingOptions
+    );
+    expect(mocks.extractFromVueProject).toHaveBeenCalledWith(
+      expect.objectContaining({ filePatterns: patterns, inspection })
+    );
+  });
+
   it('appends Vue results while preserving primary ordering and combining diagnostics', async () => {
-    mocks.detectVueProject.mockReturnValue(true);
+    mocks.inspectVueProject.mockReturnValue({
+      projectRoot: '/fixture',
+      rootOwnsVue: true,
+      hasVueScopes: true,
+    });
     const primaryUpdate = update('Primary', 'primary-hash', ['primary.tsx']);
     const vueUpdate = update('Vue', 'vue-hash', ['component.vue']);
     mocks.createInlineUpdates.mockResolvedValue({
@@ -234,38 +303,10 @@ describe('extractInlineFromProject', () => {
       'primary warning',
       'vue warning',
     ]);
-  });
-
-  it('deduplicates mixed hash collisions and merges their file paths', async () => {
-    mocks.detectVueProject.mockReturnValue(true);
-    const primaryUpdate = update('Shared', 'shared-hash', ['primary.tsx']);
-    mocks.createInlineUpdates.mockResolvedValue({
-      updates: [primaryUpdate],
-      errors: [],
-      warnings: [],
-    });
-    mocks.extractFromVueProject.mockResolvedValue({
-      updates: [
-        update('Shared', 'shared-hash', ['component.vue', 'primary.tsx']),
-      ],
-      errors: [],
-      warnings: [],
-    });
-
-    const result = await extractInlineFromProject(
-      Libraries.GT_REACT,
-      false,
-      undefined,
-      parsingFlags,
-      parsingOptions
+    expect(mocks.mergeVueProjectExtraction).toHaveBeenCalledWith(
+      expect.objectContaining({ updates: [primaryUpdate] }),
+      expect.objectContaining({ updates: [vueUpdate] })
     );
-
-    expect(result.updates).toHaveLength(1);
-    expect(result.updates[0]).toBe(primaryUpdate);
-    expect(result.updates[0].metadata.filePaths).toEqual([
-      'primary.tsx',
-      'component.vue',
-    ]);
   });
 
   it('uses only the package project API for a Vue-primary project', async () => {
@@ -284,7 +325,6 @@ describe('extractInlineFromProject', () => {
       parsingOptions
     );
 
-    expect(mocks.detectVueProject).not.toHaveBeenCalled();
     expect(mocks.createInlineUpdates).not.toHaveBeenCalled();
     expect(mocks.createPythonInlineUpdates).not.toHaveBeenCalled();
     expect(mocks.extractFromVueProject).toHaveBeenCalledOnce();

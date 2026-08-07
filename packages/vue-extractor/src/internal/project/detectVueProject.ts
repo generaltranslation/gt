@@ -1,15 +1,30 @@
-import { discoverVueProject } from './scopes.js';
+import path from 'node:path';
+import {
+  declaresAvailableJavaScriptDependency,
+  GT_VUE_PACKAGE,
+  readJavaScriptPackageManifest,
+} from './manifest.js';
 
 /**
- * Returns whether a project root owns or contains a declared gt-vue app.
+ * Returns whether the current package directly owns a declared gt-vue app.
  *
- * Detection is read-only, synchronous, and fail-safe. It loads no Vue compiler
- * or source parser, making it safe for a host CLI to call before selecting a
- * framework-specific command surface.
+ * Workspace descendants cannot change the root CLI mode. Detection is
+ * read-only, synchronous, and fail-safe, and it loads no Vue compiler, source
+ * parser, workspace globber, or project configuration.
  */
 export function detectVueProject(cwd: string = process.cwd()): boolean {
   try {
-    return discoverVueProject(cwd).scopes.length > 0;
+    const manifest = readJavaScriptPackageManifest(
+      path.join(path.resolve(cwd), 'package.json')
+    );
+    return Boolean(
+      manifest &&
+      declaresAvailableJavaScriptDependency(
+        manifest,
+        GT_VUE_PACKAGE,
+        path.resolve(cwd)
+      )
+    );
   } catch {
     return false;
   }

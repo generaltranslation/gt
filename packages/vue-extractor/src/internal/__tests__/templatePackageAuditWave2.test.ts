@@ -700,7 +700,7 @@ describe('template/package audit wave 2: metadata and public boundary', () => {
     expect(resolveVueCompilerOptions).toBeTypeOf('function');
   });
 
-  it('declares root, config, and types package exports', () => {
+  it('declares every public package export', () => {
     const packageRoot = path.resolve(__dirname, '../../..');
     const packageJson = JSON.parse(
       fs.readFileSync(path.join(packageRoot, 'package.json'), 'utf8')
@@ -710,6 +710,7 @@ describe('template/package audit wave 2: metadata and public boundary', () => {
       '.',
       './config',
       './detect',
+      './inspect',
       './project',
       './types',
     ]);

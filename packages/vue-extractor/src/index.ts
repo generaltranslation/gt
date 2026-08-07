@@ -9,5 +9,6 @@ export type {
   VueProjectExtractionOptions,
   VueProjectExtractionOutput,
   VueProjectExtractionResult,
+  VueProjectInspection,
   VueSourceCode,
 } from './types.js';

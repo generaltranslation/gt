@@ -6,8 +6,11 @@
  * diagnostics so callers do not need any Vue-specific orchestration.
  */
 export { extractFromVueProject } from './internal/project/extractFromVueProject.js';
+export { mergeVueProjectExtraction } from './internal/project/mergeVueProjectExtraction.js';
 export type {
   VueProjectExtractionOptions,
+  VueProjectInspection,
   VueProjectExtractionOutput,
   VueProjectExtractionResult,
 } from './types.js';
+export type { InlineExtractionOutput } from './internal/project/mergeVueProjectExtraction.js';

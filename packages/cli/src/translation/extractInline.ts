@@ -1,4 +1,3 @@
-import { detectVueProject } from '@generaltranslation/vue-extractor/detect';
 import type { Updates } from '../types/index.js';
 import type { GTParsingFlags, ParsingConfigOptions } from '../types/parsing.js';
 import {
@@ -6,9 +5,12 @@ import {
   Libraries,
   type InlineLibrary,
 } from '../types/libraries.js';
-import { dedupeUpdates } from '../extraction/postProcess.js';
 import { createPythonInlineUpdates } from '../python/parse/createPythonInlineUpdates.js';
 import { createInlineUpdates } from '../react/parse/createInlineUpdates.js';
+import type {
+  VueProjectExtractionOutput,
+  VueProjectInspection,
+} from '@generaltranslation/vue-extractor/types';
 
 type InlineExtractionOutput = {
   updates: Updates;
@@ -34,9 +36,15 @@ export async function extractInlineFromProject(
     return extractVueProject(filePatterns, parsingFlags, parsingOptions);
   }
 
-  const includesVue = detectVueProject();
+  const inspection = await inspectVueProject();
+  const vueSfcExclusions =
+    filePatterns && inspection.hasVueScopes
+      ? await readVueSfcExclusionPatterns(inspection, filePatterns)
+      : [];
   const primaryPatterns =
-    includesVue && filePatterns ? [...filePatterns, '!**/*.vue'] : filePatterns;
+    filePatterns && vueSfcExclusions.length > 0
+      ? [...filePatterns, ...vueSfcExclusions]
+      : filePatterns;
   const primary = isPythonLibrary(pkg)
     ? await createPythonInlineUpdates(primaryPatterns)
     : await createInlineUpdates(
@@ -46,36 +54,52 @@ export async function extractInlineFromProject(
         parsingFlags,
         parsingOptions
       );
-  if (!includesVue) return primary;
+  if (!inspection.hasVueScopes) return primary;
 
   const vue = await extractVueProject(
     filePatterns,
     parsingFlags,
-    parsingOptions
+    parsingOptions,
+    inspection
   );
-  const updates: Updates = [...primary.updates, ...vue.updates];
-  dedupeUpdates(updates);
-  return {
-    updates,
-    errors: [...primary.errors, ...vue.errors],
-    warnings: [...new Set([...primary.warnings, ...vue.warnings])],
-  };
+  const { mergeVueProjectExtraction } =
+    await import('@generaltranslation/vue-extractor/project');
+  return mergeVueProjectExtraction(primary, vue);
 }
 
 /** Loads the heavy Vue graph only after lightweight ownership detection. */
 async function extractVueProject(
   filePatterns: string[] | undefined,
   parsingFlags: GTParsingFlags,
-  parsingOptions: ParsingConfigOptions
-): Promise<InlineExtractionOutput> {
+  parsingOptions: ParsingConfigOptions,
+  inspection?: VueProjectInspection
+): Promise<VueProjectExtractionOutput> {
   const { extractFromVueProject } =
     await import('@generaltranslation/vue-extractor/project');
   const output = await extractFromVueProject({
     filePatterns,
+    inspection,
     includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
     conditionNames: parsingOptions.conditionNames,
     vueCompilerOptions: parsingFlags.vueCompilerOptions,
     viteConfigPath: parsingFlags.viteConfigPath,
   });
-  return { ...output, updates: output.updates as Updates };
+  return output;
+}
+
+/** Loads workspace inspection without loading the Vue source parser. */
+async function inspectVueProject(): Promise<VueProjectInspection> {
+  const { inspectVueProject: inspect } =
+    await import('@generaltranslation/vue-extractor/inspect');
+  return inspect();
+}
+
+/** Lets the package distinguish Vue SFCs from legacy JSX `.vue` modules. */
+async function readVueSfcExclusionPatterns(
+  inspection: VueProjectInspection,
+  filePatterns: readonly string[]
+): Promise<string[]> {
+  const { readVueSfcExclusionPatterns: readExclusions } =
+    await import('@generaltranslation/vue-extractor/inspect');
+  return readExclusions(inspection, filePatterns);
 }

@@ -44,6 +44,10 @@
       "import": "./dist/detect.js",
       "types": "./dist/detect.d.ts"
     },
+    "./inspect": {
+      "import": "./dist/inspect.js",
+      "types": "./dist/inspect.d.ts"
+    },
     "./project": {
       "import": "./dist/project.js",
       "types": "./dist/project.d.ts"
@@ -76,12 +80,14 @@
     "es-module-lexer": "^2.3.1",
     "fast-glob": "^3.3.3",
     "generaltranslation": "workspace:*",
+    "semver": "^7.8.5",
     "tsconfig-paths": "^4.2.0",
     "yaml": "^2.8.0"
   },
   "devDependencies": {
     "@types/babel__traverse": "^7.20.6",
     "@types/node": "catalog:",
+    "@types/semver": "^7.7.1",
     "@vue/compiler-dom": "^3.5.0",
     "@vue/compiler-sfc": "^3.5.0",
     "tsdown": "catalog:",

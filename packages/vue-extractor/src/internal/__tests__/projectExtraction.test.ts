@@ -61,6 +61,71 @@ describe('extractFromVueProject', () => {
     ]);
   });
 
+  it('ignores a script module explicitly selected with a .vue filename', async () => {
+    const root = createVueFixture({
+      'src/Legacy.vue': `
+        import { T } from 'gt-react';
+        export const legacy = <T>Legacy React module</T>;
+      `,
+    });
+
+    await expect(
+      extractFromVueProject({
+        cwd: root,
+        filePatterns: ['src/Legacy.vue'],
+      })
+    ).resolves.toEqual({ updates: [], errors: [], warnings: [] });
+  });
+
+  it('extracts an SFC whose standard blocks follow a custom block', async () => {
+    const root = createVueFixture({
+      'src/Localized.vue': `<i18n lang="json">
+{"en":{"title":"Localized"}}
+</i18n>
+${translatableSfc('Message after custom block')}`,
+    });
+
+    const output = await extractFromVueProject({ cwd: root });
+
+    expect(output.errors).toEqual([]);
+    expect(output.updates.map(({ source }) => source)).toEqual([
+      'Message after custom block',
+    ]);
+  });
+
+  it.each([
+    ['block comment', '/* Copyright Fixture */'],
+    ['line comment', '// Copyright Fixture'],
+    ['doctype', '<!DOCTYPE html>'],
+    ['plain text', 'Copyright Fixture'],
+    ['markdown frontmatter', '---\ntitle: Fixture\n---'],
+    ['shebang', '#!/usr/bin/env vue'],
+  ])('extracts an SFC after a leading %s', async (_name, prelude) => {
+    const root = createVueFixture({
+      'src/App.vue': `${prelude}\n${translatableSfc('Message after prelude')}`,
+    });
+
+    const output = await extractFromVueProject({ cwd: root });
+
+    expect(output.errors).toEqual([]);
+    expect(output.updates.map(({ source }) => source)).toEqual([
+      'Message after prelude',
+    ]);
+  });
+
+  it('extracts an SFC after a same-line text prefix', async () => {
+    const root = createVueFixture({
+      'src/App.vue': `Copyright Fixture ${translatableSfc('Same-line prefix')}`,
+    });
+
+    const output = await extractFromVueProject({ cwd: root });
+
+    expect(output.errors).toEqual([]);
+    expect(output.updates.map(({ source }) => source)).toEqual([
+      'Same-line prefix',
+    ]);
+  });
+
   it('uses the nearest nested package config for explicitly matched sources', async () => {
     const root = createVueFixture({
       'packages/docs/package.json': JSON.stringify({
@@ -367,6 +432,26 @@ const gt = useGT();
     expect(output.updates.map(({ source }) => source)).toEqual([
       'Selected central config',
     ]);
+  });
+
+  it('does not validate Vue config when explicit patterns match no Vue-owned files', async () => {
+    const root = createWorkspaceFixture({
+      'src/App.tsx': `
+        import { T } from 'gt-react';
+        export const App = () => <T>React only</T>;
+      `,
+      'vite.config.ts': `export default ({ mode }) => mode === 'test' ? {} : {};`,
+      'apps/vue/package.json': vuePackage('vue-app'),
+      'apps/vue/src/App.vue': translatableSfc('Unselected Vue app'),
+    });
+
+    await expect(
+      extractFromVueProject({
+        cwd: root,
+        filePatterns: ['src/App.tsx'],
+        viteConfigPath: 'vite.config.ts',
+      })
+    ).resolves.toEqual({ updates: [], errors: [], warnings: [] });
   });
 
   it('rejects a central explicit config that is ambiguous across matched apps', async () => {

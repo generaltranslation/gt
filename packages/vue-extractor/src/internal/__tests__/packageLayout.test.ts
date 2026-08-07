@@ -27,6 +27,7 @@ describe('@generaltranslation/vue-extractor package declarations', () => {
     const declarations = [
       'config.d.ts',
       'detect.d.ts',
+      'inspect.d.ts',
       'index.d.ts',
       'project.d.ts',
       'types.d.ts',

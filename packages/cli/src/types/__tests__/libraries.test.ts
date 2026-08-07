@@ -3,6 +3,7 @@ import {
   Libraries,
   isPythonLibrary,
   INLINE_LIBRARIES,
+  GT_LIBRARIES,
   GT_LIBRARIES_UPSTREAM,
   PYTHON_LIBRARIES,
 } from '../libraries.js';
@@ -49,5 +50,13 @@ describe('Python library types', () => {
     expect(PYTHON_LIBRARIES).toContain(Libraries.GT_FLASK);
     expect(PYTHON_LIBRARIES).toContain(Libraries.GT_FASTAPI);
     expect(PYTHON_LIBRARIES).toHaveLength(2);
+  });
+});
+
+describe('Vue library boundaries', () => {
+  it('supports Vue orchestration without trusting Vue-only imports in React parsing', () => {
+    expect(INLINE_LIBRARIES).toContain(Libraries.GT_VUE);
+    expect(GT_LIBRARIES).not.toContain(Libraries.GT_VUE);
+    expect(GT_LIBRARIES_UPSTREAM).not.toHaveProperty(Libraries.GT_VUE);
   });
 });

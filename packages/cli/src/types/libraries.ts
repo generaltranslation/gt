@@ -14,9 +14,7 @@ export enum Libraries {
   GT_FASTAPI = 'gt-fastapi',
 }
 
-/**
- * A list of all the libraries that support the CLI
- */
+/** Import sources trusted by the historical JavaScript/React parser. */
 export const GT_LIBRARIES = [
   Libraries.GT_REACT,
   Libraries.GT_NEXT,
@@ -25,7 +23,6 @@ export const GT_LIBRARIES = [
   Libraries.GT_I18N,
   Libraries.GT_REACT_CORE,
   Libraries.GT_TANSTACK_START,
-  Libraries.GT_VUE,
   Libraries.GT_FLASK,
   Libraries.GT_FASTAPI,
 ] as const;
@@ -83,9 +80,7 @@ export function isPythonLibrary(lib: string): lib is PythonLibrary {
   return (PYTHON_LIBRARIES as readonly string[]).includes(lib);
 }
 
-/**
- * A mapping of each library to their upstream dependencies for filtering imports
- */
+/** Historical parser import sources grouped by their upstream dependencies. */
 export const GT_LIBRARIES_UPSTREAM: Record<GTLibrary, GTLibrary[]> = {
   [Libraries.GT_NEXT]: [
     Libraries.GT_I18N,
@@ -114,7 +109,6 @@ export const GT_LIBRARIES_UPSTREAM: Record<GTLibrary, GTLibrary[]> = {
     Libraries.GT_TANSTACK_START,
   ],
   [Libraries.GT_I18N]: [Libraries.GT_I18N],
-  [Libraries.GT_VUE]: [Libraries.GT_VUE],
   [Libraries.GT_FLASK]: [Libraries.GT_FLASK],
   [Libraries.GT_FASTAPI]: [Libraries.GT_FASTAPI],
 } as const;

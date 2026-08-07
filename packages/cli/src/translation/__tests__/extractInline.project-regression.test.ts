@@ -9,7 +9,6 @@ import { createInlineUpdates } from '../../react/parse/createInlineUpdates.js';
 import { isInlineLibrary, Libraries } from '../../types/libraries.js';
 import type { ParsingConfigOptions } from '../../types/parsing.js';
 import { detectVueProject } from '@generaltranslation/vue-extractor/detect';
-import { logger } from '../../console/logger.js';
 import { extractInlineFromProject } from '../extractInline.js';
 
 const originalCwd = process.cwd();
@@ -81,7 +80,7 @@ describe('project-level Vue CLI regression boundary', () => {
     expect(sources(dispatched)).toEqual(['Pure React message']);
   });
 
-  it('keeps a React root primary and appends only its gt-vue-owned workspace', async () => {
+  it('appends only owned descendant Vue sources to the unchanged React scope', async () => {
     createVueFixture({
       'package.json': packageJson({
         private: true,
@@ -100,14 +99,14 @@ describe('project-level Vue CLI regression boundary', () => {
     const detection = determineLibrary();
 
     expect(detection.library).toBe(Libraries.GT_REACT);
-    expect(detectVueProject()).toBe(true);
+    expect(detectVueProject()).toBe(false);
 
     const output = await dispatchDetected(detection.library);
 
     expect(output.errors).toEqual([]);
-    expect(sources(output).sort()).toEqual([
-      'Owned Vue message',
+    expect(sources(output)).toEqual([
       'Root React message',
+      'Owned Vue message',
     ]);
   });
 
@@ -120,9 +119,27 @@ describe('project-level Vue CLI regression boundary', () => {
       'locales/en.json': JSON.stringify({ title: 'File-only title' }),
       'apps/react/package.json': packageJson({
         name: 'child-react',
-        dependencies: { 'gt-react': '*' },
+        dependencies: { 'gt-react': '*', 'gt-vue': '*' },
       }),
       'apps/react/src/App.tsx': reactMessage('Child React message'),
+    });
+
+    const detection = determineLibrary();
+
+    expect(detection).toEqual({ library: 'base', additionalModules: [] });
+    expect(isInlineLibrary(detection.library)).toBe(false);
+    expect(detectVueProject()).toBe(false);
+  });
+
+  it('keeps a file-only root file-only when a child declares gt-vue', () => {
+    createVueFixture({
+      'package.json': packageJson({
+        private: true,
+        workspaces: ['apps/*'],
+      }),
+      'locales/en.json': JSON.stringify({ title: 'File-only title' }),
+      'apps/vue/package.json': vuePackageJson('child-vue'),
+      'apps/vue/src/App.vue': translatableSfc('Child Vue message'),
     });
 
     const detection = determineLibrary();
@@ -156,13 +173,13 @@ describe('project-level Vue CLI regression boundary', () => {
 
     expect(detection.library).toBe(Libraries.GT_REACT);
     expect(output.errors).toEqual([]);
-    expect(sources(output).sort()).toEqual([
-      'Owned workspace Vue message',
+    expect(sources(output)).toEqual([
       'Root React only',
+      'Owned workspace Vue message',
     ]);
   });
 
-  it('retains both root gt-node and owned Vue messages', async () => {
+  it('appends owned descendant Vue sources to the unchanged Node scope', async () => {
     createVueFixture({
       'package.json': packageJson({
         private: true,
@@ -182,9 +199,9 @@ describe('project-level Vue CLI regression boundary', () => {
 
     expect(detection.library).toBe(Libraries.GT_NODE);
     expect(output.errors).toEqual([]);
-    expect(sources(output).sort()).toEqual([
-      'Node companion Vue message',
+    expect(sources(output)).toEqual([
       'Root Node message',
+      'Node companion Vue message',
     ]);
   });
 
@@ -210,34 +227,211 @@ describe('project-level Vue CLI regression boundary', () => {
 
     expect(detection.library).toBe(Libraries.GT_REACT);
     expect(output.errors).toEqual([]);
-    expect(sources(output).sort()).toEqual([
+    expect(sources(output)).toEqual([
       'React with dynamic config',
       'Scoped Vue config message',
     ]);
   });
 
-  it('splits explicit .vue patterns away from the historical parser', async () => {
+  it('preserves historical parsing for explicitly selected .vue files', async () => {
     createVueFixture({
       'package.json': packageJson({
-        dependencies: { 'gt-react': '*', 'gt-vue': '*', vue: '*' },
+        private: true,
+        workspaces: ['apps/*'],
+        dependencies: { 'gt-react': '*', 'gt-vue': '*' },
       }),
-      'src/App.tsx': reactMessage('Explicit React message'),
-      'src/App.vue': translatableSfc('Explicit Vue message'),
+      'src/Legacy.vue': reactMessage('Legacy React module'),
+      'apps/vue/package.json': vuePackageJson('vue-app'),
+      'apps/vue/src/App.vue': translatableSfc('Unselected Vue message'),
     });
-    const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {});
 
     const detection = determineLibrary();
+    const historical = await createInlineUpdates(
+      Libraries.GT_REACT,
+      false,
+      ['src/Legacy.vue'],
+      GT_PARSING_FLAGS_DEFAULT,
+      parsingOptions
+    );
     const output = await dispatchDetected(detection.library, [
-      'src/**/*.{tsx,vue}',
+      'src/Legacy.vue',
     ]);
 
     expect(detection.library).toBe(Libraries.GT_REACT);
+    expect(detectVueProject()).toBe(true);
+    expect(output).toEqual(historical);
+    expect(sources(output)).toEqual(['Legacy React module']);
+  });
+
+  it('partitions real SFCs from legacy JSX across explicit mixed patterns', async () => {
+    createVueFixture({
+      'package.json': packageJson({
+        dependencies: { 'gt-react': '*', 'gt-vue': '*' },
+      }),
+      'src/App.tsx': reactMessage('React TSX module'),
+      'src/Legacy.vue': reactMessage('React legacy module'),
+      'src/VueApp.vue': `<i18n lang="json">
+{"en":{"title":"Localized"}}
+</i18n>
+${translatableSfc('Vue SFC message')}`,
+      'src/TextPrefixed.vue': `Copyright Fixture
+${translatableSfc('Text-prefixed Vue SFC message')}`,
+    });
+
+    const output = await extractInlineFromProject(
+      Libraries.GT_REACT,
+      false,
+      ['src/**/*.{tsx,vue}'],
+      GT_PARSING_FLAGS_DEFAULT,
+      parsingOptions
+    );
+
     expect(output.errors).toEqual([]);
     expect(sources(output).sort()).toEqual([
-      'Explicit React message',
-      'Explicit Vue message',
+      'React TSX module',
+      'React legacy module',
+      'Text-prefixed Vue SFC message',
+      'Vue SFC message',
     ]);
-    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  it('partitions an explicitly selected absolute SFC path', async () => {
+    const root = createVueFixture({
+      'package.json': packageJson({
+        dependencies: { 'gt-react': '*', 'gt-vue': '*' },
+      }),
+      'src/App.vue': translatableSfc('Absolute Vue SFC message'),
+    });
+
+    const output = await extractInlineFromProject(
+      Libraries.GT_REACT,
+      false,
+      [path.join(root, 'src/App.vue')],
+      GT_PARSING_FLAGS_DEFAULT,
+      parsingOptions
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(sources(output)).toEqual(['Absolute Vue SFC message']);
+  });
+
+  it('ignores optional Vue peers in a sibling React workspace', async () => {
+    createFixture({
+      'package.json': packageJson({
+        private: true,
+        workspaces: ['apps/*'],
+        dependencies: { 'gt-react': '*' },
+      }),
+      'src/App.tsx': reactMessage('Stable React root'),
+      'apps/optional/package.json': packageJson({
+        name: 'optional-vue-integration',
+        optionalDependencies: { 'gt-vue': '*' },
+        peerDependencies: { vue: '^3.5.0' },
+      }),
+      'apps/optional/src/App.vue': translatableSfc('Optional Vue message'),
+      'node_modules/gt-vue/package.json': JSON.stringify({
+        name: 'gt-vue',
+        version: '0.1.0',
+        type: 'module',
+        main: 'index.js',
+      }),
+      'node_modules/gt-vue/index.js': 'export const T = {}\n',
+    });
+
+    const output = await dispatchDetected(Libraries.GT_REACT);
+
+    expect(detectVueProject()).toBe(false);
+    expect(output.errors).toEqual([]);
+    expect(sources(output)).toEqual(['Stable React root']);
+  });
+
+  it('does not apply Vue config to targeted React-only validation', async () => {
+    createFixture({
+      'package.json': packageJson({
+        private: true,
+        workspaces: ['apps/*'],
+        dependencies: { 'gt-react': '*' },
+      }),
+      'src/App.tsx': reactMessage('Targeted React message'),
+      'vite.config.ts': `export default ({ mode }) => mode === 'test' ? {} : {};`,
+      'apps/vue/package.json': vuePackageJson('vue-app'),
+      'apps/vue/src/App.vue': translatableSfc('Separate Vue message'),
+    });
+
+    const output = await extractInlineFromProject(
+      Libraries.GT_REACT,
+      true,
+      ['src/App.tsx'],
+      { ...GT_PARSING_FLAGS_DEFAULT, viteConfigPath: 'vite.config.ts' },
+      parsingOptions
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(sources(output)).toEqual(['Targeted React message']);
+  });
+
+  it('does not resolve Vue config before proving ownership in a mixed root', async () => {
+    createVueFixture({
+      'package.json': packageJson({
+        dependencies: { 'gt-react': '*', 'gt-vue': '*', vite: '*' },
+      }),
+      'src/App.tsx': reactMessage('Mixed root React message'),
+      'vite.config.ts': `
+        export default ({ mode }) => ({
+          resolve: { alias: mode === 'test' ? { '@app': '/one' } : { '@app': '/two' } },
+        });
+      `,
+    });
+    const flags = {
+      ...GT_PARSING_FLAGS_DEFAULT,
+      viteConfigPath: 'vite.config.ts',
+    };
+    const historical = await createInlineUpdates(
+      Libraries.GT_REACT,
+      true,
+      ['src/App.tsx'],
+      flags,
+      parsingOptions
+    );
+
+    const output = await extractInlineFromProject(
+      Libraries.GT_REACT,
+      true,
+      ['src/App.tsx'],
+      flags,
+      parsingOptions
+    );
+
+    expect(output).toEqual(historical);
+    expect(output.errors).toEqual([]);
+    expect(sources(output)).toEqual(['Mixed root React message']);
+  });
+
+  it('deduplicates identical source context for a mixed-runtime hash', async () => {
+    createVueFixture({
+      'package.json': packageJson({
+        dependencies: { 'gt-react': '*', 'gt-vue': '*' },
+      }),
+      'src/App.tsx': `
+        import { T } from 'gt-react'; import { T as VueT } from 'gt-vue';
+        export const App = () => <><T>Shared message</T><VueT>Shared message</VueT></>;
+      `,
+    });
+
+    const output = await extractInlineFromProject(
+      Libraries.GT_REACT,
+      false,
+      undefined,
+      { ...GT_PARSING_FLAGS_DEFAULT, includeSourceCodeContext: true },
+      parsingOptions
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(output.updates).toHaveLength(1);
+    const sourceCode = output.updates[0]?.metadata.sourceCode as
+      | Record<string, unknown[]>
+      | undefined;
+    expect(sourceCode?.['src/App.tsx']).toHaveLength(1);
   });
 });
 

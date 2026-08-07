@@ -267,8 +267,8 @@ describe('project extraction orchestration parity', () => {
       'src/Good.vue': translatableSfc('Good message'),
       'src/Lost.vue': translatableSfc('Lost message'),
     });
-    const lostFile = path.join(root, 'src/Lost.vue');
     const realpathSync = fs.realpathSync;
+    const lostFile = realpathSync(path.join(root, 'src/Lost.vue'));
     vi.spyOn(fs, 'realpathSync').mockImplementation((target) => {
       if (path.resolve(String(target)) === lostFile) {
         throw new Error('matched file disappeared');

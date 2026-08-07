@@ -18,16 +18,21 @@ import {
 } from './moduleResolver.js';
 import { resolveVueProjectAliasConfiguration } from './viteAliases.js';
 import {
-  declaresJavaScriptDependency,
+  declaresInstalledJavaScriptDependency,
+  GT_VUE_PACKAGE,
   readJavaScriptPackageManifest,
-} from './workspaces.js';
+} from './manifest.js';
 import {
   discoverVueProject,
   findVueSourceScope,
-  GT_VUE_PACKAGE,
   readDefaultVueSourcePatterns,
+  resolveProjectDirectory,
   type VueSourceScope,
 } from './scopes.js';
+import {
+  isVueSfcSource,
+  readVueProjectInspection,
+} from './inspectVueProject.js';
 import type {
   VueCompilerOptions,
   VueExtractionOutput,
@@ -62,8 +67,12 @@ const JSX_CONFIG_EXTENSIONS = new Set(['.jsx', '.tsx']);
 export async function extractFromVueProject(
   options: VueProjectExtractionOptions = {}
 ): Promise<VueProjectExtractionOutput> {
-  const projectRoot = path.resolve(options.cwd ?? process.cwd());
-  const discovery = discoverVueProject(projectRoot);
+  const projectRoot = resolveProjectDirectory(
+    options.cwd ?? options.inspection?.projectRoot ?? process.cwd()
+  );
+  const discovery =
+    readVueProjectInspection(options.inspection, projectRoot) ??
+    discoverVueProject(projectRoot);
   const discoveryErrors =
     options.filePatterns === undefined
       ? validateNuxtSourceScopes(discovery.scopes, options.vueCompilerOptions)
@@ -94,18 +103,19 @@ export async function extractFromVueProject(
   );
   // Explicit globs can also match files owned by another framework package.
   // They are not Vue inputs unless discovery placed them in a Vue scope.
-  const files = matchedFiles.filter(
+  const ownedFiles = matchedFiles.filter(
     (file) => fileScopes.get(file) !== undefined
   );
+  const files = await filterVueSourceFiles(ownedFiles, sourceByFile);
+  if (files.length === 0) {
+    return { updates: [], errors: [], warnings: [] };
+  }
   const errors: string[] = [];
   const warnings = new Set<string>();
   let explicitCompilerResolution = validateExplicitCompilerConfig(
     projectRoot,
     options,
-    files.some((file) => {
-      const scope = fileScopes.get(file);
-      return scope?.includeByDefault === true || path.extname(file) === '.vue';
-    }),
+    files.some((file) => path.extname(file).toLowerCase() === '.vue'),
     errors
   );
   if (errors.length > 0) {
@@ -130,14 +140,16 @@ export async function extractFromVueProject(
   for (const file of files) {
     const extension = path.extname(file).toLowerCase();
     if (extension !== '.vue' && !SCRIPT_EXTENSIONS.has(extension)) continue;
-    let source: string;
-    try {
-      source = await fs.promises.readFile(file, 'utf8');
-    } catch (error) {
-      errors.push(createReadDiagnostic(projectRoot, file, error));
-      continue;
+    let source = sourceByFile.get(file);
+    if (source === undefined) {
+      try {
+        source = await fs.promises.readFile(file, 'utf8');
+      } catch (error) {
+        errors.push(createReadDiagnostic(projectRoot, file, error));
+        continue;
+      }
+      sourceByFile.set(file, source);
     }
-    sourceByFile.set(file, source);
     if (extension === '.vue') continue;
     standaloneResults.set(
       file,
@@ -246,6 +258,27 @@ export async function extractFromVueProject(
     errors,
     warnings: [...warnings],
   };
+}
+
+/** Excludes script modules whose filename happens to end in `.vue`. */
+async function filterVueSourceFiles(
+  files: readonly string[],
+  sourceByFile: Map<string, string>
+): Promise<string[]> {
+  const included = await Promise.all(
+    files.map(async (file) => {
+      if (path.extname(file).toLowerCase() !== '.vue') return true;
+      try {
+        const source = await fs.promises.readFile(file, 'utf8');
+        sourceByFile.set(file, source);
+        return isVueSfcSource(source);
+      } catch {
+        // Preserve the file so the normal extraction pass reports its I/O error.
+        return true;
+      }
+    })
+  );
+  return files.filter((_file, index) => included[index]);
 }
 
 /** Returns whether a standalone file has observable gt-vue extraction work. */
@@ -425,7 +458,7 @@ function matchProjectFiles(
       errors: [createRootRealpathDiagnostic(cwd, error)],
     };
   }
-  const files: string[] = [];
+  const files = new Set<string>();
   const errors: string[] = [];
   for (const file of matches) {
     let realFile: string;
@@ -445,11 +478,11 @@ function matchProjectFiles(
       // Symlinks outside the project are intentionally outside its catalog.
       continue;
     }
-    files.push(file);
+    files.add(realFile);
   }
   return {
     errors,
-    files: files.sort((left, right) => left.localeCompare(right)),
+    files: [...files].sort((left, right) => left.localeCompare(right)),
   };
 }
 
@@ -517,7 +550,7 @@ function ownsIndependentVueConfiguration(directory: string): boolean {
     path.join(directory, 'package.json')
   );
   return Boolean(
-    manifest && declaresJavaScriptDependency(manifest, GT_VUE_PACKAGE)
+    manifest && declaresInstalledJavaScriptDependency(manifest, GT_VUE_PACKAGE)
   );
 }
 

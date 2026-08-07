@@ -2,24 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import fg from 'fast-glob';
 import { parse as parseYaml } from 'yaml';
-
-/** Dependency fields that can declare a runtime available to one package. */
-const DEPENDENCY_FIELDS = [
-  'dependencies',
-  'devDependencies',
-  'optionalDependencies',
-  'peerDependencies',
-] as const;
-
-/** Minimal package manifest shape used by project discovery. */
-export type JavaScriptPackageManifest = {
-  name?: string;
-  dependencies?: Record<string, string>;
-  devDependencies?: Record<string, string>;
-  optionalDependencies?: Record<string, string>;
-  peerDependencies?: Record<string, string>;
-  workspaces?: string[] | { packages?: string[] };
-};
+import {
+  readJavaScriptPackageManifest,
+  type JavaScriptPackageManifest,
+} from './manifest.js';
 
 /** A validated workspace package and its parsed manifest. */
 export type DeclaredWorkspacePackage = {
@@ -112,41 +98,6 @@ export function readDeclaredWorkspacePackages(
       : [];
   });
   return cacheWorkspacePackages(cache, cacheKey, manifestWorkspaces, packages);
-}
-
-/** Reads one package manifest without throwing for absent or malformed input. */
-export function readJavaScriptPackageManifest(
-  packagePath: string
-): JavaScriptPackageManifest | undefined {
-  try {
-    const parsed = JSON.parse(fs.readFileSync(packagePath, 'utf8')) as unknown;
-    return isRecord(parsed) ? (parsed as JavaScriptPackageManifest) : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-/** Checks every dependency field used for Vue project ownership. */
-export function declaresJavaScriptDependency(
-  manifest: JavaScriptPackageManifest,
-  packageName: string
-): boolean {
-  return DEPENDENCY_FIELDS.some(
-    (field) => manifest[field]?.[packageName] !== undefined
-  );
-}
-
-/** Lists dependency names across every supported manifest field. */
-export function readDeclaredDependencyNames(
-  manifest: JavaScriptPackageManifest
-): string[] {
-  const names = new Set<string>();
-  for (const field of DEPENDENCY_FIELDS) {
-    for (const packageName of Object.keys(manifest[field] ?? {})) {
-      names.add(packageName);
-    }
-  }
-  return [...names];
 }
 
 function cacheWorkspacePackages(

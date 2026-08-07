@@ -105,6 +105,8 @@ export type VueExtractionOutput = {
 export type VueProjectExtractionOptions = {
   /** Project root. Defaults to `process.cwd()`. */
   cwd?: string;
+  /** Reusable package-owned workspace inspection for this project root. */
+  inspection?: VueProjectInspection;
   /** Optional project-root-relative globs that replace framework defaults. */
   filePatterns?: string[];
   /** Includes surrounding source lines in result metadata. */
@@ -117,6 +119,16 @@ export type VueProjectExtractionOptions = {
   viteConfigPath?: string;
   /** Number of source lines captured before and after a translation. */
   surroundingLineCount?: number;
+};
+
+/** Opaque summary returned by package-owned Vue workspace inspection. */
+export type VueProjectInspection = {
+  /** Absolute root inspected for Vue-owned source scopes. */
+  readonly projectRoot: string;
+  /** Whether the root package itself activates the Vue command surface. */
+  readonly rootOwnsVue: boolean;
+  /** Whether the root or any declared workspace owns Vue source. */
+  readonly hasVueScopes: boolean;
 };
 
 /** A project result whose stable catalog hash has been calculated. */
