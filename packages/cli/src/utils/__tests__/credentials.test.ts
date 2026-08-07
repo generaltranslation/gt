@@ -34,4 +34,19 @@ describe('setCredentials', () => {
     expect(env).toContain('GT_API_KEY=gtx-api-key');
     expect(env).not.toContain('VITE_GT_API_KEY');
   });
+
+  it('exposes the project ID to Vite for Vue applications', async () => {
+    await setCredentials(
+      {
+        projectId: 'project-id',
+        apiKeys: [{ type: 'development', key: 'dev-key' }],
+      },
+      'vite-vue',
+      appDirectory
+    );
+
+    const env = fs.readFileSync(path.join(appDirectory, '.env.local'), 'utf8');
+    expect(env).toContain('VITE_GT_PROJECT_ID=project-id');
+    expect(env).toContain('VITE_GT_DEV_API_KEY=dev-key');
+  });
 });

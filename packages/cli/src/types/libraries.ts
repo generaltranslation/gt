@@ -5,6 +5,7 @@ export enum Libraries {
   GT_REACT = 'gt-react',
   GT_NEXT = 'gt-next',
   GT_REACT_NATIVE = 'gt-react-native',
+  GT_VUE = 'gt-vue',
   GT_NODE = 'gt-node',
   GT_I18N = 'gt-i18n',
   GT_REACT_CORE = '@generaltranslation/react-core',
@@ -20,6 +21,7 @@ export const GT_LIBRARIES = [
   Libraries.GT_REACT,
   Libraries.GT_NEXT,
   Libraries.GT_REACT_NATIVE,
+  Libraries.GT_VUE,
   Libraries.GT_NODE,
   Libraries.GT_I18N,
   Libraries.GT_REACT_CORE,
@@ -37,6 +39,7 @@ export const INLINE_LIBRARIES = [
   Libraries.GT_NEXT,
   Libraries.GT_NODE,
   Libraries.GT_REACT_NATIVE,
+  Libraries.GT_VUE,
   Libraries.GT_REACT_CORE,
   Libraries.GT_TANSTACK_START,
   Libraries.GT_I18N,
@@ -102,6 +105,7 @@ export const GT_LIBRARIES_UPSTREAM: Record<GTLibrary, GTLibrary[]> = {
     Libraries.GT_REACT_NATIVE,
     Libraries.GT_REACT, // allow for cross-library compatibility (gt-react/gt-react-native only)
   ],
+  [Libraries.GT_VUE]: [Libraries.GT_VUE],
   [Libraries.GT_NODE]: [Libraries.GT_I18N, Libraries.GT_NODE],
   [Libraries.GT_REACT_CORE]: [Libraries.GT_I18N, Libraries.GT_REACT_CORE],
   [Libraries.GT_TANSTACK_START]: [

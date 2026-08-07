@@ -5,7 +5,7 @@ import { Framework, Options, Settings, Updates } from '../types/index.js';
 import { logger } from '../console/logger.js';
 
 import { createUpdates } from './parse.js';
-import { createInlineUpdates } from '../react/parse/createInlineUpdates.js';
+import { createInlineUpdatesForLibraries } from '../extraction/createInlineUpdatesForLibrary.js';
 import { InlineLibrary, Libraries } from '../types/libraries.js';
 
 // Types for programmatic validation API
@@ -24,11 +24,12 @@ export type ValidationResult = Record<string, ValidationMessage[]>;
 async function runValidation(
   settings: Options & Settings,
   pkg: InlineLibrary,
-  files?: string[]
+  files?: string[],
+  additionalLibraries: readonly InlineLibrary[] = []
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   if (files && files.length > 0) {
-    return createInlineUpdates(
-      pkg,
+    return createInlineUpdatesForLibraries(
+      [pkg, ...additionalLibraries],
       true,
       files,
       settings.files.gtJson.parsingFlags,
@@ -56,7 +57,8 @@ async function runValidation(
     pkg,
     true,
     settings.files.gtJson.parsingFlags,
-    settings.parsingOptions
+    settings.parsingOptions,
+    additionalLibraries
   );
 }
 
@@ -94,7 +96,8 @@ export async function getValidateJson(
   pkg:
     | `${typeof Libraries.GT_REACT}`
     | `${typeof Libraries.GT_NEXT}`
-    | `${typeof Libraries.GT_REACT_NATIVE}`,
+    | `${typeof Libraries.GT_REACT_NATIVE}`
+    | `${typeof Libraries.GT_VUE}`,
   files?: string[]
 ): Promise<ValidationResult> {
   const validatedPkg: Framework =
@@ -102,7 +105,9 @@ export async function getValidateJson(
       ? Libraries.GT_NEXT
       : pkg === Libraries.GT_REACT_NATIVE
         ? Libraries.GT_REACT_NATIVE
-        : Libraries.GT_REACT;
+        : pkg === Libraries.GT_VUE
+          ? Libraries.GT_VUE
+          : Libraries.GT_REACT;
   const { errors, warnings } = await runValidation(
     settings,
     validatedPkg,
@@ -137,12 +142,14 @@ export async function getValidateJson(
 export async function validateProject(
   settings: Options & Settings,
   pkg: InlineLibrary,
-  files?: string[]
+  files?: string[],
+  additionalLibraries: readonly InlineLibrary[] = []
 ): Promise<void> {
   const { updates, errors, warnings } = await runValidation(
     settings,
     pkg,
-    files
+    files,
+    additionalLibraries
   );
 
   if (warnings.length > 0) {
@@ -169,13 +176,24 @@ export async function validateProject(
   }
 
   if (updates.length === 0) {
-    logger.error(
-      chalk.red(
-        `No inline content or dictionaries were found for ${chalk.green(
-          pkg
-        )}. Are you sure you're running this command in the right directory?`
-      )
+    const message = chalk.red(
+      `No inline content or dictionaries were found for ${chalk.green(
+        pkg
+      )}. Are you sure you're running this command in the right directory?`
     );
+    // Validation has no file-upload work to continue after an empty inline
+    // result. Fail closed for Vue so discovery or compiler mismatches cannot
+    // masquerade as a successful validation. Stage remains non-fatal for its
+    // separate file-only workflow unless source-catalog generation requires
+    // inline content.
+    if (
+      pkg === Libraries.GT_VUE ||
+      additionalLibraries.includes(Libraries.GT_VUE)
+    ) {
+      logErrorAndExit(message);
+    } else {
+      logger.error(message);
+    }
   } else {
     logger.success(
       chalk.green(

@@ -119,7 +119,8 @@ export type Framework =
   | typeof Libraries.GT_NEXT
   | typeof Libraries.GT_REACT
   | typeof Libraries.GT_REACT_NATIVE
-  | typeof Libraries.GT_TANSTACK_START;
+  | typeof Libraries.GT_TANSTACK_START
+  | typeof Libraries.GT_VUE;
 
 export type FrameworkObject =
   | {
@@ -129,6 +130,10 @@ export type FrameworkObject =
   | {
       name: 'next-app' | 'next-pages' | 'vite' | 'gatsby' | 'redwood' | 'react';
       type: 'react';
+    }
+  | {
+      name: 'nuxt' | 'vite-vue';
+      type: 'vue';
     };
 export type ReactFrameworkObject = Extract<FrameworkObject, { type: 'react' }>;
 

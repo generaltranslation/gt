@@ -10,6 +10,7 @@ import { noFilesError } from '../../console/index.js';
 import { hasValidCredentials, hasValidLocales } from './utils/validation.js';
 import { exitSync, logErrorAndExit } from '../../console/logging.js';
 import { warnManualReviewSetup } from '../../translation/reviewSetupWarning.js';
+import type { InlineLibrary } from '../../types/libraries.js';
 
 /**
  * Enqueues translations for a given set of files
@@ -20,7 +21,9 @@ import { warnManualReviewSetup } from '../../translation/reviewSetupWarning.js';
 export async function handleEnqueue(
   options: TranslateFlags,
   settings: Settings,
-  library: SupportedLibraries
+  library: SupportedLibraries,
+  additionalLibraries: readonly InlineLibrary[] = [],
+  detectedAdditionalModules?: readonly SupportedLibraries[]
 ): Promise<EnqueueFilesResult> {
   if (!hasValidLocales(settings)) return exitSync(1);
   // Validate credentials if not in dry run
@@ -30,7 +33,13 @@ export async function handleEnqueue(
   }
 
   // Collect the data for all files we need to enqueue
-  const { files } = await collectFiles(options, settings, library);
+  const { files } = await collectFiles(
+    options,
+    settings,
+    library,
+    additionalLibraries,
+    detectedAdditionalModules
+  );
 
   // Point at dashboard review setup when uploading review-gated content
   await warnManualReviewSetup(settings, files);

@@ -1,5 +1,5 @@
 import { FrameworkObject } from '../types/index.js';
-import { isPackageInstalled } from '../utils/packageJson.js';
+import { isPackageDeclared, isPackageInstalled } from '../utils/packageJson.js';
 import { searchForPackageJson } from '../utils/packageJson.js';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -10,7 +10,7 @@ import path from 'node:path';
  * Detects the frontend framework used in the current project.
  *
  * Analyzes the project structure and dependencies to identify the framework.
- * Detection order: Mintlify → Next.js (App/Pages Router) → Gatsby → RedwoodJS → Vite → React.
+ * Detection order: Mintlify → Next.js (App/Pages Router) → Gatsby → RedwoodJS → Nuxt → Vue + Vite → Vite → React.
  *
  * For Next.js projects, further determines whether it uses App Router or Pages Router
  * by checking for the presence of `app/` or `pages/` directories.
@@ -63,6 +63,44 @@ export async function detectFramework(): Promise<
   // Check for RedwoodJS
   if (isPackageInstalled('@redwoodjs/core', packageJson, false, true)) {
     return { name: 'redwood', type: 'react' };
+  }
+
+  // Check for Vue before treating a Vite project as React.
+  const hasInstalledVue = isPackageInstalled('vue', packageJson, false, true);
+  const hasDeclaredVue = isPackageDeclared('vue', packageJson);
+  const hasDeclaredReact = isPackageDeclared('react', packageJson);
+  const hasInstalledReact = isPackageInstalled(
+    'react',
+    packageJson,
+    false,
+    true
+  );
+  const hasVuePlugin = isPackageInstalled(
+    '@vitejs/plugin-vue',
+    packageJson,
+    false,
+    true
+  );
+  const hasReactPlugin = [
+    '@vitejs/plugin-react',
+    '@vitejs/plugin-react-swc',
+  ].some((packageName) =>
+    isPackageInstalled(packageName, packageJson, false, true)
+  );
+  const hasVue =
+    hasInstalledVue ||
+    (hasDeclaredVue &&
+      (!hasDeclaredReact || (hasVuePlugin && !hasReactPlugin)));
+  const hasReact = hasInstalledReact || (hasDeclaredReact && hasReactPlugin);
+  if (isPackageInstalled('nuxt', packageJson, false, true)) {
+    return { name: 'nuxt', type: 'vue' };
+  }
+  if (
+    hasVue &&
+    isPackageInstalled('vite', packageJson, false, true) &&
+    (!hasReact || (hasVuePlugin && !hasReactPlugin))
+  ) {
+    return { name: 'vite-vue', type: 'vue' };
   }
 
   // Check for Vite

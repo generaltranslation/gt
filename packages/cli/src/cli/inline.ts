@@ -15,7 +15,13 @@ import loadJSON from '../fs/loadJSON.js';
 import { generateSettings } from '../config/generateSettings.js';
 import { aggregateInlineTranslations } from '../translation/stage.js';
 import { validateProject } from '../translation/validate.js';
-import { Libraries, InlineLibrary } from '../types/libraries.js';
+import {
+  Libraries,
+  InlineLibrary,
+  NODE_LIBRARIES,
+  isInlineLibrary,
+} from '../types/libraries.js';
+import { checkMonorepoVersionConsistency } from '../utils/monorepoVersionCheck.js';
 
 /**
  * Stand in for a CLI tool that does any sort of inline content translations
@@ -23,10 +29,21 @@ import { Libraries, InlineLibrary } from '../types/libraries.js';
 export class InlineCLI extends BaseCLI {
   constructor(
     command: Command,
-    library: InlineLibrary,
+    library: SupportedLibraries,
     additionalModules?: SupportedLibraries[]
   ) {
     super(command, library, additionalModules);
+
+    if (
+      library === Libraries.GT_NODE ||
+      additionalModules?.includes(Libraries.GT_NODE)
+    ) {
+      this.program.hook('preAction', (_thisCommand, actionCommand) => {
+        if (this.program.opts().skipVersionCheck) return;
+        if (actionCommand.parent?.name() === 'git') return;
+        checkMonorepoVersionConsistency(NODE_LIBRARIES);
+      });
+    }
   }
   public init() {
     this.setupStageCommand();
@@ -110,10 +127,14 @@ export class InlineCLI extends BaseCLI {
       requireConfig: true,
     });
 
+    const [inlineLibrary, additionalInlineLibraries] =
+      this.getInlineExtractionLibraries();
     const updates = await aggregateInlineTranslations(
       initOptions,
       settings,
-      fallbackToGtReact(this.library)
+      inlineLibrary,
+      additionalInlineLibraries,
+      true
     );
 
     // Convert updates to the proper data format
@@ -174,34 +195,34 @@ export class InlineCLI extends BaseCLI {
     // First run the base class's handleTranslate method
     const options = { ...initOptions, ...settings };
 
-    // Fallback to gt-react
-    const pkg = fallbackToGtReact(this.library);
+    const [inlineLibrary, additionalInlineLibraries] =
+      this.getInlineExtractionLibraries();
 
     if (files && files.length > 0) {
       // Validate specific files using createInlineUpdates
-      await validateProject(options, pkg, files);
+      await validateProject(
+        options,
+        inlineLibrary,
+        files,
+        additionalInlineLibraries
+      );
     } else {
       // Validate whole project as before
-      await validateProject(options, pkg);
+      await validateProject(
+        options,
+        inlineLibrary,
+        undefined,
+        additionalInlineLibraries
+      );
     }
   }
-}
 
-function fallbackToGtReact(library: SupportedLibraries): InlineLibrary {
-  return [
-    Libraries.GT_NEXT,
-    Libraries.GT_NODE,
-    Libraries.GT_REACT_NATIVE,
-    Libraries.GT_TANSTACK_START,
-    Libraries.GT_FLASK,
-    Libraries.GT_FASTAPI,
-  ].includes(library as Libraries)
-    ? (library as
-        | typeof Libraries.GT_NEXT
-        | typeof Libraries.GT_NODE
-        | typeof Libraries.GT_REACT_NATIVE
-        | typeof Libraries.GT_TANSTACK_START
-        | typeof Libraries.GT_FLASK
-        | typeof Libraries.GT_FASTAPI)
-    : Libraries.GT_REACT;
+  /** Selects the inline runtime while retaining a file-format CLI primary. */
+  protected getInlineExtractionLibraries(): [InlineLibrary, InlineLibrary[]] {
+    const inlineLibraries = [
+      this.library,
+      ...this.getAdditionalInlineLibraries(),
+    ].filter(isInlineLibrary);
+    return [inlineLibraries[0] ?? Libraries.GT_REACT, inlineLibraries.slice(1)];
+  }
 }

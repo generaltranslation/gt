@@ -52,6 +52,25 @@ createApp(App)
   .mount('#app');
 ```
 
+If the app starts Vite with a custom config path, declare the same path so the
+CLI hashes templates with the active Vue compiler options:
+
+```json
+{
+  "files": {
+    "gt": {
+      "output": "src/_gt/[locale].json",
+      "parsingFlags": {
+        "viteConfigPath": "config/vite.custom.ts"
+      }
+    }
+  }
+}
+```
+
+The path is resolved from the project root. Standard `vite.config.*` files are
+detected automatically.
+
 Use `<T>` for rich content. `<Var>` values are provided as slot children, not
 through `name` or `value` props.
 
@@ -96,11 +115,11 @@ supported translation source.
 
 Vue `<Suspense>` is the one built-in whose default content participates in an
 outer `<T>`. Prefer literal `<Suspense>` and use a single default root. Immutable
-aliases that the extractor can trace directly to `vue` are also supported; the
-fallback slot is preserved but excluded from the outer translation. Re-exported,
-globally registered, ref/computed-held, and other runtime-wrapped Suspense
-aliases are not supported inside an outer `<T>`. Put `<T>` inside those
-boundaries instead:
+aliases that the extractor can trace directly to `vue`, including aliases
+through static local ESM reexports, are also supported; the fallback slot is
+preserved but excluded from the outer translation. Globally registered,
+ref/computed-held, and other runtime-wrapped Suspense aliases are not supported
+inside an outer `<T>`. Put `<T>` inside those boundaries instead:
 
 ```vue
 <Suspense>
@@ -108,6 +127,45 @@ boundaries instead:
   <template #fallback><T>Loading…</T></template>
 </Suspense>
 ```
+
+CLI extraction currently supports static `whitespace` and `delimiters` Vue
+compiler options. Custom `isCustomElement` predicates and other compiler
+callbacks are not supported. The CLI fails closed when it finds one rather than
+generating a catalog with hashes that may differ from the application compiler.
+
+## JSX and TSX
+
+Vue JSX and TSX files are supported when they use the standard Vue JSX
+transform. The extractor recognizes direct imports, namespace forms such as
+`<GT.T>`, and immutable aliases through statically resolvable local ESM
+reexports. It also follows a translator passed to a local helper or callback,
+using the same static source and context restrictions as a direct `gt()` call.
+
+```tsx
+import * as GT from 'gt-vue';
+
+function addGreeting(gt: GT.GTFunction) {
+  return gt('Welcome back', { $context: 'account greeting' });
+}
+
+export function Greeting() {
+  const gt = GT.useGT();
+  const greeting = addGreeting(gt);
+  return (
+    <section>
+      <p>{greeting}</p>
+      <GT.T context='account card'>
+        <h2>Recent activity</h2>
+      </GT.T>
+    </section>
+  );
+}
+```
+
+Custom `@jsx` pragmas, dynamic or mutable module indirection, and render-function
+forms such as `h(T, ...)` are not supported for rich extraction. The CLI reports
+these cases instead of publishing a catalog whose source cannot be proven to
+match the runtime VNodes.
 
 ## Registered Messages
 

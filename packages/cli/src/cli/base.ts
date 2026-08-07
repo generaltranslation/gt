@@ -33,6 +33,7 @@ import chalk from 'chalk';
 import { FILE_EXT_TO_EXT_LABEL } from '../formats/files/supportedFiles.js';
 import { handleSetupReactCommand } from '../setup/wizard.js';
 import {
+  isPackageDeclared,
   isPackageInstalled,
   searchForPackageJson,
 } from '../utils/packageJson.js';
@@ -59,6 +60,7 @@ import { displayTranslateSummary } from '../console/displayTranslateSummary.js';
 import updateConfig from '../fs/config/updateConfig.js';
 import { loadConfig } from '../fs/config/loadConfig.js';
 import { createLoadTranslationsFile } from '../fs/createLoadTranslationsFile.js';
+import { createRemoteLoadTranslationsFile } from '../fs/createRemoteLoadTranslationsFile.js';
 import { saveLocalEdits } from '../api/saveLocalEdits.js';
 import processSharedStaticAssets, {
   mirrorAssetsToLocales,
@@ -69,7 +71,12 @@ import {
   getFrameworkDisplayName,
   getReactFrameworkLibrary,
 } from '../setup/frameworkUtils.js';
-import { INLINE_LIBRARIES } from '../types/libraries.js';
+import {
+  INLINE_LIBRARIES,
+  Libraries,
+  type InlineLibrary,
+  isInlineLibrary,
+} from '../types/libraries.js';
 import { handleEnqueue } from './commands/enqueue.js';
 import { splitMintlifyLanguageRefs } from '../utils/splitMintlifyLanguageRefs.js';
 import { runMergeDriver, type MergeDriverName } from '../git/mergeDrivers.js';
@@ -290,7 +297,10 @@ export class BaseCLI {
         const settings = await generateSettings(initOptions, undefined, {
           requireConfig: true,
         });
-        await saveLocalEdits(settings);
+        await saveLocalEdits(settings, {
+          library: this.library,
+          additionalModules: this.additionalModules,
+        });
         logger.endCommand('Saved local edits');
       });
   }
@@ -428,7 +438,13 @@ export class BaseCLI {
     // Preprocess shared static assets if configured (move + rewrite sources)
     await processSharedStaticAssets(settings);
 
-    await handleSetupProject(initOptions, settings, this.library);
+    await handleSetupProject(
+      initOptions,
+      settings,
+      this.library,
+      this.getAdditionalInlineLibraries(),
+      this.additionalModules
+    );
   }
 
   protected async handleStage(initOptions: TranslateFlags): Promise<void> {
@@ -446,7 +462,14 @@ export class BaseCLI {
         stageTranslations: true,
       });
     }
-    await handleStage(initOptions, settings, this.library, true);
+    await handleStage(
+      initOptions,
+      settings,
+      this.library,
+      true,
+      this.getAdditionalInlineLibraries(),
+      this.additionalModules
+    );
   }
 
   /**
@@ -458,7 +481,13 @@ export class BaseCLI {
     const settings = await generateSettings(initOptions, undefined, {
       requireConfig: true,
     });
-    await handleEnqueue(initOptions, settings, this.library);
+    await handleEnqueue(
+      initOptions,
+      settings,
+      this.library,
+      this.getAdditionalInlineLibraries(),
+      this.additionalModules
+    );
   }
 
   /**
@@ -470,7 +499,13 @@ export class BaseCLI {
     const settings = await generateSettings(initOptions, undefined, {
       requireConfig: true,
     });
-    await handleDownload(initOptions, settings, this.library);
+    await handleDownload(
+      initOptions,
+      settings,
+      this.library,
+      this.getAdditionalInlineLibraries(),
+      this.additionalModules
+    );
   }
 
   protected async handleTranslate(initOptions: TranslateFlags): Promise<void> {
@@ -493,7 +528,9 @@ export class BaseCLI {
         initOptions,
         settings,
         this.library,
-        false
+        false,
+        this.getAdditionalInlineLibraries(),
+        this.additionalModules
       );
       if (results) {
         await handleTranslate(
@@ -506,7 +543,13 @@ export class BaseCLI {
         );
       }
     } else {
-      await handleDownload(initOptions, settings, this.library);
+      await handleDownload(
+        initOptions,
+        settings,
+        this.library,
+        this.getAdditionalInlineLibraries(),
+        this.additionalModules
+      );
     }
     // Only postprocess files downloaded in this run
     const include = getNeedsPostprocessing();
@@ -595,7 +638,7 @@ export class BaseCLI {
       )
       .option(
         '--src <paths...>',
-        "Space-separated list of glob patterns containing the app's source code, by default 'src/**/*.{js,jsx,ts,tsx}' 'app/**/*.{js,jsx,ts,tsx}' 'pages/**/*.{js,jsx,ts,tsx}' 'components/**/*.{js,jsx,ts,tsx}'"
+        "Space-separated list of glob patterns containing the app's source code; framework-specific source globs are used by default"
       )
       .option(
         '-c, --config <path>',
@@ -608,6 +651,7 @@ export class BaseCLI {
         displayHeader('Running setup wizard...');
 
         const framework = await detectFramework();
+        rejectUnsupportedNuxtSetup(framework);
 
         const useAgent = await (async () => {
           let useAgentMessage;
@@ -634,17 +678,19 @@ export class BaseCLI {
         } else {
           // Get framework display info for the defaults message
           const frameworkDisplayName =
-            framework.type === 'react'
+            framework.type === 'react' || framework.type === 'vue'
               ? getFrameworkDisplayName(framework)
               : null;
           const library =
             framework.type === 'react'
               ? getReactFrameworkLibrary(framework)
-              : null;
+              : framework.type === 'vue'
+                ? Libraries.GT_VUE
+                : null;
 
           // Build defaults description based on detected framework
           const defaultTranslationsDir =
-            framework.name === 'vite'
+            framework.name === 'vite' || framework.name === 'vite-vue'
               ? DEFAULT_VITE_TRANSLATIONS_DIR
               : DEFAULT_TRANSLATIONS_DIR;
 
@@ -653,7 +699,9 @@ export class BaseCLI {
               ? `${library} & initializeGTSPA, ${frameworkDisplayName}, Files saved locally in ${defaultTranslationsDir}`
               : framework.type === 'react'
                 ? `${library} & GTProvider, ${frameworkDisplayName}, Files saved locally in ${defaultTranslationsDir}`
-                : `Files saved locally in ${defaultTranslationsDir}`;
+                : framework.type === 'vue'
+                  ? `${library}, ${frameworkDisplayName}, Files saved locally in ${defaultTranslationsDir}`
+                  : `Files saved locally in ${defaultTranslationsDir}`;
 
           // Ask if user wants to use defaults
           const useDefaults = await promptConfirm({
@@ -662,6 +710,7 @@ export class BaseCLI {
           });
 
           let ranReactSetup = false;
+          let ranVueSetup = false;
 
           // so that people can run init in non-js projects
           if (framework.type === 'react') {
@@ -688,15 +737,40 @@ export class BaseCLI {
             }
           }
 
-          if (ranReactSetup) {
+          if (framework.type === 'vue') {
+            const installVue = useDefaults
+              ? true
+              : await promptConfirm({
+                  message:
+                    'Would you like to install gt-vue? You will still need to add createGT() to your Vue app entry point.',
+                  defaultValue: true,
+                });
+            if (installVue) {
+              const packageJson = await searchForPackageJson();
+              if (
+                packageJson &&
+                !isPackageDeclared(Libraries.GT_VUE, packageJson)
+              ) {
+                const packageManager = await getPackageManager();
+                const spinner = logger.createSpinner('timer');
+                spinner.start(
+                  `Installing ${Libraries.GT_VUE} with ${packageManager.name}...`
+                );
+                await installPackage(Libraries.GT_VUE, packageManager);
+                spinner.stop(
+                  chalk.green(`Automatically installed ${Libraries.GT_VUE}.`)
+                );
+              }
+              ranVueSetup = true;
+            }
+          }
+
+          const ranGTSetup = ranReactSetup || ranVueSetup;
+          if (ranGTSetup) {
             logger.startCommand('Setting up project config...');
           }
           // Configure gt.config.json
-          await this.handleInitCommand(
-            ranReactSetup,
-            useDefaults,
-            framework.name === 'vite'
-          );
+          await this.handleInitCommand(ranGTSetup, useDefaults, framework);
 
           logger.endCommand(
             'Done! Check out our docs for more information on how to use General Translation: https://generaltranslation.com/docs'
@@ -721,7 +795,8 @@ export class BaseCLI {
 
         // Configure gt.config.json
         const framework = await detectFramework();
-        await this.handleInitCommand(false, false, framework.name === 'vite');
+        rejectUnsupportedNuxtSetup(framework);
+        await this.handleInitCommand(false, false, framework);
 
         logger.endCommand(
           'Done! Make sure you have an API key and project ID to use General Translation. Get them on the dashboard: https://generaltranslation.com/dashboard'
@@ -737,15 +812,24 @@ export class BaseCLI {
     }
 
     // Process all file types at once with a single call
-    await upload(settings);
+    await upload(settings, {
+      library: this.library,
+      additionalModules: this.additionalModules,
+    });
   }
 
   // Wizard for configuring gt.config.json
   protected async handleInitCommand(
-    ranReactSetup: boolean,
+    ranGTSetup: boolean,
     useDefaults: boolean = false,
-    isVite: boolean = false
+    framework: Awaited<ReturnType<typeof detectFramework>> = {
+      name: undefined,
+    }
   ): Promise<void> {
+    rejectUnsupportedNuxtSetup(framework);
+    const isVite = framework.name === 'vite' || framework.name === 'vite-vue';
+    const isVue = framework.type === 'vue';
+    const ranReactSetup = ranGTSetup && framework.type === 'react';
     const configFilepath =
       !isVite && fs.existsSync('src/gt.config.json')
         ? 'src/gt.config.json'
@@ -758,8 +842,12 @@ export class BaseCLI {
     // Ask if using another i18n library
     const gtInstalled =
       !!packageJson &&
-      INLINE_LIBRARIES.some((lib) => isPackageInstalled(lib, packageJson));
-    const isUsingGT = ranReactSetup || gtInstalled;
+      INLINE_LIBRARIES.some((lib) =>
+        lib === Libraries.GT_VUE
+          ? isPackageDeclared(lib, packageJson)
+          : isPackageInstalled(lib, packageJson)
+      );
+    const isUsingGT = ranGTSetup || gtInstalled;
 
     // Ask where the translations are stored
     const usingCDN = await (async () => {
@@ -796,7 +884,7 @@ export class BaseCLI {
     const finalTranslationsDir =
       translationsDir?.trim() || defaultTranslationsDir;
 
-    if (isUsingGT && !usingCDN && !isVite) {
+    if (isUsingGT && !usingCDN && (!isVite || isVue)) {
       // Create loadTranslations.js file for local translations
       await createLoadTranslationsFile(
         process.cwd(),
@@ -804,9 +892,21 @@ export class BaseCLI {
         locales
       );
       logger.message(
-        `Created ${chalk.cyan('loadTranslations.js')} file for local translations.
+        isVue
+          ? `Created ${chalk.cyan('loadTranslations.js')} for local translations.
+Import it in your Vue entry point and pass it to ${chalk.cyan('createGT({ loadTranslations })')}.
+See https://generaltranslation.com/docs/vue`
+          : `Created ${chalk.cyan('loadTranslations.js')} file for local translations.
 Make sure to add this function to your app configuration.
 See https://generaltranslation.com/en/docs/next/guides/local-tx`
+      );
+    } else if (isUsingGT && usingCDN && isVue) {
+      await createRemoteLoadTranslationsFile(process.cwd());
+      logger.message(
+        `Created ${chalk.cyan('loadTranslations.js')} for CDN translations.
+Import it in your Vue entry point and pass it to ${chalk.cyan('createGT({ loadTranslations })')}.
+The loader reads ${chalk.cyan('VITE_GT_PROJECT_ID')} from your Vite environment.
+See https://generaltranslation.com/docs/vue`
       );
     }
 
@@ -858,7 +958,7 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
       defaultLocale,
       locales,
       files: Object.keys(files).length > 0 ? files : undefined,
-      framework: isVite ? 'vite' : undefined,
+      framework: isVue ? 'vite-vue' : isVite ? 'vite' : undefined,
       publish: isUsingGT && usingCDN,
     });
 
@@ -883,7 +983,7 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
       ? isPackageInstalled('gt', packageJson, true, true)
       : true; // if no package.json, we can't install it
 
-    if (!isCLIInstalled && !(isUsingGT && isVite)) {
+    if (!isCLIInstalled && !(isUsingGT && isVite && !isVue)) {
       const packageManager = await getPackageManager();
       const spinner = logger.createSpinner();
       spinner.start(
@@ -894,7 +994,7 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
     }
 
     // Set credentials
-    if ((!isVite || !isUsingGT || usingCDN) && !areCredentialsSet()) {
+    if ((isVue || !isVite || !isUsingGT || usingCDN) && !areCredentialsSet()) {
       const loginQuestion = useDefaults
         ? true
         : await promptConfirm({
@@ -916,14 +1016,40 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
               defaultValue: 'all',
             });
         const credentials = await retrieveCredentials(settings, keyType);
-        await setCredentials(credentials, isVite ? 'vite' : settings.framework);
+        await setCredentials(
+          credentials,
+          isVue ? 'vite-vue' : isVite ? 'vite' : settings.framework
+        );
       }
     }
   }
+
+  /** Returns only additional libraries that participate in inline extraction. */
+  protected getAdditionalInlineLibraries(): InlineLibrary[] {
+    return this.additionalModules.filter(isInlineLibrary);
+  }
+
   protected async handleLoginCommand(options: LoginOptions): Promise<void> {
     const settings = await generateSettings({ config: options.config });
     const keyType = options.keyType || 'all';
     const credentials = await retrieveCredentials(settings, keyType);
     await setCredentials(credentials, settings.framework);
   }
+}
+
+/** Stops the setup wizard before it makes unsupported Nuxt project changes. */
+function rejectUnsupportedNuxtSetup(
+  framework: Awaited<ReturnType<typeof detectFramework>>
+): void {
+  if (framework.name !== 'nuxt') return;
+  logErrorAndExit(
+    createDiagnosticMessage({
+      source: 'gt',
+      severity: 'Error',
+      whatHappened: 'Automatic gt-vue setup is not available for Nuxt yet',
+      reassurance: 'Vue extraction from Nuxt projects remains supported',
+      fix: 'Configure createGT and your translation loader manually using the Vue guide',
+      docsUrl: 'https://generaltranslation.com/docs/vue',
+    })
+  );
 }

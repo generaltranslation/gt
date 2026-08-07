@@ -6,12 +6,14 @@ import { Settings, TranslateFlags, Updates } from '../types/index.js';
 import { logger } from '../console/logger.js';
 
 import { createUpdates } from './parse.js';
-import { InlineLibrary } from '../types/libraries.js';
+import { InlineLibrary, Libraries } from '../types/libraries.js';
 
 export async function aggregateInlineTranslations(
   options: TranslateFlags,
   settings: Settings,
-  library: InlineLibrary
+  library: InlineLibrary,
+  additionalLibraries: readonly InlineLibrary[] = [],
+  requireInlineContent: boolean = false
 ): Promise<Updates> {
   if (!options.dictionary) {
     options.dictionary = findFilepath([
@@ -32,7 +34,8 @@ export async function aggregateInlineTranslations(
     library,
     false,
     settings.files.gtJson.parsingFlags,
-    settings.parsingOptions
+    settings.parsingOptions,
+    additionalLibraries
   );
 
   if (warnings.length > 0) {
@@ -71,13 +74,19 @@ export async function aggregateInlineTranslations(
   }
 
   if (updates.length == 0) {
-    logger.error(
-      chalk.red(
-        `No inline content or dictionaries were found for ${chalk.green(
-          library
-        )}. Are you sure you're running this command in the right directory?`
-      )
+    const message = chalk.red(
+      `No inline content or dictionaries were found for ${chalk.green(
+        library
+      )}. Are you sure you're running this command in the right directory?`
     );
+    if (
+      requireInlineContent &&
+      (library === Libraries.GT_VUE ||
+        additionalLibraries.includes(Libraries.GT_VUE))
+    ) {
+      return logErrorAndExit(message);
+    }
+    logger.error(message);
     return updates;
   }
 

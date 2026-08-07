@@ -1,0 +1,54 @@
+import { Command } from 'commander';
+import { describe, expect, it } from 'vitest';
+import { VueCLI } from '../vue.js';
+import { Libraries } from '../../types/libraries.js';
+
+describe('VueCLI', () => {
+  it('registers inline extraction commands including non-mutating setup', () => {
+    const program = new Command();
+    const cli = new VueCLI(program, Libraries.GT_VUE);
+
+    cli.init();
+
+    expect(program.commands.map((command) => command.name())).toEqual(
+      expect.arrayContaining([
+        'init',
+        'configure',
+        'setup',
+        'stage',
+        'translate',
+        'generate',
+        'validate',
+        'download',
+        'enqueue',
+      ])
+    );
+    expect(program.commands.map((command) => command.name())).not.toContain(
+      'scan'
+    );
+
+    const generate = program.commands.find(
+      (command) => command.name() === 'generate'
+    );
+    expect(generate?.helpInformation()).toContain(
+      'framework-specific source globs are used by default'
+    );
+    expect(generate?.helpInformation()).not.toContain(
+      "src/**/*.{js,jsx,ts,tsx}'"
+    );
+  });
+
+  it('retains a file-format primary while selecting gt-vue for inline commands', () => {
+    class TestVueCLI extends VueCLI {
+      readInlineLibraries() {
+        return this.getInlineExtractionLibraries();
+      }
+    }
+    const cli = new TestVueCLI(new Command(), 'i18next', [
+      'i18next-icu',
+      Libraries.GT_VUE,
+    ]);
+
+    expect(cli.readInlineLibraries()).toEqual([Libraries.GT_VUE, []]);
+  });
+});

@@ -10,11 +10,14 @@ import { BranchData } from '../../types/branch.js';
 import { collectFiles } from '../../formats/files/collectFiles.js';
 import { runSetupProjectWorkflow } from '../../workflows/setupProject.js';
 import { hasValidCredentials, hasValidLocales } from './utils/validation.js';
+import type { InlineLibrary } from '../../types/libraries.js';
 
 export async function handleSetupProject(
   options: TranslateFlags,
   settings: Settings,
-  library: SupportedLibraries
+  library: SupportedLibraries,
+  additionalLibraries: readonly InlineLibrary[] = [],
+  detectedAdditionalModules?: readonly SupportedLibraries[]
 ): Promise<{
   fileVersionData: FileTranslationData | undefined;
   branchData: BranchData | undefined;
@@ -26,7 +29,9 @@ export async function handleSetupProject(
   const { files: allFiles, reactComponents } = await collectFiles(
     options,
     settings,
-    library
+    library,
+    additionalLibraries,
+    detectedAdditionalModules
   );
 
   // Dry run

@@ -30,7 +30,10 @@ export async function calculateHashes(updates: Updates): Promise<void> {
 /**
  * Dedupe entries by hash, merging filePaths
  */
-export function dedupeUpdates(updates: Updates): void {
+export function dedupeUpdates(
+  updates: Updates,
+  options: { dedupeIncomingSourceCode?: boolean } = {}
+): void {
   const mergedByHash = new Map<string, (typeof updates)[number]>();
   const noHashUpdates: (typeof updates)[number][] = [];
 
@@ -80,13 +83,34 @@ export function dedupeUpdates(updates: Updates): void {
         if (!existingSourceCode[file]) {
           existingSourceCode[file] = [];
         }
-        existingSourceCode[file].push(...entries);
+        if (!options.dedupeIncomingSourceCode) {
+          existingSourceCode[file].push(...entries);
+          continue;
+        }
+        for (const entry of entries) {
+          if (
+            existingSourceCode[file].some((existingEntry) =>
+              sourceCodeEntriesEqual(existingEntry, entry)
+            )
+          )
+            continue;
+          existingSourceCode[file].push(entry);
+        }
       }
     }
   }
 
   const mergedUpdates = [...mergedByHash.values(), ...noHashUpdates];
   updates.splice(0, updates.length, ...mergedUpdates);
+}
+
+/** Compares source context by its serialized public fields. */
+function sourceCodeEntriesEqual(left: SourceCode, right: SourceCode): boolean {
+  return (
+    left.before === right.before &&
+    left.target === right.target &&
+    left.after === right.after
+  );
 }
 
 /**

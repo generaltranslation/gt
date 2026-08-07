@@ -11,28 +11,43 @@ import type { JsxChildren } from '@generaltranslation/format/types';
 import type { FileToUpload } from 'generaltranslation/types';
 import { hashStringSync } from '../../utils/hash.js';
 import { TEMPLATE_FILE_NAME, TEMPLATE_FILE_ID } from '../../utils/constants.js';
-import { isInlineLibrary } from '../../types/libraries.js';
+import { isInlineLibrary, type InlineLibrary } from '../../types/libraries.js';
 import { shouldPublishGt } from '../../utils/resolvePublish.js';
 
 export async function collectFiles(
   options: TranslateFlags,
   settings: Settings,
-  library: SupportedLibraries
+  library: SupportedLibraries,
+  additionalLibraries: readonly InlineLibrary[] = [],
+  detectedAdditionalModules?: readonly SupportedLibraries[]
 ): Promise<{
   files: FileToUpload[];
   reactComponents: number;
   publishMap: Map<string, boolean>;
 }> {
   // Aggregate files
-  const { files, publishMap } = await aggregateFiles(settings);
+  const { files, publishMap } = await aggregateFiles(
+    settings,
+    detectedAdditionalModules === undefined
+      ? undefined
+      : {
+          library,
+          additionalModules: detectedAdditionalModules,
+        }
+  );
 
   // Parse for React components
   let reactComponents = 0;
-  if (isInlineLibrary(library)) {
+  const inlineLibraries = [library, ...additionalLibraries].filter(
+    isInlineLibrary
+  );
+  const inlineLibrary = inlineLibraries[0];
+  if (inlineLibrary) {
     const updates = await aggregateInlineTranslations(
       options,
       settings,
-      library
+      inlineLibrary,
+      inlineLibraries.slice(1)
     );
     if (updates.length > 0) {
       if (!settings.publish && !settings.files?.placeholderPaths.gt) {

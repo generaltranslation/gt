@@ -99,3 +99,21 @@ export function getPackageVersion(
   };
   return dependencies[packageName] ?? undefined;
 }
+
+/** Checks every manifest field without changing installed-package semantics. */
+export function isPackageDeclared(
+  packageName: string,
+  packageJson: Record<string, unknown>
+): boolean {
+  return [
+    packageJson.dependencies,
+    packageJson.devDependencies,
+    packageJson.peerDependencies,
+    packageJson.optionalDependencies,
+  ].some(
+    (dependencies) =>
+      typeof dependencies === 'object' &&
+      dependencies !== null &&
+      Object.prototype.hasOwnProperty.call(dependencies, packageName)
+  );
+}
