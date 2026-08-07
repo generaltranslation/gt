@@ -300,6 +300,8 @@ jobs:
           pnpm --filter gtx-cli run bin:restore
           pnpm --filter gtx-cli run build:clean
 
+  # A no-changeset push after merging the generated Iris release PR enters
+  # Changesets' publish path for the versions committed by that PR.
   iris-release:
     if: github.ref_name == 'iris'
     name: Iris Prerelease
