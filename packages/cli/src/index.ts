@@ -6,6 +6,8 @@ import { determineLibrary } from './fs/determineFramework/index.js';
 import { Command } from 'commander';
 import { NodeCLI } from './cli/node.js';
 import { Libraries, isPythonLibrary } from './types/libraries.js';
+import { detectVueProject } from '@generaltranslation/vue-extractor/detect';
+import { VueCLI } from './cli/vue.js';
 
 export function main(program: Command) {
   program.name('gt');
@@ -24,6 +26,8 @@ export function main(program: Command) {
     cli = new NodeCLI(program, library, additionalModules);
   } else if (isPythonLibrary(library)) {
     cli = new PythonCLI(program, library, additionalModules);
+  } else if (detectVueProject()) {
+    cli = new VueCLI(program, additionalModules);
   } else {
     cli = new BaseCLI(program, library, additionalModules);
   }

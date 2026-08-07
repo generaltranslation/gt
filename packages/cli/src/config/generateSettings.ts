@@ -29,6 +29,7 @@ import { GT_PARSING_FLAGS_DEFAULT } from './defaults.js';
 import { normalizeFilesOptions } from '../formats/files/transformFormat.js';
 import { determineLibrary } from '../fs/determineFramework/index.js';
 import { logger } from '../console/logger.js';
+import { detectVueProject } from '@generaltranslation/vue-extractor/detect';
 
 export const DEFAULT_SRC_PATTERNS = [
   'src/**/*.{js,jsx,ts,tsx}',
@@ -182,7 +183,8 @@ export async function generateSettings(
 
   if (
     determineLibrary().library === 'base' &&
-    !hasConfiguredTranslationFiles(mergedOptions.files)
+    !hasConfiguredTranslationFiles(mergedOptions.files) &&
+    !detectVueProject(cwd)
   ) {
     logger.warn(
       chalk.yellow(

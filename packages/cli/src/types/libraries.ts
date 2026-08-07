@@ -9,6 +9,7 @@ export enum Libraries {
   GT_I18N = 'gt-i18n',
   GT_REACT_CORE = '@generaltranslation/react-core',
   GT_TANSTACK_START = 'gt-tanstack-start',
+  GT_VUE = 'gt-vue',
   GT_FLASK = 'gt-flask',
   GT_FASTAPI = 'gt-fastapi',
 }
@@ -24,6 +25,7 @@ export const GT_LIBRARIES = [
   Libraries.GT_I18N,
   Libraries.GT_REACT_CORE,
   Libraries.GT_TANSTACK_START,
+  Libraries.GT_VUE,
   Libraries.GT_FLASK,
   Libraries.GT_FASTAPI,
 ] as const;
@@ -39,6 +41,7 @@ export const INLINE_LIBRARIES = [
   Libraries.GT_REACT_NATIVE,
   Libraries.GT_REACT_CORE,
   Libraries.GT_TANSTACK_START,
+  Libraries.GT_VUE,
   Libraries.GT_I18N,
   Libraries.GT_FLASK,
   Libraries.GT_FASTAPI,
@@ -111,6 +114,7 @@ export const GT_LIBRARIES_UPSTREAM: Record<GTLibrary, GTLibrary[]> = {
     Libraries.GT_TANSTACK_START,
   ],
   [Libraries.GT_I18N]: [Libraries.GT_I18N],
+  [Libraries.GT_VUE]: [Libraries.GT_VUE],
   [Libraries.GT_FLASK]: [Libraries.GT_FLASK],
   [Libraries.GT_FASTAPI]: [Libraries.GT_FASTAPI],
 } as const;

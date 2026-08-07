@@ -4,6 +4,7 @@ import { resolveFiles } from '../../fs/config/parseFilesConfig';
 import { determineLibrary } from '../../fs/determineFramework/index.js';
 import { logger } from '../../console/logger.js';
 import { resolveConfig } from '../resolveConfig.js';
+import { detectVueProject } from '@generaltranslation/vue-extractor/detect';
 
 // Mock resolveFiles
 vi.mock('../../fs/config/parseFilesConfig', () => ({
@@ -15,6 +16,10 @@ vi.mock('../../fs/determineFramework/index.js', () => ({
     library: 'base',
     additionalModules: [],
   })),
+}));
+
+vi.mock('@generaltranslation/vue-extractor/detect', () => ({
+  detectVueProject: vi.fn(() => false),
 }));
 
 // Mock other dependencies
@@ -71,6 +76,7 @@ vi.mock('../optionPresets.js', () => ({
 }));
 
 const mockDetermineLibrary = vi.mocked(determineLibrary);
+const mockDetectVueProject = vi.mocked(detectVueProject);
 const mockLogWarning = vi.mocked(logger.warn);
 const mockResolveConfig = vi.mocked(resolveConfig);
 
@@ -98,6 +104,7 @@ describe('generateSettings - composite patterns', () => {
       library: 'base',
       additionalModules: [],
     });
+    mockDetectVueProject.mockReturnValue(false);
   });
 
   it('should extract composite patterns from jsonSchema options and pass to resolveFiles', async () => {
@@ -186,6 +193,17 @@ describe('generateSettings - composite patterns', () => {
       '/test/cwd'
     );
 
+    expect(mockLogWarning).not.toHaveBeenCalledWith(
+      expect.stringContaining('No package.json')
+    );
+  });
+
+  it('suppresses the warning when the package detector owns a Vue project', async () => {
+    mockDetectVueProject.mockReturnValue(true);
+
+    await generateSettings({}, '/test/cwd');
+
+    expect(mockDetectVueProject).toHaveBeenCalledWith('/test/cwd');
     expect(mockLogWarning).not.toHaveBeenCalledWith(
       expect.stringContaining('No package.json')
     );

@@ -102,7 +102,7 @@ const electronSetupError = createDiagnosticMessage({
   docsUrl: 'https://generaltranslation.com/docs/react',
 });
 
-async function exitIfUnsupportedSetupTarget(): Promise<void> {
+export async function exitIfUnsupportedSetupTarget(): Promise<void> {
   const packageJson = await searchForPackageJson();
   if (packageJson && isPackageInstalled('electron', packageJson, false, true)) {
     logErrorAndExit(electronSetupError);
