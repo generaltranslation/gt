@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { apiRequest } from '../apiRequest';
 import { fetchWithTimeout } from '../fetchWithTimeout';
 import { validateResponse } from '../validateResponse';
+import { defaultTimeout } from '../../../settings/settings';
+import { API_VERSION } from '../../api';
 
 vi.mock('../fetchWithTimeout');
 vi.mock('../validateResponse');
@@ -165,6 +167,73 @@ describe.sequential('apiRequest', () => {
 
     expect(fetchWithTimeout).toHaveBeenCalledTimes(1);
     expect(validateResponse).toHaveBeenCalledWith(rateLimitedResponse);
+  });
+
+  it('does not retry failed organization-scoped requests', async () => {
+    const serverErrorResponse = createResponse({
+      ok: false,
+      status: 500,
+      statusText: 'Internal Server Error',
+    });
+    const serverError = new Error('server error');
+
+    vi.mocked(fetchWithTimeout).mockResolvedValueOnce(serverErrorResponse);
+    vi.mocked(validateResponse).mockRejectedValueOnce(serverError);
+
+    await expect(
+      apiRequest(
+        {
+          baseUrl: 'https://api.test.com',
+          apiKey: 'gtx-org-test-key',
+        },
+        '/v2/projects',
+        {
+          body: { name: 'Customer Portal', defaultLocale: 'en-US' },
+          retryPolicy: 'none',
+        }
+      )
+    ).rejects.toThrow(serverError);
+
+    expect(fetchWithTimeout).toHaveBeenCalledTimes(1);
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
+      'https://api.test.com/v2/projects',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer gtx-org-test-key',
+          'gt-api-version': API_VERSION,
+        },
+        body: JSON.stringify({
+          name: 'Customer Portal',
+          defaultLocale: 'en-US',
+        }),
+      },
+      defaultTimeout
+    );
+    expect(validateResponse).toHaveBeenCalledWith(serverErrorResponse);
+  });
+
+  it('does not retry organization-scoped requests after response loss', async () => {
+    const networkError = new Error('response lost');
+    vi.mocked(fetchWithTimeout).mockRejectedValueOnce(networkError);
+
+    await expect(
+      apiRequest(
+        {
+          baseUrl: 'https://api.test.com',
+          apiKey: 'gtx-org-test-key',
+        },
+        '/v2/projects',
+        {
+          body: { name: 'Customer Portal', defaultLocale: 'en-US' },
+          retryPolicy: 'none',
+        }
+      )
+    ).rejects.toThrow(networkError);
+
+    expect(fetchWithTimeout).toHaveBeenCalledTimes(1);
+    expect(validateResponse).not.toHaveBeenCalled();
   });
 
   it('surfaces the final 429 validation error after exhausting retries', async () => {

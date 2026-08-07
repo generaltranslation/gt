@@ -12,6 +12,7 @@ import {
 } from './types';
 import { libraryDefaultLocale } from './settings/settings';
 import {
+  noApiKeyProvidedError,
   noSourceLocaleProvidedError,
   noTargetLocaleProvidedError,
 } from './logging/errors';
@@ -57,6 +58,10 @@ import type {
 import { _querySourceFile } from './translate/querySourceFile';
 import { ProjectData } from './types-dir/api/project';
 import { _getProjectData } from './projects/getProjectData';
+import {
+  _createProject,
+  type CreateProjectResult,
+} from './projects/createProject';
 import { DownloadFileBatchRequest } from './types-dir/api/downloadFileBatch';
 import {
   _checkJobStatus,
@@ -160,6 +165,29 @@ export {
  * });
  */
 export class GT extends GTRuntime {
+  // -------------- Project Methods -------------- //
+
+  /**
+   * Creates a project in the organization associated with the configured API key.
+   *
+   * @param name - The project name.
+   * @param defaultLocale - The project's default locale. Defaults to the library default locale.
+   * @returns The created project.
+   */
+  async createProject(
+    name: string,
+    defaultLocale: string = libraryDefaultLocale
+  ): Promise<CreateProjectResult> {
+    if (!this.apiKey) {
+      throw new Error(noApiKeyProvidedError('createProject'));
+    }
+    return await _createProject(
+      name,
+      this.resolveCanonicalLocale(defaultLocale),
+      { baseUrl: this.baseUrl, apiKey: this.apiKey }
+    );
+  }
+
   // -------------- Branch Methods -------------- //
 
   /**

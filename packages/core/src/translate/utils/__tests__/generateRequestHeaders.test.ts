@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { generateRequestHeaders } from '../generateRequestHeaders';
-import { TranslationRequestConfig } from '../../../types';
+import {
+  OrganizationRequestConfig,
+  TranslationRequestConfig,
+} from '../../../types';
 import { API_VERSION } from '../../api';
 
 describe('generateRequestHeaders', () => {
@@ -63,6 +66,21 @@ describe('generateRequestHeaders', () => {
     expect(headers).toEqual({
       'Content-Type': 'application/json',
       'gt-project-id': 'test-project',
+      'gt-api-version': API_VERSION,
+    });
+  });
+
+  it('should omit the project ID for organization-scoped requests', () => {
+    const config: OrganizationRequestConfig = {
+      baseUrl: 'https://api.test.com',
+      apiKey: 'gtx-org-test-key',
+    };
+
+    const headers = generateRequestHeaders(config);
+
+    expect(headers).toEqual({
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer gtx-org-test-key',
       'gt-api-version': API_VERSION,
     });
   });

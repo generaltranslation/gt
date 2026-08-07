@@ -1,4 +1,4 @@
-import { TranslationRequestConfig } from '../../types';
+import { ApiRequestConfig } from '../../types';
 import { defaultBaseUrl } from '../../settings/settingsUrls';
 import { defaultTimeout } from '../../settings/settings';
 import { fetchWithTimeout } from './fetchWithTimeout';
@@ -93,7 +93,7 @@ function getResponseRetryDelay(
  * @returns The parsed JSON response.
  */
 export async function apiRequest<T>(
-  config: TranslationRequestConfig,
+  config: ApiRequestConfig,
   endpoint: string,
   options?: {
     body?: unknown;
