@@ -18,6 +18,7 @@ const port = Number(process.env.PORT ?? 5181);
 const server = express();
 let vite: ViteDevServer | undefined;
 let productionTemplate = '';
+let developmentTemplate = '';
 let productionRender: RenderApplication | undefined;
 
 if (production) {
@@ -33,6 +34,10 @@ if (production) {
   ).render;
   server.use(express.static(clientDirectory, { index: false }));
 } else {
+  developmentTemplate = await fs.readFile(
+    path.join(root, 'index.html'),
+    'utf8'
+  );
   vite = await createViteServer({
     appType: 'custom',
     root,
@@ -47,10 +52,7 @@ server.use(async (request, response, next) => {
   try {
     const template = production
       ? productionTemplate
-      : await vite!.transformIndexHtml(
-          url,
-          await fs.readFile(path.join(root, 'index.html'), 'utf8')
-        );
+      : await vite!.transformIndexHtml(url, developmentTemplate);
     const render = production
       ? productionRender!
       : (await vite!.ssrLoadModule('/src/entry-server.ts')).render;
