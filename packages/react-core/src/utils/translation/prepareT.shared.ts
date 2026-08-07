@@ -15,8 +15,37 @@ type StripDollarPrefix<T> = {
   [K in keyof T as K extends `$${infer Rest}` ? Rest : K]: T[K];
 };
 
+/**
+ * $-prefixed sugar props on <T>, deprecated in favor of the unprefixed
+ * forms. Declared explicitly (rather than reusing the shared options type)
+ * so the deprecation applies only to <T> component props — the $-prefixed
+ * options of the string functions (t(), gt(), msg()) are unaffected.
+ */
+type TSugarProps = {
+  /** @deprecated Use `context` instead. Support for `$context` will be removed in the next major version. */
+  $context?: string;
+  /** @deprecated Use `id` instead. Support for `$id` will be removed in the next major version. */
+  $id?: string;
+  /** @deprecated Use `maxChars` instead. Support for `$maxChars` will be removed in the next major version. */
+  $maxChars?: number;
+  /** @deprecated Use `requiresReview` instead. Support for `$requiresReview` will be removed in the next major version. */
+  $requiresReview?: boolean;
+  /** @internal Compiler-injected hash; not part of the public API. */
+  $_hash?: string;
+  /** @internal Always 'JSX' for <T>. */
+  $format?: 'JSX';
+};
+
+// Compile-time guard: TSugarProps must stay structurally identical to the
+// shared sugar options type it re-declares.
+type AssertExact<A, B> = A extends B ? (B extends A ? true : never) : never;
+type _TSugarPropsInSync = Expect<
+  AssertExact<TSugarProps, JsxTranslationOptionsWithSugar>
+>;
+type Expect<T extends true> = T;
+
 type JsxTranslationOptions = StripDollarPrefix<JsxTranslationOptionsWithSugar> &
-  JsxTranslationOptionsWithSugar;
+  TSugarProps;
 
 type PreparedT = {
   taggedSourceChildren: TaggedChildren;
