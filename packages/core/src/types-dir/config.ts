@@ -14,8 +14,8 @@ export type GTParsingFlags = {
   viteConfigPath?: string;
   /** Hash-affecting Vue template compiler options. */
   vueCompilerOptions?: {
-    whitespace?: string;
-    delimiters?: string[];
+    whitespace?: 'condense' | 'preserve';
+    delimiters?: [string, string];
   };
 };
 
