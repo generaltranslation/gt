@@ -77,6 +77,7 @@ import { setupGitMergeDrivers } from '../git/setupMergeDrivers.js';
 import { warnReactPackageCompatibility } from '../utils/reactPackageCompatibility.js';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { setupViteSPA } from '../setup/setupViteSPA.js';
+import { manifestDirectlyDeclaresGTVue } from '@generaltranslation/vue-extractor/integration';
 
 const ID_COMPATIBILITY_WARNING_COMMANDS = new Set([
   'download',
@@ -759,8 +760,10 @@ export class BaseCLI {
   protected hasInstalledInlineRuntime(
     packageJson: Record<string, unknown>
   ): boolean {
-    return INLINE_LIBRARIES.some(
-      (lib) => lib !== Libraries.GT_VUE && isPackageInstalled(lib, packageJson)
+    return INLINE_LIBRARIES.some((lib) =>
+      lib === Libraries.GT_VUE
+        ? manifestDirectlyDeclaresGTVue(packageJson)
+        : isPackageInstalled(lib, packageJson)
     );
   }
 

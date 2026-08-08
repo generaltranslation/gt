@@ -6,7 +6,7 @@ import { determineLibrary } from './fs/determineFramework/index.js';
 import { Command } from 'commander';
 import { NodeCLI } from './cli/node.js';
 import { Libraries, isPythonLibrary } from './types/libraries.js';
-import { VueCLI } from './cli/vue.js';
+import { MixedVueCLI, VueCLI } from './cli/vue.js';
 import { planVueExtraction } from '@generaltranslation/vue-extractor/integration';
 
 export function main(program: Command) {
@@ -34,7 +34,7 @@ export function main(program: Command) {
       projectRoot: process.cwd(),
     });
     cli = vuePlan.handled
-      ? new VueCLI(program, additionalModules)
+      ? new MixedVueCLI(program, additionalModules)
       : new BaseCLI(program, library, additionalModules);
   }
   cli.init();
