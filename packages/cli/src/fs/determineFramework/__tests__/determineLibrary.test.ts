@@ -60,6 +60,76 @@ describe('determineLibrary', () => {
       expect(result.library).toBe(Libraries.GT_NODE);
     });
 
+    it('detects gt-vue from root dependencies', () => {
+      mockExistsSync.mockReturnValue(true);
+      mockReadFileSync.mockReturnValue(
+        JSON.stringify({ dependencies: { 'gt-vue': '0.1.0' } })
+      );
+
+      const result = determineLibrary();
+      expect(result.library).toBe(Libraries.GT_VUE);
+    });
+
+    it('detects gt-vue from root devDependencies', () => {
+      mockExistsSync.mockReturnValue(true);
+      mockReadFileSync.mockReturnValue(
+        JSON.stringify({ devDependencies: { 'gt-vue': '0.1.0' } })
+      );
+
+      const result = determineLibrary();
+      expect(result.library).toBe(Libraries.GT_VUE);
+    });
+
+    it.each([
+      Libraries.GT_NEXT,
+      Libraries.GT_TANSTACK_START,
+      Libraries.GT_REACT,
+      Libraries.GT_REACT_NATIVE,
+      Libraries.GT_NODE,
+      'next-intl',
+      'i18next',
+    ])('keeps the existing %s priority over gt-vue', (library) => {
+      mockExistsSync.mockReturnValue(true);
+      mockReadFileSync.mockReturnValue(
+        JSON.stringify({
+          dependencies: { [library]: '1.0.0', 'gt-vue': '0.1.0' },
+        })
+      );
+
+      const result = determineLibrary();
+      expect(result.library).toBe(library);
+    });
+
+    it('does not detect gt-vue from peer or optional dependencies', () => {
+      mockExistsSync.mockReturnValue(true);
+      mockReadFileSync.mockReturnValue(
+        JSON.stringify({
+          peerDependencies: { 'gt-vue': '^0.1.0' },
+          optionalDependencies: { 'gt-vue': '0.1.0' },
+        })
+      );
+
+      const result = determineLibrary();
+      expect(result.library).toBe('base');
+    });
+
+    it.each(['dependencies', 'devDependencies'] as const)(
+      'lets optionalDependencies override gt-vue in %s',
+      (field) => {
+        mockExistsSync.mockReturnValue(true);
+        mockReadFileSync.mockReturnValue(
+          JSON.stringify({
+            [field]: { 'gt-vue': '0.1.0' },
+            optionalDependencies: { 'gt-vue': '0.1.0' },
+          })
+        );
+
+        const result = determineLibrary();
+
+        expect(result.library).toBe('base');
+      }
+    );
+
     it("returns 'base' when package.json has no GT dependencies", () => {
       mockExistsSync.mockImplementation((path) => {
         if (String(path).endsWith('package.json')) return true;
@@ -155,6 +225,32 @@ setup(
       const result = determineLibrary();
       expect(result.library).toBe(Libraries.GT_REACT);
     });
+
+    it.each([
+      [
+        'pyproject.toml',
+        '[project]\ndependencies = ["gt-flask"]',
+        Libraries.GT_FLASK,
+      ],
+      ['requirements.txt', 'gt-fastapi', Libraries.GT_FASTAPI],
+    ])(
+      'keeps Python detection ahead of gt-vue using %s',
+      (pythonFile, pythonManifest, expectedLibrary) => {
+        mockExistsSync.mockImplementation((filepath) => {
+          const value = String(filepath);
+          return value.endsWith('package.json') || value.endsWith(pythonFile);
+        });
+        mockReadFileSync.mockImplementation((filepath) =>
+          String(filepath).endsWith('package.json')
+            ? JSON.stringify({ dependencies: { 'gt-vue': '0.1.0' } })
+            : pythonManifest
+        );
+
+        const result = determineLibrary();
+
+        expect(result.library).toBe(expectedLibrary);
+      }
+    );
 
     it('falls through pyproject.toml -> requirements.txt -> setup.py', () => {
       mockExistsSync.mockImplementation((path) => {

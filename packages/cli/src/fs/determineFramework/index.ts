@@ -4,6 +4,7 @@ import { SupportedLibraries } from '../../types/index.js';
 import { logger } from '../../console/logger.js';
 import { Libraries } from '../../types/libraries.js';
 import { detectPythonLibrary } from './detectPythonLibrary.js';
+import { planVueExtraction } from '@generaltranslation/vue-extractor/integration';
 
 export function determineLibrary(): {
   library: SupportedLibraries;
@@ -53,6 +54,15 @@ export function determineLibrary(): {
       if (pythonLibrary) {
         library = pythonLibrary;
       }
+    }
+
+    // Preserve every historical framework's priority. The package-owned
+    // planner is the single source of truth for direct Vue ownership.
+    if (
+      library === 'base' &&
+      planVueExtraction({ library, projectRoot: cwd }).handled
+    ) {
+      library = Libraries.GT_VUE;
     }
 
     // Fallback to base if neither is found

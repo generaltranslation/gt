@@ -35,4 +35,12 @@ Generate translations:
 npx gt translate
 ```
 
+## Vue projects
+
+Vue extraction activates when `gt-vue` is listed in the root
+`dependencies` or `devDependencies` where the command runs. In a monorepo,
+run the CLI from the Vue package or add `gt-vue` to the command root; a
+child-only, peer-only, optional, or wrapper dependency does not opt the root
+into Vue extraction.
+
 See the [full documentation](https://generaltranslation.com/docs/cli) for guides and API reference.
