@@ -69,7 +69,7 @@ import {
   getFrameworkDisplayName,
   getReactFrameworkLibrary,
 } from '../setup/frameworkUtils.js';
-import { INLINE_LIBRARIES } from '../types/libraries.js';
+import { INLINE_LIBRARIES, Libraries } from '../types/libraries.js';
 import { handleEnqueue } from './commands/enqueue.js';
 import { splitMintlifyLanguageRefs } from '../utils/splitMintlifyLanguageRefs.js';
 import { runMergeDriver, type MergeDriverName } from '../git/mergeDrivers.js';
@@ -755,6 +755,15 @@ export class BaseCLI {
     await upload(settings);
   }
 
+  /** Returns whether setup should configure an installed inline GT runtime. */
+  protected hasInstalledInlineRuntime(
+    packageJson: Record<string, unknown>
+  ): boolean {
+    return INLINE_LIBRARIES.some(
+      (lib) => lib !== Libraries.GT_VUE && isPackageInstalled(lib, packageJson)
+    );
+  }
+
   /**
    * Runs the interactive `gt.config.json` wizard.
    *
@@ -781,8 +790,7 @@ export class BaseCLI {
 
     // Ask if using another i18n library
     const gtInstalled =
-      !!packageJson &&
-      INLINE_LIBRARIES.some((lib) => isPackageInstalled(lib, packageJson));
+      !!packageJson && this.hasInstalledInlineRuntime(packageJson);
     const isUsingGT = ranReactSetup || gtInstalled;
 
     // Ask where the translations are stored

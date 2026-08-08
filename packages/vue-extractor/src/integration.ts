@@ -65,6 +65,24 @@ type CapturedPlannerOptions = Omit<
 const UNHANDLED_PLAN = Object.freeze({ handled: false } as const);
 
 /**
+ * Returns whether a package manifest directly enables gt-vue extraction.
+ *
+ * Only production and development dependencies establish ownership. An
+ * optional declaration is authoritative and vetoes a matching declaration in
+ * either field, while peer dependencies never establish ownership.
+ */
+export function manifestDirectlyDeclaresGTVue(manifest: unknown): boolean {
+  if (!isRecord(manifest)) return false;
+  if (hasOwnDependency(manifest.optionalDependencies, GT_VUE_PACKAGE)) {
+    return false;
+  }
+  return (
+    hasOwnDependency(manifest.dependencies, GT_VUE_PACKAGE) ||
+    hasOwnDependency(manifest.devDependencies, GT_VUE_PACKAGE)
+  );
+}
+
+/**
  * Plans Vue extraction without changing historical framework behavior.
  *
  * Activation is intentionally narrow: only an explicitly selected `gt-vue`
@@ -120,17 +138,7 @@ function rootDirectlyDeclaresGTVue(projectRoot: string): boolean {
   } catch {
     return false;
   }
-  if (!isRecord(manifest)) return false;
-  // npm treats an optional dependency as overriding the same regular
-  // dependency. Honor that effective classification so an optional gt-vue
-  // install can never activate extraction through another manifest field.
-  if (hasOwnDependency(manifest.optionalDependencies, GT_VUE_PACKAGE)) {
-    return false;
-  }
-  return (
-    hasOwnDependency(manifest.dependencies, GT_VUE_PACKAGE) ||
-    hasOwnDependency(manifest.devDependencies, GT_VUE_PACKAGE)
-  );
+  return manifestDirectlyDeclaresGTVue(manifest);
 }
 
 function hasOwnDependency(value: unknown, packageName: string): boolean {

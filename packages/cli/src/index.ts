@@ -7,6 +7,7 @@ import { Command } from 'commander';
 import { NodeCLI } from './cli/node.js';
 import { Libraries, isPythonLibrary } from './types/libraries.js';
 import { VueCLI } from './cli/vue.js';
+import { planVueExtraction } from '@generaltranslation/vue-extractor/integration';
 
 export function main(program: Command) {
   program.name('gt');
@@ -28,7 +29,13 @@ export function main(program: Command) {
   } else if (isPythonLibrary(library)) {
     cli = new PythonCLI(program, library, additionalModules);
   } else {
-    cli = new BaseCLI(program, library, additionalModules);
+    const vuePlan = planVueExtraction({
+      library,
+      projectRoot: process.cwd(),
+    });
+    cli = vuePlan.handled
+      ? new VueCLI(program, additionalModules)
+      : new BaseCLI(program, library, additionalModules);
   }
   cli.init();
   cli.execute();
