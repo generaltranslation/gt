@@ -158,62 +158,60 @@ async function runVueExtraction(
   options: CapturedPlannerOptions,
   { extractPrimary }: VueExtractionRunOptions
 ): Promise<InlineExtractionOutput> {
-  const defaultPrimaryPromise =
-    extractPrimary && options.filePatterns === undefined
-      ? extractPrimary(options.filePatterns)
-      : undefined;
-  if (defaultPrimaryPromise) {
-    // Preserve the original promise for the eventual await and error identity,
-    // while marking an early rejection handled before Vue inspection yields.
-    // The derived catch promise always fulfills and therefore cannot introduce
-    // a second unhandled rejection.
-    void defaultPrimaryPromise.catch(() => undefined);
+  const filePatterns = options.filePatterns;
+  if (filePatterns === undefined) {
+    if (extractPrimary) {
+      const primaryPromise = extractPrimary(filePatterns);
+      const vueContextPromise = loadVueExtractionContext(options);
+      // Observe both branches immediately. This lets an already-rejected
+      // primary extractor retain its error identity and settle the returned
+      // promise without waiting for workspace inspection. Promise.all also
+      // keeps the losing branch observed if it rejects later.
+      const vuePromise = vueContextPromise.then(
+        async ({ inspection, project }) => ({
+          project,
+          vue: await project.extractFromVueProject(
+            createProjectExtractionOptions(options, inspection, filePatterns)
+          ),
+        })
+      );
+      const [primary, { project, vue }] = await Promise.all([
+        primaryPromise,
+        vuePromise,
+      ]);
+      return project.mergeVueProjectExtraction(primary, vue);
+    }
+
+    const { project, inspection } = await loadVueExtractionContext(options);
+    return project.extractFromVueProject(
+      createProjectExtractionOptions(options, inspection, filePatterns)
+    );
   }
 
-  const [inspectionModule, project] = await Promise.all([
-    import('./internal/project/inspectVueProject.js'),
-    import('./project.js'),
-  ]);
-  const inspection = await inspectionModule.inspectVueProjectForRuntime(
-    options.projectRoot,
-    options.library === GT_VUE_PACKAGE
-  );
+  const vueContextPromise = loadVueExtractionContext(options);
+  const { inspectionModule, project, inspection } = await vueContextPromise;
 
   if (!extractPrimary) {
     return project.extractFromVueProject(
-      createProjectExtractionOptions(options, inspection, options.filePatterns)
+      createProjectExtractionOptions(options, inspection, filePatterns)
     );
-  }
-
-  if (options.filePatterns === undefined) {
-    const vuePromise = project.extractFromVueProject(
-      createProjectExtractionOptions(options, inspection, undefined)
-    );
-    const [primary, vue] = await Promise.all([
-      defaultPrimaryPromise!,
-      vuePromise,
-    ]);
-    return project.mergeVueProjectExtraction(primary, vue);
   }
 
   const partition = inspection.hasVueScopes
-    ? inspectionModule.partitionVueSourcePatterns(
-        inspection,
-        options.filePatterns
-      )
+    ? inspectionModule.partitionVueSourcePatterns(inspection, filePatterns)
     : { primaryExclusionPatterns: [], vueExclusionPatterns: [] };
   const stablePrimaryPatterns =
     process.cwd() === options.projectRoot
-      ? options.filePatterns
-      : await anchorFilePatterns(options.projectRoot, options.filePatterns);
+      ? filePatterns
+      : await anchorFilePatterns(options.projectRoot, filePatterns);
   const primaryPatterns =
     partition.primaryExclusionPatterns.length === 0
       ? stablePrimaryPatterns
       : [...stablePrimaryPatterns, ...partition.primaryExclusionPatterns];
   const vuePatterns =
     partition.vueExclusionPatterns.length === 0
-      ? options.filePatterns
-      : [...options.filePatterns, ...partition.vueExclusionPatterns];
+      ? filePatterns
+      : [...filePatterns, ...partition.vueExclusionPatterns];
 
   // Calling before constructing/awaiting Vue extraction preserves the
   // historical extractor's synchronous process.cwd() observation.
@@ -223,6 +221,19 @@ async function runVueExtraction(
   );
   const [primary, vue] = await Promise.all([primaryPromise, vuePromise]);
   return project.mergeVueProjectExtraction(primary, vue);
+}
+
+/** Loads the lazy Vue modules and performs package-owned project inspection. */
+async function loadVueExtractionContext(options: CapturedPlannerOptions) {
+  const [inspectionModule, project] = await Promise.all([
+    import('./internal/project/inspectVueProject.js'),
+    import('./project.js'),
+  ]);
+  const inspection = await inspectionModule.inspectVueProjectForRuntime(
+    options.projectRoot,
+    options.library === GT_VUE_PACKAGE
+  );
+  return { inspectionModule, project, inspection };
 }
 
 function createProjectExtractionOptions(
