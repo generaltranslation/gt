@@ -200,7 +200,15 @@ jobs:
 
       - name: Use Vue ${{ matrix.vue }}
         if: steps.gt_vue_changed.outputs.changed == 'true'
-        run: pnpm --filter gt-vue --filter @generaltranslation/vue-extractor add --save-dev --save-exact --lockfile=false vue@${{ matrix.vue }}
+        run: |
+          pnpm --filter gt-vue add --save-dev --save-exact --lockfile=false vue@${{ matrix.vue }}
+          pnpm --filter @generaltranslation/vue-extractor add --save-dev --save-exact --lockfile=false vue@${{ matrix.vue }} @vue/compiler-dom@${{ matrix.vue }} @vue/compiler-sfc@${{ matrix.vue }}
+
+      - name: Verify Vue ${{ matrix.vue }} toolchain
+        if: steps.gt_vue_changed.outputs.changed == 'true'
+        run: |
+          pnpm --filter gt-vue exec node -e "const actual = require('vue/package.json').version; if (actual !== '${{ matrix.vue }}') throw new Error('vue resolved to ' + actual);"
+          pnpm --filter @generaltranslation/vue-extractor exec node -e "for (const dependency of ['vue', '@vue/compiler-dom', '@vue/compiler-sfc']) { const actual = require(dependency + '/package.json').version; if (actual !== '${{ matrix.vue }}') throw new Error(dependency + ' resolved to ' + actual); }"
 
       - name: Build and test gt-vue and the Vue extractor
         if: steps.gt_vue_changed.outputs.changed == 'true'

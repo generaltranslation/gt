@@ -2,46 +2,55 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { JsxChildren } from '@generaltranslation/format/types';
-import { extractFromVueSource } from './testVueCompiler.js';
+import {
+  extractFromVueSource,
+  testVueCompilerVersion,
+} from './testVueCompiler.js';
+
+// This fixture includes quoted dynamic directive arguments rejected by 3.3.
+const supportsRuntimeParityFixture = !testVueCompilerVersion.startsWith('3.3.');
 
 describe('Vue template runtime parity', () => {
-  it('matches Vue directive scope, slot, and component-name behavior', async () => {
-    const result = await extractFixture('template-runtime-parity.vue');
+  it.skipIf(!supportsRuntimeParityFixture)(
+    'matches Vue directive scope, slot, and component-name behavior',
+    async () => {
+      const result = await extractFixture('template-runtime-parity.vue');
 
-    expect(result.errors).toEqual([]);
-    expect(
-      result.results
-        .filter((update) => update.dataFormat === 'STRING')
-        .map((update) => update.source)
-    ).toEqual(['Outer v-if', 'v-for default', 'Directive', 'slot default']);
+      expect(result.errors).toEqual([]);
+      expect(
+        result.results
+          .filter((update) => update.dataFormat === 'STRING')
+          .map((update) => update.source)
+      ).toEqual(['Outer v-if', 'v-for default', 'Directive', 'slot default']);
 
-    const richSources = result.results
-      .filter((update) => update.dataFormat === 'JSX')
-      .map((update) => update.source);
-    const branch: JsxChildren = {
-      t: 'Branch',
-      i: 1,
-      d: {
-        b: { casual: 'Second', formal: 'First' },
-        t: 'b',
-      },
-    };
-    const plural: JsxChildren = {
-      t: 'Plural',
-      i: 1,
-      d: {
-        b: { one: 'One', other: 'Other' },
-        t: 'p',
-      },
-    };
-    expect(richSources).toEqual([
-      'Digit-normalized component',
-      'Dynamic component',
-      'Explicit default',
-      branch,
-      plural,
-    ]);
-  });
+      const richSources = result.results
+        .filter((update) => update.dataFormat === 'JSX')
+        .map((update) => update.source);
+      const branch: JsxChildren = {
+        t: 'Branch',
+        i: 1,
+        d: {
+          b: { casual: 'Second', formal: 'First' },
+          t: 'b',
+        },
+      };
+      const plural: JsxChildren = {
+        t: 'Plural',
+        i: 1,
+        d: {
+          b: { one: 'One', other: 'Other' },
+          t: 'p',
+        },
+      };
+      expect(richSources).toEqual([
+        'Digit-normalized component',
+        'Dynamic component',
+        'Explicit default',
+        branch,
+        plural,
+      ]);
+    }
+  );
 
   it('still rejects meaningful implicit content beside an explicit default slot', async () => {
     const result = await extractFixture('template-duplicate-default.vue');

@@ -15,6 +15,8 @@ export type ResolvedVueCompiler = {
   parseTemplate?: typeof parseVueTemplate;
   templateCompiler?: TemplateCompiler;
   templateParseOptionsSupported: boolean;
+  /** Whether a valued `v-is` replaces its source element at runtime. */
+  valuedVIsReplacesElement: boolean;
   version: string;
 };
 
@@ -27,9 +29,18 @@ const inspectedCompilers = new WeakMap<object, CompilerResolution>();
 
 type ExactVueCompiler = Pick<
   typeof VueCompilerModule,
-  'compileTemplate' | 'parse' | 'version'
+  'compileTemplate' | 'version'
 > & {
+  /** Newer SFC parser options accepted at runtime but absent in Vue 3.3 types. */
+  parse: (
+    source: string,
+    options?: NonNullable<Parameters<typeof VueCompilerModule.parse>[1]> & {
+      templateParseOptions?: Record<string, unknown>;
+    }
+  ) => ReturnType<typeof VueCompilerModule.parse>;
   parseTemplate?: typeof parseVueTemplate;
+  /** Adjacent compiler-dom surface used to apply legacy parser options. */
+  templateCompiler?: TemplateCompiler;
 };
 
 /**
@@ -110,7 +121,11 @@ export function inspectVueCompiler(compiler: VueCompiler): CompilerResolution {
   if (cached) return cached;
   const exactCompiler = compiler as ExactVueCompiler;
   const resolution = isVueCompiler(compiler)
-    ? inspectCompiler(exactCompiler, exactCompiler.parseTemplate)
+    ? inspectCompiler(
+        exactCompiler,
+        exactCompiler.parseTemplate,
+        exactCompiler.templateCompiler
+      )
     : {
         ok: false as const,
         details:
@@ -403,14 +418,16 @@ function inspectCompiler(
           'The supplied compiler does not expose exact template parser options. Let the extractor resolve vue/compiler-sfc from the consuming app instead.',
       };
     }
+    const compilerBehavior = detectTemplateCompilerBehavior(compiler);
     return {
       ok: true,
       value: {
         compiler,
-        implicitSlotWhitespace: detectImplicitSlotWhitespace(compiler),
+        implicitSlotWhitespace: compilerBehavior.implicitSlotWhitespace,
         parseTemplate,
         templateCompiler,
         templateParseOptionsSupported,
+        valuedVIsReplacesElement: compilerBehavior.valuedVIsReplacesElement,
         version,
       },
     };
@@ -444,18 +461,21 @@ function collectText(value: unknown): string {
 }
 
 /**
- * Detects the compiler's slot-whitespace semantics instead of inferring them
- * from a semver range. Vue 3.3/3.4 use ECMAScript `trim()`, while Vue 3.5 uses
- * the HTML parser's ASCII whitespace set. A behavior probe remains exact if a
- * later Vue 3.x release backports or revises that implementation.
+ * Detects version-sensitive template semantics instead of inferring them from
+ * a semver range. Vue 3.3/3.4 use ECMAScript `trim()` for slot whitespace,
+ * while Vue 3.5 uses the HTML parser's ASCII set. Vue 3.3 also compiles valued
+ * `v-is` as a dynamic selector, while newer Vue releases retain the source
+ * element. One behavior probe remains exact if either behavior is backported.
  */
-function detectImplicitSlotWhitespace(
-  compiler: ExactVueCompiler
-): ImplicitSlotWhitespace {
+function detectTemplateCompilerBehavior(compiler: ExactVueCompiler): {
+  implicitSlotWhitespace: ImplicitSlotWhitespace;
+  valuedVIsReplacesElement: boolean;
+} {
   const result = compiler.compileTemplate({
     filename: 'gt-vue-compiler-probe.vue',
     id: 'gt-vue-compiler-probe',
-    source: '<Probe><template #named>x</template>&nbsp;</Probe>',
+    source:
+      '<Probe><template #named>x</template>&nbsp;</Probe><div v-is="Probe" />',
   });
   if (result.errors.length > 0) {
     throw new Error(
@@ -502,7 +522,19 @@ function detectImplicitSlotWhitespace(
       key.content === 'default'
     );
   });
-  return hasImplicitDefault ? 'html' : 'ecmascript';
+  const vIsElement = result.ast?.children.find(
+    (node) =>
+      typeof node === 'object' &&
+      node !== null &&
+      'tag' in node &&
+      node.tag === 'div'
+  );
+  return {
+    implicitSlotWhitespace: hasImplicitDefault ? 'html' : 'ecmascript',
+    valuedVIsReplacesElement: Boolean(
+      vIsElement && 'tagType' in vIsElement && vIsElement.tagType === 1
+    ),
+  };
 }
 
 function isVueCompiler(value: unknown): value is VueCompiler {
