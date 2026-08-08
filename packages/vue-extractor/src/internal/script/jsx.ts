@@ -555,12 +555,11 @@ function serializeElement(
     return [];
   }
 
-  const ordinaryShape =
-    identity?.type === 'vue-call'
-      ? { opaque: true }
-      : identity
-        ? undefined
-        : resolveOrdinaryElementShape(name, scope, analysis, new Set());
+  // Every remaining known identity is a runtime function or object. Vue
+  // therefore creates a component VNode whose slots gt-vue keeps opaque.
+  const ordinaryShape = identity
+    ? { opaque: true }
+    : resolveOrdinaryElementShape(name, scope, analysis, new Set());
   if (!identity && !ordinaryShape) {
     addVueError(
       context,
@@ -1354,6 +1353,9 @@ function resolveElementIdentity(
   scope: Scope,
   analysis: VueJSXAnalysis
 ): KnownValue | undefined {
+  // Vue JSX emits intrinsic HTML and SVG names as string VNodes before it
+  // consults lexical bindings, even when an import uses the same local name.
+  if (isNativeElement(name)) return undefined;
   const expression = jsxNameToExpression(name);
   return expression ? analysis.resolveKnownValue(expression, scope) : undefined;
 }

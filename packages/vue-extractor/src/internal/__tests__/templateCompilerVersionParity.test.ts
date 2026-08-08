@@ -92,6 +92,28 @@ describe('consumer Vue template compiler parity', () => {
     );
   });
 
+  it('traverses static vue-prefixed native HTML, SVG, and MathML targets', async () => {
+    const output = await extractFromVueSource(
+      `
+        <script setup>import { T } from 'gt-vue';</script>
+        <template><T><div is="vue:span"><b>HTML child</b></div><svg is="vue:g"><text>SVG child</text></svg><math is="vue:mrow"><span is="vue:mi">MathML child</span></math></T></template>
+      `,
+      '/project/src/StaticNativeVueIs.vue',
+      { projectRoot: '/project' }
+    );
+
+    expect(output.errors).toEqual([]);
+    const source = output.results[0]?.source;
+    expect(source).toEqual([
+      { t: 'span', i: 1, c: { t: 'b', i: 2, c: 'HTML child' } },
+      { t: 'g', i: 3, c: { t: 'text', i: 4, c: 'SVG child' } },
+      { t: 'mrow', i: 5, c: { t: 'mi', i: 6, c: 'MathML child' } },
+    ]);
+    expect(hashSource({ dataFormat: 'JSX', source: source! })).toBe(
+      'a5292e364873b6e9'
+    );
+  });
+
   it('honors Vue first-is precedence before a later vue-prefixed attribute', async () => {
     const output = await extractFromVueSource(
       `
