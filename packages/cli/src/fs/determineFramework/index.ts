@@ -10,6 +10,7 @@ export function determineLibrary(): {
   additionalModules: SupportedLibraries[];
 } {
   let library: SupportedLibraries = 'base';
+  let hasGtVue = false;
   const additionalModules: SupportedLibraries[] = [];
   try {
     // Get the current working directory (where the CLI is being run)
@@ -24,6 +25,7 @@ export function determineLibrary(): {
         ...packageJson.dependencies,
         ...packageJson.devDependencies,
       };
+      hasGtVue = Boolean(dependencies[Libraries.GT_VUE]);
 
       // Check for gt-next or gt-react in dependencies
       if (dependencies[Libraries.GT_NEXT]) {
@@ -53,6 +55,13 @@ export function determineLibrary(): {
       if (pythonLibrary) {
         library = pythonLibrary;
       }
+    }
+
+    // Preserve every historical framework's priority. Vue is the final
+    // root-owned fallback and can still be merged into an existing inline
+    // runtime by the package-owned extraction planner.
+    if (library === 'base' && hasGtVue) {
+      library = Libraries.GT_VUE;
     }
 
     // Fallback to base if neither is found
