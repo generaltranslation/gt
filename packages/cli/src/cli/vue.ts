@@ -1,4 +1,5 @@
 import type { Command } from 'commander';
+import { manifestDirectlyDeclaresGTVue } from '@generaltranslation/vue-extractor/integration';
 import type { SupportedLibraries } from '../types/index.js';
 import { Libraries } from '../types/libraries.js';
 import { InlineCLI } from './inline.js';
@@ -27,5 +28,15 @@ export class VueCLI extends InlineCLI {
     useBundledTranslationDefaults: boolean = true
   ): Promise<void> {
     return super.handleConfigureCommand(useBundledTranslationDefaults);
+  }
+
+  /** Applies the extractor-owned gt-vue manifest ownership policy. */
+  protected override hasInstalledInlineRuntime(
+    packageJson: Record<string, unknown>
+  ): boolean {
+    return (
+      super.hasInstalledInlineRuntime(packageJson) ||
+      manifestDirectlyDeclaresGTVue(packageJson)
+    );
   }
 }

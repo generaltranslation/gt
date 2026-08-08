@@ -3,6 +3,7 @@ import path from 'node:path';
 import { hashSource } from 'generaltranslation/id';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  manifestDirectlyDeclaresGTVue,
   planVueExtraction,
   type InlineExtractionOutput,
 } from '../../integration.js';
@@ -22,6 +23,34 @@ afterEach(() => {
   for (const directory of temporaryDirectories.splice(0)) {
     removeProjectFixture(directory);
   }
+});
+
+describe('manifestDirectlyDeclaresGTVue', () => {
+  it.each([
+    ['production dependency', { dependencies: { 'gt-vue': '*' } }, true],
+    ['development dependency', { devDependencies: { 'gt-vue': '*' } }, true],
+    ['optional dependency', { optionalDependencies: { 'gt-vue': '*' } }, false],
+    [
+      'production dependency overridden by an optional dependency',
+      {
+        dependencies: { 'gt-vue': '*' },
+        optionalDependencies: { 'gt-vue': '*' },
+      },
+      false,
+    ],
+    [
+      'development dependency overridden by an optional dependency',
+      {
+        devDependencies: { 'gt-vue': '*' },
+        optionalDependencies: { 'gt-vue': '*' },
+      },
+      false,
+    ],
+    ['peer dependency', { peerDependencies: { 'gt-vue': '*' } }, false],
+    ['non-Vue runtime', { dependencies: { 'gt-react': '*' } }, false],
+  ])('returns expected ownership for %s', (_name, manifest, expected) => {
+    expect(manifestDirectlyDeclaresGTVue(manifest)).toBe(expected);
+  });
 });
 
 describe('planVueExtraction activation', () => {

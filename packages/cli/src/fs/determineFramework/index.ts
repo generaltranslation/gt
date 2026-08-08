@@ -4,13 +4,13 @@ import { SupportedLibraries } from '../../types/index.js';
 import { logger } from '../../console/logger.js';
 import { Libraries } from '../../types/libraries.js';
 import { detectPythonLibrary } from './detectPythonLibrary.js';
+import { planVueExtraction } from '@generaltranslation/vue-extractor/integration';
 
 export function determineLibrary(): {
   library: SupportedLibraries;
   additionalModules: SupportedLibraries[];
 } {
   let library: SupportedLibraries = 'base';
-  let hasGtVue = false;
   const additionalModules: SupportedLibraries[] = [];
   try {
     // Get the current working directory (where the CLI is being run)
@@ -25,13 +25,6 @@ export function determineLibrary(): {
         ...packageJson.dependencies,
         ...packageJson.devDependencies,
       };
-      const optionalDependencies = packageJson.optionalDependencies;
-      const hasOptionalGtVue =
-        optionalDependencies !== null &&
-        typeof optionalDependencies === 'object' &&
-        !Array.isArray(optionalDependencies) &&
-        Object.hasOwn(optionalDependencies, Libraries.GT_VUE);
-      hasGtVue = Boolean(dependencies[Libraries.GT_VUE]) && !hasOptionalGtVue;
 
       // Check for gt-next or gt-react in dependencies
       if (dependencies[Libraries.GT_NEXT]) {
@@ -63,10 +56,12 @@ export function determineLibrary(): {
       }
     }
 
-    // Preserve every historical framework's priority. Vue is the final
-    // root-owned fallback and can still be merged into an existing inline
-    // runtime by the package-owned extraction planner.
-    if (library === 'base' && hasGtVue) {
+    // Preserve every historical framework's priority. The package-owned
+    // planner is the single source of truth for direct Vue ownership.
+    if (
+      library === 'base' &&
+      planVueExtraction({ library, projectRoot: cwd }).handled
+    ) {
       library = Libraries.GT_VUE;
     }
 
