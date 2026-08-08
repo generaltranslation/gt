@@ -1,7 +1,4 @@
-import {
-  ElementTypes as VueElementTypes,
-  NodeTypes as VueNodeTypes,
-} from '@vue/compiler-dom';
+import { parse } from '@vue/compiler-dom';
 import { describe, expect, it } from 'vitest';
 import {
   ElementTypes,
@@ -11,18 +8,35 @@ import {
 
 describe('local Vue compiler AST discriminants', () => {
   it('matches the installed Vue compiler', () => {
+    const root = parse(
+      '<Probe plain v-bind:title="title">text<!--comment-->{{ value }}</Probe>'
+    );
+    const element = root.children[0];
+    const slot = parse('<slot />').children[0];
+    if (element?.type !== 1 || slot?.type !== 1) {
+      throw new Error('Vue returned an unknown element AST shape');
+    }
+    const text = element.children.find((child) => child.type === 2);
+    const comment = element.children.find((child) => child.type === 3);
+    const interpolation = element.children.find((child) => child.type === 5);
+    const attribute = element.props.find((property) => property.type === 6);
+    const directive = element.props.find((property) => property.type === 7);
+    if (!text || !comment || !interpolation || !attribute || !directive) {
+      throw new Error('Vue returned an incomplete compiler AST probe');
+    }
+
     expect(NodeTypes).toEqual({
-      ELEMENT: VueNodeTypes.ELEMENT,
-      TEXT: VueNodeTypes.TEXT,
-      COMMENT: VueNodeTypes.COMMENT,
-      SIMPLE_EXPRESSION: VueNodeTypes.SIMPLE_EXPRESSION,
-      INTERPOLATION: VueNodeTypes.INTERPOLATION,
-      ATTRIBUTE: VueNodeTypes.ATTRIBUTE,
-      DIRECTIVE: VueNodeTypes.DIRECTIVE,
+      ELEMENT: element.type,
+      TEXT: text.type,
+      COMMENT: comment.type,
+      SIMPLE_EXPRESSION: interpolation.content.type,
+      INTERPOLATION: interpolation.type,
+      ATTRIBUTE: attribute.type,
+      DIRECTIVE: directive.type,
     });
     expect(ElementTypes).toEqual({
-      COMPONENT: VueElementTypes.COMPONENT,
-      SLOT: VueElementTypes.SLOT,
+      COMPONENT: element.tagType,
+      SLOT: slot.tagType,
     });
   });
 

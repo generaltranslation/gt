@@ -555,9 +555,12 @@ function serializeElement(
     return [];
   }
 
-  const ordinaryShape = identity
-    ? undefined
-    : resolveOrdinaryElementShape(name, scope, analysis, new Set());
+  const ordinaryShape =
+    identity?.type === 'vue-call'
+      ? { opaque: true }
+      : identity
+        ? undefined
+        : resolveOrdinaryElementShape(name, scope, analysis, new Set());
   if (!identity && !ordinaryShape) {
     addVueError(
       context,
