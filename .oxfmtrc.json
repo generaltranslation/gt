@@ -18,6 +18,7 @@
     "examples/next-chatbot/lib/db/migrations/**",
     "tests/seeds/*",
     "tests/apps/compiler-cli-parity/**",
+    "packages/vue-extractor/src/internal/__tests__/fixtures/template-runtime-parity.vue",
     "**/next-env.d.ts",
     "**/routeTree.gen.ts"
   ]
