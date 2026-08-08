@@ -15,6 +15,7 @@ import {
   type JsxChild,
   type JsxChildren,
 } from '@generaltranslation/format/types';
+import { isHTMLTag, isSVGTag } from '@vue/shared';
 import { isAcceptedPluralForm } from 'generaltranslation/internal';
 import { ElementTypes, NodeTypes } from './compilerAst.js';
 import { processVueStringCall } from './stringCalls.js';
@@ -39,6 +40,17 @@ import {
 } from './utils.js';
 
 const traverse = traverseModule.default || traverseModule;
+
+/**
+ * Vue's native MathML tag set, retained locally for Vue 3.3 compatibility.
+ * `@vue/shared` did not export `isMathMLTag` in 3.3, so importing the newer
+ * helper would prevent the extractor from loading with a supported runtime.
+ */
+const VUE_MATHML_TAGS = new Set(
+  'annotation,annotation-xml,maction,maligngroup,malignmark,math,menclose,merror,mfenced,mfrac,mfraction,mglyph,mi,mlabeledtr,mlongdiv,mmultiscripts,mn,mo,mover,mpadded,mphantom,mprescripts,mroot,mrow,ms,mscarries,mscarry,msgroup,msline,mspace,msqrt,msrow,mstack,mstyle,msub,msubsup,msup,mtable,mtd,mtext,mtr,munder,munderover,none,semantics'.split(
+    ','
+  )
+);
 
 type Counter = { value: number };
 
@@ -1677,7 +1689,11 @@ function serializeElement(
   }
 
   return {
-    t: originalName ?? suspense?.originalName ?? element.tag,
+    t:
+      originalName ??
+      suspense?.originalName ??
+      readStaticVueIsTarget(element) ??
+      element.tag,
     i: id,
     ...(Object.keys(data).length > 0 && { d: data }),
     ...(children.length > 0 && { c: collapseChildren(children) }),
@@ -1690,9 +1706,20 @@ function isOpaqueComponent(
   component?: { localName: string; originalName: GTComponentName },
   vueBuiltin?: { localName: string; originalName: VueBuiltinName }
 ): boolean {
+  const staticVueIsTarget = readStaticVueIsTarget(element);
   return (
-    element.tagType === ElementTypes.COMPONENT && !component && !vueBuiltin
+    element.tagType === ElementTypes.COMPONENT &&
+    !component &&
+    !vueBuiltin &&
+    // An unresolved vue-prefixed native target becomes a string VNode whose
+    // descendants the runtime traverses like an ordinary element.
+    !(staticVueIsTarget && isNativeVueTag(staticVueIsTarget))
   );
+}
+
+/** Returns whether a template tag produces a native string VNode. */
+function isNativeVueTag(target: string): boolean {
+  return isHTMLTag(target) || isSVGTag(target) || VUE_MATHML_TAGS.has(target);
 }
 
 /** Resolves literal Suspense and statically proven aliases of Vue's builtin. */
