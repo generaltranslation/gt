@@ -124,6 +124,11 @@ type TemplateBindingPattern =
   | babel.ObjectPattern
   | babel.RestElement;
 
+/** Simple-expression metadata available at runtime across Vue 3 releases. */
+type CompatibleSimpleExpressionNode = SimpleExpressionNode & {
+  ast?: unknown;
+};
+
 const NON_BRANCH_ATTRIBUTE_NAMES = new Set([
   'branch',
   'class',
@@ -257,6 +262,7 @@ function visitTemplateChildren(
     for (const property of child.props) {
       if (property.type !== NodeTypes.DIRECTIVE) continue;
       if (
+        property.name !== 'is' &&
         property.arg?.type === NodeTypes.SIMPLE_EXPRESSION &&
         !property.arg.isStatic
       ) {
@@ -269,6 +275,16 @@ function visitTemplateChildren(
         );
       }
       if (property.name === 'slot' || !property.exp) continue;
+      if (
+        property.name === 'is' &&
+        !isEffectiveValuedVIsSelector(
+          child,
+          property,
+          context.valuedVIsReplacesElement
+        )
+      ) {
+        continue;
+      }
       if (property.name === 'for') {
         const parseResult = readForParseResult(property);
         if (parseResult?.source) {
@@ -299,19 +315,22 @@ function visitTemplateChildren(
       child,
       childBindings,
       expressionPlugins,
-      childShadowed
+      childShadowed,
+      context.valuedVIsReplacesElement
     );
     const suspense = resolveSuspenseComponent(
       child,
       childBindings,
       expressionPlugins,
-      childShadowed
+      childShadowed,
+      context.valuedVIsReplacesElement
     );
     const fragment = resolveFragmentComponent(
       child,
       childBindings,
       expressionPlugins,
-      childShadowed
+      childShadowed,
+      context.valuedVIsReplacesElement
     );
     const uncertainGTComponent = resolveUncertainComponentBinding(
       child,
@@ -320,7 +339,8 @@ function visitTemplateChildren(
       childBindings.uncertainRegisteredGTComponents,
       childBindings.gtComponentFactories,
       expressionPlugins,
-      childShadowed
+      childShadowed,
+      context.valuedVIsReplacesElement
     );
     const possibleDynamicT = component
       ? undefined
@@ -328,7 +348,8 @@ function visitTemplateChildren(
           child,
           childBindings,
           expressionPlugins,
-          childShadowed
+          childShadowed,
+          context.valuedVIsReplacesElement
         );
     const unresolvedGTComponent = uncertainGTComponent ?? possibleDynamicT;
     if (!insideTranslation && !component && unresolvedGTComponent) {
@@ -1252,9 +1273,13 @@ function readTContext(
 ): string | undefined {
   let translationContext: string | undefined;
   let hasContext = false;
+  const staticVueIsSelector = readStaticVueIsSelector(element);
 
   for (const property of element.props) {
     if (isDynamicComponentSelector(element, property)) continue;
+    if (staticVueIsSelector?.property === property) {
+      continue;
+    }
     if (property.type === NodeTypes.ATTRIBUTE) {
       if (RESERVED_T_PROPS.has(property.name)) continue;
       if (property.name !== 'context' && property.name !== '$context') {
@@ -1277,7 +1302,7 @@ function readTContext(
 
     if (property.name !== 'bind') continue;
     if (property.modifiers.length > 0) {
-      const directive = property.rawName ?? 'v-bind';
+      const directive = readDirectiveSourceName(property);
       addVueError(
         context,
         property.loc,
@@ -1440,7 +1465,8 @@ function serializeChild(
     child,
     bindings,
     expressionPlugins,
-    shadowed
+    shadowed,
+    context.valuedVIsReplacesElement
   );
   if (fragment) {
     return serializeFragmentElement(
@@ -1507,13 +1533,15 @@ function serializeElement(
     element,
     bindings,
     expressionPlugins,
-    shadowed
+    shadowed,
+    context.valuedVIsReplacesElement
   );
   const suspense = resolveSuspenseComponent(
     element,
     bindings,
     expressionPlugins,
-    shadowed
+    shadowed,
+    context.valuedVIsReplacesElement
   );
   const uncertainComponent =
     !component && !suspense
@@ -1521,7 +1549,8 @@ function serializeElement(
           element,
           bindings,
           expressionPlugins,
-          shadowed
+          shadowed,
+          context.valuedVIsReplacesElement
         )
       : undefined;
   if (uncertainComponent) {
@@ -1579,7 +1608,7 @@ function serializeElement(
   );
   if (isOpaqueComponent(element, component, suspense)) {
     return {
-      t: element.tag,
+      t: readStaticVueIsTarget(element) ?? element.tag,
       i: id,
       ...(Object.keys(data).length > 0 && { d: data }),
     };
@@ -1671,11 +1700,27 @@ function resolveSuspenseComponent(
   element: ElementNode,
   bindings: TemplateBindings,
   expressionPlugins: ParserPlugin[],
-  shadowed: Set<string>
+  shadowed: Set<string>,
+  valuedVIsReplacesElement: boolean
 ): { localName: string; originalName: 'Suspense' } | undefined {
+  const dynamicSelector = readDynamicComponentSelector(
+    element,
+    expressionPlugins,
+    bindings,
+    shadowed,
+    valuedVIsReplacesElement
+  );
+  const staticVueIsTarget = dynamicSelector
+    ? undefined
+    : readStaticVueIsTarget(element);
+  if (staticVueIsTarget && isLiteralSuspenseName(staticVueIsTarget)) {
+    return { localName: staticVueIsTarget, originalName: 'Suspense' };
+  }
   if (
     element.tagType === ElementTypes.COMPONENT &&
-    element.tag.toLowerCase() === 'suspense'
+    isLiteralSuspenseName(element.tag) &&
+    staticVueIsTarget === undefined &&
+    !dynamicSelector
   ) {
     return { localName: element.tag, originalName: 'Suspense' };
   }
@@ -1683,7 +1728,8 @@ function resolveSuspenseComponent(
     element,
     bindings,
     expressionPlugins,
-    shadowed
+    shadowed,
+    valuedVIsReplacesElement
   );
   return builtin?.originalName === 'Suspense'
     ? { localName: builtin.localName, originalName: 'Suspense' }
@@ -1695,13 +1741,15 @@ function resolveFragmentComponent(
   element: ElementNode,
   bindings: TemplateBindings,
   expressionPlugins: ParserPlugin[],
-  shadowed: Set<string>
+  shadowed: Set<string>,
+  valuedVIsReplacesElement: boolean
 ): { localName: string; originalName: 'Fragment' } | undefined {
   const builtin = resolveVueBuiltinComponent(
     element,
     bindings,
     expressionPlugins,
-    shadowed
+    shadowed,
+    valuedVIsReplacesElement
   );
   return builtin?.originalName === 'Fragment'
     ? { localName: builtin.localName, originalName: 'Fragment' }
@@ -1713,7 +1761,8 @@ function resolveVueBuiltinComponent(
   element: ElementNode,
   bindings: TemplateBindings,
   expressionPlugins: ParserPlugin[],
-  shadowed: Set<string>
+  shadowed: Set<string>,
+  valuedVIsReplacesElement: boolean
 ): { localName: string; originalName: VueBuiltinName } | undefined {
   return resolveComponentBinding(
     element,
@@ -1722,7 +1771,8 @@ function resolveVueBuiltinComponent(
     bindings.registeredVueBuiltins,
     bindings.directBindings,
     expressionPlugins,
-    shadowed
+    shadowed,
+    valuedVIsReplacesElement
   );
 }
 
@@ -1731,7 +1781,8 @@ function resolveUncertainComponent(
   element: ElementNode,
   bindings: TemplateBindings,
   expressionPlugins: ParserPlugin[],
-  shadowed: Set<string>
+  shadowed: Set<string>,
+  valuedVIsReplacesElement: boolean
 ): string | undefined {
   return resolveUncertainComponentBinding(
     element,
@@ -1740,7 +1791,8 @@ function resolveUncertainComponent(
     bindings.uncertainRegisteredComponents,
     bindings.componentFactories,
     expressionPlugins,
-    shadowed
+    shadowed,
+    valuedVIsReplacesElement
   );
 }
 
@@ -1752,14 +1804,16 @@ function resolveUncertainComponentBinding(
   uncertainRegisteredBindings: Set<string>,
   uncertainFactories: Set<string>,
   expressionPlugins: ParserPlugin[],
-  shadowed: Set<string>
+  shadowed: Set<string>,
+  valuedVIsReplacesElement: boolean
 ): string | undefined {
   if (element.tagType !== ElementTypes.COMPONENT) return undefined;
   const selector = readDynamicComponentSelector(
     element,
     expressionPlugins,
     bindings,
-    shadowed
+    shadowed,
+    valuedVIsReplacesElement
   );
   if (selector) {
     if (
@@ -1785,7 +1839,8 @@ function resolveUncertainComponentBinding(
     }
     return undefined;
   }
-  for (const localName of normalizeTemplateBindingNames(element.tag)) {
+  const effectiveTag = readStaticVueIsTarget(element) ?? element.tag;
+  for (const localName of normalizeTemplateBindingNames(effectiveTag)) {
     const direct = uncertainDirectBindings.has(localName);
     const registered = uncertainRegisteredBindings.has(localName);
     if (isDirectTemplateBinding(localName, bindings.directBindings)) {
@@ -1802,13 +1857,15 @@ function resolvePossibleDynamicT(
   element: ElementNode,
   bindings: TemplateBindings,
   expressionPlugins: ParserPlugin[],
-  shadowed: Set<string>
+  shadowed: Set<string>,
+  valuedVIsReplacesElement: boolean
 ): string | undefined {
   const selector = readDynamicComponentSelector(
     element,
     expressionPlugins,
     bindings,
-    shadowed
+    shadowed,
+    valuedVIsReplacesElement
   );
   if (!selector) return undefined;
   if (selector.possibleGT || selector.gtComponentFactories.size > 0) {
@@ -1875,7 +1932,16 @@ function validateRichElement(
       'Use an ordinary element or a statically named slot template'
     );
   }
-  if (element.tag.toLowerCase() === 'component' && !resolvedDynamicComponent) {
+  const hasUnresolvedDynamicSelector =
+    element.tag.toLowerCase() === 'component' ||
+    element.props.some((property) =>
+      isEffectiveValuedVIsSelector(
+        element,
+        property,
+        context.valuedVIsReplacesElement
+      )
+    );
+  if (hasUnresolvedDynamicSelector && !resolvedDynamicComponent) {
     addVueError(
       context,
       element.loc,
@@ -1890,7 +1956,7 @@ function validateRichElement(
       addVueError(
         context,
         property.loc,
-        `Found source-shaping directive ${property.rawName ?? `v-${property.name}`} inside a gt-vue <T> component`,
+        `Found source-shaping directive ${readDirectiveSourceName(property)} inside a gt-vue <T> component`,
         'Move conditional or repeated content outside <T>, or use Branch/Plural'
       );
     } else if (property.name === 'bind' && !readDirectiveKey(property)) {
@@ -2033,7 +2099,9 @@ function readBranches(
   }
 
   for (const property of element.props) {
-    if (isDynamicComponentSelector(element, property)) continue;
+    if (isCompilerConsumedComponentSelectorProperty(element, property)) {
+      continue;
+    }
     if (property.type === NodeTypes.DIRECTIVE && property.name === 'slot') {
       continue;
     }
@@ -2059,7 +2127,7 @@ function readBranches(
       property.type === NodeTypes.DIRECTIVE &&
       (property.name !== 'bind' || property.modifiers.length > 0)
     ) {
-      const directive = property.rawName ?? `v-${property.name}`;
+      const directive = readDirectiveSourceName(property);
       addVueError(
         context,
         property.loc,
@@ -2470,8 +2538,9 @@ function getExpressionNode(
   expressionPlugins: ParserPlugin[]
 ): babel.Node | undefined {
   if (expression.type !== NodeTypes.SIMPLE_EXPRESSION) return undefined;
-  if (expression.ast && typeof expression.ast === 'object') {
-    return expression.ast as babel.Node;
+  const compilerAst = (expression as CompatibleSimpleExpressionNode).ast;
+  if (compilerAst && typeof compilerAst === 'object') {
+    return compilerAst as babel.Node;
   }
   try {
     return parseExpression(expression.content, {
@@ -2580,9 +2649,9 @@ function cloneForExpression(
   expression: SimpleExpressionNode,
   content: string
 ): SimpleExpressionNode {
+  const { ast: _ast, ...base } = expression as CompatibleSimpleExpressionNode;
   return {
-    ...expression,
-    ast: undefined,
+    ...base,
     content,
     loc: { ...expression.loc, source: content },
   };
@@ -2646,7 +2715,8 @@ function resolveGTComponent(
   element: ElementNode,
   bindings: TemplateBindings,
   expressionPlugins: ParserPlugin[],
-  shadowed: Set<string>
+  shadowed: Set<string>,
+  valuedVIsReplacesElement: boolean
 ): { localName: string; originalName: GTComponentName } | undefined {
   return resolveComponentBinding(
     element,
@@ -2655,7 +2725,8 @@ function resolveGTComponent(
     bindings.registeredComponents,
     bindings.directBindings,
     expressionPlugins,
-    shadowed
+    shadowed,
+    valuedVIsReplacesElement
   );
 }
 
@@ -2667,14 +2738,16 @@ function resolveComponentBinding<Name extends string>(
   registeredBindings: Map<string, Name>,
   directTemplateBindings: Set<string>,
   expressionPlugins: ParserPlugin[],
-  shadowed: Set<string>
+  shadowed: Set<string>,
+  valuedVIsReplacesElement: boolean
 ): { localName: string; originalName: Name } | undefined {
   if (element.tagType !== ElementTypes.COMPONENT) return undefined;
   const selector = readDynamicComponentSelector(
     element,
     expressionPlugins,
     bindings,
-    shadowed
+    shadowed,
+    valuedVIsReplacesElement
   );
   if (selector) {
     if (
@@ -2704,7 +2777,8 @@ function resolveComponentBinding<Name extends string>(
       ? first
       : undefined;
   }
-  for (const localName of normalizeTemplateBindingNames(element.tag)) {
+  const effectiveTag = readStaticVueIsTarget(element) ?? element.tag;
+  for (const localName of normalizeTemplateBindingNames(effectiveTag)) {
     const originalName = isDirectTemplateBinding(
       localName,
       directTemplateBindings
@@ -2742,12 +2816,16 @@ function readDynamicComponentSelector(
   element: ElementNode,
   expressionPlugins: ParserPlugin[],
   bindings: TemplateBindings,
-  shadowed: Set<string>
+  shadowed: Set<string>,
+  valuedVIsReplacesElement: boolean
 ): DynamicSelectorAnalysis | undefined {
-  if (element.tag.toLowerCase() !== 'component') return undefined;
-  const property = element.props.find((candidate) =>
-    isDynamicComponentSelector(element, candidate)
-  );
+  const property =
+    element.props.find((candidate) =>
+      isDynamicComponentSelector(element, candidate)
+    ) ??
+    element.props.find((candidate) =>
+      isEffectiveValuedVIsSelector(element, candidate, valuedVIsReplacesElement)
+    );
   if (!property) return undefined;
   if (property.type === NodeTypes.ATTRIBUTE) {
     return property.value
@@ -2765,13 +2843,19 @@ function readDynamicComponentSelector(
   const node = property.exp
     ? getExpressionNode(property.exp, expressionPlugins)
     : undefined;
-  if (!node) return undefined;
+  const displayName =
+    property.exp?.type === NodeTypes.SIMPLE_EXPRESSION && property.exp.content
+      ? property.exp.content
+      : 'dynamic component';
+  if (!node) {
+    return {
+      ...emptyDynamicSelectorAnalysis(true),
+      displayName,
+    };
+  }
   return {
     ...collectDynamicSelectorCandidates(node, bindings, shadowed, new Set()),
-    displayName:
-      property.exp?.type === NodeTypes.SIMPLE_EXPRESSION
-        ? property.exp.content
-        : 'dynamic component',
+    displayName,
   };
 }
 
@@ -5173,6 +5257,103 @@ function isDynamicComponentSelector(
   if (element.tag.toLowerCase() !== 'component') return false;
   if (property.type === NodeTypes.ATTRIBUTE) return property.name === 'is';
   return property.name === 'bind' && readDirectiveKey(property) === 'is';
+}
+
+type StaticVueIsSelector = {
+  property: ElementNode['props'][number];
+  target: string;
+};
+
+/** Finds the first ordinary `is` property using Vue's own source-order rule. */
+function findFirstComponentIsProperty(
+  element: ElementNode
+): ElementNode['props'][number] | undefined {
+  return element.props.find((property) => {
+    if (property.type === NodeTypes.ATTRIBUTE) {
+      return property.name === 'is';
+    }
+    return property.name === 'bind' && readDirectiveKey(property) === 'is';
+  });
+}
+
+/** Reads Vue's effective static `is="vue:..."` component replacement. */
+function readStaticVueIsSelector(
+  element: ElementNode
+): StaticVueIsSelector | undefined {
+  if (
+    element.tagType !== ElementTypes.COMPONENT ||
+    element.tag.toLowerCase() === 'component'
+  ) {
+    return undefined;
+  }
+  const property = findFirstComponentIsProperty(element);
+  if (
+    property?.type !== NodeTypes.ATTRIBUTE ||
+    !property.value?.content.startsWith('vue:')
+  ) {
+    return undefined;
+  }
+  return {
+    property,
+    target: property.value.content.slice('vue:'.length),
+  };
+}
+
+/** Reads only the target name of Vue's effective static replacement. */
+function readStaticVueIsTarget(element: ElementNode): string | undefined {
+  return readStaticVueIsSelector(element)?.target;
+}
+
+/** Matches the only two spellings Vue treats as its built-in Suspense. */
+function isLiteralSuspenseName(name: string): boolean {
+  return name === 'Suspense' || name === 'suspense';
+}
+
+/** Matches the selector directive actually consumed by Vue 3.3's transform. */
+function isEffectiveValuedVIsSelector(
+  element: ElementNode,
+  property: ElementNode['props'][number],
+  valuedVIsReplacesElement: boolean
+): property is DirectiveNode {
+  return (
+    valuedVIsReplacesElement &&
+    element.tagType === ElementTypes.COMPONENT &&
+    element.tag.toLowerCase() !== 'component' &&
+    property.type === NodeTypes.DIRECTIVE &&
+    property.name === 'is' &&
+    property.exp !== undefined
+  );
+}
+
+/** Mirrors selector properties omitted from Vue's generated VNode props. */
+function isCompilerConsumedComponentSelectorProperty(
+  element: ElementNode,
+  property: ElementNode['props'][number]
+): boolean {
+  if (property.type === NodeTypes.ATTRIBUTE) {
+    return (
+      property.name === 'is' &&
+      (element.tag.toLowerCase() === 'component' ||
+        Boolean(property.value?.content.startsWith('vue:')))
+    );
+  }
+  if (property.name === 'is') return true;
+  return (
+    property.name === 'bind' &&
+    element.tag.toLowerCase() === 'component' &&
+    readDirectiveKey(property) === 'is'
+  );
+}
+
+/** Reads directive source spelling absent from Vue 3.3's public AST types. */
+function readDirectiveSourceName(directive: DirectiveNode): string {
+  const rawName =
+    'rawName' in directive && typeof directive.rawName === 'string'
+      ? directive.rawName
+      : undefined;
+  if (rawName) return rawName;
+  const sourceName = directive.loc.source.split('=', 1)[0]?.trim();
+  return sourceName || `v-${directive.name}`;
 }
 
 function readDirectiveKey(directive: DirectiveNode): string | undefined {

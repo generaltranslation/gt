@@ -709,11 +709,19 @@ function assertVueValid(testCase: AuditCase): void {
   });
   const template = parsed.descriptor.template;
   if (!template) return;
+  const language =
+    parsed.descriptor.scriptSetup?.lang ?? parsed.descriptor.script?.lang;
   const compiled = compileTemplate({
     id: `audit-${slug(testCase.name)}`,
     filename,
     source: template.content,
-    compilerOptions: { bindingMetadata: script.bindings },
+    compilerOptions: {
+      bindingMetadata: script.bindings,
+      ...(language &&
+        /^(?:ts|tsx)$/i.test(language) && {
+          expressionPlugins: ['typescript'],
+        }),
+    },
   });
   expect(compiled.errors, `${testCase.name}: template compile`).toEqual([]);
 }
