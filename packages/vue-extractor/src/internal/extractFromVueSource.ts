@@ -39,6 +39,20 @@ import {
 const DEFAULT_SURROUNDING_LINE_COUNT = 5;
 const MAX_MALFORMED_SUFFIX_RECOVERIES = 64;
 
+/** Parser options supported at runtime but omitted from Vue 3.3 declarations. */
+type CompatibleTemplateParserOptions = NonNullable<
+  Parameters<TemplateCompiler['parse']>[1]
+> & {
+  expressionPlugins?: ParserPlugin[];
+};
+
+/** compiler-dom options supported at runtime across the supported Vue range. */
+type CompatibleCompilerDomParserOptions = NonNullable<
+  Parameters<NonNullable<ResolvedVueCompiler['parseTemplate']>>[1]
+> & {
+  expressionPlugins?: ParserPlugin[];
+};
+
 /**
  * Extracts General Translation content from one Vue SFC or JavaScript file.
  *
@@ -88,6 +102,8 @@ export async function extractFromVueSource(
     }
     context.implicitSlotWhitespace =
       compilerResolution.value.implicitSlotWhitespace;
+    context.valuedVIsReplacesElement =
+      compilerResolution.value.valuedVIsReplacesElement;
     parseVueSingleFileComponent(
       sourceCode,
       context,
@@ -648,7 +664,7 @@ function parseVueSingleFileComponent(
         resolvedCompiler.parseTemplate,
         template.loc.start
       )
-    : template.ast;
+    : (template.ast as unknown as RootNode);
   if (templateAst) {
     const templateResultStart = context.results.length;
     const templateErrorStart = context.errors.length;
@@ -731,7 +747,7 @@ function matchesProductionTemplate(
         resolvedCompiler.parseTemplate,
         template.loc.start
       )
-    : template.ast;
+    : (template.ast as unknown as RootNode);
   if (!templateAst) return false;
   parseVueTemplate(templateAst, bindings, expressionPlugins, productionContext);
   if (productionContext.errors.length > 0) return false;
@@ -762,13 +778,15 @@ function createConfiguredTemplateCompiler(
   const templateCompiler = resolvedCompiler.templateCompiler;
   if (!templateCompiler) return undefined;
 
-  const parse: TemplateCompiler['parse'] = (source, baseOptions) =>
-    templateCompiler.parse(source, {
+  const parse: TemplateCompiler['parse'] = (source, baseOptions) => {
+    const options: CompatibleTemplateParserOptions = {
       ...baseOptions,
       ...compilerOptions,
       comments,
       expressionPlugins,
-    });
+    };
+    return templateCompiler.parse(source, options);
+  };
   const identity = JSON.stringify({
     comments,
     delimiters: compilerOptions.delimiters,
@@ -794,14 +812,15 @@ function parseTemplateWithCompiler(
   origin: CompilerPosition
 ): RootNode | undefined {
   const errors: Array<SyntaxError & { loc?: ExtractionLocationLike }> = [];
-  const ast = parseTemplate(source, {
+  const options: CompatibleCompilerDomParserOptions = {
     ...compilerOptions,
     comments,
     expressionPlugins,
     onError(error) {
       errors.push(error as SyntaxError & { loc?: ExtractionLocationLike });
     },
-  });
+  };
+  const ast = parseTemplate(source, options);
   if (errors.length === 0) {
     shiftCompilerAstLocations(ast, origin);
     return ast;

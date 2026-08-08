@@ -26,6 +26,7 @@ export function createVueExtractionContext(
     results,
     source,
     surroundingLineCount,
+    valuedVIsReplacesElement: false,
     validatedVariableComponents: new WeakSet(),
     warnings,
   };
