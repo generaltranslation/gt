@@ -4,6 +4,7 @@ import { logger } from '../../console/logger.js';
 import micromatch from 'micromatch';
 const { isMatch } = micromatch;
 import path from 'path';
+import { toPosixPath } from '../../utils/paths.js';
 
 export function validateYamlSchema(
   options: AdditionalOptions,
@@ -13,9 +14,10 @@ export function validateYamlSchema(
     return null;
   }
   // Check if the file matches any of the yaml schema globs
+  const relativeFilePath = toPosixPath(path.relative(process.cwd(), filePath));
   const fileGlobs = Object.keys(options.yamlSchema);
   const matchingGlob = fileGlobs.find((fileGlob) =>
-    isMatch(path.relative(process.cwd(), filePath), fileGlob)
+    isMatch(relativeFilePath, toPosixPath(fileGlob))
   );
   if (!matchingGlob || !options.yamlSchema[matchingGlob]) {
     return null;

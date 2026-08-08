@@ -356,6 +356,17 @@ describe('validateYamlSchema', () => {
       expect(validateYamlSchema(options, 'docs/readme.yaml')).toEqual(schema2);
       expect(validateYamlSchema(options, 'other/file.yaml')).toEqual(schema3);
     });
+
+    it('matches Windows paths against slash-separated globs', () => {
+      const schema = { include: ['$.title'] };
+
+      const result = validateYamlSchema(
+        { yamlSchema: { 'src/**/*.yaml': schema } },
+        'src\\content\\messages.yaml'
+      );
+
+      expect(result).toEqual(schema);
+    });
   });
 
   describe('Edge Cases', () => {

@@ -479,5 +479,11 @@ describe('resolveMintlifyRefs', () => {
         jsonSchema: { './other.json': { composite: {} } },
       })
     ).toBe(false);
+
+    expect(
+      shouldResolveRefs('src\\content\\docs.json', {
+        jsonSchema: { 'src/**/*.json': { resolveRefs: true } },
+      })
+    ).toBe(true);
   });
 });

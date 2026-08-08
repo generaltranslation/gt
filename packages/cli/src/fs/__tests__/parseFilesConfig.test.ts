@@ -567,6 +567,21 @@ describe('parseFilesConfig', () => {
       });
     });
 
+    it('normalizes Windows separators in glob patterns', () => {
+      expandGlobPatterns(
+        '/project',
+        ['src\\[locale]\\*.json'],
+        ['src\\[locale]\\ignored\\**'],
+        'en',
+        defaultLocales
+      );
+
+      expect(fg.sync).toHaveBeenCalledWith('/project/src/en/*.json', {
+        absolute: true,
+        ignore: ['/project/src/en/ignored/**'],
+      });
+    });
+
     it('should handle complex locale replacement in paths', () => {
       const includePatterns = ['nested/[locale]/deep/[locale]/files.json'];
       const excludePatterns = [];

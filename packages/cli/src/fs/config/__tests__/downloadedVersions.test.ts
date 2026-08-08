@@ -81,6 +81,31 @@ describe('readLockfile / writeLockfile', () => {
       expect(originalV1).toBeNull();
     });
 
+    it('normalizes Windows paths from a v2 lockfile', () => {
+      writeLockFile({
+        version: 2,
+        branchId: 'brc_abc',
+        entries: [
+          {
+            fileId: 'f1',
+            versionId: 'v1',
+            fileName: 'src\\content\\page.mdx',
+            staged: true,
+            translations: {
+              es: { fileName: 'content\\es\\page.mdx' },
+            },
+          },
+        ],
+      });
+
+      const { data } = readLockfile(settings('brc_abc'));
+
+      expect(data.entries[0].fileName).toBe('src/content/page.mdx');
+      expect(data.entries[0].translations.es.fileName).toBe(
+        'content/es/page.mdx'
+      );
+    });
+
     it('updates branchId on v2 file to current branch', () => {
       writeLockFile({
         version: 2,
@@ -186,6 +211,32 @@ describe('readLockfile / writeLockfile', () => {
       expect(written.version).toBe(2);
       expect(written.branchId).toBe('brc_123');
       expect(written.entries).toHaveLength(1);
+    });
+
+    it('writes lockfile paths with forward slashes', () => {
+      writeLockfile(
+        {
+          version: 2,
+          branchId: 'brc_123',
+          entries: [
+            {
+              fileId: 'f1',
+              versionId: 'v1',
+              fileName: 'src\\content\\page.mdx',
+              translations: {
+                es: { fileName: 'content\\es\\page.mdx' },
+              },
+            },
+          ],
+        },
+        null
+      );
+
+      const written = readLockFile();
+      expect(written.entries[0].fileName).toBe('src/content/page.mdx');
+      expect(written.entries[0].translations.es.fileName).toBe(
+        'content/es/page.mdx'
+      );
     });
 
     it('writes v1 format when originalV1 is provided, preserving other branches', () => {
