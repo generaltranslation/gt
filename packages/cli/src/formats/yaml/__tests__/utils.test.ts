@@ -13,12 +13,15 @@ const mockExit = vi.mocked(exitSync).mockImplementation(() => {
 });
 
 describe('validateYamlSchema', () => {
+  const originalSeparator = Object.getOwnPropertyDescriptor(path, 'sep')!;
+
   beforeEach(() => {
     mockLogError.mockClear();
     mockExit.mockClear();
   });
 
   afterEach(() => {
+    Object.defineProperty(path, 'sep', originalSeparator);
     vi.clearAllMocks();
   });
 
@@ -358,11 +361,31 @@ describe('validateYamlSchema', () => {
     });
 
     it('matches Windows paths against slash-separated globs', () => {
+      Object.defineProperty(path, 'sep', {
+        ...originalSeparator,
+        value: path.win32.sep,
+      });
+
       const schema = { include: ['$.title'] };
 
       const result = validateYamlSchema(
         { yamlSchema: { 'src/**/*.yaml': schema } },
         'src\\content\\messages.yaml'
+      );
+
+      expect(result).toEqual(schema);
+    });
+
+    it('preserves escaped schema globs on POSIX', () => {
+      Object.defineProperty(path, 'sep', {
+        ...originalSeparator,
+        value: path.posix.sep,
+      });
+      const schema = { include: ['$.title'] };
+
+      const result = validateYamlSchema(
+        { yamlSchema: { 'app/\\(marketing\\)/*.yaml': schema } },
+        'app/(marketing)/messages.yaml'
       );
 
       expect(result).toEqual(schema);

@@ -12,6 +12,7 @@ import {
   DownloadedVersionEntry,
 } from '../downloadedVersions.js';
 import { createMockSettings } from '../../../api/__mocks__/settings.js';
+import { hashStringSync } from '../../../utils/hash.js';
 
 describe('readLockfile / writeLockfile', () => {
   const originalCwd = process.cwd();
@@ -104,6 +105,44 @@ describe('readLockfile / writeLockfile', () => {
       expect(data.entries[0].translations.es.fileName).toBe(
         'content/es/page.mdx'
       );
+    });
+
+    it('re-keys path-derived file IDs when normalizing Windows paths', () => {
+      const windowsFileName = 'src\\content\\page.mdx';
+      const posixFileName = 'src/content/page.mdx';
+      writeLockFile({
+        version: 2,
+        branchId: 'brc_abc',
+        entries: [
+          {
+            fileId: hashStringSync(windowsFileName),
+            versionId: 'v1',
+            fileName: windowsFileName,
+            translations: {
+              es: {
+                fileName: 'content\\es\\page.mdx',
+                postProcessHash: 'translation-hash',
+              },
+            },
+          },
+        ],
+      });
+
+      const { data, entryMap } = readLockfile(settings('brc_abc'));
+      const normalizedFileId = hashStringSync(posixFileName);
+
+      expect(data.entries[0]).toMatchObject({
+        fileId: normalizedFileId,
+        fileName: posixFileName,
+        translations: {
+          es: {
+            fileName: 'content/es/page.mdx',
+            postProcessHash: 'translation-hash',
+          },
+        },
+      });
+      expect(entryMap.get(normalizedFileId)).toBe(data.entries[0]);
+      expect(entryMap.has(hashStringSync(windowsFileName))).toBe(false);
     });
 
     it('updates branchId on v2 file to current branch', () => {

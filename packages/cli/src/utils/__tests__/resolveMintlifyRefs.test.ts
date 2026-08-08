@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { afterEach, describe, it, expect, vi, beforeEach } from 'vitest';
 import path from 'node:path';
 import { resolveMintlifyRefs } from '../resolveMintlifyRefs';
 
@@ -23,6 +23,7 @@ import { logger } from '../../console/logger.js';
 
 const mockExists = vi.mocked(fs.existsSync);
 const mockRead = vi.mocked(fs.readFileSync);
+const originalSeparator = Object.getOwnPropertyDescriptor(path, 'sep')!;
 
 function setupFiles(files: Record<string, unknown>) {
   const resolvedFiles: Record<string, string> = {};
@@ -43,6 +44,10 @@ function setupFiles(files: Record<string, unknown>) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+});
+
+afterEach(() => {
+  Object.defineProperty(path, 'sep', originalSeparator);
 });
 
 describe('resolveMintlifyRefs', () => {
@@ -480,6 +485,10 @@ describe('resolveMintlifyRefs', () => {
       })
     ).toBe(false);
 
+    Object.defineProperty(path, 'sep', {
+      ...originalSeparator,
+      value: path.win32.sep,
+    });
     expect(
       shouldResolveRefs('src\\content\\docs.json', {
         jsonSchema: { 'src/**/*.json': { resolveRefs: true } },

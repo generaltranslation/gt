@@ -435,7 +435,7 @@ function classifyRequiresReviewPaths(
   if (typeof config === 'boolean' || config === undefined) {
     if (config ?? requiresReviewDefault) {
       for (const resolvedPath of resolvedPaths) {
-        requiresReviewPaths.add(resolvedPath);
+        requiresReviewPaths.add(toPosixPath(resolvedPath));
       }
     }
     return;
@@ -462,7 +462,7 @@ function classifyRequiresReviewPaths(
       ? false
       : included.has(posixPaths[i]) || requiresReviewDefault;
     if (requiresReview) {
-      requiresReviewPaths.add(resolvedPaths[i]);
+      requiresReviewPaths.add(posixPaths[i]);
     }
   }
 }

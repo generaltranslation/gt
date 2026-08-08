@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import path from 'node:path';
 import {
   resolveLocaleFiles,
   resolveFiles,
@@ -35,11 +36,14 @@ import fg from 'fast-glob';
 import { logger } from '../../console/logger.js';
 
 describe('parseFilesConfig', () => {
+  const originalSeparator = Object.getOwnPropertyDescriptor(path, 'sep')!;
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   afterEach(() => {
+    Object.defineProperty(path, 'sep', originalSeparator);
     vi.restoreAllMocks();
   });
 
@@ -567,7 +571,12 @@ describe('parseFilesConfig', () => {
       });
     });
 
-    it('normalizes Windows separators in glob patterns', () => {
+    it('normalizes Windows separators in glob patterns on Windows', () => {
+      Object.defineProperty(path, 'sep', {
+        ...originalSeparator,
+        value: path.win32.sep,
+      });
+
       expandGlobPatterns(
         '/project',
         ['src\\[locale]\\*.json'],
@@ -580,6 +589,29 @@ describe('parseFilesConfig', () => {
         absolute: true,
         ignore: ['/project/src/en/ignored/**'],
       });
+    });
+
+    it('preserves escaped glob characters on POSIX', () => {
+      Object.defineProperty(path, 'sep', {
+        ...originalSeparator,
+        value: path.posix.sep,
+      });
+
+      expandGlobPatterns(
+        '/project',
+        ['app/\\(marketing\\)/[locale]/*.mdx'],
+        ['src/\\[slug\\]/[locale]/**'],
+        'en',
+        defaultLocales
+      );
+
+      expect(fg.sync).toHaveBeenCalledWith(
+        '/project/app/\\(marketing\\)/en/*.mdx',
+        {
+          absolute: true,
+          ignore: ['/project/src/\\[slug\\]/en/**'],
+        }
+      );
     });
 
     it('should handle complex locale replacement in paths', () => {
@@ -1098,6 +1130,28 @@ describe('parseFilesConfig', () => {
       const result = resolveFiles(files, 'en', defaultLocales, '/project');
 
       expect(result.requiresReviewPaths).toEqual(new Set(resolved));
+    });
+
+    it('stores Windows review paths with forward slashes', () => {
+      Object.defineProperty(path, 'sep', {
+        ...originalSeparator,
+        value: path.win32.sep,
+      });
+      vi.mocked(fg.sync).mockReturnValue([
+        'C:\\project\\locales\\en\\messages.json',
+      ]);
+      const files = {
+        json: {
+          include: ['locales\\[locale]\\*.json'],
+          requiresReview: true,
+        },
+      };
+
+      const result = resolveFiles(files, 'en', defaultLocales, 'C:\\project');
+
+      expect(result.requiresReviewPaths).toEqual(
+        new Set(['C:/project/locales/en/messages.json'])
+      );
     });
 
     it('file-type false overrides a top-level true default', () => {
