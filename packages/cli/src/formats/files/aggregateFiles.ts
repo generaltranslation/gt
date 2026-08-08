@@ -31,6 +31,7 @@ import {
 } from '../parseKeyedMetadata.js';
 import { buildPublishMap } from '../../utils/resolvePublish.js';
 import { getTransformFormatProperty } from './transformFormat.js';
+import { toPosixPath } from '../../utils/paths.js';
 
 /**
  * Checks if a file path is a metadata companion file (e.g. foo.metadata.json)
@@ -178,7 +179,7 @@ export async function aggregateFiles(
           fileId: hashStringSync(relativePath),
           versionId: hashVersionId(
             parsedJson,
-            requiresReviewPaths.has(filePath)
+            requiresReviewPaths.has(toPosixPath(filePath))
           ),
           content: parsedJson,
           fileName: relativePath,
@@ -273,7 +274,7 @@ export async function aggregateFiles(
           fileId: hashStringSync(relativePath),
           versionId: hashVersionId(
             parsedYaml,
-            requiresReviewPaths.has(filePath)
+            requiresReviewPaths.has(toPosixPath(filePath))
           ),
           locale: settings.defaultLocale,
           ...(keyedMetadata && {
@@ -331,7 +332,7 @@ export async function aggregateFiles(
           fileId: hashStringSync(relativePath),
           versionId: hashVersionId(
             parsedJson,
-            requiresReviewPaths.has(filePath)
+            requiresReviewPaths.has(toPosixPath(filePath))
           ),
           content: parsedJson,
           fileName: relativePath,
@@ -430,7 +431,7 @@ export async function aggregateFiles(
             fileId: hashStringSync(relativePath),
             versionId: hashVersionId(
               processed,
-              requiresReviewPaths.has(filePath)
+              requiresReviewPaths.has(toPosixPath(filePath))
             ),
             locale: settings.defaultLocale,
           } satisfies FileToUpload;

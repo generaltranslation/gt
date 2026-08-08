@@ -11,6 +11,7 @@ import { Settings } from '../../types/index.js';
 import { recordWarning } from '../../state/translateWarnings.js';
 import { FileStatusTracker } from './PollJobsStep.js';
 import { TEMPLATE_FILE_NAME } from '../../utils/constants.js';
+import { toPosixPath } from '../../utils/paths.js';
 
 export type DownloadTranslationsInput = {
   fileTracker: FileStatusTracker;
@@ -114,7 +115,7 @@ export class DownloadTranslationsStep {
             process.cwd(),
             fileProperties.fileName
           );
-          if (!requiresReviewPaths.has(absolutePath)) continue;
+          if (!requiresReviewPaths.has(toPosixPath(absolutePath))) continue;
           reviewGatedKeys.add(fileKey);
           fileTracker.completed.delete(fileKey);
           fileTracker.skipped.set(fileKey, fileProperties);

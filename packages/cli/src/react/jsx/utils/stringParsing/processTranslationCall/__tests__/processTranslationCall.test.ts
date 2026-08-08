@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import path from 'node:path';
+import { afterEach, describe, it, expect } from 'vitest';
 import { parse } from '@babel/parser';
 import traverse, { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
@@ -7,6 +8,11 @@ import { ParsingConfig, ParsingOutput } from '../../types.js';
 import { Updates } from '../../../../../../types/index.js';
 
 const FILE_PATH = 'test.tsx';
+const originalSeparator = Object.getOwnPropertyDescriptor(path, 'sep')!;
+
+afterEach(() => {
+  Object.defineProperty(path, 'sep', originalSeparator);
+});
 
 function createConfig(overrides?: Partial<ParsingConfig>): ParsingConfig {
   return {
@@ -62,6 +68,23 @@ function runProcessTranslationCall(
 
   return output;
 }
+
+describe('processTranslationCall - path metadata', () => {
+  it('uses slash-separated metadata paths on Windows', () => {
+    Object.defineProperty(path, 'sep', {
+      ...originalSeparator,
+      value: path.win32.sep,
+    });
+
+    const output = runProcessTranslationCall(`t('hello')`, 't', {
+      file: 'src\\components\\Page.tsx',
+    });
+
+    expect(output.updates[0].metadata.filePaths).toEqual([
+      'src/components/Page.tsx',
+    ]);
+  });
+});
 
 describe('processTranslationCall - array support', () => {
   it('should extract each string literal in an array', () => {

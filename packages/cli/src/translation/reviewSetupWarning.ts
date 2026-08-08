@@ -4,6 +4,7 @@ import type { FileToUpload } from 'generaltranslation/types';
 import { logger } from '../console/logger.js';
 import { gt } from '../utils/gt.js';
 import { Settings } from '../types/index.js';
+import { toPosixPath } from '../utils/paths.js';
 
 const PROJECT_INFO_TIMEOUT_MS = 10_000;
 
@@ -34,7 +35,9 @@ export async function warnManualReviewSetup(
           (metadata as { requires_review?: boolean })?.requires_review === true
       );
     }
-    return requiresReviewPaths?.has(path.resolve(process.cwd(), file.fileName));
+    return requiresReviewPaths?.has(
+      toPosixPath(path.resolve(process.cwd(), file.fileName))
+    );
   });
   if (!hasReviewGatedFile) return;
 
