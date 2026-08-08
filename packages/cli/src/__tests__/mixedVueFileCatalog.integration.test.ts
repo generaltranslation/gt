@@ -99,8 +99,15 @@ describe('mixed Vue and file-library CLI integration', () => {
       main(program);
 
       const commandNames = program.commands.map((command) => command.name());
+      expect(commandNames).toContain('setup');
       expect(commandNames).toContain('validate');
       expect(commandNames).toContain('generate');
+      const initOptions = program.commands
+        .find((command) => command.name() === 'init')
+        ?.options.map(({ flags }) => flags);
+      expect(initOptions).toEqual(
+        expect.arrayContaining(['--src <paths...>', '-c, --config <path>'])
+      );
 
       await program.parseAsync(
         ['--quiet', 'translate', '--dry-run', '--config', 'gt.config.json'],

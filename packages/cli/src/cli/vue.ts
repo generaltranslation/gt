@@ -1,5 +1,4 @@
 import type { Command } from 'commander';
-import { manifestDirectlyDeclaresGTVue } from '@generaltranslation/vue-extractor/integration';
 import type { SupportedLibraries } from '../types/index.js';
 import { Libraries } from '../types/libraries.js';
 import { InlineCLI } from './inline.js';
@@ -29,14 +28,25 @@ export class VueCLI extends InlineCLI {
   ): Promise<void> {
     return super.handleConfigureCommand(useBundledTranslationDefaults);
   }
+}
 
-  /** Applies the extractor-owned gt-vue manifest ownership policy. */
-  protected override hasInstalledInlineRuntime(
-    packageJson: Record<string, unknown>
-  ): boolean {
-    return (
-      super.hasInstalledInlineRuntime(packageJson) ||
-      manifestDirectlyDeclaresGTVue(packageJson)
-    );
+/**
+ * Adds Vue inline extraction to an existing file-translation CLI.
+ *
+ * Historical setup and configuration behavior remains inherited from BaseCLI,
+ * while InlineCLI adds Vue-aware validation and source-generation commands.
+ */
+export class MixedVueCLI extends InlineCLI {
+  public constructor(
+    command: Command,
+    additionalModules?: SupportedLibraries[]
+  ) {
+    super(command, Libraries.GT_VUE, additionalModules);
+  }
+
+  /** Preserves BaseCLI's setup command alongside Vue inline commands. */
+  public override init(): void {
+    this.setupSetupProjectCommand();
+    super.init();
   }
 }

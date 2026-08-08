@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
     node: vi.fn(),
     python: vi.fn(),
     react: vi.fn(),
+    mixedVue: vi.fn(),
     vue: vi.fn(),
   },
   detectedLibrary: 'gt-vue' as string,
@@ -129,6 +130,19 @@ vi.mock('../cli/react.js', () => ({
 }));
 
 vi.mock('../cli/vue.js', () => ({
+  MixedVueCLI: class {
+    public constructor(...args: unknown[]) {
+      mocks.constructors.mixedVue(...args);
+    }
+
+    public init(): void {
+      mocks.init('mixedVue');
+    }
+
+    public execute(): void {
+      mocks.execute('mixedVue');
+    }
+  },
   VueCLI: class {
     public constructor(...args: unknown[]) {
       mocks.constructors.vue(...args);
@@ -230,12 +244,44 @@ describe('Vue CLI routing', () => {
   );
 
   it.each([
+    [Libraries.GT_NEXT, 'next'],
+    [Libraries.GT_REACT, 'react'],
+    [Libraries.GT_REACT_NATIVE, 'react'],
+    [Libraries.GT_TANSTACK_START, 'react'],
+    [Libraries.GT_NODE, 'node'],
+    [Libraries.GT_FLASK, 'python'],
+    [Libraries.GT_FASTAPI, 'python'],
+  ] as const)(
+    'keeps a direct gt-vue dependency on the historical %s CLI branch',
+    (library, expectedCli) => {
+      mocks.detectedLibrary = library;
+      createProject({
+        dependencies: {
+          [library]: '*',
+          'gt-vue': '*',
+        },
+      });
+      const program = new Command();
+
+      main(program);
+
+      expectOnlyConstructor(expectedCli);
+      expect(mocks.constructors[expectedCli]).toHaveBeenCalledWith(
+        program,
+        library,
+        ['i18next-icu']
+      );
+      expect(mocks.planCalls).toEqual([]);
+    }
+  );
+
+  it.each([
     ['dependencies', 'i18next'],
     ['dependencies', 'next-intl'],
     ['devDependencies', 'i18next'],
     ['devDependencies', 'next-intl'],
   ] as const)(
-    'routes a %s gt-vue root through VueCLI while preserving %s detection',
+    'adds Vue commands to a %s gt-vue root while preserving %s detection',
     (vueField, fileLibrary) => {
       mocks.detectedLibrary = fileLibrary;
       const projectRoot = createProject(
@@ -250,8 +296,8 @@ describe('Vue CLI routing', () => {
 
       main(program);
 
-      expectOnlyConstructor('vue');
-      expect(mocks.constructors.vue).toHaveBeenCalledWith(program, [
+      expectOnlyConstructor('mixedVue');
+      expect(mocks.constructors.mixedVue).toHaveBeenCalledWith(program, [
         'i18next-icu',
       ]);
       expect(mocks.planCalls).toEqual([{ library: fileLibrary, projectRoot }]);
