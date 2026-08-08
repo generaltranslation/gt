@@ -3,3 +3,4 @@ package-lock.json
 *.tgz
 binaries
 .rollup.cache
+npm
