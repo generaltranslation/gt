@@ -251,6 +251,75 @@ describe('Vue JSX rich extraction', () => {
     ]);
   });
 
+  it('keeps every recognized Vue helper used as a JSX tag opaque', async () => {
+    const output = await extractFromVueSource(
+      `
+        import {
+          defineComponent as DefineComponent,
+          markRaw as MarkRaw,
+          reactive as Reactive,
+          ref as Ref,
+        } from 'vue';
+        import { T } from 'gt-vue';
+        export const View = () => (
+          <T>
+            <Ref><b>hidden ref</b></Ref>
+            <Reactive><i>hidden reactive</i></Reactive>
+            <MarkRaw><em>hidden markRaw</em></MarkRaw>
+            <DefineComponent><strong>hidden defineComponent</strong></DefineComponent>
+            <u>visible</u>
+          </T>
+        );
+      `,
+      '/project/src/View.tsx'
+    );
+
+    expect(output.errors).toEqual([]);
+    const source = output.results[0]?.source;
+    expect(source).toEqual([
+      { i: 1, t: 'Ref' },
+      { i: 2, t: 'Reactive' },
+      { i: 3, t: 'MarkRaw' },
+      { i: 4, t: 'DefineComponent' },
+      { c: 'visible', i: 5, t: 'u' },
+    ]);
+    expect(hashSource({ dataFormat: 'JSX', source: source! })).toBe(
+      '8db74524e3792706'
+    );
+  });
+
+  it('gives intrinsic HTML and SVG tags precedence over lexical aliases', async () => {
+    const output = await extractFromVueSource(
+      `
+        import { T, T as div, Var as span } from 'gt-vue';
+        import { reactive as svg } from 'vue';
+        export const View = () => (
+          <T>
+            <div><b>GT alias</b></div>
+            <span><i>Variable alias</i></span>
+            <svg><text>Vue helper alias</text></svg>
+          </T>
+        );
+      `,
+      '/project/src/View.tsx'
+    );
+
+    expect(output.errors).toEqual([]);
+    const source = output.results[0]?.source;
+    expect(source).toEqual([
+      { c: { c: 'GT alias', i: 2, t: 'b' }, i: 1, t: 'div' },
+      { c: { c: 'Variable alias', i: 4, t: 'i' }, i: 3, t: 'span' },
+      {
+        c: { c: 'Vue helper alias', i: 6, t: 'text' },
+        i: 5,
+        t: 'svg',
+      },
+    ]);
+    expect(hashSource({ dataFormat: 'JSX', source: source! })).toBe(
+      'a5b5d264ac1dd95d'
+    );
+  });
+
   it('traverses bound tags only when every possible value is a string element', async () => {
     const output = await extractFromVueSource(
       `
