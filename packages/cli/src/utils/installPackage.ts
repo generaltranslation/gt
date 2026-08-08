@@ -7,11 +7,12 @@ export async function installPackage(
   packageName: string,
   packageManager: PackageManager,
   asDevDependency?: boolean,
-  cwd: string = process.cwd()
+  cwd: string = process.cwd(),
+  extraArgs: string[] = []
 ): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const command = packageManager.name;
-    const args = [packageManager.installCommand, packageName];
+    const args = [packageManager.installCommand, packageName, ...extraArgs];
 
     if (asDevDependency) {
       args.push(packageManager.devDependencyFlag);

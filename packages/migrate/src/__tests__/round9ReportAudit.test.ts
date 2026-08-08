@@ -1,0 +1,286 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { describe, expect, it } from 'vitest';
+import { runMigration } from '../pipeline/runMigration.js';
+import { buildReport } from '../report/report.js';
+import { makeIO } from './support/io.js';
+import { makeTree, registerTreeCleanup } from './support/tree.js';
+import type { MigrationContext } from '../pipeline/types.js';
+
+// Round-9 harness audit (2026-07-24): the emitted report went silent about
+// files that still reference the source library after the run. Two shapes
+// shipped in every migrated next-intl fixture: i18n/request.ts listed under
+// "Converted" while still importing next-intl, and i18n/routing.ts retained
+// (still imported by kept wiring) but named nowhere in the report. The report
+// builder now (a) annotates Converted entries that still reference the
+// library and (b) sweeps every project file's post-run content and names the
+// unnamed under "Still referencing <library>".
+//
+// Every test drives the REAL pipeline against a real tmpdir project; nothing
+// hand-populates a MigrationContext.
+
+registerTreeCleanup();
+
+const writeTree = (files: Record<string, string>) =>
+  makeTree(files, { prefix: 'gt-r9-report-' });
+
+function migrate(cwd: string): Promise<MigrationContext> {
+  return runMigration(
+    {
+      config: 'gt.config.json',
+      from: 'next-intl',
+      dryRun: false,
+      yes: true,
+      allowDirty: true,
+    },
+    'next-intl',
+    makeIO(),
+    cwd
+  );
+}
+
+const lines = (...l: string[]) => l.join('\n');
+
+/** Post-run content of a file: the pending edit when written, disk otherwise. */
+function postRunContent(ctx: MigrationContext, abs: string): string | null {
+  const edit = [...ctx.edits]
+    .reverse()
+    .find((candidate) => candidate.path === abs);
+  if (edit?.kind === 'delete') return null;
+  if (edit?.kind === 'write') return edit.content ?? '';
+  try {
+    return fs.readFileSync(abs, 'utf8');
+  } catch {
+    return null;
+  }
+}
+
+const baseApp = {
+  'package.json': JSON.stringify({
+    name: 'demo',
+    dependencies: { next: '15.5.0', 'next-intl': '^4.1.0', react: '19.0.0' },
+  }),
+  'messages/en.json': JSON.stringify({ Home: { title: 'Welcome' } }),
+  'messages/es.json': JSON.stringify({ Home: { title: 'Bienvenido' } }),
+  'i18n/routing.ts': lines(
+    "import { defineRouting } from 'next-intl/routing';",
+    'export const routing = defineRouting({',
+    "  locales: ['en', 'es'],",
+    "  defaultLocale: 'en',",
+    '});'
+  ),
+  'i18n/request.ts': lines(
+    "import { getRequestConfig } from 'next-intl/server';",
+    "import { hasLocale } from 'next-intl';",
+    "import { routing } from './routing';",
+    'export default getRequestConfig(async ({ requestLocale }) => {',
+    '  const requested = await requestLocale;',
+    '  const locale = hasLocale(routing.locales, requested)',
+    '    ? requested',
+    '    : routing.defaultLocale;',
+    '  return {',
+    '    locale,',
+    '    messages: (await import(`../messages/${locale}.json`)).default,',
+    '  };',
+    '});'
+  ),
+  'next.config.ts': lines(
+    "import createNextIntlPlugin from 'next-intl/plugin';",
+    'const withNextIntl = createNextIntlPlugin();',
+    'export default withNextIntl({});'
+  ),
+  'app/[locale]/layout.tsx': lines(
+    "import { NextIntlClientProvider } from 'next-intl';",
+    "import { setRequestLocale } from 'next-intl/server';",
+    'export default async function LocaleLayout({',
+    '  children,',
+    '  params,',
+    '}: {',
+    '  children: React.ReactNode;',
+    '  params: Promise<{ locale: string }>;',
+    '}) {',
+    '  const { locale } = await params;',
+    '  setRequestLocale(locale);',
+    '  return (',
+    '    <html lang={locale}>',
+    '      <body>',
+    '        <NextIntlClientProvider>{children}</NextIntlClientProvider>',
+    '      </body>',
+    '    </html>',
+    '  );',
+    '}'
+  ),
+  'app/[locale]/page.tsx': lines(
+    "import { useTranslations } from 'next-intl';",
+    'export default function Page() {',
+    "  const t = useTranslations('Home');",
+    "  return <h1>{t('title')}</h1>;",
+    '}'
+  ),
+};
+
+// t.rich always skips its file, which retains next-intl and keeps the run in
+// partial mode: the shape where retained wiring goes silent in the report.
+const richPage = lines(
+  "import { useTranslations } from 'next-intl';",
+  'export default function Rich() {',
+  "  const t = useTranslations('Home');",
+  "  return <p>{t.rich('title', { b: (chunk) => <b>{chunk}</b> })}</p>;",
+  '}'
+);
+
+describe('round 9: the report names every post-run source-library reference', () => {
+  it('partial mode: every file still referencing next-intl appears in the report', async () => {
+    const cwd = writeTree({
+      ...baseApp,
+      'app/[locale]/rich/page.tsx': richPage,
+    });
+    const ctx = await migrate(cwd);
+    const report = buildReport(ctx, false);
+
+    // The generic invariant (harness assertion R4, mechanized here): every
+    // project file whose post-run content still references next-intl is
+    // named somewhere in the report.
+    const unnamed: string[] = [];
+    for (const abs of ctx.projectFiles ?? []) {
+      const content = postRunContent(ctx, abs);
+      if (content === null) continue;
+      if (!ctx.adapter.mentionedIn(content)) continue;
+      const rel = path.relative(cwd, abs).split(path.sep).join('/');
+      const relNative = path.relative(cwd, abs);
+      if (!report.includes(rel) && !report.includes(relNative)) {
+        unnamed.push(rel);
+      }
+    }
+    expect(unnamed).toEqual([]);
+
+    // The concrete round-9 instance: the retained routing module is named.
+    expect(report).toContain('i18n/routing.ts');
+  });
+
+  it('annotates a Converted entry that still references next-intl', async () => {
+    const cwd = writeTree({
+      ...baseApp,
+      'app/[locale]/rich/page.tsx': richPage,
+    });
+    const ctx = await migrate(cwd);
+    const report = buildReport(ctx, false);
+
+    // In partial mode at least one written file keeps a next-intl reference
+    // (the composed next.config, or the request config). It must live under
+    // "Partially converted", never under "Converted".
+    const rewrittenStillReferencing = ctx.edits.filter(
+      (edit) =>
+        edit.kind === 'write' &&
+        /\.[cm]?[jt]sx?$/.test(edit.path) &&
+        ctx.adapter.mentionedIn(edit.content ?? '')
+    );
+    expect(rewrittenStillReferencing.length).toBeGreaterThan(0);
+    expect(report).toContain('## Partially converted');
+    const convertedSection =
+      report.split('## Converted')[1]?.split('\n## ')[0] ?? '';
+    const partialSection =
+      report.split('## Partially converted')[1]?.split('\n## ')[0] ?? '';
+    for (const edit of rewrittenStillReferencing) {
+      const rel = path.relative(cwd, edit.path).split(path.sep).join('/');
+      expect(partialSection).toContain(rel);
+      expect(convertedSection).not.toContain(`- ${rel}\n`);
+    }
+  });
+
+  it('full migration: no Still referencing section and no annotations', async () => {
+    const {
+      'i18n/routing.ts': _routing,
+      'i18n/request.ts': _request,
+      ...rest
+    } = baseApp;
+    const cwd = writeTree({
+      ...rest,
+      // No routing/request infrastructure and no rich page: the run converts
+      // everything and tears next-intl down completely.
+      'i18n/routing.ts': _routing,
+      'i18n/request.ts': _request,
+    });
+    const ctx = await migrate(cwd);
+    const report = buildReport(ctx, false);
+    expect(report).not.toContain('## Still referencing');
+    expect(report).not.toContain('## Partially converted');
+  });
+
+  it('lists synthesized files under Created, never Converted', async () => {
+    const cwd = writeTree(baseApp);
+    const ctx = await migrate(cwd);
+    const report = buildReport(ctx, false);
+    const convertedSection =
+      report.split('## Converted')[1]?.split('\n## ')[0] ?? '';
+    const createdSection =
+      report.split('## Created')[1]?.split('\n## ')[0] ?? '';
+    // gt.config.json did not exist before the run; the synthesis site knows
+    // that and flags the edit, so the report must not claim it was converted.
+    expect(createdSection).toContain('gt.config.json');
+    expect(convertedSection).not.toContain('- gt.config.json');
+    // The emitted config carries the dictionary gt generate reads.
+    const emitted = ctx.edits.find((edit) =>
+      edit.path.endsWith('gt.config.json')
+    );
+    expect(JSON.parse(emitted?.content ?? '{}').dictionary).toBe(
+      './messages/en.json'
+    );
+  });
+
+  it('names the suites a dead config-wired mock breaks, and only those', async () => {
+    // The sniply shape: the ONLY next-intl reference in the test tree is a
+    // vi.mock string in a setup file that vitest wires through config, so the
+    // failing suites import nothing any scan or import-closure can see. The
+    // suites that import converted (now gt-next-calling) code get named with
+    // recorded evidence; a suite exercising untouched code does not.
+    const cwd = writeTree({
+      ...baseApp,
+      'vitest.config.ts': lines(
+        "import { defineConfig } from 'vitest/config';",
+        'export default defineConfig({',
+        "  test: { setupFiles: ['./tests/setup.ts'] },",
+        '});'
+      ),
+      'tests/setup.ts': lines(
+        "import { vi } from 'vitest';",
+        'vi.mock("next-intl", () => ({',
+        '  useTranslations: () => (key: string) => key,',
+        '}));'
+      ),
+      'components/Widget.tsx': lines(
+        "import { useTranslations } from 'next-intl';",
+        'export function Widget() {',
+        "  const t = useTranslations('Home');",
+        "  return <span>{t('title')}</span>;",
+        '}'
+      ),
+      'components/Plain.tsx': lines(
+        'export function Plain() {',
+        '  return <span>plain</span>;',
+        '}'
+      ),
+      'tests/components/Widget.test.tsx': lines(
+        "import { Widget } from '../../components/Widget';",
+        "it('renders', () => {",
+        '  expect(Widget).toBeDefined();',
+        '});'
+      ),
+      'tests/components/Plain.test.tsx': lines(
+        "import { Plain } from '../../components/Plain';",
+        "it('renders', () => {",
+        '  expect(Plain).toBeDefined();',
+        '});'
+      ),
+    });
+    const ctx = await migrate(cwd);
+    const report = buildReport(ctx, false);
+    const testSection =
+      report.split('## Tests need manual migration')[1]?.split('\n## ')[0] ??
+      '';
+    expect(testSection).toContain('tests/setup.ts');
+    expect(testSection).toContain('tests/components/Widget.test.tsx');
+    expect(testSection).toContain('imports converted code');
+    expect(testSection).not.toContain('tests/components/Plain.test.tsx');
+  });
+});
