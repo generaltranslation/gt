@@ -15,7 +15,6 @@ import {
   type JsxChild,
   type JsxChildren,
 } from '@generaltranslation/format/types';
-import { isHTMLTag, isSVGTag } from '@vue/shared';
 import { isAcceptedPluralForm } from 'generaltranslation/internal';
 import { ElementTypes, NodeTypes } from './compilerAst.js';
 import { processVueStringCall } from './stringCalls.js';
@@ -40,17 +39,6 @@ import {
 } from './utils.js';
 
 const traverse = traverseModule.default || traverseModule;
-
-/**
- * Vue's native MathML tag set, retained locally for Vue 3.3 compatibility.
- * `@vue/shared` did not export `isMathMLTag` in 3.3, so importing the newer
- * helper would prevent the extractor from loading with a supported runtime.
- */
-const VUE_MATHML_TAGS = new Set(
-  'annotation,annotation-xml,maction,maligngroup,malignmark,math,menclose,merror,mfenced,mfrac,mfraction,mglyph,mi,mlabeledtr,mlongdiv,mmultiscripts,mn,mo,mover,mpadded,mphantom,mprescripts,mroot,mrow,ms,mscarries,mscarry,msgroup,msline,mspace,msqrt,msrow,mstack,mstyle,msub,msubsup,msup,mtable,mtd,mtext,mtr,munder,munderover,none,semantics'.split(
-    ','
-  )
-);
 
 type Counter = { value: number };
 
@@ -1555,6 +1543,40 @@ function serializeElement(
     shadowed,
     context.valuedVIsReplacesElement
   );
+  const staticVueIsTarget = readStaticVueIsTarget(element);
+  const directTagBindings =
+    staticVueIsTarget === undefined &&
+    element.tagType === ElementTypes.COMPONENT
+      ? getNormalizedDirectTemplateBindings(
+          element.tag,
+          bindings.directBindings
+        )
+      : [];
+  const hasShapeConflictingDirectTag =
+    directTagBindings.length > 1 ||
+    directTagBindings.some(
+      (localName) =>
+        bindings.staticValues.has(localName) ||
+        bindings.possibleStaticStrings.has(localName)
+    );
+  if (!component && !suspense && hasShapeConflictingDirectTag) {
+    addVueError(
+      context,
+      element.loc,
+      `Found unsupported direct binding for component tag <${element.tag}> inside a gt-vue <T> component`,
+      'Use a literal native tag, a statically known GT or Vue component, or move the binding outside <T>'
+    );
+    return { t: element.tag, i: id };
+  }
+  if (staticVueIsTarget !== undefined && !component && !suspense) {
+    addVueError(
+      context,
+      element.loc,
+      `Found unsupported is="vue:${staticVueIsTarget}" content inside a gt-vue <T> component`,
+      'Use a direct literal or component tag, or move the selector outside <T>'
+    );
+    return { t: staticVueIsTarget, i: id };
+  }
   const uncertainComponent =
     !component && !suspense
       ? resolveUncertainComponent(
@@ -1706,20 +1728,9 @@ function isOpaqueComponent(
   component?: { localName: string; originalName: GTComponentName },
   vueBuiltin?: { localName: string; originalName: VueBuiltinName }
 ): boolean {
-  const staticVueIsTarget = readStaticVueIsTarget(element);
   return (
-    element.tagType === ElementTypes.COMPONENT &&
-    !component &&
-    !vueBuiltin &&
-    // An unresolved vue-prefixed native target becomes a string VNode whose
-    // descendants the runtime traverses like an ordinary element.
-    !(staticVueIsTarget && isNativeVueTag(staticVueIsTarget))
+    element.tagType === ElementTypes.COMPONENT && !component && !vueBuiltin
   );
-}
-
-/** Returns whether a template tag produces a native string VNode. */
-function isNativeVueTag(target: string): boolean {
-  return isHTMLTag(target) || isSVGTag(target) || VUE_MATHML_TAGS.has(target);
 }
 
 /** Resolves literal Suspense and statically proven aliases of Vue's builtin. */
@@ -2805,13 +2816,22 @@ function resolveComponentBinding<Name extends string>(
       : undefined;
   }
   const effectiveTag = readStaticVueIsTarget(element) ?? element.tag;
-  for (const localName of normalizeTemplateBindingNames(effectiveTag)) {
-    const originalName = isDirectTemplateBinding(
-      localName,
-      directTemplateBindings
-    )
-      ? directBindings.get(localName)
-      : registeredBindings.get(localName);
+  const normalizedNames = [...normalizeTemplateBindingNames(effectiveTag)];
+  const directNames = getNormalizedDirectTemplateBindings(
+    effectiveTag,
+    directTemplateBindings
+  );
+  if (directNames.length > 0) {
+    const originalName = directBindings.get(directNames[0]!);
+    return originalName &&
+      directNames.every(
+        (localName) => directBindings.get(localName) === originalName
+      )
+      ? { localName: directNames[0]!, originalName }
+      : undefined;
+  }
+  for (const localName of normalizedNames) {
+    const originalName = registeredBindings.get(localName);
     if (originalName) return { localName, originalName };
   }
   return undefined;
@@ -2825,6 +2845,16 @@ function normalizeTemplateBindingNames(sourceName: string): Set<string> {
     ? camelized[0].toUpperCase() + camelized.slice(1)
     : camelized;
   return new Set([sourceName, camelized, pascalized]);
+}
+
+/** Returns every direct binding in one Vue-normalized template-name family. */
+function getNormalizedDirectTemplateBindings(
+  sourceName: string,
+  directBindings: Set<string>
+): string[] {
+  return [...normalizeTemplateBindingNames(sourceName)].filter((localName) =>
+    isDirectTemplateBinding(localName, directBindings)
+  );
 }
 
 /** Returns whether a program binding shadows an Options API registration. */
