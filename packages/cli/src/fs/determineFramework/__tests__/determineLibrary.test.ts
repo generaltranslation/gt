@@ -113,6 +113,23 @@ describe('determineLibrary', () => {
       expect(result.library).toBe('base');
     });
 
+    it.each(['dependencies', 'devDependencies'] as const)(
+      'lets optionalDependencies override gt-vue in %s',
+      (field) => {
+        mockExistsSync.mockReturnValue(true);
+        mockReadFileSync.mockReturnValue(
+          JSON.stringify({
+            [field]: { 'gt-vue': '0.1.0' },
+            optionalDependencies: { 'gt-vue': '0.1.0' },
+          })
+        );
+
+        const result = determineLibrary();
+
+        expect(result.library).toBe('base');
+      }
+    );
+
     it("returns 'base' when package.json has no GT dependencies", () => {
       mockExistsSync.mockImplementation((path) => {
         if (String(path).endsWith('package.json')) return true;

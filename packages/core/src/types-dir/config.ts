@@ -10,6 +10,13 @@ export type GTParsingFlags = {
   enableAutoJsxInjection?: boolean;
   legacyGtReactImportSource?: boolean;
   devHotReload?: boolean | { strings?: boolean; jsx?: boolean };
+  /** Vite config used to resolve hash-affecting Vue compiler behavior. */
+  viteConfigPath?: string;
+  /** Hash-affecting Vue template compiler options. */
+  vueCompilerOptions?: {
+    whitespace?: string;
+    delimiters?: string[];
+  };
 };
 
 /** Configuration for generated GT translation files. */

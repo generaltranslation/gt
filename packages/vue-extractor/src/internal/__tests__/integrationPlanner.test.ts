@@ -56,6 +56,20 @@ describe('planVueExtraction activation', () => {
     ['peer dependency', { peerDependencies: { 'gt-vue': '*' } }],
     ['optional dependency', { optionalDependencies: { 'gt-vue': '*' } }],
     [
+      'dependency overridden by an optional dependency',
+      {
+        dependencies: { 'gt-vue': '*' },
+        optionalDependencies: { 'gt-vue': '*' },
+      },
+    ],
+    [
+      'development dependency overridden by an optional dependency',
+      {
+        devDependencies: { 'gt-vue': '*' },
+        optionalDependencies: { 'gt-vue': '*' },
+      },
+    ],
+    [
       'peer and optional dependencies',
       {
         peerDependencies: { 'gt-vue': '*' },
@@ -170,6 +184,59 @@ describe('handled Vue extraction plans', () => {
       },
     });
     await expect(asynchronous).rejects.toBe(asynchronousError);
+  });
+
+  it('handles an early default rejection before yielding to Vue inspection', async () => {
+    const root = createFixture({
+      'package.json': JSON.stringify({
+        private: true,
+        workspaces: ['packages/*'],
+        devDependencies: { 'gt-vue': '*' },
+      }),
+      'packages/child/package.json': JSON.stringify({
+        name: '@fixture/child',
+      }),
+    });
+    linkInstalledVue(root);
+    const primaryError = new Error('early primary failure');
+    const unhandledReasons: unknown[] = [];
+    const onUnhandledRejection = (reason: unknown) => {
+      unhandledReasons.push(reason);
+    };
+    const plan = planVueExtraction({
+      library: 'gt-react',
+      projectRoot: root,
+    });
+    if (!plan.handled) throw new Error('Expected handled plan');
+    process.on('unhandledRejection', onUnhandledRejection);
+
+    try {
+      let primaryStarted = false;
+      const resultPromise = plan.run({
+        extractPrimary(patterns) {
+          primaryStarted = true;
+          expect(patterns).toBeUndefined();
+          return Promise.reject(primaryError);
+        },
+      });
+      expect(primaryStarted).toBe(true);
+
+      // Observe the outer promise immediately so any event can only come from
+      // the early primary rejection held while Vue inspection is in flight.
+      const settlementPromise = resultPromise.then(
+        () => ({ fulfilled: true as const, error: undefined }),
+        (error: unknown) => ({ fulfilled: false as const, error })
+      );
+      await new Promise<void>((resolve) => setImmediate(resolve));
+      const settlement = await settlementPromise;
+      await new Promise<void>((resolve) => setImmediate(resolve));
+
+      expect(unhandledReasons).toEqual([]);
+      expect(settlement.fulfilled).toBe(false);
+      expect(settlement.error).toBe(primaryError);
+    } finally {
+      process.off('unhandledRejection', onUnhandledRejection);
+    }
   });
 
   it('passes unchanged explicit non-SFC patterns and merges Vue updates', async () => {

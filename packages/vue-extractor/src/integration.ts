@@ -68,10 +68,11 @@ const UNHANDLED_PLAN = Object.freeze({ handled: false } as const);
  * Plans Vue extraction without changing historical framework behavior.
  *
  * Activation is intentionally narrow: only an explicitly selected `gt-vue`
- * runtime or a root `package.json` dependency/devDependency can handle the
- * project. Peer, optional, workspace-child, wrapper, source, and transitive
- * evidence is ignored. The false branch is synchronous and performs no source
- * scan, workspace traversal, dynamic import, or asynchronous work.
+ * runtime or a non-optional root `package.json` dependency/devDependency can
+ * handle the project. An optional declaration vetoes manifest ownership; peer,
+ * workspace-child, wrapper, source, and transitive evidence is ignored. The
+ * false branch is synchronous and performs no source scan, workspace traversal,
+ * dynamic import, or asynchronous work.
  */
 export function planVueExtraction(
   options: VueExtractionPlannerOptions
@@ -109,7 +110,7 @@ function capturePlannerOptions(
   };
 }
 
-/** Reads only the root manifest fields that are allowed to activate Vue. */
+/** Reads the root manifest fields that determine effective direct ownership. */
 function rootDirectlyDeclaresGTVue(projectRoot: string): boolean {
   let manifest: unknown;
   try {
@@ -120,6 +121,12 @@ function rootDirectlyDeclaresGTVue(projectRoot: string): boolean {
     return false;
   }
   if (!isRecord(manifest)) return false;
+  // npm treats an optional dependency as overriding the same regular
+  // dependency. Honor that effective classification so an optional gt-vue
+  // install can never activate extraction through another manifest field.
+  if (hasOwnDependency(manifest.optionalDependencies, GT_VUE_PACKAGE)) {
+    return false;
+  }
   return (
     hasOwnDependency(manifest.dependencies, GT_VUE_PACKAGE) ||
     hasOwnDependency(manifest.devDependencies, GT_VUE_PACKAGE)
@@ -147,6 +154,13 @@ async function runVueExtraction(
     extractPrimary && options.filePatterns === undefined
       ? extractPrimary(options.filePatterns)
       : undefined;
+  if (defaultPrimaryPromise) {
+    // Preserve the original promise for the eventual await and error identity,
+    // while marking an early rejection handled before Vue inspection yields.
+    // The derived catch promise always fulfills and therefore cannot introduce
+    // a second unhandled rejection.
+    void defaultPrimaryPromise.catch(() => undefined);
+  }
 
   const [inspectionModule, project] = await Promise.all([
     import('./internal/project/inspectVueProject.js'),
