@@ -51,7 +51,7 @@ describe('consumer Vue template compiler parity', () => {
           import { Branch, Plural, T } from 'gt-vue';
           import { Fragment } from 'vue';
         </script>
-        <template><T><div is="vue:Branch" formal="Formal" casual="Casual">Default</div><div is="vue:Plural" one="One" other="Other">Many</div><div is="vue:Suspense"><b>Ready</b><template #fallback>Loading</template></div><div is="vue:Fragment"><i>First</i><u>Second</u></div><Suspense is="vue:Card"><em>Hidden</em></Suspense></T></template>
+        <template><T><div is="vue:Branch" formal="Formal" casual="Casual">Default</div><div is="vue:Plural" one="One" other="Other">Many</div><div is="vue:Suspense"><b>Ready</b><template #fallback>Loading</template></div><div is="vue:Fragment"><i>First</i><u>Second</u></div></T></template>
       `,
       '/project/src/StaticRichVueIs.vue',
       { projectRoot: '/project' }
@@ -85,32 +85,77 @@ describe('consumer Vue template compiler parity', () => {
       },
       { t: 'i', i: 5, c: 'First' },
       { t: 'u', i: 6, c: 'Second' },
-      { t: 'Card', i: 7 },
     ]);
     expect(hashSource({ dataFormat: 'JSX', source: source! })).toBe(
-      '1252c72057a1e9af'
+      '01a3131578552150'
     );
   });
 
-  it('traverses static vue-prefixed native HTML, SVG, and MathML targets', async () => {
+  it('rejects native-looking static vue:is targets inside T', async () => {
     const output = await extractFromVueSource(
       `
         <script setup>import { T } from 'gt-vue';</script>
-        <template><T><div is="vue:span"><b>HTML child</b></div><svg is="vue:g"><text>SVG child</text></svg><math is="vue:mrow"><span is="vue:mi">MathML child</span></math></T></template>
+        <template><T><div is="vue:span"><b>HTML child</b></div><svg is="vue:g"><text>SVG child</text></svg><math is="vue:mrow"><mi>MathML child</mi></math></T></template>
       `,
       '/project/src/StaticNativeVueIs.vue',
       { projectRoot: '/project' }
     );
 
-    expect(output.errors).toEqual([]);
-    const source = output.results[0]?.source;
-    expect(source).toEqual([
-      { t: 'span', i: 1, c: { t: 'b', i: 2, c: 'HTML child' } },
-      { t: 'g', i: 3, c: { t: 'text', i: 4, c: 'SVG child' } },
-      { t: 'mrow', i: 5, c: { t: 'mi', i: 6, c: 'MathML child' } },
-    ]);
-    expect(hashSource({ dataFormat: 'JSX', source: source! })).toBe(
-      'a5292e364873b6e9'
+    expect(output.results).toEqual([]);
+    expect(output.errors).toHaveLength(3);
+    for (const target of ['span', 'g', 'mrow']) {
+      expect(output.errors.join('\n')).toContain(`is="vue:${target}"`);
+      expect(output.errors.join('\n')).toContain(
+        'Use a direct literal or component tag'
+      );
+    }
+  });
+
+  it('rejects every unrecognized static vue:is selector inside T', async () => {
+    const output = await extractFromVueSource(
+      `
+        <script>
+          import { Var } from 'gt-vue';
+          import OptionsCard from './OptionsCard.vue';
+          export default { components: { NativeTag: Var, OptionsCard } };
+        </script>
+        <script setup>
+          import { T, Var as CollisionTag } from 'gt-vue';
+          import Card from './Card.vue';
+          import collisionTag from './Collision.vue';
+          const Native = 'div';
+          const nativeTag = 'div';
+          const Ambiguous = enabled ? 'em' : 'strong';
+          const Falsey = false;
+        </script>
+        <template><T><section is="vue:Native">String</section><section is="vue:Card">Component</section><section is="vue:Ambiguous">Ambiguous</section><section is="vue:Falsey">Falsey</section><section is="vue:OptionsCard">Options</section><section is="vue:">Empty</section><section is="vue:native-tag">Normalized setup</section><native-tag><b>Plain normalized setup</b></native-tag><section is="vue:collision-tag">Direct collision</section><collision-tag><b>Plain direct collision</b></collision-tag></T></template>
+      `,
+      '/project/src/UnsupportedVueIsBindings.vue',
+      { projectRoot: '/project' }
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toHaveLength(10);
+    for (const target of [
+      'Native',
+      'Card',
+      'Ambiguous',
+      'Falsey',
+      'OptionsCard',
+      '',
+      'native-tag',
+      'collision-tag',
+    ]) {
+      expect(output.errors.join('\n')).toContain(`is="vue:${target}"`);
+      expect(output.errors.join('\n')).toContain(
+        'Use a direct literal or component tag'
+      );
+    }
+    expect(output.errors.join('\n')).toContain(
+      'unsupported direct binding for component tag <native-tag>'
+    );
+    expect(output.errors.join('\n')).toContain(
+      'unsupported direct binding for component tag <collision-tag>'
     );
   });
 
@@ -234,7 +279,7 @@ describe('consumer Vue template compiler parity', () => {
           const SUSPENSE = defineComponent({ name: 'SUSPENSE' });
           const susPense = defineComponent({ name: 'susPense' });
         </script>
-        <template><T><Suspense><b>Exact</b></Suspense><suspense><i>Lower</i></suspense><SUSPENSE><u>Upper hidden</u></SUSPENSE><susPense><em>Mixed hidden</em></susPense><div is="vue:Suspense"><strong>Static exact</strong></div><div is="vue:suspense"><small>Static lower</small></div><div is="vue:SUSPENSE"><mark>Static upper hidden</mark></div><div is="vue:susPense"><q>Static mixed hidden</q></div></T></template>
+        <template><T><Suspense><b>Exact</b></Suspense><suspense><i>Lower</i></suspense><SUSPENSE><u>Upper hidden</u></SUSPENSE><susPense><em>Mixed hidden</em></susPense><div is="vue:Suspense"><strong>Static exact</strong></div><div is="vue:suspense"><small>Static lower</small></div></T></template>
       `,
       '/project/src/SuspenseCasing.vue',
       { projectRoot: '/project' }
@@ -257,11 +302,9 @@ describe('consumer Vue template compiler parity', () => {
         i: 9,
         c: { t: 'small', i: 10, c: 'Static lower' },
       },
-      { t: 'SUSPENSE', i: 11 },
-      { t: 'susPense', i: 12 },
     ]);
     expect(hashSource({ dataFormat: 'JSX', source: source! })).toBe(
-      '00bb4863e3f1f1a6'
+      'c76cdf0171c4fe3a'
     );
   });
 });
