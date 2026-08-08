@@ -4,6 +4,13 @@ import { DEFAULT_GIT_REMOTE_NAME } from '../utils/constants.js';
 
 const DEFAULT_TIMEOUT = 900;
 
+const HISTORICAL_INLINE_SRC_DESCRIPTION =
+  "Space-separated list of glob patterns containing the app's source code, by default 'src/**/*.{js,jsx,ts,tsx}' 'app/**/*.{js,jsx,ts,tsx}' 'pages/**/*.{js,jsx,ts,tsx}' 'components/**/*.{js,jsx,ts,tsx}'";
+const VUE_INLINE_SRC_DESCRIPTION =
+  "Space-separated glob patterns containing the app's source code. Vue source locations are scanned by default.";
+
+type InlineSourceHelp = 'historical' | 'vue';
+
 export function attachSharedFlags(command: Command) {
   command
     .option(
@@ -132,7 +139,10 @@ export function attachTranslateFlags(command: Command) {
  * @param command - The command to attach the flags to
  * @returns The command with the inline content parsing flags attached
  */
-function attachInlineContentParsingFlags(command: Command) {
+function attachInlineContentParsingFlags(
+  command: Command,
+  sourceHelp: InlineSourceHelp
+) {
   return command
     .option(
       '--tsconfig, --jsconfig <path>',
@@ -142,7 +152,9 @@ function attachInlineContentParsingFlags(command: Command) {
     .option('--dictionary <path>', 'Path to dictionary file')
     .option(
       '--src <paths...>',
-      "Space-separated glob patterns containing the app's source code. Framework-specific source locations are scanned by default."
+      sourceHelp === 'vue'
+        ? VUE_INLINE_SRC_DESCRIPTION
+        : HISTORICAL_INLINE_SRC_DESCRIPTION
     )
     .option(
       '--inline',
@@ -156,13 +168,17 @@ function attachInlineContentParsingFlags(command: Command) {
  * @param command
  * @returns The command with the validate flags attached
  */
-export function attachValidateFlags(command: Command) {
+export function attachValidateFlags(
+  command: Command,
+  sourceHelp: InlineSourceHelp = 'historical'
+) {
   return attachInlineContentParsingFlags(
     command.option(
       '-c, --config <path>',
       'Filepath to config file, by default gt.config.json',
       findFilepath(['gt.config.json'])
-    )
+    ),
+    sourceHelp
   );
 }
 
@@ -171,12 +187,16 @@ export function attachValidateFlags(command: Command) {
  * @param command
  * @returns The command with the translate flags attached
  */
-export function attachInlineTranslateFlags(command: Command) {
+export function attachInlineTranslateFlags(
+  command: Command,
+  sourceHelp: InlineSourceHelp = 'historical'
+) {
   return attachInlineContentParsingFlags(
     command.option(
       '--ignore-errors',
       'Ignore errors encountered while scanning for inline content',
       false
-    )
+    ),
+    sourceHelp
   );
 }
