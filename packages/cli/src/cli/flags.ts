@@ -142,7 +142,7 @@ function attachInlineContentParsingFlags(command: Command) {
     .option('--dictionary <path>', 'Path to dictionary file')
     .option(
       '--src <paths...>',
-      "Space-separated list of glob patterns containing the app's source code, by default 'src/**/*.{js,jsx,ts,tsx}' 'app/**/*.{js,jsx,ts,tsx}' 'pages/**/*.{js,jsx,ts,tsx}' 'components/**/*.{js,jsx,ts,tsx}'"
+      "Space-separated glob patterns containing the app's source code. Framework-specific source locations are scanned by default."
     )
     .option(
       '--inline',

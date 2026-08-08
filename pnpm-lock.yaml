@@ -798,6 +798,9 @@ importers:
       '@generaltranslation/supported-locales':
         specifier: workspace:*
         version: link:../supported-locales
+      '@generaltranslation/vue-extractor':
+        specifier: workspace:*
+        version: link:../vue-extractor
       chalk:
         specifier: ^5.4.1
         version: 5.6.2

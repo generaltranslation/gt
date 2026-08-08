@@ -1,4 +1,5 @@
 import type { SupportedFileExtension } from './index.js';
+import type { VueCompilerOptions } from '@generaltranslation/vue-extractor/types';
 
 /**
  * For monorepo projects, checking for extra exports fields in resolved internal packages.
@@ -43,6 +44,10 @@ export type GTParsingFlags = BaseParsingFlags & {
   includeSourceCodeContext: boolean;
   enableAutoJsxInjection: boolean;
   legacyGtReactImportSource: boolean;
+  /** Vite config used to resolve hash-affecting Vue compiler behavior. */
+  viteConfigPath?: string;
+  /** Hash-affecting Vue template compiler options. */
+  vueCompilerOptions?: VueCompilerOptions;
 };
 
 /**
