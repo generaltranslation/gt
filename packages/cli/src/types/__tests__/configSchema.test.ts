@@ -3,7 +3,12 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 type JsonSchema = {
+  additionalItems?: boolean;
   additionalProperties?: boolean;
+  enum?: unknown[];
+  items?: JsonSchema[];
+  maxItems?: number;
+  minItems?: number;
   oneOf?: JsonSchema[];
   properties?: Record<string, JsonSchema>;
   type?: string;
@@ -49,6 +54,30 @@ describe('GT config schema parsing flags', () => {
           additionalProperties: false,
         },
       ],
+    });
+  });
+
+  it('matches the exact Vue compiler option contract', () => {
+    expect(getParsingFlagProperties().vueCompilerOptions).toEqual({
+      type: 'object',
+      description: 'Hash-affecting Vue template compiler options',
+      properties: {
+        whitespace: {
+          type: 'string',
+          enum: ['condense', 'preserve'],
+        },
+        delimiters: {
+          type: 'array',
+          items: [
+            { type: 'string', minLength: 1 },
+            { type: 'string', minLength: 1 },
+          ],
+          additionalItems: false,
+          minItems: 2,
+          maxItems: 2,
+        },
+      },
+      additionalProperties: false,
     });
   });
 });
