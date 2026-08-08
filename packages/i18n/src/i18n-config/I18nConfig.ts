@@ -49,8 +49,6 @@ type RuntimeConfig = Pick<
 export type LocaleCandidates = string | string[] | undefined;
 
 export class I18nConfig extends LocaleConfig {
-  // protected so subclasses (e.g. react-core's ReactI18nConfig) can read runtime
-  // flags such as `_tagIds` without I18nConfig owning renderer-specific accessors.
   protected runtimeConfig: RuntimeConfig;
   private gtServicesEnabled: boolean;
   private logLevel: GeneralTranslationLogLevel;
@@ -152,10 +150,6 @@ export class I18nConfig extends LocaleConfig {
       getRuntimeEnvironment() === 'development'
     );
   }
-
-  // NB: id-tagging (`isIdTaggingEnabled`) is a renderer concern and lives on the
-  // react layer (react-core's ReactI18nConfig), not here — this package stays
-  // runtime-agnostic. `_tagIds` is still stored in runtimeConfig (config data).
 
   isGTServicesEnabled(): boolean {
     return this.gtServicesEnabled;

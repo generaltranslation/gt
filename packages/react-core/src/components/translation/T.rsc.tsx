@@ -25,8 +25,6 @@ async function RscT({
   const defaultLocale = getI18nConfig().getDefaultLocale();
   const shouldTranslate =
     enableI18n && getI18nConfig().requiresTranslation(locale);
-  // prepareT resolves the id-tagging hash (prepared.hash) and caches it on
-  // targetOptions.$_hash, so the lookup below reuses it (no double hashing).
   const prepared = prepareT({
     sourceChildren,
     params,
@@ -41,6 +39,7 @@ async function RscT({
       defaultLocale,
       enableI18n,
       shouldTranslate,
+      hash: prepared.targetOptions.$_hash,
     });
   }
 
@@ -70,6 +69,7 @@ async function RscT({
     defaultLocale,
     enableI18n,
     shouldTranslate,
+    hash: prepared.targetOptions.$_hash,
   });
 }
 

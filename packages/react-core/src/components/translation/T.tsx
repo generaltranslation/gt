@@ -34,9 +34,7 @@ function useComputeT({
   _renderPreparedT = renderPreparedT,
   ...params
 }: TProps): ReactNode {
-  // Prepare our source children for rendering. usePrepareT (via prepareT)
-  // resolves the id-tagging hash (`hash`) and caches it on targetOptions.$_hash,
-  // so the useTranslate lookup below reuses it rather than hashing again.
+  // Prepare our source children for rendering
   const {
     defaultLocale,
     locale,
@@ -45,7 +43,6 @@ function useComputeT({
     taggedSourceChildren,
     sourceJsxChildren,
     shouldTranslate,
-    hash,
   } = usePrepareT({
     sourceChildren,
     params,
@@ -80,7 +77,7 @@ function useComputeT({
     defaultLocale,
     enableI18n,
     shouldTranslate,
-    hash,
+    hash: targetOptions.$_hash,
   });
 
   // record previous result

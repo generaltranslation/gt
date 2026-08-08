@@ -26,10 +26,6 @@ type PreparedT = {
     $format: 'JSX';
     $locale: string;
   };
-  // The <T> id-tagging hash — resolved once here (see resolveTagHash) and also
-  // cached onto targetOptions.$_hash so the downstream lookup reuses it. undefined
-  // when id-tagging is off, so apps not using the feature pay nothing.
-  hash: string | undefined;
 };
 
 type RenderPreparedT = (params: RenderPreparedTParams) => ReactNode;
@@ -60,16 +56,13 @@ function prepareT({
   const options = normalizeParameters(params);
   const targetOptions = prepareTargetOptions({ options, locale });
 
-  // Resolve the id-tagging hash once, here — shared by the RSC and hook code
-  // paths — and cache it on targetOptions.$_hash BEFORE the lookup so the lookup
-  // reuses it (no double hashing). undefined when id-tagging is off.
-  const hash = resolveTagHash(sourceJsxChildren, targetOptions);
+  // Caches the id-tagging hash onto targetOptions.$_hash so the lookup reuses it.
+  resolveTagHash(sourceJsxChildren, targetOptions);
 
   return {
     taggedSourceChildren,
     sourceJsxChildren,
     targetOptions,
-    hash,
   };
 }
 
