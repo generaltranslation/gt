@@ -25,7 +25,13 @@ export function determineLibrary(): {
         ...packageJson.dependencies,
         ...packageJson.devDependencies,
       };
-      hasGtVue = Boolean(dependencies[Libraries.GT_VUE]);
+      const optionalDependencies = packageJson.optionalDependencies;
+      const hasOptionalGtVue =
+        optionalDependencies !== null &&
+        typeof optionalDependencies === 'object' &&
+        !Array.isArray(optionalDependencies) &&
+        Object.hasOwn(optionalDependencies, Libraries.GT_VUE);
+      hasGtVue = Boolean(dependencies[Libraries.GT_VUE]) && !hasOptionalGtVue;
 
       // Check for gt-next or gt-react in dependencies
       if (dependencies[Libraries.GT_NEXT]) {
