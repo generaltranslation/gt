@@ -232,6 +232,25 @@ describe('Vue JSX rich extraction', () => {
     ]);
   });
 
+  it('keeps Vue h aliases used as JSX component tags opaque', async () => {
+    const output = await extractFromVueSource(
+      `
+        import { h as H } from 'vue';
+        import { T } from 'gt-vue';
+        export const View = () => (
+          <T><H><strong>Opaque helper slot</strong></H><i>After</i></T>
+        );
+      `,
+      '/project/src/View.tsx'
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(output.results[0]?.source).toEqual([
+      { i: 1, t: 'H' },
+      { c: 'After', i: 2, t: 'i' },
+    ]);
+  });
+
   it('traverses bound tags only when every possible value is a string element', async () => {
     const output = await extractFromVueSource(
       `

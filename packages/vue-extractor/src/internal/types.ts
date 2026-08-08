@@ -77,6 +77,8 @@ export type VueExtractionContext = {
   results: VueExtractionResult[];
   source: string;
   surroundingLineCount: number;
+  /** Whether the consumer compiler implements Vue 3.3's valued `v-is`. */
+  valuedVIsReplacesElement: boolean;
   /** Variable component nodes whose public shape was already validated. */
   validatedVariableComponents: WeakSet<object>;
   warnings: Set<string>;

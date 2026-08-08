@@ -1,6 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { compileScript, parse } from '@vue/compiler-sfc';
+import {
+  compileScript,
+  parse,
+  version as vueCompilerVersion,
+} from '@vue/compiler-sfc';
 import { afterEach, describe, expect, it } from 'vitest';
 import { detectVueProject } from '../../detect.js';
 import {
@@ -449,14 +453,18 @@ describe('Vue wrapper use in lexically scoped component tags', () => {
     expect(namespace).toContain('_createBlock(Mixed.VueT)');
   });
 
-  it('documents Vue 3.5 removal of valued v-is', () => {
+  it('documents installed Vue semantics for valued v-is', () => {
     const output = compileInlineTemplate(
       '<div v-is="VueT" />',
       "import { VueT } from '@fixture/multi/vue';"
     );
 
-    expect(output).toContain('_createElementBlock("div")');
-    expect(output).not.toContain('_unref(VueT)');
+    if (vueCompilerVersion.startsWith('3.3.')) {
+      expect(output).toContain('_resolveDynamicComponent(_unref(VueT))');
+    } else {
+      expect(output).toContain('_createElementBlock("div")');
+      expect(output).not.toContain('_unref(VueT)');
+    }
   });
 
   it('matches Vue component lookup precedence for camel setup bindings', () => {

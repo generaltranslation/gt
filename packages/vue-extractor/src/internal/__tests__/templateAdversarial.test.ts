@@ -2,7 +2,14 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { JsxChildren } from '@generaltranslation/format/types';
 import { describe, expect, it } from 'vitest';
-import { extractFromVueSource } from './testVueCompiler.js';
+import {
+  extractFromVueSource,
+  testVueCompilerVersion,
+} from './testVueCompiler.js';
+
+// Vue 3.3's HTML parser rejects quotes inside dynamic directive arguments.
+const supportsQuotedDirectiveArguments =
+  !testVueCompilerVersion.startsWith('3.3.');
 
 describe('Vue template extraction', () => {
   it('ports the React rich-content matrix with Vue slot semantics', async () => {
@@ -102,8 +109,10 @@ describe('Vue template extraction', () => {
     ]);
   });
 
-  it('visits executable directive arguments in their Vue scope', async () => {
-    const output = await extractVue(`
+  it.skipIf(!supportsQuotedDirectiveArguments)(
+    'visits executable directive arguments in their Vue scope',
+    async () => {
+      const output = await extractVue(`
       <script setup>
       import { useGT } from 'gt-vue';
       const gt = useGT();
@@ -116,9 +125,10 @@ describe('Vue template extraction', () => {
       </template>
     `);
 
-    expect(output.errors).toEqual([]);
-    expect(stringSources(output.results)).toEqual(['DirectiveArgument']);
-  });
+      expect(output.errors).toEqual([]);
+      expect(stringSources(output.results)).toEqual(['DirectiveArgument']);
+    }
+  );
 
   it('ignores comments and whitespace before an explicit default slot', async () => {
     const output = await extractVue(`
