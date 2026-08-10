@@ -13,6 +13,7 @@ import {
   addVueError,
   babelLocation,
   createInlineMetadata,
+  type StaticPrimitive,
   type StaticPrimitiveResult,
   unwrapExpression,
 } from '../utils.js';
@@ -1109,11 +1110,26 @@ function readBranchAttributeSources(
       );
       continue;
     }
-    branches[name] =
-      value.value == null || typeof value.value === 'boolean'
-        ? []
-        : String(value.value);
+    branches[name] = serializeBranchAttributePrimitive(value.value);
   }
+}
+
+/**
+ * Serializes one direct branch prop without applying Vue child normalization.
+ *
+ * Vue renders boolean and null VNode children empty, but React and gt-vue
+ * preserve those direct prop values in the persisted branch wire format. The
+ * shared `JsxChildren` type predates those values, so the cast stays confined
+ * to this exact catalog boundary. Other primitives retain the established
+ * string representation.
+ */
+function serializeBranchAttributePrimitive(
+  value: StaticPrimitive
+): JsxChildren {
+  if (value === null || typeof value === 'boolean') {
+    return value as unknown as JsxChildren;
+  }
+  return String(value);
 }
 
 function isBranchPropName(name: string): boolean {
