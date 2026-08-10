@@ -1,0 +1,525 @@
+[
+  {
+    "id": "branching-components/branch/complex/big",
+    "hash": "38ec69190078142b",
+    "mode": "excluded",
+    "reason": "The fixtures are not equivalent: React uses singular/plural branches while Vue uses one/other, and the case also mixes fragments with boolean and null branches that Vue normalizes away."
+  },
+  {
+    "id": "branching-components/branch/complex/composite",
+    "hash": "190eeac7f8c818ed",
+    "mode": "semantic-wire-exact",
+    "reason": "At runtime prepareT and gt-vue serialize the same Branch transformation, branches, variables, IDs, and hash."
+  },
+  {
+    "id": "branching-components/branch/complex/nestedbranches",
+    "hash": "f4ffc9cbcc62ebe4",
+    "mode": "semantic-wire-exact",
+    "reason": "Both runtimes serialize the same nested Branch transformations, branch content, IDs, and hash."
+  },
+  {
+    "id": "branching-components/branch/simple/basic",
+    "hash": "a785b696e567580b",
+    "mode": "semantic-wire-exact",
+    "reason": "Both runtimes serialize identical Branch transformation data, branch content, IDs, and hash."
+  },
+  {
+    "id": "branching-components/branch/simple/default",
+    "hash": "09560c569c4865b7",
+    "mode": "semantic-wire-exact",
+    "reason": "Both runtimes serialize the same default content, Branch transformation data, IDs, and hash."
+  },
+  {
+    "id": "branching-components/branch/simple/empty",
+    "hash": "b5c4b7b8cbea300b",
+    "mode": "excluded",
+    "reason": "The compiled Vue branch slot retains the explicit empty Fragment VNode, but gt-vue's current serializer deliberately treats Fragment as transparent; explicit Fragment identity is outside the initial portable grammar."
+  },
+  {
+    "id": "branching-components/branch/simple/jsx-branch",
+    "hash": "4984101a84f79442",
+    "mode": "semantic-wire-exact",
+    "reason": "Both runtimes serialize identical element-valued branch structure, Branch transformation data, IDs, and hash."
+  },
+  {
+    "id": "branching-components/branch/simple/stringliterals",
+    "hash": "257b552d655ac08e",
+    "mode": "semantic-wire-exact",
+    "reason": "Both runtimes serialize the same literal branches, defaults, Branch transformation data, IDs, and hash."
+  },
+  {
+    "id": "branching-components/plural/complex/composite",
+    "hash": "3e41ae7ee96a8a45",
+    "mode": "semantic-wire-exact",
+    "reason": "At runtime prepareT and gt-vue serialize identical rich plural forms, Plural transformation data, IDs, and hash."
+  },
+  {
+    "id": "branching-components/plural/complex/nestedbranches",
+    "hash": "6bb5921309dccd8e",
+    "mode": "semantic-wire-exact",
+    "reason": "Both runtimes serialize the same nested Plural transformations, form content, IDs, and hash."
+  },
+  {
+    "id": "branching-components/plural/simple/basic",
+    "hash": "e55955253ba86252",
+    "mode": "semantic-wire-exact",
+    "reason": "Both runtimes serialize identical Plural transformation data, form content, IDs, and hash."
+  },
+  {
+    "id": "branching-components/plural/simple/default",
+    "hash": "dd1dea877e2e4cd8",
+    "mode": "semantic-wire-exact",
+    "reason": "Both runtimes serialize the same default content, Plural transformation data, forms, IDs, and hash."
+  },
+  {
+    "id": "branching-components/plural/simple/empty",
+    "hash": "a595c029effd5e36",
+    "mode": "excluded",
+    "reason": "The compiled Vue plural-form slot retains the explicit empty Fragment VNode, but gt-vue's current serializer deliberately treats Fragment as transparent; explicit Fragment identity is outside the initial portable grammar."
+  },
+  {
+    "id": "branching-components/plural/simple/jsx-branch",
+    "hash": "d9cd02a509fe5c49",
+    "mode": "semantic-wire-exact",
+    "reason": "Both runtimes serialize identical element-valued form structure, Plural transformation data, IDs, and hash."
+  },
+  {
+    "id": "branching-components/plural/simple/stringliterals",
+    "hash": "0231d21d66b43987",
+    "mode": "semantic-wire-exact",
+    "reason": "Both runtimes serialize the same literal forms, defaults, Plural transformation data, IDs, and hash."
+  },
+  {
+    "id": "complex-cases/all-empty-branch-attr",
+    "hash": "b5afa467eff619c8",
+    "mode": "excluded",
+    "reason": "The compiled Branch VNode retains null, false, and the explicit empty Fragment as distinct inputs, but gt-vue's current serializer normalizes the primitive branches and deliberately treats Fragment as transparent; this Fragment-sensitive case is outside the initial portable grammar."
+  },
+  {
+    "id": "complex-cases/all-plual-forms",
+    "hash": "38512687adbc60fa",
+    "mode": "semantic-wire-exact",
+    "reason": "Both runtimes serialize the same complete set of plural-form keys, values, Plural transformation data, IDs, and hash."
+  },
+  {
+    "id": "complex-cases/attribute-props",
+    "hash": "c6d7761ce8dd2a59",
+    "mode": "semantic-wire-exact",
+    "reason": "Both runtimes serialize the same Branch transformation data, branch structure, translatable HTML attributes, IDs, and hash."
+  },
+  {
+    "id": "complex-cases/boundary-numeric-values",
+    "hash": "f78e188604fcfff4",
+    "mode": "semantic-wire-exact",
+    "reason": "Both runtimes serialize every boundary numeric form with the same Plural transformation data, IDs, and hash."
+  },
+  {
+    "id": "complex-cases/complex-fragment-nesting",
+    "hash": "6c901a520d542fa8",
+    "mode": "excluded",
+    "reason": "The compiled Vue slots retain the explicit nested Fragment VNodes, but gt-vue's current serializer deliberately treats them as transparent and Vue normalizes the surrounding template whitespace differently; Fragment identity and ambiguous formatting whitespace are outside the initial portable grammar."
+  },
+  {
+    "id": "complex-cases/component-nesting-edge-cases",
+    "hash": "7e4bbf7961dcca27",
+    "mode": "excluded",
+    "reason": "A Fragment inside a nested branch slot is flattened and surrounding template whitespace is normalized, so the React child structure and numbering cannot be reconstructed."
+  },
+  {
+    "id": "complex-cases/deeply-nested-branch-components",
+    "hash": "a3bad22afc92233b",
+    "mode": "excluded",
+    "reason": "The evening branch relies on a Fragment wrapper that Vue flattens; its loss shifts variable and nested-branch IDs and combines differently normalized text."
+  },
+  {
+    "id": "complex-cases/different-number-formats",
+    "hash": "4d68f22fc6e97b8f",
+    "mode": "expected-failure",
+    "reason": "The only runtime mismatch is direct Branch props true, false, and null being normalized to empty children; their typed values remain available on the compiled VNode, so gt-vue can preserve them in source serialization.",
+    "brokenVueHash": "4c9ba22391e5f1dc",
+    "repairs": [
+      {
+        "path": [1, "d", "b", "active"],
+        "before": [],
+        "after": true
+      },
+      {
+        "path": [1, "d", "b", "inactive"],
+        "before": [],
+        "after": false
+      },
+      {
+        "path": [1, "d", "b", "unknown"],
+        "before": [],
+        "after": null
+      }
+    ]
+  },
+  {
+    "id": "complex-cases/duplicate-branches",
+    "hash": "bc1400bbcd8c5a7a",
+    "mode": "excluded",
+    "reason": "Each rich branch is wrapped in a React Fragment that Vue flattens, changing both element numbering and compiler-normalized whitespace."
+  },
+  {
+    "id": "complex-cases/empty-fragments",
+    "hash": "5e3dfbb4983ff412",
+    "mode": "excluded",
+    "reason": "React serializes the empty Fragment as a tagged child, but Vue compiles the corresponding form to an empty slot with no recoverable node."
+  },
+  {
+    "id": "complex-cases/empty-minimal-content",
+    "hash": "cb715c6c561d06e6",
+    "mode": "excluded",
+    "reason": "The Vue fixture supplies the singleChar branch as the distinct single-char key; the runtime cannot infer the React branch name from that compiled prop."
+  },
+  {
+    "id": "complex-cases/five-level-nesting",
+    "hash": "9095e84edac4763a",
+    "mode": "excluded",
+    "reason": "React assigns the deepest Var the explicit name deep_var, but the Vue fixture omits that name and only exposes an auto-generated variable identity."
+  },
+  {
+    "id": "complex-cases/fragments-and-elements",
+    "hash": "8c456a04a0aa6795",
+    "mode": "excluded",
+    "reason": "The compiled Vue children retain both explicit Fragment VNodes, but gt-vue's current serializer deliberately treats them as transparent, changing semantic element identity and numbering; explicit Fragment identity is outside the initial portable grammar."
+  },
+  {
+    "id": "complex-cases/fragments-with-only-whitespace",
+    "hash": "fe4d6d291f5f1384",
+    "mode": "excluded",
+    "reason": "Vue exposes the whitespace form as text and the empty form as no nodes, while React preserves a distinct Fragment element for each form."
+  },
+  {
+    "id": "complex-cases/leading-trailing-spaces-with-diff-sibs-pos",
+    "hash": "87521cdd2d9e92b7",
+    "mode": "semantic-wire-exact",
+    "reason": "The compiled Vue text boundaries, element IDs, semantic wire source, and hash match the React fixture."
+  },
+  {
+    "id": "complex-cases/long-attributes",
+    "hash": "540627838e017e07",
+    "mode": "semantic-wire-exact",
+    "reason": "Both runtimes serialize the same long attribute values, Plural transformation data, IDs, and hash."
+  },
+  {
+    "id": "complex-cases/long-content-string",
+    "hash": "d5fbcdfef5e87db1",
+    "mode": "excluded",
+    "reason": "The mixed branch uses a Fragment that Vue flattens, and multiline template formatting is normalized into different text boundaries and element IDs."
+  },
+  {
+    "id": "complex-cases/many-edge-cases",
+    "hash": "9975ce1096bddd02",
+    "mode": "excluded",
+    "reason": "The Vue fixture intentionally omits and changes portions of the React stress corpus, while also mixing fragments, named variables, booleans, and nulls, so the inputs are not equivalent."
+  },
+  {
+    "id": "complex-cases/mixed-component-types",
+    "hash": "62b7f2d2a37f1bf9",
+    "mode": "excluded",
+    "reason": "Fragment children inside both plural forms are flattened by Vue and formatted template text is normalized, removing nodes and changing subsequent IDs."
+  },
+  {
+    "id": "complex-cases/mixed-element-types-in-branches",
+    "hash": "0278d0825cf63b05",
+    "mode": "excluded",
+    "reason": "Fragments nested under footer and main elements are flattened by Vue, which removes React wire nodes and shifts every following descendant ID."
+  },
+  {
+    "id": "complex-cases/more-extreme-edge-cases",
+    "hash": "03192064013401f9",
+    "mode": "excluded",
+    "reason": "This stress corpus combines retained explicit Fragment VNodes with empty expressions, primitive interpolations, and Vue cases that differ from the React fixture; those Fragment-sensitive, primitive, and non-equivalent inputs are outside the initial portable grammar."
+  },
+  {
+    "id": "complex-cases/multiple-variable-types-in-branch",
+    "hash": "3147331853462b48",
+    "mode": "excluded",
+    "reason": "The singular Fragment is flattened and the React Var name reference is omitted from Vue, so neither the original IDs nor the named variable key can be recovered."
+  },
+  {
+    "id": "complex-cases/multiple-vars-same-keys",
+    "hash": "acf6252b72f8a938",
+    "mode": "excluded",
+    "reason": "Vue template whitespace normalization moves spaces around each variable relative to React JSX, and the compiled text nodes do not retain the original source placement."
+  },
+  {
+    "id": "complex-cases/nested-fragments",
+    "hash": "f7a2329cfdc886aa",
+    "mode": "excluded",
+    "reason": "Vue flattens both levels of nested Fragments into text, while React retains tagged fragment elements in the wire structure."
+  },
+  {
+    "id": "complex-cases/parallel-branches-with-fragments",
+    "hash": "098f517dbae38267",
+    "mode": "excluded",
+    "reason": "The compiled singular slot retains its explicit Fragment VNode, but gt-vue's current serializer deliberately treats it as transparent, shifting variable IDs relative to the element-wrapped plural form; explicit Fragment identity is outside the initial portable grammar."
+  },
+  {
+    "id": "complex-cases/previous-issues",
+    "hash": "9f8429513a1e9f3a",
+    "mode": "excluded",
+    "reason": "The compiled Vue slots retain the explicit Fragment VNodes, but gt-vue's current serializer deliberately treats them as transparent and Vue normalizes the root template whitespace differently; Fragment identity and ambiguous formatting whitespace are outside the initial portable grammar."
+  },
+  {
+    "id": "complex-cases/self-closing-and-void",
+    "hash": "a4c913018a80e6e9",
+    "mode": "excluded",
+    "reason": "Every branch is Fragment-wrapped in React; Vue flattens those wrappers and normalizes surrounding text, shifting the void elements and variable IDs."
+  },
+  {
+    "id": "complex-cases/special-control-characters",
+    "hash": "063494e573a854aa",
+    "mode": "excluded",
+    "reason": "The fixtures are not equivalent: React preserves backslash escape text in a JSX attribute while Vue evaluates a bound expression to actual control characters."
+  },
+  {
+    "id": "complex-cases/special-js-values-in-branches",
+    "hash": "fcce7d4952f02096",
+    "mode": "excluded",
+    "reason": "The Vue fixture compiles bigNumber and negativeScientific as kebab-case branch keys, which are distinct from React's camelCase keys and cannot be inferred at runtime."
+  },
+  {
+    "id": "complex-cases/unicode-special-characters",
+    "hash": "86e21ba52010f7ef",
+    "mode": "semantic-wire-exact",
+    "reason": "Both runtimes serialize all Unicode branch values with the same Branch transformation data, IDs, and hash."
+  },
+  {
+    "id": "complex-cases/whitespace",
+    "hash": "711b912bc06378a1",
+    "mode": "excluded",
+    "reason": "This stress fixture combines non-equivalent content with compiler-normalized whitespace, Fragments, booleans, and nulls, so Vue's compiled VNodes cannot reproduce React's source."
+  },
+  {
+    "id": "complex-cases/whitespace-preservation-complex-structure",
+    "hash": "df2fcc8f82538d01",
+    "mode": "excluded",
+    "reason": "Vue flattens each branch Fragment and normalizes its indentation into different leading and trailing text, losing React's fragment nodes and exact spaces."
+  },
+  {
+    "id": "t-component/simple/context/static",
+    "context": "runtime parity",
+    "hash": "d3507605a23269dc",
+    "mode": "semantic-wire-exact",
+    "reason": "Both runtimes preserve the same static context and mix it into the same literal catalog hash."
+  },
+  {
+    "id": "t-component/simple/expressions/null/fragment-null",
+    "hash": "a013c005483cdd19",
+    "mode": "excluded",
+    "reason": "Vue flattens the Fragment and renders null interpolation as empty text, while React preserves a tagged Fragment containing null semantics."
+  },
+  {
+    "id": "t-component/simple/expressions/null/plain-null",
+    "hash": "471b9124c31817e9",
+    "mode": "excluded",
+    "reason": "Vue exposes null interpolation as an empty text value, which is indistinguishable from authored empty text and cannot recover React's null child."
+  },
+  {
+    "id": "t-component/simple/expressions/static-boolean/array",
+    "hash": "9ff224ca1118e4df",
+    "mode": "excluded",
+    "reason": "Vue stringifies and coalesces the boolean interpolations after flattening the Fragment, whereas React preserves a fragment node with boolean children."
+  },
+  {
+    "id": "t-component/simple/expressions/static-boolean/false",
+    "hash": "d98d8886a31c98f3",
+    "mode": "excluded",
+    "reason": "Vue interpolation supplies the text false rather than a typed boolean, and the runtime cannot distinguish it from an authored string."
+  },
+  {
+    "id": "t-component/simple/expressions/static-boolean/fragment-false",
+    "hash": "a013c005483cdd19",
+    "mode": "excluded",
+    "reason": "Vue both flattens the Fragment and stringifies false, losing the tagged wrapper and typed boolean that React preserves."
+  },
+  {
+    "id": "t-component/simple/expressions/static-boolean/fragment-true",
+    "hash": "200db4fbcabc7d06",
+    "mode": "excluded",
+    "reason": "Vue both flattens the Fragment and stringifies true, losing the tagged wrapper and typed boolean that React preserves."
+  },
+  {
+    "id": "t-component/simple/expressions/static-boolean/true",
+    "hash": "73b6b211a4122ba8",
+    "mode": "excluded",
+    "reason": "Vue interpolation supplies the text true rather than a typed boolean, and the runtime cannot distinguish it from an authored string."
+  },
+  {
+    "id": "t-component/simple/expressions/static-number",
+    "hash": "4d7c200090ca2696",
+    "mode": "semantic-wire-exact",
+    "reason": "Both frameworks serialize the static number to the same text source and hash."
+  },
+  {
+    "id": "t-component/simple/expressions/static-special-identifiers",
+    "hash": "4f82a98ad0b111d9",
+    "mode": "excluded",
+    "reason": "The Vue extractor rejects these dynamic special identifiers, and Vue coalesces their runtime interpolation output after null and undefined disappear, so the React array cannot be recovered."
+  },
+  {
+    "id": "t-component/simple/expressions/static-string",
+    "hash": "9373218d961a8520",
+    "mode": "semantic-wire-exact",
+    "reason": "Both frameworks serialize the static string expression to the same source and hash."
+  },
+  {
+    "id": "t-component/simple/expressions/static-template",
+    "hash": "c8681c983afc3a29",
+    "mode": "semantic-wire-exact",
+    "reason": "Both frameworks serialize the static template literal to the same source and hash."
+  },
+  {
+    "id": "t-component/simple/misc/customcomponents",
+    "hash": "0a4baa9bf7d3c242",
+    "mode": "excluded",
+    "reason": "Vue intentionally treats arbitrary custom-component slots as opaque, so T cannot inspect the Link and Button slot text that React serializes."
+  },
+  {
+    "id": "t-component/simple/misc/localeselector",
+    "hash": "354f3fe65565abba",
+    "mode": "semantic-wire-exact",
+    "reason": "The childless opaque custom component has the same ID, semantic wire record, and hash after ordinary element labels are normalized."
+  },
+  {
+    "id": "t-component/simple/plain-text/plain-text",
+    "hash": "0894d32c42fe7e31",
+    "mode": "semantic-wire-exact",
+    "reason": "The plain text source and hash already match exactly."
+  },
+  {
+    "id": "t-component/simple/plain-text/plain-text-deeply-nested",
+    "hash": "8a7e316169324f40",
+    "mode": "semantic-wire-exact",
+    "reason": "The complete nested element structure, IDs, text, and hash already match exactly."
+  },
+  {
+    "id": "t-component/simple/plain-text/plain-text-nested",
+    "hash": "7bf637c4fa920fb5",
+    "mode": "semantic-wire-exact",
+    "reason": "The nested element structure, IDs, text, and hash match after ordinary element labels are normalized."
+  },
+  {
+    "id": "t-component/simple/plain-text/plain-text-nested-fragment",
+    "hash": "7bf637c4fa920fb5",
+    "mode": "excluded",
+    "reason": "The compiled Vue child retains its explicit Fragment VNode, but gt-vue's current serializer deliberately treats Fragment as transparent; explicit Fragment identity is outside the initial portable grammar."
+  },
+  {
+    "id": "t-component/simple/plain-text/plain-text-siblings",
+    "hash": "743972847e294775",
+    "mode": "semantic-wire-exact",
+    "reason": "The sibling text boundaries, nested element, IDs, and hash already match exactly."
+  },
+  {
+    "id": "t-component/simple/special-react-components",
+    "hash": "4c76e787e705659e",
+    "mode": "excluded",
+    "reason": "The compiled Vue children retain the explicit empty Fragment VNode, but gt-vue's current serializer deliberately treats it as transparent; this Fragment-sensitive case also uses framework-specific Suspense semantics outside the initial portable grammar."
+  },
+  {
+    "id": "variable-components/currency/simple/basic",
+    "hash": "ca1ff7d6802b1d46",
+    "mode": "semantic-wire-exact",
+    "reason": "Both runtimes produce the same generated currency variable key, type, ID, source, and hash."
+  },
+  {
+    "id": "variable-components/currency/simple/siblings",
+    "hash": "2084cabfb2ecd9cd",
+    "mode": "semantic-wire-exact",
+    "reason": "The sibling text and generated currency variable wire data already match exactly."
+  },
+  {
+    "id": "variable-components/currency/simple/variable",
+    "hash": "7bde2306205fa50a",
+    "mode": "semantic-wire-exact",
+    "reason": "All generated currency variables have identical order, IDs, keys, types, source, and hash."
+  },
+  {
+    "id": "variable-components/datetime/simple/basic",
+    "hash": "1b218e0af4bb7cf8",
+    "mode": "semantic-wire-exact",
+    "reason": "Both runtimes produce the same generated date variable wire data and hash."
+  },
+  {
+    "id": "variable-components/datetime/simple/siblings",
+    "hash": "ec6838ca65e06e9c",
+    "mode": "semantic-wire-exact",
+    "reason": "The sibling text and generated date variable wire data already match exactly."
+  },
+  {
+    "id": "variable-components/datetime/simple/variable",
+    "hash": "b31170adc0017f5d",
+    "mode": "semantic-wire-exact",
+    "reason": "All generated date variables have identical order, IDs, keys, types, source, and hash."
+  },
+  {
+    "id": "variable-components/num/simple/basic",
+    "hash": "2280bcd71389dedf",
+    "mode": "semantic-wire-exact",
+    "reason": "Both runtimes produce the same generated number variable wire data and hash."
+  },
+  {
+    "id": "variable-components/num/simple/siblings",
+    "hash": "e8390dd22a8dec20",
+    "mode": "semantic-wire-exact",
+    "reason": "The sibling text and generated number variable wire data already match exactly."
+  },
+  {
+    "id": "variable-components/num/simple/variable",
+    "hash": "d95f311f07b58f05",
+    "mode": "semantic-wire-exact",
+    "reason": "All generated number variables have identical order, IDs, keys, types, source, and hash."
+  },
+  {
+    "id": "variable-components/static/branches",
+    "hash": "a013c005483cdd19",
+    "mode": "excluded",
+    "reason": "React's source is a Derive expansion map, while gt-vue does not support Derive and the Vue fixture substitutes a manually authored Branch structure."
+  },
+  {
+    "id": "variable-components/static/simple",
+    "hash": "a013c005483cdd19",
+    "mode": "excluded",
+    "reason": "React's Derive runtime enumerates a static content map, while the Vue fixture manually rewrites it as Branch components; these are different wire semantics."
+  },
+  {
+    "id": "variable-components/static/ternaries",
+    "hash": "a013c005483cdd19",
+    "mode": "excluded",
+    "reason": "React uses unsupported Derive output with a static content map, while the Vue fixture replaces it with a Branch and therefore is not equivalent at runtime."
+  },
+  {
+    "id": "variable-components/var/simple/basic",
+    "hash": "933fa7740fe8c681",
+    "mode": "semantic-wire-exact",
+    "reason": "Both runtimes produce the same generated Var key, type, ID, source, and hash."
+  },
+  {
+    "id": "variable-components/var/simple/empty",
+    "hash": "933fa7740fe8c681",
+    "mode": "semantic-wire-exact",
+    "reason": "The empty Var remains an identical generated variable record and hash in both fixtures."
+  },
+  {
+    "id": "variable-components/var/simple/name",
+    "hash": "5313ec64034eb6b2",
+    "mode": "excluded",
+    "reason": "React's three explicit Var names are omitted from the Vue fixture, so gt-vue only receives auto-generated variable keys and cannot recover test1, test2, or test3."
+  },
+  {
+    "id": "variable-components/var/simple/siblings",
+    "hash": "5aa66fd8e225d406",
+    "mode": "semantic-wire-exact",
+    "reason": "The sibling text and generated Var record already match exactly."
+  },
+  {
+    "id": "variable-components/var/simple/variable",
+    "hash": "aec76c6e76ba1b89",
+    "mode": "semantic-wire-exact",
+    "reason": "All generated Var records have identical order, IDs, keys, types, source, and hash."
+  }
+]
