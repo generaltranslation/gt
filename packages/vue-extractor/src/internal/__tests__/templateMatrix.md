@@ -30,7 +30,6 @@ be known deterministically at extraction time.
 The following behavior is intentionally unsupported and must produce a
 diagnostic instead of a partial catalog entry:
 
-- rich extraction from Vue JSX/TSX;
 - dynamic content outside Var, Num, DateTime, or Currency;
 - nested T components unless the inner T is inside an opaque Var;
 - source-shaping directives inside T, including `v-if`, `v-for`, `v-html`, and
