@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1785903682549,
+  "lastUpdate": 1786384789030,
   "repoUrl": "https://github.com/generaltranslation/gt",
   "entries": {
     "Middleware Benchmarks": [
@@ -8120,6 +8120,122 @@ window.BENCHMARK_DATA = {
             "value": 98.89999999999418,
             "unit": "ms",
             "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.5\"\n}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "b751e35a8d255ba3c1ac36c008595385bc33a2d8",
+          "message": "[ci] release (#2050)\n\nThis PR was opened by the [Changesets\nrelease](https://github.com/changesets/action) GitHub action. When\nyou're ready to do a release, you can merge this and the packages will\nbe published to npm automatically. If you're not ready to do a release\nyet, that's fine, whenever you add more changesets to main, this PR will\nbe updated.\n\n\n# Releases\n## gt@2.16.4\n\n### Patch Changes\n\n- Updated dependencies\n[[`b00b93e`](https://github.com/generaltranslation/gt/commit/b00b93eb3b830b8528ef3dbd5f503ff76d1b338a)]:\n  - generaltranslation@9.1.2\n  - @generaltranslation/python-extractor@0.2.35\n  - @generaltranslation/supported-locales@2.1.15\n## @generaltranslation/compiler@1.3.37\n\n### Patch Changes\n\n- Updated dependencies\n[[`b00b93e`](https://github.com/generaltranslation/gt/commit/b00b93eb3b830b8528ef3dbd5f503ff76d1b338a)]:\n  - generaltranslation@9.1.2\n## generaltranslation@9.1.2\n\n### Patch Changes\n\n- [#2017](https://github.com/generaltranslation/gt/pull/2017)\n[`b00b93e`](https://github.com/generaltranslation/gt/commit/b00b93eb3b830b8528ef3dbd5f503ff76d1b338a)\nThanks [@logflash](https://github.com/logflash)! - Add opt-in `<T>`\nid-tagging (`_tagIds`). When enabled via `withGTConfig(config, {\n_tagIds: true })`, each `<T>`/`<Tx>` exposes its published-translation\nhash as a `data-_gt-hash` attribute, so tooling (localized replay,\nin-context QA) can map a rendered DOM node back to its published\ntranslation. Off by default; apps not using it pay nothing. No effect on\n`gt()` strings, and DOM-only — skipped on React Native.\n\nSpan injection is kept to the minimum necessary: when a `<T>` renders a\nsingle host element the attribute is placed directly on that element (no\nwrapper), so `<T>` keeps copying the source 1:1 and stays valid inside\nparents that reject a `<span>` (e.g. `<tr>`/`<select>`/`<ul>`). A\nlayout-neutral `display:contents` span is injected only when there is no\nelement to carry the attribute (bare text or a fragment).\n## gtx-cli@2.16.4\n\n### Patch Changes\n\n- Updated dependencies []:\n  - gt@2.16.4\n## gt-i18n@1.0.12\n\n### Patch Changes\n\n- [#2017](https://github.com/generaltranslation/gt/pull/2017)\n[`b00b93e`](https://github.com/generaltranslation/gt/commit/b00b93eb3b830b8528ef3dbd5f503ff76d1b338a)\nThanks [@logflash](https://github.com/logflash)! - Add opt-in `<T>`\nid-tagging (`_tagIds`). When enabled via `withGTConfig(config, {\n_tagIds: true })`, each `<T>`/`<Tx>` exposes its published-translation\nhash as a `data-_gt-hash` attribute, so tooling (localized replay,\nin-context QA) can map a rendered DOM node back to its published\ntranslation. Off by default; apps not using it pay nothing. No effect on\n`gt()` strings, and DOM-only — skipped on React Native.\n\nSpan injection is kept to the minimum necessary: when a `<T>` renders a\nsingle host element the attribute is placed directly on that element (no\nwrapper), so `<T>` keeps copying the source 1:1 and stays valid inside\nparents that reject a `<span>` (e.g. `<tr>`/`<select>`/`<ul>`). A\nlayout-neutral `display:contents` span is injected only when there is no\nelement to carry the attribute (bare text or a fragment).\n\n- Updated dependencies\n[[`b00b93e`](https://github.com/generaltranslation/gt/commit/b00b93eb3b830b8528ef3dbd5f503ff76d1b338a)]:\n  - generaltranslation@9.1.2\n## locadex@1.0.207\n\n### Patch Changes\n\n- Updated dependencies []:\n  - gt@2.16.4\n## gt-next@11.1.6\n\n### Patch Changes\n\n- [#2017](https://github.com/generaltranslation/gt/pull/2017)\n[`b00b93e`](https://github.com/generaltranslation/gt/commit/b00b93eb3b830b8528ef3dbd5f503ff76d1b338a)\nThanks [@logflash](https://github.com/logflash)! - Add opt-in `<T>`\nid-tagging (`_tagIds`). When enabled via `withGTConfig(config, {\n_tagIds: true })`, each `<T>`/`<Tx>` exposes its published-translation\nhash as a `data-_gt-hash` attribute, so tooling (localized replay,\nin-context QA) can map a rendered DOM node back to its published\ntranslation. Off by default; apps not using it pay nothing. No effect on\n`gt()` strings, and DOM-only — skipped on React Native.\n\nSpan injection is kept to the minimum necessary: when a `<T>` renders a\nsingle host element the attribute is placed directly on that element (no\nwrapper), so `<T>` keeps copying the source 1:1 and stays valid inside\nparents that reject a `<span>` (e.g. `<tr>`/`<select>`/`<ul>`). A\nlayout-neutral `display:contents` span is injected only when there is no\nelement to carry the attribute (bare text or a fragment).\n\n- Updated dependencies\n[[`b00b93e`](https://github.com/generaltranslation/gt/commit/b00b93eb3b830b8528ef3dbd5f503ff76d1b338a)]:\n  - generaltranslation@9.1.2\n  - gt-i18n@1.0.12\n  - @generaltranslation/react-core@11.1.6\n  - @generaltranslation/compiler@1.3.37\n  - gt-react@11.1.6\n## gt-node@1.0.13\n\n### Patch Changes\n\n- Updated dependencies\n[[`b00b93e`](https://github.com/generaltranslation/gt/commit/b00b93eb3b830b8528ef3dbd5f503ff76d1b338a)]:\n  - generaltranslation@9.1.2\n  - gt-i18n@1.0.12\n## @generaltranslation/python-extractor@0.2.35\n\n### Patch Changes\n\n- Updated dependencies\n[[`b00b93e`](https://github.com/generaltranslation/gt/commit/b00b93eb3b830b8528ef3dbd5f503ff76d1b338a)]:\n  - generaltranslation@9.1.2\n## gt-react@11.1.6\n\n### Patch Changes\n\n- Updated dependencies\n[[`b00b93e`](https://github.com/generaltranslation/gt/commit/b00b93eb3b830b8528ef3dbd5f503ff76d1b338a)]:\n  - generaltranslation@9.1.2\n  - gt-i18n@1.0.12\n  - @generaltranslation/react-core@11.1.6\n## @generaltranslation/react-core@11.1.6\n\n### Patch Changes\n\n- [#2017](https://github.com/generaltranslation/gt/pull/2017)\n[`b00b93e`](https://github.com/generaltranslation/gt/commit/b00b93eb3b830b8528ef3dbd5f503ff76d1b338a)\nThanks [@logflash](https://github.com/logflash)! - Add opt-in `<T>`\nid-tagging (`_tagIds`). When enabled via `withGTConfig(config, {\n_tagIds: true })`, each `<T>`/`<Tx>` exposes its published-translation\nhash as a `data-_gt-hash` attribute, so tooling (localized replay,\nin-context QA) can map a rendered DOM node back to its published\ntranslation. Off by default; apps not using it pay nothing. No effect on\n`gt()` strings, and DOM-only — skipped on React Native.\n\nSpan injection is kept to the minimum necessary: when a `<T>` renders a\nsingle host element the attribute is placed directly on that element (no\nwrapper), so `<T>` keeps copying the source 1:1 and stays valid inside\nparents that reject a `<span>` (e.g. `<tr>`/`<select>`/`<ul>`). A\nlayout-neutral `display:contents` span is injected only when there is no\nelement to carry the attribute (bare text or a fragment).\n\n- Updated dependencies\n[[`b00b93e`](https://github.com/generaltranslation/gt/commit/b00b93eb3b830b8528ef3dbd5f503ff76d1b338a)]:\n  - generaltranslation@9.1.2\n  - gt-i18n@1.0.12\n## gt-react-native@11.1.6\n\n### Patch Changes\n\n- Updated dependencies\n[[`b00b93e`](https://github.com/generaltranslation/gt/commit/b00b93eb3b830b8528ef3dbd5f503ff76d1b338a)]:\n  - generaltranslation@9.1.2\n  - gt-i18n@1.0.12\n  - @generaltranslation/react-core@11.1.6\n  - @generaltranslation/supported-locales@2.1.15\n## gt-sanity@3.1.5\n\n### Patch Changes\n\n- Updated dependencies\n[[`b00b93e`](https://github.com/generaltranslation/gt/commit/b00b93eb3b830b8528ef3dbd5f503ff76d1b338a)]:\n  - generaltranslation@9.1.2\n## @generaltranslation/supported-locales@2.1.15\n\n### Patch Changes\n\n- Updated dependencies\n[[`b00b93e`](https://github.com/generaltranslation/gt/commit/b00b93eb3b830b8528ef3dbd5f503ff76d1b338a)]:\n  - generaltranslation@9.1.2\n## gt-tanstack-start@11.1.6\n\n### Patch Changes\n\n- Updated dependencies\n[[`b00b93e`](https://github.com/generaltranslation/gt/commit/b00b93eb3b830b8528ef3dbd5f503ff76d1b338a)]:\n  - generaltranslation@9.1.2\n  - gt-i18n@1.0.12\n  - @generaltranslation/react-core@11.1.6\n  - gt-react@11.1.6\n\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+          "timestamp": "2026-08-10T17:52:23Z",
+          "url": "https://github.com/generaltranslation/gt/commit/b751e35a8d255ba3c1ac36c008595385bc33a2d8"
+        },
+        "date": 1786384787714,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "gt-next > unit > middleware: factory creation latency > createNextMiddleware() (mean)",
+            "value": 0.045124403573684885,
+            "range": "±0.0238",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.6\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > default locale request (/) (mean)",
+            "value": 0.24087941377649308,
+            "range": "±0.0839",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.6\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > non-default locale request (/fr) (mean)",
+            "value": 0.4264539880647865,
+            "range": "±0.1049",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.6\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > nested route (/fr/about) (mean)",
+            "value": 0.4166594388010035,
+            "range": "±0.0923",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.6\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > ttfb",
+            "value": 129.5,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.6\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > domContentLoaded",
+            "value": 138.60000000000582,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.6\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > load",
+            "value": 226.30000000001746,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.6\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > elapsed",
+            "value": 120,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.6\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > ttfb",
+            "value": 19.099999999976717,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.6\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > domContentLoaded",
+            "value": 28.29999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.6\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > load",
+            "value": 111.29999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.6\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: locale-switch-en-to-fr > elapsed",
+            "value": 608,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.6\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > ttfb",
+            "value": 11.39999999999418,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.6\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > domContentLoaded",
+            "value": 21.39999999999418,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.6\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > load",
+            "value": 98.70000000001164,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.6\"\n}"
           }
         ]
       }
