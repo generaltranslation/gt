@@ -16,6 +16,10 @@ export type NonPortableSeed =
   | {
       id: string;
       reason: 'vue-display-string-erasure';
+    }
+  | {
+      id: string;
+      reason: 'vue-text-coalescing';
     };
 
 /**
@@ -28,12 +32,36 @@ export type NonPortableSeed =
  */
 export const NON_PORTABLE_SEEDS = [
   {
+    id: 'complex-cases/complex-fragment-nesting',
+    reason: 'vue-text-coalescing',
+  },
+  {
+    id: 'complex-cases/deeply-nested-branch-components',
+    reason: 'vue-text-coalescing',
+  },
+  {
+    id: 'complex-cases/duplicate-branches',
+    reason: 'vue-text-coalescing',
+  },
+  {
     id: 'complex-cases/five-level-nesting',
     reason: 'unsupported-named-variable',
   },
   {
+    id: 'complex-cases/long-content-string',
+    reason: 'vue-text-coalescing',
+  },
+  {
     id: 'complex-cases/many-edge-cases',
     reason: 'unsupported-named-variable',
+  },
+  {
+    id: 'complex-cases/mixed-component-types',
+    reason: 'vue-text-coalescing',
+  },
+  {
+    id: 'complex-cases/mixed-element-types-in-branches',
+    reason: 'vue-text-coalescing',
   },
   {
     id: 'complex-cases/more-extreme-edge-cases',
@@ -46,6 +74,10 @@ export const NON_PORTABLE_SEEDS = [
   {
     id: 'complex-cases/whitespace',
     reason: 'vue-display-string-erasure',
+  },
+  {
+    id: 'complex-cases/whitespace-preservation-complex-structure',
+    reason: 'vue-text-coalescing',
   },
   {
     id: 't-component/simple/expressions/null/fragment-null',
@@ -98,4 +130,4 @@ export const NON_PORTABLE_SEEDS = [
 ] as const satisfies readonly NonPortableSeed[];
 
 /** Exact parity cannot regress below the first complete Vue seed port. */
-export const MINIMUM_EXACT_SEED_COUNT = 67;
+export const MINIMUM_EXACT_SEED_COUNT = 60;

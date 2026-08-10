@@ -10,30 +10,10 @@ const count = 5;
   <T>
     <Plural :n="count">
       <template #singular>
-        <Fragment>
-          Outer fragment
-          <Fragment>
-            Nested fragment with
-            <Var>variable</Var>
-            <Fragment>
-              Deep nested with
-              <Num :value="count" />
-              <Fragment>More nesting</Fragment>
-            </Fragment>
-          </Fragment>
-          Back to outer
-        </Fragment>
+        <Fragment>Outer fragment<Fragment>Nested fragment with <Var>variable</Var><Fragment>Deep nested with <Num :value="count" /><Fragment>More nesting</Fragment></Fragment></Fragment>Back to outer</Fragment>
       </template>
       <template #plural>
-        <div>
-          <Fragment>Fragment in div</Fragment>
-          <span>
-            <Fragment>
-              Fragment in span with {{ ' ' }}
-              <Currency :value="amount" currency="USD" />
-            </Fragment>
-          </span>
-        </div>
+        <div><Fragment>Fragment in div</Fragment><span><Fragment>Fragment in span with{{ ' ' }}<Currency :value="amount" currency="USD" /></Fragment></span></div>
       </template>
     </Plural>
   </T>

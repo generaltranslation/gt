@@ -7,10 +7,7 @@ import { Fragment } from 'vue';
   <T>
     <Plural :n="1" plural="files">
       <template #singular>
-        <Fragment>
-          <Fragment>nested</Fragment>
-          fragment
-        </Fragment>
+        <Fragment><Fragment>nested</Fragment> fragment</Fragment>
       </template>
     </Plural>
   </T>

@@ -9,26 +9,13 @@ const count = 5;
   <T>
     <Branch branch="type">
       <template #line>
-        <Fragment>
-          <hr />
-          Line break
-          <br />
-          New line
-        </Fragment>
+        <Fragment><hr />Line break<br />New line</Fragment>
       </template>
       <template #image>
-        <Fragment>
-          <img src="test.jpg" alt="Test" />
-          Image with
-          <Var>caption</Var>
-        </Fragment>
+        <Fragment><img src="test.jpg" alt="Test" />Image with <Var>caption</Var></Fragment>
       </template>
       <template #input>
-        <Fragment>
-          <input type="text" placeholder="Input" />
-          Field with
-          <Num :value="count" />
-        </Fragment>
+        <Fragment><input type="text" placeholder="Input" />Field with <Num :value="count" /></Fragment>
       </template>
     </Branch>
   </T>

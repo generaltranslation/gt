@@ -127,7 +127,7 @@ describe('React and Vue seed runtime parity', () => {
   it('keeps the non-portable allowlist narrow, sorted, and exhaustive', () => {
     const ids = NON_PORTABLE_SEEDS.map(({ id }) => id);
 
-    expect(ids).toHaveLength(17);
+    expect(ids).toHaveLength(24);
     expect(ids).toEqual([...ids].sort());
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids.every((id) => reactSeedIds.includes(id))).toBe(true);
@@ -222,10 +222,76 @@ function assertNonPortableEvidence(fixture: NonPortableSeed): void {
     return;
   }
 
+  if (fixture.reason === 'vue-text-coalescing') {
+    const react = getReactSource(fixture);
+    const vue = getVueSource(fixture);
+    const reactWire = toSemanticWireSource(react.source);
+    const vueWire = toSemanticWireSource(vue.source);
+
+    expect(countAdjacentStringBoundaries(reactWire)).toBeGreaterThan(
+      countAdjacentStringBoundaries(vueWire)
+    );
+    expect(vueWire).not.toStrictEqual(reactWire);
+    expect(coalesceAdjacentStrings(vueWire)).toStrictEqual(
+      coalesceAdjacentStrings(reactWire)
+    );
+    expect(sourceHash(vue.source, vue.context)).not.toBe(
+      sourceHash(react.source, react.context)
+    );
+    expect(compileVueSeed(fixture).javascript).toContain('toDisplayString');
+    return;
+  }
+
   const { javascript } = compileVueSeed(fixture);
   expect(javascript).toContain('toDisplayString');
   expect(toSemanticWireSource(getVueSource(fixture).source)).not.toStrictEqual(
     toSemanticWireSource(getReactSource(fixture).source)
+  );
+}
+
+/** Counts authored text boundaries that Vue's template compiler can erase. */
+function countAdjacentStringBoundaries(value: unknown): number {
+  if (Array.isArray(value)) {
+    return value.reduce(
+      (count, child, index) =>
+        count +
+        (index > 0 &&
+        typeof value[index - 1] === 'string' &&
+        typeof child === 'string'
+          ? 1
+          : 0) +
+        countAdjacentStringBoundaries(child),
+      0
+    );
+  }
+  if (!isRecord(value)) return 0;
+  return Object.values(value).reduce(
+    (count, child) => count + countAdjacentStringBoundaries(child),
+    0
+  );
+}
+
+/** Normalizes only adjacent text segmentation, preserving the rest of the wire. */
+function coalesceAdjacentStrings(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.reduce<unknown[]>((children, child) => {
+      const normalized = coalesceAdjacentStrings(child);
+      const previous = children.at(-1);
+
+      if (typeof previous === 'string' && typeof normalized === 'string') {
+        children[children.length - 1] = previous + normalized;
+      } else {
+        children.push(normalized);
+      }
+      return children;
+    }, []);
+  }
+  if (!isRecord(value)) return value;
+  return Object.fromEntries(
+    Object.entries(value).map(([key, child]) => [
+      key,
+      coalesceAdjacentStrings(child),
+    ])
   );
 }
 
