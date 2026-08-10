@@ -1,4 +1,5 @@
 import type { VueExtractionResult } from '../types.js';
+import type { StaticPrimitive } from './utils.js';
 import type { ImplicitSlotWhitespace } from './vueCompiler.js';
 
 export type GTComponentName =
@@ -34,7 +35,7 @@ export type TemplateBindings = {
   registeredComponents: Map<string, GTComponentName>;
   /** Vue builtin identities registered through an Options API object. */
   registeredVueBuiltins: Map<string, VueBuiltinName>;
-  staticValues: Map<string, string | number | bigint | boolean | null>;
+  staticValues: Map<string, StaticPrimitive>;
   /** Vue identity helpers such as `markRaw`. */
   identityFunctions: Set<string>;
   /** Statically visible string alternatives for non-singleton expressions. */

@@ -1390,6 +1390,8 @@ function readBranchAttributeSources(
       );
       continue;
     }
+    // Vue omits undefined attributes from the branch registry entirely.
+    if (value.value === undefined) continue;
     branches[name] = serializeBranchAttributePrimitive(value.value);
   }
 }

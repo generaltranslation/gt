@@ -119,13 +119,29 @@ function extractSourceCode(
   };
 }
 
-export type StaticPrimitive = string | number | bigint | boolean | null;
+export type StaticPrimitive =
+  | string
+  | number
+  | bigint
+  | boolean
+  | null
+  | undefined;
 export type StaticPrimitiveResult =
   | { ok: true; value: StaticPrimitive }
   | { ok: false };
 export type StaticIdentifierResolver = (
   identifier: t.Identifier
 ) => StaticPrimitiveResult;
+
+/** Resolves immutable ECMAScript primitive globals without executing code. */
+export function readStaticGlobalPrimitive(name: string): StaticPrimitiveResult {
+  if (name === 'undefined') return { ok: true, value: undefined };
+  if (name === 'NaN') return { ok: true, value: Number.NaN };
+  if (name === 'Infinity') {
+    return { ok: true, value: Number.POSITIVE_INFINITY };
+  }
+  return { ok: false };
+}
 
 /** Removes syntax-only TypeScript, Flow, and parenthesis wrappers. */
 export function unwrapExpression(
@@ -229,6 +245,12 @@ export function readStaticPrimitive(
       return expression.operator === '-'
         ? { ok: true, value: -argument.value }
         : { ok: false };
+    }
+    // ECMAScript coerces undefined through unary +/- to NaN. Retaining this
+    // narrow case lets immutable global expressions match Vue without
+    // widening extraction to arbitrary coercions.
+    if (argument.ok && argument.value === undefined) {
+      return { ok: true, value: Number.NaN };
     }
   }
   return { ok: false };

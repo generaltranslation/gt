@@ -17,7 +17,9 @@ import type {
 import {
   addVueError,
   babelLocation,
+  readStaticGlobalPrimitive,
   readStaticPrimitive,
+  type StaticPrimitive,
   type StaticPrimitiveResult,
   unwrapExpression,
 } from '../utils.js';
@@ -78,12 +80,9 @@ const traverse = traverseModule.default || traverseModule;
 
 const staticBindingResults = new WeakMap<
   VueScriptAnalysis,
-  Map<Binding, Map<boolean, StaticPrimitiveResult>>
+  Map<Binding, StaticPrimitiveResult>
 >();
-const staticBindingsInProgress = new WeakMap<
-  VueScriptAnalysis,
-  Map<Binding, Set<boolean>>
->();
+const staticBindingsInProgress = new WeakMap<VueScriptAnalysis, Set<Binding>>();
 
 /** Creates opt-in counters for deterministic analyzer complexity tests. */
 export function createVueScriptAnalysisStats(): VueScriptAnalysisStats {
@@ -3337,7 +3336,7 @@ function collectProgramStaticMembers(
   localName: string,
   binding: Binding,
   state: ScriptState
-): Map<string, string | number | bigint | boolean | null> {
+): Map<string, StaticPrimitive> {
   const declaration = binding.path.node;
   if (
     declaration.type !== 'VariableDeclarator' ||
@@ -4465,8 +4464,8 @@ function collectStaticMemberValues(
   seenNodes: Set<t.Node>,
   seenBindings: Set<Binding>,
   atPosition: number
-): Map<string, string | number | bigint | boolean | null> {
-  const result = new Map<string, string | number | bigint | boolean | null>();
+): Map<string, StaticPrimitive> {
+  const result = new Map<string, StaticPrimitive>();
   const expression = unwrapExpression(node);
   if (!expression || seenNodes.has(expression)) return result;
   const staticValue = readStaticFromScope(
@@ -11789,8 +11788,7 @@ function collectTransformArrayEntries(
       scope,
       new Set(),
       node.end ?? atPosition,
-      state.analysis,
-      true
+      state.analysis
     );
     if (!value.ok || typeof value.value === 'bigint') return { ok: false };
     try {
@@ -12208,8 +12206,7 @@ function collectTransformArrayEntries(
           scope,
           new Set(),
           depthNode.end ?? atPosition,
-          state.analysis,
-          true
+          state.analysis
         )
       : { ok: true as const, value: 1 };
     if (!staticDepth.ok || typeof staticDepth.value === 'bigint') {
@@ -12728,40 +12725,30 @@ function readStaticFromScope(
   scope: Scope,
   seen: Set<Binding>,
   atPosition: number,
-  analysis?: VueScriptAnalysis,
-  allowNumericGlobals = false
+  analysis?: VueScriptAnalysis
 ): StaticPrimitiveResult {
   return readStaticPrimitive(node, (identifier) => {
     const binding = scope.getBinding(identifier.name);
     if (!binding) {
-      const value = analysis?.staticValues.get(identifier.name);
       if (analysis?.staticValues.has(identifier.name)) {
-        return { ok: true, value: value! };
+        return {
+          ok: true,
+          value: analysis.staticValues.get(identifier.name) as StaticPrimitive,
+        };
       }
-      if (allowNumericGlobals && identifier.name === 'Infinity') {
-        return { ok: true, value: Number.POSITIVE_INFINITY };
-      }
-      if (allowNumericGlobals && identifier.name === 'NaN') {
-        return { ok: true, value: Number.NaN };
-      }
-      return { ok: false };
+      return readStaticGlobalPrimitive(identifier.name);
     }
     const cacheable =
       analysis !== undefined && atPosition === Number.POSITIVE_INFINITY;
     const cached = cacheable
-      ? staticBindingResults
-          .get(analysis)
-          ?.get(binding)
-          ?.get(allowNumericGlobals)
+      ? staticBindingResults.get(analysis)?.get(binding)
       : undefined;
     if (cached) return cached;
     if (seen.has(binding)) return { ok: false };
     if (cacheable) {
-      const active = staticBindingsInProgress.get(analysis) ?? new Map();
-      const modes = active.get(binding) ?? new Set<boolean>();
-      if (modes.has(allowNumericGlobals)) return { ok: false };
-      modes.add(allowNumericGlobals);
-      active.set(binding, modes);
+      const active = staticBindingsInProgress.get(analysis) ?? new Set();
+      if (active.has(binding)) return { ok: false };
+      active.add(binding);
       staticBindingsInProgress.set(analysis, active);
     }
     const nextSeen = new Set(seen);
@@ -12784,24 +12771,19 @@ function readStaticFromScope(
             expression.scope,
             nextSeen,
             atPosition,
-            analysis,
-            allowNumericGlobals
+            analysis
           )
         : { ok: false };
       if (cacheable) {
         const results = staticBindingResults.get(analysis) ?? new Map();
-        const modes = results.get(binding) ?? new Map();
-        modes.set(allowNumericGlobals, result);
-        results.set(binding, modes);
+        results.set(binding, result);
         staticBindingResults.set(analysis, results);
       }
       return result;
     } finally {
       if (cacheable) {
         const active = staticBindingsInProgress.get(analysis);
-        const modes = active?.get(binding);
-        modes?.delete(allowNumericGlobals);
-        if (modes?.size === 0) active?.delete(binding);
+        active?.delete(binding);
       }
     }
   });

@@ -210,7 +210,7 @@ describe('React CLI parity audit: rich Vue content', () => {
     expect(output.errors.join('\n')).toContain('unsupported value prop');
   });
 
-  it('diagnoses special global interpolations instead of hashing them incorrectly', async () => {
+  it('serializes immutable primitive globals with Vue display semantics', async () => {
     const source = createSfc(
       `import { T } from 'gt-vue';`,
       `<T>{{ undefined }}{{ NaN }}{{ Infinity }}</T>`
@@ -219,11 +219,61 @@ describe('React CLI parity audit: rich Vue content', () => {
 
     const output = await extract(source, 'special-globals');
 
-    expect(output.results).toEqual([]);
-    expect(output.errors).toHaveLength(3);
-    expect(
-      output.errors.every((error) => error.includes('dynamic template content'))
-    ).toBe(true);
+    expect(output.errors).toEqual([]);
+    expect(output.results.map((result) => result.source)).toEqual([
+      'NaNInfinity',
+    ]);
+  });
+
+  it('gives script bindings precedence over primitive globals', async () => {
+    const source = createSfc(
+      `
+        import { T } from 'gt-vue';
+        const undefined = 'local undefined';
+        const NaN = 'local NaN';
+        const Infinity = 'local Infinity';
+      `,
+      `<T>{{ undefined }}|{{ NaN }}|{{ Infinity }}</T>`
+    );
+    assertVueCompiles(source, 'shadowed-special-globals');
+
+    const output = await extract(source, 'shadowed-special-globals');
+
+    expect(output.errors).toEqual([]);
+    expect(output.results.map((result) => result.source)).toEqual([
+      'local undefined|local NaN|local Infinity',
+    ]);
+  });
+
+  it.each(['undefined', 'NaN', 'Infinity'])(
+    'does not fall back to global %s when a dynamic binding shadows it',
+    async (name) => {
+      const source = createSfc(
+        `import { T } from 'gt-vue'; const ${name} = getValue();`,
+        `<T>{{ ${name} }}</T>`
+      );
+      assertVueCompiles(source, `dynamic-shadow-${name}`);
+
+      const output = await extract(source, `dynamic-shadow-${name}`);
+
+      expect(output.results).toEqual([]);
+      expect(output.errors.join('\n')).toContain('dynamic template content');
+    }
+  );
+
+  it('serializes unary forms of primitive globals', async () => {
+    const source = createSfc(
+      `import { T } from 'gt-vue';`,
+      `<T>{{ -Infinity }}|{{ +Infinity }}|{{ -NaN }}|{{ +NaN }}|{{ -undefined }}|{{ +undefined }}</T>`
+    );
+    assertVueCompiles(source, 'unary-special-globals');
+
+    const output = await extract(source, 'unary-special-globals');
+
+    expect(output.errors).toEqual([]);
+    expect(output.results.map((result) => result.source)).toEqual([
+      '-Infinity|Infinity|NaN|NaN|NaN|NaN',
+    ]);
   });
 });
 

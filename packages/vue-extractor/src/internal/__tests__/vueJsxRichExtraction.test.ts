@@ -176,6 +176,67 @@ describe('Vue JSX rich extraction', () => {
     ).toBe('4293805c6f6d7cd8');
   });
 
+  it('serializes immutable primitive globals in JSX', async () => {
+    const output = await extractFromVueSource(
+      `
+        import { Branch, T } from 'gt-vue';
+        export const View = () => (
+          <T>{undefined}{NaN}{Infinity}<Branch branch="few" missing={undefined} few={Infinity} many={NaN}>Fallback</Branch></T>
+        );
+      `,
+      '/project/src/View.tsx',
+      { projectRoot: '/project' }
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(output.results.map((result) => result.source)).toEqual([
+      [
+        'NaN',
+        'Infinity',
+        {
+          c: 'Fallback',
+          d: { b: { few: 'Infinity', many: 'NaN' }, t: 'b' },
+          i: 1,
+          t: 'Branch',
+        },
+      ],
+    ]);
+  });
+
+  it('gives JSX lexical bindings precedence over primitive globals', async () => {
+    const output = await extractFromVueSource(
+      `
+        import { T } from 'gt-vue';
+        const undefined = 'local undefined';
+        const NaN = 'local NaN';
+        const Infinity = 'local Infinity';
+        export const View = () => <T>{undefined}|{NaN}|{Infinity}</T>;
+      `,
+      '/project/src/View.tsx',
+      { projectRoot: '/project' }
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(output.results.map((result) => result.source)).toEqual([
+      ['local undefined', '|', 'local NaN', '|', 'local Infinity'],
+    ]);
+  });
+
+  it('does not fall back to JSX globals through dynamic lexical bindings', async () => {
+    const output = await extractFromVueSource(
+      `
+        import { T } from 'gt-vue';
+        const NaN = getValue();
+        export const View = () => <T>{NaN}</T>;
+      `,
+      '/project/src/View.tsx',
+      { projectRoot: '/project' }
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors.join('\n')).toContain('dynamic JSX content');
+  });
+
   it('matches the Fragment spellings Vue JSX keeps transparent', async () => {
     const output = await extractFromVueSource(
       `

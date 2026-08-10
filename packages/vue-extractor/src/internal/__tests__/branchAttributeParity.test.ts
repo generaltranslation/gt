@@ -49,6 +49,17 @@ const primitiveCases: BranchCase[] = [
     source: branchSource({ count: '-12' }),
   },
   {
+    name: 'global NaN',
+    template: '<T><Branch branch="count" :count="NaN">Fallback</Branch></T>',
+    source: branchSource({ count: 'NaN' }),
+  },
+  {
+    name: 'global Infinity',
+    template:
+      '<T><Branch branch="count" :count="Infinity">Fallback</Branch></T>',
+    source: branchSource({ count: 'Infinity' }),
+  },
+  {
     name: 'bigint',
     template: '<T><Branch branch="large" :large="12n">Fallback</Branch></T>',
     source: branchSource({ large: '12' }),
@@ -417,6 +428,20 @@ describe('Branch attribute runtime parity', () => {
         many: null,
         other: 'Other',
       }),
+    ]);
+  });
+
+  it('serializes numeric global Plural forms and omits undefined forms', async () => {
+    const output = await extractCase({
+      name: 'plural primitive globals',
+      template:
+        '<T><Plural :n="2" :zero="undefined" :few="Infinity" :many="NaN">Fallback</Plural></T>',
+      source: pluralSource({ few: 'Infinity', many: 'NaN' }),
+    });
+
+    expect(output.errors).toEqual([]);
+    expect(richSources(output)).toEqual([
+      pluralSource({ few: 'Infinity', many: 'NaN' }),
     ]);
   });
 

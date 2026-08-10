@@ -33,6 +33,7 @@ import type {
 import {
   addVueError,
   createInlineMetadata,
+  readStaticGlobalPrimitive,
   readStaticPrimitive,
   type StaticPrimitive,
   unwrapExpression,
@@ -1176,14 +1177,30 @@ function readTemplatePrimitive(
   bindings: TemplateBindings
 ) {
   return readStaticPrimitive(input, (identifier) => {
-    if (shadowed.has(identifier.name) || scope.hasBinding(identifier.name)) {
+    if (scope.hasBinding(identifier.name)) {
       return { ok: false };
     }
-    const value = bindings.staticValues.get(identifier.name);
-    return bindings.staticValues.has(identifier.name)
-      ? { ok: true, value: value! }
-      : { ok: false };
+    return readTemplateIdentifierPrimitive(identifier, shadowed, bindings);
   });
+}
+
+/** Resolves a template primitive after honoring every Vue-local binding. */
+function readTemplateIdentifierPrimitive(
+  identifier: babel.Identifier,
+  shadowed: Set<string>,
+  bindings: TemplateBindings
+) {
+  if (shadowed.has(identifier.name)) return { ok: false } as const;
+  if (bindings.staticValues.has(identifier.name)) {
+    return {
+      ok: true,
+      value: bindings.staticValues.get(identifier.name) as StaticPrimitive,
+    } as const;
+  }
+  if (bindings.directBindings.has(identifier.name)) {
+    return { ok: false } as const;
+  }
+  return readStaticGlobalPrimitive(identifier.name);
 }
 
 /** Resolves a template call back to a statically imported gt-vue function. */
@@ -2233,6 +2250,8 @@ function readBranches(
       );
       continue;
     }
+    // Vue omits undefined attributes from the branch registry entirely.
+    if (value.value === undefined) continue;
     branches[key] = branchPropToChildren(value.value);
   }
   return branches;
@@ -2247,7 +2266,7 @@ function readBranches(
  * compatibility boundary.
  */
 function branchPropToChildren(value: StaticPrimitive): JsxChildren {
-  if (value == null || typeof value === 'boolean') {
+  if (value === null || typeof value === 'boolean') {
     return value as unknown as JsxChildren;
   }
   return String(value);
@@ -2622,11 +2641,7 @@ function readExpressionPrimitive(
     ? getExpressionNode(expression, expressionPlugins)
     : undefined;
   return readStaticPrimitive(node, (identifier) => {
-    if (shadowed.has(identifier.name)) return { ok: false };
-    const value = bindings.staticValues.get(identifier.name);
-    return bindings.staticValues.has(identifier.name)
-      ? { ok: true, value: value! }
-      : { ok: false };
+    return readTemplateIdentifierPrimitive(identifier, shadowed, bindings);
   });
 }
 
@@ -3913,7 +3928,7 @@ function collectTemplateTransformCandidates(
   if (method === 'flat') {
     const depthNode = readArgument(0);
     const depthValue = depthNode
-      ? readTemplateStaticPrimitive(depthNode, bindings, shadowed, true)
+      ? readTemplateStaticPrimitive(depthNode, bindings, shadowed)
       : { ok: true as const, value: 1 };
     if (!depthValue.ok) {
       const possibilities = [source];
@@ -5305,31 +5320,10 @@ function readStaticTemplateMemberProperty(
 function readTemplateStaticPrimitive(
   node: babel.Node,
   bindings: TemplateBindings,
-  shadowed: Set<string>,
-  allowNumericGlobals = false
+  shadowed: Set<string>
 ) {
   return readStaticPrimitive(node, (identifier) => {
-    if (shadowed.has(identifier.name)) {
-      return { ok: false };
-    }
-    if (bindings.staticValues.has(identifier.name)) {
-      return { ok: true, value: bindings.staticValues.get(identifier.name)! };
-    }
-    if (
-      allowNumericGlobals &&
-      !bindings.directBindings.has(identifier.name) &&
-      identifier.name === 'Infinity'
-    ) {
-      return { ok: true, value: Number.POSITIVE_INFINITY };
-    }
-    if (
-      allowNumericGlobals &&
-      !bindings.directBindings.has(identifier.name) &&
-      identifier.name === 'NaN'
-    ) {
-      return { ok: true, value: Number.NaN };
-    }
-    return { ok: false };
+    return readTemplateIdentifierPrimitive(identifier, shadowed, bindings);
   });
 }
 

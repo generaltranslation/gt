@@ -6,6 +6,7 @@ import type {
   TemplateContainerKind,
   VueBuiltinName,
 } from '../types.js';
+import type { StaticPrimitive } from '../utils.js';
 import type { LocalModuleResolver } from './localModules.js';
 
 /** A statically recognized value that affects Vue translation extraction. */
@@ -77,7 +78,7 @@ export type VueScriptAnalysis = {
   possibleGTContainers: Set<string>;
   /** Normal-script callables returning containers that may directly contain T. */
   gtContainerFactories: Set<string>;
-  staticValues: Map<string, string | number | bigint | boolean | null>;
+  staticValues: Map<string, StaticPrimitive>;
   /** Values exposed to templates after Vue's top-level ref unwrapping. */
   templateValues: Map<string, KnownValue>;
   /** Cross-block component bindings whose runtime identity is not provable. */
@@ -148,7 +149,7 @@ export type TemplateExposure =
   | { type: 'possible-static-strings'; values: Set<string> }
   | {
       type: 'static';
-      value: string | number | bigint | boolean | null;
+      value: StaticPrimitive;
     };
 
 export type GTContainerExposure = {
