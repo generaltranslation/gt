@@ -222,22 +222,7 @@ jobs:
   test-cli-binaries:
     strategy:
       matrix:
-        include:
-          - os: ubuntu-latest
-            arch: x64
-            binary: gt-linux-x64
-          - os: ubuntu-latest
-            arch: arm64
-            binary: gt-linux-arm64
-          - os: macos-latest
-            arch: x64
-            binary: gt-darwin-x64
-          - os: macos-latest
-            arch: arm64
-            binary: gt-darwin-arm64
-          - os: windows-latest
-            arch: x64
-            binary: gt-win32-x64.exe
+        os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout code
@@ -245,11 +230,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check if CLI or Python extractor changed
+      - name: Check if CLI, Vue extractor, or Python extractor changed
         id: gt_cli_changed
         shell: bash
         run: |
-          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -qE "^packages/(cli|python-extractor)/"; then
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -qE "^(packages/(cli|python-extractor|vue-extractor)|tests/apps/cli-binary-vue)/"; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
             echo "changed=false" >> $GITHUB_OUTPUT
@@ -302,6 +287,53 @@ jobs:
         if: steps.gt_cli_changed.outputs.changed == 'true'
         shell: bash
         run: cd tests/apps/cli-test-app && pnpm install && pnpm gt --help
+
+      - name: Test native CLI Vue extraction
+        if: steps.gt_cli_changed.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "${RUNNER_OS}:${RUNNER_ARCH}" in
+            Linux:X64) host_binary=gt-linux-x64 ;;
+            Linux:ARM64) host_binary=gt-linux-arm64 ;;
+            macOS:X64) host_binary=gt-darwin-x64 ;;
+            macOS:ARM64) host_binary=gt-darwin-arm64 ;;
+            Windows:X64) host_binary=gt-win32-x64.exe ;;
+            *) echo "Unsupported runner ${RUNNER_OS}:${RUNNER_ARCH}"; exit 1 ;;
+          esac
+
+          fixture=tests/apps/cli-binary-vue
+          cleanup_fixture() {
+            node -e \
+              "require('node:fs').rmSync('tests/apps/cli-binary-vue/_gt', { recursive: true, force: true })"
+          }
+          trap cleanup_fixture EXIT
+
+          for vue_version in 3.3.13 3.5.40; do
+            pnpm --filter gt-cli-binary-vue-fixture add --save-exact --lockfile=false \
+              "vue@${vue_version}" \
+              "@vue/compiler-dom@${vue_version}" \
+              "@vue/compiler-sfc@${vue_version}"
+            pnpm --filter gt-cli-binary-vue-fixture exec node -e \
+              "for (const dependency of ['vue', '@vue/compiler-dom', '@vue/compiler-sfc']) { const actual = require(dependency + '/package.json').version; if (actual !== '${vue_version}') throw new Error(dependency + ' resolved to ' + actual); }"
+
+            output=$(
+              cd "$fixture"
+              NO_COLOR=1 ../../../packages/cli/binaries/"$host_binary" \
+                --skip-version-check validate App.vue
+            )
+            echo "$output"
+            grep -Fq "Success! Found 1 translatable entries for gt-vue." <<<"$output"
+
+            (
+              cd "$fixture"
+              NO_COLOR=1 ../../../packages/cli/binaries/"$host_binary" \
+                --skip-version-check generate --omit-config-ids
+              node -e \
+                "const fs = require('node:fs'); const expected = JSON.stringify(JSON.parse(fs.readFileSync('expected.json', 'utf8'))); for (const locale of ['en', 'fr']) { const actual = JSON.stringify(JSON.parse(fs.readFileSync('_gt/' + locale + '.json', 'utf8'))); if (actual !== expected) throw new Error(locale + ' catalog did not match expected.json'); }"
+            )
+            cleanup_fixture
+          done
 
   size:
     runs-on: ubuntu-latest

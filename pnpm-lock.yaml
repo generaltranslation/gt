@@ -1744,6 +1744,21 @@ importers:
         specifier: ^3.5.0
         version: 3.5.40(typescript@5.9.3)
 
+  tests/apps/cli-binary-vue:
+    dependencies:
+      '@vue/compiler-dom':
+        specifier: 3.5.40
+        version: 3.5.40
+      '@vue/compiler-sfc':
+        specifier: 3.5.40
+        version: 3.5.40
+      gt-vue:
+        specifier: workspace:*
+        version: link:../../../packages/vue
+      vue:
+        specifier: 3.5.40
+        version: 3.5.40(typescript@5.9.3)
+
   tests/apps/cli-test-app:
     dependencies:
       gt:
