@@ -83,11 +83,17 @@ describe('consumer Vue template compiler parity', () => {
         i: 3,
         c: { t: 'b', i: 4, c: 'Ready' },
       },
-      { t: 'i', i: 5, c: 'First' },
-      { t: 'u', i: 6, c: 'Second' },
+      {
+        t: 'C5',
+        i: 5,
+        c: [
+          { t: 'i', i: 6, c: 'First' },
+          { t: 'u', i: 7, c: 'Second' },
+        ],
+      },
     ]);
     expect(hashSource({ dataFormat: 'JSX', source: source! })).toBe(
-      '01a3131578552150'
+      '6e3d6f99b81eb251'
     );
   });
 
@@ -177,11 +183,11 @@ describe('consumer Vue template compiler parity', () => {
     expect(source).toEqual([
       { t: 'div', i: 1, c: { t: 'b', i: 2, c: 'Hidden' } },
       { t: 'Suspense', i: 3, c: { t: 'b', i: 4, c: 'Ready' } },
-      { t: 'u', i: 5, c: 'Fragment' },
-      { t: 'i', i: 6, c: 'After' },
+      { t: 'C5', i: 5, c: { t: 'u', i: 6, c: 'Fragment' } },
+      { t: 'i', i: 7, c: 'After' },
     ]);
     expect(hashSource({ dataFormat: 'JSX', source: source! })).toBe(
-      '45c26775d92815dd'
+      '11c8429caf23f3a6'
     );
   });
 

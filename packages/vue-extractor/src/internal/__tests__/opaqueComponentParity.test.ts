@@ -115,8 +115,12 @@ describe('component slot runtime parity', () => {
       {
         context: 'outer',
         source: [
-          { t: 'b', i: 1, c: 'Default' },
-          { t: 'i', i: 2, c: 'After' },
+          {
+            t: 'C1',
+            i: 1,
+            c: { t: 'b', i: 2, c: 'Default' },
+          },
+          { t: 'i', i: 3, c: 'After' },
         ],
       },
       { context: 'inner', source: 'Aside' },

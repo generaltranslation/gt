@@ -568,13 +568,7 @@ function serializeElement(
   const identity = resolveElementIdentity(name, scope, analysis);
   if (isTransparentFragment(name, identity)) {
     return usesFragmentComponentSlots(name, identity)
-      ? serializeOrdinaryComponentDefault(
-          element,
-          counter,
-          scope,
-          context,
-          analysis
-        )
+      ? serializeSemanticFragment(element, counter, scope, context, analysis)
       : serializeChildren(element.children, counter, scope, context, analysis);
   }
 
@@ -681,6 +675,43 @@ function serializeElement(
   return [
     {
       t: tag,
+      i: id,
+      ...(Object.keys(data).length > 0 && { d: data }),
+      ...(children.length > 0 && { c: collapseChildren(children) }),
+    },
+  ];
+}
+
+/** Serializes a Fragment alias that Vue JSX represents as a component slot. */
+function serializeSemanticFragment(
+  element: babel.JSXElement,
+  counter: Counter,
+  scope: Scope,
+  context: VueExtractionContext,
+  analysis: VueJSXAnalysis
+): SerializedJSXChild[] {
+  counter.value += 1;
+  const id = counter.value;
+  validateElementAttributes(element.openingElement, scope, context, analysis);
+  const data = readContentProps(
+    element.openingElement,
+    scope,
+    context,
+    analysis
+  );
+  const children = serializeOrdinaryComponentDefault(
+    element,
+    counter,
+    scope,
+    context,
+    analysis
+  );
+  return [
+    {
+      // Fragment is a Symbol at runtime and therefore uses the anonymous
+      // component label. The label is diagnostic-only and excluded from the
+      // persisted hash; the boundary and its ID remain semantically relevant.
+      t: `C${id}`,
       i: id,
       ...(Object.keys(data).length > 0 && { d: data }),
       ...(children.length > 0 && { c: collapseChildren(children) }),
@@ -1655,7 +1686,7 @@ function isLiteralFragment(
   return name.type === 'JSXIdentifier' && name.name === 'Fragment';
 }
 
-/** Matches Fragment spellings whose runtime VNode flattens authored children. */
+/** Matches Fragment spellings, distinguishing their runtime child shapes. */
 function isTransparentFragment(
   name: babel.JSXElement['openingElement']['name'],
   identity: KnownValue | undefined

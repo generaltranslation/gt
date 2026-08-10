@@ -203,7 +203,7 @@ describe('Vue JSX rich extraction', () => {
     ]);
   });
 
-  it('flattens renamed Fragment imports after Vue normalizes their slots', async () => {
+  it('preserves renamed Fragment imports that Vue compiles as component slots', async () => {
     const output = await extractFromVueSource(
       `
         import { Fragment as VueFragment } from 'vue';
@@ -218,9 +218,23 @@ describe('Vue JSX rich extraction', () => {
 
     expect(output.errors).toEqual([]);
     expect(output.results[0]?.source).toEqual([
-      { c: 'Retained', i: 1, t: 'b' },
-      { c: 'Slotted', i: 2, t: 'em' },
+      {
+        c: { c: 'Retained', i: 2, t: 'b' },
+        i: 1,
+        t: 'C1',
+      },
+      {
+        c: { c: 'Slotted', i: 4, t: 'em' },
+        i: 3,
+        t: 'C3',
+      },
     ]);
+    expect(
+      hashSource({
+        dataFormat: 'JSX',
+        source: output.results[0]!.source,
+      })
+    ).toBe('63915234a0275689');
   });
 
   it('serializes static children inside arbitrary custom components', async () => {

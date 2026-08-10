@@ -12,9 +12,10 @@ The Vue script tests port the React extractor's applicable adversarial cases:
   concise arrows, component registration, and `defineComponent` aliases;
 - shared `<script>`/`<script setup>` imports and Vue's digit tag
   normalization;
-- Vue JSX/TSX `<T>` trees, namespace members such as `<GT.T>`, Vue Fragment
-  spellings, local ESM re-exports, and statically traceable local callback
-  forwarding.
+- Vue JSX/TSX `<T>` trees, namespace members such as `<GT.T>`, runtime-accurate
+  Vue Fragment spellings, local ESM re-exports, and statically traceable local
+  callback forwarding. Literal and namespace JSX Fragments stay transparent;
+  renamed aliases compiled as component slots preserve their semantic boundary.
 
 The initial `gt-vue` API intentionally does not port React-only behavior:
 

@@ -1533,14 +1533,16 @@ function serializeChild(
     context.valuedVIsReplacesElement
   );
   if (fragment) {
-    return serializeFragmentElement(
-      child,
-      counter,
-      shadowed,
-      bindings,
-      expressionPlugins,
-      context
-    );
+    return [
+      serializeFragmentElement(
+        child,
+        counter,
+        shadowed,
+        bindings,
+        expressionPlugins,
+        context
+      ),
+    ];
   }
   return [
     serializeElement(
@@ -1554,7 +1556,7 @@ function serializeChild(
   ];
 }
 
-/** Flattens an exact Vue Fragment default slot without consuming an ID. */
+/** Serializes an authored Vue Fragment while leaving compiler wrappers flat. */
 function serializeFragmentElement(
   element: ElementNode,
   counter: Counter,
@@ -1562,7 +1564,9 @@ function serializeFragmentElement(
   bindings: TemplateBindings,
   expressionPlugins: ParserPlugin[],
   context: VueExtractionContext
-): JsxChild[] {
+): JsxChild {
+  counter.value += 1;
+  const id = counter.value;
   validateRichElement(element, context, true);
   const slots = getSlotLayout(
     element,
@@ -1571,7 +1575,7 @@ function serializeFragmentElement(
     context,
     'opaque'
   );
-  return serializeChildren(
+  const children = serializeChildren(
     slots.defaultSlot.children,
     counter,
     slots.defaultSlot.shadowed,
@@ -1579,6 +1583,22 @@ function serializeFragmentElement(
     expressionPlugins,
     context
   );
+  const data = readContentProps(
+    element,
+    shadowed,
+    bindings,
+    expressionPlugins,
+    context
+  );
+  return {
+    // Vue's Fragment is a Symbol, so gt-vue uses the same deterministic
+    // anonymous-component fallback at runtime. `hashSource()` intentionally
+    // ignores this diagnostic label while preserving the semantic boundary.
+    t: `C${id}`,
+    i: id,
+    ...(Object.keys(data).length > 0 && { d: data }),
+    ...(children.length > 0 && { c: collapseChildren(children) }),
+  };
 }
 
 function serializeElement(

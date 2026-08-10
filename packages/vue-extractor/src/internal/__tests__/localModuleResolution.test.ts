@@ -164,7 +164,7 @@ describe('local module identity resolution', () => {
     ]);
   });
 
-  it('flattens a locally reexported renamed Fragment in TSX', async () => {
+  it('preserves a locally reexported renamed Fragment component in TSX', async () => {
     write(
       'fragment-barrel.ts',
       `export { T } from 'gt-vue';
@@ -177,7 +177,11 @@ describe('local module identity resolution', () => {
     );
 
     expect(output.results.map(({ source }) => source)).toEqual([
-      { c: 'Lost', i: 1, t: 'b' },
+      {
+        c: { c: 'Lost', i: 2, t: 'b' },
+        i: 1,
+        t: 'C1',
+      },
     ]);
     expect(output.errors).toEqual([]);
   });

@@ -127,6 +127,56 @@ const reactOracleFixtures = [
     ),
   },
   {
+    name: 'authored semantic Fragment',
+    expectedHash: 'b7817326e13971eb',
+    expectedSource: {
+      t: 'C1',
+      i: 1,
+      c: { t: 'strong', i: 2, c: 'Semantic Fragment' },
+    },
+    sfc: templateFixture(
+      '<T><Fragment><strong>Semantic Fragment</strong></Fragment></T>',
+      "import { Fragment } from 'vue';"
+    ),
+    jsx: jsxFixture(
+      '<T><VueFragment><strong>Semantic Fragment</strong></VueFragment></T>',
+      "import { Fragment as VueFragment } from 'vue';"
+    ),
+  },
+  {
+    name: 'authored semantic Fragment explicit default slot',
+    expectedHash: '41b3977504b974f9',
+    expectedSource: {
+      t: 'C1',
+      i: 1,
+      c: { t: 'em', i: 2, c: 'Explicit default' },
+    },
+    sfc: templateFixture(
+      '<T><Fragment><template #default><em>Explicit default</em></template></Fragment></T>',
+      "import { Fragment } from 'vue';"
+    ),
+    jsx: jsxFixture(
+      '<T><VueFragment v-slots={{ default: () => <em>Explicit default</em> }} /></T>',
+      "import { Fragment as VueFragment } from 'vue';"
+    ),
+  },
+  {
+    name: 'empty authored semantic Fragment',
+    expectedHash: 'a013c005483cdd19',
+    expectedSource: {
+      t: 'C1',
+      i: 1,
+    },
+    sfc: templateFixture(
+      '<T><Fragment /></T>',
+      "import { Fragment } from 'vue';"
+    ),
+    jsx: jsxFixture(
+      '<T><VueFragment /></T>',
+      "import { Fragment as VueFragment } from 'vue';"
+    ),
+  },
+  {
     name: 'typed and untyped variables',
     expectedHash: '21b7659d399c89fc',
     expectedSource: [
