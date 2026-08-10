@@ -1,8 +1,10 @@
 /**
  * Closed reasons why a React seed cannot participate in exact Vue parity yet.
  *
- * This list intentionally describes capabilities, never an alternate Vue
- * source or hash. Every paired seed not listed here must match React exactly.
+ * This list intentionally describes the primary framework boundary exercised
+ * by each seed, never an alternate Vue source or hash. A large stress seed can
+ * cross more than one boundary; every paired seed not listed here must still
+ * match React exactly.
  */
 export type NonPortableSeed =
   | {
@@ -25,10 +27,11 @@ export type NonPortableSeed =
 /**
  * Exhaustive allowlist of presently non-portable React seeds.
  *
- * Keep this list narrow. Adding an entry removes a seed from exact runtime and
- * extractor parity, so each reason is independently proven against its source
- * fixture by the test harness. Implementing one of these capabilities should
- * remove entries from this list and increase the exact-parity count.
+ * Keep this list narrow. Adding an entry removes a seed only from cross-runtime
+ * React/Vue parity. The test harness still requires the Vue extractor to match
+ * the Vue runtime for all 84 seeds. Each primary reason is evidenced against
+ * its source fixture; implementing it should remove entries from this list and
+ * increase the exact cross-runtime parity count.
  */
 export const NON_PORTABLE_SEEDS = [
   {
