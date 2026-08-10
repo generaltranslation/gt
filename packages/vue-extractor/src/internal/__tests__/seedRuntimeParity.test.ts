@@ -12,6 +12,18 @@ type ReactOracleFixture = {
   sfc: string;
 };
 
+const reactCommentBoundaryFixture = {
+  name: 'text boundaries separated by a source comment',
+  expectedHash: '3bcc07b273d94f01',
+  expectedSource: {
+    t: 'p',
+    i: 1,
+    c: ['Before', 'After'],
+  },
+  sfc: templateFixture('<T><p>Before<!-- source boundary -->After</p></T>'),
+  jsx: jsxFixture('<T><p>Before{/* source boundary */}After</p></T>'),
+} satisfies ReactOracleFixture;
+
 /**
  * Portable rich-content cases whose source and hashes were produced by React's
  * `prepareT()`. The parent runtime-contract PR exercises the same oracle for
@@ -22,7 +34,8 @@ type ReactOracleFixture = {
  * templates apply their configured whitespace transform before runtime, while
  * JSX applies JavaScript's JSX whitespace transform. Formatting-only source
  * that those compilers normalize differently is therefore not the same runtime
- * input and is the sole cross-syntax exclusion from this corpus.
+ * input. HTML source comments are also excluded because Vue removes them in
+ * production and merges the surrounding text into one runtime VNode.
  */
 const reactOracleFixtures = [
   {
@@ -35,17 +48,6 @@ const reactOracleFixtures = [
     },
     sfc: templateFixture('<T><p>Read <strong>the docs</strong> today.</p></T>'),
     jsx: jsxFixture('<T><p>Read <strong>the docs</strong> today.</p></T>'),
-  },
-  {
-    name: 'text boundaries separated by a source comment',
-    expectedHash: '3bcc07b273d94f01',
-    expectedSource: {
-      t: 'p',
-      i: 1,
-      c: ['Before', 'After'],
-    },
-    sfc: templateFixture('<T><p>Before<!-- source boundary -->After</p></T>'),
-    jsx: jsxFixture('<T><p>Before{/* source boundary */}After</p></T>'),
   },
   {
     name: 'static custom-component children',
@@ -323,6 +325,45 @@ describe('React-authoritative rich-content extraction contract', () => {
       );
     });
   }
+
+  describe(reactCommentBoundaryFixture.name, () => {
+    it('locks the checked-in React prepareT oracle', () => {
+      expect(hashRichSource(reactCommentBoundaryFixture.expectedSource)).toBe(
+        reactCommentBoundaryFixture.expectedHash
+      );
+    });
+
+    it('extracts the exact semantic wire and hash from Vue JSX', async () => {
+      const output = await extractFromVueSource(
+        reactCommentBoundaryFixture.jsx,
+        '/project/src/text-boundaries-separated-by-a-source-comment.tsx',
+        { projectRoot: '/project' }
+      );
+
+      expect(output.errors).toEqual([]);
+      expect(output.warnings).toEqual([]);
+      expect(output.results).toHaveLength(1);
+      expect(normalizeSemanticWire(output.results[0]!.source)).toStrictEqual(
+        normalizeSemanticWire(reactCommentBoundaryFixture.expectedSource)
+      );
+      expect(hashRichSource(output.results[0]!.source)).toBe(
+        reactCommentBoundaryFixture.expectedHash
+      );
+    });
+
+    it('rejects the non-portable Vue SFC comment boundary', async () => {
+      const output = await extractFromVueSource(
+        reactCommentBoundaryFixture.sfc,
+        '/project/src/text-boundaries-separated-by-a-source-comment.vue',
+        { projectRoot: '/project' }
+      );
+
+      expect(output.results).toEqual([]);
+      expect(output.errors.join('\n')).toContain(
+        'hash changes between development and production'
+      );
+    });
+  });
 });
 
 function templateFixture(template: string, setup = '', imports = 'T'): string {

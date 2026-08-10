@@ -258,12 +258,6 @@ describe('Vue template extraction', () => {
 
   it.each([
     {
-      name: 'preserves text boundaries around whitespace-free comments',
-      imports: 'T',
-      template: '<T>Hello<!-- translator note -->world</T>',
-      expected: [['Hello', 'world']] satisfies JsxChildren[],
-    },
-    {
       name: 'evaluates side-effect-free primitive expressions',
       imports: 'T',
       template: "<T>{{ 'A' + 'B' }}|{{ 2 + 3 }}|{{ true }}|{{ null }}</T>",
@@ -361,6 +355,20 @@ describe('Vue template extraction', () => {
 
     expect(output.errors).toEqual([]);
     expect(richSources(output.results)).toEqual(expected);
+  });
+
+  it('rejects whitespace-free comments that create build-dependent text boundaries', async () => {
+    const output = await extractVue(
+      vueSource({
+        imports: 'T',
+        template: '<T>Hello<!-- translator note -->world</T>',
+      })
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors.join('\n')).toContain(
+      'hash changes between development and production'
+    );
   });
 
   it('supports both context prop spellings with static bindings', async () => {

@@ -1,7 +1,6 @@
 import { parseExpression, type ParserPlugin } from '@babel/parser';
 import traverseModule, { type Scope } from '@babel/traverse';
 import * as babel from '@babel/types';
-import { DecodingMode, decodeHTML } from 'entities/decode';
 import type {
   DirectiveNode,
   ElementNode,
@@ -1447,14 +1446,8 @@ function serializeChildren(
       expressionPlugins,
       context
     );
-    const containsStrippedComment =
-      child.type === NodeTypes.TEXT && child.loc.source.includes('<!--');
-    for (const [index, value] of values.entries()) {
-      appendSerializedChild(
-        result,
-        value,
-        mergeWithPrevious && (!containsStrippedComment || index === 0)
-      );
+    for (const value of values) {
+      appendSerializedChild(result, value, mergeWithPrevious);
       mergeWithPrevious = true;
     }
   }
@@ -1493,34 +1486,6 @@ function isHtmlWhitespace(value: string | undefined): boolean {
   return value !== undefined && /[\t\n\f\r ]/.test(value);
 }
 
-/**
- * Restores text boundaries when Vue's production parser strips comments.
- *
- * With comments enabled, Vue emits a comment VNode between the adjacent text
- * VNodes and gt-vue uses that VNode as a non-serializing merge barrier. With
- * comments disabled, compiler-dom folds the same raw range into one Text node
- * while retaining the original source in `loc.source`. Splitting that range
- * keeps development, production, extraction, and the React children wire in
- * agreement. Whitespace-adjacent comments are rejected above because Vue may
- * normalize their surrounding text differently between compiler modes.
- */
-function splitCommentSeparatedText(content: string, source: string): string[] {
-  if (!source.includes('<!--')) return [content];
-  const rawSegments = source.split(/<!--[\s\S]*?-->/);
-  if (rawSegments.length < 2) return [content];
-
-  const decodedSegments = rawSegments.map((segment) =>
-    decodeHTML(segment, DecodingMode.Legacy)
-  );
-  if (decodedSegments.join('') !== content) {
-    // A mismatch means compiler whitespace normalization affected more than
-    // the comment boundary. Returning the compiler value makes the existing
-    // development/production parity check reject the translation safely.
-    return [content];
-  }
-  return decodedSegments.filter((segment) => segment.length > 0);
-}
-
 function serializeChild(
   child: TemplateChildNode,
   counter: Counter,
@@ -1531,7 +1496,7 @@ function serializeChild(
 ): JsxChild[] {
   if (child.type === NodeTypes.COMMENT) return [];
   if (child.type === NodeTypes.TEXT) {
-    return splitCommentSeparatedText(child.content, child.loc.source);
+    return [child.content];
   }
   if (child.type === NodeTypes.INTERPOLATION) {
     const value = readExpressionPrimitive(
