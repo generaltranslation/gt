@@ -4,6 +4,7 @@ import { SupportedLibraries } from '../../types/index.js';
 import { logger } from '../../console/logger.js';
 import { Libraries } from '../../types/libraries.js';
 import { detectPythonLibrary } from './detectPythonLibrary.js';
+import { manifestDirectlyDeclaresGTVue } from '@generaltranslation/vue-extractor/integration';
 
 export function determineLibrary(): {
   library: SupportedLibraries;
@@ -11,6 +12,7 @@ export function determineLibrary(): {
 } {
   let library: SupportedLibraries = 'base';
   const additionalModules: SupportedLibraries[] = [];
+  let directlyDeclaresVue = false;
   try {
     // Get the current working directory (where the CLI is being run)
     const cwd = process.cwd();
@@ -20,6 +22,7 @@ export function determineLibrary(): {
     if (fs.existsSync(packageJsonPath)) {
       // Read and parse package.json
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+      directlyDeclaresVue = manifestDirectlyDeclaresGTVue(packageJson);
       const dependencies = {
         ...packageJson.dependencies,
         ...packageJson.devDependencies,
@@ -53,6 +56,12 @@ export function determineLibrary(): {
       if (pythonLibrary) {
         library = pythonLibrary;
       }
+    }
+
+    // Vue is intentionally the final fallback so every existing framework
+    // keeps its historical command surface and priority in mixed projects.
+    if (library === 'base' && directlyDeclaresVue) {
+      library = Libraries.GT_VUE;
     }
 
     // Fallback to base if neither is found
