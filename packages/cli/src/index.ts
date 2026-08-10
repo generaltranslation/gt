@@ -6,7 +6,7 @@ import { determineLibrary } from './fs/determineFramework/index.js';
 import { Command } from 'commander';
 import { NodeCLI } from './cli/node.js';
 import { Libraries, isPythonLibrary } from './types/libraries.js';
-import { InlineCLI } from './cli/inline.js';
+import { VueCLI } from './cli/vue.js';
 
 export function main(program: Command) {
   program.name('gt');
@@ -24,7 +24,7 @@ export function main(program: Command) {
   } else if (library === Libraries.GT_NODE) {
     cli = new NodeCLI(program, library, additionalModules);
   } else if (library === Libraries.GT_VUE) {
-    cli = new InlineCLI(program, library, additionalModules);
+    cli = new VueCLI(program, additionalModules);
   } else if (isPythonLibrary(library)) {
     cli = new PythonCLI(program, library, additionalModules);
   } else {

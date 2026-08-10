@@ -711,22 +711,24 @@ export class BaseCLI {
       .description(
         'Configure your project for General Translation. This will create a gt.config.json file in your codebase.'
       )
-      .action(async () => {
-        await exitIfUnsupportedSetupTarget();
-        displayHeader('Configuring project...');
+      .action(() => this.handleConfigureCommand());
+  }
 
-        logger.info(
-          'Welcome! This tool will help you configure your gt.config.json file. See the docs: https://generaltranslation.com/docs/cli/reference/config for more information.'
-        );
+  protected async handleConfigureCommand(): Promise<void> {
+    await exitIfUnsupportedSetupTarget();
+    displayHeader('Configuring project...');
 
-        // Configure gt.config.json
-        const framework = await detectFramework();
-        await this.handleInitCommand(false, false, framework.name === 'vite');
+    logger.info(
+      'Welcome! This tool will help you configure your gt.config.json file. See the docs: https://generaltranslation.com/docs/cli/reference/config for more information.'
+    );
 
-        logger.endCommand(
-          'Done! Make sure you have an API key and project ID to use General Translation. Get them on the dashboard: https://generaltranslation.com/dashboard'
-        );
-      });
+    // Configure gt.config.json
+    const framework = await detectFramework();
+    await this.handleInitCommand(false, false, framework.name === 'vite');
+
+    logger.endCommand(
+      'Done! Make sure you have an API key and project ID to use General Translation. Get them on the dashboard: https://generaltranslation.com/dashboard'
+    );
   }
 
   protected async handleUploadCommand(
