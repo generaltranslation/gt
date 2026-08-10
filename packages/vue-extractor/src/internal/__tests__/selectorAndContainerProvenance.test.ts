@@ -544,7 +544,7 @@ describe('Vue selector and container provenance', () => {
         'Translated',
         [
           { t: 'Suspense', i: 1, c: 'Ready' },
-          { t: 'kit.Card', i: 2 },
+          { t: 'kit.Card', i: 2, c: 'Opaque' },
         ],
       ]);
       expect(trailing.results).toEqual([]);
@@ -581,7 +581,7 @@ describe('Vue selector and container provenance', () => {
       'Object',
       [
         { t: 'Suspense', i: 1, c: 'Ready' },
-        { t: 'kit.Card', i: 2 },
+        { t: 'kit.Card', i: 2, c: 'Opaque' },
       ],
     ]);
   });

@@ -21,6 +21,11 @@ import type { KnownValue } from './model.js';
 
 type Counter = { value: number };
 
+/** Prevents source strings on opposite sides of a JSX comment from merging. */
+const jsxTextBoundary = Symbol('gt-vue-jsx-text-boundary');
+
+type SerializedJSXChild = JsxChild | typeof jsxTextBoundary;
+
 type JSXSlotFunction = {
   node:
     | babel.ArrowFunctionExpression
@@ -36,8 +41,8 @@ type JSXSlotLayout = {
 };
 
 type OrdinaryElementShape = {
-  /** Component slots stay outside T's source tree. */
-  opaque: boolean;
+  /** Whether Vue represents authored JSX children as a default slot. */
+  component: boolean;
   /** Proven runtime string tag, retained only for catalog readability. */
   tag?: string;
 };
@@ -92,8 +97,9 @@ const NON_BRANCH_PROP_NAMES = new Set([
  *
  * This serializer follows the VNodes emitted by `@vue/babel-plugin-jsx`:
  * fragments are transparent, JSX text uses the plugin's normalization, and
- * arbitrary component slots remain opaque because gt-vue does not execute
- * user slots while calculating a source hash.
+ * static custom-component default slots participate in the same rich source
+ * tree as React component children. Runtime values remain explicit variable
+ * boundaries and named component slots remain outside the outer translation.
  */
 export function extractVueJSXTranslation(
   path: NodePath<babel.JSXElement>,
@@ -153,17 +159,62 @@ export function isNestedInVueJSXTranslation(
         analysis
       );
       const containingAttribute = findContainingJSXAttribute(path, current);
-      if (
-        containingAttribute &&
-        !(
+      if (containingAttribute) {
+        if (!isSlotsAttribute(containingAttribute.node)) {
+          // JSX inside an event or ordinary prop is not a child VNode of the
+          // surrounding translation. Extract it independently if it is T.
+          return false;
+        }
+        if (
           identity?.type === 'component' &&
-          (identity.name === 'Branch' || identity.name === 'Plural') &&
-          isSlotsAttribute(containingAttribute.node)
-        )
+          (identity.name === 'Branch' || identity.name === 'Plural')
+        ) {
+          // Every stable Branch and Plural slot belongs to the outer source.
+          current = current.parentPath;
+          continue;
+        }
+        if (
+          identity?.type === 'component' &&
+          (identity.name === 'Var' || FORMAT_COMPONENTS.has(identity.name))
+        ) {
+          return false;
+        }
+        const slotName = readContainingJSXSlotName(
+          path,
+          containingAttribute,
+          analysis
+        );
+        // Only a component's default slot belongs to the surrounding rich
+        // source. Named slots have independent lifetimes and may contain an
+        // independently extracted T. An unresolved key is kept nested so the
+        // outer extraction owns the fail-closed diagnostic without emitting a
+        // second, misleading catalog entry.
+        if (slotName !== 'default') return slotName === undefined;
+      }
+      if (
+        !containingAttribute &&
+        identity?.type !== 'component' &&
+        (identity?.type !== 'vue-builtin' ||
+          usesFragmentComponentSlots(element.openingElement.name, identity))
       ) {
-        // JSX inside an event or ordinary prop is not a child VNode of the
-        // surrounding translation. Extract it independently if it is T.
-        return false;
+        const shape = identity
+          ? { component: true }
+          : resolveOrdinaryElementShape(
+              element.openingElement.name,
+              current.scope,
+              analysis,
+              new Set()
+            );
+        if (shape?.component) {
+          const objectSlot = readContainingJSXObjectSlotName(
+            path,
+            current,
+            analysis
+          );
+          if (objectSlot.present && objectSlot.name !== 'default') {
+            return objectSlot.name === undefined;
+          }
+        }
       }
       if (identity?.type === 'component') {
         if (identity.name === 'T') return true;
@@ -176,24 +227,8 @@ export function isNestedInVueJSXTranslation(
         (identity.name !== 'Fragment' ||
           isTransparentFragment(element.openingElement.name, identity))
       ) {
-        if (
-          identity.name === 'Suspense' &&
-          containingAttribute &&
-          isSlotsAttribute(containingAttribute.node)
-        ) {
-          // Explicit Suspense slots have separate lifetimes. The outer
-          // serializer follows the default slot and excludes fallback, while
-          // a T declared in fallback remains an independent translation.
-          return false;
-        }
         // Vue Fragment aliases and normalized Suspense default content are
         // transparent to the runtime source tree.
-      } else if (
-        !isLiteralFragment(element.openingElement.name) &&
-        !isNativeElement(element.openingElement.name)
-      ) {
-        // Arbitrary component slots are opaque to the outer translation.
-        return false;
       }
     }
     current = current.parentPath;
@@ -223,6 +258,66 @@ function findContainingJSXAttribute(
 function isSlotsAttribute(attribute: babel.JSXAttribute): boolean {
   const name = readAttributeName(attribute.name);
   return name === 'v-slots' || name === 'vSlots';
+}
+
+/** Returns the direct static slot key containing one nested JSX element. */
+function readContainingJSXSlotName(
+  path: NodePath,
+  attribute: NodePath<babel.JSXAttribute>,
+  analysis: VueJSXAnalysis
+): string | undefined {
+  const expression =
+    attribute.node.value?.type === 'JSXExpressionContainer' &&
+    attribute.node.value.expression.type !== 'JSXEmptyExpression'
+      ? unwrapExpression(attribute.node.value.expression)
+      : undefined;
+  if (expression?.type !== 'ObjectExpression') return undefined;
+
+  let current: NodePath | null = path.parentPath;
+  while (current && current.node !== expression) {
+    if (
+      current.parentPath?.node === expression &&
+      (current.isObjectMethod() || current.isObjectProperty())
+    ) {
+      return readStaticObjectKey(current.node, attribute.scope, analysis);
+    }
+    current = current.parentPath;
+  }
+  return undefined;
+}
+
+/** Classifies a nested element inside Vue's object-child slot spelling. */
+function readContainingJSXObjectSlotName(
+  path: NodePath,
+  element: NodePath<babel.JSXElement>,
+  analysis: VueJSXAnalysis
+): { name?: string; present: boolean } {
+  const meaningfulChildren = element.node.children.filter(isMeaningfulJSXChild);
+  const child = meaningfulChildren[0];
+  if (
+    meaningfulChildren.length !== 1 ||
+    child?.type !== 'JSXExpressionContainer' ||
+    child.expression.type === 'JSXEmptyExpression'
+  ) {
+    return { present: false };
+  }
+  const object = unwrapExpression(child.expression);
+  if (object?.type !== 'ObjectExpression') return { present: false };
+
+  let current: NodePath | null = path.parentPath;
+  while (current && current.node !== object) {
+    if (
+      current.parentPath?.node === object &&
+      (current.isObjectMethod() || current.isObjectProperty())
+    ) {
+      return {
+        name: readStaticObjectKey(current.node, element.scope, analysis),
+        present: true,
+      };
+    }
+    current = current.parentPath;
+  }
+  return { present: false };
 }
 
 /** Resolves a JSX tag to the identity tracked by the script analyzer. */
@@ -327,8 +422,8 @@ function serializeChildren(
   scope: Scope,
   context: VueExtractionContext,
   analysis: VueJSXAnalysis
-): JsxChild[] {
-  const result: JsxChild[] = [];
+): SerializedJSXChild[] {
+  const result: SerializedJSXChild[] = [];
   for (const child of children) {
     for (const serialized of serializeChild(
       child,
@@ -354,7 +449,7 @@ function serializeChild(
   scope: Scope,
   context: VueExtractionContext,
   analysis: VueJSXAnalysis
-): JsxChild[] {
+): SerializedJSXChild[] {
   if (child.type === 'JSXText') {
     const text = normalizeJSXText(child.value);
     return text ? [text] : [];
@@ -374,7 +469,9 @@ function serializeChild(
     );
     return [];
   }
-  if (child.expression.type === 'JSXEmptyExpression') return [];
+  if (child.expression.type === 'JSXEmptyExpression') {
+    return [jsxTextBoundary];
+  }
   return serializeExpression(
     child.expression,
     counter,
@@ -390,7 +487,7 @@ function serializeExpression(
   scope: Scope,
   context: VueExtractionContext,
   analysis: VueJSXAnalysis
-): JsxChild[] {
+): SerializedJSXChild[] {
   const expression = unwrapExpression(input);
   if (!expression) return [];
   if (expression.type === 'JSXElement') {
@@ -406,7 +503,7 @@ function serializeExpression(
     );
   }
   if (expression.type === 'ArrayExpression') {
-    const result: JsxChild[] = [];
+    const result: SerializedJSXChild[] = [];
     for (const item of expression.elements) {
       if (!item) continue;
       if (item.type === 'SpreadElement') {
@@ -466,17 +563,19 @@ function serializeElement(
   scope: Scope,
   context: VueExtractionContext,
   analysis: VueJSXAnalysis
-): JsxChild[] {
+): SerializedJSXChild[] {
   const name = element.openingElement.name;
   const identity = resolveElementIdentity(name, scope, analysis);
   if (isTransparentFragment(name, identity)) {
-    return serializeChildren(
-      element.children,
-      counter,
-      scope,
-      context,
-      analysis
-    );
+    return usesFragmentComponentSlots(name, identity)
+      ? serializeOrdinaryComponentDefault(
+          element,
+          counter,
+          scope,
+          context,
+          analysis
+        )
+      : serializeChildren(element.children, counter, scope, context, analysis);
   }
 
   counter.value += 1;
@@ -528,24 +627,6 @@ function serializeElement(
       serializeSuspenseElement(element, id, counter, scope, context, analysis),
     ];
   }
-  if (identity?.type === 'vue-builtin' && identity.name === 'Fragment') {
-    addVueError(
-      context,
-      babelLocation(element.loc),
-      'Found a renamed Vue Fragment binding inside a gt-vue JSX translation',
-      'Use <>, literal <Fragment>, or a Vue namespace member such as <Vue.Fragment>; the Vue JSX transform compiles renamed Fragment bindings as component slots'
-    );
-    return [];
-  }
-  if (identity?.type === 'vue-builtin') {
-    addVueError(
-      context,
-      babelLocation(element.loc),
-      `Found unsupported Vue <${identity.name}> content inside a gt-vue JSX translation`,
-      'Move this Vue builtin outside <T>'
-    );
-    return [];
-  }
   if (!identity && isUnboundNonNativeElement(name, scope)) {
     addVueError(
       context,
@@ -557,9 +638,10 @@ function serializeElement(
   }
 
   // Every remaining known identity is a runtime function or object. Vue
-  // therefore creates a component VNode whose slots gt-vue keeps opaque.
+  // therefore creates a component VNode whose authored default slot is the
+  // equivalent of React `children` and belongs to this rich source tree.
   const ordinaryShape = identity
-    ? { opaque: true }
+    ? { component: true }
     : resolveOrdinaryElementShape(name, scope, analysis, new Set());
   if (!identity && !ordinaryShape) {
     addVueError(
@@ -587,23 +669,15 @@ function serializeElement(
     );
     return [];
   }
-  if (ordinaryShape?.opaque) {
-    return [
-      {
-        t: tag,
-        i: id,
-        ...(Object.keys(data).length > 0 && { d: data }),
-      },
-    ];
-  }
-
-  const children = serializeChildren(
-    element.children,
-    counter,
-    scope,
-    context,
-    analysis
-  );
+  const children = ordinaryShape?.component
+    ? serializeOrdinaryComponentDefault(
+        element,
+        counter,
+        scope,
+        context,
+        analysis
+      )
+    : serializeChildren(element.children, counter, scope, context, analysis);
   return [
     {
       t: tag,
@@ -612,6 +686,190 @@ function serializeElement(
       ...(children.length > 0 && { c: collapseChildren(children) }),
     },
   ];
+}
+
+/** Serializes the authored default slot of an ordinary component VNode. */
+function serializeOrdinaryComponentDefault(
+  element: babel.JSXElement,
+  counter: Counter,
+  scope: Scope,
+  context: VueExtractionContext,
+  analysis: VueJSXAnalysis
+): SerializedJSXChild[] {
+  const slotAttributes = element.openingElement.attributes.filter(
+    (attribute): attribute is babel.JSXAttribute =>
+      attribute.type === 'JSXAttribute' && isSlotsAttribute(attribute)
+  );
+  if (slotAttributes.length > 1) {
+    addVueError(
+      context,
+      babelLocation(slotAttributes[1]!.loc),
+      'Found more than one v-slots prop on a component inside a gt-vue JSX translation',
+      'Pass one static slots object'
+    );
+  }
+
+  const meaningfulChildren = element.children.filter(isMeaningfulJSXChild);
+  const objectSlotChild =
+    slotAttributes.length === 0 &&
+    meaningfulChildren.length === 1 &&
+    meaningfulChildren[0]?.type === 'JSXExpressionContainer' &&
+    meaningfulChildren[0].expression.type !== 'JSXEmptyExpression'
+      ? analysis.resolveStaticObject(meaningfulChildren[0].expression, scope)
+      : undefined;
+  const slotsObject = slotAttributes[0]
+    ? readSlotsAttributeObject(
+        slotAttributes[0],
+        scope,
+        context,
+        analysis,
+        'a component inside a gt-vue JSX translation'
+      )
+    : objectSlotChild;
+  const defaultSlot = slotsObject
+    ? readOrdinaryDefaultSlot(slotsObject, context, analysis)
+    : { present: false };
+
+  if (defaultSlot.present) {
+    return defaultSlot.slot
+      ? serializeSlotFunction(defaultSlot.slot, counter, context, analysis)
+      : [];
+  }
+  const directSlot = readDirectOrdinaryDefaultSlot(
+    element,
+    scope,
+    context,
+    analysis
+  );
+  if (directSlot.present) {
+    return directSlot.slot
+      ? serializeSlotFunction(directSlot.slot, counter, context, analysis)
+      : [];
+  }
+  if (objectSlotChild) return [];
+  return serializeChildren(element.children, counter, scope, context, analysis);
+}
+
+/** Reads the one-function child Vue JSX compiles as a direct default slot. */
+function readDirectOrdinaryDefaultSlot(
+  element: babel.JSXElement,
+  scope: Scope,
+  context: VueExtractionContext,
+  analysis: VueJSXAnalysis
+): { present: boolean; slot?: JSXSlotFunction } {
+  const children = element.children.filter(isMeaningfulJSXChild);
+  if (
+    children.length !== 1 ||
+    children[0]?.type !== 'JSXExpressionContainer' ||
+    children[0].expression.type === 'JSXEmptyExpression'
+  ) {
+    return { present: false };
+  }
+  const value = unwrapExpression(children[0].expression);
+  if (
+    !value ||
+    (value.type !== 'ArrowFunctionExpression' &&
+      value.type !== 'FunctionExpression')
+  ) {
+    return { present: false };
+  }
+  if (value.params.length > 0 || value.async || value.generator) {
+    addVueError(
+      context,
+      babelLocation(value.loc),
+      'Found a dynamic or scoped direct default slot on a component inside a gt-vue JSX translation',
+      'Use a synchronous zero-argument function with static returned content'
+    );
+    return { present: true };
+  }
+  return {
+    present: true,
+    slot: {
+      node: value,
+      scope: analysis.scopeForNode(value, scope),
+    },
+  };
+}
+
+/** Reads only the default entry; named slots remain runtime-owned and opaque. */
+function readOrdinaryDefaultSlot(
+  object: { node: babel.ObjectExpression; scope: Scope },
+  context: VueExtractionContext,
+  analysis: VueJSXAnalysis
+): { present: boolean; slot?: JSXSlotFunction } {
+  let present = false;
+  let slot: JSXSlotFunction | undefined;
+
+  for (const property of object.node.properties) {
+    if (property.type === 'SpreadElement') {
+      addVueError(
+        context,
+        babelLocation(property.loc),
+        'Found a spread in a component slots object inside a gt-vue JSX translation',
+        'List the static default slot explicitly so a spread cannot add or replace it'
+      );
+      continue;
+    }
+    const name = readStaticObjectKey(property, object.scope, analysis);
+    if (name === undefined) {
+      addVueError(
+        context,
+        babelLocation(property.loc),
+        'Found a dynamic slot name on a component inside a gt-vue JSX translation',
+        'Use a static named slot or an explicit default key'
+      );
+      continue;
+    }
+    if (name !== 'default') continue;
+    if (present) {
+      addVueError(
+        context,
+        babelLocation(property.loc),
+        'Found duplicate default slots on a component inside a gt-vue JSX translation',
+        'Define the default slot once'
+      );
+      continue;
+    }
+    present = true;
+    if (property.computed) {
+      addVueError(
+        context,
+        babelLocation(property.loc),
+        'Found a computed default slot on a component inside a gt-vue JSX translation',
+        'Use the literal default key'
+      );
+      continue;
+    }
+    const value =
+      property.type === 'ObjectMethod' && property.kind === 'method'
+        ? property
+        : property.type === 'ObjectProperty'
+          ? unwrapExpression(property.value)
+          : undefined;
+    if (
+      !value ||
+      (value.type !== 'ArrowFunctionExpression' &&
+        value.type !== 'FunctionExpression' &&
+        value.type !== 'ObjectMethod') ||
+      value.params.length > 0 ||
+      value.async ||
+      value.generator
+    ) {
+      addVueError(
+        context,
+        babelLocation(property.loc),
+        'Found a dynamic or scoped default slot on a component inside a gt-vue JSX translation',
+        'Use a synchronous zero-argument function with static returned content'
+      );
+      continue;
+    }
+    slot = {
+      node: value,
+      scope: analysis.scopeForNode(value, object.scope),
+    };
+  }
+
+  return { present, ...(slot && { slot }) };
 }
 
 /**
@@ -1018,7 +1276,7 @@ function serializeSlotFunction(
   counter: Counter,
   context: VueExtractionContext,
   analysis: VueJSXAnalysis
-): JsxChild[] {
+): SerializedJSXChild[] {
   const returned = readStaticSlotReturn(slot);
   if (!returned) {
     addVueError(
@@ -1406,17 +1664,27 @@ function isLiteralFragment(
   return name.type === 'JSXIdentifier' && name.name === 'Fragment';
 }
 
-/** Matches only Fragment spellings the Vue JSX transform keeps transparent. */
+/** Matches Fragment spellings whose runtime VNode flattens authored children. */
 function isTransparentFragment(
   name: babel.JSXElement['openingElement']['name'],
   identity: KnownValue | undefined
 ): boolean {
   return (
     isLiteralFragment(name) ||
-    (identity?.type === 'vue-builtin' &&
-      identity.name === 'Fragment' &&
-      name.type === 'JSXMemberExpression' &&
-      name.property.name === 'Fragment')
+    (identity?.type === 'vue-builtin' && identity.name === 'Fragment')
+  );
+}
+
+/** Detects Fragment aliases the JSX transform compiles through component slots. */
+function usesFragmentComponentSlots(
+  name: babel.JSXElement['openingElement']['name'],
+  identity: KnownValue | undefined
+): boolean {
+  return (
+    identity?.type === 'vue-builtin' &&
+    identity.name === 'Fragment' &&
+    !isLiteralFragment(name) &&
+    !(name.type === 'JSXMemberExpression' && name.property.name === 'Fragment')
   );
 }
 
@@ -1447,7 +1715,7 @@ function isNativeElement(
   );
 }
 
-/** Proves whether a non-GT JSX tag is traversable or slot-opaque. */
+/** Proves whether a non-GT JSX tag is an element or component VNode. */
 function resolveOrdinaryElementShape(
   name: babel.JSXElement['openingElement']['name'],
   scope: Scope,
@@ -1455,7 +1723,7 @@ function resolveOrdinaryElementShape(
   seen: Set<babel.Node>
 ): OrdinaryElementShape | undefined {
   if (isNativeElement(name)) {
-    return { opaque: false, tag: (name as babel.JSXIdentifier).name };
+    return { component: false, tag: (name as babel.JSXIdentifier).name };
   }
   if (name.type === 'JSXNamespacedName') return undefined;
   if (name.type === 'JSXMemberExpression') {
@@ -1465,7 +1733,7 @@ function resolveOrdinaryElementShape(
     return binding?.path.isImportSpecifier() ||
       binding?.path.isImportDefaultSpecifier() ||
       binding?.path.isImportNamespaceSpecifier()
-      ? { opaque: true }
+      ? { component: true }
       : undefined;
   }
   const binding = scope.getBinding(name.name);
@@ -1477,7 +1745,7 @@ function resolveOrdinaryElementShape(
     binding.path.isFunctionDeclaration() ||
     binding.path.isClassDeclaration()
   ) {
-    return { opaque: true };
+    return { component: true };
   }
   const declaration = binding.path.node;
   return declaration.type === 'VariableDeclarator' && declaration.init
@@ -1505,7 +1773,7 @@ function resolveOrdinaryElementExpression(
   const primitive = analysis.readStaticPrimitive(expression, scope);
   if (primitive.ok) {
     return typeof primitive.value === 'string'
-      ? { opaque: false, tag: primitive.value }
+      ? { component: false, tag: primitive.value }
       : undefined;
   }
   if (
@@ -1514,7 +1782,7 @@ function resolveOrdinaryElementExpression(
     expression.type === 'ClassExpression' ||
     expression.type === 'ObjectExpression'
   ) {
-    return { opaque: true };
+    return { component: true };
   }
   if (expression.type === 'Identifier') {
     const binding = scope.getBinding(expression.name);
@@ -1526,7 +1794,7 @@ function resolveOrdinaryElementExpression(
       binding.path.isFunctionDeclaration() ||
       binding.path.isClassDeclaration()
     ) {
-      return { opaque: true };
+      return { component: true };
     }
     const declaration = binding.path.node;
     return declaration.type === 'VariableDeclarator' && declaration.init
@@ -1544,7 +1812,7 @@ function resolveOrdinaryElementExpression(
   ) {
     if (expression.callee.type === 'V8IntrinsicIdentifier') return undefined;
     const callee = analysis.resolveKnownValue(expression.callee, scope);
-    if (callee?.type === 'defineComponent') return { opaque: true };
+    if (callee?.type === 'defineComponent') return { component: true };
     const argument = expression.arguments[0];
     return callee?.type === 'identity' &&
       expression.arguments.length === 1 &&
@@ -1600,9 +1868,9 @@ function mergeOrdinaryElementShapes(
   left: OrdinaryElementShape | undefined,
   right: OrdinaryElementShape | undefined
 ): OrdinaryElementShape | undefined {
-  if (!left || !right || left.opaque !== right.opaque) return undefined;
+  if (!left || !right || left.component !== right.component) return undefined;
   return {
-    opaque: left.opaque,
+    component: left.component,
     ...(left.tag === right.tag && left.tag !== undefined && { tag: left.tag }),
   };
 }
@@ -1653,15 +1921,23 @@ function normalizeJSXText(text: string): string {
   return result;
 }
 
-function appendSerializedChild(result: JsxChild[], child: JsxChild): void {
-  const previous = result.at(-1);
-  if (typeof previous === 'string' && typeof child === 'string') {
-    result[result.length - 1] = previous + child;
-  } else {
-    result.push(child);
+function appendSerializedChild(
+  result: SerializedJSXChild[],
+  child: SerializedJSXChild
+): void {
+  if (child === jsxTextBoundary) {
+    if (result.at(-1) !== jsxTextBoundary) result.push(child);
+    return;
   }
+  // React preserves each authored child as a separate array entry, including
+  // adjacent string expressions. gt-vue's runtime does the same for distinct
+  // Vue Text VNodes, so merging here would change the persisted source hash.
+  result.push(child);
 }
 
-function collapseChildren(children: JsxChild[]): JsxChildren {
-  return children.length === 1 ? children[0]! : children;
+function collapseChildren(children: SerializedJSXChild[]): JsxChildren {
+  const visibleChildren = children.filter(
+    (child): child is JsxChild => child !== jsxTextBoundary
+  );
+  return visibleChildren.length === 1 ? visibleChildren[0]! : visibleChildren;
 }

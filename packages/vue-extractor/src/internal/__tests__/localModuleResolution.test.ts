@@ -164,7 +164,7 @@ describe('local module identity resolution', () => {
     ]);
   });
 
-  it('rejects a locally reexported renamed Fragment in TSX', async () => {
+  it('flattens a locally reexported renamed Fragment in TSX', async () => {
     write(
       'fragment-barrel.ts',
       `export { T } from 'gt-vue';
@@ -176,8 +176,10 @@ describe('local module identity resolution', () => {
        export const View = () => <T><VueFragment><b>Lost</b></VueFragment></T>;`
     );
 
-    expect(output.results).toEqual([]);
-    expect(output.errors.join('\n')).toContain('renamed Vue Fragment binding');
+    expect(output.results.map(({ source }) => source)).toEqual([
+      { c: 'Lost', i: 1, t: 'b' },
+    ]);
+    expect(output.errors).toEqual([]);
   });
 
   it('resolves external namespace reexports for gt-vue and Vue', async () => {

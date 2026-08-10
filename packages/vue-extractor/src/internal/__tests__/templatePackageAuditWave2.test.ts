@@ -711,6 +711,7 @@ describe('template/package audit wave 2: metadata and public boundary', () => {
       './config',
       './detect',
       './inspect',
+      './integration',
       './project',
       './types',
     ]);

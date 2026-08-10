@@ -1,249 +1,380 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { isDeepStrictEqual } from 'node:util';
+import type { JsxChildren } from '@generaltranslation/format/types';
 import { hashSource } from 'generaltranslation/id';
 import { describe, expect, it } from 'vitest';
 import { extractFromVueSource } from './testVueCompiler.js';
 
-type ParityMode = 'excluded' | 'semantic-wire-exact';
-
-type ParitySeed = {
+type ReactOracleFixture = {
   context?: string;
-  hash: string;
-  id: string;
-  mode: ParityMode;
-  reason: string;
+  expectedHash: string;
+  expectedSource: JsxChildren;
+  jsx: string;
+  name: string;
+  sfc: string;
 };
 
-const repositoryRoot = path.resolve(__dirname, '../../../../..');
-const seedRoot = path.join(repositoryRoot, 'tests/seeds');
-const manifestPath = path.join(
-  repositoryRoot,
-  'test-fixtures/react-vue-runtime-parity.json'
-);
-const manifest = readManifest(manifestPath);
-const semanticWireExactSeeds = manifest.filter(
-  ({ mode }) => mode === 'semantic-wire-exact'
-);
-const excludedSeeds = manifest.filter(({ mode }) => mode === 'excluded');
+/**
+ * Portable rich-content cases whose source and hashes were produced by React's
+ * `prepareT()`. The parent runtime-contract PR exercises the same oracle for
+ * the shared cases; these constants keep extraction independently locked to
+ * it.
+ *
+ * Every case is deliberately authored without indentation-only slot text. Vue
+ * templates apply their configured whitespace transform before runtime, while
+ * JSX applies JavaScript's JSX whitespace transform. Formatting-only source
+ * that those compilers normalize differently is therefore not the same runtime
+ * input and is the sole cross-syntax exclusion from this corpus.
+ */
+const reactOracleFixtures = [
+  {
+    name: 'nested intrinsic elements and exact text boundaries',
+    expectedHash: '3c9fbfe0bd03e332',
+    expectedSource: {
+      t: 'p',
+      i: 1,
+      c: ['Read ', { t: 'strong', i: 2, c: 'the docs' }, ' today.'],
+    },
+    sfc: templateFixture('<T><p>Read <strong>the docs</strong> today.</p></T>'),
+    jsx: jsxFixture('<T><p>Read <strong>the docs</strong> today.</p></T>'),
+  },
+  {
+    name: 'text boundaries separated by a source comment',
+    expectedHash: '3bcc07b273d94f01',
+    expectedSource: {
+      t: 'p',
+      i: 1,
+      c: ['Before', 'After'],
+    },
+    sfc: templateFixture('<T><p>Before<!-- source boundary -->After</p></T>'),
+    jsx: jsxFixture('<T><p>Before{/* source boundary */}After</p></T>'),
+  },
+  {
+    name: 'static custom-component children',
+    expectedHash: 'f7cdc234abd75e9f',
+    expectedSource: {
+      t: 'DocsLink',
+      i: 1,
+      c: 'Cannot access?',
+    },
+    sfc: templateFixture(
+      '<T><DocsLink to="/docs">Cannot access?</DocsLink></T>',
+      "import DocsLink from './DocsLink.vue';"
+    ),
+    jsx: jsxFixture(
+      '<T><DocsLink to="/docs">Cannot access?</DocsLink></T>',
+      "import DocsLink from './DocsLink.vue';"
+    ),
+  },
+  {
+    name: 'self-closing custom component excludes implementation content',
+    expectedHash: 'a013c005483cdd19',
+    expectedSource: {
+      t: 'DocsLink',
+      i: 1,
+    },
+    sfc: templateFixture(
+      '<T><DocsLink to="/docs"/></T>',
+      "import DocsLink from './DocsLink.vue';"
+    ),
+    jsx: jsxFixture(
+      '<T><DocsLink to="/docs"/></T>',
+      "import DocsLink from './DocsLink.vue';"
+    ),
+  },
+  {
+    name: 'nested static custom-component content with a dynamic Var',
+    expectedHash: '356b2ca0bdc05769',
+    expectedSource: {
+      t: 'DocsLink',
+      i: 1,
+      c: {
+        t: 'span',
+        i: 2,
+        c: ['Hello, ', { i: 3, k: '_gt_value_3', v: 'v' }, '!'],
+      },
+    },
+    sfc: templateFixture(
+      '<T><DocsLink to="/docs"><span>Hello, <Var>{{ name }}</Var>!</span></DocsLink></T>',
+      "import DocsLink from './DocsLink.vue'; const name = getName();",
+      'T, Var'
+    ),
+    jsx: jsxFixture(
+      '<T><DocsLink to="/docs"><span>Hello, <Var>{name}</Var>!</span></DocsLink></T>',
+      "import DocsLink from './DocsLink.vue'; const name = getName();",
+      'T, Var'
+    ),
+  },
+  {
+    name: 'nested custom components',
+    expectedHash: '1784f420869fcf17',
+    expectedSource: {
+      t: 'Callout',
+      i: 1,
+      c: {
+        t: 'DocsLink',
+        i: 2,
+        c: ['Read ', { t: 'em', i: 3, c: 'the guide' }],
+      },
+    },
+    sfc: templateFixture(
+      '<T><Callout><DocsLink to="/docs">Read <em>the guide</em></DocsLink></Callout></T>',
+      "import Callout from './Callout.vue'; import DocsLink from './DocsLink.vue';"
+    ),
+    jsx: jsxFixture(
+      '<T><Callout><DocsLink to="/docs">Read <em>the guide</em></DocsLink></Callout></T>',
+      "import Callout from './Callout.vue'; import DocsLink from './DocsLink.vue';"
+    ),
+  },
+  {
+    name: 'typed and untyped variables',
+    expectedHash: '21b7659d399c89fc',
+    expectedSource: [
+      { i: 1, k: '_gt_value_1', v: 'v' },
+      { i: 2, k: '_gt_n_2', v: 'n' },
+      { i: 3, k: '_gt_cost_3', v: 'c' },
+      { i: 4, k: '_gt_date_4', v: 'd' },
+    ],
+    sfc: templateFixture(
+      '<T><Var>{{ name }}</Var><Num :value="count"/><Currency currency="USD" :value="cost"/><DateTime :value="date"/></T>',
+      'const name = getName(); const count = getCount(); const cost = getCost(); const date = getDate();',
+      'Currency, DateTime, Num, T, Var'
+    ),
+    jsx: jsxFixture(
+      '<T><Var>{name}</Var><Num value={count}/><Currency currency="USD" value={cost}/><DateTime value={date}/></T>',
+      'const name = getName(); const count = getCount(); const cost = getCost(); const date = getDate();',
+      'Currency, DateTime, Num, T, Var'
+    ),
+  },
+  {
+    name: 'Branch alternatives and fallback content',
+    expectedHash: '3bf7c973bd1e6ca3',
+    expectedSource: {
+      t: 'Branch',
+      i: 1,
+      d: {
+        b: { online: { t: 'strong', i: 2, c: 'Online' } },
+        t: 'b',
+      },
+      c: { t: 'span', i: 2, c: 'Unknown' },
+    },
+    sfc: templateFixture(
+      '<T><Branch branch="online"><template #online><strong>Online</strong></template><span>Unknown</span></Branch></T>',
+      '',
+      'Branch, T'
+    ),
+    jsx: jsxFixture(
+      '<T><Branch branch="online" v-slots={{ online: () => <strong>Online</strong>, default: () => <span>Unknown</span> }}/></T>',
+      '',
+      'Branch, T'
+    ),
+  },
+  {
+    name: 'Plural alternatives and fallback content',
+    expectedHash: 'f440fc6969acdbc8',
+    expectedSource: {
+      t: 'Plural',
+      i: 1,
+      d: {
+        b: {
+          one: { t: 'span', i: 2, c: 'One item' },
+          other: { t: 'span', i: 2, c: 'Many items' },
+        },
+        t: 'p',
+      },
+      c: { t: 'span', i: 2, c: 'Items' },
+    },
+    sfc: templateFixture(
+      '<T><Plural :n="2"><template #one><span>One item</span></template><template #other><span>Many items</span></template><span>Items</span></Plural></T>',
+      '',
+      'Plural, T'
+    ),
+    jsx: jsxFixture(
+      '<T><Plural n={2} v-slots={{ one: () => <span>One item</span>, other: () => <span>Many items</span>, default: () => <span>Items</span> }}/></T>',
+      '',
+      'Plural, T'
+    ),
+  },
+  {
+    name: 'custom components inside Branch alternatives',
+    expectedHash: 'edf0e94a93bc4cad',
+    expectedSource: {
+      t: 'Branch',
+      i: 1,
+      d: {
+        b: {
+          docs: {
+            t: 'DocsLink',
+            i: 2,
+            c: 'Read the docs',
+          },
+        },
+        t: 'b',
+      },
+      c: { t: 'span', i: 2, c: 'No destination' },
+    },
+    sfc: templateFixture(
+      '<T><Branch branch="docs"><template #docs><DocsLink to="/docs">Read the docs</DocsLink></template><span>No destination</span></Branch></T>',
+      "import DocsLink from './DocsLink.vue';",
+      'Branch, T'
+    ),
+    jsx: jsxFixture(
+      '<T><Branch branch="docs" v-slots={{ docs: () => <DocsLink to="/docs">Read the docs</DocsLink>, default: () => <span>No destination</span> }}/></T>',
+      "import DocsLink from './DocsLink.vue';",
+      'Branch, T'
+    ),
+  },
+  {
+    name: 'Branch and Var inside a custom component',
+    expectedHash: '954d847862e22fe8',
+    expectedSource: {
+      t: 'Callout',
+      i: 1,
+      c: {
+        t: 'Branch',
+        i: 2,
+        d: {
+          b: {
+            welcome: ['Welcome, ', { i: 3, k: '_gt_value_3', v: 'v' }, '!'],
+          },
+          t: 'b',
+        },
+        c: 'Welcome!',
+      },
+    },
+    sfc: templateFixture(
+      '<T><Callout><Branch branch="welcome"><template #welcome>Welcome, <Var>{{ name }}</Var>!</template>Welcome!</Branch></Callout></T>',
+      "import Callout from './Callout.vue'; const name = getName();",
+      'Branch, T, Var'
+    ),
+    jsx: jsxFixture(
+      '<T><Callout><Branch branch="welcome" v-slots={{ welcome: () => <>Welcome, <Var>{name}</Var>!</>, default: () => <>Welcome!</> }}/></Callout></T>',
+      "import Callout from './Callout.vue'; const name = getName();",
+      'Branch, T, Var'
+    ),
+  },
+  {
+    name: 'statically translatable content props',
+    expectedHash: '2d16822a26dda28b',
+    expectedSource: {
+      t: 'button',
+      i: 1,
+      d: {
+        pl: 'Find a guide',
+        ti: 'Open docs',
+        arl: 'Read the docs',
+      },
+      c: 'Read',
+    },
+    sfc: templateFixture(
+      '<T><button title="Open docs" aria-label="Read the docs" placeholder="Find a guide">Read</button></T>'
+    ),
+    jsx: jsxFixture(
+      '<T><button title="Open docs" aria-label="Read the docs" placeholder="Find a guide">Read</button></T>'
+    ),
+  },
+  {
+    name: 'static context',
+    context: 'account navigation',
+    expectedHash: '772a8ad7b7535db5',
+    expectedSource: { t: 'nav', i: 1, c: 'Account' },
+    sfc: templateFixture(
+      '<T context="account navigation"><nav>Account</nav></T>'
+    ),
+    jsx: jsxFixture('<T context="account navigation"><nav>Account</nav></T>'),
+  },
+] satisfies ReactOracleFixture[];
 
-describe('React runtime seed parity', () => {
-  it('classifies every colocated Vue seed exactly once', () => {
-    const manifestIds = manifest.map(({ id }) => id);
-
-    expect(manifestIds).toEqual([...manifestIds].sort());
-    expect(new Set(manifestIds).size).toBe(manifestIds.length);
-    expect(manifestIds).toEqual(collectVueSeedIds(seedRoot));
-    for (const seed of manifest) {
-      expect(seed.reason).toBe(seed.reason.trim());
-      expect(seed.reason.length).toBeGreaterThan(0);
-      expect(
-        fs.existsSync(path.join(seedDirectory(seed), 'expected.json'))
-      ).toBe(true);
-    }
-  });
-
-  describe('semantic-wire-exact seeds', () => {
-    for (const seed of semanticWireExactSeeds) {
-      it(`${seed.id}: ${seed.reason}`, async () => {
-        const filename = path.join(seedDirectory(seed), 'page.vue');
-        const output = await extractFromVueSource(
-          fs.readFileSync(filename, 'utf8'),
-          filename
+describe('React-authoritative rich-content extraction contract', () => {
+  for (const fixture of reactOracleFixtures) {
+    describe(fixture.name, () => {
+      it('locks the checked-in React prepareT oracle', () => {
+        expect(hashRichSource(fixture.expectedSource, fixture.context)).toBe(
+          fixture.expectedHash
         );
-        const richResults = output.results.filter(
-          ({ dataFormat }) => dataFormat === 'JSX'
-        );
-
-        expect(output.errors).toEqual([]);
-        expect(output.warnings).toEqual([]);
-        expect(output.results).toHaveLength(1);
-        expect(richResults).toHaveLength(1);
-
-        const result = richResults[0];
-        const expectedSource = readJson(
-          path.join(seedDirectory(seed), 'expected.json')
-        );
-
-        expect(result.metadata.context).toBe(seed.context);
-        expect(toSemanticWireSource(result.source)).toStrictEqual(
-          toSemanticWireSource(expectedSource)
-        );
-        expect(
-          hashSource({
-            context: result.metadata.context,
-            dataFormat: 'JSX',
-            source: result.source,
-          })
-        ).toBe(seed.hash);
       });
-    }
-  });
 
-  describe('explicitly excluded seeds', () => {
-    for (const seed of excludedSeeds) {
-      it(`${seed.id}: ${seed.reason}`, async () => {
-        const filename = path.join(seedDirectory(seed), 'page.vue');
-        const output = await extractFromVueSource(
-          fs.readFileSync(filename, 'utf8'),
-          filename
-        );
-        const richResults = output.results.filter(
-          ({ dataFormat }) => dataFormat === 'JSX'
-        );
-        const expectedSource = readJson(
-          path.join(seedDirectory(seed), 'expected.json')
-        );
+      it.each([
+        ['Vue SFC template', 'vue', fixture.sfc],
+        ['Vue JSX', 'tsx', fixture.jsx],
+      ] as const)(
+        'extracts the exact semantic wire and hash from %s',
+        async (_syntax, extension, sourceCode) => {
+          const filename = `/project/src/${toFilename(fixture.name)}.${extension}`;
+          const output = await extractFromVueSource(sourceCode, filename, {
+            projectRoot: '/project',
+          });
+          const richResults = output.results.filter(
+            ({ dataFormat }) => dataFormat === 'JSX'
+          );
 
-        expect(seed.mode).toBe('excluded');
-        expect(
-          isExactParity(seed, output, richResults, expectedSource),
-          `${seed.id} now matches the React oracle and must be promoted to semantic-wire-exact`
-        ).toBe(false);
-      });
-    }
-  });
+          expect(output.errors).toEqual([]);
+          expect(output.warnings).toEqual([]);
+          expect(output.results).toHaveLength(1);
+          expect(richResults).toHaveLength(1);
+
+          const result = richResults[0]!;
+          expect(result.metadata.context).toBe(fixture.context);
+          expect(normalizeSemanticWire(result.source)).toStrictEqual(
+            normalizeSemanticWire(fixture.expectedSource)
+          );
+          expect(hashRichSource(result.source, result.metadata.context)).toBe(
+            fixture.expectedHash
+          );
+        }
+      );
+    });
+  }
 });
 
-/** Returns whether one extraction satisfies the complete portable contract. */
-function isExactParity(
-  seed: ParitySeed,
-  output: Awaited<ReturnType<typeof extractFromVueSource>>,
-  richResults: Awaited<ReturnType<typeof extractFromVueSource>>['results'],
-  expectedSource: unknown
-): boolean {
-  if (
-    output.errors.length > 0 ||
-    output.warnings.length > 0 ||
-    output.results.length !== 1 ||
-    richResults.length !== 1
-  ) {
-    return false;
-  }
+function templateFixture(template: string, setup = '', imports = 'T'): string {
+  return `<script setup lang="ts">import { ${imports} } from 'gt-vue'; ${setup}</script><template>${template}</template>`;
+}
 
-  const result = richResults[0];
-  if (
-    result.metadata.context !== seed.context ||
-    !isDeepStrictEqual(
-      toSemanticWireSource(result.source),
-      toSemanticWireSource(expectedSource)
-    )
-  ) {
-    return false;
-  }
+function jsxFixture(expression: string, setup = '', imports = 'T'): string {
+  return `import { ${imports} } from 'gt-vue'; ${setup} export const View = () => (${expression});`;
+}
 
-  try {
-    return (
-      hashSource({
-        context: result.metadata.context,
-        dataFormat: 'JSX',
-        source: result.source,
-      }) === seed.hash
-    );
-  } catch {
-    return false;
-  }
+function hashRichSource(source: JsxChildren, context?: string): string {
+  return hashSource({ context, dataFormat: 'JSX', source });
 }
 
 /**
- * Canonicalizes a source to the persisted cross-runtime semantic wire format.
+ * Removes only diagnostic ordinary-element labels, matching the runtime test.
  *
- * React derives ordinary element labels from function names, which production
- * minifiers may rewrite. GT hashing already excludes those labels and both
- * runtimes reconcile translated elements by `i`, so only that ordinary `t`
- * label is removed. Branch/plural discriminators at `d.t`, IDs, variables,
- * content props, branches, and children remain strict. Undefined object props
- * are omitted because JSON catalogs cannot represent them; array positions and
- * holes remain untouched.
+ * React function names can be minified and Vue component names can be inferred,
+ * so `t` is deliberately ignored by `hashSource()` and runtime ID binding. IDs,
+ * nesting, content props, branch discriminators, and variable identities remain
+ * strict here.
  */
-function toSemanticWireSource(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(toSemanticWireSource);
-  if (!isRecord(value)) return value;
-
-  return Object.fromEntries(
-    Object.entries(value)
-      .filter(
-        ([key, child]) =>
-          child !== undefined &&
-          (key !== 't' || !('i' in value) || 'k' in value)
-      )
-      .map(([key, child]) => [key, toSemanticWireSource(child)])
-  );
-}
-
-function collectVueSeedIds(directory: string): string[] {
-  const ids: string[] = [];
-
-  function visit(current: string): void {
-    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
-      const child = path.join(current, entry.name);
-      if (entry.isDirectory()) {
-        visit(child);
-      } else if (entry.name === 'page.vue') {
-        ids.push(toPosixPath(path.relative(seedRoot, path.dirname(child))));
-      }
-    }
+function normalizeSemanticWire(source: JsxChildren): unknown {
+  if (Array.isArray(source)) return source.map(normalizeSemanticWire);
+  if (typeof source === 'string') return source;
+  if ('k' in source) {
+    return {
+      i: source.i,
+      k: source.k,
+      ...(source.v && { v: source.v }),
+    };
   }
 
-  visit(directory);
-  return ids.sort();
+  return {
+    i: source.i,
+    ...(source.d && {
+      d: {
+        ...source.d,
+        ...(source.d.b && {
+          b: Object.fromEntries(
+            Object.entries(source.d.b).map(([key, branch]) => [
+              key,
+              normalizeSemanticWire(branch),
+            ])
+          ),
+        }),
+      },
+    }),
+    ...(source.c !== undefined && { c: normalizeSemanticWire(source.c) }),
+  };
 }
 
-function seedDirectory({ id }: ParitySeed): string {
-  return path.join(seedRoot, id);
-}
-
-function readManifest(filename: string): ParitySeed[] {
-  const value = readJson(filename);
-  invariant(Array.isArray(value), 'Runtime parity manifest must be an array');
-
-  return value.map((entry, index) => {
-    invariant(isRecord(entry), `Manifest entry ${index} must be an object`);
-    invariant(
-      entry.mode === 'excluded' || entry.mode === 'semantic-wire-exact',
-      `Manifest entry ${index} has an invalid parity mode`
-    );
-    const expectedKeys = [
-      ...('context' in entry ? ['context'] : []),
-      'hash',
-      'id',
-      'mode',
-      'reason',
-    ].sort();
-    invariant(
-      Object.keys(entry).sort().join('\0') === expectedKeys.join('\0'),
-      `Manifest entry ${index} has unexpected fields`
-    );
-    invariant(typeof entry.id === 'string', `Manifest entry ${index} needs id`);
-    invariant(
-      typeof entry.hash === 'string',
-      `Manifest entry ${index} needs hash`
-    );
-    invariant(
-      typeof entry.reason === 'string',
-      `Manifest entry ${index} needs reason`
-    );
-    invariant(
-      entry.context === undefined || typeof entry.context === 'string',
-      `Manifest entry ${index} has invalid context`
-    );
-
-    return entry as ParitySeed;
-  });
-}
-
-function readJson(filename: string): unknown {
-  return JSON.parse(fs.readFileSync(filename, 'utf8')) as unknown;
-}
-
-function toPosixPath(filename: string): string {
-  return filename.split(path.sep).join('/');
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
-
-function invariant(condition: unknown, message: string): asserts condition {
-  if (!condition) throw new Error(message);
+function toFilename(name: string): string {
+  return name.toLowerCase().replaceAll(/[^a-z0-9]+/g, '-');
 }

@@ -148,7 +148,8 @@ describe('Vue JSX rich extraction', () => {
       {
         dataFormat: 'JSX',
         source: [
-          'Hello 1',
+          'Hello ',
+          '1',
           { c: 'world', d: { ti: 'Greeting' }, i: 1, t: 'strong' },
           { i: 2, k: '_gt_value_2', v: 'v' },
           { i: 3, k: '_gt_n_3', v: 'n' },
@@ -172,7 +173,7 @@ describe('Vue JSX rich extraction', () => {
         dataFormat: 'JSX',
         source: output.results[0]!.source,
       })
-    ).toBe('3a680d85faf2fc41');
+    ).toBe('4293805c6f6d7cd8');
   });
 
   it('matches the Fragment spellings Vue JSX keeps transparent', async () => {
@@ -194,31 +195,42 @@ describe('Vue JSX rich extraction', () => {
       'short',
       { c: 'one', i: 1, t: 'span' },
       { c: 'three', i: 2, t: 'b' },
-      { i: 3, t: 'CustomFragment' },
+      {
+        c: { c: 'opaque', i: 4, t: 'i' },
+        i: 3,
+        t: 'CustomFragment',
+      },
     ]);
   });
 
-  it('rejects renamed Fragment imports that Vue JSX compiles as component slots', async () => {
+  it('flattens renamed Fragment imports after Vue normalizes their slots', async () => {
     const output = await extractFromVueSource(
       `
         import { Fragment as VueFragment } from 'vue';
         import { T } from 'gt-vue';
-        export const View = () => <T><VueFragment><b>Lost</b></VueFragment></T>;
+        export const View = () => <T>
+          <VueFragment><b>Retained</b></VueFragment>
+          <VueFragment v-slots={{ default: () => <em>Slotted</em> }} />
+        </T>;
       `,
       '/project/src/View.tsx'
     );
 
-    expect(output.results).toEqual([]);
-    expect(output.errors.join('\n')).toContain('renamed Vue Fragment binding');
+    expect(output.errors).toEqual([]);
+    expect(output.results[0]?.source).toEqual([
+      { c: 'Retained', i: 1, t: 'b' },
+      { c: 'Slotted', i: 2, t: 'em' },
+    ]);
   });
 
-  it('keeps arbitrary component slots opaque and extracts their nested T independently', async () => {
+  it('serializes static children inside arbitrary custom components', async () => {
     const output = await extractFromVueSource(
       `
-        import { T } from 'gt-vue';
+        import { T, Var } from 'gt-vue';
         import Card from './Card.vue';
+        const name = getName();
         export const View = () => (
-          <T><Card title="Card"><span>Opaque</span><T>Independent</T></Card></T>
+          <T><Card title="Card"><span>Visible</span><Var>{name}</Var></Card></T>
         );
       `,
       '/project/src/View.tsx',
@@ -227,12 +239,68 @@ describe('Vue JSX rich extraction', () => {
 
     expect(output.errors).toEqual([]);
     expect(output.results.map((result) => result.source)).toEqual([
-      { d: { ti: 'Card' }, i: 1, t: 'Card' },
-      'Independent',
+      {
+        c: [
+          { c: 'Visible', i: 2, t: 'span' },
+          { i: 3, k: '_gt_value_3', v: 'v' },
+        ],
+        d: { ti: 'Card' },
+        i: 1,
+        t: 'Card',
+      },
     ]);
   });
 
-  it('keeps Vue h aliases used as JSX component tags opaque', async () => {
+  it('preserves React-compatible text boundaries around JSX comments', async () => {
+    const output = await extractFromVueSource(
+      `
+        import { T } from 'gt-vue';
+        import Card from './Card.vue';
+        export const View = () => (
+          <T><Card>Before{/* source boundary */}After</Card></T>
+        );
+      `,
+      '/project/src/View.tsx',
+      { projectRoot: '/project' }
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(output.results[0]?.source).toEqual({
+      c: ['Before', 'After'],
+      i: 1,
+      t: 'Card',
+    });
+    expect(
+      hashSource({ dataFormat: 'JSX', source: output.results[0]!.source })
+    ).toBe('3bcc07b273d94f01');
+  });
+
+  it('preserves React-compatible boundaries between adjacent string expressions', async () => {
+    const output = await extractFromVueSource(
+      `
+        import { T } from 'gt-vue';
+        import Card from './Card.vue';
+        export const View = () => (
+          <><T>{'A'}{'B'}</T><T><Card>{'A'}{'B'}</Card></T></>
+        );
+      `,
+      '/project/src/View.tsx',
+      { projectRoot: '/project' }
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(output.results.map(({ source }) => source)).toEqual([
+      ['A', 'B'],
+      { c: ['A', 'B'], i: 1, t: 'Card' },
+    ]);
+    expect(
+      output.results.map(({ source }) =>
+        hashSource({ dataFormat: 'JSX', source })
+      )
+    ).toEqual(['0998d2c300882cb5', '9bbc5cefc482e24c']);
+  });
+
+  it('serializes static children of Vue helpers used as JSX component tags', async () => {
     const output = await extractFromVueSource(
       `
         import { h as H } from 'vue';
@@ -246,12 +314,16 @@ describe('Vue JSX rich extraction', () => {
 
     expect(output.errors).toEqual([]);
     expect(output.results[0]?.source).toEqual([
-      { i: 1, t: 'H' },
-      { c: 'After', i: 2, t: 'i' },
+      {
+        c: { c: 'Opaque helper slot', i: 2, t: 'strong' },
+        i: 1,
+        t: 'H',
+      },
+      { c: 'After', i: 3, t: 'i' },
     ]);
   });
 
-  it('keeps every recognized Vue helper used as a JSX tag opaque', async () => {
+  it('serializes authored children for every recognized Vue helper tag', async () => {
     const output = await extractFromVueSource(
       `
         import {
@@ -277,15 +349,155 @@ describe('Vue JSX rich extraction', () => {
     expect(output.errors).toEqual([]);
     const source = output.results[0]?.source;
     expect(source).toEqual([
-      { i: 1, t: 'Ref' },
-      { i: 2, t: 'Reactive' },
-      { i: 3, t: 'MarkRaw' },
-      { i: 4, t: 'DefineComponent' },
-      { c: 'visible', i: 5, t: 'u' },
+      { c: { c: 'hidden ref', i: 2, t: 'b' }, i: 1, t: 'Ref' },
+      { c: { c: 'hidden reactive', i: 4, t: 'i' }, i: 3, t: 'Reactive' },
+      { c: { c: 'hidden markRaw', i: 6, t: 'em' }, i: 5, t: 'MarkRaw' },
+      {
+        c: { c: 'hidden defineComponent', i: 8, t: 'strong' },
+        i: 7,
+        t: 'DefineComponent',
+      },
+      { c: 'visible', i: 9, t: 'u' },
     ]);
-    expect(hashSource({ dataFormat: 'JSX', source: source! })).toBe(
-      '8db74524e3792706'
+  });
+
+  it('serializes a static explicit default slot and ignores named slots', async () => {
+    const output = await extractFromVueSource(
+      `
+        import { T, Var } from 'gt-vue';
+        import Card from './Card.vue';
+        const name = getName();
+        export const View = () => (
+          <T>
+            <Card v-slots={{
+              default: () => <><strong>Hello</strong> <Var>{name}</Var></>,
+              named: async (props) => <i>{props.label}</i>,
+            }} />
+            <b>After</b>
+          </T>
+        );
+      `,
+      '/project/src/View.tsx',
+      { projectRoot: '/project' }
     );
+
+    expect(output.errors).toEqual([]);
+    expect(output.results[0]?.source).toEqual([
+      {
+        c: [
+          { c: 'Hello', i: 2, t: 'strong' },
+          ' ',
+          { i: 3, k: '_gt_value_3', v: 'v' },
+        ],
+        i: 1,
+        t: 'Card',
+      },
+      { c: 'After', i: 4, t: 'b' },
+    ]);
+  });
+
+  it('serializes Vue object-child default slots while leaving named slots opaque', async () => {
+    const output = await extractFromVueSource(
+      `
+        import { T } from 'gt-vue';
+        import Card from './Card.vue';
+        export const View = () => (
+          <T><Card>{{
+            default: () => <span>Default child</span>,
+            named: ({ label }) => <i>{label}</i>,
+          }}</Card></T>
+        );
+      `,
+      '/project/src/View.tsx',
+      { projectRoot: '/project' }
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(output.results[0]?.source).toEqual({
+      c: { c: 'Default child', i: 2, t: 'span' },
+      i: 1,
+      t: 'Card',
+    });
+  });
+
+  it.each([
+    {
+      name: 'arrow function',
+      child: `{() => <b>Hello</b>}`,
+    },
+    {
+      name: 'function expression',
+      child: `{function () { return <b>Hello</b>; }}`,
+    },
+  ])(
+    'serializes the $name child Vue JSX transforms into a direct default slot',
+    async ({ child }) => {
+      const output = await extractFromVueSource(
+        `
+          import { T } from 'gt-vue';
+          import Card from './Card.vue';
+          export const View = () => <T><Card>${child}</Card></T>;
+        `,
+        '/project/src/View.tsx',
+        { projectRoot: '/project' }
+      );
+
+      const source = {
+        c: { c: 'Hello', i: 2, t: 'b' },
+        i: 1,
+        t: 'Card',
+      };
+      expect(output.errors).toEqual([]);
+      expect(output.results[0]?.source).toEqual(source);
+      expect(hashSource({ dataFormat: 'JSX', source })).toBe(
+        '1c3760937a26bcbd'
+      );
+    }
+  );
+
+  it('extracts T inside an ordinary named slot independently', async () => {
+    const output = await extractFromVueSource(
+      `
+        import { T } from 'gt-vue';
+        import Card from './Card.vue';
+        export const View = () => (
+          <T><Card v-slots={{
+            default: () => <span>Default child</span>,
+            named: () => <T context="named">Independent</T>,
+          }} /><b>After</b></T>
+        );
+      `,
+      '/project/src/View.tsx',
+      { projectRoot: '/project' }
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(output.results.map((result) => result.source)).toEqual([
+      [
+        {
+          c: { c: 'Default child', i: 2, t: 'span' },
+          i: 1,
+          t: 'Card',
+        },
+        { c: 'After', i: 3, t: 'b' },
+      ],
+      'Independent',
+    ]);
+  });
+
+  it('omits component-owned implementation content from a self-closing component', async () => {
+    const output = await extractFromVueSource(
+      `
+        import { T } from 'gt-vue';
+        import Card from './Card.vue';
+        export const View = () => <T><Card /></T>;
+      `,
+      '/project/src/View.tsx',
+      { projectRoot: '/project' }
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(output.results[0]?.source).toEqual({ i: 1, t: 'Card' });
   });
 
   it('gives intrinsic HTML and SVG tags precedence over lexical aliases', async () => {
@@ -618,7 +830,11 @@ describe('Vue JSX rich extraction', () => {
       },
       { c: { c: 'Alias', i: 4, t: 'article' }, i: 3, t: 'Suspense' },
       { c: { c: 'Namespace', i: 6, t: 'div' }, i: 5, t: 'Suspense' },
-      { i: 7, t: 'Transition' },
+      {
+        c: { c: 'Opaque transition child', i: 8, t: 'b' },
+        i: 7,
+        t: 'Transition',
+      },
     ]);
   });
 
@@ -715,6 +931,78 @@ describe('Vue JSX rich extraction', () => {
       name: 'conditional child',
       source: `<T>{enabled && <strong>Hello</strong>}</T>`,
       diagnostic: 'conditional JSX content',
+    },
+    {
+      name: 'scoped ordinary default slot',
+      source: `<T><Card v-slots={{ default: (props) => <b>{props.label}</b> }} /></T>`,
+      setup: `const Card = () => null;`,
+      diagnostic: 'dynamic or scoped default slot',
+    },
+    {
+      name: 'async ordinary default slot',
+      source: `<T><Card v-slots={{ default: async () => <b>Hello</b> }} /></T>`,
+      setup: `const Card = () => null;`,
+      diagnostic: 'dynamic or scoped default slot',
+    },
+    {
+      name: 'generator ordinary default slot',
+      source: `<T><Card v-slots={{ *default() { return <b>Hello</b>; } }} /></T>`,
+      setup: `const Card = () => null;`,
+      diagnostic: 'dynamic or scoped default slot',
+    },
+    {
+      name: 'computed ordinary default slot',
+      source: `<T><Card v-slots={{ ['default']: () => <b>Hello</b> }} /></T>`,
+      setup: `const Card = () => null;`,
+      diagnostic: 'computed default slot',
+    },
+    {
+      name: 'spread ordinary slots',
+      source: `<T><Card v-slots={{ ...slots, default: () => <b>Hello</b> }} /></T>`,
+      setup: `const Card = () => null;`,
+      diagnostic: 'spread in a component slots object',
+    },
+    {
+      name: 'dynamic ordinary slots object',
+      source: `<T><Card v-slots={getSlots()} /></T>`,
+      setup: `const Card = () => null;`,
+      diagnostic: 'dynamic v-slots',
+    },
+    {
+      name: 'ordinary default slot with a dynamic body',
+      source: `<T><Card v-slots={{ default() { prepare(); return <b>Hello</b>; } }} /></T>`,
+      setup: `const Card = () => null;`,
+      diagnostic: 'dynamic function body',
+    },
+    {
+      name: 'scoped direct ordinary default slot',
+      source: `<T><Card>{(props) => <b>{props.label}</b>}</Card></T>`,
+      setup: `const Card = () => null;`,
+      diagnostic: 'dynamic or scoped direct default slot',
+    },
+    {
+      name: 'async direct ordinary default slot',
+      source: `<T><Card>{async () => <b>Hello</b>}</Card></T>`,
+      setup: `const Card = () => null;`,
+      diagnostic: 'dynamic or scoped direct default slot',
+    },
+    {
+      name: 'generator direct ordinary default slot',
+      source: `<T><Card>{function* () { return <b>Hello</b>; }}</Card></T>`,
+      setup: `const Card = () => null;`,
+      diagnostic: 'dynamic or scoped direct default slot',
+    },
+    {
+      name: 'direct ordinary default slot with a dynamic body',
+      source: `<T><Card>{() => { prepare(); return <b>Hello</b>; }}</Card></T>`,
+      setup: `const Card = () => null;`,
+      diagnostic: 'dynamic function body',
+    },
+    {
+      name: 'nested T in an ordinary component default slot',
+      source: `<T><Card><T>Nested</T></Card></T>`,
+      setup: `const Card = () => null;`,
+      diagnostic: 'nested gt-vue <T>',
     },
     {
       name: 'custom JSX pragma',

@@ -1,6 +1,7 @@
 import { parseExpression, type ParserPlugin } from '@babel/parser';
 import traverseModule, { type Scope } from '@babel/traverse';
 import * as babel from '@babel/types';
+import { DecodingMode, decodeHTML } from 'entities/decode';
 import type {
   DirectiveNode,
   ElementNode,
@@ -53,6 +54,8 @@ type SlotLayout = {
   defaultSlot: SlotContent;
   namedSlots: Map<string, SlotContent>;
 };
+
+type NamedSlotPolicy = 'opaque' | 'reject' | 'serialize';
 
 type DynamicSelectorCandidate = {
   kind: 'expression' | 'string';
@@ -318,20 +321,6 @@ function visitTemplateChildren(
       childShadowed,
       context.valuedVIsReplacesElement
     );
-    const suspense = resolveSuspenseComponent(
-      child,
-      childBindings,
-      expressionPlugins,
-      childShadowed,
-      context.valuedVIsReplacesElement
-    );
-    const fragment = resolveFragmentComponent(
-      child,
-      childBindings,
-      expressionPlugins,
-      childShadowed,
-      context.valuedVIsReplacesElement
-    );
     const uncertainGTComponent = resolveUncertainComponentBinding(
       child,
       childBindings,
@@ -379,25 +368,20 @@ function visitTemplateChildren(
     }
 
     const childInsideTranslation =
-      component?.originalName === 'Var' ||
-      (insideTranslation &&
-        isOpaqueComponent(child, component, suspense ?? fragment))
+      component?.originalName === 'Var'
         ? false
         : insideTranslation || component?.originalName === 'T';
-    if (childInsideTranslation && suspense) {
-      const suspenseElementIsFallback = hasStaticSlotName(child, 'fallback');
-      for (const suspenseChild of child.children) {
-        visitTemplateChildren(
-          [suspenseChild],
-          childShadowed,
-          childBindings,
-          expressionPlugins,
-          context,
-          suspenseElementIsFallback
-            ? false
-            : !isSuspenseFallbackTemplate(suspenseChild)
-        );
-      }
+    if (childInsideTranslation && child.tagType === ElementTypes.COMPONENT) {
+      visitComponentSlotChildren(
+        child,
+        childShadowed,
+        childBindings,
+        expressionPlugins,
+        context,
+        component?.originalName === 'Branch' ||
+          component?.originalName === 'Plural' ||
+          component?.originalName === 'T'
+      );
     } else {
       visitTemplateChildren(
         child.children,
@@ -409,6 +393,71 @@ function visitTemplateChildren(
       );
     }
   }
+}
+
+/**
+ * Walks a component's authored slots with the same boundary used at runtime.
+ *
+ * A static default slot is React-equivalent `children` and therefore belongs
+ * to the surrounding translation. Ordinary named slots are not materialized
+ * by gt-vue's runtime, so they remain outside that translation and may contain
+ * their own independent T. Branch and Plural are the deliberate exception:
+ * their named slots are persisted as translation branches.
+ */
+function visitComponentSlotChildren(
+  element: ElementNode,
+  shadowed: Set<string>,
+  bindings: TemplateBindings,
+  expressionPlugins: ParserPlugin[],
+  context: VueExtractionContext,
+  namedSlotsParticipate: boolean
+): void {
+  const componentSlot = element.props.find(
+    (property): property is DirectiveNode =>
+      property.type === NodeTypes.DIRECTIVE && property.name === 'slot'
+  );
+  if (componentSlot) {
+    const name = readStaticSlotName(componentSlot);
+    visitTemplateChildren(
+      element.children,
+      shadowed,
+      bindings,
+      expressionPlugins,
+      context,
+      name === 'default' || name === undefined || namedSlotsParticipate
+    );
+    return;
+  }
+
+  for (const child of element.children) {
+    const slotDirective =
+      child.type === NodeTypes.ELEMENT && child.tag === 'template'
+        ? child.props.find(
+            (property): property is DirectiveNode =>
+              property.type === NodeTypes.DIRECTIVE && property.name === 'slot'
+          )
+        : undefined;
+    const slotName = slotDirective
+      ? readStaticSlotName(slotDirective)
+      : 'default';
+    visitTemplateChildren(
+      [child],
+      shadowed,
+      bindings,
+      expressionPlugins,
+      context,
+      slotName === 'default' || slotName === undefined || namedSlotsParticipate
+    );
+  }
+}
+
+/** Reads only a literal slot name without emitting extraction diagnostics. */
+function readStaticSlotName(directive: DirectiveNode): string | undefined {
+  if (!directive.arg) return 'default';
+  return directive.arg.type === NodeTypes.SIMPLE_EXPRESSION &&
+    directive.arg.isStatic
+    ? directive.arg.content
+    : undefined;
 }
 
 /** Finds local Vue aliases whose runtime value can be a GT component. */
@@ -1236,7 +1285,13 @@ function extractTranslationComponent(
     expressionPlugins,
     context
   );
-  const slots = getSlotLayout(element, shadowed, expressionPlugins, context);
+  const slots = getSlotLayout(
+    element,
+    shadowed,
+    expressionPlugins,
+    context,
+    'reject'
+  );
   if (slots.namedSlots.size > 0) {
     addVueError(
       context,
@@ -1378,7 +1433,12 @@ function serializeChildren(
 ): JsxChild[] {
   validateCommentWhitespaceParity(children, context);
   const result: JsxChild[] = [];
+  let mergeWithPrevious = true;
   for (const child of children) {
+    if (child.type === NodeTypes.COMMENT) {
+      mergeWithPrevious = false;
+      continue;
+    }
     const values = serializeChild(
       child,
       counter,
@@ -1387,7 +1447,16 @@ function serializeChildren(
       expressionPlugins,
       context
     );
-    for (const value of values) appendSerializedChild(result, value);
+    const containsStrippedComment =
+      child.type === NodeTypes.TEXT && child.loc.source.includes('<!--');
+    for (const [index, value] of values.entries()) {
+      appendSerializedChild(
+        result,
+        value,
+        mergeWithPrevious && (!containsStrippedComment || index === 0)
+      );
+      mergeWithPrevious = true;
+    }
   }
   return result;
 }
@@ -1424,6 +1493,34 @@ function isHtmlWhitespace(value: string | undefined): boolean {
   return value !== undefined && /[\t\n\f\r ]/.test(value);
 }
 
+/**
+ * Restores text boundaries when Vue's production parser strips comments.
+ *
+ * With comments enabled, Vue emits a comment VNode between the adjacent text
+ * VNodes and gt-vue uses that VNode as a non-serializing merge barrier. With
+ * comments disabled, compiler-dom folds the same raw range into one Text node
+ * while retaining the original source in `loc.source`. Splitting that range
+ * keeps development, production, extraction, and the React children wire in
+ * agreement. Whitespace-adjacent comments are rejected above because Vue may
+ * normalize their surrounding text differently between compiler modes.
+ */
+function splitCommentSeparatedText(content: string, source: string): string[] {
+  if (!source.includes('<!--')) return [content];
+  const rawSegments = source.split(/<!--[\s\S]*?-->/);
+  if (rawSegments.length < 2) return [content];
+
+  const decodedSegments = rawSegments.map((segment) =>
+    decodeHTML(segment, DecodingMode.Legacy)
+  );
+  if (decodedSegments.join('') !== content) {
+    // A mismatch means compiler whitespace normalization affected more than
+    // the comment boundary. Returning the compiler value makes the existing
+    // development/production parity check reject the translation safely.
+    return [content];
+  }
+  return decodedSegments.filter((segment) => segment.length > 0);
+}
+
 function serializeChild(
   child: TemplateChildNode,
   counter: Counter,
@@ -1433,7 +1530,9 @@ function serializeChild(
   context: VueExtractionContext
 ): JsxChild[] {
   if (child.type === NodeTypes.COMMENT) return [];
-  if (child.type === NodeTypes.TEXT) return [child.content];
+  if (child.type === NodeTypes.TEXT) {
+    return splitCommentSeparatedText(child.content, child.loc.source);
+  }
   if (child.type === NodeTypes.INTERPOLATION) {
     const value = readExpressionPrimitive(
       child.content,
@@ -1500,15 +1599,13 @@ function serializeFragmentElement(
   context: VueExtractionContext
 ): JsxChild[] {
   validateRichElement(element, context, true);
-  const slots = getSlotLayout(element, shadowed, expressionPlugins, context);
-  if (slots.namedSlots.size > 0) {
-    addVueError(
-      context,
-      element.loc,
-      'Found a named slot on Vue Fragment inside a gt-vue <T> component',
-      'Keep Fragment content in its default slot'
-    );
-  }
+  const slots = getSlotLayout(
+    element,
+    shadowed,
+    expressionPlugins,
+    context,
+    'opaque'
+  );
   return serializeChildren(
     slots.defaultSlot.children,
     counter,
@@ -1640,17 +1737,17 @@ function serializeElement(
     expressionPlugins,
     context
   );
-  if (isOpaqueComponent(element, component, suspense)) {
-    return {
-      t: readStaticVueIsTarget(element) ?? element.tag,
-      i: id,
-      ...(Object.keys(data).length > 0 && { d: data }),
-    };
-  }
-
   const slotLayout =
     element.tagType === ElementTypes.COMPONENT
-      ? getSlotLayout(element, shadowed, expressionPlugins, context)
+      ? getSlotLayout(
+          element,
+          shadowed,
+          expressionPlugins,
+          context,
+          originalName === 'Branch' || originalName === 'Plural'
+            ? 'serialize'
+            : 'opaque'
+        )
       : {
           defaultSlot: {
             children: element.children,
@@ -1674,22 +1771,6 @@ function serializeElement(
       element.loc,
       'Found more than one default root inside Vue <Suspense> within a gt-vue <T> component',
       'Wrap the Suspense default content in a single element or move <T> inside <Suspense>'
-    );
-  }
-
-  const unsupportedNamedSlots = [...slotLayout.namedSlots].filter(
-    ([name]) => !suspense || name !== 'fallback'
-  );
-  if (
-    unsupportedNamedSlots.length > 0 &&
-    originalName !== 'Branch' &&
-    originalName !== 'Plural'
-  ) {
-    addVueError(
-      context,
-      element.loc,
-      `Found named slots on <${originalName ?? element.tag}> inside a gt-vue <T> component`,
-      'Move named-slot content outside <T> or use only the component default slot'
     );
   }
 
@@ -1720,17 +1801,6 @@ function serializeElement(
     ...(Object.keys(data).length > 0 && { d: data }),
     ...(children.length > 0 && { c: collapseChildren(children) }),
   };
-}
-
-/** Returns true when the runtime preserves a component's slots as opaque. */
-function isOpaqueComponent(
-  element: ElementNode,
-  component?: { localName: string; originalName: GTComponentName },
-  vueBuiltin?: { localName: string; originalName: VueBuiltinName }
-): boolean {
-  return (
-    element.tagType === ElementTypes.COMPONENT && !component && !vueBuiltin
-  );
 }
 
 /** Resolves literal Suspense and statically proven aliases of Vue's builtin. */
@@ -1919,28 +1989,6 @@ function resolvePossibleDynamicT(
     }
   }
   return undefined;
-}
-
-/** Identifies a statically named Suspense fallback slot during tree walking. */
-function isSuspenseFallbackTemplate(child: TemplateChildNode): boolean {
-  return (
-    child.type === NodeTypes.ELEMENT &&
-    child.tag === 'template' &&
-    hasStaticSlotName(child, 'fallback')
-  );
-}
-
-/** Matches one statically named slot directive without emitting diagnostics. */
-function hasStaticSlotName(element: ElementNode, name: string): boolean {
-  const directive = element.props.find(
-    (property): property is DirectiveNode =>
-      property.type === NodeTypes.DIRECTIVE && property.name === 'slot'
-  );
-  return (
-    directive?.arg?.type === NodeTypes.SIMPLE_EXPRESSION &&
-    directive.arg.isStatic &&
-    directive.arg.content === name
-  );
 }
 
 function validateRichElement(
@@ -2276,7 +2324,8 @@ function getSlotLayout(
   element: ElementNode,
   shadowed: Set<string>,
   expressionPlugins: ParserPlugin[],
-  context: VueExtractionContext
+  context: VueExtractionContext,
+  namedSlotPolicy: NamedSlotPolicy
 ): SlotLayout {
   const namedSlots = new Map<string, SlotContent>();
   let defaultSlot: SlotContent = { children: [], rootCount: 0, shadowed };
@@ -2289,8 +2338,13 @@ function getSlotLayout(
   );
 
   if (componentSlot) {
-    if (componentSlot.exp) addScopedSlotError(componentSlot.loc, context);
     const slotName = readSlotName(componentSlot, context);
+    if (
+      componentSlot.exp &&
+      (slotName === 'default' || namedSlotPolicy !== 'opaque')
+    ) {
+      addScopedSlotError(componentSlot.loc, context);
+    }
     const slotShadowed = unionSets(
       shadowed,
       collectExpressionBindings(componentSlot.exp, expressionPlugins)
@@ -2326,8 +2380,14 @@ function getSlotLayout(
     }
     hasTemplateSlots = true;
 
+    const slotName = readSlotName(slotDirective, context);
+
     for (const property of child.props) {
-      if (property.type === NodeTypes.DIRECTIVE && property.name !== 'slot') {
+      if (
+        property.type === NodeTypes.DIRECTIVE &&
+        property.name !== 'slot' &&
+        (slotName === 'default' || namedSlotPolicy !== 'opaque')
+      ) {
         addVueError(
           context,
           property.loc,
@@ -2337,8 +2397,12 @@ function getSlotLayout(
       }
     }
 
-    const slotName = readSlotName(slotDirective, context);
-    if (slotDirective.exp) addScopedSlotError(slotDirective.loc, context);
+    if (
+      slotDirective.exp &&
+      (slotName === 'default' || namedSlotPolicy !== 'opaque')
+    ) {
+      addScopedSlotError(slotDirective.loc, context);
+    }
     const slotShadowed = unionSets(
       shadowed,
       collectExpressionBindings(slotDirective.exp, expressionPlugins)
@@ -5434,9 +5498,17 @@ function toDisplayString(value: StaticPrimitive): string {
   return value == null ? '' : String(value);
 }
 
-function appendSerializedChild(result: JsxChild[], value: JsxChild): void {
+function appendSerializedChild(
+  result: JsxChild[],
+  value: JsxChild,
+  mergeWithPrevious: boolean
+): void {
   const previous = result[result.length - 1];
-  if (typeof previous === 'string' && typeof value === 'string') {
+  if (
+    mergeWithPrevious &&
+    typeof previous === 'string' &&
+    typeof value === 'string'
+  ) {
     result[result.length - 1] = previous + value;
   } else {
     result.push(value);
