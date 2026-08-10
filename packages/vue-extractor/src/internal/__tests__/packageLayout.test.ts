@@ -28,6 +28,7 @@ describe('@generaltranslation/vue-extractor package declarations', () => {
       'config.d.ts',
       'detect.d.ts',
       'inspect.d.ts',
+      'integration.d.ts',
       'index.d.ts',
       'project.d.ts',
       'types.d.ts',
@@ -37,5 +38,20 @@ describe('@generaltranslation/vue-extractor package declarations', () => {
       .join('\n');
 
     expect(declarations).not.toMatch(/@vue\/compiler-(?:dom|sfc)/);
+  });
+
+  it('keeps the integration entry lightweight until a handled plan runs', () => {
+    const integration = readFileSync(
+      join(packageRoot, 'dist', 'integration.js'),
+      'utf8'
+    );
+
+    expect(integration).not.toMatch(
+      /^import .*?(?:fast-glob|\.\/internal\/project|\.\/project\.js)/m
+    );
+    expect(integration).toContain(
+      'import("./internal/project/inspectVueProject.js")'
+    );
+    expect(integration).toContain('import("./project.js")');
   });
 });
