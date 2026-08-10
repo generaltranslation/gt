@@ -1843,6 +1843,53 @@ describe('gt-vue runtime', () => {
     );
   });
 
+  it('preserves retained raw slot ownership without invoking ignored slots', async () => {
+    const ignoredSlot = vi.fn(() => h('em', null, 'ignored'));
+    const Card = defineComponent({
+      name: 'Card',
+      setup(_props, { slots }) {
+        return () =>
+          h('section', [slots.default?.(), slots.label?.({ text: 'ARG' })]);
+      },
+    });
+    const plugin = createGT({
+      loadTranslations: async () => ({
+        retainedSlotOwner: {
+          t: 'Card',
+          i: 1,
+          c: { t: 'span', i: 2, c: 'translated' },
+        },
+      }),
+    });
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(
+            T,
+            { _hash: 'retainedSlotOwner' },
+            {
+              default: () =>
+                h(Card, null, {
+                  default: () => h('span', null, 'source'),
+                  ignored: ignoredSlot,
+                  label: ({ text }: { text: string }) => h('i', null, text),
+                }),
+            }
+          );
+      },
+    });
+    Root.__scopeId = 'data-v-parent';
+
+    expect(stripFragmentMarkers(await renderWithPlugin(Root, plugin))).toBe(
+      '<section data-v-parent><span data-v-parent>source</span><i data-v-parent>ARG</i></section>'
+    );
+    await plugin.setLocale('fr');
+    expect(stripFragmentMarkers(await renderWithPlugin(Root, plugin))).toBe(
+      '<section data-v-parent><span data-v-parent>translated</span><i data-v-parent>ARG</i></section>'
+    );
+    expect(ignoredSlot).not.toHaveBeenCalled();
+  });
+
   it('numbers variables independently within every plural and branch slot', async () => {
     const pluralSource: JsxChildren = {
       t: 'Plural',

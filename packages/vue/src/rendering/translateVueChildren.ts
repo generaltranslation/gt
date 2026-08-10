@@ -504,8 +504,16 @@ function readDefaultSlot(vnode: VNode): {
 
 /** Invokes a raw render-function slot under the instance that authored it. */
 function invokeSlotWithOwner(slots: Slots, slot: () => unknown): unknown {
+  return bindSlotToOwner(slots, slot)();
+}
+
+/** Keeps a retained raw slot lazy while preserving its authored render context. */
+function bindSlotToOwner<T extends (...args: never[]) => unknown>(
+  slots: Slots,
+  slot: T
+): T {
   const owner = (slots as OwnedSlots)._ctx;
-  return owner ? withCtx(slot, owner)() : slot();
+  return (owner ? withCtx(slot, owner) : slot) as T;
 }
 
 function getBranches(
@@ -1119,7 +1127,12 @@ function cloneWithChildren(
   const props = Object.keys(extraProps).length ? extraProps : null;
   const slots = isSlots(vnode.children) ? vnode.children : {};
   const runtimeSlots = Object.fromEntries(
-    Object.entries(slots).filter(([name]) => name !== '_' && name !== '$stable')
+    Object.entries(slots)
+      .filter(([name]) => name !== '_' && name !== '$stable')
+      .map(([name, slot]) => [
+        name,
+        typeof slot === 'function' ? bindSlotToOwner(slots, slot) : slot,
+      ])
   );
   return h(type, props, {
     // The compiler's stable-slot marker describes the source slot function,
