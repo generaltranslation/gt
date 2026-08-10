@@ -25,7 +25,9 @@ import {
   h,
   isVNode,
   mergeProps,
+  withCtx,
   type Component,
+  type ComponentInternalInstance,
   type Slots,
   type VNode,
   type VNodeChild,
@@ -90,6 +92,11 @@ type SourceElement = {
 };
 
 type SourceNode = SourceElement | string | typeof textBoundary;
+
+type OwnedSlots = Slots & {
+  /** Component instance that authored raw render-function slots. */
+  _ctx?: ComponentInternalInstance | null;
+};
 
 type ComponentWithGTMetadata = Component & {
   _gtt?: string;
@@ -484,11 +491,21 @@ function readDefaultSlot(vnode: VNode): {
   if (!isSlots(vnode.children)) {
     return { children: vnode.children, replace: false };
   }
-  const defaultSlot = vnode.children.default;
+  const slots = vnode.children;
+  const defaultSlot = slots.default;
   return {
-    children: typeof defaultSlot === 'function' ? defaultSlot() : undefined,
+    children:
+      typeof defaultSlot === 'function'
+        ? invokeSlotWithOwner(slots, defaultSlot)
+        : undefined,
     replace: typeof defaultSlot === 'function',
   };
+}
+
+/** Invokes a raw render-function slot under the instance that authored it. */
+function invokeSlotWithOwner(slots: Slots, slot: () => unknown): unknown {
+  const owner = (slots as OwnedSlots)._ctx;
+  return owner ? withCtx(slot, owner)() : slot();
 }
 
 function getBranches(
@@ -511,7 +528,9 @@ function getBranches(
         !key.startsWith('_') &&
         typeof slot === 'function'
       ) {
-        inputs[key] = { value: slot() };
+        inputs[key] = {
+          value: invokeSlotWithOwner(vnode.children, slot),
+        };
       }
     }
   }

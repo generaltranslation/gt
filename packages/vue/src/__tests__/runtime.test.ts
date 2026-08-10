@@ -1819,6 +1819,30 @@ describe('gt-vue runtime', () => {
     );
   });
 
+  it('preserves scoped CSS ownership for raw component slots', async () => {
+    const Card = defineComponent({
+      setup(_props, { slots }) {
+        return () => h('section', slots.default?.());
+      },
+    });
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(T, null, {
+            default: () =>
+              h(Card, null, {
+                default: () => h('span', null, 'source'),
+              }),
+          });
+      },
+    });
+    Root.__scopeId = 'data-v-parent';
+
+    expect(stripFragmentMarkers(await renderWithPlugin(Root, createGT()))).toBe(
+      '<section data-v-parent><span data-v-parent>source</span></section>'
+    );
+  });
+
   it('numbers variables independently within every plural and branch slot', async () => {
     const pluralSource: JsxChildren = {
       t: 'Plural',
