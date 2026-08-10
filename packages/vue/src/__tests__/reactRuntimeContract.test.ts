@@ -13,6 +13,7 @@ import { createElement, type ReactNode } from 'react';
 import * as Vue from 'vue';
 import {
   createSSRApp,
+  createTextVNode,
   defineComponent,
   h,
   type Component,
@@ -290,6 +291,22 @@ describe('React-authoritative rich-content runtime contract', () => {
 
     expect(second).toEqual(first);
     expect(hashRichSource(second)).toBe(hashRichSource(first));
+  });
+
+  it('matches React text boundaries for adjacent Vue JSX Text VNodes', () => {
+    const reactWire = prepareT({
+      locale: 'en',
+      params: {},
+      sourceChildren: createElement('p', null, 'Before', 'After'),
+    }).sourceJsxChildren;
+    const vueWire = serializeVueChildren([
+      h('p', null, [createTextVNode('Before'), createTextVNode('After')]),
+    ]);
+
+    expect(normalizeSemanticWire(vueWire)).toEqual(
+      normalizeSemanticWire(reactWire)
+    );
+    expect(hashRichSource(vueWire)).toBe(hashRichSource(reactWire));
   });
 
   it('renders React-keyed translations inside a custom component', async () => {
