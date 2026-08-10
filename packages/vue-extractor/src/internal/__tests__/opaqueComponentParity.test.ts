@@ -3,7 +3,7 @@ import { hashSource } from 'generaltranslation/id';
 import { extractFromVueSource } from './testVueCompiler.js';
 
 describe('component slot runtime parity', () => {
-  it('preserves comment boundaries in a serialized component default slot', async () => {
+  it('rejects comment boundaries in a serialized component default slot', async () => {
     const output = await extract(`
       <script setup lang="ts">
       import { T } from 'gt-vue';
@@ -14,11 +14,10 @@ describe('component slot runtime parity', () => {
       </template>
     `);
 
-    expect(output.errors).toEqual([]);
-    expect(output.results[0]?.source).toEqual([
-      { t: 'Card', i: 1, c: ['Before', 'After'] },
-      { t: 'b', i: 2, c: 'End' },
-    ]);
+    expect(output.results).toEqual([]);
+    expect(output.errors.join('\n')).toContain(
+      'hash changes between development and production'
+    );
   });
 
   it('does not inspect comment whitespace in an opaque named slot', async () => {

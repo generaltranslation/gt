@@ -166,7 +166,7 @@ describe('Vue compiler option parity', () => {
   );
 
   it.each(['condense', 'preserve'] as const)(
-    'allows comments that do not change %s translation content',
+    'rejects whitespace-free comment boundaries with %s whitespace',
     async (whitespace) => {
       const source = `
         <script setup>import { T } from 'gt-vue';</script>
@@ -177,10 +177,10 @@ describe('Vue compiler option parity', () => {
         compilerOptions: { whitespace },
       });
 
-      expect(result.errors).toEqual([]);
-      expect(result.results.map(({ source }) => source)).toEqual([
-        ['Hello', 'world'],
-      ]);
+      expect(result.results).toEqual([]);
+      expect(result.errors.join('\n')).toContain(
+        'hash changes between development and production'
+      );
     }
   );
 });
