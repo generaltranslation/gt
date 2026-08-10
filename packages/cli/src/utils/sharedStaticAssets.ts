@@ -371,7 +371,7 @@ export default async function processSharedStaticAssets(settings: Settings) {
   // Map original absolute path -> public URL
   const originalToPublic = new Map<string, string>();
   for (const abs of assetPaths) {
-    const relFromRoot = path.relative(cwd, abs).replace(/\\/g, '/');
+    const relFromRoot = toPosixPath(path.relative(cwd, abs));
     const publicUrl =
       (publicPath.endsWith('/') ? publicPath.slice(0, -1) : publicPath) +
       '/' +

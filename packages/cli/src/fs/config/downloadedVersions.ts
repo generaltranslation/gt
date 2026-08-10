@@ -50,7 +50,7 @@ export type DownloadedVersionsV1 = {
   };
 };
 
-function normalizeLockfilePaths(data: DownloadedVersions): void {
+export function normalizeLockfilePaths(data: DownloadedVersions): void {
   for (const entry of data.entries) {
     if (typeof entry.fileName === 'string') {
       const originalFileName = entry.fileName;
