@@ -1,8 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createUpdates } from '../parse.js';
 import { createInlineUpdates } from '../../react/parse/createInlineUpdates.js';
+import { createPythonInlineUpdates } from '../../python/parse/createPythonInlineUpdates.js';
 import { Libraries } from '../../types/libraries.js';
-import type { ParsingConfigOptions } from '../../types/parsing.js';
+import type {
+  GTParsingFlags,
+  ParsingConfigOptions,
+} from '../../types/parsing.js';
 import type { TranslateFlags } from '../../types/index.js';
 
 vi.mock('../../react/parse/createInlineUpdates.js', () => ({
@@ -87,4 +91,72 @@ describe('createUpdates', () => {
       'shared-id',
     ]);
   });
+
+  it.each([
+    Libraries.GT_REACT,
+    Libraries.GT_NEXT,
+    Libraries.GT_REACT_NATIVE,
+    Libraries.GT_TANSTACK_START,
+    Libraries.GT_NODE,
+  ])('preserves the historical %s extractor arguments', async (library) => {
+    const patterns = ['src/entry.tsx'];
+    const parsingFlags = {
+      includeSourceCodeContext: true,
+      legacyGtReactImportSource: 'custom-gt-react',
+    } as GTParsingFlags;
+    const parsingOptions = {
+      conditionNames: ['source', 'import'],
+    } as ParsingConfigOptions;
+    vi.mocked(createInlineUpdates).mockResolvedValue({
+      updates: [],
+      errors: [],
+      warnings: [],
+    });
+
+    await createUpdates(
+      {} as TranslateFlags,
+      patterns,
+      undefined,
+      library,
+      true,
+      parsingFlags,
+      parsingOptions
+    );
+
+    expect(createInlineUpdates).toHaveBeenCalledOnce();
+    expect(createInlineUpdates).toHaveBeenCalledWith(
+      library,
+      true,
+      patterns,
+      parsingFlags,
+      parsingOptions
+    );
+    expect(createPythonInlineUpdates).not.toHaveBeenCalled();
+  });
+
+  it.each([Libraries.GT_FLASK, Libraries.GT_FASTAPI])(
+    'preserves the historical %s extractor arguments',
+    async (library) => {
+      const patterns = ['src/**/*.py'];
+      vi.mocked(createPythonInlineUpdates).mockResolvedValue({
+        updates: [],
+        errors: [],
+        warnings: [],
+      });
+
+      await createUpdates(
+        {} as TranslateFlags,
+        patterns,
+        undefined,
+        library,
+        true,
+        {},
+        {} as ParsingConfigOptions
+      );
+
+      expect(createPythonInlineUpdates).toHaveBeenCalledOnce();
+      expect(createPythonInlineUpdates).toHaveBeenCalledWith(patterns);
+      expect(createInlineUpdates).not.toHaveBeenCalled();
+    }
+  );
 });
