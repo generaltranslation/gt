@@ -90,6 +90,13 @@ const fixtures: ContractFixture[] = [
     },
   },
   {
+    name: 'text boundaries separated by a source comment',
+    react: () => createElement('p', null, 'Before', 'After'),
+    vue: {
+      template: '<T><p>Before<!-- source boundary -->After</p></T>',
+    },
+  },
+  {
     name: 'static custom-component children',
     react: () => createElement(DocsLink, { to: '/docs' }, 'Cannot access?'),
     vue: {
