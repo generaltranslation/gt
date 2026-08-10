@@ -2205,8 +2205,18 @@ function readBranches(
   return branches;
 }
 
+/**
+ * Converts a direct branch prop into its persisted GT wire value.
+ *
+ * React preserves boolean and null branch props as typed wire values, while
+ * the rich renderer handles their visible output separately. `JsxChildren`
+ * predates those wire literals, so the cast is confined to this exact
+ * compatibility boundary.
+ */
 function branchPropToChildren(value: StaticPrimitive): JsxChildren {
-  if (value == null || typeof value === 'boolean') return [];
+  if (value == null || typeof value === 'boolean') {
+    return value as unknown as JsxChildren;
+  }
   return String(value);
 }
 

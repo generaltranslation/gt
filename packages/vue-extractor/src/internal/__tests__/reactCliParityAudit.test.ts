@@ -98,15 +98,15 @@ describe('React CLI parity audit: rich Vue content', () => {
             negativeZero: '0',
             epsilon: '2.220446049250313e-16',
             empty: '',
-            disabled: [],
-            nothing: [],
+            disabled: false,
+            nothing: null,
             unicode: '你好',
             control: '\n\t',
           },
           t: 'b',
         },
         c: 'Fallback',
-      },
+      } as unknown as JsxChildren,
     ]);
   });
 

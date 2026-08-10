@@ -1,4 +1,38 @@
-import type { JsxChildren } from '@generaltranslation/format/types';
+import type {
+  GTProp,
+  JsxElement,
+  Variable,
+} from '@generaltranslation/format/types';
+
+/** A direct Branch or Plural source value preserved by the GT wire format. */
+export type VueBranchSource = VueJsxChildren | boolean | null;
+
+/** GT element metadata with the complete branch-source wire contract. */
+export type VueGTProp = Omit<GTProp, 'b'> & {
+  /** Named Branch or Plural sources. */
+  b?: Record<string, VueBranchSource>;
+};
+
+/** A serialized Vue element in a rich translation source. */
+export type VueJsxElement = Omit<JsxElement, 'c' | 'd'> & {
+  /** Nested serialized children. */
+  c?: VueJsxChildren;
+  /** Translation metadata attached to this element. */
+  d?: VueGTProp;
+};
+
+/** One serialized child in a rich Vue translation source. */
+export type VueJsxChild = string | VueJsxElement | Variable;
+
+/**
+ * The complete rich-source wire format returned by Vue extraction.
+ *
+ * Boolean and null values occur only as direct Branch or Plural sources. The
+ * older shared `JsxChildren` declaration does not describe those historical
+ * React wire values, so the Vue extractor exposes the accurate recursive type
+ * instead of hiding them behind a cast.
+ */
+export type VueJsxChildren = VueJsxChild | VueJsxChild[];
 
 /**
  * Version-neutral Vue compiler surface accepted by programmatic extraction.
@@ -46,7 +80,7 @@ export type VueExtractionMetadata = {
 export type VueExtractionResult =
   | {
       dataFormat: 'JSX';
-      source: JsxChildren;
+      source: VueJsxChildren;
       metadata: VueExtractionMetadata;
     }
   | {

@@ -1,5 +1,8 @@
 import type { Updates } from 'generaltranslation/types';
-import type { VueProjectExtractionOutput } from '../../types.js';
+import type {
+  VueProjectExtractionOutput,
+  VueProjectExtractionResult,
+} from '../../types.js';
 
 /** Framework-neutral extraction output accepted by the CLI adapter. */
 export type InlineExtractionOutput = {
@@ -26,7 +29,10 @@ export function mergeVueProjectExtraction(
   };
 }
 
-function mergeUpdates(primary: Updates, vue: Updates): Updates {
+function mergeUpdates(
+  primary: Updates,
+  vue: VueProjectExtractionResult[]
+): Updates {
   const updates = [...primary];
   const byHash = new Map(
     updates.flatMap((update, index) =>
@@ -35,17 +41,20 @@ function mergeUpdates(primary: Updates, vue: Updates): Updates {
   );
 
   for (const update of vue) {
+    // The shared Updates type predates boolean/null branch wire sources.
+    // Runtime consumers already accept them; keep the cast at this adapter.
+    const compatibleUpdate = update as Updates[number];
     const hash = update.metadata.hash;
     const existingIndex = hash ? byHash.get(hash) : undefined;
     if (existingIndex === undefined) {
       if (hash) byHash.set(hash, updates.length);
-      updates.push(update);
+      updates.push(compatibleUpdate);
       continue;
     }
 
     const existing = updates[existingIndex]!;
-    mergeFilePaths(existing, update);
-    mergeSourceCode(existing, update);
+    mergeFilePaths(existing, compatibleUpdate);
+    mergeSourceCode(existing, compatibleUpdate);
   }
   return updates;
 }

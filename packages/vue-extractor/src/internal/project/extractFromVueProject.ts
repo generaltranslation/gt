@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import type { JsxChildren } from '@generaltranslation/format/types';
 import fg from 'fast-glob';
 import { hashSource } from 'generaltranslation/id';
 import {
@@ -365,7 +366,9 @@ function addCatalogHash(
   result: VueExtractionResult
 ): VueProjectExtractionResult {
   const hash = hashSource({
-    source: result.source,
+    // hashSource's historical shared type omits boolean/null branch sources,
+    // although its runtime sanitizer has always supported those React values.
+    source: result.source as JsxChildren | string,
     ...(result.metadata.context && { context: result.metadata.context }),
     dataFormat: result.dataFormat,
   });
