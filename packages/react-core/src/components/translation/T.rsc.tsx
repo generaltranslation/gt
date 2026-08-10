@@ -39,6 +39,7 @@ async function RscT({
       defaultLocale,
       enableI18n,
       shouldTranslate,
+      hash: prepared.targetOptions.$_hash,
     });
   }
 
@@ -68,6 +69,7 @@ async function RscT({
     defaultLocale,
     enableI18n,
     shouldTranslate,
+    hash: prepared.targetOptions.$_hash,
   });
 }
 
