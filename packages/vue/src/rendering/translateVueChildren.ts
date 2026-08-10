@@ -943,7 +943,7 @@ function getSelectedSourceBranch(
 
 /** Returns the scalar/array shape produced by `serializeNodes()`. */
 function getSourceCardinality(nodes: SourceNode[]): SourceCardinality {
-  return nodes.length === 1 ? 'scalar' : 'array';
+  return nodes.filter(isContentNode).length === 1 ? 'scalar' : 'array';
 }
 
 function getSelectedTargetBranch(

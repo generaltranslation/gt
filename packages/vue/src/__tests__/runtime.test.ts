@@ -1786,6 +1786,39 @@ describe('gt-vue runtime', () => {
     ).toContain('Bonjour le monde');
   });
 
+  it('ignores comments when matching translated child cardinality', async () => {
+    const source: JsxChildren = {
+      t: 'p',
+      i: 1,
+      c: { t: 'strong', i: 2, c: 'source' },
+    };
+    const target: JsxChildren = {
+      t: 'p',
+      i: 1,
+      c: { t: 'strong', i: 2, c: 'translated' },
+    };
+    const plugin = createGT({
+      loadTranslations: async () => ({ [jsxHash(source)]: target }),
+    });
+    await plugin.setLocale('fr');
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(T, null, {
+            default: () =>
+              h('p', null, [
+                createCommentVNode('translator note'),
+                h('strong', null, 'source'),
+              ]),
+          });
+      },
+    });
+
+    expect(stripFragmentMarkers(await renderWithPlugin(Root, plugin))).toBe(
+      '<p><strong>translated</strong></p>'
+    );
+  });
+
   it('numbers variables independently within every plural and branch slot', async () => {
     const pluralSource: JsxChildren = {
       t: 'Plural',
