@@ -1,0 +1,570 @@
+import fs from 'node:fs';
+import { createRequire } from 'node:module';
+import path from 'node:path';
+import { hashSource } from 'generaltranslation/id';
+import type { JsxChildren } from 'generaltranslation/types';
+import {
+  DiagnosticCategory,
+  JsxEmit,
+  ModuleKind,
+  ScriptTarget,
+  formatDiagnostics,
+  transpileModule,
+} from 'typescript';
+import * as Vue from 'vue';
+import { compileScript, parse } from 'vue/compiler-sfc';
+import { describe, expect, it } from 'vitest';
+import {
+  MINIMUM_EXACT_SEED_COUNT,
+  NON_PORTABLE_SEEDS,
+  type NonPortableSeed,
+} from '../../../../test-fixtures/react-vue-seed-contract';
+import * as ReactCoreSource from '../../../react-core/src/components';
+import { prepareT } from '../../../react-core/src/utils/translation/prepareT.shared';
+import * as GTVue from '../index';
+import { serializeVueChildren } from '../rendering/translateVueChildren';
+
+type ParitySeed = {
+  id: string;
+};
+
+type CompiledSeed = {
+  filename: string;
+  javascript: string;
+};
+
+type PreparedSeed = {
+  context?: string;
+  source: JsxChildren;
+};
+
+type ReactBoundaryElement = {
+  props: {
+    children?: unknown;
+    context?: unknown;
+  };
+  type: unknown;
+};
+
+type ReactRuntime = {
+  isValidElement: (value: unknown) => boolean;
+};
+
+type VueSetupComponent = {
+  setup?: (
+    props: Record<string, unknown>,
+    context: {
+      attrs: Record<string, unknown>;
+      emit: () => void;
+      expose: () => void;
+      slots: Record<string, never>;
+    }
+  ) => unknown;
+};
+
+const repositoryRoot = path.resolve(__dirname, '../../../..');
+const requireFromReactCore = createRequire(
+  path.join(repositoryRoot, 'packages/react-core/package.json')
+);
+const React = requireFromReactCore('react') as ReactRuntime;
+const ReactJsxRuntime = requireFromReactCore('react/jsx-runtime') as Record<
+  string,
+  unknown
+>;
+const seedRoot = path.join(repositoryRoot, 'tests/seeds');
+const reactSeedIds = collectSeedIds(seedRoot, 'page.tsx');
+const vueSeedIds = collectSeedIds(seedRoot, 'page.vue');
+const fixtures = reactSeedIds.map((id): ParitySeed => ({ id }));
+const nonPortableById = new Map(
+  NON_PORTABLE_SEEDS.map((fixture) => [fixture.id, fixture])
+);
+const exactSeeds = fixtures.filter(({ id }) => !nonPortableById.has(id));
+const expectedSourceCache = new Map<string, unknown>();
+const reactSourceCache = new Map<string, PreparedSeed>();
+const vueSourceCache = new Map<string, PreparedSeed>();
+
+/** Boundary identity substituted only while evaluating a compiled seed. */
+function ReactTBoundary(): null {
+  return null;
+}
+
+/** Named stand-in for a seed child that prepareT inspects but never renders. */
+function LocaleSelector(): null {
+  return null;
+}
+
+/** Named stand-in whose authored children remain visible to prepareT. */
+function Link(): null {
+  return null;
+}
+
+/** Boundary identity substituted only while evaluating a compiled seed. */
+const VueTBoundary = Vue.defineComponent({
+  name: 'SeedTBoundary',
+  render: () => null,
+});
+
+const reactSeedImports = Object.freeze({
+  ...ReactCoreSource,
+  LocaleSelector,
+  T: ReactTBoundary,
+});
+const reactRuntimeModule = Object.freeze({
+  ...(React as unknown as Record<string, unknown>),
+  useState: <T>(initial: T) => [initial, () => undefined] as const,
+});
+const vueSeedImports = Object.freeze({
+  ...GTVue,
+  T: VueTBoundary,
+});
+
+describe('React and Vue seed runtime parity', () => {
+  it('pairs every one of the 84 React seeds with a Vue seed', () => {
+    expect(reactSeedIds).toHaveLength(84);
+    expect(vueSeedIds).toEqual(reactSeedIds);
+  });
+
+  it('keeps the non-portable allowlist narrow, sorted, and exhaustive', () => {
+    const ids = NON_PORTABLE_SEEDS.map(({ id }) => id);
+
+    expect(ids).toHaveLength(17);
+    expect(ids).toEqual([...ids].sort());
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids.every((id) => reactSeedIds.includes(id))).toBe(true);
+    expect(exactSeeds.length).toBeGreaterThanOrEqual(MINIMUM_EXACT_SEED_COUNT);
+  });
+
+  describe('React prepareT oracle for every seed', () => {
+    for (const fixture of fixtures) {
+      it(fixture.id, () => {
+        assertReactRuntimeOracle(fixture);
+      });
+    }
+  });
+
+  describe('exact Vue runtime source and hash', () => {
+    for (const fixture of exactSeeds) {
+      it(fixture.id, () => {
+        assertVueRuntimeParity(fixture);
+      });
+    }
+  });
+
+  describe('non-portable reason evidence', () => {
+    for (const fixture of NON_PORTABLE_SEEDS) {
+      it(`${fixture.id}: ${fixture.reason}`, () => {
+        assertNonPortableEvidence(fixture);
+      });
+    }
+  });
+
+  it('proves Vue display-string conversion erases primitive identity', () => {
+    expect(Vue.toDisplayString(false)).toBe(Vue.toDisplayString('false'));
+    expect(Vue.toDisplayString(true)).toBe(Vue.toDisplayString('true'));
+    expect(Vue.toDisplayString(null)).toBe(Vue.toDisplayString(undefined));
+    expect(Vue.toDisplayString(null)).toBe(Vue.toDisplayString(''));
+  });
+});
+
+/** Pins React runtime semantics and hash to the checked-in catalog oracle. */
+function assertReactRuntimeOracle(fixture: ParitySeed): void {
+  const expected = getExpectedSource(fixture);
+  const { context, source } = getReactSource(fixture);
+
+  if (nonPortableById.get(fixture.id)?.reason === 'unsupported-derive') {
+    const catalog = getDeriveCatalog(expected, fixture.id);
+    const hash = sourceHash(source, context);
+
+    expect(catalog).toHaveProperty(hash);
+    expect(toSemanticWireSource(source)).toStrictEqual(
+      toSemanticWireSource(catalog[hash])
+    );
+    return;
+  }
+
+  expect(toSemanticWireSource(source)).toStrictEqual(
+    toSemanticWireSource(expected)
+  );
+  expect(sourceHash(source, context)).toBe(
+    sourceHash(expected as JsxChildren, context)
+  );
+}
+
+/** Compares every Vue semantic wire field before checking the literal hash. */
+function assertVueRuntimeParity(fixture: ParitySeed): void {
+  const react = getReactSource(fixture);
+  const vue = getVueSource(fixture);
+
+  expect(vue.context).toBe(react.context);
+  expect(toSemanticWireSource(vue.source)).toStrictEqual(
+    toSemanticWireSource(react.source)
+  );
+  expect(sourceHash(vue.source, vue.context)).toBe(
+    sourceHash(react.source, react.context)
+  );
+}
+
+/** Proves that every allowlisted exception is present in its React/Vue source. */
+function assertNonPortableEvidence(fixture: NonPortableSeed): void {
+  const reactSource = fs.readFileSync(
+    path.join(seedDirectory(fixture), 'page.tsx'),
+    'utf8'
+  );
+
+  if (fixture.reason === 'unsupported-derive') {
+    expect(reactSource).toMatch(/<Derive(?:\s|>)/);
+    return;
+  }
+  if (fixture.reason === 'unsupported-named-variable') {
+    expect(reactSource).toMatch(
+      /<(?:Currency|DateTime|Num|Var)\b[^>]*\bname\s*=/s
+    );
+    return;
+  }
+
+  const { javascript } = compileVueSeed(fixture);
+  expect(javascript).toContain('toDisplayString');
+  expect(toSemanticWireSource(getVueSource(fixture).source)).not.toStrictEqual(
+    toSemanticWireSource(getReactSource(fixture).source)
+  );
+}
+
+/** Reads the compiler-enumerated React sources used by a Derive seed. */
+function getDeriveCatalog(
+  expected: unknown,
+  fixtureId: string
+): Record<string, JsxChildren> {
+  invariant(isRecord(expected), `${fixtureId} must contain a Derive catalog`);
+  const catalog = expected.static === true ? expected.content : expected;
+  invariant(isRecord(catalog), `${fixtureId} must contain Derive sources`);
+  return catalog as Record<string, JsxChildren>;
+}
+
+/**
+ * Canonicalizes a runtime source to its persisted rich-content wire form.
+ *
+ * React derives these labels from function names, which production minifiers
+ * are free to rewrite. GT hashing already excludes them, and both renderers
+ * reconcile translated elements by `i`. The branch/plural discriminator at
+ * `d.t`, element IDs, variables, content props, branches, and children remain
+ * part of this comparison. Undefined object properties are also omitted
+ * because JSON catalogs cannot represent them; array positions and holes are
+ * deliberately left untouched.
+ */
+function toSemanticWireSource(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(toSemanticWireSource);
+  if (!isRecord(value)) return value;
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(
+        ([key, child]) =>
+          child !== undefined &&
+          (key !== 't' || !('i' in value) || 'k' in value)
+      )
+      .map(([key, child]) => [key, toSemanticWireSource(child)])
+  );
+}
+
+function getExpectedSource(fixture: ParitySeed): unknown {
+  const cached = expectedSourceCache.get(fixture.id);
+  if (cached !== undefined) return cached;
+
+  const source = readJson(path.join(seedDirectory(fixture), 'expected.json'));
+  expectedSourceCache.set(fixture.id, source);
+  return source;
+}
+
+function getReactSource(fixture: ParitySeed): PreparedSeed {
+  const cached = reactSourceCache.get(fixture.id);
+  if (cached !== undefined) return cached;
+
+  const { filename, javascript } = compileReactSeed(fixture);
+  const module = evaluateCommonJs(javascript, filename, (specifier) => {
+    if (specifier === 'gt-next') return reactSeedImports;
+    if (specifier === 'next/link') return { __esModule: true, default: Link };
+    if (specifier === 'react') return reactRuntimeModule;
+    if (specifier === 'react/jsx-runtime') return ReactJsxRuntime;
+    throw new Error(`${fixture.id} has unexpected React import: ${specifier}`);
+  });
+  const Page = module.default;
+  invariant(
+    typeof Page === 'function',
+    `${fixture.id} must default-export a React page function`
+  );
+  const boundary = findReactBoundary((Page as () => unknown)(), fixture.id);
+  const context = boundary.props.context;
+  invariant(
+    context === undefined || typeof context === 'string',
+    `${fixture.id} React T context must be a static string`
+  );
+  const prepared = prepareT({
+    locale: 'en',
+    params: context === undefined ? {} : { context },
+    sourceChildren: boundary.props.children as Parameters<
+      typeof prepareT
+    >[0]['sourceChildren'],
+  });
+  invariant(
+    prepared.targetOptions.$context === context,
+    `${fixture.id} React prepareT must preserve its static context`
+  );
+  const result = { context, source: prepared.sourceJsxChildren };
+
+  reactSourceCache.set(fixture.id, result);
+  return result;
+}
+
+function getVueSource(fixture: ParitySeed): PreparedSeed {
+  const cached = vueSourceCache.get(fixture.id);
+  if (cached !== undefined) return cached;
+
+  const { filename, javascript } = compileVueSeed(fixture);
+  const component = evaluateVueSfc(javascript, filename, (specifier) => {
+    if (specifier === 'vue') return Vue;
+    if (specifier === 'gt-vue') return vueSeedImports;
+    throw new Error(`${fixture.id} has unexpected Vue import: ${specifier}`);
+  });
+  const rendered = renderCompiledVueComponent(component, fixture.id);
+  const boundary = findVueBoundary(rendered, fixture.id);
+  const runtimeSource = serializeVueChildren(boundary.children);
+  const result = { context: boundary.context, source: runtimeSource };
+
+  vueSourceCache.set(fixture.id, result);
+  return result;
+}
+
+/** Compiles a React seed without resolving or executing its imports. */
+function compileReactSeed(fixture: ParitySeed): CompiledSeed {
+  const filename = path.join(seedDirectory(fixture), 'page.tsx');
+  return {
+    filename,
+    javascript: transpile(
+      fs.readFileSync(filename, 'utf8'),
+      filename,
+      JsxEmit.ReactJSX
+    ),
+  };
+}
+
+/** Compiles a Vue SFC and its generated TypeScript without executing it. */
+function compileVueSeed(fixture: ParitySeed): CompiledSeed {
+  const filename = path.join(seedDirectory(fixture), 'page.vue');
+  const source = fs.readFileSync(filename, 'utf8');
+  const parsed = parse(source, { filename });
+  invariant(
+    parsed.errors.length === 0,
+    `${fixture.id} Vue parse errors: ${parsed.errors.map(String).join('\n')}`
+  );
+  const compiled = compileScript(parsed.descriptor, {
+    genDefaultAs: '__sfc__',
+    id: `runtime-parity-${fixture.id.replaceAll('/', '-')}`,
+    inlineTemplate: true,
+  });
+  return { filename, javascript: transpile(compiled.content, filename) };
+}
+
+function findReactBoundary(
+  root: unknown,
+  fixtureId: string
+): ReactBoundaryElement {
+  const boundaries: ReactBoundaryElement[] = [];
+
+  function visit(node: unknown): void {
+    if (Array.isArray(node)) {
+      node.forEach(visit);
+      return;
+    }
+    if (!React.isValidElement(node)) return;
+    const element = node as ReactBoundaryElement;
+    if (element.type === ReactTBoundary) {
+      boundaries.push(element);
+      return;
+    }
+    visit(element.props.children);
+  }
+
+  visit(root);
+  invariant(
+    boundaries.length === 1,
+    `${fixtureId} must render exactly one outer React T; found ${boundaries.length}`
+  );
+  return boundaries[0];
+}
+
+function renderCompiledVueComponent(
+  component: Vue.Component,
+  fixtureId: string
+): unknown {
+  const setup = (component as VueSetupComponent).setup;
+  invariant(
+    typeof setup === 'function',
+    `${fixtureId} compiled Vue component must expose setup()`
+  );
+  const render = setup(
+    {},
+    {
+      attrs: {},
+      emit: () => undefined,
+      expose: () => undefined,
+      slots: {},
+    }
+  );
+  invariant(
+    typeof render === 'function',
+    `${fixtureId} compiled Vue setup() must return a render function`
+  );
+  return (
+    render as (context: Record<string, unknown>, cache: unknown[]) => unknown
+  )({}, []);
+}
+
+function findVueBoundary(
+  root: unknown,
+  fixtureId: string
+): { children: Vue.VNode[]; context?: string } {
+  const boundaries: Vue.VNode[] = [];
+
+  function visit(node: unknown): void {
+    if (Array.isArray(node)) {
+      node.forEach(visit);
+      return;
+    }
+    if (!Vue.isVNode(node)) return;
+    if (node.type === VueTBoundary) {
+      boundaries.push(node);
+      return;
+    }
+    if (Array.isArray(node.children)) visit(node.children);
+  }
+
+  visit(root);
+  invariant(
+    boundaries.length === 1,
+    `${fixtureId} must render exactly one outer Vue T; found ${boundaries.length}`
+  );
+  const boundary = boundaries[0];
+  const context = boundary.props?.context;
+  invariant(
+    context === undefined || typeof context === 'string',
+    `${fixtureId} Vue T context must be a static string`
+  );
+  const slots = boundary.children;
+  invariant(
+    isRecord(slots) && typeof slots.default === 'function',
+    `${fixtureId} compiled Vue T must provide a default slot`
+  );
+  const children = (slots.default as () => unknown)();
+  invariant(
+    Array.isArray(children),
+    `${fixtureId} compiled Vue T default slot must return an array`
+  );
+  return { children: children as Vue.VNode[], context };
+}
+
+function transpile(source: string, filename: string, jsx?: JsxEmit): string {
+  const result = transpileModule(source, {
+    compilerOptions: {
+      esModuleInterop: true,
+      ...(jsx === undefined ? {} : { jsx }),
+      module: ModuleKind.CommonJS,
+      target: ScriptTarget.ES2022,
+    },
+    fileName: filename,
+    reportDiagnostics: true,
+  });
+  const errors =
+    result.diagnostics?.filter(
+      ({ category }) => category === DiagnosticCategory.Error
+    ) ?? [];
+  invariant(errors.length === 0, formatDiagnostics(errors, formatHost));
+  return result.outputText;
+}
+
+function evaluateCommonJs(
+  javascript: string,
+  filename: string,
+  requireModule: (specifier: string) => unknown
+): Record<string, unknown> {
+  const commonJsModule = { exports: {} as Record<string, unknown> };
+  const evaluate = new Function(
+    'require',
+    'exports',
+    'module',
+    `${javascript}\n//# sourceURL=${filename}`
+  ) as (
+    require: (specifier: string) => unknown,
+    exports: Record<string, unknown>,
+    module: { exports: Record<string, unknown> }
+  ) => void;
+
+  evaluate(requireModule, commonJsModule.exports, commonJsModule);
+  return commonJsModule.exports;
+}
+
+function evaluateVueSfc(
+  javascript: string,
+  filename: string,
+  requireModule: (specifier: string) => unknown
+): Vue.Component {
+  const evaluate = new Function(
+    'require',
+    'exports',
+    `${javascript}\nreturn __sfc__;\n//# sourceURL=${filename}`
+  ) as (
+    require: (specifier: string) => unknown,
+    exports: Record<string, unknown>
+  ) => Vue.Component;
+
+  return evaluate(requireModule, {});
+}
+
+function sourceHash(source: JsxChildren, context?: string): string {
+  return hashSource({
+    context,
+    dataFormat: 'JSX',
+    source,
+  });
+}
+
+function seedDirectory({ id }: ParitySeed): string {
+  return path.join(seedRoot, id);
+}
+
+function readJson(filename: string): unknown {
+  return JSON.parse(fs.readFileSync(filename, 'utf8')) as unknown;
+}
+
+/** Recursively discovers one side of the React/Vue seed contract. */
+function collectSeedIds(directory: string, seedFilename: string): string[] {
+  const ids: string[] = [];
+
+  function visit(current: string): void {
+    const entries = fs.readdirSync(current, { withFileTypes: true });
+    if (
+      entries.some((entry) => entry.isFile() && entry.name === seedFilename)
+    ) {
+      ids.push(path.relative(directory, current).replaceAll(path.sep, '/'));
+    }
+    for (const entry of entries) {
+      if (entry.isDirectory()) visit(path.join(current, entry.name));
+    }
+  }
+
+  visit(directory);
+  return ids.sort();
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function invariant(condition: unknown, message: string): asserts condition {
+  if (!condition) throw new Error(message);
+}
+
+const formatHost = {
+  getCanonicalFileName: (filename: string) => filename,
+  getCurrentDirectory: () => repositoryRoot,
+  getNewLine: () => '\n',
+};
