@@ -534,6 +534,7 @@ function getBranches(
       if (
         key !== 'default' &&
         !key.startsWith('_') &&
+        (transformation === 'branch' || isAcceptedPluralForm(key)) &&
         typeof slot === 'function'
       ) {
         inputs[key] = {

@@ -179,6 +179,35 @@ describe('Branch and Plural attributes', () => {
     ]);
   });
 
+  it('does not invoke unsupported Plural named slots while serializing rich source', () => {
+    let acceptedCalls = 0;
+    let ignoredCalls = 0;
+    const source = serializeVueChildren([
+      h(
+        Plural,
+        { n: 1 },
+        {
+          ignored: () => {
+            ignoredCalls += 1;
+            return 'Ignored';
+          },
+          one: () => {
+            acceptedCalls += 1;
+            return 'One';
+          },
+        }
+      ),
+    ]);
+
+    expect(source).toEqual({
+      t: 'Plural',
+      i: 1,
+      d: { b: { one: 'One' }, t: 'p' },
+    });
+    expect(acceptedCalls).toBe(1);
+    expect(ignoredCalls).toBe(0);
+  });
+
   it.each([
     ['branch', 'formal'],
     ['class', 'secret'],
