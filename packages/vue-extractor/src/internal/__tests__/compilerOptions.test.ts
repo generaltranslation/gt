@@ -179,7 +179,7 @@ describe('Vue compiler option parity', () => {
 
       expect(result.errors).toEqual([]);
       expect(result.results.map(({ source }) => source)).toEqual([
-        'Helloworld',
+        ['Hello', 'world'],
       ]);
     }
   );

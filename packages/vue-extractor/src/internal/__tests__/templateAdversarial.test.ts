@@ -258,10 +258,10 @@ describe('Vue template extraction', () => {
 
   it.each([
     {
-      name: 'coalesces text around whitespace-free comments',
+      name: 'preserves text boundaries around whitespace-free comments',
       imports: 'T',
       template: '<T>Hello<!-- translator note -->world</T>',
-      expected: ['Helloworld'] satisfies JsxChildren[],
+      expected: [['Hello', 'world']] satisfies JsxChildren[],
     },
     {
       name: 'evaluates side-effect-free primitive expressions',

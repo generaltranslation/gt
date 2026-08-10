@@ -255,12 +255,15 @@ describe('extractFromVueSource', () => {
     });
   });
 
-  it('keeps ordinary component slots opaque while diagnosing invalid T content', async () => {
+  it('extracts static default and independent named slots while diagnosing invalid T content', async () => {
     const result = await extractFixtures(['unsupported-slots.vue']);
     const errors = result.errors.join('\n');
 
-    expect(result.updates).toHaveLength(1);
-    expect(result.updates[0]?.source).toEqual({ t: 'Card', i: 1 });
+    expect(result.updates).toHaveLength(2);
+    expect(result.updates.map(({ source }) => source)).toEqual([
+      { t: 'Card', i: 1, c: ' Body ' },
+      'Header',
+    ]);
     expect(errors).toContain('bare <template>');
     expect(errors).toContain('nested gt-vue <T>');
   });

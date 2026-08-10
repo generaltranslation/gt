@@ -2,32 +2,46 @@ import { describe, expect, it } from 'vitest';
 import { hashSource } from 'generaltranslation/id';
 import { extractFromVueSource } from './testVueCompiler.js';
 
-describe('opaque component runtime parity', () => {
-  it('does not inspect comment whitespace outside serialized component slots', async () => {
+describe('component slot runtime parity', () => {
+  it('preserves comment boundaries in a serialized component default slot', async () => {
     const output = await extract(`
       <script setup lang="ts">
       import { T } from 'gt-vue';
       </script>
       <template>
         <!-- outside translated content -->
-        <T><Card>Hidden <!-- opaque slot --> content</Card><b>After</b></T>
+        <T><Card>Before<!-- source boundary -->After</Card><b>End</b></T>
       </template>
     `);
 
     expect(output.errors).toEqual([]);
     expect(output.results[0]?.source).toEqual([
-      { t: 'Card', i: 1 },
-      { t: 'b', i: 2, c: 'After' },
+      { t: 'Card', i: 1, c: ['Before', 'After'] },
+      { t: 'b', i: 2, c: 'End' },
     ]);
   });
 
-  it('omits arbitrary component slots and extracts a nested T independently', async () => {
+  it('does not inspect comment whitespace in an opaque named slot', async () => {
+    const output = await extract(`
+      <script setup>import { T } from 'gt-vue';</script>
+      <template><T><Card>Body<template #details>Hidden <!-- named boundary --> content</template></Card></T></template>
+    `);
+
+    expect(output.errors).toEqual([]);
+    expect(output.results[0]?.source).toEqual({
+      t: 'Card',
+      i: 1,
+      c: 'Body',
+    });
+  });
+
+  it('serializes a static default slot and extracts named slots independently', async () => {
     const output = await extract(`
       <script setup lang="ts">
       import { T, Var } from 'gt-vue';
       </script>
       <template>
-        <T context="outer"><Card title="Heading"><template #default="{ label }"><strong>Hidden</strong><T context="inner">Inner<Var>{{ label }}</Var></T></template><template #unused>Ignored</template></Card><span>After</span></T>
+        <T context="outer"><Card title="Heading">Body<template #details="{ label }"><T context="inner">Inner<Var>{{ label }}</Var></T></template><template #unused>Ignored</template></Card><span>After</span></T>
       </template>
     `);
 
@@ -43,7 +57,7 @@ describe('opaque component runtime parity', () => {
       {
         context: 'outer',
         source: [
-          { t: 'Card', i: 1, d: { ti: 'Heading' } },
+          { t: 'Card', i: 1, d: { ti: 'Heading' }, c: 'Body' },
           { t: 'span', i: 2, c: 'After' },
         ],
       },
@@ -51,6 +65,62 @@ describe('opaque component runtime parity', () => {
         context: 'inner',
         source: ['Inner', { i: 1, k: '_gt_value_1', v: 'v' }],
       },
+    ]);
+  });
+
+  it('rejects scoped default slots and dynamic names that may select default', async () => {
+    const scoped = await extract(`
+      <script setup>import { T } from 'gt-vue';</script>
+      <template><T><Card><template #default="{ label }">{{ label }}</template></Card></T></template>
+    `);
+    const dynamic = await extract(`
+      <script setup>import { T } from 'gt-vue'; const name = 'details';</script>
+      <template><T><Card><template #[name]>Details</template></Card></T></template>
+    `);
+
+    expect(scoped.results).toEqual([]);
+    expect(scoped.errors.join('\n')).toContain('scoped slot');
+    expect(dynamic.results).toEqual([]);
+    expect(dynamic.errors.join('\n')).toContain('dynamic slot name');
+  });
+
+  it('uses an explicit static default slot without inspecting component implementation content', async () => {
+    const output = await extract(`
+      <script setup>import { T } from 'gt-vue';</script>
+      <template><T><Card><template #default>Static body</template><template #toolbar>Ignored toolbar</template></Card><ImplementationOnly /></T></template>
+    `);
+
+    expect(output.errors).toEqual([]);
+    expect(output.results[0]?.source).toEqual([
+      { t: 'Card', i: 1, c: 'Static body' },
+      { t: 'ImplementationOnly', i: 2 },
+    ]);
+  });
+
+  it('keeps Fragment named slots outside the outer translation', async () => {
+    const output = await extract(`
+      <script setup>
+      import { T } from 'gt-vue';
+      import { Fragment } from 'vue';
+      </script>
+      <template><T context="outer"><Fragment><b>Default</b><template #aside><T context="inner">Aside</T></template></Fragment><i>After</i></T></template>
+    `);
+
+    expect(output.errors).toEqual([]);
+    expect(
+      output.results.map((result) => ({
+        context: result.metadata.context,
+        source: result.source,
+      }))
+    ).toEqual([
+      {
+        context: 'outer',
+        source: [
+          { t: 'b', i: 1, c: 'Default' },
+          { t: 'i', i: 2, c: 'After' },
+        ],
+      },
+      { context: 'inner', source: 'Aside' },
     ]);
   });
 
@@ -81,8 +151,12 @@ describe('opaque component runtime parity', () => {
             i: 1,
             c: { t: 'main', i: 2, c: 'Source' },
           },
-          { t: 'Transition', i: 3 },
-          { t: 'b', i: 4, c: 'After' },
+          {
+            t: 'Transition',
+            i: 3,
+            c: { t: 'p', i: 4, c: 'Motion' },
+          },
+          { t: 'b', i: 5, c: 'After' },
         ],
       },
       { context: 'loading', source: 'Loading' },
@@ -426,7 +500,7 @@ describe('opaque component runtime parity', () => {
     );
   });
 
-  it('keeps unproven Suspense-like components opaque and rejects unregistered string selectors', async () => {
+  it('serializes unproven Suspense-like component children and rejects unregistered string selectors', async () => {
     const opaque = await extract(`
       <script setup lang="ts">
       import { T } from 'gt-vue';
@@ -451,7 +525,11 @@ describe('opaque component runtime parity', () => {
     `);
 
     expect(opaque.errors).toEqual([]);
-    expect(opaque.results[0]?.source).toEqual({ t: 'AsyncBoundary', i: 1 });
+    expect(opaque.results[0]?.source).toEqual({
+      t: 'AsyncBoundary',
+      i: 1,
+      c: { t: 'main', i: 2, c: 'Hidden' },
+    });
     expect(mutable.results).toEqual([]);
     expect(mutable.errors.join('\n')).toContain(
       'Could not statically resolve component alias "AsyncBoundary"'
@@ -558,6 +636,7 @@ describe('opaque component runtime parity', () => {
         expect(output.results[0]?.source).toEqual({
           t: 'AsyncBoundary',
           i: 1,
+          c: { t: 'main', i: 2, c: 'Hidden' },
         });
       } else {
         expect(output.results).toEqual([]);
@@ -669,7 +748,7 @@ describe('opaque component runtime parity', () => {
     }
   );
 
-  it('still rejects source-shaping directives and dynamic content props on opaque components', async () => {
+  it('still rejects source-shaping directives and dynamic content props on components', async () => {
     const output = await extract(`
       <script setup lang="ts">
       import { T } from 'gt-vue';

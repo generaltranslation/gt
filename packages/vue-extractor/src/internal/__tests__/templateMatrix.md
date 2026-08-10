@@ -20,6 +20,13 @@ default slots, static `<component :is>` resolution, and compiler-valid
 TypeScript expressions. Branch and Plural named slots are the Vue equivalent
 of React branch props containing rich JSX.
 
+Static default-slot content authored on ordinary components and Vue built-ins
+participates in the surrounding T just like React component children. Their
+named slots stay opaque to that outer translation and may contain independent
+T components. Component implementation content is never inspected. Scoped
+default slots and dynamic slot names are rejected because their content cannot
+be known deterministically at extraction time.
+
 The following behavior is intentionally unsupported and must produce a
 diagnostic instead of a partial catalog entry:
 
@@ -29,7 +36,7 @@ diagnostic instead of a partial catalog entry:
 - source-shaping directives inside T, including `v-if`, `v-for`, `v-html`, and
   `v-text`;
 - dynamic translatable HTML props, unknown dynamic components, runtime slot
-  outlets, scoped slots, and named slots on ordinary rich components;
+  outlets, scoped default slots, and dynamic slot names;
 - React-only Derive/autoderive behavior; and
 - `$maxChars`, `$format`, ICU formatting, and interpolation. gt-vue currently
   extracts context-only plain strings.

@@ -175,13 +175,13 @@ describe('consumer Vue template compiler parity', () => {
     expect(output.errors).toEqual([]);
     const source = output.results[0]?.source;
     expect(source).toEqual([
-      { t: 'div', i: 1 },
-      { t: 'Suspense', i: 2, c: { t: 'b', i: 3, c: 'Ready' } },
-      { t: 'u', i: 4, c: 'Fragment' },
-      { t: 'i', i: 5, c: 'After' },
+      { t: 'div', i: 1, c: { t: 'b', i: 2, c: 'Hidden' } },
+      { t: 'Suspense', i: 3, c: { t: 'b', i: 4, c: 'Ready' } },
+      { t: 'u', i: 5, c: 'Fragment' },
+      { t: 'i', i: 6, c: 'After' },
     ]);
     expect(hashSource({ dataFormat: 'JSX', source: source! })).toBe(
-      '6a3a75b4fd57293b'
+      '45c26775d92815dd'
     );
   });
 
@@ -290,21 +290,21 @@ describe('consumer Vue template compiler parity', () => {
     expect(source).toEqual([
       { t: 'Suspense', i: 1, c: { t: 'b', i: 2, c: 'Exact' } },
       { t: 'Suspense', i: 3, c: { t: 'i', i: 4, c: 'Lower' } },
-      { t: 'SUSPENSE', i: 5 },
-      { t: 'susPense', i: 6 },
-      {
-        t: 'Suspense',
-        i: 7,
-        c: { t: 'strong', i: 8, c: 'Static exact' },
-      },
+      { t: 'SUSPENSE', i: 5, c: { t: 'u', i: 6, c: 'Upper hidden' } },
+      { t: 'susPense', i: 7, c: { t: 'em', i: 8, c: 'Mixed hidden' } },
       {
         t: 'Suspense',
         i: 9,
-        c: { t: 'small', i: 10, c: 'Static lower' },
+        c: { t: 'strong', i: 10, c: 'Static exact' },
+      },
+      {
+        t: 'Suspense',
+        i: 11,
+        c: { t: 'small', i: 12, c: 'Static lower' },
       },
     ]);
     expect(hashSource({ dataFormat: 'JSX', source: source! })).toBe(
-      'c76cdf0171c4fe3a'
+      '1fc85d4b54bced88'
     );
   });
 });

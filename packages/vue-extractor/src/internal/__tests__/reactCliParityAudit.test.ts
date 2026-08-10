@@ -163,11 +163,16 @@ describe('React CLI parity audit: rich Vue content', () => {
             t: 'Card',
             i: 2,
             d: { ti: 'Heading' },
+            c: 'Custom & deep',
           },
         },
-        { t: 'Transition', i: 3 },
-        { t: 'img', i: 4, d: { alt: 'Portrait' } },
-        { t: 'br', i: 5 },
+        {
+          t: 'Transition',
+          i: 3,
+          c: { t: 'p', i: 4, c: 'Motion' },
+        },
+        { t: 'img', i: 5, d: { alt: 'Portrait' } },
+        { t: 'br', i: 6 },
       ],
     ]);
   });

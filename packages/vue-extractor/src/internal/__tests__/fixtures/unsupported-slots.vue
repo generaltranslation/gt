@@ -5,8 +5,8 @@ import { T } from 'gt-vue';
 <template>
   <T>
     <Card>
-      <template #header>Header</template>
-      <template #default>Body</template>
+      Body
+      <template #header><T context="header">Header</T></template>
     </Card>
   </T>
   <T>

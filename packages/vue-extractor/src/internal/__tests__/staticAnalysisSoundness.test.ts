@@ -109,7 +109,7 @@ describe('Vue static-analysis soundness', () => {
     `const Card = () => h('div', [h(Suspense)]);`,
     `const Card = markRaw(defineComponent({ render() { return h('div', [h(Suspense)]); } }));`,
   ])(
-    'keeps an ordinary component opaque when its implementation mentions Suspense',
+    'keeps component implementation details out of its authored static children',
     async (script) => {
       const output = await extract(
         setup(
@@ -119,7 +119,11 @@ describe('Vue static-analysis soundness', () => {
       );
 
       expect(output.errors).toEqual([]);
-      expect(output.results[0]?.source).toEqual({ t: 'Card', i: 1 });
+      expect(output.results[0]?.source).toEqual({
+        t: 'Card',
+        i: 1,
+        c: 'Hidden',
+      });
     }
   );
 
@@ -158,7 +162,11 @@ describe('Vue static-analysis soundness', () => {
     );
 
     expect(output.errors).toEqual([]);
-    expect(output.results[0]?.source).toEqual({ t: 'Boundary', i: 1 });
+    expect(output.results[0]?.source).toEqual({
+      t: 'Boundary',
+      i: 1,
+      c: 'Hidden',
+    });
   });
 
   it('lets script setup shadow a normal-script Suspense binding', async () => {
@@ -169,7 +177,11 @@ describe('Vue static-analysis soundness', () => {
     `);
 
     expect(output.errors).toEqual([]);
-    expect(output.results[0]?.source).toEqual({ t: 'Boundary', i: 1 });
+    expect(output.results[0]?.source).toEqual({
+      t: 'Boundary',
+      i: 1,
+      c: 'Hidden',
+    });
   });
 
   it('lets script setup shadow a normal-script GT component', async () => {
@@ -210,7 +222,11 @@ describe('Vue static-analysis soundness', () => {
     );
 
     expect(direct.errors).toEqual([]);
-    expect(direct.results[0]?.source).toEqual({ t: 'AsyncBoundary', i: 1 });
+    expect(direct.results[0]?.source).toEqual({
+      t: 'AsyncBoundary',
+      i: 1,
+      c: 'Hidden',
+    });
     expect(literal.errors).toEqual([]);
     expect(literal.results[0]?.source).toEqual({
       t: 'Suspense',
