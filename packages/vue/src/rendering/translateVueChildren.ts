@@ -39,8 +39,39 @@ const variableTypes = {
 
 type Transformation = 'branch' | 'fragment' | 'plural' | 'variable' | undefined;
 
+/**
+ * Empty-rendering primitives that React preserves verbatim in branch source.
+ *
+ * These values cannot be part of `SourceNode`: Vue renders them as no child,
+ * while the persisted GT wire format distinguishes `true`, `false`, and
+ * `null`. Keeping them beside the render nodes preserves both contracts.
+ */
+type BranchWireLiteral = boolean | null;
+type SourceCardinality = 'array' | 'scalar';
+
+type BranchSourceInput = {
+  /** Original JavaScript truthiness for a direct primitive attribute. */
+  scalarTruthy?: boolean;
+  value: unknown;
+  /** Persisted primitive that differs from its empty Vue render shape. */
+  wireLiteral?: BranchWireLiteral;
+};
+
+type SelectedBranchSource = {
+  cardinality: SourceCardinality;
+  nodes: SourceNode[];
+  /** Absent for named slots and defaults, which are already node collections. */
+  scalarTruthy?: boolean;
+};
+
 type SourceElement = {
   branches: Record<string, SourceNode[]>;
+  /** Semantic wire shape for each branch, independent from Vue slot arrays. */
+  branchCardinalities: Record<string, SourceCardinality>;
+  /** Truthiness before Vue normalizes primitive attributes into text nodes. */
+  branchScalarTruthiness: Record<string, boolean>;
+  /** Boolean/null values preserved independently from empty render nodes. */
+  branchWireLiterals: Record<string, BranchWireLiteral>;
   children: SourceNode[];
   id: number;
   identity: string;
@@ -306,6 +337,9 @@ function visitChildren(
     : readDefaultSlot(children, transformation);
   const source: SourceElement = {
     branches: {},
+    branchCardinalities: {},
+    branchScalarTruthiness: {},
+    branchWireLiterals: {},
     children:
       variable || defaultSlot.opaque
         ? []
@@ -328,13 +362,17 @@ function visitChildren(
   };
 
   if (transformation === 'branch' || transformation === 'plural') {
-    source.branches = getBranches(
+    const branches = getBranches(
       children,
       transformation,
       id,
       identity,
       identityRender
     );
+    source.branches = branches.nodes;
+    source.branchCardinalities = branches.cardinalities;
+    source.branchScalarTruthiness = branches.scalarTruthiness;
+    source.branchWireLiterals = branches.wireLiterals;
   }
   return [source];
 }
@@ -442,8 +480,13 @@ function getBranches(
   branchElementId: number,
   identity: string,
   identityRender: TranslationIdentityRender
-): Record<string, SourceNode[]> {
-  const inputs = Object.create(null) as Record<string, unknown>;
+): {
+  cardinalities: Record<string, SourceCardinality>;
+  nodes: Record<string, SourceNode[]>;
+  scalarTruthiness: Record<string, boolean>;
+  wireLiterals: Record<string, BranchWireLiteral>;
+} {
+  const inputs = Object.create(null) as Record<string, BranchSourceInput>;
   if (isSlots(vnode.children)) {
     for (const [key, slot] of Object.entries(vnode.children)) {
       if (
@@ -451,7 +494,7 @@ function getBranches(
         !key.startsWith('_') &&
         typeof slot === 'function'
       ) {
-        inputs[key] = slot();
+        inputs[key] = { value: slot() };
       }
     }
   }
@@ -460,28 +503,78 @@ function getBranches(
       isBranchAttribute(key, value) &&
       !Object.prototype.hasOwnProperty.call(inputs, key)
     ) {
-      inputs[key] = value;
+      inputs[key] = {
+        scalarTruthy: Boolean(value),
+        value,
+        ...(isBranchWireLiteral(value) && { wireLiteral: value }),
+      };
     }
   }
 
-  return Object.fromEntries(
-    Object.entries(inputs)
-      .filter(
-        ([key]) => transformation === 'branch' || isAcceptedPluralForm(key)
-      )
-      // Branches are mutually exclusive. Number each one independently from
-      // the parent so they share stable variable names and do not shift later
-      // siblings, matching the React renderer.
-      .map(([key, value]) => [
-        key,
-        visitChildren(
-          value,
-          { value: branchElementId },
-          `${identity}/branch:${key.length}:${key}`,
-          identityRender
-        ),
-      ])
+  const acceptedInputs = Object.entries(inputs).filter(
+    ([key]) => transformation === 'branch' || isAcceptedPluralForm(key)
   );
+  const nodes: Record<string, SourceNode[]> = Object.fromEntries(
+    acceptedInputs.map(([key, input]) => [
+      key,
+      getBranchRenderNodes(
+        input,
+        branchElementId,
+        identity,
+        key,
+        identityRender
+      ),
+    ])
+  );
+  return {
+    cardinalities: Object.fromEntries(
+      acceptedInputs.map(([key, input]) => [
+        key,
+        input.scalarTruthy === undefined
+          ? getSourceCardinality(nodes[key])
+          : 'scalar',
+      ])
+    ),
+    nodes,
+    scalarTruthiness: Object.fromEntries(
+      acceptedInputs.flatMap(([key, input]) =>
+        input.scalarTruthy === undefined ? [] : [[key, input.scalarTruthy]]
+      )
+    ),
+    wireLiterals: Object.fromEntries(
+      acceptedInputs.flatMap(([key, input]) =>
+        input.wireLiteral === undefined ? [] : [[key, input.wireLiteral]]
+      )
+    ),
+  };
+}
+
+/**
+ * Builds the render model for one branch independently from its wire model.
+ *
+ * Direct boolean/null attributes render no node, so they must not enter the
+ * recursive VNode visitor. Other mutually exclusive branches start numbering
+ * from their parent to preserve React-compatible variable and element IDs.
+ */
+function getBranchRenderNodes(
+  input: BranchSourceInput,
+  branchElementId: number,
+  identity: string,
+  key: string,
+  identityRender: TranslationIdentityRender
+): SourceNode[] {
+  if (input.wireLiteral !== undefined) return [];
+  return visitChildren(
+    input.value,
+    { value: branchElementId },
+    `${identity}/branch:${key.length}:${key}`,
+    identityRender
+  );
+}
+
+/** True when Vue renders a direct branch attribute empty but GT persists it. */
+function isBranchWireLiteral(value: unknown): value is BranchWireLiteral {
+  return value === null || typeof value === 'boolean';
 }
 
 function isSlots(children: unknown): children is Slots {
@@ -517,7 +610,7 @@ function serializeNode(node: SourceNode): JsxChild {
     data.b = Object.fromEntries(
       Object.entries(node.branches).map(([key, branch]) => [
         key,
-        serializeNodes(branch),
+        serializeBranch(node, key, branch),
       ])
     );
     data.t = node.transformation === 'plural' ? 'p' : 'b';
@@ -529,6 +622,23 @@ function serializeNode(node: SourceNode): JsxChild {
     ...(Object.keys(data).length && { d: data }),
     ...(node.children.length && { c: serializeNodes(node.children) }),
   };
+}
+
+/**
+ * Serializes a branch without conflating its render shape with its wire value.
+ *
+ * `JsxChildren` predates React's persisted boolean/null branch values, so the
+ * cast is confined to the exact literal crossing that shared type boundary.
+ */
+function serializeBranch(
+  node: SourceElement,
+  key: string,
+  branch: SourceNode[]
+): JsxChildren {
+  if (Object.hasOwn(node.branchWireLiterals, key)) {
+    return node.branchWireLiterals[key] as unknown as JsxChildren;
+  }
+  return serializeNodes(branch);
 }
 
 /**
@@ -549,18 +659,33 @@ function getElementName(vnode: VNode, id: number): string {
 
 function renderNodes(
   source: SourceNode[],
-  target: JsxChildren | undefined,
+  target: JsxChildren | boolean | null | undefined,
   state: GTState,
-  identityRender: TranslationIdentityRender
+  identityRender: TranslationIdentityRender,
+  sourceCardinality: SourceCardinality = getSourceCardinality(source),
+  sourceScalarTruthy?: boolean
 ): VNodeChild {
-  if (target == null) {
+  if (target == null || typeof target === 'boolean') {
     // A partial translated tree falls back within the active locale. A wholly
     // missing catalog entry is handled above using the source/default locale.
     return renderDefaultNodes(source, state, identityRender, state.getLocale());
   }
   if (typeof target === 'string') return target;
+  const targetIsArray = Array.isArray(target);
+  if (!targetIsArray && sourceCardinality === 'array') {
+    // A scalar element/variable target cannot reconcile against React's array
+    // source shape. React falls back to the complete source instead of
+    // selecting the first compatible child and dropping its siblings.
+    return renderDefaultNodes(source, state, identityRender, state.getLocale());
+  }
+  if (targetIsArray && sourceScalarTruthy === false) {
+    // React only coerces a truthy scalar source to an array before rendering
+    // an array target. Preserve that asymmetry for every falsy primitive,
+    // including zero, empty strings, false, null, NaN, and zero bigint.
+    return renderDefaultNodes(source, state, identityRender, state.getLocale());
+  }
 
-  const targets = Array.isArray(target) ? target : [target];
+  const targets = targetIsArray ? target : [target];
   const sourceElements = source.filter(
     (node): node is SourceElement => typeof node !== 'string'
   );
@@ -575,6 +700,23 @@ function renderNodes(
   const ordinaryById = new Map(ordinary.map((node) => [node.id, node]));
   const fallback = [...ordinary];
   const occurrences = new Map<SourceElement, number>();
+
+  // React falls back to the complete scalar source when a scalar target has
+  // no compatible element or variable. Array targets instead drop unmatched
+  // records one by one, so this check must remain limited to scalar targets.
+  if (!targetIsArray) {
+    const hasCompatibleSource = isVariable(target)
+      ? variables.has(target.k)
+      : ordinary.length > 0;
+    if (!hasCompatibleSource) {
+      return renderDefaultNodes(
+        source,
+        state,
+        identityRender,
+        state.getLocale()
+      );
+    }
+  }
 
   return targets.map((targetNode) => {
     if (typeof targetNode === 'string') return targetNode;
@@ -667,11 +809,14 @@ function renderElement(
 ): VNodeChild {
   if (source.transformation === 'branch') {
     const branch = getBranchKey(source.vnode);
+    const selectedSource = getSelectedSourceBranch(source, branch);
     return renderNodes(
-      getSelectedSourceBranch(source, branch),
+      selectedSource.nodes,
       getSelectedTargetBranch(target, branch),
       state,
-      identityRender
+      identityRender,
+      selectedSource.cardinality,
+      selectedSource.scalarTruthy
     );
   }
   if (source.transformation === 'plural') {
@@ -684,26 +829,17 @@ function renderElement(
         state.getLocale()
       );
     }
-    const sourceBranch = getPluralKey(
-      n,
-      Object.keys(source.branches),
-      source,
-      state,
-      state.defaultLocale,
-      true
-    );
+    const sourceBranch = getPluralKey(n, Object.keys(source.branches), state);
     const targetBranches = target.d?.b ?? {};
-    const targetBranch = getPluralKey(
-      n,
-      Object.keys(targetBranches),
-      source,
-      state
-    );
+    const targetBranch = getPluralKey(n, Object.keys(targetBranches), state);
+    const selectedSource = getSelectedSourceBranch(source, sourceBranch);
     return renderNodes(
-      getSelectedSourceBranch(source, sourceBranch),
+      selectedSource.nodes,
       (targetBranch && targetBranches[targetBranch]) ?? target.c,
       state,
-      identityRender
+      identityRender,
+      selectedSource.cardinality,
+      selectedSource.scalarTruthy
     );
   }
   if (source.transformation === 'fragment') {
@@ -750,24 +886,16 @@ function getBranchKey(source: VNode): string | undefined {
 function getPluralKey(
   n: number,
   branches: string[],
-  source: SourceElement,
   state: GTState,
-  locale = state.getLocale(),
-  includeSourceLocales = false
+  locale = state.getLocale()
 ): string | undefined {
   const forms = branches.filter(isAcceptedPluralForm);
   if (!forms.length) return undefined;
-  const sourceLocales =
-    includeSourceLocales && Array.isArray(source.vnode.props?.locales)
-      ? source.vnode.props.locales.filter(
-          (locale): locale is string => typeof locale === 'string'
-        )
-      : [];
   return (
     getPluralForm(
       n,
       forms,
-      getFormatLocales(sourceLocales, locale, state.defaultLocale)
+      getFormatLocales(undefined, locale, state.defaultLocale)
     ) || undefined
   );
 }
@@ -775,19 +903,45 @@ function getPluralKey(
 function getSelectedSourceBranch(
   source: SourceElement,
   branch?: string
-): SourceNode[] {
-  return branch && Object.hasOwn(source.branches, branch)
-    ? source.branches[branch]
-    : source.children;
+): SelectedBranchSource {
+  if (!branch || !Object.hasOwn(source.branches, branch)) {
+    return {
+      cardinality: getSourceCardinality(source.children),
+      nodes: source.children,
+    };
+  }
+
+  const wireLiteral = source.branchWireLiterals[branch];
+  // React treats a null plural form as missing and renders the default branch,
+  // while a null Branch value remains a selected, empty branch.
+  if (source.transformation === 'plural' && wireLiteral === null) {
+    return {
+      cardinality: getSourceCardinality(source.children),
+      nodes: source.children,
+    };
+  }
+  return {
+    cardinality: source.branchCardinalities[branch],
+    nodes: source.branches[branch],
+    scalarTruthy: source.branchScalarTruthiness[branch],
+  };
+}
+
+/** Returns the scalar/array shape produced by `serializeNodes()`. */
+function getSourceCardinality(nodes: SourceNode[]): SourceCardinality {
+  return nodes.length === 1 ? 'scalar' : 'array';
 }
 
 function getSelectedTargetBranch(
   target: JsxElement,
   branch?: string
-): JsxChildren | undefined {
-  return branch && target.d?.b && Object.hasOwn(target.d.b, branch)
-    ? target.d.b[branch]
-    : target.c;
+): JsxChildren | boolean | null | undefined {
+  if (branch && target.d?.b && Object.hasOwn(target.d.b, branch)) {
+    // React catalogs can persist boolean/null branch values even though the
+    // shared public type has not yet widened to describe that wire reality.
+    return target.d.b[branch] as JsxChildren | boolean | null;
+  }
+  return target.c;
 }
 
 function mergeAdjacentStrings(nodes: SourceNode[]): SourceNode[] {
@@ -848,7 +1002,7 @@ function renderDefaultNode(
   }
   if (node.transformation === 'branch') {
     return renderDefaultNodes(
-      getSelectedSourceBranch(node, getBranchKey(node.vnode)),
+      getSelectedSourceBranch(node, getBranchKey(node.vnode)).nodes,
       state,
       identityRender,
       locale
@@ -859,16 +1013,9 @@ function renderDefaultNode(
     if (typeof n !== 'number') {
       return renderDefaultNodes(node.children, state, identityRender, locale);
     }
-    const branch = getPluralKey(
-      n,
-      Object.keys(node.branches),
-      node,
-      state,
-      locale,
-      true
-    );
+    const branch = getPluralKey(n, Object.keys(node.branches), state, locale);
     return renderDefaultNodes(
-      getSelectedSourceBranch(node, branch),
+      getSelectedSourceBranch(node, branch).nodes,
       state,
       identityRender,
       locale
@@ -983,6 +1130,11 @@ function cloneWithProps(
   return cloneVNode(vnode, extraProps);
 }
 
-function isVariable(value: JsxElement | Variable): value is Variable {
-  return 'k' in value && typeof value.k === 'string';
+function isVariable(value: unknown): value is Variable {
+  return (
+    value != null &&
+    typeof value === 'object' &&
+    'k' in value &&
+    typeof value.k === 'string'
+  );
 }

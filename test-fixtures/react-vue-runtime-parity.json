@@ -134,26 +134,8 @@
   {
     "id": "complex-cases/different-number-formats",
     "hash": "4d68f22fc6e97b8f",
-    "mode": "expected-failure",
-    "reason": "The only runtime mismatch is direct Branch props true, false, and null being normalized to empty children; their typed values remain available on the compiled VNode, so gt-vue can preserve them in source serialization.",
-    "brokenVueHash": "4c9ba22391e5f1dc",
-    "repairs": [
-      {
-        "path": [1, "d", "b", "active"],
-        "before": [],
-        "after": true
-      },
-      {
-        "path": [1, "d", "b", "inactive"],
-        "before": [],
-        "after": false
-      },
-      {
-        "path": [1, "d", "b", "unknown"],
-        "before": [],
-        "after": null
-      }
-    ]
+    "mode": "semantic-wire-exact",
+    "reason": "Both runtimes preserve direct Branch props true, false, and null as typed source values, producing identical semantic wire data and the locked React hash."
   },
   {
     "id": "complex-cases/duplicate-branches",
