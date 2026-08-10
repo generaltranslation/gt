@@ -1413,7 +1413,7 @@ describe('gt-vue runtime', () => {
     mounted.app.unmount();
   });
 
-  it('selects source plural values with the source locale and target branches with the active locale', async () => {
+  it('selects source and target plural values with the active locale', async () => {
     const variable = { i: 2, k: '_gt_value_2', v: 'v' } as const;
     const target: JsxChildren = {
       t: 'Plural',
@@ -1454,8 +1454,8 @@ describe('gt-vue runtime', () => {
 
     const html = stripFragmentMarkers(await renderWithPlugin(Root, plugin));
 
-    expect(html).toContain('Cible OTHER');
-    expect(html).not.toContain('Cible ONE');
+    expect(html).toContain('Cible ONE');
+    expect(html).not.toContain('Cible OTHER');
   });
 
   it('updates multi-root rich children from arrays to scalar text on the client', async () => {
