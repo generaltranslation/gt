@@ -831,15 +831,6 @@ function readOrdinaryDefaultSlot(
       continue;
     }
     present = true;
-    if (property.computed) {
-      addVueError(
-        context,
-        babelLocation(property.loc),
-        'Found a computed default slot on a component inside a gt-vue JSX translation',
-        'Use the literal default key'
-      );
-      continue;
-    }
     const value =
       property.type === 'ObjectMethod' && property.kind === 'method'
         ? property
