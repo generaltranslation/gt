@@ -420,6 +420,176 @@ describe('Vue JSX rich extraction', () => {
     ]);
   });
 
+  it.each(['/project/src/View.jsx', '/project/src/View.tsx'])(
+    'preserves React-compatible primitive branch wire values in %s',
+    async (filename) => {
+      const output = await extractFromVueSource(
+        `
+          import { Branch, Plural, T } from 'gt-vue';
+          export const View = () => (
+            <T>
+              <Plural
+                n={1}
+                zero={0}
+                one={1}
+                two={-1}
+                few={3.14159}
+                many={1e6}
+                other={0xff}
+                ignored={false}
+              />
+              <Branch
+                branch="status"
+                active={true}
+                inactive={false}
+                unknown={null}
+                pending=""
+              />
+              <Plural
+                n={1}
+                singular="Single 'quotes' inside"
+                plural={'Double "quotes" inside'}
+                other={\`Template with 'both' "types"\`}
+              />
+            </T>
+          );
+        `,
+        filename
+      );
+
+      expect(output.errors).toEqual([]);
+      expect(output.results[0]?.source).toStrictEqual([
+        {
+          d: {
+            b: {
+              few: '3.14159',
+              many: '1000000',
+              one: '1',
+              other: '255',
+              two: '-1',
+              zero: '0',
+            },
+            t: 'p',
+          },
+          i: 1,
+          t: 'Plural',
+        },
+        {
+          d: {
+            b: {
+              active: true,
+              inactive: false,
+              pending: '',
+              unknown: null,
+            },
+            t: 'b',
+          },
+          i: 2,
+          t: 'Branch',
+        },
+        {
+          d: {
+            b: {
+              other: 'Template with \'both\' "types"',
+              plural: 'Double "quotes" inside',
+              singular: "Single 'quotes' inside",
+            },
+            t: 'p',
+          },
+          i: 3,
+          t: 'Plural',
+        },
+      ]);
+      expect(
+        hashSource({
+          dataFormat: 'JSX',
+          source: output.results[0]!.source,
+        })
+      ).toBe('4d68f22fc6e97b8f');
+    }
+  );
+
+  it('preserves direct boolean and null props for accepted Plural forms', async () => {
+    const output = await extractFromVueSource(
+      `
+        import { Plural, T } from 'gt-vue';
+        export const View = () => (
+          <T>
+            <Plural
+              n={2}
+              zero
+              one={false}
+              two="Two"
+              other={null}
+              invalid={true}
+            />
+          </T>
+        );
+      `,
+      '/project/src/View.tsx'
+    );
+
+    const source = {
+      d: {
+        b: { one: false, other: null, two: 'Two', zero: true },
+        t: 'p' as const,
+      },
+      i: 1,
+      t: 'Plural',
+    };
+    expect(output.errors).toEqual([]);
+    expect(output.results[0]?.source).toStrictEqual(source);
+    expect(hashSource({ dataFormat: 'JSX', source })).toBe('5057e7a9d4100a95');
+  });
+
+  it('keeps named JSX slots ahead of direct boolean and null props', async () => {
+    const output = await extractFromVueSource(
+      `
+        import { Branch, Plural, T } from 'gt-vue';
+        export const View = () => (
+          <T>
+            <Branch
+              branch="formal"
+              formal={false}
+              casual={null}
+              v-slots={{
+                formal: () => 'Formal slot',
+                casual: () => 'Casual slot',
+              }}
+            />
+            <Plural
+              n={1}
+              one={false}
+              other={null}
+              v-slots={{
+                one: () => 'One slot',
+                other: () => 'Other slot',
+              }}
+            />
+          </T>
+        );
+      `,
+      '/project/src/View.jsx'
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(output.results[0]?.source).toStrictEqual([
+      {
+        d: {
+          b: { casual: 'Casual slot', formal: 'Formal slot' },
+          t: 'b',
+        },
+        i: 1,
+        t: 'Branch',
+      },
+      {
+        d: { b: { one: 'One slot', other: 'Other slot' }, t: 'p' },
+        i: 2,
+        t: 'Plural',
+      },
+    ]);
+  });
+
   it('serializes only the normalized default roots of imported Vue Suspense forms', async () => {
     const output = await extractFromVueSource(
       `
@@ -602,6 +772,11 @@ describe('Vue JSX rich extraction', () => {
       name: 'duplicate branch prop',
       source: `<T><Branch formal="First" formal="Second" /></T>`,
       diagnostic: 'duplicate branch prop "formal"',
+    },
+    {
+      name: 'spread branch props',
+      source: `<T><Branch {...branches} /></T>`,
+      diagnostic: 'spread prop',
     },
     {
       name: 'missing plural selector',

@@ -11,6 +11,8 @@ type BranchCase = {
   template: string;
 };
 
+type BranchWireValue = JsxChildren | boolean | null;
+
 const primitiveCases: BranchCase[] = [
   {
     name: 'plain string attribute',
@@ -54,17 +56,17 @@ const primitiveCases: BranchCase[] = [
   {
     name: 'true',
     template: '<T><Branch branch="flag" :flag="true">Fallback</Branch></T>',
-    source: branchSource({ flag: [] }),
+    source: branchSource({ flag: true }),
   },
   {
     name: 'false',
     template: '<T><Branch branch="flag" :flag="false">Fallback</Branch></T>',
-    source: branchSource({ flag: [] }),
+    source: branchSource({ flag: false }),
   },
   {
     name: 'null',
     template: '<T><Branch branch="empty" :empty="null">Fallback</Branch></T>',
-    source: branchSource({ empty: [] }),
+    source: branchSource({ empty: null }),
   },
   {
     name: 'empty bare attribute',
@@ -362,10 +364,24 @@ describe('Branch attribute runtime parity', () => {
       source: branchSource({ formal: 'Slot' }),
     },
     {
+      name: 'primitive Branch prop',
+      setup: '',
+      template:
+        '<T><Branch branch="formal" :formal="false"><template #formal>Slot</template>Fallback</Branch></T>',
+      source: branchSource({ formal: 'Slot' }),
+    },
+    {
       name: 'dynamic Plural prop',
       setup: 'const value = String(Date.now());',
       template:
         '<T><Plural :n="1" :one="value"><template #one>Slot</template>Fallback</Plural></T>',
+      source: pluralSource({ one: 'Slot' }),
+    },
+    {
+      name: 'primitive Plural prop',
+      setup: '',
+      template:
+        '<T><Plural :n="1" :one="null"><template #one>Slot</template>Fallback</Plural></T>',
       source: pluralSource({ one: 'Slot' }),
     },
   ])('gives a named slot precedence over a $name', async (testCase) => {
@@ -385,8 +401,8 @@ describe('Branch attribute runtime parity', () => {
         zero: 'None',
         one: '1',
         two: '2',
-        few: [],
-        many: [],
+        few: false,
+        many: null,
         other: 'Other',
       }),
     });
@@ -397,11 +413,58 @@ describe('Branch attribute runtime parity', () => {
         zero: 'None',
         one: '1',
         two: '2',
-        few: [],
-        many: [],
+        few: false,
+        many: null,
         other: 'Other',
       }),
     ]);
+  });
+
+  it('matches finalized runtime hashes for direct primitive branch values', async () => {
+    const branchExpected = branchSource({
+      active: true,
+      inactive: false,
+      unknown: null,
+      count: '12',
+      label: 'Hello',
+    });
+    const branchOutput = await extractCase({
+      name: 'primitive Branch runtime hash',
+      template:
+        '<T><Branch branch="active" :active="true" :inactive="false" :unknown="null" :count="12" label="Hello">Fallback</Branch></T>',
+      source: branchExpected,
+    });
+    const pluralExpected = pluralSource({
+      zero: false,
+      one: true,
+      two: null,
+      few: '',
+      many: '0',
+      other: 'Other',
+    });
+    const pluralOutput = await extractCase({
+      name: 'primitive Plural runtime hash',
+      template:
+        '<T><Plural :n="2" :zero="false" :one="true" :two="null" few="" :many="0" other="Other">Fallback</Plural></T>',
+      source: pluralExpected,
+    });
+
+    expect(branchOutput.errors).toEqual([]);
+    expect(pluralOutput.errors).toEqual([]);
+    expect(richSources(branchOutput)).toEqual([branchExpected]);
+    expect(richSources(pluralOutput)).toEqual([pluralExpected]);
+    expect(
+      hashSource({
+        dataFormat: 'JSX',
+        source: richSources(branchOutput)[0],
+      })
+    ).toBe('be0765c641c3c17a');
+    expect(
+      hashSource({
+        dataFormat: 'JSX',
+        source: richSources(pluralOutput)[0],
+      })
+    ).toBe('69b0a0d0f137587f');
   });
 
   it.each([
@@ -465,7 +528,7 @@ describe('Branch attribute runtime parity', () => {
   });
 });
 
-function branchSource(branches?: Record<string, JsxChildren>): JsxChildren {
+function branchSource(branches?: Record<string, BranchWireValue>): JsxChildren {
   return {
     t: 'Branch',
     i: 1,
@@ -473,16 +536,16 @@ function branchSource(branches?: Record<string, JsxChildren>): JsxChildren {
       ? { d: { b: branches, t: 'b' as const } }
       : {}),
     c: 'Fallback',
-  };
+  } as unknown as JsxChildren;
 }
 
-function pluralSource(branches: Record<string, JsxChildren>): JsxChildren {
+function pluralSource(branches: Record<string, BranchWireValue>): JsxChildren {
   return {
     t: 'Plural',
     i: 1,
     d: { b: branches, t: 'p' },
     c: 'Fallback',
-  };
+  } as unknown as JsxChildren;
 }
 
 async function extractCase(testCase: BranchCase) {

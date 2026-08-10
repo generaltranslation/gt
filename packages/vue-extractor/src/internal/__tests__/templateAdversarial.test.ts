@@ -309,9 +309,9 @@ describe('Vue template extraction', () => {
         {
           t: 'Branch',
           i: 1,
-          d: { b: { zero: '0', off: [], empty: [] }, t: 'b' },
+          d: { b: { zero: '0', off: false, empty: null }, t: 'b' },
           c: 'Fallback',
-        },
+        } as unknown as JsxChildren,
       ] satisfies JsxChildren[],
     },
     {
