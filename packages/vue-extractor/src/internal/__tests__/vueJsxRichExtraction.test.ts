@@ -396,6 +396,39 @@ describe('Vue JSX rich extraction', () => {
     ]);
   });
 
+  it.each([
+    {
+      name: 'literal computed key',
+      setup: '',
+      slot: `['default']`,
+    },
+    {
+      name: 'immutable computed key',
+      setup: `const defaultSlot = 'default';`,
+      slot: `[defaultSlot]`,
+    },
+  ])('serializes a default slot selected by a $name', async (fixture) => {
+    const output = await extractFromVueSource(
+      `
+        import { T } from 'gt-vue';
+        import Card from './Card.vue';
+        ${fixture.setup}
+        export const View = () => (
+          <T><Card v-slots={{ ${fixture.slot}: () => <b>Hello</b> }} /></T>
+        );
+      `,
+      '/project/src/View.tsx',
+      { projectRoot: '/project' }
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(output.results[0]?.source).toEqual({
+      c: { c: 'Hello', i: 2, t: 'b' },
+      i: 1,
+      t: 'Card',
+    });
+  });
+
   it('serializes Vue object-child default slots while leaving named slots opaque', async () => {
     const output = await extractFromVueSource(
       `
@@ -951,10 +984,10 @@ describe('Vue JSX rich extraction', () => {
       diagnostic: 'dynamic or scoped default slot',
     },
     {
-      name: 'computed ordinary default slot',
-      source: `<T><Card v-slots={{ ['default']: () => <b>Hello</b> }} /></T>`,
-      setup: `const Card = () => null;`,
-      diagnostic: 'computed default slot',
+      name: 'unknown computed ordinary default slot',
+      source: `<T><Card v-slots={{ [slotName]: () => <b>Hello</b> }} /></T>`,
+      setup: `const Card = () => null; const slotName = getSlotName();`,
+      diagnostic: 'dynamic slot name',
     },
     {
       name: 'spread ordinary slots',
