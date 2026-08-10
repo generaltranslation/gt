@@ -79,6 +79,38 @@ describe('default-pattern primary rejection precedence', () => {
     expect(outcome).not.toBe(timeout);
   });
 
+  it('surfaces an immediate primary error before starting lazy Vue work', async () => {
+    const primaryError = new Error('primary failed before Vue loading');
+    const result = handledPlan().run({
+      extractPrimary: () => Promise.reject(primaryError),
+    });
+
+    await expect(result).rejects.toBe(primaryError);
+    expect(mocks.inspectVueProjectForRuntime).not.toHaveBeenCalled();
+
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(mocks.inspectVueProjectForRuntime).not.toHaveBeenCalled();
+  });
+
+  it('starts Vue work while a successful primary extractor remains pending', async () => {
+    const primaryResult = deferred<typeof emptyOutput>();
+    const result = handledPlan().run({
+      extractPrimary: () => primaryResult.promise,
+    });
+
+    expect(mocks.inspectVueProjectForRuntime).not.toHaveBeenCalled();
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(mocks.inspectVueProjectForRuntime).toHaveBeenCalledOnce();
+
+    primaryResult.resolve(emptyOutput);
+    await expect(result).resolves.toBe(emptyOutput);
+    expect(mocks.mergeVueProjectExtraction).toHaveBeenCalledWith(
+      emptyOutput,
+      emptyOutput
+    );
+  });
+
   it('preserves an already-rejected primary error over inspection failure', async () => {
     const primaryError = new Error('primary failure');
     const inspectionError = new Error('inspection failure');

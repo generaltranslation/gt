@@ -165,21 +165,29 @@ async function runVueExtraction(
   if (filePatterns === undefined) {
     if (extractPrimary) {
       const primaryPromise = extractPrimary(filePatterns);
-      const vueContextPromise = loadVueExtractionContext(options);
+      let primaryRejected = false;
+      let primaryError: unknown;
+      const observedPrimaryPromise = primaryPromise.catch((error: unknown) => {
+        primaryRejected = true;
+        primaryError = error;
+        throw error;
+      });
       // Observe both branches immediately. This lets an already-rejected
-      // primary extractor retain its error identity and settle the returned
-      // promise without waiting for workspace inspection. Promise.all also
-      // keeps the losing branch observed if it rejects later.
-      const vuePromise = vueContextPromise.then(
-        async ({ inspection, project }) => ({
+      // primary extractor retain its error identity before Node starts the
+      // comparatively expensive lazy Vue imports. Successful primary work and
+      // Vue inspection still overlap after the current event-loop turn.
+      const vuePromise = afterCurrentTurn(async () => {
+        if (primaryRejected) throw primaryError;
+        const { inspection, project } = await loadVueExtractionContext(options);
+        return {
           project,
           vue: await project.extractFromVueProject(
             createProjectExtractionOptions(options, inspection, filePatterns)
           ),
-        })
-      );
+        };
+      });
       const [primary, { project, vue }] = await Promise.all([
-        primaryPromise,
+        observedPrimaryPromise,
         vuePromise,
       ]);
       return project.mergeVueProjectExtraction(primary, vue);
@@ -230,6 +238,11 @@ async function runVueExtraction(
   );
   const [primary, vue] = await Promise.all([primaryPromise, vuePromise]);
   return project.mergeVueProjectExtraction(primary, vue);
+}
+
+/** Lets an already-settled primary extractor reach the host before Vue loads. */
+function afterCurrentTurn<T>(callback: () => Promise<T>): Promise<T> {
+  return new Promise<void>((resolve) => setImmediate(resolve)).then(callback);
 }
 
 /** Adapts accurate Vue wire types at the legacy host-CLI Updates boundary. */
