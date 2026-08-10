@@ -44,8 +44,8 @@
   "devDependencies": {
     "@generaltranslation/react-core": "workspace:*",
     "@types/node": "catalog:",
-    "@types/react": "19.1.15",
-    "react": "19.1.1",
+    "@types/react": ">=18.0.0 <20.0.0",
+    "react": ">=18.0.0",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
