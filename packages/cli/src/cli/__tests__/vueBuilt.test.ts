@@ -70,6 +70,7 @@ describe('built Vue CLI', () => {
         import { Command } from ${JSON.stringify(commanderUrl)};
         import { BaseCLI, main } from ${JSON.stringify(builtIndexUrl)};
         import { InlineCLI } from ${JSON.stringify(builtInlineUrl)};
+        import { ReactCLI } from ${JSON.stringify(builtReactUrl)};
         import { VueCLI } from ${JSON.stringify(builtVueUrl)};
 
         const commandNames = (CLI, ...args) => {
@@ -77,6 +78,14 @@ describe('built Vue CLI', () => {
           const cli = new CLI(program, ...args);
           cli.init();
           return program.commands.map((command) => command.name());
+        };
+        const commandOptions = (CLI, commandName, ...args) => {
+          const program = new Command();
+          const cli = new CLI(program, ...args);
+          cli.init();
+          return program.commands
+            .find((command) => command.name() === commandName)
+            .options.map((option) => option.attributeName());
         };
         const baseCommands = commandNames(BaseCLI, 'base');
         const inlineCommands = commandNames(InlineCLI, 'gt-vue');
@@ -87,6 +96,14 @@ describe('built Vue CLI', () => {
         assert.equal(vueCommands.filter((name) => name === 'setup').length, 1);
         assert.equal(vueCommands.includes('generate'), true);
         assert.equal(vueCommands.includes('validate'), true);
+        assert.deepEqual(
+          commandOptions(VueCLI, 'init'),
+          commandOptions(BaseCLI, 'init', 'base')
+        );
+        assert.deepEqual(
+          commandOptions(VueCLI, 'setup'),
+          commandOptions(ReactCLI, 'setup', 'gt-react')
+        );
 
         process.argv.splice(0, process.argv.length, process.execPath, 'gt', 'probe');
         const routedProgram = new Command();
@@ -131,10 +148,66 @@ describe('built Vue CLI', () => {
           const cli = new ConfigurationProbeCLI(program);
           cli.init();
 
-          await program.parseAsync([commandName], { from: 'user' });
+          const args =
+            commandName === 'init'
+              ? [
+                  commandName,
+                  '--src',
+                  'src/**/*.vue',
+                  '--config',
+                  'custom.gt.config.json',
+                ]
+              : [commandName];
+          await program.parseAsync(args, { from: 'user' });
 
           assert.deepEqual(cli.calls, [[false, false, true]]);
         }
+      `,
+      projectRoot
+    );
+  });
+
+  it('passes Vue source-selection flags through setup', () => {
+    const projectRoot = createProject({
+      dependencies: {
+        'gt-vue': '*',
+        vite: '*',
+      },
+    });
+
+    runNode(
+      `
+        import assert from 'node:assert/strict';
+        import { Command } from ${JSON.stringify(commanderUrl)};
+        import { VueCLI } from ${JSON.stringify(builtVueUrl)};
+
+        class SetupProbeCLI extends VueCLI {
+          calls = [];
+
+          async handleSetupProject(options) {
+            this.calls.push(options);
+          }
+        }
+
+        const program = new Command();
+        const cli = new SetupProbeCLI(program);
+        cli.init();
+        await program.parseAsync(
+          [
+            'setup',
+            '--src',
+            'src/**/*.vue',
+            '--tsconfig',
+            'tsconfig.app.json',
+            '--dry-run',
+          ],
+          { from: 'user' }
+        );
+
+        assert.equal(cli.calls.length, 1);
+        assert.deepEqual(cli.calls[0].src, ['src/**/*.vue']);
+        assert.equal(cli.calls[0].jsconfig, 'tsconfig.app.json');
+        assert.equal(cli.calls[0].dryRun, true);
       `,
       projectRoot
     );
