@@ -11,8 +11,9 @@ import type { JsxChildren } from '@generaltranslation/format/types';
 import type { FileToUpload } from 'generaltranslation/types';
 import { hashStringSync } from '../../utils/hash.js';
 import { TEMPLATE_FILE_NAME, TEMPLATE_FILE_ID } from '../../utils/constants.js';
-import { isInlineLibrary } from '../../types/libraries.js';
+import { isInlineLibrary, Libraries } from '../../types/libraries.js';
 import { shouldPublishGt } from '../../utils/resolvePublish.js';
+import { planVueExtraction } from '@generaltranslation/vue-extractor/integration';
 
 export async function collectFiles(
   options: TranslateFlags,
@@ -28,11 +29,19 @@ export async function collectFiles(
 
   // Parse for React components
   let reactComponents = 0;
-  if (isInlineLibrary(library)) {
+  const inlineLibrary = isInlineLibrary(library)
+    ? library
+    : planVueExtraction({
+          library,
+          projectRoot: process.cwd(),
+        }).handled
+      ? Libraries.GT_VUE
+      : undefined;
+  if (inlineLibrary) {
     const updates = await aggregateInlineTranslations(
       options,
       settings,
-      library
+      inlineLibrary
     );
     if (updates.length > 0) {
       if (!settings.publish && !settings.files?.placeholderPaths.gt) {
