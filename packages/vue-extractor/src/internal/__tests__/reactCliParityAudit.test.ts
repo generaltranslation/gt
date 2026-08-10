@@ -261,6 +261,36 @@ describe('React CLI parity audit: rich Vue content', () => {
     }
   );
 
+  it.each(['data', 'setup'])(
+    'keeps immutable globals ahead of Options API %s return keys',
+    async (method) => {
+      const source = `
+        <script lang="ts">
+          import { T } from 'gt-vue';
+          export default {
+            components: { T },
+            ${method}() {
+              return {
+                undefined: 'options undefined',
+                NaN: 'options NaN',
+                Infinity: 'options Infinity',
+              };
+            },
+          };
+        </script>
+        <template><T>{{ undefined }}|{{ NaN }}|{{ Infinity }}</T></template>
+      `;
+      assertVueCompiles(source, `options-${method}-special-globals`);
+
+      const output = await extract(source, `options-${method}-special-globals`);
+
+      expect(output.errors).toEqual([]);
+      expect(output.results.map((result) => result.source)).toEqual([
+        '|NaN|Infinity',
+      ]);
+    }
+  );
+
   it('serializes unary forms of primitive globals', async () => {
     const source = createSfc(
       `import { T } from 'gt-vue';`,

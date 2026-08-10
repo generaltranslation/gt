@@ -1184,23 +1184,36 @@ function readTemplatePrimitive(
   });
 }
 
-/** Resolves a template primitive after honoring every Vue-local binding. */
+/**
+ * Resolves a template primitive using Vue's compiler binding precedence.
+ *
+ * Script-setup bindings are compiler-visible and can shadow global names.
+ * Options API return keys live on the render context, but Vue emits immutable
+ * globals directly before consulting that context, so those exposures cannot
+ * shadow `undefined`, `NaN`, or `Infinity`.
+ */
 function readTemplateIdentifierPrimitive(
   identifier: babel.Identifier,
   shadowed: Set<string>,
   bindings: TemplateBindings
 ) {
   if (shadowed.has(identifier.name)) return { ok: false } as const;
-  if (bindings.staticValues.has(identifier.name)) {
-    return {
-      ok: true,
-      value: bindings.staticValues.get(identifier.name) as StaticPrimitive,
-    } as const;
-  }
   if (bindings.directBindings.has(identifier.name)) {
-    return { ok: false } as const;
+    return bindings.staticValues.has(identifier.name)
+      ? ({
+          ok: true,
+          value: bindings.staticValues.get(identifier.name) as StaticPrimitive,
+        } as const)
+      : ({ ok: false } as const);
   }
-  return readStaticGlobalPrimitive(identifier.name);
+  const global = readStaticGlobalPrimitive(identifier.name);
+  if (global.ok) return global;
+  return bindings.staticValues.has(identifier.name)
+    ? ({
+        ok: true,
+        value: bindings.staticValues.get(identifier.name) as StaticPrimitive,
+      } as const)
+    : ({ ok: false } as const);
 }
 
 /** Resolves a template call back to a statically imported gt-vue function. */
