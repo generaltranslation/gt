@@ -16,6 +16,15 @@ const isCustomLanguage = (language: string) => {
   return language >= 'qaa' && language <= 'qtz';
 };
 
+// Both helpers are deterministic per locale string, and LocaleConfig runs
+// them against every configured locale on each requiresTranslation and
+// determineLocale call, so results are memoized by string. Bounded because
+// locale strings can come from unbounded user input such as Accept-Language
+// headers; clearing on overflow only costs a recompute.
+const MAX_CACHE_SIZE = 1000;
+const validityCache = new Map<string, boolean>();
+const standardizeCache = new Map<string, string>();
+
 /**
  * Checks if a given BCP 47 language code is valid.
  * @param {string} code - The BCP 47 language code to validate.
@@ -29,7 +38,15 @@ export const _isValidLocale = (
 ): boolean => {
   // Use the canonical code from custom mappings when one is configured.
   locale = getCustomLocaleCode(customMapping, locale) || locale;
+  const cached = validityCache.get(locale);
+  if (cached !== undefined) return cached;
+  const result = computeIsValidLocale(locale);
+  if (validityCache.size >= MAX_CACHE_SIZE) validityCache.clear();
+  validityCache.set(locale, result);
+  return result;
+};
 
+const computeIsValidLocale = (locale: string): boolean => {
   try {
     const { language, region, script } = intlCache.get('Locale', locale);
     const partCount = 1 + Number(Boolean(region)) + Number(Boolean(script));
@@ -83,9 +100,15 @@ export const _isValidLocale = (
  * @internal
  */
 export const _standardizeLocale = (locale: string): string => {
+  const cached = standardizeCache.get(locale);
+  if (cached !== undefined) return cached;
+  let result: string;
   try {
-    return Intl.getCanonicalLocales(locale)[0];
+    result = Intl.getCanonicalLocales(locale)[0];
   } catch {
-    return locale;
+    result = locale;
   }
+  if (standardizeCache.size >= MAX_CACHE_SIZE) standardizeCache.clear();
+  standardizeCache.set(locale, result);
+  return result;
 };
