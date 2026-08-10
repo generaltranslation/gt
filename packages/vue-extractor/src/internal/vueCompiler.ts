@@ -4,6 +4,7 @@ import path from 'node:path';
 import type { parse as parseVueTemplate } from '@vue/compiler-dom';
 import type * as VueCompilerModule from '@vue/compiler-sfc';
 import type { TemplateCompiler } from '@vue/compiler-sfc';
+import { DecodingMode, decodeHTML } from 'entities/decode';
 import type { VueCompiler } from '../types.js';
 
 /** Whitespace test used by Vue when it constructs an implicit default slot. */
@@ -292,13 +293,34 @@ function loadBunCompiler(
         details: `The template compiler at ${compilerDomPath} does not expose compile().`,
       };
     }
-    return inspectCompiler(compiler, compilerDom.parse, {
-      compile: compilerDom.compile,
-      parse: compilerDom.parse,
-    });
+    const templateCompiler = createHeadlessBrowserTemplateCompiler(
+      compilerDom.parse,
+      compilerDom.compile
+    );
+    return inspectCompiler(compiler, templateCompiler.parse, templateCompiler);
   } catch (error) {
     return { ok: false, details: formatResolutionError(error) };
   }
+}
+
+/** Replaces compiler-dom's browser-only DOM entity decoder. */
+function createHeadlessBrowserTemplateCompiler(
+  browserParse: typeof parseVueTemplate,
+  browserCompile: TemplateCompiler['compile']
+): TemplateCompiler & { parse: typeof parseVueTemplate } {
+  const decodeEntities = (raw: string, asAttribute = false) =>
+    decodeHTML(raw, asAttribute ? DecodingMode.Attribute : DecodingMode.Legacy);
+  const parse: typeof parseVueTemplate = (source, options) =>
+    browserParse(source, {
+      ...options,
+      decodeEntities,
+    } as NonNullable<Parameters<typeof browserParse>[1]>);
+  const compile: TemplateCompiler['compile'] = (source, options) =>
+    browserCompile(source, {
+      ...options,
+      decodeEntities,
+    } as NonNullable<Parameters<typeof browserCompile>[1]>);
+  return { compile, parse };
 }
 
 /** Finds one dependency relative to the physical Vue installation on disk. */
