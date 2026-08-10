@@ -1,6 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { VueCompilerOptions } from './types.js';
+import type {
+  VueCompilerOptions,
+  VueProjectExtractionOutput,
+} from './types.js';
 import type { InlineExtractionOutput } from './internal/project/mergeVueProjectExtraction.js';
 
 const GT_VUE_PACKAGE = 'gt-vue';
@@ -183,8 +186,11 @@ async function runVueExtraction(
     }
 
     const { project, inspection } = await loadVueExtractionContext(options);
-    return project.extractFromVueProject(
-      createProjectExtractionOptions(options, inspection, filePatterns)
+    return adaptVueOnlyExtraction(
+      project,
+      await project.extractFromVueProject(
+        createProjectExtractionOptions(options, inspection, filePatterns)
+      )
     );
   }
 
@@ -192,8 +198,11 @@ async function runVueExtraction(
   const { inspectionModule, project, inspection } = await vueContextPromise;
 
   if (!extractPrimary) {
-    return project.extractFromVueProject(
-      createProjectExtractionOptions(options, inspection, filePatterns)
+    return adaptVueOnlyExtraction(
+      project,
+      await project.extractFromVueProject(
+        createProjectExtractionOptions(options, inspection, filePatterns)
+      )
     );
   }
 
@@ -221,6 +230,17 @@ async function runVueExtraction(
   );
   const [primary, vue] = await Promise.all([primaryPromise, vuePromise]);
   return project.mergeVueProjectExtraction(primary, vue);
+}
+
+/** Adapts accurate Vue wire types at the legacy host-CLI Updates boundary. */
+function adaptVueOnlyExtraction(
+  project: typeof import('./project.js'),
+  vue: VueProjectExtractionOutput
+): InlineExtractionOutput {
+  return project.mergeVueProjectExtraction(
+    { updates: [], errors: [], warnings: [] },
+    vue
+  );
 }
 
 /** Loads the lazy Vue modules and performs package-owned project inspection. */

@@ -400,6 +400,44 @@ describe('handled Vue extraction plans', () => {
     ]);
   });
 
+  it.each([
+    ['framework-default patterns', undefined],
+    ['explicit patterns', ['src/App.vue']],
+  ])(
+    'preserves rich Vue wire values through the CLI adapter with %s',
+    async (_name, filePatterns) => {
+      const root = createVueFixture({
+        'src/App.vue': `<script setup>import { Branch, T } from 'gt-vue';</script><template><T><Branch branch="active" :active="true" :inactive="false" :unknown="null">Fallback</Branch></T></template>`,
+      });
+      const plan = planVueExtraction({
+        library: 'gt-vue',
+        projectRoot: root,
+        filePatterns,
+      });
+      if (!plan.handled) throw new Error('Expected handled plan');
+
+      const result = await plan.run();
+
+      expect(result.errors).toEqual([]);
+      expect(result.warnings).toEqual([]);
+      expect(result.updates).toEqual([
+        expect.objectContaining({
+          dataFormat: 'JSX',
+          source: {
+            t: 'Branch',
+            i: 1,
+            d: {
+              b: { active: true, inactive: false, unknown: null },
+              t: 'b',
+            },
+            c: 'Fallback',
+          },
+          metadata: expect.objectContaining({ hash: '3b82a72a2e3538d6' }),
+        }),
+      ]);
+    }
+  );
+
   it('lets an explicitly selected gt-vue runtime own an undeclared root', async () => {
     const root = createFixture({
       'package.json': JSON.stringify({ private: true }),
