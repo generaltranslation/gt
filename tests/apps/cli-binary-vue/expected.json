@@ -1,0 +1,55 @@
+{
+  "9ad64aff21409af6": [
+    {
+      "t": "p",
+      "i": 1,
+      "d": {
+        "ti": "Tea & biscuits &notit"
+      },
+      "c": "Rock & roll 🍽"
+    },
+    " ",
+    {
+      "t": "Plural",
+      "i": 2,
+      "d": {
+        "b": {
+          "zero": "0",
+          "one": "1",
+          "two": "-1",
+          "few": "3.14159",
+          "many": "1000000",
+          "other": "255"
+        },
+        "t": "p"
+      }
+    },
+    " ",
+    {
+      "t": "Branch",
+      "i": 3,
+      "d": {
+        "b": {
+          "active": true,
+          "inactive": false,
+          "unknown": null,
+          "pending": ""
+        },
+        "t": "b"
+      }
+    },
+    " ",
+    {
+      "t": "Plural",
+      "i": 4,
+      "d": {
+        "b": {
+          "singular": "Single 'quotes' inside",
+          "plural": "Double \"quotes\" inside",
+          "other": "Template with 'both' \"types\""
+        },
+        "t": "p"
+      }
+    }
+  ]
+}

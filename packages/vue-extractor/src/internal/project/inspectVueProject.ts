@@ -40,6 +40,21 @@ export function inspectVueProject(
 export async function inspectVueProjectAsync(
   cwd: string = process.cwd()
 ): Promise<VueProjectInspection> {
+  return inspectVueProjectForRuntime(cwd, false);
+}
+
+/**
+ * Inspects Vue ownership for the high-level framework planner.
+ *
+ * An explicitly selected `gt-vue` runtime owns its root even when a host CLI
+ * supplied that selection independently of package-manifest detection. This
+ * override remains package-private so ordinary discovery cannot promote a
+ * React or file-only project.
+ */
+export async function inspectVueProjectForRuntime(
+  cwd: string,
+  forceRootOwnership: boolean
+): Promise<VueProjectInspection> {
   const projectRoot = resolveProjectDirectory(cwd);
   const rootManifest = readJavaScriptPackageManifest(
     path.join(projectRoot, 'package.json')
@@ -48,7 +63,29 @@ export async function inspectVueProjectAsync(
   if (rootManifest) {
     await readDeclaredWorkspacePackagesAsync(projectRoot, rootManifest, cache);
   }
-  return createVueProjectInspection(discoverVueProject(projectRoot, cache));
+  const discovery = discoverVueProject(projectRoot, cache);
+  return createVueProjectInspection(
+    forceRootOwnership ? addRootOwnership(discovery) : discovery
+  );
+}
+
+/** Adds one forced root scope without changing discovered child scopes. */
+function addRootOwnership(discovery: VueProjectDiscovery): VueProjectDiscovery {
+  if (discovery.rootOwnsVue) return discovery;
+  return {
+    ...discovery,
+    rootOwnsVue: true,
+    scopes: [
+      {
+        directory: discovery.projectRoot,
+        includeByDefault: true,
+        relativeDirectory: '',
+      },
+      ...discovery.scopes.filter(
+        ({ directory }) => directory !== discovery.projectRoot
+      ),
+    ],
+  };
 }
 
 function createVueProjectInspection(

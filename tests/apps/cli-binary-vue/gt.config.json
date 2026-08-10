@@ -1,0 +1,14 @@
+{
+  "defaultLocale": "en",
+  "locales": ["fr"],
+  "files": {
+    "gt": {
+      "output": "_gt/[locale].json",
+      "parsingFlags": {
+        "vueCompilerOptions": {
+          "whitespace": "preserve"
+        }
+      }
+    }
+  }
+}

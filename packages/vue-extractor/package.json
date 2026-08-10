@@ -48,6 +48,10 @@
       "import": "./dist/inspect.js",
       "types": "./dist/inspect.d.ts"
     },
+    "./integration": {
+      "import": "./dist/integration.js",
+      "types": "./dist/integration.d.ts"
+    },
     "./project": {
       "import": "./dist/project.js",
       "types": "./dist/project.d.ts"

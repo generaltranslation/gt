@@ -69,7 +69,7 @@ import {
   getFrameworkDisplayName,
   getReactFrameworkLibrary,
 } from '../setup/frameworkUtils.js';
-import { INLINE_LIBRARIES } from '../types/libraries.js';
+import { INLINE_LIBRARIES, Libraries } from '../types/libraries.js';
 import { handleEnqueue } from './commands/enqueue.js';
 import { splitMintlifyLanguageRefs } from '../utils/splitMintlifyLanguageRefs.js';
 import { runMergeDriver, type MergeDriverName } from '../git/mergeDrivers.js';
@@ -77,6 +77,7 @@ import { setupGitMergeDrivers } from '../git/setupMergeDrivers.js';
 import { warnReactPackageCompatibility } from '../utils/reactPackageCompatibility.js';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { setupViteSPA } from '../setup/setupViteSPA.js';
+import { manifestDirectlyDeclaresGTVue } from '@generaltranslation/vue-extractor/integration';
 
 const ID_COMPATIBILITY_WARNING_COMMANDS = new Set([
   'download',
@@ -711,22 +712,37 @@ export class BaseCLI {
       .description(
         'Configure your project for General Translation. This will create a gt.config.json file in your codebase.'
       )
-      .action(async () => {
-        await exitIfUnsupportedSetupTarget();
-        displayHeader('Configuring project...');
+      .action(() => this.handleConfigureCommand());
+  }
 
-        logger.info(
-          'Welcome! This tool will help you configure your gt.config.json file. See the docs: https://generaltranslation.com/docs/cli/reference/config for more information.'
-        );
+  /**
+   * Runs the framework-neutral configuration flow.
+   *
+   * @param useBundledTranslationDefaults - Uses the source-bundled output
+   * layout and skips generation of the server-oriented loader file.
+   */
+  protected async handleConfigureCommand(
+    useBundledTranslationDefaults: boolean = false
+  ): Promise<void> {
+    await exitIfUnsupportedSetupTarget();
+    displayHeader('Configuring project...');
 
-        // Configure gt.config.json
-        const framework = await detectFramework();
-        await this.handleInitCommand(false, false, framework.name === 'vite');
+    logger.info(
+      'Welcome! This tool will help you configure your gt.config.json file. See the docs: https://generaltranslation.com/docs/cli/reference/config for more information.'
+    );
 
-        logger.endCommand(
-          'Done! Make sure you have an API key and project ID to use General Translation. Get them on the dashboard: https://generaltranslation.com/dashboard'
-        );
-      });
+    // Configure gt.config.json
+    const framework = await detectFramework();
+    await this.handleInitCommand(
+      false,
+      false,
+      framework.name === 'vite',
+      useBundledTranslationDefaults
+    );
+
+    logger.endCommand(
+      'Done! Make sure you have an API key and project ID to use General Translation. Get them on the dashboard: https://generaltranslation.com/dashboard'
+    );
   }
 
   protected async handleUploadCommand(
@@ -740,11 +756,31 @@ export class BaseCLI {
     await upload(settings);
   }
 
-  // Wizard for configuring gt.config.json
+  /** Returns whether setup should configure an installed inline GT runtime. */
+  protected hasInstalledInlineRuntime(
+    packageJson: Record<string, unknown>
+  ): boolean {
+    return INLINE_LIBRARIES.some((lib) =>
+      lib === Libraries.GT_VUE
+        ? manifestDirectlyDeclaresGTVue(packageJson)
+        : isPackageInstalled(lib, packageJson)
+    );
+  }
+
+  /**
+   * Runs the interactive `gt.config.json` wizard.
+   *
+   * @param ranReactSetup - Whether React application setup already completed.
+   * @param useDefaults - Accepts prompts using their recommended defaults.
+   * @param isVite - Records Vite framework behavior and enables React SPA setup.
+   * @param useBundledTranslationDefaults - Uses `src/_gt` without generating
+   * a server-framework loader, independently of application framework.
+   */
   protected async handleInitCommand(
     ranReactSetup: boolean,
     useDefaults: boolean = false,
-    isVite: boolean = false
+    isVite: boolean = false,
+    useBundledTranslationDefaults: boolean = false
   ): Promise<void> {
     const configFilepath =
       !isVite && fs.existsSync('src/gt.config.json')
@@ -757,8 +793,7 @@ export class BaseCLI {
 
     // Ask if using another i18n library
     const gtInstalled =
-      !!packageJson &&
-      INLINE_LIBRARIES.some((lib) => isPackageInstalled(lib, packageJson));
+      !!packageJson && this.hasInstalledInlineRuntime(packageJson);
     const isUsingGT = ranReactSetup || gtInstalled;
 
     // Ask where the translations are stored
@@ -776,7 +811,9 @@ export class BaseCLI {
       return selectedValue === 'cdn';
     })();
 
-    const defaultTranslationsDir = isVite
+    const usesBundledTranslationDefaults =
+      isVite || useBundledTranslationDefaults;
+    const defaultTranslationsDir = usesBundledTranslationDefaults
       ? DEFAULT_VITE_TRANSLATIONS_DIR
       : DEFAULT_TRANSLATIONS_DIR;
 
@@ -796,7 +833,7 @@ export class BaseCLI {
     const finalTranslationsDir =
       translationsDir?.trim() || defaultTranslationsDir;
 
-    if (isUsingGT && !usingCDN && !isVite) {
+    if (isUsingGT && !usingCDN && !usesBundledTranslationDefaults) {
       // Create loadTranslations.js file for local translations
       await createLoadTranslationsFile(
         process.cwd(),

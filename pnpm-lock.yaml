@@ -798,6 +798,9 @@ importers:
       '@generaltranslation/supported-locales':
         specifier: workspace:*
         version: link:../supported-locales
+      '@generaltranslation/vue-extractor':
+        specifier: workspace:*
+        version: link:../vue-extractor
       chalk:
         specifier: ^5.4.1
         version: 5.6.2
@@ -1739,6 +1742,21 @@ importers:
         version: 3.2.4(@edge-runtime/vm@4.0.4)(@types/debug@4.1.12)(@types/node@22.13.10)(jiti@2.7.0)(jsdom@29.0.1(@noble/hashes@2.2.0))(lightningcss@1.32.0)(terser@5.44.0)(tsx@4.21.0)(yaml@2.8.3)
       vue:
         specifier: ^3.5.0
+        version: 3.5.40(typescript@5.9.3)
+
+  tests/apps/cli-binary-vue:
+    dependencies:
+      '@vue/compiler-dom':
+        specifier: 3.5.40
+        version: 3.5.40
+      '@vue/compiler-sfc':
+        specifier: 3.5.40
+        version: 3.5.40
+      gt-vue:
+        specifier: workspace:*
+        version: link:../../../packages/vue
+      vue:
+        specifier: 3.5.40
         version: 3.5.40(typescript@5.9.3)
 
   tests/apps/cli-test-app:

@@ -33,6 +33,7 @@
     "webpack-spa",
     "cli-test-app",
     "compiler-cli-parity",
+    "gt-cli-binary-vue-fixture",
     "next-ssg",
     "gt-next-middleware-e2e",
     "gt-react-native-expo-example",

@@ -6,6 +6,8 @@ import { determineLibrary } from './fs/determineFramework/index.js';
 import { Command } from 'commander';
 import { NodeCLI } from './cli/node.js';
 import { Libraries, isPythonLibrary } from './types/libraries.js';
+import { MixedVueCLI, VueCLI } from './cli/vue.js';
+import { planVueExtraction } from '@generaltranslation/vue-extractor/integration';
 
 export function main(program: Command) {
   program.name('gt');
@@ -22,10 +24,18 @@ export function main(program: Command) {
     cli = new ReactCLI(program, library, additionalModules);
   } else if (library === Libraries.GT_NODE) {
     cli = new NodeCLI(program, library, additionalModules);
+  } else if (library === Libraries.GT_VUE) {
+    cli = new VueCLI(program, additionalModules);
   } else if (isPythonLibrary(library)) {
     cli = new PythonCLI(program, library, additionalModules);
   } else {
-    cli = new BaseCLI(program, library, additionalModules);
+    const vuePlan = planVueExtraction({
+      library,
+      projectRoot: process.cwd(),
+    });
+    cli = vuePlan.handled
+      ? new MixedVueCLI(program, additionalModules)
+      : new BaseCLI(program, library, additionalModules);
   }
   cli.init();
   cli.execute();

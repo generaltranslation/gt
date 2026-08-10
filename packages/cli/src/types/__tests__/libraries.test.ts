@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   Libraries,
   isPythonLibrary,
+  GT_LIBRARIES,
   INLINE_LIBRARIES,
   GT_LIBRARIES_UPSTREAM,
   PYTHON_LIBRARIES,
@@ -49,5 +50,15 @@ describe('Python library types', () => {
     expect(PYTHON_LIBRARIES).toContain(Libraries.GT_FLASK);
     expect(PYTHON_LIBRARIES).toContain(Libraries.GT_FASTAPI);
     expect(PYTHON_LIBRARIES).toHaveLength(2);
+  });
+});
+
+describe('Vue library boundaries', () => {
+  it('supports gt-vue as an inline library', () => {
+    expect(INLINE_LIBRARIES).toContain(Libraries.GT_VUE);
+  });
+
+  it('does not expose gt-vue to the historical React parser allowlist', () => {
+    expect(GT_LIBRARIES as readonly string[]).not.toContain(Libraries.GT_VUE);
   });
 });

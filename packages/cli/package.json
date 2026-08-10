@@ -118,6 +118,7 @@
     "@generaltranslation/format": "workspace:*",
     "@generaltranslation/python-extractor": "workspace:*",
     "@generaltranslation/supported-locales": "workspace:*",
+    "@generaltranslation/vue-extractor": "workspace:*",
     "chalk": "^5.4.1",
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
