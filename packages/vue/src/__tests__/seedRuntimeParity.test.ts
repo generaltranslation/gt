@@ -169,31 +169,33 @@ describe('React and Vue seed runtime parity', () => {
     }
   });
 
-  describe('repairable runtime mismatches', () => {
-    for (const fixture of expectedFailureSeeds) {
-      it(`${fixture.id} is limited to its declared semantic repairs`, () => {
-        const vueSource = getVueSource(fixture);
-        const repairedVueSource = applySemanticWireRepairs(
-          toSemanticWireSource(vueSource),
-          fixture.repairs
-        );
+  if (expectedFailureSeeds.length) {
+    describe('repairable runtime mismatches', () => {
+      for (const fixture of expectedFailureSeeds) {
+        it(`${fixture.id} is limited to its declared semantic repairs`, () => {
+          const vueSource = getVueSource(fixture);
+          const repairedVueSource = applySemanticWireRepairs(
+            toSemanticWireSource(vueSource),
+            fixture.repairs
+          );
 
-        expect(sourceHash(vueSource, fixture)).toBe(fixture.brokenVueHash);
-        expect(repairedVueSource).toStrictEqual(
-          toSemanticWireSource(getExpectedSource(fixture))
-        );
-      });
+          expect(sourceHash(vueSource, fixture)).toBe(fixture.brokenVueHash);
+          expect(repairedVueSource).toStrictEqual(
+            toSemanticWireSource(getExpectedSource(fixture))
+          );
+        });
 
-      it(`${fixture.id} compiles and serializes in both runtimes`, () => {
-        expect(getReactSource(fixture)).toBeDefined();
-        expect(getVueSource(fixture)).toBeDefined();
-      });
+        it(`${fixture.id} compiles and serializes in both runtimes`, () => {
+          expect(getReactSource(fixture)).toBeDefined();
+          expect(getVueSource(fixture)).toBeDefined();
+        });
 
-      it.fails(`${fixture.id}: ${fixture.reason}`, () => {
-        assertVueRuntimeParity(fixture);
-      });
-    }
-  });
+        it.fails(`${fixture.id}: ${fixture.reason}`, () => {
+          assertVueRuntimeParity(fixture);
+        });
+      }
+    });
+  }
 
   describe('explicitly excluded seeds', () => {
     for (const fixture of excludedSeeds) {
