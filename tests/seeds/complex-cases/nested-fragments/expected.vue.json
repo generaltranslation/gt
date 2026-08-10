@@ -1,0 +1,14 @@
+{
+  "source": {
+    "t": "Plural",
+    "i": 1,
+    "d": {
+      "b": {
+        "singular": "nested fragment ",
+        "plural": "files"
+      },
+      "t": "p"
+    }
+  },
+  "hash": "a4affeffdad64ef6"
+}

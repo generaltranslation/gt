@@ -1,0 +1,46 @@
+{
+  "source": {
+    "t": "Plural",
+    "i": 1,
+    "d": {
+      "b": {
+        "singular": [
+          " Outer fragment  Nested fragment with ",
+          {
+            "i": 2,
+            "k": "_gt_value_2",
+            "v": "v"
+          },
+          " Deep nested with ",
+          {
+            "i": 3,
+            "k": "_gt_n_3",
+            "v": "n"
+          },
+          "More nesting Back to outer "
+        ],
+        "plural": {
+          "t": "div",
+          "i": 2,
+          "c": [
+            "Fragment in div",
+            {
+              "t": "span",
+              "i": 3,
+              "c": [
+                " Fragment in span with   ",
+                {
+                  "i": 4,
+                  "k": "_gt_cost_4",
+                  "v": "c"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "t": "p"
+    }
+  },
+  "hash": "63dfceb6072612d8"
+}

@@ -1,0 +1,54 @@
+{
+  "source": [
+    {
+      "t": "Plural",
+      "i": 1,
+      "d": {
+        "b": {
+          "singular": "Line1\nLine2\tTabbed",
+          "plural": "Special: !@#$%^&*()_+-=[]{}|;:,.<>?",
+          "other": "Template with ${variable} and `backticks`"
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "Branch",
+      "i": 2,
+      "d": {
+        "b": {
+          "english": "Hello World",
+          "spanish": "Hola Mundo ñáéíóú",
+          "chinese": "你好世界",
+          "emoji": "🌍🌎🌏 Hello 👋",
+          "arabic": "مرحبا بالعالم",
+          "russian": "Привет мир"
+        },
+        "t": "b"
+      }
+    },
+    {
+      "t": "Plural",
+      "i": 3,
+      "d": {
+        "b": {
+          "singular": "simple template",
+          "plural": "another simple template"
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "Branch",
+      "i": 4,
+      "d": {
+        "b": {
+          "single": "single line",
+          "multi": "\n            line 1\n            line 2\n            line 3\n          "
+        },
+        "t": "b"
+      }
+    }
+  ],
+  "hash": "f216a353e7d1db5f"
+}

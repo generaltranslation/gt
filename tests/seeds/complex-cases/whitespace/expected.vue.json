@@ -1,0 +1,388 @@
+{
+  "source": [
+    " Normal text ",
+    {
+      "t": "div",
+      "i": 1,
+      "c": "and some nesting"
+    },
+    {
+      "t": "div",
+      "i": 2,
+      "c": "content before"
+    },
+    " trailing text Text with multiple spaces         Text ",
+    {
+      "t": "div",
+      "i": 3,
+      "c": "yo yo"
+    },
+    " with ",
+    {
+      "t": "span",
+      "i": 4
+    },
+    " multiple spaces  Hello World with spaces ",
+    {
+      "t": "Plural",
+      "i": 5,
+      "d": {
+        "b": {
+          "singular": "",
+          "plural": "Files"
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "Plural",
+      "i": 6,
+      "d": {
+        "b": {
+          "singular": "   File   ",
+          "plural": "   Files   "
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "Branch",
+      "i": 7,
+      "d": {
+        "b": {
+          "option3": {
+            "t": "span",
+            "i": 8,
+            "c": "JSX content"
+          },
+          "option1": "",
+          "option2": "   Padded   "
+        },
+        "t": "b"
+      }
+    },
+    " Start ",
+    {
+      "t": "strong",
+      "i": 8,
+      "c": "Bold"
+    },
+    {
+      "t": "em",
+      "i": 9,
+      "c": "Italic"
+    },
+    " End ",
+    {
+      "t": "div",
+      "i": 10,
+      "c": "Before"
+    },
+    "     ",
+    {
+      "t": "div",
+      "i": 11,
+      "c": "After"
+    },
+    " User: ",
+    {
+      "i": 12,
+      "k": "_gt_value_12",
+      "v": "v"
+    },
+    " has ",
+    {
+      "i": 13,
+      "k": "_gt_n_13",
+      "v": "n"
+    },
+    " items Click ",
+    {
+      "t": "a",
+      "i": 14,
+      "c": "here"
+    },
+    " to continue. Line 1 Line 2 with tabs Line 3 with spaces You have ",
+    {
+      "t": "Plural",
+      "i": 15,
+      "d": {
+        "b": {
+          "singular": "  1 item  ",
+          "plural": "  2 items  "
+        },
+        "t": "p"
+      }
+    },
+    " Total: ",
+    {
+      "i": 16,
+      "k": "_gt_cost_16",
+      "v": "c"
+    },
+    " available Status: ",
+    {
+      "t": "Plural",
+      "i": 17,
+      "d": {
+        "b": {
+          "singular": true,
+          "plural": false
+        },
+        "t": "p"
+      }
+    },
+    " - ",
+    {
+      "t": "Plural",
+      "i": 18,
+      "d": {
+        "b": {
+          "singular": null,
+          "plural": "Active"
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "div",
+      "i": 19,
+      "c": "Content"
+    },
+    "     ",
+    {
+      "t": "div",
+      "i": 20,
+      "c": "More content"
+    },
+    " Boundary whitespace test Hello ",
+    {
+      "i": 21,
+      "k": "_gt_value_21",
+      "v": "v"
+    },
+    " , you have ",
+    {
+      "i": 22,
+      "k": "_gt_n_22",
+      "v": "n"
+    },
+    " new messages. ",
+    {
+      "t": "Plural",
+      "i": 23,
+      "d": {
+        "b": {
+          "singular": "1 file",
+          "plural": "2 files"
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "div",
+      "i": 24,
+      "c": [
+        " Welcome ",
+        {
+          "t": "strong",
+          "i": 25,
+          "c": "user"
+        },
+        " , ",
+        {
+          "t": "br",
+          "i": 26
+        },
+        " You have ",
+        {
+          "t": "span",
+          "i": 27,
+          "c": "messages"
+        },
+        " waiting. "
+      ]
+    },
+    " Text with multiple spaces Text with multiple spaces ",
+    {
+      "t": "Branch",
+      "i": 28,
+      "d": {
+        "b": {
+          "mixed": [
+            " Very long text with ",
+            {
+              "i": 29,
+              "k": "_gt_value_29",
+              "v": "v"
+            },
+            " that continues for a very long time and includes multiple ",
+            {
+              "i": 30,
+              "k": "_gt_n_30",
+              "v": "n"
+            },
+            "  numeric values and  ",
+            {
+              "i": 31,
+              "k": "_gt_cost_31",
+              "v": "c"
+            },
+            " monetary amounts spread throughout the content. "
+          ],
+          "short": "Brief",
+          "long": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+        },
+        "t": "b"
+      }
+    },
+    " Hello World with spacestruetrue ",
+    {
+      "t": "div",
+      "i": 29
+    },
+    {
+      "t": "div",
+      "i": 30
+    },
+    " true ",
+    {
+      "t": "Plural",
+      "i": 31,
+      "d": {
+        "b": {
+          "dual": "falsetrue",
+          "singular": true
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "Plural",
+      "i": 32,
+      "d": {
+        "b": {
+          "dual": "true",
+          "singular": true
+        },
+        "t": "p"
+      }
+    },
+    "  yo   yo  yo yo ",
+    {
+      "t": "div",
+      "i": 33,
+      "c": "true"
+    },
+    {
+      "t": "div",
+      "i": 34,
+      "c": [
+        {
+          "t": "div",
+          "i": 35
+        },
+        {
+          "t": "div",
+          "i": 36
+        }
+      ]
+    },
+    " Hello ",
+    {
+      "t": "div",
+      "i": 37,
+      "c": "there"
+    },
+    {
+      "t": "div",
+      "i": 38,
+      "c": "there"
+    },
+    {
+      "t": "Plural",
+      "i": 39,
+      "d": {
+        "b": {
+          "singular": " Text  More text ",
+          "plural": "Fragment content ",
+          "other": []
+        },
+        "t": "p"
+      }
+    },
+    "truefalsetruetrue",
+    {
+      "t": "span",
+      "i": 40,
+      "c": "true"
+    },
+    {
+      "t": "span",
+      "i": 41,
+      "c": "false"
+    },
+    {
+      "t": "span",
+      "i": 42,
+      "c": "truetrue"
+    },
+    {
+      "t": "Branch",
+      "i": 43,
+      "d": {
+        "b": {
+          "e": "false",
+          "f": "true",
+          "g": "",
+          "i": "falsetrue",
+          "a": false,
+          "b": true,
+          "c": null
+        },
+        "t": "b"
+      }
+    },
+    {
+      "t": "Branch",
+      "i": 44,
+      "d": {
+        "b": {
+          "true_val": "true",
+          "false_val": "false",
+          "mixed_true": "Before true after",
+          "mixed_false": "Before false after",
+          "multiple": [
+            "truefalsetrue ",
+            {
+              "t": "div",
+              "i": 45
+            }
+          ]
+        },
+        "t": "b"
+      }
+    },
+    "  yo   yo  ",
+    {
+      "t": "Branch",
+      "i": 45,
+      "d": {
+        "b": {
+          "option1": [
+            "TextMore",
+            {
+              "t": "span",
+              "i": 46,
+              "c": "Element"
+            },
+            "Final"
+          ],
+          "option2": "Flat   "
+        },
+        "t": "b"
+      }
+    }
+  ],
+  "hash": "629223f8b0ee094a"
+}

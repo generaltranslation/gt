@@ -1,0 +1,12 @@
+{
+  "source": [
+    "text before",
+    {
+      "t": "div",
+      "i": 1,
+      "c": "element"
+    },
+    "text after"
+  ],
+  "hash": "06313920d05c3df1"
+}

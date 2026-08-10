@@ -1,0 +1,35 @@
+{
+  "source": {
+    "t": "Branch",
+    "i": 1,
+    "d": {
+      "b": {
+        "mixed": [
+          " Very long text with ",
+          {
+            "i": 2,
+            "k": "_gt_value_2",
+            "v": "v"
+          },
+          " that continues for a very long time and includes multiple ",
+          {
+            "i": 3,
+            "k": "_gt_n_3",
+            "v": "n"
+          },
+          "  numeric values and  ",
+          {
+            "i": 4,
+            "k": "_gt_cost_4",
+            "v": "c"
+          },
+          " monetary amounts spread throughout the content to test how the algorithm handles very large content blocks with mixed variable types. "
+        ],
+        "short": "Brief",
+        "long": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+      },
+      "t": "b"
+    }
+  },
+  "hash": "3df76a6ca0ebbf53"
+}

@@ -1,0 +1,339 @@
+{
+  "source": [
+    {
+      "t": "Plural",
+      "i": 1,
+      "d": {
+        "b": {
+          "one": "File",
+          "other": "Files"
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "Branch",
+      "i": 2,
+      "d": {
+        "b": {
+          "file": "file.svg",
+          "directory": "public"
+        },
+        "t": "b"
+      }
+    },
+    {
+      "t": "Plural",
+      "i": 3,
+      "d": {
+        "b": {
+          "one": "File",
+          "other": "42"
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "Plural",
+      "i": 4,
+      "d": {
+        "b": {
+          "one": true,
+          "other": false
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "Plural",
+      "i": 5,
+      "d": {
+        "b": {
+          "one": null,
+          "other": "Files"
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "Plural",
+      "i": 6,
+      "d": {
+        "b": {
+          "one": "File",
+          "other": "Files"
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "Plural",
+      "i": 7,
+      "d": {
+        "b": {
+          "one": "File",
+          "other": "42"
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "Plural",
+      "i": 8,
+      "d": {
+        "b": {
+          "one": "Single file",
+          "other": "Multiple files"
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "Plural",
+      "i": 9,
+      "d": {
+        "b": {
+          "one": {
+            "t": "span",
+            "i": 10,
+            "c": "Single file"
+          },
+          "other": {
+            "t": "span",
+            "i": 10,
+            "c": "Multiple files"
+          }
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "Plural",
+      "i": 10,
+      "d": {
+        "b": {
+          "one": {
+            "i": 11,
+            "k": "_gt_value_11",
+            "v": "v"
+          },
+          "other": [
+            "Multiple ",
+            {
+              "i": 11,
+              "k": "_gt_value_11",
+              "v": "v"
+            },
+            "s"
+          ]
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "div",
+      "i": 11,
+      "c": [
+        "Yo",
+        {
+          "i": 12,
+          "k": "_gt_value_12",
+          "v": "v"
+        }
+      ]
+    },
+    {
+      "t": "Plural",
+      "i": 13,
+      "d": {
+        "b": {
+          "one": {
+            "i": 14,
+            "k": "_gt_value_14",
+            "v": "v"
+          },
+          "other": {
+            "t": "div",
+            "i": 14,
+            "c": [
+              "Multiple ",
+              {
+                "i": 15,
+                "k": "_gt_value_15",
+                "v": "v"
+              },
+              "s"
+            ]
+          }
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "Plural",
+      "i": 14,
+      "d": {
+        "b": {
+          "one": {
+            "t": "Branch",
+            "i": 15,
+            "d": {
+              "b": {
+                "file": {
+                  "t": "Plural",
+                  "i": 16,
+                  "d": {
+                    "b": {
+                      "one": "Single nested file",
+                      "other": "Multiple nested files"
+                    },
+                    "t": "p"
+                  }
+                },
+                "directory": "Public directory"
+              },
+              "t": "b"
+            }
+          },
+          "other": "Multiple top-level items"
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "Plural",
+      "i": 15,
+      "d": {
+        "b": {
+          "one": "",
+          "other": "Files"
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "Plural",
+      "i": 16,
+      "d": {
+        "b": {
+          "one": "File",
+          "other": ""
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "Plural",
+      "i": 17,
+      "d": {
+        "b": {
+          "one": "   File   ",
+          "other": "   Files   "
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "Plural",
+      "i": 18,
+      "d": {
+        "b": {
+          "one": "\n            Multiline\n            File\n          ",
+          "other": "Files"
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "Plural",
+      "i": 19,
+      "d": {
+        "b": {
+          "one": "File with emoji 📁",
+          "other": "Files with emoji 📁📂"
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "Branch",
+      "i": 20,
+      "d": {
+        "b": {
+          "file": "special-chars!@#$%^&*().svg",
+          "directory": "unicode-path-ñáéíóú"
+        },
+        "t": "b"
+      }
+    },
+    {
+      "t": "div",
+      "i": 21,
+      "c": "hello"
+    },
+    {
+      "t": "Branch",
+      "i": 22,
+      "d": {
+        "b": {
+          "option1": {
+            "t": "Branch",
+            "i": 23,
+            "d": {
+              "b": {
+                "option1": {
+                  "t": "Plural",
+                  "i": 24,
+                  "d": {
+                    "b": {
+                      "one": {
+                        "t": "Branch",
+                        "i": 25,
+                        "d": {
+                          "b": {
+                            "option1": "Deep option 1",
+                            "option2": {
+                              "i": 26,
+                              "k": "_gt_value_26",
+                              "v": "v"
+                            }
+                          },
+                          "t": "b"
+                        }
+                      },
+                      "other": {
+                        "t": "Branch",
+                        "i": 25,
+                        "d": {
+                          "b": {
+                            "option1": {
+                              "i": 26,
+                              "k": "_gt_cost_26",
+                              "v": "c"
+                            },
+                            "option2": {
+                              "i": 26,
+                              "k": "_gt_date_26",
+                              "v": "d"
+                            }
+                          },
+                          "t": "b"
+                        }
+                      }
+                    },
+                    "t": "p"
+                  }
+                },
+                "option2": "Level 2 option 2"
+              },
+              "t": "b"
+            }
+          },
+          "option2": "Level 1 option 2"
+        },
+        "t": "b"
+      }
+    }
+  ],
+  "hash": "b19401e36ed33fb7"
+}

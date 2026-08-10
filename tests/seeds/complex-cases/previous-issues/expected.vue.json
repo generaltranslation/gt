@@ -1,0 +1,50 @@
+{
+  "source": [
+    " Normal text ",
+    {
+      "t": "div",
+      "i": 1,
+      "c": "nested content"
+    },
+    " more text ",
+    {
+      "t": "Plural",
+      "i": 2,
+      "d": {
+        "b": {
+          "singular": "Single file",
+          "zero": "No files",
+          "one": "One file",
+          "two": "Two files",
+          "few": "Few files",
+          "many": "Many files",
+          "other": "Other files"
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "Branch",
+      "i": 3,
+      "d": {
+        "b": {
+          "option3": {
+            "i": 4,
+            "k": "_gt_value_4",
+            "v": "v"
+          },
+          "option4": "fragment content",
+          "option5": {
+            "t": "div",
+            "i": 4,
+            "c": "element content"
+          },
+          "option1": "",
+          "option2": "   padded   "
+        },
+        "t": "b"
+      }
+    }
+  ],
+  "hash": "2c76d787b163b3dd"
+}

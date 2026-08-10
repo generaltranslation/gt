@@ -1,0 +1,85 @@
+{
+  "source": [
+    {
+      "t": "Branch",
+      "i": 1,
+      "d": {
+        "b": {
+          "archie": "Archie",
+          "ernest": "Ernest",
+          "fernanda": "Fernanda",
+          "lily": "Lily",
+          "brian": [
+            "The beautiful ",
+            {
+              "i": 2,
+              "k": "_gt_value_2",
+              "v": "v"
+            }
+          ]
+        },
+        "t": "b"
+      }
+    },
+    " ",
+    {
+      "t": "Branch",
+      "i": 2,
+      "d": {
+        "b": {
+          "is": "is",
+          "wouldHaveBeen": "would have been",
+          "was": "was",
+          "other": {
+            "i": 3,
+            "k": "_gt_value_3",
+            "v": "v"
+          }
+        },
+        "t": "b"
+      }
+    },
+    " ",
+    {
+      "t": "Branch",
+      "i": 3,
+      "d": {
+        "b": {
+          "painter": "a painter",
+          "famousPerson": "a famous person",
+          "sculptor": "a sculptor",
+          "person": [
+            "a ",
+            {
+              "t": "Branch",
+              "i": 4,
+              "d": {
+                "b": {
+                  "person": "person",
+                  "coolPerson": "cool person"
+                },
+                "t": "b"
+              }
+            }
+          ],
+          "coolPerson": [
+            "a ",
+            {
+              "t": "Branch",
+              "i": 4,
+              "d": {
+                "b": {
+                  "person": "person",
+                  "coolPerson": "cool person"
+                },
+                "t": "b"
+              }
+            }
+          ]
+        },
+        "t": "b"
+      }
+    }
+  ],
+  "hash": "287448edce495a71"
+}

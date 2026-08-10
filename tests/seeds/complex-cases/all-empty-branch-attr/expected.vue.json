@@ -1,0 +1,16 @@
+{
+  "source": {
+    "t": "Branch",
+    "i": 1,
+    "d": {
+      "b": {
+        "option3": [],
+        "option1": "",
+        "option2": null,
+        "option4": false
+      },
+      "t": "b"
+    }
+  },
+  "hash": "9aa16398ba9162dd"
+}

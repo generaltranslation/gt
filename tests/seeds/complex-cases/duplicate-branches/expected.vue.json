@@ -1,0 +1,54 @@
+{
+  "source": {
+    "t": "Branch",
+    "i": 1,
+    "d": {
+      "b": {
+        "version1": [
+          " Identical content with ",
+          {
+            "i": 2,
+            "k": "_gt_value_2",
+            "v": "v"
+          },
+          " and   ",
+          {
+            "i": 3,
+            "k": "_gt_n_3",
+            "v": "n"
+          }
+        ],
+        "version2": [
+          " Identical content with ",
+          {
+            "i": 2,
+            "k": "_gt_value_2",
+            "v": "v"
+          },
+          " and   ",
+          {
+            "i": 3,
+            "k": "_gt_n_3",
+            "v": "n"
+          }
+        ],
+        "different": [
+          " Different content with ",
+          {
+            "i": 2,
+            "k": "_gt_value_2",
+            "v": "v"
+          },
+          " and   ",
+          {
+            "i": 3,
+            "k": "_gt_n_3",
+            "v": "n"
+          }
+        ]
+      },
+      "t": "b"
+    }
+  },
+  "hash": "b51351171964d202"
+}

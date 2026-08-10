@@ -1,0 +1,56 @@
+{
+  "source": {
+    "t": "Branch",
+    "i": 1,
+    "d": {
+      "b": {
+        "nested": {
+          "t": "div",
+          "i": 2,
+          "c": {
+            "t": "Plural",
+            "i": 3,
+            "d": {
+              "b": {
+                "singular": {
+                  "t": "span",
+                  "i": 4,
+                  "c": [
+                    " Nested plural: ",
+                    {
+                      "i": 5,
+                      "k": "_gt_value_5",
+                      "v": "v"
+                    }
+                  ]
+                },
+                "plural": {
+                  "t": "Branch",
+                  "i": 4,
+                  "d": {
+                    "b": {
+                      "option2": [
+                        " With ",
+                        {
+                          "i": 5,
+                          "k": "_gt_cost_5",
+                          "v": "c"
+                        }
+                      ],
+                      "option1": "Double nested!"
+                    },
+                    "t": "b"
+                  }
+                }
+              },
+              "t": "p"
+            }
+          }
+        },
+        "flat": "Simple flat content"
+      },
+      "t": "b"
+    }
+  },
+  "hash": "b3ad6c01b2b50e2f"
+}
