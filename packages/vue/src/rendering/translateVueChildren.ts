@@ -16,9 +16,12 @@ import { hashSource } from 'generaltranslation/id';
 import {
   Comment,
   Fragment,
+  Static,
   Suspense,
   Text,
   cloneVNode,
+  createCommentVNode,
+  createTextVNode,
   h,
   isVNode,
   mergeProps,
@@ -39,20 +42,23 @@ const variableTypes = {
 
 type Transformation = 'branch' | 'fragment' | 'plural' | 'variable' | undefined;
 
+/** Prevents text on opposite sides of an ignored Vue comment from merging. */
+const textBoundary = Symbol('gt-vue-text-boundary');
+
 type SourceElement = {
   branches: Record<string, SourceNode[]>;
   children: SourceNode[];
   id: number;
   identity: string;
-  opaque: boolean;
   preserveExplicitKey: boolean;
+  replaceDefaultSlot: boolean;
   transformation: Transformation;
   variableName?: string;
   variableType?: VariableType;
   vnode: VNode;
 };
 
-type SourceNode = SourceElement | string;
+type SourceNode = SourceElement | string | typeof textBoundary;
 
 type ComponentWithGTMetadata = Component & {
   _gtt?: string;
@@ -241,22 +247,20 @@ function visitChildren(
   transparentKeyScope = false
 ): SourceNode[] {
   if (Array.isArray(children)) {
-    return mergeAdjacentStrings(
-      children.flatMap((child) =>
-        visitChildren(
-          child,
-          index,
-          identityScope,
-          identityRender,
-          identityOccurrences,
-          transparentKeyScope
-        )
+    return children.flatMap((child) =>
+      visitChildren(
+        child,
+        index,
+        identityScope,
+        identityRender,
+        identityOccurrences,
+        transparentKeyScope
       )
     );
   }
   if (children == null || typeof children === 'boolean') return [];
   if (!isVNode(children)) return [String(children)];
-  if (children.type === Comment) return [];
+  if (children.type === Comment) return [textBoundary];
   if (children.type === Text) return [String(children.children ?? '')];
   if (children.type === Fragment) {
     const fragmentChildren = isSlots(children.children)
@@ -302,25 +306,24 @@ function visitChildren(
   const variable =
     transformation === 'variable' ? getVariable(metadata, id) : undefined;
   const defaultSlot = variable
-    ? { children: undefined, opaque: false }
-    : readDefaultSlot(children, transformation);
+    ? { children: undefined, replace: false }
+    : readDefaultSlot(children);
   const source: SourceElement = {
     branches: {},
-    children:
-      variable || defaultSlot.opaque
-        ? []
-        : visitChildren(
-            defaultSlot.children,
-            index,
-            transformation === 'branch' || transformation === 'plural'
-              ? `${identity}/default`
-              : identity,
-            identityRender
-          ),
+    children: variable
+      ? []
+      : visitChildren(
+          defaultSlot.children,
+          index,
+          transformation === 'branch' || transformation === 'plural'
+            ? `${identity}/default`
+            : identity,
+          identityRender
+        ),
     id,
     identity,
-    opaque: defaultSlot.opaque,
     preserveExplicitKey: !transparentKeyScope,
+    replaceDefaultSlot: defaultSlot.replace,
     transformation,
     variableName: variable?.name,
     variableType: variable?.type,
@@ -405,35 +408,39 @@ function getVariable(
 }
 
 /**
- * Reads source-owned content without speculatively invoking user components.
+ * Materializes the authored default slot that React receives as `children`.
  *
- * Vue represents both scoped and unscoped component slots as indistinguishable
- * functions. Calling an arbitrary slot to discover which kind it is can run
- * ignored slots, duplicate side effects, or let synthetic props escape. Keep
- * custom component slots opaque and traverse only GT-owned slots whose
- * no-argument contract is known. Suspense is read from Vue's already-normalized
- * content so its slot is not invoked a second time.
+ * GT rich content is static by contract: runtime values belong in a variable
+ * component and alternatives belong in Branch or Plural. Vue represents even
+ * a static custom component child as a lazy, zero-argument slot, so T invokes
+ * that authored slot once and later replaces it with the translated children.
+ * Scoped or otherwise dynamic slots are rejected by extraction instead of
+ * changing this runtime wire format.
  */
-function readDefaultSlot(
-  vnode: VNode,
-  transformation: Transformation
-): {
+function readDefaultSlot(vnode: VNode): {
   children: unknown;
-  opaque: boolean;
+  replace: boolean;
 } {
+  // A Static VNode stores pre-rendered HTML in `children`, not translatable
+  // text children. Preserve it as an opaque source node rather than treating
+  // its Symbol type as a component and dropping its HTML during cloning.
+  if (vnode.type === Static) {
+    return { children: undefined, replace: false };
+  }
   if (vnode.type === Suspense) {
     return {
       children: (vnode as VNodeWithRenderMetadata).ssContent,
-      opaque: false,
+      replace: true,
     };
   }
-  if (transformation === undefined && typeof vnode.type !== 'string') {
-    return { children: undefined, opaque: true };
-  }
   if (!isSlots(vnode.children)) {
-    return { children: vnode.children, opaque: false };
+    return { children: vnode.children, replace: false };
   }
-  return { children: vnode.children.default?.(), opaque: false };
+  const defaultSlot = vnode.children.default;
+  return {
+    children: typeof defaultSlot === 'function' ? defaultSlot() : undefined,
+    replace: typeof defaultSlot === 'function',
+  };
 }
 
 function getBranches(
@@ -489,11 +496,11 @@ function isSlots(children: unknown): children is Slots {
 }
 
 function serializeNodes(nodes: SourceNode[]): JsxChildren {
-  const serialized = nodes.map(serializeNode);
+  const serialized = nodes.filter(isContentNode).map(serializeNode);
   return serialized.length === 1 ? serialized[0] : serialized;
 }
 
-function serializeNode(node: SourceNode): JsxChild {
+function serializeNode(node: SourceElement | string): JsxChild {
   if (typeof node === 'string') return node;
   if (node.transformation === 'variable') {
     return {
@@ -527,7 +534,7 @@ function serializeNode(node: SourceNode): JsxChild {
     t: getElementName(node.vnode, node.id),
     i: node.id,
     ...(Object.keys(data).length && { d: data }),
-    ...(node.children.length && { c: serializeNodes(node.children) }),
+    ...(hasContentNodes(node.children) && { c: serializeNodes(node.children) }),
   };
 }
 
@@ -562,7 +569,8 @@ function renderNodes(
 
   const targets = Array.isArray(target) ? target : [target];
   const sourceElements = source.filter(
-    (node): node is SourceElement => typeof node !== 'string'
+    (node): node is SourceElement =>
+      typeof node !== 'string' && node !== textBoundary
   );
   const variables = new Map(
     sourceElements
@@ -649,9 +657,9 @@ function keySourceResult(
 
   if (isVNode(rendered)) {
     if (rendered.key === key) return rendered;
-    const cloned = cloneVNode(rendered);
-    cloned.key = key;
-    return cloned;
+    // Persist the key in props as well as `VNode.key`. Vue built-ins such as
+    // KeepAlive clone cached children and recompute their key from props.
+    return cloneVNode(rendered, { key });
   }
 
   const children =
@@ -709,15 +717,11 @@ function renderElement(
   if (source.transformation === 'fragment') {
     return renderNodes(source.children, target.c, state, identityRender);
   }
-  if (source.opaque) {
-    const translatedProps = getTranslatedProps(target);
-    return Object.keys(translatedProps).length
-      ? cloneWithProps(source.vnode, translatedProps)
-      : source.vnode;
-  }
   const translatedProps = getTranslatedProps(target);
-  if (target.c == null) {
-    return source.children.length
+  const hasAuthoredChildren =
+    hasContentNodes(source.children) || source.replaceDefaultSlot;
+  if (target.c == null || !hasAuthoredChildren) {
+    return hasAuthoredChildren
       ? cloneWithChildren(
           source.vnode,
           renderDefaultNodes(
@@ -790,17 +794,12 @@ function getSelectedTargetBranch(
     : target.c;
 }
 
-function mergeAdjacentStrings(nodes: SourceNode[]): SourceNode[] {
-  const result: SourceNode[] = [];
-  for (const node of nodes) {
-    const previous = result.at(-1);
-    if (typeof previous === 'string' && typeof node === 'string') {
-      result[result.length - 1] = previous + node;
-    } else {
-      result.push(node);
-    }
-  }
-  return result;
+function isContentNode(node: SourceNode): node is SourceElement | string {
+  return node !== textBoundary;
+}
+
+function hasContentNodes(nodes: SourceNode[]): boolean {
+  return nodes.some(isContentNode);
 }
 
 function getTranslatedProps(target: JsxElement): Record<string, string> {
@@ -819,20 +818,22 @@ function renderDefaultNodes(
   locale: string
 ): VNodeChild[] {
   const occurrences = new Map<SourceElement, number>();
-  return nodes.map((node) =>
-    typeof node === 'string'
-      ? node
-      : keySourceResult(
-          node,
-          renderDefaultNode(node, state, identityRender, locale),
-          occurrences,
-          identityRender
-        )
-  );
+  return nodes
+    .filter(isContentNode)
+    .map((node) =>
+      typeof node === 'string'
+        ? node
+        : keySourceResult(
+            node,
+            renderDefaultNode(node, state, identityRender, locale),
+            occurrences,
+            identityRender
+          )
+    );
 }
 
 function renderDefaultNode(
-  node: SourceNode,
+  node: SourceElement | string,
   state: GTState,
   identityRender: TranslationIdentityRender,
   locale: string
@@ -874,7 +875,9 @@ function renderDefaultNode(
       locale
     );
   }
-  if (!node.children.length) return node.vnode;
+  if (!hasContentNodes(node.children) && !node.replaceDefaultSlot) {
+    return node.vnode;
+  }
   return cloneWithChildren(
     node.vnode,
     renderDefaultNodes(node.children, state, identityRender, locale)
@@ -931,9 +934,32 @@ function cloneWithChildren(
   const type = vnode as unknown as Component;
   const props = Object.keys(extraProps).length ? extraProps : null;
   const slots = isSlots(vnode.children) ? vnode.children : {};
+  const runtimeSlots = Object.fromEntries(
+    Object.entries(slots).filter(([name]) => name !== '_' && name !== '$stable')
+  );
   return h(type, props, {
-    ...slots,
-    default: () => children,
+    // The compiler's stable-slot marker describes the source slot function,
+    // not the translated VNodes assembled here. Keeping it lets Vue take a
+    // block-optimized path that can skip runtime-created descendants.
+    ...runtimeSlots,
+    // Compiler-generated slot outlets consume normalized VNode arrays. A
+    // programmatic component can happen to accept a primitive here, which hid
+    // this distinction in unit fixtures, but a production-compiled `<slot />`
+    // drops an unnormalized translated string.
+    default: () => normalizeComponentSlotValue(children),
+  });
+}
+
+/** Normalizes a replacement default slot the same way Vue normalizes raw slots. */
+function normalizeComponentSlotValue(value: VNodeChild): VNode[] {
+  const values = Array.isArray(value) ? value : [value];
+  return values.map((child) => {
+    if (isVNode(child)) return child;
+    if (Array.isArray(child)) return h(Fragment, null, child);
+    if (child == null || typeof child === 'boolean') {
+      return createCommentVNode();
+    }
+    return createTextVNode(String(child));
   });
 }
 
