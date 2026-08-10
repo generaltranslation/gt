@@ -17,6 +17,7 @@ describe('localizePathSegment', () => {
     expect(localizePathSegment('/en/docs/api', 'es', knownLocales)).toBe(
       '/es/docs/api'
     );
+    expect(localizePathSegment('/en', 'es', knownLocales)).toBe('/es');
   });
 
   it('preserves surrounding whitespace', () => {
