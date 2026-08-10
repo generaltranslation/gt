@@ -3,10 +3,12 @@ import { hashSource } from 'generaltranslation/id';
 import * as Vue from 'vue';
 import {
   Fragment,
+  KeepAlive,
   Suspense,
   createCommentVNode,
   createRenderer,
   createSSRApp,
+  createStaticVNode,
   defineComponent,
   h,
   nextTick,
@@ -41,22 +43,131 @@ import {
 import type { TranslationCatalog } from '../index';
 
 describe('gt-vue runtime', () => {
-  it('flattens only the default slot of a compiled Vue Fragment', () => {
+  it('preserves authored Fragments while flattening array-child compiler wrappers', () => {
     const defaultSlot = vi.fn(() => [h('span', 'Fragment child')]);
     const ignoredSlot = vi.fn(() => [h('span', 'Ignored child')]);
-    const fragment = h(Fragment, null, {
+    const authoredFragment = h(Fragment, null, {
       _: 1,
       default: defaultSlot,
       ignored: ignoredSlot,
     });
 
-    expect(serializeVueChildren([fragment])).toEqual({
+    expect(serializeVueChildren([authoredFragment])).toEqual({
+      t: 'C1',
+      i: 1,
+      c: {
+        t: 'span',
+        i: 2,
+        c: 'Fragment child',
+      },
+    });
+    expect(serializeVueChildren([h(Fragment)])).toEqual({ t: 'C1', i: 1 });
+    expect(
+      serializeVueChildren([
+        h(Fragment, null, [h('span', 'Compiler wrapper child')]),
+      ])
+    ).toEqual({
       t: 'span',
       i: 1,
-      c: 'Fragment child',
+      c: 'Compiler wrapper child',
     });
     expect(defaultSlot).toHaveBeenCalledOnce();
     expect(ignoredSlot).not.toHaveBeenCalled();
+  });
+
+  it('translates authored Fragment children in SSR and preserves keyed state when reordered', async () => {
+    let setupCount = 0;
+    const Stateful = defineComponent({
+      name: 'Stateful',
+      props: { label: { required: true, type: String } },
+      setup(props, { slots }) {
+        const initialLabel = props.label;
+        const instance = ++setupCount;
+        return () =>
+          h('span', [
+            `${props.label}:${initialLabel}:${instance}:`,
+            slots.default?.(),
+            '|',
+          ]);
+      },
+    });
+    const source: JsxChildren = {
+      t: 'C1',
+      i: 1,
+      c: [
+        { t: 'Stateful', i: 2, c: 'A' },
+        { t: 'Stateful', i: 3, c: 'B' },
+      ],
+    };
+    const plugin = createGT({
+      loadTranslations: async () => ({
+        [jsxHash(source)]: {
+          t: 'C1',
+          i: 1,
+          c: [
+            { t: 'Stateful', i: 3, c: 'B-fr' },
+            { t: 'Stateful', i: 2, c: 'A-fr' },
+          ],
+        },
+      }),
+    });
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(T, null, {
+            default: () =>
+              h(
+                Fragment,
+                { key: 'authored-fragment' },
+                {
+                  default: () => [
+                    h(
+                      Stateful,
+                      { key: 'a', label: 'a' },
+                      { default: () => 'A' }
+                    ),
+                    h(
+                      Stateful,
+                      { key: 'b', label: 'b' },
+                      { default: () => 'B' }
+                    ),
+                  ],
+                }
+              ),
+          });
+      },
+    });
+
+    await plugin.setLocale('fr');
+    expect(stripFragmentMarkers(await renderWithPlugin(Root, plugin))).toBe(
+      '<span>b:b:1:B-fr|</span><span>a:a:2:A-fr|</span>'
+    );
+
+    await plugin.setLocale('en');
+    const mounted = mount(Root, plugin);
+    expect(textContent(mounted.root)).toBe('a:a:3:A|b:b:4:B|');
+    await plugin.setLocale('fr');
+    await nextTick();
+    expect(textContent(mounted.root)).toBe('b:b:4:B-fr|a:a:3:A-fr|');
+    expect(setupCount).toBe(4);
+    mounted.app.unmount();
+  });
+
+  it('renders empty authored Fragments safely in source and translated SSR', async () => {
+    const plugin = createGT({
+      loadTranslations: async () => ({
+        [jsxHash({ t: 'C1', i: 1 })]: { t: 'C1', i: 1 },
+      }),
+    });
+    const Root = defineComponent({
+      setup() {
+        return () => h(T, null, { default: () => h(Fragment) });
+      },
+    });
+
+    expect(stripFragmentMarkers(await renderWithPlugin(Root, plugin))).toBe('');
+    await plugin.setLocale('fr');
+    expect(stripFragmentMarkers(await renderWithPlugin(Root, plugin))).toBe('');
   });
 
   it('deduplicates branch names shared by attrs and slots', () => {
@@ -260,7 +371,7 @@ describe('gt-vue runtime', () => {
     expect(html).not.toContain('Formal');
   });
 
-  it('translates supported component props while preserving opaque slots', async () => {
+  it('translates supported component props and static slot children', async () => {
     const onNavigate = vi.fn();
     const Link = defineComponent({
       emits: ['navigate'],
@@ -327,7 +438,7 @@ describe('gt-vue runtime', () => {
       id: 'docs-link',
       title: 'Titre traduit',
     });
-    expect(textContent(mounted.root)).toBe('Source link');
+    expect(textContent(mounted.root)).toBe('Lien traduit');
     const onClick = anchor?.props.onClick;
     expect(onClick).toBeTypeOf('function');
     (onClick as () => void)();
@@ -335,7 +446,40 @@ describe('gt-vue runtime', () => {
     mounted.app.unmount();
   });
 
-  it('keeps Vue-compiled scoped slots opaque and supplies real props in SSR', async () => {
+  it('normalizes translated text for compiler-generated slot outlets', async () => {
+    const CompiledLink = defineComponent({
+      name: 'CompiledLink',
+      render: compileSfcTemplate('<a><slot /></a>'),
+    });
+    const plugin = createGT({
+      loadTranslations: async () => ({
+        compiledSlot: {
+          t: 'CompiledLink',
+          i: 1,
+          c: 'Translated compiler slot',
+        },
+      }),
+    });
+    await plugin.setLocale('fr');
+    const Root = defineComponent({
+      components: { CompiledLink, T },
+      render: compileSfcTemplate(
+        '<T _hash="compiledSlot"><CompiledLink>Source compiler slot</CompiledLink></T>'
+      ),
+    });
+
+    const html = await renderWithPlugin(Root, plugin);
+
+    expect(html).toContain('<a>');
+    expect(html).toContain('Translated compiler slot');
+    expect(html).not.toContain('Source compiler slot');
+
+    const mounted = mount(Root, plugin);
+    expect(textContent(mounted.root)).toBe('Translated compiler slot');
+    mounted.app.unmount();
+  });
+
+  it('keeps Vue-compiled scoped slots dynamic when enclosed by Var', async () => {
     const ScopedCard = defineComponent({
       name: 'ScopedCard',
       setup(_props, { slots }) {
@@ -345,42 +489,33 @@ describe('gt-vue runtime', () => {
     const plugin = createGT({
       loadTranslations: async () => ({
         scoped: {
-          t: 'ScopedCard',
           i: 1,
-          c: 'A translated replacement must not consume a scoped slot',
+          k: '_gt_value_1',
+          v: 'v',
         },
       }),
     });
     await plugin.setLocale('fr');
     const Root = defineComponent({
-      components: { Card: ScopedCard, T },
+      components: { Card: ScopedCard, T, Var },
       render: compileSfcTemplate(
-        '<T _hash="scoped"><Card v-slot="{ label }"><span>{{ label }}</span></Card></T>'
+        '<T _hash="scoped"><Var><Card v-slot="{ label }"><span>{{ label }}</span></Card></Var></T>'
       ),
     });
 
     const html = await renderWithPlugin(Root, plugin);
 
     expect(html).toContain('<article><span>Runtime label</span></article>');
-    expect(html).not.toContain('translated replacement');
   });
 
-  it('never probes direct, ignored, or forwarded custom component slots', async () => {
+  it('materializes each authored custom-component slot once', async () => {
     const directCalls = vi.fn();
     const ignoredCalls = vi.fn();
     const forwardedCalls = vi.fn();
-    const scope = { label: 'Runtime label' };
-    const DeferredReader = defineComponent({
-      name: 'DeferredReader',
-      props: { payload: { required: true, type: Object } },
-      setup(props) {
-        return () => h('span', String(props.payload.label));
-      },
-    });
     const DirectOwner = defineComponent({
       name: 'DirectOwner',
       setup(_props, { slots }) {
-        return () => h('section', slots.default?.(scope));
+        return () => h('section', slots.default?.());
       },
     });
     const IgnoredOwner = defineComponent({
@@ -392,15 +527,15 @@ describe('gt-vue runtime', () => {
     const ForwardingOwner = defineComponent({
       name: 'ForwardingOwner',
       setup(_props, { slots }) {
-        return () => h('div', slots.default?.(scope));
+        return () => h('div', slots.default?.());
       },
     });
     const plugin = createGT({
       loadTranslations: async () => ({
         opaqueSlots: [
-          { t: 'DirectOwner', i: 1, c: 'Wrong direct replacement' },
-          { t: 'IgnoredOwner', i: 2, c: 'Wrong ignored replacement' },
-          { t: 'ForwardingOwner', i: 3, c: 'Wrong forwarded replacement' },
+          { t: 'DirectOwner', i: 1, c: 'Translated direct child' },
+          { t: 'IgnoredOwner', i: 2, c: 'Translated ignored child' },
+          { t: 'ForwardingOwner', i: 3, c: 'Translated forwarded child' },
         ],
       }),
     });
@@ -414,11 +549,9 @@ describe('gt-vue runtime', () => {
             {
               default: () => [
                 h(DirectOwner, null, {
-                  default: (slotScope: typeof scope) => {
-                    directCalls(slotScope);
-                    return slotScope === scope
-                      ? 'Exact scope object'
-                      : 'Synthetic scope object';
+                  default: () => {
+                    directCalls();
+                    return 'Source direct child';
                   },
                 }),
                 h(IgnoredOwner, null, {
@@ -428,9 +561,9 @@ describe('gt-vue runtime', () => {
                   },
                 }),
                 h(ForwardingOwner, null, {
-                  default: (slotScope: typeof scope) => {
-                    forwardedCalls(slotScope);
-                    return h(DeferredReader, { payload: slotScope });
+                  default: () => {
+                    forwardedCalls();
+                    return 'Source forwarded child';
                   },
                 }),
               ],
@@ -441,18 +574,17 @@ describe('gt-vue runtime', () => {
 
     const html = await renderWithPlugin(Root, plugin);
 
-    expect(html).toContain('Exact scope object');
+    expect(html).toContain('Translated direct child');
     expect(html).toContain('Ignored safely');
-    expect(html).toContain('Runtime label');
-    expect(html).not.toContain('Wrong');
+    expect(html).toContain('Translated forwarded child');
+    expect(html).not.toContain('Source direct child');
+    expect(html).not.toContain('Source forwarded child');
     expect(directCalls).toHaveBeenCalledOnce();
-    expect(directCalls).toHaveBeenCalledWith(scope);
-    expect(ignoredCalls).not.toHaveBeenCalled();
+    expect(ignoredCalls).toHaveBeenCalledOnce();
     expect(forwardedCalls).toHaveBeenCalledOnce();
-    expect(forwardedCalls).toHaveBeenCalledWith(scope);
   });
 
-  it('preserves arbitrary scoped named slots without invoking them', async () => {
+  it('keeps arbitrary scoped named slots dynamic when enclosed by Var', async () => {
     const ScopedBranch = defineComponent({
       name: 'ScopedBranch',
       setup(_props, { slots }) {
@@ -462,24 +594,83 @@ describe('gt-vue runtime', () => {
     const plugin = createGT({
       loadTranslations: async () => ({
         scopedBranch: {
-          t: 'ScopedBranch',
           i: 1,
-          c: 'Translated replacement',
+          k: '_gt_value_1',
+          v: 'v',
         },
       }),
     });
     await plugin.setLocale('fr');
     const Root = defineComponent({
-      components: { ScopedBranch, T },
+      components: { ScopedBranch, T, Var },
       render: compileSfcTemplate(
-        '<T _hash="scopedBranch"><ScopedBranch><template #one="{ label }"><span>{{ label }}</span></template></ScopedBranch></T>'
+        '<T _hash="scopedBranch"><Var><ScopedBranch><template #one="{ label }"><span>{{ label }}</span></template></ScopedBranch></Var></T>'
       ),
     });
 
     const html = await renderWithPlugin(Root, plugin);
 
     expect(html).toContain('<span>Runtime label</span>');
-    expect(html).not.toContain('Translated replacement');
+  });
+
+  it('does not translate component-owned implementation content', async () => {
+    const ImplementationCopy = defineComponent({
+      name: 'ImplementationCopy',
+      setup() {
+        return () => h('p', 'Component-owned copy');
+      },
+    });
+    const plugin = createGT({
+      loadTranslations: async () => ({
+        implementation: {
+          t: 'ImplementationCopy',
+          i: 1,
+          c: 'Catalog content was not authored inside T',
+        },
+      }),
+    });
+    await plugin.setLocale('fr');
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(
+            T,
+            { _hash: 'implementation' },
+            { default: () => h(ImplementationCopy) }
+          );
+      },
+    });
+
+    const html = await renderWithPlugin(Root, plugin);
+
+    expect(html).toContain('Component-owned copy');
+    expect(html).not.toContain('Catalog content was not authored inside T');
+  });
+
+  it('preserves opaque Static VNodes in source and translated locales', async () => {
+    const plugin = createGT({
+      loadTranslations: async () => ({
+        staticVNode: { t: 'Static', i: 1, c: 'Ignored target' },
+      }),
+    });
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(
+            T,
+            { _hash: 'staticVNode' },
+            { default: () => createStaticVNode('<p>Static source</p>', 1) }
+          );
+      },
+    });
+
+    expect(await renderWithPlugin(Root, plugin)).toContain(
+      '<p>Static source</p>'
+    );
+    await plugin.setLocale('fr');
+    const translatedHtml = await renderWithPlugin(Root, plugin);
+    expect(translatedHtml).toContain('<p>Static source</p>');
+    expect(translatedHtml).not.toContain('Ignored target');
   });
 
   it('reuses explicit source element IDs repeated by a translation', async () => {
@@ -518,10 +709,15 @@ describe('gt-vue runtime', () => {
     const Stateful = defineComponent({
       name: 'Stateful',
       props: { label: { required: true, type: String } },
-      setup(props) {
+      setup(props, { slots }) {
         const initialLabel = props.label;
         const instance = ++setupCount;
-        return () => h('span', `${props.label}:${initialLabel}:${instance}|`);
+        return () =>
+          h('span', [
+            `${props.label}:${initialLabel}:${instance}:`,
+            slots.default?.(),
+            '|',
+          ]);
       },
     });
     const plugin = createGT({
@@ -529,13 +725,13 @@ describe('gt-vue runtime', () => {
         identity:
           locale === 'fr'
             ? [
-                { t: 'Stateful', i: 2 },
-                { t: 'Stateful', i: 1 },
+                { t: 'Stateful', i: 2, c: 'B-fr' },
+                { t: 'Stateful', i: 1, c: 'A-fr' },
               ]
             : [
-                { t: 'Stateful', i: 1 },
-                { t: 'Stateful', i: 1 },
-                { t: 'Stateful', i: 2 },
+                { t: 'Stateful', i: 1, c: 'A-de-1' },
+                { t: 'Stateful', i: 1, c: 'A-de-2' },
+                { t: 'Stateful', i: 2, c: 'B-de' },
               ],
       }),
     });
@@ -547,8 +743,8 @@ describe('gt-vue runtime', () => {
             { _hash: 'identity' },
             {
               default: () => [
-                h(Stateful, { label: 'a' }),
-                h(Stateful, { label: 'b' }),
+                h(Stateful, { label: 'a' }, { default: () => 'A' }),
+                h(Stateful, { label: 'b' }, { default: () => 'B' }),
               ],
             }
           );
@@ -556,24 +752,82 @@ describe('gt-vue runtime', () => {
     });
     const mounted = mount(Root, plugin);
 
-    expect(textContent(mounted.root)).toBe('a:a:1|b:b:2|');
+    expect(textContent(mounted.root)).toBe('a:a:1:A|b:b:2:B|');
     await plugin.setLocale('fr');
     await nextTick();
-    expect(textContent(mounted.root)).toBe('b:b:2|a:a:1|');
+    expect(textContent(mounted.root)).toBe('b:b:2:B-fr|a:a:1:A-fr|');
     expect(setupCount).toBe(2);
 
     await plugin.setLocale('de');
     await nextTick();
-    expect(textContent(mounted.root)).toBe('a:a:1|a:a:3|b:b:2|');
+    expect(textContent(mounted.root)).toBe(
+      'a:a:1:A-de-1|a:a:3:A-de-2|b:b:2:B-de|'
+    );
     expect(setupCount).toBe(3);
 
     await plugin.setLocale('fr');
     await nextTick();
-    expect(textContent(mounted.root)).toBe('b:b:2|a:a:1|');
+    expect(textContent(mounted.root)).toBe('b:b:2:B-fr|a:a:1:A-fr|');
 
     await plugin.setLocale('en');
     await nextTick();
-    expect(textContent(mounted.root)).toBe('a:a:1|b:b:2|');
+    expect(textContent(mounted.root)).toBe('a:a:1:A|b:b:2:B|');
+    mounted.app.unmount();
+  });
+
+  it('preserves generated keys through KeepAlive locale updates', async () => {
+    let setupCount = 0;
+    const Stateful = defineComponent({
+      name: 'Stateful',
+      setup(_props, { slots }) {
+        setupCount += 1;
+        return () => h('span', slots.default?.());
+      },
+    });
+    const plugin = createGT({
+      loadTranslations: async (locale) =>
+        locale === 'fr'
+          ? {
+              keepAlive: {
+                t: 'KeepAlive',
+                i: 1,
+                c: {
+                  t: 'Stateful',
+                  i: 2,
+                  c: 'Contenu traduit',
+                },
+              },
+            }
+          : {},
+    });
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(
+            T,
+            { _hash: 'keepAlive' },
+            {
+              default: () =>
+                h(KeepAlive, null, {
+                  default: () =>
+                    h(Stateful, null, { default: () => 'Source content' }),
+                }),
+            }
+          );
+      },
+    });
+    const mounted = mount(Root, plugin);
+
+    expect(textContent(mounted.root)).toBe('Source content');
+    await plugin.setLocale('fr');
+    await nextTick();
+    expect(textContent(mounted.root)).toBe('Contenu traduit');
+    expect(setupCount).toBe(1);
+
+    await plugin.setLocale('en');
+    await nextTick();
+    expect(textContent(mounted.root)).toBe('Source content');
+    expect(setupCount).toBe(1);
     mounted.app.unmount();
   });
 
@@ -1413,7 +1667,7 @@ describe('gt-vue runtime', () => {
     mounted.app.unmount();
   });
 
-  it('selects source plural values with the source locale and target branches with the active locale', async () => {
+  it('selects source and target plural values with the active locale', async () => {
     const variable = { i: 2, k: '_gt_value_2', v: 'v' } as const;
     const target: JsxChildren = {
       t: 'Plural',
@@ -1454,8 +1708,8 @@ describe('gt-vue runtime', () => {
 
     const html = stripFragmentMarkers(await renderWithPlugin(Root, plugin));
 
-    expect(html).toContain('Cible OTHER');
-    expect(html).not.toContain('Cible ONE');
+    expect(html).toContain('Cible ONE');
+    expect(html).not.toContain('Cible OTHER');
   });
 
   it('updates multi-root rich children from arrays to scalar text on the client', async () => {
@@ -1505,8 +1759,8 @@ describe('gt-vue runtime', () => {
     mounted.app.unmount();
   });
 
-  it('coalesces text around comments and fragments for stable rich hashes', async () => {
-    const source = 'Hello world';
+  it('preserves React-compatible text boundaries around comments', async () => {
+    const source = ['Hello', ' world'];
     const plugin = createGT({
       loadTranslations: async () => ({
         [jsxHash(source)]: 'Bonjour le monde',

@@ -59,7 +59,15 @@ export const Plural = withGTMetadata<PluralProps>(
             state.defaultLocale
           )
         );
-        return asFragmentRoot(getBranchContent(branch, attrs, slots));
+        const namedSlot = branch && slots[branch];
+        // React treats a null plural form as absent and renders the default,
+        // while false and true remain selected branches that render empty.
+        // A Vue named slot still wins over an attribute with the same name.
+        const content =
+          branch && attrs[branch] === null && typeof namedSlot !== 'function'
+            ? (slots.default?.() ?? null)
+            : getBranchContent(branch, attrs, slots);
+        return asFragmentRoot(content);
       };
     },
   }),
