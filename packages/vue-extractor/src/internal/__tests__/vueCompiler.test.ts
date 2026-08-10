@@ -84,6 +84,13 @@ describe('consumer Vue compiler resolution', () => {
           version: '3.5.40',
         }),
       });
+      if (!resolution.ok) return;
+      expect(resolution.value.parseTemplate?.('A &amp; B', {})).toMatchObject({
+        decoded: 'A & B',
+      });
+      expect(
+        resolution.value.templateCompiler?.compile('A&nbsp;B', {})
+      ).toMatchObject({ decoded: 'A\u00a0B' });
     } finally {
       delete process.versions.bun;
     }
@@ -271,7 +278,14 @@ function writeBunIsolatedVuePackage(root: string, version: string): void {
   );
   fs.writeFileSync(
     path.join(compilerDomRoot, 'dist/compiler-dom.esm-browser.js'),
-    `module.exports = { compile() {}, parse() {} };\n`
+    `module.exports = {
+  compile(source, options) {
+    return { decoded: options.decodeEntities(source, false) };
+  },
+  parse(source, options) {
+    return { decoded: options.decodeEntities(source, true) };
+  }
+};\n`
   );
 }
 
