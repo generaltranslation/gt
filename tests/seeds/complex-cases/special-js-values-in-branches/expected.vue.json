@@ -1,0 +1,19 @@
+{
+  "source": {
+    "t": "Branch",
+    "i": 1,
+    "d": {
+      "b": {
+        "number": "42",
+        "big-number": "9007199254740991",
+        "scientific": "1e-20",
+        "negative-scientific": "-100000000000000000000",
+        "hex": "3735928559",
+        "octal": "493",
+        "binary": "255"
+      },
+      "t": "b"
+    }
+  },
+  "hash": "ee8e9cf77520e7a8"
+}

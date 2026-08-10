@@ -1,0 +1,21 @@
+{
+  "source": {
+    "t": "Branch",
+    "i": 1,
+    "d": {
+      "b": {
+        "minimal": {
+          "t": "span",
+          "i": 2
+        },
+        "empty": "",
+        "space": " ",
+        "newline": "\n",
+        "tab": "\t",
+        "single-char": "x"
+      },
+      "t": "b"
+    }
+  },
+  "hash": "c2e4b9ae37029cf7"
+}

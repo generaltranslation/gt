@@ -1,0 +1,75 @@
+{
+  "source": [
+    "Hello there",
+    {
+      "t": "Branch",
+      "i": 1,
+      "d": {
+        "b": {
+          "fn2": [
+            "Hello my good friend",
+            {
+              "t": "span",
+              "i": 2,
+              "c": "fn1 hi fn2"
+            },
+            {
+              "t": "Branch",
+              "i": 3,
+              "d": {
+                "b": {
+                  "yes": "yes",
+                  "no": "no",
+                  "other": "yo"
+                },
+                "t": "b"
+              }
+            }
+          ],
+          "nope": [
+            "Hello my good friend",
+            {
+              "t": "span",
+              "i": 2,
+              "c": "fn1 hi nope"
+            },
+            {
+              "t": "Branch",
+              "i": 3,
+              "d": {
+                "b": {
+                  "yes": "yes",
+                  "no": "no",
+                  "other": "yo"
+                },
+                "t": "b"
+              }
+            }
+          ],
+          "no": [
+            "Hello my good friend",
+            {
+              "t": "span",
+              "i": 2,
+              "c": "no"
+            },
+            {
+              "t": "Branch",
+              "i": 3,
+              "d": {
+                "b": {
+                  "yes": "yes",
+                  "no": "no",
+                  "other": "yo"
+                },
+                "t": "b"
+              }
+            }
+          ]
+        },
+        "t": "b"
+      }
+    }
+  ],
+  "hash": "aed1c66a660ea385"
+}

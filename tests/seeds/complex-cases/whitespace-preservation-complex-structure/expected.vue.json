@@ -1,0 +1,45 @@
+{
+  "source": {
+    "t": "Branch",
+    "i": 1,
+    "d": {
+      "b": {
+        "compact": [
+          " No spaces ",
+          {
+            "i": 2,
+            "k": "_gt_value_2",
+            "v": "v"
+          },
+          " at all "
+        ],
+        "spaced": [
+          " Lots of spaces ",
+          {
+            "i": 2,
+            "k": "_gt_value_2",
+            "v": "v"
+          },
+          " everywhere "
+        ],
+        "mixed": [
+          " Text ",
+          {
+            "t": "span",
+            "i": 2,
+            "c": "embedded spaces"
+          },
+          " more text ",
+          {
+            "i": 3,
+            "k": "_gt_value_3",
+            "v": "v"
+          },
+          " final text "
+        ]
+      },
+      "t": "b"
+    }
+  },
+  "hash": "5911779f03b0a9b5"
+}

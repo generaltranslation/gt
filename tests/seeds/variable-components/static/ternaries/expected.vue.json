@@ -1,0 +1,17 @@
+{
+  "source": [
+    {
+      "t": "Branch",
+      "i": 1,
+      "d": {
+        "b": {
+          "true": "The boy",
+          "false": "The girl"
+        },
+        "t": "b"
+      }
+    },
+    " is beautiful"
+  ],
+  "hash": "28da75b7c45137da"
+}

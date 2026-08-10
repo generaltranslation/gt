@@ -1,0 +1,493 @@
+{
+  "source": [
+    {
+      "t": "Plural",
+      "i": 1,
+      "d": {
+        "b": {
+          "singular": " ",
+          "plural": "\t"
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "span",
+      "i": 2,
+      "c": "start"
+    },
+    {
+      "t": "span",
+      "i": 3,
+      "c": "middle"
+    },
+    {
+      "t": "span",
+      "i": 4,
+      "c": "end"
+    },
+    {
+      "t": "Plural",
+      "i": 5,
+      "d": {
+        "b": {
+          "singular": "deep fragment nesting",
+          "plural": "files"
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "Branch",
+      "i": 6,
+      "d": {
+        "b": {
+          "option1": [
+            " text ",
+            {
+              "t": "span",
+              "i": 7,
+              "c": "element"
+            },
+            " 42truemore text "
+          ],
+          "option2": "simple"
+        },
+        "t": "b"
+      }
+    },
+    {
+      "t": "Plural",
+      "i": 7,
+      "d": {
+        "b": {
+          "zero": "0",
+          "one": "0",
+          "two": "999999999999",
+          "few": "-999999999999",
+          "many": "1e-9",
+          "other": "-1e-9"
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "Branch",
+      "i": 8,
+      "d": {
+        "b": {
+          "tiny": "0.1",
+          "precise": "3.141592653589793",
+          "scientific": "1.23e-10",
+          "big-scientific": "12300000000"
+        },
+        "t": "b"
+      }
+    },
+    {
+      "t": "Branch",
+      "i": 9,
+      "d": {
+        "b": {
+          "small": "1",
+          "medium": "2748",
+          "large": "3735928559",
+          "mixed": "1194684"
+        },
+        "t": "b"
+      }
+    },
+    {
+      "t": "Plural",
+      "i": 10,
+      "d": {
+        "b": {
+          "singular": "Quotes: \" and '",
+          "plural": "Backslashes: \\ and \\n and \\t",
+          "other": "Unicode: \\u0041 and \\x41"
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "Branch",
+      "i": 11,
+      "d": {
+        "b": {
+          "json": "{\"key\": \"value\", \"array\": [1,2,3]}",
+          "regex": "/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\\\.[a-zA-Z]{2,}$/",
+          "path": "C:\\Program Files\\App\\file.exe"
+        },
+        "t": "b"
+      }
+    },
+    {
+      "t": "Plural",
+      "i": 12,
+      "d": {
+        "b": {
+          "zero": false,
+          "one": true,
+          "two": null,
+          "few": "",
+          "many": "0",
+          "other": "false"
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "Branch",
+      "i": 13,
+      "d": {
+        "b": {
+          "truthy": true,
+          "falsy": false,
+          "nullish": null,
+          "empty": "",
+          "zero": "0",
+          "string-true": "true",
+          "string-false": "false"
+        },
+        "t": "b"
+      }
+    },
+    {
+      "t": "Plural",
+      "i": 14,
+      "d": {
+        "b": {
+          "singular": "Template with ${escaped} and `backticks`",
+          "plural": "Multi line template literal",
+          "other": "Mixed \"quotes\" and 'apostrophes' in template"
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "Plural",
+      "i": 15,
+      "d": {
+        "b": {
+          "zero": "",
+          "one": "1",
+          "two": "2",
+          "few": "few",
+          "many": "many",
+          "other": "other",
+          "singular": "sing",
+          "plural": "plur"
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "Branch",
+      "i": 16,
+      "d": {
+        "b": {
+          "f": "fragment f",
+          "g": {
+            "t": "span",
+            "i": 17,
+            "c": "element g"
+          },
+          "a": "option a",
+          "b": "option b",
+          "c": "option c",
+          "d": "option d",
+          "e": "option e",
+          "h": "42",
+          "i": true,
+          "j": null
+        },
+        "t": "b"
+      }
+    },
+    {
+      "i": 17,
+      "k": "_gt_value_17",
+      "v": "v"
+    },
+    {
+      "i": 18,
+      "k": "_gt_value_18",
+      "v": "v"
+    },
+    {
+      "i": 19,
+      "k": "_gt_n_19",
+      "v": "n"
+    },
+    {
+      "i": 20,
+      "k": "_gt_n_20",
+      "v": "n"
+    },
+    {
+      "i": 21,
+      "k": "_gt_n_21",
+      "v": "n"
+    },
+    {
+      "i": 22,
+      "k": "_gt_cost_22",
+      "v": "c"
+    },
+    {
+      "i": 23,
+      "k": "_gt_cost_23",
+      "v": "c"
+    },
+    {
+      "i": 24,
+      "k": "_gt_cost_24",
+      "v": "c"
+    },
+    {
+      "i": 25,
+      "k": "_gt_date_25",
+      "v": "d"
+    },
+    {
+      "i": 26,
+      "k": "_gt_date_26",
+      "v": "d"
+    },
+    {
+      "t": "Branch",
+      "i": 27,
+      "d": {
+        "b": {
+          "option1": {
+            "t": "Plural",
+            "i": 28,
+            "d": {
+              "b": {
+                "singular": {
+                  "t": "Branch",
+                  "i": 29,
+                  "d": {
+                    "b": {
+                      "option1": {
+                        "t": "Plural",
+                        "i": 30,
+                        "d": {
+                          "b": {
+                            "singular": {
+                              "t": "Branch",
+                              "i": 31,
+                              "d": {
+                                "b": {
+                                  "option1": {
+                                    "i": 32,
+                                    "k": "_gt_value_32",
+                                    "v": "v"
+                                  },
+                                  "option2": "l3 end"
+                                },
+                                "t": "b"
+                              }
+                            },
+                            "plural": "l2 plural"
+                          },
+                          "t": "p"
+                        }
+                      },
+                      "option2": "l2 end"
+                    },
+                    "t": "b"
+                  }
+                },
+                "plural": "l1 plural"
+              },
+              "t": "p"
+            }
+          },
+          "option2": "l1 end"
+        },
+        "t": "b"
+      }
+    },
+    {
+      "t": "div",
+      "i": 28,
+      "c": {
+        "t": "Branch",
+        "i": 29,
+        "d": {
+          "b": {
+            "option1": [
+              {
+                "t": "span",
+                "i": 30,
+                "c": "Before plural"
+              },
+              {
+                "t": "Plural",
+                "i": 31,
+                "d": {
+                  "b": {
+                    "singular": {
+                      "t": "div",
+                      "i": 32,
+                      "c": [
+                        " Single item: ",
+                        {
+                          "i": 33,
+                          "k": "_gt_n_33",
+                          "v": "n"
+                        },
+                        " costing   ",
+                        {
+                          "i": 34,
+                          "k": "_gt_cost_34",
+                          "v": "c"
+                        },
+                        " at ",
+                        {
+                          "i": 35,
+                          "k": "_gt_date_35",
+                          "v": "d"
+                        },
+                        " in   ",
+                        {
+                          "t": "Branch",
+                          "i": 36,
+                          "d": {
+                            "b": {
+                              "home": [
+                                " home folder with ",
+                                {
+                                  "i": 37,
+                                  "k": "_gt_value_37",
+                                  "v": "v"
+                                }
+                              ],
+                              "work": "office"
+                            },
+                            "t": "b"
+                          }
+                        }
+                      ]
+                    },
+                    "plural": {
+                      "t": "div",
+                      "i": 32,
+                      "c": [
+                        " Multiple items: ",
+                        {
+                          "i": 33,
+                          "k": "_gt_n_33",
+                          "v": "n"
+                        },
+                        " costing   ",
+                        {
+                          "i": 34,
+                          "k": "_gt_cost_34",
+                          "v": "c"
+                        },
+                        "with fragments and ",
+                        {
+                          "t": "span",
+                          "i": 35,
+                          "c": "elements"
+                        }
+                      ]
+                    }
+                  },
+                  "t": "p"
+                }
+              },
+              {
+                "t": "span",
+                "i": 32,
+                "c": "After plural"
+              }
+            ],
+            "option2": "simple option"
+          },
+          "t": "b"
+        }
+      }
+    },
+    {
+      "t": "Branch",
+      "i": 30,
+      "d": {
+        "b": {
+          "latin": "àáâãäåæçèéêëìíîï",
+          "cyrillic": "абвгдежзийклмнопрстуфхцчшщъыьэюя",
+          "greek": "αβγδεζηθικλμνξοπρστυφχψω",
+          "arabic": "ابتثجحخدذرزسشصضطظعغفقكلمنهوي",
+          "hebrew": "אבגדהוזחטיכלמנסעפצקרשת",
+          "chinese": "你好世界中文测试",
+          "japanese": "こんにちは世界ひらがなカタカナ漢字",
+          "korean": "안녕하세요세계한글테스트",
+          "emoji": "🌍🌎🌏🚀⚡️🎉💯✨🔥💎🌟⭐️🎯"
+        },
+        "t": "b"
+      }
+    },
+    {
+      "t": "Plural",
+      "i": 31,
+      "d": {
+        "b": {
+          "singular": "English left-to-right",
+          "plural": "العربية من اليمين إلى اليسار",
+          "other": "עברית מימין לשמאל"
+        },
+        "t": "p"
+      }
+    },
+    {
+      "t": "Branch",
+      "i": 32,
+      "d": {
+        "b": {
+          "path_a": {
+            "t": "div",
+            "i": 33,
+            "c": [
+              {
+                "i": 34,
+                "k": "_gt_value_34",
+                "v": "v"
+              },
+              {
+                "i": 35,
+                "k": "_gt_n_35",
+                "v": "n"
+              },
+              {
+                "i": 36,
+                "k": "_gt_cost_36",
+                "v": "c"
+              }
+            ]
+          },
+          "path_b": [
+            {
+              "i": 33,
+              "k": "_gt_value_33",
+              "v": "v"
+            },
+            {
+              "i": 34,
+              "k": "_gt_n_34",
+              "v": "n"
+            },
+            {
+              "i": 35,
+              "k": "_gt_cost_35",
+              "v": "c"
+            }
+          ]
+        },
+        "t": "b"
+      }
+    }
+  ],
+  "hash": "086d4cacece75155"
+}

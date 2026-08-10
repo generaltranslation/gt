@@ -1,0 +1,6 @@
+{
+  "errors": [
+    "Found dynamic template content inside a gt-vue <T> component"
+  ],
+  "errorCount": 3
+}

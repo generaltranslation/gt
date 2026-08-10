@@ -1,0 +1,43 @@
+{
+  "source": {
+    "t": "Branch",
+    "i": 1,
+    "d": {
+      "b": {
+        "home": {
+          "t": "Branch",
+          "i": 2,
+          "d": {
+            "b": {
+              "evening": [
+                " Good evening at ",
+                {
+                  "i": 3,
+                  "k": "_gt_value_3",
+                  "v": "v"
+                },
+                " with   ",
+                {
+                  "t": "Branch",
+                  "i": 4,
+                  "d": {
+                    "b": {
+                      "sunny": "sunny skies",
+                      "rainy": "rainy weather"
+                    },
+                    "t": "b"
+                  }
+                }
+              ],
+              "morning": "Good morning at home"
+            },
+            "t": "b"
+          }
+        },
+        "work": "At the office"
+      },
+      "t": "b"
+    }
+  },
+  "hash": "7854cf321fde15d8"
+}

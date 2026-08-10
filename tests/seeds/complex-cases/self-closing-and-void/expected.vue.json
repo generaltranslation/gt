@@ -1,0 +1,54 @@
+{
+  "source": {
+    "t": "Branch",
+    "i": 1,
+    "d": {
+      "b": {
+        "line": [
+          {
+            "t": "hr",
+            "i": 2
+          },
+          " Line break ",
+          {
+            "t": "br",
+            "i": 3
+          },
+          " New line "
+        ],
+        "image": [
+          {
+            "t": "img",
+            "i": 2,
+            "d": {
+              "alt": "Test"
+            }
+          },
+          " Image with ",
+          {
+            "i": 3,
+            "k": "_gt_value_3",
+            "v": "v"
+          }
+        ],
+        "input": [
+          {
+            "t": "input",
+            "i": 2,
+            "d": {
+              "pl": "Input"
+            }
+          },
+          " Field with ",
+          {
+            "i": 3,
+            "k": "_gt_n_3",
+            "v": "n"
+          }
+        ]
+      },
+      "t": "b"
+    }
+  },
+  "hash": "a81b985c84db638a"
+}

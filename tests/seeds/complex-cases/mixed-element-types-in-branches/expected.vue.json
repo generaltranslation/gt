@@ -1,0 +1,115 @@
+{
+  "source": {
+    "t": "Plural",
+    "i": 1,
+    "d": {
+      "b": {
+        "singular": {
+          "t": "article",
+          "i": 2,
+          "c": [
+            {
+              "t": "h1",
+              "i": 3,
+              "c": "Single Item"
+            },
+            {
+              "t": "p",
+              "i": 4,
+              "c": [
+                " Description with ",
+                {
+                  "i": 5,
+                  "k": "_gt_value_5",
+                  "v": "v"
+                }
+              ]
+            },
+            {
+              "t": "footer",
+              "i": 6,
+              "c": [
+                " Footer with ",
+                {
+                  "i": 7,
+                  "k": "_gt_cost_7",
+                  "v": "c"
+                },
+                {
+                  "t": "span",
+                  "i": 8,
+                  "c": [
+                    " and ",
+                    {
+                      "i": 9,
+                      "k": "_gt_date_9",
+                      "v": "d"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "plural": {
+          "t": "section",
+          "i": 2,
+          "c": [
+            {
+              "t": "header",
+              "i": 3,
+              "c": {
+                "t": "h2",
+                "i": 4,
+                "c": [
+                  {
+                    "i": 5,
+                    "k": "_gt_n_5",
+                    "v": "n"
+                  },
+                  " Items "
+                ]
+              }
+            },
+            {
+              "t": "main",
+              "i": 6,
+              "c": [
+                {
+                  "t": "p",
+                  "i": 7,
+                  "c": [
+                    " Multiple items totaling   ",
+                    {
+                      "i": 8,
+                      "k": "_gt_cost_8",
+                      "v": "c"
+                    }
+                  ]
+                },
+                {
+                  "t": "ul",
+                  "i": 9,
+                  "c": {
+                    "t": "li",
+                    "i": 10,
+                    "c": [
+                      " Item with ",
+                      {
+                        "i": 11,
+                        "k": "_gt_value_11",
+                        "v": "v"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "t": "p"
+    }
+  },
+  "hash": "a8bab4aeabfc3a73"
+}

@@ -1,0 +1,14 @@
+{
+  "source": {
+    "t": "Plural",
+    "i": 1,
+    "d": {
+      "b": {
+        "singular": [],
+        "plural": "files"
+      },
+      "t": "p"
+    }
+  },
+  "hash": "994ff261ec6380cb"
+}
