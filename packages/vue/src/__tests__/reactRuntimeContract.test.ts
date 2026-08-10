@@ -91,13 +91,6 @@ const fixtures: ContractFixture[] = [
     },
   },
   {
-    name: 'text boundaries separated by a source comment',
-    react: () => createElement('p', null, 'Before', 'After'),
-    vue: {
-      template: '<T><p>Before<!-- source boundary -->After</p></T>',
-    },
-  },
-  {
     name: 'static custom-component children',
     react: () => createElement(DocsLink, { to: '/docs' }, 'Cannot access?'),
     vue: {
@@ -294,6 +287,8 @@ describe('React-authoritative rich-content runtime contract', () => {
   });
 
   it('matches React text boundaries for adjacent Vue JSX Text VNodes', () => {
+    // Source comments are deliberately outside this portable contract: Vue's
+    // production compiler removes both the comment and its text boundary.
     const reactWire = prepareT({
       locale: 'en',
       params: {},
@@ -307,6 +302,30 @@ describe('React-authoritative rich-content runtime contract', () => {
       normalizeSemanticWire(reactWire)
     );
     expect(hashRichSource(vueWire)).toBe(hashRichSource(reactWire));
+  });
+
+  it('documents HTML source-comment boundaries as non-portable', async () => {
+    const fixture: ContractFixture = {
+      name: 'source comment boundary',
+      react: () => createElement('p', null, 'Before', 'After'),
+      vue: {
+        template: '<T><p>Before<!-- source boundary -->After</p></T>',
+      },
+    };
+    const reactWire = prepareReactWire(fixture);
+    const developmentWire = await prepareVueWire(fixture, true);
+    const productionWire = await prepareVueWire(fixture, false);
+
+    expect(normalizeSemanticWire(developmentWire)).toEqual(
+      normalizeSemanticWire(reactWire)
+    );
+    expect(normalizeSemanticWire(productionWire)).toEqual({
+      i: 1,
+      c: 'BeforeAfter',
+    });
+    expect(hashRichSource(productionWire)).not.toBe(
+      hashRichSource(developmentWire)
+    );
   });
 
   it('renders React-keyed translations inside a custom component', async () => {
@@ -348,7 +367,10 @@ function prepareReactWire(fixture: ContractFixture): JsxChildren {
   }).sourceJsxChildren;
 }
 
-async function prepareVueWire(fixture: ContractFixture): Promise<JsxChildren> {
+async function prepareVueWire(
+  fixture: ContractFixture,
+  comments = true
+): Promise<JsxChildren> {
   let sourceChildren: VNode[] | undefined;
   const ProbeT = defineComponent({
     name: 'T',
@@ -370,7 +392,7 @@ async function prepareVueWire(fixture: ContractFixture): Promise<JsxChildren> {
       Var,
       ...fixture.vue.components,
     },
-    render: compileVueTemplate(fixture.vue.template),
+    render: compileVueTemplate(fixture.vue.template, comments),
     setup: fixture.vue.setup,
   });
 
@@ -379,9 +401,12 @@ async function prepareVueWire(fixture: ContractFixture): Promise<JsxChildren> {
   return serializeVueChildren(sourceChildren!);
 }
 
-function compileVueTemplate(template: string): ReturnType<typeof Vue.compile> {
+function compileVueTemplate(
+  template: string,
+  comments = true
+): ReturnType<typeof Vue.compile> {
   const result = compileTemplate({
-    compilerOptions: { mode: 'function' },
+    compilerOptions: { comments, mode: 'function' },
     filename: 'ReactRuntimeContract.vue',
     id: 'react-runtime-contract',
     source: template,
