@@ -53,6 +53,22 @@ describe('calculateHash', () => {
   });
 
   describe('JSX data format - no static components', () => {
+    it.each([
+      false,
+      true,
+      null,
+      { t: 'span', c: false },
+      { t: 'Branch', d: { t: 'b' as const, b: { active: false } } },
+    ])('delegates rich wire literal %j to the shared hasher', (source) => {
+      const result = hashSource({ source, dataFormat: 'JSX' });
+
+      expect(mockHashSource).toHaveBeenCalledWith({
+        source,
+        dataFormat: 'JSX',
+      });
+      expect(result).toBe('mocked-hash-JSX');
+    });
+
     it('should return hash for string source', () => {
       const result = hashSource({
         source: 'Hello world',
