@@ -29,7 +29,7 @@
     "typescript"
   ],
   "author": "General Translation, Inc.",
-  "license": "FSL-1.1-ALv2",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/generaltranslation/gt.git",

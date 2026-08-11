@@ -1,4 +1,4 @@
-import { getLocaleProperties } from '@generaltranslation/format';
+import { getConfiguredLocaleProperties } from '../utils.js';
 import { exitSync } from '../../console/logging.js';
 import { logger } from '../../console/logger.js';
 import type { LocaleProperties } from '@generaltranslation/format/types';
@@ -123,7 +123,9 @@ export function getIdentifyingLocaleProperty(
   // Validate localeProperty
   const localeProperty = sourceObjectOptions.localeProperty || 'code';
   const identifyingLocaleProperty =
-    getLocaleProperties(locale)[localeProperty as keyof LocaleProperties];
+    getConfiguredLocaleProperties(locale)[
+      localeProperty as keyof LocaleProperties
+    ];
   if (!identifyingLocaleProperty) {
     logger.error(
       `Source object options localeProperty is not a valid locale property at path: ${sourceObjectPointer}`

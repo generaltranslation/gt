@@ -66,6 +66,14 @@ export class ReactI18nConfig extends I18nConfig {
   getEnableI18nCookieName(): string {
     return this.enableI18nCookieName;
   }
+
+  /**
+   * Opt-in (`_tagIds`): whether `<T>` output should carry its translation hash as
+   * a `data-_gt-hash` attribute for tooling. Requires the literal `true`.
+   */
+  isIdTaggingEnabled(): boolean {
+    return this.runtimeConfig._tagIds === true;
+  }
 }
 
 export function getI18nConfig(): ReactI18nConfig {

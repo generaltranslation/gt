@@ -1,10 +1,11 @@
 {
   "name": "@generaltranslation/compiler",
-  "version": "1.3.36",
+  "version": "1.3.37",
   "description": "Universal plugin for compile-time optimization of GT translation components",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "author": "General Translation, Inc.",
+  "license": "MIT",
   "scripts": {
     "emit-types": "sh ../../scripts/emit-types.sh",
     "transpile": "tsdown && pnpm run emit-types",
