@@ -263,6 +263,15 @@ describe('React and Vue seed runtime parity', () => {
       );
     });
 
+    it('preserves distinct lone UTF-16 surrogate code units', () => {
+      expect(semanticWireFingerprint('\uD800')).not.toBe(
+        semanticWireFingerprint('\uD801')
+      );
+      expect(semanticWireFingerprint('\uD800')).not.toBe(
+        semanticWireFingerprint('\uFFFD')
+      );
+    });
+
     it('normalizes only unstable element names', () => {
       expect(
         semanticWireFingerprint({ t: 'SourceComponent', i: 1, c: 'Child' })
@@ -593,7 +602,9 @@ function assertNonPortableEvidence(fixture: NonPortableSeed): void {
 
 /** Fingerprints every wire field without JSON's lossy primitive coercions. */
 function semanticWireFingerprint(value: unknown): string {
-  return createHash('sha256').update(encodeSemanticWire(value)).digest('hex');
+  return createHash('sha256')
+    .update(Buffer.from(encodeSemanticWire(value), 'utf16le'))
+    .digest('hex');
 }
 
 /**
