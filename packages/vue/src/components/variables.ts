@@ -38,8 +38,8 @@ type CurrencyProps = NumberFormatProps & {
  * <Var>{{ accountName }}</Var>
  * ```
  */
-export const Var = withGTMetadata(
-  defineComponent({
+export const Var = /* @__PURE__ */ withGTMetadata(
+  /* @__PURE__ */ defineComponent({
     inheritAttrs: false,
     name: 'Var',
     setup(_props, { slots }) {
@@ -55,8 +55,8 @@ export const Var = withGTMetadata(
  * active and default GT locales while translating. Text that is not an entire
  * numeric value is returned unchanged.
  */
-export const Num = withGTMetadata<NumberFormatProps>(
-  defineComponent({
+export const Num = /* @__PURE__ */ withGTMetadata<NumberFormatProps>(
+  /* @__PURE__ */ defineComponent({
     inheritAttrs: false,
     name: 'Num',
     props: {
@@ -105,8 +105,8 @@ export const Num = withGTMetadata<NumberFormatProps>(
  * default GT locales while translating. Invalid values are returned
  * unchanged.
  */
-export const DateTime = withGTMetadata<DateTimeProps>(
-  defineComponent({
+export const DateTime = /* @__PURE__ */ withGTMetadata<DateTimeProps>(
+  /* @__PURE__ */ defineComponent({
     inheritAttrs: false,
     name: 'DateTime',
     props: {
@@ -156,8 +156,8 @@ export const DateTime = withGTMetadata<DateTimeProps>(
  * the active and default GT locales while translating. Text that is not an
  * entire numeric value is returned unchanged.
  */
-export const Currency = withGTMetadata<CurrencyProps>(
-  defineComponent({
+export const Currency = /* @__PURE__ */ withGTMetadata<CurrencyProps>(
+  /* @__PURE__ */ defineComponent({
     inheritAttrs: false,
     name: 'Currency',
     props: {
