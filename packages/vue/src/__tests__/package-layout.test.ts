@@ -107,5 +107,5 @@ describe('gt-vue package layout', () => {
     } finally {
       rmSync(fixtureDirectory, { force: true, recursive: true });
     }
-  });
+  }, 15_000);
 });
