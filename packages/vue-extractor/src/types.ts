@@ -5,7 +5,7 @@ import type {
 } from '@generaltranslation/format/types';
 
 /** A direct Branch or Plural source value preserved by the GT wire format. */
-export type VueBranchSource = VueJsxChildren | boolean | null;
+export type VueBranchSource = VueJsxChildren;
 
 /** GT element metadata with the complete branch-source wire contract. */
 export type VueGTProp = Omit<GTProp, 'b'> & {
@@ -27,12 +27,13 @@ export type VueJsxChild = string | VueJsxElement | Variable;
 /**
  * The complete rich-source wire format returned by Vue extraction.
  *
- * Boolean and null values occur only as direct Branch or Plural sources. The
- * older shared `JsxChildren` declaration does not describe those historical
- * React wire values, so the Vue extractor exposes the accurate recursive type
- * instead of hiding them behind a cast.
+ * Boolean and null values can occur at scalar root, element-child, Fragment,
+ * Branch, and Plural positions. React removes those values from authored child
+ * arrays, so arrays retain the narrower {@link VueJsxChild} member type.
+ * This Vue-specific export documents those exact recursive wire semantics for
+ * consumers without requiring framework-internal casts.
  */
-export type VueJsxChildren = VueJsxChild | VueJsxChild[];
+export type VueJsxChildren = VueJsxChild | boolean | null | VueJsxChild[];
 
 /**
  * Version-neutral Vue compiler surface accepted by programmatic extraction.
@@ -152,6 +153,11 @@ export type VueProjectExtractionOptions = {
   vueCompilerOptions?: VueCompilerOptions;
   /** Explicit Vite config path relative to the project root. */
   viteConfigPath?: string;
+  /**
+   * Explicit tsconfig.json or jsconfig.json path relative to the project root.
+   * When omitted, module resolution discovers the nearest config per importer.
+   */
+  tsconfigPath?: string;
   /** Number of source lines captured before and after a translation. */
   surroundingLineCount?: number;
 };

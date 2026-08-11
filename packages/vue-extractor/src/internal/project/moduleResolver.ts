@@ -56,6 +56,8 @@ type ProjectModuleResolverOptions = {
     directory: string;
     manifest: JavaScriptPackageManifest;
   };
+  /** Explicit tsconfig.json or jsconfig.json used for every importer. */
+  tsconfigPath?: string;
 };
 
 /** Creates a deterministic, source-first resolver scoped to one extraction. */
@@ -64,6 +66,10 @@ export function createProjectModuleResolver(
   options: ProjectModuleResolverOptions = {}
 ): (specifier: string, importer: string) => string | undefined {
   const cache = new Map<string, string | undefined>();
+  const explicitTsConfig =
+    options.tsconfigPath === undefined
+      ? undefined
+      : loadConfig(options.tsconfigPath);
   return (specifier, importer) => {
     const cacheKey = `${importer}::${specifier}`;
     if (cache.has(cacheKey)) return cache.get(cacheKey);
@@ -71,7 +77,8 @@ export function createProjectModuleResolver(
       specifier,
       importer,
       conditionNames,
-      options
+      options,
+      explicitTsConfig
     );
     cache.set(cacheKey, result);
     return result;
@@ -83,7 +90,8 @@ function resolveProjectModule(
   specifier: string,
   importer: string,
   conditionNames: readonly string[],
-  options: ProjectModuleResolverOptions
+  options: ProjectModuleResolverOptions,
+  explicitTsConfig: ReturnType<typeof loadConfig> | undefined
 ): string | undefined {
   const basedir = path.dirname(importer);
   const extensions = [...SOURCE_EXTENSIONS];
@@ -101,7 +109,7 @@ function resolveProjectModule(
     isRequire
   );
 
-  const tsConfigResult = loadConfig(basedir);
+  const tsConfigResult = explicitTsConfig ?? loadConfig(basedir);
   if (tsConfigResult.resultType === 'success') {
     const matchPath = createMatchPath(
       tsConfigResult.absoluteBaseUrl,

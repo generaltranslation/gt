@@ -35,6 +35,11 @@ export type VueExtractionPlannerOptions = {
   vueCompilerOptions?: VueCompilerOptions;
   /** Explicit Vite config path relative to the captured project root. */
   viteConfigPath?: string;
+  /**
+   * Explicit tsconfig.json or jsconfig.json path relative to the captured
+   * project root. When omitted, the nearest config is discovered per importer.
+   */
+  tsconfigPath?: string;
   /** Number of source lines captured before and after a translation. */
   surroundingLineCount?: number;
 };
@@ -282,6 +287,7 @@ function createProjectExtractionOptions(
     conditionNames: options.conditionNames,
     vueCompilerOptions: options.vueCompilerOptions,
     viteConfigPath: options.viteConfigPath,
+    tsconfigPath: options.tsconfigPath,
     surroundingLineCount: options.surroundingLineCount,
   };
 }
