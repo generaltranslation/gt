@@ -1,5 +1,6 @@
 import { build, type Plugin } from 'esbuild';
 import { execFile, fork, type ForkOptions } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { extname, resolve } from 'node:path';
@@ -20,6 +21,7 @@ const execFileAsync = promisify(execFile);
 const require = createRequire(import.meta.url);
 const harnessCompleteMessage = 'gt-react-runtime-seed-complete';
 const maxHarnessOutputBytes = 10 * 1024 * 1024;
+const processTokenEnvironmentName = 'GT_REACT_RUNTIME_SEED_PROCESS_TOKEN';
 
 export async function captureRuntimeSeeds(
   options: CaptureRuntimeSeedsOptions
@@ -130,9 +132,14 @@ function instrumentationPlugin(cwd: string): Plugin {
 }
 
 async function runHarness(bundleFile: string, cwd: string): Promise<void> {
+  const processToken = randomUUID();
   const child = fork(bundleFile, [], {
     cwd,
     detached: true,
+    env: {
+      ...process.env,
+      [processTokenEnvironmentName]: processToken,
+    },
     silent: true,
     windowsHide: true,
   } as ForkOptions & { windowsHide: boolean });
@@ -195,7 +202,7 @@ async function runHarness(bundleFile: string, cwd: string): Promise<void> {
       if (settled) return;
       settled = true;
       clearTimeout(timeout);
-      await terminateProcessTree(child.pid);
+      await terminateProcessTree(child.pid, processToken);
       await closed;
       if (error) rejectRun(error);
       else resolveRun();
@@ -203,7 +210,10 @@ async function runHarness(bundleFile: string, cwd: string): Promise<void> {
   });
 }
 
-async function terminateProcessTree(pid: number | undefined): Promise<void> {
+async function terminateProcessTree(
+  pid: number | undefined,
+  processToken: string
+): Promise<void> {
   if (pid == null) return;
   if (process.platform === 'win32') {
     try {
@@ -215,15 +225,18 @@ async function terminateProcessTree(pid: number | undefined): Promise<void> {
       // Fall through to the direct child as a best-effort fallback.
     }
   } else {
-    // Freeze the harness group before taking the process snapshot so it cannot
-    // race cleanup by spawning another child. Detached descendants have their
-    // own process groups, so enumerate and kill them explicitly as well.
+    // Freeze the harness group first. Detached and reparented descendants keep
+    // the unique inherited environment marker, so repeated process snapshots
+    // can freeze the complete stable set before anything is killed.
     try {
       process.kill(-pid, 'SIGSTOP');
     } catch {
       // The harness may already have exited.
     }
-    for (const descendantPid of await findPosixDescendantPids(pid)) {
+    for (const descendantPid of await freezePosixProcessTree(
+      pid,
+      processToken
+    )) {
       try {
         process.kill(descendantPid, 'SIGKILL');
       } catch {
@@ -244,39 +257,90 @@ async function terminateProcessTree(pid: number | undefined): Promise<void> {
   }
 }
 
-async function findPosixDescendantPids(rootPid: number): Promise<number[]> {
-  try {
-    const { stdout } = await execFileAsync('ps', ['-ax', '-o', 'pid=,ppid='], {
-      encoding: 'utf8',
-      maxBuffer: 10 * 1024 * 1024,
-    });
-    const childrenByParent = new Map<number, number[]>();
-    for (const line of stdout.split('\n')) {
-      const [pidText, parentPidText] = line.trim().split(/\s+/);
-      const processPid = Number(pidText);
-      const parentPid = Number(parentPidText);
-      if (!Number.isInteger(processPid) || !Number.isInteger(parentPid)) {
-        continue;
-      }
-      const children = childrenByParent.get(parentPid) ?? [];
-      children.push(processPid);
-      childrenByParent.set(parentPid, children);
-    }
+type PosixProcess = {
+  pid: number;
+  parentPid: number;
+  state: string;
+  command: string;
+};
 
-    const descendants: number[] = [];
-    const pending = [...(childrenByParent.get(rootPid) ?? [])];
-    const seen = new Set<number>();
-    while (pending.length > 0) {
-      const processPid = pending.shift();
-      if (processPid == null || seen.has(processPid)) continue;
-      seen.add(processPid);
-      descendants.push(processPid);
-      pending.push(...(childrenByParent.get(processPid) ?? []));
+async function freezePosixProcessTree(
+  rootPid: number,
+  processToken: string
+): Promise<number[]> {
+  const frozenPids = new Set<number>();
+  const environmentMarker = `${processTokenEnvironmentName}=${processToken}`;
+
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    const processes = await listPosixProcesses();
+    const descendants = findDescendantPids(processes, rootPid);
+    const targets = processes.filter(
+      (process) =>
+        process.pid !== rootPid &&
+        (descendants.has(process.pid) ||
+          process.command.includes(environmentMarker))
+    );
+    let allFrozen = true;
+    for (const target of targets) {
+      frozenPids.add(target.pid);
+      if (target.state.includes('T')) continue;
+      allFrozen = false;
+      try {
+        process.kill(target.pid, 'SIGSTOP');
+      } catch {
+        // The process may have exited since the process snapshot.
+      }
     }
-    return descendants;
+    if (allFrozen) break;
+  }
+
+  return [...frozenPids];
+}
+
+async function listPosixProcesses(): Promise<PosixProcess[]> {
+  try {
+    const { stdout } = await execFileAsync(
+      'ps',
+      ['eww', '-ax', '-o', 'pid=,ppid=,stat=,command='],
+      { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 }
+    );
+    const processes: PosixProcess[] = [];
+    for (const line of stdout.split('\n')) {
+      const match = line.match(/^\s*(\d+)\s+(\d+)\s+(\S+)\s+(.*)$/);
+      if (!match) continue;
+      processes.push({
+        pid: Number(match[1]),
+        parentPid: Number(match[2]),
+        state: match[3],
+        command: match[4],
+      });
+    }
+    return processes;
   } catch {
     return [];
   }
+}
+
+function findDescendantPids(
+  processes: PosixProcess[],
+  rootPid: number
+): Set<number> {
+  const childrenByParent = new Map<number, number[]>();
+  for (const process of processes) {
+    const children = childrenByParent.get(process.parentPid) ?? [];
+    children.push(process.pid);
+    childrenByParent.set(process.parentPid, children);
+  }
+
+  const descendants = new Set<number>();
+  const pending = [...(childrenByParent.get(rootPid) ?? [])];
+  while (pending.length > 0) {
+    const processPid = pending.shift();
+    if (processPid == null || descendants.has(processPid)) continue;
+    descendants.add(processPid);
+    pending.push(...(childrenByParent.get(processPid) ?? []));
+  }
+  return descendants;
 }
 
 function runtimeResolutionPlugin(): Plugin {

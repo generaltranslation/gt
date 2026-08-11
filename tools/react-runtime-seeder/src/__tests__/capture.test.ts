@@ -106,6 +106,43 @@ describe('captureRuntimeSeeds', () => {
     }
   });
 
+  it('terminates daemonized descendants after they are reparented', async () => {
+    const marker = resolve(
+      tmpdir(),
+      `gt-react-runtime-seed-daemon-${randomUUID()}`
+    );
+    const ready = `${marker}-ready`;
+    const daemon = `const fs = require('node:fs'); fs.writeFileSync(${JSON.stringify(ready)}, 'ready'); setTimeout(() => fs.writeFileSync(${JSON.stringify(marker)}, 'survived'), 500)`;
+    const intermediary = `const child = require('node:child_process').spawn(process.execPath, ['-e', ${JSON.stringify(daemon)}], { detached: true, stdio: 'ignore' }); child.unref();`;
+
+    try {
+      const candidate = await captureRuntimeSeeds({
+        cwd: repositoryRoot,
+        code: `<T>{(() => {
+          const child = process.getBuiltinModule('node:child_process').spawn(
+            process.execPath,
+            ['-e', ${JSON.stringify(intermediary)}],
+            { detached: true, stdio: 'ignore' }
+          );
+          child.unref();
+          const fs = process.getBuiltinModule('node:fs');
+          const waitUntil = Date.now() + 1_000;
+          while (!fs.existsSync(${JSON.stringify(ready)}) && Date.now() < waitUntil) {}
+          const reparentUntil = Date.now() + 100;
+          while (Date.now() < reparentUntil) {}
+          return 'Daemon process';
+        })()}</T>`,
+      });
+      expect(candidate.seeds[0].jsxChildren).toBe('Daemon process');
+      expect(existsSync(ready)).toBe(true);
+      await delay(700);
+      expect(existsSync(marker)).toBe(false);
+    } finally {
+      await rm(marker, { force: true });
+      await rm(ready, { force: true });
+    }
+  });
+
   it('preserves the exact message used to calculate formatter hashes', async () => {
     const candidate = await captureRuntimeSeeds({
       cwd: repositoryRoot,
