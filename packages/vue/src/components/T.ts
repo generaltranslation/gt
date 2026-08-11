@@ -31,8 +31,8 @@ type TProps = {
  * </T>
  * ```
  */
-export const T = withGTMetadata<TProps>(
-  defineComponent({
+export const T = /* @__PURE__ */ withGTMetadata<TProps>(
+  /* @__PURE__ */ defineComponent({
     inheritAttrs: false,
     name: 'T',
     props: {
