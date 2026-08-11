@@ -1,0 +1,44 @@
+{
+  "name": "@generaltranslation/react-runtime-seeder",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Internal CLI for capturing gt-react runtime translation seeds",
+  "type": "module",
+  "main": "dist/index.mjs",
+  "types": "dist/index.d.mts",
+  "bin": {
+    "gt-react-seed": "dist/cli.mjs"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "transpile": "tsdown",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.25.7",
+    "@babel/traverse": "^7.25.7",
+    "@babel/types": "^7.25.7",
+    "@generaltranslation/format": "workspace:*",
+    "@generaltranslation/react-core": "workspace:*",
+    "esbuild": "^0.27.2",
+    "generaltranslation": "workspace:*",
+    "gt-i18n": "workspace:*",
+    "gt-react": "workspace:*",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@types/babel__traverse": "^7.20.0",
+    "@types/node": "catalog:",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
