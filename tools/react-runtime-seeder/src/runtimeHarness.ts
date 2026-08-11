@@ -9,7 +9,7 @@ export function createRuntimeHarness({
 }): string {
   return `
 import React from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
+import { prerender } from 'react-dom/static';
 import { InternalGTProvider, I18nStore } from '@generaltranslation/react-core/components';
 import { internalInitializeGTSRA, ReadonlyConditionStore } from '@generaltranslation/react-core/pure';
 import { hashMessage } from 'gt-i18n/internal';
@@ -51,7 +51,7 @@ const conditionStore = new ReadonlyConditionStore({
   locale: ${JSON.stringify(locale)},
   enableI18n: false,
 });
-renderToStaticMarkup(
+const { prelude } = await prerender(
   React.createElement(
     InternalGTProvider,
     {
@@ -62,6 +62,7 @@ renderToStaticMarkup(
     content
   )
 );
+await prelude.cancel();
 writeFileSync(${JSON.stringify(resultFile)}, JSON.stringify(captures));
 process.exit(0);
 `;

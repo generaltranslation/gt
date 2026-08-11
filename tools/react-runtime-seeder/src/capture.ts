@@ -131,6 +131,7 @@ function runtimeResolutionPlugin(): Plugin {
     ['react/jsx-runtime', require.resolve('react/jsx-runtime')],
     ['react/jsx-dev-runtime', require.resolve('react/jsx-dev-runtime')],
     ['react-dom/server', require.resolve('react-dom/server')],
+    ['react-dom/static', require.resolve('react-dom/static')],
     ['gt-react', gtReact],
     ['gt-next', gtReact],
     [
@@ -164,7 +165,7 @@ export default Link;`,
       build.onResolve(
         {
           filter:
-            /^(react|react\/jsx(-dev)?-runtime|react-dom\/server|gt-react|gt-next|@generaltranslation\/react-core\/(components|pure)|gt-i18n\/internal)$/,
+            /^(react|react\/jsx(-dev)?-runtime|react-dom\/(server|static)|gt-react|gt-next|@generaltranslation\/react-core\/(components|pure)|gt-i18n\/internal)$/,
         },
         ({ path }) => ({
           path: aliases.get(path),

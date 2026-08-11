@@ -7,6 +7,8 @@ real `gt-react` `<T>` component renders. It creates reviewable candidates under
 
 The tool renders in an isolated Node process, intercepts the runtime lookup at
 the `I18nStore` boundary, and hashes with the runtime's `hashMessage()` helper.
+Rendering uses React's async static renderer, so Next-style async server
+components and suspended values settle before their runtime seeds are written.
 It records each directly imported `<T>` source location without reprinting the
 input, preserving whitespace-sensitive JSX behavior. Seed files that import
 shared components from `gt-next` are intentionally resolved to the same

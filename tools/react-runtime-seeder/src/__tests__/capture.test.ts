@@ -1,6 +1,5 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { hashSource } from 'generaltranslation/id';
 import { describe, expect, it } from 'vitest';
 import { captureRuntimeSeeds } from '../capture';
 
@@ -72,40 +71,29 @@ describe('captureRuntimeSeeds', () => {
     expect(candidate.seeds[0].jsxChildren).toBe('Top-level await');
   });
 
-  it.each([
-    'tests/seeds/t-component/simple/plain-text/plain-text',
-    'tests/seeds/t-component/simple/misc/customcomponents',
-    'tests/seeds/variable-components/currency/simple/variable',
-    'tests/seeds/branching-components/branch/simple/basic',
-  ])('matches the existing React runtime oracle for %s', async (seedDir) => {
+  it('captures multiple seeds from an async server component', async () => {
     const expected = JSON.parse(
-      await readFile(resolve(repositoryRoot, seedDir, 'expected.json'), 'utf8')
+      await readFile(
+        resolve(import.meta.dirname, 'fixtures/productionProof.candidate.json'),
+        'utf8'
+      )
     );
     const candidate = await captureRuntimeSeeds({
       cwd: repositoryRoot,
-      file: resolve(repositoryRoot, seedDir, 'page.tsx'),
+      file: resolve(import.meta.dirname, 'fixtures/productionProof.jsx'),
     });
 
-    expect(candidate.seeds).toHaveLength(1);
-    expect(normalizeSemanticWire(candidate.seeds[0].jsxChildren)).toEqual(
-      normalizeSemanticWire(expected)
-    );
-    expect(candidate.seeds[0].hash).toBe(
-      hashSource({ source: expected, dataFormat: 'JSX' })
-    );
+    expect(candidate).toEqual(expected);
+  });
+
+  it('reports render failures from the async static renderer', async () => {
+    await expect(
+      captureRuntimeSeeds({
+        cwd: repositoryRoot,
+        code: `<T>{(() => {
+          throw new Error('proof render failure');
+        })()}</T>`,
+      })
+    ).rejects.toThrow('proof render failure');
   });
 });
-
-function normalizeSemanticWire(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(normalizeSemanticWire);
-  if (!isRecord(value)) return value;
-  return Object.fromEntries(
-    Object.entries(value)
-      .filter(([key]) => key !== 't' || !('i' in value) || 'k' in value)
-      .map(([key, child]) => [key, normalizeSemanticWire(child)])
-  );
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}

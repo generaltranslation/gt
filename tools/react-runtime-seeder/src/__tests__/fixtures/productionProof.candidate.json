@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "input": "tools/react-runtime-seeder/src/__tests__/fixtures/productionProof.jsx",
+  "seeds": [
+    {
+      "source": {
+        "file": "tools/react-runtime-seeder/src/__tests__/fixtures/productionProof.jsx",
+        "line": 26,
+        "column": 7
+      },
+      "hash": "d2280a63d2c02ac7",
+      "jsxChildren": [
+        "Welcome, ",
+        {
+          "i": 1,
+          "k": "user",
+          "v": "v"
+        },
+        "!",
+        " ",
+        {
+          "t": "Card",
+          "i": 2,
+          "c": [
+            "Your cart has ",
+            {
+              "i": 3,
+              "k": "count",
+              "v": "n"
+            },
+            " ",
+            {
+              "t": "i",
+              "i": 4,
+              "d": {
+                "b": {
+                  "one": "item",
+                  "other": {
+                    "t": "C5",
+                    "i": 5,
+                    "c": [
+                      "items worth",
+                      " ",
+                      {
+                        "i": 6,
+                        "k": "total",
+                        "v": "c"
+                      }
+                    ]
+                  }
+                },
+                "t": "p"
+              }
+            }
+          ]
+        }
+      ],
+      "metadata": {
+        "context": "production proof greeting",
+        "id": "production-proof-greeting",
+        "maxChars": 120,
+        "requiresReview": true
+      }
+    },
+    {
+      "source": {
+        "file": "tools/react-runtime-seeder/src/__tests__/fixtures/productionProof.jsx",
+        "line": 50,
+        "column": 7
+      },
+      "hash": "6dc16a4439d89f54",
+      "jsxChildren": [
+        "Access:",
+        " ",
+        {
+          "t": "n",
+          "i": 1,
+          "d": {
+            "b": {
+              "admin": {
+                "t": "strong",
+                "i": 2,
+                "c": [
+                  "administrator ",
+                  {
+                    "i": 3,
+                    "k": "team",
+                    "v": "v"
+                  }
+                ]
+              },
+              "member": "member"
+            },
+            "t": "b"
+          }
+        }
+      ]
+    },
+    {
+      "source": {
+        "file": "tools/react-runtime-seeder/src/__tests__/fixtures/productionProof.jsx",
+        "line": 63,
+        "column": 7
+      },
+      "hash": "d5d39247555e7709",
+      "jsxChildren": [
+        "Scheduled for ",
+        {
+          "i": 1,
+          "k": "event",
+          "v": "d"
+        },
+        ",",
+        " ",
+        {
+          "i": 2,
+          "k": "offset"
+        },
+        "."
+      ]
+    },
+    {
+      "source": {
+        "file": "tools/react-runtime-seeder/src/__tests__/fixtures/productionProof.jsx",
+        "line": 68,
+        "column": 7
+      },
+      "hash": "e93a920034df666a",
+      "jsxChildren": {
+        "t": "n",
+        "i": 1,
+        "c": {
+          "t": "em",
+          "i": 2,
+          "c": "Derived JSX remains translatable"
+        }
+      }
+    }
+  ]
+}
