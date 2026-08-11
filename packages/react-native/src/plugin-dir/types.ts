@@ -10,6 +10,28 @@ export const POLYFILLS = [
   '@formatjs/intl-datetimeformat/add-all-tz',
 ] as const;
 
+// Keep the public excludePolyfills values stable while selecting faster runtime
+// entrypoints for APIs that Hermes does not provide.
+export const POLYFILL_IMPORTS: Record<(typeof POLYFILLS)[number], string> = {
+  '@formatjs/intl-getcanonicallocales/polyfill':
+    '@formatjs/intl-getcanonicallocales/polyfill',
+  '@formatjs/intl-locale/polyfill': '@formatjs/intl-locale/polyfill',
+  '@formatjs/intl-displaynames/polyfill':
+    '@formatjs/intl-displaynames/polyfill-force',
+  '@formatjs/intl-listformat/polyfill':
+    '@formatjs/intl-listformat/polyfill-force',
+  '@formatjs/intl-pluralrules/polyfill-force':
+    '@formatjs/intl-pluralrules/polyfill-force',
+  '@formatjs/intl-numberformat/polyfill':
+    '@formatjs/intl-numberformat/polyfill',
+  '@formatjs/intl-relativetimeformat/polyfill':
+    '@formatjs/intl-relativetimeformat/polyfill-force',
+  '@formatjs/intl-datetimeformat/polyfill':
+    '@formatjs/intl-datetimeformat/polyfill',
+  '@formatjs/intl-datetimeformat/add-all-tz':
+    '@formatjs/intl-datetimeformat/add-all-tz',
+};
+
 export const LOCALE_POLYFILLS = [
   `@formatjs/intl-displaynames/locale-data`,
   `@formatjs/intl-listformat/locale-data`,

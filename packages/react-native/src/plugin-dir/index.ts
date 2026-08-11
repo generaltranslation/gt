@@ -1,6 +1,11 @@
 import * as path from 'path';
 import type { PluginObj, types } from '@babel/core';
-import { LOCALE_POLYFILLS, POLYFILLS, type PluginOptions } from './types';
+import {
+  LOCALE_POLYFILLS,
+  POLYFILLS,
+  POLYFILL_IMPORTS,
+  type PluginOptions,
+} from './types';
 import { resolveLocales } from './utils/resolveLocales';
 
 export function plugin(
@@ -38,7 +43,7 @@ export function plugin(
         const imports = [
           ...POLYFILLS.filter(
             (polyfill) => !excludePolyfills.includes(polyfill)
-          ),
+          ).map((polyfill) => POLYFILL_IMPORTS[polyfill]),
           ...resolvedLocales.flatMap((locale) =>
             LOCALE_POLYFILLS.map((localeData) => `${localeData}/${locale}`)
           ),
