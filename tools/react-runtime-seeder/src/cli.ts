@@ -5,6 +5,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { captureRuntimeSeeds } from './capture';
 import { createSeederError, createUnexpectedSeederError } from './diagnostics';
+import { getDefaultOutputName } from './output';
 
 const help = `Usage:
   pnpm seed:react -- --file path/to/component.tsx [--out candidate.json]
@@ -67,16 +68,8 @@ async function main(): Promise<void> {
     process.stdout.write(json);
     return;
   }
-  const defaultName = `${
-    candidate.input === '<inline>'
-      ? 'inline'
-      : candidate.input
-          .split('/')
-          .at(-1)
-          ?.replace(/\.[^.]+$/, '')
-  }-${candidate.seeds[0].hash}.json`;
   const output = resolve(
-    values.out ?? resolve('.gt/runtime-seeds', defaultName)
+    values.out ?? resolve('.gt/runtime-seeds', getDefaultOutputName(candidate))
   );
   await mkdir(dirname(output), { recursive: true });
   await writeFile(output, json, 'utf8');

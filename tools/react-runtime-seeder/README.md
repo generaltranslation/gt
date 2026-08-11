@@ -41,9 +41,11 @@ EOF
 ```
 
 Use `--out path.json` to choose an intermediary file. The default path is
-`.gt/runtime-seeds/<input>-<hash>.json`, which is ignored by Git. Review the
-candidate's `jsxChildren`, `hash`, metadata, and source location before copying
-the tree into an `expected.json` seed.
+`.gt/runtime-seeds/<input>-<candidate-hash>.json`, which is ignored by Git. The
+candidate hash fingerprints the complete artifact, so exact reruns reuse a
+path while distinct inputs or captures cannot overwrite each other. Review the
+candidate's `jsxChildren`, runtime `hash`, metadata, and source location before
+copying the tree into an `expected.json` seed.
 
 The captured tree is the runtime value verbatim. A component object's `t`
 field is a diagnostic display name and can differ between development and
