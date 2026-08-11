@@ -309,6 +309,10 @@ jobs:
         if: steps.gt_cli_changed.outputs.changed == 'true'
         shell: bash
         run: |
+          if [[ "$(node -p 'process.arch')" != "${{ matrix.arch }}" ]]; then
+            echo "Skipping execution of the cross-compiled ${{ matrix.arch }} binary on $(node -p 'process.arch')"
+            exit 0
+          fi
           cd tests/apps/cli-vue-binary-test
           ../../../packages/cli/binaries/${{ matrix.binary }} generate --config gt.config.json
           node --input-type=module -e "import fs from 'node:fs'; const catalog = JSON.parse(fs.readFileSync('dist/_gt/en.json', 'utf8')); if (!Object.values(catalog).includes('Hello from the native Vue extractor')) throw new Error('Native CLI did not extract the Vue message');"
