@@ -14,8 +14,11 @@ The Vue script tests port the React extractor's applicable adversarial cases:
   normalization;
 - Vue JSX/TSX `<T>` trees, namespace members such as `<GT.T>`, runtime-accurate
   Vue Fragment spellings, local ESM re-exports, and statically traceable local
-  callback forwarding. Literal and namespace JSX Fragments stay transparent;
-  renamed aliases compiled as component slots preserve their semantic boundary.
+  callback forwarding. Every authored JSX Fragment preserves the same semantic
+  boundary as React.Fragment. A direct array expression under `<T>` fails
+  closed because Vue normalizes it to the exact same VNode as an authored
+  Fragment before the runtime can inspect it; arrays nested under native or
+  custom elements remain statically distinguishable and supported.
 
 The initial `gt-vue` API intentionally does not port React-only behavior:
 

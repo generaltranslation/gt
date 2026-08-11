@@ -245,6 +245,37 @@ const gt = useGT();
     });
   });
 
+  it('hashes a missing T slot and rejects an ambiguous root array', async () => {
+    const validRoot = createVueFixture({
+      'src/Missing.tsx': `
+        import { T } from 'gt-vue';
+        export const Missing = () => <T />;
+      `,
+    });
+    const validOutput = await extractFromVueProject({ cwd: validRoot });
+
+    expect(validOutput.errors).toEqual([]);
+    expect(
+      validOutput.updates.map(({ metadata, source }) => ({
+        hash: metadata.hash,
+        source,
+      }))
+    ).toEqual([{ hash: '309dc626c8db3d4c', source: undefined }]);
+
+    const invalidRoot = createVueFixture({
+      'src/Ambiguous.tsx': `
+        import { T } from 'gt-vue';
+        export const EmptyArray = () => <T>{[]}</T>;
+      `,
+    });
+    const invalidOutput = await extractFromVueProject({ cwd: invalidRoot });
+
+    expect(invalidOutput.errors.join('\n')).toContain(
+      'array expression directly inside a gt-vue <T>'
+    );
+    expect(invalidOutput.updates).toEqual([]);
+  });
+
   it('deduplicates hashes while merging unique file and source metadata', async () => {
     const root = createVueFixture({
       'src/first.ts': `

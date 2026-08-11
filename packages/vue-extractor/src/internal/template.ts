@@ -1343,7 +1343,7 @@ function extractTranslationComponent(
 
   context.results.push({
     dataFormat: 'JSX',
-    source: collapseChildren(serialized),
+    source: serialized.length > 0 ? collapseChildren(serialized) : undefined,
     metadata: createInlineMetadata(context, element.loc, translationContext),
   });
 }

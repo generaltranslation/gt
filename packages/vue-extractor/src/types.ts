@@ -80,7 +80,8 @@ export type VueExtractionMetadata = {
 export type VueExtractionResult =
   | {
       dataFormat: 'JSX';
-      source: VueJsxChildren;
+      /** Missing when the authored T has no default-slot content. */
+      source: VueJsxChildren | undefined;
       metadata: VueExtractionMetadata;
     }
   | {

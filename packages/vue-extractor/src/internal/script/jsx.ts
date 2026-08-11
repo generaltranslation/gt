@@ -24,7 +24,15 @@ type Counter = { value: number };
 /** Prevents source strings on opposite sides of a JSX comment from merging. */
 const jsxTextBoundary = Symbol('gt-vue-jsx-text-boundary');
 
-type SerializedJSXChild = JsxChild | typeof jsxTextBoundary;
+type SerializedJSXArray = {
+  kind: 'array';
+  children: SerializedJSXChild[];
+};
+
+type SerializedJSXChild =
+  | JsxChild
+  | SerializedJSXArray
+  | typeof jsxTextBoundary;
 
 type JSXSlotFunction = {
   node:
@@ -95,11 +103,13 @@ const NON_BRANCH_PROP_NAMES = new Set([
 /**
  * Extracts one statically identified gt-vue `T` JSX element.
  *
- * This serializer follows the VNodes emitted by `@vue/babel-plugin-jsx`:
- * fragments are transparent, JSX text uses the plugin's normalization, and
- * static custom-component default slots participate in the same rich source
- * tree as React component children. Runtime values remain explicit variable
- * boundaries and named component slots remain outside the outer translation.
+ * This serializer follows the VNodes emitted by `@vue/babel-plugin-jsx` while
+ * preserving React's authoritative rich-source contract: authored Fragments
+ * are semantic elements, explicit arrays retain array cardinality, JSX text
+ * uses the plugin's normalization, and static custom-component default slots
+ * participate in the same source tree as React component children. Runtime
+ * values remain explicit variable boundaries and named component slots remain
+ * outside the outer translation.
  */
 export function extractVueJSXTranslation(
   path: NodePath<babel.JSXElement>,
@@ -122,7 +132,8 @@ export function extractVueJSXTranslation(
     context,
     analysis
   );
-  const source = collapseChildren(
+  validateRootArrayChildren(path.node.children, context);
+  const source = collapseRootChildren(
     serializeChildren(
       path.node.children,
       { value: 0 },
@@ -142,6 +153,37 @@ export function extractVueJSXTranslation(
       translationContext
     ),
   });
+}
+
+/**
+ * Rejects the one JSX shape Vue erases before T can inspect it.
+ *
+ * The official Vue JSX transform normalizes a direct array child and an
+ * authored Fragment to the same patch-flag-zero Fragment VNode. React assigns
+ * those sources different persisted wires, so no runtime-only implementation
+ * can recover the authored form. Failing closed prevents extraction from
+ * publishing a hash that the mounted runtime cannot reproduce.
+ */
+function validateRootArrayChildren(
+  children: babel.JSXElement['children'],
+  context: VueExtractionContext
+): void {
+  for (const child of children) {
+    if (
+      child.type !== 'JSXExpressionContainer' ||
+      child.expression.type === 'JSXEmptyExpression'
+    ) {
+      continue;
+    }
+    const expression = unwrapExpression(child.expression);
+    if (expression?.type !== 'ArrayExpression') continue;
+    addVueError(
+      context,
+      babelLocation(expression.loc),
+      'Found an array expression directly inside a gt-vue <T> component in JSX',
+      'List the static children directly, or place the array inside a native or custom element'
+    );
+  }
 }
 
 /** Returns whether the visitor is already covered by an outer serialized T. */
@@ -225,10 +267,11 @@ export function isNestedInVueJSXTranslation(
       } else if (
         identity?.type === 'vue-builtin' &&
         (identity.name !== 'Fragment' ||
-          isTransparentFragment(element.openingElement.name, identity))
+          isAuthoredFragment(element.openingElement.name, identity))
       ) {
-        // Vue Fragment aliases and normalized Suspense default content are
-        // transparent to the runtime source tree.
+        // Vue built-ins remain within the outer translation traversal. An
+        // authored Fragment contributes a semantic wire element; Suspense
+        // contributes its normalized default subtree.
       }
     }
     current = current.parentPath;
@@ -424,7 +467,9 @@ function serializeChildren(
   analysis: VueJSXAnalysis
 ): SerializedJSXChild[] {
   const result: SerializedJSXChild[] = [];
+  let runtimeArgumentCount = 0;
   for (const child of children) {
+    if (isJSXRuntimeChildArgument(child)) runtimeArgumentCount += 1;
     for (const serialized of serializeChild(
       child,
       counter,
@@ -435,7 +480,25 @@ function serializeChildren(
       appendSerializedChild(result, serialized);
     }
   }
-  return result;
+  return runtimeArgumentCount > 1
+    ? [{ kind: 'array', children: result }]
+    : result;
+}
+
+/** Whether the Vue JSX transform emits this authored node as a child value. */
+function isJSXRuntimeChildArgument(
+  child:
+    | babel.JSXText
+    | babel.JSXExpressionContainer
+    | babel.JSXSpreadChild
+    | babel.JSXElement
+    | babel.JSXFragment
+): boolean {
+  if (child.type === 'JSXText') return normalizeJSXText(child.value) !== '';
+  return (
+    child.type !== 'JSXExpressionContainer' ||
+    child.expression.type !== 'JSXEmptyExpression'
+  );
 }
 
 function serializeChild(
@@ -458,7 +521,7 @@ function serializeChild(
     return serializeElement(child, counter, scope, context, analysis);
   }
   if (child.type === 'JSXFragment') {
-    return serializeChildren(child.children, counter, scope, context, analysis);
+    return [serializeJSXFragment(child, counter, scope, context, analysis)];
   }
   if (child.type === 'JSXSpreadChild') {
     addVueError(
@@ -494,13 +557,9 @@ function serializeExpression(
     return serializeElement(expression, counter, scope, context, analysis);
   }
   if (expression.type === 'JSXFragment') {
-    return serializeChildren(
-      expression.children,
-      counter,
-      scope,
-      context,
-      analysis
-    );
+    return [
+      serializeJSXFragment(expression, counter, scope, context, analysis),
+    ];
   }
   if (expression.type === 'ArrayExpression') {
     const result: SerializedJSXChild[] = [];
@@ -525,7 +584,7 @@ function serializeExpression(
         appendSerializedChild(result, serialized);
       }
     }
-    return result;
+    return [{ kind: 'array', children: result }];
   }
   if (
     expression.type === 'ConditionalExpression' ||
@@ -566,10 +625,15 @@ function serializeElement(
 ): SerializedJSXChild[] {
   const name = element.openingElement.name;
   const identity = resolveElementIdentity(name, scope, analysis);
-  if (isTransparentFragment(name, identity)) {
-    return usesFragmentComponentSlots(name, identity)
-      ? serializeSemanticFragment(element, counter, scope, context, analysis)
-      : serializeChildren(element.children, counter, scope, context, analysis);
+  if (isAuthoredFragment(name, identity)) {
+    return serializeSemanticFragment(
+      element,
+      counter,
+      scope,
+      context,
+      analysis,
+      usesFragmentComponentSlots(name, identity)
+    );
   }
 
   counter.value += 1;
@@ -677,9 +741,37 @@ function serializeElement(
       t: tag,
       i: id,
       ...(Object.keys(data).length > 0 && { d: data }),
-      ...(children.length > 0 && { c: collapseChildren(children) }),
+      ...(shouldIncludeElementChildren(element, children, scope, analysis) && {
+        c: collapseChildren(children),
+      }),
     },
   ];
+}
+
+/** Serializes the shorthand `<>...</>` spelling as React.Fragment semantics. */
+function serializeJSXFragment(
+  fragment: babel.JSXFragment,
+  counter: Counter,
+  scope: Scope,
+  context: VueExtractionContext,
+  analysis: VueJSXAnalysis
+): JsxChild {
+  counter.value += 1;
+  const id = counter.value;
+  const children = serializeChildren(
+    fragment.children,
+    counter,
+    scope,
+    context,
+    analysis
+  );
+  return {
+    t: `C${id}`,
+    i: id,
+    ...(hasTruthyJSXChildren(fragment.children, scope, analysis) && {
+      c: collapseChildren(children),
+    }),
+  };
 }
 
 /** Serializes a Fragment alias that Vue JSX represents as a component slot. */
@@ -688,7 +780,8 @@ function serializeSemanticFragment(
   counter: Counter,
   scope: Scope,
   context: VueExtractionContext,
-  analysis: VueJSXAnalysis
+  analysis: VueJSXAnalysis,
+  usesComponentSlots: boolean
 ): SerializedJSXChild[] {
   counter.value += 1;
   const id = counter.value;
@@ -699,13 +792,15 @@ function serializeSemanticFragment(
     context,
     analysis
   );
-  const children = serializeOrdinaryComponentDefault(
-    element,
-    counter,
-    scope,
-    context,
-    analysis
-  );
+  const children = usesComponentSlots
+    ? serializeOrdinaryComponentDefault(
+        element,
+        counter,
+        scope,
+        context,
+        analysis
+      )
+    : serializeChildren(element.children, counter, scope, context, analysis);
   return [
     {
       // Fragment is a Symbol at runtime and therefore uses the anonymous
@@ -714,7 +809,9 @@ function serializeSemanticFragment(
       t: `C${id}`,
       i: id,
       ...(Object.keys(data).length > 0 && { d: data }),
-      ...(children.length > 0 && { c: collapseChildren(children) }),
+      ...(shouldIncludeElementChildren(element, children, scope, analysis) && {
+        c: collapseChildren(children),
+      }),
     },
   ];
 }
@@ -955,7 +1052,9 @@ function serializeSuspenseElement(
     t: 'Suspense',
     i: id,
     ...(Object.keys(data).length > 0 && { d: data }),
-    ...(children.length > 0 && { c: collapseChildren(children) }),
+    ...(shouldIncludeElementChildren(element, children, scope, analysis) && {
+      c: collapseChildren(children),
+    }),
   };
 }
 
@@ -1135,7 +1234,9 @@ function serializeBranchElement(
     t: component,
     i: id,
     ...(Object.keys(data).length > 0 && { d: data }),
-    ...(children.length > 0 && { c: collapseChildren(children) }),
+    ...(shouldIncludeElementChildren(element, children, scope, analysis) && {
+      c: collapseChildren(children),
+    }),
   };
 }
 
@@ -1684,12 +1785,12 @@ function isLiteralFragment(
 ): boolean {
   // Vue's JSX transforms (verified in 1.4 and 3.0) select the Fragment helper
   // before checking lexical bindings. Consequently literal `<Fragment>` is
-  // transparent even when source code declares a same-named local binding.
+  // semantic Fragment syntax even when source declares a same-named binding.
   return name.type === 'JSXIdentifier' && name.name === 'Fragment';
 }
 
-/** Matches Fragment spellings, distinguishing their runtime child shapes. */
-function isTransparentFragment(
+/** Matches Fragment spellings that create a semantic authored boundary. */
+function isAuthoredFragment(
   name: babel.JSXElement['openingElement']['name'],
   identity: KnownValue | undefined
 ): boolean {
@@ -1959,9 +2060,104 @@ function appendSerializedChild(
   result.push(child);
 }
 
-function collapseChildren(children: SerializedJSXChild[]): JsxChildren {
-  const visibleChildren = children.filter(
-    (child): child is JsxChild => child !== jsxTextBoundary
+/**
+ * Mirrors the truthiness guard in React's `addGTIdentifier()`.
+ *
+ * JSX emits a scalar for one authored child and an array for multiple children.
+ * Arrays are truthy even when React.Children later removes all of their values;
+ * a sole primitive instead controls the guard with its original runtime value.
+ */
+function hasTruthyJSXChildren(
+  children: babel.JSXElement['children'],
+  scope: Scope,
+  analysis: VueJSXAnalysis
+): boolean {
+  const runtimeChildren = children.filter(isJSXRuntimeChildArgument);
+  if (runtimeChildren.length !== 1) return runtimeChildren.length > 1;
+
+  const child = runtimeChildren[0]!;
+  if (child.type === 'JSXText') {
+    return Boolean(normalizeJSXText(child.value));
+  }
+  if (
+    child.type === 'JSXElement' ||
+    child.type === 'JSXFragment' ||
+    child.type === 'JSXSpreadChild'
+  ) {
+    return true;
+  }
+  if (child.expression.type === 'JSXEmptyExpression') return false;
+  const expression = unwrapExpression(child.expression);
+  if (!expression) return false;
+  if (expression.type === 'ArrayExpression') return true;
+  if (expression.type === 'JSXElement' || expression.type === 'JSXFragment') {
+    return true;
+  }
+  const primitive = analysis.readStaticPrimitive(expression, scope);
+  return primitive.ok ? Boolean(primitive.value) : true;
+}
+
+/** Includes direct children or a statically selected Vue default slot. */
+function shouldIncludeElementChildren(
+  element: babel.JSXElement,
+  children: SerializedJSXChild[],
+  scope: Scope,
+  analysis: VueJSXAnalysis
+): boolean {
+  return element.children.some(isJSXRuntimeChildArgument)
+    ? hasTruthyJSXChildren(element.children, scope, analysis)
+    : children.some(hasSerializedValue);
+}
+
+function hasSerializedValue(child: SerializedJSXChild): boolean {
+  return child !== jsxTextBoundary;
+}
+
+function isSerializedJSXArray(
+  child: SerializedJSXChild
+): child is SerializedJSXArray {
+  return (
+    child !== jsxTextBoundary &&
+    typeof child === 'object' &&
+    child !== null &&
+    'kind' in child &&
+    child.kind === 'array'
   );
+}
+
+/** Flattens explicit nested arrays exactly as React.Children.map does. */
+function flattenSerializedChildren(children: SerializedJSXChild[]): JsxChild[] {
+  const flattened: JsxChild[] = [];
+  for (const child of children) {
+    if (child === jsxTextBoundary) continue;
+    if (isSerializedJSXArray(child)) {
+      flattened.push(...flattenSerializedChildren(child.children));
+    } else {
+      flattened.push(child);
+    }
+  }
+  return flattened;
+}
+
+function collapseChildren(children: SerializedJSXChild[]): JsxChildren {
+  const structuralChildren = children.filter(
+    (child) => child !== jsxTextBoundary
+  );
+  if (
+    structuralChildren.length === 1 &&
+    isSerializedJSXArray(structuralChildren[0]!)
+  ) {
+    return flattenSerializedChildren(structuralChildren[0]!.children);
+  }
+  const visibleChildren = flattenSerializedChildren(children);
   return visibleChildren.length === 1 ? visibleChildren[0]! : visibleChildren;
+}
+
+/** Distinguishes a missing T slot from an explicitly authored empty array. */
+function collapseRootChildren(
+  children: SerializedJSXChild[]
+): JsxChildren | undefined {
+  return children.some(hasSerializedValue)
+    ? collapseChildren(children)
+    : undefined;
 }

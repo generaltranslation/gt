@@ -298,7 +298,10 @@ const reactOracleFixtures = [
       'Branch, T, Var'
     ),
     jsx: jsxFixture(
-      '<T><Callout><Branch branch="welcome" v-slots={{ welcome: () => <>Welcome, <Var>{name}</Var>!</>, default: () => <>Welcome!</> }}/></Callout></T>',
+      `<T><Callout><Branch branch="welcome" v-slots={{
+        welcome: () => ['Welcome, ', <Var>{name}</Var>, '!'],
+        default: () => 'Welcome!',
+      }}/></Callout></T>`,
       "import Callout from './Callout.vue'; const name = getName();",
       'Branch, T, Var'
     ),
