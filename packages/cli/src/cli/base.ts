@@ -714,7 +714,9 @@ export class BaseCLI {
       .action(() => this.handleConfigureCommand());
   }
 
-  protected async handleConfigureCommand(): Promise<void> {
+  protected async handleConfigureCommand(
+    options?: SetupOptions
+  ): Promise<void> {
     await exitIfUnsupportedSetupTarget();
     displayHeader('Configuring project...');
 
@@ -724,7 +726,12 @@ export class BaseCLI {
 
     // Configure gt.config.json
     const framework = await detectFramework();
-    await this.handleInitCommand(false, false, framework.name === 'vite');
+    await this.handleInitCommand(
+      false,
+      false,
+      framework.name === 'vite',
+      options
+    );
 
     logger.endCommand(
       'Done! Make sure you have an API key and project ID to use General Translation. Get them on the dashboard: https://generaltranslation.com/dashboard'
@@ -746,12 +753,14 @@ export class BaseCLI {
   protected async handleInitCommand(
     ranReactSetup: boolean,
     useDefaults: boolean = false,
-    isVite: boolean = false
+    isVite: boolean = false,
+    options?: SetupOptions
   ): Promise<void> {
     const configFilepath =
-      !isVite && fs.existsSync('src/gt.config.json')
+      options?.config ||
+      (!isVite && fs.existsSync('src/gt.config.json')
         ? 'src/gt.config.json'
-        : 'gt.config.json';
+        : 'gt.config.json');
     const existingConfig = loadConfig(configFilepath);
     const { defaultLocale, locales } = await getDesiredLocales(existingConfig);
 
@@ -859,6 +868,7 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
     await createOrUpdateConfig(configFilepath, {
       defaultLocale,
       locales,
+      src: options?.src,
       files: Object.keys(files).length > 0 ? files : undefined,
       framework: isVite ? 'vite' : undefined,
       publish: isUsingGT && usingCDN,

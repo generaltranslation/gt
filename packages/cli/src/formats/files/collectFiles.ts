@@ -11,7 +11,11 @@ import type { JsxChildren } from '@generaltranslation/format/types';
 import type { FileToUpload } from 'generaltranslation/types';
 import { hashStringSync } from '../../utils/hash.js';
 import { TEMPLATE_FILE_NAME, TEMPLATE_FILE_ID } from '../../utils/constants.js';
-import { isInlineLibrary, Libraries } from '../../types/libraries.js';
+import {
+  isInlineLibrary,
+  Libraries,
+  type InlineLibrary,
+} from '../../types/libraries.js';
 import { shouldPublishGt } from '../../utils/resolvePublish.js';
 import { planVueExtraction } from '@generaltranslation/vue-extractor/integration';
 
@@ -22,6 +26,7 @@ export async function collectFiles(
 ): Promise<{
   files: FileToUpload[];
   reactComponents: number;
+  inlineLibrary?: InlineLibrary;
   publishMap: Map<string, boolean>;
 }> {
   // Aggregate files
@@ -113,5 +118,5 @@ export async function collectFiles(
       }
     }
   }
-  return { files, reactComponents, publishMap };
+  return { files, reactComponents, inlineLibrary, publishMap };
 }

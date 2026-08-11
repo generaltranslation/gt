@@ -41,7 +41,7 @@ export class VueCLI extends InlineCLI {
         'Filepath to config file, by default gt.config.json',
         findFilepath(['gt.config.json'])
       )
-      .action((_options: SetupOptions) => this.handleConfigureCommand());
+      .action((options: SetupOptions) => this.handleConfigureCommand(options));
   }
 
   /** Uploads Vue inline sources with the same targeting flags as extraction. */

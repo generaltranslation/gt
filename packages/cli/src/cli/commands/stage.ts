@@ -35,6 +35,7 @@ export async function handleStage(
   const {
     files: allFiles,
     reactComponents,
+    inlineLibrary,
     publishMap,
   } = await collectFiles(options, settings, library);
 
@@ -44,7 +45,7 @@ export async function handleStage(
   // Dry run
   if (options.dryRun) {
     logger.success(`Dry run: No files were sent to General Translation.`);
-    logCollectedFiles(allFiles, reactComponents);
+    logCollectedFiles(allFiles, reactComponents, inlineLibrary);
     return null;
   }
 
@@ -60,7 +61,12 @@ export async function handleStage(
   let branchData: BranchData | undefined;
   if (allFiles.length > 0) {
     const { branchData: branchDataResult, enqueueResult } =
-      await runStageFilesWorkflow({ files: allFiles, options, settings });
+      await runStageFilesWorkflow({
+        files: allFiles,
+        options,
+        settings,
+        inlineLibrary,
+      });
     jobData = enqueueResult;
     branchData = branchDataResult;
 

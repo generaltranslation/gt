@@ -1,4 +1,4 @@
-import type { GTConfig, GTParsingFlags } from '../src/types.js';
+import type { GTConfig, GTParsingFlags } from '../../types.js';
 
 type Equal<Left, Right> =
   (<Value>() => Value extends Left ? 1 : 2) extends <

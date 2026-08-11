@@ -17,6 +17,7 @@ export async function createOrUpdateConfig(
     projectId?: string;
     defaultLocale?: string;
     locales?: string[];
+    src?: string[];
     files?: FilesOptions;
     framework?: SupportedFrameworks;
     baseUrl?: string;
@@ -27,6 +28,7 @@ export async function createOrUpdateConfig(
   const newContent = {
     ...(options.projectId && { projectId: options.projectId }),
     ...(options.defaultLocale && { defaultLocale: options.defaultLocale }),
+    ...(options.src && { src: options.src }),
     ...(options.files && { files: options.files }),
     ...(options.framework && { framework: options.framework }),
     ...(options.baseUrl && { baseUrl: options.baseUrl }),

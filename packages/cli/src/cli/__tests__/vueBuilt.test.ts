@@ -160,7 +160,15 @@ describe('built Vue CLI', () => {
               : [commandName];
           await program.parseAsync(args, { from: 'user' });
 
-          assert.deepEqual(cli.calls, [[false, false, true]]);
+          assert.deepEqual(
+            cli.calls,
+            commandName === 'init'
+              ? [[false, false, true, {
+                  src: ['src/**/*.vue'],
+                  config: 'custom.gt.config.json',
+                }]]
+              : [[false, false, true, undefined]]
+          );
         }
       `,
       projectRoot

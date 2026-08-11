@@ -57,6 +57,7 @@ describe('collectFiles Vue adapter', () => {
         result.files.some(({ fileId }) => fileId === TEMPLATE_FILE_ID)
       ).toBe(true);
       expect(result.reactComponents).toBe(1);
+      expect(result.inlineLibrary).toBe(Libraries.GT_VUE);
       expect(aggregateInlineTranslations).toHaveBeenCalledOnce();
       expect(aggregateInlineTranslations).toHaveBeenCalledWith(
         options,

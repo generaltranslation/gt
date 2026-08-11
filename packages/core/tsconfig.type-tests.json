@@ -5,6 +5,6 @@
     "noEmit": true,
     "rootDir": "."
   },
-  "include": ["type-tests/**/*.ts"],
+  "include": ["src/types-dir/__tests__/**/*.test.ts"],
   "exclude": []
 }

@@ -1781,6 +1781,18 @@ importers:
         specifier: ^5
         version: 5.9.2
 
+  tests/apps/cli-vue-binary-test:
+    dependencies:
+      '@vue/compiler-sfc':
+        specifier: ^3.5.0
+        version: 3.5.40
+      gt-vue:
+        specifier: workspace:*
+        version: link:../../../packages/vue
+      vue:
+        specifier: ^3.5.0
+        version: 3.5.40(typescript@5.9.3)
+
   tests/apps/compiler-cli-parity:
     dependencies:
       gt-react:

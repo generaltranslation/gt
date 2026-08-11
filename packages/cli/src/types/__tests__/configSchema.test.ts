@@ -30,32 +30,11 @@ function getParsingFlagProperties(): Record<string, JsonSchema> {
 }
 
 describe('GT config schema parsing flags', () => {
-  it('retains the complete canonical parsing flag surface', () => {
+  it('adds only the Vue parsing flag surface', () => {
     expect(Object.keys(getParsingFlagProperties()).sort()).toEqual([
-      'autoderive',
-      'devHotReload',
-      'enableAutoJsxInjection',
-      'includeSourceCodeContext',
-      'legacyGtReactImportSource',
       'viteConfigPath',
       'vueCompilerOptions',
     ]);
-  });
-
-  it('accepts the existing boolean and granular dev hot reload forms', () => {
-    expect(getParsingFlagProperties().devHotReload).toEqual({
-      oneOf: [
-        { type: 'boolean' },
-        {
-          type: 'object',
-          properties: {
-            strings: { type: 'boolean' },
-            jsx: { type: 'boolean' },
-          },
-          additionalProperties: false,
-        },
-      ],
-    });
   });
 
   it('matches the exact Vue compiler option contract', () => {

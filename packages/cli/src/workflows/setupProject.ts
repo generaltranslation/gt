@@ -9,6 +9,7 @@ import { BranchStep } from './steps/BranchStep.js';
 import { BranchData } from '../types/branch.js';
 import { logCollectedFiles } from '../console/logging.js';
 import { calculateTimeoutMs } from '../utils/calculateTimeoutMs.js';
+import type { InlineLibrary } from '../types/libraries.js';
 
 /**
  * Sets up a project by uploading files running the setup step
@@ -20,13 +21,14 @@ import { calculateTimeoutMs } from '../utils/calculateTimeoutMs.js';
 export async function runSetupProjectWorkflow(
   files: FileToUpload[],
   options: TranslateFlags,
-  settings: Settings
+  settings: Settings,
+  inlineLibrary?: InlineLibrary
 ): Promise<{
   branchData: BranchData;
 }> {
   try {
     // Log files to be translated
-    logCollectedFiles(files);
+    logCollectedFiles(files, undefined, inlineLibrary);
 
     // Calculate timeout for setup step
     const timeoutMs = calculateTimeoutMs(options.timeout);

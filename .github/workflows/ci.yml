@@ -245,11 +245,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check if CLI or Python extractor changed
+      - name: Check if CLI or an embedded extractor changed
         id: gt_cli_changed
         shell: bash
         run: |
-          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -qE "^packages/(cli|python-extractor)/"; then
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -qE "^packages/(cli|python-extractor|vue-extractor)/"; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
             echo "changed=false" >> $GITHUB_OUTPUT
@@ -301,7 +301,17 @@ jobs:
       - name: Test CLI in test environment
         if: steps.gt_cli_changed.outputs.changed == 'true'
         shell: bash
-        run: cd tests/apps/cli-test-app && pnpm install && pnpm gt --help
+        run: |
+          cd tests/apps/cli-test-app
+          pnpm gt --help
+
+      - name: Exercise Vue extraction through the native CLI binary
+        if: steps.gt_cli_changed.outputs.changed == 'true'
+        shell: bash
+        run: |
+          cd tests/apps/cli-vue-binary-test
+          ../../../packages/cli/binaries/${{ matrix.binary }} generate --config gt.config.json
+          node --input-type=module -e "import fs from 'node:fs'; const catalog = JSON.parse(fs.readFileSync('dist/_gt/en.json', 'utf8')); if (!Object.values(catalog).includes('Hello from the native Vue extractor')) throw new Error('Native CLI did not extract the Vue message');"
 
   size:
     runs-on: ubuntu-latest
