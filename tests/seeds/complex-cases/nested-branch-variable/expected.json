@@ -1,0 +1,26 @@
+[
+  "Access:",
+  " ",
+  {
+    "t": "n",
+    "i": 1,
+    "d": {
+      "b": {
+        "admin": {
+          "t": "strong",
+          "i": 2,
+          "c": [
+            "administrator ",
+            {
+              "i": 3,
+              "k": "team",
+              "v": "v"
+            }
+          ]
+        },
+        "member": "member"
+      },
+      "t": "b"
+    }
+  }
+]

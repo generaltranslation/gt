@@ -1,0 +1,16 @@
+[
+  "Scheduled for ",
+  {
+    "i": 1,
+    "k": "event",
+    "v": "d"
+  },
+  " with",
+  " ",
+  {
+    "i": 2,
+    "k": "attendees",
+    "v": "n"
+  },
+  " attendees."
+]
