@@ -1,6 +1,6 @@
 import { transformSync } from '@babel/core';
 import { describe, expect, it } from 'vitest';
-import { plugin } from '.';
+import { plugin } from '..';
 
 const entryPointFilePath = '/app/src/App.tsx';
 
