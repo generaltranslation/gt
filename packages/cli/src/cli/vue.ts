@@ -55,7 +55,7 @@ export class VueCLI extends InlineCLI {
   }): string {
     return `GT will write local translation files to ${translationsDir}.
 Configure createGT({ loadTranslations }) to load files from that directory.
-See https://generaltranslation.com/docs/vue`;
+See https://www.npmjs.com/package/gt-vue`;
   }
 
   /** Uses Vue-specific default source guidance on inherited inline commands. */

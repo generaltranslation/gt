@@ -300,7 +300,7 @@ describe('built Vue CLI', () => {
           guidance:
             'GT will write local translation files to public/_gt.\\n' +
             'Configure createGT({ loadTranslations }) to load files from that directory.\\n' +
-            'See https://generaltranslation.com/docs/vue',
+            'See https://www.npmjs.com/package/gt-vue',
         });
 
         const react = new ReactInitProbe(new Command(), 'gt-react');
