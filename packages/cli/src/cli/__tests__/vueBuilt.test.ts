@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
+import { hashSource } from 'generaltranslation/id';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 const execFileAsync = promisify(execFile);
@@ -1061,6 +1062,56 @@ import { T } from 'gt-vue';
     expect(Object.keys(catalog)).toHaveLength(2);
     expect(JSON.stringify(catalog)).toContain('Preserved React entry');
     expect(JSON.stringify(catalog)).toContain('Added Vue entry');
+  });
+
+  it('preserves Vue T metadata in the generated catalog identity', async () => {
+    const projectRoot = createProject({
+      dependencies: {
+        'gt-vue': '*',
+        vue: '*',
+      },
+    });
+    const source = 'Review this constrained Vue entry';
+    writeProjectFiles(projectRoot, {
+      'gt.config.json': JSON.stringify({
+        defaultLocale: 'en',
+        locales: ['fr'],
+        files: { gt: { output: 'translations/[locale].json' } },
+      }),
+      'src/App.vue': `<script setup>
+import { T } from 'gt-vue';
+</script>
+<template><T id="editor-metadata" context="card" :max-chars="24" requires-review>${source}</T></template>
+`,
+    });
+    linkInstalledVue(projectRoot);
+
+    await runBuiltCli(
+      ['--skip-version-check', 'generate', '--config', 'gt.config.json'],
+      projectRoot
+    );
+    const catalog = JSON.parse(
+      fs.readFileSync(path.join(projectRoot, 'translations/en.json'), 'utf8')
+    ) as Record<string, unknown>;
+    const expectedHash = hashSource({
+      context: 'card',
+      dataFormat: 'JSX',
+      maxChars: 24,
+      requiresReview: true,
+      source,
+    });
+
+    expect(catalog).toEqual({ [expectedHash]: source });
+    expect(expectedHash).not.toBe(
+      hashSource({
+        context: 'card',
+        dataFormat: 'JSX',
+        id: 'editor-metadata',
+        maxChars: 24,
+        requiresReview: true,
+        source,
+      })
+    );
   });
 
   it('uses an explicit tsconfig for full and targeted Vue extraction', async () => {
