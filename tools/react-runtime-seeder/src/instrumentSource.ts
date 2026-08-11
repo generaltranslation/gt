@@ -1,6 +1,12 @@
 import { parse } from '@babel/parser';
 import traverseModule from '@babel/traverse';
-import type { JSXOpeningElement, Program } from '@babel/types';
+import type { NodePath } from '@babel/traverse';
+import type {
+  ImportNamespaceSpecifier,
+  ImportSpecifier,
+  JSXOpeningElement,
+  Program,
+} from '@babel/types';
 import { relative } from 'node:path';
 
 const traverse =
@@ -36,7 +42,7 @@ export function instrumentSource({
   const insertions: Insertion[] = [];
   traverse(ast, {
     JSXOpeningElement(path) {
-      if (!isRuntimeT(path.node, bindings)) return;
+      if (!isRuntimeT(path, bindings)) return;
       if (
         path.node.attributes.some(
           (attribute) =>
@@ -71,8 +77,8 @@ export function instrumentSource({
 }
 
 function collectTBindings(body: Program['body']) {
-  const named = new Set<string>();
-  const namespaces = new Set<string>();
+  const named = new Map<string, ImportSpecifier>();
+  const namespaces = new Map<string, ImportNamespaceSpecifier>();
 
   for (const statement of body) {
     if (
@@ -88,9 +94,9 @@ function collectTBindings(body: Program['body']) {
           ? specifier.imported.name
           : specifier.imported.value) === 'T'
       ) {
-        named.add(specifier.local.name);
+        named.set(specifier.local.name, specifier);
       } else if (specifier.type === 'ImportNamespaceSpecifier') {
-        namespaces.add(specifier.local.name);
+        namespaces.set(specifier.local.name, specifier);
       }
     }
   }
@@ -98,18 +104,32 @@ function collectTBindings(body: Program['body']) {
 }
 
 function isRuntimeT(
-  node: JSXOpeningElement,
-  bindings: { named: Set<string>; namespaces: Set<string> }
-): boolean {
-  if (node.name.type === 'JSXIdentifier') {
-    return bindings.named.has(node.name.name);
+  path: NodePath<JSXOpeningElement>,
+  bindings: {
+    named: Map<string, ImportSpecifier>;
+    namespaces: Map<string, ImportNamespaceSpecifier>;
   }
+): boolean {
+  const { node } = path;
+  if (node.name.type === 'JSXIdentifier') {
+    const importSpecifier = bindings.named.get(node.name.name);
+    return (
+      importSpecifier != null &&
+      path.scope.getBinding(node.name.name)?.path.node === importSpecifier
+    );
+  }
+  if (
+    node.name.type !== 'JSXMemberExpression' ||
+    node.name.object.type !== 'JSXIdentifier' ||
+    node.name.property.type !== 'JSXIdentifier' ||
+    node.name.property.name !== 'T'
+  ) {
+    return false;
+  }
+  const importSpecifier = bindings.namespaces.get(node.name.object.name);
   return (
-    node.name.type === 'JSXMemberExpression' &&
-    node.name.object.type === 'JSXIdentifier' &&
-    node.name.property.type === 'JSXIdentifier' &&
-    bindings.namespaces.has(node.name.object.name) &&
-    node.name.property.name === 'T'
+    importSpecifier != null &&
+    path.scope.getBinding(node.name.object.name)?.path.node === importSpecifier
   );
 }
 

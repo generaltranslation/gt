@@ -33,4 +33,34 @@ export default () => (
       instrumentSource({ code, file: '/repo/example.tsx', cwd: '/repo' })
     ).toBe(code);
   });
+
+  it('does not instrument a locally shadowed named import', () => {
+    const code = `import { T } from 'gt-react';
+const Runtime = () => <T>runtime</T>;
+const Local = ({ T }) => <T>local</T>;
+`;
+    const result = instrumentSource({
+      code,
+      file: '/repo/example.tsx',
+      cwd: '/repo',
+    });
+
+    expect(result.match(/__gtRuntimeSeedSource/g)).toHaveLength(1);
+    expect(result).toContain('<T>local</T>');
+  });
+
+  it('does not instrument a locally shadowed namespace import', () => {
+    const code = `import * as GT from 'gt-react';
+const Runtime = () => <GT.T>runtime</GT.T>;
+const Local = ({ GT }) => <GT.T>local</GT.T>;
+`;
+    const result = instrumentSource({
+      code,
+      file: '/repo/example.tsx',
+      cwd: '/repo',
+    });
+
+    expect(result.match(/__gtRuntimeSeedSource/g)).toHaveLength(1);
+    expect(result).toContain('<GT.T>local</GT.T>');
+  });
 });

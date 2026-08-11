@@ -5,6 +5,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { captureRuntimeSeeds } from './capture';
 import { createSeederError, createUnexpectedSeederError } from './diagnostics';
+import { resolveCaptureInput } from './input';
 import { getDefaultOutputName } from './output';
 
 const help = `Usage:
@@ -47,20 +48,10 @@ async function main(): Promise<void> {
       fix: 'Choose a candidate file or stdout as the output destination.',
     });
   }
-  const stdinCode = values.stdin ? await readStdin() : undefined;
-  const inputs = [values.file, values.code, stdinCode].filter(
-    (value) => value != null
-  );
-  if (inputs.length !== 1) {
-    throw createSeederError({
-      whatHappened: 'Exactly one input mode is required',
-      fix: 'Pass one of --file, --code, or --stdin.',
-    });
-  }
+  const input = await resolveCaptureInput(values, readStdin);
 
   const candidate = await captureRuntimeSeeds({
-    file: values.file,
-    code: values.code ?? stdinCode,
+    ...input,
     locale: values.locale,
   });
   const json = `${JSON.stringify(candidate, null, 2)}\n`;

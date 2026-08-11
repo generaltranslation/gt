@@ -50,6 +50,28 @@ describe('captureRuntimeSeeds', () => {
     ]);
   });
 
+  it('exits after capture when rendered code leaves an active handle', async () => {
+    const candidate = await captureRuntimeSeeds({
+      cwd: repositoryRoot,
+      code: `<T>{(() => {
+        setInterval(() => undefined, 1_000);
+        return 'Timer';
+      })()}</T>`,
+    });
+
+    expect(candidate.seeds[0].jsxChildren).toBe('Timer');
+  });
+
+  it('supports seed modules that use top-level await', async () => {
+    const candidate = await captureRuntimeSeeds({
+      cwd: repositoryRoot,
+      file: resolve(import.meta.dirname, 'fixtures/topLevelAwait.jsx'),
+    });
+
+    expect(candidate.seeds).toHaveLength(1);
+    expect(candidate.seeds[0].jsxChildren).toBe('Top-level await');
+  });
+
   it.each([
     'tests/seeds/t-component/simple/plain-text/plain-text',
     'tests/seeds/t-component/simple/misc/customcomponents',

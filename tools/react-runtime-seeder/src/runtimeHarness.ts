@@ -63,5 +63,6 @@ renderToStaticMarkup(
   )
 );
 writeFileSync(${JSON.stringify(resultFile)}, JSON.stringify(captures));
+process.exit(0);
 `;
 }

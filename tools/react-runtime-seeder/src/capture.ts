@@ -2,12 +2,13 @@ import { build, type Plugin } from 'esbuild';
 import { execFile } from 'node:child_process';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { basename, extname, resolve } from 'node:path';
+import { extname, resolve } from 'node:path';
 import { promisify } from 'node:util';
 import { createRequire } from 'node:module';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { createSeederError, createUnexpectedSeederError } from './diagnostics';
 import { instrumentSource } from './instrumentSource';
+import { normalizePath, relativeToCwd } from './paths';
 import { createRuntimeHarness } from './runtimeHarness';
 import type {
   CaptureRuntimeSeedsOptions,
@@ -42,7 +43,7 @@ export async function captureRuntimeSeeds(
 
     const resultFile = resolve(temporaryDirectory, 'result.json');
     const harnessFile = resolve(temporaryDirectory, 'harness.ts');
-    const bundleFile = resolve(temporaryDirectory, 'harness.cjs');
+    const bundleFile = resolve(temporaryDirectory, 'harness.mjs');
     await writeFile(
       harnessFile,
       createRuntimeHarness({
@@ -58,14 +59,19 @@ export async function captureRuntimeSeeds(
       outfile: bundleFile,
       bundle: true,
       platform: 'node',
-      format: 'cjs',
+      format: 'esm',
       target: 'node20',
       jsx: 'automatic',
       logLevel: 'silent',
+      banner: {
+        js: "import { createRequire as __gtCreateRequire } from 'node:module'; const require = __gtCreateRequire(import.meta.url);",
+      },
       plugins: [runtimeResolutionPlugin(), instrumentationPlugin(cwd)],
     });
     await execFileAsync(process.execPath, [bundleFile], {
       cwd,
+      timeout: 30_000,
+      killSignal: 'SIGKILL',
       maxBuffer: 10 * 1024 * 1024,
     });
     const seeds = JSON.parse(
@@ -186,15 +192,6 @@ function loaderFor(pathname: string): 'js' | 'jsx' | 'ts' | 'tsx' {
   }
   if (extension === '.jsx') return 'jsx';
   return 'js';
-}
-
-function relativeToCwd(cwd: string, file: string): string {
-  const prefix = `${cwd}/`;
-  return file.startsWith(prefix) ? file.slice(prefix.length) : basename(file);
-}
-
-function normalizePath(pathname: string): string {
-  return pathname.replaceAll('\\', '/');
 }
 
 function isSeederError(error: unknown): boolean {
