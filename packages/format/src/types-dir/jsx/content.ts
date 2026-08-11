@@ -58,9 +58,13 @@ export type StringContent = IcuMessage | StringMessage | I18nextMessage;
 export type Content = JsxChildren | StringContent;
 
 /**
- * A content type representing JSX elements.
+ * GT's persisted rich-content wire format.
+ *
+ * React preserves scalar boolean and null children, including nested element
+ * content and Branch or Plural alternatives. Arrays omit those empty-rendering
+ * primitives through React's child normalization.
  */
-export type JsxChildren = JsxChild | JsxChild[];
+export type JsxChildren = boolean | null | JsxChild | JsxChild[];
 
 /**
  * A content type representing ICU messages.

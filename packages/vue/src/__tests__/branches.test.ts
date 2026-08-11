@@ -32,7 +32,7 @@ type BranchSourceValue =
   | null
   | number
   | string;
-type BranchTargetValue = JsxChildren | boolean | null;
+type BranchTargetValue = JsxChildren;
 
 const BRANCH_SOURCE_CASES = [
   { label: 'rich node', value: 'rich' },
@@ -607,7 +607,7 @@ describe('Branch and Plural attributes', () => {
   it('uses a React-canonical boolean/null branch hash and renders both source and target values as empty', async () => {
     // React's persisted wire format keeps boolean and null branch values as
     // primitives even though they render no visible content.
-    const source = [
+    const source: JsxChildren = [
       'before',
       {
         t: 'Branch',
@@ -625,8 +625,8 @@ describe('Branch and Plural attributes', () => {
         d: { b: { unknown: null }, t: 'b' },
       },
       'after',
-    ] as unknown as JsxChildren;
-    const target = [
+    ];
+    const target: JsxChildren = [
       'avant',
       {
         t: 'Branch',
@@ -644,7 +644,7 @@ describe('Branch and Plural attributes', () => {
         d: { b: { unknown: null }, t: 'b' },
       },
       'après',
-    ] as unknown as JsxChildren;
+    ];
     const Root = defineComponent({
       setup() {
         return () =>
@@ -851,7 +851,7 @@ function createMatrixTarget(
     t: transformation === 'branch' ? 'Branch' : 'Plural',
     i: 1,
     d: {
-      b: { [branchName]: value } as unknown as Record<string, JsxChildren>,
+      b: { [branchName]: value },
       t: transformation === 'branch' ? 'b' : 'p',
     },
     c: 'TARGET DEFAULT',

@@ -10,6 +10,7 @@ import {
   createVNode,
   defineComponent,
   h,
+  type Component,
 } from 'vue';
 import { renderToString } from 'vue/server-renderer';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
@@ -59,10 +60,83 @@ describe('React-authoritative rich runtime shape', () => {
     );
   });
 
-  it('flattens only compiler structural Fragments', () => {
-    expectParity(React.createElement('span', null, 'Structural child'), [
-      createVNode(Fragment, null, [h('span', null, 'Structural child')], 64),
-    ]);
+  it('preserves compiler structural Fragments as transparent arrays', () => {
+    expectParity([], [createVNode(Fragment, null, [], 64)], 'bdb7cc7686d0e468');
+    expectParity(
+      [React.createElement('span', { key: 'one' }, 'One')],
+      [createVNode(Fragment, null, [h('span', { key: 'one' }, 'One')], 64)],
+      'db8f4cf2c0cbdeea'
+    );
+    expectParity(
+      [
+        React.createElement('span', { key: 'one' }, 'One'),
+        React.createElement('span', { key: 'two' }, 'Two'),
+      ],
+      [
+        createVNode(
+          Fragment,
+          null,
+          [h('span', { key: 'one' }, 'One'), h('span', { key: 'two' }, 'Two')],
+          64
+        ),
+      ],
+      'da0189970ce80427'
+    );
+  });
+
+  it('renders structural Fragment arrays in source and translated locales', async () => {
+    const Root = defineComponent({
+      setup() {
+        return () => [
+          h(T, null, {
+            default: () => [createVNode(Fragment, null, [], 64)],
+          }),
+          h(T, null, {
+            default: () => [
+              createVNode(
+                Fragment,
+                null,
+                [h('span', { key: 'one' }, 'One')],
+                64
+              ),
+            ],
+          }),
+          h(T, null, {
+            default: () => [
+              createVNode(
+                Fragment,
+                null,
+                [
+                  h('span', { key: 'one' }, 'One'),
+                  h('span', { key: 'two' }, 'Two'),
+                ],
+                64
+              ),
+            ],
+          }),
+        ];
+      },
+    });
+
+    expect(stripFragmentMarkers(await renderWithPlugin(Root, createGT()))).toBe(
+      '<span>One</span><span>One</span><span>Two</span>'
+    );
+
+    const translated = createGT({
+      loadTranslations: async () => ({
+        bdb7cc7686d0e468: ['Translated empty'],
+        db8f4cf2c0cbdeea: [{ t: 'span', i: 1, c: 'Un' }],
+        da0189970ce80427: [
+          { t: 'span', i: 2, c: 'Deux' },
+          { t: 'span', i: 1, c: 'Un' },
+        ],
+      }),
+    });
+    await translated.setLocale('fr');
+
+    expect(stripFragmentMarkers(await renderWithPlugin(Root, translated))).toBe(
+      'Translated empty<span>Un</span><span>Deux</span><span>Un</span>'
+    );
   });
 
   it('distinguishes a nested numeric zero from the string zero', () => {
@@ -368,4 +442,15 @@ async function normalizeSlot(rawChildren: unknown[]): Promise<unknown> {
 
   await renderToString(createSSRApp(Root));
   return normalized;
+}
+
+async function renderWithPlugin(
+  root: Component,
+  plugin: ReturnType<typeof createGT>
+): Promise<string> {
+  return renderToString(createSSRApp(root).use(plugin));
+}
+
+function stripFragmentMarkers(html: string): string {
+  return html.replaceAll('<!--[-->', '').replaceAll('<!--]-->', '');
 }

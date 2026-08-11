@@ -432,11 +432,7 @@ function visitChildren(
   // wrappers (for example, `v-for`). Authored JSX Fragments have patch flag
   // zero and remain semantic React.Fragment peers, including an authored
   // Fragment whose child is an explicit empty array.
-  if (
-    children.type === Fragment &&
-    Array.isArray(children.children) &&
-    children.patchFlag !== 0
-  ) {
+  if (isCompilerStructuralFragment(children)) {
     const fragmentChildren = isSlots(children.children)
       ? children.children.default?.()
       : children.children;
@@ -620,9 +616,7 @@ function readDefaultSlot(vnode: VNode): {
     return {
       children: content,
       replace: true,
-      ...(content?.type === Fragment &&
-        Array.isArray(content.children) &&
-        content.patchFlag !== 0 && { shapeInput: content.children }),
+      ...(isCompilerStructuralFragment(content) && { shapeInput: content }),
     };
   }
   if (vnode.type === Fragment && !isSlots(vnode.children)) {
@@ -819,6 +813,18 @@ function isSlots(children: unknown): children is Slots {
   return !!children && typeof children === 'object' && !Array.isArray(children);
 }
 
+/** True for transparent Fragment VNodes synthesized by Vue's compiler. */
+function isCompilerStructuralFragment(
+  value: unknown
+): value is VNode & { children: VNodeChild[] } {
+  return (
+    isVNode(value) &&
+    value.type === Fragment &&
+    Array.isArray(value.children) &&
+    value.patchFlag !== 0
+  );
+}
+
 /** Serializes the normalized outer slot while preserving an absent slot. */
 function serializeRootNodes(
   nodes: SourceNode[],
@@ -837,7 +843,11 @@ function serializeNodesWithCardinality(
   cardinality: SourceCardinality
 ): JsxChildren {
   const serialized = nodes.filter(isContentNode).map(serializeNode);
-  return cardinality === 'array' ? serialized : (serialized[0] as JsxChildren);
+  return cardinality === 'array'
+    ? serialized.filter(
+        (node): node is JsxChild => node !== null && typeof node !== 'boolean'
+      )
+    : (serialized[0] as JsxChildren);
 }
 
 /**
@@ -856,6 +866,9 @@ function getNormalizedChildrenShape(
   cardinality: SourceCardinality;
   truthy: boolean;
 } {
+  if (isCompilerStructuralFragment(input)) {
+    return { cardinality: 'array', truthy: true };
+  }
   if (!Array.isArray(input)) {
     return { cardinality: 'scalar', truthy: Boolean(input) };
   }
@@ -868,6 +881,14 @@ function getNormalizedChildrenShape(
   const meaningfulInputs = input.filter(
     (child) => !(isVNode(child) && child.type === Comment)
   );
+  if (
+    meaningfulInputs.length === 1 &&
+    isCompilerStructuralFragment(meaningfulInputs[0])
+  ) {
+    // A compiler Fragment is a transparent list boundary. Its child array is
+    // semantic even when it currently contains zero or one item.
+    return { cardinality: 'array', truthy: true };
+  }
   if (meaningfulInputs.length === 1) {
     return { cardinality: 'scalar', truthy: Boolean(meaningfulInputs[0]) };
   }
@@ -883,9 +904,9 @@ function getNormalizedChildrenShape(
 
 function serializeNode(
   node: SourceElement | string | BranchWireLiteral
-): JsxChild {
+): BranchWireLiteral | JsxChild {
   if (node === null || typeof node === 'boolean') {
-    return node as unknown as JsxChild;
+    return node;
   }
   if (typeof node === 'string') return node;
   if (node.transformation === 'variable') {
@@ -929,8 +950,7 @@ function serializeNode(
 /**
  * Serializes a branch without conflating its render shape with its wire value.
  *
- * `JsxChildren` predates React's persisted boolean/null branch values, so the
- * cast is confined to the exact literal crossing that shared type boundary.
+ * Branch wire literals render empty but remain distinct persisted values.
  */
 function serializeBranch(
   node: SourceElement,
@@ -938,7 +958,7 @@ function serializeBranch(
   branch: SourceNode[]
 ): JsxChildren {
   if (Object.hasOwn(node.branchWireLiterals, key)) {
-    return node.branchWireLiterals[key] as unknown as JsxChildren;
+    return node.branchWireLiterals[key];
   }
   return serializeNodesWithCardinality(branch, node.branchCardinalities[key]);
 }
@@ -961,7 +981,7 @@ function getElementName(vnode: VNode, id: number): string {
 
 function renderNodes(
   source: SourceNode[],
-  target: JsxChildren | boolean | null | undefined,
+  target: JsxChildren | undefined,
   state: GTState,
   identityRender: TranslationIdentityRender,
   sourceCardinality: SourceCardinality = getSourceCardinality(source),
@@ -1234,11 +1254,9 @@ function getSourceCardinality(nodes: SourceNode[]): SourceCardinality {
 function getSelectedTargetBranch(
   target: JsxElement,
   branch?: string
-): JsxChildren | boolean | null | undefined {
+): JsxChildren | undefined {
   if (branch && target.d?.b && Object.hasOwn(target.d.b, branch)) {
-    // React catalogs can persist boolean/null branch values even though the
-    // shared public type has not yet widened to describe that wire reality.
-    return target.d.b[branch] as JsxChildren | boolean | null;
+    return target.d.b[branch];
   }
   return target.c;
 }
