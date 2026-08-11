@@ -1,4 +1,4 @@
-import { noFilesError } from '../../console/index.js';
+import { noFilesError, noVersionIdError } from '../../console/index.js';
 import { SupportedLibraries, TranslateFlags } from '../../types/index.js';
 import { Settings } from '../../types/index.js';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
@@ -48,6 +48,19 @@ export async function handleDownload(
     fileVersionData = getStagedEntriesFromLockfile(settings);
   } else {
     const { files } = await collectFiles(options, settings, library);
+    // _versionId is only written by stage when an inline GTJSON template was
+    // staged, so demand it only when a GTJSON is part of this download —
+    // file-only projects never have one and don't need it. (Staged downloads
+    // above resolve all versions from gt-lock.json.) omitConfigIds intentionally
+    // never writes _versionId; in that mode the collected GTJSON template carries
+    // its own content-derived versionId, so skip the guard rather than fail.
+    if (
+      !settings.omitConfigIds &&
+      !settings._versionId &&
+      files.some((file) => file.fileFormat === 'GTJSON')
+    ) {
+      return logErrorAndExit(noVersionIdError);
+    }
     fileVersionData = convertToFileTranslationData(files);
   }
 

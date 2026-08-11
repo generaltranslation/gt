@@ -1,5 +1,56 @@
 # gtx-cli
 
+## 2.16.4
+
+### Patch Changes
+
+- Updated dependencies [[`b00b93e`](https://github.com/generaltranslation/gt/commit/b00b93eb3b830b8528ef3dbd5f503ff76d1b338a)]:
+  - generaltranslation@9.1.2
+  - @generaltranslation/python-extractor@0.2.35
+  - @generaltranslation/supported-locales@2.1.15
+
+## 2.16.3
+
+### Patch Changes
+
+- [#2040](https://github.com/generaltranslation/gt/pull/2040) [`79e6836`](https://github.com/generaltranslation/gt/commit/79e6836349191220ee8f5848b5e6ff287246f162) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Use the locale exactly as configured when substituting `{locale}` in file and JSON transforms, instead of canonicalizing it. Projects that configure a non-canonical tag such as `fr-ca` or `ja-jp` were getting content written to `docs/fr-CA/` while `[locale]` substitution and localized URLs used `docs/fr-ca/`, so every internal link in the translated output pointed at a directory that did not exist.
+
+## 2.16.2
+
+### Patch Changes
+
+- [#2029](https://github.com/generaltranslation/gt/pull/2029) [`c1fd8a0`](https://github.com/generaltranslation/gt/commit/c1fd8a05c5325775e3ec8104e2d48d35da864de6) Thanks [@eoinest](https://github.com/eoinest)! - Configure Vite React apps with `initializeGTSPA` and bundled translation loading without adding the compiler.
+
+## 2.16.1
+
+### Patch Changes
+
+- [#2019](https://github.com/generaltranslation/gt/pull/2019) [`60d154c`](https://github.com/generaltranslation/gt/commit/60d154c851d6ae0510447b7d66ec5e12104f0d1b) Thanks [@eoinest](https://github.com/eoinest)! - Save local edits before translation by default, with a `--no-save-local` flag to opt out.
+
+- [#2028](https://github.com/generaltranslation/gt/pull/2028) [`8066d0a`](https://github.com/generaltranslation/gt/commit/8066d0ad64d4f9c3475a935e6bbb27d9f7389b20) Thanks [@eoinest](https://github.com/eoinest)! - Stop the setup wizard at monorepo workspace roots and direct users to run it from the app they want to localize.
+
+- Updated dependencies [[`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9)]:
+  - generaltranslation@9.1.1
+  - @generaltranslation/python-extractor@0.2.34
+  - @generaltranslation/supported-locales@2.1.14
+
+## 2.16.0
+
+### Minor Changes
+
+- [#1994](https://github.com/generaltranslation/gt/pull/1994) [`bd961d1`](https://github.com/generaltranslation/gt/commit/bd961d1474547f7c6d470583c1b1190dce0112ca) Thanks [@logflash](https://github.com/logflash)! - Add Lottie file support and project font syncing.
+  - Support `.lottie` files as a new `LOTTIE` file format. Lottie bundles are binary (zip), so their content is carried base64-encoded end-to-end — including existing translated `.lottie` targets on `gt upload` — and skips the UTF-8 encode/decode and text merge paths (new `isBinaryFileFormat` / `BINARY_FILE_FORMATS` exports). Lottie translations are processed asynchronously and require the `gt stage` + `gt download` flow, so `gt translate` now exits with an error pointing users there when a project has Lottie files and staging isn't enabled. (As before, enabling staging makes `gt translate` download staged results rather than translating inline.)
+  - Reject `.lottie` files that use After Effects expressions (executable code): the upload fails and names every offending file, since expression-driven text can't be translated safely.
+  - Add `GT.uploadFonts` and a `fonts` config option (include/exclude globs) so project fonts are synced to the API before translating formats that need them (including during `gt stage`, so async Lottie jobs get the real fonts). Globs resolve from the project root. Font sync is idempotent and non-fatal on failure.
+  - Keep staged lock entries staged until every configured locale has downloaded, and only require `_versionId` for `gt download` when an inline GTJSON template is part of the download and config IDs aren't omitted (staged downloads resolve versions from `gt-lock.json`, file-only projects never have a `_versionId`, and `omitConfigIds` projects use the GTJSON's own content-derived version).
+
+### Patch Changes
+
+- Updated dependencies [[`bd961d1`](https://github.com/generaltranslation/gt/commit/bd961d1474547f7c6d470583c1b1190dce0112ca)]:
+  - generaltranslation@9.1.0
+  - @generaltranslation/python-extractor@0.2.33
+  - @generaltranslation/supported-locales@2.1.13
+
 ## 2.15.0
 
 ### Minor Changes

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Stack, Box, Card, Text, Flex, Spinner } from '@sanity/ui';
 import { LanguageStatus } from './LanguageStatus';
+import { resolveLanguageStatusState } from '../../utils/languageStatusState';
 import { useTranslations } from '../TranslationsProvider';
 import { pluginConfig } from '../../adapter/core';
 import {
@@ -14,6 +15,7 @@ export const SingleDocumentView: React.FC = () => {
     locales,
     loadingDocuments,
     translationStatuses,
+    pendingTranslations,
     downloadStatus,
     importedTranslations,
     handleImportDocument,
@@ -94,8 +96,11 @@ export const SingleDocumentView: React.FC = () => {
                       <LanguageStatus
                         key={`${document._id}-${versionId}-${locale.localeId}`}
                         localeId={locale.localeId}
-                        progress={status?.progress || 0}
-                        isImported={isImported || isDownloaded}
+                        state={resolveLanguageStatusState({
+                          status,
+                          isImported: isImported || isDownloaded,
+                          isPending: pendingTranslations.has(key),
+                        })}
                         importFile={async () => {
                           await handleImportDocument(
                             documentId,

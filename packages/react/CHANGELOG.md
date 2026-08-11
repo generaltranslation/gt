@@ -1,5 +1,50 @@
 # gt-react
 
+## 11.1.6
+
+### Patch Changes
+
+- Updated dependencies [[`b00b93e`](https://github.com/generaltranslation/gt/commit/b00b93eb3b830b8528ef3dbd5f503ff76d1b338a)]:
+  - generaltranslation@9.1.2
+  - gt-i18n@1.0.12
+  - @generaltranslation/react-core@11.1.6
+
+## 11.1.5
+
+### Patch Changes
+
+- Updated dependencies [[`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9)]:
+  - generaltranslation@9.1.1
+  - @generaltranslation/react-core@11.1.5
+  - gt-i18n@1.0.11
+
+## 11.1.4
+
+### Patch Changes
+
+- Updated dependencies [[`bd961d1`](https://github.com/generaltranslation/gt/commit/bd961d1474547f7c6d470583c1b1190dce0112ca)]:
+  - generaltranslation@9.1.0
+  - gt-i18n@1.0.10
+  - @generaltranslation/react-core@11.1.4
+
+## 11.1.3
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.1.3
+
+## 11.1.2
+
+### Patch Changes
+
+- [#1998](https://github.com/generaltranslation/gt/pull/1998) [`06fbf97`](https://github.com/generaltranslation/gt/commit/06fbf97731178d9892ab0e02b81acb62df8e38c5) Thanks [@pompa](https://github.com/pompa)! - Resolve the server build on worker runtimes. The `.` export listed `browser` ahead of `import`, and Node's exports algorithm lets the target's own key order decide which condition wins, so worker runtimes — whose condition sets include `browser`, such as Cloudflare's `["workerd", "worker", "module", "browser"]` — loaded the browser build during SSR. `gt-tanstack-start` crashed with `ReferenceError: document is not defined` when `initializeGT()` read `document.cookie`; `gt-react` silently handed back `BrowserGTProvider` and `initializeGTSRAClient`, so SSR ran on the isolate-global `BrowserConditionStore` shared across concurrent requests instead of the request-scoped store.
+
+  Both packages now list `workerd` and `worker` ahead of `browser` and resolve them to the server build. In `gt-react` they sit after `react-server`, so RSC runtimes on workerd keep the RSC build. Browsers still match `browser` and Node SSR still falls through to `import`, so no existing consumer changes.
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.1.2
+
 ## 11.1.1
 
 ### Patch Changes

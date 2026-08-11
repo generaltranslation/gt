@@ -1,5 +1,66 @@
 # gt-next
 
+## 11.1.6
+
+### Patch Changes
+
+- [#2017](https://github.com/generaltranslation/gt/pull/2017) [`b00b93e`](https://github.com/generaltranslation/gt/commit/b00b93eb3b830b8528ef3dbd5f503ff76d1b338a) Thanks [@logflash](https://github.com/logflash)! - Add opt-in `<T>` id-tagging (`_tagIds`). When enabled via `withGTConfig(config, { _tagIds: true })`, each `<T>`/`<Tx>` exposes its published-translation hash as a `data-_gt-hash` attribute, so tooling (localized replay, in-context QA) can map a rendered DOM node back to its published translation. Off by default; apps not using it pay nothing. No effect on `gt()` strings, and DOM-only — skipped on React Native.
+
+  Span injection is kept to the minimum necessary: when a `<T>` renders a single host element the attribute is placed directly on that element (no wrapper), so `<T>` keeps copying the source 1:1 and stays valid inside parents that reject a `<span>` (e.g. `<tr>`/`<select>`/`<ul>`). A layout-neutral `display:contents` span is injected only when there is no element to carry the attribute (bare text or a fragment).
+
+- Updated dependencies [[`b00b93e`](https://github.com/generaltranslation/gt/commit/b00b93eb3b830b8528ef3dbd5f503ff76d1b338a)]:
+  - generaltranslation@9.1.2
+  - gt-i18n@1.0.12
+  - @generaltranslation/react-core@11.1.6
+  - @generaltranslation/compiler@1.3.37
+  - gt-react@11.1.6
+
+## 11.1.5
+
+### Patch Changes
+
+- [#2018](https://github.com/generaltranslation/gt/pull/2018) [`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9) Thanks [@eoinest](https://github.com/eoinest)! - Preserve proper-noun casing when diagnostic reasons are combined into user-facing messages.
+
+- Updated dependencies [[`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9)]:
+  - generaltranslation@9.1.1
+  - @generaltranslation/react-core@11.1.5
+  - @generaltranslation/compiler@1.3.36
+  - gt-i18n@1.0.11
+  - gt-react@11.1.5
+
+## 11.1.4
+
+### Patch Changes
+
+- [#2005](https://github.com/generaltranslation/gt/pull/2005) [`6264532`](https://github.com/generaltranslation/gt/commit/62645327e27a6b55cf55c58201dd43a63bf31f53) Thanks [@eoinest](https://github.com/eoinest)! - Warn when locale settings in the GT config file differ from Next.js internationalized routing configuration.
+
+- Updated dependencies [[`bd961d1`](https://github.com/generaltranslation/gt/commit/bd961d1474547f7c6d470583c1b1190dce0112ca)]:
+  - generaltranslation@9.1.0
+  - @generaltranslation/compiler@1.3.35
+  - gt-i18n@1.0.10
+  - gt-react@11.1.4
+  - @generaltranslation/react-core@11.1.4
+
+## 11.1.3
+
+### Patch Changes
+
+- [#2004](https://github.com/generaltranslation/gt/pull/2004) [`e54d376`](https://github.com/generaltranslation/gt/commit/e54d376ab948e4081ddc372487918a9155fcb8b2) Thanks [@eoinest](https://github.com/eoinest)! - Delegate Pages Router locale routing and active-locale resolution to Next.js internationalized routing. Pages data wrappers prefer `context.locale` while retaining the previous request detector as a compatibility fallback, `withGTConfig` selects `NEXT_LOCALE` when Next.js locale detection is enabled, and applications can navigate with the Pages Router locale option through the existing provider reload callback. App Router middleware and `GTProvider` behavior are unchanged.
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.1.3
+  - gt-react@11.1.3
+
+## 11.1.2
+
+### Patch Changes
+
+- [#2002](https://github.com/generaltranslation/gt/pull/2002) [`11d9a36`](https://github.com/generaltranslation/gt/commit/11d9a36eca6346b5dde2b1f5cb394a4abde625ad) Thanks [@eoinest](https://github.com/eoinest)! - Resolve the server build in worker runtimes by prioritizing `workerd` and `worker` export conditions ahead of `browser`, while preserving the React Server Components entrypoint's precedence.
+
+- Updated dependencies [[`06fbf97`](https://github.com/generaltranslation/gt/commit/06fbf97731178d9892ab0e02b81acb62df8e38c5)]:
+  - gt-react@11.1.2
+  - @generaltranslation/react-core@11.1.2
+
 ## 11.1.1
 
 ### Patch Changes

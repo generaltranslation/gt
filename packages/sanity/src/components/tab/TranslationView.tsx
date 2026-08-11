@@ -4,7 +4,7 @@
  * Add cleanup function to cancel async tasks
  */
 
-import { useMemo, useState, useCallback, useEffect } from 'react';
+import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import {
   Stack,
   Text,
@@ -18,8 +18,11 @@ import {
 } from '@sanity/ui';
 import { pluginConfig } from '../../adapter/core';
 import { SaveLocalTranslationsDialog } from '../page/SaveLocalTranslationsDialog';
+import { DebugInfoDialog } from '../page/DebugInfoDialog';
+import { version as PACKAGE_VERSION } from '../../../package.json';
 import { useTranslations } from '../TranslationsProvider';
 import { LanguageStatus } from '../shared/LanguageStatus';
+import { resolveLanguageStatusState } from '../../utils/languageStatusState';
 import { LocaleCheckbox } from '../shared/LocaleCheckbox';
 import {
   DownloadIcon,
@@ -39,6 +42,7 @@ export const TranslationView = () => {
     documents,
     locales,
     translationStatuses,
+    pendingTranslations,
     branchId,
     isBusy,
     handleTranslateAll,
@@ -67,6 +71,7 @@ export const TranslationView = () => {
   const [isPublishing, setIsPublishing] = useState(false);
   const [isUploadingExisting, setIsUploadingExisting] = useState(false);
   const [isSaveLocalDialogOpen, setIsSaveLocalDialogOpen] = useState(false);
+  const [isDebugInfoDialogOpen, setIsDebugInfoDialogOpen] = useState(false);
 
   const toast = useToast();
 
@@ -121,6 +126,43 @@ export const TranslationView = () => {
     return getVersionId(document);
   }, [document, getVersionId]);
 
+  // Translations that were already complete when this dialog opened. Auto-import
+  // means "import a translation that finishes while I am watching", so these are
+  // left alone: importing them would rewrite translated documents — discarding
+  // any edits made to them — every time the dialog is opened. Reset on Translate,
+  // so a fresh run's results are imported even for a locale that already had one.
+  const alreadyCompleteRef = useRef<Set<string> | null>(null);
+
+  const statusKeyFor = useCallback(
+    (localeId: string) =>
+      createTranslationStatusKey(
+        branchId,
+        documentId ?? '',
+        versionId ?? '',
+        localeId
+      ),
+    [branchId, documentId, versionId]
+  );
+
+  if (
+    alreadyCompleteRef.current === null &&
+    documentId &&
+    versionId &&
+    translationStatuses.size > 0
+  ) {
+    alreadyCompleteRef.current = new Set(
+      statusLocales
+        .map((locale) => statusKeyFor(locale.localeId))
+        .filter((key) => translationStatuses.get(key)?.isReady)
+    );
+  }
+
+  // The per-locale rows already read "Translating…"; this only guards the
+  // button against enqueueing the same run twice.
+  const isWaitingOnTranslations = statusLocales.some((locale) =>
+    pendingTranslations.has(statusKeyFor(locale.localeId))
+  );
+
   // Unified import functionality
   const handleImportTranslations = useCallback(
     async (options: { autoOnly?: boolean } = {}) => {
@@ -140,7 +182,8 @@ export const TranslationView = () => {
           locale.localeId
         );
         const status = translationStatuses.get(key);
-        return status?.isReady && !importedTranslations.has(key);
+        if (!status?.isReady || importedTranslations.has(key)) return false;
+        return !(autoOnly && alreadyCompleteRef.current?.has(key));
       });
 
       if (readyTranslations.length === 0) return;
@@ -188,13 +231,6 @@ export const TranslationView = () => {
   useEffect(() => {
     handleImportTranslations({ autoOnly: true });
   }, [handleImportTranslations]);
-
-  // Enable auto features on mount
-  useEffect(() => {
-    setAutoRefresh(true);
-    setAutoPatchReferences(true);
-    setAutoPublish(true);
-  }, [setAutoRefresh, setAutoPatchReferences, setAutoPublish]);
 
   // Locale toggle functionality
   const toggleLocale = useCallback(
@@ -283,13 +319,17 @@ export const TranslationView = () => {
 
         <Button
           onClick={() => {
-            setAutoImport(true);
+            // A new run's results should import even for locales that already
+            // had a translation when the dialog opened.
+            alreadyCompleteRef.current = new Set();
             handleTranslateAll();
           }}
-          disabled={isBusy || !availableLocales.length}
+          disabled={
+            isBusy || isWaitingOnTranslations || !availableLocales.length
+          }
           icon={TranslateIcon}
-          text='Translate'
-          loading={isBusy && !isUploadingExisting}
+          text={isWaitingOnTranslations ? 'Translating…' : 'Translate'}
+          loading={(isBusy && !isUploadingExisting) || isWaitingOnTranslations}
         />
       </Stack>
 
@@ -324,7 +364,7 @@ export const TranslationView = () => {
                 icon={RefreshIcon}
                 text='Refresh'
                 loading={isRefreshing}
-                onClick={handleRefreshAll}
+                onClick={() => handleRefreshAll()}
                 disabled={isRefreshing || isBusy}
               />
             </Flex>
@@ -339,15 +379,17 @@ export const TranslationView = () => {
                 locale.localeId
               );
               const status = translationStatuses.get(key);
-              const progress = status?.progress || 0;
               const isImported = importedTranslations.has(key);
 
               return (
                 <LanguageStatus
                   key={key}
                   localeId={locale.localeId}
-                  progress={progress}
-                  isImported={isImported}
+                  state={resolveLanguageStatusState({
+                    status,
+                    isImported,
+                    isPending: pendingTranslations.has(key),
+                  })}
                   importFile={async () => {
                     if (!isImported && status?.isReady) {
                       await handleImportDocument(
@@ -429,32 +471,17 @@ export const TranslationView = () => {
                   <Text size={1}>Auto-import when complete</Text>
                 </Flex>
               </Flex>
+              {/* Counted against every configured locale. The number of
+                  currently-ready translations decays to zero as they are
+                  imported, because a downloaded file drops out of the status
+                  query — which made the old denominator read "6/0". */}
               <Text size={1} muted>
-                Imported{' '}
                 {
-                  statusLocales.filter((locale) => {
-                    const key = createTranslationStatusKey(
-                      branchId,
-                      documentId,
-                      versionId,
-                      locale.localeId
-                    );
-                    return importedTranslations.has(key);
-                  }).length
-                }
-                /
-                {
-                  statusLocales.filter((locale) => {
-                    const key = createTranslationStatusKey(
-                      branchId,
-                      documentId,
-                      versionId,
-                      locale.localeId
-                    );
-                    const status = translationStatuses.get(key);
-                    return status?.isReady;
-                  }).length
-                }
+                  statusLocales.filter((locale) =>
+                    importedTranslations.has(statusKeyFor(locale.localeId))
+                  ).length
+                }{' '}
+                of {statusLocales.length} imported
               </Text>
             </Flex>
 
@@ -519,6 +546,26 @@ export const TranslationView = () => {
           </Stack>
         </Stack>
       )}
+
+      <Card borderTop paddingTop={3}>
+        <Flex align='center' justify='flex-end' gap={2}>
+          <Text size={1} muted>
+            gt-sanity v{PACKAGE_VERSION}
+          </Text>
+          <Button
+            fontSize={1}
+            padding={2}
+            mode='bleed'
+            text='Debug info'
+            onClick={() => setIsDebugInfoDialogOpen(true)}
+          />
+        </Flex>
+      </Card>
+
+      <DebugInfoDialog
+        isOpen={isDebugInfoDialogOpen}
+        onClose={() => setIsDebugInfoDialogOpen(false)}
+      />
     </Stack>
   );
 };

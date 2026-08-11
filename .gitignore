@@ -18,6 +18,7 @@ dist/
 CLAUDE.local.md
 tsconfig.tsbuildinfo
 target/
+tmp/
 .rollup.cache
 .mcp.json
 .vscode/mcp.json

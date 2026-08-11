@@ -9,7 +9,7 @@ import {
 
 type HomeProps = {
   renderedAt: string;
-  cookieLocale: string;
+  nextLocalePreference: string;
 };
 
 export const getServerSideProps: GetServerSideProps<HomeProps> =
@@ -17,12 +17,12 @@ export const getServerSideProps: GetServerSideProps<HomeProps> =
     return {
       props: {
         renderedAt: new Date().toISOString(),
-        cookieLocale: context.req.cookies['generaltranslation.locale'] ?? 'en',
+        nextLocalePreference: context.req.cookies.NEXT_LOCALE ?? 'unset',
       },
     };
   });
 
-export default function Home({ renderedAt, cookieLocale }: HomeProps) {
+export default function Home({ renderedAt, nextLocalePreference }: HomeProps) {
   const gt = useGT();
   const locale = useLocale();
 
@@ -33,7 +33,7 @@ export default function Home({ renderedAt, cookieLocale }: HomeProps) {
         <h1>gt-next pages SSR test</h1>
         <div className='meta'>
           <span>Client locale: {locale}</span>
-          <span>Cookie locale (SSR): {cookieLocale}</span>
+          <span>NEXT_LOCALE preference: {nextLocalePreference}</span>
           <span>Rendered: {renderedAt}</span>
         </div>
       </section>

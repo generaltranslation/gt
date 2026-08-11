@@ -52,6 +52,26 @@ export async function createOrUpdateConfig(
       ...newContent,
     } as Record<string, unknown> & { locales?: string[] };
 
+    // Preserve unrelated file configuration and nested GT options when setup
+    // only needs to add or update a translation output path.
+    if (options.files) {
+      const oldFiles =
+        oldContent.files && typeof oldContent.files === 'object'
+          ? (oldContent.files as Record<string, unknown>)
+          : {};
+      const oldGt =
+        oldFiles.gt && typeof oldFiles.gt === 'object'
+          ? (oldFiles.gt as Record<string, unknown>)
+          : {};
+      mergedContent.files = {
+        ...oldFiles,
+        ...options.files,
+        ...(options.files.gt && {
+          gt: { ...oldGt, ...options.files.gt },
+        }),
+      };
+    }
+
     // Add locales to mergedContent if they exist
     if (options.locales) {
       mergedContent.locales = mergedContent.locales

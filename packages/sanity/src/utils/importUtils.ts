@@ -10,8 +10,13 @@ export interface ImportResult {
   successfulImports: string[];
 }
 
+/** A status that has passed the ready check, so its `fileData` is present. */
+export type ReadyTranslationStatus = TranslationStatus & {
+  fileData: FileProperties;
+};
+
 export interface ImportOptions {
-  filterReadyFiles?: (key: string, status: TranslationStatus) => boolean;
+  filterReadyFiles?: (key: string, status: ReadyTranslationStatus) => boolean;
   onProgress?: (current: number, total: number) => void;
   onImportSuccess?: (key: string) => void;
 }
@@ -24,12 +29,16 @@ export async function getReadyFilesForImport(
   const readyFilesByDocumentLocale = new Map<string, FileProperties>();
 
   for (const [key, status] of translationStatuses.entries()) {
-    if (status.isReady && status.fileData && filterReadyFiles(key, status)) {
+    const readyStatus =
+      status.isReady && status.fileData
+        ? ({ ...status, fileData: status.fileData } as ReadyTranslationStatus)
+        : null;
+    if (readyStatus && filterReadyFiles(key, readyStatus)) {
       const fileData = {
-        fileId: getPublishedId(status.fileData.fileId),
-        versionId: status.fileData.versionId,
-        branchId: status.fileData.branchId,
-        locale: status.fileData.locale,
+        fileId: getPublishedId(readyStatus.fileData.fileId),
+        versionId: readyStatus.fileData.versionId,
+        branchId: readyStatus.fileData.branchId,
+        locale: readyStatus.fileData.locale,
       };
       readyFilesByDocumentLocale.set(
         createStableTranslationKey(

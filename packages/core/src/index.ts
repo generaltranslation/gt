@@ -41,6 +41,7 @@ import {
   SubmitUserEditDiffsPayload,
 } from './translate/submitUserEditDiffs';
 import { _uploadSourceFiles } from './translate/uploadSourceFiles';
+import { _uploadFonts } from './translate/uploadFonts';
 import { _uploadTranslations } from './translate/uploadTranslations';
 import {
   FileUpload,
@@ -48,6 +49,11 @@ import {
   UploadFilesOptions,
   UploadFilesResponse,
 } from './types-dir/api/uploadFiles';
+import type {
+  AssetUpload,
+  UploadAssetsOptions,
+  UploadAssetsResponse,
+} from './types-dir/api/uploadAssets';
 import { _querySourceFile } from './translate/querySourceFile';
 import { ProjectData } from './types-dir/api/project';
 import { _getProjectData } from './projects/getProjectData';
@@ -696,6 +702,29 @@ export class GT extends GTRuntime {
       count: result.count,
       message: `Successfully uploaded ${result.count} files in ${result.batchCount} batch(es)`,
     };
+  }
+
+  /**
+   * Uploads fonts used when translating formats that need the source font.
+   * Persistent and reused across translation jobs; idempotent on the server, so
+   * re-running only stores new fonts.
+   * @param {AssetUpload[]} fonts - Fonts to upload (`content` base64-encoded).
+   * @param {UploadAssetsOptions} options - Optional settings (e.g. timeout).
+   * @returns {Promise<UploadAssetsResponse>} The stored/deduped assets.
+   */
+  async uploadFonts(
+    fonts: AssetUpload[],
+    options: UploadAssetsOptions = {}
+  ): Promise<UploadAssetsResponse> {
+    this._validateAuth('uploadFonts');
+
+    const result = await _uploadFonts(
+      fonts,
+      options,
+      this._getTranslationConfig()
+    );
+
+    return { assets: result.data, count: result.count };
   }
 
   /**

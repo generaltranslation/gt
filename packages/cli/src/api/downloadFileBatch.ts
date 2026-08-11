@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { isBinaryFileFormat } from 'generaltranslation/types';
 import { logger } from '../console/logger.js';
 import { gt } from '../utils/gt.js';
 import { Settings } from '../types/index.js';
@@ -274,6 +275,53 @@ export async function downloadFileBatch(
             : undefined;
         const fileExists = fs.existsSync(outputPath);
 
+        // Binary formats (e.g. LOTTIE zip bundles) carry base64 content that must
+        // not go through the text merge/sort path — decode straight to bytes and
+        // write. Skip only when an unchanged local translation already exists.
+        if (isBinaryFileFormat(file.fileFormat)) {
+          if (!forceDownload && fileExists && downloadedTranslation) {
+            result.skipped.push(requestedFile);
+            continue;
+          }
+          await fs.promises.writeFile(
+            outputPath,
+            Buffer.from(file.data, 'base64')
+          );
+          recordDownloaded(outputPath, {
+            branchId,
+            fileId,
+            versionId,
+            locale,
+            inputPath,
+          });
+          result.successful.push(requestedFile);
+          if (fileId && versionId && locale) {
+            const entry = findOrCreateEntry(
+              entryMap,
+              downloadedVersions.entries,
+              fileId,
+              versionId
+            );
+            entry.fileName = inputPath;
+            entry.translations[locale] = {
+              updatedAt: new Date().toISOString(),
+              // Store a relative path (matches the text path) so gt-lock.json
+              // stays portable and the skip-on-re-download check matches.
+              fileName: getRelative(outputPath),
+            };
+            // A staged entry tracks the whole file, not one locale. Keep it
+            // staged until every configured locale has downloaded, so a partial
+            // batch (locales still translating) doesn't abandon the rest.
+            if (entry.staged) {
+              entry.staged = !options.locales.every(
+                (l) => entry.translations[l]
+              );
+            }
+            didUpdateDownloadedLock = true;
+          }
+          continue;
+        }
+
         // Composite schema files merge translations into the source file itself,
         // so outputPath always exists and the lock can't tell whether derived
         // split outputs (e.g. {locale}/docs.json) are still on disk. Always
@@ -395,11 +443,16 @@ export async function downloadFileBatch(
             versionId
           );
           entry.fileName = inputPath;
-          entry.staged = false;
           entry.translations[locale] = {
             updatedAt: new Date().toISOString(),
             fileName: getRelative(outputPath),
           };
+          // A staged entry tracks the whole file, not one locale. Keep it
+          // staged until every configured locale has downloaded, so a partial
+          // batch (locales still translating) doesn't abandon the rest.
+          if (entry.staged) {
+            entry.staged = !options.locales.every((l) => entry.translations[l]);
+          }
           didUpdateDownloadedLock = true;
         }
       } catch (error) {

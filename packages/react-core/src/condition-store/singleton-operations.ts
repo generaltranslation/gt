@@ -6,7 +6,7 @@ const conditionStoreNotInitializedError = createDiagnosticMessage({
   source: '@generaltranslation/react-core',
   severity: 'Error',
   whatHappened: 'Cannot read GT runtime context before it has been initialized',
-  why: 'The internal ConditionStore is unavailable',
+  why: 'the internal ConditionStore is unavailable',
   fix: 'Call initializeGT() during setup (gt-next runs this automatically) and add a <GTProvider> at the root of your component tree.',
 });
 
