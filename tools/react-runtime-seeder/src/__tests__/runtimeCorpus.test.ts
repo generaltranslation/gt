@@ -40,12 +40,14 @@ describe('React runtime seed corpus', () => {
       if (!expectedByHash) {
         const context = seed.metadata?.context;
         const maxChars = seed.metadata?.maxChars;
+        const requiresReview = seed.metadata?.requiresReview;
         expect(seed.hash).toBe(
           hashSource({
             source: expectedTree,
             dataFormat: 'JSX',
             ...(context && { context }),
             ...(maxChars && { maxChars }),
+            ...(requiresReview && { requiresReview }),
           })
         );
       }
