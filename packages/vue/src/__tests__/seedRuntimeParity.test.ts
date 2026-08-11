@@ -228,6 +228,67 @@ describe('React and Vue seed runtime parity', () => {
     );
   });
 
+  describe('semantic wire fingerprint encoder', () => {
+    it('distinguishes holes, undefined entries, null entries, and array length', () => {
+      expect(semanticWireFingerprint(Array(1))).not.toBe(
+        semanticWireFingerprint([undefined])
+      );
+      expect(semanticWireFingerprint([undefined])).not.toBe(
+        semanticWireFingerprint([null])
+      );
+      expect(semanticWireFingerprint(Array(1))).not.toBe(
+        semanticWireFingerprint(Array(2))
+      );
+    });
+
+    it('distinguishes absent and explicitly undefined object fields', () => {
+      expect(semanticWireFingerprint({})).not.toBe(
+        semanticWireFingerprint({ x: undefined })
+      );
+    });
+
+    it('distinguishes every supported numeric primitive', () => {
+      const values = [NaN, null, Infinity, -Infinity, 0, -0, 1n];
+      const fingerprints = values.map(semanticWireFingerprint);
+
+      expect(new Set(fingerprints).size).toBe(values.length);
+    });
+
+    it('preserves array order while normalizing object key order', () => {
+      expect(semanticWireFingerprint(['a', 'b'])).not.toBe(
+        semanticWireFingerprint(['b', 'a'])
+      );
+      expect(semanticWireFingerprint({ a: 1, b: 2 })).toBe(
+        semanticWireFingerprint({ b: 2, a: 1 })
+      );
+    });
+
+    it('normalizes only unstable element names', () => {
+      expect(
+        semanticWireFingerprint({ t: 'SourceComponent', i: 1, c: 'Child' })
+      ).toBe(
+        semanticWireFingerprint({ t: 'MinifiedComponent', i: 1, c: 'Child' })
+      );
+      expect(semanticWireFingerprint({ t: 'branch' })).not.toBe(
+        semanticWireFingerprint({ t: 'plural' })
+      );
+    });
+
+    it('rejects values outside the persisted wire grammar', () => {
+      const cyclic: Record<string, unknown> = {};
+      cyclic.self = cyclic;
+
+      expect(() => semanticWireFingerprint(cyclic)).toThrow(/cycle/i);
+      expect(() => semanticWireFingerprint(() => undefined)).toThrow(
+        /unsupported/i
+      );
+      expect(() => semanticWireFingerprint(Symbol('wire'))).toThrow(
+        /unsupported/i
+      );
+      expect(() => semanticWireFingerprint(new Date(0))).toThrow(/plain/i);
+    });
+  });
+
   describe('programmatic React-authoritative shape boundaries', () => {
     it('collapses the default-slot wrapper around one custom-component child', () => {
       function Card(): null {
@@ -522,11 +583,73 @@ function assertNonPortableEvidence(fixture: NonPortableSeed): void {
   expect(javascript).toContain('toDisplayString');
 }
 
-/** Fingerprints every canonical wire field, including IDs and content props. */
+/** Fingerprints every wire field without JSON's lossy primitive coercions. */
 function semanticWireFingerprint(value: unknown): string {
-  return createHash('sha256')
-    .update(JSON.stringify(toSemanticWireSource(value)) ?? 'undefined')
-    .digest('hex');
+  return createHash('sha256').update(encodeSemanticWire(value)).digest('hex');
+}
+
+/**
+ * Encodes the persisted wire injectively before hashing it.
+ *
+ * Element labels are the sole normalized field because React derives them
+ * from function names that production minifiers may rewrite. Everything else
+ * remains observable, including undefined object fields, array holes, special
+ * numbers, negative zero, and array cardinality.
+ */
+function encodeSemanticWire(
+  value: unknown,
+  active = new Set<object>()
+): string {
+  if (value === undefined) return 'u;';
+  if (value === null) return 'l;';
+  if (typeof value === 'boolean') return value ? 'b:1;' : 'b:0;';
+  if (typeof value === 'string') return `s:${value.length}:${value}`;
+  if (typeof value === 'bigint') return `g:${value};`;
+  if (typeof value === 'number') {
+    if (Number.isNaN(value)) return 'n:nan;';
+    if (value === Infinity) return 'n:+inf;';
+    if (value === -Infinity) return 'n:-inf;';
+    if (Object.is(value, -0)) return 'n:-0;';
+    return `n:${value};`;
+  }
+  invariant(
+    typeof value === 'object',
+    `Unsupported semantic wire value: ${typeof value}`
+  );
+  invariant(!active.has(value), 'Semantic wire cannot contain a cycle');
+
+  active.add(value);
+  try {
+    if (Array.isArray(value)) {
+      let encoded = `a:${value.length}:[`;
+      for (let index = 0; index < value.length; index += 1) {
+        encoded += Object.hasOwn(value, index)
+          ? `p:${encodeSemanticWire(value[index], active)}`
+          : 'h;';
+      }
+      return `${encoded}]`;
+    }
+
+    const prototype = Object.getPrototypeOf(value);
+    invariant(
+      prototype === Object.prototype || prototype === null,
+      'Semantic wire objects must be plain objects'
+    );
+    const isElement = Object.hasOwn(value, 'i') && !Object.hasOwn(value, 'k');
+    const keys = Object.keys(value)
+      .filter((key) => key !== 't' || !isElement)
+      .sort();
+    let encoded = `o:${keys.length}:{`;
+    for (const key of keys) {
+      encoded += `k:${key.length}:${key}${encodeSemanticWire(
+        (value as Record<string, unknown>)[key],
+        active
+      )}`;
+    }
+    return `${encoded}}`;
+  } finally {
+    active.delete(value);
+  }
 }
 
 /** Collects persisted variable names without normalizing away their contract. */
