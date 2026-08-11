@@ -2,4 +2,6 @@
 '@generaltranslation/react-runtime-seeder': patch
 ---
 
-Support capturing translations rendered by async React server components.
+Support async React server components while preserving exact message/hash
+pairs, deterministic ordering, complete process-tree cleanup, portable paths,
+and actionable CLI diagnostics.

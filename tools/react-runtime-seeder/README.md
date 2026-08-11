@@ -9,6 +9,10 @@ The tool renders in an isolated Node process, intercepts the runtime lookup at
 the `I18nStore` boundary, and hashes with the runtime's `hashMessage()` helper.
 Rendering uses React's async static renderer, so Next-style async server
 components and suspended values settle before their runtime seeds are written.
+Each message is snapshotted before the runtime can mutate it, and captures are
+written in deterministic source order. The isolated render process tree is
+terminated after capture, including child processes or active handles left by
+the rendered module.
 It records each directly imported `<T>` source location without reprinting the
 input, preserving whitespace-sensitive JSX behavior. Seed files that import
 shared components from `gt-next` are intentionally resolved to the same
