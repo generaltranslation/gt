@@ -9,6 +9,7 @@ import {
   createRenderer,
   createSSRApp,
   createStaticVNode,
+  createVNode,
   defineComponent,
   h,
   nextTick,
@@ -43,7 +44,7 @@ import {
 import type { TranslationCatalog } from '../index';
 
 describe('gt-vue runtime', () => {
-  it('preserves authored Fragments while flattening array-child compiler wrappers', () => {
+  it('preserves authored Fragments while flattening compiler structural wrappers', () => {
     const defaultSlot = vi.fn(() => [h('span', 'Fragment child')]);
     const ignoredSlot = vi.fn(() => [h('span', 'Ignored child')]);
     const authoredFragment = h(Fragment, null, {
@@ -64,7 +65,7 @@ describe('gt-vue runtime', () => {
     expect(serializeVueChildren([h(Fragment)])).toEqual({ t: 'C1', i: 1 });
     expect(
       serializeVueChildren([
-        h(Fragment, null, [h('span', 'Compiler wrapper child')]),
+        createVNode(Fragment, null, [h('span', 'Compiler wrapper child')], 64),
       ])
     ).toEqual({
       t: 'span',
@@ -508,7 +509,7 @@ describe('gt-vue runtime', () => {
     expect(html).toContain('<article><span>Runtime label</span></article>');
   });
 
-  it('materializes each authored custom-component slot once', async () => {
+  it('materializes every authored static custom-component slot exactly once', async () => {
     const directCalls = vi.fn();
     const ignoredCalls = vi.fn();
     const forwardedCalls = vi.fn();
@@ -580,6 +581,10 @@ describe('gt-vue runtime', () => {
     expect(html).not.toContain('Source direct child');
     expect(html).not.toContain('Source forwarded child');
     expect(directCalls).toHaveBeenCalledOnce();
+    // Vue exposes authored custom-component children only through the default
+    // slot function. T must materialize it even when that component does not
+    // render the slot so extraction and runtime hash the same static source.
+    // Runtime-dependent children belong inside Var and remain opaque above.
     expect(ignoredCalls).toHaveBeenCalledOnce();
     expect(forwardedCalls).toHaveBeenCalledOnce();
   });
@@ -1476,7 +1481,12 @@ describe('gt-vue runtime', () => {
                   default: () =>
                     h(Suspense, null, {
                       default: () =>
-                        h(Fragment, null, [h('span', 'A'), h('span', 'B')]),
+                        createVNode(
+                          Fragment,
+                          null,
+                          [h('span', 'A'), h('span', 'B')],
+                          64
+                        ),
                       fallback: innerFallback,
                     }),
                   fallback: outerFallback,
@@ -1550,7 +1560,7 @@ describe('gt-vue runtime', () => {
     }
   });
 
-  it('preserves the first repeated Suspense root across locale transitions', async () => {
+  it('preserves React fallback props on repeated childless Suspense roots', async () => {
     let setupCount = 0;
     const Stateful = defineComponent({
       name: 'SuspenseStateful',
@@ -1594,7 +1604,7 @@ describe('gt-vue runtime', () => {
       expect(textContent(mounted.root)).toBe('Source:1|');
       await plugin.setLocale('fr');
       await nextTick();
-      expect(textContent(mounted.root)).toBe('Premier:1|Deuxième:2|');
+      expect(textContent(mounted.root)).toBe('Source:1|Source:2|');
       await plugin.setLocale('en');
       await nextTick();
       expect(textContent(mounted.root)).toBe('Source:1|');
@@ -1771,12 +1781,11 @@ describe('gt-vue runtime', () => {
       setup() {
         return () =>
           h(T, null, {
-            default: () =>
-              h(Fragment, null, [
-                'Hello',
-                createCommentVNode('translator note'),
-                ' world',
-              ]),
+            default: () => [
+              'Hello',
+              createCommentVNode('translator note'),
+              ' world',
+            ],
           });
       },
     });
@@ -2173,7 +2182,7 @@ describe('gt-vue runtime', () => {
     );
   });
 
-  it('applies translated content props to leaf elements', async () => {
+  it('retains source content props on childless elements like React', async () => {
     const plugin = createGT({
       loadTranslations: async () => ({
         image: { t: 'img', i: 1, d: { alt: 'Portrait traduit' } },
@@ -2194,8 +2203,8 @@ describe('gt-vue runtime', () => {
     });
 
     const html = await renderWithPlugin(Root, plugin);
-    expect(html).toContain('alt="Portrait traduit"');
-    expect(html).not.toContain('alt="Source portrait"');
+    expect(html).toContain('alt="Source portrait"');
+    expect(html).not.toContain('alt="Portrait traduit"');
   });
 
   it('uses pipeline locales instead of public preferences for rich formatters', async () => {
@@ -2309,7 +2318,7 @@ describe('gt-vue runtime', () => {
       stripFragmentMarkers(
         await renderWithPlugin(PartialRoot, translatedPlugin)
       )
-    ).toBe(`<span title="Titre">${expected('fr-FR')}</span>`);
+    ).toBe(`<span title="Source title">${expected('fr-FR')}</span>`);
   });
 
   it('requires explicit preloading for an asynchronous SSR locale', async () => {

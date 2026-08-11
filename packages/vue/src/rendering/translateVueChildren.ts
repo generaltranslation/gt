@@ -47,16 +47,20 @@ type Transformation = 'branch' | 'fragment' | 'plural' | 'variable' | undefined;
 /**
  * Empty-rendering primitives that React preserves verbatim in branch source.
  *
- * These values cannot be part of `SourceNode`: Vue renders them as no child,
- * while the persisted GT wire format distinguishes `true`, `false`, and
- * `null`. Keeping them beside the render nodes preserves both contracts.
+ * Vue renders these values as no child, while the persisted GT wire format
+ * distinguishes `true`, `false`, and `null`. Keeping them as wire-only source
+ * nodes preserves both contracts.
  */
 type BranchWireLiteral = boolean | null;
 type SourceCardinality = 'array' | 'scalar';
 
 type BranchSourceInput = {
+  /** Explicit wire cardinality for named slots, including an empty slot. */
+  cardinality?: SourceCardinality;
   /** Original JavaScript truthiness for a direct primitive attribute. */
   scalarTruthy?: boolean;
+  /** Whether Vue owns the outer array returned by a named slot. */
+  slotWrapped: boolean;
   value: unknown;
   /** Persisted primitive that differs from its empty Vue render shape. */
   wireLiteral?: BranchWireLiteral;
@@ -72,6 +76,21 @@ type SelectedBranchSource = {
 /** Prevents text on opposite sides of an ignored Vue comment from merging. */
 const textBoundary = Symbol('gt-vue-text-boundary');
 
+/** Marks the raw child container captured directly from T's component VNode. */
+const rawTChildren = Symbol('gt-vue-raw-t-children');
+
+type RawTChildren = {
+  /** Whether Vue wrapped an authored slot result in its outer child array. */
+  slotWrapped: boolean;
+  [rawTChildren]: true;
+  value: unknown;
+};
+
+type NormalizedRootChildren = {
+  slotWrapped: boolean;
+  value: unknown;
+};
+
 type SourceElement = {
   branches: Record<string, SourceNode[]>;
   /** Semantic wire shape for each branch, independent from Vue slot arrays. */
@@ -81,6 +100,10 @@ type SourceElement = {
   /** Boolean/null values preserved independently from empty render nodes. */
   branchWireLiterals: Record<string, BranchWireLiteral>;
   children: SourceNode[];
+  /** React-compatible scalar/array shape of the authored children. */
+  childrenCardinality: SourceCardinality;
+  /** React's `props.children` gate before Vue normalized the child container. */
+  childrenTruthy: boolean;
   id: number;
   identity: string;
   preserveExplicitKey: boolean;
@@ -91,7 +114,11 @@ type SourceElement = {
   vnode: VNode;
 };
 
-type SourceNode = SourceElement | string | typeof textBoundary;
+type SourceNode =
+  | BranchWireLiteral
+  | SourceElement
+  | string
+  | typeof textBoundary;
 
 type OwnedSlots = Slots & {
   /** Component instance that authored raw render-function slots. */
@@ -144,7 +171,7 @@ type VNodeWithRenderMetadata = VNode & {
 };
 
 export function translateVueChildren(
-  children: VNode[],
+  children: unknown,
   state: GTState,
   options: RichTranslationOptions,
   identityCache: TranslationIdentityCache = createTranslationIdentityCache()
@@ -152,7 +179,8 @@ export function translateVueChildren(
   const identityRender = createTranslationIdentityRender(identityCache);
   let rendered: VNodeChild;
   try {
-    const source = createSourceNodes(children, identityRender);
+    const root = normalizeRootChildren(children);
+    const source = createSourceNodes(root, identityRender);
     if (state.getLocale() === state.defaultLocale) {
       rendered = renderDefaultNodes(
         source,
@@ -166,7 +194,7 @@ export function translateVueChildren(
         hashSource({
           context: options.context ?? options.$context,
           dataFormat: 'JSX',
-          source: serializeNodes(source),
+          source: serializeRootNodes(source, root),
         });
       const target = state.getCatalog()[hash];
       rendered =
@@ -177,7 +205,15 @@ export function translateVueChildren(
               identityRender,
               state.defaultLocale
             )
-          : renderNodes(source, target, state, identityRender);
+          : renderNodes(
+              source,
+              target,
+              state,
+              identityRender,
+              getNormalizedChildrenShape(root.value, root.slotWrapped)
+                .cardinality,
+              getNormalizedChildrenShape(root.value, root.slotWrapped).truthy
+            );
     }
   } catch (error) {
     rollbackTranslationIdentityCache(identityRender);
@@ -261,19 +297,82 @@ function rollbackTranslationIdentityCache(
  * element IDs, variable names, and branches before `hashSource()` deliberately
  * removes identity-only fields.
  */
-export function serializeVueChildren(children: VNode[]): JsxChildren {
+export function serializeVueChildren(children: unknown): JsxChildren {
   const identityCache = createTranslationIdentityCache();
-  return serializeNodes(
-    createSourceNodes(children, createTranslationIdentityRender(identityCache))
+  const root = normalizeRootChildren(children);
+  return serializeRootNodes(
+    createSourceNodes(root, createTranslationIdentityRender(identityCache)),
+    root
+  );
+}
+
+/**
+ * Materializes T's raw authored slot before Vue normalizes nested arrays into
+ * Fragment VNodes.
+ *
+ * That raw boundary is observable on the component VNode even though the
+ * public `slots.default()` result has already erased the distinction between
+ * an explicit array expression and an authored Fragment. Invoking it under
+ * its owner also preserves scoped CSS and reactive dependency ownership.
+ */
+export function readRawTChildren(
+  vnode: VNode,
+  normalizedSlots: Slots
+): unknown {
+  const rawChildren = vnode.children;
+  if (!isSlots(rawChildren)) {
+    return {
+      slotWrapped: false,
+      [rawTChildren]: true,
+      // A component VNode with no authored children stores null. React's
+      // equivalent `props.children` is undefined.
+      value: rawChildren === null ? undefined : rawChildren,
+    } satisfies RawTChildren;
+  }
+
+  const rawDefault = rawChildren.default;
+  return {
+    slotWrapped: true,
+    [rawTChildren]: true,
+    value:
+      typeof rawDefault === 'function'
+        ? invokeSlotWithOwner(rawChildren, rawDefault)
+        : normalizedSlots.default?.(),
+  } satisfies RawTChildren;
+}
+
+/** Unwraps T's internal raw-child record without exposing it publicly. */
+function normalizeRootChildren(children: unknown): NormalizedRootChildren {
+  if (isRawTChildren(children)) {
+    return { slotWrapped: children.slotWrapped, value: children.value };
+  }
+  // serializeVueChildren() accepts the raw array returned by an official Vue
+  // JSX/SFC slot, so its public test seam defaults to slot-wrapper semantics.
+  return { slotWrapped: true, value: children };
+}
+
+function isRawTChildren(children: unknown): children is RawTChildren {
+  return (
+    !!children &&
+    typeof children === 'object' &&
+    (children as Partial<RawTChildren>)[rawTChildren] === true
   );
 }
 
 function createSourceNodes(
-  children: unknown,
+  root: NormalizedRootChildren,
   identityRender: TranslationIdentityRender
 ): SourceNode[] {
   const index = { value: 0 };
-  return visitChildren(children, index, 'root', identityRender);
+  return visitChildren(
+    root.value,
+    index,
+    'root',
+    identityRender,
+    new Map(),
+    false,
+    root.slotWrapped
+  );
 }
 
 function visitChildren(
@@ -282,29 +381,62 @@ function visitChildren(
   identityScope: string,
   identityRender: TranslationIdentityRender,
   identityOccurrences: Map<string, number> = new Map(),
-  transparentKeyScope = false
+  transparentKeyScope = false,
+  normalizedArrayWrapper = true
 ): SourceNode[] {
   if (Array.isArray(children)) {
-    return children.flatMap((child) =>
-      visitChildren(
+    // Vue's compiler wraps one scalar child in an array. Preserve a direct
+    // null/boolean at that boundary because React serializes those scalar
+    // roots verbatim. A nested array is authored array content instead;
+    // React.Children.map flattens it and removes nullish/boolean members.
+    if (
+      normalizedArrayWrapper &&
+      children.length === 1 &&
+      !Array.isArray(children[0])
+    ) {
+      return visitChildren(
+        children[0],
+        index,
+        identityScope,
+        identityRender,
+        identityOccurrences,
+        transparentKeyScope,
+        true
+      );
+    }
+    const authoredChildren =
+      normalizedArrayWrapper &&
+      children.length === 1 &&
+      Array.isArray(children[0])
+        ? children[0]
+        : children;
+    return authoredChildren.flatMap((child) => {
+      if (child == null || typeof child === 'boolean') return [];
+      return visitChildren(
         child,
         index,
         identityScope,
         identityRender,
         identityOccurrences,
-        transparentKeyScope
-      )
-    );
+        transparentKeyScope,
+        false
+      );
+    });
   }
-  if (children == null || typeof children === 'boolean') return [];
+  if (children === undefined) return [];
+  if (children === null || typeof children === 'boolean') return [children];
   if (!isVNode(children)) return [String(children)];
   if (children.type === Comment) return [textBoundary];
   if (children.type === Text) return [String(children.children ?? '')];
-  // Vue uses array-child Fragments as transparent compiler/runtime wrappers.
-  // An explicitly authored Fragment imported as a setup binding instead
-  // arrives with a slot object (or null when empty), matching React's semantic
-  // Fragment element and therefore participating in IDs and hashing below.
-  if (children.type === Fragment && Array.isArray(children.children)) {
+  // Vue's template compiler uses flagged Fragments as transparent structural
+  // wrappers (for example, `v-for`). Authored JSX Fragments have patch flag
+  // zero and remain semantic React.Fragment peers, including an authored
+  // Fragment whose child is an explicit empty array.
+  if (
+    children.type === Fragment &&
+    Array.isArray(children.children) &&
+    children.patchFlag !== 0
+  ) {
     const fragmentChildren = isSlots(children.children)
       ? children.children.default?.()
       : children.children;
@@ -350,21 +482,27 @@ function visitChildren(
   const defaultSlot = variable
     ? { children: undefined, replace: false }
     : readDefaultSlot(children);
+  const sourceChildren = variable
+    ? []
+    : visitChildren(
+        defaultSlot.children,
+        index,
+        transformation === 'branch' || transformation === 'plural'
+          ? `${identity}/default`
+          : identity,
+        identityRender
+      );
+  const childrenShape = getNormalizedChildrenShape(
+    defaultSlot.shapeInput ?? defaultSlot.children
+  );
   const source: SourceElement = {
     branches: {},
     branchCardinalities: {},
     branchScalarTruthiness: {},
     branchWireLiterals: {},
-    children: variable
-      ? []
-      : visitChildren(
-          defaultSlot.children,
-          index,
-          transformation === 'branch' || transformation === 'plural'
-            ? `${identity}/default`
-            : identity,
-          identityRender
-        ),
+    children: sourceChildren,
+    childrenCardinality: childrenShape.cardinality,
+    childrenTruthy: childrenShape.truthy,
     id,
     identity,
     preserveExplicitKey: !transparentKeyScope,
@@ -469,6 +607,7 @@ function getVariable(
 function readDefaultSlot(vnode: VNode): {
   children: unknown;
   replace: boolean;
+  shapeInput?: unknown;
 } {
   // A Static VNode stores pre-rendered HTML in `children`, not translatable
   // text children. Preserve it as an opaque source node rather than treating
@@ -477,9 +616,13 @@ function readDefaultSlot(vnode: VNode): {
     return { children: undefined, replace: false };
   }
   if (vnode.type === Suspense) {
+    const content = (vnode as VNodeWithRenderMetadata).ssContent;
     return {
-      children: (vnode as VNodeWithRenderMetadata).ssContent,
+      children: content,
       replace: true,
+      ...(content?.type === Fragment &&
+        Array.isArray(content.children) &&
+        content.patchFlag !== 0 && { shapeInput: content.children }),
     };
   }
   if (vnode.type === Fragment && !isSlots(vnode.children)) {
@@ -489,7 +632,12 @@ function readDefaultSlot(vnode: VNode): {
     return { children: vnode.children, replace: true };
   }
   if (!isSlots(vnode.children)) {
-    return { children: vnode.children, replace: false };
+    // Vue stores null for an element with no child argument. An authored JSX
+    // null is preserved as the single member of the compiler's child array.
+    return {
+      children: vnode.children === null ? undefined : vnode.children,
+      replace: false,
+    };
   }
   const slots = vnode.children;
   const defaultSlot = slots.default;
@@ -537,8 +685,31 @@ function getBranches(
         (transformation === 'branch' || isAcceptedPluralForm(key)) &&
         typeof slot === 'function'
       ) {
+        const value = invokeSlotWithOwner(vnode.children, slot);
+        // React treats an undefined branch prop as absent and falls back to
+        // children. Vue's slot wrapper preserves that authored distinction.
+        if (
+          value === undefined ||
+          (Array.isArray(value) && value.length === 1 && value[0] === undefined)
+        ) {
+          continue;
+        }
+        // The existence of a named slot is semantic branch data. Unlike an
+        // empty default slot, an empty named slot must remain an explicit []
+        // branch in the persisted React wire format.
+        const shape =
+          Array.isArray(value) && value.length === 0
+            ? ({ cardinality: 'array', truthy: true } as const)
+            : getNormalizedChildrenShape(value);
+        const wireLiteral = getNamedSlotWireLiteral(value);
         inputs[key] = {
-          value: invokeSlotWithOwner(vnode.children, slot),
+          cardinality: shape.cardinality,
+          ...(shape.cardinality === 'scalar' && {
+            scalarTruthy: shape.truthy,
+          }),
+          slotWrapped: true,
+          value,
+          ...(wireLiteral !== undefined && { wireLiteral }),
         };
       }
     }
@@ -549,7 +720,9 @@ function getBranches(
       !Object.prototype.hasOwnProperty.call(inputs, key)
     ) {
       inputs[key] = {
-        scalarTruthy: Boolean(value),
+        cardinality: Array.isArray(value) ? 'array' : 'scalar',
+        ...(!Array.isArray(value) && { scalarTruthy: Boolean(value) }),
+        slotWrapped: false,
         value,
         ...(isBranchWireLiteral(value) && { wireLiteral: value }),
       };
@@ -576,7 +749,9 @@ function getBranches(
       acceptedInputs.map(([key, input]) => [
         key,
         input.scalarTruthy === undefined
-          ? getSourceCardinality(nodes[key])
+          ? (input.cardinality ??
+            getNormalizedChildrenShape(input.value, input.slotWrapped)
+              .cardinality)
           : 'scalar',
       ])
     ),
@@ -613,7 +788,10 @@ function getBranchRenderNodes(
     input.value,
     { value: branchElementId },
     `${identity}/branch:${key.length}:${key}`,
-    identityRender
+    identityRender,
+    new Map(),
+    false,
+    input.slotWrapped
   );
 }
 
@@ -622,16 +800,93 @@ function isBranchWireLiteral(value: unknown): value is BranchWireLiteral {
   return value === null || typeof value === 'boolean';
 }
 
+/** Returns the scalar literal inside Vue's one-element named-slot wrapper. */
+function getNamedSlotWireLiteral(
+  value: unknown
+): BranchWireLiteral | undefined {
+  if (isBranchWireLiteral(value)) return value;
+  if (
+    Array.isArray(value) &&
+    value.length === 1 &&
+    isBranchWireLiteral(value[0])
+  ) {
+    return value[0];
+  }
+  return undefined;
+}
+
 function isSlots(children: unknown): children is Slots {
   return !!children && typeof children === 'object' && !Array.isArray(children);
 }
 
-function serializeNodes(nodes: SourceNode[]): JsxChildren {
-  const serialized = nodes.filter(isContentNode).map(serializeNode);
-  return serialized.length === 1 ? serialized[0] : serialized;
+/** Serializes the normalized outer slot while preserving an absent slot. */
+function serializeRootNodes(
+  nodes: SourceNode[],
+  root: NormalizedRootChildren
+): JsxChildren {
+  if (root.value === undefined) return undefined as unknown as JsxChildren;
+  return serializeNodesWithCardinality(
+    nodes,
+    getNormalizedChildrenShape(root.value, root.slotWrapped).cardinality
+  );
 }
 
-function serializeNode(node: SourceElement | string): JsxChild {
+/** Serializes children with the scalar/array shape React assigned them. */
+function serializeNodesWithCardinality(
+  nodes: SourceNode[],
+  cardinality: SourceCardinality
+): JsxChildren {
+  const serialized = nodes.filter(isContentNode).map(serializeNode);
+  return cardinality === 'array' ? serialized : (serialized[0] as JsxChildren);
+}
+
+/**
+ * Recovers authored child shape from Vue's normalized child containers.
+ *
+ * Vue wraps the children of slots, JSX elements, and authored Fragments in an
+ * array even when the source has one scalar child. A nested array is the one
+ * observable representation of an explicitly authored array expression. This
+ * mirrors React's scalar/array and truthiness gates without treating Vue's
+ * framework-owned wrapper as source content.
+ */
+function getNormalizedChildrenShape(
+  input: unknown,
+  normalizedArrayWrapper = true
+): {
+  cardinality: SourceCardinality;
+  truthy: boolean;
+} {
+  if (!Array.isArray(input)) {
+    return { cardinality: 'scalar', truthy: Boolean(input) };
+  }
+  if (!normalizedArrayWrapper) {
+    return { cardinality: 'array', truthy: true };
+  }
+  if (input.some(Array.isArray)) {
+    return { cardinality: 'array', truthy: true };
+  }
+  const meaningfulInputs = input.filter(
+    (child) => !(isVNode(child) && child.type === Comment)
+  );
+  if (meaningfulInputs.length === 1) {
+    return { cardinality: 'scalar', truthy: Boolean(meaningfulInputs[0]) };
+  }
+  if (meaningfulInputs.length === 0) {
+    // An empty slot return is Vue's framework wrapper around no child. An
+    // authored empty array remains nested (`[[]]`) and takes the branch above.
+    return { cardinality: 'scalar', truthy: false };
+  }
+  // Arrays are truthy in React even when they are empty or contain only
+  // values React.Children removes from the serialized result.
+  return { cardinality: 'array', truthy: true };
+}
+
+function serializeNode(
+  node: SourceElement | string | BranchWireLiteral
+): JsxChild {
+  if (node === null || typeof node === 'boolean') {
+    return node as unknown as JsxChild;
+  }
   if (typeof node === 'string') return node;
   if (node.transformation === 'variable') {
     return {
@@ -665,7 +920,9 @@ function serializeNode(node: SourceElement | string): JsxChild {
     t: getElementName(node.vnode, node.id),
     i: node.id,
     ...(Object.keys(data).length && { d: data }),
-    ...(hasContentNodes(node.children) && { c: serializeNodes(node.children) }),
+    ...(node.childrenTruthy && {
+      c: serializeNodesWithCardinality(node.children, node.childrenCardinality),
+    }),
   };
 }
 
@@ -683,7 +940,7 @@ function serializeBranch(
   if (Object.hasOwn(node.branchWireLiterals, key)) {
     return node.branchWireLiterals[key] as unknown as JsxChildren;
   }
-  return serializeNodes(branch);
+  return serializeNodesWithCardinality(branch, node.branchCardinalities[key]);
 }
 
 /**
@@ -731,9 +988,8 @@ function renderNodes(
   }
 
   const targets = targetIsArray ? target : [target];
-  const sourceElements = source.filter(
-    (node): node is SourceElement =>
-      typeof node !== 'string' && node !== textBoundary
+  const sourceElements = source.filter((node): node is SourceElement =>
+    isSourceElement(node)
   );
   const variables = new Map(
     sourceElements
@@ -889,32 +1145,27 @@ function renderElement(
     );
   }
   if (source.transformation === 'fragment') {
-    return renderNodes(source.children, target.c, state, identityRender);
+    return renderNodes(
+      source.children,
+      target.c,
+      state,
+      identityRender,
+      source.childrenCardinality,
+      source.childrenTruthy
+    );
   }
-  const translatedProps = getTranslatedProps(target);
-  const hasAuthoredChildren =
-    hasContentNodes(source.children) || source.replaceDefaultSlot;
-  if (target.c == null || !hasAuthoredChildren) {
-    return hasAuthoredChildren
-      ? cloneWithChildren(
-          source.vnode,
-          renderDefaultNodes(
-            source.children,
-            state,
-            identityRender,
-            state.getLocale()
-          ),
-          translatedProps
-        )
-      : Object.keys(translatedProps).length
-        ? cloneWithProps(source.vnode, translatedProps)
-        : source.vnode;
+  // React applies translated children and content props together only when
+  // both authored `props.children` and translated `c` are truthy. Preserve the
+  // complete source element for every other shape, including leaf elements,
+  // zero/empty-string children, and an empty translated string.
+  if (!source.childrenTruthy || !target.c) {
+    return renderDefaultNode(source, state, identityRender, state.getLocale());
   }
 
   return cloneWithChildren(
     source.vnode,
     renderNodes(source.children, target.c, state, identityRender),
-    translatedProps
+    getTranslatedProps(target)
   );
 }
 
@@ -948,8 +1199,11 @@ function getSelectedSourceBranch(
 ): SelectedBranchSource {
   if (!branch || !Object.hasOwn(source.branches, branch)) {
     return {
-      cardinality: getSourceCardinality(source.children),
+      cardinality: source.childrenCardinality,
       nodes: source.children,
+      ...(source.childrenCardinality === 'scalar' && {
+        scalarTruthy: source.childrenTruthy,
+      }),
     };
   }
 
@@ -958,8 +1212,11 @@ function getSelectedSourceBranch(
   // while a null Branch value remains a selected, empty branch.
   if (source.transformation === 'plural' && wireLiteral === null) {
     return {
-      cardinality: getSourceCardinality(source.children),
+      cardinality: source.childrenCardinality,
       nodes: source.children,
+      ...(source.childrenCardinality === 'scalar' && {
+        scalarTruthy: source.childrenTruthy,
+      }),
     };
   }
   return {
@@ -969,7 +1226,7 @@ function getSelectedSourceBranch(
   };
 }
 
-/** Returns the scalar/array shape produced by `serializeNodes()`. */
+/** Returns the scalar/array shape for legacy call sites without raw input. */
 function getSourceCardinality(nodes: SourceNode[]): SourceCardinality {
   return nodes.filter(isContentNode).length === 1 ? 'scalar' : 'array';
 }
@@ -986,8 +1243,20 @@ function getSelectedTargetBranch(
   return target.c;
 }
 
-function isContentNode(node: SourceNode): node is SourceElement | string {
+function isContentNode(
+  node: SourceNode
+): node is SourceElement | string | BranchWireLiteral {
   return node !== textBoundary;
+}
+
+/** True for a source element rather than text, a wire-only literal, or a boundary. */
+function isSourceElement(node: SourceNode): node is SourceElement {
+  return !!node && typeof node === 'object';
+}
+
+/** Vue renders React's boolean/null wire literals as empty children. */
+function isRenderableNode(node: SourceNode): node is SourceElement | string {
+  return typeof node === 'string' || isSourceElement(node);
 }
 
 function hasContentNodes(nodes: SourceNode[]): boolean {
@@ -998,7 +1267,7 @@ function getTranslatedProps(target: JsxElement): Record<string, string> {
   const result: Record<string, string> = {};
   for (const [shortName, propName] of Object.entries(HTML_CONTENT_PROPS)) {
     const value = target.d?.[shortName as keyof HtmlContentPropKeysRecord];
-    if (typeof value === 'string') result[propName] = value;
+    if (typeof value === 'string' && value) result[propName] = value;
   }
   return result;
 }
@@ -1011,7 +1280,7 @@ function renderDefaultNodes(
 ): VNodeChild[] {
   const occurrences = new Map<SourceElement, number>();
   return nodes
-    .filter(isContentNode)
+    .filter(isRenderableNode)
     .map((node) =>
       typeof node === 'string'
         ? node

@@ -184,6 +184,51 @@ describe('Branch and Plural attributes', () => {
     ]);
   });
 
+  it('preserves empty and literal named slots independently from default slots', () => {
+    const source = serializeVueChildren([
+      h(
+        Branch,
+        { branch: 'empty' },
+        {
+          empty: () => [],
+          false: () => [false],
+          null: () => [null],
+          true: () => [true],
+          undefined: () => [undefined],
+        }
+      ),
+      h(
+        Plural,
+        { n: 1 },
+        {
+          few: () => [false],
+          many: () => [null],
+          one: () => [],
+          other: () => [true],
+        }
+      ),
+    ]);
+
+    expect(source).toEqual([
+      {
+        t: 'Branch',
+        i: 1,
+        d: {
+          b: { empty: [], false: false, null: null, true: true },
+          t: 'b',
+        },
+      },
+      {
+        t: 'Plural',
+        i: 2,
+        d: {
+          b: { few: false, many: null, one: [], other: true },
+          t: 'p',
+        },
+      },
+    ]);
+  });
+
   it('does not invoke unsupported Plural named slots while serializing rich source', () => {
     let acceptedCalls = 0;
     let ignoredCalls = 0;
@@ -331,6 +376,34 @@ describe('Branch and Plural attributes', () => {
     expect(html).toContain('Slot');
     expect(html).not.toContain('Attribute');
     expect(html).not.toContain('Fallback');
+  });
+
+  it('keeps empty Branch slots selected and lets null Plural slots fall back', async () => {
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(T, null, {
+            default: () => [
+              'before',
+              h(
+                Branch,
+                { branch: 'empty' },
+                { default: () => ['Branch fallback'], empty: () => [] }
+              ),
+              'after|',
+              h(
+                Plural,
+                { n: 1 },
+                { default: () => ['Plural fallback'], one: () => [null] }
+              ),
+            ],
+          });
+      },
+    });
+
+    expect(stripFragmentMarkers(await renderWithRoot(Root, createGT()))).toBe(
+      'beforeafter|Plural fallback'
+    );
   });
 
   it('selects a data-* named slot without treating the matching attribute as content', async () => {
