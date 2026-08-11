@@ -4,11 +4,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { parseCliArgs } from './args';
 import { captureRuntimeSeeds } from './capture';
-import {
-  createOutputError,
-  createSeederError,
-  createUnexpectedSeederError,
-} from './diagnostics';
+import { createOutputError, createUnexpectedSeederError } from './diagnostics';
 import { resolveCaptureInput } from './input';
 import { getDefaultOutputName } from './output';
 
@@ -32,12 +28,6 @@ async function main(): Promise<void> {
   if (values.help) {
     process.stdout.write(help);
     return;
-  }
-  if (values.out && values.stdout) {
-    throw createSeederError({
-      whatHappened: '--out and --stdout cannot be used together',
-      fix: 'Choose a candidate file or stdout as the output destination.',
-    });
   }
   const input = await resolveCaptureInput(values, readStdin);
 

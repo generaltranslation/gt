@@ -93,7 +93,7 @@ describe('captureRuntimeSeeds', () => {
           process.getBuiltinModule('node:child_process').spawn(
             process.execPath,
             ['-e', ${JSON.stringify(descendant)}],
-            { stdio: 'ignore' }
+            { detached: true, stdio: 'ignore' }
           );
           return 'Child process';
         })()}</T>`,

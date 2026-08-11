@@ -14,4 +14,20 @@ describe('parseCliArgs', () => {
       'The command-line arguments are invalid'
     );
   });
+
+  it('rejects an empty output path before rendering', () => {
+    expect(() => parseCliArgs(['--code', '<T>Hello</T>', '--out='])).toThrow(
+      'The runtime seed output path is empty'
+    );
+  });
+
+  it('rejects conflicting output destinations even with an empty path', () => {
+    expect(() =>
+      parseCliArgs(['--code', '<T>Hello</T>', '--out=', '--stdout'])
+    ).toThrow('The runtime seed output path is empty');
+
+    expect(() =>
+      parseCliArgs(['--code', '<T>Hello</T>', '--out=seed.json', '--stdout'])
+    ).toThrow('--out and --stdout cannot be used together');
+  });
 });
