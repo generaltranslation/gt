@@ -1,7 +1,11 @@
 import path from 'node:path';
 import type * as t from '@babel/types';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
-import type { VueExtractionResult, VueSourceCode } from '../types.js';
+import type {
+  VueExtractionMetadata,
+  VueExtractionResult,
+  VueSourceCode,
+} from '../types.js';
 import type { ExtractionLocation, VueExtractionContext } from './types.js';
 
 export function createVueExtractionContext(
@@ -67,10 +71,10 @@ export function babelLocation(
 export function createInlineMetadata(
   context: VueExtractionContext,
   location: ExtractionLocation | undefined,
-  translationContext?: string
+  translationMetadata: ExtractedTMetadata = {}
 ): VueExtractionResult['metadata'] {
   const metadata: VueExtractionResult['metadata'] = {
-    ...(translationContext !== undefined && { context: translationContext }),
+    ...translationMetadata,
     ...(context.relativeFile && { filePaths: [context.relativeFile] }),
   };
 
@@ -92,6 +96,69 @@ export function createInlineMetadata(
   }
 
   return metadata;
+}
+
+export type TMetadataKey = 'context' | 'id' | 'maxChars' | 'requiresReview';
+
+export type ExtractedTMetadata = Pick<VueExtractionMetadata, TMetadataKey>;
+
+const T_METADATA_KEYS: Readonly<Record<string, TMetadataKey>> = {
+  context: 'context',
+  $context: 'context',
+  id: 'id',
+  $id: 'id',
+  maxChars: 'maxChars',
+  $maxChars: 'maxChars',
+  requiresReview: 'requiresReview',
+  $requiresReview: 'requiresReview',
+};
+
+const TEMPLATE_T_METADATA_KEYS: Readonly<Record<string, TMetadataKey>> = {
+  'max-chars': 'maxChars',
+  '$max-chars': 'maxChars',
+  'requires-review': 'requiresReview',
+  '$requires-review': 'requiresReview',
+};
+
+/** Maps React-compatible sugar props onto their canonical metadata key. */
+export function normalizeTMetadataKey(
+  name: string,
+  allowTemplateCase = false
+): TMetadataKey | undefined {
+  return (
+    T_METADATA_KEYS[name] ||
+    (allowTemplateCase ? TEMPLATE_T_METADATA_KEYS[name] : undefined)
+  );
+}
+
+/**
+ * Applies one statically evaluated T metadata value using React's validation
+ * and normalization rules. Invalid values leave metadata untouched.
+ */
+export function applyStaticTMetadataValue(
+  metadata: ExtractedTMetadata,
+  key: TMetadataKey,
+  value: StaticPrimitive
+): boolean {
+  if (key === 'context' || key === 'id') {
+    if (typeof value !== 'string') return false;
+    metadata[key] = value;
+    return true;
+  }
+  if (key === 'maxChars') {
+    if (
+      typeof value !== 'number' ||
+      !Number.isFinite(value) ||
+      !Number.isInteger(value)
+    ) {
+      return false;
+    }
+    metadata.maxChars = Math.abs(value);
+    return true;
+  }
+  if (typeof value !== 'boolean') return false;
+  metadata.requiresReview = value;
+  return true;
 }
 
 /** Extracts source lines around a 1-based line range. */

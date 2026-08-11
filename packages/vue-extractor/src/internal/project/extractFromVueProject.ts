@@ -380,6 +380,10 @@ function addCatalogHash(
     // although its runtime sanitizer has always supported those React values.
     source: result.source as JsxChildren | string,
     ...(result.metadata.context && { context: result.metadata.context }),
+    ...(result.metadata.maxChars != null && {
+      maxChars: result.metadata.maxChars,
+    }),
+    ...(result.metadata.requiresReview === true && { requiresReview: true }),
     dataFormat: result.dataFormat,
   });
   return {

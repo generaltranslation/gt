@@ -12,9 +12,26 @@ type TProps = {
   _hash?: string;
   /** @internal React-compatible alias accepted for compiler output. */
   $context?: string;
+  /** @internal React-compatible alias accepted for compiler output. */
+  $id?: string;
+  /** @internal React-compatible alias accepted for compiler output. */
+  $maxChars?: number;
+  /** @internal React-compatible alias accepted for compiler output. */
+  $requiresReview?: boolean;
   /** Translation context using a Vue-template-friendly prop name. */
   context?: string;
+  /** Deprecated custom message ID retained for React API compatibility. */
+  id?: string;
+  /** Maximum translated character count supplied to translation tooling. */
+  maxChars?: number;
+  /** Whether a human should review the translation. */
+  requiresReview?: boolean;
 };
+
+type TCompilerAliases = Pick<
+  TProps,
+  '$context' | '$id' | '$maxChars' | '$requiresReview'
+>;
 
 /**
  * Translates rich content from its default slot with the active locale's
@@ -40,6 +57,12 @@ export const T = /* @__PURE__ */ withGTMetadata<TProps>(
       _hash: String,
       /** Translation context used to disambiguate identical source content. */
       context: String,
+      /** Deprecated custom message ID retained for React API compatibility. */
+      id: String,
+      /** Maximum translated character count supplied to translation tooling. */
+      maxChars: Number,
+      /** Whether a human should review the translation. */
+      requiresReview: Boolean,
     },
     setup(props, { attrs, slots }) {
       const state = useGTState();
@@ -56,9 +79,7 @@ export const T = /* @__PURE__ */ withGTMetadata<TProps>(
             state,
             {
               ...props,
-              ...(typeof attrs.$context === 'string' && {
-                $context: attrs.$context,
-              }),
+              ...readCompilerAliases(attrs),
             },
             identityCache
           )
@@ -67,3 +88,19 @@ export const T = /* @__PURE__ */ withGTMetadata<TProps>(
   }),
   'translate-client'
 );
+
+/** Normalizes compiler aliases that remain undeclared Vue attributes. */
+function readCompilerAliases(attrs: Record<string, unknown>): TCompilerAliases {
+  const maxChars = attrs.$maxChars ?? attrs['$max-chars'];
+  const requiresReview = attrs.$requiresReview ?? attrs['$requires-review'];
+  return {
+    ...(typeof attrs.$context === 'string' && {
+      $context: attrs.$context,
+    }),
+    ...(typeof attrs.$id === 'string' && { $id: attrs.$id }),
+    ...(typeof maxChars === 'number' && { $maxChars: maxChars }),
+    ...((requiresReview === '' || typeof requiresReview === 'boolean') && {
+      $requiresReview: requiresReview === '' ? true : requiresReview,
+    }),
+  };
+}

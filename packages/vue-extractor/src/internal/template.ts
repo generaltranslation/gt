@@ -32,10 +32,14 @@ import type {
 } from './types.js';
 import {
   addVueError,
+  applyStaticTMetadataValue,
   createInlineMetadata,
+  type ExtractedTMetadata,
+  normalizeTMetadataKey,
   readStaticGlobalPrimitive,
   readStaticPrimitive,
   type StaticPrimitive,
+  type TMetadataKey,
   unwrapExpression,
 } from './utils.js';
 
@@ -1307,7 +1311,7 @@ function extractTranslationComponent(
   context: VueExtractionContext
 ): void {
   const errorCount = context.errors.length;
-  const translationContext = readTContext(
+  const translationMetadata = readTMetadata(
     element,
     shadowed,
     bindings,
@@ -1344,19 +1348,19 @@ function extractTranslationComponent(
   context.results.push({
     dataFormat: 'JSX',
     source: serialized.length > 0 ? collapseChildren(serialized) : undefined,
-    metadata: createInlineMetadata(context, element.loc, translationContext),
+    metadata: createInlineMetadata(context, element.loc, translationMetadata),
   });
 }
 
-function readTContext(
+function readTMetadata(
   element: ElementNode,
   shadowed: Set<string>,
   bindings: TemplateBindings,
   expressionPlugins: ParserPlugin[],
   context: VueExtractionContext
-): string | undefined {
-  let translationContext: string | undefined;
-  let hasContext = false;
+): ExtractedTMetadata {
+  const metadata: ExtractedTMetadata = {};
+  const seen = new Set<TMetadataKey>();
   const staticVueIsSelector = readStaticVueIsSelector(element);
 
   for (const property of element.props) {
@@ -1366,21 +1370,29 @@ function readTContext(
     }
     if (property.type === NodeTypes.ATTRIBUTE) {
       if (RESERVED_T_PROPS.has(property.name)) continue;
-      if (property.name !== 'context' && property.name !== '$context') {
+      const key = normalizeTMetadataKey(property.name, true);
+      if (!key) {
         addVueError(
           context,
           property.loc,
           `Found unsupported prop "${property.name}" on a gt-vue <T> component`,
-          'gt-vue <T> currently supports only context'
+          'Use only static context, id, maxChars, or requiresReview metadata'
         );
         continue;
       }
-      if (hasContext) {
-        addDuplicateContextError(property.loc, context);
+      if (!registerTMetadataKey(key, seen, property.loc, context)) {
         continue;
       }
-      hasContext = true;
-      translationContext = property.value?.content ?? '';
+      const value: StaticPrimitive =
+        key === 'requiresReview' && property.value === undefined
+          ? true
+          : (property.value?.content ?? '');
+      if (
+        key === 'maxChars' ||
+        !applyStaticTMetadataValue(metadata, key, value)
+      ) {
+        addInvalidTMetadataValueError(key, property.loc, context);
+      }
       continue;
     }
 
@@ -1391,7 +1403,7 @@ function readTContext(
         context,
         property.loc,
         `Found unsupported directive ${directive} on a gt-vue <T> component`,
-        'Pass context without a v-bind modifier'
+        'Pass translation metadata without a v-bind modifier'
       );
       continue;
     }
@@ -1401,54 +1413,76 @@ function readTContext(
         context,
         property.loc,
         'Found a dynamic or spread binding on a gt-vue <T> component',
-        'Pass context as a static context or $context prop'
+        'Pass each metadata value through an explicit static prop'
       );
       continue;
     }
     if (RESERVED_T_PROPS.has(key)) continue;
-    if (key !== 'context' && key !== '$context') {
+    const metadataKey = normalizeTMetadataKey(key, true);
+    if (!metadataKey) {
       addVueError(
         context,
         property.loc,
         `Found unsupported prop "${key}" on a gt-vue <T> component`,
-        'gt-vue <T> currently supports only context'
+        'Use only static context, id, maxChars, or requiresReview metadata'
       );
       continue;
     }
-    if (hasContext) {
-      addDuplicateContextError(property.loc, context);
+    if (!registerTMetadataKey(metadataKey, seen, property.loc, context)) {
       continue;
     }
-    hasContext = true;
     const value = readExpressionPrimitive(
       property.exp,
       expressionPlugins,
       shadowed,
       bindings
     );
-    if (!value.ok || typeof value.value !== 'string') {
-      addVueError(
-        context,
-        property.loc,
-        'Found a dynamic context on a gt-vue <T> component',
-        'Use a string literal or a template literal without expressions'
-      );
+    if (
+      !value.ok ||
+      !applyStaticTMetadataValue(metadata, metadataKey, value.value)
+    ) {
+      addInvalidTMetadataValueError(metadataKey, property.loc, context);
       continue;
     }
-    translationContext = value.value;
   }
-  return translationContext;
+  return metadata;
 }
 
-function addDuplicateContextError(
+function registerTMetadataKey(
+  key: TMetadataKey,
+  seen: Set<TMetadataKey>,
   location: ExtractionLocation,
   context: VueExtractionContext
-): void {
+): boolean {
+  if (!seen.has(key)) {
+    seen.add(key);
+    return true;
+  }
   addVueError(
     context,
     location,
-    'Found duplicate context props on a gt-vue <T> component',
-    'Pass only one context prop'
+    `Found duplicate ${key} props on a gt-vue <T> component`,
+    `Pass only one ${key} prop or its $-prefixed alias`
+  );
+  return false;
+}
+
+function addInvalidTMetadataValueError(
+  key: TMetadataKey,
+  location: ExtractionLocation,
+  context: VueExtractionContext
+): void {
+  const expected =
+    key === 'context' || key === 'id'
+      ? 'a static string'
+      : key === 'maxChars'
+        ? 'a static integer through v-bind'
+        : 'a static boolean or a bare requiresReview prop';
+  addVueError(
+    context,
+    location,
+    `Found an invalid or dynamic ${key} on a gt-vue <T> component`,
+    `Use ${expected}`
   );
 }
 
@@ -2089,6 +2123,15 @@ function validateVariableComponentShape(
         `Pass the runtime value through <${component} :value="value" />`
       );
     }
+    const nameProp = findTemplateProp(element, 'name');
+    if (nameProp) {
+      addVueError(
+        context,
+        nameProp.loc,
+        `Found unsupported name prop on a gt-vue <${component}> component`,
+        'Remove name; named variables are not supported by gt-vue yet'
+      );
+    }
     if (hasMeaningfulSlotContent(element.children, context)) {
       addVueError(
         context,
@@ -2131,7 +2174,14 @@ function validateVariableComponentShape(
 
 /** Returns whether a statically named template prop is explicitly present. */
 function hasTemplateProp(element: ElementNode, expected: string): boolean {
-  return element.props.some((property) => {
+  return findTemplateProp(element, expected) !== undefined;
+}
+
+function findTemplateProp(
+  element: ElementNode,
+  expected: string
+): ElementNode['props'][number] | undefined {
+  return element.props.find((property) => {
     if (property.type === NodeTypes.ATTRIBUTE) {
       return property.name === expected;
     }

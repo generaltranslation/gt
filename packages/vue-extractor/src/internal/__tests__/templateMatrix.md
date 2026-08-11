@@ -37,8 +37,9 @@ diagnostic instead of a partial catalog entry:
 - dynamic translatable HTML props, unknown dynamic components, runtime slot
   outlets, scoped default slots, and dynamic slot names;
 - React-only Derive/autoderive behavior; and
-- `$maxChars`, `$format`, ICU formatting, and interpolation. gt-vue currently
-  extracts context-only plain strings.
+- `$format`, ICU formatting, and interpolation. Rich `<T>` sources support
+  static `context`, `id`, `maxChars`, and `requiresReview` metadata, including
+  their `$`-prefixed aliases.
 
 The real-runtime parity probe compiles the same Branch and Plural templates
 with Vue and renders them through gt-vue SSR. Catalog keys computed only from

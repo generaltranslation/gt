@@ -2,7 +2,9 @@ import { prepareT } from '@generaltranslation/react-core/components-rsc';
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 import { hashSource } from 'generaltranslation/id';
 import type { JsxChildren } from 'generaltranslation/types';
+import { hashMessage } from 'gt-i18n/internal';
 import * as React from 'react';
+import * as Vue from 'vue';
 import {
   Fragment,
   createSSRApp,
@@ -12,6 +14,7 @@ import {
   h,
   type Component,
 } from 'vue';
+import { compileTemplate } from 'vue/compiler-sfc';
 import { renderToString } from 'vue/server-renderer';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { T, createGT } from '../index';
@@ -358,7 +361,165 @@ describe('React-authoritative rich runtime shape', () => {
       await renderOrdinaryTarget({ c: 'Target child', d: { ti: 'Target' } }, '')
     ).toBe('<span title="Source"></span>');
   });
+
+  it('uses React lookup identity for documented T metadata and aliases', async () => {
+    const documentedSource = 'Documented runtime metadata';
+    const documentedParams = {
+      context: 'documented context',
+      id: 'documented-id',
+      maxChars: 32,
+      requiresReview: true,
+    };
+    const aliasSource = 'Alias runtime metadata';
+    const aliasParams = {
+      $context: 'alias context',
+      $id: 'alias-id',
+      $maxChars: -18,
+      $requiresReview: true,
+    };
+    const zeroSource = 'Zero max chars metadata';
+    const falseReviewSource = 'False review metadata';
+    const duplicateAliasSource = 'Duplicate alias metadata';
+    const duplicateAliasParams = {
+      $maxChars: 7,
+      $requiresReview: false,
+      maxChars: 12,
+      requiresReview: true,
+    };
+    const documentedHash = getReactLookupHash(
+      documentedSource,
+      documentedParams
+    );
+    const aliasHash = getReactLookupHash(aliasSource, aliasParams);
+
+    expect(getReactLookupHash(documentedSource, { id: 'ignored-id' })).toBe(
+      getReactLookupHash(documentedSource)
+    );
+    expect(getReactLookupHash(documentedSource, { $id: 'ignored-alias' })).toBe(
+      getReactLookupHash(documentedSource)
+    );
+    expect(getReactLookupHash(documentedSource, { maxChars: 0 })).not.toBe(
+      getReactLookupHash(documentedSource)
+    );
+    expect(getReactLookupHash(documentedSource, { maxChars: -18 })).toBe(
+      getReactLookupHash(documentedSource, { maxChars: 18 })
+    );
+    expect(getReactLookupHash(documentedSource, { maxChars: 32 })).not.toBe(
+      getReactLookupHash(documentedSource)
+    );
+    expect(
+      getReactLookupHash(documentedSource, { requiresReview: true })
+    ).not.toBe(getReactLookupHash(documentedSource));
+    expect(
+      getReactLookupHash(documentedSource, { requiresReview: false })
+    ).toBe(getReactLookupHash(documentedSource));
+
+    const plugin = createGT({
+      loadTranslations: async () => ({
+        [aliasHash]: 'Alias runtime target',
+        [documentedHash]: 'Documented runtime target',
+        [getReactLookupHash(duplicateAliasSource, duplicateAliasParams)]:
+          'Dollar aliases take precedence',
+        [getReactLookupHash(falseReviewSource, {
+          requiresReview: false,
+        })]: 'False review target',
+        [getReactLookupHash(zeroSource, { maxChars: 0 })]:
+          'Zero max chars target',
+        explicitMetadataHash: 'Explicit hash target',
+      }),
+    });
+    await plugin.setLocale('fr');
+    const Root = defineComponent({
+      setup() {
+        return () => [
+          h(T, documentedParams, { default: () => documentedSource }),
+          h(T, aliasParams, { default: () => aliasSource }),
+          h(T, { maxChars: 0 }, { default: () => zeroSource }),
+          h(T, { requiresReview: false }, { default: () => falseReviewSource }),
+          h(T, duplicateAliasParams, {
+            default: () => duplicateAliasSource,
+          }),
+          h(
+            T,
+            {
+              _hash: 'explicitMetadataHash',
+              context: 'ignored by the explicit hash',
+              maxChars: 1,
+              requiresReview: true,
+            },
+            { default: () => 'Explicit hash source' }
+          ),
+        ];
+      },
+    });
+
+    expect(stripFragmentMarkers(await renderWithPlugin(Root, plugin))).toBe(
+      'Documented runtime targetAlias runtime targetZero max chars targetFalse review targetDollar aliases take precedenceExplicit hash target'
+    );
+  });
+
+  it('passes documented T metadata and dollar aliases through SFC templates', async () => {
+    const documentedSource = 'Documented SFC metadata';
+    const aliasSource = 'Alias SFC metadata';
+    const bareCamelReviewSource = 'Bare camel review metadata';
+    const bareKebabReviewSource = 'Bare kebab review metadata';
+    const falseReviewSource = 'Explicit false review metadata';
+    const documentedParams = {
+      context: 'documented SFC context',
+      id: 'documented-sfc-id',
+      maxChars: 24,
+      requiresReview: true,
+    };
+    const aliasParams = {
+      $context: 'alias SFC context',
+      $id: 'alias-sfc-id',
+      $maxChars: 16,
+      $requiresReview: true,
+    };
+    const plugin = createGT({
+      loadTranslations: async () => ({
+        [getReactLookupHash(aliasSource, aliasParams)]: 'Alias SFC target',
+        [getReactLookupHash(bareCamelReviewSource, {
+          $requiresReview: true,
+        })]: 'Bare camel review target',
+        [getReactLookupHash(bareKebabReviewSource, {
+          $requiresReview: true,
+        })]: 'Bare kebab review target',
+        [getReactLookupHash(documentedSource, documentedParams)]:
+          'Documented SFC target',
+        [getReactLookupHash(falseReviewSource, {
+          $requiresReview: false,
+          requiresReview: true,
+        })]: 'Explicit false review target',
+      }),
+    });
+    await plugin.setLocale('fr');
+    const Root = defineComponent({
+      components: { T },
+      render: compileSfcTemplate(
+        '<main><T context="documented SFC context" id="documented-sfc-id" :max-chars="24" requires-review>Documented SFC metadata</T><T $context="alias SFC context" $id="alias-sfc-id" :$max-chars="16" :$requires-review="true">Alias SFC metadata</T><T $requiresReview>Bare camel review metadata</T><T $requires-review>Bare kebab review metadata</T><T requires-review :$requires-review="false">Explicit false review metadata</T></main>'
+      ),
+    });
+
+    expect(stripFragmentMarkers(await renderWithPlugin(Root, plugin))).toBe(
+      '<main>Documented SFC targetAlias SFC targetBare camel review targetBare kebab review targetExplicit false review target</main>'
+    );
+  });
 });
+
+type ReactTParams = Parameters<typeof prepareT>[0]['params'];
+
+function getReactLookupHash(
+  sourceChildren: React.ReactNode,
+  params: ReactTParams = {}
+): string {
+  const prepared = prepareT({
+    locale: 'fr',
+    params,
+    sourceChildren,
+  });
+  return hashMessage(prepared.sourceJsxChildren, prepared.targetOptions);
+}
 
 function getReactWire(sourceChildren: React.ReactNode): JsxChildren {
   return prepareT({
@@ -449,6 +610,20 @@ async function renderWithPlugin(
   plugin: ReturnType<typeof createGT>
 ): Promise<string> {
   return renderToString(createSSRApp(root).use(plugin));
+}
+
+/** Compiles a template through the same SFC compiler used by Vue tooling. */
+function compileSfcTemplate(template: string): ReturnType<typeof Vue.compile> {
+  const result = compileTemplate({
+    compilerOptions: { mode: 'function' },
+    filename: 'ReactMetadataParityFixture.vue',
+    id: 'react-metadata-parity-fixture',
+    source: template,
+  });
+  expect(result.errors).toEqual([]);
+  return new Function('Vue', result.code)(Vue) as ReturnType<
+    typeof Vue.compile
+  >;
 }
 
 function stripFragmentMarkers(html: string): string {
