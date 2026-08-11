@@ -1,10 +1,13 @@
-import { execFileSync } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { promisify } from 'node:util';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+
+const execFileAsync = promisify(execFile);
 
 const packageRoot = fileURLToPath(new URL('../../..', import.meta.url));
 const requireFromVueExtractor = createRequire(
@@ -46,16 +49,16 @@ const builtVueUrl = pathToFileURL(
 ).href;
 const cliBinPath = path.join(packageRoot, 'bin/main.js');
 
-beforeAll(() => {
+beforeAll(async () => {
   if (process.env.TURBO_HASH) return;
 
   const command = process.env.npm_execpath ? process.execPath : 'pnpm';
   const args = process.env.npm_execpath
     ? [process.env.npm_execpath, 'run', 'build']
     : ['run', 'build'];
-  execFileSync(command, args, {
+  await execFileAsync(command, args, {
     cwd: packageRoot,
-    stdio: 'pipe',
+    encoding: 'utf8',
     timeout: 120_000,
   });
 }, 125_000);
@@ -67,7 +70,7 @@ afterAll(() => {
 });
 
 describe('built Vue CLI', () => {
-  it('routes gt-vue Vite roots to the combined base and inline command surface', () => {
+  it('routes gt-vue Vite roots to the combined base and inline command surface', async () => {
     const projectRoot = createProject({
       dependencies: {
         'gt-vue': '*',
@@ -75,7 +78,7 @@ describe('built Vue CLI', () => {
       },
     });
 
-    runNode(
+    await runNode(
       `
         import assert from 'node:assert/strict';
         import { Command } from ${JSON.stringify(commanderUrl)};
@@ -134,7 +137,7 @@ describe('built Vue CLI', () => {
 
   it.each(['next-intl', 'i18next'] as const)(
     'adds Vue commands and flags to mixed %s roots without React setup',
-    (fileLibrary) => {
+    async (fileLibrary) => {
       const projectRoot = createProject({
         dependencies: {
           [fileLibrary]: '*',
@@ -146,7 +149,7 @@ describe('built Vue CLI', () => {
         },
       });
 
-      runNode(
+      await runNode(
         `
           import assert from 'node:assert/strict';
           import { Command } from ${JSON.stringify(commanderUrl)};
@@ -231,7 +234,7 @@ describe('built Vue CLI', () => {
     ],
   ] as const)(
     'keeps the pure %s command surface unchanged %s',
-    (fileLibrary, _description, extraManifest) => {
+    async (fileLibrary, _description, extraManifest) => {
       const projectRoot = createProject({
         dependencies: {
           [fileLibrary]: '*',
@@ -240,7 +243,7 @@ describe('built Vue CLI', () => {
         ...extraManifest,
       });
 
-      runNode(
+      await runNode(
         `
           import assert from 'node:assert/strict';
           import { Command } from ${JSON.stringify(commanderUrl)};
@@ -269,7 +272,7 @@ describe('built Vue CLI', () => {
     }
   );
 
-  it('runs Vue init through the built configuration-only Vite path', () => {
+  it('runs Vue init through the built configuration-only Vite path', async () => {
     const projectRoot = createProject({
       dependencies: {
         'gt-vue': '*',
@@ -277,7 +280,7 @@ describe('built Vue CLI', () => {
       },
     });
 
-    runNode(
+    await runNode(
       `
         import assert from 'node:assert/strict';
         import { Command } from ${JSON.stringify(commanderUrl)};
@@ -323,7 +326,7 @@ describe('built Vue CLI', () => {
     );
   });
 
-  it('passes Vue source-selection flags through setup', () => {
+  it('passes Vue source-selection flags through setup', async () => {
     const projectRoot = createProject({
       dependencies: {
         'gt-vue': '*',
@@ -331,7 +334,7 @@ describe('built Vue CLI', () => {
       },
     });
 
-    runNode(
+    await runNode(
       `
         import assert from 'node:assert/strict';
         import { Command } from ${JSON.stringify(commanderUrl)};
@@ -369,7 +372,7 @@ describe('built Vue CLI', () => {
     );
   });
 
-  it('keeps Vue init local and config-only for development and Nuxt roots', () => {
+  it('keeps Vue init local and config-only for development and Nuxt roots', async () => {
     const projectRoot = createProject({
       dependencies: {
         nuxt: '*',
@@ -388,7 +391,7 @@ describe('built Vue CLI', () => {
       })
     );
 
-    runNode(
+    await runNode(
       `
         import assert from 'node:assert/strict';
         import fs from 'node:fs';
@@ -500,7 +503,7 @@ describe('built Vue CLI', () => {
     ['i18next', 'devDependencies'],
   ] as const)(
     'configures mixed %s and Vue roots from %s without unsupported storage',
-    (library, vueDependencyField) => {
+    async (library, vueDependencyField) => {
       const projectRoot = createProject({
         dependencies: {
           [library]: '*',
@@ -519,7 +522,7 @@ describe('built Vue CLI', () => {
         })
       );
 
-      runNode(
+      await runNode(
         `
           import assert from 'node:assert/strict';
           import fs from 'node:fs';
@@ -599,7 +602,7 @@ describe('built Vue CLI', () => {
     ['gt-node', builtNodeUrl, 'NodeCLI'],
   ] as const)(
     'retains the existing %s local loader when Vue shares its catalog',
-    (library, cliModuleUrl, cliExport) => {
+    async (library, cliModuleUrl, cliExport) => {
       const projectRoot = createProject({
         dependencies: {
           [library]: '*',
@@ -618,7 +621,7 @@ describe('built Vue CLI', () => {
         'src/.gitkeep': '',
       });
 
-      runNode(
+      await runNode(
         `
           import assert from 'node:assert/strict';
           import fs from 'node:fs';
@@ -691,7 +694,7 @@ describe('built Vue CLI', () => {
     }
   );
 
-  it('uses Vue loader guidance instead of JavaScript framework setup for Python', () => {
+  it('uses Vue loader guidance instead of JavaScript framework setup for Python', async () => {
     const projectRoot = createProject({
       dependencies: {
         'gt-vue': '*',
@@ -708,7 +711,7 @@ describe('built Vue CLI', () => {
       'requirements.txt': 'gt-fastapi>=1.0.0\n',
     });
 
-    runNode(
+    await runNode(
       `
         import assert from 'node:assert/strict';
         import fs from 'node:fs';
@@ -771,7 +774,7 @@ describe('built Vue CLI', () => {
     );
   });
 
-  it('preserves historical pure React publish merging', () => {
+  it('preserves historical pure React publish merging', async () => {
     const projectRoot = createProject({
       dependencies: {
         'gt-react': '*',
@@ -789,7 +792,7 @@ describe('built Vue CLI', () => {
       'src/.gitkeep': '',
     });
 
-    runNode(
+    await runNode(
       `
         import assert from 'node:assert/strict';
         import fs from 'node:fs';
@@ -818,8 +821,8 @@ describe('built Vue CLI', () => {
     );
   });
 
-  it('ignores peer and optional Vue declarations and preserves pure React setup', () => {
-    runNode(`
+  it('ignores peer and optional Vue declarations and preserves pure React setup', async () => {
+    await runNode(`
       import assert from 'node:assert/strict';
       import { Command } from ${JSON.stringify(commanderUrl)};
       import { BaseCLI } from ${JSON.stringify(builtBaseUrl)};
@@ -907,8 +910,8 @@ describe('built Vue CLI', () => {
     `);
   });
 
-  it('describes Vue defaults only on Vue inline commands', () => {
-    runNode(`
+  it('describes Vue defaults only on Vue inline commands', async () => {
+    await runNode(`
       import assert from 'node:assert/strict';
       import { Command } from ${JSON.stringify(commanderUrl)};
       import { ReactCLI } from ${JSON.stringify(builtReactUrl)};
@@ -935,7 +938,7 @@ describe('built Vue CLI', () => {
     `);
   });
 
-  it('resolves the Vue label owner in a built mixed non-inline project', () => {
+  it('resolves the Vue label owner in a built mixed non-inline project', async () => {
     const projectRoot = createProject({
       dependencies: {
         'gt-vue': '*',
@@ -943,7 +946,7 @@ describe('built Vue CLI', () => {
       },
     });
 
-    runNode(
+    await runNode(
       `
         import assert from 'node:assert/strict';
         import { resolveInlineLibrary } from ${JSON.stringify(builtCollectFilesUrl)};
@@ -959,12 +962,12 @@ describe('built Vue CLI', () => {
 
   it.each(['gt-react', 'gt-node', 'gt-fastapi'] as const)(
     'preserves the historical %s label without Vue',
-    (library) => {
+    async (library) => {
       const projectRoot = createProject({
         dependencies: { [library]: '*' },
       });
 
-      runNode(
+      await runNode(
         `
           import assert from 'node:assert/strict';
           import { resolveInlineLibrary } from ${JSON.stringify(builtCollectFilesUrl)};
@@ -981,7 +984,7 @@ describe('built Vue CLI', () => {
 
   it.each(['next-intl', 'i18next'] as const)(
     'extracts Vue content through the mixed %s command adapter',
-    (fileLibrary) => {
+    async (fileLibrary) => {
       const projectRoot = createProject({
         dependencies: {
           [fileLibrary]: '*',
@@ -1003,7 +1006,10 @@ import { T } from 'gt-vue';
       });
       linkInstalledVue(projectRoot);
 
-      runBuiltCli(['generate', '--config', 'gt.config.json'], projectRoot);
+      await runBuiltCli(
+        ['generate', '--config', 'gt.config.json'],
+        projectRoot
+      );
       const catalog = JSON.parse(
         fs.readFileSync(path.join(projectRoot, 'translations/en.json'), 'utf8')
       ) as Record<string, unknown>;
@@ -1012,7 +1018,7 @@ import { T } from 'gt-vue';
         `Vue entry from ${fileLibrary}`
       );
 
-      const validationOutput = runBuiltCli(
+      const validationOutput = await runBuiltCli(
         ['validate', 'src/App.vue', '--config', 'gt.config.json'],
         projectRoot
       );
@@ -1020,7 +1026,7 @@ import { T } from 'gt-vue';
     }
   );
 
-  it('preserves React and Vue entries in one generated mixed catalog', () => {
+  it('preserves React and Vue entries in one generated mixed catalog', async () => {
     const projectRoot = createProject({
       dependencies: {
         'gt-react': '*',
@@ -1045,7 +1051,7 @@ import { T } from 'gt-vue';
     });
     linkInstalledVue(projectRoot);
 
-    runBuiltCli(
+    await runBuiltCli(
       ['--skip-version-check', 'generate', '--config', 'gt.config.json'],
       projectRoot
     );
@@ -1057,7 +1063,7 @@ import { T } from 'gt-vue';
     expect(JSON.stringify(catalog)).toContain('Added Vue entry');
   });
 
-  it('uses an explicit tsconfig for full and targeted Vue extraction', () => {
+  it('uses an explicit tsconfig for full and targeted Vue extraction', async () => {
     const projectRoot = createProject({
       dependencies: {
         'gt-vue': '*',
@@ -1085,7 +1091,7 @@ import { LocalT } from '@gt';
     });
     linkInstalledVue(projectRoot);
 
-    runBuiltCli(
+    await runBuiltCli(
       [
         'generate',
         '--config',
@@ -1101,7 +1107,7 @@ import { LocalT } from '@gt';
     expect(Object.keys(catalog)).toHaveLength(1);
     expect(JSON.stringify(catalog)).toContain('Hello through custom tsconfig');
 
-    const validationOutput = runBuiltCli(
+    const validationOutput = await runBuiltCli(
       [
         'validate',
         'src/App.vue',
@@ -1125,7 +1131,7 @@ import { LocalT } from '@gt';
     });
     fs.writeFileSync(targetCatalogPath, targetCatalogBeforeFailure);
 
-    expect(() =>
+    await expect(
       runBuiltCli(
         [
           'generate',
@@ -1136,7 +1142,7 @@ import { LocalT } from '@gt';
         ],
         projectRoot
       )
-    ).toThrow();
+    ).rejects.toThrow();
     expect(fs.readFileSync(sourceCatalogPath, 'utf8')).toBe(
       sourceCatalogBeforeFailure
     );
@@ -1145,8 +1151,8 @@ import { LocalT } from '@gt';
     );
   });
 
-  it('keeps existing built command surfaces for non-Vue runtimes', () => {
-    runNode(`
+  it('keeps existing built command surfaces for non-Vue runtimes', async () => {
+    await runNode(`
       import assert from 'node:assert/strict';
       import { Command } from ${JSON.stringify(commanderUrl)};
       import { BaseCLI } from ${JSON.stringify(builtBaseUrl)};
@@ -1234,14 +1240,19 @@ function linkInstalledVue(projectRoot: string): void {
   );
 }
 
-function runBuiltCli(args: string[], cwd: string): string {
+async function runBuiltCli(args: string[], cwd: string): Promise<string> {
   try {
-    return execFileSync(process.execPath, [cliBinPath, ...args], {
-      cwd,
-      encoding: 'utf8',
-      env: { ...process.env, NO_COLOR: '1' },
-      timeout: 30_000,
-    });
+    const { stdout } = await execFileAsync(
+      process.execPath,
+      [cliBinPath, ...args],
+      {
+        cwd,
+        encoding: 'utf8',
+        env: { ...process.env, NO_COLOR: '1' },
+        timeout: 30_000,
+      }
+    );
+    return stdout;
   } catch (error) {
     const result = error as Error & { stderr?: string; stdout?: string };
     throw new Error(
@@ -1250,15 +1261,19 @@ function runBuiltCli(args: string[], cwd: string): string {
   }
 }
 
-function runNode(
+async function runNode(
   source: string,
   cwd: string = packageRoot,
   environment: Record<string, string> = {}
-): void {
-  execFileSync(process.execPath, ['--input-type=module', '--eval', source], {
-    cwd,
-    env: { ...process.env, NO_COLOR: '1', ...environment },
-    stdio: 'pipe',
-    timeout: 30_000,
-  });
+): Promise<void> {
+  await execFileAsync(
+    process.execPath,
+    ['--input-type=module', '--eval', source],
+    {
+      cwd,
+      encoding: 'utf8',
+      env: { ...process.env, NO_COLOR: '1', ...environment },
+      timeout: 30_000,
+    }
+  );
 }
