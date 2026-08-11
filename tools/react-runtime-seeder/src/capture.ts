@@ -215,6 +215,21 @@ async function terminateProcessTree(pid: number | undefined): Promise<void> {
       // Fall through to the direct child as a best-effort fallback.
     }
   } else {
+    // Freeze the harness group before taking the process snapshot so it cannot
+    // race cleanup by spawning another child. Detached descendants have their
+    // own process groups, so enumerate and kill them explicitly as well.
+    try {
+      process.kill(-pid, 'SIGSTOP');
+    } catch {
+      // The harness may already have exited.
+    }
+    for (const descendantPid of await findPosixDescendantPids(pid)) {
+      try {
+        process.kill(descendantPid, 'SIGKILL');
+      } catch {
+        // The descendant may have exited since the process snapshot.
+      }
+    }
     try {
       process.kill(-pid, 'SIGKILL');
       return;
@@ -226,6 +241,41 @@ async function terminateProcessTree(pid: number | undefined): Promise<void> {
     process.kill(pid, 'SIGKILL');
   } catch {
     // The process may already have exited.
+  }
+}
+
+async function findPosixDescendantPids(rootPid: number): Promise<number[]> {
+  try {
+    const { stdout } = await execFileAsync('ps', ['-ax', '-o', 'pid=,ppid='], {
+      encoding: 'utf8',
+      maxBuffer: 10 * 1024 * 1024,
+    });
+    const childrenByParent = new Map<number, number[]>();
+    for (const line of stdout.split('\n')) {
+      const [pidText, parentPidText] = line.trim().split(/\s+/);
+      const processPid = Number(pidText);
+      const parentPid = Number(parentPidText);
+      if (!Number.isInteger(processPid) || !Number.isInteger(parentPid)) {
+        continue;
+      }
+      const children = childrenByParent.get(parentPid) ?? [];
+      children.push(processPid);
+      childrenByParent.set(parentPid, children);
+    }
+
+    const descendants: number[] = [];
+    const pending = [...(childrenByParent.get(rootPid) ?? [])];
+    const seen = new Set<number>();
+    while (pending.length > 0) {
+      const processPid = pending.shift();
+      if (processPid == null || seen.has(processPid)) continue;
+      seen.add(processPid);
+      descendants.push(processPid);
+      pending.push(...(childrenByParent.get(processPid) ?? []));
+    }
+    return descendants;
+  } catch {
+    return [];
   }
 }
 
