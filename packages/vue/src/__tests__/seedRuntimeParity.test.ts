@@ -277,6 +277,10 @@ describe('React and Vue seed runtime parity', () => {
     it('rejects values outside the persisted wire grammar', () => {
       const cyclic: Record<string, unknown> = {};
       cyclic.self = cyclic;
+      const symbolKey = Symbol('wire-key');
+      const symbolKeyed = { [symbolKey]: 'hidden' };
+      const extendedArray = ['child'] as unknown[] & { extra?: string };
+      extendedArray.extra = 'hidden';
 
       expect(() => semanticWireFingerprint(cyclic)).toThrow(/cycle/i);
       expect(() => semanticWireFingerprint(() => undefined)).toThrow(
@@ -284,6 +288,10 @@ describe('React and Vue seed runtime parity', () => {
       );
       expect(() => semanticWireFingerprint(Symbol('wire'))).toThrow(
         /unsupported/i
+      );
+      expect(() => semanticWireFingerprint(symbolKeyed)).toThrow(/symbol/i);
+      expect(() => semanticWireFingerprint(extendedArray)).toThrow(
+        /array properties/i
       );
       expect(() => semanticWireFingerprint(new Date(0))).toThrow(/plain/i);
     });
@@ -617,16 +625,28 @@ function encodeSemanticWire(
     `Unsupported semantic wire value: ${typeof value}`
   );
   invariant(!active.has(value), 'Semantic wire cannot contain a cycle');
+  invariant(
+    Object.getOwnPropertySymbols(value).length === 0,
+    'Semantic wire cannot contain symbol-keyed properties'
+  );
 
   active.add(value);
   try {
     if (Array.isArray(value)) {
       let encoded = `a:${value.length}:[`;
+      let presentEntries = 0;
       for (let index = 0; index < value.length; index += 1) {
-        encoded += Object.hasOwn(value, index)
-          ? `p:${encodeSemanticWire(value[index], active)}`
-          : 'h;';
+        if (Object.hasOwn(value, index)) {
+          presentEntries += 1;
+          encoded += `p:${encodeSemanticWire(value[index], active)}`;
+        } else {
+          encoded += 'h;';
+        }
       }
+      invariant(
+        Object.keys(value).length === presentEntries,
+        'Semantic wire arrays cannot contain extra array properties'
+      );
       return `${encoded}]`;
     }
 
