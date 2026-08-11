@@ -341,6 +341,7 @@ async function freezePosixProcessTree(
     const targets = processes.filter(
       (process) =>
         process.pid !== rootPid &&
+        !recordedPids.has(process.pid) &&
         (descendants.has(process.pid) ||
           process.command.includes(environmentMarker))
     );
