@@ -9,9 +9,9 @@ import {
 } from '../types';
 import {
   Transformation,
-  TransformationPrefix,
   VariableTransformationSuffix,
 } from 'generaltranslation/types';
+import { parseTransformation } from './parseTransformation';
 
 type GTComponentType = {
   _gtt?: Transformation;
@@ -41,26 +41,14 @@ export function addGTIdentifier(
       /* empty */
     }
     if (transformation) {
-      const transformationParts = transformation.split('-');
-      // If the component was inserted automatically by the compiler
-      if (
-        transformationParts[1] === 'automatic' ||
-        transformationParts[2] === 'automatic'
-      ) {
-        result.injectionType = 'automatic';
-      }
-
-      if (transformationParts[0] === 'translate') {
-        // Convert nested <T> to fragments
-        // This will nullify translation specific attributes of child, i.e. id, context, etc.
-        transformationParts[0] = 'fragment';
-      }
-      if (transformationParts[0] === 'variable') {
+      const { prefix, suffix, injectionType } =
+        parseTransformation(transformation);
+      result.injectionType = injectionType;
+      if (prefix === 'variable') {
         result.variableType =
-          (transformationParts?.[1] as VariableTransformationSuffix) ||
-          'variable';
+          (suffix as VariableTransformationSuffix) || 'variable';
       }
-      if (transformationParts[0] === 'plural') {
+      if (prefix === 'plural') {
         const pluralBranches = Object.entries(props).reduce(
           (acc, [branchName, branch]) => {
             if (isAcceptedPluralForm(branchName)) {
@@ -74,7 +62,7 @@ export function addGTIdentifier(
         if (Object.keys(pluralBranches).length)
           result.branches = pluralBranches;
       }
-      if (transformationParts[0] === 'branch') {
+      if (prefix === 'branch') {
         const { children: _children, branch: _branch, ...branches } = props;
         // Filter out data-* attributes injected by build tools
         const filteredBranches = Object.fromEntries(
@@ -91,7 +79,9 @@ export function addGTIdentifier(
         if (Object.keys(resultBranches).length)
           result.branches = resultBranches;
       }
-      result.transformation = transformationParts[0] as TransformationPrefix;
+      // Convert nested <T> to fragments
+      // This will nullify translation specific attributes of child, i.e. id, context, etc.
+      result.transformation = prefix === 'translate' ? 'fragment' : prefix;
     }
     return result;
   };
