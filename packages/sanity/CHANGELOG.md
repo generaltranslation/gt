@@ -1,5 +1,30 @@
 # gt-sanity
 
+## 3.1.6
+
+### Patch Changes
+
+- [#2075](https://github.com/generaltranslation/gt/pull/2075) [`55f94e9`](https://github.com/generaltranslation/gt/commit/55f94e9ab5cae58589f5a658a4ff2e0858b965d7) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Stop document-level import from overwriting published translations.
+
+  When a translation document already existed as a published document with no
+  draft, importing a translation patched that published document directly, so
+  translated content went live immediately with no draft to review, no publish
+  step, and no regard for the auto-publish switch. Studios that already had
+  localized documents — including ones set up with
+  `@sanity/document-internationalization` before installing this plugin — hit
+  this on their first import, because the existing `translation.metadata` is
+  adopted and already points at published translations.
+
+  Imports now seed a draft from the published state and patch the draft, matching
+  what `internationalizedArrayPatch` and `commitResolvedRefs` already do.
+
+## 3.1.5
+
+### Patch Changes
+
+- Updated dependencies [[`b00b93e`](https://github.com/generaltranslation/gt/commit/b00b93eb3b830b8528ef3dbd5f503ff76d1b338a)]:
+  - generaltranslation@9.1.2
+
 ## 3.1.4
 
 ### Patch Changes

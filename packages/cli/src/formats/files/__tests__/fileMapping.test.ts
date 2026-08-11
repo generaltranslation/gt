@@ -36,4 +36,92 @@ describe('createFileMapping', () => {
       'locales/fr/messages.po'
     );
   });
+
+  describe('non-canonical locale tags', () => {
+    // A locale written as "fr-ca" canonicalizes to "fr-CA". Everything that
+    // names a path must use the tag as configured, because [locale]
+    // substitution and static URL localization both use it verbatim. If
+    // {locale} canonicalized here, content would be written to docs/fr-CA/
+    // while links pointed at /docs/fr-ca/.
+    const mapWith = (transform: { match: string; replace: string }) =>
+      createFileMapping(
+        { mdx: [path.resolve('docs/guide.mdx')] },
+        { mdx: [path.resolve('docs/guide.mdx')] },
+        { mdx: transform },
+        {},
+        ['fr-ca', 'ja-jp'],
+        'en'
+      );
+
+    it('uses the configured tag, not the canonical one, for object transforms', () => {
+      const mapping = mapWith({
+        match: '^docs/(.*)$',
+        replace: 'docs/{locale}/$1',
+      });
+
+      expect(mapping['fr-ca']['docs/guide.mdx']).toBe('docs/fr-ca/guide.mdx');
+      expect(mapping['ja-jp']['docs/guide.mdx']).toBe('docs/ja-jp/guide.mdx');
+    });
+
+    it('uses the configured tag for array transforms', () => {
+      const mapping = createFileMapping(
+        { json: [path.resolve('docs/oas/api.json')] },
+        { json: [path.resolve('docs/oas/api.json')] },
+        {
+          json: [{ match: '^docs/oas/(.*)$', replace: 'docs/{locale}/oas/$1' }],
+        },
+        {},
+        ['fr-ca'],
+        'en'
+      );
+
+      expect(mapping['fr-ca']['docs/oas/api.json']).toBe(
+        'docs/fr-ca/oas/api.json'
+      );
+    });
+
+    it('agrees with the [locale] substitution used by the string transform form', () => {
+      // The string form of transform has always substituted [locale]
+      // verbatim. The object form must produce the same directory.
+      const objectForm = mapWith({
+        match: '^docs/(.*)$',
+        replace: 'docs/{locale}/$1',
+      });
+      const stringForm = createFileMapping(
+        { mdx: [path.resolve('docs/guide.mdx')] },
+        { mdx: [path.resolve('docs/[locale]/guide.mdx')] },
+        {},
+        {},
+        ['fr-ca'],
+        'en'
+      );
+
+      expect(objectForm['fr-ca']['docs/guide.mdx']).toBe(
+        stringForm['fr-ca']['docs/guide.mdx']
+      );
+    });
+
+    it('leaves already-canonical tags unchanged', () => {
+      const mapping = createFileMapping(
+        { mdx: [path.resolve('docs/guide.mdx')] },
+        { mdx: [path.resolve('docs/guide.mdx')] },
+        { mdx: { match: '^docs/(.*)$', replace: 'docs/{locale}/$1' } },
+        {},
+        ['fr-CA', 'ja'],
+        'en'
+      );
+
+      expect(mapping['fr-CA']['docs/guide.mdx']).toBe('docs/fr-CA/guide.mdx');
+      expect(mapping['ja']['docs/guide.mdx']).toBe('docs/ja/guide.mdx');
+    });
+
+    it('still exposes canonical values via explicitly-named properties', () => {
+      const mapping = mapWith({
+        match: '^docs/(.*)$',
+        replace: 'docs/{languageCode}-{regionCode}/$1',
+      });
+
+      expect(mapping['fr-ca']['docs/guide.mdx']).toBe('docs/fr-CA/guide.mdx');
+    });
+  });
 });

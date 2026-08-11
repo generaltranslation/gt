@@ -5,6 +5,7 @@ import {
   prepareT as prepareReactT,
   renderTranslatedChildren as renderReactTranslatedChildren,
 } from '@generaltranslation/react-core/components-rsc';
+import { initializeI18nConfig as initializeReactI18nConfig } from '@generaltranslation/react-core/pure';
 import { hashSource } from 'generaltranslation/id';
 import type { JsxChildren } from 'generaltranslation/types';
 import * as React from 'react';
@@ -18,7 +19,7 @@ import {
   type VNodeChild,
 } from 'vue';
 import { renderToString } from 'vue/server-renderer';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { isBranchAttribute } from '../components/utils';
 import { Branch, Plural, T, Var, createGT } from '../index';
 import { serializeVueChildren } from '../rendering/translateVueChildren';
@@ -72,6 +73,10 @@ const BRANCH_TARGET_CASES = [
 const BRANCH_RENDER_MATRIX = BRANCH_SOURCE_CASES.flatMap((source) =>
   BRANCH_TARGET_CASES.map((target) => ({ source, target }))
 );
+
+beforeAll(() => {
+  initializeReactI18nConfig({ defaultLocale: 'en' });
+});
 
 describe('Branch and Plural attributes', () => {
   it.each([

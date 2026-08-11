@@ -1,3 +1,5 @@
-# Require someone from the @maintainers team to approve all changes
-* @generaltranslation/maintainers
+# Require someone from the @engineering team to approve all changes
+* @generaltranslation/engineering
 
+# Require someone from the @admins team to approve changes to code ownership
+/.github/CODEOWNERS @generaltranslation/admins

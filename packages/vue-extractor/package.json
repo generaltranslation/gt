@@ -13,7 +13,7 @@
     }
   },
   "author": "General Translation, Inc.",
-  "license": "FSL-1.1-ALv2",
+  "license": "MIT",
   "scripts": {
     "emit-types": "sh ../../scripts/emit-types.sh",
     "transpile": "tsdown && pnpm run emit-types",
