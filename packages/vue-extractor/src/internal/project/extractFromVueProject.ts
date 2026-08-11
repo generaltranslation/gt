@@ -7,6 +7,7 @@ import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/internal';
+import { loadConfig } from 'tsconfig-paths';
 import { extractFromVueSource } from '../extractFromVueSource.js';
 import {
   resolveVueCompilerOptions,
@@ -113,6 +114,14 @@ export async function extractFromVueProject(
   }
   const errors: string[] = [];
   const warnings = new Set<string>();
+  const tsconfigPath = resolveExplicitTypeScriptConfigPath(
+    projectRoot,
+    options.tsconfigPath,
+    errors
+  );
+  if (errors.length > 0) {
+    return { updates: [], errors, warnings: [] };
+  }
   let explicitCompilerResolution = validateExplicitCompilerConfig(
     projectRoot,
     options,
@@ -129,7 +138,8 @@ export async function extractFromVueProject(
     fileScopes,
     options,
     createProjectModuleResolver(
-      options.conditionNames ?? DEFAULT_RESOLUTION_CONDITIONS
+      options.conditionNames ?? DEFAULT_RESOLUTION_CONDITIONS,
+      { tsconfigPath }
     )
   );
   errors.push(...moduleResolution.errors);
@@ -864,6 +874,48 @@ function createExplicitConfigOwnershipDiagnostic(configPath: string): string {
     fix: 'Run extraction from that application root, include only one centrally configured Vue application, or remove files.gt.parsingFlags.viteConfigPath',
     details: configPath,
   });
+}
+
+/** Resolves and validates one explicit TypeScript project file atomically. */
+function resolveExplicitTypeScriptConfigPath(
+  projectRoot: string,
+  configuredPath: string | undefined,
+  errors: string[]
+): string | undefined {
+  if (configuredPath === undefined) return undefined;
+  const absolutePath = path.resolve(projectRoot, configuredPath);
+  try {
+    const configPath = fs.realpathSync(absolutePath);
+    if (!fs.statSync(configPath).isFile()) {
+      throw new Error('The configured path is not a file');
+    }
+    const resolution = loadConfig(configPath);
+    if (resolution.resultType === 'failed') {
+      throw new Error(resolution.message);
+    }
+    const loadedPath = fs.realpathSync(resolution.configFileAbsolutePath);
+    if (loadedPath !== configPath) {
+      throw new Error(
+        `The resolver selected a different config file: ${loadedPath}`
+      );
+    }
+    return configPath;
+  } catch (error) {
+    errors.push(
+      createDiagnosticMessage({
+        source: '@generaltranslation/vue-extractor',
+        severity: 'Error',
+        whatHappened: 'Could not load the configured TypeScript project file',
+        why: 'Unresolved path aliases can hide gt-vue imports and produce an incomplete translation catalog',
+        fix: 'Set tsconfigPath to a readable tsconfig.json or jsconfig.json file',
+        details: [
+          configuredPath,
+          formatDiagnosticErrorDetails(error) ?? 'Unknown config error',
+        ],
+      })
+    );
+    return undefined;
+  }
 }
 
 function createReadDiagnostic(

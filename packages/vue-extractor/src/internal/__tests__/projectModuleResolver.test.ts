@@ -67,6 +67,41 @@ describe('project module resolution', () => {
     );
   });
 
+  it.each(['tsconfig.json', 'jsconfig.json'])(
+    'uses an explicit %s instead of the nearest discovered config',
+    (configName) => {
+      const root = createFixture({
+        'tsconfig.json': JSON.stringify({
+          compilerOptions: {
+            baseUrl: '.',
+            paths: { '@fixture/target': ['src/discovered.ts'] },
+          },
+        }),
+        [`config/${configName}`]: JSON.stringify({
+          compilerOptions: {
+            baseUrl: '..',
+            paths: { '@fixture/target': ['src/explicit.ts'] },
+          },
+        }),
+        'src/importer.ts': '',
+        'src/discovered.ts': '',
+        'src/explicit.ts': '',
+      });
+      const importer = path.join(root, 'src/importer.ts');
+
+      expectResolved(
+        createProjectModuleResolver()('@fixture/target', importer),
+        path.join(root, 'src/discovered.ts')
+      );
+      expectResolved(
+        createProjectModuleResolver(undefined, {
+          tsconfigPath: path.join(root, 'config', configName),
+        })('@fixture/target', importer),
+        path.join(root, 'src/explicit.ts')
+      );
+    }
+  );
+
   it('selects import exports instead of CommonJS exports', () => {
     const root = createFixture({
       'src/importer.ts': '',

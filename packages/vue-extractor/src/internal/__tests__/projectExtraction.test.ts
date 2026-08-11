@@ -3,6 +3,7 @@ import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { hashSource } from 'generaltranslation/id';
 import { extractFromVueProject } from '../../project.js';
+import { inspectVueProject } from '../../inspect.js';
 import {
   createProjectFixture,
   linkInstalledVue,
@@ -649,6 +650,87 @@ import { LocalT } from '@local/gt';
       'Aliased reexport message',
     ]);
   });
+
+  it.each([
+    {
+      filePatterns: undefined,
+      name: 'framework-default source discovery',
+      sources: ['Selected explicit config', 'Other explicit config'],
+    },
+    {
+      filePatterns: ['src/Selected.tsx'],
+      name: 'targeted source discovery',
+      sources: ['Selected explicit config'],
+    },
+  ])(
+    'uses an explicit jsconfig with reusable inspection and $name',
+    async ({ filePatterns, sources }) => {
+      const root = createVueFixture({
+        'tsconfig.json': JSON.stringify({
+          compilerOptions: {
+            baseUrl: '.',
+            paths: { '@local/gt': ['src/not-gt.ts'] },
+          },
+        }),
+        'config/jsconfig.json': JSON.stringify({
+          compilerOptions: {
+            baseUrl: '..',
+            paths: { '@local/gt': ['src/gt.ts'] },
+          },
+        }),
+        'src/not-gt.ts': 'export const LocalT = Symbol();\n',
+        'src/gt.ts': "export { T as LocalT } from 'gt-vue';\n",
+        'src/Selected.tsx': `
+          import { LocalT } from '@local/gt';
+          export const Selected = () => (
+            <LocalT>Selected explicit config</LocalT>
+          );
+        `,
+        'src/Other.vue': `<script setup lang="ts">
+import { LocalT } from '@local/gt';
+</script>
+<template><LocalT>Other explicit config</LocalT></template>
+`,
+      });
+      const inspection = inspectVueProject(root);
+
+      const output = await extractFromVueProject({
+        cwd: root,
+        inspection,
+        filePatterns,
+        tsconfigPath: 'config/jsconfig.json',
+      });
+
+      expect(output.errors).toEqual([]);
+      expect(output.updates.map(({ source }) => source).sort()).toEqual(
+        [...sources].sort()
+      );
+    }
+  );
+
+  it.each([
+    ['missing config', 'config/missing.json', undefined],
+    ['malformed config', 'config/tsconfig.json', '{ malformed'],
+  ])(
+    'fails atomically for an explicit $name',
+    async (_name, tsconfigPath, config) => {
+      const root = createVueFixture({
+        ...(config === undefined ? {} : { [tsconfigPath]: config }),
+        'src/App.vue': translatableSfc('Must not publish'),
+      });
+
+      const output = await extractFromVueProject({
+        cwd: root,
+        tsconfigPath,
+      });
+
+      expect(output.updates).toEqual([]);
+      expect(output.errors.join('\n')).toContain(
+        'Could not load the configured TypeScript project file'
+      );
+      expect(output.errors.join('\n')).toContain(tsconfigPath);
+    }
+  );
 
   it('follows a package self-reference whose emitted export has only TypeScript source', async () => {
     const root = createFixture({

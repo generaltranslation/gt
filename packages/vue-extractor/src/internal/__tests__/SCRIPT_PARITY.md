@@ -15,10 +15,9 @@ The Vue script tests port the React extractor's applicable adversarial cases:
 - Vue JSX/TSX `<T>` trees, namespace members such as `<GT.T>`, runtime-accurate
   Vue Fragment spellings, local ESM re-exports, and statically traceable local
   callback forwarding. Every authored JSX Fragment preserves the same semantic
-  boundary as React.Fragment. A direct array expression under `<T>` fails
-  closed because Vue normalizes it to the exact same VNode as an authored
-  Fragment before the runtime can inspect it; arrays nested under native or
-  custom elements remain statically distinguishable and supported.
+  boundary as React.Fragment. Direct and nested array expressions preserve
+  React's array cardinality, while boolean and null array members follow
+  React.Children normalization.
 
 The initial `gt-vue` API intentionally does not port React-only behavior:
 

@@ -40,6 +40,19 @@ describe('@generaltranslation/vue-extractor package declarations', () => {
     expect(declarations).not.toMatch(/@vue\/compiler-(?:dom|sfc)/);
   });
 
+  it('declares scalar boolean and null rich-wire values recursively', () => {
+    const declarations = readFileSync(
+      join(packageRoot, 'dist', 'types.d.ts'),
+      'utf8'
+    );
+
+    expect(declarations).toContain(
+      'type VueJsxChildren = VueJsxChild | boolean | null | VueJsxChild[];'
+    );
+    expect(declarations).toContain('c?: VueJsxChildren;');
+    expect(declarations).toContain('b?: Record<string, VueBranchSource>;');
+  });
+
   it('keeps the integration entry lightweight until a handled plan runs', () => {
     const integration = readFileSync(
       join(packageRoot, 'dist', 'integration.js'),

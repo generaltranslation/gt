@@ -378,6 +378,46 @@ describe('handled Vue extraction plans', () => {
     ]);
   });
 
+  it('resolves an explicit tsconfig from the captured root after cwd changes', async () => {
+    const root = createVueFixture({
+      'config/vue.tsconfig.json': JSON.stringify({
+        compilerOptions: {
+          baseUrl: '..',
+          paths: { '@local/gt': ['src/gt.ts'] },
+        },
+      }),
+      'src/gt.ts': "export { T as LocalT } from 'gt-vue';\n",
+      'src/App.vue': `<script setup lang="ts">
+import { LocalT } from '@local/gt';
+</script>
+<template><LocalT>Captured config message</LocalT></template>
+`,
+    });
+    const otherDirectory = createFixture({
+      'config/vue.tsconfig.json': JSON.stringify({
+        compilerOptions: {
+          baseUrl: '..',
+          paths: { '@local/gt': ['src/not-gt.ts'] },
+        },
+      }),
+      'src/not-gt.ts': 'export const LocalT = Symbol();\n',
+    });
+    const plan = planVueExtraction({
+      library: 'gt-vue',
+      projectRoot: root,
+      tsconfigPath: 'config/vue.tsconfig.json',
+    });
+    if (!plan.handled) throw new Error('Expected handled plan');
+    process.chdir(otherDirectory);
+
+    const result = await plan.run();
+
+    expect(result.errors).toEqual([]);
+    expect(result.updates.map(({ source }) => source)).toEqual([
+      'Captured config message',
+    ]);
+  });
+
   it('runs Vue extraction without a primary callback', async () => {
     const root = createVueFixture({
       'src/messages.ts': `
