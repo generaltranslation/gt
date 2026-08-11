@@ -75,6 +75,10 @@ async function createTest(dirPath: string) {
         parsingOptions
       );
 
+      if (runtime) {
+        expect(result.updates).toHaveLength(1);
+      }
+
       // Verify we got updates from files that have T components
       if (result.updates.length === 0) {
         expect(result.warnings.length || result.errors.length).toBeGreaterThan(
@@ -89,7 +93,6 @@ async function createTest(dirPath: string) {
       expect(result.updates).not.toHaveLength(0);
 
       if (runtime) {
-        expect(result.updates).toHaveLength(1);
         const [update] = result.updates;
         expect(normalizeSemanticWire(update.source)).toEqual(
           normalizeSemanticWire(expected)
