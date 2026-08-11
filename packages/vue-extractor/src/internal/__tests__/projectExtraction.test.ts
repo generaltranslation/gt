@@ -653,6 +653,90 @@ import { LocalT } from '@local/gt';
 
   it.each([
     {
+      environment: 'TS_NODE_BASEURL' as const,
+      filePatterns: undefined,
+      name: 'full extraction with TS_NODE_BASEURL',
+      sources: ['Selected discovered config', 'Other discovered config'],
+    },
+    {
+      environment: 'TS_NODE_BASEURL' as const,
+      filePatterns: ['src/Selected.tsx'],
+      name: 'targeted extraction with TS_NODE_BASEURL',
+      sources: ['Selected discovered config'],
+    },
+    {
+      environment: 'TS_NODE_PROJECT' as const,
+      filePatterns: undefined,
+      name: 'full extraction with TS_NODE_PROJECT',
+      sources: ['Selected discovered config', 'Other discovered config'],
+    },
+    {
+      environment: 'TS_NODE_PROJECT' as const,
+      filePatterns: ['src/Selected.tsx'],
+      name: 'targeted extraction with TS_NODE_PROJECT',
+      sources: ['Selected discovered config'],
+    },
+  ])(
+    'isolates discovered configs from ambient ts-node settings during $name',
+    async ({ environment, filePatterns, sources }) => {
+      const root = createVueFixture({
+        'tsconfig.json': JSON.stringify({
+          extends: './config/base.json',
+        }),
+        'config/base.json': JSON.stringify({
+          compilerOptions: {
+            baseUrl: '..',
+            paths: { '@local/gt': ['src/gt.ts'] },
+          },
+        }),
+        'config/wrong.json': JSON.stringify({
+          compilerOptions: {
+            baseUrl: '..',
+            paths: { '@local/gt': ['src/not-gt.ts'] },
+          },
+        }),
+        'src/not-gt.ts': 'export const LocalT = Symbol();\n',
+        'src/gt.ts': "export { T as LocalT } from 'gt-vue';\n",
+        'src/Selected.tsx': `
+          import { LocalT } from '@local/gt';
+          export const Selected = () => (
+            <LocalT>Selected discovered config</LocalT>
+          );
+        `,
+        'src/Other.vue': `<script setup lang="ts">
+import { LocalT } from '@local/gt';
+</script>
+<template><LocalT>Other discovered config</LocalT></template>
+`,
+      });
+      const previousBaseUrl = process.env.TS_NODE_BASEURL;
+      const previousProject = process.env.TS_NODE_PROJECT;
+      delete process.env.TS_NODE_BASEURL;
+      delete process.env.TS_NODE_PROJECT;
+      process.env[environment] =
+        environment === 'TS_NODE_PROJECT'
+          ? path.join(root, 'config', 'wrong.json')
+          : 'ambient-base-url';
+
+      try {
+        const output = await extractFromVueProject({
+          cwd: root,
+          filePatterns,
+        });
+
+        expect(output.errors).toEqual([]);
+        expect(output.updates.map(({ source }) => source).sort()).toEqual(
+          [...sources].sort()
+        );
+      } finally {
+        restoreEnvironmentVariable('TS_NODE_BASEURL', previousBaseUrl);
+        restoreEnvironmentVariable('TS_NODE_PROJECT', previousProject);
+      }
+    }
+  );
+
+  it.each([
+    {
       filePatterns: undefined,
       name: 'framework-default source discovery',
       sources: ['Selected explicit config', 'Other explicit config'],
