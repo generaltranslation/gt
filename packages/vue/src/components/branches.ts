@@ -31,8 +31,8 @@ type BranchProps = {
  * At the default locale, explicit `locales` are ignored. Otherwise, they are
  * tried before the active and default GT locales.
  */
-export const Plural = withGTMetadata<PluralProps>(
-  defineComponent({
+export const Plural = /* @__PURE__ */ withGTMetadata<PluralProps>(
+  /* @__PURE__ */ defineComponent({
     inheritAttrs: false,
     name: 'Plural',
     props: {
@@ -81,8 +81,8 @@ export const Plural = withGTMetadata<PluralProps>(
  * When used inside {@link T}, every named branch is extracted for translation
  * while only the active branch is rendered.
  */
-export const Branch = withGTMetadata<BranchProps>(
-  defineComponent({
+export const Branch = /* @__PURE__ */ withGTMetadata<BranchProps>(
+  /* @__PURE__ */ defineComponent({
     inheritAttrs: false,
     name: 'Branch',
     props: {
