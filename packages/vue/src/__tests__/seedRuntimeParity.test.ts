@@ -279,25 +279,29 @@ function assertNonPortableEvidence(fixture: NonPortableSeed): void {
   );
   const react = getReactSource(fixture);
   const vue = getVueSource(fixture);
+  const reactHash = sourceHash(react.source, react.context);
+  const vueHash = sourceHash(vue.source, vue.context);
+
+  // The semantic assertions below prove the named boundary. Exact two-sided
+  // hashes additionally make the exception fail when any unrelated wire node
+  // changes, including for lossy compiler boundaries that cannot be reversed.
+  expect(reactHash).toBe(fixture.reactHash);
+  expect(vueHash).toBe(fixture.vueHash);
 
   expect(toSemanticWireSource(vue.source)).not.toStrictEqual(
     toSemanticWireSource(react.source)
   );
 
   if (fixture.reason === 'unsupported-derive') {
-    expect(sourceHash(vue.source, vue.context)).not.toBe(
-      sourceHash(react.source, react.context)
-    );
+    expect(vueHash).not.toBe(reactHash);
     expect(reactSource).toMatch(/<Derive(?:\s|>)/);
     const catalog = getDeriveCatalog(getExpectedSource(fixture), fixture.id);
     expect(Object.keys(catalog).length).toBeGreaterThan(1);
-    expect(catalog).toHaveProperty(sourceHash(react.source, react.context));
+    expect(catalog).toHaveProperty(reactHash);
     return;
   }
   if (fixture.reason === 'unsupported-named-variable') {
-    expect(sourceHash(vue.source, vue.context)).not.toBe(
-      sourceHash(react.source, react.context)
-    );
+    expect(vueHash).not.toBe(reactHash);
     expect(reactSource).toMatch(
       /<(?:Currency|DateTime|Num|Var)\b[^>]*\bname\s*=/s
     );
@@ -314,9 +318,7 @@ function assertNonPortableEvidence(fixture: NonPortableSeed): void {
   }
 
   if (fixture.reason === 'vue-text-coalescing') {
-    expect(sourceHash(vue.source, vue.context)).not.toBe(
-      sourceHash(react.source, react.context)
-    );
+    expect(vueHash).not.toBe(reactHash);
     const reactWire = toSemanticWireSource(react.source);
     const vueWire = toSemanticWireSource(vue.source);
 
