@@ -19,6 +19,17 @@ import {
 import { shouldPublishGt } from '../../utils/resolvePublish.js';
 import { planVueExtraction } from '@generaltranslation/vue-extractor/integration';
 
+/** Resolves the inline runtime that owns this project's shared GTJSON file. */
+export function resolveInlineLibrary(
+  library: SupportedLibraries,
+  projectRoot: string = process.cwd()
+): InlineLibrary | undefined {
+  if (isInlineLibrary(library)) return library;
+  return planVueExtraction({ library, projectRoot }).handled
+    ? Libraries.GT_VUE
+    : undefined;
+}
+
 export async function collectFiles(
   options: TranslateFlags,
   settings: Settings,
@@ -34,14 +45,7 @@ export async function collectFiles(
 
   // Parse for React components
   let reactComponents = 0;
-  const inlineLibrary = isInlineLibrary(library)
-    ? library
-    : planVueExtraction({
-          library,
-          projectRoot: process.cwd(),
-        }).handled
-      ? Libraries.GT_VUE
-      : undefined;
+  const inlineLibrary = resolveInlineLibrary(library);
   if (inlineLibrary) {
     const updates = await aggregateInlineTranslations(
       options,

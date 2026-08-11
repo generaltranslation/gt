@@ -28,7 +28,8 @@ export function extractInlineFromProject(
   filePatterns: string[] | undefined,
   parsingFlags: GTParsingFlags,
   parsingOptions: ParsingConfigOptions,
-  extractPrimary?: PrimaryInlineExtractor
+  extractPrimary?: PrimaryInlineExtractor,
+  tsconfigPath?: string
 ): Promise<InlineExtractionOutput> {
   const plan = planVueExtraction({
     library,
@@ -38,6 +39,7 @@ export function extractInlineFromProject(
     conditionNames: parsingOptions.conditionNames,
     vueCompilerOptions: parsingFlags.vueCompilerOptions,
     viteConfigPath: parsingFlags.viteConfigPath,
+    tsconfigPath,
   });
 
   if (!plan.handled) {

@@ -9,7 +9,10 @@ import {
 } from '../../workflows/download.js';
 import { exitSync, logErrorAndExit } from '../../console/logging.js';
 import { convertToFileTranslationData } from '../../formats/files/convertToFileTranslationData.js';
-import { collectFiles } from '../../formats/files/collectFiles.js';
+import {
+  collectFiles,
+  resolveInlineLibrary,
+} from '../../formats/files/collectFiles.js';
 import { hasValidCredentials, hasValidLocales } from './utils/validation.js';
 import { isInlineLibrary, type InlineLibrary } from '../../types/libraries.js';
 
@@ -49,6 +52,7 @@ export async function handleDownload(
     ? library
     : undefined;
   if (settings.stageTranslations) {
+    inlineLibrary ??= resolveInlineLibrary(library);
     fileVersionData = getStagedEntriesFromLockfile(settings);
   } else {
     const { files, inlineLibrary: collectedInlineLibrary } = await collectFiles(

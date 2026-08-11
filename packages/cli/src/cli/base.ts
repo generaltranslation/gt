@@ -134,6 +134,11 @@ export type GitSetupOptions = {
   driverCommand?: string;
 };
 
+type LocalTranslationGuidanceOptions = {
+  generatedLoader: boolean;
+  translationsDir: string;
+};
+
 export class BaseCLI {
   protected library: SupportedLibraries;
   protected additionalModules: SupportedLibraries[];
@@ -750,6 +755,33 @@ export class BaseCLI {
     await upload(settings);
   }
 
+  /** Returns whether this CLI's inline runtime is installed for setup. */
+  protected isInlineRuntimeInstalled(
+    packageJson: Record<string, unknown>
+  ): boolean {
+    return INLINE_LIBRARIES.some((lib) => isPackageInstalled(lib, packageJson));
+  }
+
+  /** Returns whether setup may offer General Translation CDN storage. */
+  protected supportsCDNStorage(): boolean {
+    return true;
+  }
+
+  /** Returns whether setup should generate a local runtime loader. */
+  protected shouldGenerateLocalTranslationLoader(isVite: boolean): boolean {
+    return !isVite;
+  }
+
+  /** Returns framework guidance after selecting local translation storage. */
+  protected getLocalTranslationGuidance({
+    generatedLoader,
+  }: LocalTranslationGuidanceOptions): string | undefined {
+    if (!generatedLoader) return undefined;
+    return `Created ${chalk.cyan('loadTranslations.js')} file for local translations.
+Make sure to add this function to your app configuration.
+See https://generaltranslation.com/en/docs/next/guides/local-tx`;
+  }
+
   // Wizard for configuring gt.config.json
   protected async handleInitCommand(
     ranReactSetup: boolean,
@@ -769,14 +801,14 @@ export class BaseCLI {
 
     // Ask if using another i18n library
     const gtInstalled =
-      !!packageJson &&
-      INLINE_LIBRARIES.some((lib) => isPackageInstalled(lib, packageJson));
+      !!packageJson && this.isInlineRuntimeInstalled(packageJson);
     const isUsingGT = ranReactSetup || gtInstalled;
 
     // Ask where the translations are stored
     const usingCDN = await (async () => {
       if (!isUsingGT) return false;
       if (useDefaults) return false; // Default to local
+      if (!this.supportsCDNStorage()) return false;
       const selectedValue = await promptSelect({
         message: `Would you like to save translation files locally or use the General Translation CDN to store them?`,
         options: [
@@ -808,18 +840,20 @@ export class BaseCLI {
     const finalTranslationsDir =
       translationsDir?.trim() || defaultTranslationsDir;
 
-    if (isUsingGT && !usingCDN && !isVite) {
-      // Create loadTranslations.js file for local translations
-      await createLoadTranslationsFile(
-        process.cwd(),
-        finalTranslationsDir,
-        locales
-      );
-      logger.message(
-        `Created ${chalk.cyan('loadTranslations.js')} file for local translations.
-Make sure to add this function to your app configuration.
-See https://generaltranslation.com/en/docs/next/guides/local-tx`
-      );
+    if (isUsingGT && !usingCDN) {
+      const generatedLoader = this.shouldGenerateLocalTranslationLoader(isVite);
+      if (generatedLoader) {
+        await createLoadTranslationsFile(
+          process.cwd(),
+          finalTranslationsDir,
+          locales
+        );
+      }
+      const guidance = this.getLocalTranslationGuidance({
+        generatedLoader,
+        translationsDir: finalTranslationsDir,
+      });
+      if (guidance) logger.message(guidance);
     }
 
     const message = !isUsingGT

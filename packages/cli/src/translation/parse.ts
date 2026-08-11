@@ -100,7 +100,8 @@ export async function createUpdates(
     src,
     parsingFlags,
     parsingOptions,
-    extractPrimary
+    extractPrimary,
+    options.jsconfig
   );
 
   errors = [...errors, ...newErrors];

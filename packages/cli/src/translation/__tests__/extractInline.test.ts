@@ -28,6 +28,7 @@ const parsingOptions = {
   conditionNames: ['source', 'import'],
 } as ParsingConfigOptions;
 const emptyOutput = { updates: [], errors: [], warnings: [] };
+const tsconfigPath = 'config/tsconfig.app.json';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -62,7 +63,8 @@ describe('extractInlineFromProject', () => {
         patterns,
         parsingFlags,
         parsingOptions,
-        extractPrimary
+        extractPrimary,
+        tsconfigPath
       );
 
       expect(extractPrimary).toHaveBeenCalledOnce();
@@ -76,6 +78,7 @@ describe('extractInlineFromProject', () => {
         conditionNames: parsingOptions.conditionNames,
         vueCompilerOptions: parsingFlags.vueCompilerOptions,
         viteConfigPath: parsingFlags.viteConfigPath,
+        tsconfigPath,
       });
     }
   );

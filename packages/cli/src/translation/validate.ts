@@ -47,7 +47,8 @@ async function runValidation(
       files,
       settings.files.gtJson.parsingFlags,
       settings.parsingOptions,
-      extractPrimary
+      extractPrimary,
+      settings.jsconfig
     );
   }
 
