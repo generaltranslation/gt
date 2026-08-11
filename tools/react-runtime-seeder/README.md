@@ -10,9 +10,12 @@ the `I18nStore` boundary, and hashes with the runtime's `hashMessage()` helper.
 Rendering uses React's async static renderer, so Next-style async server
 components and suspended values settle before their runtime seeds are written.
 Each message is snapshotted before the runtime can mutate it, and captures are
-written in deterministic source order. The isolated render process tree is
-terminated after capture, including child processes or active handles left by
-the rendered module.
+written in deterministic source order. After capture, the tool terminates the
+harness, active handles, and tracked Node descendants, including detached or
+reparented processes and children launched with replacement environments.
+This cleanup is not a security sandbox: seed modules must be trusted, because
+a native subprocess can deliberately clear all tracking state and daemonize
+outside the harness.
 It records each directly imported `<T>` source location without reprinting the
 input, preserving whitespace-sensitive JSX behavior. Seed files that import
 shared components from `gt-next` are intentionally resolved to the same
