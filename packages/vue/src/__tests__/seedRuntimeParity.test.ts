@@ -51,6 +51,12 @@ type ReactBoundaryElement = {
 };
 
 type ReactRuntime = {
+  Fragment: unknown;
+  createElement: (
+    type: unknown,
+    props: Record<string, unknown> | null,
+    ...children: unknown[]
+  ) => unknown;
   isValidElement: (value: unknown) => boolean;
 };
 
@@ -197,7 +203,141 @@ describe('React and Vue seed runtime parity', () => {
     expect(Vue.toDisplayString(null)).toBe(Vue.toDisplayString(undefined));
     expect(Vue.toDisplayString(null)).toBe(Vue.toDisplayString(''));
   });
+
+  describe('programmatic React-authoritative shape boundaries', () => {
+    it('collapses the default-slot wrapper around one custom-component child', () => {
+      function Card(): null {
+        return null;
+      }
+      const VueCard = Vue.defineComponent({ name: 'Card', render: () => null });
+      const react = prepareProgrammaticReactChildren(
+        React.createElement(Card, null, React.createElement('b', null, 'Hello'))
+      );
+      const vue = serializeProgrammaticVueChildren([
+        Vue.h(VueCard, null, {
+          default: () => [Vue.h('b', null, 'Hello')],
+        }),
+      ]);
+      const expected: JsxChildren = {
+        t: 'Card',
+        i: 1,
+        c: { t: 'b', i: 2, c: 'Hello' },
+      };
+
+      assertExactProgrammaticParity(react, vue, expected, '1c3760937a26bcbd');
+    });
+
+    it('preserves nested array cardinality and a zero inside an element', () => {
+      const react = prepareProgrammaticReactChildren(
+        React.createElement('div', null, [[0]])
+      );
+      const vue = serializeProgrammaticVueChildren([Vue.h('div', null, [[0]])]);
+      const expected: JsxChildren = {
+        t: 'div',
+        i: 1,
+        c: ['0'],
+      };
+
+      assertExactProgrammaticParity(react, vue, expected, 'c9c9cd7f3378429f');
+    });
+
+    it('uses React truthiness for scalar Fragment children', () => {
+      const reactNumber = prepareProgrammaticReactChildren(
+        React.createElement(React.Fragment, null, 0)
+      );
+      const vueNumber = serializeProgrammaticVueChildren([
+        Vue.h(Vue.Fragment, null, { default: () => 0 }),
+      ]);
+      const reactString = prepareProgrammaticReactChildren(
+        React.createElement(React.Fragment, null, '0')
+      );
+      const vueString = serializeProgrammaticVueChildren([
+        Vue.h(Vue.Fragment, null, { default: () => '0' }),
+      ]);
+
+      assertExactProgrammaticParity(
+        reactNumber,
+        vueNumber,
+        { t: 'C1', i: 1 },
+        'a013c005483cdd19'
+      );
+      assertExactProgrammaticParity(
+        reactString,
+        vueString,
+        { t: 'C1', i: 1, c: '0' },
+        '246d388a23db9248'
+      );
+    });
+
+    it('distinguishes a missing root from an explicitly empty root', () => {
+      const reactMissing = prepareProgrammaticReactChildren(undefined);
+      const vueMissing = serializeProgrammaticVueChildren(undefined);
+      const reactEmpty = prepareProgrammaticReactChildren([]);
+      const vueEmpty = serializeProgrammaticVueChildren([]);
+
+      expect(reactMissing).toBeUndefined();
+      expect(vueMissing).toBeUndefined();
+      expect(sourceHash(reactMissing)).toBe('309dc626c8db3d4c');
+      expect(sourceHash(vueMissing)).toBe('309dc626c8db3d4c');
+      assertExactProgrammaticParity(
+        reactEmpty,
+        vueEmpty,
+        [],
+        'bdb7cc7686d0e468'
+      );
+    });
+
+    it('fails closed when a root array compiles to an indistinguishable Fragment', async () => {
+      const output = await extractFromVueSource(
+        `
+          import { T } from 'gt-vue';
+          export const View = () => <T>{[<b key="one">Hello</b>]}</T>;
+        `,
+        '/project/src/RootArray.tsx',
+        { projectRoot: '/project' }
+      );
+
+      expect(output.results).toEqual([]);
+      expect(output.errors.length).toBeGreaterThan(0);
+      expect(output.errors.join('\n')).toMatch(/array|fragment/i);
+    });
+  });
 });
+
+/** Prepares an arbitrary React child shape through the authoritative runtime. */
+function prepareProgrammaticReactChildren(
+  sourceChildren: unknown
+): JsxChildren {
+  return prepareT({
+    locale: 'en',
+    params: {},
+    sourceChildren: sourceChildren as Parameters<
+      typeof prepareT
+    >[0]['sourceChildren'],
+  }).sourceJsxChildren;
+}
+
+/** Calls the Vue serializer without erasing a deliberately missing root. */
+function serializeProgrammaticVueChildren(children: unknown): JsxChildren {
+  return serializeVueChildren(
+    children as Parameters<typeof serializeVueChildren>[0]
+  );
+}
+
+/** Pins semantic wire shape and hash on both sides of a programmatic boundary. */
+function assertExactProgrammaticParity(
+  react: JsxChildren,
+  vue: JsxChildren,
+  expected: JsxChildren,
+  expectedHash: string
+): void {
+  const semanticExpected = toSemanticWireSource(expected);
+
+  expect(toSemanticWireSource(react)).toStrictEqual(semanticExpected);
+  expect(toSemanticWireSource(vue)).toStrictEqual(semanticExpected);
+  expect(sourceHash(react)).toBe(expectedHash);
+  expect(sourceHash(vue)).toBe(expectedHash);
+}
 
 /** Pins React runtime semantics and hash to the checked-in catalog oracle. */
 function assertReactRuntimeOracle(fixture: ParitySeed): void {
