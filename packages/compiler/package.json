@@ -5,6 +5,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "author": "General Translation, Inc.",
+  "license": "MIT",
   "scripts": {
     "emit-types": "sh ../../scripts/emit-types.sh",
     "transpile": "tsdown && pnpm run emit-types",

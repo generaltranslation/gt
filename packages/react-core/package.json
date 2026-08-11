@@ -34,7 +34,7 @@
     "url": "git+https://github.com/generaltranslation/gt.git"
   },
   "author": "General Translation, Inc.",
-  "license": "FSL-1.1-ALv2",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/generaltranslation/gt/issues"
   },
