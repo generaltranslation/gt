@@ -35,3 +35,19 @@ export function createUnexpectedSeederError(error: unknown): Error {
     details: formatDiagnosticErrorDetails(error),
   });
 }
+
+export function createCliArgumentError(error: unknown): Error {
+  return createSeederError({
+    whatHappened: 'The command-line arguments are invalid',
+    fix: 'Run gt-react-seed --help to see the supported options.',
+    details: formatDiagnosticErrorDetails(error),
+  });
+}
+
+export function createOutputError(path: string, error: unknown): Error {
+  return createSeederError({
+    whatHappened: 'The runtime seed candidate could not be written',
+    fix: 'Choose a writable output path with --out, or use --stdout.',
+    details: `${path}\n${formatDiagnosticErrorDetails(error)}`,
+  });
+}

@@ -102,7 +102,7 @@
         "line": 63,
         "column": 7
       },
-      "hash": "d5d39247555e7709",
+      "hash": "aa713b18a19643de",
       "jsxChildren": [
         "Scheduled for ",
         {
@@ -114,7 +114,8 @@
         " ",
         {
           "i": 2,
-          "k": "offset"
+          "k": "offset",
+          "v": "rt"
         },
         "."
       ]

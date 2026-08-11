@@ -4,6 +4,12 @@ export async function resolveCaptureInput(
   values: { file?: string; code?: string; stdin?: boolean },
   readStdin: () => Promise<string>
 ): Promise<{ file?: string; code?: string }> {
+  if (values.file != null && values.file.trim() === '') {
+    throw createSeederError({
+      whatHappened: 'The --file path is empty',
+      fix: 'Pass a path to a React module after --file.',
+    });
+  }
   const inputCount = [
     values.file != null,
     values.code != null,

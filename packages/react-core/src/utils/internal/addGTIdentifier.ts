@@ -43,10 +43,7 @@ export function addGTIdentifier(
     if (transformation) {
       const transformationParts = transformation.split('-');
       // If the component was inserted automatically by the compiler
-      if (
-        transformationParts[1] === 'automatic' ||
-        transformationParts[2] === 'automatic'
-      ) {
+      if (transformationParts.includes('automatic')) {
         result.injectionType = 'automatic';
       }
 
@@ -56,9 +53,12 @@ export function addGTIdentifier(
         transformationParts[0] = 'fragment';
       }
       if (transformationParts[0] === 'variable') {
+        const variableType = transformationParts
+          .slice(1)
+          .filter((part) => part !== 'automatic')
+          .join('-');
         result.variableType =
-          (transformationParts?.[1] as VariableTransformationSuffix) ||
-          'variable';
+          (variableType as VariableTransformationSuffix) || 'variable';
       }
       if (transformationParts[0] === 'plural') {
         const pluralBranches = Object.entries(props).reduce(

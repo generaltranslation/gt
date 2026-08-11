@@ -17,23 +17,28 @@ import * as inputModule from ${JSON.stringify(inputFile)};
 import { writeFileSync } from 'node:fs';
 
 const captures = [];
-internalInitializeGTSRA({ defaultLocale: ${JSON.stringify(locale)}, locales: [${JSON.stringify(locale)}] });
+internalInitializeGTSRA({
+  defaultLocale: ${JSON.stringify(locale)},
+  locales: [${JSON.stringify(locale)}],
+});
 
 const store = new I18nStore();
 const getTranslateSnapshot = store.getTranslateSnapshot.bind(store);
 store.getTranslateSnapshot = (lookup, translations) => {
-  const source = lookup.options.__gtRuntimeSeedSource;
+  const options = lookup.options;
+  const source = options.__gtRuntimeSeedSource;
   if (source) {
+    const jsxChildren = structuredClone(lookup.message);
     const metadata = {
-      ...(lookup.options.$context && { context: lookup.options.$context }),
-      ...(lookup.options.$id && { id: lookup.options.$id }),
-      ...(lookup.options.$maxChars != null && { maxChars: lookup.options.$maxChars }),
-      ...(lookup.options.$requiresReview === true && { requiresReview: true }),
+      ...(options.$context && { context: options.$context }),
+      ...(options.$id && { id: options.$id }),
+      ...(options.$maxChars != null && { maxChars: options.$maxChars }),
+      ...(options.$requiresReview === true && { requiresReview: true }),
     };
     captures.push({
       source,
-      hash: hashMessage(lookup.message, lookup.options),
-      jsxChildren: lookup.message,
+      hash: hashMessage(structuredClone(jsxChildren), options),
+      jsxChildren,
       ...(Object.keys(metadata).length > 0 && { metadata }),
     });
   }
@@ -63,7 +68,29 @@ const { prelude } = await prerender(
   )
 );
 await prelude.cancel();
+captures.sort((first, second) => {
+  const sourceOrder =
+    compare(first.source.file, second.source.file) ||
+    first.source.line - second.source.line ||
+    first.source.column - second.source.column;
+  return sourceOrder || compare(JSON.stringify(first), JSON.stringify(second));
+});
 writeFileSync(${JSON.stringify(resultFile)}, JSON.stringify(captures));
-process.exit(0);
+if (!process.send) {
+  throw new Error('The runtime harness must be started with an IPC channel.');
+}
+await new Promise((resolve, reject) => {
+  process.send({ type: 'gt-react-runtime-seed-complete' }, (error) =>
+    error ? reject(error) : resolve()
+  );
+});
+await new Promise(() => {});
+
+function compare(first, second) {
+  if (first < second) return -1;
+  if (first > second) return 1;
+  return 0;
+}
+
 `;
 }

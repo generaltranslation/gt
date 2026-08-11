@@ -31,12 +31,20 @@ describe('React runtime seed corpus', () => {
 
       expect(candidate.seeds).toHaveLength(1);
       const [seed] = candidate.seeds;
+      const runtimeOraclePath = resolve(seedDirectory, 'runtime.json');
+      const runtimeOracle = existsSync(runtimeOraclePath)
+        ? JSON.parse(await readFile(runtimeOraclePath, 'utf8'))
+        : undefined;
       const expectedByHash = getExpectedByHash(expected);
       const expectedTree = expectedByHash?.[seed.hash] ?? expected;
       expect(expectedTree).toBeDefined();
       expect(normalizeSemanticWire(seed.jsxChildren)).toEqual(
         normalizeSemanticWire(expectedTree)
       );
+      if (runtimeOracle) {
+        expect(seed.hash).toBe(runtimeOracle.hash);
+        expect(seed.metadata).toEqual(runtimeOracle.metadata);
+      }
       if (!expectedByHash) {
         const context = seed.metadata?.context;
         const maxChars = seed.metadata?.maxChars;
@@ -46,8 +54,8 @@ describe('React runtime seed corpus', () => {
             source: expectedTree,
             dataFormat: 'JSX',
             ...(context && { context }),
-            ...(maxChars && { maxChars }),
-            ...(requiresReview && { requiresReview }),
+            ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
+            ...(requiresReview === true && { requiresReview: true }),
           })
         );
       }

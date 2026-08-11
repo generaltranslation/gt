@@ -1,5 +1,5 @@
 import { build, type Plugin } from 'esbuild';
-import { execFile } from 'node:child_process';
+import { execFile, fork, type ForkOptions } from 'node:child_process';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { extname, resolve } from 'node:path';
@@ -8,7 +8,7 @@ import { createRequire } from 'node:module';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { createSeederError, createUnexpectedSeederError } from './diagnostics';
 import { instrumentSource } from './instrumentSource';
-import { normalizePath, relativeToCwd } from './paths';
+import { isNodeModulesPath, normalizePath, relativeToCwd } from './paths';
 import { createRuntimeHarness } from './runtimeHarness';
 import type {
   CaptureRuntimeSeedsOptions,
@@ -18,6 +18,8 @@ import type {
 
 const execFileAsync = promisify(execFile);
 const require = createRequire(import.meta.url);
+const harnessCompleteMessage = 'gt-react-runtime-seed-complete';
+const maxHarnessOutputBytes = 10 * 1024 * 1024;
 
 export async function captureRuntimeSeeds(
   options: CaptureRuntimeSeedsOptions
@@ -29,12 +31,14 @@ export async function captureRuntimeSeeds(
   );
 
   try {
-    const inputFile = options.file
-      ? resolve(cwd, options.file)
-      : resolve(temporaryDirectory, 'inline.tsx');
-    const inputLabel = options.file
-      ? normalizePath(relativeToCwd(cwd, inputFile))
-      : '<inline>';
+    const inputFile =
+      options.file != null
+        ? resolve(cwd, options.file)
+        : resolve(temporaryDirectory, 'inline.tsx');
+    const inputLabel =
+      options.file != null
+        ? normalizePath(relativeToCwd(cwd, inputFile))
+        : '<inline>';
     if (options.code != null) {
       await writeFile(inputFile, createInlineModule(options.code), 'utf8');
     } else {
@@ -68,12 +72,7 @@ export async function captureRuntimeSeeds(
       },
       plugins: [runtimeResolutionPlugin(), instrumentationPlugin(cwd)],
     });
-    await execFileAsync(process.execPath, [bundleFile], {
-      cwd,
-      timeout: 30_000,
-      killSignal: 'SIGKILL',
-      maxBuffer: 10 * 1024 * 1024,
-    });
+    await runHarness(bundleFile, cwd);
     const seeds = JSON.parse(
       await readFile(resultFile, 'utf8')
     ) as RuntimeSeed[];
@@ -106,6 +105,12 @@ function validateInput(options: CaptureRuntimeSeedsOptions): void {
       fix: 'Pass either file or code, but not both.',
     });
   }
+  if (options.file != null && options.file.trim() === '') {
+    throw createSeederError({
+      whatHappened: 'The React seed file path is empty',
+      fix: 'Pass a path to a React module as file.',
+    });
+  }
 }
 
 function instrumentationPlugin(cwd: string): Plugin {
@@ -113,7 +118,7 @@ function instrumentationPlugin(cwd: string): Plugin {
     name: 'gt-react-runtime-seed-source',
     setup(build) {
       build.onLoad({ filter: /\.[cm]?[jt]sx?$/ }, async ({ path }) => {
-        if (path.includes('/node_modules/')) return;
+        if (isNodeModulesPath(path)) return;
         const code = await readFile(path, 'utf8');
         return {
           contents: instrumentSource({ code, file: path, cwd }),
@@ -122,6 +127,106 @@ function instrumentationPlugin(cwd: string): Plugin {
       });
     },
   };
+}
+
+async function runHarness(bundleFile: string, cwd: string): Promise<void> {
+  const child = fork(bundleFile, [], {
+    cwd,
+    detached: true,
+    silent: true,
+    windowsHide: true,
+  } as ForkOptions & { windowsHide: boolean });
+  let output = '';
+  let outputBytes = 0;
+  let settled = false;
+  const closed = new Promise<void>((resolveClosed) => {
+    child.once('close', () => resolveClosed());
+  });
+
+  await new Promise<void>((resolveRun, rejectRun) => {
+    const timeout = setTimeout(() => {
+      void finish(
+        createSeederError({
+          whatHappened: 'The React runtime seed render timed out',
+          fix: 'Make sure the rendered component and its asynchronous work finish within 30 seconds.',
+        })
+      );
+    }, 30_000);
+
+    const appendOutput = (chunk: Buffer): void => {
+      outputBytes += chunk.byteLength;
+      if (outputBytes > maxHarnessOutputBytes) {
+        void finish(
+          createSeederError({
+            whatHappened:
+              'The React runtime seed render produced too much output',
+            fix: 'Remove excessive logging from the rendered module and try again.',
+          })
+        );
+        return;
+      }
+      output += chunk.toString('utf8');
+    };
+
+    child.stdout?.on('data', appendOutput);
+    child.stderr?.on('data', appendOutput);
+    child.once('error', (error) => void finish(error));
+    child.once('exit', (code, signal) => {
+      if (settled) return;
+      const detail = output.trim();
+      void finish(
+        new Error(
+          `The runtime harness exited before completing (code ${String(code)}, signal ${String(signal)}).${detail ? `\n${detail}` : ''}`
+        )
+      );
+    });
+    child.on('message', (message) => {
+      if (
+        typeof message === 'object' &&
+        message !== null &&
+        'type' in message &&
+        message.type === harnessCompleteMessage
+      ) {
+        void finish();
+      }
+    });
+
+    async function finish(error?: Error): Promise<void> {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      await terminateProcessTree(child.pid);
+      await closed;
+      if (error) rejectRun(error);
+      else resolveRun();
+    }
+  });
+}
+
+async function terminateProcessTree(pid: number | undefined): Promise<void> {
+  if (pid == null) return;
+  if (process.platform === 'win32') {
+    try {
+      await execFileAsync('taskkill', ['/PID', String(pid), '/T', '/F'], {
+        windowsHide: true,
+      });
+      return;
+    } catch {
+      // Fall through to the direct child as a best-effort fallback.
+    }
+  } else {
+    try {
+      process.kill(-pid, 'SIGKILL');
+      return;
+    } catch {
+      // Fall through when process groups are unavailable.
+    }
+  }
+  try {
+    process.kill(pid, 'SIGKILL');
+  } catch {
+    // The process may already have exited.
+  }
 }
 
 function runtimeResolutionPlugin(): Plugin {

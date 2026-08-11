@@ -1,9 +1,6 @@
 import * as path from 'node:path';
 
-type PathApi = Pick<
-  typeof path,
-  'basename' | 'isAbsolute' | 'relative' | 'sep'
->;
+type PathApi = Pick<typeof path, 'isAbsolute' | 'relative'>;
 
 export function relativeToCwd(
   cwd: string,
@@ -11,17 +8,14 @@ export function relativeToCwd(
   pathApi: PathApi = path
 ): string {
   const relativePath = pathApi.relative(cwd, file);
-  if (
-    !relativePath ||
-    relativePath === '..' ||
-    relativePath.startsWith(`..${pathApi.sep}`) ||
-    pathApi.isAbsolute(relativePath)
-  ) {
-    return pathApi.basename(file);
-  }
-  return relativePath;
+  if (!relativePath) return file;
+  return pathApi.isAbsolute(relativePath) ? file : relativePath;
 }
 
 export function normalizePath(pathname: string): string {
   return pathname.replaceAll('\\', '/');
+}
+
+export function isNodeModulesPath(pathname: string): boolean {
+  return normalizePath(pathname).split('/').includes('node_modules');
 }

@@ -19,4 +19,10 @@ describe('resolveCaptureInput', () => {
     ).resolves.toEqual({ file: undefined, code: '<T>stdin</T>' });
     expect(readStdin).toHaveBeenCalledOnce();
   });
+
+  it('rejects an empty file path', async () => {
+    await expect(resolveCaptureInput({ file: '  ' }, vi.fn())).rejects.toThrow(
+      'The --file path is empty'
+    );
+  });
 });

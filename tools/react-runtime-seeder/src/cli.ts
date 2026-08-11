@@ -1,10 +1,14 @@
 #!/usr/bin/env node
 
-import { parseArgs } from 'node:util';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
+import { parseCliArgs } from './args';
 import { captureRuntimeSeeds } from './capture';
-import { createSeederError, createUnexpectedSeederError } from './diagnostics';
+import {
+  createOutputError,
+  createSeederError,
+  createUnexpectedSeederError,
+} from './diagnostics';
 import { resolveCaptureInput } from './input';
 import { getDefaultOutputName } from './output';
 
@@ -24,20 +28,7 @@ Options:
 `;
 
 async function main(): Promise<void> {
-  const { values } = parseArgs({
-    args:
-      process.argv[2] === '--' ? process.argv.slice(3) : process.argv.slice(2),
-    options: {
-      file: { type: 'string', short: 'f' },
-      code: { type: 'string', short: 'c' },
-      stdin: { type: 'boolean' },
-      out: { type: 'string', short: 'o' },
-      stdout: { type: 'boolean' },
-      locale: { type: 'string' },
-      help: { type: 'boolean', short: 'h' },
-    },
-    allowPositionals: false,
-  });
+  const values = parseCliArgs(process.argv.slice(2));
   if (values.help) {
     process.stdout.write(help);
     return;
@@ -62,8 +53,12 @@ async function main(): Promise<void> {
   const output = resolve(
     values.out ?? resolve('.gt/runtime-seeds', getDefaultOutputName(candidate))
   );
-  await mkdir(dirname(output), { recursive: true });
-  await writeFile(output, json, 'utf8');
+  try {
+    await mkdir(dirname(output), { recursive: true });
+    await writeFile(output, json, 'utf8');
+  } catch (error) {
+    throw createOutputError(output, error);
+  }
   process.stdout.write(
     `Captured ${candidate.seeds.length} runtime seed${candidate.seeds.length === 1 ? '' : 's'} in ${output}\n`
   );
