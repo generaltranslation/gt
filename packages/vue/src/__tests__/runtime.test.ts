@@ -154,6 +154,88 @@ describe('gt-vue runtime', () => {
     mounted.app.unmount();
   });
 
+  it('keeps the T instance, Fragment root, and keyed child across locale changes', async () => {
+    let setupCount = 0;
+    const Stateful = defineComponent({
+      name: 'StableFragmentChild',
+      setup(_props, { slots }) {
+        setupCount += 1;
+        return () => h('span', slots.default?.());
+      },
+    });
+    const plugin = createGT({
+      loadTranslations: async () => ({
+        stableFragmentRoot: {
+          t: 'StableFragmentChild',
+          i: 1,
+          c: 'Translated content',
+        },
+      }),
+    });
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(
+            T,
+            { _hash: 'stableFragmentRoot' },
+            {
+              default: () =>
+                h(
+                  Stateful,
+                  { key: 'stable-child' },
+                  { default: () => 'Source content' }
+                ),
+            }
+          );
+      },
+    });
+    const mounted = mount(Root, plugin);
+    const rootInstance = mounted.app._instance;
+    expect(rootInstance).not.toBeNull();
+
+    const sourceTVNode = rootInstance!.subTree;
+    expect(sourceTVNode.type).toBe(T);
+    const tInstance = sourceTVNode.component;
+    expect(tInstance).not.toBeNull();
+    expect(tInstance!.subTree.type).toBe(Fragment);
+    const sourceChildren = tInstance!.subTree.children;
+    expect(Array.isArray(sourceChildren)).toBe(true);
+    const sourceChildInstance = (sourceChildren as Vue.VNode[]).find(
+      (child) => child.component
+    )?.component;
+    expect(sourceChildInstance).toBeTruthy();
+    expect(textContent(mounted.root)).toBe('Source content');
+
+    await plugin.setLocale('fr');
+    await nextTick();
+    expect(rootInstance!.subTree.type).toBe(T);
+    expect(rootInstance!.subTree.component).toBe(tInstance);
+    expect(tInstance!.subTree.type).toBe(Fragment);
+    const translatedChildren = tInstance!.subTree.children;
+    expect(Array.isArray(translatedChildren)).toBe(true);
+    expect(
+      (translatedChildren as Vue.VNode[]).find((child) => child.component)
+        ?.component
+    ).toBe(sourceChildInstance);
+    expect(textContent(mounted.root)).toBe('Translated content');
+    expect(setupCount).toBe(1);
+
+    await plugin.setLocale('en');
+    await nextTick();
+    expect(rootInstance!.subTree.type).toBe(T);
+    expect(rootInstance!.subTree.component).toBe(tInstance);
+    expect(tInstance!.subTree.type).toBe(Fragment);
+    const restoredChildren = tInstance!.subTree.children;
+    expect(Array.isArray(restoredChildren)).toBe(true);
+    expect(
+      (restoredChildren as Vue.VNode[]).find((child) => child.component)
+        ?.component
+    ).toBe(sourceChildInstance);
+    expect(textContent(mounted.root)).toBe('Source content');
+    expect(setupCount).toBe(1);
+    mounted.app.unmount();
+  });
+
   it('renders empty authored Fragments safely in source and translated SSR', async () => {
     const plugin = createGT({
       loadTranslations: async () => ({
