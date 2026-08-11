@@ -273,7 +273,10 @@ describe('React and Vue seed runtime parity', () => {
       const reactMissing = prepareProgrammaticReactChildren(undefined);
       const vueMissing = serializeProgrammaticVueChildren(undefined);
       const reactEmpty = prepareProgrammaticReactChildren([]);
-      const vueEmpty = serializeProgrammaticVueChildren([]);
+      // Vue's JSX/SFC slot contract wraps authored children once. An authored
+      // empty array therefore reaches T as `[[]]`; a bare `[]` is the missing
+      // slot wrapper covered by `vueMissing` above.
+      const vueEmpty = serializeProgrammaticVueChildren([[]]);
 
       expect(reactMissing).toBeUndefined();
       expect(vueMissing).toBeUndefined();
@@ -287,7 +290,7 @@ describe('React and Vue seed runtime parity', () => {
       );
     });
 
-    it('fails closed when a root array compiles to an indistinguishable Fragment', async () => {
+    it('preserves an authored root array across extraction and runtime', async () => {
       const output = await extractFromVueSource(
         `
           import { T } from 'gt-vue';
@@ -297,9 +300,24 @@ describe('React and Vue seed runtime parity', () => {
         { projectRoot: '/project' }
       );
 
-      expect(output.results).toEqual([]);
-      expect(output.errors.length).toBeGreaterThan(0);
-      expect(output.errors.join('\n')).toMatch(/array|fragment/i);
+      const expected = [{ t: 'b', i: 1, c: 'Hello' }] satisfies JsxChildren;
+      const runtime = serializeProgrammaticVueChildren([
+        [Vue.h('b', { key: 'one' }, 'Hello')],
+      ]);
+
+      expect(output.errors).toEqual([]);
+      expect(output.results).toHaveLength(1);
+      expect(toSemanticWireSource(output.results[0]?.source)).toStrictEqual(
+        toSemanticWireSource(expected)
+      );
+      assertExactProgrammaticParity(
+        prepareProgrammaticReactChildren([
+          React.createElement('b', { key: 'one' }, 'Hello'),
+        ]),
+        runtime,
+        expected,
+        '3bfbeb8ed305dcfb'
+      );
     });
   });
 });
