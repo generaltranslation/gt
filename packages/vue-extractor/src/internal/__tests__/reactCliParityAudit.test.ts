@@ -188,7 +188,7 @@ describe('React CLI parity audit: rich Vue content', () => {
 
     expect(output.errors).toEqual([]);
     expect(richSources(output.results)).toEqual([
-      [],
+      undefined,
       {
         t: 'Branch',
         i: 1,

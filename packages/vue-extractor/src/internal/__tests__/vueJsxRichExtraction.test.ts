@@ -148,13 +148,19 @@ describe('Vue JSX rich extraction', () => {
       {
         dataFormat: 'JSX',
         source: [
-          'Hello ',
-          '1',
-          { c: 'world', d: { ti: 'Greeting' }, i: 1, t: 'strong' },
-          { i: 2, k: '_gt_value_2', v: 'v' },
-          { i: 3, k: '_gt_n_3', v: 'n' },
-          { i: 4, k: '_gt_cost_4', v: 'c' },
-          { i: 5, k: '_gt_date_5', v: 'd' },
+          {
+            c: [
+              'Hello ',
+              '1',
+              { c: 'world', d: { ti: 'Greeting' }, i: 2, t: 'strong' },
+            ],
+            i: 1,
+            t: 'C1',
+          },
+          { i: 3, k: '_gt_value_3', v: 'v' },
+          { i: 4, k: '_gt_n_4', v: 'n' },
+          { i: 5, k: '_gt_cost_5', v: 'c' },
+          { i: 6, k: '_gt_date_6', v: 'd' },
         ],
         metadata: {
           context: 'hero',
@@ -173,7 +179,353 @@ describe('Vue JSX rich extraction', () => {
         dataFormat: 'JSX',
         source: output.results[0]!.source,
       })
-    ).toBe('4293805c6f6d7cd8');
+    ).toBe('93725f15b60d40ce');
+  });
+
+  it.each([
+    {
+      child: `<>{0}</>`,
+      hash: 'a013c005483cdd19',
+      name: 'a semantic Fragment with scalar zero',
+      source: { i: 1, t: 'C1' },
+    },
+    {
+      child: `<><span>Child</span></>`,
+      hash: 'af6e1f5c580048d9',
+      name: 'a semantic Fragment with an element',
+      source: { c: { c: 'Child', i: 2, t: 'span' }, i: 1, t: 'C1' },
+    },
+  ])(
+    'matches React prepareT shape and hash for $name',
+    async ({ child, hash, source }) => {
+      const output = await extractFromVueSource(
+        `
+          import { T } from 'gt-vue';
+          export const View = () => <T>${child}</T>;
+        `,
+        '/project/src/View.tsx'
+      );
+
+      expect(output.errors).toEqual([]);
+      expect(output.results[0]?.source).toEqual(source);
+      expect(
+        hashSource({ dataFormat: 'JSX', source: output.results[0]!.source })
+      ).toBe(hash);
+    }
+  );
+
+  it.each([
+    {
+      child: `{['x']}`,
+      hash: '18d8d88a83f23215',
+      name: 'a singleton array',
+      source: ['x'],
+    },
+    {
+      child: `{[[['x']]]}`,
+      hash: '18d8d88a83f23215',
+      name: 'nested arrays flattened by React.Children',
+      source: ['x'],
+    },
+    {
+      child: `{/* boundary */}{['x']}`,
+      hash: '18d8d88a83f23215',
+      name: 'an array following a JSX comment boundary',
+      source: ['x'],
+    },
+    {
+      child: `{[]}`,
+      hash: 'bdb7cc7686d0e468',
+      name: 'an empty array',
+      source: [],
+    },
+    {
+      child: `{[false, true, null]}`,
+      hash: 'bdb7cc7686d0e468',
+      name: 'boolean and null values removed from an authored array',
+      source: [],
+    },
+    {
+      child: `{false}{true}{null}`,
+      hash: 'bdb7cc7686d0e468',
+      name: 'boolean and null values removed from multiple children',
+      source: [],
+    },
+  ])(
+    'matches React prepareT shape and hash for $name',
+    async ({ child, hash, source }) => {
+      const output = await extractFromVueSource(
+        `
+          import { T } from 'gt-vue';
+          export const View = () => <T>${child}</T>;
+        `,
+        '/project/src/View.tsx'
+      );
+
+      expect(output.errors).toEqual([]);
+      expect(output.results[0]?.source).toEqual(source);
+      expect(
+        hashSource({ dataFormat: 'JSX', source: output.results[0]!.source })
+      ).toBe(hash);
+    }
+  );
+
+  it.each([
+    {
+      child: '{false}',
+      hash: 'd98d8886a31c98f3',
+      name: 'false',
+      source: false,
+    },
+    {
+      child: '{true}',
+      hash: '73b6b211a4122ba8',
+      name: 'true',
+      source: true,
+    },
+    {
+      child: '{null}',
+      hash: '471b9124c31817e9',
+      name: 'null',
+      source: null,
+    },
+  ])(
+    'preserves the exact React scalar wire for $name',
+    async ({ child, hash, source }) => {
+      const output = await extractFromVueSource(
+        `
+          import { T } from 'gt-vue';
+          export const View = () => <T>${child}</T>;
+        `,
+        '/project/src/View.tsx'
+      );
+
+      expect(output.errors).toEqual([]);
+      expect(output.results[0]?.source).toBe(source);
+      expect(
+        hashSource({ dataFormat: 'JSX', source: output.results[0]!.source })
+      ).toBe(hash);
+    }
+  );
+
+  it('serializes a missing root as React prepareT undefined', async () => {
+    const output = await extractFromVueSource(
+      `
+        import { T } from 'gt-vue';
+        export const Missing = () => <T />;
+      `,
+      '/project/src/View.tsx'
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(output.results.map(({ source }) => source)).toEqual([undefined]);
+    expect(
+      hashSource({
+        dataFormat: output.results[0]!.dataFormat,
+        source: output.results[0]!.source,
+      })
+    ).toBe('309dc626c8db3d4c');
+  });
+
+  it('mirrors React truthiness gates for ordinary element children', async () => {
+    const output = await extractFromVueSource(
+      `
+        import { T } from 'gt-vue';
+        export const View = () => (
+          <T>
+            <p>{0}</p><p>{''}</p><p>{false}</p><p>{null}</p><p>{true}</p><p>{[]}</p><p>{[false, true, null]}</p>
+            <>{false}</><>{null}</><>{true}</><>{[false, true, null]}</>
+          </T>
+        );
+      `,
+      '/project/src/View.tsx'
+    );
+    const source = [
+      { i: 1, t: 'p' },
+      { i: 2, t: 'p' },
+      { i: 3, t: 'p' },
+      { i: 4, t: 'p' },
+      { c: true, i: 5, t: 'p' },
+      { c: [], i: 6, t: 'p' },
+      { c: [], i: 7, t: 'p' },
+      { i: 8, t: 'C8' },
+      { i: 9, t: 'C9' },
+      { c: true, i: 10, t: 'C10' },
+      { c: [], i: 11, t: 'C11' },
+    ];
+
+    expect(output.errors).toEqual([]);
+    expect(output.results[0]?.source).toEqual(source);
+    expect(hashSource({ dataFormat: 'JSX', source })).toBe('f0b316370c61fd25');
+  });
+
+  it('preserves nested-array cardinality for zero inside an element', async () => {
+    const output = await extractFromVueSource(
+      `
+        import { T } from 'gt-vue';
+        export const View = () => <T><div>{[[0]]}</div></T>;
+      `,
+      '/project/src/View.tsx'
+    );
+    const source = { c: ['0'], i: 1, t: 'div' };
+
+    expect(output.errors).toEqual([]);
+    expect(output.results[0]?.source).toEqual(source);
+    expect(hashSource({ dataFormat: 'JSX', source })).toBe('c9c9cd7f3378429f');
+  });
+
+  it('distinguishes an absent component slot from an explicit empty array', async () => {
+    const output = await extractFromVueSource(
+      `
+        import { T } from 'gt-vue';
+        import Card from './Card.vue';
+        export const View = () => <T><Card/><Card>{[]}</Card></T>;
+      `,
+      '/project/src/View.tsx',
+      { projectRoot: '/project' }
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(output.results[0]?.source).toEqual([
+      { i: 1, t: 'Card' },
+      { c: [], i: 2, t: 'Card' },
+    ]);
+  });
+
+  it('normalizes explicit component slot wrappers before applying React truthiness', async () => {
+    const output = await extractFromVueSource(
+      `
+        import { T } from 'gt-vue';
+        import Card from './Card.vue';
+        export const View = () => (
+          <T>
+            <Card v-slots={{ default: () => ['Scalar'] }} />
+            <Card v-slots={{ default: () => [] }} />
+            <Card v-slots={{ default: () => [['Array']] }} />
+            <Card v-slots={{ default: () => [[]] }} />
+            <Card v-slots={{ default: () => [0] }} />
+            <Card>{() => 0}</Card>
+            <Card v-slots={{ default: () => [false] }} />
+            <Card v-slots={{ default: () => [null] }} />
+            <Card v-slots={{ default: () => [true] }} />
+            <Card v-slots={{ default: () => [false, true, null] }} />
+            <Card v-slots={{ default: () => [[false, true, null]] }} />
+          </T>
+        );
+      `,
+      '/project/src/View.tsx',
+      { projectRoot: '/project' }
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(output.results[0]?.source).toEqual([
+      { c: 'Scalar', i: 1, t: 'Card' },
+      { i: 2, t: 'Card' },
+      { c: ['Array'], i: 3, t: 'Card' },
+      { c: [], i: 4, t: 'Card' },
+      { i: 5, t: 'Card' },
+      { i: 6, t: 'Card' },
+      { i: 7, t: 'Card' },
+      { i: 8, t: 'Card' },
+      { c: true, i: 9, t: 'Card' },
+      { c: [], i: 10, t: 'Card' },
+      { c: [], i: 11, t: 'Card' },
+    ]);
+  });
+
+  it('preserves scalar branch slot wires and drops literals in branch arrays', async () => {
+    const output = await extractFromVueSource(
+      `
+        import { Branch, T } from 'gt-vue';
+        export const View = () => (
+          <T>
+            <Branch
+              branch="yes"
+              v-slots={{
+                default: () => [true],
+                no: () => [false],
+                empty: () => [null],
+                yes: () => [true],
+                many: () => [false, true, null],
+                array: () => [[false, true, null]],
+              }}
+            />
+          </T>
+        );
+      `,
+      '/project/src/View.tsx'
+    );
+    const source = {
+      c: true,
+      d: {
+        b: { array: [], empty: null, many: [], no: false, yes: true },
+        t: 'b',
+      },
+      i: 1,
+      t: 'Branch',
+    };
+
+    expect(output.errors).toEqual([]);
+    expect(output.results[0]?.source).toEqual(source);
+    expect(hashSource({ dataFormat: 'JSX', source })).toBe('ffb22a789e8e9619');
+  });
+
+  it('omits undefined Branch slots while retaining authored empty arrays', async () => {
+    const output = await extractFromVueSource(
+      `
+        import { Branch, T } from 'gt-vue';
+        export const View = () => (
+          <T>
+            <Branch
+              branch="empty"
+              v-slots={{
+                scalar: () => undefined,
+                wrapped: () => [undefined],
+                empty: () => [],
+                nested: () => [[undefined]],
+              }}
+            />
+          </T>
+        );
+      `,
+      '/project/src/View.tsx'
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(output.results[0]?.source).toEqual({
+      d: { b: { empty: [], nested: [] }, t: 'b' },
+      i: 1,
+      t: 'Branch',
+    });
+  });
+
+  it('omits undefined Plural slots while retaining authored empty arrays', async () => {
+    const output = await extractFromVueSource(
+      `
+        import { Plural, T } from 'gt-vue';
+        export const View = () => (
+          <T>
+            <Plural
+              n={2}
+              v-slots={{
+                one: () => undefined,
+                two: () => [undefined],
+                few: () => [],
+                many: () => [[undefined]],
+              }}
+            />
+          </T>
+        );
+      `,
+      '/project/src/View.tsx'
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(output.results[0]?.source).toEqual({
+      d: { b: { few: [], many: [] }, t: 'p' },
+      i: 1,
+      t: 'Plural',
+    });
   });
 
   it('serializes immutable primitive globals in JSX', async () => {
@@ -237,7 +589,7 @@ describe('Vue JSX rich extraction', () => {
     expect(output.errors.join('\n')).toContain('dynamic JSX content');
   });
 
-  it('matches the Fragment spellings Vue JSX keeps transparent', async () => {
+  it('serializes authored Fragment spellings as semantic elements', async () => {
     const output = await extractFromVueSource(
       `
         import * as Vue from 'vue';
@@ -253,12 +605,12 @@ describe('Vue JSX rich extraction', () => {
 
     expect(output.errors).toEqual([]);
     expect(output.results[0]?.source).toEqual([
-      'short',
-      { c: 'one', i: 1, t: 'span' },
-      { c: 'three', i: 2, t: 'b' },
+      { c: 'short', i: 1, t: 'C1' },
+      { c: { c: 'one', i: 3, t: 'span' }, i: 2, t: 'C2' },
+      { c: { c: 'three', i: 5, t: 'b' }, i: 4, t: 'C4' },
       {
-        c: { c: 'opaque', i: 4, t: 'i' },
-        i: 3,
+        c: { c: 'opaque', i: 7, t: 'i' },
+        i: 6,
         t: 'CustomFragment',
       },
     ]);
@@ -445,7 +797,7 @@ describe('Vue JSX rich extraction', () => {
         export const View = () => (
           <T>
             <Card v-slots={{
-              default: () => <><strong>Hello</strong> <Var>{name}</Var></>,
+              default: () => [<strong>Hello</strong>, ' ', <Var>{name}</Var>],
               named: async (props) => <i>{props.label}</i>,
             }} />
             <b>After</b>
@@ -668,8 +1020,8 @@ describe('Vue JSX rich extraction', () => {
         const tone = getTone();
         export const View = () => (
           <GT.T><GT.Branch branch={tone} formal="ignored attribute" v-slots={{
-            formal: () => <><strong>Hello</strong> <GT.Var>{name}</GT.Var></>,
-            casual: () => <><em>Hi</em> <GT.Var>{name}</GT.Var></>,
+            formal: () => [<strong>Hello</strong>, ' ', <GT.Var>{name}</GT.Var>],
+            casual: () => [<em>Hi</em>, ' ', <GT.Var>{name}</GT.Var>],
             default: () => 'Fallback',
           }} /><span>After</span></GT.T>
         );
@@ -710,8 +1062,8 @@ describe('Vue JSX rich extraction', () => {
         const count = getCount();
         export const View = () => (
           <T><Plural n={count} zero="None" title="Tip" v-slots={{
-            one: () => <>One <Num value={1} /></>,
-            other: () => <>Many <Num value={count} /></>,
+            one: () => ['One ', <Num value={1} />],
+            other: () => ['Many ', <Num value={count} />],
             invalid: () => 'ignored',
             default: () => 'Fallback',
           }} /><span>After</span></T>

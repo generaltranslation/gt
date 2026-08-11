@@ -16,7 +16,9 @@ export type InlineExtractionOutput = {
  *
  * Hash collisions represent one catalog entry. Their paths and source context
  * are combined without duplicating identical locations, while the primary
- * framework's ordering and update object remain authoritative.
+ * framework's ordering and catalog value remain authoritative. Primary input
+ * objects are never mutated and their diagnostics retain their original
+ * ordering and multiplicity.
  */
 export function mergeVueProjectExtraction(
   primary: InlineExtractionOutput,
@@ -25,7 +27,7 @@ export function mergeVueProjectExtraction(
   return {
     updates: mergeUpdates(primary.updates, vue.updates),
     errors: [...primary.errors, ...vue.errors],
-    warnings: [...new Set([...primary.warnings, ...vue.warnings])],
+    warnings: [...primary.warnings, ...vue.warnings],
   };
 }
 
@@ -53,8 +55,14 @@ function mergeUpdates(
     }
 
     const existing = updates[existingIndex]!;
-    mergeFilePaths(existing, compatibleUpdate);
-    mergeSourceCode(existing, compatibleUpdate);
+    updates[existingIndex] = {
+      ...existing,
+      metadata: {
+        ...existing.metadata,
+        ...mergeFilePaths(existing, compatibleUpdate),
+        ...mergeSourceCode(existing, compatibleUpdate),
+      },
+    };
   }
   return updates;
 }
@@ -62,31 +70,34 @@ function mergeUpdates(
 function mergeFilePaths(
   existing: Updates[number],
   incoming: Updates[number]
-): void {
+): Pick<Updates[number]['metadata'], 'filePaths'> {
   const paths = [
     ...(existing.metadata.filePaths ?? []),
     ...(incoming.metadata.filePaths ?? []),
   ];
-  if (paths.length > 0) existing.metadata.filePaths = [...new Set(paths)];
+  return paths.length > 0 ? { filePaths: [...new Set(paths)] } : {};
 }
 
 function mergeSourceCode(
   existing: Updates[number],
   incoming: Updates[number]
-): void {
+): Pick<Updates[number]['metadata'], 'sourceCode'> {
   const incomingSourceCode = asSourceCodeMap(incoming.metadata.sourceCode);
-  if (!incomingSourceCode) return;
+  if (!incomingSourceCode) return {};
 
   const currentSourceCode = existing.metadata.sourceCode;
   const existingSourceCode =
     currentSourceCode === undefined ? {} : asSourceCodeMap(currentSourceCode);
-  if (!existingSourceCode) return;
-  if (currentSourceCode === undefined) {
-    existing.metadata.sourceCode = existingSourceCode;
-  }
+  if (!existingSourceCode) return {};
+  const mergedSourceCode = Object.fromEntries(
+    Object.entries(existingSourceCode).map(([file, entries]) => [
+      file,
+      [...entries],
+    ])
+  );
 
   for (const [file, entries] of Object.entries(incomingSourceCode)) {
-    const target = (existingSourceCode[file] ??= []);
+    const target = (mergedSourceCode[file] ??= []);
     const known = new Set(target.map(serializeSourceCodeEntry));
     for (const entry of entries) {
       const key = serializeSourceCodeEntry(entry);
@@ -95,6 +106,7 @@ function mergeSourceCode(
       known.add(key);
     }
   }
+  return { sourceCode: mergedSourceCode };
 }
 
 type SourceCodeMap = Record<string, unknown[]>;

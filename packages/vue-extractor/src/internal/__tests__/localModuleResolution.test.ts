@@ -156,7 +156,7 @@ describe('local module identity resolution', () => {
       'TSX function',
       'TSX message',
       'TSX forwarded',
-      'TSX rich',
+      { c: 'TSX rich', i: 1, t: 'C1' },
       'TSX namespace rich',
     ]);
     expect(output.errors).toEqual([

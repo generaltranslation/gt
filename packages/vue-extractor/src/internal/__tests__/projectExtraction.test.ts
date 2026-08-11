@@ -245,6 +245,40 @@ const gt = useGT();
     });
   });
 
+  it('hashes missing and explicit-empty T children distinctly', async () => {
+    const validRoot = createVueFixture({
+      'src/Missing.tsx': `
+        import { T } from 'gt-vue';
+        export const Missing = () => <T />;
+      `,
+    });
+    const validOutput = await extractFromVueProject({ cwd: validRoot });
+
+    expect(validOutput.errors).toEqual([]);
+    expect(
+      validOutput.updates.map(({ metadata, source }) => ({
+        hash: metadata.hash,
+        source,
+      }))
+    ).toEqual([{ hash: '309dc626c8db3d4c', source: undefined }]);
+
+    const emptyRoot = createVueFixture({
+      'src/Empty.tsx': `
+        import { T } from 'gt-vue';
+        export const EmptyArray = () => <T>{[]}</T>;
+      `,
+    });
+    const emptyOutput = await extractFromVueProject({ cwd: emptyRoot });
+
+    expect(emptyOutput.errors).toEqual([]);
+    expect(
+      emptyOutput.updates.map(({ metadata, source }) => ({
+        hash: metadata.hash,
+        source,
+      }))
+    ).toEqual([{ hash: 'bdb7cc7686d0e468', source: [] }]);
+  });
+
   it('deduplicates hashes while merging unique file and source metadata', async () => {
     const root = createVueFixture({
       'src/first.ts': `
