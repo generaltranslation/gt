@@ -40,6 +40,8 @@ type SerializedJSXChild =
 
 type SerializedSlotResult = {
   children: SerializedJSXChild[];
+  /** Vue treats an undefined named-slot result as an absent branch. */
+  slotAbsent?: boolean;
   slotTruthy?: boolean;
 };
 
@@ -1235,9 +1237,14 @@ function serializeBranchElement(
   for (const [name, slot] of slots.namedSlots) {
     if (name.startsWith('_')) continue;
     if (component === 'Plural' && !isAcceptedPluralForm(name)) continue;
-    branches[name] = collapseChildren(
-      serializeSlotFunction(slot, { value: id }, context, analysis).children
+    const result = serializeSlotFunction(
+      slot,
+      { value: id },
+      context,
+      analysis
     );
+    if (result.slotAbsent) continue;
+    branches[name] = collapseChildren(result.children);
   }
   readBranchAttributeSources(
     element.openingElement,
@@ -1454,6 +1461,9 @@ function serializeSlotFunction(
         analysis,
         true
       ),
+      ...(isUndefinedSlotChild(value, slot.scope, analysis) && {
+        slotAbsent: true,
+      }),
       slotTruthy: isTruthySlotChild(value, slot.scope, analysis),
     };
   }
@@ -1489,12 +1499,29 @@ function serializeSlotFunction(
   }
   return {
     children: entries.length > 1 ? [{ kind: 'array', children }] : children,
+    ...(entries.length === 1 &&
+      entries[0]!.type !== 'SpreadElement' &&
+      isUndefinedSlotChild(entries[0]!, slot.scope, analysis) && {
+        slotAbsent: true,
+      }),
     slotTruthy:
       entries.length > 1 ||
       (entries.length === 1 &&
         entries[0]!.type !== 'SpreadElement' &&
         isTruthySlotChild(entries[0]!, slot.scope, analysis)),
   };
+}
+
+/** Matches Vue's absent named-slot result without collapsing an authored array. */
+function isUndefinedSlotChild(
+  input: babel.Expression,
+  scope: Scope,
+  analysis: VueJSXAnalysis
+): boolean {
+  const expression = unwrapExpression(input);
+  if (!expression || expression.type === 'ArrayExpression') return false;
+  const primitive = analysis.readStaticPrimitive(expression, scope);
+  return primitive.ok && primitive.value === undefined;
 }
 
 /** Mirrors React's `props.children` truthiness for one normalized slot entry. */

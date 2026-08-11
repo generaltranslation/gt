@@ -470,6 +470,64 @@ describe('Vue JSX rich extraction', () => {
     expect(hashSource({ dataFormat: 'JSX', source })).toBe('ffb22a789e8e9619');
   });
 
+  it('omits undefined Branch slots while retaining authored empty arrays', async () => {
+    const output = await extractFromVueSource(
+      `
+        import { Branch, T } from 'gt-vue';
+        export const View = () => (
+          <T>
+            <Branch
+              branch="empty"
+              v-slots={{
+                scalar: () => undefined,
+                wrapped: () => [undefined],
+                empty: () => [],
+                nested: () => [[undefined]],
+              }}
+            />
+          </T>
+        );
+      `,
+      '/project/src/View.tsx'
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(output.results[0]?.source).toEqual({
+      d: { b: { empty: [], nested: [] }, t: 'b' },
+      i: 1,
+      t: 'Branch',
+    });
+  });
+
+  it('omits undefined Plural slots while retaining authored empty arrays', async () => {
+    const output = await extractFromVueSource(
+      `
+        import { Plural, T } from 'gt-vue';
+        export const View = () => (
+          <T>
+            <Plural
+              n={2}
+              v-slots={{
+                one: () => undefined,
+                two: () => [undefined],
+                few: () => [],
+                many: () => [[undefined]],
+              }}
+            />
+          </T>
+        );
+      `,
+      '/project/src/View.tsx'
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(output.results[0]?.source).toEqual({
+      d: { b: { few: [], many: [] }, t: 'p' },
+      i: 1,
+      t: 'Plural',
+    });
+  });
+
   it('serializes immutable primitive globals in JSX', async () => {
     const output = await extractFromVueSource(
       `
