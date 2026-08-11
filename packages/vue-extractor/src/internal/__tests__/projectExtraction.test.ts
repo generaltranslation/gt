@@ -245,7 +245,7 @@ const gt = useGT();
     });
   });
 
-  it('hashes a missing T slot and rejects an ambiguous root array', async () => {
+  it('hashes missing and explicit-empty T children distinctly', async () => {
     const validRoot = createVueFixture({
       'src/Missing.tsx': `
         import { T } from 'gt-vue';
@@ -262,18 +262,21 @@ const gt = useGT();
       }))
     ).toEqual([{ hash: '309dc626c8db3d4c', source: undefined }]);
 
-    const invalidRoot = createVueFixture({
-      'src/Ambiguous.tsx': `
+    const emptyRoot = createVueFixture({
+      'src/Empty.tsx': `
         import { T } from 'gt-vue';
         export const EmptyArray = () => <T>{[]}</T>;
       `,
     });
-    const invalidOutput = await extractFromVueProject({ cwd: invalidRoot });
+    const emptyOutput = await extractFromVueProject({ cwd: emptyRoot });
 
-    expect(invalidOutput.errors.join('\n')).toContain(
-      'array expression directly inside a gt-vue <T>'
-    );
-    expect(invalidOutput.updates).toEqual([]);
+    expect(emptyOutput.errors).toEqual([]);
+    expect(
+      emptyOutput.updates.map(({ metadata, source }) => ({
+        hash: metadata.hash,
+        source,
+      }))
+    ).toEqual([{ hash: 'bdb7cc7686d0e468', source: [] }]);
   });
 
   it('deduplicates hashes while merging unique file and source metadata', async () => {

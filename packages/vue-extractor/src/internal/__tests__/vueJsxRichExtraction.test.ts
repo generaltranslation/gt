@@ -214,9 +214,46 @@ describe('Vue JSX rich extraction', () => {
     }
   );
 
-  it.each([`{['x']}`, `{[[['x']]]}`, `{/* boundary */}{['x']}`, `{[]}`])(
-    'fails closed for a direct T array child that Vue makes indistinguishable from Fragment syntax: %s',
-    async (child) => {
+  it.each([
+    {
+      child: `{['x']}`,
+      hash: '18d8d88a83f23215',
+      name: 'a singleton array',
+      source: ['x'],
+    },
+    {
+      child: `{[[['x']]]}`,
+      hash: '18d8d88a83f23215',
+      name: 'nested arrays flattened by React.Children',
+      source: ['x'],
+    },
+    {
+      child: `{/* boundary */}{['x']}`,
+      hash: '18d8d88a83f23215',
+      name: 'an array following a JSX comment boundary',
+      source: ['x'],
+    },
+    {
+      child: `{[]}`,
+      hash: 'bdb7cc7686d0e468',
+      name: 'an empty array',
+      source: [],
+    },
+    {
+      child: `{[false, true, null]}`,
+      hash: 'bdb7cc7686d0e468',
+      name: 'boolean and null values removed from an authored array',
+      source: [],
+    },
+    {
+      child: `{false}{true}{null}`,
+      hash: 'bdb7cc7686d0e468',
+      name: 'boolean and null values removed from multiple children',
+      source: [],
+    },
+  ])(
+    'matches React prepareT shape and hash for $name',
+    async ({ child, hash, source }) => {
       const output = await extractFromVueSource(
         `
           import { T } from 'gt-vue';
@@ -225,10 +262,49 @@ describe('Vue JSX rich extraction', () => {
         '/project/src/View.tsx'
       );
 
-      expect(output.results).toEqual([]);
-      expect(output.errors.join('\n')).toContain(
-        'array expression directly inside a gt-vue <T>'
+      expect(output.errors).toEqual([]);
+      expect(output.results[0]?.source).toEqual(source);
+      expect(
+        hashSource({ dataFormat: 'JSX', source: output.results[0]!.source })
+      ).toBe(hash);
+    }
+  );
+
+  it.each([
+    {
+      child: '{false}',
+      hash: 'd98d8886a31c98f3',
+      name: 'false',
+      source: false,
+    },
+    {
+      child: '{true}',
+      hash: '73b6b211a4122ba8',
+      name: 'true',
+      source: true,
+    },
+    {
+      child: '{null}',
+      hash: '471b9124c31817e9',
+      name: 'null',
+      source: null,
+    },
+  ])(
+    'preserves the exact React scalar wire for $name',
+    async ({ child, hash, source }) => {
+      const output = await extractFromVueSource(
+        `
+          import { T } from 'gt-vue';
+          export const View = () => <T>${child}</T>;
+        `,
+        '/project/src/View.tsx'
       );
+
+      expect(output.errors).toEqual([]);
+      expect(output.results[0]?.source).toBe(source);
+      expect(
+        hashSource({ dataFormat: 'JSX', source: output.results[0]!.source })
+      ).toBe(hash);
     }
   );
 
@@ -256,7 +332,10 @@ describe('Vue JSX rich extraction', () => {
       `
         import { T } from 'gt-vue';
         export const View = () => (
-          <T><p>{0}</p><p>{''}</p><p>{[]}</p></T>
+          <T>
+            <p>{0}</p><p>{''}</p><p>{false}</p><p>{null}</p><p>{true}</p><p>{[]}</p><p>{[false, true, null]}</p>
+            <>{false}</><>{null}</><>{true}</><>{[false, true, null]}</>
+          </T>
         );
       `,
       '/project/src/View.tsx'
@@ -264,12 +343,20 @@ describe('Vue JSX rich extraction', () => {
     const source = [
       { i: 1, t: 'p' },
       { i: 2, t: 'p' },
-      { c: [], i: 3, t: 'p' },
+      { i: 3, t: 'p' },
+      { i: 4, t: 'p' },
+      { c: true, i: 5, t: 'p' },
+      { c: [], i: 6, t: 'p' },
+      { c: [], i: 7, t: 'p' },
+      { i: 8, t: 'C8' },
+      { i: 9, t: 'C9' },
+      { c: true, i: 10, t: 'C10' },
+      { c: [], i: 11, t: 'C11' },
     ];
 
     expect(output.errors).toEqual([]);
     expect(output.results[0]?.source).toEqual(source);
-    expect(hashSource({ dataFormat: 'JSX', source })).toBe('b0fd1e0a1a8cc365');
+    expect(hashSource({ dataFormat: 'JSX', source })).toBe('f0b316370c61fd25');
   });
 
   it('preserves nested-array cardinality for zero inside an element', async () => {
@@ -303,6 +390,84 @@ describe('Vue JSX rich extraction', () => {
       { i: 1, t: 'Card' },
       { c: [], i: 2, t: 'Card' },
     ]);
+  });
+
+  it('normalizes explicit component slot wrappers before applying React truthiness', async () => {
+    const output = await extractFromVueSource(
+      `
+        import { T } from 'gt-vue';
+        import Card from './Card.vue';
+        export const View = () => (
+          <T>
+            <Card v-slots={{ default: () => ['Scalar'] }} />
+            <Card v-slots={{ default: () => [] }} />
+            <Card v-slots={{ default: () => [['Array']] }} />
+            <Card v-slots={{ default: () => [[]] }} />
+            <Card v-slots={{ default: () => [0] }} />
+            <Card>{() => 0}</Card>
+            <Card v-slots={{ default: () => [false] }} />
+            <Card v-slots={{ default: () => [null] }} />
+            <Card v-slots={{ default: () => [true] }} />
+            <Card v-slots={{ default: () => [false, true, null] }} />
+            <Card v-slots={{ default: () => [[false, true, null]] }} />
+          </T>
+        );
+      `,
+      '/project/src/View.tsx',
+      { projectRoot: '/project' }
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(output.results[0]?.source).toEqual([
+      { c: 'Scalar', i: 1, t: 'Card' },
+      { i: 2, t: 'Card' },
+      { c: ['Array'], i: 3, t: 'Card' },
+      { c: [], i: 4, t: 'Card' },
+      { i: 5, t: 'Card' },
+      { i: 6, t: 'Card' },
+      { i: 7, t: 'Card' },
+      { i: 8, t: 'Card' },
+      { c: true, i: 9, t: 'Card' },
+      { c: [], i: 10, t: 'Card' },
+      { c: [], i: 11, t: 'Card' },
+    ]);
+  });
+
+  it('preserves scalar branch slot wires and drops literals in branch arrays', async () => {
+    const output = await extractFromVueSource(
+      `
+        import { Branch, T } from 'gt-vue';
+        export const View = () => (
+          <T>
+            <Branch
+              branch="yes"
+              v-slots={{
+                default: () => [true],
+                no: () => [false],
+                empty: () => [null],
+                yes: () => [true],
+                many: () => [false, true, null],
+                array: () => [[false, true, null]],
+              }}
+            />
+          </T>
+        );
+      `,
+      '/project/src/View.tsx'
+    );
+    const source = {
+      c: true,
+      d: {
+        b: { array: [], empty: null, many: [], no: false, yes: true },
+        t: 'b',
+      },
+      i: 1,
+      t: 'Branch',
+    };
+
+    expect(output.errors).toEqual([]);
+    expect(output.results[0]?.source).toEqual(source);
+    expect(hashSource({ dataFormat: 'JSX', source })).toBe('ffb22a789e8e9619');
   });
 
   it('serializes immutable primitive globals in JSX', async () => {

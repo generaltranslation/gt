@@ -29,10 +29,19 @@ type SerializedJSXArray = {
   children: SerializedJSXChild[];
 };
 
+/** React persists these as scalar wires but removes them inside child arrays. */
+type SerializedWireLiteral = boolean | null;
+
 type SerializedJSXChild =
   | JsxChild
+  | SerializedWireLiteral
   | SerializedJSXArray
   | typeof jsxTextBoundary;
+
+type SerializedSlotResult = {
+  children: SerializedJSXChild[];
+  slotTruthy?: boolean;
+};
 
 type JSXSlotFunction = {
   node:
@@ -132,7 +141,6 @@ export function extractVueJSXTranslation(
     context,
     analysis
   );
-  validateRootArrayChildren(path.node.children, context);
   const source = collapseRootChildren(
     serializeChildren(
       path.node.children,
@@ -153,37 +161,6 @@ export function extractVueJSXTranslation(
       translationContext
     ),
   });
-}
-
-/**
- * Rejects the one JSX shape Vue erases before T can inspect it.
- *
- * The official Vue JSX transform normalizes a direct array child and an
- * authored Fragment to the same patch-flag-zero Fragment VNode. React assigns
- * those sources different persisted wires, so no runtime-only implementation
- * can recover the authored form. Failing closed prevents extraction from
- * publishing a hash that the mounted runtime cannot reproduce.
- */
-function validateRootArrayChildren(
-  children: babel.JSXElement['children'],
-  context: VueExtractionContext
-): void {
-  for (const child of children) {
-    if (
-      child.type !== 'JSXExpressionContainer' ||
-      child.expression.type === 'JSXEmptyExpression'
-    ) {
-      continue;
-    }
-    const expression = unwrapExpression(child.expression);
-    if (expression?.type !== 'ArrayExpression') continue;
-    addVueError(
-      context,
-      babelLocation(expression.loc),
-      'Found an array expression directly inside a gt-vue <T> component in JSX',
-      'List the static children directly, or place the array inside a native or custom element'
-    );
-  }
 }
 
 /** Returns whether the visitor is already covered by an outer serialized T. */
@@ -467,15 +444,18 @@ function serializeChildren(
   analysis: VueJSXAnalysis
 ): SerializedJSXChild[] {
   const result: SerializedJSXChild[] = [];
-  let runtimeArgumentCount = 0;
+  const runtimeArgumentCount = children.filter(
+    isJSXRuntimeChildArgument
+  ).length;
+  const preserveScalarWireLiteral = runtimeArgumentCount === 1;
   for (const child of children) {
-    if (isJSXRuntimeChildArgument(child)) runtimeArgumentCount += 1;
     for (const serialized of serializeChild(
       child,
       counter,
       scope,
       context,
-      analysis
+      analysis,
+      preserveScalarWireLiteral
     )) {
       appendSerializedChild(result, serialized);
     }
@@ -511,7 +491,8 @@ function serializeChild(
   counter: Counter,
   scope: Scope,
   context: VueExtractionContext,
-  analysis: VueJSXAnalysis
+  analysis: VueJSXAnalysis,
+  preserveScalarWireLiteral: boolean
 ): SerializedJSXChild[] {
   if (child.type === 'JSXText') {
     const text = normalizeJSXText(child.value);
@@ -540,7 +521,8 @@ function serializeChild(
     counter,
     scope,
     context,
-    analysis
+    analysis,
+    preserveScalarWireLiteral
   );
 }
 
@@ -549,7 +531,8 @@ function serializeExpression(
   counter: Counter,
   scope: Scope,
   context: VueExtractionContext,
-  analysis: VueJSXAnalysis
+  analysis: VueJSXAnalysis,
+  preserveScalarWireLiteral = true
 ): SerializedJSXChild[] {
   const expression = unwrapExpression(input);
   if (!expression) return [];
@@ -579,7 +562,8 @@ function serializeExpression(
         counter,
         scope,
         context,
-        analysis
+        analysis,
+        false
       )) {
         appendSerializedChild(result, serialized);
       }
@@ -609,11 +593,15 @@ function serializeExpression(
     );
     return [];
   }
-  // Vue drops null and boolean JSX children. All other primitive VNode
-  // children are stringified by gt-vue before the source is hashed.
-  return value.value == null || typeof value.value === 'boolean'
-    ? []
-    : [String(value.value)];
+  // React preserves a lone boolean/null source as its exact persisted wire,
+  // even though neither framework renders a DOM node for it. Once nested in
+  // an authored children array, React.Children.map removes those literals.
+  if (value.value === null || typeof value.value === 'boolean') {
+    return preserveScalarWireLiteral ? [value.value] : [];
+  }
+  // An explicit undefined behaves like an absent child in both scalar and
+  // array positions. Every other primitive is stringified by the runtime.
+  return value.value === undefined ? [] : [String(value.value)];
 }
 
 function serializeElement(
@@ -727,7 +715,7 @@ function serializeElement(
     );
     return [];
   }
-  const children = ordinaryShape?.component
+  const childResult = ordinaryShape?.component
     ? serializeOrdinaryComponentDefault(
         element,
         counter,
@@ -735,15 +723,27 @@ function serializeElement(
         context,
         analysis
       )
-    : serializeChildren(element.children, counter, scope, context, analysis);
+    : {
+        children: serializeChildren(
+          element.children,
+          counter,
+          scope,
+          context,
+          analysis
+        ),
+      };
   return [
     {
       t: tag,
       i: id,
       ...(Object.keys(data).length > 0 && { d: data }),
-      ...(shouldIncludeElementChildren(element, children, scope, analysis) && {
-        c: collapseChildren(children),
-      }),
+      ...(shouldIncludeElementChildren(
+        element,
+        childResult.children,
+        scope,
+        analysis,
+        childResult.slotTruthy
+      ) && { c: collapseChildren(childResult.children) }),
     },
   ];
 }
@@ -792,7 +792,7 @@ function serializeSemanticFragment(
     context,
     analysis
   );
-  const children = usesComponentSlots
+  const childResult = usesComponentSlots
     ? serializeOrdinaryComponentDefault(
         element,
         counter,
@@ -800,7 +800,15 @@ function serializeSemanticFragment(
         context,
         analysis
       )
-    : serializeChildren(element.children, counter, scope, context, analysis);
+    : {
+        children: serializeChildren(
+          element.children,
+          counter,
+          scope,
+          context,
+          analysis
+        ),
+      };
   return [
     {
       // Fragment is a Symbol at runtime and therefore uses the anonymous
@@ -809,9 +817,13 @@ function serializeSemanticFragment(
       t: `C${id}`,
       i: id,
       ...(Object.keys(data).length > 0 && { d: data }),
-      ...(shouldIncludeElementChildren(element, children, scope, analysis) && {
-        c: collapseChildren(children),
-      }),
+      ...(shouldIncludeElementChildren(
+        element,
+        childResult.children,
+        scope,
+        analysis,
+        childResult.slotTruthy
+      ) && { c: collapseChildren(childResult.children) }),
     },
   ];
 }
@@ -823,7 +835,7 @@ function serializeOrdinaryComponentDefault(
   scope: Scope,
   context: VueExtractionContext,
   analysis: VueJSXAnalysis
-): SerializedJSXChild[] {
+): { children: SerializedJSXChild[]; slotTruthy?: boolean } {
   const slotAttributes = element.openingElement.attributes.filter(
     (attribute): attribute is babel.JSXAttribute =>
       attribute.type === 'JSXAttribute' && isSlotsAttribute(attribute)
@@ -861,7 +873,7 @@ function serializeOrdinaryComponentDefault(
   if (defaultSlot.present) {
     return defaultSlot.slot
       ? serializeSlotFunction(defaultSlot.slot, counter, context, analysis)
-      : [];
+      : { children: [], slotTruthy: false };
   }
   const directSlot = readDirectOrdinaryDefaultSlot(
     element,
@@ -872,10 +884,18 @@ function serializeOrdinaryComponentDefault(
   if (directSlot.present) {
     return directSlot.slot
       ? serializeSlotFunction(directSlot.slot, counter, context, analysis)
-      : [];
+      : { children: [], slotTruthy: false };
   }
-  if (objectSlotChild) return [];
-  return serializeChildren(element.children, counter, scope, context, analysis);
+  if (objectSlotChild) return { children: [], slotTruthy: false };
+  return {
+    children: serializeChildren(
+      element.children,
+      counter,
+      scope,
+      context,
+      analysis
+    ),
+  };
 }
 
 /** Reads the one-function child Vue JSX compiles as a direct default slot. */
@@ -1033,15 +1053,17 @@ function serializeSuspenseElement(
     validateSuspenseImplicitRoot(slots.defaultChildren, element, context);
   }
 
-  const children = slots.defaultSlot
+  const childResult: SerializedSlotResult = slots.defaultSlot
     ? serializeSlotFunction(slots.defaultSlot, counter, context, analysis)
-    : serializeChildren(
-        slots.defaultChildren,
-        counter,
-        scope,
-        context,
-        analysis
-      );
+    : {
+        children: serializeChildren(
+          slots.defaultChildren,
+          counter,
+          scope,
+          context,
+          analysis
+        ),
+      };
   const data = readContentProps(
     element.openingElement,
     scope,
@@ -1052,9 +1074,13 @@ function serializeSuspenseElement(
     t: 'Suspense',
     i: id,
     ...(Object.keys(data).length > 0 && { d: data }),
-    ...(shouldIncludeElementChildren(element, children, scope, analysis) && {
-      c: collapseChildren(children),
-    }),
+    ...(shouldIncludeElementChildren(
+      element,
+      childResult.children,
+      scope,
+      analysis,
+      childResult.slotTruthy
+    ) && { c: collapseChildren(childResult.children) }),
   };
 }
 
@@ -1194,21 +1220,23 @@ function serializeBranchElement(
     );
   }
 
-  const children = slots.defaultSlot
+  const childResult: SerializedSlotResult = slots.defaultSlot
     ? serializeSlotFunction(slots.defaultSlot, counter, context, analysis)
-    : serializeChildren(
-        slots.defaultChildren,
-        counter,
-        scope,
-        context,
-        analysis
-      );
+    : {
+        children: serializeChildren(
+          slots.defaultChildren,
+          counter,
+          scope,
+          context,
+          analysis
+        ),
+      };
   const branches: Record<string, JsxChildren> = {};
   for (const [name, slot] of slots.namedSlots) {
     if (name.startsWith('_')) continue;
     if (component === 'Plural' && !isAcceptedPluralForm(name)) continue;
     branches[name] = collapseChildren(
-      serializeSlotFunction(slot, { value: id }, context, analysis)
+      serializeSlotFunction(slot, { value: id }, context, analysis).children
     );
   }
   readBranchAttributeSources(
@@ -1234,9 +1262,13 @@ function serializeBranchElement(
     t: component,
     i: id,
     ...(Object.keys(data).length > 0 && { d: data }),
-    ...(shouldIncludeElementChildren(element, children, scope, analysis) && {
-      c: collapseChildren(children),
-    }),
+    ...(shouldIncludeElementChildren(
+      element,
+      childResult.children,
+      scope,
+      analysis,
+      childResult.slotTruthy
+    ) && { c: collapseChildren(childResult.children) }),
   };
 }
 
@@ -1399,7 +1431,7 @@ function serializeSlotFunction(
   counter: Counter,
   context: VueExtractionContext,
   analysis: VueJSXAnalysis
-): SerializedJSXChild[] {
+): SerializedSlotResult & { slotTruthy: boolean } {
   const returned = readStaticSlotReturn(slot);
   if (!returned) {
     addVueError(
@@ -1408,9 +1440,80 @@ function serializeSlotFunction(
       'Found a JSX slot with a dynamic function body in a gt-vue translation',
       'Return static slot content directly from the zero-argument function'
     );
-    return [];
+    return { children: [], slotTruthy: false };
   }
-  return serializeExpression(returned, counter, slot.scope, context, analysis);
+  const value = unwrapExpression(returned) as babel.Expression | undefined;
+  if (!value) return { children: [], slotTruthy: false };
+  if (value.type !== 'ArrayExpression') {
+    return {
+      children: serializeExpression(
+        value,
+        counter,
+        slot.scope,
+        context,
+        analysis,
+        true
+      ),
+      slotTruthy: isTruthySlotChild(value, slot.scope, analysis),
+    };
+  }
+
+  // Vue slot functions return a framework-owned array of VNode children. The
+  // outer array is not itself authored content: one entry is scalar, multiple
+  // entries form React's children array, and a nested array is the authored
+  // array value that must retain array cardinality in the persisted wire.
+  const children: SerializedJSXChild[] = [];
+  const entries = value.elements.filter(
+    (entry): entry is babel.Expression | babel.SpreadElement => entry !== null
+  );
+  for (const entry of entries) {
+    if (entry.type === 'SpreadElement') {
+      addVueError(
+        context,
+        babelLocation(entry.loc),
+        'Found a spread in a JSX slot return inside a gt-vue translation',
+        'Return a static list of slot children'
+      );
+      continue;
+    }
+    for (const child of serializeExpression(
+      entry,
+      counter,
+      slot.scope,
+      context,
+      analysis,
+      entries.length === 1
+    )) {
+      appendSerializedChild(children, child);
+    }
+  }
+  return {
+    children: entries.length > 1 ? [{ kind: 'array', children }] : children,
+    slotTruthy:
+      entries.length > 1 ||
+      (entries.length === 1 &&
+        entries[0]!.type !== 'SpreadElement' &&
+        isTruthySlotChild(entries[0]!, slot.scope, analysis)),
+  };
+}
+
+/** Mirrors React's `props.children` truthiness for one normalized slot entry. */
+function isTruthySlotChild(
+  input: babel.Expression,
+  scope: Scope,
+  analysis: VueJSXAnalysis
+): boolean {
+  const expression = unwrapExpression(input);
+  if (!expression) return false;
+  if (
+    expression.type === 'ArrayExpression' ||
+    expression.type === 'JSXElement' ||
+    expression.type === 'JSXFragment'
+  ) {
+    return true;
+  }
+  const primitive = analysis.readStaticPrimitive(expression, scope);
+  return primitive.ok ? Boolean(primitive.value) : true;
 }
 
 /** Returns the expression from a slot body that contains only one return. */
@@ -2102,8 +2205,10 @@ function shouldIncludeElementChildren(
   element: babel.JSXElement,
   children: SerializedJSXChild[],
   scope: Scope,
-  analysis: VueJSXAnalysis
+  analysis: VueJSXAnalysis,
+  slotTruthy?: boolean
 ): boolean {
+  if (slotTruthy !== undefined) return slotTruthy;
   return element.children.some(isJSXRuntimeChildArgument)
     ? hasTruthyJSXChildren(element.children, scope, analysis)
     : children.some(hasSerializedValue);
@@ -2133,7 +2238,7 @@ function flattenSerializedChildren(children: SerializedJSXChild[]): JsxChild[] {
     if (isSerializedJSXArray(child)) {
       flattened.push(...flattenSerializedChildren(child.children));
     } else {
-      flattened.push(child);
+      flattened.push(child as JsxChild);
     }
   }
   return flattened;
