@@ -71,6 +71,12 @@ export type VueSourceCode = {
 /** Metadata attached to an extracted Vue translation. */
 export type VueExtractionMetadata = {
   context?: string;
+  /** Deprecated custom identifier retained for React catalog compatibility. */
+  id?: string;
+  /** Maximum translated character count included in the catalog identity. */
+  maxChars?: number;
+  /** Whether generated translations require human review. */
+  requiresReview?: boolean;
   filePaths?: string[];
   /** Stable catalog key calculated by project-level extraction. */
   hash?: string;

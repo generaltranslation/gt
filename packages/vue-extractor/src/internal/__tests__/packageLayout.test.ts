@@ -53,6 +53,21 @@ describe('@generaltranslation/vue-extractor package declarations', () => {
     expect(declarations).toContain('b?: Record<string, VueBranchSource>;');
   });
 
+  it('publishes every supported T metadata field', () => {
+    const declarations = readFileSync(
+      join(packageRoot, 'dist', 'types.d.ts'),
+      'utf8'
+    );
+
+    const metadataDeclaration = declarations.match(
+      /type VueExtractionMetadata = \{[\s\S]*?\n\};/
+    )?.[0];
+    expect(metadataDeclaration).toContain('context?: string;');
+    expect(metadataDeclaration).toContain('id?: string;');
+    expect(metadataDeclaration).toContain('maxChars?: number;');
+    expect(metadataDeclaration).toContain('requiresReview?: boolean;');
+  });
+
   it('keeps the integration entry lightweight until a handled plan runs', () => {
     const integration = readFileSync(
       join(packageRoot, 'dist', 'integration.js'),

@@ -854,7 +854,12 @@ function comparableTemplateResults(
   return JSON.stringify(
     results.map((result) => ({
       dataFormat: result.dataFormat,
-      context: result.metadata.context,
+      metadata: {
+        context: result.metadata.context,
+        id: result.metadata.id,
+        maxChars: result.metadata.maxChars,
+        requiresReview: result.metadata.requiresReview,
+      },
       source: result.source,
     }))
   );

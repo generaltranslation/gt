@@ -102,7 +102,11 @@ function addStringUpdate(
   context.results.push({
     dataFormat: 'STRING',
     source,
-    metadata: createInlineMetadata(context, location, translationContext),
+    metadata: createInlineMetadata(context, location, {
+      ...(translationContext !== undefined && {
+        context: translationContext,
+      }),
+    }),
   });
 }
 

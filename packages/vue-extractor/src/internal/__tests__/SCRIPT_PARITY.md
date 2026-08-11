@@ -22,7 +22,8 @@ The Vue script tests port the React extractor's applicable adversarial cases:
 The initial `gt-vue` API intentionally does not port React-only behavior:
 
 - rich/ICU string interpolation and derived runtime placeholders;
-- metadata other than `$context`, including `$id`, `$maxChars`, and formatting;
+- formatting metadata. Rich `<T>` sources support static `context`, `id`,
+  `maxChars`, and `requiresReview` props, including their `$`-prefixed aliases;
 - `getGT`, async translator creation, tagged templates, or React JSX semantics;
 - extraction through arbitrary runtime callbacks, package re-exports, or
   cross-file data flow beyond statically resolved local ESM modules. When a

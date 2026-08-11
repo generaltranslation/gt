@@ -455,10 +455,10 @@ describe('Vue template extraction', () => {
       error: 'unsupported name prop',
     },
     {
-      name: 'removed T metadata fields',
+      name: 'string maxChars metadata',
       imports: 'T',
       template: '<T $maxChars="20">Hello</T>',
-      error: 'unsupported prop "$maxChars"',
+      error: 'invalid or dynamic maxChars',
     },
     {
       name: 'branch model directive',

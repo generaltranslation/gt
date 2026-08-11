@@ -8,13 +8,21 @@ import {
 } from '@generaltranslation/format/types';
 import { isHTMLTag, isSVGTag } from '@vue/shared';
 import { isAcceptedPluralForm } from 'generaltranslation/internal';
-import type { GTComponentName, VueExtractionContext } from '../types.js';
+import type {
+  ExtractionLocation,
+  GTComponentName,
+  VueExtractionContext,
+} from '../types.js';
 import {
   addVueError,
+  applyStaticTMetadataValue,
   babelLocation,
   createInlineMetadata,
+  type ExtractedTMetadata,
+  normalizeTMetadataKey,
   type StaticPrimitive,
   type StaticPrimitiveResult,
+  type TMetadataKey,
   unwrapExpression,
 } from '../utils.js';
 import type { KnownValue } from './model.js';
@@ -137,7 +145,7 @@ export function extractVueJSXTranslation(
     return;
   }
   const errorCount = context.errors.length;
-  const translationContext = readTranslationContext(
+  const translationMetadata = readTranslationMetadata(
     path.node.openingElement,
     path.scope,
     context,
@@ -160,7 +168,7 @@ export function extractVueJSXTranslation(
     metadata: createInlineMetadata(
       context,
       babelLocation(path.node.loc),
-      translationContext
+      translationMetadata
     ),
   });
 }
@@ -360,14 +368,14 @@ export function validateVueJSXVariableComponent(
   validateVariableElement(element, component, context);
 }
 
-function readTranslationContext(
+function readTranslationMetadata(
   element: babel.JSXOpeningElement,
   scope: Scope,
   context: VueExtractionContext,
   analysis: VueJSXAnalysis
-): string | undefined {
-  let translationContext: string | undefined;
-  let hasContext = false;
+): ExtractedTMetadata {
+  const metadata: ExtractedTMetadata = {};
+  const seen = new Set<TMetadataKey>();
 
   for (const attribute of element.attributes) {
     if (attribute.type === 'JSXSpreadAttribute') {
@@ -375,39 +383,36 @@ function readTranslationContext(
         context,
         babelLocation(attribute.loc),
         'Found a spread prop on a gt-vue <T> component in JSX',
-        'Pass context as one explicit static context or $context prop'
+        'Pass each metadata value through an explicit static prop'
       );
       continue;
     }
     const name = readAttributeName(attribute.name);
     if (RESERVED_T_PROPS.has(name)) continue;
-    if (name !== 'context' && name !== '$context') {
+    const key = normalizeTMetadataKey(name);
+    if (!key) {
       addVueError(
         context,
         babelLocation(attribute.loc),
         `Found unsupported prop "${name}" on a gt-vue <T> component`,
-        'gt-vue <T> currently supports only context'
+        'Use only static context, id, maxChars, or requiresReview metadata'
       );
       continue;
     }
-    if (hasContext) {
-      addVueError(
-        context,
-        babelLocation(attribute.loc),
-        'Found duplicate context props on a gt-vue <T> component',
-        'Pass only one context prop'
-      );
+    if (
+      !registerJSXTMetadataKey(key, seen, babelLocation(attribute.loc), context)
+    ) {
       continue;
     }
-    hasContext = true;
     const contextExpression =
       attribute.value?.type === 'JSXExpressionContainer' &&
       attribute.value.expression.type !== 'JSXEmptyExpression'
         ? unwrapExpression(attribute.value.expression)
         : undefined;
     if (
-      contextExpression?.type === 'ConditionalExpression' ||
-      contextExpression?.type === 'LogicalExpression'
+      key === 'context' &&
+      (contextExpression?.type === 'ConditionalExpression' ||
+        contextExpression?.type === 'LogicalExpression')
     ) {
       addVueError(
         context,
@@ -418,18 +423,54 @@ function readTranslationContext(
       continue;
     }
     const value = readJSXAttributePrimitive(attribute, scope, analysis);
-    if (!value.ok || typeof value.value !== 'string') {
-      addVueError(
-        context,
+    if (!value.ok || !applyStaticTMetadataValue(metadata, key, value.value)) {
+      addInvalidJSXTMetadataValueError(
+        key,
         babelLocation(attribute.loc),
-        'Found a dynamic context on a gt-vue <T> component',
-        'Use a string literal or an immutable static string'
+        context
       );
       continue;
     }
-    translationContext = value.value;
   }
-  return translationContext;
+  return metadata;
+}
+
+function registerJSXTMetadataKey(
+  key: TMetadataKey,
+  seen: Set<TMetadataKey>,
+  location: ExtractionLocation | undefined,
+  context: VueExtractionContext
+): boolean {
+  if (!seen.has(key)) {
+    seen.add(key);
+    return true;
+  }
+  addVueError(
+    context,
+    location,
+    `Found duplicate ${key} props on a gt-vue <T> component`,
+    `Pass only one ${key} prop or its $-prefixed alias`
+  );
+  return false;
+}
+
+function addInvalidJSXTMetadataValueError(
+  key: TMetadataKey,
+  location: ExtractionLocation | undefined,
+  context: VueExtractionContext
+): void {
+  const expected =
+    key === 'context' || key === 'id'
+      ? 'a static string'
+      : key === 'maxChars'
+        ? 'a static integer expression'
+        : 'a static boolean or a bare requiresReview prop';
+  addVueError(
+    context,
+    location,
+    `Found an invalid or dynamic ${key} on a gt-vue <T> component`,
+    `Use ${expected}`
+  );
 }
 
 function serializeChildren(
@@ -1745,6 +1786,14 @@ function validateVariableElement(
       babelLocation(element.openingElement.loc),
       `Found a gt-vue <${component}> component without a value prop`,
       `Pass the runtime value through <${component} value={value} />`
+    );
+  }
+  if (explicitProps.has('name')) {
+    addVueError(
+      context,
+      babelLocation(element.openingElement.loc),
+      `Found unsupported name prop on a gt-vue <${component}> component`,
+      'Remove name; named variables are not supported by gt-vue yet'
     );
   }
   if (hasMeaningfulChildren(element.children)) {
