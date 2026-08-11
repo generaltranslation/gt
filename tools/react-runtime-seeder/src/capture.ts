@@ -260,11 +260,19 @@ async function terminateProcessTree(
     } catch {
       // The harness may already have exited.
     }
-    for (const descendantPid of await freezePosixProcessTree(
+    const frozenPids = await freezePosixProcessTree(
       pid,
       processToken,
       processPidFile
-    )) {
+    );
+    const trackedPids = await readTrackedProcessPids(processPidFile);
+    for (const descendantPid of frozenPids) {
+      if (
+        trackedPids.has(descendantPid) &&
+        !(await processHasToken(descendantPid, processToken))
+      ) {
+        continue;
+      }
       try {
         process.kill(descendantPid, 'SIGKILL');
       } catch {
@@ -303,7 +311,13 @@ async function freezePosixProcessTree(
   for (let attempt = 0; attempt < 50; attempt += 1) {
     const processes = await listPosixProcesses();
     const descendants = findDescendantPids(processes, rootPid);
-    const trackedPids = await readTrackedProcessPids(processPidFile);
+    const recordedPids = await readTrackedProcessPids(processPidFile);
+    const trackedPids = new Set<number>();
+    for (const recordedPid of recordedPids) {
+      if (await processHasToken(recordedPid, processToken, processes)) {
+        trackedPids.add(recordedPid);
+      }
+    }
     let allFrozen = true;
     for (const trackedPid of trackedPids) {
       if (trackedPid === rootPid || frozenPids.has(trackedPid)) continue;
@@ -336,6 +350,28 @@ async function freezePosixProcessTree(
   }
 
   return [...frozenPids];
+}
+
+async function processHasToken(
+  pid: number,
+  processToken: string,
+  processes?: PosixProcess[]
+): Promise<boolean> {
+  const environmentMarker = `${processTokenEnvironmentName}=${processToken}`;
+  if (process.platform === 'linux') {
+    try {
+      const environment = await readFile(`/proc/${pid}/environ`);
+      return environment.includes(Buffer.from(`${environmentMarker}\0`));
+    } catch {
+      return false;
+    }
+  }
+  const snapshot = processes ?? (await listPosixProcesses());
+  return (
+    snapshot
+      .find((candidate) => candidate.pid === pid)
+      ?.command.includes(environmentMarker) ?? false
+  );
 }
 
 async function readTrackedProcessPids(pathname: string): Promise<Set<number>> {
@@ -407,6 +443,15 @@ const token = process.env[tokenName];
 const pidFile = process.env[pidFileName];
 const preloadOption = '--require=' + JSON.stringify(__filename);
 
+function registerProcess(pid) {
+  if (!pidFile || !pid) return;
+  try {
+    fs.appendFileSync(pidFile, pid + '\\n');
+  } catch {}
+}
+
+registerProcess(process.pid);
+
 function setEnvironmentPair(pairs, name, value) {
   const prefix = name.toUpperCase() + '=';
   const filtered = pairs.filter(
@@ -465,11 +510,7 @@ childProcess.ChildProcess.prototype.spawn = function trackedSpawn(options) {
     ...options,
     envPairs: environmentPairs,
   });
-  if (pidFile && this.pid) {
-    try {
-      fs.appendFileSync(pidFile, this.pid + '\\n');
-    } catch {}
-  }
+  registerProcess(this.pid);
   return result;
 };
 
