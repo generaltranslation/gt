@@ -134,8 +134,17 @@ type ComponentWithGTMetadata = Component & {
 type RichTranslationOptions = {
   /** @internal React-compatible alias accepted for compiler output. */
   $context?: string;
+  /** @internal React-compatible alias accepted for compiler output. */
+  $id?: string;
+  /** @internal React-compatible alias accepted for compiler output. */
+  $maxChars?: number;
+  /** @internal React-compatible alias accepted for compiler output. */
+  $requiresReview?: boolean;
   _hash?: string;
   context?: string;
+  id?: string;
+  maxChars?: number;
+  requiresReview?: boolean;
 };
 
 /** Runtime-only reconciliation state owned by one mounted `T` instance. */
@@ -194,6 +203,10 @@ export function translateVueChildren(
         hashSource({
           context: options.context ?? options.$context,
           dataFormat: 'JSX',
+          // Current React lookups accept id/$id as compatibility metadata but
+          // deliberately exclude custom IDs from content-based catalog hashes.
+          maxChars: options.$maxChars ?? options.maxChars,
+          requiresReview: options.$requiresReview ?? options.requiresReview,
           source: serializeRootNodes(source, root),
         });
       const target = state.getCatalog()[hash];
