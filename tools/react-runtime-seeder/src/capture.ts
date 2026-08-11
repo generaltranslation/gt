@@ -385,6 +385,19 @@ function getEnvironmentPair(pairs, name) {
   return pair ? pair.slice(pair.indexOf('=') + 1) : '';
 }
 
+function withTrackedEnvironment(options) {
+  const originalOptions = options ?? {};
+  const environment = { ...(originalOptions.env ?? process.env) };
+  if (token) environment[tokenName] = token;
+  const nodeOptions = environment.NODE_OPTIONS ?? '';
+  if (!nodeOptions.includes(preloadOption)) {
+    environment.NODE_OPTIONS = nodeOptions
+      ? nodeOptions + ' ' + preloadOption
+      : preloadOption;
+  }
+  return { ...originalOptions, env: environment };
+}
+
 const originalSpawn = childProcess.ChildProcess.prototype.spawn;
 childProcess.ChildProcess.prototype.spawn = function trackedSpawn(options) {
   let environmentPairs = [...(options.envPairs ?? [])];
@@ -405,6 +418,39 @@ childProcess.ChildProcess.prototype.spawn = function trackedSpawn(options) {
   }
   return originalSpawn.call(this, { ...options, envPairs: environmentPairs });
 };
+
+const originalSpawnSync = childProcess.spawnSync;
+childProcess.spawnSync = function trackedSpawnSync(command, args, options) {
+  if (Array.isArray(args)) {
+    return originalSpawnSync.call(
+      this,
+      command,
+      args,
+      withTrackedEnvironment(options)
+    );
+  }
+  return originalSpawnSync.call(this, command, withTrackedEnvironment(args));
+};
+
+const originalExecFileSync = childProcess.execFileSync;
+childProcess.execFileSync = function trackedExecFileSync(file, args, options) {
+  if (Array.isArray(args)) {
+    return originalExecFileSync.call(
+      this,
+      file,
+      args,
+      withTrackedEnvironment(options)
+    );
+  }
+  return originalExecFileSync.call(this, file, withTrackedEnvironment(args));
+};
+
+const originalExecSync = childProcess.execSync;
+childProcess.execSync = function trackedExecSync(command, options) {
+  return originalExecSync.call(this, command, withTrackedEnvironment(options));
+};
+
+require('node:module').syncBuiltinESMExports();
 `;
 }
 
