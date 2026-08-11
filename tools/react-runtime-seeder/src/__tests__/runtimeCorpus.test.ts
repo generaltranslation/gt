@@ -38,11 +38,14 @@ describe('React runtime seed corpus', () => {
         normalizeSemanticWire(expectedTree)
       );
       if (!expectedByHash) {
+        const context = seed.metadata?.context;
+        const maxChars = seed.metadata?.maxChars;
         expect(seed.hash).toBe(
           hashSource({
             source: expectedTree,
             dataFormat: 'JSX',
-            ...seed.metadata,
+            ...(context && { context }),
+            ...(maxChars && { maxChars }),
           })
         );
       }
