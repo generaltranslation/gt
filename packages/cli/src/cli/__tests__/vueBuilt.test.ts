@@ -381,7 +381,11 @@ describe('built Vue CLI', () => {
     });
     fs.writeFileSync(
       path.join(projectRoot, 'gt.config.json'),
-      JSON.stringify({ defaultLocale: 'en', locales: ['fr'] })
+      JSON.stringify({
+        defaultLocale: 'en',
+        locales: ['fr'],
+        publish: true,
+      })
     );
 
     runNode(
@@ -508,7 +512,11 @@ describe('built Vue CLI', () => {
       });
       fs.writeFileSync(
         path.join(projectRoot, 'gt.config.json'),
-        JSON.stringify({ defaultLocale: 'en', locales: ['fr'] })
+        JSON.stringify({
+          defaultLocale: 'en',
+          locales: ['fr'],
+          publish: true,
+        })
       );
 
       runNode(
@@ -605,6 +613,7 @@ describe('built Vue CLI', () => {
         'gt.config.json': JSON.stringify({
           defaultLocale: 'en',
           locales: ['fr'],
+          publish: true,
         }),
         'src/.gitkeep': '',
       });
@@ -753,6 +762,53 @@ describe('built Vue CLI', () => {
         );
         assert.equal(config.publish, undefined);
         assert.equal(fs.existsSync('loadTranslations.js'), false);
+      `,
+      projectRoot,
+      {
+        GT_API_KEY: 'test-api-key',
+        GT_PROJECT_ID: 'test-project-id',
+      }
+    );
+  });
+
+  it('preserves historical pure React publish merging', () => {
+    const projectRoot = createProject({
+      dependencies: {
+        'gt-react': '*',
+      },
+      devDependencies: {
+        gt: '*',
+      },
+    });
+    writeProjectFiles(projectRoot, {
+      'gt.config.json': JSON.stringify({
+        defaultLocale: 'en',
+        locales: ['fr'],
+        publish: true,
+      }),
+      'src/.gitkeep': '',
+    });
+
+    runNode(
+      `
+        import assert from 'node:assert/strict';
+        import fs from 'node:fs';
+        import { Command } from ${JSON.stringify(commanderUrl)};
+        import { ReactCLI } from ${JSON.stringify(builtReactUrl)};
+
+        class ReactConfigProbe extends ReactCLI {
+          configure() {
+            return this.handleInitCommand(false, true, false, {
+              config: 'gt.config.json',
+            });
+          }
+        }
+
+        const cli = new ReactConfigProbe(new Command(), 'gt-react');
+        await cli.configure();
+        const config = JSON.parse(fs.readFileSync('gt.config.json', 'utf8'));
+        assert.equal(config.publish, true);
+        assert.equal(config.files.gt.output, 'public/_gt/[locale].json');
       `,
       projectRoot,
       {

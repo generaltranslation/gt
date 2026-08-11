@@ -22,6 +22,8 @@ export async function createOrUpdateConfig(
     framework?: SupportedFrameworks;
     baseUrl?: string;
     publish?: boolean;
+    /** Removes stale global CDN intent when the selected runtime forbids it. */
+    clearPublish?: boolean;
   }
 ): Promise<string> {
   // Filter out empty string values from the config object
@@ -53,6 +55,10 @@ export async function createOrUpdateConfig(
       ...oldContent,
       ...newContent,
     } as Record<string, unknown> & { locales?: string[] };
+
+    if (options.clearPublish) {
+      delete mergedContent.publish;
+    }
 
     // Preserve unrelated file configuration and nested GT options when setup
     // only needs to add or update a translation output path.

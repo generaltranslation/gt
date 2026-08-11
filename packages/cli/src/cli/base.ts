@@ -959,6 +959,7 @@ See https://www.npmjs.com/package/gt-vue`);
       files: Object.keys(files).length > 0 ? files : undefined,
       framework: isVite ? 'vite' : undefined,
       publish: isUsingGT && usingCDN,
+      clearPublish: runtimeSetup.hasVueRuntime && !usingCDN,
     });
 
     logger.success(
