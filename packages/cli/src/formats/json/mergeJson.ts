@@ -9,8 +9,10 @@ import {
   getSourceObjectOptionsArray,
   validateJsonSchema,
 } from './utils.js';
-import { getLocaleProperties } from '@generaltranslation/format';
-import { replaceLocalePlaceholders } from '../utils.js';
+import {
+  getConfiguredLocaleProperties,
+  replaceLocalePlaceholders,
+} from '../utils.js';
 import { gt } from '../../utils/gt.js';
 import {
   applyStructuralTransforms,
@@ -562,8 +564,8 @@ export function applyTransformations(
 ): void {
   if (!transform) return;
 
-  const targetLocaleProperties = getLocaleProperties(targetLocale);
-  const defaultLocaleProperties = getLocaleProperties(defaultLocale);
+  const targetLocaleProperties = getConfiguredLocaleProperties(targetLocale);
+  const defaultLocaleProperties = getConfiguredLocaleProperties(defaultLocale);
 
   for (const [transformPath, transformOptions] of Object.entries(transform)) {
     if (

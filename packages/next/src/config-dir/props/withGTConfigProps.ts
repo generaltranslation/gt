@@ -80,6 +80,14 @@ export type BaseWithGTConfigProps = {
   experimentalCompilerOptions?: CompilerOptions;
   headersAndCookies?: HeadersAndCookies;
   _usingPlugin?: boolean;
+  /**
+   * Opt-in id-tagging (off by default): exposes each `<T>`'s translation hash as
+   * a `data-_gt-hash` attribute for tooling (localized replay, in-context QA).
+   * Must be the literal `true` to enable — see `isIdTaggingEnabled`. ⚠️ Enabling
+   * injects a `display:contents` `<span>` around any `<T>` that renders bare text
+   * or a fragment (elements are annotated in place, no wrapper).
+   */
+  _tagIds?: boolean;
   // Request function paths
   getLocalePath?: string;
   getRegionPath?: string;

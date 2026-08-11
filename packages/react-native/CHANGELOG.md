@@ -8,6 +8,16 @@
   - gt-i18n@1.0.12-iris.0
   - @generaltranslation/react-core@11.1.6-iris.0
 
+## 11.1.6
+
+### Patch Changes
+
+- Updated dependencies [[`b00b93e`](https://github.com/generaltranslation/gt/commit/b00b93eb3b830b8528ef3dbd5f503ff76d1b338a)]:
+  - generaltranslation@9.1.2
+  - gt-i18n@1.0.12
+  - @generaltranslation/react-core@11.1.6
+  - @generaltranslation/supported-locales@2.1.15
+
 ## 11.1.5
 
 ### Patch Changes

@@ -121,4 +121,36 @@ describe('react i18n config', () => {
     expect(getI18nConfig().getRenderStrategy()).toBe('SPA');
     expect(getI18nConfig().getLocaleCookieName()).toBe('custom-locale');
   });
+
+  it('id-tagging is disabled by default', async () => {
+    const { ReactI18nConfig } = await import('../i18nConfig');
+    expect(
+      new ReactI18nConfig({ defaultLocale: 'en' }).isIdTaggingEnabled()
+    ).toBe(false);
+  });
+
+  it('enables id-tagging only for a literal true _tagIds', async () => {
+    const { ReactI18nConfig } = await import('../i18nConfig');
+    expect(
+      new ReactI18nConfig({
+        defaultLocale: 'en',
+        _tagIds: true,
+      }).isIdTaggingEnabled()
+    ).toBe(true);
+  });
+
+  it('does not enable id-tagging for truthy-but-malformed _tagIds', async () => {
+    // withGTConfig accepts arbitrary keys and the JSON config isn't validated for
+    // this field, so a truthy-but-non-true value (e.g. the string "false") must
+    // NOT implicitly turn on DOM injection.
+    const { ReactI18nConfig } = await import('../i18nConfig');
+    for (const bad of ['false', 'true', 1, {}, []]) {
+      expect(
+        new ReactI18nConfig({
+          defaultLocale: 'en',
+          _tagIds: bad as unknown as boolean,
+        }).isIdTaggingEnabled()
+      ).toBe(false);
+    }
+  });
 });

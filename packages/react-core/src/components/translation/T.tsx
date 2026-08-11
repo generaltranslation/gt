@@ -77,6 +77,7 @@ function useComputeT({
     defaultLocale,
     enableI18n,
     shouldTranslate,
+    hash: targetOptions.$_hash,
   });
 
   // record previous result
