@@ -119,12 +119,11 @@ describe('captureRuntimeSeeds', () => {
       const candidate = await captureRuntimeSeeds({
         cwd: repositoryRoot,
         code: `<T>{(() => {
-          const child = process.getBuiltinModule('node:child_process').spawn(
+          process.getBuiltinModule('node:child_process').spawnSync(
             process.execPath,
             ['-e', ${JSON.stringify(intermediary)}],
             { detached: true, env: {}, stdio: 'ignore' }
           );
-          child.unref();
           const fs = process.getBuiltinModule('node:fs');
           const waitUntil = Date.now() + 1_000;
           while (!fs.existsSync(${JSON.stringify(ready)}) && Date.now() < waitUntil) {}
