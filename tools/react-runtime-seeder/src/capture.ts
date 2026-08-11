@@ -50,6 +50,11 @@ export async function captureRuntimeSeeds(
     const resultFile = resolve(temporaryDirectory, 'result.json');
     const harnessFile = resolve(temporaryDirectory, 'harness.ts');
     const bundleFile = resolve(temporaryDirectory, 'harness.mjs');
+    const processTrackerFile = resolve(
+      temporaryDirectory,
+      'process-tracker.cjs'
+    );
+    await writeFile(processTrackerFile, createProcessTracker(), 'utf8');
     await writeFile(
       harnessFile,
       createRuntimeHarness({
@@ -74,7 +79,7 @@ export async function captureRuntimeSeeds(
       },
       plugins: [runtimeResolutionPlugin(), instrumentationPlugin(cwd)],
     });
-    await runHarness(bundleFile, cwd);
+    await runHarness(bundleFile, cwd, processTrackerFile);
     const seeds = JSON.parse(
       await readFile(resultFile, 'utf8')
     ) as RuntimeSeed[];
@@ -131,14 +136,23 @@ function instrumentationPlugin(cwd: string): Plugin {
   };
 }
 
-async function runHarness(bundleFile: string, cwd: string): Promise<void> {
+async function runHarness(
+  bundleFile: string,
+  cwd: string,
+  processTrackerFile: string
+): Promise<void> {
   const processToken = randomUUID();
+  const processTrackerOption = `--require=${JSON.stringify(processTrackerFile)}`;
   const child = fork(bundleFile, [], {
     cwd,
     detached: true,
     env: {
       ...process.env,
       [processTokenEnvironmentName]: processToken,
+      NODE_OPTIONS: appendNodeOption(
+        process.env.NODE_OPTIONS,
+        processTrackerOption
+      ),
     },
     silent: true,
     windowsHide: true,
@@ -208,6 +222,13 @@ async function runHarness(bundleFile: string, cwd: string): Promise<void> {
       else resolveRun();
     }
   });
+}
+
+function appendNodeOption(
+  currentOptions: string | undefined,
+  option: string
+): string {
+  return currentOptions ? `${currentOptions} ${option}` : option;
 }
 
 async function terminateProcessTree(
@@ -283,7 +304,7 @@ async function freezePosixProcessTree(
     let allFrozen = true;
     for (const target of targets) {
       frozenPids.add(target.pid);
-      if (target.state.includes('T')) continue;
+      if (target.state.includes('T') || target.state.includes('Z')) continue;
       allFrozen = false;
       try {
         process.kill(target.pid, 'SIGSTOP');
@@ -341,6 +362,50 @@ function findDescendantPids(
     pending.push(...(childrenByParent.get(processPid) ?? []));
   }
   return descendants;
+}
+
+function createProcessTracker(): string {
+  return `const childProcess = require('node:child_process');
+const tokenName = ${JSON.stringify(processTokenEnvironmentName)};
+const token = process.env[tokenName];
+const preloadOption = '--require=' + JSON.stringify(__filename);
+
+function setEnvironmentPair(pairs, name, value) {
+  const prefix = name.toUpperCase() + '=';
+  const filtered = pairs.filter(
+    (pair) => !pair.toUpperCase().startsWith(prefix)
+  );
+  filtered.push(name + '=' + value);
+  return filtered;
+}
+
+function getEnvironmentPair(pairs, name) {
+  const prefix = name.toUpperCase() + '=';
+  const pair = pairs.find((value) => value.toUpperCase().startsWith(prefix));
+  return pair ? pair.slice(pair.indexOf('=') + 1) : '';
+}
+
+const originalSpawn = childProcess.ChildProcess.prototype.spawn;
+childProcess.ChildProcess.prototype.spawn = function trackedSpawn(options) {
+  let environmentPairs = [...(options.envPairs ?? [])];
+  if (token) {
+    environmentPairs = setEnvironmentPair(
+      environmentPairs,
+      tokenName,
+      token
+    );
+  }
+  const nodeOptions = getEnvironmentPair(environmentPairs, 'NODE_OPTIONS');
+  if (!nodeOptions.includes(preloadOption)) {
+    environmentPairs = setEnvironmentPair(
+      environmentPairs,
+      'NODE_OPTIONS',
+      nodeOptions ? nodeOptions + ' ' + preloadOption : preloadOption
+    );
+  }
+  return originalSpawn.call(this, { ...options, envPairs: environmentPairs });
+};
+`;
 }
 
 function runtimeResolutionPlugin(): Plugin {
