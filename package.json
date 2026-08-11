@@ -3,6 +3,7 @@
   "private": true,
   "workspaces": [
     "packages/*",
+    "tools/*",
     "examples/*",
     "tests/apps/**/*"
   ],
@@ -19,8 +20,8 @@
     "release": "changeset publish",
     "release:gt-bin": "pnpm --filter gt run release:bin",
     "release:gtx-cli-bin": "pnpm --filter gtx-cli run release:bin",
-    "build:clean": "turbo run build:clean --filter='./packages/*'",
-    "build:release": "turbo run build:release --filter='./packages/*'",
+    "build:clean": "turbo run build:clean --filter='./packages/*' --filter='./tools/*'",
+    "build:release": "turbo run build:release --filter='./packages/*' --filter='./tools/*'",
     "bench": "turbo run bench",
     "size": "size-limit",
     "check:library-defaults": "node scripts/check-library-defaults.mjs && vitest run scripts/check-library-defaults.test.mjs",
@@ -28,7 +29,7 @@
     "format": "oxfmt --check .",
     "format:fix": "oxfmt .",
     "changeset": "changeset",
-    "version-packages": "changeset version && oxfmt packages/*/CHANGELOG.md"
+    "version-packages": "changeset version && oxfmt packages/*/CHANGELOG.md tools/*/CHANGELOG.md"
   },
   "repository": {
     "type": "git",

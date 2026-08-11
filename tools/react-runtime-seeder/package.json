@@ -5,11 +5,17 @@
   "type": "module",
   "main": "dist/index.mjs",
   "types": "dist/index.d.mts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "bin": {
     "gt-react-seed": "dist/cli.mjs"
   },
   "scripts": {
     "build": "tsdown",
+    "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
+    "build:release": "pnpm run build:clean",
     "transpile": "tsdown",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -39,5 +45,29 @@
   },
   "engines": {
     "node": ">=20.0.0"
-  }
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/generaltranslation/gt.git",
+    "directory": "tools/react-runtime-seeder"
+  },
+  "keywords": [
+    "react",
+    "translation",
+    "i18n",
+    "testing",
+    "seed"
+  ],
+  "author": "General Translation, Inc.",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/generaltranslation/gt/issues"
+  },
+  "homepage": "https://generaltranslation.com/"
 }

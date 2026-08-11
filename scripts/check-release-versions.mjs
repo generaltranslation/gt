@@ -28,6 +28,11 @@ function compareVersions(left, right) {
   return 0;
 }
 
+const workspaceRoots = ['packages', 'tools'];
+const manifestPathspecs = workspaceRoots.map(
+  (root) => `${root}/*/package.json`
+);
+
 const changedManifests = git(
   'diff',
   '--name-only',
@@ -35,7 +40,7 @@ const changedManifests = git(
   base,
   head,
   '--',
-  'packages/*/package.json'
+  ...manifestPathspecs
 )
   .split('\n')
   .filter(Boolean);
@@ -48,10 +53,10 @@ const packageManifests = git(
   '--name-only',
   head,
   '--',
-  'packages'
+  ...workspaceRoots
 )
   .split('\n')
-  .filter((path) => /^packages\/[^/]+\/package\.json$/.test(path))
+  .filter((path) => /^(packages|tools)\/[^/]+\/package\.json$/.test(path))
   .map((path) => ({
     path,
     manifest: JSON.parse(git('show', `${head}:${path}`)),
