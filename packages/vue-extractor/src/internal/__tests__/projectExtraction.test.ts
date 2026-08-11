@@ -11,6 +11,7 @@ import {
 } from './projectTestUtils.js';
 
 const temporaryDirectories: string[] = [];
+const CONCURRENT_PROJECT_EXTRACTION_TIMEOUT_MS = 15_000;
 
 afterEach(() => {
   for (const directory of temporaryDirectories.splice(0)) {
@@ -773,32 +774,36 @@ import { LocalT } from '@local/gt';
     ]);
   });
 
-  it('is deterministic across 80 concurrent project extractions', async () => {
-    const root = createVueFixture({
-      'src/App.vue': `<script setup lang="ts">
+  it(
+    'is deterministic across 80 concurrent project extractions',
+    async () => {
+      const root = createVueFixture({
+        'src/App.vue': `<script setup lang="ts">
 import { T, msg } from 'gt-vue';
 export const subtitle = msg('Concurrent subtitle');
 </script>
 <template><T context="concurrency">Concurrent heading</T></template>
 `,
-    });
+      });
 
-    const outputs = await Promise.all(
-      Array.from({ length: 80 }, () =>
-        extractFromVueProject({
-          cwd: root,
-          includeSourceCodeContext: true,
-        })
-      )
-    );
+      const outputs = await Promise.all(
+        Array.from({ length: 80 }, () =>
+          extractFromVueProject({
+            cwd: root,
+            includeSourceCodeContext: true,
+          })
+        )
+      );
 
-    expect(outputs[0]?.errors).toEqual([]);
-    expect(outputs[0]?.updates).toHaveLength(2);
-    const expected = JSON.stringify(outputs[0]);
-    expect(outputs.every((output) => JSON.stringify(output) === expected)).toBe(
-      true
-    );
-  });
+      expect(outputs[0]?.errors).toEqual([]);
+      expect(outputs[0]?.updates).toHaveLength(2);
+      const expected = JSON.stringify(outputs[0]);
+      expect(
+        outputs.every((output) => JSON.stringify(output) === expected)
+      ).toBe(true);
+    },
+    CONCURRENT_PROJECT_EXTRACTION_TIMEOUT_MS
+  );
 });
 
 function createVueFixture(
