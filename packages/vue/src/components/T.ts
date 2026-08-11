@@ -28,6 +28,11 @@ type TProps = {
   requiresReview?: boolean;
 };
 
+type TCompilerAliases = Pick<
+  TProps,
+  '$context' | '$id' | '$maxChars' | '$requiresReview'
+>;
+
 /**
  * Translates rich content from its default slot with the active locale's
  * catalog. Missing entries render the source slot, and loaded catalogs or
@@ -74,16 +79,7 @@ export const T = /* @__PURE__ */ withGTMetadata<TProps>(
             state,
             {
               ...props,
-              ...(typeof attrs.$context === 'string' && {
-                $context: attrs.$context,
-              }),
-              ...(typeof attrs.$id === 'string' && { $id: attrs.$id }),
-              ...(typeof attrs.$maxChars === 'number' && {
-                $maxChars: attrs.$maxChars,
-              }),
-              ...(typeof attrs.$requiresReview === 'boolean' && {
-                $requiresReview: attrs.$requiresReview,
-              }),
+              ...readCompilerAliases(attrs),
             },
             identityCache
           )
@@ -92,3 +88,19 @@ export const T = /* @__PURE__ */ withGTMetadata<TProps>(
   }),
   'translate-client'
 );
+
+/** Normalizes compiler aliases that remain undeclared Vue attributes. */
+function readCompilerAliases(attrs: Record<string, unknown>): TCompilerAliases {
+  const maxChars = attrs.$maxChars ?? attrs['$max-chars'];
+  const requiresReview = attrs.$requiresReview ?? attrs['$requires-review'];
+  return {
+    ...(typeof attrs.$context === 'string' && {
+      $context: attrs.$context,
+    }),
+    ...(typeof attrs.$id === 'string' && { $id: attrs.$id }),
+    ...(typeof maxChars === 'number' && { $maxChars: maxChars }),
+    ...((requiresReview === '' || typeof requiresReview === 'boolean') && {
+      $requiresReview: requiresReview === '' ? true : requiresReview,
+    }),
+  };
+}

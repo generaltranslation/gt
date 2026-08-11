@@ -461,6 +461,9 @@ describe('React-authoritative rich runtime shape', () => {
   it('passes documented T metadata and dollar aliases through SFC templates', async () => {
     const documentedSource = 'Documented SFC metadata';
     const aliasSource = 'Alias SFC metadata';
+    const bareCamelReviewSource = 'Bare camel review metadata';
+    const bareKebabReviewSource = 'Bare kebab review metadata';
+    const falseReviewSource = 'Explicit false review metadata';
     const documentedParams = {
       context: 'documented SFC context',
       id: 'documented-sfc-id',
@@ -476,23 +479,30 @@ describe('React-authoritative rich runtime shape', () => {
     const plugin = createGT({
       loadTranslations: async () => ({
         [getReactLookupHash(aliasSource, aliasParams)]: 'Alias SFC target',
+        [getReactLookupHash(bareCamelReviewSource, {
+          $requiresReview: true,
+        })]: 'Bare camel review target',
+        [getReactLookupHash(bareKebabReviewSource, {
+          $requiresReview: true,
+        })]: 'Bare kebab review target',
         [getReactLookupHash(documentedSource, documentedParams)]:
           'Documented SFC target',
+        [getReactLookupHash(falseReviewSource, {
+          $requiresReview: false,
+          requiresReview: true,
+        })]: 'Explicit false review target',
       }),
     });
     await plugin.setLocale('fr');
     const Root = defineComponent({
       components: { T },
-      setup() {
-        return { aliasParams };
-      },
       render: compileSfcTemplate(
-        '<main><T context="documented SFC context" id="documented-sfc-id" :max-chars="24" requires-review>Documented SFC metadata</T><T v-bind="aliasParams">Alias SFC metadata</T></main>'
+        '<main><T context="documented SFC context" id="documented-sfc-id" :max-chars="24" requires-review>Documented SFC metadata</T><T $context="alias SFC context" $id="alias-sfc-id" :$max-chars="16" :$requires-review="true">Alias SFC metadata</T><T $requiresReview>Bare camel review metadata</T><T $requires-review>Bare kebab review metadata</T><T requires-review :$requires-review="false">Explicit false review metadata</T></main>'
       ),
     });
 
     expect(stripFragmentMarkers(await renderWithPlugin(Root, plugin))).toBe(
-      '<main>Documented SFC targetAlias SFC target</main>'
+      '<main>Documented SFC targetAlias SFC targetBare camel review targetBare kebab review targetExplicit false review target</main>'
     );
   });
 });
