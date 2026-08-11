@@ -101,7 +101,7 @@ export async function createUpdates(
     parsingFlags,
     parsingOptions,
     extractPrimary,
-    options.jsconfig
+    options.jsconfig || undefined
   );
 
   errors = [...errors, ...newErrors];

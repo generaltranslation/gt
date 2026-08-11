@@ -10,7 +10,6 @@ import { displayHeader } from '../console/logging.js';
 import { logger } from '../console/logger.js';
 import { attachInlineTranslateFlags, attachTranslateFlags } from './flags.js';
 import { InlineCLI } from './inline.js';
-import { manifestDirectlyDeclaresGTVue } from '@generaltranslation/vue-extractor/integration';
 
 const VUE_SOURCE_HELP =
   "Space-separated list of glob patterns containing the app's Vue source code; defaults cover root SFCs and conventional Vue and Nuxt directories";
@@ -19,9 +18,10 @@ const VUE_SOURCE_HELP =
 export class VueCLI extends InlineCLI {
   public constructor(
     command: Command,
-    additionalModules?: SupportedLibraries[]
+    additionalModules?: SupportedLibraries[],
+    fileLibrary: SupportedLibraries = Libraries.GT_VUE
   ) {
-    super(command, Libraries.GT_VUE, additionalModules);
+    super(command, fileLibrary, additionalModules);
   }
 
   public override init(): void {
@@ -29,38 +29,14 @@ export class VueCLI extends InlineCLI {
     super.init();
   }
 
-  /** Vue extraction accepts a direct production or development dependency. */
-  protected override isInlineRuntimeInstalled(
-    packageJson: Record<string, unknown>
-  ): boolean {
-    return manifestDirectlyDeclaresGTVue(packageJson);
-  }
-
-  /** gt-vue has no built-in CDN loader yet. */
-  protected override supportsCDNStorage(): boolean {
-    return false;
-  }
-
-  /** Vue setup remains config-only; applications own their loader wiring. */
-  protected override shouldGenerateLocalTranslationLoader(): boolean {
-    return false;
-  }
-
-  /** Explains the manual runtime step without generating application code. */
-  protected override getLocalTranslationGuidance({
-    translationsDir,
-  }: {
-    generatedLoader: boolean;
-    translationsDir: string;
-  }): string {
-    return `GT will write local translation files to ${translationsDir}.
-Configure createGT({ loadTranslations }) to load files from that directory.
-See https://www.npmjs.com/package/gt-vue`;
-  }
-
   /** Uses Vue-specific default source guidance on inherited inline commands. */
   protected override getInlineSourceHelp(): string {
     return VUE_SOURCE_HELP;
+  }
+
+  /** Mixed file projects still use Vue for generate and validation. */
+  protected override getInlineLibrary(): typeof Libraries.GT_VUE {
+    return Libraries.GT_VUE;
   }
 
   /** Configure Vue without entering the React application setup wizard. */

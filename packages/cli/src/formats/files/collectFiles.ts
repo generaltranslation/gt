@@ -24,10 +24,9 @@ export function resolveInlineLibrary(
   library: SupportedLibraries,
   projectRoot: string = process.cwd()
 ): InlineLibrary | undefined {
-  if (isInlineLibrary(library)) return library;
-  return planVueExtraction({ library, projectRoot }).handled
-    ? Libraries.GT_VUE
-    : undefined;
+  const includesVue = planVueExtraction({ library, projectRoot }).handled;
+  if (includesVue) return Libraries.GT_VUE;
+  return isInlineLibrary(library) ? library : undefined;
 }
 
 export async function collectFiles(
@@ -46,11 +45,16 @@ export async function collectFiles(
   // Parse for React components
   let reactComponents = 0;
   const inlineLibrary = resolveInlineLibrary(library);
-  if (inlineLibrary) {
+  const extractionLibrary = isInlineLibrary(library)
+    ? library
+    : inlineLibrary === Libraries.GT_VUE
+      ? Libraries.GT_VUE
+      : undefined;
+  if (extractionLibrary) {
     const updates = await aggregateInlineTranslations(
       options,
       settings,
-      inlineLibrary
+      extractionLibrary
     );
     if (updates.length > 0) {
       if (!settings.publish && !settings.files?.placeholderPaths.gt) {

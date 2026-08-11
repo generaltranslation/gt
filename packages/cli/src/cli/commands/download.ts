@@ -14,7 +14,7 @@ import {
   resolveInlineLibrary,
 } from '../../formats/files/collectFiles.js';
 import { hasValidCredentials, hasValidLocales } from './utils/validation.js';
-import { isInlineLibrary, type InlineLibrary } from '../../types/libraries.js';
+import type { InlineLibrary } from '../../types/libraries.js';
 
 // Downloads translations that were originally staged
 
@@ -48,11 +48,9 @@ export async function handleDownload(
 
   // Collect the hashes for all files we need to download
   let fileVersionData: FileTranslationData;
-  let inlineLibrary: InlineLibrary | undefined = isInlineLibrary(library)
-    ? library
-    : undefined;
+  let inlineLibrary: InlineLibrary | undefined;
   if (settings.stageTranslations) {
-    inlineLibrary ??= resolveInlineLibrary(library);
+    inlineLibrary = resolveInlineLibrary(library);
     fileVersionData = getStagedEntriesFromLockfile(settings);
   } else {
     const { files, inlineLibrary: collectedInlineLibrary } = await collectFiles(

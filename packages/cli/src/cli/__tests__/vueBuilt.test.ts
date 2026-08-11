@@ -132,6 +132,143 @@ describe('built Vue CLI', () => {
     );
   });
 
+  it.each(['next-intl', 'i18next'] as const)(
+    'adds Vue commands and flags to mixed %s roots without React setup',
+    (fileLibrary) => {
+      const projectRoot = createProject({
+        dependencies: {
+          [fileLibrary]: '*',
+          'gt-vue': '*',
+          vite: '*',
+        },
+        devDependencies: {
+          gt: '*',
+        },
+      });
+
+      runNode(
+        `
+          import assert from 'node:assert/strict';
+          import { Command } from ${JSON.stringify(commanderUrl)};
+          import { main } from ${JSON.stringify(builtIndexUrl)};
+          import { VueCLI } from ${JSON.stringify(builtVueUrl)};
+
+          const optionNames = (command) =>
+            command.options.map((option) => option.attributeName());
+
+          process.argv.splice(0, process.argv.length, process.execPath, 'gt', 'probe');
+          const routedProgram = new Command();
+          main(routedProgram);
+          const routedCommands = routedProgram.commands.map((command) =>
+            command.name()
+          );
+          assert.equal(routedCommands.includes('generate'), true);
+          assert.equal(routedCommands.includes('validate'), true);
+          for (const commandName of ['setup', 'stage', 'translate']) {
+            const options = optionNames(
+              routedProgram.commands.find(
+                (command) => command.name() === commandName
+              )
+            );
+            assert.equal(options.includes('src'), true);
+            assert.equal(options.includes('jsconfig'), true);
+          }
+          assert.match(
+            routedProgram.commands
+              .find((command) => command.name() === 'init')
+              .description(),
+            /gt-vue/
+          );
+
+          class InitProbe extends VueCLI {
+            calls = [];
+
+            async handleInitCommand(...args) {
+              this.calls.push(args);
+            }
+          }
+
+          const initProgram = new Command();
+          const cli = new InitProbe(
+            initProgram,
+            undefined,
+            ${JSON.stringify(fileLibrary)}
+          );
+          cli.init();
+          await initProgram.parseAsync(
+            [
+              'init',
+              '--src',
+              'src/**/*.vue',
+              '--config',
+              'custom.gt.config.json',
+            ],
+            { from: 'user' }
+          );
+          assert.deepEqual(cli.calls, [[
+            false,
+            false,
+            true,
+            {
+              src: ['src/**/*.vue'],
+              config: 'custom.gt.config.json',
+            },
+          ]]);
+        `,
+        projectRoot
+      );
+    }
+  );
+
+  it.each([
+    ['next-intl', 'without Vue', {}],
+    ['i18next', 'without Vue', {}],
+    ['next-intl', 'with a Vue peer', { peerDependencies: { 'gt-vue': '*' } }],
+    [
+      'i18next',
+      'with optional Vue',
+      { optionalDependencies: { 'gt-vue': '*' } },
+    ],
+  ] as const)(
+    'keeps the pure %s command surface unchanged %s',
+    (fileLibrary, _description, extraManifest) => {
+      const projectRoot = createProject({
+        dependencies: {
+          [fileLibrary]: '*',
+          vite: '*',
+        },
+        ...extraManifest,
+      });
+
+      runNode(
+        `
+          import assert from 'node:assert/strict';
+          import { Command } from ${JSON.stringify(commanderUrl)};
+          import { main } from ${JSON.stringify(builtIndexUrl)};
+
+          process.argv.splice(0, process.argv.length, process.execPath, 'gt', 'probe');
+          const program = new Command();
+          main(program);
+          const commandNames = program.commands.map((command) => command.name());
+          assert.equal(commandNames.includes('generate'), false);
+          assert.equal(commandNames.includes('validate'), false);
+          const translateOptions = program.commands
+            .find((command) => command.name() === 'translate')
+            .options.map((option) => option.attributeName());
+          assert.equal(translateOptions.includes('src'), false);
+          assert.equal(translateOptions.includes('jsconfig'), false);
+          assert.doesNotMatch(
+            program.commands
+              .find((command) => command.name() === 'init')
+              .description(),
+            /gt-vue/
+          );
+        `,
+        projectRoot
+      );
+    }
+  );
+
   it('runs Vue init through the built configuration-only Vite path', () => {
     const projectRoot = createProject({
       dependencies: {
@@ -258,12 +395,18 @@ describe('built Vue CLI', () => {
 
         class VueInitProbe extends VueCLI {
           inspect(manifest) {
+            const runtimeSetup = this.getInlineRuntimeSetup(manifest);
+            const generatedLoader = this.shouldGenerateLocalTranslationLoader(
+              false,
+              runtimeSetup
+            );
             return {
               installed: this.isInlineRuntimeInstalled(manifest),
-              supportsCDN: this.supportsCDNStorage(),
-              generatesLoader: this.shouldGenerateLocalTranslationLoader(false),
+              supportsCDN: this.supportsCDNStorage(runtimeSetup),
+              generatesLoader: generatedLoader,
               guidance: this.getLocalTranslationGuidance({
-                generatedLoader: false,
+                generatedLoader,
+                runtimeSetup,
                 translationsDir: 'public/_gt',
               }),
             };
@@ -278,13 +421,22 @@ describe('built Vue CLI', () => {
 
         class ReactInitProbe extends ReactCLI {
           inspect(manifest) {
+            const runtimeSetup = this.getInlineRuntimeSetup(manifest);
+            const generatedLoader = this.shouldGenerateLocalTranslationLoader(
+              false,
+              runtimeSetup
+            );
             return {
               installed: this.isInlineRuntimeInstalled(manifest),
-              supportsCDN: this.supportsCDNStorage(),
-              generatesLoader: this.shouldGenerateLocalTranslationLoader(false),
-              skipsViteLoader: this.shouldGenerateLocalTranslationLoader(true),
+              supportsCDN: this.supportsCDNStorage(runtimeSetup),
+              generatesLoader: generatedLoader,
+              skipsViteLoader: this.shouldGenerateLocalTranslationLoader(
+                true,
+                runtimeSetup
+              ),
               guidance: this.getLocalTranslationGuidance({
-                generatedLoader: true,
+                generatedLoader,
+                runtimeSetup,
                 translationsDir: 'public/_gt',
               }),
             };
@@ -339,6 +491,366 @@ describe('built Vue CLI', () => {
     );
   });
 
+  it.each([
+    ['next-intl', 'dependencies'],
+    ['i18next', 'devDependencies'],
+  ] as const)(
+    'configures mixed %s and Vue roots from %s without unsupported storage',
+    (library, vueDependencyField) => {
+      const projectRoot = createProject({
+        dependencies: {
+          [library]: '*',
+          ...(vueDependencyField === 'dependencies' ? { 'gt-vue': '*' } : {}),
+        },
+        ...(vueDependencyField === 'devDependencies'
+          ? { devDependencies: { gt: '*', 'gt-vue': '*' } }
+          : { devDependencies: { gt: '*' } }),
+      });
+      fs.writeFileSync(
+        path.join(projectRoot, 'gt.config.json'),
+        JSON.stringify({ defaultLocale: 'en', locales: ['fr'] })
+      );
+
+      runNode(
+        `
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import { Command } from ${JSON.stringify(commanderUrl)};
+          import { VueCLI } from ${JSON.stringify(builtVueUrl)};
+
+          class MixedSetupProbe extends VueCLI {
+            inspect(manifest) {
+              const runtimeSetup = this.getInlineRuntimeSetup(manifest);
+              const generatedLoader = this.shouldGenerateLocalTranslationLoader(
+                false,
+                runtimeSetup
+              );
+              return {
+                generatedLoader,
+                guidance: this.getLocalTranslationGuidance({
+                  generatedLoader,
+                  runtimeSetup,
+                  translationsDir: 'public/_gt',
+                }),
+                installed: this.isInlineRuntimeInstalled(manifest),
+                runtimeSetup,
+                supportsCDN: this.supportsCDNStorage(runtimeSetup),
+              };
+            }
+
+            configure() {
+              return this.handleInitCommand(false, true, false, {
+                config: 'gt.config.json',
+              });
+            }
+          }
+
+          const manifest = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          const cli = new MixedSetupProbe(
+            new Command(),
+            undefined,
+            ${JSON.stringify(library)}
+          );
+          assert.deepEqual(cli.inspect(manifest), {
+            generatedLoader: false,
+            guidance:
+              'GT will write local translation files to public/_gt.\\n' +
+              'Configure createGT({ loadTranslations }) to load files from that directory.\\n' +
+              'See https://www.npmjs.com/package/gt-vue',
+            installed: true,
+            runtimeSetup: {
+              hasOtherInlineRuntime: false,
+              hasVueRuntime: true,
+              ranReactSetup: false,
+            },
+            supportsCDN: false,
+          });
+
+          await cli.configure();
+          const config = JSON.parse(fs.readFileSync('gt.config.json', 'utf8'));
+          assert.equal(
+            config.files.gt.output,
+            path.join('public', '_gt', '[locale].json')
+          );
+          assert.equal(config.publish, undefined);
+          assert.equal(fs.existsSync('loadTranslations.js'), false);
+          assert.equal(fs.existsSync('src/loadTranslations.js'), false);
+        `,
+        projectRoot,
+        {
+          GT_API_KEY: 'test-api-key',
+          GT_PROJECT_ID: 'test-project-id',
+        }
+      );
+    }
+  );
+
+  it.each([
+    ['gt-react', builtReactUrl, 'ReactCLI'],
+    ['gt-node', builtNodeUrl, 'NodeCLI'],
+  ] as const)(
+    'retains the existing %s local loader when Vue shares its catalog',
+    (library, cliModuleUrl, cliExport) => {
+      const projectRoot = createProject({
+        dependencies: {
+          [library]: '*',
+          'gt-vue': '*',
+        },
+        devDependencies: {
+          gt: '*',
+        },
+      });
+      writeProjectFiles(projectRoot, {
+        'gt.config.json': JSON.stringify({
+          defaultLocale: 'en',
+          locales: ['fr'],
+        }),
+        'src/.gitkeep': '',
+      });
+
+      runNode(
+        `
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import { Command } from ${JSON.stringify(commanderUrl)};
+          import { ${cliExport} as RuntimeCLI } from ${JSON.stringify(cliModuleUrl)};
+
+          class MixedRuntimeProbe extends RuntimeCLI {
+            inspect(manifest) {
+              const runtimeSetup = this.getInlineRuntimeSetup(manifest);
+              const generatedLoader = this.shouldGenerateLocalTranslationLoader(
+                false,
+                runtimeSetup
+              );
+              return {
+                generatedLoader,
+                guidance: this.getLocalTranslationGuidance({
+                  generatedLoader,
+                  runtimeSetup,
+                  translationsDir: 'public/_gt',
+                }),
+                runtimeSetup,
+                supportsCDN: this.supportsCDNStorage(runtimeSetup),
+              };
+            }
+
+            configure() {
+              return this.handleInitCommand(false, true, false, {
+                config: 'gt.config.json',
+              });
+            }
+          }
+
+          const manifest = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          const cli = new MixedRuntimeProbe(new Command(), ${JSON.stringify(library)});
+          const setup = cli.inspect(manifest);
+          assert.deepEqual(setup.runtimeSetup, {
+            hasOtherInlineRuntime: true,
+            hasVueRuntime: true,
+            ranReactSetup: false,
+          });
+          assert.equal(setup.supportsCDN, false);
+          assert.equal(setup.generatedLoader, true);
+          assert.equal(setup.guidance.includes('docs/next/guides/local-tx'), true);
+          assert.equal(
+            setup.guidance.includes('createGT({ loadTranslations })'),
+            true
+          );
+
+          await cli.configure();
+          const config = JSON.parse(fs.readFileSync('gt.config.json', 'utf8'));
+          assert.equal(
+            config.files.gt.output,
+            path.join('public', '_gt', '[locale].json')
+          );
+          assert.equal(config.publish, undefined);
+          const loaderPath = path.join('src', 'loadTranslations.js');
+          assert.equal(fs.existsSync(loaderPath), true);
+          assert.match(
+            fs.readFileSync(loaderPath, 'utf8'),
+            /export default async function loadTranslations/
+          );
+        `,
+        projectRoot,
+        {
+          GT_API_KEY: 'test-api-key',
+          GT_PROJECT_ID: 'test-project-id',
+        }
+      );
+    }
+  );
+
+  it('uses Vue loader guidance instead of JavaScript framework setup for Python', () => {
+    const projectRoot = createProject({
+      dependencies: {
+        'gt-vue': '*',
+      },
+      devDependencies: {
+        gt: '*',
+      },
+    });
+    writeProjectFiles(projectRoot, {
+      'gt.config.json': JSON.stringify({
+        defaultLocale: 'en',
+        locales: ['fr'],
+      }),
+      'requirements.txt': 'gt-fastapi>=1.0.0\n',
+    });
+
+    runNode(
+      `
+        import assert from 'node:assert/strict';
+        import fs from 'node:fs';
+        import path from 'node:path';
+        import { Command } from ${JSON.stringify(commanderUrl)};
+        import { PythonCLI } from ${JSON.stringify(builtPythonUrl)};
+
+        class PythonVueProbe extends PythonCLI {
+          inspect(manifest) {
+            const runtimeSetup = this.getInlineRuntimeSetup(manifest);
+            const generatedLoader = this.shouldGenerateLocalTranslationLoader(
+              false,
+              runtimeSetup
+            );
+            return {
+              generatedLoader,
+              guidance: this.getLocalTranslationGuidance({
+                generatedLoader,
+                runtimeSetup,
+                translationsDir: 'public/_gt',
+              }),
+              runtimeSetup,
+              supportsCDN: this.supportsCDNStorage(runtimeSetup),
+            };
+          }
+
+          configure() {
+            return this.handleInitCommand(false, true, false, {
+              config: 'gt.config.json',
+            });
+          }
+        }
+
+        const manifest = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+        const cli = new PythonVueProbe(new Command(), 'gt-fastapi');
+        const setup = cli.inspect(manifest);
+        assert.deepEqual(setup.runtimeSetup, {
+          hasOtherInlineRuntime: false,
+          hasVueRuntime: true,
+          ranReactSetup: false,
+        });
+        assert.equal(setup.supportsCDN, false);
+        assert.equal(setup.generatedLoader, false);
+        assert.equal(setup.guidance.includes('createGT({ loadTranslations })'), true);
+
+        await cli.configure();
+        const config = JSON.parse(fs.readFileSync('gt.config.json', 'utf8'));
+        assert.equal(
+          config.files.gt.output,
+          path.join('public', '_gt', '[locale].json')
+        );
+        assert.equal(config.publish, undefined);
+        assert.equal(fs.existsSync('loadTranslations.js'), false);
+      `,
+      projectRoot,
+      {
+        GT_API_KEY: 'test-api-key',
+        GT_PROJECT_ID: 'test-project-id',
+      }
+    );
+  });
+
+  it('ignores peer and optional Vue declarations and preserves pure React setup', () => {
+    runNode(`
+      import assert from 'node:assert/strict';
+      import { Command } from ${JSON.stringify(commanderUrl)};
+      import { BaseCLI } from ${JSON.stringify(builtBaseUrl)};
+      import { ReactCLI } from ${JSON.stringify(builtReactUrl)};
+
+      const inspect = (cli, manifest) => {
+        const runtimeSetup = cli.getInlineRuntimeSetup(manifest);
+        const generatedLoader = cli.shouldGenerateLocalTranslationLoader(
+          false,
+          runtimeSetup
+        );
+        return {
+          generatedLoader,
+          guidance: cli.getLocalTranslationGuidance({
+            generatedLoader,
+            runtimeSetup,
+            translationsDir: 'public/_gt',
+          }),
+          installed: cli.isInlineRuntimeInstalled(manifest),
+          runtimeSetup,
+          supportsCDN: cli.supportsCDNStorage(runtimeSetup),
+        };
+      };
+
+      class BaseProbe extends BaseCLI {
+        inspect(manifest) {
+          return inspect(this, manifest);
+        }
+      }
+      class ReactProbe extends ReactCLI {
+        inspect(manifest) {
+          return inspect(this, manifest);
+        }
+      }
+
+      const base = new BaseProbe(new Command(), 'next-intl');
+      const ignoredVue = {
+        generatedLoader: true,
+        guidance:
+          'Created loadTranslations.js file for local translations.\\n' +
+          'Make sure to add this function to your app configuration.\\n' +
+          'See https://generaltranslation.com/en/docs/next/guides/local-tx',
+        installed: false,
+        runtimeSetup: {
+          hasOtherInlineRuntime: false,
+          hasVueRuntime: false,
+          ranReactSetup: false,
+        },
+        supportsCDN: true,
+      };
+      assert.deepEqual(
+        base.inspect({ peerDependencies: { 'gt-vue': '*' } }),
+        ignoredVue
+      );
+      assert.deepEqual(
+        base.inspect({ optionalDependencies: { 'gt-vue': '*' } }),
+        ignoredVue
+      );
+      assert.deepEqual(
+        base.inspect({
+          dependencies: { 'gt-vue': '*' },
+          optionalDependencies: { 'gt-vue': '*' },
+        }),
+        ignoredVue
+      );
+
+      const react = new ReactProbe(new Command(), 'gt-react');
+      const pureReact = react.inspect({ dependencies: { 'gt-react': '*' } });
+      assert.deepEqual(pureReact.runtimeSetup, {
+        hasOtherInlineRuntime: true,
+        hasVueRuntime: false,
+        ranReactSetup: false,
+      });
+      assert.equal(pureReact.installed, true);
+      assert.equal(pureReact.supportsCDN, true);
+      assert.equal(pureReact.generatedLoader, true);
+      assert.equal(
+        pureReact.guidance.includes('docs/next/guides/local-tx'),
+        true
+      );
+      assert.equal(
+        react.inspect({ devDependencies: { 'gt-react': '*' } }).installed,
+        false
+      );
+    `);
+  });
+
   it('describes Vue defaults only on Vue inline commands', () => {
     runNode(`
       import assert from 'node:assert/strict';
@@ -381,9 +893,112 @@ describe('built Vue CLI', () => {
         import { resolveInlineLibrary } from ${JSON.stringify(builtCollectFilesUrl)};
 
         assert.equal(resolveInlineLibrary('next-intl'), 'gt-vue');
+        assert.equal(resolveInlineLibrary('gt-react'), 'gt-vue');
+        assert.equal(resolveInlineLibrary('gt-node'), 'gt-vue');
+        assert.equal(resolveInlineLibrary('gt-fastapi'), 'gt-vue');
       `,
       projectRoot
     );
+  });
+
+  it.each(['gt-react', 'gt-node', 'gt-fastapi'] as const)(
+    'preserves the historical %s label without Vue',
+    (library) => {
+      const projectRoot = createProject({
+        dependencies: { [library]: '*' },
+      });
+
+      runNode(
+        `
+          import assert from 'node:assert/strict';
+          import { resolveInlineLibrary } from ${JSON.stringify(builtCollectFilesUrl)};
+
+          assert.equal(
+            resolveInlineLibrary(${JSON.stringify(library)}),
+            ${JSON.stringify(library)}
+          );
+        `,
+        projectRoot
+      );
+    }
+  );
+
+  it.each(['next-intl', 'i18next'] as const)(
+    'extracts Vue content through the mixed %s command adapter',
+    (fileLibrary) => {
+      const projectRoot = createProject({
+        dependencies: {
+          [fileLibrary]: '*',
+          'gt-vue': '*',
+          vue: '*',
+        },
+      });
+      writeProjectFiles(projectRoot, {
+        'gt.config.json': JSON.stringify({
+          defaultLocale: 'en',
+          locales: ['fr'],
+          files: { gt: { output: 'translations/[locale].json' } },
+        }),
+        'src/App.vue': `<script setup>
+import { T } from 'gt-vue';
+</script>
+<template><T>Vue entry from ${fileLibrary}</T></template>
+`,
+      });
+      linkInstalledVue(projectRoot);
+
+      runBuiltCli(['generate', '--config', 'gt.config.json'], projectRoot);
+      const catalog = JSON.parse(
+        fs.readFileSync(path.join(projectRoot, 'translations/en.json'), 'utf8')
+      ) as Record<string, unknown>;
+      expect(Object.keys(catalog)).toHaveLength(1);
+      expect(JSON.stringify(catalog)).toContain(
+        `Vue entry from ${fileLibrary}`
+      );
+
+      const validationOutput = runBuiltCli(
+        ['validate', 'src/App.vue', '--config', 'gt.config.json'],
+        projectRoot
+      );
+      expect(validationOutput).toContain('Found 1 translatable entries');
+    }
+  );
+
+  it('preserves React and Vue entries in one generated mixed catalog', () => {
+    const projectRoot = createProject({
+      dependencies: {
+        'gt-react': '*',
+        'gt-vue': '*',
+        vue: '*',
+      },
+    });
+    writeProjectFiles(projectRoot, {
+      'gt.config.json': JSON.stringify({
+        defaultLocale: 'en',
+        locales: ['fr'],
+        files: { gt: { output: 'translations/[locale].json' } },
+      }),
+      'src/App.tsx': `import { T } from 'gt-react';
+export const App = () => <T>Preserved React entry</T>;
+`,
+      'src/App.vue': `<script setup>
+import { T } from 'gt-vue';
+</script>
+<template><T>Added Vue entry</T></template>
+`,
+    });
+    linkInstalledVue(projectRoot);
+
+    runBuiltCli(
+      ['--skip-version-check', 'generate', '--config', 'gt.config.json'],
+      projectRoot
+    );
+    const catalog = JSON.parse(
+      fs.readFileSync(path.join(projectRoot, 'translations/en.json'), 'utf8')
+    ) as Record<string, unknown>;
+    expect(Object.keys(catalog)).toHaveLength(2);
+    expect(JSON.stringify(catalog)).toContain('Preserved React entry');
+    expect(JSON.stringify(catalog)).toContain('Added Vue entry');
   });
 
   it('uses an explicit tsconfig for full and targeted Vue extraction', () => {
@@ -564,12 +1179,19 @@ function linkInstalledVue(projectRoot: string): void {
 }
 
 function runBuiltCli(args: string[], cwd: string): string {
-  return execFileSync(process.execPath, [cliBinPath, ...args], {
-    cwd,
-    encoding: 'utf8',
-    env: { ...process.env, NO_COLOR: '1' },
-    timeout: 30_000,
-  });
+  try {
+    return execFileSync(process.execPath, [cliBinPath, ...args], {
+      cwd,
+      encoding: 'utf8',
+      env: { ...process.env, NO_COLOR: '1' },
+      timeout: 30_000,
+    });
+  } catch (error) {
+    const result = error as Error & { stderr?: string; stdout?: string };
+    throw new Error(
+      [result.message, result.stdout, result.stderr].filter(Boolean).join('\n')
+    );
+  }
 }
 
 function runNode(

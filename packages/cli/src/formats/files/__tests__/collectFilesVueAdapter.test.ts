@@ -66,9 +66,29 @@ describe('collectFiles Vue adapter', () => {
       );
     }
   );
+
+  it.each([Libraries.GT_REACT, Libraries.GT_NODE, Libraries.GT_FASTAPI])(
+    'keeps %s as the parser while labeling its mixed Vue catalog',
+    async (primaryLibrary) => {
+      const root = createFixture(primaryLibrary);
+      const settings = createSettings(path.join(root, 'messages.json'));
+      const options = {} as TranslateFlags;
+      process.chdir(root);
+
+      const result = await collectFiles(options, settings, primaryLibrary);
+
+      expect(result.inlineLibrary).toBe(Libraries.GT_VUE);
+      expect(aggregateInlineTranslations).toHaveBeenCalledOnce();
+      expect(aggregateInlineTranslations).toHaveBeenCalledWith(
+        options,
+        settings,
+        primaryLibrary
+      );
+    }
+  );
 });
 
-function createFixture(fileLibrary: 'next-intl' | 'i18next'): string {
+function createFixture(fileLibrary: string): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-cli-vue-files-'));
   temporaryDirectories.push(root);
   fs.writeFileSync(

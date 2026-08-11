@@ -23,7 +23,7 @@ import { Libraries, InlineLibrary } from '../types/libraries.js';
 export class InlineCLI extends BaseCLI {
   constructor(
     command: Command,
-    library: InlineLibrary,
+    library: SupportedLibraries,
     additionalModules?: SupportedLibraries[]
   ) {
     super(command, library, additionalModules);
@@ -40,6 +40,11 @@ export class InlineCLI extends BaseCLI {
   /** Allows framework adapters to describe their own default source scope. */
   protected getInlineSourceHelp(): string | undefined {
     return undefined;
+  }
+
+  /** Returns the inline parser used by generate and targeted validation. */
+  protected getInlineLibrary(): InlineLibrary {
+    return fallbackToGtReact(this.library);
   }
 
   protected setupStageCommand(): void {
@@ -122,7 +127,7 @@ export class InlineCLI extends BaseCLI {
     const updates = await aggregateInlineTranslations(
       initOptions,
       settings,
-      fallbackToGtReact(this.library)
+      this.getInlineLibrary()
     );
 
     // Convert updates to the proper data format
@@ -184,7 +189,7 @@ export class InlineCLI extends BaseCLI {
     const options = { ...initOptions, ...settings };
 
     // Fallback to gt-react
-    const pkg = fallbackToGtReact(this.library);
+    const pkg = this.getInlineLibrary();
 
     if (files && files.length > 0) {
       // Validate specific files using createInlineUpdates

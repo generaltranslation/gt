@@ -69,7 +69,7 @@ import {
   getFrameworkDisplayName,
   getReactFrameworkLibrary,
 } from '../setup/frameworkUtils.js';
-import { INLINE_LIBRARIES } from '../types/libraries.js';
+import { INLINE_LIBRARIES, Libraries } from '../types/libraries.js';
 import { handleEnqueue } from './commands/enqueue.js';
 import { splitMintlifyLanguageRefs } from '../utils/splitMintlifyLanguageRefs.js';
 import { runMergeDriver, type MergeDriverName } from '../git/mergeDrivers.js';
@@ -77,6 +77,7 @@ import { setupGitMergeDrivers } from '../git/setupMergeDrivers.js';
 import { warnReactPackageCompatibility } from '../utils/reactPackageCompatibility.js';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { setupViteSPA } from '../setup/setupViteSPA.js';
+import { manifestDirectlyDeclaresGTVue } from '@generaltranslation/vue-extractor/integration';
 
 const ID_COMPATIBILITY_WARNING_COMMANDS = new Set([
   'download',
@@ -136,7 +137,14 @@ export type GitSetupOptions = {
 
 type LocalTranslationGuidanceOptions = {
   generatedLoader: boolean;
+  runtimeSetup: InlineRuntimeSetup;
   translationsDir: string;
+};
+
+type InlineRuntimeSetup = {
+  hasOtherInlineRuntime: boolean;
+  hasVueRuntime: boolean;
+  ranReactSetup: boolean;
 };
 
 export class BaseCLI {
@@ -755,31 +763,63 @@ export class BaseCLI {
     await upload(settings);
   }
 
-  /** Returns whether this CLI's inline runtime is installed for setup. */
+  /** Describes installed runtimes without changing historical package lookup. */
+  protected getInlineRuntimeSetup(
+    packageJson: Record<string, unknown>,
+    ranReactSetup: boolean = false
+  ): InlineRuntimeSetup {
+    return {
+      hasOtherInlineRuntime: INLINE_LIBRARIES.some(
+        (lib) =>
+          lib !== Libraries.GT_VUE && isPackageInstalled(lib, packageJson)
+      ),
+      hasVueRuntime: manifestDirectlyDeclaresGTVue(packageJson),
+      ranReactSetup,
+    };
+  }
+
+  /** Returns whether any inline runtime is installed for setup. */
   protected isInlineRuntimeInstalled(
     packageJson: Record<string, unknown>
   ): boolean {
-    return INLINE_LIBRARIES.some((lib) => isPackageInstalled(lib, packageJson));
+    const { hasOtherInlineRuntime, hasVueRuntime } =
+      this.getInlineRuntimeSetup(packageJson);
+    return hasOtherInlineRuntime || hasVueRuntime;
   }
 
-  /** Returns whether setup may offer General Translation CDN storage. */
-  protected supportsCDNStorage(): boolean {
-    return true;
+  /** Returns whether every installed runtime can consume CDN translations. */
+  protected supportsCDNStorage(runtimeSetup: InlineRuntimeSetup): boolean {
+    return !runtimeSetup.hasVueRuntime;
   }
 
   /** Returns whether setup should generate a local runtime loader. */
-  protected shouldGenerateLocalTranslationLoader(isVite: boolean): boolean {
-    return !isVite;
+  protected shouldGenerateLocalTranslationLoader(
+    isVite: boolean,
+    runtimeSetup: InlineRuntimeSetup
+  ): boolean {
+    if (isVite) return false;
+    if (!runtimeSetup.hasVueRuntime) return true;
+    return runtimeSetup.hasOtherInlineRuntime || runtimeSetup.ranReactSetup;
   }
 
   /** Returns framework guidance after selecting local translation storage. */
   protected getLocalTranslationGuidance({
     generatedLoader,
+    runtimeSetup,
+    translationsDir,
   }: LocalTranslationGuidanceOptions): string | undefined {
-    if (!generatedLoader) return undefined;
-    return `Created ${chalk.cyan('loadTranslations.js')} file for local translations.
+    const guidance: string[] = [];
+    if (generatedLoader) {
+      guidance.push(`Created ${chalk.cyan('loadTranslations.js')} file for local translations.
 Make sure to add this function to your app configuration.
-See https://generaltranslation.com/en/docs/next/guides/local-tx`;
+See https://generaltranslation.com/en/docs/next/guides/local-tx`);
+    }
+    if (runtimeSetup.hasVueRuntime) {
+      guidance.push(`GT will write local translation files to ${translationsDir}.
+Configure createGT({ loadTranslations }) to load files from that directory.
+See https://www.npmjs.com/package/gt-vue`);
+    }
+    return guidance.length > 0 ? guidance.join('\n') : undefined;
   }
 
   // Wizard for configuring gt.config.json
@@ -800,15 +840,23 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`;
     const packageJson = await searchForPackageJson();
 
     // Ask if using another i18n library
-    const gtInstalled =
-      !!packageJson && this.isInlineRuntimeInstalled(packageJson);
-    const isUsingGT = ranReactSetup || gtInstalled;
+    const runtimeSetup: InlineRuntimeSetup = packageJson
+      ? this.getInlineRuntimeSetup(packageJson, ranReactSetup)
+      : {
+          hasOtherInlineRuntime: false,
+          hasVueRuntime: false,
+          ranReactSetup,
+        };
+    const isUsingGT =
+      runtimeSetup.ranReactSetup ||
+      runtimeSetup.hasOtherInlineRuntime ||
+      runtimeSetup.hasVueRuntime;
 
     // Ask where the translations are stored
     const usingCDN = await (async () => {
       if (!isUsingGT) return false;
       if (useDefaults) return false; // Default to local
-      if (!this.supportsCDNStorage()) return false;
+      if (!this.supportsCDNStorage(runtimeSetup)) return false;
       const selectedValue = await promptSelect({
         message: `Would you like to save translation files locally or use the General Translation CDN to store them?`,
         options: [
@@ -841,7 +889,10 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`;
       translationsDir?.trim() || defaultTranslationsDir;
 
     if (isUsingGT && !usingCDN) {
-      const generatedLoader = this.shouldGenerateLocalTranslationLoader(isVite);
+      const generatedLoader = this.shouldGenerateLocalTranslationLoader(
+        isVite,
+        runtimeSetup
+      );
       if (generatedLoader) {
         await createLoadTranslationsFile(
           process.cwd(),
@@ -851,6 +902,7 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`;
       }
       const guidance = this.getLocalTranslationGuidance({
         generatedLoader,
+        runtimeSetup,
         translationsDir: finalTranslationsDir,
       });
       if (guidance) logger.message(guidance);

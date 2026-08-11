@@ -129,6 +129,8 @@ describe('handleDownload GTJSON versionId guard', () => {
   });
 
   it('uses the selected Vue runtime when downloading staged translations', async () => {
+    vi.mocked(resolveInlineLibrary).mockReturnValue('gt-vue');
+
     await handleDownload(
       options,
       settings({ stageTranslations: true }),
@@ -136,6 +138,7 @@ describe('handleDownload GTJSON versionId guard', () => {
     );
 
     expect(collectFiles).not.toHaveBeenCalled();
+    expect(resolveInlineLibrary).toHaveBeenCalledWith('gt-vue');
     expect(runDownloadWorkflow).toHaveBeenCalledWith(
       expect.objectContaining({ inlineLibrary: 'gt-vue' })
     );
@@ -156,4 +159,23 @@ describe('handleDownload GTJSON versionId guard', () => {
       expect.objectContaining({ inlineLibrary: 'gt-vue' })
     );
   });
+
+  it.each(['gt-react', 'gt-node', 'gt-fastapi'] as const)(
+    'labels a staged mixed %s and Vue catalog as Vue',
+    async (library) => {
+      vi.mocked(resolveInlineLibrary).mockReturnValue('gt-vue');
+
+      await handleDownload(
+        options,
+        settings({ stageTranslations: true }),
+        library
+      );
+
+      expect(collectFiles).not.toHaveBeenCalled();
+      expect(resolveInlineLibrary).toHaveBeenCalledWith(library);
+      expect(runDownloadWorkflow).toHaveBeenCalledWith(
+        expect.objectContaining({ inlineLibrary: 'gt-vue' })
+      );
+    }
+  );
 });

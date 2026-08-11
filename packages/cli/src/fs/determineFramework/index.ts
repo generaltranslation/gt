@@ -6,10 +6,24 @@ import { Libraries } from '../../types/libraries.js';
 import { detectPythonLibrary } from './detectPythonLibrary.js';
 import { manifestDirectlyDeclaresGTVue } from '@generaltranslation/vue-extractor/integration';
 
-export function determineLibrary(): {
+type DeterminedLibrary = {
   library: SupportedLibraries;
   additionalModules: SupportedLibraries[];
-} {
+};
+
+type DeterminedCLILibrary = DeterminedLibrary & {
+  directlyDeclaresVue: boolean;
+};
+
+/** Preserves the historical public detection result shape. */
+export function determineLibrary(): DeterminedLibrary {
+  const { directlyDeclaresVue: _directlyDeclaresVue, ...selection } =
+    determineLibraryForCLI();
+  return selection;
+}
+
+/** Includes the direct Vue signal needed to select a mixed command adapter. */
+export function determineLibraryForCLI(): DeterminedCLILibrary {
   let library: SupportedLibraries = 'base';
   const additionalModules: SupportedLibraries[] = [];
   let directlyDeclaresVue = false;
@@ -65,9 +79,13 @@ export function determineLibrary(): {
     }
 
     // Fallback to base if neither is found
-    return { library, additionalModules };
+    return { library, additionalModules, directlyDeclaresVue };
   } catch (error) {
     logger.error('Error determining framework: ' + String(error));
-    return { library: 'base', additionalModules: [] };
+    return {
+      library: 'base',
+      additionalModules: [],
+      directlyDeclaresVue: false,
+    };
   }
 }

@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Libraries } from '../../../types/libraries.js';
-import { determineLibrary } from '../index.js';
+import { determineLibrary, determineLibraryForCLI } from '../index.js';
 
 const initialCwd = process.cwd();
 const temporaryDirectories: string[] = [];
@@ -42,6 +42,11 @@ describe('determineLibrary Vue adapter', () => {
         library: expected,
         additionalModules: [],
       });
+      expect(determineLibraryForCLI()).toEqual({
+        library: expected,
+        additionalModules: [],
+        directlyDeclaresVue: true,
+      });
     }
   );
 
@@ -68,6 +73,11 @@ describe('determineLibrary Vue adapter', () => {
     expect(determineLibrary()).toEqual({
       library: Libraries.GT_VUE,
       additionalModules: [],
+    });
+    expect(determineLibraryForCLI()).toEqual({
+      library: Libraries.GT_VUE,
+      additionalModules: [],
+      directlyDeclaresVue: true,
     });
   });
 
@@ -109,6 +119,7 @@ describe('determineLibrary Vue adapter', () => {
       library: 'base',
       additionalModules: [],
     });
+    expect(determineLibraryForCLI().directlyDeclaresVue).toBe(false);
   });
 });
 
