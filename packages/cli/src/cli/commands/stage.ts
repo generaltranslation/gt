@@ -16,6 +16,7 @@ import { collectFiles } from '../../formats/files/collectFiles.js';
 import { convertToFileTranslationData } from '../../formats/files/convertToFileTranslationData.js';
 import { hasValidCredentials, hasValidLocales } from './utils/validation.js';
 import { warnManualReviewSetup } from '../../translation/reviewSetupWarning.js';
+import type { InlineLibrary } from '../../types/libraries.js';
 
 export async function handleStage(
   options: TranslateFlags,
@@ -27,6 +28,7 @@ export async function handleStage(
   jobData: EnqueueFilesResult | undefined;
   branchData: BranchData | undefined;
   publishMap: Map<string, boolean>;
+  inlineLibrary?: InlineLibrary;
 } | null> {
   if (!hasValidLocales(settings)) return exitSync(1);
   // Validate credentials if not in dry run
@@ -114,5 +116,6 @@ export async function handleStage(
     jobData,
     branchData,
     publishMap,
+    inlineLibrary,
   };
 }

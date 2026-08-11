@@ -11,6 +11,7 @@ import { exitSync, logErrorAndExit } from '../../console/logging.js';
 import { convertToFileTranslationData } from '../../formats/files/convertToFileTranslationData.js';
 import { collectFiles } from '../../formats/files/collectFiles.js';
 import { hasValidCredentials, hasValidLocales } from './utils/validation.js';
+import { isInlineLibrary, type InlineLibrary } from '../../types/libraries.js';
 
 // Downloads translations that were originally staged
 
@@ -44,10 +45,18 @@ export async function handleDownload(
 
   // Collect the hashes for all files we need to download
   let fileVersionData: FileTranslationData;
+  let inlineLibrary: InlineLibrary | undefined = isInlineLibrary(library)
+    ? library
+    : undefined;
   if (settings.stageTranslations) {
     fileVersionData = getStagedEntriesFromLockfile(settings);
   } else {
-    const { files } = await collectFiles(options, settings, library);
+    const { files, inlineLibrary: collectedInlineLibrary } = await collectFiles(
+      options,
+      settings,
+      library
+    );
+    inlineLibrary = collectedInlineLibrary;
     // _versionId is only written by stage when an inline GTJSON template was
     // staged, so demand it only when a GTJSON is part of this download —
     // file-only projects never have one and don't need it. (Staged downloads
@@ -74,6 +83,7 @@ export async function handleDownload(
     resolveOutputPath: (sourcePath, locale) =>
       fileMapping[locale][sourcePath] ?? null,
     options: settings,
+    inlineLibrary,
     forceRetranslation: false, // force is not applicable for downloading staged translations
     forceDownload: options.force || options.forceDownload,
   });

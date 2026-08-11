@@ -107,4 +107,32 @@ describe('handleDownload GTJSON versionId guard', () => {
     expect(logErrorAndExit).not.toHaveBeenCalled();
     expect(runDownloadWorkflow).toHaveBeenCalledOnce();
   });
+
+  it('passes the collected inline runtime to the download workflow', async () => {
+    vi.mocked(collectFiles).mockResolvedValue({
+      files: [gtjsonFile],
+      reactComponents: 1,
+      inlineLibrary: 'gt-vue',
+      publishMap: new Map(),
+    });
+
+    await handleDownload(options, settings({ omitConfigIds: true }), 'gt-vue');
+
+    expect(runDownloadWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({ inlineLibrary: 'gt-vue' })
+    );
+  });
+
+  it('uses the selected Vue runtime when downloading staged translations', async () => {
+    await handleDownload(
+      options,
+      settings({ stageTranslations: true }),
+      'gt-vue'
+    );
+
+    expect(collectFiles).not.toHaveBeenCalled();
+    expect(runDownloadWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({ inlineLibrary: 'gt-vue' })
+    );
+  });
 });

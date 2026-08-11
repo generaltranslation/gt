@@ -20,6 +20,7 @@ import { runPublishWorkflow } from '../../workflows/publish.js';
 import { SUPPORTED_FILE_EXTENSIONS } from '../../formats/files/supportedFiles.js';
 import { hasNonIdentityFileFormatTransformForType } from '../../formats/files/transformFormat.js';
 import { getRelative } from '../../fs/findFilepath.js';
+import type { InlineLibrary } from '../../types/libraries.js';
 
 // Downloads translations that were completed
 export async function handleTranslate(
@@ -28,7 +29,8 @@ export async function handleTranslate(
   fileVersionData: FileTranslationData | undefined,
   jobData: EnqueueFilesResult | undefined,
   branchData: BranchData | undefined,
-  publishMap?: Map<string, boolean>
+  publishMap?: Map<string, boolean>,
+  inlineLibrary?: InlineLibrary
 ) {
   if (fileVersionData) {
     const {
@@ -56,6 +58,7 @@ export async function handleTranslate(
       resolveOutputPath: (sourcePath, locale) =>
         fileMapping[locale]?.[sourcePath] ?? null,
       options: settings,
+      inlineLibrary,
       forceRetranslation: options.force,
       forceDownload: options.forceDownload || options.force, // if force is true should also force download
     });

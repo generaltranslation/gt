@@ -26,6 +26,10 @@ import type { FileStatusTracker } from '../workflows/steps/PollJobsStep.js';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import { hasNonIdentityFileFormatTransformForType } from '../formats/files/transformFormat.js';
 import { getRelative } from '../fs/findFilepath.js';
+import {
+  getInlineElementsLabel,
+  type InlineLibrary,
+} from '../types/libraries.js';
 
 /**
  * The platform withholds unapproved review-gated GTJSON components from
@@ -37,7 +41,8 @@ function reportWithheldGtJsonComponents(
   fileFormat: string | undefined,
   servedContent: string,
   componentCount: number | undefined,
-  locale: string
+  locale: string,
+  inlineLibrary?: InlineLibrary
 ): void {
   if (fileFormat !== 'GTJSON' || componentCount == null) return;
   const received = countGtJsonEntries(servedContent);
@@ -46,7 +51,7 @@ function reportWithheldGtJsonComponents(
   if (withheld > 0) {
     recordWarning(
       'pending_review',
-      '<React Elements>',
+      `<${getInlineElementsLabel(inlineLibrary)}>`,
       `${withheld} component translation(s) for locale ${locale} require review and are not approved yet`
     );
   }
@@ -180,16 +185,19 @@ export type DownloadFileBatchResult = {
 };
 /**
  * Downloads multiple translation files in a single batch request
+ * @param fileTracker - Current translation status keyed by file identity
  * @param files - Array of files to download with their output paths
- * @param maxRetries - Maximum number of retry attempts
- * @param retryDelay - Delay between retries in milliseconds
+ * @param options - Resolved CLI settings used for merge and lockfile behavior
+ * @param forceDownload - Whether to bypass an up-to-date local translation
+ * @param inlineLibrary - Inline runtime used to label the shared GTJSON file
  * @returns Object containing successful and failed file IDs
  */
 export async function downloadFileBatch(
   fileTracker: FileStatusTracker,
   files: BatchedFiles,
   options: Settings,
-  forceDownload: boolean = false
+  forceDownload: boolean = false,
+  inlineLibrary?: InlineLibrary
 ): Promise<DownloadFileBatchResult> {
   // Local record of what version was last downloaded for each fileName:locale
   const {
@@ -400,7 +408,8 @@ export async function downloadFileBatch(
             file.fileFormat,
             file.data,
             fileProperties.componentCount,
-            locale
+            locale,
+            inlineLibrary
           );
           result.skipped.push(requestedFile);
           continue;
@@ -431,7 +440,8 @@ export async function downloadFileBatch(
           file.fileFormat,
           data,
           fileProperties.componentCount,
-          locale
+          locale,
+          inlineLibrary
         );
 
         result.successful.push(requestedFile);

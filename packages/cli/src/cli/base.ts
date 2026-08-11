@@ -502,7 +502,8 @@ export class BaseCLI {
           results.fileVersionData,
           results.jobData,
           results.branchData,
-          results.publishMap
+          results.publishMap,
+          results.inlineLibrary
         );
       }
     } else {

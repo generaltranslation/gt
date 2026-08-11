@@ -11,6 +11,7 @@ import { Settings } from '../../types/index.js';
 import { recordWarning } from '../../state/translateWarnings.js';
 import { FileStatusTracker } from './PollJobsStep.js';
 import { TEMPLATE_FILE_NAME } from '../../utils/constants.js';
+import type { InlineLibrary } from '../../types/libraries.js';
 
 export type DownloadTranslationsInput = {
   fileTracker: FileStatusTracker;
@@ -23,7 +24,8 @@ export class DownloadTranslationsStep {
 
   constructor(
     private gt: GT,
-    private settings: Settings
+    private settings: Settings,
+    private inlineLibrary?: InlineLibrary
   ) {}
 
   async run({
@@ -219,7 +221,8 @@ export class DownloadTranslationsStep {
         fileTracker,
         remainingFiles,
         this.settings,
-        forceDownload
+        forceDownload,
+        this.inlineLibrary
       );
 
       allSuccessful = [...allSuccessful, ...batchResult.successful];

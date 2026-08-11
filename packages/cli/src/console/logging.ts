@@ -18,7 +18,10 @@ import {
   validateLocale,
   validateLocaleList,
 } from './promptParsing.js';
-import { Libraries, type InlineLibrary } from '../types/libraries.js';
+import {
+  getInlineElementsLabel,
+  type InlineLibrary,
+} from '../types/libraries.js';
 
 function cancelPromptAndExit(message: string): never {
   endTerminalSession();
@@ -428,8 +431,7 @@ export function logCollectedFiles(
   inlineComponents?: number,
   inlineLibrary?: InlineLibrary
 ): void {
-  const elementLabel =
-    inlineLibrary === Libraries.GT_VUE ? 'Vue Elements' : 'React Elements';
+  const elementLabel = getInlineElementsLabel(inlineLibrary);
   logger.message(
     chalk.cyan('Files found in project:') +
       '\n' +

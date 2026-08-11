@@ -51,6 +51,13 @@ export function isInlineLibrary(lib: string): lib is InlineLibrary {
   return (INLINE_LIBRARIES as readonly string[]).includes(lib);
 }
 
+/** Returns the framework-specific label for the shared inline GTJSON file. */
+export function getInlineElementsLabel(
+  inlineLibrary?: InlineLibrary
+): 'Vue Elements' | 'React Elements' {
+  return inlineLibrary === Libraries.GT_VUE ? 'Vue Elements' : 'React Elements';
+}
+
 /**
  * Libraries that support react primitives
  */
