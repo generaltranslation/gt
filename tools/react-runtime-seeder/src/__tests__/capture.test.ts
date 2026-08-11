@@ -2,9 +2,9 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { hashSource } from 'generaltranslation/id';
 import { describe, expect, it } from 'vitest';
-import { captureRuntimeSeeds } from './capture';
+import { captureRuntimeSeeds } from '../capture';
 
-const repositoryRoot = resolve(import.meta.dirname, '../../..');
+const repositoryRoot = resolve(import.meta.dirname, '../../../..');
 
 describe('captureRuntimeSeeds', () => {
   it('captures inline JSX through the real T runtime', async () => {
@@ -21,6 +21,33 @@ describe('captureRuntimeSeeds', () => {
       metadata: { context: 'greeting' },
       jsxChildren: ['Hello ', { i: 1, k: 'person', v: 'v' }],
     });
+  });
+
+  it('captures multiple T components from one file in render order', async () => {
+    const candidate = await captureRuntimeSeeds({
+      cwd: repositoryRoot,
+      code: '<><T>First</T><T>Second <Var name="value">value</Var></T></>',
+    });
+
+    expect(candidate.seeds).toHaveLength(2);
+    expect(
+      candidate.seeds.map(({ source, hash, jsxChildren }) => ({
+        source,
+        hash,
+        jsxChildren,
+      }))
+    ).toEqual([
+      {
+        source: { file: '<inline>', line: 1, column: 3 },
+        hash: expect.stringMatching(/^[a-f0-9]{16}$/),
+        jsxChildren: 'First',
+      },
+      {
+        source: { file: '<inline>', line: 1, column: 15 },
+        hash: expect.stringMatching(/^[a-f0-9]{16}$/),
+        jsxChildren: ['Second ', { i: 1, k: 'value', v: 'v' }],
+      },
+    ]);
   });
 
   it.each([

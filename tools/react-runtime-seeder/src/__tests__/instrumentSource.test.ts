@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { instrumentSource } from './instrumentSource';
+import { instrumentSource } from '../instrumentSource';
 
 describe('instrumentSource', () => {
   it('adds locations to aliased and namespace T components without reprinting JSX', () => {
