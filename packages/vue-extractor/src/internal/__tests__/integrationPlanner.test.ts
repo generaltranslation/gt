@@ -494,11 +494,12 @@ describe('handled Vue extraction plans', () => {
     });
 
     expect(result.updates).toHaveLength(1);
-    expect(result.updates[0]).toBe(primaryUpdate);
+    expect(result.updates[0]).not.toBe(primaryUpdate);
     expect(result.updates[0]?.metadata.filePaths).toEqual([
       'src/primary.ts',
       'src/messages.ts',
     ]);
+    expect(primaryUpdate.metadata.filePaths).toEqual(['src/primary.ts']);
     expect(result.errors).toEqual(['primary error']);
     expect(result.warnings).toEqual(['primary warning']);
   });
