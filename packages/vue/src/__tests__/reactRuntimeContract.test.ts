@@ -9,6 +9,7 @@ import {
   Var as ReactVar,
 } from '@generaltranslation/react-core/components';
 import { prepareT } from '@generaltranslation/react-core/components-rsc';
+import { initializeI18nConfig as initializeReactI18nConfig } from '@generaltranslation/react-core/pure';
 import { createElement, type ReactNode } from 'react';
 import * as Vue from 'vue';
 import {
@@ -33,6 +34,8 @@ import {
   createGT,
 } from '../index';
 import { serializeVueChildren } from '../rendering/translateVueChildren';
+
+initializeReactI18nConfig({ defaultLocale: 'en' });
 
 type ContractFixture = {
   context?: string;

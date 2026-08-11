@@ -20,10 +20,13 @@ import {
   NON_PORTABLE_SEEDS,
   type NonPortableSeed,
 } from '../../../../test-fixtures/react-vue-seed-contract';
+import { initializeI18nConfig as initializeReactI18nConfig } from '@generaltranslation/react-core/pure';
 import * as ReactCoreSource from '../../../react-core/src/components';
 import { prepareT } from '../../../react-core/src/utils/translation/prepareT.shared';
 import * as GTVue from '../index';
 import { serializeVueChildren } from '../rendering/translateVueChildren';
+
+initializeReactI18nConfig({ defaultLocale: 'en' });
 
 type ParitySeed = {
   id: string;
