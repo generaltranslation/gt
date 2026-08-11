@@ -21,8 +21,9 @@ export type LoadTranslations = (locale: string) => Promise<TranslationCatalog>;
 /**
  * Options supported by gt-vue plain-string lookups.
  *
- * gt-vue intentionally does not support `$maxChars`, `$format`, ICU syntax,
- * or interpolation variables.
+ * Plain-string lookups intentionally do not support `$maxChars`, `$format`,
+ * ICU syntax, or interpolation variables. Rich {@link T} translations have
+ * their own metadata props.
  */
 export type GTStringOptions = {
   /** Disambiguates identical source strings when calculating their hash. */

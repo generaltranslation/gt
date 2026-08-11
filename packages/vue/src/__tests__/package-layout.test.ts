@@ -113,6 +113,68 @@ describe('gt-vue package layout', () => {
     }
   }, 30_000);
 
+  it('publishes documented T metadata props and compiler aliases', () => {
+    const packageRoot = fileURLToPath(new URL('../..', import.meta.url));
+    const fixtureDirectory = mkdtempSync(
+      join(packageRoot, '.gt-vue-typecheck-')
+    );
+    const fixture = join(fixtureDirectory, 't-props.ts');
+    writeFileSync(
+      fixture,
+      `
+        import { T } from '../src/index.js';
+
+        type TPublicProps = InstanceType<typeof T>['$props'];
+
+        const documented = {
+          context: 'welcome',
+          id: 'welcome-id',
+          maxChars: 80,
+          requiresReview: true,
+        } satisfies TPublicProps;
+        const aliases = {
+          $context: 'welcome',
+          $id: 'welcome-id',
+          $maxChars: 80,
+          $requiresReview: true,
+          _hash: 'compiled-hash',
+        } satisfies TPublicProps;
+
+        // @ts-expect-error maxChars must be numeric.
+        const invalidMaxChars = { maxChars: '80' } satisfies TPublicProps;
+        // @ts-expect-error requiresReview must be boolean.
+        const invalidReview = { $requiresReview: 'yes' } satisfies TPublicProps;
+
+        void documented;
+        void aliases;
+        void invalidMaxChars;
+        void invalidReview;
+      `
+    );
+
+    try {
+      execFileSync(
+        process.execPath,
+        [
+          join(packageRoot, 'node_modules/typescript/bin/tsc'),
+          '--noEmit',
+          '--strict',
+          '--skipLibCheck',
+          '--module',
+          'ESNext',
+          '--moduleResolution',
+          'Bundler',
+          '--target',
+          'ES2022',
+          fixture,
+        ],
+        { stdio: 'pipe' }
+      );
+    } finally {
+      rmSync(fixtureDirectory, { force: true, recursive: true });
+    }
+  }, 30_000);
+
   it('tree-shakes component runtime from a packed msg-only consumer', () => {
     const packageRoot = fileURLToPath(new URL('../..', import.meta.url));
     const fixtureDirectory = mkdtempSync(

@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://generaltranslation.com/docs/vue">
+  <a href="https://generaltranslation.com/docs">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://generaltranslation.com/brand/gt-logo-dark.svg">
       <img alt="General Translation" src="https://generaltranslation.com/brand/gt-logo-light.svg" width="100" height="100">
@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <a href="https://generaltranslation.com/docs/vue"><strong>Documentation</strong></a> · <a href="https://github.com/generaltranslation/gt/issues">Report Bug</a>
+  <a href="https://generaltranslation.com/docs"><strong>Documentation</strong></a> · <a href="https://github.com/generaltranslation/gt/issues">Report Bug</a>
 </p>
 
 # gt-vue
@@ -142,7 +142,10 @@ const m = useMessages();
 
 ## Components
 
-- `<T context="...">` translates rich slot content.
+- `<T context="..." :max-chars="80" requires-review>` translates rich slot
+  content and supplies translation metadata. The deprecated `id` prop is
+  accepted for React API compatibility but does not replace the content-based
+  catalog hash.
 - `<Var>` preserves a dynamic slot value inside `<T>`.
 - `<Num>`, `<DateTime>`, and `<Currency>` require typed runtime values through
   `:value`; formatter slot children are not supported.

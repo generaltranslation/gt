@@ -12,8 +12,20 @@ type TProps = {
   _hash?: string;
   /** @internal React-compatible alias accepted for compiler output. */
   $context?: string;
+  /** @internal React-compatible alias accepted for compiler output. */
+  $id?: string;
+  /** @internal React-compatible alias accepted for compiler output. */
+  $maxChars?: number;
+  /** @internal React-compatible alias accepted for compiler output. */
+  $requiresReview?: boolean;
   /** Translation context using a Vue-template-friendly prop name. */
   context?: string;
+  /** Deprecated custom message ID retained for React API compatibility. */
+  id?: string;
+  /** Maximum translated character count supplied to translation tooling. */
+  maxChars?: number;
+  /** Whether a human should review the translation. */
+  requiresReview?: boolean;
 };
 
 /**
@@ -40,6 +52,12 @@ export const T = /* @__PURE__ */ withGTMetadata<TProps>(
       _hash: String,
       /** Translation context used to disambiguate identical source content. */
       context: String,
+      /** Deprecated custom message ID retained for React API compatibility. */
+      id: String,
+      /** Maximum translated character count supplied to translation tooling. */
+      maxChars: Number,
+      /** Whether a human should review the translation. */
+      requiresReview: Boolean,
     },
     setup(props, { attrs, slots }) {
       const state = useGTState();
@@ -58,6 +76,13 @@ export const T = /* @__PURE__ */ withGTMetadata<TProps>(
               ...props,
               ...(typeof attrs.$context === 'string' && {
                 $context: attrs.$context,
+              }),
+              ...(typeof attrs.$id === 'string' && { $id: attrs.$id }),
+              ...(typeof attrs.$maxChars === 'number' && {
+                $maxChars: attrs.$maxChars,
+              }),
+              ...(typeof attrs.$requiresReview === 'boolean' && {
+                $requiresReview: attrs.$requiresReview,
               }),
             },
             identityCache
