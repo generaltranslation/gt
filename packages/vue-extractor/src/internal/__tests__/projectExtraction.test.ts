@@ -709,8 +709,97 @@ import { LocalT } from '@local/gt';
   );
 
   it.each([
+    {
+      environment: 'TS_NODE_BASEURL' as const,
+      filePatterns: undefined,
+      name: 'full extraction with TS_NODE_BASEURL',
+      sources: ['Selected isolated config', 'Other isolated config'],
+    },
+    {
+      environment: 'TS_NODE_BASEURL' as const,
+      filePatterns: ['src/Selected.tsx'],
+      name: 'targeted extraction with TS_NODE_BASEURL',
+      sources: ['Selected isolated config'],
+    },
+    {
+      environment: 'TS_NODE_PROJECT' as const,
+      filePatterns: undefined,
+      name: 'full extraction with TS_NODE_PROJECT',
+      sources: ['Selected isolated config', 'Other isolated config'],
+    },
+    {
+      environment: 'TS_NODE_PROJECT' as const,
+      filePatterns: ['src/Selected.tsx'],
+      name: 'targeted extraction with TS_NODE_PROJECT',
+      sources: ['Selected isolated config'],
+    },
+  ])(
+    'isolates an explicit config from ambient ts-node settings during $name',
+    async ({ environment, filePatterns, sources }) => {
+      const root = createVueFixture({
+        'tsconfig.json': JSON.stringify({
+          compilerOptions: {
+            baseUrl: '.',
+            paths: { '@local/gt': ['src/not-gt.ts'] },
+          },
+        }),
+        'config/jsconfig.json': JSON.stringify({
+          compilerOptions: {
+            baseUrl: '..',
+            paths: { '@local/gt': ['src/gt.ts'] },
+          },
+        }),
+        'src/not-gt.ts': 'export const LocalT = Symbol();\n',
+        'src/gt.ts': "export { T as LocalT } from 'gt-vue';\n",
+        'src/Selected.tsx': `
+          import { LocalT } from '@local/gt';
+          export const Selected = () => (
+            <LocalT>Selected isolated config</LocalT>
+          );
+        `,
+        'src/Other.vue': `<script setup lang="ts">
+import { LocalT } from '@local/gt';
+</script>
+<template><LocalT>Other isolated config</LocalT></template>
+`,
+      });
+      const previousBaseUrl = process.env.TS_NODE_BASEURL;
+      const previousProject = process.env.TS_NODE_PROJECT;
+      delete process.env.TS_NODE_BASEURL;
+      delete process.env.TS_NODE_PROJECT;
+      process.env[environment] =
+        environment === 'TS_NODE_PROJECT'
+          ? path.join(root, 'tsconfig.json')
+          : 'ambient-base-url';
+
+      try {
+        const output = await extractFromVueProject({
+          cwd: root,
+          filePatterns,
+          tsconfigPath: 'config/jsconfig.json',
+        });
+
+        expect(output.errors).toEqual([]);
+        expect(output.updates.map(({ source }) => source).sort()).toEqual(
+          [...sources].sort()
+        );
+      } finally {
+        restoreEnvironmentVariable('TS_NODE_BASEURL', previousBaseUrl);
+        restoreEnvironmentVariable('TS_NODE_PROJECT', previousProject);
+      }
+    }
+  );
+
+  it.each([
     ['missing config', 'config/missing.json', undefined],
     ['malformed config', 'config/tsconfig.json', '{ malformed'],
+    [
+      'invalid path mappings',
+      'config/jsconfig.json',
+      JSON.stringify({
+        compilerOptions: { paths: { '@local/gt': 'src/gt.ts' } },
+      }),
+    ],
   ])(
     'fails atomically for an explicit $name',
     async (_name, tsconfigPath, config) => {
@@ -929,4 +1018,15 @@ function createFixture(files: Record<string, string>): string {
   temporaryDirectories.push(root);
   linkInstalledVue(root);
   return root;
+}
+
+function restoreEnvironmentVariable(
+  name: 'TS_NODE_BASEURL' | 'TS_NODE_PROJECT',
+  value: string | undefined
+): void {
+  if (value === undefined) {
+    delete process.env[name];
+  } else {
+    process.env[name] = value;
+  }
 }

@@ -7,7 +7,6 @@ import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/internal';
-import { loadConfig } from 'tsconfig-paths';
 import { extractFromVueSource } from '../extractFromVueSource.js';
 import {
   resolveVueCompilerOptions,
@@ -17,6 +16,7 @@ import { NUXT_CONFIG_FILES, VITE_CONFIG_FILES } from '../config/configFiles.js';
 import {
   createProjectModuleResolver,
   DEFAULT_RESOLUTION_CONDITIONS,
+  loadExplicitTypeScriptConfig,
 } from './moduleResolver.js';
 import { resolveVueProjectAliasConfiguration } from './viteAliases.js';
 import {
@@ -889,7 +889,7 @@ function resolveExplicitTypeScriptConfigPath(
     if (!fs.statSync(configPath).isFile()) {
       throw new Error('The configured path is not a file');
     }
-    const resolution = loadConfig(configPath);
+    const resolution = loadExplicitTypeScriptConfig(configPath);
     if (resolution.resultType === 'failed') {
       throw new Error(resolution.message);
     }
