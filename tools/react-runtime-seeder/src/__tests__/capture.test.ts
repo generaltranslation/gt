@@ -113,7 +113,7 @@ describe('captureRuntimeSeeds', () => {
     );
     const ready = `${marker}-ready`;
     const daemon = `const fs = require('node:fs'); fs.writeFileSync(${JSON.stringify(ready)}, 'ready'); setTimeout(() => fs.writeFileSync(${JSON.stringify(marker)}, 'survived'), 500)`;
-    const intermediary = `const child = require('node:child_process').spawn(process.execPath, ['-e', ${JSON.stringify(daemon)}], { detached: true, stdio: 'ignore' }); child.unref();`;
+    const intermediary = `const child = require('node:child_process').spawn(process.execPath, ['-e', ${JSON.stringify(daemon)}], { detached: true, env: {}, stdio: 'ignore' }); child.unref();`;
 
     try {
       const candidate = await captureRuntimeSeeds({
@@ -122,7 +122,7 @@ describe('captureRuntimeSeeds', () => {
           const child = process.getBuiltinModule('node:child_process').spawn(
             process.execPath,
             ['-e', ${JSON.stringify(intermediary)}],
-            { detached: true, stdio: 'ignore' }
+            { detached: true, env: {}, stdio: 'ignore' }
           );
           child.unref();
           const fs = process.getBuiltinModule('node:fs');
