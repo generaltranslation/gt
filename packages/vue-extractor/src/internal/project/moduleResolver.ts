@@ -1,7 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import enhancedResolve, { type FileSystem } from 'enhanced-resolve';
-import { createMatchPath, loadConfig } from 'tsconfig-paths';
+import { createMatchPath, type ConfigLoaderResult } from 'tsconfig-paths';
+import { configLoader } from 'tsconfig-paths/lib/config-loader.js';
+import {
+  loadTsconfig,
+  walkForTsConfig,
+} from 'tsconfig-paths/lib/tsconfig-loader.js';
 import {
   readJavaScriptPackageManifest,
   resolveInstalledJavaScriptPackage,
@@ -60,16 +65,64 @@ type ProjectModuleResolverOptions = {
   tsconfigPath?: string;
 };
 
+/** Loads one explicit config without honoring ambient ts-node overrides. */
+export function loadExplicitTypeScriptConfig(
+  configPath: string
+): ConfigLoaderResult {
+  const config = loadTsconfig(configPath) as unknown;
+  if (!isUnknownRecord(config)) {
+    return invalidTypeScriptConfig('The config root must be an object');
+  }
+  const compilerOptions = config.compilerOptions;
+  if (compilerOptions !== undefined && !isUnknownRecord(compilerOptions)) {
+    return invalidTypeScriptConfig('compilerOptions must be an object');
+  }
+  const baseUrl = compilerOptions?.baseUrl;
+  if (baseUrl !== undefined && typeof baseUrl !== 'string') {
+    return invalidTypeScriptConfig('compilerOptions.baseUrl must be a string');
+  }
+  const configuredPaths = compilerOptions?.paths;
+  if (configuredPaths !== undefined && !isUnknownRecord(configuredPaths)) {
+    return invalidTypeScriptConfig('compilerOptions.paths must be an object');
+  }
+  const paths: Record<string, string[]> = {};
+  for (const [alias, targets] of Object.entries(configuredPaths ?? {})) {
+    if (
+      !Array.isArray(targets) ||
+      !targets.every((target) => typeof target === 'string')
+    ) {
+      return invalidTypeScriptConfig(
+        `compilerOptions.paths.${alias} must be an array of strings`
+      );
+    }
+    paths[alias] = targets;
+  }
+
+  return configLoader({
+    cwd: path.dirname(configPath),
+    tsConfigLoader: () => ({
+      tsConfigPath: configPath,
+      baseUrl,
+      paths,
+    }),
+  });
+}
+
+function invalidTypeScriptConfig(message: string): ConfigLoaderResult {
+  return { resultType: 'failed', message };
+}
+
 /** Creates a deterministic, source-first resolver scoped to one extraction. */
 export function createProjectModuleResolver(
   conditionNames: readonly string[] = DEFAULT_RESOLUTION_CONDITIONS,
   options: ProjectModuleResolverOptions = {}
 ): (specifier: string, importer: string) => string | undefined {
   const cache = new Map<string, string | undefined>();
+  const discoveredTsConfigs = new Map<string, ConfigLoaderResult>();
   const explicitTsConfig =
     options.tsconfigPath === undefined
       ? undefined
-      : loadConfig(options.tsconfigPath);
+      : loadExplicitTypeScriptConfig(options.tsconfigPath);
   return (specifier, importer) => {
     const cacheKey = `${importer}::${specifier}`;
     if (cache.has(cacheKey)) return cache.get(cacheKey);
@@ -78,7 +131,8 @@ export function createProjectModuleResolver(
       importer,
       conditionNames,
       options,
-      explicitTsConfig
+      explicitTsConfig,
+      discoveredTsConfigs
     );
     cache.set(cacheKey, result);
     return result;
@@ -91,7 +145,8 @@ function resolveProjectModule(
   importer: string,
   conditionNames: readonly string[],
   options: ProjectModuleResolverOptions,
-  explicitTsConfig: ReturnType<typeof loadConfig> | undefined
+  explicitTsConfig: ConfigLoaderResult | undefined,
+  discoveredTsConfigs: Map<string, ConfigLoaderResult>
 ): string | undefined {
   const basedir = path.dirname(importer);
   const extensions = [...SOURCE_EXTENSIONS];
@@ -109,7 +164,9 @@ function resolveProjectModule(
     isRequire
   );
 
-  const tsConfigResult = explicitTsConfig ?? loadConfig(basedir);
+  const tsConfigResult =
+    explicitTsConfig ??
+    loadNearestTypeScriptConfig(basedir, discoveredTsConfigs);
   if (tsConfigResult.resultType === 'success') {
     const matchPath = createMatchPath(
       tsConfigResult.absoluteBaseUrl,
@@ -160,6 +217,28 @@ function resolveProjectModule(
     resolvedConditions,
     options
   );
+}
+
+/** Discovers the nearest project file without honoring ts-node environment. */
+function loadNearestTypeScriptConfig(
+  basedir: string,
+  cache: Map<string, ConfigLoaderResult>
+): ConfigLoaderResult {
+  const cached = cache.get(basedir);
+  if (cached) return cached;
+  const configPath = walkForTsConfig(basedir);
+  const result = configPath
+    ? loadExplicitTypeScriptConfig(configPath)
+    : loadConfigWithoutProject();
+  if (configPath && result.resultType === 'failed') {
+    throw new Error(result.message);
+  }
+  cache.set(basedir, result);
+  return result;
+}
+
+function loadConfigWithoutProject(): ConfigLoaderResult {
+  return { resultType: 'failed', message: "Couldn't find tsconfig.json" };
 }
 
 /** Adds the import kind and expands Vite's mode placeholder deterministically. */

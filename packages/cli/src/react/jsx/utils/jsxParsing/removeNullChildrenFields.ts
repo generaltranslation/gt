@@ -13,7 +13,10 @@ export function removeNullChildrenFields(tree: JsxChildren): JsxChildren {
     if (Array.isArray(children)) {
       return children.filter((child) => child != null).map(handleChild);
     }
-    return handleChild(children);
+    // The public wire type now accurately admits scalar boolean/null values.
+    // `handleChild` already preserves them at runtime; this erased cast keeps
+    // the historical React extractor byte-for-byte unchanged.
+    return handleChild(children as JsxChild);
   }
 
   function handleChild(child: JsxChild): JsxChild {

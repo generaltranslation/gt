@@ -44,7 +44,7 @@ import {
 import type { TranslationCatalog } from '../index';
 
 describe('gt-vue runtime', () => {
-  it('preserves authored Fragments while flattening compiler structural wrappers', () => {
+  it('preserves authored Fragments and structural-wrapper array shape', () => {
     const defaultSlot = vi.fn(() => [h('span', 'Fragment child')]);
     const ignoredSlot = vi.fn(() => [h('span', 'Ignored child')]);
     const authoredFragment = h(Fragment, null, {
@@ -67,11 +67,13 @@ describe('gt-vue runtime', () => {
       serializeVueChildren([
         createVNode(Fragment, null, [h('span', 'Compiler wrapper child')], 64),
       ])
-    ).toEqual({
-      t: 'span',
-      i: 1,
-      c: 'Compiler wrapper child',
-    });
+    ).toEqual([
+      {
+        t: 'span',
+        i: 1,
+        c: 'Compiler wrapper child',
+      },
+    ]);
     expect(defaultSlot).toHaveBeenCalledOnce();
     expect(ignoredSlot).not.toHaveBeenCalled();
   });
