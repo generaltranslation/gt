@@ -925,6 +925,9 @@ importers:
       '@types/semver':
         specifier: ^7.7.1
         version: 7.7.1
+      ajv:
+        specifier: ^8.18.0
+        version: 8.18.0
       eslint:
         specifier: ^9.20.0
         version: 9.36.0(jiti@2.7.0)

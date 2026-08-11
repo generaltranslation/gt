@@ -145,7 +145,7 @@
                   "additionalProperties": false
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": true
             },
             "includeSourceCodeContext": {
               "type": "boolean",

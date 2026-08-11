@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import Ajv from 'ajv';
 import { describe, expect, it } from 'vitest';
 
 type JsonSchema = {
@@ -21,12 +22,18 @@ const schemaPath = fileURLToPath(
 const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8')) as JsonSchema;
 
 function getParsingFlagProperties(): Record<string, JsonSchema> {
-  const parsingFlagProperties =
-    schema.properties?.files?.properties?.gt?.properties?.parsingFlags
-      ?.properties;
+  const parsingFlagProperties = getParsingFlagsSchema().properties;
 
   expect(parsingFlagProperties).toBeDefined();
   return parsingFlagProperties ?? {};
+}
+
+function getParsingFlagsSchema(): JsonSchema {
+  const parsingFlagsSchema =
+    schema.properties?.files?.properties?.gt?.properties?.parsingFlags;
+
+  expect(parsingFlagsSchema).toBeDefined();
+  return parsingFlagsSchema ?? {};
 }
 
 describe('GT config schema parsing flags', () => {
@@ -35,6 +42,26 @@ describe('GT config schema parsing flags', () => {
       'viteConfigPath',
       'vueCompilerOptions',
     ]);
+  });
+
+  it('validates Vue options without rejecting existing React flags', () => {
+    const validate = new Ajv({ strict: false }).compile(
+      getParsingFlagsSchema()
+    );
+
+    expect(
+      validate({
+        autoderive: { jsx: true },
+        devHotReload: { strings: true },
+        vueCompilerOptions: { whitespace: 'preserve' },
+      })
+    ).toBe(true);
+    expect(
+      validate({
+        devHotReload: true,
+        vueCompilerOptions: { unsupportedVueOption: true },
+      })
+    ).toBe(false);
   });
 
   it('matches the exact Vue compiler option contract', () => {
