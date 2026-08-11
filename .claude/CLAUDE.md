@@ -9,7 +9,7 @@ Open source i18n libraries for React, Next.js, and more. Repo: `generaltranslati
 - **Releases:** Changesets (`pnpm changeset` to add, `changeset publish` to release)
 - **Testing:** Vitest across all packages
 - **Linting:** oxlint + oxfmt (enforced via lefthook pre-commit)
-- **License:** FSL-1.1-ALv2
+- **License:** MIT
 
 ## Commands
 
