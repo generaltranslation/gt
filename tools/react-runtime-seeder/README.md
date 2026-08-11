@@ -1,6 +1,6 @@
 # React runtime seeder
 
-`@generaltranslation/react-runtime-seeder` is a private monorepo tool that
+`@generaltranslation/react-runtime-seeder` is an internal monorepo tool that
 captures the exact `JsxChildren` tree and translation hash produced when the
 real `gt-react` `<T>` component renders. It creates reviewable candidates under
 `.gt/runtime-seeds/`; it never edits `tests/seeds`.

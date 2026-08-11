@@ -1,7 +1,6 @@
 {
   "name": "@generaltranslation/react-runtime-seeder",
   "version": "0.0.0",
-  "private": true,
   "description": "Internal CLI for capturing gt-react runtime translation seeds",
   "type": "module",
   "main": "dist/index.mjs",
