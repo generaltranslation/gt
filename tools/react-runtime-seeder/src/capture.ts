@@ -322,18 +322,26 @@ async function freezePosixProcessTree(
     for (const trackedPid of trackedPids) {
       if (trackedPid === rootPid || frozenPids.has(trackedPid)) continue;
       allFrozen = false;
-      frozenPids.add(trackedPid);
       try {
         process.kill(trackedPid, 'SIGSTOP');
       } catch {
         // The tracked process may already have exited.
+        continue;
+      }
+      if (await processHasToken(trackedPid, processToken)) {
+        frozenPids.add(trackedPid);
+      } else {
+        try {
+          process.kill(trackedPid, 'SIGCONT');
+        } catch {
+          // The process may have exited after the identity check.
+        }
       }
     }
     const targets = processes.filter(
       (process) =>
         process.pid !== rootPid &&
         (descendants.has(process.pid) ||
-          trackedPids.has(process.pid) ||
           process.command.includes(environmentMarker))
     );
     for (const target of targets) {
