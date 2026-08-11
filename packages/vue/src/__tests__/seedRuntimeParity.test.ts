@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { hashSource } from 'generaltranslation/id';
@@ -202,6 +203,29 @@ describe('React and Vue seed runtime parity', () => {
     expect(Vue.toDisplayString(true)).toBe(Vue.toDisplayString('true'));
     expect(Vue.toDisplayString(null)).toBe(Vue.toDisplayString(undefined));
     expect(Vue.toDisplayString(null)).toBe(Vue.toDisplayString(''));
+  });
+
+  it('pins semantic fields intentionally omitted from catalog hashes', () => {
+    const source: JsxChildren = {
+      t: 'div',
+      i: 1,
+      d: { ti: 'Source title' },
+      c: 'Source child',
+    };
+    const changedIdentity: JsxChildren = { ...source, i: 2 };
+    const changedContentProp: JsxChildren = {
+      ...source,
+      d: { ti: 'Different title' },
+    };
+
+    expect(sourceHash(changedIdentity)).toBe(sourceHash(source));
+    expect(sourceHash(changedContentProp)).toBe(sourceHash(source));
+    expect(semanticWireFingerprint(changedIdentity)).not.toBe(
+      semanticWireFingerprint(source)
+    );
+    expect(semanticWireFingerprint(changedContentProp)).not.toBe(
+      semanticWireFingerprint(source)
+    );
   });
 
   describe('programmatic React-authoritative shape boundaries', () => {
@@ -440,11 +464,15 @@ function assertNonPortableEvidence(fixture: NonPortableSeed): void {
   const reactHash = sourceHash(react.source, react.context);
   const vueHash = sourceHash(vue.source, vue.context);
 
-  // The semantic assertions below prove the named boundary. Exact two-sided
-  // hashes additionally make the exception fail when any unrelated wire node
-  // changes, including for lossy compiler boundaries that cannot be reversed.
+  // The semantic assertions below prove the named boundary. Exact GT hashes
+  // pin catalog identity, while the SHA-256 fingerprints pin the complete
+  // semantic wire fields that GT's catalog hash intentionally normalizes.
   expect(reactHash).toBe(fixture.reactHash);
   expect(vueHash).toBe(fixture.vueHash);
+  expect(semanticWireFingerprint(react.source)).toBe(
+    fixture.reactWireFingerprint
+  );
+  expect(semanticWireFingerprint(vue.source)).toBe(fixture.vueWireFingerprint);
 
   expect(toSemanticWireSource(vue.source)).not.toStrictEqual(
     toSemanticWireSource(react.source)
@@ -492,6 +520,13 @@ function assertNonPortableEvidence(fixture: NonPortableSeed): void {
 
   const { javascript } = compileVueSeed(fixture);
   expect(javascript).toContain('toDisplayString');
+}
+
+/** Fingerprints every canonical wire field, including IDs and content props. */
+function semanticWireFingerprint(value: unknown): string {
+  return createHash('sha256')
+    .update(JSON.stringify(toSemanticWireSource(value)) ?? 'undefined')
+    .digest('hex');
 }
 
 /** Collects persisted variable names without normalizing away their contract. */
