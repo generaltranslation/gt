@@ -44,4 +44,4 @@ pnpm lint
 
 ## License
 
-FSL-1.1-ALv2
+MIT
