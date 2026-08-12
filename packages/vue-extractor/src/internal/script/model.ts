@@ -272,7 +272,6 @@ export type ReplayLeaf = {
   hasGT: boolean | undefined;
   knownValue?: TemplateKnownValue;
   selectionKind?: 'collection' | 'getter' | 'member' | 'ref';
-  stringRole?: 'factory' | 'translator';
 };
 
 export type ReplayUnsafe = { type: 'unsafe' };
@@ -350,7 +349,6 @@ export type ScriptState = {
   transformArrayEntriesInProgress: Set<Binding>;
   /** Import and alias bindings that may call a forwarded translator. */
   uncertainTranslationHelperBindings: Set<Binding>;
-  uncertainStringFunctionBindings: Set<Binding>;
   /** Whether this block uses GT through an unsupported dynamic import. */
   unsupportedDynamicGTReference: boolean;
   /** Whether a used GT reference came through a malformed local module. */
