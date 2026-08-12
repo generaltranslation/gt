@@ -89,6 +89,8 @@ applied.
 Browser-only SPAs can call `t()` at module scope after `initializeGTSPA()` has
 loaded the active locale. Use a bootstrap module with top-level `await`, and
 dynamically import the rest of the application only after initialization.
+This complements rather than replaces the `gt()` callback from `useGT()`,
+which remains the normal API inside Vue components and for SSR applications.
 
 ```ts
 // src/index.ts
