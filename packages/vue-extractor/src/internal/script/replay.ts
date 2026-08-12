@@ -57,6 +57,11 @@ export type ReplayAnalysisDependencies = {
     scope: Scope,
     state: ScriptState
   ) => number | undefined;
+  readStaticLogicalSelection: (
+    node: t.LogicalExpression,
+    scope: Scope,
+    state: ScriptState
+  ) => 'left' | 'right' | undefined;
   readResolvedMemberPath: (
     node: t.Node,
     scope: Scope,
@@ -72,6 +77,10 @@ export type ReplayAnalysisDependencies = {
     scope: Scope,
     state: ScriptState
   ) => string | undefined;
+  readParameterSubstitution: (
+    binding: Binding,
+    state: ScriptState
+  ) => ScopedExpression | undefined;
   readStaticFromScope: (
     node: t.Node | null | undefined,
     scope: Scope,
@@ -145,6 +154,13 @@ export type ReplayAnalysis = {
     binding: Binding,
     state: ScriptState
   ) => boolean;
+  replayMaySelectStringRoleAtPosition: (
+    node: t.Node,
+    scope: Scope,
+    atPosition: number,
+    role: 'factory' | 'translator',
+    state: ScriptState
+  ) => boolean;
 };
 
 /**
@@ -161,9 +177,11 @@ export function createReplayAnalysis({
   composeContainerWritePolicy,
   knownValueKey,
   readDefiniteArrayInteger,
+  readStaticLogicalSelection,
   readResolvedMemberPath,
   readResolvedMemberProperty,
   readResolvedPropertyKey,
+  readParameterSubstitution,
   readStaticFromScope,
   resolveCalledFunction,
   resolveComputedGetter,
@@ -478,6 +496,12 @@ export function createReplayAnalysis({
         expression: { node: expression, scope },
         hasGT: known.type === 'component' && known.name === 'T',
         knownValue,
+        stringRole:
+          known.type === 'hook'
+            ? 'factory'
+            : known.type === 'string'
+              ? 'translator'
+              : undefined,
       };
     }
     const primitive = readStaticFromScope(
@@ -1171,6 +1195,26 @@ export function createReplayAnalysis({
     }
 
     const calleePath = readResolvedMemberPath(node.callee, scope, state);
+    if (calleePath === 'Object.values' && !scope.getBinding('Object')) {
+      if (
+        !first ||
+        first.type === 'ArgumentPlaceholder' ||
+        first.type === 'SpreadElement'
+      ) {
+        return undefined;
+      }
+      const source = evaluateReplayExpression(first, scope, state, context);
+      const entries =
+        source?.type === 'container'
+          ? readReplayVisibleContainerEntries(source, state, context)
+          : undefined;
+      return entries
+        ? createReplayContainer({
+            kind: 'array',
+            entries: entries.map(([, value]) => value),
+          })
+        : undefined;
+    }
     if (calleePath === 'Array.from' && !scope.getBinding('Array')) {
       if (
         node.arguments.length > 1 ||
@@ -2424,13 +2468,11 @@ export function createReplayAnalysis({
     return replay;
   }
 
-  /** Replays earlier sibling statements and reads one call target in-place. */
-  function evaluateReplayAtPosition(
+  function createReplayContextAtPosition(
     node: t.Node,
-    scope: Scope,
     atPosition: number,
     state: ScriptState
-  ): ReplayValue | undefined {
+  ): ReplayEvaluationContext | undefined {
     const expression = unwrapExpression(node) ?? node;
     const nodePath = state.paths.get(expression) ?? state.paths.get(node);
     const statement = nodePath?.getStatementParent();
@@ -2459,9 +2501,179 @@ export function createReplayAnalysis({
       }
       replayContainerStatement(child as NodePath<t.Node>, state, context);
     }
-    return evaluateReplayExpression(expression, scope, state, context);
+    return context;
   }
 
+  function evaluateReplayAtPosition(
+    node: t.Node,
+    scope: Scope,
+    atPosition: number,
+    state: ScriptState
+  ): ReplayValue | undefined {
+    const expression = unwrapExpression(node) ?? node;
+    const context = createReplayContextAtPosition(
+      expression,
+      atPosition,
+      state
+    );
+    return context
+      ? evaluateReplayExpression(expression, scope, state, context)
+      : undefined;
+  }
+  function replayMaySelectStringRoleAtPosition(
+    node: t.Node,
+    scope: Scope,
+    atPosition: number,
+    role: 'factory' | 'translator',
+    state: ScriptState
+  ): boolean {
+    const expression = unwrapExpression(node) ?? node;
+    const context = createReplayContextAtPosition(
+      expression,
+      atPosition,
+      state
+    );
+    if (!context) return false;
+    const visibleEntries = (value: ReplayValue): ReplayValue[] => {
+      if (value.type !== 'container') return [];
+      const entries = readReplayVisibleContainerEntries(value, state, context);
+      return entries
+        ? entries.flatMap(([, entry]) => (entry ? [entry] : []))
+        : [];
+    };
+    const possibleValues = (
+      candidate: t.Node,
+      candidateScope: Scope,
+      seen: Set<t.Node>
+    ): ReplayValue[] => {
+      const expression = unwrapExpression(candidate);
+      if (!expression || seen.has(expression)) return [];
+      const nextSeen = new Set(seen).add(expression);
+      if (expression.type === 'ConditionalExpression') {
+        const condition = readStaticFromScope(
+          expression.test,
+          candidateScope,
+          new Set(),
+          expression.test.end ?? Number.POSITIVE_INFINITY,
+          state.analysis
+        );
+        const branches = condition.ok
+          ? [condition.value ? expression.consequent : expression.alternate]
+          : [expression.consequent, expression.alternate];
+        return branches.flatMap((branch) =>
+          possibleValues(branch, candidateScope, nextSeen)
+        );
+      }
+      if (expression.type === 'LogicalExpression') {
+        let selection = readStaticLogicalSelection(
+          expression,
+          candidateScope,
+          state
+        );
+        const leftValue = selection
+          ? undefined
+          : evaluateReplayExpression(
+              expression.left,
+              candidateScope,
+              state,
+              context
+            );
+        const replayTruthy = Boolean(
+          leftValue &&
+          leftValue.type !== 'unsafe' &&
+          (leftValue.type !== 'leaf' || leftValue.stringRole)
+        );
+        if (replayTruthy) {
+          selection = expression.operator === '&&' ? 'right' : 'left';
+        }
+        if (!selection) {
+          return [expression.left, expression.right].flatMap((branch) =>
+            possibleValues(branch, candidateScope, nextSeen)
+          );
+        }
+        return possibleValues(expression[selection], candidateScope, nextSeen);
+      }
+      if (
+        (expression.type === 'MemberExpression' ||
+          expression.type === 'OptionalMemberExpression') &&
+        readResolvedMemberProperty(expression, candidateScope, state) ===
+          undefined
+      ) {
+        return possibleValues(
+          expression.object,
+          candidateScope,
+          nextSeen
+        ).flatMap(visibleEntries);
+      }
+      const value = evaluateReplayExpression(
+        expression,
+        candidateScope,
+        state,
+        context
+      );
+      return value ? [value] : [];
+    };
+    const hasRole = (
+      value: ReplayValue,
+      expected: 'factory' | 'translator',
+      seen: Set<ReplayValue>
+    ): boolean => {
+      if (seen.has(value)) return false;
+      if (value.type === 'leaf') {
+        if (value.stringRole === expected) return true;
+        const expression = unwrapExpression(value.expression.node);
+        const binding =
+          expression?.type === 'Identifier'
+            ? value.expression.scope.getBinding(expression.name)
+            : undefined;
+        const substitution = binding
+          ? readParameterSubstitution(binding, state)
+          : undefined;
+        if (!substitution) return false;
+        const nextSeen = new Set(seen).add(value);
+        return possibleValues(
+          substitution.node,
+          substitution.scope,
+          new Set()
+        ).some((candidate) => hasRole(candidate, expected, nextSeen));
+      }
+      if (
+        expected !== 'factory' ||
+        (value.type !== 'function' && value.type !== 'method')
+      ) {
+        return false;
+      }
+      const result = executeReplayFunction(
+        value.callable,
+        value.type === 'function' ? value.boundArguments : [],
+        state,
+        {
+          ...context,
+          substitutions: new Map(value.substitutions),
+        },
+        value.type === 'function' ? value.thisValue : value.receiver
+      );
+      return Boolean(
+        result?.executed &&
+        result.value &&
+        hasRole(result.value, 'translator', new Set(seen).add(value))
+      );
+    };
+    const matches = (
+      candidate: t.Node,
+      expected: 'factory' | 'translator'
+    ): boolean =>
+      possibleValues(candidate, scope, new Set()).some((value) =>
+        hasRole(value, expected, new Set())
+      );
+    if (matches(expression, role)) return true;
+    return Boolean(
+      role === 'translator' &&
+      (expression?.type === 'CallExpression' ||
+        expression?.type === 'OptionalCallExpression') &&
+      matches(expression.callee, 'factory')
+    );
+  }
   /** Applies Vue template top-level ref/computed unwrapping to replayed bindings. */
   function readReplayTemplateValue(
     value: ReplayValue | undefined,
@@ -2975,5 +3187,6 @@ export function createReplayAnalysis({
     readReplayLeafState,
     readSafeReplayLeafOverride,
     replayBindingRetainsUnsafeIdentity,
+    replayMaySelectStringRoleAtPosition,
   };
 }

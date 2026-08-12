@@ -1221,7 +1221,12 @@ function getPluralKey(
     getPluralForm(
       n,
       forms,
-      getFormatLocales(undefined, locale, state.defaultLocale)
+      getFormatLocales(
+        undefined,
+        locale,
+        state.defaultLocale,
+        state.resolveFormattingLocale
+      )
     ) || undefined
   );
 }

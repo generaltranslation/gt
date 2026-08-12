@@ -19,7 +19,7 @@ The Vue script tests port the React extractor's applicable adversarial cases:
   React's array cardinality, while boolean and null array members follow
   React.Children normalization.
 
-The initial `gt-vue` API intentionally does not port React-only behavior:
+The initial `gt-vue` API intentionally does not port or statically extract:
 
 - rich/ICU string interpolation and derived runtime placeholders;
 - formatting metadata. Rich `<T>` sources support static `context`, `id`,
@@ -30,6 +30,9 @@ The initial `gt-vue` API intentionally does not port React-only behavior:
   callback or conditional value can still be a translator but cannot be
   resolved safely, extraction fails closed instead of silently omitting a
   catalog entry.
+- arbitrary translator mutation through `Reflect.set`, destructuring or
+  logical assignment, `eval`, proxies, or similar runtime metaprogramming. Use
+  direct, static translator aliases for extraction.
 
 Unsupported dynamic `gt()`/`msg()`/`t()` content receives an extraction
 diagnostic. Dynamic `useMessages()` input remains unreported because it may be

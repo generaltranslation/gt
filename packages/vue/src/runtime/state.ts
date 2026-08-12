@@ -13,11 +13,17 @@ import type {
 } from '../types';
 import { createCookieBackedLocale } from './localeCookie';
 
-const gtContextKey: InjectionKey<GTState> = Symbol('gt-vue');
+const gtContextKey = Symbol.for(
+  'generaltranslation.gt-vue.context'
+) as InjectionKey<GTState>;
 
 type CreateGTRuntimeOptions = {
+  /** Keeps the initial locale stable until a browser reload. */
+  pinLocale?: boolean;
   /** Reloads the document after an SPA locale cookie is updated. */
   reloadDocument?: () => void;
+  /** Resolves aliases before locale-sensitive formatting. */
+  resolveFormattingLocale?: (locale: string) => string;
   /** Resolves supported locales before they enter runtime state. */
   resolveLocale?: (locale: string) => string;
 };
@@ -90,9 +96,14 @@ export function createGTRuntime(
   const revision = ref(0);
   const catalogs = new Map<string, TranslationCatalog>([[defaultLocale, {}]]);
   const pending = new Map<string, Promise<TranslationCatalog>>();
+  const initialLocale = localeAccessor.getLocale();
+  const getLocale = runtimeOptions.pinLocale
+    ? () => initialLocale
+    : () => localeAccessor.getLocale();
   let localeRequest = 0;
 
-  const load = async (targetLocale: string): Promise<TranslationCatalog> => {
+  const load = async (locale: string): Promise<TranslationCatalog> => {
+    const targetLocale = runtimeOptions.resolveLocale?.(locale) ?? locale;
     const cached = catalogs.get(targetLocale);
     if (cached) return cached;
 
@@ -141,13 +152,6 @@ export function createGTRuntime(
         revision.value += 1;
       };
 
-  const getLocale = (): string => {
-    // Cookie APIs have no reactive event. This counter invalidates Vue
-    // consumers after this plugin writes a successfully loaded locale.
-    void revision.value;
-    return localeAccessor.getLocale();
-  };
-
   const state: GTState = {
     defaultLocale,
     getCatalog() {
@@ -156,19 +160,25 @@ export function createGTRuntime(
       void revision.value;
       return catalogs.get(getLocale()) ?? {};
     },
-    getLocale,
+    getLocale() {
+      // Cookie APIs have no reactive event. This counter invalidates Vue
+      // consumers after this plugin writes a successfully loaded locale.
+      void revision.value;
+      return getLocale();
+    },
     loadTranslations: load,
+    resolveFormattingLocale: runtimeOptions.resolveFormattingLocale,
     revision,
     setLocale,
   };
 
   const plugin: GTPlugin = {
-    getLocale,
+    getLocale: state.getLocale,
     install(app) {
       app.provide(gtContextKey, state);
       // Client apps may mount immediately and render source content until the
       // initial asynchronous catalog arrives. Its revision update rerenders.
-      void load(getLocale()).catch(() => undefined);
+      void load(state.getLocale()).catch(() => undefined);
     },
     loadTranslations: load,
     setLocale,
@@ -187,7 +197,7 @@ export function useGTState(): GTState {
       source: 'gt-vue',
       severity: 'Error',
       whatHappened: 'The GT Vue plugin is not installed',
-      fix: 'Install the plugin with app.use(createGT(options))',
+      fix: 'Install the exact plugin returned by initializeGTSPA() with app.use(plugin), or install app.use(createGT(options)) for non-SPA usage',
     })
   );
 }

@@ -301,6 +301,453 @@ describe('module-level t() extraction', () => {
       expect.stringContaining('possible gt-vue string function alias'),
     ]);
   });
+
+  it.each([
+    {
+      name: 'conditional t callee',
+      statement: `(flag ? t : String)('Conditional t');`,
+      setup: `import { t } from 'gt-vue'; const flag = Boolean(Date.now());`,
+    },
+    {
+      name: 'array-selected msg callee',
+      statement: `[msg, String][index]('Selected msg');`,
+      setup: `import { msg } from 'gt-vue'; const index = Number(Date.now());`,
+    },
+    {
+      name: 'object-selected useGT callee',
+      statement: `({ translated: useGT(), ordinary: String })[key]('Selected useGT');`,
+      setup: `import { useGT } from 'gt-vue'; const key = String(Date.now());`,
+    },
+    {
+      name: 'forwarded conditional t callee',
+      statement: `invoke(flag ? t : String);`,
+      setup: `import { t } from 'gt-vue';
+        const flag = Boolean(Date.now());
+        function invoke(translate) { translate('Forwarded conditional t'); }`,
+    },
+  ])('fails closed for a $name', async ({ setup, statement }) => {
+    const output = await extract('dynamic-callee.ts', `${setup} ${statement}`);
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([
+      expect.stringContaining('possible gt-vue string function alias'),
+    ]);
+  });
+
+  it.each([
+    `import('gt-vue').then(({ t }) => t('Then dynamic import'));`,
+    `(await import('gt-vue')).t('Awaited dynamic import');`,
+  ])('fails closed for a non-declarator dynamic import', async (statement) => {
+    const output = await extract('dynamic-import.ts', statement);
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([
+      expect.stringContaining('string function alias from a dynamic import'),
+    ]);
+  });
+
+  it.each([
+    ['t', `runtime.t('Namespace rest t')`],
+    ['msg', `runtime.msg('Namespace rest msg')`],
+    ['useGT', `runtime.useGT()('Namespace rest useGT')`],
+  ])('fails closed for a namespace-rest %s call', async (_name, statement) => {
+    const output = await extract(
+      'namespace-rest.ts',
+      `import * as GT from 'gt-vue';
+       const { T: _T, ...runtime } = GT;
+       ${statement};`
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([
+      expect.stringContaining('possible gt-vue string function alias'),
+    ]);
+  });
+
+  it.each([
+    ['t', `({ ...GT }).t('Namespace spread t')`],
+    ['msg', `({ ...GT }).msg('Namespace spread msg')`],
+    ['useGT', `({ ...GT }).useGT()('Namespace spread useGT')`],
+  ])(
+    'fails closed for a namespace-spread %s call',
+    async (_name, statement) => {
+      const output = await extract(
+        'namespace-spread.ts',
+        `import * as GT from 'gt-vue'; ${statement};`
+      );
+
+      expect(output.results).toEqual([]);
+      expect(output.errors).toEqual([
+        expect.stringContaining('possible gt-vue string function alias'),
+      ]);
+    }
+  );
+
+  it('keeps statically ordinary dynamic callees isolated', async () => {
+    const output = await extract(
+      'ordinary-dynamic-callees.ts',
+      `import { t } from 'gt-vue';
+       import * as GT from 'gt-vue';
+       (false ? t : String)('Dead translated branch');
+       (false ? t : String)\`Dead translated tag\`;
+       (String || t)('Ordinary OR');
+       (t && String)('Ordinary AND');
+       (String ?? t)('Ordinary nullish');
+       (false && t)('Dead logical branch');
+       (undefined && t)('Undefined logical branch');
+       ((() => String) || t)('Arrow OR');
+       ((() => String) ?? t)('Arrow nullish');
+       function ordinary(value) { return value; }
+       (ordinary || t)('Function OR');
+       (ordinary ?? t)('Function nullish');
+       ({ ...GT, t: String }).t('Overridden namespace spread');
+       const { t: _removedT, ...withoutT } = GT;
+       withoutT.t('Excluded namespace-rest export');`
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([]);
+  });
+
+  it.each([
+    [`(false || t)('False OR')`, 'False OR'],
+    [`(true && t)('True AND')`, 'True AND'],
+    [`(null ?? t)('Nullish')`, 'Nullish'],
+    [`(undefined || t)('Undefined OR')`, 'Undefined OR'],
+    [`(undefined ?? t)('Undefined nullish')`, 'Undefined nullish'],
+    [`(t || String)('Translator OR')`, 'Translator OR'],
+    [`(t ?? String)('Translator nullish')`, 'Translator nullish'],
+  ])(
+    'extracts a statically selected logical translator',
+    async (call, text) => {
+      const output = await extract(
+        'logical-translator.ts',
+        `import { t } from 'gt-vue'; ${call};`
+      );
+
+      expect(output.errors).toEqual([]);
+      expect(output.results.map((result) => result.source)).toEqual([text]);
+    }
+  );
+
+  it.each(['let', 'var'])(
+    'fails closed for a mutable CommonJS destructure declared with %s',
+    async (declaration) => {
+      const output = await extract(
+        'mutable-commonjs.cjs',
+        `${declaration} { t } = require('gt-vue');
+         t('Before reassignment');
+         t = String;
+         t('After reassignment');`
+      );
+
+      expect(output.results).toEqual([]);
+      expect(output.errors).toEqual([
+        expect.stringContaining('possible gt-vue string function alias'),
+      ]);
+    }
+  );
+
+  it('fails closed for mutable CommonJS msg and useGT destructures', async () => {
+    const output = await extract(
+      'mutable-commonjs-functions.cjs',
+      `let { msg, useGT } = require('gt-vue');
+       msg('Mutable CommonJS msg');
+       useGT()('Mutable CommonJS useGT');
+       msg = String;
+       useGT = () => String;`
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toHaveLength(2);
+    expect(output.errors).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('possible gt-vue string function alias "msg"'),
+        expect.stringContaining(
+          'possible gt-vue string function alias "useGT"'
+        ),
+      ])
+    );
+  });
+
+  it.each([
+    `const choices = [t, String]; choices[index]('Alias array');`,
+    `const choices = { a: t, b: String }; choices[key]('Alias object');`,
+  ])('fails closed for an aliased dynamic container', async (statement) => {
+    const output = await extract(
+      'aliased-container.ts',
+      `import { t } from 'gt-vue';
+       const index = Math.random() > 0.5 ? 0 : 1;
+       const key = Math.random() > 0.5 ? 'a' : 'b';
+       ${statement}`
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([
+      expect.stringContaining('possible gt-vue string function alias'),
+    ]);
+  });
+
+  it('keeps statically ordinary aliased container entries isolated', async () => {
+    const output = await extract(
+      'static-aliased-container.ts',
+      `import { t } from 'gt-vue';
+       const array = [t, String];
+       const object = { a: t, b: String };
+       array[1]('Static array entry');
+       object.b('Static object entry');`
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([]);
+  });
+
+  it.each([
+    `const spread = { ...GT }; spread.t('Spread alias');`,
+    `const { T: _T, ...rest } = GT;
+     const alias = rest;
+     alias.t('Rest alias');`,
+    `const { T: _T, ...rest } = GT;
+     const { T: _T2, ...rest2 } = rest;
+     rest2.t('Nested rest');`,
+  ])('fails closed for an aliased namespace copy', async (statement) => {
+    const output = await extract(
+      'aliased-namespace.ts',
+      `import * as GT from 'gt-vue'; ${statement}`
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([
+      expect.stringContaining('possible gt-vue string function alias'),
+    ]);
+  });
+
+  it('keeps overridden and excluded namespace copies isolated', async () => {
+    const output = await extract(
+      'ordinary-namespace-copy.ts',
+      `import * as GT from 'gt-vue';
+       const spread = { ...GT, t: String };
+       const { t: _removed, ...withoutT } = GT;
+       spread.t('Overridden spread alias');
+       withoutT.t('Excluded rest alias');`
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([]);
+  });
+
+  it.each([
+    `const alias = fn; alias('Forward alias');`,
+    `const first = fn; const second = first; second('Chained forward alias');`,
+  ])('fails closed for a forwarded parameter alias', async (body) => {
+    const output = await extract(
+      'forwarded-alias.ts',
+      `import { t } from 'gt-vue';
+       const flag = Math.random() > 0.5;
+       function invoke(fn) { ${body} }
+       invoke(flag ? t : String);`
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([
+      expect.stringContaining('possible gt-vue string function alias'),
+    ]);
+  });
+
+  it('keeps an ordinary forwarded parameter alias isolated', async () => {
+    const output = await extract(
+      'ordinary-forwarded-alias.ts',
+      `function invoke(fn) { const alias = fn; alias('Ordinary alias'); }
+       invoke(String);`
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([]);
+  });
+
+  it.each([
+    `const source = 'gt-vue'; import(source).then(({ t }) => t('Const import'));`,
+    "import(`gt-vue`).then(({ t }) => t('Template import'));",
+  ])(
+    'fails closed for a statically resolved dynamic import',
+    async (source) => {
+      const output = await extract('static-dynamic-import.ts', source);
+
+      expect(output.results).toEqual([]);
+      expect(output.errors).toEqual([
+        expect.stringContaining('string function alias from a dynamic import'),
+      ]);
+    }
+  );
+
+  it.each([
+    `const source = 'gt-react'; import(source).then(({ t }) => t('React const import'));`,
+    "import(`gt-react`).then(({ t }) => t('React template import'));",
+  ])(
+    'keeps a statically resolved React dynamic import isolated',
+    async (source) => {
+      const output = await extract('static-react-dynamic-import.ts', source);
+
+      expect(output.results).toEqual([]);
+      expect(output.errors).toEqual([]);
+    }
+  );
+
+  it.each([
+    `[useGT, () => String][index]()('Inline hook selection');`,
+    `const choices = [useGT, () => String];
+     choices[index]()('Aliased hook selection');`,
+  ])('fails closed for an uncertain hook identity', async (statement) => {
+    const output = await extract(
+      'uncertain-hook.ts',
+      `import { useGT } from 'gt-vue';
+       const index = Math.random() > 0.5 ? 0 : 1;
+       ${statement}`
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([
+      expect.stringContaining('possible gt-vue string function alias'),
+    ]);
+  });
+
+  it.each(['t', 'candidate'])(
+    'does not leak mutable CommonJS uncertainty into a shadowed %s parameter',
+    async (localName) => {
+      const imported = localName === 't' ? 't' : `t: ${localName}`;
+      const output = await extract(
+        'commonjs-shadow.cjs',
+        `let { ${imported} } = require('gt-vue');
+         ${localName} = String;
+         function ordinary(${localName}) { ${localName}('Ordinary shadow'); }
+         ordinary(String);`
+      );
+
+      expect(output.results).toEqual([]);
+      expect(output.errors).toEqual([]);
+    }
+  );
+
+  it.each([
+    `[useGT, String][index]('Not a translation');`,
+    `[useGT, () => String][index]();`,
+    `const value = [useGT, () => String][index](); void value;`,
+  ])('does not diagnose an unconsumed uncertain hook', async (statement) => {
+    const output = await extract(
+      'unused-hook.ts',
+      `import { useGT } from 'gt-vue';
+       const index = Math.random() > 0.5 ? 0 : 1;
+       ${statement}`
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([]);
+  });
+
+  it.each([
+    `const choices = [String, String]; choices[0] = t; choices[index]('Live array');`,
+    `const outer = [[t, String], [String, String]]; outer[index][index]('Nested');`,
+    `Object.values({ a: t, b: String })[index]('Values');`,
+    `[t, String].map((value) => value)[index]('Map');`,
+    `[() => t, () => String][index]()('Factory');`,
+    `function invoke(fn) { let alias = String; alias = fn; alias('Mutable alias'); }
+     invoke(flag ? t : String);`,
+    `const c = [String];
+     function mutate(box, value) { box[0] = value; }
+     mutate(c, t); c[index]('Parameter value');`,
+    `const c = { a: String };
+     function mutate(box, value) { box.a = value; }
+     mutate(c, t); c[flag ? 'a' : 'b']('Object parameter value');`,
+    `const c = [String];
+     function mutate(box, callback) { box[0] = callback(); }
+     mutate(c, () => t); c[index]('Callback value');`,
+  ])(
+    'fails closed for an expanded uncertain callee shape',
+    async (statement) => {
+      const output = await extract(
+        'expanded-uncertain-callee.ts',
+        `import { t } from 'gt-vue';
+       const flag = Math.random() > 0.5;
+       const index = flag ? 0 : 1;
+       ${statement}`
+      );
+
+      expect(output.results).toEqual([]);
+      expect(output.errors).toEqual([
+        expect.stringContaining('possible gt-vue string function alias'),
+      ]);
+    }
+  );
+
+  it.each([
+    `(flag ? t : String)\`Conditional tag\``,
+    `[t, String][index]\`Member tag\``,
+    `const choices = [t, String]; choices[index]\`Alias tag\``,
+  ])('rejects an uncertain gt-vue tagged template', async (statement) => {
+    const output = await extract(
+      'uncertain-tag.ts',
+      `import { t } from 'gt-vue';
+       const flag = Math.random() > 0.5;
+       const index = flag ? 0 : 1;
+       ${statement}`
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([
+      expect.stringContaining('unsupported tagged template translation'),
+    ]);
+  });
+
+  it.each([
+    `const source = 'gt-vue'; const { t } = require(source); t('Const require');`,
+    "const { t } = require(`gt-vue`); t('Template require');",
+  ])(
+    'extracts from a statically sourced CommonJS namespace',
+    async (source) => {
+      const output = await extract('static-require.cjs', source);
+
+      expect(output.errors).toEqual([]);
+      expect(output.results).toHaveLength(1);
+    }
+  );
+
+  it.each([
+    `const flag = Math.random() > 0.5;
+     const source = flag ? 'gt-vue' : 'gt-react';`,
+    `const flag = Math.random() > 0.5;
+     const source = flag ? 'gt-vue' : 'ordinary';`,
+    `let source = 'gt-react';
+     if (Math.random() > 0.5) source = 'gt-vue';`,
+  ])('fails closed for a mixed CommonJS source', async (setup) => {
+    const output = await extract(
+      'mixed-commonjs.cjs',
+      `${setup} const { t } = require(source); t('Mixed require');`
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([
+      expect.stringContaining(
+        'string function alias from a dynamic import or require()'
+      ),
+    ]);
+  });
+
+  it('keeps uncertain React tags and static CommonJS sources isolated', async () => {
+    const output = await extract(
+      'react-controls.ts',
+      `import { t } from 'gt-react';
+       const flag = Math.random() > 0.5;
+       const index = flag ? 0 : 1;
+       (flag ? t : String)\`React tag\`;
+       [t, String][index]\`React member tag\`;
+       const source = 'gt-react';
+       const { t: requiredT } = require(source);
+       requiredT('React require');`
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([]);
+  });
 });
 
 function contexts(
