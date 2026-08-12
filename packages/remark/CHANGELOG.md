@@ -1,5 +1,11 @@
 # gt-remark
 
+## 1.0.12-iris.0
+
+### Patch Changes
+
+- 5d8b78a: Migrate the package license from FSL-1.1-ALv2 to MIT.
+
 ## 1.0.11
 
 ### Patch Changes

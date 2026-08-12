@@ -1,5 +1,14 @@
 # gtx-cli
 
+## 2.17.0-iris.0
+
+### Patch Changes
+
+- 5d8b78a: Migrate the package license from FSL-1.1-ALv2 to MIT.
+- Updated dependencies [5d8b78a]
+- Updated dependencies [b05b470]
+  - gt@2.17.0-iris.0
+
 ## 2.16.3-iris.0
 
 ### Patch Changes

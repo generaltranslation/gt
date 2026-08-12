@@ -1,5 +1,16 @@
 # gt-i18n
 
+## 1.0.13-iris.0
+
+### Patch Changes
+
+- 5d8b78a: Migrate the package license from FSL-1.1-ALv2 to MIT.
+- Updated dependencies [f2204b9]
+- Updated dependencies [b05b470]
+- Updated dependencies [5d8b78a]
+  - @generaltranslation/format@0.1.5-iris.0
+  - generaltranslation@9.1.3-iris.0
+
 ## 1.0.12-iris.0
 
 ### Patch Changes

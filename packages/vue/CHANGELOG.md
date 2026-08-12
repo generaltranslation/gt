@@ -1,5 +1,20 @@
 # gt-vue
 
+## 0.1.0-iris.1
+
+### Patch Changes
+
+- f2204b9: Translate statically authored custom-component default slots, preserve authored
+  Fragments, and align Branch and Plural wire values, rendering fallbacks, and
+  locale selection with React. Add React-compatible `context`, `id`, `maxChars`,
+  and `requiresReview` metadata to `<T>`, including compiler-facing `$` aliases.
+- 5d8b78a: Migrate the package license from FSL-1.1-ALv2 to MIT.
+- Updated dependencies [f2204b9]
+- Updated dependencies [b05b470]
+- Updated dependencies [5d8b78a]
+  - generaltranslation@9.1.3-iris.0
+  - gt-i18n@1.0.13-iris.0
+
 ## 0.1.0-iris.0
 
 ### Minor Changes

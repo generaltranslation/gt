@@ -1,5 +1,15 @@
 # gt-sanity
 
+## 3.1.7-iris.0
+
+### Patch Changes
+
+- 5d8b78a: Migrate the package license from FSL-1.1-ALv2 to MIT.
+- Updated dependencies [f2204b9]
+- Updated dependencies [b05b470]
+- Updated dependencies [5d8b78a]
+  - generaltranslation@9.1.3-iris.0
+
 ## 3.1.6
 
 ### Patch Changes

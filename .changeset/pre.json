@@ -53,11 +53,19 @@
     "gt-test-apps-e2e": "0.1.0",
     "gt-test-vite-react": "0.1.1",
     "gt-test-webpack-react": "0.1.1",
-    "gt-vue": "0.0.0"
+    "gt-vue": "0.0.0",
+    "@generaltranslation/vue-extractor": "0.0.0",
+    "cli-vue-binary-test": "0.0.0"
   },
   "changesets": [
+    "bright-vue-extractor",
+    "bright-vue-runtime-parity",
     "calm-pandas-translate",
+    "calm-rich-wire-types",
+    "calm-vue-config",
+    "migrate-licenses-to-mit",
     "test-iris-gt-patch",
-    "tidy-vue-messages"
+    "tidy-vue-messages",
+    "warm-vue-cli"
   ]
 }

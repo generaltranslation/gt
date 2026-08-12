@@ -1,5 +1,26 @@
 # gtx-cli
 
+## 2.17.0-iris.0
+
+### Minor Changes
+
+- b05b470: Add Vue source extraction through the standalone `@generaltranslation/vue-extractor` package.
+
+### Patch Changes
+
+- 5d8b78a: Migrate the package license from FSL-1.1-ALv2 to MIT.
+- Updated dependencies [697093a]
+- Updated dependencies [f2204b9]
+- Updated dependencies [b05b470]
+- Updated dependencies [5d8b78a]
+  - @generaltranslation/vue-extractor@0.1.0-iris.0
+  - @generaltranslation/format@0.1.5-iris.0
+  - generaltranslation@9.1.3-iris.0
+  - @generaltranslation/icu@0.1.2-iris.0
+  - @generaltranslation/python-extractor@0.2.36-iris.0
+  - @generaltranslation/supported-locales@2.1.16-iris.0
+  - gt-remark@1.0.12-iris.0
+
 ## 2.16.3-iris.0
 
 ### Patch Changes
