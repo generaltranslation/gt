@@ -304,6 +304,95 @@ describe('module-level t() extraction', () => {
     expect(unusedImports.errors).toEqual([]);
   });
 
+  it('follows statically selected ordinary logical and conditional aliases', async () => {
+    const output = await extract(
+      'ordinary-static-branches.ts',
+      `import { t } from 'gt-vue';
+       function ordinary() { return String; }
+       const first = String || t;
+       const second = t && String;
+       const third = String ?? t;
+       const fourth = false && t;
+       const fifth = true ? String : t;
+       const sixth = false ? t : String;
+       const seventh = (() => String) || t;
+       const eighth = ordinary ?? t;
+       const ninth = String ? Number : t;
+       const tenth = {} ? String : t;
+       first('String or');
+       second('T and');
+       third('String nullish');
+       fourth('False and');
+       fifth('True conditional');
+       sixth('False conditional');
+       seventh('Arrow or');
+       eighth('Function nullish');
+       ninth('Global conditional');
+       tenth('Object conditional');`
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([]);
+  });
+
+  it('extracts statically selected module t aliases', async () => {
+    const output = await extract(
+      'translated-static-branches.ts',
+      `import { t } from 'gt-vue';
+       function ordinaryCondition() {}
+       const first = false || t;
+       const second = t || String;
+       const third = undefined ?? t;
+       const fourth = true && t;
+       const fifth = true ? t : String;
+       const sixth = false ? String : t;
+       const seventh = String && t;
+       const eighth = String ? t : Number;
+       const ninth = ordinaryCondition ? t : String;
+       const tenth = (() => {}) ? t : String;
+       first('False or');
+       second('T or');
+       third('Undefined nullish');
+       fourth('True and');
+       fifth('True conditional');
+       sixth('False conditional');
+       seventh('String and');
+       eighth('Global condition');
+       ninth('Function condition');
+       tenth('Arrow condition');`
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(output.results.map(({ source }) => source)).toEqual([
+      'False or',
+      'T or',
+      'Undefined nullish',
+      'True and',
+      'True conditional',
+      'False conditional',
+      'String and',
+      'Global condition',
+      'Function condition',
+      'Arrow condition',
+    ]);
+  });
+
+  it('keeps overridden callable methods fail-closed', async () => {
+    const output = await extract(
+      'overridden-callable.ts',
+      `import { t } from 'gt-vue';
+       function callable() {}
+       callable.bind = () => false;
+       const selected = callable.bind(null) || t;
+       selected('Overridden bind');`
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([
+      expect.stringContaining('possible gt-vue string function alias'),
+    ]);
+  });
+
   it('fails closed when a proven local t reexport becomes mutable', async () => {
     write(
       'mutable.ts',

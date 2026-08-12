@@ -5527,46 +5527,31 @@ function resolveKnownExpression(
       : undefined;
   }
   if (expression.type === 'LogicalExpression') {
-    const left = resolveKnownExpression(
-      expression.left,
+    const selection = readStaticLogicalSelection(
+      expression,
       scope,
       state,
       new Set(seen)
     );
-    if (left) {
-      return expression.operator === '&&'
-        ? resolveKnownExpression(expression.right, scope, state, new Set(seen))
-        : left;
-    }
-    const staticLeft = readStaticFromScope(
-      expression.left,
-      scope,
-      new Set(),
-      expression.left.end ?? Number.POSITIVE_INFINITY,
-      state.analysis
-    );
-    if (!staticLeft.ok) return undefined;
-    const selectsRight =
-      expression.operator === '??'
-        ? staticLeft.value == null
-        : expression.operator === '||'
-          ? !staticLeft.value
-          : Boolean(staticLeft.value);
-    return selectsRight
-      ? resolveKnownExpression(expression.right, scope, state, new Set(seen))
+    return selection
+      ? resolveKnownExpression(
+          expression[selection],
+          scope,
+          state,
+          new Set(seen)
+        )
       : undefined;
   }
   if (expression.type === 'ConditionalExpression') {
-    const condition = readStaticFromScope(
+    const condition = readStaticTruthiness(
       expression.test,
       scope,
-      new Set(),
-      expression.test.end ?? Number.POSITIVE_INFINITY,
-      state.analysis
+      state,
+      new Set(seen)
     );
-    if (condition.ok) {
+    if (condition) {
       return resolveKnownExpression(
-        condition.value ? expression.consequent : expression.alternate,
+        condition === 'truthy' ? expression.consequent : expression.alternate,
         scope,
         state,
         new Set(seen)
@@ -9516,6 +9501,78 @@ function bindingMayReferenceStringFunction(
   );
 }
 
+type StaticTruthiness = 'truthy' | 'falsy' | 'nullish';
+
+/** Evaluates only side-effect-free truthiness needed for static branch choice. */
+function readStaticTruthiness(
+  node: t.Node,
+  scope: Scope,
+  state: ScriptState,
+  seen: Set<Binding>
+): StaticTruthiness | undefined {
+  const expression = unwrapExpression(node);
+  if (!expression) return undefined;
+  const primitive = readStaticFromScope(
+    expression,
+    scope,
+    new Set(seen),
+    expression.end ?? Number.POSITIVE_INFINITY,
+    state.analysis
+  );
+  if (primitive.ok) {
+    if (primitive.value == null) return 'nullish';
+    return primitive.value ? 'truthy' : 'falsy';
+  }
+  if (resolveKnownExpression(expression, scope, state, new Set(seen))) {
+    return 'truthy';
+  }
+  if (
+    expression.type === 'ArrayExpression' ||
+    expression.type === 'ArrowFunctionExpression' ||
+    expression.type === 'ClassExpression' ||
+    expression.type === 'FunctionExpression' ||
+    expression.type === 'ObjectExpression' ||
+    expression.type === 'RegExpLiteral'
+  ) {
+    return 'truthy';
+  }
+  if (expression.type === 'Identifier') {
+    const binding = scope.getBinding(expression.name);
+    if (!binding) {
+      return expression.name !== 'undefined' &&
+        ORDINARY_GLOBAL_VALUES.has(expression.name)
+        ? 'truthy'
+        : undefined;
+    }
+    if (!binding.constant || seen.has(binding)) return undefined;
+    if (
+      binding.path.isClassDeclaration() ||
+      binding.path.isFunctionDeclaration()
+    ) {
+      return 'truthy';
+    }
+  }
+  return undefined;
+}
+
+/** Selects a logical branch when the left value's truthiness is static. */
+function readStaticLogicalSelection(
+  expression: t.LogicalExpression,
+  scope: Scope,
+  state: ScriptState,
+  seen: Set<Binding> = new Set()
+): 'left' | 'right' | undefined {
+  const value = readStaticTruthiness(expression.left, scope, state, seen);
+  if (!value) return undefined;
+  const selectsRight =
+    expression.operator === '??'
+      ? value === 'nullish'
+      : expression.operator === '||'
+        ? value !== 'truthy'
+        : value === 'truthy';
+  return selectsRight ? 'right' : 'left';
+}
+
 /** Tracks expressions whose resulting value can be a gt-vue string function. */
 function expressionMayProduceStringFunction(
   node: t.Node | null | undefined,
@@ -9673,6 +9730,15 @@ function expressionMayProduceStringFunction(
     );
   }
   if (expression.type === 'ConditionalExpression') {
+    const condition = readStaticTruthiness(expression.test, scope, state, seen);
+    if (condition) {
+      return expressionMayProduceStringFunction(
+        condition === 'truthy' ? expression.consequent : expression.alternate,
+        scope,
+        state,
+        seen
+      );
+    }
     return (
       expressionMayProduceStringFunction(
         expression.consequent,
@@ -9689,6 +9755,15 @@ function expressionMayProduceStringFunction(
     );
   }
   if (expression.type === 'LogicalExpression') {
+    const selection = readStaticLogicalSelection(expression, scope, state);
+    if (selection) {
+      return expressionMayProduceStringFunction(
+        expression[selection],
+        scope,
+        state,
+        seen
+      );
+    }
     return (
       expressionMayProduceStringFunction(expression.left, scope, state, seen) ||
       expressionMayProduceStringFunction(expression.right, scope, state, seen)
