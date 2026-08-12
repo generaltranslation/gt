@@ -270,6 +270,8 @@ describe('gt-vue package layout', () => {
             '--eval',
             `
               import { createRequire } from 'node:module';
+              import { createSSRApp, h } from 'vue';
+              import { renderToString } from 'vue/server-renderer';
 
               const require = createRequire(import.meta.url);
               const esm = await import('gt-vue');
@@ -285,11 +287,40 @@ describe('gt-vue package layout', () => {
               const commonjsPlugin = await commonjs.initializeGTSPA();
               if (commonjsPlugin !== esmPlugin) process.exit(1);
               if (commonjs.t('Shared source') !== 'Shared source') process.exit(1);
+              const Root = {
+                setup() {
+                  const gt = commonjs.useGT();
+                  return () => h('p', gt('Shared component source'));
+                },
+              };
+              const html = await renderToString(createSSRApp(Root).use(esmPlugin));
+              if (!html.includes('Shared component source')) process.exit(1);
             `,
           ],
           { cwd: fixtureDirectory, stdio: 'pipe' }
         )
       ).not.toThrow();
+
+      const esmPackageSource = readFileSync(
+        join(unpackDirectory, 'package', 'dist', 'index.mjs'),
+        'utf8'
+      );
+      expect(esmPackageSource).not.toMatch(
+        /(?:^|\n)import\s+[^;]*["']@generaltranslation\/format["']/
+      );
+      expect(esmPackageSource).toMatch(
+        /import\(["']@generaltranslation\/format["']\)/
+      );
+      const commonJSPackageSource = readFileSync(
+        join(unpackDirectory, 'package', 'dist', 'index.cjs'),
+        'utf8'
+      );
+      expect(commonJSPackageSource).not.toMatch(
+        /(?:^|\n)(?:const|let|var)\s+[^;]*require\(["']@generaltranslation\/format["']\)/
+      );
+      expect(commonJSPackageSource).toMatch(
+        /import\(["']@generaltranslation\/format["']\)/
+      );
 
       for (const exportName of ['msg', 'useGT']) {
         const consumerEntry = join(
@@ -338,6 +369,7 @@ describe('gt-vue package layout', () => {
         );
         expect(bundledSource).not.toMatch(/["']gt-i18n\/internal["']/);
         expect(bundledSource).not.toContain('spaRuntime');
+        expect(bundledSource).not.toContain('@generaltranslation/format');
         expect(bundledSource).not.toContain(
           'The browser SPA runtime is not initialized'
         );
