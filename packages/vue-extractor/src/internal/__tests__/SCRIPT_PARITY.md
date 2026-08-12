@@ -19,21 +19,19 @@ The Vue script tests port the React extractor's applicable adversarial cases:
   React's array cardinality, while boolean and null array members follow
   React.Children normalization.
 
-The initial `gt-vue` API intentionally does not port or statically extract:
+The initial `gt-vue` API intentionally does not port React-only behavior:
 
 - rich/ICU string interpolation and derived runtime placeholders;
 - formatting metadata. Rich `<T>` sources support static `context`, `id`,
   `maxChars`, and `requiresReview` props, including their `$`-prefixed aliases;
 - `getGT`, async translator creation, tagged templates, or React JSX semantics;
 - extraction through arbitrary runtime callbacks, package re-exports, or
-  cross-file data flow beyond statically resolved local ESM modules. When a
-  callback or conditional value can still be a translator but cannot be
-  resolved safely, extraction fails closed instead of silently omitting a
-  catalog entry.
-- arbitrary translator mutation through `Reflect.set`, destructuring or
-  logical assignment, `eval`, proxies, or similar runtime metaprogramming. Use
-  direct, static translator aliases for extraction.
+  cross-file data flow beyond statically resolved local ESM modules;
+- module-level `t()` identities selected through dynamic callee expressions or
+  runtime containers. Use a direct import or a statically resolved immutable
+  alias when the call must be extracted.
 
-Unsupported dynamic `gt()`/`msg()`/`t()` content receives an extraction
-diagnostic. Dynamic `useMessages()` input remains unreported because it may be
-an encoded value produced by `msg()` at runtime.
+Unsupported dynamic content or options in a statically resolved
+`gt()`/`msg()`/`t()` call receives an extraction diagnostic. Dynamic
+`useMessages()` input remains unreported because it may be an encoded value
+produced by `msg()` at runtime.
