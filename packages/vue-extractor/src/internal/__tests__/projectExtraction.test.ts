@@ -46,62 +46,6 @@ describe('extractFromVueProject', () => {
     ]);
   });
 
-  it('hashes and deduplicates module-level t() calls through project extraction', async () => {
-    const root = createVueFixture({
-      'src/messages.ts': `
-        import { msg, t } from 'gt-vue';
-        t('Module greeting');
-        t('Module greeting');
-        msg('Module greeting');
-        t('Module greeting', { $context: 'toolbar action' });
-        t('Literal {name} — 你好\\nnext');
-      `,
-    });
-
-    const output = await extractFromVueProject({ cwd: root });
-
-    expect(output.errors).toEqual([]);
-    expect(output.warnings).toEqual([]);
-    expect(
-      output.updates.map(({ dataFormat, metadata, source }) => ({
-        context: metadata.context,
-        dataFormat,
-        hash: metadata.hash,
-        source,
-      }))
-    ).toEqual([
-      {
-        context: undefined,
-        dataFormat: 'STRING',
-        hash: 'f7333e2142c92464',
-        source: 'Module greeting',
-      },
-      {
-        context: 'toolbar action',
-        dataFormat: 'STRING',
-        hash: 'e811c9263249a811',
-        source: 'Module greeting',
-      },
-      {
-        context: undefined,
-        dataFormat: 'STRING',
-        hash: '1eddffaf048e42ac',
-        source: 'Literal {name} — 你好\nnext',
-      },
-    ]);
-
-    expect(
-      hashSource({ dataFormat: 'STRING', source: 'Module greeting' })
-    ).toBe('f7333e2142c92464');
-    expect(
-      hashSource({
-        context: 'toolbar action',
-        dataFormat: 'STRING',
-        source: 'Module greeting',
-      })
-    ).toBe('e811c9263249a811');
-  });
-
   it('uses explicit source patterns as a replacement for defaults', async () => {
     const root = createVueFixture({
       'src/Ignored.vue': translatableSfc('Ignored default source'),

@@ -65,14 +65,6 @@ export const apps = Object.freeze({
     command: 'pnpm --filter gt-test-vite-react dev',
     readyPath: '/',
   },
-  'vite-vue': {
-    packageName: 'gt-test-vite-vue',
-    entryPackage: 'gt-vue',
-    kind: 'vue-spa',
-    baseURL: 'http://127.0.0.1:5179',
-    command: 'pnpm --filter gt-test-vite-vue test:e2e:serve',
-    readyPath: '/',
-  },
   'webpack-react': {
     packageName: 'gt-test-webpack-react',
     entryPackage: 'gt-react',

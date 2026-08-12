@@ -3,7 +3,7 @@
 This workspace turns the manual test-app workflow into a sequential Playwright
 matrix. For every browser-capable app it first verifies that the app's GT entry
 package resolves inside this checkout's `packages/` directory, then starts the
-app's development server and exercises its configured locale behavior in
+app's development server and exercises English, French, and Chinese output in
 Chromium. The React Native app is excluded because it requires a native runtime.
 
 Run the complete matrix from the repository root:
@@ -16,7 +16,7 @@ pnpm --filter gt-test-apps-e2e test:e2e
 Run one or more apps with a comma-separated filter:
 
 ```bash
-GT_TEST_APPS=vite-vue,next-app-router pnpm --filter gt-test-apps-e2e test:e2e
+GT_TEST_APPS=vite-react,next-app-router pnpm --filter gt-test-apps-e2e test:e2e
 ```
 
 The runner starts one development server at a time and always delegates server

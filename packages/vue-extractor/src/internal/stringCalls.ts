@@ -73,7 +73,7 @@ export function processVueStringCall(
     addVueError(
       context,
       location,
-      `Found dynamic content in a gt-vue ${stringFunctionName(kind)} call`,
+      `Found dynamic content in a gt-vue ${kind === 'gt' ? 'gt()' : 'msg()'} call`,
       'Use a string literal or a template literal without expressions'
     );
     return;
@@ -91,11 +91,6 @@ export function processVueStringCall(
     return;
   }
   addStringUpdate(value.value, options.context, location, context);
-}
-
-/** Returns the public callable name represented by one extraction identity. */
-function stringFunctionName(kind: Exclude<StringFunctionKind, 'messages'>) {
-  return kind === 'gt' ? 'gt()' : kind === 'msg' ? 'msg()' : 't()';
 }
 
 function addStringUpdate(
@@ -123,10 +118,6 @@ function readContextOptions(
 ): { ok: true; context?: string } | { ok: false } {
   if (argument === undefined) return { ok: true };
   const options = unwrapExpression(argument);
-  const staticOptions = readStatic(options);
-  if (staticOptions.ok && staticOptions.value === undefined) {
-    return { ok: true };
-  }
   if (options?.type !== 'ObjectExpression') {
     addVueError(
       context,
@@ -167,10 +158,7 @@ function readContextOptions(
       return { ok: false };
     }
     const value = readStatic(property.value);
-    if (
-      !value.ok ||
-      (typeof value.value !== 'string' && value.value !== undefined)
-    ) {
+    if (!value.ok || typeof value.value !== 'string') {
       addVueError(
         context,
         location,

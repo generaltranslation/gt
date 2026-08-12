@@ -15,9 +15,6 @@ test(`${appName} renders local translations and switches locales`, async ({
     case 'react':
       await testReactApp(page);
       break;
-    case 'vue-spa':
-      await testVueSpa(page);
-      break;
     case 'next':
       await testNextApp(page);
       break;
@@ -65,55 +62,6 @@ async function testReactApp(page: Page) {
   await selectLocale(page, 'en');
   await expect(page.getByText('Locale: en')).toBeVisible();
   await expect(page.getByText('A string translated with useGT.')).toBeVisible();
-}
-
-async function testVueSpa(page: Page) {
-  await page.context().clearCookies();
-  await page.context().addCookies([
-    {
-      name: 'generaltranslation.locale',
-      value: 'fr',
-      url: app.baseURL,
-    },
-  ]);
-
-  await page.goto('/');
-  await expect(
-    page.getByRole('heading', {
-      name: 'Traduction de module chargée après l’initialisation de la SPA.',
-    })
-  ).toBeVisible();
-  await expect(
-    page.getByText('La traduction du composant partage l’exécution SPA.')
-  ).toBeVisible();
-  await expect(page.getByText('Locale: fr')).toBeVisible();
-  await expect(page.getByText('Module evaluations: 1')).toBeVisible();
-  await expect(page.getByText('Bootstrap: ready')).toBeVisible();
-
-  await selectLocale(page, 'en');
-  await expect(
-    page.getByRole('heading', {
-      name: 'Module translation loaded after SPA initialization.',
-    })
-  ).toBeVisible();
-  await expect(page.getByText('Locale: en')).toBeVisible();
-  await expect(page.getByText('Module evaluations: 2')).toBeVisible();
-
-  await page.evaluate(() => {
-    document.cookie = 'generaltranslation.locale=es;path=/';
-  });
-  await page.reload();
-  await expect(
-    page.getByRole('heading', {
-      name: 'Module translation loaded after SPA initialization.',
-    })
-  ).toBeVisible();
-  await expect(page.getByText('Locale: en')).toBeVisible();
-  await expect(page.getByText('Module evaluations: 3')).toBeVisible();
-  const localeCookie = (await page.context().cookies()).find(
-    ({ name }) => name === 'generaltranslation.locale'
-  );
-  expect(localeCookie?.value).toBe('en');
 }
 
 async function testNextApp(page: Page) {

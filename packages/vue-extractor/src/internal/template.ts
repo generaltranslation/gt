@@ -1181,9 +1181,7 @@ function readTemplatePrimitive(
   bindings: TemplateBindings
 ) {
   return readStaticPrimitive(input, (identifier) => {
-    // Babel's hasBinding() also reports globals such as `undefined`; only an
-    // actual lexical binding masks the immutable primitive here.
-    if (scope.getBinding(identifier.name)) {
+    if (scope.hasBinding(identifier.name)) {
       return { ok: false };
     }
     return readTemplateIdentifierPrimitive(identifier, shadowed, bindings);

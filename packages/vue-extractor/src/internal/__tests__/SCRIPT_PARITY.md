@@ -31,6 +31,6 @@ The initial `gt-vue` API intentionally does not port React-only behavior:
   resolved safely, extraction fails closed instead of silently omitting a
   catalog entry.
 
-Unsupported dynamic `gt()`/`msg()`/`t()` content receives an extraction
-diagnostic. Dynamic `useMessages()` input remains unreported because it may be
-an encoded value produced by `msg()` at runtime.
+Unsupported dynamic `gt()`/`msg()` content receives an extraction diagnostic.
+Dynamic `useMessages()` input remains unreported because it may be an encoded
+value produced by `msg()` at runtime.

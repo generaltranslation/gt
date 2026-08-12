@@ -315,7 +315,7 @@ jobs:
           fi
           cd tests/apps/cli-vue-binary-test
           ../../../packages/cli/binaries/${{ matrix.binary }} generate --config gt.config.json
-          node --input-type=module -e "import fs from 'node:fs'; const catalog = JSON.parse(fs.readFileSync('dist/_gt/en.json', 'utf8')); for (const message of ['Hello from the native Vue extractor', 'Hello from module-level t in the native Vue extractor']) if (!Object.values(catalog).includes(message)) throw new Error('Native CLI did not extract: ' + message);"
+          node --input-type=module -e "import fs from 'node:fs'; const catalog = JSON.parse(fs.readFileSync('dist/_gt/en.json', 'utf8')); if (!Object.values(catalog).includes('Hello from the native Vue extractor')) throw new Error('Native CLI did not extract the Vue message');"
 
   size:
     runs-on: ubuntu-latest

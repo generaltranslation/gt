@@ -37,7 +37,6 @@ const GT_EXPORT_NAMES = [
   'Plural',
   'Branch',
   'msg',
-  't',
   'useGT',
   'useMessages',
 ] as const;
@@ -46,7 +45,6 @@ const GT_EXPORT_NAMES = [
 const GT_RUNTIME_EXPORT_NAMES = [
   ...GT_EXPORT_NAMES,
   'createGT',
-  'initializeGTSPA',
   'useLocale',
   'useSetLocale',
 ] as const;

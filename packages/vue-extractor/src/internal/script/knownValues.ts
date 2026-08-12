@@ -137,7 +137,6 @@ export function knownExport(
     return { type: 'component', name: name as GTComponentName };
   }
   if (name === 'msg') return { type: 'string', kind: 'msg' };
-  if (name === 't') return { type: 'string', kind: 't' };
   if (name === 'useGT') return { type: 'hook', kind: 'gt' };
   if (name === 'useMessages') return { type: 'hook', kind: 'messages' };
   return undefined;
