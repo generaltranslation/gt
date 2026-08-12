@@ -372,7 +372,7 @@ export function parseVueScript(
           context,
           consumerLocation,
           `Could not statically resolve possible gt-vue string function alias "${calleePath}"`,
-          'Use a direct, immutable alias of useGT(), useMessages(), or msg()'
+          'Use a direct, immutable alias of useGT(), useMessages(), msg(), or t()'
         );
       }
       processForwardedTranslationCalls(path, consumerLocation);
@@ -829,7 +829,7 @@ function recordRuntimeReexport(
     return;
   }
   const candidateNames = exportNames.includes('*')
-    ? [...COMPONENT_IMPORTS, 'msg', 'useGT', 'useMessages']
+    ? [...COMPONENT_IMPORTS, 'msg', 't', 'useGT', 'useMessages']
     : exportNames;
   if (
     candidateNames.some((name) =>
@@ -972,6 +972,7 @@ function recordDynamicImportPattern(
       for (const exportName of [
         ...COMPONENT_IMPORTS,
         'msg',
+        't',
         'useGT',
         'useMessages',
       ]) {
@@ -989,7 +990,7 @@ function recordDynamicImportPattern(
         state.analysis.uncertainComponents.add(path);
         state.analysis.uncertainGTComponents.add(path);
       }
-      for (const name of ['msg', 'useGT', 'useMessages']) {
+      for (const name of ['msg', 't', 'useGT', 'useMessages']) {
         state.analysis.uncertainStringFunctions.add(
           appendTemplatePath(pattern.name, name)
         );
@@ -1542,6 +1543,7 @@ function recordLocalNamespaceMembers(
     ...resolver.listExportNames(modulePath),
     ...COMPONENT_IMPORTS,
     'msg',
+    't',
     'useGT',
     'useMessages',
   ]);
@@ -1612,7 +1614,7 @@ function recordUnresolvedGTNamespace(
     state.analysis.uncertainComponents.add(componentPath);
     state.analysis.uncertainGTComponents.add(componentPath);
   }
-  for (const name of ['msg', 'useGT', 'useMessages']) {
+  for (const name of ['msg', 't', 'useGT', 'useMessages']) {
     state.analysis.uncertainStringFunctions.add(
       appendTemplatePath(localName, name)
     );
@@ -1741,6 +1743,7 @@ function recordUnresolvedGTShapedBinding(
   }
   if (
     exportName === 'msg' ||
+    exportName === 't' ||
     exportName === 'useGT' ||
     exportName === 'useMessages'
   ) {
@@ -2396,6 +2399,10 @@ function exposeKnownValue(
       appendTemplatePath(localName, 'msg'),
       'msg'
     );
+    templateBindings.stringFunctions.set(
+      appendTemplatePath(localName, 't'),
+      't'
+    );
   } else if (value.type === 'namespace' && value.source === 'vue') {
     for (const builtin of VUE_BUILTIN_IMPORTS) {
       templateBindings.vueBuiltins.set(
@@ -2497,6 +2504,7 @@ function exposeUncertainKnownValue(
       uncertainGTComponents.add(appendTemplatePath(localName, component));
     }
     uncertainStringFunctions.add(appendTemplatePath(localName, 'msg'));
+    uncertainStringFunctions.add(appendTemplatePath(localName, 't'));
   } else if (value.type === 'namespace' && value.source === 'vue') {
     for (const builtin of VUE_BUILTIN_IMPORTS) {
       uncertainComponents.add(appendTemplatePath(localName, builtin));
@@ -3061,6 +3069,7 @@ function collectNamespaceRestMemberCandidates(
             (name): TemplateKnownValue => ({ type: 'component', name })
           ),
           { type: 'string', kind: 'msg' },
+          { type: 'string', kind: 't' },
         ]
       : [...VUE_BUILTIN_IMPORTS].map(
           (name): TemplateKnownValue => ({ type: 'vue-builtin', name })
@@ -3071,7 +3080,7 @@ function collectNamespaceRestMemberCandidates(
         entry.type === 'component'
           ? entry.name
           : entry.type === 'string'
-            ? 'msg'
+            ? entry.kind
             : entry.name;
       return !excluded.has(name);
     })
@@ -3082,7 +3091,7 @@ function collectNamespaceRestMemberCandidates(
         entry.type === 'component'
           ? entry.name
           : entry.type === 'string'
-            ? 'msg'
+            ? entry.kind
             : entry.name
       ),
       value: entry,

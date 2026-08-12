@@ -7,6 +7,7 @@ type CreateCookieBackedLocaleOptions = {
   defaultLocale: string;
   locale?: string;
   localeCookieName: string;
+  resolveLocale?: (locale: string) => string;
 };
 
 type CookieBackedLocale = {
@@ -29,10 +30,13 @@ export function createCookieBackedLocale({
   defaultLocale,
   locale: explicitLocale,
   localeCookieName,
+  resolveLocale = identityLocale,
 }: CreateCookieBackedLocaleOptions): CookieBackedLocale {
   const cookieLocale = getBrowserCookieValue(localeCookieName);
-  const resolvedLocale = explicitLocale ?? (cookieLocale || defaultLocale);
-  const browserFallbackLocale = explicitLocale ?? defaultLocale;
+  const resolvedLocale = resolveLocale(
+    explicitLocale ?? (cookieLocale || defaultLocale)
+  );
+  const browserFallbackLocale = resolveLocale(explicitLocale ?? defaultLocale);
   let serverLocale = resolvedLocale;
 
   // Match React's hydration contract: an explicit server locale wins over a
@@ -42,13 +46,21 @@ export function createCookieBackedLocale({
   return {
     getLocale() {
       if (typeof document !== 'undefined') {
-        return getBrowserCookieValue(localeCookieName) || browserFallbackLocale;
+        return resolveLocale(
+          getBrowserCookieValue(localeCookieName) || browserFallbackLocale
+        );
       }
       return serverLocale;
     },
     setLocale(nextLocale) {
-      serverLocale = nextLocale;
-      setBrowserCookieValue(localeCookieName, nextLocale);
+      const resolvedNextLocale = resolveLocale(nextLocale);
+      serverLocale = resolvedNextLocale;
+      setBrowserCookieValue(localeCookieName, resolvedNextLocale);
     },
   };
+}
+
+/** Preserves unrestricted locale behavior when no resolver is configured. */
+function identityLocale(locale: string): string {
+  return locale;
 }

@@ -15,6 +15,7 @@
     "vue": ">=3.3.0 <4.0.0"
   },
   "dependencies": {
+    "@generaltranslation/format": "workspace:*",
     "generaltranslation": "workspace:*",
     "gt-i18n": "workspace:*"
   },

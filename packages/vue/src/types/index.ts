@@ -1,4 +1,4 @@
-import type { JsxChildren } from 'generaltranslation/types';
+import type { CustomMapping, JsxChildren } from 'generaltranslation/types';
 import type { App, Ref } from 'vue';
 
 /**
@@ -76,7 +76,24 @@ export type CreateGTOptions = {
 };
 
 /**
- * Vue plugin returned by {@link createGT}.
+ * Options used to initialize the browser-only SPA runtime.
+ *
+ * `locales` and `customMapping` are accepted so a `gt.config.json` object can
+ * be passed directly. Catalog availability is still determined by
+ * {@link loadTranslations}.
+ */
+export type InitializeGTSPAOptions = CreateGTOptions & {
+  /** Custom locale aliases declared by the application's GT configuration. */
+  customMapping?: CustomMapping;
+  /**
+   * Target locales declared by the application's GT configuration.
+   * Unsupported persisted or requested locales fall back to `defaultLocale`.
+   */
+  locales?: readonly string[];
+};
+
+/**
+ * Vue plugin returned by {@link createGT} or `initializeGTSPA()`.
  *
  * Install it with `app.use(plugin)`. Its locale and catalog cache are scoped
  * to that plugin instance.
@@ -92,9 +109,11 @@ export type GTPlugin = {
    */
   loadTranslations(locale: string): Promise<TranslationCatalog>;
   /**
-   * Loads a locale when needed, then switches reactive consumers to it.
-   * Only the latest overlapping locale request is applied. Superseded calls
-   * still fulfill after their catalog loads, without changing the locale.
+   * Changes the active locale.
+   *
+   * Plugins from {@link createGT} load the locale before updating reactive
+   * consumers. Plugins from `initializeGTSPA()` persist it and reload the
+   * document so module-level translations execute again.
    */
   setLocale(locale: string): Promise<void>;
 };

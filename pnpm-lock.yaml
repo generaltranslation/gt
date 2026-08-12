@@ -1642,6 +1642,9 @@ importers:
 
   packages/vue:
     dependencies:
+      '@generaltranslation/format':
+        specifier: workspace:*
+        version: link:../format
       generaltranslation:
         specifier: workspace:*
         version: link:../core
@@ -2390,6 +2393,28 @@ importers:
         version: 5.7.3
       vite:
         specifier: ^8.0.16
+        version: 8.1.4(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.44.0)(tsx@4.21.0)(yaml@2.8.3)
+
+  tests/apps/vite-vue:
+    dependencies:
+      gt-vue:
+        specifier: workspace:*
+        version: link:../../../packages/vue
+      vue:
+        specifier: 3.5.40
+        version: 3.5.40(typescript@5.9.3)
+    devDependencies:
+      '@vitejs/plugin-vue':
+        specifier: 6.0.8
+        version: 6.0.8(vite@8.1.4(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.44.0)(tsx@4.21.0)(yaml@2.8.3))(vue@3.5.40(typescript@5.9.3))
+      gt:
+        specifier: workspace:*
+        version: link:../../../packages/cli
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+      vite:
+        specifier: 8.1.4
         version: 8.1.4(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.44.0)(tsx@4.21.0)(yaml@2.8.3)
 
   tests/apps/webpack-react:
@@ -9869,6 +9894,13 @@ packages:
         optional: true
       babel-plugin-react-compiler:
         optional: true
+
+  '@vitejs/plugin-vue@6.0.8':
+    resolution: {integrity: sha512-0ZjgOg7oO6farnNGup7yvoM/YXZV84OZxHAwtflItNa/6zzQyVb5LNxyea3FEKEX2XlagIKzrlH7wwxkKgtiew==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    peerDependencies:
+      vite: ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0
+      vue: ^3.2.25
 
   '@vitest/coverage-v8@3.2.4':
     resolution: {integrity: sha512-EyF9SXU6kS5Ku/U82E259WSnvg6c8KTjppUncuNdm5QHpe17mwREHnjDzozC8x9MZ0xfBUFSaLkRv4TMA75ALQ==}
@@ -28827,6 +28859,12 @@ snapshots:
       vite: 8.1.4(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.44.0)(tsx@4.21.0)(yaml@2.8.3)
     optionalDependencies:
       babel-plugin-react-compiler: 1.0.0
+
+  '@vitejs/plugin-vue@6.0.8(vite@8.1.4(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.44.0)(tsx@4.21.0)(yaml@2.8.3))(vue@3.5.40(typescript@5.9.3))':
+    dependencies:
+      '@rolldown/pluginutils': 1.0.1
+      vite: 8.1.4(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.44.0)(tsx@4.21.0)(yaml@2.8.3)
+      vue: 3.5.40(typescript@5.9.3)
 
   '@vitest/coverage-v8@3.2.4(vitest@3.2.4(@edge-runtime/vm@4.0.4)(@types/debug@4.1.12)(@types/node@24.13.3)(jiti@2.7.0)(jsdom@29.0.1(@noble/hashes@2.2.0))(lightningcss@1.32.0)(terser@5.44.0)(tsx@4.21.0)(yaml@2.8.3))':
     dependencies:
