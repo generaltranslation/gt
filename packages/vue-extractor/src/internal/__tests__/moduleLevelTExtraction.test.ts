@@ -393,6 +393,31 @@ describe('module-level t() extraction', () => {
     ]);
   });
 
+  it('bounds nested logical alias analysis', async () => {
+    const nested = Array.from({ length: 28 }, () => 't').join(' || ');
+    const output = await extract(
+      'nested-logical.ts',
+      `import { t } from 'gt-vue';
+       import { markRaw } from 'vue';
+       const selected = ${nested};
+       const sequenceSelected = (0, ${nested});
+       const memberSelected = ({ value: ${nested} }).value;
+       const wrappedSelected = markRaw(${nested});
+       selected('Nested logical');
+       sequenceSelected('Sequence nested logical');
+       memberSelected('Member nested logical');
+       wrappedSelected('Wrapped nested logical');`
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toHaveLength(4);
+    expect(
+      output.errors.every((error) =>
+        error.includes('possible gt-vue string function alias')
+      )
+    ).toBe(true);
+  });
+
   it('fails closed when a proven local t reexport becomes mutable', async () => {
     write(
       'mutable.ts',

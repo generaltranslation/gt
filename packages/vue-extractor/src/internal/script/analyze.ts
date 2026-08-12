@@ -5527,6 +5527,24 @@ function resolveKnownExpression(
       : undefined;
   }
   if (expression.type === 'LogicalExpression') {
+    const leftExpression = unwrapExpression(expression.left);
+    if (
+      leftExpression?.type === 'ConditionalExpression' ||
+      leftExpression?.type === 'LogicalExpression'
+    ) {
+      return undefined;
+    }
+    const left = resolveKnownExpression(
+      expression.left,
+      scope,
+      state,
+      new Set(seen)
+    );
+    if (left) {
+      return expression.operator === '&&'
+        ? resolveKnownExpression(expression.right, scope, state, new Set(seen))
+        : left;
+    }
     const selection = readStaticLogicalSelection(
       expression,
       scope,
@@ -9522,6 +9540,12 @@ function readStaticTruthiness(
   if (primitive.ok) {
     if (primitive.value == null) return 'nullish';
     return primitive.value ? 'truthy' : 'falsy';
+  }
+  if (
+    expression.type === 'ConditionalExpression' ||
+    expression.type === 'LogicalExpression'
+  ) {
+    return undefined;
   }
   if (resolveKnownExpression(expression, scope, state, new Set(seen))) {
     return 'truthy';
