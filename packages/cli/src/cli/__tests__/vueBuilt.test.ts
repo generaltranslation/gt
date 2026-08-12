@@ -1064,6 +1064,44 @@ import { T } from 'gt-vue';
     expect(JSON.stringify(catalog)).toContain('Added Vue entry');
   });
 
+  it('extracts module-level Vue t calls through generate', async () => {
+    const projectRoot = createProject({
+      dependencies: {
+        'gt-vue': '*',
+        vue: '*',
+      },
+    });
+    const headline = 'Visit San Francisco';
+    const callToAction = 'Explore the waterfront';
+    const context = 'homepage call to action';
+    writeProjectFiles(projectRoot, {
+      'gt.config.json': JSON.stringify({
+        defaultLocale: 'en',
+        locales: ['fr'],
+        files: { gt: { output: 'translations/[locale].json' } },
+      }),
+      'src/moduleMessages.ts': `import { t } from 'gt-vue';
+export const headline = t(${JSON.stringify(headline)});
+export const callToAction = t(${JSON.stringify(callToAction)}, { $context: ${JSON.stringify(context)} });
+`,
+    });
+    linkInstalledVue(projectRoot);
+
+    await runBuiltCli(
+      ['--skip-version-check', 'generate', '--config', 'gt.config.json'],
+      projectRoot
+    );
+    const catalog = JSON.parse(
+      fs.readFileSync(path.join(projectRoot, 'translations/en.json'), 'utf8')
+    ) as Record<string, unknown>;
+
+    expect(catalog).toEqual({
+      [hashSource({ dataFormat: 'STRING', source: headline })]: headline,
+      [hashSource({ context, dataFormat: 'STRING', source: callToAction })]:
+        callToAction,
+    });
+  });
+
   it('preserves Vue T metadata in the generated catalog identity', async () => {
     const projectRoot = createProject({
       dependencies: {
