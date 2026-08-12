@@ -355,7 +355,8 @@ export function parseVueScript(
         : undefined;
       const possibleStringCallee = expressionMayProduceStringFunction(
         materializedCallee?.node ??
-          (calleeExpression?.type !== 'Identifier'
+          (calleeExpression?.type !== 'Identifier' ||
+          calleeSubstitution?.constant
             ? path.node.callee
             : undefined),
         materializedCallee?.scope ?? path.scope,
@@ -377,6 +378,15 @@ export function parseVueScript(
         !localCallable &&
         (callTarget.possibleStringFunction ||
           possibleStringCallee ||
+          replayMaySelectStringRoleAtPosition(
+            path.node.callee,
+            path.scope,
+            path.node.start ?? Number.POSITIVE_INFINITY,
+            'translator',
+            state
+          ) ||
+          (calleeSubstitution &&
+            state.uncertainStringFunctionBindings.has(calleeSubstitution)) ||
           uncertainTranslationHelper ||
           (calleePath &&
             (templateBindings.uncertainStringFunctions.has(calleePath) ||
@@ -479,7 +489,24 @@ export function parseVueScript(
         state,
         new Set()
       );
-      if (value?.type !== 'string') return;
+      if (
+        value?.type !== 'string' &&
+        !expressionMayProduceStringFunction(
+          path.node.tag,
+          path.scope,
+          state,
+          new Set()
+        ) &&
+        !replayMaySelectStringRoleAtPosition(
+          path.node.tag,
+          path.scope,
+          path.node.start ?? Number.POSITIVE_INFINITY,
+          'translator',
+          state
+        )
+      ) {
+        return;
+      }
       state.analysis.hasGTSourceReference = true;
       addVueError(
         context,
@@ -518,7 +545,7 @@ export function parseVueScript(
     addVueError(
       context,
       undefined,
-      'Could not statically resolve possible gt-vue string function alias from a dynamic import',
+      'Could not statically resolve possible gt-vue string function alias from a dynamic import or require()',
       'Use a static gt-vue import so translation ownership can be extracted deterministically'
     );
   }
@@ -588,6 +615,7 @@ function createScriptState(
     thisSubstitutions: [],
     transformArrayEntries: new Map(),
     transformArrayEntriesInProgress: new Set(),
+    uncertainStringFunctionBindings: new Set(),
     uncertainTranslationHelperBindings: new Set(),
     unsupportedDynamicGTReference: false,
     unsupportedMalformedGTReference: false,
@@ -615,13 +643,13 @@ function analyzeMutableNamespaceSafety(ast: t.File, state: ScriptState): void {
   }
   traverse(ast, {
     CallExpression(path) {
-      const namespace = readRequireNamespace(path.node, path.scope);
+      const namespace = readRequireNamespace(path.node, path.scope, state);
       if (namespace && directRequireCanMutate(path)) {
         state.unsafeMutableNamespaceSources.add(namespace.source);
       }
     },
     OptionalCallExpression(path) {
-      const namespace = readRequireNamespace(path.node, path.scope);
+      const namespace = readRequireNamespace(path.node, path.scope, state);
       if (namespace && directRequireCanMutate(path)) {
         state.unsafeMutableNamespaceSources.add(namespace.source);
       }
@@ -698,7 +726,7 @@ function collectImports(
       if (
         importerFile === state.analysis.entryFile &&
         (path.isCallExpression() || path.node.type === 'ImportExpression') &&
-        readDynamicImport(path.node)?.source === 'gt-vue'
+        readDynamicImport(path.node, path.scope, state)?.source === 'gt-vue'
       ) {
         state.analysis.hasGTSourceReference = true;
         state.unsupportedDynamicGTReference = true;
@@ -813,7 +841,11 @@ function collectImports(
       );
     },
     VariableDeclarator(path) {
-      const dynamicImport = readDynamicImport(path.node.init);
+      const dynamicImport = readDynamicImport(
+        path.node.init,
+        path.scope,
+        state
+      );
       if (dynamicImport) {
         recordDynamicImportPattern(
           path.node.id,
@@ -824,7 +856,7 @@ function collectImports(
         );
         return;
       }
-      const namespace = readRequireNamespace(path.node.init, path.scope);
+      const namespace = readRequireNamespace(path.node.init, path.scope, state);
       if (!namespace) return;
       if (
         namespace.source === 'gt-vue' &&
@@ -945,31 +977,60 @@ function propagateUncertainTranslationHelperAliases(
 
 /** Reads an import() source, including a single surrounding await. */
 function readDynamicImport(
-  node: t.Node | null | undefined
+  node: t.Node | null | undefined,
+  scope: Scope,
+  state: ScriptState
 ): { source?: string } | undefined {
   let expression = unwrapExpression(node);
   if (expression?.type === 'AwaitExpression') {
     expression = unwrapExpression(expression.argument);
   }
   if (!expression) return undefined;
-  if (expression.type === 'ImportExpression') {
-    const source = unwrapExpression(expression.source);
-    return {
-      source: source?.type === 'StringLiteral' ? source.value : undefined,
-    };
-  }
-  if (
-    expression.type !== 'CallExpression' ||
-    expression.callee.type !== 'Import'
-  ) {
-    return undefined;
-  }
-  const source = unwrapExpression(expression.arguments[0]);
+  const source =
+    expression.type === 'ImportExpression'
+      ? expression.source
+      : expression.type === 'CallExpression' &&
+          expression.callee.type === 'Import'
+        ? expression.arguments[0]
+        : undefined;
+  if (!source) return undefined;
+  const sources = readStaticImportSources(
+    unwrapExpression(source),
+    scope,
+    state
+  );
+  const exact = sources.size === 1 ? sources.values().next().value : undefined;
   return {
-    source: source?.type === 'StringLiteral' ? source.value : undefined,
+    source: exact ?? (sources.has('gt-vue') ? 'gt-vue' : undefined),
   };
 }
 
+function readStaticImportSources(
+  source: t.Node | null | undefined,
+  scope: Scope,
+  state: ScriptState
+): Set<string> {
+  if (!source) return new Set();
+  const binding =
+    source.type === 'Identifier' ? scope.getBinding(source.name) : undefined;
+  const candidates = binding
+    ? readPossibleBindingValuesAtPosition(
+        binding,
+        source.start ?? Number.POSITIVE_INFINITY,
+        state
+      )
+    : [{ node: source, scope }];
+  return new Set(
+    candidates.flatMap((candidate) => [
+      ...collectPossibleStaticStrings(
+        candidate.node,
+        candidate.scope,
+        state,
+        new Set()
+      ),
+    ])
+  );
+}
 /** Marks GT-shaped values selected from a dynamic namespace as unresolved. */
 function recordDynamicImportPattern(
   pattern: t.LVal | t.VoidPattern,
@@ -1906,13 +1967,17 @@ function registerRequirePattern(
       if (binding) {
         state.mutableImportSources.set(binding, namespace.source);
         if (!binding.constant) {
-          exposeUncertainKnownValue(
-            localName,
-            value,
-            state.analysis.uncertainComponents,
-            state.analysis.uncertainGTComponents,
-            state.analysis.uncertainStringFunctions
-          );
+          if (value.type === 'string' || value.type === 'hook') {
+            state.uncertainStringFunctionBindings.add(binding);
+          } else {
+            exposeUncertainKnownValue(
+              localName,
+              value,
+              state.analysis.uncertainComponents,
+              state.analysis.uncertainGTComponents,
+              state.analysis.uncertainStringFunctions
+            );
+          }
         }
       }
     }
@@ -5519,7 +5584,7 @@ function resolveKnownExpression(
     expression.type === 'CallExpression' ||
     expression.type === 'OptionalCallExpression'
   ) {
-    const namespace = readRequireNamespace(expression, scope);
+    const namespace = readRequireNamespace(expression, scope, state);
     if (
       namespace &&
       !state.unsafeMutableNamespaceSources.has(namespace.source)
@@ -7633,6 +7698,7 @@ const {
   readReplayLeafState,
   readSafeReplayLeafOverride,
   replayBindingRetainsUnsafeIdentity,
+  replayMaySelectStringRoleAtPosition,
 } = createReplayAnalysis({
   ordinaryGlobalValues: ORDINARY_GLOBAL_VALUES,
   readonlyArrayTransforms: READONLY_ARRAY_TRANSFORMS,
@@ -7642,8 +7708,10 @@ const {
   composeContainerWritePolicy,
   knownValueKey,
   readDefiniteArrayInteger,
+  readStaticLogicalSelection,
   readResolvedMemberPath,
   readResolvedMemberProperty,
+  readParameterSubstitution,
   readResolvedPropertyKey,
   readStaticFromScope,
   resolveCalledFunction,
@@ -9534,6 +9602,40 @@ function bindingMayReferenceStringFunction(
   );
 }
 
+/** Selects a logical branch when the left value's truthiness is static. */
+function readStaticLogicalSelection(
+  expression: t.LogicalExpression,
+  scope: Scope,
+  state: ScriptState
+): 'left' | 'right' | undefined {
+  const left = resolveKnownExpression(expression.left, scope, state, new Set());
+  const node = unwrapExpression(expression.left);
+  const definitelyTruthy = Boolean(
+    left ||
+    resolveCalledFunction(expression.left, scope, state, new Set()) ||
+    (node?.type === 'Identifier' &&
+      node.name !== 'undefined' &&
+      !scope.getBinding(node.name) &&
+      ORDINARY_GLOBAL_VALUES.has(node.name))
+  );
+  if (definitelyTruthy) return expression.operator === '&&' ? 'right' : 'left';
+  const value = readStaticFromScope(
+    expression.left,
+    scope,
+    new Set(),
+    expression.left.end ?? Number.POSITIVE_INFINITY,
+    state.analysis
+  );
+  if (!value.ok) return undefined;
+  const selectsRight =
+    expression.operator === '??'
+      ? value.value == null
+      : expression.operator === '||'
+        ? !value.value
+        : Boolean(value.value);
+  return selectsRight ? 'right' : 'left';
+}
+
 /** Tracks expressions whose resulting value can be a gt-vue string function. */
 function expressionMayProduceStringFunction(
   node: t.Node | null | undefined,
@@ -9555,6 +9657,7 @@ function expressionMayProduceStringFunction(
     if (!binding) {
       return state.analysis.uncertainStringFunctions.has(expression.name);
     }
+    if (state.uncertainStringFunctionBindings.has(binding)) return true;
     const substitution = readParameterSubstitution(binding, state);
     if (substitution) {
       return expressionMayProduceStringFunction(
@@ -9638,13 +9741,13 @@ function expressionMayProduceStringFunction(
     }
     const namespaceMember = knownExport('gt-vue', property);
     return Boolean(
-      (namespaceMember?.type === 'string' ||
-        namespaceMember?.type === 'hook') &&
+      namespaceMember?.type === 'string' &&
       expressionMayCopyGTNamespaceExport(
         expression.object,
         property,
         scope,
-        state
+        state,
+        new Set()
       )
     );
   }
@@ -9652,6 +9755,27 @@ function expressionMayProduceStringFunction(
     expression.type === 'CallExpression' ||
     expression.type === 'OptionalCallExpression'
   ) {
+    const member = unwrapExpression(expression.callee);
+    const memberProperty =
+      member?.type === 'MemberExpression' ||
+      member?.type === 'OptionalMemberExpression'
+        ? readResolvedMemberProperty(member, scope, state)
+        : undefined;
+    if (
+      memberProperty &&
+      knownExport('gt-vue', memberProperty)?.type === 'hook' &&
+      (member?.type === 'MemberExpression' ||
+        member?.type === 'OptionalMemberExpression') &&
+      expressionMayCopyGTNamespaceExport(
+        member.object,
+        memberProperty,
+        scope,
+        state,
+        new Set()
+      )
+    ) {
+      return true;
+    }
     const callee = resolveKnownExpression(
       expression.callee,
       scope,
@@ -9741,6 +9865,15 @@ function expressionMayProduceStringFunction(
     );
   }
   if (expression.type === 'LogicalExpression') {
+    const selection = readStaticLogicalSelection(expression, scope, state);
+    if (selection) {
+      return expressionMayProduceStringFunction(
+        expression[selection],
+        scope,
+        state,
+        seen
+      );
+    }
     return (
       expressionMayProduceStringFunction(expression.left, scope, state, seen) ||
       expressionMayProduceStringFunction(expression.right, scope, state, seen)
@@ -9970,39 +10103,63 @@ function expressionMayCopyGTNamespaceExport(
   node: t.Node,
   property: string,
   scope: Scope,
-  state: ScriptState
+  state: ScriptState,
+  seen: Set<Binding>
 ): boolean {
   const expression = unwrapExpression(node);
+  if (
+    expression &&
+    resolveNamespaceOrigin(expression, scope, state, new Set())?.source ===
+      'gt-vue'
+  ) {
+    return true;
+  }
   if (expression?.type === 'ObjectExpression') {
     return expression.properties.some(
       (entry) =>
         entry.type === 'SpreadElement' &&
-        resolveNamespaceOrigin(entry.argument, scope, state, new Set())
-          ?.source === 'gt-vue'
+        expressionMayCopyGTNamespaceExport(
+          entry.argument,
+          property,
+          scope,
+          state,
+          seen
+        )
     );
   }
   if (expression?.type !== 'Identifier') return false;
   const binding = scope.getBinding(expression.name);
-  if (!binding) return false;
-  const declaration = binding.path.node;
-  if (declaration?.type !== 'VariableDeclarator' || !declaration.init) {
-    return false;
-  }
+  if (!binding || seen.has(binding)) return false;
+  const nextSeen = new Set(seen).add(binding);
+  const source = getBindingSource(binding);
+  if (!source) return false;
   const rest = readDirectRestPattern(
-    declaration.id,
+    source.pattern,
     expression.name,
     binding.path.scope,
     state
   );
+  if (rest?.type === 'object' && rest.excluded.has(property)) return false;
+  const selected =
+    rest?.type === 'object'
+      ? source.expression
+      : selectPatternExpression(
+          source.pattern,
+          source.expression.node,
+          expression.name,
+          source.expression.scope,
+          expression.start ?? Number.POSITIVE_INFINITY,
+          state
+        );
   return Boolean(
-    rest?.type === 'object' &&
-    !rest.excluded.has(property) &&
-    resolveNamespaceOrigin(
-      declaration.init,
-      binding.path.scope,
+    selected &&
+    expressionMayCopyGTNamespaceExport(
+      selected.node,
+      property,
+      selected.scope,
       state,
-      new Set()
-    )?.source === 'gt-vue'
+      nextSeen
+    )
   );
 }
 
@@ -10958,7 +11115,7 @@ function resolveNamespaceOrigin(
 ): Extract<KnownValue, { type: 'namespace' }> | undefined {
   const expression = unwrapExpression(node);
   if (!expression) return undefined;
-  const required = readRequireNamespace(expression, scope);
+  const required = readRequireNamespace(expression, scope, state);
   if (required) return required;
   if (expression.type !== 'Identifier') return undefined;
   const binding = scope.getBinding(expression.name);
@@ -13018,7 +13175,8 @@ function selectPatternDefault(
 
 function readRequireNamespace(
   node: t.Node | null | undefined,
-  scope: Scope
+  scope: Scope,
+  state: ScriptState
 ): Extract<KnownValue, { type: 'namespace' }> | undefined {
   const expression = unwrapExpression(node);
   if (
@@ -13033,9 +13191,21 @@ function readRequireNamespace(
     return undefined;
   }
   const argument = expression.arguments[0];
-  if (argument?.type !== 'StringLiteral') return undefined;
-  return argument.value === 'gt-vue' || argument.value === 'vue'
-    ? { type: 'namespace', source: argument.value, mutable: true }
+  if (
+    !argument ||
+    argument.type === 'ArgumentPlaceholder' ||
+    argument.type === 'SpreadElement'
+  ) {
+    return undefined;
+  }
+  const sources = readStaticImportSources(argument, scope, state);
+  const source = sources.size === 1 ? [...sources][0] : undefined;
+  if (!source && sources.has('gt-vue')) {
+    state.analysis.hasGTSourceReference = true;
+    state.unsupportedDynamicGTReference = true;
+  }
+  return source === 'gt-vue' || source === 'vue'
+    ? { type: 'namespace', source, mutable: true }
     : undefined;
 }
 

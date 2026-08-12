@@ -72,17 +72,32 @@ describe('mixed-runtime isolation', () => {
           const flag = Boolean(Date.now());
           const index = Number(Date.now());
           const { T: _T, ...rest } = ReactGT;
+          const restAlias = rest;
+          const spreadAlias = { ...ReactGT };
+          const choices = [t, String];
           (flag ? t : String)('React conditional t');
           [msg, String][index]('React selected msg');
           ({ translated: useGT(), ordinary: String })[index]('React selected useGT');
+          choices[index]('React aliased selection');
+          [useGT, () => String][index]()('React selected hook');
           rest.t('React namespace rest');
+          restAlias.t('React namespace rest alias');
+          spreadAlias.t('React namespace spread alias');
           ({ ...ReactGT }).t('React namespace spread');
           function invoke(translate) { translate('React forwarded t'); }
+          function invokeAlias(translate) {
+            const first = translate;
+            const second = first;
+            second('React forwarded alias');
+          }
           invoke(flag ? t : String);
+          invokeAlias(flag ? t : String);
           let { t: mutableT } = require('${runtime}');
           mutableT('React mutable CommonJS before');
           mutableT = String;
           import('${runtime}').then(({ t: dynamicT }) => dynamicT('React dynamic import'));
+          const dynamicSource = '${runtime}';
+          import(dynamicSource).then(({ t: dynamicT }) => dynamicT('React const dynamic import'));
         `,
         path.join(fixtureRoot, 'uncertain-react.ts'),
         {
@@ -106,13 +121,28 @@ describe('mixed-runtime isolation', () => {
         const flag = Boolean(Date.now());
         const index = Number(Date.now());
         const { ...rest } = Ordinary;
+        const restAlias = rest;
+        const spreadAlias = { ...Ordinary };
+        const choices = [t, String];
         (flag ? t : String)('Ordinary conditional t');
         [msg, String][index]('Ordinary selected msg');
         ({ translated: useGT(), ordinary: String })[index]('Ordinary selected useGT');
+        choices[index]('Ordinary aliased selection');
+        [useGT, () => String][index]()('Ordinary selected hook');
         rest.t('Ordinary rest');
+        restAlias.t('Ordinary rest alias');
+        spreadAlias.t('Ordinary spread alias');
         ({ ...Ordinary }).t('Ordinary spread');
         function invoke(translate) { translate('Ordinary forwarded t'); }
+        function invokeAlias(translate) {
+          const first = translate;
+          const second = first;
+          second('Ordinary forwarded alias');
+        }
         invoke(flag ? t : String);
+        invokeAlias(flag ? t : String);
+        const dynamicSource = 'ordinary-runtime';
+        import(dynamicSource).then(({ t: dynamicT }) => dynamicT('Ordinary const dynamic import'));
       `,
       path.join(fixtureRoot, 'uncertain-ordinary.ts'),
       { projectRoot: fixtureRoot }
