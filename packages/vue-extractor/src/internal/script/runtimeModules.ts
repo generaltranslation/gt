@@ -14,7 +14,7 @@ const KNOWN_NON_VUE_GT_RUNTIME_PACKAGES = [
  *
  * Package subpaths retain the identity of their package root. Explicitly
  * classifying these imports prevents a mixed-framework scan from treating a
- * React or server API named `T`, `msg`, or `useGT` as an unresolved gt-vue
+ * React or server API named `T`, `msg`, `t`, or `useGT` as an unresolved gt-vue
  * alias. Unknown packages and application aliases remain unresolved so the
  * analyzer can continue to fail closed for custom gt-vue reexports.
  */
