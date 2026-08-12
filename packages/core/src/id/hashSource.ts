@@ -76,7 +76,12 @@ type SanitizedElement = {
   c?: SanitizedChildren; // Children
   t?: string; // Branch Transformation
 };
-type SanitizedChild = SanitizedElement | SanitizedVariable | string;
+type SanitizedChild =
+  | boolean
+  | null
+  | SanitizedElement
+  | SanitizedVariable
+  | string;
 type SanitizedChildren = SanitizedChild | SanitizedChild[];
 
 /**
@@ -86,7 +91,7 @@ type SanitizedChildren = SanitizedChild | SanitizedChild[];
  * @returns The sanitized child object.
  *
  */
-const sanitizeChild = (child: JsxChild): SanitizedChild => {
+const sanitizeChild = (child: boolean | null | JsxChild): SanitizedChild => {
   if (child && typeof child === 'object') {
     const newChild: SanitizedChild = {};
     if ('c' in child && child.c) {

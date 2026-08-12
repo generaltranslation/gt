@@ -1,5 +1,30 @@
 import { describe, it, expect } from 'vitest';
+import type { JsxChildren } from '../../types';
 import { hashSource } from '../hashSource';
+
+describe('hashSource rich wire literals', () => {
+  it.each([
+    [false, 'd98d8886a31c98f3'],
+    [true, '73b6b211a4122ba8'],
+    [null, '471b9124c31817e9'],
+    [{ t: 'div', i: 1, c: false }, 'a013c005483cdd19'],
+    [{ t: 'div', i: 1, c: true }, '200db4fbcabc7d06'],
+    [{ t: 'div', i: 1, c: { t: 'span', i: 2, c: null } }, 'd8ef2c2b0a384ae8'],
+    [
+      {
+        t: 'Branch',
+        i: 1,
+        d: { t: 'b', b: { active: false, empty: null } },
+      },
+      'f385da3e793d958b',
+    ],
+  ] satisfies ReadonlyArray<readonly [JsxChildren, string]>)(
+    'preserves the React hash for %j',
+    (source, expected) => {
+      expect(hashSource({ dataFormat: 'JSX', source })).toBe(expected);
+    }
+  );
+});
 
 describe('hashSource requiresReview', () => {
   it('hashes identically when requiresReview is false or absent (ICU)', () => {

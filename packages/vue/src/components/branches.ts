@@ -31,8 +31,8 @@ type BranchProps = {
  * At the default locale, explicit `locales` are ignored. Otherwise, they are
  * tried before the active and default GT locales.
  */
-export const Plural = withGTMetadata<PluralProps>(
-  defineComponent({
+export const Plural = /* @__PURE__ */ withGTMetadata<PluralProps>(
+  /* @__PURE__ */ defineComponent({
     inheritAttrs: false,
     name: 'Plural',
     props: {
@@ -59,7 +59,15 @@ export const Plural = withGTMetadata<PluralProps>(
             state.defaultLocale
           )
         );
-        return asFragmentRoot(getBranchContent(branch, attrs, slots));
+        const namedSlot = branch && slots[branch];
+        // React treats a null plural form as absent and renders the default,
+        // while false and true remain selected branches that render empty.
+        // A Vue named slot still wins over an attribute with the same name.
+        const content =
+          branch && attrs[branch] === null && typeof namedSlot !== 'function'
+            ? (slots.default?.() ?? null)
+            : getBranchContent(branch, attrs, slots);
+        return asFragmentRoot(content);
       };
     },
   }),
@@ -73,8 +81,8 @@ export const Plural = withGTMetadata<PluralProps>(
  * When used inside {@link T}, every named branch is extracted for translation
  * while only the active branch is rendered.
  */
-export const Branch = withGTMetadata<BranchProps>(
-  defineComponent({
+export const Branch = /* @__PURE__ */ withGTMetadata<BranchProps>(
+  /* @__PURE__ */ defineComponent({
     inheritAttrs: false,
     name: 'Branch',
     props: {

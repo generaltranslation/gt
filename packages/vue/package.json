@@ -41,7 +41,10 @@
   },
   "homepage": "https://generaltranslation.com/",
   "devDependencies": {
+    "@generaltranslation/react-core": "workspace:*",
     "@types/node": "catalog:",
+    "@types/react": "19.1.15",
+    "react": "19.1.1",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",

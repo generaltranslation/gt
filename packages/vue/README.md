@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://generaltranslation.com/docs/vue">
+  <a href="https://generaltranslation.com/docs">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://generaltranslation.com/brand/gt-logo-dark.svg">
       <img alt="General Translation" src="https://generaltranslation.com/brand/gt-logo-light.svg" width="100" height="100">
@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <a href="https://generaltranslation.com/docs/vue"><strong>Documentation</strong></a> · <a href="https://github.com/generaltranslation/gt/issues">Report Bug</a>
+  <a href="https://generaltranslation.com/docs"><strong>Documentation</strong></a> · <a href="https://github.com/generaltranslation/gt/issues">Report Bug</a>
 </p>
 
 # gt-vue
@@ -84,22 +84,35 @@ const setLocale = useSetLocale();
 `$context`; braces are literal text and no ICU formatting or interpolation is
 applied.
 
-Arbitrary component slots are opaque when placed inside `<T>`. Vue does not
-expose a reliable way to inspect a component slot without executing user code,
-so the component and its real runtime slots are preserved, but their content is
-not part of the surrounding rich translation. To translate slot content, place
-`<T>` inside the slot and wrap runtime values in `<Var>`. Native elements and
-the slots owned by GT's `<Branch>` and `<Plural>` components remain part of the
-surrounding translation. Component tags inside `<T>` must resolve at runtime;
-an unresolved component warning from Vue is a configuration error and is not a
-supported translation source.
+Statically authored default-slot content inside a custom component participates
+in the surrounding translation. The component itself, its props, and its
+listeners are preserved while the translated content replaces its default
+slot:
 
-Vue `<Suspense>` is the one built-in whose default content participates in an
-outer `<T>`. Prefer literal `<Suspense>` and use a single default root. Immutable
-aliases that the extractor can trace directly to `vue` are also supported; the
-fallback slot is preserved but excluded from the outer translation. Re-exported,
-globally registered, ref/computed-held, and other runtime-wrapped Suspense
-aliases are not supported inside an outer `<T>`. Put `<T>` inside those
+```vue
+<T>
+  <DocsLink to="/docs">Read the documentation</DocsLink>
+</T>
+```
+
+Content created inside `DocsLink`'s implementation is not visible to the outer
+`<T>`. Runtime values still belong in `<Var>`, and conditional alternatives
+belong in `<Branch>` or `<Plural>`. Scoped and arbitrary named slots depend on
+the child component's runtime behavior, so place `<T>` inside those slots or
+enclose the dynamic component boundary in `<Var>`. Component tags inside `<T>`
+must resolve at runtime; an unresolved component warning from Vue is a
+configuration error and is not a supported translation source. Use direct
+component tags inside an outer `<T>`: Vue's `<component :is>` and
+`is="vue:..."` selector forms are intentionally rejected by extraction because
+global runtime registration can change their component identity after build.
+
+Vue built-ins with statically authored default content follow the same rule.
+`<Suspense>` needs one additional distinction: its default content participates
+in an outer `<T>`, while its fallback slot is preserved but excluded from that
+translation. Prefer literal `<Suspense>` with a single default root. Immutable
+aliases that the extractor can trace directly to `vue` are also supported.
+Re-exported, globally registered, ref/computed-held, and other runtime-wrapped
+Suspense aliases are not supported inside an outer `<T>`. Put `<T>` inside those
 boundaries instead:
 
 ```vue
@@ -129,7 +142,10 @@ const m = useMessages();
 
 ## Components
 
-- `<T context="...">` translates rich slot content.
+- `<T context="..." :max-chars="80" requires-review>` translates rich slot
+  content and supplies translation metadata. The deprecated `id` prop is
+  accepted for React API compatibility but does not replace the content-based
+  catalog hash.
 - `<Var>` preserves a dynamic slot value inside `<T>`.
 - `<Num>`, `<DateTime>`, and `<Currency>` require typed runtime values through
   `:value`; formatter slot children are not supported.
