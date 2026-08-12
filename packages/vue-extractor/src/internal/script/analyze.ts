@@ -5527,13 +5527,6 @@ function resolveKnownExpression(
       : undefined;
   }
   if (expression.type === 'LogicalExpression') {
-    const leftExpression = unwrapExpression(expression.left);
-    if (
-      leftExpression?.type === 'ConditionalExpression' ||
-      leftExpression?.type === 'LogicalExpression'
-    ) {
-      return undefined;
-    }
     const left = resolveKnownExpression(
       expression.left,
       scope,
