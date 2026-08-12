@@ -178,13 +178,11 @@ Content created inside `DocsLink`'s implementation is not visible to the outer
 belong in `<Branch>` or `<Plural>`. Scoped and arbitrary named slots depend on
 the child component's runtime behavior, so place `<T>` inside those slots or
 enclose the dynamic component boundary in `<Var>`. Component tags inside `<T>`
-must resolve to the same identity during extraction and at runtime; an
-unresolved component warning from Vue is a configuration error and is not a
-supported translation source. Prefer direct component tags inside an outer
-`<T>`. Statically resolved `<component :is>` selectors and recognized
-`is="vue:..."` GT or Vue built-ins are also supported. Unresolved or dynamic
-selectors are rejected because runtime state or global registration can change
-their component identity after build.
+must resolve at runtime; an unresolved component warning from Vue is a
+configuration error and is not a supported translation source. Use direct
+component tags inside an outer `<T>`: Vue's `<component :is>` and
+`is="vue:..."` selector forms are intentionally rejected by extraction because
+global runtime registration can change their component identity after build.
 
 Vue built-ins with statically authored default content follow the same rule.
 `<Suspense>` needs one additional distinction: its default content participates
