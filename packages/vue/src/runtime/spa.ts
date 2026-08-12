@@ -131,8 +131,10 @@ function createSupportedLocaleResolver(
   canonicalizeLocale: (locale: string) => string
 ): (locale: string) => string {
   if (locales === undefined) {
+    const canonicalDefaultLocale = canonicalizeLocale(defaultLocale);
     return (locale) =>
-      locale.toLowerCase() === defaultLocale.toLowerCase()
+      locale.toLowerCase() === defaultLocale.toLowerCase() ||
+      canonicalizeLocale(locale) === canonicalDefaultLocale
         ? defaultLocale
         : locale;
   }

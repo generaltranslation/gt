@@ -304,6 +304,42 @@ describe('gt-vue SPA runtime', () => {
     expect(loadTranslations).toHaveBeenCalledWith('FR-ca');
   });
 
+  it.each([
+    {
+      cookieLocale: 'en',
+      customMapping: { source: { code: 'en' } },
+      defaultLocale: 'source',
+      name: 'configured alias',
+    },
+    {
+      cookieLocale: 'iw',
+      customMapping: undefined,
+      defaultLocale: 'he',
+      name: 'legacy locale alias',
+    },
+  ])(
+    'maps a canonical $name to the source locale when locales are omitted',
+    async ({ cookieLocale, customMapping, defaultLocale }) => {
+      const browser = installBrowser(
+        `generaltranslation.locale=${cookieLocale}`
+      );
+      const loadTranslations = vi.fn(async () => ({}));
+      const plugin = await initializeGTSPA({
+        customMapping,
+        defaultLocale,
+        loadTranslations,
+      });
+
+      await plugin.loadTranslations(cookieLocale);
+
+      expect(plugin.getLocale()).toBe(defaultLocale);
+      expect(browser.cookies.get('generaltranslation.locale')).toBe(
+        defaultLocale
+      );
+      expect(loadTranslations).not.toHaveBeenCalled();
+    }
+  );
+
   it('uses source strings without loading the default locale', async () => {
     installBrowser();
     const loadTranslations = vi.fn(async () => ({ ignored: 'Ignored' }));
