@@ -1,4 +1,3 @@
-import { determineLocale } from '@generaltranslation/format';
 import {
   createDiagnosticMessage,
   libraryDefaultLocale,
@@ -25,9 +24,10 @@ type GlobalWithGTRegistry = typeof globalThis & {
  * plugin with `app.use()`; creating another plugin would separate component
  * lookups from module-level {@link t} lookups.
  *
- * Locale changes write the configured cookie and reload the document. This
- * guarantees that module-level `t()` calls execute again for the new locale.
- * Ordinary {@link createGT} plugins retain reactive, no-reload switching.
+ * Locale changes write the configured cookie while the current page retains
+ * its initialized locale, then reload the document. This guarantees that
+ * module-level `t()` calls execute again for the new locale. Ordinary
+ * {@link createGT} plugins retain reactive, no-reload switching.
  *
  * @param options - SPA locale, cookie, and translation loader configuration.
  * @returns The preloaded singleton plugin to install in the Vue application.
@@ -96,12 +96,23 @@ async function createSPARuntime(
   options: InitializeGTSPAOptions
 ): Promise<GTRuntime> {
   const { customMapping, locales, ...createOptions } = options;
+  const { determineLocale, resolveCanonicalLocale } =
+    await import('@generaltranslation/format');
+  const resolveFormattingLocale = (locale: string): string => {
+    const canonicalLocale = resolveCanonicalLocale(locale, customMapping);
+    return (
+      determineLocale(canonicalLocale, [canonicalLocale]) ?? canonicalLocale
+    );
+  };
   const runtime = createGTRuntime(createOptions, {
+    pinLocale: true,
     reloadDocument: () => window.location.reload(),
+    resolveFormattingLocale,
     resolveLocale: createSupportedLocaleResolver(
       createOptions.defaultLocale ?? libraryDefaultLocale,
       locales,
-      customMapping
+      determineLocale,
+      resolveFormattingLocale
     ),
   });
 
@@ -113,14 +124,21 @@ async function createSPARuntime(
 function createSupportedLocaleResolver(
   defaultLocale: string,
   locales: readonly string[] | undefined,
-  customMapping: InitializeGTSPAOptions['customMapping']
-): ((locale: string) => string) | undefined {
-  if (locales === undefined) return undefined;
+  determineLocale: (
+    locale: string,
+    supportedLocales: string[]
+  ) => string | undefined,
+  canonicalizeLocale: (locale: string) => string
+): (locale: string) => string {
+  if (locales === undefined) {
+    return (locale) =>
+      locale.toLowerCase() === defaultLocale.toLowerCase()
+        ? defaultLocale
+        : locale;
+  }
 
   const configuredLocales = Array.from(new Set([defaultLocale, ...locales]));
-  const canonicalLocales = configuredLocales.map((locale) =>
-    canonicalizeConfiguredLocale(locale, customMapping)
-  );
+  const canonicalLocales = configuredLocales.map(canonicalizeLocale);
 
   return (locale) => {
     // File and directory placeholders use the spelling from gt.config.json.
@@ -131,29 +149,13 @@ function createSupportedLocaleResolver(
     );
     if (exactIndex !== -1) return configuredLocales[exactIndex];
 
-    const canonicalLocale = canonicalizeConfiguredLocale(locale, customMapping);
+    const canonicalLocale = canonicalizeLocale(locale);
     const matchedLocale = determineLocale(canonicalLocale, canonicalLocales);
     if (matchedLocale === undefined) return defaultLocale;
 
     const matchedIndex = canonicalLocales.indexOf(matchedLocale);
     return configuredLocales[matchedIndex] ?? defaultLocale;
   };
-}
-
-/** Resolves a configured alias and normalizes it for locale matching only. */
-function canonicalizeConfiguredLocale(
-  locale: string,
-  customMapping: InitializeGTSPAOptions['customMapping']
-): string {
-  const mapping = customMapping?.[locale];
-  const mappedLocale =
-    typeof mapping === 'object' &&
-    mapping !== null &&
-    typeof mapping.code === 'string'
-      ? mapping.code
-      : locale;
-
-  return determineLocale(mappedLocale, [mappedLocale]) ?? mappedLocale;
 }
 
 /** Returns the page-wide SPA manager, initializing its empty shell if needed. */

@@ -99,7 +99,7 @@ export type InitializeGTSPAOptions = CreateGTOptions & {
  * to that plugin instance.
  */
 export type GTPlugin = {
-  /** Returns the active locale from its cookie-backed accessor. */
+  /** Returns the active locale for this plugin instance. */
   getLocale(): string;
   /** Provides the GT state to a Vue application. Usually called by `app.use`. */
   install(app: App): void;
@@ -113,7 +113,8 @@ export type GTPlugin = {
    *
    * Plugins from {@link createGT} load the locale before updating reactive
    * consumers. Plugins from `initializeGTSPA()` persist it and reload the
-   * document so module-level translations execute again.
+   * document so module-level translations execute again; until that reload,
+   * the current page retains the locale it initialized with.
    */
   setLocale(locale: string): Promise<void>;
 };
@@ -124,6 +125,8 @@ export type GTState = {
   getCatalog(): TranslationCatalog;
   getLocale(): string;
   loadTranslations(locale: string): Promise<TranslationCatalog>;
+  /** @internal Resolves aliases for locale-sensitive formatting. */
+  resolveFormattingLocale?: (locale: string) => string;
   revision: Ref<number>;
   setLocale(locale: string): Promise<void>;
 };

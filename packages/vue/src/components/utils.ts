@@ -51,10 +51,19 @@ export function withGTMetadata<Props = {}>(
 export function getFormatLocales(
   locales: string[] | undefined,
   locale: string,
-  defaultLocale: string = libraryDefaultLocale
+  defaultLocale: string = libraryDefaultLocale,
+  resolveLocale: (locale: string) => string = identityLocale
 ): string[] {
-  if (locale === defaultLocale) return [defaultLocale];
-  return [...new Set([...(locales ?? []), locale, defaultLocale])];
+  const resolvedLocale = resolveLocale(locale);
+  const resolvedDefaultLocale = resolveLocale(defaultLocale);
+  if (resolvedLocale === resolvedDefaultLocale) return [resolvedDefaultLocale];
+  return [
+    ...new Set([...(locales ?? []), locale, defaultLocale].map(resolveLocale)),
+  ];
+}
+
+function identityLocale(locale: string): string {
+  return locale;
 }
 
 /**

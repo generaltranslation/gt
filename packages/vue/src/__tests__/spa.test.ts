@@ -2,7 +2,18 @@ import { hashStringMessage } from 'gt-i18n/internal/string';
 import { createSSRApp, defineComponent, h } from 'vue';
 import { renderToString } from 'vue/server-renderer';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createGT, initializeGTSPA, t, useGT, useSetLocale } from '../index';
+import {
+  Currency,
+  DateTime,
+  Num,
+  Plural,
+  T,
+  createGT,
+  initializeGTSPA,
+  t,
+  useGT,
+  useSetLocale,
+} from '../index';
 import { resetGTSPAForTests } from '../runtime/spa';
 import type { TranslationCatalog } from '../types';
 
@@ -120,6 +131,81 @@ describe('gt-vue SPA runtime', () => {
     expect(browser.cookies.get('generaltranslation.locale')).toBe('pirate');
   });
 
+  it('uses a custom alias canonical locale for standalone and rich formatting', async () => {
+    installBrowser('generaltranslation.locale=pirate');
+    const date = new Date('2024-01-02T00:00:00.000Z');
+    const dateOptions = {
+      day: 'numeric',
+      month: 'long',
+      timeZone: 'UTC',
+      year: 'numeric',
+    } as const;
+    const renderFormatters = () => [
+      h(Num, { value: 1234.5 }),
+      '|',
+      h(Currency, { currency: 'EUR', value: 1234.5 }),
+      '|',
+      h(DateTime, { options: dateOptions, value: date }),
+    ];
+    const expectedFormatters = [
+      new Intl.NumberFormat('fr-FR').format(1234.5),
+      new Intl.NumberFormat('fr-FR', {
+        currency: 'EUR',
+        style: 'currency',
+      }).format(1234.5),
+      new Intl.DateTimeFormat('fr-FR', dateOptions).format(date),
+    ].join('|');
+    const plugin = await initializeGTSPA({
+      defaultLocale: 'en-US',
+      locales: ['pirate'],
+      customMapping: { pirate: { code: 'fr-FR' } },
+      loadTranslations: async () => ({
+        formatters: [
+          { i: 1, k: '_gt_n_1', v: 'n' },
+          '|',
+          { i: 2, k: '_gt_cost_2', v: 'c' },
+          '|',
+          { i: 3, k: '_gt_date_3', v: 'd' },
+        ],
+        plural: {
+          t: 'Plural',
+          i: 1,
+          d: { b: { one: 'un', other: 'autres' }, t: 'p' },
+        },
+      }),
+    });
+    const Root = defineComponent({
+      setup() {
+        const pluralSlots = {
+          one: () => 'one',
+          other: () => 'other',
+        };
+        return () =>
+          h('div', [
+            ...renderFormatters(),
+            '|',
+            h(Plural, { n: 0 }, pluralSlots),
+            '|',
+            h(T, { _hash: 'formatters' }, { default: renderFormatters }),
+            '|',
+            h(
+              T,
+              { _hash: 'plural' },
+              { default: () => h(Plural, { n: 0 }, pluralSlots) }
+            ),
+          ]);
+      },
+    });
+
+    const html = (await renderToString(createSSRApp(Root).use(plugin)))
+      .replaceAll('<!--[-->', '')
+      .replaceAll('<!--]-->', '');
+
+    expect(html).toBe(
+      `<div>${expectedFormatters}|one|${expectedFormatters}|un</div>`
+    );
+  });
+
   it.each([
     {
       cookieLocale: 'fr-CA',
@@ -178,9 +264,44 @@ describe('gt-vue SPA runtime', () => {
 
     await plugin.setLocale('es');
 
-    expect(plugin.getLocale()).toBe('en');
+    expect(plugin.getLocale()).toBe('fr');
     expect(browser.cookies.get('generaltranslation.locale')).toBe('en');
     expect(browser.reload).toHaveBeenCalledOnce();
+  });
+
+  it('normalizes public preloads before caching or calling the loader', async () => {
+    installBrowser();
+    const loadTranslations = vi.fn(async () => ({}));
+    const plugin = await initializeGTSPA({
+      defaultLocale: 'en',
+      locales: ['FR-ca', 'pirate'],
+      customMapping: { pirate: { code: 'fr' } },
+      loadTranslations,
+    });
+
+    await plugin.loadTranslations('fr-CA');
+    await plugin.loadTranslations('FR');
+    await plugin.loadTranslations('pirate');
+    await plugin.loadTranslations('unsupported');
+
+    expect(loadTranslations.mock.calls).toEqual([['FR-ca'], ['pirate']]);
+  });
+
+  it('normalizes only default-locale casing when locales are omitted', async () => {
+    const browser = installBrowser('generaltranslation.locale=en-US');
+    const loadTranslations = vi.fn(async () => ({}));
+    const plugin = await initializeGTSPA({
+      defaultLocale: 'EN-us',
+      loadTranslations,
+    });
+
+    expect(plugin.getLocale()).toBe('EN-us');
+    expect(browser.cookies.get('generaltranslation.locale')).toBe('EN-us');
+    expect(loadTranslations).not.toHaveBeenCalled();
+
+    await plugin.loadTranslations('FR-ca');
+    expect(loadTranslations).toHaveBeenCalledOnce();
+    expect(loadTranslations).toHaveBeenCalledWith('FR-ca');
   });
 
   it('uses source strings without loading the default locale', async () => {
@@ -231,6 +352,28 @@ describe('gt-vue SPA runtime', () => {
 
     resolveCatalog({});
     await initialization;
+  });
+
+  it('pins the active locale while its initial catalog is loading', async () => {
+    const browser = installBrowser('generaltranslation.locale=fr');
+    const source = 'Welcome';
+    let resolveCatalog!: (catalog: TranslationCatalog) => void;
+    const initialization = initializeGTSPA({
+      defaultLocale: 'en',
+      loadTranslations: () =>
+        new Promise((resolve) => {
+          resolveCatalog = resolve;
+        }),
+    });
+    await vi.waitFor(() => expect(resolveCatalog).toBeTypeOf('function'));
+
+    browser.cookies.cookie = 'generaltranslation.locale=de';
+    resolveCatalog({ [hashStringMessage(source)]: 'Bienvenue' });
+    const plugin = await initialization;
+
+    expect(plugin.getLocale()).toBe('fr');
+    expect(t(source)).toBe('Bienvenue');
+    expect(browser.cookies.get('generaltranslation.locale')).toBe('de');
   });
 
   it('rejects SPA initialization and t in server environments', async () => {
@@ -314,7 +457,7 @@ describe('gt-vue SPA runtime', () => {
     expect(browser.cookies.get('generaltranslation.locale')).toBe('fr');
     expect(browser.reload).toHaveBeenCalledOnce();
     expect(loadTranslations).not.toHaveBeenCalled();
-    expect(plugin.getLocale()).toBe('fr');
+    expect(plugin.getLocale()).toBe('en');
     expect(t(source)).toBe(source);
   });
 
