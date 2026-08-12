@@ -178,11 +178,13 @@ Content created inside `DocsLink`'s implementation is not visible to the outer
 belong in `<Branch>` or `<Plural>`. Scoped and arbitrary named slots depend on
 the child component's runtime behavior, so place `<T>` inside those slots or
 enclose the dynamic component boundary in `<Var>`. Component tags inside `<T>`
-must resolve at runtime; an unresolved component warning from Vue is a
-configuration error and is not a supported translation source. Use direct
-component tags inside an outer `<T>`: Vue's `<component :is>` and
-`is="vue:..."` selector forms are intentionally rejected by extraction because
-global runtime registration can change their component identity after build.
+must resolve to the same identity during extraction and at runtime; an
+unresolved component warning from Vue is a configuration error and is not a
+supported translation source. Prefer direct component tags inside an outer
+`<T>`. Statically resolved `<component :is>` selectors and recognized
+`is="vue:..."` GT or Vue built-ins are also supported. Unresolved or dynamic
+selectors are rejected because runtime state or global registration can change
+their component identity after build.
 
 Vue built-ins with statically authored default content follow the same rule.
 `<Suspense>` needs one additional distinction: its default content participates
@@ -251,12 +253,18 @@ from `createGT()`, that cookie wins over `defaultLocale`. Use
 `localeCookieName` to share a different cookie with your routing or server
 integration.
 
-`setLocale()` loads a missing catalog before writing the cookie and rerendering
-consumers. A failed or superseded request leaves both the cookie and rendered
-locale unchanged. Direct changes to `document.cookie` are reflected by
-`plugin.getLocale()` and the next Vue render, but browsers do not emit cookie
-change events, so they do not schedule a render by themselves. Use gt-vue's
-setter for reactive locale changes.
+For plugins created with `createGT()`, `setLocale()` loads a missing catalog
+before writing the cookie and rerendering consumers. A failed or superseded
+request leaves both the cookie and rendered locale unchanged. Direct changes to
+`document.cookie` are reflected by `plugin.getLocale()` and the next Vue render,
+but browsers do not emit cookie change events, so they do not schedule a render
+by themselves. Use gt-vue's setter for reactive locale changes.
+
+`initializeGTSPA()` instead pins the preloaded locale for the lifetime of the
+page. Its `setLocale()` writes the cookie and reloads the document so
+module-level `t()` calls execute again with the new catalog. Direct cookie
+changes do not change the mounted SPA; they are resolved during the next page
+initialization, and unsupported locales fall back to `defaultLocale`.
 
 For SSR, resolve the request locale on the server and pass it as
 `createGT({ locale })`. An explicit locale wins over a stale browser cookie,

@@ -96,6 +96,9 @@ async function testVueSpa(page: Page) {
       name: 'Module translation loaded after SPA initialization.',
     })
   ).toBeVisible();
+  await expect(
+    page.getByText('Component translation shares the SPA runtime.')
+  ).toBeVisible();
   await expect(page.getByText('Locale: en')).toBeVisible();
   await expect(page.getByText('Module evaluations: 2')).toBeVisible();
 
@@ -107,6 +110,9 @@ async function testVueSpa(page: Page) {
     page.getByRole('heading', {
       name: 'Module translation loaded after SPA initialization.',
     })
+  ).toBeVisible();
+  await expect(
+    page.getByText('Component translation shares the SPA runtime.')
   ).toBeVisible();
   await expect(page.getByText('Locale: en')).toBeVisible();
   await expect(page.getByText('Module evaluations: 3')).toBeVisible();
