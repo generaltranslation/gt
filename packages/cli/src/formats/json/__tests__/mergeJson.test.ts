@@ -1622,6 +1622,73 @@ describe('mergeJson', () => {
       expect(frenchNav.tabs[0].pages[0]).toBe('docs/fr-ca/index');
     });
 
+    it('uses the configured locale tag for keys and transforms by default', () => {
+      // Without experimentalCanonicalLocaleKeys, the locale key and any
+      // {locale} in a transform must both use the tag exactly as configured.
+      // Canonicalizing here would emit a "fr-CA" key and docs/fr-CA/ paths
+      // while the files on disk and the localized URLs both use "fr-ca".
+      const originalContent = JSON.stringify({
+        navigation: {
+          languages: [
+            {
+              language: 'en',
+              tabs: [{ tab: 'Home', pages: ['docs/index'] }],
+            },
+          ],
+        },
+      });
+
+      const targets = [
+        {
+          translatedContent: JSON.stringify({
+            '/navigation/languages': {
+              '/0': {
+                '/tabs/0/tab': 'Accueil',
+                '/tabs/0/pages/0': 'docs/index',
+              },
+            },
+          }),
+          targetLocale: 'fr-ca',
+        },
+      ];
+
+      const result = mergeJson(
+        originalContent,
+        'docs.json',
+        {
+          jsonSchema: {
+            '**/*.json': {
+              composite: {
+                '$.navigation.languages': {
+                  type: 'array',
+                  include: ['$.tabs[*].tab', '$.tabs[*].pages[*]'],
+                  key: '$.language',
+                  transform: {
+                    '$..pages[*]': {
+                      match: '^docs/(.*)$',
+                      replace: 'docs/{locale}/$1',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        targets,
+        'en',
+        ['fr-ca']
+      );
+
+      const parsed = JSON.parse(result[0]);
+      const frenchNav = parsed.navigation.languages.find(hasLanguage('fr-ca'));
+
+      expect(frenchNav).toBeDefined();
+      expect(
+        parsed.navigation.languages.find(hasLanguage('fr-CA'))
+      ).toBeUndefined();
+      expect(frenchNav.tabs[0].pages[0]).toBe('docs/fr-ca/index');
+    });
+
     it('should order array items to match locales when sort is set to locale', () => {
       const originalContent = JSON.stringify({
         navigation: {

@@ -1,6 +1,6 @@
 {
   "name": "gt-tanstack-start",
-  "version": "11.1.6-iris.0",
+  "version": "11.1.6",
   "description": "TanStack Start integration for General Translation",
   "main": "./dist/index.server.mjs",
   "module": "./dist/index.server.mjs",
@@ -38,7 +38,7 @@
     "url": "git+https://github.com/generaltranslation/gt.git"
   },
   "author": "General Translation, Inc.",
-  "license": "FSL-1.1-ALv2",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/generaltranslation/gt/issues"
   },
