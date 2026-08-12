@@ -8,6 +8,7 @@ import { BranchStep } from './steps/BranchStep.js';
 import { logger } from '../console/logger.js';
 import { filterFilesForEnqueue } from './utils/filterFilesForEnqueue.js';
 import { syncFonts } from './utils/syncFonts.js';
+import type { InlineLibrary } from '../types/libraries.js';
 
 /**
  * Enqueues translations for a given set of files
@@ -23,14 +24,16 @@ export async function runEnqueueWorkflow({
   files,
   options,
   settings,
+  inlineLibrary,
 }: {
   files: FileToUpload[];
   options: TranslateFlags;
   settings: Settings;
+  inlineLibrary?: InlineLibrary;
 }): Promise<EnqueueFilesResult> {
   try {
     // Log files to be enqueued
-    logCollectedFiles(files);
+    logCollectedFiles(files, undefined, inlineLibrary);
 
     logger.debug('Files: ' + JSON.stringify(files, null, 2));
 

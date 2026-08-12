@@ -11,8 +11,23 @@ import type { JsxChildren } from '@generaltranslation/format/types';
 import type { FileToUpload } from 'generaltranslation/types';
 import { hashStringSync } from '../../utils/hash.js';
 import { TEMPLATE_FILE_NAME, TEMPLATE_FILE_ID } from '../../utils/constants.js';
-import { isInlineLibrary } from '../../types/libraries.js';
+import {
+  isInlineLibrary,
+  Libraries,
+  type InlineLibrary,
+} from '../../types/libraries.js';
 import { shouldPublishGt } from '../../utils/resolvePublish.js';
+import { planVueExtraction } from '@generaltranslation/vue-extractor/integration';
+
+/** Resolves the inline runtime that owns this project's shared GTJSON file. */
+export function resolveInlineLibrary(
+  library: SupportedLibraries,
+  projectRoot: string = process.cwd()
+): InlineLibrary | undefined {
+  const includesVue = planVueExtraction({ library, projectRoot }).handled;
+  if (includesVue) return Libraries.GT_VUE;
+  return isInlineLibrary(library) ? library : undefined;
+}
 
 export async function collectFiles(
   options: TranslateFlags,
@@ -21,6 +36,7 @@ export async function collectFiles(
 ): Promise<{
   files: FileToUpload[];
   reactComponents: number;
+  inlineLibrary?: InlineLibrary;
   publishMap: Map<string, boolean>;
 }> {
   // Aggregate files
@@ -28,11 +44,17 @@ export async function collectFiles(
 
   // Parse for React components
   let reactComponents = 0;
-  if (isInlineLibrary(library)) {
+  const inlineLibrary = resolveInlineLibrary(library);
+  const extractionLibrary = isInlineLibrary(library)
+    ? library
+    : inlineLibrary === Libraries.GT_VUE
+      ? Libraries.GT_VUE
+      : undefined;
+  if (extractionLibrary) {
     const updates = await aggregateInlineTranslations(
       options,
       settings,
-      library
+      extractionLibrary
     );
     if (updates.length > 0) {
       if (!settings.publish && !settings.files?.placeholderPaths.gt) {
@@ -104,5 +126,5 @@ export async function collectFiles(
       }
     }
   }
-  return { files, reactComponents, publishMap };
+  return { files, reactComponents, inlineLibrary, publishMap };
 }
