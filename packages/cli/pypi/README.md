@@ -51,4 +51,4 @@ source tree after building.
 
 ## License
 
-FSL-1.1-ALv2. See `LICENSE.md`.
+MIT. See `LICENSE.md`.
