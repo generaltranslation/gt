@@ -301,6 +301,142 @@ describe('module-level t() extraction', () => {
       expect.stringContaining('possible gt-vue string function alias'),
     ]);
   });
+
+  it.each([
+    {
+      name: 'conditional t callee',
+      statement: `(flag ? t : String)('Conditional t');`,
+      setup: `import { t } from 'gt-vue'; const flag = Boolean(Date.now());`,
+    },
+    {
+      name: 'array-selected msg callee',
+      statement: `[msg, String][index]('Selected msg');`,
+      setup: `import { msg } from 'gt-vue'; const index = Number(Date.now());`,
+    },
+    {
+      name: 'object-selected useGT callee',
+      statement: `({ translated: useGT(), ordinary: String })[key]('Selected useGT');`,
+      setup: `import { useGT } from 'gt-vue'; const key = String(Date.now());`,
+    },
+    {
+      name: 'forwarded conditional t callee',
+      statement: `invoke(flag ? t : String);`,
+      setup: `import { t } from 'gt-vue';
+        const flag = Boolean(Date.now());
+        function invoke(translate) { translate('Forwarded conditional t'); }`,
+    },
+  ])('fails closed for a $name', async ({ setup, statement }) => {
+    const output = await extract('dynamic-callee.ts', `${setup} ${statement}`);
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([
+      expect.stringContaining('possible gt-vue string function alias'),
+    ]);
+  });
+
+  it.each([
+    `import('gt-vue').then(({ t }) => t('Then dynamic import'));`,
+    `(await import('gt-vue')).t('Awaited dynamic import');`,
+  ])('fails closed for a non-declarator dynamic import', async (statement) => {
+    const output = await extract('dynamic-import.ts', statement);
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([
+      expect.stringContaining('string function alias from a dynamic import'),
+    ]);
+  });
+
+  it.each([
+    ['t', `runtime.t('Namespace rest t')`],
+    ['msg', `runtime.msg('Namespace rest msg')`],
+    ['useGT', `runtime.useGT()('Namespace rest useGT')`],
+  ])('fails closed for a namespace-rest %s call', async (_name, statement) => {
+    const output = await extract(
+      'namespace-rest.ts',
+      `import * as GT from 'gt-vue';
+       const { T: _T, ...runtime } = GT;
+       ${statement};`
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([
+      expect.stringContaining('possible gt-vue string function alias'),
+    ]);
+  });
+
+  it.each([
+    ['t', `({ ...GT }).t('Namespace spread t')`],
+    ['msg', `({ ...GT }).msg('Namespace spread msg')`],
+    ['useGT', `({ ...GT }).useGT()('Namespace spread useGT')`],
+  ])(
+    'fails closed for a namespace-spread %s call',
+    async (_name, statement) => {
+      const output = await extract(
+        'namespace-spread.ts',
+        `import * as GT from 'gt-vue'; ${statement};`
+      );
+
+      expect(output.results).toEqual([]);
+      expect(output.errors).toEqual([
+        expect.stringContaining('possible gt-vue string function alias'),
+      ]);
+    }
+  );
+
+  it('keeps statically ordinary dynamic callees isolated', async () => {
+    const output = await extract(
+      'ordinary-dynamic-callees.ts',
+      `import { t } from 'gt-vue';
+       import * as GT from 'gt-vue';
+       (false ? t : String)('Dead translated branch');
+       ({ ...GT, t: String }).t('Overridden namespace spread');
+       const { t: _removedT, ...withoutT } = GT;
+       withoutT.t('Excluded namespace-rest export');`
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([]);
+  });
+
+  it.each(['let', 'var'])(
+    'fails closed for a mutable CommonJS destructure declared with %s',
+    async (declaration) => {
+      const output = await extract(
+        'mutable-commonjs.cjs',
+        `${declaration} { t } = require('gt-vue');
+         t('Before reassignment');
+         t = String;
+         t('After reassignment');`
+      );
+
+      expect(output.results).toEqual([]);
+      expect(output.errors).toEqual([
+        expect.stringContaining('possible gt-vue string function alias'),
+      ]);
+    }
+  );
+
+  it('fails closed for mutable CommonJS msg and useGT destructures', async () => {
+    const output = await extract(
+      'mutable-commonjs-functions.cjs',
+      `let { msg, useGT } = require('gt-vue');
+       msg('Mutable CommonJS msg');
+       useGT()('Mutable CommonJS useGT');
+       msg = String;
+       useGT = () => String;`
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toHaveLength(2);
+    expect(output.errors).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('possible gt-vue string function alias "msg"'),
+        expect.stringContaining(
+          'possible gt-vue string function alias "useGT"'
+        ),
+      ])
+    );
+  });
 });
 
 function contexts(

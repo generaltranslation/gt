@@ -345,6 +345,23 @@ export function parseVueScript(
         path.scope,
         state
       );
+      const calleeExpression = unwrapExpression(path.node.callee);
+      const calleeSubstitution =
+        calleeExpression?.type === 'Identifier'
+          ? path.scope.getBinding(calleeExpression.name)
+          : undefined;
+      const materializedCallee = calleeSubstitution
+        ? readParameterSubstitution(calleeSubstitution, state)
+        : undefined;
+      const possibleStringCallee = expressionMayProduceStringFunction(
+        materializedCallee?.node ??
+          (calleeExpression?.type !== 'Identifier'
+            ? path.node.callee
+            : undefined),
+        materializedCallee?.scope ?? path.scope,
+        state,
+        new Set()
+      );
       const uncertainTranslationHelper = Boolean(
         calleePath &&
         pathMayReferenceUncertainTranslationHelper(
@@ -358,20 +375,21 @@ export function parseVueScript(
       if (
         !callTarget.definitelyOrdinary &&
         !localCallable &&
-        calleePath &&
         (callTarget.possibleStringFunction ||
+          possibleStringCallee ||
           uncertainTranslationHelper ||
-          templateBindings.uncertainStringFunctions.has(calleePath) ||
-          state.analysis.uncertainStringFunctions.has(calleePath) ||
-          (calleePath.endsWith('.value') &&
-            templateBindings.uncertainStringFunctions.has(
-              calleePath.slice(0, -'.value'.length)
-            )))
+          (calleePath &&
+            (templateBindings.uncertainStringFunctions.has(calleePath) ||
+              state.analysis.uncertainStringFunctions.has(calleePath) ||
+              (calleePath.endsWith('.value') &&
+                templateBindings.uncertainStringFunctions.has(
+                  calleePath.slice(0, -'.value'.length)
+                )))))
       ) {
         addVueError(
           context,
           consumerLocation,
-          `Could not statically resolve possible gt-vue string function alias "${calleePath}"`,
+          `Could not statically resolve possible gt-vue string function alias "${calleePath ?? '<dynamic callee>'}"`,
           'Use a direct, immutable alias of useGT(), useMessages(), msg(), or t()'
         );
       }
@@ -676,6 +694,16 @@ function collectImports(
   importerFile = state.analysis.entryFile
 ): void {
   traverse(ast, {
+    enter(path) {
+      if (
+        importerFile === state.analysis.entryFile &&
+        (path.isCallExpression() || path.node.type === 'ImportExpression') &&
+        readDynamicImport(path.node)?.source === 'gt-vue'
+      ) {
+        state.analysis.hasGTSourceReference = true;
+        state.unsupportedDynamicGTReference = true;
+      }
+    },
     ImportDeclaration(path) {
       if (isTypeOnlyImportKind(path.node.importKind)) return;
       const source = path.node.source.value;
@@ -1875,7 +1903,18 @@ function registerRequirePattern(
     if (localName && value) {
       registerImport(localName, value, scope, state);
       const binding = scope.getBinding(localName);
-      if (binding) state.mutableImportSources.set(binding, namespace.source);
+      if (binding) {
+        state.mutableImportSources.set(binding, namespace.source);
+        if (!binding.constant) {
+          exposeUncertainKnownValue(
+            localName,
+            value,
+            state.analysis.uncertainComponents,
+            state.analysis.uncertainGTComponents,
+            state.analysis.uncertainStringFunctions
+          );
+        }
+      }
     }
   }
 }
@@ -9562,7 +9601,14 @@ function expressionMayProduceStringFunction(
     expression.type === 'OptionalMemberExpression'
   ) {
     const property = readResolvedMemberProperty(expression, scope, state);
-    if (!property) return false;
+    if (!property) {
+      return containerMayContainStringFunction(
+        expression.object,
+        scope,
+        state,
+        new Set()
+      );
+    }
     const entry = readObjectEntry(
       expression.object,
       property,
@@ -9571,23 +9617,35 @@ function expressionMayProduceStringFunction(
       expression.end ?? Number.POSITIVE_INFINITY,
       state
     );
-    if (
-      entry.status === 'known' &&
-      expressionMayProduceStringFunction(
+    if (entry.status === 'known') {
+      return expressionMayProduceStringFunction(
         entry.expression.node,
         entry.expression.scope,
+        state,
+        seen
+      );
+    }
+    if (
+      objectGetterMayProduceStringFunction(
+        expression.object,
+        property,
+        scope,
         state,
         seen
       )
     ) {
       return true;
     }
-    return objectGetterMayProduceStringFunction(
-      expression.object,
-      property,
-      scope,
-      state,
-      seen
+    const namespaceMember = knownExport('gt-vue', property);
+    return Boolean(
+      (namespaceMember?.type === 'string' ||
+        namespaceMember?.type === 'hook') &&
+      expressionMayCopyGTNamespaceExport(
+        expression.object,
+        property,
+        scope,
+        state
+      )
     );
   }
   if (
@@ -9652,6 +9710,21 @@ function expressionMayProduceStringFunction(
     );
   }
   if (expression.type === 'ConditionalExpression') {
+    const condition = readStaticFromScope(
+      expression.test,
+      scope,
+      new Set(),
+      expression.test.end ?? Number.POSITIVE_INFINITY,
+      state.analysis
+    );
+    if (condition.ok) {
+      return expressionMayProduceStringFunction(
+        condition.value ? expression.consequent : expression.alternate,
+        scope,
+        state,
+        seen
+      );
+    }
     return (
       expressionMayProduceStringFunction(
         expression.consequent,
@@ -9843,6 +9916,8 @@ function containerMayContainStringFunction(
 ): boolean {
   const expression = unwrapExpression(node);
   if (!expression || seen.has(expression)) return false;
+  const known = resolveKnownExpression(expression, scope, state, new Set());
+  if (known?.type === 'namespace' && known.source === 'gt-vue') return true;
   const nextSeen = new Set(seen).add(expression);
   if (expression.type === 'ObjectExpression') {
     return expression.properties.some((property) => {
@@ -9888,6 +9963,47 @@ function containerMayContainStringFunction(
     });
   }
   return false;
+}
+
+/** Detects a named export copied from the gt-vue namespace by rest or spread. */
+function expressionMayCopyGTNamespaceExport(
+  node: t.Node,
+  property: string,
+  scope: Scope,
+  state: ScriptState
+): boolean {
+  const expression = unwrapExpression(node);
+  if (expression?.type === 'ObjectExpression') {
+    return expression.properties.some(
+      (entry) =>
+        entry.type === 'SpreadElement' &&
+        resolveNamespaceOrigin(entry.argument, scope, state, new Set())
+          ?.source === 'gt-vue'
+    );
+  }
+  if (expression?.type !== 'Identifier') return false;
+  const binding = scope.getBinding(expression.name);
+  if (!binding) return false;
+  const declaration = binding.path.node;
+  if (declaration?.type !== 'VariableDeclarator' || !declaration.init) {
+    return false;
+  }
+  const rest = readDirectRestPattern(
+    declaration.id,
+    expression.name,
+    binding.path.scope,
+    state
+  );
+  return Boolean(
+    rest?.type === 'object' &&
+    !rest.excluded.has(property) &&
+    resolveNamespaceOrigin(
+      declaration.init,
+      binding.path.scope,
+      state,
+      new Set()
+    )?.source === 'gt-vue'
+  );
 }
 
 /** Tracks assignment and for-of writes into one top-level component alias. */

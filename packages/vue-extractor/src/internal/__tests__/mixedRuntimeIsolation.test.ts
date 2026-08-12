@@ -62,6 +62,66 @@ describe('mixed-runtime isolation', () => {
     }
   );
 
+  it.each(REACT_FAMILY_RUNTIMES)(
+    'does not diagnose uncertain call shapes from %s',
+    async (runtime) => {
+      const output = await extractFromVueSource(
+        `
+          import { msg, t, useGT } from '${runtime}';
+          import * as ReactGT from '${runtime}';
+          const flag = Boolean(Date.now());
+          const index = Number(Date.now());
+          const { T: _T, ...rest } = ReactGT;
+          (flag ? t : String)('React conditional t');
+          [msg, String][index]('React selected msg');
+          ({ translated: useGT(), ordinary: String })[index]('React selected useGT');
+          rest.t('React namespace rest');
+          ({ ...ReactGT }).t('React namespace spread');
+          function invoke(translate) { translate('React forwarded t'); }
+          invoke(flag ? t : String);
+          let { t: mutableT } = require('${runtime}');
+          mutableT('React mutable CommonJS before');
+          mutableT = String;
+          import('${runtime}').then(({ t: dynamicT }) => dynamicT('React dynamic import'));
+        `,
+        path.join(fixtureRoot, 'uncertain-react.ts'),
+        {
+          projectRoot: fixtureRoot,
+          resolveModule: () => undefined,
+        }
+      );
+
+      expect(output.results).toEqual([]);
+      expect(output.errors).toEqual([]);
+    }
+  );
+
+  it('does not diagnose uncertain call shapes from ordinary values', async () => {
+    const output = await extractFromVueSource(
+      `
+        const t = String;
+        const msg = String;
+        const useGT = () => String;
+        const Ordinary = { t, msg, useGT };
+        const flag = Boolean(Date.now());
+        const index = Number(Date.now());
+        const { ...rest } = Ordinary;
+        (flag ? t : String)('Ordinary conditional t');
+        [msg, String][index]('Ordinary selected msg');
+        ({ translated: useGT(), ordinary: String })[index]('Ordinary selected useGT');
+        rest.t('Ordinary rest');
+        ({ ...Ordinary }).t('Ordinary spread');
+        function invoke(translate) { translate('Ordinary forwarded t'); }
+        invoke(flag ? t : String);
+      `,
+      path.join(fixtureRoot, 'uncertain-ordinary.ts'),
+      { projectRoot: fixtureRoot }
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([]);
+  });
+
   it.each(OTHER_NON_VUE_GT_RUNTIMES)(
     'does not diagnose GT-shaped APIs from $source',
     async ({ importNames, source, usage }) => {
