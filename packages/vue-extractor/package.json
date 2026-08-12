@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/vue-extractor",
-  "version": "0.0.0",
+  "version": "0.1.0-iris.0",
   "description": "Vue source code extraction for General Translation",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
