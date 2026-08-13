@@ -1557,7 +1557,7 @@ importers:
         specifier: ^19.2.7
         version: 19.2.7
       groq-js:
-        specifier: 1.29.0
+        specifier: ^1.29.0
         version: 1.29.0
       jsdom:
         specifier: ^26.1.0
