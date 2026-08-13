@@ -1224,23 +1224,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         });
       });
 
-      // Last guard before publishing: drop candidates that are themselves
-      // source documents, recognised either by id or by being written in the
-      // source language. Deliberately an exclude list rather than an allow
-      // list of configured targets: a translation whose locale was renamed
-      // after import still carries the old code, and an allow list would omit
-      // it from every future publish without saying so. Failing to publish
-      // real content silently is worse than the narrow case this leaves open,
-      // where an unmanaged source on a stale label is mistaken for a
-      // translation.
-      const candidateIds = Array.from(translationDocIds);
-      const sourceLanguageIds = await client.fetch<string[]>(
-        `*[_id in $candidateIds && language == $sourceLocale]._id`,
-        { candidateIds, sourceLocale: pluginConfig.getSourceLocale() }
-      );
-      const publishableIds = candidateIds.filter(
-        (docId) => !sourceLanguageIds.includes(docId)
-      );
+      const publishableIds = Array.from(translationDocIds);
 
       if (publishableIds.length === 0) {
         toast.push({

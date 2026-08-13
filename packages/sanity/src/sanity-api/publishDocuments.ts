@@ -6,24 +6,26 @@ import { getPublishedId } from '../utils/documentIds';
 /**
  * Selects the translation documents belonging to a set of source documents.
  *
- * Source and translation entries are told apart by which document they
- * reference, never by their `language` label. A metadata document written
- * before the configured source locale was relabelled still carries the old
- * code, so matching the label would drop the whole group from the publish and
- * the inverse test would publish the source document as if it were a
- * translation.
+ * A document is classified as a source by its id, never by the `language`
+ * label on its metadata entry. Locale codes get renamed — `en` to `en-US`, say
+ * — and entries written beforehand keep the old code, so a group whose source
+ * label no longer matches the configured source locale would be skipped
+ * entirely and its source would be mistaken for a translation.
  *
- * Takes two id sets, and they are deliberately different:
+ * The two id sets answer different questions:
  *
- * - `$publishedDocumentIds` decides which metadata groups are in scope. There
- *   is nothing to publish translations for until the source itself exists
- *   published.
- * - `$sourceDocumentIds` decides what counts as a source. It covers every
- *   source under management, including ones that only exist as a draft, so a
- *   stale reference from one group to another group's source is never mistaken
- *   for a translation and published. Scoping this to the published subset
- *   would let an unpublished source be picked up and published as if it were a
- *   translation.
+ * - `$publishedDocumentIds` — which groups are in scope. There is nothing to
+ *   publish until the source itself exists published.
+ * - `$sourceDocumentIds` — what counts as a source. Every source under
+ *   management, including ones that only exist as a draft, so a source is
+ *   never returned as a translation of some other document.
+ *
+ * Known limitation: a group is in scope if it references any requested source,
+ * so metadata that wrongly links two sources into one group can return the
+ * other source's translations. Which source owns a translation is not
+ * recoverable from the metadata once it is inconsistent, and the alternative —
+ * skipping ambiguous groups — silently drops valid translations, which is the
+ * worse outcome.
  */
 export const TRANSLATION_DOCS_FOR_PUBLISH_QUERY = `*[
   _type == 'translation.metadata' &&
