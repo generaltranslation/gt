@@ -35,6 +35,21 @@ describe('Vue JSX rich extraction', () => {
     ).toBe('fcd7d4e98f673df0');
   });
 
+  it('preserves a nested static T component alias', async () => {
+    const output = await extractFromVueSource(
+      `import { T } from 'gt-vue';
+       const Alias = (false || T) || 'div';
+       export const View = () => <Alias>Nested static component</Alias>;`,
+      '/project/src/View.tsx',
+      { projectRoot: '/project' }
+    );
+
+    expect(output.errors).toEqual([]);
+    expect(output.results.map((result) => result.source)).toEqual([
+      'Nested static component',
+    ]);
+  });
+
   it.each([
     {
       name: 'default functional component',

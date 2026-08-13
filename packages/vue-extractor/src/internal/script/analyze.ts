@@ -372,7 +372,7 @@ export function parseVueScript(
           context,
           consumerLocation,
           `Could not statically resolve possible gt-vue string function alias "${calleePath}"`,
-          'Use a direct, immutable alias of useGT(), useMessages(), or msg()'
+          'Use a direct, immutable alias of useGT(), useMessages(), msg(), or t()'
         );
       }
       processForwardedTranslationCalls(path, consumerLocation);
@@ -829,7 +829,7 @@ function recordRuntimeReexport(
     return;
   }
   const candidateNames = exportNames.includes('*')
-    ? [...COMPONENT_IMPORTS, 'msg', 'useGT', 'useMessages']
+    ? [...COMPONENT_IMPORTS, 'msg', 't', 'useGT', 'useMessages']
     : exportNames;
   if (
     candidateNames.some((name) =>
@@ -972,6 +972,7 @@ function recordDynamicImportPattern(
       for (const exportName of [
         ...COMPONENT_IMPORTS,
         'msg',
+        't',
         'useGT',
         'useMessages',
       ]) {
@@ -989,7 +990,9 @@ function recordDynamicImportPattern(
         state.analysis.uncertainComponents.add(path);
         state.analysis.uncertainGTComponents.add(path);
       }
-      for (const name of ['msg', 'useGT', 'useMessages']) {
+      const stringFunctions = ['msg', 'useGT', 'useMessages'];
+      if (source === 'gt-vue') stringFunctions.push('t');
+      for (const name of stringFunctions) {
         state.analysis.uncertainStringFunctions.add(
           appendTemplatePath(pattern.name, name)
         );
@@ -1012,7 +1015,12 @@ function recordDynamicImportPattern(
           importerFile === state.analysis.entryFile
         );
       } else {
-        recordUnresolvedGTShapedBinding(localName, exportedName, state);
+        recordUnresolvedGTShapedBinding(
+          localName,
+          exportedName,
+          state,
+          source === 'gt-vue'
+        );
       }
     }
   }
@@ -1032,7 +1040,12 @@ function recordDynamicImportPattern(
           importerFile === state.analysis.entryFile
         );
       } else {
-        recordUnresolvedGTShapedBinding(localName, exportedName, state);
+        recordUnresolvedGTShapedBinding(
+          localName,
+          exportedName,
+          state,
+          source === 'gt-vue'
+        );
       }
     }
   }
@@ -1542,6 +1555,7 @@ function recordLocalNamespaceMembers(
     ...resolver.listExportNames(modulePath),
     ...COMPONENT_IMPORTS,
     'msg',
+    't',
     'useGT',
     'useMessages',
   ]);
@@ -1592,11 +1606,16 @@ function recordInvalidGTResolution(
   state: ScriptState
 ): void {
   if (resolution.gtExportName === '*') {
-    recordUnresolvedGTNamespace(localName, state);
+    recordUnresolvedGTNamespace(localName, state, true);
     return;
   }
   if (resolution.gtExportName) {
-    recordUnresolvedGTShapedBinding(localName, resolution.gtExportName, state);
+    recordUnresolvedGTShapedBinding(
+      localName,
+      resolution.gtExportName,
+      state,
+      true
+    );
     return;
   }
   state.analysis.uncertainTranslationHelpers.add(localName);
@@ -1605,14 +1624,17 @@ function recordInvalidGTResolution(
 /** Marks the GT-shaped members of one unresolved namespace path. */
 function recordUnresolvedGTNamespace(
   localName: string,
-  state: ScriptState
+  state: ScriptState,
+  includeImmediateTranslation = false
 ): void {
   for (const component of COMPONENT_IMPORTS) {
     const componentPath = appendTemplatePath(localName, component);
     state.analysis.uncertainComponents.add(componentPath);
     state.analysis.uncertainGTComponents.add(componentPath);
   }
-  for (const name of ['msg', 'useGT', 'useMessages']) {
+  const stringFunctions = ['msg', 'useGT', 'useMessages'];
+  if (includeImmediateTranslation) stringFunctions.push('t');
+  for (const name of stringFunctions) {
     state.analysis.uncertainStringFunctions.add(
       appendTemplatePath(localName, name)
     );
@@ -1733,7 +1755,8 @@ function recordUncertainTranslationHelperBinding(
 function recordUnresolvedGTShapedBinding(
   localName: string,
   exportName: string,
-  state: ScriptState
+  state: ScriptState,
+  includeImmediateTranslation = false
 ): void {
   if (COMPONENT_IMPORTS.has(exportName as never)) {
     state.analysis.uncertainComponents.add(localName);
@@ -1741,6 +1764,7 @@ function recordUnresolvedGTShapedBinding(
   }
   if (
     exportName === 'msg' ||
+    (includeImmediateTranslation && exportName === 't') ||
     exportName === 'useGT' ||
     exportName === 'useMessages'
   ) {
@@ -2396,6 +2420,10 @@ function exposeKnownValue(
       appendTemplatePath(localName, 'msg'),
       'msg'
     );
+    templateBindings.stringFunctions.set(
+      appendTemplatePath(localName, 't'),
+      't'
+    );
   } else if (value.type === 'namespace' && value.source === 'vue') {
     for (const builtin of VUE_BUILTIN_IMPORTS) {
       templateBindings.vueBuiltins.set(
@@ -2497,6 +2525,7 @@ function exposeUncertainKnownValue(
       uncertainGTComponents.add(appendTemplatePath(localName, component));
     }
     uncertainStringFunctions.add(appendTemplatePath(localName, 'msg'));
+    uncertainStringFunctions.add(appendTemplatePath(localName, 't'));
   } else if (value.type === 'namespace' && value.source === 'vue') {
     for (const builtin of VUE_BUILTIN_IMPORTS) {
       uncertainComponents.add(appendTemplatePath(localName, builtin));
@@ -3061,6 +3090,7 @@ function collectNamespaceRestMemberCandidates(
             (name): TemplateKnownValue => ({ type: 'component', name })
           ),
           { type: 'string', kind: 'msg' },
+          { type: 'string', kind: 't' },
         ]
       : [...VUE_BUILTIN_IMPORTS].map(
           (name): TemplateKnownValue => ({ type: 'vue-builtin', name })
@@ -3071,7 +3101,7 @@ function collectNamespaceRestMemberCandidates(
         entry.type === 'component'
           ? entry.name
           : entry.type === 'string'
-            ? 'msg'
+            ? entry.kind
             : entry.name;
       return !excluded.has(name);
     })
@@ -3082,7 +3112,7 @@ function collectNamespaceRestMemberCandidates(
         entry.type === 'component'
           ? entry.name
           : entry.type === 'string'
-            ? 'msg'
+            ? entry.kind
             : entry.name
       ),
       value: entry,
@@ -5508,35 +5538,31 @@ function resolveKnownExpression(
         ? resolveKnownExpression(expression.right, scope, state, new Set(seen))
         : left;
     }
-    const staticLeft = readStaticFromScope(
-      expression.left,
+    const selection = readStaticLogicalSelection(
+      expression,
       scope,
-      new Set(),
-      expression.left.end ?? Number.POSITIVE_INFINITY,
-      state.analysis
+      state,
+      new Set(seen)
     );
-    if (!staticLeft.ok) return undefined;
-    const selectsRight =
-      expression.operator === '??'
-        ? staticLeft.value == null
-        : expression.operator === '||'
-          ? !staticLeft.value
-          : Boolean(staticLeft.value);
-    return selectsRight
-      ? resolveKnownExpression(expression.right, scope, state, new Set(seen))
+    return selection
+      ? resolveKnownExpression(
+          expression[selection],
+          scope,
+          state,
+          new Set(seen)
+        )
       : undefined;
   }
   if (expression.type === 'ConditionalExpression') {
-    const condition = readStaticFromScope(
+    const condition = readStaticTruthiness(
       expression.test,
       scope,
-      new Set(),
-      expression.test.end ?? Number.POSITIVE_INFINITY,
-      state.analysis
+      state,
+      new Set(seen)
     );
-    if (condition.ok) {
+    if (condition) {
       return resolveKnownExpression(
-        condition.value ? expression.consequent : expression.alternate,
+        condition === 'truthy' ? expression.consequent : expression.alternate,
         scope,
         state,
         new Set(seen)
@@ -9486,6 +9512,84 @@ function bindingMayReferenceStringFunction(
   );
 }
 
+type StaticTruthiness = 'truthy' | 'falsy' | 'nullish';
+
+/** Evaluates only side-effect-free truthiness needed for static branch choice. */
+function readStaticTruthiness(
+  node: t.Node,
+  scope: Scope,
+  state: ScriptState,
+  seen: Set<Binding>
+): StaticTruthiness | undefined {
+  const expression = unwrapExpression(node);
+  if (!expression) return undefined;
+  const primitive = readStaticFromScope(
+    expression,
+    scope,
+    new Set(seen),
+    expression.end ?? Number.POSITIVE_INFINITY,
+    state.analysis
+  );
+  if (primitive.ok) {
+    if (primitive.value == null) return 'nullish';
+    return primitive.value ? 'truthy' : 'falsy';
+  }
+  if (
+    expression.type === 'ConditionalExpression' ||
+    expression.type === 'LogicalExpression'
+  ) {
+    return undefined;
+  }
+  if (resolveKnownExpression(expression, scope, state, new Set(seen))) {
+    return 'truthy';
+  }
+  if (
+    expression.type === 'ArrayExpression' ||
+    expression.type === 'ArrowFunctionExpression' ||
+    expression.type === 'ClassExpression' ||
+    expression.type === 'FunctionExpression' ||
+    expression.type === 'ObjectExpression' ||
+    expression.type === 'RegExpLiteral'
+  ) {
+    return 'truthy';
+  }
+  if (expression.type === 'Identifier') {
+    const binding = scope.getBinding(expression.name);
+    if (!binding) {
+      return expression.name !== 'undefined' &&
+        ORDINARY_GLOBAL_VALUES.has(expression.name)
+        ? 'truthy'
+        : undefined;
+    }
+    if (!binding.constant || seen.has(binding)) return undefined;
+    if (
+      binding.path.isClassDeclaration() ||
+      binding.path.isFunctionDeclaration()
+    ) {
+      return 'truthy';
+    }
+  }
+  return undefined;
+}
+
+/** Selects a logical branch when the left value's truthiness is static. */
+function readStaticLogicalSelection(
+  expression: t.LogicalExpression,
+  scope: Scope,
+  state: ScriptState,
+  seen: Set<Binding> = new Set()
+): 'left' | 'right' | undefined {
+  const value = readStaticTruthiness(expression.left, scope, state, seen);
+  if (!value) return undefined;
+  const selectsRight =
+    expression.operator === '??'
+      ? value === 'nullish'
+      : expression.operator === '||'
+        ? value !== 'truthy'
+        : value === 'truthy';
+  return selectsRight ? 'right' : 'left';
+}
+
 /** Tracks expressions whose resulting value can be a gt-vue string function. */
 function expressionMayProduceStringFunction(
   node: t.Node | null | undefined,
@@ -9643,6 +9747,15 @@ function expressionMayProduceStringFunction(
     );
   }
   if (expression.type === 'ConditionalExpression') {
+    const condition = readStaticTruthiness(expression.test, scope, state, seen);
+    if (condition) {
+      return expressionMayProduceStringFunction(
+        condition === 'truthy' ? expression.consequent : expression.alternate,
+        scope,
+        state,
+        seen
+      );
+    }
     return (
       expressionMayProduceStringFunction(
         expression.consequent,
@@ -9659,6 +9772,15 @@ function expressionMayProduceStringFunction(
     );
   }
   if (expression.type === 'LogicalExpression') {
+    const selection = readStaticLogicalSelection(expression, scope, state);
+    if (selection) {
+      return expressionMayProduceStringFunction(
+        expression[selection],
+        scope,
+        state,
+        seen
+      );
+    }
     return (
       expressionMayProduceStringFunction(expression.left, scope, state, seen) ||
       expressionMayProduceStringFunction(expression.right, scope, state, seen)

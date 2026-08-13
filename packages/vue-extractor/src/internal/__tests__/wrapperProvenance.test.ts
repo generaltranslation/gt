@@ -35,7 +35,7 @@ describe('local Vue wrapper provenance', () => {
     expect(exposesGT(root)).toBe(true);
   });
 
-  it.each(['createGT', 'useLocale', 'useSetLocale'])(
+  it.each(['createGT', 'initializeGTSPA', 'useLocale', 'useSetLocale'])(
     'recognizes the non-extraction runtime export %s',
     (exportName) => {
       const root = createPackage({
