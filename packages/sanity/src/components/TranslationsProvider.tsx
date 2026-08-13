@@ -1224,20 +1224,27 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         });
       });
 
-      // Last guard before publishing: drop anything that is itself written in
-      // the source language. The query already excludes every source under
-      // management, but metadata can reference a source this Studio does not
-      // manage — a type removed from `translateDocuments`, say — and that
-      // reference would otherwise look like a translation. This only ever
-      // removes candidates, so a mislabelled document cannot cause a group to
-      // be skipped the way matching on the label used to.
+      // Last guard before publishing: keep only documents written in a locale
+      // this plugin translates into. Stating it as an allow list rather than
+      // excluding the source language is what makes it hold up against stale
+      // labels — a source left on an older code is simply not a configured
+      // target, so it drops out without having to be recognised as a source.
+      //
+      // Comparing base languages instead would be wrong here: a source of
+      // `en-US` alongside an `en-GB` target both reduce to `en`, which would
+      // discard every en-GB translation.
+      const sourceLocale = pluginConfig.getSourceLocale();
+      const targetLocaleIds = locales
+        .filter(
+          (locale) =>
+            locale.enabled !== false && locale.localeId !== sourceLocale
+        )
+        .map((locale) => locale.localeId);
+
       const candidateIds = Array.from(translationDocIds);
-      const sourceLanguageIds = await client.fetch<string[]>(
-        `*[_id in $candidateIds && language == $sourceLocale]._id`,
-        { candidateIds, sourceLocale: pluginConfig.getSourceLocale() }
-      );
-      const publishableIds = candidateIds.filter(
-        (docId) => !sourceLanguageIds.includes(docId)
+      const publishableIds = await client.fetch<string[]>(
+        `*[_id in $candidateIds && language in $targetLocaleIds]._id`,
+        { candidateIds, targetLocaleIds }
       );
 
       if (publishableIds.length === 0) {
@@ -1273,7 +1280,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } finally {
       setIsBusy(false);
     }
-  }, [secrets, documents, client, branchId]);
+  }, [secrets, documents, locales, client, branchId]);
 
   useEffect(() => {
     fetchDocuments();
