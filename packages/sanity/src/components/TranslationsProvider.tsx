@@ -1212,6 +1212,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         TranslationDocumentMetadata[]
       >(TRANSLATION_DOCS_FOR_PUBLISH_QUERY, {
         publishedDocumentIds,
+        sourceDocumentIds,
       });
 
       const translationDocIds = new Set<string>();

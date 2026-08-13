@@ -17,15 +17,21 @@ function metadata(id: string, entries: MetadataEntry[]) {
   };
 }
 
-/** Runs the real publish query the provider sends, via Sanity's own GROQ engine. */
+/**
+ * Runs the real publish query the provider sends, via Sanity's own GROQ engine.
+ *
+ * `sourceDocumentIds` defaults to the published set, matching the common case
+ * where every source under management is already published.
+ */
 async function selectTranslationDocIds(
   dataset: unknown[],
-  publishedDocumentIds: string[]
+  publishedDocumentIds: string[],
+  sourceDocumentIds: string[] = publishedDocumentIds
 ): Promise<string[]> {
   const tree = parse(TRANSLATION_DOCS_FOR_PUBLISH_QUERY);
   const value = await evaluate(tree, {
     dataset,
-    params: { publishedDocumentIds },
+    params: { publishedDocumentIds, sourceDocumentIds },
   });
   const result = (await value.get()) as {
     translationDocs?: { docId?: string }[];
@@ -95,6 +101,29 @@ describe('TRANSLATION_DOCS_FOR_PUBLISH_QUERY', () => {
 
     expect(selected).toEqual(['page-a-fr', 'page-b-de']);
     expect(selected).not.toContain('page-a');
+    expect(selected).not.toContain('page-b');
+  });
+
+  test('never returns a source that exists only as a draft', async () => {
+    // `page-b` is under management but has never been published, so it is
+    // absent from the published set. A stale reference to it from another
+    // group must still be recognised as a source: treating it as a translation
+    // would publish a document that was deliberately left in draft.
+    const dataset = [
+      metadata('page-a', [
+        { language: 'en-US', ref: 'page-a' },
+        { language: 'en', ref: 'page-b' },
+        { language: 'fr-FR', ref: 'page-a-fr' },
+      ]),
+    ];
+
+    const selected = await selectTranslationDocIds(
+      dataset,
+      ['page-a'], // published sources
+      ['page-a', 'page-b'] // every source under management
+    );
+
+    expect(selected).toEqual(['page-a-fr']);
     expect(selected).not.toContain('page-b');
   });
 

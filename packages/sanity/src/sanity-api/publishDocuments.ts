@@ -13,14 +13,24 @@ import { getPublishedId } from '../utils/documentIds';
  * the inverse test would publish the source document as if it were a
  * translation.
  *
- * Expects a `$publishedDocumentIds` param holding every source document id.
+ * Takes two id sets, and they are deliberately different:
+ *
+ * - `$publishedDocumentIds` decides which metadata groups are in scope. There
+ *   is nothing to publish translations for until the source itself exists
+ *   published.
+ * - `$sourceDocumentIds` decides what counts as a source. It covers every
+ *   source under management, including ones that only exist as a draft, so a
+ *   stale reference from one group to another group's source is never mistaken
+ *   for a translation and published. Scoping this to the published subset
+ *   would let an unpublished source be picked up and published as if it were a
+ *   translation.
  */
 export const TRANSLATION_DOCS_FOR_PUBLISH_QUERY = `*[
   _type == 'translation.metadata' &&
   count(translations[defined(value._ref) && value._ref in $publishedDocumentIds]) > 0
 ] {
   'translationDocs': translations[
-    defined(value._ref) && !(value._ref in $publishedDocumentIds)
+    defined(value._ref) && !(value._ref in $sourceDocumentIds)
   ]{
     _key,
     'docId': value._ref
