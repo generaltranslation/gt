@@ -1224,7 +1224,23 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         });
       });
 
-      if (translationDocIds.size === 0) {
+      // Last guard before publishing: drop anything that is itself written in
+      // the source language. The query already excludes every source under
+      // management, but metadata can reference a source this Studio does not
+      // manage — a type removed from `translateDocuments`, say — and that
+      // reference would otherwise look like a translation. This only ever
+      // removes candidates, so a mislabelled document cannot cause a group to
+      // be skipped the way matching on the label used to.
+      const candidateIds = Array.from(translationDocIds);
+      const sourceLanguageIds = await client.fetch<string[]>(
+        `*[_id in $candidateIds && language == $sourceLocale]._id`,
+        { candidateIds, sourceLocale: pluginConfig.getSourceLocale() }
+      );
+      const publishableIds = candidateIds.filter(
+        (docId) => !sourceLanguageIds.includes(docId)
+      );
+
+      if (publishableIds.length === 0) {
         toast.push({
           title: 'No translation documents found to publish',
           status: 'warning',
@@ -1234,7 +1250,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       }
 
       const translatedDocumentIds = await publishTranslations(
-        Array.from(translationDocIds),
+        publishableIds,
         client
       );
 
