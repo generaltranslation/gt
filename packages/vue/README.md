@@ -84,6 +84,84 @@ const setLocale = useSetLocale();
 `$context`; braces are literal text and no ICU formatting or interpolation is
 applied.
 
+## Module-level translations in a Vite SPA
+
+Browser-only SPAs can call `t()` at module scope after `initializeGTSPA()` has
+loaded the active locale. Use a bootstrap module with top-level `await`, and
+dynamically import the rest of the application only after initialization.
+This complements rather than replaces the `gt()` callback from `useGT()`,
+which remains the normal API inside Vue components and for SSR applications.
+
+```ts
+// src/index.ts
+import { initializeGTSPA } from 'gt-vue';
+import gtConfig from '../gt.config.json';
+import loadTranslations from './loadTranslations';
+
+const gt = await initializeGTSPA({ ...gtConfig, loadTranslations });
+const { mount } = await import('./main');
+mount(gt);
+```
+
+Configure the CLI output and the Vite loader to use the same directory:
+
+```json
+{
+  "defaultLocale": "en",
+  "locales": ["fr"],
+  "files": {
+    "gt": {
+      "output": "src/_gt/[locale].json"
+    }
+  }
+}
+```
+
+```ts
+// src/loadTranslations.ts
+export default async function loadTranslations(locale: string) {
+  const translations = await import(`./_gt/${locale}.json`);
+  return translations.default;
+}
+```
+
+Create an empty JSON file for each configured target locale before the first
+translation run (for example, `src/_gt/fr.json` containing `{}`). The default
+locale uses source content and does not need a loader file.
+
+```ts
+// src/main.ts
+import { createApp } from 'vue';
+import type { GTPlugin } from 'gt-vue';
+import App from './App.vue';
+
+export function mount(gt: GTPlugin) {
+  createApp(App).use(gt).mount('#app');
+}
+```
+
+Install the plugin returned by `initializeGTSPA()` rather than creating a
+second plugin. The returned instance is already preloaded and is the exact
+runtime used by `t()`.
+
+```ts
+// src/navigation.ts (loaded by the dynamic application import)
+import { t } from 'gt-vue';
+
+export const navigation = [
+  t('Documentation', { $context: 'primary navigation' }),
+];
+```
+
+Like `useGT()`, `t()` supports only plain STRING content and static `$context`.
+It does not support ICU syntax, interpolation, tagged templates, `$format`, or
+`$maxChars`. The extractor registers static `t()` calls in the catalog.
+
+SPA locale changes write the locale cookie and reload the page. Reloading is
+intentional: it lets every module-level translation execute again after the new
+locale catalog is preloaded. `initializeGTSPA()` and `t()` are not valid in SSR;
+use one request-scoped `createGT({ locale })` instance there.
+
 Statically authored default-slot content inside a custom component participates
 in the surrounding translation. The component itself, its props, and its
 listeners are preserved while the translated content replaces its default
@@ -173,12 +251,18 @@ from `createGT()`, that cookie wins over `defaultLocale`. Use
 `localeCookieName` to share a different cookie with your routing or server
 integration.
 
-`setLocale()` loads a missing catalog before writing the cookie and rerendering
-consumers. A failed or superseded request leaves both the cookie and rendered
-locale unchanged. Direct changes to `document.cookie` are reflected by
-`plugin.getLocale()` and the next Vue render, but browsers do not emit cookie
-change events, so they do not schedule a render by themselves. Use gt-vue's
-setter for reactive locale changes.
+For plugins created with `createGT()`, `setLocale()` loads a missing catalog
+before writing the cookie and rerendering consumers. A failed or superseded
+request leaves both the cookie and rendered locale unchanged. Direct changes to
+`document.cookie` are reflected by `plugin.getLocale()` and the next Vue render,
+but browsers do not emit cookie change events, so they do not schedule a render
+by themselves. Use gt-vue's setter for reactive locale changes.
+
+`initializeGTSPA()` instead pins the preloaded locale for the lifetime of the
+page. Its `setLocale()` writes the cookie and reloads the document so
+module-level `t()` calls execute again with the new catalog. Direct cookie
+changes do not change the mounted SPA; they are resolved during the next page
+initialization, and unsupported locales fall back to `defaultLocale`.
 
 For SSR, resolve the request locale on the server and pass it as
 `createGT({ locale })`. An explicit locale wins over a stale browser cookie,
