@@ -55,7 +55,8 @@
     "gt-test-webpack-react": "0.1.1",
     "gt-vue": "0.0.0",
     "@generaltranslation/vue-extractor": "0.0.0",
-    "cli-vue-binary-test": "0.0.0"
+    "cli-vue-binary-test": "0.0.0",
+    "gt-test-vite-vue": "0.0.0"
   },
   "changesets": [
     "bright-vue-extractor",
@@ -63,7 +64,10 @@
     "calm-pandas-translate",
     "calm-rich-wire-types",
     "calm-vue-config",
+    "extract-vue-module-translations",
+    "integrate-vue-spa-translations",
     "migrate-licenses-to-mit",
+    "quick-vue-spa",
     "test-iris-gt-patch",
     "tidy-vue-messages",
     "warm-vue-cli"

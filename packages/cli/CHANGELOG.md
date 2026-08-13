@@ -1,5 +1,13 @@
 # gtx-cli
 
+## 2.17.0-iris.1
+
+### Patch Changes
+
+- c47eed5: Generate catalogs for gt-vue module-level `t()` calls through the CLI.
+- Updated dependencies [8178815]
+  - @generaltranslation/vue-extractor@0.1.0-iris.1
+
 ## 2.17.0-iris.0
 
 ### Minor Changes
