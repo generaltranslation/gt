@@ -1,5 +1,12 @@
 # gt-vue
 
+## 0.1.0-iris.2
+
+### Patch Changes
+
+- 95b48df: Add browser SPA initialization and synchronous module-level `t()` translations
+  to gt-vue.
+
 ## 0.1.0-iris.1
 
 ### Patch Changes

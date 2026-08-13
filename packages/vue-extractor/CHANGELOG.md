@@ -1,5 +1,11 @@
 # @generaltranslation/vue-extractor
 
+## 0.1.0-iris.1
+
+### Patch Changes
+
+- 8178815: Extract static module-level `t()` calls from gt-vue projects.
+
 ## 0.1.0-iris.0
 
 ### Minor Changes
