@@ -303,7 +303,9 @@ describe('gt-vue runtime state', () => {
       },
     });
 
-    expect(() => mount(Root)).toThrow('The GT Vue plugin is not installed');
+    expect(() => mount(Root)).toThrow(
+      'Install the exact plugin returned by initializeGTSPA()'
+    );
   });
 
   it('never calls the loader for the source locale', async () => {

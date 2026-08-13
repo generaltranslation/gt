@@ -49,7 +49,9 @@ describe('gt-vue package layout', () => {
         'T',
         'Var',
         'createGT',
+        'initializeGTSPA',
         'msg',
+        't',
         'useGT',
         'useLocale',
         'useMessages',
@@ -175,7 +177,7 @@ describe('gt-vue package layout', () => {
     }
   }, 30_000);
 
-  it('tree-shakes component runtime from a packed msg-only consumer', () => {
+  it('publishes server-safe SPA guards and tree-shakes non-SPA consumers', () => {
     const packageRoot = fileURLToPath(new URL('../..', import.meta.url));
     const fixtureDirectory = mkdtempSync(
       join(packageRoot, '.gt-vue-tree-shaking-')
@@ -187,6 +189,7 @@ describe('gt-vue package layout', () => {
     mkdirSync(packDirectory);
     mkdirSync(unpackDirectory);
     mkdirSync(nodeModulesDirectory);
+    mkdirSync(join(nodeModulesDirectory, '@generaltranslation'));
 
     try {
       execFileSync(
@@ -206,44 +209,177 @@ describe('gt-vue package layout', () => {
 
       for (const [name, target] of [
         ['gt-vue', join(unpackDirectory, 'package')],
+        ['@generaltranslation/format', join(packageRoot, '..', 'format')],
         ['generaltranslation', join(packageRoot, '..', 'core')],
         ['gt-i18n', join(packageRoot, '..', 'i18n')],
         ['vue', realpathSync(join(packageRoot, 'node_modules', 'vue'))],
       ]) {
         symlinkSync(target, join(nodeModulesDirectory, name), 'junction');
       }
-      const consumerEntry = join(fixtureDirectory, 'consumer.mjs');
-      writeFileSync(consumerEntry, `export { msg } from 'gt-vue';\n`);
 
-      execFileSync(
-        process.execPath,
+      for (const [moduleFormat, script] of [
         [
-          join(packageRoot, 'node_modules/tsdown/dist/run.mjs'),
-          consumerEntry,
-          '--no-config',
-          '--format',
-          'esm',
-          '--out-dir',
-          outputDirectory,
-          '--logLevel',
-          'silent',
-        ],
-        { cwd: fixtureDirectory, stdio: 'pipe' }
-      );
+          'ESM',
+          `
+            const gtVue = await import('gt-vue');
+            assertServerRuntime(gtVue);
 
-      const bundledFile = readdirSync(outputDirectory).find((file) =>
-        file.endsWith('.mjs')
-      );
-      expect(bundledFile).toBeDefined();
-      const bundledSource = readFileSync(
-        join(outputDirectory, bundledFile!),
+            function assertServerRuntime(runtime) {
+              if (typeof runtime.initializeGTSPA !== 'function') process.exit(1);
+              if (typeof runtime.t !== 'function') process.exit(1);
+              try {
+                runtime.t('Server message');
+                process.exit(1);
+              } catch (error) {
+                if (!String(error).includes('t() cannot run in a server-rendered environment')) process.exit(1);
+              }
+            }
+          `,
+        ],
+        [
+          'CommonJS',
+          `
+            const gtVue = require('gt-vue');
+            if (typeof gtVue.initializeGTSPA !== 'function') process.exit(1);
+            if (typeof gtVue.t !== 'function') process.exit(1);
+            try {
+              gtVue.t('Server message');
+              process.exit(1);
+            } catch (error) {
+              if (!String(error).includes('t() cannot run in a server-rendered environment')) process.exit(1);
+            }
+          `,
+        ],
+      ] as const) {
+        expect(() =>
+          execFileSync(
+            process.execPath,
+            moduleFormat === 'ESM'
+              ? ['--input-type=module', '--eval', script]
+              : ['--eval', script],
+            { cwd: fixtureDirectory, stdio: 'pipe' }
+          )
+        ).not.toThrow();
+      }
+
+      expect(() =>
+        execFileSync(
+          process.execPath,
+          [
+            '--input-type=module',
+            '--eval',
+            `
+              import { createRequire } from 'node:module';
+              import { createSSRApp, h } from 'vue';
+              import { renderToString } from 'vue/server-renderer';
+
+              const require = createRequire(import.meta.url);
+              const esm = await import('gt-vue');
+              const commonjs = require('gt-vue');
+              let cookie = 'generaltranslation.locale=en';
+              globalThis.document = {
+                get cookie() { return cookie; },
+                set cookie(value) { cookie = value; },
+              };
+              globalThis.window = { location: { reload() {} } };
+
+              const esmPlugin = await esm.initializeGTSPA();
+              const commonjsPlugin = await commonjs.initializeGTSPA();
+              if (commonjsPlugin !== esmPlugin) process.exit(1);
+              if (commonjs.t('Shared source') !== 'Shared source') process.exit(1);
+              const Root = {
+                setup() {
+                  const gt = commonjs.useGT();
+                  return () => h('p', gt('Shared component source'));
+                },
+              };
+              const html = await renderToString(createSSRApp(Root).use(esmPlugin));
+              if (!html.includes('Shared component source')) process.exit(1);
+            `,
+          ],
+          { cwd: fixtureDirectory, stdio: 'pipe' }
+        )
+      ).not.toThrow();
+
+      const esmPackageSource = readFileSync(
+        join(unpackDirectory, 'package', 'dist', 'index.mjs'),
         'utf8'
       );
-      expect(bundledSource).toContain('gt-i18n/internal/string');
-      expect(bundledSource).not.toContain('from "vue"');
-      expect(bundledSource).not.toContain('defineComponent');
-      expect(bundledSource).not.toContain('translateVueChildren');
-      expect(bundledSource).not.toContain('gt-vue-raw-t-children');
+      expect(esmPackageSource).not.toMatch(
+        /(?:^|\n)import\s+[^;]*["']@generaltranslation\/format["']/
+      );
+      expect(esmPackageSource).toMatch(
+        /import\(["']@generaltranslation\/format["']\)/
+      );
+      const commonJSPackageSource = readFileSync(
+        join(unpackDirectory, 'package', 'dist', 'index.cjs'),
+        'utf8'
+      );
+      expect(commonJSPackageSource).not.toMatch(
+        /(?:^|\n)(?:const|let|var)\s+[^;]*require\(["']@generaltranslation\/format["']\)/
+      );
+      expect(commonJSPackageSource).toMatch(
+        /import\(["']@generaltranslation\/format["']\)/
+      );
+
+      for (const exportName of ['msg', 'useGT']) {
+        const consumerEntry = join(
+          fixtureDirectory,
+          `consumer-${exportName}.mjs`
+        );
+        const consumerOutputDirectory = `${outputDirectory}-${exportName}`;
+        writeFileSync(
+          consumerEntry,
+          `export { ${exportName} } from 'gt-vue';\n`
+        );
+
+        execFileSync(
+          process.execPath,
+          [
+            join(packageRoot, 'node_modules/tsdown/dist/run.mjs'),
+            consumerEntry,
+            '--no-config',
+            '--format',
+            'esm',
+            '--out-dir',
+            consumerOutputDirectory,
+            '--logLevel',
+            'silent',
+          ],
+          { cwd: fixtureDirectory, stdio: 'pipe' }
+        );
+
+        const bundledFile = readdirSync(consumerOutputDirectory).find((file) =>
+          file.endsWith('.mjs')
+        );
+        expect(bundledFile).toBeDefined();
+        const bundledSource = readFileSync(
+          join(consumerOutputDirectory, bundledFile!),
+          'utf8'
+        );
+        expect(bundledSource).toContain('gt-i18n/internal/string');
+        if (exportName === 'msg') {
+          expect(bundledSource).not.toContain('from "vue"');
+        }
+        expect(bundledSource).not.toContain('defineComponent');
+        expect(bundledSource).not.toContain('translateVueChildren');
+        expect(bundledSource).not.toContain('gt-vue-raw-t-children');
+        expect(bundledSource).not.toMatch(
+          /(?:from\s*|import\s*)["']generaltranslation["']/
+        );
+        expect(bundledSource).not.toMatch(/["']gt-i18n\/internal["']/);
+        expect(bundledSource).not.toContain('spaRuntime');
+        expect(bundledSource).not.toContain('@generaltranslation/format');
+        expect(bundledSource).not.toContain(
+          'The browser SPA runtime is not initialized'
+        );
+        expect(bundledSource).not.toContain(
+          'initializeGTSPA() cannot run in a server-rendered environment'
+        );
+        expect(bundledSource).not.toContain(
+          't() cannot run in a server-rendered environment'
+        );
+      }
     } finally {
       rmSync(fixtureDirectory, { force: true, recursive: true });
     }

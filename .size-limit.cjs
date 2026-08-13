@@ -38,9 +38,10 @@ const react = (name, file, limit = '50 kB') =>
     ignore: reactPeerIgnore,
   });
 
-const vue = (name, file, limit = '15 kB') =>
+const vue = (name, file, limit = '15 kB', options = {}) =>
   entry(name, `packages/vue/dist/${file}.mjs`, limit, {
     ignore: ['vue'],
+    ...options,
   });
 
 const reactNode = (name, file, limit = '50 kB') =>
@@ -110,7 +111,12 @@ module.exports = [
   reactNode('gt-react (server)', 'index.server', '55 kB'),
   react('gt-react/macros', 'macros'),
 
-  vue('gt-vue', 'index'),
+  // Locale matching is loaded only when initializeGTSPA() runs. Track the
+  // always-loaded runtime and complete SPA payload independently.
+  vue('gt-vue', 'index', '15 kB', {
+    ignore: ['vue', '@generaltranslation/format'],
+  }),
+  vue('gt-vue (SPA)', 'index', '22 kB'),
 
   next('gt-next (client)', 'index.client', '75 kB'),
   nextNode('gt-next (rsc)', 'index.rsc', '85 kB'),

@@ -56,7 +56,8 @@ export const Plural = /* @__PURE__ */ withGTMetadata<PluralProps>(
           getFormatLocales(
             props.locales,
             state.getLocale(),
-            state.defaultLocale
+            state.defaultLocale,
+            state.resolveFormattingLocale
           )
         );
         const namedSlot = branch && slots[branch];

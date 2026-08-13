@@ -1642,6 +1642,9 @@ importers:
 
   packages/vue:
     dependencies:
+      '@generaltranslation/format':
+        specifier: workspace:*
+        version: link:../format
       generaltranslation:
         specifier: workspace:*
         version: link:../core
