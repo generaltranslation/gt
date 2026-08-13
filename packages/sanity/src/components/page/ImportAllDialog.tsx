@@ -35,7 +35,7 @@ export const ImportAllDialog: React.FC<ImportAllDialogProps> = ({
       }
     >
       <Box padding={4}>
-        <Stack space={3}>
+        <Stack gap={3}>
           <Text>
             Are you sure you want to import translations for all{' '}
             {documents.length} documents?

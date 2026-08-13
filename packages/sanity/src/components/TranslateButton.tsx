@@ -1,5 +1,5 @@
 import { Button } from '@sanity/ui';
-import { TranslateIcon } from '@sanity/icons';
+import { TranslateIcon } from '@sanity/icons/Translate';
 import { useRouter } from 'sanity/router';
 
 export function TranslateButton() {

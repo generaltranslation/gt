@@ -28,7 +28,6 @@
     ".": {
       "source": "./src/index.ts",
       "import": "./dist/index.js",
-      "require": "./dist/index.cjs",
       "default": "./dist/index.js"
     },
     "./package.json": "./package.json"
@@ -37,13 +36,11 @@
     "exports": {
       ".": {
         "import": "./dist/index.js",
-        "require": "./dist/index.cjs",
         "default": "./dist/index.js"
       },
       "./package.json": "./package.json"
     }
   },
-  "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
@@ -69,44 +66,49 @@
   "dependencies": {
     "@portabletext/block-tools": "^5.1.1",
     "@portabletext/to-html": "^2.0.14",
-    "@sanity/document-internationalization": "^6.0.6",
-    "@sanity/icons": "^3.7.4",
+    "@sanity/document-internationalization": "^6.2.30",
     "@sanity/incompatible-plugin": "^1.0.5",
-    "@sanity/mutator": "^5.18.0",
-    "@sanity/schema": "^5.18.0",
-    "@sanity/ui": "^3.1.14",
-    "@sanity/util": "^5.18.0",
     "generaltranslation": "workspace:*",
     "jsonpath-plus": "^10.3.0",
     "jsonpointer": "^5.0.1",
     "lodash.merge": "^4.6.2",
-    "sanity-plugin-internationalized-array": "^5.1.0"
+    "sanity-plugin-internationalized-array": "^5.1.27"
   },
   "devDependencies": {
     "@portabletext/types": "^2.0.15",
     "@sanity/browserslist-config": "^1.0.5",
+    "@sanity/icons": "^5.2.1",
+    "@sanity/mutator": "^6.9.2",
     "@sanity/pkg-utils": "^10.4.13",
     "@sanity/plugin-kit": "^4.0.20",
+    "@sanity/schema": "^6.9.2",
+    "@sanity/ui": "^4.0.1",
     "@types/lodash.merge": "^4.6.9",
     "@types/react": "^19.2.7",
+    "groq-js": "^1.29.0",
     "jsdom": "^26.1.0",
     "just-clone": "^6.2.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
-    "sanity": "^5.18.0",
+    "sanity": "^6.9.2",
     "styled-components": "^6.1.19"
   },
   "peerDependencies": {
+    "@sanity/icons": "^5.2.1",
+    "@sanity/mutator": "^6.9.2",
+    "@sanity/schema": "^6.9.2",
+    "@sanity/ui": "^4.0.1",
     "react": ">=19.2.0",
-    "sanity": ">=5.0.0"
+    "sanity": "^6.9.2"
   },
   "sanityPlugin": {
     "verifyPackage": {
       "eslintImports": false,
-      "packageName": false
+      "packageName": false,
+      "nodeEngine": false
     }
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22.12"
   }
 }

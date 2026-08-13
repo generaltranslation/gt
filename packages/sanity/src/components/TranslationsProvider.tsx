@@ -8,7 +8,7 @@ import React, {
   ReactNode,
 } from 'react';
 import { SanityDocument, useSchema } from 'sanity';
-import { useToast } from '@sanity/ui';
+import { useToast } from '@sanity/ui/toast';
 import { useClient } from '../hooks/useClient';
 import { useSecrets } from '../hooks/useSecrets';
 import {
@@ -36,7 +36,10 @@ import {
   ImportOptions,
 } from '../utils/importUtils';
 import { processBatch } from '../utils/batchProcessor';
-import { publishTranslations } from '../sanity-api/publishDocuments';
+import {
+  publishTranslations,
+  TRANSLATION_DOCS_FOR_PUBLISH_QUERY,
+} from '../sanity-api/publishDocuments';
 import { getLocales } from '../adapter/getLocales';
 import type {
   FileProperties,
@@ -109,6 +112,12 @@ interface TranslationsContextType {
    * status map distinguishes from "never translated" — both read as 0%.
    */
   pendingTranslations: Set<string>;
+  /**
+   * Status keys currently being written to Sanity. `importProgress` only counts
+   * how many are done, so without this a locale row cannot tell "queued in this
+   * import" from "not part of it" while a bulk import runs.
+   */
+  importingTranslations: Set<string>;
   isRefreshing: boolean;
   loadingSecrets: boolean;
   secrets: Secrets | null;
@@ -231,6 +240,9 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   const [pendingTranslations, setPendingTranslations] = useState<Set<string>>(
     new Set()
   );
+  const [importingTranslations, setImportingTranslations] = useState<
+    Set<string>
+  >(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const client = useClient();
@@ -624,7 +636,9 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     setIsBusy(true);
 
     try {
-      const readyFiles = await getReadyFilesForImport(translationStatuses);
+      const readyFiles = await getReadyFilesForImport(translationStatuses, {
+        onSelectedKeys: (keys) => setImportingTranslations(new Set(keys)),
+      });
 
       if (readyFiles.length === 0) {
         toast.push({
@@ -687,6 +701,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } finally {
       setIsBusy(false);
       setImportProgress({ current: 0, total: 0, isImporting: false });
+      setImportingTranslations(new Set());
     }
   }, [
     secrets,
@@ -761,6 +776,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       );
 
       const readyFiles = await getReadyFilesForImport(translationStatuses, {
+        onSelectedKeys: (keys) => setImportingTranslations(new Set(keys)),
         filterReadyFiles: (_key, status) =>
           !existingTranslations.has(
             createStableTranslationKey(
@@ -833,6 +849,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } finally {
       setIsBusy(false);
       setImportProgress({ current: 0, total: 0, isImporting: false });
+      setImportingTranslations(new Set());
     }
   }, [
     secrets,
@@ -1175,7 +1192,6 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     setIsBusy(true);
 
     try {
-      const sourceLocale = pluginConfig.getSourceLocale();
       const sourceDocumentIds = documents.map(getDocumentPublishedId);
       const publishedDocumentIds = await client.fetch(
         `*[_id in $sourceDocumentIds]._id`,
@@ -1192,21 +1208,9 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         return 0;
       }
 
-      const query = `*[
-        _type == 'translation.metadata' &&
-        translations[language == $sourceLocale][0].value._ref in $publishedDocumentIds
-      ] {
-        'sourceDocId': translations[language == $sourceLocale][0].value._ref,
-        'translationDocs': translations[language != $sourceLocale && defined(value._ref)]{
-          _key,
-          'docId': value._ref
-        }
-      }`;
-
       const translationMetadata = await client.fetch<
         TranslationDocumentMetadata[]
-      >(query, {
-        sourceLocale,
+      >(TRANSLATION_DOCS_FOR_PUBLISH_QUERY, {
         publishedDocumentIds,
       });
 
@@ -1326,6 +1330,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     downloadStatus,
     translationStatuses,
     pendingTranslations,
+    importingTranslations,
     isRefreshing,
     loadingSecrets,
     secrets,

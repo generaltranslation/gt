@@ -3,6 +3,30 @@ import { processBatch } from '../utils/batchProcessor';
 import { findDocument } from './findDocuments';
 import { getPublishedId } from '../utils/documentIds';
 
+/**
+ * Selects the translation documents belonging to a set of source documents.
+ *
+ * Source and translation entries are told apart by which document they
+ * reference, never by their `language` label. A metadata document written
+ * before the configured source locale was relabelled still carries the old
+ * code, so matching the label would drop the whole group from the publish and
+ * the inverse test would publish the source document as if it were a
+ * translation.
+ *
+ * Expects a `$publishedDocumentIds` param holding every source document id.
+ */
+export const TRANSLATION_DOCS_FOR_PUBLISH_QUERY = `*[
+  _type == 'translation.metadata' &&
+  count(translations[defined(value._ref) && value._ref in $publishedDocumentIds]) > 0
+] {
+  'translationDocs': translations[
+    defined(value._ref) && !(value._ref in $publishedDocumentIds)
+  ]{
+    _key,
+    'docId': value._ref
+  }
+}`;
+
 export async function publishDocument(
   documentId: string,
   client: SanityClient
