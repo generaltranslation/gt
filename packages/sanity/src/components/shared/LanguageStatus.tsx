@@ -2,7 +2,8 @@
 
 import { useCallback, useState } from 'react';
 import { Badge, Box, Button, Flex, Grid, Spinner, Text } from '@sanity/ui';
-import { CheckmarkCircleIcon, DownloadIcon } from '@sanity/icons';
+import { CheckmarkCircleIcon } from '@sanity/icons/CheckmarkCircle';
+import { DownloadIcon } from '@sanity/icons/Download';
 import { LocaleLabel } from './LocaleLabel';
 
 /**
@@ -22,6 +23,12 @@ type LanguageStatusProps = {
   localeId: string;
   state: LanguageStatusState;
   importFile: () => Promise<void>;
+  /**
+   * This locale is part of an import running elsewhere, such as Import All.
+   * The row's own button state only covers a click on that button, so without
+   * this a bulk import leaves every row looking idle until it finishes.
+   */
+  isImporting?: boolean;
 };
 
 const STATE_LABEL: Record<LanguageStatusState, string> = {
@@ -35,32 +42,42 @@ export const LanguageStatus = ({
   localeId,
   state,
   importFile,
+  isImporting = false,
 }: LanguageStatusProps) => {
-  const [isBusy, setIsBusy] = useState(false);
+  const [isSelfImporting, setIsSelfImporting] = useState(false);
+  // A bulk import reports every queued locale at once and only clears the set
+  // when the whole run ends, so a row that has already landed must stop
+  // reporting itself as in progress on its own.
+  const isBusy = (isSelfImporting || isImporting) && state !== 'imported';
 
   const handleImport = useCallback(async () => {
-    setIsBusy(true);
+    setIsSelfImporting(true);
     try {
       await importFile();
     } finally {
-      setIsBusy(false);
+      setIsSelfImporting(false);
     }
   }, [importFile]);
 
   return (
-    <Grid columns={5} gap={3} paddingX={3} paddingY={2}>
-      <Flex columnStart={1} columnEnd={3} align='center'>
+    <Grid gridTemplateColumns={5} gap={3} paddingX={3} paddingY={2}>
+      <Flex gridColumnStart={1} gridColumnEnd={3} align='center'>
         <LocaleLabel localeId={localeId} />
       </Flex>
 
-      <Flex columnStart={3} columnEnd={5} align='center' gap={2}>
-        {state === 'translating' && <Spinner size={1} muted />}
+      <Flex gridColumnStart={3} gridColumnEnd={5} align='center' gap={2}>
+        {(state === 'translating' || isBusy) && <Spinner size={1} muted />}
         <Text size={1} muted={state !== 'ready'}>
-          {STATE_LABEL[state]}
+          {isBusy ? 'Importing…' : STATE_LABEL[state]}
         </Text>
       </Flex>
 
-      <Flex columnStart={5} columnEnd={6} align='center' justify='flex-end'>
+      <Flex
+        gridColumnStart={5}
+        gridColumnEnd={6}
+        align='center'
+        justify='flex-end'
+      >
         {state === 'imported' ? (
           <Badge tone='positive' fontSize={0} radius={2}>
             <Flex align='center' gap={1}>
@@ -75,7 +92,7 @@ export const LanguageStatus = ({
             fontSize={1}
             padding={2}
             onClick={handleImport}
-            text='Import'
+            text={isBusy ? 'Importing…' : 'Import'}
             loading={isBusy}
             icon={DownloadIcon}
             disabled={isBusy || state !== 'ready'}

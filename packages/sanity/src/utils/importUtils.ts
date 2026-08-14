@@ -18,6 +18,15 @@ export type ReadyTranslationStatus = TranslationStatus & {
 export interface ImportOptions {
   filterReadyFiles?: (key: string, status: ReadyTranslationStatus) => boolean;
   onProgress?: (current: number, total: number) => void;
+  /**
+   * The translation-status keys selected for import, reported before any
+   * downloading starts. These come straight from the status map, which is what
+   * the locale rows are indexed by, so a caller can light up a row without
+   * rederiving anything. `onImportSuccess` builds its key from the downloaded
+   * file; the two agree today, and reporting the map keys here keeps that from
+   * being load-bearing.
+   */
+  onSelectedKeys?: (statusKeys: string[]) => void;
   onImportSuccess?: (key: string) => void;
 }
 
@@ -27,6 +36,7 @@ export async function getReadyFilesForImport(
 ): Promise<FileProperties[]> {
   const { filterReadyFiles = () => true } = options;
   const readyFilesByDocumentLocale = new Map<string, FileProperties>();
+  const selectedStatusKeys: string[] = [];
 
   for (const [key, status] of translationStatuses.entries()) {
     const readyStatus =
@@ -34,6 +44,7 @@ export async function getReadyFilesForImport(
         ? ({ ...status, fileData: status.fileData } as ReadyTranslationStatus)
         : null;
     if (readyStatus && filterReadyFiles(key, readyStatus)) {
+      selectedStatusKeys.push(key);
       const fileData = {
         fileId: getPublishedId(readyStatus.fileData.fileId),
         versionId: readyStatus.fileData.versionId,
@@ -51,7 +62,23 @@ export async function getReadyFilesForImport(
     }
   }
 
+  options.onSelectedKeys?.(selectedStatusKeys);
+
   return Array.from(readyFilesByDocumentLocale.values());
+}
+
+/**
+ * Identifies one file+locale across an import. Derived the same way for the
+ * files queued up front and the files that come back from the download, so
+ * `onImportStart` and `onImportSuccess` always agree on a key.
+ */
+function importKeyFor(file: {
+  branchId?: string;
+  fileId?: string;
+  versionId?: string;
+  locale?: string | null;
+}): string {
+  return `${file.branchId}:${file.fileId}:${file.versionId}:${file.locale}`;
 }
 
 export async function importTranslations(
@@ -79,7 +106,7 @@ export async function importTranslations(
       locale: file.locale!,
       data,
       translationContext,
-      key: `${file.branchId}:${file.fileId}:${file.versionId}:${file.locale}`,
+      key: importKeyFor(file),
     };
   });
 

@@ -1,5 +1,21 @@
 # generaltranslation
 
+## 9.1.4
+
+### Patch Changes
+
+- [#2059](https://github.com/generaltranslation/gt/pull/2059) [`6607925`](https://github.com/generaltranslation/gt/commit/660792523b15d2e43e9752ea599e5229c1b45bc7) Thanks [@rupaut98](https://github.com/rupaut98)! - Fall back to `plural` or `other` for the `zero` and `one` plural categories.
+
+## 9.1.3
+
+### Patch Changes
+
+- [#2074](https://github.com/generaltranslation/gt/pull/2074) [`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8) Thanks [@eoinest](https://github.com/eoinest)! - Migrate the package license from FSL-1.1-ALv2 to MIT.
+
+- Updated dependencies [[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)]:
+  - @generaltranslation/format@0.1.5
+  - @generaltranslation/icu@0.1.2
+
 ## 9.1.2
 
 ### Patch Changes
