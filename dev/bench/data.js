@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1786384789030,
+  "lastUpdate": 1786729610547,
   "repoUrl": "https://github.com/generaltranslation/gt",
   "entries": {
     "Middleware Benchmarks": [
@@ -8236,6 +8236,122 @@ window.BENCHMARK_DATA = {
             "value": 98.70000000001164,
             "unit": "ms",
             "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.6\"\n}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "61838b4498123192b0558f25c2607f39bb383273",
+          "message": "[ci] release (#2079)\n\nThis PR was opened by the [Changesets\nrelease](https://github.com/changesets/action) GitHub action. When\nyou're ready to do a release, you can merge this and the packages will\nbe published to npm automatically. If you're not ready to do a release\nyet, that's fine, whenever you add more changesets to main, this PR will\nbe updated.\n\n\n# Releases\n## gt-sanity@4.0.0\n\n### Major Changes\n\n- [#2096](https://github.com/generaltranslation/gt/pull/2096)\n[`88db50b`](https://github.com/generaltranslation/gt/commit/88db50b2ef3cc60871b516119e93f7fcdae9ed27)\nThanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add\nSanity 6 support and drop the Sanity 5 generation.\n\n`gt-sanity` now targets `sanity` 6.9.2+ and `@sanity/ui` 4. Sanity moved\nfrom `@sanity/ui` 3 to 4 in 6.9.2, so Studios on 6.0 through 6.8 are\nstill on the `@sanity/ui` 3 generation and should stay on `gt-sanity`\n3.1.x.\n\n  **Breaking changes**\n- **ESM-only.** The CommonJS build and the `require` export condition\nare removed, following `@sanity/ui` 4.\n- **Node.js 22.12+ required**, up from 18, matching `sanity` and\n`@sanity/ui` 4.\n- **Peer dependencies replace bundled Studio packages.** `@sanity/ui`,\n`@sanity/icons`, `@sanity/schema` and `@sanity/mutator` were previously\nregular dependencies. Because they are Studio runtime singletons,\ninstalling alongside a different Sanity generation nested a second copy,\nproducing duplicate schema registries and duplicate styled-components\ntheme contexts. They are now peer dependencies resolved from the host\nStudio.\n\n  **Dependency fixes**\n- The `sanity` peer range was `>=5.0.0`, which admitted Sanity 6 even\nthough the dependencies pinned the Sanity 5 generation. Installs\nresolved cleanly instead of warning, so the duplicate runtime was\nsilent. The range is now `^6.9.2`.\n- Raised the `@sanity/document-internationalization` and\n`sanity-plugin-internationalized-array` floors to `^6.2.30` and\n`^5.1.27`. The previous floors could resolve to releases that only\nsupport `sanity` 5, a second path to a duplicated runtime.\n  - Removed the unused `@sanity/util` dependency.\n\n  **Fixes**\n- `gtStructureItems` now pins an `apiVersion` on the document lists it\nbuilds. Those lists supply a custom filter, and Sanity warns once per\nlist when the version is omitted, which it has said will become an\nerror. The version is shared with the plugin's Sanity client as\n`SANITY_API_VERSION`.\n- **Publish Translations silently skipped documents whose source locale\nhad been relabelled.** Publish found the source entry in\n`translation.metadata` by matching `language` against the configured\nsource locale. A metadata document written before that label changed —\n`en` to `en-US`, say — still carries the old code, so the subquery\nmatched nothing and the whole group was dropped before publishing\nstarted, with no error. Importing was unaffected because it resolves\ndocuments by a different key, so publishing appeared to do nothing with\nno indication why. The inverse test had the same cause and a worse\noutcome: `language != $sourceLocale` treated a relabelled source entry\nas a translation and queued the source document itself for publishing.\nSource and translation entries are now told apart by which document they\nreference rather than by their language label.\n\n  **Translation progress in the Translations tool**\n- **Translate All** stayed idle while a run was still in flight. The\nbutton only tracked the request, which resolves long before General\nTranslation finishes, so the tool looked like the click had not\nregistered. It now reads \"Translating…\" with a spinner until every\nenqueued locale reports back, and is disabled meanwhile so the same run\ncannot be submitted twice. The document-level view already behaved this\nway.\n- **Locale rows showed nothing during a bulk import.** Each row only\ntracked its own Import button, so `Import All` left every row reading\n\"Ready to import\" until it finished. Rows queued by a bulk import now\nread \"Importing…\" with a spinner and flip to \"Imported\" individually as\neach one lands. `getReadyFilesForImport` accepts an `onSelectedKeys`\ncallback reporting the translation-status keys it selected; those keys\nindex the status map the rows are built from, unlike the keys passed to\n`onImportSuccess`, which come from the downloaded file and can carry a\ndifferent version than the one pinned at upload.\n\n### Patch Changes\n\n- [#2074](https://github.com/generaltranslation/gt/pull/2074)\n[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)\nThanks [@eoinest](https://github.com/eoinest)! - Migrate the package\nlicense from FSL-1.1-ALv2 to MIT.\n\n- Updated dependencies\n[[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)]:\n  - generaltranslation@9.1.3\n## gt@2.16.5\n\n### Patch Changes\n\n- [#2074](https://github.com/generaltranslation/gt/pull/2074)\n[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)\nThanks [@eoinest](https://github.com/eoinest)! - Migrate the package\nlicense from FSL-1.1-ALv2 to MIT.\n\n- Updated dependencies\n[[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)]:\n  - @generaltranslation/format@0.1.5\n  - @generaltranslation/icu@0.1.2\n  - @generaltranslation/python-extractor@0.2.36\n  - @generaltranslation/supported-locales@2.1.16\n  - generaltranslation@9.1.3\n  - gt-remark@1.0.12\n## @generaltranslation/compiler@1.3.38\n\n### Patch Changes\n\n- [#2074](https://github.com/generaltranslation/gt/pull/2074)\n[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)\nThanks [@eoinest](https://github.com/eoinest)! - Migrate the package\nlicense from FSL-1.1-ALv2 to MIT.\n\n- Updated dependencies\n[[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)]:\n  - @generaltranslation/format@0.1.5\n  - generaltranslation@9.1.3\n## generaltranslation@9.1.3\n\n### Patch Changes\n\n- [#2074](https://github.com/generaltranslation/gt/pull/2074)\n[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)\nThanks [@eoinest](https://github.com/eoinest)! - Migrate the package\nlicense from FSL-1.1-ALv2 to MIT.\n\n- Updated dependencies\n[[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)]:\n  - @generaltranslation/format@0.1.5\n  - @generaltranslation/icu@0.1.2\n## @generaltranslation/format@0.1.5\n\n### Patch Changes\n\n- [#2074](https://github.com/generaltranslation/gt/pull/2074)\n[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)\nThanks [@eoinest](https://github.com/eoinest)! - Migrate the package\nlicense from FSL-1.1-ALv2 to MIT.\n\n- Updated dependencies\n[[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)]:\n  - @generaltranslation/icu@0.1.2\n## gtx-cli@2.16.5\n\n### Patch Changes\n\n- [#2074](https://github.com/generaltranslation/gt/pull/2074)\n[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)\nThanks [@eoinest](https://github.com/eoinest)! - Migrate the package\nlicense from FSL-1.1-ALv2 to MIT.\n\n- Updated dependencies\n[[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)]:\n  - gt@2.16.5\n## gt-i18n@1.0.13\n\n### Patch Changes\n\n- [#2074](https://github.com/generaltranslation/gt/pull/2074)\n[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)\nThanks [@eoinest](https://github.com/eoinest)! - Migrate the package\nlicense from FSL-1.1-ALv2 to MIT.\n\n- Updated dependencies\n[[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)]:\n  - @generaltranslation/format@0.1.5\n  - generaltranslation@9.1.3\n## @generaltranslation/icu@0.1.2\n\n### Patch Changes\n\n- [#2074](https://github.com/generaltranslation/gt/pull/2074)\n[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)\nThanks [@eoinest](https://github.com/eoinest)! - Migrate the package\nlicense from FSL-1.1-ALv2 to MIT.\n## locadex@1.0.208\n\n### Patch Changes\n\n- [#2074](https://github.com/generaltranslation/gt/pull/2074)\n[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)\nThanks [@eoinest](https://github.com/eoinest)! - Migrate the package\nlicense from FSL-1.1-ALv2 to MIT.\n\n- Updated dependencies\n[[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)]:\n  - gt@2.16.5\n## @generaltranslation/mcp@1.0.9\n\n### Patch Changes\n\n- [#2074](https://github.com/generaltranslation/gt/pull/2074)\n[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)\nThanks [@eoinest](https://github.com/eoinest)! - Migrate the package\nlicense from FSL-1.1-ALv2 to MIT.\n## gt-next@11.1.7\n\n### Patch Changes\n\n- [#2074](https://github.com/generaltranslation/gt/pull/2074)\n[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)\nThanks [@eoinest](https://github.com/eoinest)! - Migrate the package\nlicense from FSL-1.1-ALv2 to MIT.\n\n- Updated dependencies\n[[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)]:\n  - @generaltranslation/compiler@1.3.38\n  - @generaltranslation/format@0.1.5\n  - @generaltranslation/react-core@11.1.7\n  - generaltranslation@9.1.3\n  - gt-i18n@1.0.13\n  - gt-react@11.1.7\n## gt-node@1.0.14\n\n### Patch Changes\n\n- [#2074](https://github.com/generaltranslation/gt/pull/2074)\n[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)\nThanks [@eoinest](https://github.com/eoinest)! - Migrate the package\nlicense from FSL-1.1-ALv2 to MIT.\n\n- Updated dependencies\n[[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)]:\n  - generaltranslation@9.1.3\n  - gt-i18n@1.0.13\n## @generaltranslation/python-extractor@0.2.36\n\n### Patch Changes\n\n- [#2074](https://github.com/generaltranslation/gt/pull/2074)\n[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)\nThanks [@eoinest](https://github.com/eoinest)! - Migrate the package\nlicense from FSL-1.1-ALv2 to MIT.\n\n- Updated dependencies\n[[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)]:\n  - generaltranslation@9.1.3\n## gt-react@11.1.7\n\n### Patch Changes\n\n- [#2074](https://github.com/generaltranslation/gt/pull/2074)\n[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)\nThanks [@eoinest](https://github.com/eoinest)! - Migrate the package\nlicense from FSL-1.1-ALv2 to MIT.\n\n- Updated dependencies\n[[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)]:\n  - @generaltranslation/react-core@11.1.7\n  - generaltranslation@9.1.3\n  - gt-i18n@1.0.13\n## @generaltranslation/react-core@11.1.7\n\n### Patch Changes\n\n- [#2074](https://github.com/generaltranslation/gt/pull/2074)\n[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)\nThanks [@eoinest](https://github.com/eoinest)! - Migrate the package\nlicense from FSL-1.1-ALv2 to MIT.\n\n- Updated dependencies\n[[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)]:\n  - @generaltranslation/format@0.1.5\n  - generaltranslation@9.1.3\n  - gt-i18n@1.0.13\n## @generaltranslation/react-core-linter@0.1.15\n\n### Patch Changes\n\n- [#2074](https://github.com/generaltranslation/gt/pull/2074)\n[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)\nThanks [@eoinest](https://github.com/eoinest)! - Migrate the package\nlicense from FSL-1.1-ALv2 to MIT.\n\n- Updated dependencies\n[[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)]:\n  - @generaltranslation/icu@0.1.2\n## gt-react-native@11.1.7\n\n### Patch Changes\n\n- [#2074](https://github.com/generaltranslation/gt/pull/2074)\n[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)\nThanks [@eoinest](https://github.com/eoinest)! - Migrate the package\nlicense from FSL-1.1-ALv2 to MIT.\n\n- Updated dependencies\n[[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)]:\n  - @generaltranslation/format@0.1.5\n  - @generaltranslation/react-core@11.1.7\n  - @generaltranslation/supported-locales@2.1.16\n  - generaltranslation@9.1.3\n  - gt-i18n@1.0.13\n## gt-remark@1.0.12\n\n### Patch Changes\n\n- [#2074](https://github.com/generaltranslation/gt/pull/2074)\n[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)\nThanks [@eoinest](https://github.com/eoinest)! - Migrate the package\nlicense from FSL-1.1-ALv2 to MIT.\n## @generaltranslation/supported-locales@2.1.16\n\n### Patch Changes\n\n- [#2074](https://github.com/generaltranslation/gt/pull/2074)\n[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)\nThanks [@eoinest](https://github.com/eoinest)! - Migrate the package\nlicense from FSL-1.1-ALv2 to MIT.\n\n- Updated dependencies\n[[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)]:\n  - generaltranslation@9.1.3\n## gt-tanstack-start@11.1.7\n\n### Patch Changes\n\n- [#2074](https://github.com/generaltranslation/gt/pull/2074)\n[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)\nThanks [@eoinest](https://github.com/eoinest)! - Migrate the package\nlicense from FSL-1.1-ALv2 to MIT.\n\n- Updated dependencies\n[[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)]:\n  - @generaltranslation/react-core@11.1.7\n  - generaltranslation@9.1.3\n  - gt-i18n@1.0.13\n  - gt-react@11.1.7\n\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+          "timestamp": "2026-08-14T17:38:38Z",
+          "url": "https://github.com/generaltranslation/gt/commit/61838b4498123192b0558f25c2607f39bb383273"
+        },
+        "date": 1786729609723,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "gt-next > unit > middleware: factory creation latency > createNextMiddleware() (mean)",
+            "value": 0.033285271268805844,
+            "range": "±0.0202",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.7\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > default locale request (/) (mean)",
+            "value": 0.19706581166272966,
+            "range": "±0.081",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.7\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > non-default locale request (/fr) (mean)",
+            "value": 0.35564479160739254,
+            "range": "±0.0876",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.7\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > nested route (/fr/about) (mean)",
+            "value": 0.3638187316363589,
+            "range": "±0.1271",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.7\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > ttfb",
+            "value": 132.09999999997672,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.7\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > domContentLoaded",
+            "value": 145,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.7\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > load",
+            "value": 218.09999999997672,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.7\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > elapsed",
+            "value": 109,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.7\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > ttfb",
+            "value": 19.900000000023283,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.7\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > domContentLoaded",
+            "value": 30.300000000046566,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.7\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > load",
+            "value": 99.90000000002328,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.7\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: locale-switch-en-to-fr > elapsed",
+            "value": 609,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.7\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > ttfb",
+            "value": 11.099999999976717,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.7\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > domContentLoaded",
+            "value": 20.20000000001164,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.7\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > load",
+            "value": 88.09999999997672,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.7\"\n}"
           }
         ]
       }
