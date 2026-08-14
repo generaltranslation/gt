@@ -46,6 +46,6 @@ export interface PluginOptions {
   entryPointFilePath?: string;
   /* Polyfills to exclude */
   excludePolyfills?: Polyfill[];
-  /* true forces every supported polyfill; an array forces only those entries */
-  forcePolyfills?: boolean | ForceablePolyfill[];
+  /* Polyfills that should bypass runtime capability detection */
+  forcePolyfills?: ForceablePolyfill[];
 }

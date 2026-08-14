@@ -20,11 +20,7 @@ function getPolyfillImport(
   polyfill: Polyfill,
   forcePolyfills: PluginOptions['forcePolyfills']
 ): string {
-  if (
-    isForceablePolyfill(polyfill) &&
-    (forcePolyfills === true ||
-      (Array.isArray(forcePolyfills) && forcePolyfills.includes(polyfill)))
-  ) {
+  if (isForceablePolyfill(polyfill) && forcePolyfills?.includes(polyfill)) {
     return FORCED_POLYFILL_IMPORTS[polyfill];
   }
 
@@ -45,7 +41,7 @@ export function plugin(
     configFilePath,
     entryPointFilePath = path.resolve(process.cwd(), 'src', 'App.tsx'),
     excludePolyfills = [],
-    forcePolyfills = false,
+    forcePolyfills = [],
   }: PluginOptions
 ): PluginObj {
   const { types: t } = babel;

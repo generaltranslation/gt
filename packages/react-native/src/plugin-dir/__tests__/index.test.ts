@@ -8,7 +8,7 @@ const entryPointFilePath = '/app/src/App.tsx';
 function transform({
   code = 'const app = true;',
   excludePolyfills = [],
-  forcePolyfills = false,
+  forcePolyfills = [],
 }: Pick<PluginOptions, 'excludePolyfills' | 'forcePolyfills'> & {
   code?: string;
 } = {}) {
@@ -48,20 +48,7 @@ describe('React Native Babel plugin polyfills', () => {
     );
   });
 
-  it('forces every supported polyfill when configured with true', () => {
-    const imports = transform({ forcePolyfills: true });
-
-    expect(imports).toContain('@formatjs/intl-displaynames/polyfill-force');
-    expect(imports).toContain('@formatjs/intl-listformat/polyfill-force');
-    expect(imports).toContain(
-      '@formatjs/intl-relativetimeformat/polyfill-force'
-    );
-    expect(imports).not.toContain('@formatjs/intl-displaynames/polyfill');
-    expect(imports).not.toContain('@formatjs/intl-listformat/polyfill');
-    expect(imports).not.toContain('@formatjs/intl-relativetimeformat/polyfill');
-  });
-
-  it('forces only the selected polyfills when configured with an array', () => {
+  it('forces only the selected polyfills', () => {
     const imports = transform({
       forcePolyfills: [
         '@formatjs/intl-displaynames/polyfill',
@@ -82,7 +69,7 @@ describe('React Native Babel plugin polyfills', () => {
   it('gives excludePolyfills precedence over forcePolyfills', () => {
     const imports = transform({
       excludePolyfills: ['@formatjs/intl-displaynames/polyfill'],
-      forcePolyfills: true,
+      forcePolyfills: ['@formatjs/intl-displaynames/polyfill'],
     });
 
     expect(imports).not.toContain('@formatjs/intl-displaynames/polyfill');
