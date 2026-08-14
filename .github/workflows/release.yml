@@ -4,22 +4,60 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
-  id-token: write # Required for OIDC
-  contents: write
-  pull-requests: write
-  packages: write
+  contents: read
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 env:
   CI: true
 jobs:
-  release:
-    if: github.ref_name == 'main'
-    name: Release
+  release-pr:
+    if: github.event_name == 'push' && github.ref_name == 'main' && !startsWith(github.event.head_commit.message, '[ci] release')
+    name: Create Release Pull Request
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        name: Install pnpm
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.18.0
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        # not frozen since we are using workspaces & package versions will change
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Create Release Pull Request
+        uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1
+        with:
+          version: pnpm run version-packages
+          commit: '[ci] release'
+          title: '[ci] release'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release:
+    if: github.ref_name == 'main' && (github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, '[ci] release'))
+    name: Publish Release
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Required for npm trusted publishing
+      contents: write
+      pull-requests: write
+      packages: write
     environment:
       name: 'release'
     steps:
@@ -39,7 +77,6 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Validate release versions
-        if: startsWith(github.event.head_commit.message, '[ci] release')
         run: pnpm run check:release-versions
 
       - name: Setup Bun
@@ -303,6 +340,11 @@ jobs:
     if: github.ref_name == 'odysseus'
     name: Odysseus Release
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Required for npm trusted publishing
+      contents: write
+      pull-requests: write
+      packages: write
     environment:
       name: 'release'
     steps:
