@@ -36,24 +36,7 @@ export function _getPluralForm(
   if (provisionalBranchName === 'two' && forms.includes('dual')) return 'dual';
   // fallbacks
   if (forms.includes(provisionalBranchName)) return provisionalBranchName;
-  // two
-  if (provisionalBranchName === 'two' && forms.includes('dual')) return 'dual';
-  if (provisionalBranchName === 'two' && forms.includes('plural'))
-    return 'plural';
-  if (provisionalBranchName === 'two' && forms.includes('other'))
-    return 'other';
-  // few
-  if (provisionalBranchName === 'few' && forms.includes('plural'))
-    return 'plural';
-  if (provisionalBranchName === 'few' && forms.includes('other'))
-    return 'other';
-  // many
-  if (provisionalBranchName === 'many' && forms.includes('plural'))
-    return 'plural';
-  if (provisionalBranchName === 'many' && forms.includes('other'))
-    return 'other';
-  // other
-  if (provisionalBranchName === 'other' && forms.includes('plural'))
-    return 'plural';
+  if (forms.includes('plural')) return 'plural';
+  if (forms.includes('other')) return 'other';
   return '';
 }
