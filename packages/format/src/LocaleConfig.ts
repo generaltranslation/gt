@@ -38,12 +38,6 @@ type LocalesOption = {
 
 type WithLocales<T = object> = T & LocalesOption;
 
-// Bounded because memoized methods accept caller-provided locale lists (for
-// example per-request Accept-Language candidates on a long-lived server
-// instance), so distinct keys are unbounded. Clearing on overflow only costs
-// a recompute, which is the pre-memoization behavior.
-const MAX_MEMO_SIZE = 500;
-
 /**
  * LocaleConfig contains the locale and formatting primitives exposed through
  * the core entrypoint.
@@ -56,18 +50,6 @@ export class LocaleConfig {
   readonly defaultLocale: string;
   readonly locales: string[];
   readonly customMapping?: CustomMapping;
-  // Locale resolution results are memoized per instance: they depend only on
-  // the call arguments (captured in the key) and customMapping, which is set
-  // once in the constructor.
-  private readonly memoCache = new Map<string, unknown>();
-
-  private memoize<T>(key: string, compute: () => T): T {
-    if (this.memoCache.has(key)) return this.memoCache.get(key) as T;
-    const result = compute();
-    if (this.memoCache.size >= MAX_MEMO_SIZE) this.memoCache.clear();
-    this.memoCache.set(key, result);
-    return result;
-  }
 
   constructor({
     defaultLocale = libraryDefaultLocale,
@@ -247,23 +229,13 @@ export class LocaleConfig {
       ? this.locales
       : undefined
   ) {
-    // JSON keys keep distinct inputs distinct, including [] vs undefined
-    // approved locales, which _requiresTranslation treats differently.
-    const key = JSON.stringify([
-      'requiresTranslation',
-      sourceLocale,
-      targetLocale,
-      approvedLocales ?? null,
-    ]);
-    return this.memoize(key, () =>
-      _requiresTranslation(
-        this.resolveCanonicalLocale(sourceLocale),
-        this.resolveCanonicalLocale(targetLocale),
-        approvedLocales
-          ? approvedLocales.map((locale) => this.resolveCanonicalLocale(locale))
-          : undefined,
-        this.customMapping
-      )
+    return _requiresTranslation(
+      this.resolveCanonicalLocale(sourceLocale),
+      this.resolveCanonicalLocale(targetLocale),
+      approvedLocales
+        ? approvedLocales.map((locale) => this.resolveCanonicalLocale(locale))
+        : undefined,
+      this.customMapping
     );
   }
 
@@ -274,16 +246,6 @@ export class LocaleConfig {
   determineLocale(
     locales: string | string[],
     approvedLocales: string[] = this.locales
-  ) {
-    const key = JSON.stringify(['determineLocale', locales, approvedLocales]);
-    return this.memoize(key, () =>
-      this.computeDetermineLocale(locales, approvedLocales)
-    );
-  }
-
-  private computeDetermineLocale(
-    locales: string | string[],
-    approvedLocales: string[]
   ) {
     const approvedLocalePairs = approvedLocales.map((locale) => ({
       locale,
