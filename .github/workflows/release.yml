@@ -107,32 +107,63 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          commits=$(gh api --paginate --slurp \
-            "/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/commits?per_page=100")
+          owner=${GITHUB_REPOSITORY%%/*}
+          repository=${GITHUB_REPOSITORY#*/}
+          mapfile -t commit_shas < <(gh api --paginate --slurp \
+            "/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/commits?per_page=100" \
+            --jq 'flatten | .[].sha')
 
-          if echo "$commits" | jq -e '
-            flatten |
-            length > 0 and
-            all(.[];
-              .author.id == 41898282 and
-              .committer.id == 41898282 and
-              .commit.verification.verified == true
-            )
-          ' > /dev/null; then
-            exit 0
+          if [ "${#commit_shas[@]}" -eq 0 ]; then
+            echo '::error::The release pull request has no commits.'
+            exit 1
           fi
 
-          echo '::error::Every release PR commit must be GitHub-signed and attributed to github-actions[bot].'
-          echo "$commits" | jq -r '
-            flatten[] |
-            select(
-              .author.id != 41898282 or
-              .committer.id != 41898282 or
-              .commit.verification.verified != true
-            ) |
-            "::error::Untrusted release commit \(.sha)"
-          '
-          exit 1
+          for sha in "${commit_shas[@]}"; do
+            commit=$(gh api graphql \
+              -f owner="$owner" \
+              -f name="$repository" \
+              -f oid="$sha" \
+              -f query='query($owner: String!, $name: String!, $oid: GitObjectID!) {
+                repository(owner: $owner, name: $name) {
+                  object(oid: $oid) {
+                    ... on Commit {
+                      author { user { databaseId } }
+                      signature {
+                        isValid
+                        signer { databaseId }
+                        wasSignedByGitHub
+                      }
+                    }
+                  }
+                }
+              }')
+
+            if echo "$commit" | jq -e '
+              .data.repository.object as $commit |
+              ($commit.author.user.databaseId // 0) as $author |
+              ($commit.signature // {}) as $signature |
+              (
+                $author == 41898282 and
+                $signature.isValid == true and
+                $signature.wasSignedByGitHub == true and
+                $signature.signer.databaseId == 19864447
+              ) or (
+                ([73407149, 69982825, 90429137] | index($author)) != null and
+                $signature.isValid == true and
+                (
+                  ($signature.wasSignedByGitHub == true and
+                    $signature.signer.databaseId == 19864447) or
+                  ($signature.wasSignedByGitHub == false and
+                    $signature.signer.databaseId == $author)
+                )
+              )
+            ' > /dev/null; then
+              continue
+            fi
+
+            echo "::error::Untrusted release commit ${sha}. Commits must be created by github-actions[bot] or verifiably signed by Ernest, Brian, or Archie."
+            exit 1
+          done
 
       - name: Checkout Repo
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
