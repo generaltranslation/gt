@@ -44,13 +44,38 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Create Release Pull Request
+        id: changesets-pr
         uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1
         with:
           version: pnpm run version-packages
           commit: '[ci] release'
           title: '[ci] release'
+          commitMode: github-api
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Clarify automatic publishing
+        if: steps.changesets-pr.outputs.pullRequestNumber != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.changesets-pr.outputs.pullRequestNumber }}
+        run: |
+          body=$(gh pr view "$PR_NUMBER" --json body --jq .body)
+          manual_text='publish to npm yourself or [setup this action to publish automatically](https://github.com/changesets/action#with-publishing)'
+          automatic_text='the packages will be published to npm automatically after this pull request is reviewed and merged'
+
+          if [[ "$body" == *"$automatic_text"* ]]; then
+            exit 0
+          fi
+          if [[ "$body" != *"$manual_text"* ]]; then
+            echo '::error::The Changesets release instructions did not match the pinned action output.'
+            exit 1
+          fi
+
+          updated_body=${body/"$manual_text"/"$automatic_text"}
+          gh api --method PATCH \
+            "/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" \
+            --raw-field body="$updated_body" > /dev/null
 
   # GitHub Actions bot: 41898282. Allowed mergers: eoinest (73407149),
   # brian-lou (69982825), and archie-mckenzie (90429137).
@@ -77,6 +102,69 @@ jobs:
     environment:
       name: 'release'
     steps:
+      - name: Verify release pull request provenance
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          owner=${GITHUB_REPOSITORY%%/*}
+          repository=${GITHUB_REPOSITORY#*/}
+          mapfile -t commit_shas < <(gh api --paginate --slurp \
+            "/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/commits?per_page=100" \
+            --jq 'flatten | .[].sha')
+
+          if [ "${#commit_shas[@]}" -eq 0 ]; then
+            echo '::error::The release pull request has no commits.'
+            exit 1
+          fi
+
+          for sha in "${commit_shas[@]}"; do
+            commit=$(gh api graphql \
+              -f owner="$owner" \
+              -f name="$repository" \
+              -f oid="$sha" \
+              -f query='query($owner: String!, $name: String!, $oid: GitObjectID!) {
+                repository(owner: $owner, name: $name) {
+                  object(oid: $oid) {
+                    ... on Commit {
+                      author { user { databaseId } }
+                      signature {
+                        isValid
+                        signer { databaseId }
+                        wasSignedByGitHub
+                      }
+                    }
+                  }
+                }
+              }')
+
+            if echo "$commit" | jq -e '
+              .data.repository.object as $commit |
+              ($commit.author.user.databaseId // 0) as $author |
+              ($commit.signature // {}) as $signature |
+              (
+                $author == 41898282 and
+                $signature.isValid == true and
+                $signature.wasSignedByGitHub == true and
+                $signature.signer.databaseId == 19864447
+              ) or (
+                ([73407149, 69982825, 90429137] | index($author)) != null and
+                $signature.isValid == true and
+                (
+                  ($signature.wasSignedByGitHub == true and
+                    $signature.signer.databaseId == 19864447) or
+                  ($signature.wasSignedByGitHub == false and
+                    $signature.signer.databaseId == $author)
+                )
+              )
+            ' > /dev/null; then
+              continue
+            fi
+
+            echo "::error::Untrusted release commit ${sha}. Commits must be created by github-actions[bot] or verifiably signed by Ernest, Brian, or Archie."
+            exit 1
+          done
+
       - name: Checkout Repo
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
