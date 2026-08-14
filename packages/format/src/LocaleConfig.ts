@@ -9,8 +9,12 @@ import {
   _selectRelativeTimeUnit,
 } from './formatting/format';
 import { intlCache } from './cache/IntlCache';
-import { _requiresTranslation } from './locales/requiresTranslation';
-import { _determineLocale } from './locales/determineLocale';
+import {
+  _prepareApprovedLocales,
+  type ApprovedLocales,
+} from './locales/approvedLocales';
+import { _requiresTranslationWithScope } from './locales/requiresTranslation';
+import { _determineLocaleWithIndex } from './locales/determineLocale';
 import { _isSameLanguage } from './locales/isSameLanguage';
 import { _getLocaleProperties } from './locales/getLocaleProperties';
 import { _getLocaleEmoji } from './locales/getLocaleEmoji';
@@ -39,6 +43,16 @@ type LocalesOption = {
 type WithLocales<T = object> = T & LocalesOption;
 
 /**
+ * Approved-locales work that requiresTranslation and determineLocale would
+ * otherwise redo on every call: canonical codes plus the validated and
+ * indexed scope built from them.
+ */
+type LocaleResolutionScope = {
+  approvedLocalePairs: { locale: string; canonicalLocale: string }[];
+  approved: ApprovedLocales;
+};
+
+/**
  * LocaleConfig contains the locale and formatting primitives exposed through
  * the core entrypoint.
  *
@@ -50,6 +64,31 @@ export class LocaleConfig {
   readonly defaultLocale: string;
   readonly locales: string[];
   readonly customMapping?: CustomMapping;
+  // Derived from this.locales and this.customMapping, which are set once in
+  // the constructor. Built lazily so construction stays cheap for instances
+  // that never resolve locales.
+  private resolutionScope?: LocaleResolutionScope;
+
+  private getResolutionScope(): LocaleResolutionScope {
+    this.resolutionScope ??= this.buildResolutionScope(this.locales);
+    return this.resolutionScope;
+  }
+
+  private buildResolutionScope(
+    approvedLocales: string[]
+  ): LocaleResolutionScope {
+    const approvedLocalePairs = approvedLocales.map((locale) => ({
+      locale,
+      canonicalLocale: this.resolveCanonicalLocale(locale),
+    }));
+    return {
+      approvedLocalePairs,
+      approved: _prepareApprovedLocales(
+        approvedLocalePairs.map(({ canonicalLocale }) => canonicalLocale),
+        this.customMapping
+      ),
+    };
+  }
 
   constructor({
     defaultLocale = libraryDefaultLocale,
@@ -229,12 +268,23 @@ export class LocaleConfig {
       ? this.locales
       : undefined
   ) {
-    return _requiresTranslation(
+    // The default scope (this.locales) is prepared once per instance; a
+    // caller-provided list is prepared for that call only. No configured
+    // locales means no approved-locales restriction.
+    const approvedScope = approvedLocales
+      ? approvedLocales === this.locales
+        ? this.getResolutionScope().approved
+        : _prepareApprovedLocales(
+            approvedLocales.map((locale) =>
+              this.resolveCanonicalLocale(locale)
+            ),
+            this.customMapping
+          )
+      : undefined;
+    return _requiresTranslationWithScope(
       this.resolveCanonicalLocale(sourceLocale),
       this.resolveCanonicalLocale(targetLocale),
-      approvedLocales
-        ? approvedLocales.map((locale) => this.resolveCanonicalLocale(locale))
-        : undefined,
+      approvedScope,
       this.customMapping
     );
   }
@@ -247,15 +297,15 @@ export class LocaleConfig {
     locales: string | string[],
     approvedLocales: string[] = this.locales
   ) {
-    const approvedLocalePairs = approvedLocales.map((locale) => ({
-      locale,
-      canonicalLocale: this.resolveCanonicalLocale(locale),
-    }));
-    const resolvedLocale = _determineLocale(
+    const { approvedLocalePairs, approved } =
+      approvedLocales === this.locales
+        ? this.getResolutionScope()
+        : this.buildResolutionScope(approvedLocales);
+    const resolvedLocale = _determineLocaleWithIndex(
       Array.isArray(locales)
         ? locales.map((locale) => this.resolveCanonicalLocale(locale))
         : this.resolveCanonicalLocale(locales),
-      approvedLocalePairs.map(({ canonicalLocale }) => canonicalLocale),
+      approved,
       this.customMapping
     );
     if (!resolvedLocale) return undefined;
