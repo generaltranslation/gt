@@ -9,7 +9,6 @@ on:
       - main
     types:
       - closed
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -18,7 +17,7 @@ env:
   CI: true
 jobs:
   release-pr:
-    if: github.event_name == 'push' && github.ref_name == 'main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     name: Create Release Pull Request
     runs-on: ubuntu-latest
     concurrency: ${{ github.workflow }}-release-pr-${{ github.ref }}
@@ -53,28 +52,28 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # GitHub Actions bot: 41898282. Manual recovery: eoinest (73407149),
+  # GitHub Actions bot: 41898282. Allowed mergers: eoinest (73407149),
   # brian-lou (69982825), and archie-mckenzie (90429137).
   release:
     if: >-
-      (github.event_name == 'pull_request' &&
-        github.event.action == 'closed' &&
-        github.event.pull_request.merged == true &&
-        github.event.pull_request.base.ref == 'main' &&
-        github.event.pull_request.head.ref == 'changeset-release/main' &&
-        github.event.pull_request.head.repo.full_name == github.repository &&
-        github.event.pull_request.user.id == 41898282) ||
-      (github.event_name == 'workflow_dispatch' &&
-        github.ref_name == 'main' &&
-        (github.actor_id == '73407149' ||
-          github.actor_id == '69982825' ||
-          github.actor_id == '90429137'))
+      github.event_name == 'pull_request' &&
+      github.event.action == 'closed' &&
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.ref == 'changeset-release/main' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.id == 41898282 &&
+      (github.event.pull_request.merged_by.id == 73407149 ||
+        github.event.pull_request.merged_by.id == 69982825 ||
+        github.event.pull_request.merged_by.id == 90429137)
     name: Publish Release
     runs-on: ubuntu-latest
     concurrency: ${{ github.workflow }}-publish-main
     permissions:
+      actions: read # Required to authenticate retry recovery
       id-token: write # Required for npm trusted publishing
       contents: write
+      pull-requests: read
     environment:
       name: 'release'
     steps:
@@ -102,9 +101,34 @@ jobs:
             exit 1
           fi
 
-      - name: Validate release versions
-        if: github.event_name == 'pull_request'
-        run: pnpm run check:release-versions
+      - name: Authorize package publishing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if pnpm run check:release-versions; then
+            exit 0
+          fi
+
+          if [ "$GITHUB_RUN_ATTEMPT" = '1' ]; then
+            echo '::error::Release version validation failed before package publishing began.'
+            exit 1
+          fi
+
+          attempt=1
+          while [ "$attempt" -lt "$GITHUB_RUN_ATTEMPT" ]; do
+            publish_conclusion=$(gh api \
+              -H 'Accept: application/vnd.github+json' \
+              "/repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/attempts/${attempt}/jobs?per_page=100" \
+              --jq '[.jobs[].steps[]? | select(.name == "Publish packages to npm") | .conclusion] | map(select(. != null and . != "skipped")) | first // ""')
+            if [ -n "$publish_conclusion" ]; then
+              echo "A previous attempt reached package publishing (${publish_conclusion}); continuing exact-run recovery."
+              exit 0
+            fi
+            attempt=$((attempt + 1))
+          done
+
+          echo '::error::Release version validation failed, and no previous attempt reached package publishing.'
+          exit 1
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
@@ -204,9 +228,15 @@ jobs:
           if [ -n "$published_packages" ] && echo "$published_packages" | jq -e 'any(.[]; .name == "gt")' > /dev/null; then
             echo "should_release_bin=true" >> $GITHUB_OUTPUT
           elif npm view "gt@${version}" version > /dev/null 2>&1 && ! npm view "gt@${version}-bin.0" version > /dev/null 2>&1; then
-            # A previous run published gt but failed before the binary
-            # release landed; finish it on this run.
-            echo "should_release_bin=true" >> $GITHUB_OUTPUT
+            latest_version=$(npm view 'gt@latest' version)
+            if [ "$version" = "$latest_version" ]; then
+              # This exact run published gt but failed before the binary
+              # release landed; finish it without rolling latest backwards.
+              echo "should_release_bin=true" >> $GITHUB_OUTPUT
+            else
+              echo "::warning::Skipping gt@${version} binary recovery because gt@latest is ${latest_version}."
+              echo "should_release_bin=false" >> $GITHUB_OUTPUT
+            fi
           else
             echo "should_release_bin=false" >> $GITHUB_OUTPUT
           fi
@@ -297,9 +327,15 @@ jobs:
           if [ -n "$published_packages" ] && echo "$published_packages" | jq -e 'any(.[]; .name == "gtx-cli")' > /dev/null; then
             echo "should_release_bin=true" >> $GITHUB_OUTPUT
           elif npm view "gtx-cli@${version}" version > /dev/null 2>&1 && ! npm view "gtx-cli@${version}-bin.0" version > /dev/null 2>&1; then
-            # A previous run published gtx-cli but failed before the binary
-            # release landed; finish it on this run.
-            echo "should_release_bin=true" >> $GITHUB_OUTPUT
+            latest_version=$(npm view 'gtx-cli@latest' version)
+            if [ "$version" = "$latest_version" ]; then
+              # This exact run published gtx-cli but failed before the binary
+              # release landed; finish it without rolling latest backwards.
+              echo "should_release_bin=true" >> $GITHUB_OUTPUT
+            else
+              echo "::warning::Skipping gtx-cli@${version} binary recovery because gtx-cli@latest is ${latest_version}."
+              echo "should_release_bin=false" >> $GITHUB_OUTPUT
+            fi
           else
             echo "should_release_bin=false" >> $GITHUB_OUTPUT
           fi
