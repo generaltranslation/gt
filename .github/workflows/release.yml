@@ -44,13 +44,38 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Create Release Pull Request
+        id: changesets-pr
         uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1
         with:
           version: pnpm run version-packages
           commit: '[ci] release'
           title: '[ci] release'
+          commitMode: github-api
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Clarify automatic publishing
+        if: steps.changesets-pr.outputs.pullRequestNumber != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.changesets-pr.outputs.pullRequestNumber }}
+        run: |
+          body=$(gh pr view "$PR_NUMBER" --json body --jq .body)
+          manual_text='publish to npm yourself or [setup this action to publish automatically](https://github.com/changesets/action#with-publishing)'
+          automatic_text='the packages will be published to npm automatically after this pull request is reviewed and merged'
+
+          if [[ "$body" == *"$automatic_text"* ]]; then
+            exit 0
+          fi
+          if [[ "$body" != *"$manual_text"* ]]; then
+            echo '::error::The Changesets release instructions did not match the pinned action output.'
+            exit 1
+          fi
+
+          updated_body=${body/"$manual_text"/"$automatic_text"}
+          gh api --method PATCH \
+            "/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" \
+            --raw-field body="$updated_body" > /dev/null
 
   # GitHub Actions bot: 41898282. Allowed mergers: eoinest (73407149),
   # brian-lou (69982825), and archie-mckenzie (90429137).
@@ -77,6 +102,38 @@ jobs:
     environment:
       name: 'release'
     steps:
+      - name: Verify release pull request provenance
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          commits=$(gh api --paginate --slurp \
+            "/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/commits?per_page=100")
+
+          if echo "$commits" | jq -e '
+            flatten |
+            length > 0 and
+            all(.[];
+              .author.id == 41898282 and
+              .committer.id == 41898282 and
+              .commit.verification.verified == true
+            )
+          ' > /dev/null; then
+            exit 0
+          fi
+
+          echo '::error::Every release PR commit must be GitHub-signed and attributed to github-actions[bot].'
+          echo "$commits" | jq -r '
+            flatten[] |
+            select(
+              .author.id != 41898282 or
+              .committer.id != 41898282 or
+              .commit.verification.verified != true
+            ) |
+            "::error::Untrusted release commit \(.sha)"
+          '
+          exit 1
+
       - name: Checkout Repo
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
