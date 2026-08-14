@@ -20,11 +20,11 @@ export interface ImportOptions {
   onProgress?: (current: number, total: number) => void;
   /**
    * The translation-status keys selected for import, reported before any
-   * downloading starts. These are the keys the status map is built from, so a
-   * caller can match them straight to a locale row; the keys passed to
-   * `onImportSuccess` are derived from the downloaded file instead and do not
-   * necessarily agree, because a file's version can differ from the version
-   * pinned at upload time.
+   * downloading starts. These come straight from the status map, which is what
+   * the locale rows are indexed by, so a caller can light up a row without
+   * rederiving anything. `onImportSuccess` builds its key from the downloaded
+   * file; the two agree today, and reporting the map keys here keeps that from
+   * being load-bearing.
    */
   onSelectedKeys?: (statusKeys: string[]) => void;
   onImportSuccess?: (key: string) => void;

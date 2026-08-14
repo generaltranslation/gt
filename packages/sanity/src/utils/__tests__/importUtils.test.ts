@@ -65,10 +65,10 @@ describe('getReadyFilesForImport', () => {
   });
 
   test('reports the status keys it selected, so rows can show import progress', async () => {
-    // These are the keys the status map is built from, which is what the locale
-    // rows are indexed by. Deriving them from the files instead would use the
-    // file's version rather than the version pinned at upload, and no row would
-    // match.
+    // Reports the map keys, which is what the locale rows are indexed by,
+    // rather than rederiving them from each file. The fixture gives the file a
+    // different version from its key to pin that down: the two agree in
+    // practice, and this keeps a row's progress from depending on it.
     const statuses = new Map<string, TranslationStatus>([
       [
         'branch:article-1:rev-pinned:es',

@@ -525,25 +525,56 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         writeUploadedVersions(uploadedVersionsStorageKey, nextUploadedVersions);
         setUploadedVersions(nextUploadedVersions);
 
+        const enqueuedStatusKeys = new Set<string>();
+        const enqueuedStableKeys = new Set<string>();
+        for (const { info } of transformedDocuments) {
+          for (const localeId of availableLocaleIds) {
+            enqueuedStatusKeys.add(
+              createTranslationStatusKey(
+                branchId,
+                info.documentId,
+                info.versionId ?? '',
+                localeId
+              )
+            );
+            enqueuedStableKeys.add(
+              createStableTranslationKey(branchId, info.documentId, localeId)
+            );
+          }
+        }
+
+        // A key already downloaded this session is skipped by the status
+        // query, so re-translating one would leave it outstanding forever:
+        // enqueued as pending, never reported ready, never cleared. Drop the
+        // markers for everything being retranslated — the previous download is
+        // superseded by the run starting now.
+        setDownloadStatus((prev) => ({
+          downloaded: new Set(
+            [...prev.downloaded].filter(
+              (key) =>
+                !enqueuedStatusKeys.has(key) && !enqueuedStableKeys.has(key)
+            )
+          ),
+          failed: new Set(
+            [...prev.failed].filter(
+              (key) =>
+                !enqueuedStatusKeys.has(key) && !enqueuedStableKeys.has(key)
+            )
+          ),
+          skipped: new Set(
+            [...prev.skipped].filter(
+              (key) =>
+                !enqueuedStatusKeys.has(key) && !enqueuedStableKeys.has(key)
+            )
+          ),
+        }));
+
         // Everything just enqueued is outstanding until a refresh reports it
         // ready. Without this the UI cannot tell "General Translation is
         // working on it" from "never translated" — both sit at 0%.
-        setPendingTranslations((prev) => {
-          const next = new Set(prev);
-          for (const { info } of transformedDocuments) {
-            for (const localeId of availableLocaleIds) {
-              next.add(
-                createTranslationStatusKey(
-                  branchId,
-                  info.documentId,
-                  info.versionId ?? '',
-                  localeId
-                )
-              );
-            }
-          }
-          return next;
-        });
+        setPendingTranslations(
+          (prev) => new Set([...prev, ...enqueuedStatusKeys])
+        );
 
         toast.push({
           title: force
