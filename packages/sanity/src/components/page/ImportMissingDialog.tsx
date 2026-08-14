@@ -35,7 +35,7 @@ export const ImportMissingDialog: React.FC<ImportMissingDialogProps> = ({
       }
     >
       <Box padding={4}>
-        <Stack space={3}>
+        <Stack gap={3}>
           <Text>
             Import only the missing translations (translations that are ready
             but haven't been imported to Sanity yet)?
