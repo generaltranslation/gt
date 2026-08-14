@@ -35,7 +35,7 @@ export const UploadExistingDialog: React.FC<UploadExistingDialogProps> = ({
       }
     >
       <Box padding={4}>
-        <Stack space={3}>
+        <Stack gap={3}>
           <Text>
             Save the translations currently in Sanity for all {documents.length}{' '}
             documents to General Translation?
