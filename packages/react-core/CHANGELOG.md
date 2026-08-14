@@ -1,5 +1,15 @@
 # @generaltranslation/react-core
 
+## 11.1.8
+
+### Patch Changes
+
+- [#2059](https://github.com/generaltranslation/gt/pull/2059) [`6607925`](https://github.com/generaltranslation/gt/commit/660792523b15d2e43e9752ea599e5229c1b45bc7) Thanks [@rupaut98](https://github.com/rupaut98)! - Fall back to `plural` or `other` for the `zero` and `one` plural categories.
+
+- Updated dependencies [[`6607925`](https://github.com/generaltranslation/gt/commit/660792523b15d2e43e9752ea599e5229c1b45bc7)]:
+  - generaltranslation@9.1.4
+  - gt-i18n@1.0.14
+
 ## 11.1.7
 
 ### Patch Changes
