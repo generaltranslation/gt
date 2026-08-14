@@ -1,11 +1,18 @@
 import { transformSync } from '@babel/core';
 import { describe, expect, it } from 'vitest';
 import { plugin } from '..';
+import type { PluginOptions } from '../types';
 
 const entryPointFilePath = '/app/src/App.tsx';
 
-function transform(excludePolyfills: string[] = []) {
-  return transformSync('const app = true;', {
+function transform({
+  code = 'const app = true;',
+  excludePolyfills = [],
+  forcePolyfills = false,
+}: Pick<PluginOptions, 'excludePolyfills' | 'forcePolyfills'> & {
+  code?: string;
+} = {}) {
+  const output = transformSync(code, {
     babelrc: false,
     configFile: false,
     filename: entryPointFilePath,
@@ -15,31 +22,92 @@ function transform(excludePolyfills: string[] = []) {
         {
           entryPointFilePath,
           excludePolyfills,
+          forcePolyfills,
           locales: ['en-US'],
         },
       ],
     ],
   })?.code;
+
+  return Array.from(output?.matchAll(/import ["']([^"']+)["'];/g) ?? []).map(
+    ([, source]) => source
+  );
 }
 
 describe('React Native Babel plugin polyfills', () => {
-  it('bypasses locale matching for Intl APIs that Hermes does not provide', () => {
-    const output = transform();
+  it('uses capability-detecting polyfills by default', () => {
+    const imports = transform();
 
-    expect(output).toContain('@formatjs/intl-displaynames/polyfill-force');
-    expect(output).toContain('@formatjs/intl-listformat/polyfill-force');
-    expect(output).toContain(
+    expect(imports).toContain('@formatjs/intl-displaynames/polyfill');
+    expect(imports).toContain('@formatjs/intl-listformat/polyfill');
+    expect(imports).toContain('@formatjs/intl-relativetimeformat/polyfill');
+    expect(imports).not.toContain('@formatjs/intl-displaynames/polyfill-force');
+    expect(imports).not.toContain('@formatjs/intl-listformat/polyfill-force');
+    expect(imports).not.toContain(
       '@formatjs/intl-relativetimeformat/polyfill-force'
     );
-    expect(output).not.toMatch(/intl-displaynames\/polyfill['"]/);
-    expect(output).not.toMatch(/intl-listformat\/polyfill['"]/);
-    expect(output).not.toMatch(/intl-relativetimeformat\/polyfill['"]/);
   });
 
-  it('keeps existing excludePolyfills values working', () => {
-    const output = transform(['@formatjs/intl-displaynames/polyfill']);
+  it('forces every supported polyfill when configured with true', () => {
+    const imports = transform({ forcePolyfills: true });
 
-    expect(output).not.toContain('@formatjs/intl-displaynames/polyfill');
-    expect(output).toContain('@formatjs/intl-displaynames/locale-data/en-US');
+    expect(imports).toContain('@formatjs/intl-displaynames/polyfill-force');
+    expect(imports).toContain('@formatjs/intl-listformat/polyfill-force');
+    expect(imports).toContain(
+      '@formatjs/intl-relativetimeformat/polyfill-force'
+    );
+    expect(imports).not.toContain('@formatjs/intl-displaynames/polyfill');
+    expect(imports).not.toContain('@formatjs/intl-listformat/polyfill');
+    expect(imports).not.toContain('@formatjs/intl-relativetimeformat/polyfill');
+  });
+
+  it('forces only the selected polyfills when configured with an array', () => {
+    const imports = transform({
+      forcePolyfills: [
+        '@formatjs/intl-displaynames/polyfill',
+        '@formatjs/intl-relativetimeformat/polyfill',
+      ],
+    });
+
+    expect(imports).toContain('@formatjs/intl-displaynames/polyfill-force');
+    expect(imports).toContain('@formatjs/intl-listformat/polyfill');
+    expect(imports).toContain(
+      '@formatjs/intl-relativetimeformat/polyfill-force'
+    );
+    expect(imports).not.toContain('@formatjs/intl-displaynames/polyfill');
+    expect(imports).not.toContain('@formatjs/intl-listformat/polyfill-force');
+    expect(imports).not.toContain('@formatjs/intl-relativetimeformat/polyfill');
+  });
+
+  it('gives excludePolyfills precedence over forcePolyfills', () => {
+    const imports = transform({
+      excludePolyfills: ['@formatjs/intl-displaynames/polyfill'],
+      forcePolyfills: true,
+    });
+
+    expect(imports).not.toContain('@formatjs/intl-displaynames/polyfill');
+    expect(imports).not.toContain('@formatjs/intl-displaynames/polyfill-force');
+    expect(imports).toContain('@formatjs/intl-displaynames/locale-data/en-US');
+  });
+
+  it('does not add a forced alias when the normal import already exists', () => {
+    const imports = transform({
+      code: "import '@formatjs/intl-displaynames/polyfill';",
+      forcePolyfills: ['@formatjs/intl-displaynames/polyfill'],
+    });
+
+    expect(
+      imports.filter((source) => source.includes('intl-displaynames/polyfill'))
+    ).toEqual(['@formatjs/intl-displaynames/polyfill']);
+  });
+
+  it('does not add a normal alias when the forced import already exists', () => {
+    const imports = transform({
+      code: "import '@formatjs/intl-displaynames/polyfill-force';",
+    });
+
+    expect(
+      imports.filter((source) => source.includes('intl-displaynames/polyfill'))
+    ).toEqual(['@formatjs/intl-displaynames/polyfill-force']);
   });
 });
