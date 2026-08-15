@@ -7,6 +7,7 @@ export const ROOT_PARAM_STABILITY = {
   unsupported: '0.0.0',
   unstable: '15.2.0',
   experimental: '15.5.0',
+  stable: '16.3.0',
 };
 
 export const STABLE_TURBO_CONFIG_VERSION = '15.3.0';
