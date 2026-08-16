@@ -1,5 +1,15 @@
 # gt-next
 
+## 11.1.9
+
+### Patch Changes
+
+- [#2104](https://github.com/generaltranslation/gt/pull/2104) [`524dd7d`](https://github.com/generaltranslation/gt/commit/524dd7d3e1b6657ce953b24db5fef1b6c6157c19) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - Stop adding the deprecated `experimental.rootParams` option on Next.js 16.3 and newer.
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.1.9
+  - gt-react@11.1.9
+
 ## 11.1.8
 
 ### Patch Changes
