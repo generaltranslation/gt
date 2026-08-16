@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1786732639920,
+  "lastUpdate": 1786900646238,
   "repoUrl": "https://github.com/generaltranslation/gt",
   "entries": {
     "Middleware Benchmarks": [
@@ -8468,6 +8468,122 @@ window.BENCHMARK_DATA = {
             "value": 71,
             "unit": "ms",
             "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.8\"\n}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "642f250789b87ba4c5f91b1693baff3036ce8e5b",
+          "message": "[ci] release (#2102)\n\nThis PR was opened by the [Changesets\nrelease](https://github.com/changesets/action) GitHub action. When\nyou're ready to do a release, you can merge this and the packages will\nbe published to npm automatically. If you're not ready to do a release\nyet, that's fine, whenever you add more changesets to main, this PR will\nbe updated.\n\n\n# Releases\n## gt-next@11.1.9\n\n### Patch Changes\n\n- [#2104](https://github.com/generaltranslation/gt/pull/2104)\n[`524dd7d`](https://github.com/generaltranslation/gt/commit/524dd7d3e1b6657ce953b24db5fef1b6c6157c19)\nThanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - Stop\nadding the deprecated `experimental.rootParams` option on Next.js 16.3\nand newer.\n\n- Updated dependencies []:\n  - @generaltranslation/react-core@11.1.9\n  - gt-react@11.1.9\n## gt-react@11.1.9\n\n### Patch Changes\n\n- Updated dependencies []:\n  - @generaltranslation/react-core@11.1.9\n## gt-react-native@11.1.9\n\n### Patch Changes\n\n- [#2086](https://github.com/generaltranslation/gt/pull/2086)\n[`45da777`](https://github.com/generaltranslation/gt/commit/45da777854560bc33ce0cb5a1b487fd7217443d2)\nThanks [@eoinest](https://github.com/eoinest)! - Add an opt-in\n`forcePolyfills` Babel plugin option to bypass FormatJS locale matching\nfor selected polyfills. Capability detection remains the default,\n`excludePolyfills` takes precedence, and existing normal or forced\nimports are not duplicated.\n\n- Updated dependencies []:\n  - @generaltranslation/react-core@11.1.9\n## gt-tanstack-start@11.1.9\n\n### Patch Changes\n\n- Updated dependencies []:\n  - @generaltranslation/react-core@11.1.9\n  - gt-react@11.1.9\n## @generaltranslation/react-core@11.1.9\n\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+          "timestamp": "2026-08-16T17:10:39Z",
+          "url": "https://github.com/generaltranslation/gt/commit/642f250789b87ba4c5f91b1693baff3036ce8e5b"
+        },
+        "date": 1786900645440,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "gt-next > unit > middleware: factory creation latency > createNextMiddleware() (mean)",
+            "value": 0.0445067301530799,
+            "range": "±0.0242",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.9\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > default locale request (/) (mean)",
+            "value": 0.24384052657240246,
+            "range": "±0.0865",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.9\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > non-default locale request (/fr) (mean)",
+            "value": 0.42064775609755495,
+            "range": "±0.0874",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.9\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > nested route (/fr/about) (mean)",
+            "value": 0.4225108749999958,
+            "range": "±0.0959",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > ttfb",
+            "value": 129.60000000000582,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > domContentLoaded",
+            "value": 148,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > load",
+            "value": 209.80000000001746,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > elapsed",
+            "value": 102,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > ttfb",
+            "value": 18.79999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > domContentLoaded",
+            "value": 30.29999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > load",
+            "value": 94.10000000000582,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: locale-switch-en-to-fr > elapsed",
+            "value": 618,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > ttfb",
+            "value": 11.60000000000582,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > domContentLoaded",
+            "value": 21.39999999999418,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.9\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > load",
+            "value": 86,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.9\"\n}"
           }
         ]
       }
