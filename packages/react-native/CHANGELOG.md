@@ -1,5 +1,14 @@
 # gt-react-native
 
+## 11.1.9
+
+### Patch Changes
+
+- [#2086](https://github.com/generaltranslation/gt/pull/2086) [`45da777`](https://github.com/generaltranslation/gt/commit/45da777854560bc33ce0cb5a1b487fd7217443d2) Thanks [@eoinest](https://github.com/eoinest)! - Add an opt-in `forcePolyfills` Babel plugin option to bypass FormatJS locale matching for selected polyfills. Capability detection remains the default, `excludePolyfills` takes precedence, and existing normal or forced imports are not duplicated.
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.1.9
+
 ## 11.1.8
 
 ### Patch Changes
