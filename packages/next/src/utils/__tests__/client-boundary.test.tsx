@@ -3,13 +3,19 @@ import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockGetI18nConfig, mockInitializeGTClient, mockRefresh } = vi.hoisted(
-  () => ({
-    mockGetI18nConfig: vi.fn(),
-    mockInitializeGTClient: vi.fn(),
-    mockRefresh: vi.fn(),
-  })
-);
+const {
+  mockGetI18nConfig,
+  mockInitializeGTClient,
+  mockPathname,
+  mockRefresh,
+  mockReloadPage,
+} = vi.hoisted(() => ({
+  mockGetI18nConfig: vi.fn(),
+  mockInitializeGTClient: vi.fn(),
+  mockPathname: vi.fn(),
+  mockRefresh: vi.fn(),
+  mockReloadPage: vi.fn(),
+}));
 
 vi.mock('gt-i18n/internal', async (importOriginal) => ({
   ...(await importOriginal<typeof import('gt-i18n/internal')>()),
@@ -23,7 +29,7 @@ vi.mock('gt-react', () => ({
 }));
 
 vi.mock('next/navigation', () => ({
-  usePathname: () => '/uk',
+  usePathname: mockPathname,
   useRouter: () => ({ refresh: mockRefresh }),
 }));
 
@@ -35,6 +41,8 @@ describe('Client_GTProvider', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+    vi.stubGlobal('location', { reload: mockReloadPage });
+    mockPathname.mockReturnValue('/uk');
     process.env._GENERALTRANSLATION_PATH_REGEX = '^/(?!uk(?:/|$)).*';
     document.cookie = 'generaltranslation.locale-routing-enabled=true;path=/';
     mockGetI18nConfig.mockReturnValue({
@@ -52,6 +60,7 @@ describe('Client_GTProvider', () => {
     delete process.env._GENERALTRANSLATION_PATH_REGEX;
     document.cookie =
       'generaltranslation.locale-routing-enabled=;max-age=0;path=/';
+    vi.unstubAllGlobals();
     globalThis.IS_REACT_ACT_ENVIRONMENT = false;
   });
 
@@ -69,6 +78,35 @@ describe('Client_GTProvider', () => {
     });
 
     expect(mockGetI18nConfig).toHaveBeenCalled();
+    expect(mockRefresh).not.toHaveBeenCalled();
+
+    await act(async () => root.unmount());
+  });
+
+  it('reloads the page when switching to the default locale', async () => {
+    process.env._GENERALTRANSLATION_PATH_REGEX = '.*';
+    mockPathname.mockReturnValue('/pt-BR');
+    mockGetI18nConfig.mockReturnValue({
+      determineLocale: vi.fn(([locale]: string[]) => locale),
+      getDefaultLocale: () => 'en',
+      getLocales: () => ['en', 'pt-BR'],
+      isGTServicesEnabled: () => false,
+      resolveAliasLocale: (locale: string) => locale,
+      standardizeLocale: (locale: string) => locale,
+    });
+    const { Client_GTProvider } = await import('../client-boundary');
+    const container = document.createElement('div');
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <Client_GTProvider dictionaries={{}} locale='en' translations={{}}>
+          content
+        </Client_GTProvider>
+      );
+    });
+
+    expect(mockReloadPage).toHaveBeenCalledOnce();
     expect(mockRefresh).not.toHaveBeenCalled();
 
     await act(async () => root.unmount());

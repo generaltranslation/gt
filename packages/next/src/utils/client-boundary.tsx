@@ -44,21 +44,26 @@ export function Client_GTProvider(props: SharedGTProviderProps) {
     // Reload server components
     router.refresh();
   }, [router]);
+  const reloadPage = useCallback(() => {
+    globalThis.location.reload();
+  }, []);
   // TODO: when routing is enabled, validate the path matches the locale
-  usePathCheck({ reloadServer: reload, locale: props.locale });
+  usePathCheck({ reloadPage, reloadServer: reload, locale: props.locale });
   return <GTProvider {...props} _reload={reload} />;
 }
 
 /**
- * Reloads the server components if
+ * Reloads content if the URL locale does not match the selected locale.
  * TODO: optimize this hook
  */
 function usePathCheck({
+  reloadPage,
   reloadServer,
   locale,
   referrerLocaleCookieName = defaultReferrerLocaleCookieName,
   localeRoutingEnabledCookieName = defaultLocaleRoutingEnabledCookieName,
 }: {
+  reloadPage: () => void;
   reloadServer: () => void;
   locale: string;
   referrerLocaleCookieName?: string;
@@ -98,8 +103,13 @@ function usePathCheck({
         // clear cookie (avoids infinite loop when there is no middleware)
         document.cookie = `${localeRoutingEnabledCookieName}=;path=/`;
 
-        // reload page
-        reloadServer();
+        if (locale === i18nConfig.resolveAliasLocale(defaultLocale)) {
+          // A browser navigation follows the middleware redirect that removes
+          // the default locale prefix. Next.js router.refresh() does not.
+          reloadPage();
+        } else {
+          reloadServer();
+        }
       }
     }
   }, [
@@ -107,6 +117,7 @@ function usePathCheck({
     locale,
     referrerLocaleCookieName,
     localeRoutingEnabledCookieName,
+    reloadPage,
     reloadServer,
   ]);
 }
