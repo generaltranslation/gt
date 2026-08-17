@@ -5,12 +5,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   mockGetI18nConfig,
+  mockGTProvider,
   mockInitializeGTClient,
   mockPathname,
   mockRefresh,
   mockReloadPage,
 } = vi.hoisted(() => ({
   mockGetI18nConfig: vi.fn(),
+  mockGTProvider: vi.fn(
+    ({ children }: { children?: React.ReactNode }) => children
+  ),
   mockInitializeGTClient: vi.fn(),
   mockPathname: vi.fn(),
   mockRefresh: vi.fn(),
@@ -23,7 +27,7 @@ vi.mock('gt-i18n/internal', async (importOriginal) => ({
 }));
 
 vi.mock('gt-react', () => ({
-  GTProvider: ({ children }: { children?: React.ReactNode }) => children,
+  GTProvider: mockGTProvider,
   LocaleSelector: () => null,
   RegionSelector: () => null,
 }));
@@ -41,7 +45,7 @@ describe('Client_GTProvider', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
-    vi.stubGlobal('location', { reload: mockReloadPage });
+    vi.stubGlobal('location', { pathname: '/uk', reload: mockReloadPage });
     mockPathname.mockReturnValue('/uk');
     process.env._GENERALTRANSLATION_PATH_REGEX = '^/(?!uk(?:/|$)).*';
     document.cookie = 'generaltranslation.locale-routing-enabled=true;path=/';
@@ -86,6 +90,10 @@ describe('Client_GTProvider', () => {
   it('reloads the page when switching to the default locale', async () => {
     process.env._GENERALTRANSLATION_PATH_REGEX = '.*';
     mockPathname.mockReturnValue('/pt-BR');
+    vi.stubGlobal('location', {
+      pathname: '/pt-BR',
+      reload: mockReloadPage,
+    });
     mockGetI18nConfig.mockReturnValue({
       determineLocale: vi.fn(([locale]: string[]) => locale),
       getDefaultLocale: () => 'en',
@@ -100,14 +108,41 @@ describe('Client_GTProvider', () => {
 
     await act(async () => {
       root.render(
-        <Client_GTProvider dictionaries={{}} locale='en' translations={{}}>
+        <Client_GTProvider dictionaries={{}} locale='pt-BR' translations={{}}>
           content
         </Client_GTProvider>
       );
     });
 
+    const reload = mockGTProvider.mock.calls.at(-1)?.[0]._reload;
+    reload({ enableI18n: true, locale: 'en', region: undefined });
+
     expect(mockReloadPage).toHaveBeenCalledOnce();
     expect(mockRefresh).not.toHaveBeenCalled();
+
+    await act(async () => root.unmount());
+  });
+
+  it('refreshes server components without locale routing', async () => {
+    document.cookie =
+      'generaltranslation.locale-routing-enabled=;max-age=0;path=/';
+    const { Client_GTProvider } = await import('../client-boundary');
+    const container = document.createElement('div');
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <Client_GTProvider dictionaries={{}} locale='fr' translations={{}}>
+          content
+        </Client_GTProvider>
+      );
+    });
+
+    const reload = mockGTProvider.mock.calls.at(-1)?.[0]._reload;
+    reload({ enableI18n: true, locale: 'en', region: undefined });
+
+    expect(mockRefresh).toHaveBeenCalledOnce();
+    expect(mockReloadPage).not.toHaveBeenCalled();
 
     await act(async () => root.unmount());
   });

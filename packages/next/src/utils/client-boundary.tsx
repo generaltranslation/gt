@@ -40,15 +40,46 @@ if (typeof window !== 'undefined') {
  */
 export function Client_GTProvider(props: SharedGTProviderProps) {
   const router = useRouter();
-  const reload = useCallback(() => {
-    // Reload server components
+  const refresh = useCallback(() => {
     router.refresh();
   }, [router]);
   const reloadPage = useCallback(() => {
     globalThis.location.reload();
   }, []);
+  const reload = useCallback<NonNullable<SharedGTProviderProps['_reload']>>(
+    ({ locale }) => {
+      const i18nConfig = getI18nConfig();
+      const middlewareEnabled =
+        getCookieValue(
+          document.cookie,
+          defaultLocaleRoutingEnabledCookieName
+        ) === 'true';
+      const nextLocale = i18nConfig.resolveAliasLocale(locale);
+      const defaultLocale = i18nConfig.resolveAliasLocale(
+        i18nConfig.getDefaultLocale()
+      );
+      const pathLocale = extractLocale(
+        globalThis.location.pathname,
+        i18nConfig
+      );
+
+      if (
+        middlewareEnabled &&
+        nextLocale === defaultLocale &&
+        pathLocale &&
+        pathLocale !== defaultLocale
+      ) {
+        reloadPage();
+        return;
+      }
+
+      // Reload server components
+      refresh();
+    },
+    [refresh, reloadPage]
+  );
   // TODO: when routing is enabled, validate the path matches the locale
-  usePathCheck({ reloadPage, reloadServer: reload, locale: props.locale });
+  usePathCheck({ reloadPage, reloadServer: refresh, locale: props.locale });
   return <GTProvider {...props} _reload={reload} />;
 }
 
