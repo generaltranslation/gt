@@ -48,8 +48,20 @@ function useHandleMissingTranslationProd(): OnMissingTranslation {
 }
 
 function useHandleMissingTranslationDev(): OnMissingTranslation {
+  return useHandleMissingTranslationWithConditionsDev(useShouldTranslate());
+}
+
+function useHandleMissingTranslationWithConditionsProd(
+  _shouldTranslate: boolean
+): OnMissingTranslation {
+  return noopOnMissingTranslation;
+}
+
+function useHandleMissingTranslationWithConditionsDev(
+  shouldTranslate: boolean
+): OnMissingTranslation {
   const customHandleMissing = useGTContext()?.onMissingTranslation;
-  const pureHandleMissing = useDevHotReloadQueue();
+  const pureHandleMissing = useDevHotReloadQueue(shouldTranslate);
 
   return useCallback(
     (lookup: TranslateLookup) => {
@@ -72,7 +84,7 @@ function useHandleMissingDictionaryEntryProd(): OnMissingDictionaryEntry {
 
 function useHandleMissingDictionaryEntryDev(): OnMissingDictionaryEntry {
   const customHandleMissing = useGTContext()?.onMissingDictionaryEntry;
-  const pureHandleMissing = useDevHotReloadQueue();
+  const pureHandleMissing = useDevHotReloadQueue(useShouldTranslate());
 
   return useCallback(
     (lookup: DictionaryLookup) => {
@@ -95,7 +107,7 @@ function useHandleMissingDictionaryObjectProd(): OnMissingDictionaryObj {
 
 function useHandleMissingDictionaryObjectDev(): OnMissingDictionaryObj {
   const customHandleMissing = useGTContext()?.onMissingDictionaryObj;
-  const pureHandleMissing = useDevHotReloadQueue();
+  const pureHandleMissing = useDevHotReloadQueue(useShouldTranslate());
   return useCallback(
     (lookup: DictionaryLookup) => {
       if (customHandleMissing) {
@@ -116,6 +128,13 @@ export const useHandleMissingTranslation: () => OnMissingTranslation =
     ? useHandleMissingTranslationProd
     : useHandleMissingTranslationDev;
 
+export const useHandleMissingTranslationWithConditions: (
+  shouldTranslate: boolean
+) => OnMissingTranslation =
+  process.env.NODE_ENV === 'production'
+    ? useHandleMissingTranslationWithConditionsProd
+    : useHandleMissingTranslationWithConditionsDev;
+
 export const useHandleMissingDictionaryEntry: () => OnMissingDictionaryEntry =
   process.env.NODE_ENV === 'production'
     ? useHandleMissingDictionaryEntryProd
@@ -129,13 +148,12 @@ export const useHandleMissingDictionaryObject: () => OnMissingDictionaryObj =
 /**
  * HMR translation needs to be deferred to post-commit phase
  */
-function useDevHotReloadQueue() {
+function useDevHotReloadQueue(shouldTranslate: boolean) {
   // Statically gated so bundlers can drop dev hot-reload work from
   // production builds.
   const devHotReloadEnabled =
     process.env.NODE_ENV !== 'production' &&
     getI18nConfig().isDevHotReloadEnabled();
-  const shouldTranslate = useShouldTranslate();
   const i18nStore = useI18nStore();
 
   // No memoization bc we want to flush after every render
