@@ -1,5 +1,11 @@
 # @generaltranslation/format
 
+## 0.1.6
+
+### Patch Changes
+
+- [#2108](https://github.com/generaltranslation/gt/pull/2108) [`d0ae632`](https://github.com/generaltranslation/gt/commit/d0ae632ac0cd53600f6b893c23754dde06fbe808) Thanks [@eoinest](https://github.com/eoinest)! - Prepare and reuse an indexed configured-locale scope when determining the best supported locale.
+
 ## 0.1.5
 
 ### Patch Changes
