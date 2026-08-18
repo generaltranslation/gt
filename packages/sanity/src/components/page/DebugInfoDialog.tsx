@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Box, Button, Card, Code, Dialog, Flex, Stack } from '@sanity/ui';
-import { ClipboardIcon } from '@sanity/icons';
+import { Box, Button, Card, Dialog, Flex, Stack } from '@sanity/ui';
+import { Code } from '@sanity/ui/code';
+import { ClipboardIcon } from '@sanity/icons/Clipboard';
 import { useClient } from '../../hooks/useClient';
 import { useTranslations } from '../TranslationsProvider';
 import { buildDebugInfo, formatDebugInfo } from '../../utils/debugInfo';
@@ -122,7 +123,7 @@ export const DebugInfoDialog: React.FC<DebugInfoDialogProps> = ({
       }
     >
       <Box padding={4}>
-        <Stack space={4}>
+        <Stack gap={4}>
           <Card
             padding={3}
             radius={2}

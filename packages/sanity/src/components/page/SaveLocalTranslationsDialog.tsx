@@ -27,7 +27,7 @@ export const SaveLocalTranslationsDialog: React.FC<
       }
     >
       <Box padding={4}>
-        <Stack space={4}>
+        <Stack gap={4}>
           <Text>
             Before each translation run, the translations currently in Sanity
             are sent to General Translation. Content whose source text has not
@@ -36,7 +36,7 @@ export const SaveLocalTranslationsDialog: React.FC<
           </Text>
 
           <Card padding={3} radius={2} tone='caution' border>
-            <Stack space={3}>
+            <Stack gap={3}>
               <Text size={1} weight='medium'>
                 Sanity becomes the source of truth
               </Text>

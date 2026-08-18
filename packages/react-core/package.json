@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/react-core",
-  "version": "11.1.6",
+  "version": "11.1.9",
   "description": "A pure React library for internationalization",
   "files": [
     "dist",
@@ -34,7 +34,7 @@
     "url": "git+https://github.com/generaltranslation/gt.git"
   },
   "author": "General Translation, Inc.",
-  "license": "FSL-1.1-ALv2",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/generaltranslation/gt/issues"
   },

@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/supported-locales",
-  "version": "2.1.15",
+  "version": "2.1.17",
   "description": "List of supported locales for General Translation",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
@@ -29,7 +29,7 @@
     "internal"
   ],
   "author": "General Translation, Inc.",
-  "license": "FSL-1.1-ALv2",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/generaltranslation/gt/issues"
   },

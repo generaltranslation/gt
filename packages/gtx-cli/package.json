@@ -1,6 +1,6 @@
 {
   "name": "gtx-cli",
-  "version": "2.16.4",
+  "version": "2.16.6",
   "description": "CLI tool for AI-powered i18n (wrapper for gt)",
   "main": "dist/index.js",
   "bin": "bin/main.js",
@@ -60,7 +60,7 @@
     "cli"
   ],
   "author": "General Translation, Inc.",
-  "license": "FSL-1.1-ALv2",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/generaltranslation/gt/issues"
   },

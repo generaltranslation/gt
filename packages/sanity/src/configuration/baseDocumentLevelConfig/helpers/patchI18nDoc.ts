@@ -8,6 +8,7 @@ import {
   forEachMatchingField,
 } from '../../../utils/applyDocuments';
 import { pluginConfig } from '../../../adapter/core';
+import { getPublishedId } from '../../../utils/documentIds';
 
 const SYSTEM_FIELDS = ['_id', '_rev', '_updatedAt', 'language'];
 
@@ -61,5 +62,31 @@ export async function patchI18nDoc(
       }
     );
   }
-  await client.patch(i18nDocId, { set: appliedDocument }).commit();
+  if (i18nDocId.startsWith('drafts.')) {
+    await client.patch(i18nDocId, { set: appliedDocument }).commit();
+    return;
+  }
+
+  // A draft in Sanity is just a document whose id carries a `drafts.` prefix,
+  // and the client writes to whatever id it is handed — it will not redirect a
+  // write to the draft on your behalf. A published id here is therefore the
+  // copy readers are served. Copy it into a draft and patch that, so the
+  // translation lands somewhere reviewable and the live document only changes
+  // when someone publishes.
+  const seed = existingDocument ?? (await client.getDocument(i18nDocId));
+  if (!seed) {
+    // References in `translation.metadata` are weak, so they outlive the
+    // documents they point at: deleting a translation leaves its entry behind.
+    // With no document to copy there is nothing to seed a draft from, so patch
+    // the id directly and let the missing document surface as an error.
+    await client.patch(i18nDocId, { set: appliedDocument }).commit();
+    return;
+  }
+
+  const draftId = `drafts.${getPublishedId(i18nDocId)}`;
+  await client
+    .transaction()
+    .createIfNotExists({ ...seed, _id: draftId })
+    .patch(draftId, (patch) => patch.set(appliedDocument))
+    .commit();
 }
