@@ -28,6 +28,17 @@ describe('LocaleConfig', () => {
     expect(config.determineLocale('de-DE')).toBe('brand');
   });
 
+  it('refreshes translation decisions after the configured locales mutate', () => {
+    const locales = ['es'];
+    const config = new LocaleConfig({ defaultLocale: 'en', locales });
+
+    expect(config.requiresTranslation('es')).toBe(true);
+    locales.splice(0, 1, 'fr');
+
+    expect(config.requiresTranslation('es')).toBe(false);
+    expect(config.requiresTranslation('fr')).toBe(true);
+  });
+
   it('does not expose the prepared locale scope as enumerable state', () => {
     const config = new LocaleConfig({ locales: ['en-US'] });
     const serializedBeforeResolution = JSON.stringify(config);
