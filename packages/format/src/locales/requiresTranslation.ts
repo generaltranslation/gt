@@ -21,9 +21,9 @@ export function _requiresTranslationWithScope(
 ): boolean {
   // If codes are invalid
   if (
+    (approvedScope && !approvedScope.allValid) ||
     !_isValidLocale(sourceLocale, customMapping) ||
-    !_isValidLocale(targetLocale, customMapping) ||
-    (approvedScope && !approvedScope.allValid)
+    !_isValidLocale(targetLocale, customMapping)
   ) {
     return false;
   }
