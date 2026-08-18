@@ -1,6 +1,6 @@
 {
   "name": "gt-rrweb",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Record a product walkthrough once with rrweb and replay it per-locale using General Translation's own published translations",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
