@@ -51,12 +51,6 @@ function useHandleMissingTranslationDev(): OnMissingTranslation {
   return useHandleMissingTranslationWithConditionsDev(useShouldTranslate());
 }
 
-function useHandleMissingTranslationWithConditionsProd(
-  _shouldTranslate: boolean
-): OnMissingTranslation {
-  return noopOnMissingTranslation;
-}
-
 function useHandleMissingTranslationWithConditionsDev(
   shouldTranslate: boolean
 ): OnMissingTranslation {
@@ -132,7 +126,7 @@ export const useHandleMissingTranslationWithConditions: (
   shouldTranslate: boolean
 ) => OnMissingTranslation =
   process.env.NODE_ENV === 'production'
-    ? useHandleMissingTranslationWithConditionsProd
+    ? useHandleMissingTranslationProd
     : useHandleMissingTranslationWithConditionsDev;
 
 export const useHandleMissingDictionaryEntry: () => OnMissingDictionaryEntry =
