@@ -1,5 +1,17 @@
 # gt-next
 
+## 11.1.11
+
+### Patch Changes
+
+- Updated dependencies [[`53b2100`](https://github.com/generaltranslation/gt/commit/53b2100abe824b81d3c2d0a3acaf7201c77da87c), [`bb08d8c`](https://github.com/generaltranslation/gt/commit/bb08d8cc5df87c71dd2a31416087821dbae38aa8)]:
+  - @generaltranslation/react-core@11.1.11
+  - @generaltranslation/format@0.1.7
+  - gt-react@11.1.11
+  - @generaltranslation/compiler@1.3.41
+  - generaltranslation@9.1.6
+  - gt-i18n@1.0.16
+
 ## 11.1.10
 
 ### Patch Changes

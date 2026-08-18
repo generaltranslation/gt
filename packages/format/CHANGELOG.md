@@ -1,5 +1,11 @@
 # @generaltranslation/format
 
+## 0.1.7
+
+### Patch Changes
+
+- [#2109](https://github.com/generaltranslation/gt/pull/2109) [`bb08d8c`](https://github.com/generaltranslation/gt/commit/bb08d8cc5df87c71dd2a31416087821dbae38aa8) Thanks [@eoinest](https://github.com/eoinest)! - Reuse the prepared configured-locale scope when deciding whether a locale requires translation.
+
 ## 0.1.6
 
 ### Patch Changes

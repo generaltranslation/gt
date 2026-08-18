@@ -1,5 +1,13 @@
 # gt-node
 
+## 1.0.17
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.1.6
+  - gt-i18n@1.0.16
+
 ## 1.0.16
 
 ### Patch Changes
