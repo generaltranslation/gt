@@ -27,6 +27,7 @@ import { _isSupersetLocale } from './locales/isSupersetLocale';
 import type { CustomMapping, FormatVariables } from './types';
 import { _resolveAliasLocale } from './locales/resolveAliasLocale';
 import { _resolveCanonicalLocale } from './locales/resolveCanonicalLocale';
+import { getCustomLocaleCode } from './locales/customLocaleMapping';
 import type { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
 import type { StringFormat } from './types-dir/jsx/content';
 
@@ -48,6 +49,7 @@ type WithLocales<T = object> = T & LocalesOption;
  */
 type LocaleResolutionScope = {
   approvedLocalePairs: { locale: string; canonicalLocale: string }[];
+  canonicalMappingCodes: (string | undefined)[];
   approved: ApprovedLocales;
 };
 
@@ -63,14 +65,42 @@ export class LocaleConfig {
   readonly defaultLocale: string;
   readonly locales: string[];
   readonly customMapping?: CustomMapping;
-  // Derived from this.locales and this.customMapping, which are set once in
-  // the constructor. Built lazily so construction stays cheap for instances
-  // that never resolve locales.
+  // Built lazily so construction stays cheap for instances that never resolve
+  // locales. The snapshot is refreshed if callers mutate the public locale or
+  // custom-mapping collections retained by this instance.
   private resolutionScope?: LocaleResolutionScope;
 
   private getResolutionScope(): LocaleResolutionScope {
-    this.resolutionScope ??= this.buildResolutionScope(this.locales);
-    return this.resolutionScope;
+    if (
+      this.resolutionScope &&
+      this.isResolutionScopeCurrent(this.resolutionScope)
+    ) {
+      return this.resolutionScope;
+    }
+    const resolutionScope = this.buildResolutionScope(this.locales);
+    Object.defineProperty(this, 'resolutionScope', {
+      configurable: true,
+      value: resolutionScope,
+      writable: true,
+    });
+    return resolutionScope;
+  }
+
+  private isResolutionScopeCurrent(scope: LocaleResolutionScope): boolean {
+    if (scope.approvedLocalePairs.length !== this.locales.length) return false;
+    for (let index = 0; index < this.locales.length; index++) {
+      const locale = this.locales[index];
+      const pair = scope.approvedLocalePairs[index];
+      if (
+        pair.locale !== locale ||
+        pair.canonicalLocale !== this.resolveCanonicalLocale(locale) ||
+        scope.canonicalMappingCodes[index] !==
+          getCustomLocaleCode(this.customMapping, pair.canonicalLocale)
+      ) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private buildResolutionScope(
@@ -82,6 +112,9 @@ export class LocaleConfig {
     }));
     return {
       approvedLocalePairs,
+      canonicalMappingCodes: approvedLocalePairs.map(({ canonicalLocale }) =>
+        getCustomLocaleCode(this.customMapping, canonicalLocale)
+      ),
       approved: _prepareApprovedLocales(
         approvedLocalePairs.map(({ canonicalLocale }) => canonicalLocale),
         this.customMapping
