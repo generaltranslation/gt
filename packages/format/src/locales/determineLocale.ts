@@ -49,7 +49,12 @@ function getLocaleMatchCodes(locale: string): LocaleMatchCodes {
   }
 }
 
-function findMatchingCode(
+/**
+ * Matches a valid, standardized locale against standardized candidate codes.
+ * Callers are responsible for validation and canonicalization before matching.
+ * @internal
+ */
+export function findMatchingCode(
   locale: string,
   candidates: Set<string>
 ): string | undefined {
