@@ -1,5 +1,16 @@
 # @generaltranslation/react-core
 
+## 11.1.11
+
+### Patch Changes
+
+- [#2112](https://github.com/generaltranslation/gt/pull/2112) [`53b2100`](https://github.com/generaltranslation/gt/commit/53b2100abe824b81d3c2d0a3acaf7201c77da87c) Thanks [@eoinest](https://github.com/eoinest)! - Reuse resolved translation conditions across each `useGT` call.
+
+- Updated dependencies [[`bb08d8c`](https://github.com/generaltranslation/gt/commit/bb08d8cc5df87c71dd2a31416087821dbae38aa8)]:
+  - @generaltranslation/format@0.1.7
+  - generaltranslation@9.1.6
+  - gt-i18n@1.0.16
+
 ## 11.1.10
 
 ### Patch Changes
