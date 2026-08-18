@@ -1,5 +1,16 @@
 # gt-react-native
 
+## 11.1.10
+
+### Patch Changes
+
+- Updated dependencies [[`d0ae632`](https://github.com/generaltranslation/gt/commit/d0ae632ac0cd53600f6b893c23754dde06fbe808)]:
+  - @generaltranslation/format@0.1.6
+  - generaltranslation@9.1.5
+  - gt-i18n@1.0.15
+  - @generaltranslation/react-core@11.1.10
+  - @generaltranslation/supported-locales@2.1.18
+
 ## 11.1.9
 
 ### Patch Changes
