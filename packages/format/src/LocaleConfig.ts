@@ -13,7 +13,7 @@ import {
   _prepareApprovedLocales,
   type ApprovedLocales,
 } from './locales/approvedLocales';
-import { _requiresTranslation } from './locales/requiresTranslation';
+import { _requiresTranslationWithScope } from './locales/requiresTranslation';
 import { _determineLocaleWithIndex } from './locales/determineLocale';
 import { _isSameLanguage } from './locales/isSameLanguage';
 import { _getLocaleProperties } from './locales/getLocaleProperties';
@@ -44,8 +44,9 @@ type LocalesOption = {
 type WithLocales<T = object> = T & LocalesOption;
 
 /**
- * Approved-locales work that determineLocale would otherwise redo on every
- * call: canonical codes plus the validated and indexed scope built from them.
+ * Approved-locales work that requiresTranslation and determineLocale would
+ * otherwise redo on every call: canonical codes plus the validated and
+ * indexed scope built from them.
  */
 type LocaleResolutionScope = {
   approvedLocalePairs: { locale: string; canonicalLocale: string }[];
@@ -300,12 +301,23 @@ export class LocaleConfig {
       ? this.locales
       : undefined
   ) {
-    return _requiresTranslation(
+    // The default scope (this.locales) is prepared once per instance; a
+    // caller-provided list is prepared for that call only. No configured
+    // locales means no approved-locales restriction.
+    const approvedScope = approvedLocales
+      ? approvedLocales === this.locales
+        ? this.getResolutionScope().approved
+        : _prepareApprovedLocales(
+            approvedLocales.map((locale) =>
+              this.resolveCanonicalLocale(locale)
+            ),
+            this.customMapping
+          )
+      : undefined;
+    return _requiresTranslationWithScope(
       this.resolveCanonicalLocale(sourceLocale),
       this.resolveCanonicalLocale(targetLocale),
-      approvedLocales
-        ? approvedLocales.map((locale) => this.resolveCanonicalLocale(locale))
-        : undefined,
+      approvedScope,
       this.customMapping
     );
   }
