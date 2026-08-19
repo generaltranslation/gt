@@ -10,6 +10,27 @@
 - Updated dependencies [5d8b78a]
   - @generaltranslation/icu@0.1.2-iris.0
 
+## 0.1.7
+
+### Patch Changes
+
+- [#2109](https://github.com/generaltranslation/gt/pull/2109) [`bb08d8c`](https://github.com/generaltranslation/gt/commit/bb08d8cc5df87c71dd2a31416087821dbae38aa8) Thanks [@eoinest](https://github.com/eoinest)! - Reuse the prepared configured-locale scope when deciding whether a locale requires translation.
+
+## 0.1.6
+
+### Patch Changes
+
+- [#2108](https://github.com/generaltranslation/gt/pull/2108) [`d0ae632`](https://github.com/generaltranslation/gt/commit/d0ae632ac0cd53600f6b893c23754dde06fbe808) Thanks [@eoinest](https://github.com/eoinest)! - Prepare and reuse an indexed configured-locale scope when determining the best supported locale.
+
+## 0.1.5
+
+### Patch Changes
+
+- [#2074](https://github.com/generaltranslation/gt/pull/2074) [`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8) Thanks [@eoinest](https://github.com/eoinest)! - Migrate the package license from FSL-1.1-ALv2 to MIT.
+
+- Updated dependencies [[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)]:
+  - @generaltranslation/icu@0.1.2
+
 ## 0.1.4
 
 ### Patch Changes

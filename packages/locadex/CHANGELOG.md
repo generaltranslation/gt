@@ -23,6 +23,36 @@
 - Updated dependencies [01ba884]
   - gt@2.16.3-iris.0
 
+## 1.0.211
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.16.8
+
+## 1.0.210
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.16.7
+
+## 1.0.209
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.16.6
+
+## 1.0.208
+
+### Patch Changes
+
+- [#2074](https://github.com/generaltranslation/gt/pull/2074) [`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8) Thanks [@eoinest](https://github.com/eoinest)! - Migrate the package license from FSL-1.1-ALv2 to MIT.
+
+- Updated dependencies [[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)]:
+  - gt@2.16.5
+
 ## 1.0.207
 
 ### Patch Changes

@@ -8,6 +8,7 @@ import type {
 } from 'sanity/structure';
 import { pluginConfig } from '../adapter/core';
 import { formatLocalePropertiesLabel } from '../utils/localeDisplay';
+import { SANITY_API_VERSION } from '../utils/shared';
 
 export type GTStructureOptions = {
   /**
@@ -118,6 +119,7 @@ export function gtStructureItems(
                   .id(`gt-${type}-${sourceLocale}-list`)
                   .title(options.sourceTitle ?? localeLabel(sourceLocale))
                   .schemaType(type)
+                  .apiVersion(SANITY_API_VERSION)
                   .filter(sourceFilter)
                   .params({ type, locale: sourceLocale })
               ),
@@ -132,6 +134,7 @@ export function gtStructureItems(
                     .id(`gt-${type}-${locale}-list`)
                     .title(paneTitle)
                     .schemaType(type)
+                    .apiVersion(SANITY_API_VERSION)
                     .filter(localeFilter)
                     .params({ type, locale })
                 );
