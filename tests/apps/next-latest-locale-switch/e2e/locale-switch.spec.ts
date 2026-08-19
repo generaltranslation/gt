@@ -3,7 +3,6 @@ import type { Page } from '@playwright/test';
 
 const localeRouting = process.env.GT_LOCALE_ROUTING === 'true';
 const prefixDefaultLocale = process.env.GT_PREFIX_DEFAULT_LOCALE === 'true';
-const localeSelectorName = 'General Translation locale selector';
 const content = {
   en: 'English content',
   fr: 'Contenu français',
@@ -34,7 +33,7 @@ for (const route of [
 
 async function selectLocale(page: Page, locale: keyof typeof content) {
   await page
-    .getByRole('combobox', { name: localeSelectorName })
+    .getByRole('combobox')
     .selectOption(locale);
 }
 
@@ -57,9 +56,7 @@ async function expectLocale(
   await expect(
     page.getByText(`Client content: ${content[locale]}`)
   ).toBeVisible();
-  await expect(
-    page.getByRole('combobox', { name: localeSelectorName })
-  ).toHaveValue(locale);
+  await expect(page.getByRole('combobox')).toHaveValue(locale);
 }
 
 function pathFor(locale: keyof typeof content, suffix: '' | '/nested') {
