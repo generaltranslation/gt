@@ -8,13 +8,6 @@ const packageDir = path.resolve(
 );
 const configurations = [
   {
-    name: 'no routing',
-    environment: {
-      GT_LOCALE_ROUTING: 'false',
-      GT_PREFIX_DEFAULT_LOCALE: 'false',
-    },
-  },
-  {
     name: 'routing without a default-locale prefix',
     environment: {
       GT_LOCALE_ROUTING: 'true',

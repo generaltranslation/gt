@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { GTProvider } from 'gt-next';
 import { getLocale } from 'gt-next/server';
-import './styles.css';
+import '../styles.css';
 
 export const metadata: Metadata = {
   title: 'Latest Next.js locale switch compatibility test',
