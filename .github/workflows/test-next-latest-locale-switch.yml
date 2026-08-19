@@ -4,6 +4,13 @@ on:
   pull_request:
     paths:
       - '.github/workflows/test-next-latest-locale-switch.yml'
+      - 'packages/compiler/**'
+      - 'packages/core/**'
+      - 'packages/format/**'
+      - 'packages/i18n/**'
+      - 'packages/next/**'
+      - 'packages/react/**'
+      - 'packages/react-core/**'
       - 'tests/apps/next-latest-locale-switch/**'
   schedule:
     # Run daily at 07:00 UTC, after the general test-app browser checks.
