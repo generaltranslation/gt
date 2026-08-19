@@ -219,7 +219,12 @@ function textByKey(root: Element): Map<string, string> {
         visit(child, `${prefix}/${child.tagName}[${nth}]`);
       }
     });
-    if (own.length > 0) map.set(prefix, own.join(''));
+    // Key ONLY single-text-node elements. The value is then exactly one text node's
+    // content, matching collectRecordedText's per-node granularity. JOINING multiple
+    // own text nodes would create an artifact string that can collide with an
+    // unrelated single recorded node's text (applying the wrong translation), and it's
+    // usually a dynamic concatenation (e.g. "Hello {name}") we shouldn't translate.
+    if (own.length === 1) map.set(prefix, own[0]);
   };
   visit(root, '');
   return map;
@@ -229,7 +234,53 @@ function textByKey(root: Element): Map<string, string> {
 // a source text agreed on (a real translation, or the source text itself =
 // "untranslated"); `ambiguous` holds source texts whose occurrences DISAGREED and are
 // therefore dropped.
-type TargetDict = { bag: Map<string, string>; ambiguous: Set<string> };
+export type TargetDict = { bag: Map<string, string>; ambiguous: Set<string> };
+
+export function newTargetDict(): TargetDict {
+  return { bag: new Map(), ambiguous: new Set() };
+}
+
+// Fold one render's structural alignment (source key→text vs target key→text) into a
+// target's dictionary. Every source-text occurrence is recorded as an observation —
+// a real translation, or the source itself when the target is missing/blank/identical
+// ("untranslated"). If a source text is observed with MORE THAN ONE distinct value
+// (different translations, or translated in one place and untranslated in another) it
+// is context-dependent → marked ambiguous and dropped, so every matching node renders
+// SOURCE rather than one occurrence's value applied everywhere. Pure (mutates entry).
+export function foldObservations(
+  entry: TargetDict,
+  srcMap: Map<string, string>,
+  tgtMap: Map<string, string>
+): void {
+  for (const [key, s] of srcMap) {
+    if (!s.trim() || entry.ambiguous.has(s)) continue;
+    const g = tgtMap.get(key);
+    const observed = g !== undefined && g.trim() && g !== s ? g : s;
+    const prev = entry.bag.get(s);
+    if (prev === undefined) {
+      entry.bag.set(s, observed);
+    } else if (prev !== observed) {
+      entry.ambiguous.add(s);
+      entry.bag.delete(s);
+    }
+  }
+}
+
+// Map a finished target dictionary onto the recording's nodes by source text. Emits
+// only REAL translations (a bag value equal to the source means every occurrence was
+// untranslated → that node renders source). Pure.
+export function overlayFromDict(
+  entry: TargetDict,
+  recorded: Map<number, string>
+): Record<number, string> {
+  const bag: Record<number, string> = {};
+  for (const [id, text] of recorded) {
+    if (entry.ambiguous.has(text)) continue;
+    const tr = entry.bag.get(text);
+    if (tr !== undefined && tr !== text) bag[id] = tr;
+  }
+  return bag;
+}
 
 async function harvestStructural(
   events: eventWithTime[],
@@ -243,7 +294,7 @@ async function harvestStructural(
   const targets = locales.filter((l) => l && l !== source);
   const paths = visitedPaths(events, opts.maxPaths);
   const dict: Record<string, TargetDict> = {};
-  for (const t of targets) dict[t] = { bag: new Map(), ambiguous: new Set() };
+  for (const t of targets) dict[t] = newTargetDict();
 
   for (const path of paths) {
     const src = await renderShell(
@@ -252,32 +303,12 @@ async function harvestStructural(
     );
     const srcMap = src.shell ? textByKey(src.shell) : null;
     for (const target of targets) {
-      const entry = dict[target];
       const tgt = await renderShell(
         opts.localeToUrl(path, source, target),
         opts.contentSelector
       );
-      if (entry && srcMap && tgt.shell) {
-        const tgtMap = textByKey(tgt.shell);
-        for (const [key, s] of srcMap) {
-          if (!s.trim() || entry.ambiguous.has(s)) continue;
-          const g = tgtMap.get(key);
-          // What THIS occurrence renders in the target: a real translation, or the
-          // source text itself when missing/blank/identical ("untranslated"). Every
-          // occurrence is recorded as an observation — a skipped one must NOT let a
-          // later translated occurrence be applied source-text-wide.
-          const observed = g !== undefined && g.trim() && g !== s ? g : s;
-          const prev = entry.bag.get(s);
-          if (prev === undefined) {
-            entry.bag.set(s, observed);
-          } else if (prev !== observed) {
-            // Occurrences DISAGREE — different translations, or translated in one
-            // place and untranslated in another → context-dependent. Drop it so every
-            // matching node renders SOURCE (safe) rather than one occurrence's value.
-            entry.ambiguous.add(s);
-            entry.bag.delete(s);
-          }
-        }
+      if (srcMap && tgt.shell) {
+        foldObservations(dict[target], srcMap, textByKey(tgt.shell));
       }
       tgt.dispose();
     }
@@ -288,16 +319,7 @@ async function harvestStructural(
   const recorded = collectRecordedText(events);
   const overlay: LocaleTextOverlay = {};
   for (const target of targets) {
-    const entry = dict[target];
-    const bag: Record<number, string> = {};
-    overlay[target] = bag;
-    for (const [id, text] of recorded) {
-      if (!entry || entry.ambiguous.has(text)) continue;
-      const tr = entry.bag.get(text);
-      // Emit only REAL translations; a value equal to the source means every
-      // occurrence was untranslated, so that node renders source.
-      if (tr !== undefined && tr !== text) bag[id] = tr;
-    }
+    overlay[target] = overlayFromDict(dict[target], recorded);
   }
   return overlay;
 }

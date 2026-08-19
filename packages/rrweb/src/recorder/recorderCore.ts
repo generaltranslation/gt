@@ -110,21 +110,25 @@ function removeFrame(): void {
 
 const FONT_STYLE_ID = 'gt-rrweb-fonts';
 
-// Embed same-origin web fonts as data: URIs in a <style> appended to <head> BEFORE
-// the snapshot, so the recording carries its own fonts (see inlineFonts). Best
+// Fetch the inlined-font stylesheet (see inlineFonts) — the ASYNC part, which does NOT
+// mutate the DOM, so it's safe to await before we've committed to recording. Best
 // effort: a fetch/CORS failure just leaves the replay on fallback fonts.
-async function injectInlinedFonts(): Promise<void> {
-  if (document.getElementById(FONT_STYLE_ID)) return;
+async function fetchInlinedFontCss(): Promise<string> {
   try {
-    const css = await collectInlinedFontFaceCss();
-    if (!css) return;
-    const style = document.createElement('style');
-    style.id = FONT_STYLE_ID;
-    style.textContent = css;
-    document.head.appendChild(style);
+    return await collectInlinedFontFaceCss();
   } catch {
-    // Best effort: on failure the replay falls back to system fonts.
+    return '';
   }
+}
+
+// Append the inlined fonts to <head> BEFORE the snapshot so the recording carries its
+// own fonts. Synchronous DOM mutation — only called once we own the recording.
+function injectFontStyle(css: string): void {
+  if (!css || document.getElementById(FONT_STYLE_ID)) return;
+  const style = document.createElement('style');
+  style.id = FONT_STYLE_ID;
+  style.textContent = css;
+  document.head.appendChild(style);
 }
 
 function removeInlinedFonts(): void {
@@ -200,17 +204,13 @@ export async function start(runConfig: RecorderConfig): Promise<void> {
   preparing = true;
   const mySession = ++sessionId;
   setStatus('preparing');
+  // Do the ONLY await (font fetch) BEFORE mutating the DOM. If stop()/abort()
+  // supersedes this prep during the fetch, we bail having touched nothing — so we
+  // can't remove a newer session's frame/fonts (they share element ids).
+  const fontCss = await fetchInlinedFontCss();
+  if (sessionId !== mySession) return; // superseded during the fetch; nothing to undo
   applyFrame();
-  // Embed fonts BEFORE the snapshot so they're captured self-contained.
-  await injectInlinedFonts();
-  // If stop()/abort() ran during prep, this session is stale — do NOT begin recording
-  // after the caller stopped it. Our applyFrame()/injectInlinedFonts() may have landed
-  // after the canceller's cleanup, so remove them and bail.
-  if (sessionId !== mySession) {
-    removeFrame();
-    removeInlinedFonts();
-    return;
-  }
+  injectFontStyle(fontCss); // embed fonts before the snapshot (self-contained)
   activeEvents = [];
   activeLocales = runConfig.locales;
   const stop = record({
@@ -227,7 +227,7 @@ export async function start(runConfig: RecorderConfig): Promise<void> {
     // for modern CSS (nesting, @layer, color-mix). Keeping the (absolutized)
     // <link href>s makes the replay load the real CSS. Fonts referenced by those
     // sheets can't be fetched cross-origin at replay time, so we embed them as
-    // data: URIs ourselves (injectInlinedFonts, above) — `collectFonts` only
+    // data: URIs ourselves (injectFontStyle, above) — `collectFonts` only
     // captures the @font-face RULES, not the binaries.
     inlineStylesheet: false,
     collectFonts: true,
