@@ -54,10 +54,7 @@ export function Client_GTProvider(props: SharedGTProviderProps) {
           document.cookie,
           defaultLocaleRoutingEnabledCookieName
         ) === 'true';
-      const nextLocale = i18nConfig.resolveAliasLocale(locale);
-      const defaultLocale = i18nConfig.resolveAliasLocale(
-        i18nConfig.getDefaultLocale()
-      );
+      const defaultLocale = i18nConfig.getDefaultLocale();
       const pathLocale = extractLocale(
         globalThis.location.pathname,
         i18nConfig
@@ -65,7 +62,7 @@ export function Client_GTProvider(props: SharedGTProviderProps) {
 
       if (
         middlewareEnabled &&
-        nextLocale === defaultLocale &&
+        locale === defaultLocale &&
         pathLocale &&
         pathLocale !== defaultLocale
       ) {
@@ -134,7 +131,7 @@ function usePathCheck({
         // clear cookie (avoids infinite loop when there is no middleware)
         document.cookie = `${localeRoutingEnabledCookieName}=;path=/`;
 
-        if (locale === i18nConfig.resolveAliasLocale(defaultLocale)) {
+        if (locale === defaultLocale) {
           // A browser navigation follows the middleware redirect that removes
           // the default locale prefix. Next.js router.refresh() does not.
           reloadPage();
