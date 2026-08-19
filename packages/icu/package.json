@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/icu",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Dependency-free ICU MessageFormat parsing and formatting for General Translation",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
@@ -37,7 +37,7 @@
     "i18n"
   ],
   "author": "General Translation, Inc.",
-  "license": "FSL-1.1-ALv2",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/generaltranslation/gt/issues"
   },

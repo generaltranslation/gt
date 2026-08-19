@@ -82,22 +82,30 @@ export const turboConfigStable = comparePackageVersion(
 
 export type RootParam = 'unsupported' | 'unstable' | 'experimental' | 'stable';
 
-export const rootParamStability: RootParam = (() => {
-  const nextVersion = getNextVersion();
+/**
+ * Classify the stability of root params for a Next.js version.
+ *
+ * @param nextVersion - The Next.js version to classify.
+ * @returns The root params stability tier for the supplied version.
+ */
+export function getRootParamStability(nextVersion: string): RootParam {
+  // Check stable before experimental because each threshold is a lower bound.
+  if (comparePackageVersion(nextVersion, ROOT_PARAM_STABILITY.stable)) {
+    return 'stable';
+  }
 
-  // Check if experimental
   if (comparePackageVersion(nextVersion, ROOT_PARAM_STABILITY.experimental)) {
     return 'experimental';
   }
 
-  // Check if unstable
   if (comparePackageVersion(nextVersion, ROOT_PARAM_STABILITY.unstable)) {
     return 'unstable';
   }
 
-  // return unsupported
   return 'unsupported';
-})();
+}
+
+export const rootParamStability = getRootParamStability(getNextVersion());
 
 export const swcPluginCompatible = comparePackageVersion(
   getNextVersion(),

@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/format",
-  "version": "0.1.4",
+  "version": "0.1.7",
   "description": "Locale and formatting utilities for General Translation",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
@@ -36,7 +36,7 @@
     "i18n"
   ],
   "author": "General Translation, Inc.",
-  "license": "FSL-1.1-ALv2",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/generaltranslation/gt/issues"
   },

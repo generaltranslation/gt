@@ -11,13 +11,11 @@ import type {
 } from '../../i18n-store/storeTypes';
 import type { TranslationMetadata } from 'gt-i18n/internal/types';
 import type { StringFormat } from '@generaltranslation/format';
-import { useLocale } from '../condition-store';
-import { useShouldTranslate } from '../utils';
 import {
   useI18nStore,
   useTranslationsSnapshot,
 } from '../../i18n-store/useI18nStore';
-import { useHandleMissingTranslation } from '../utils/missing-translation';
+import { useHandleMissingTranslationWithConditions } from '../utils/missing-translation';
 import { useSubscribeToTrackedLookups } from './useSubscribeToTrackedLookups';
 
 /**
@@ -45,14 +43,17 @@ export type Message = TranslationMetadata & {
  */
 
 export function useTrackedTranslationResolver(
-  messages: Message[] = []
+  messages: Message[] = [],
+  locale: string,
+  shouldTranslate: boolean
 ): TrackedTranslationResolver {
   const translationsSnapshot = useTranslationsSnapshot();
   const i18nStore = useI18nStore();
   const devHotReloadEnabled =
     process.env.NODE_ENV !== 'production' &&
     getI18nConfig().isDevHotReloadEnabled();
-  const onMissingTranslation = useHandleMissingTranslation();
+  const onMissingTranslation =
+    useHandleMissingTranslationWithConditions(shouldTranslate);
 
   /**
    * Track lookups per hook instance without updating React state during render.
@@ -63,7 +64,7 @@ export function useTrackedTranslationResolver(
   }
 
   // (optimization) Pre-subscribe to compiler-injected lookups
-  usePreloadCompilerLookups(messages, trackedKeysRef);
+  usePreloadCompilerLookups(messages, trackedKeysRef, locale, shouldTranslate);
 
   // (tx hot reload) Subscribe to translation updates
   useSubscribeToTrackedLookups(
@@ -112,14 +113,14 @@ export function useTrackedTranslationResolver(
  */
 function usePreloadCompilerLookups(
   messages: Message[],
-  trackedKeysRef: RefObject<Set<string> | null>
+  trackedKeysRef: RefObject<Set<string> | null>,
+  locale: string,
+  shouldTranslate: boolean
 ) {
   const i18nStore = useI18nStore();
-  const locale = useLocale();
   const devHotReloadEnabled =
     process.env.NODE_ENV !== 'production' &&
     getI18nConfig().isDevHotReloadEnabled();
-  const shouldTranslate = useShouldTranslate();
   const translationsSnapshot = useTranslationsSnapshot();
   const txHotReloadEnabled = useMemo(() => {
     return messages?.length > 0 && shouldTranslate && devHotReloadEnabled;

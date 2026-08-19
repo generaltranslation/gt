@@ -1,12 +1,12 @@
 {
   "name": "@generaltranslation/python-extractor",
-  "version": "0.2.35",
+  "version": "0.2.39",
   "description": "Python source code extraction for General Translation",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
   "author": "General Translation, Inc.",
-  "license": "FSL-1.1-ALv2",
+  "license": "MIT",
   "scripts": {
     "emit-types": "sh ../../scripts/emit-types.sh",
     "transpile": "tsdown && pnpm run emit-types",

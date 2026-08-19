@@ -21,9 +21,6 @@ import { isDeriveCall } from './isDeriveCall.js';
 const traverse = traverseModule.default || traverseModule;
 const generate = generateModule.default || generateModule;
 
-// Nested arrays of strings (deprecated - kept for backwards compatibility)
-export type StringTree = (string | StringTree)[];
-
 /**
  * Cache for resolved import paths to avoid redundant I/O operations.
  * Key: `${currentFile}::${importPath}`

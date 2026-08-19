@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "Self-contained Python launcher for the General Translation CLI"
 readme = "README.md"
 requires-python = ">=3.8"
-license = "FSL-1.1-ALv2"
+license = "MIT"
 license-files = ["LICENSE.md"]
 authors = [
   { name = "General Translation, Inc.", email = "support@generaltranslation.com" },
