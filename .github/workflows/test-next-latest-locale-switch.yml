@@ -41,33 +41,22 @@ jobs:
           node-version: 24
           cache: 'pnpm'
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
-        with:
-          targets: wasm32-wasip1
-
       - name: Install dependencies
         run: pnpm install
 
-      - name: Build local GT packages
-        run: pnpm exec turbo build --filter='@generaltranslation/format' --filter='@generaltranslation/compiler' --filter=generaltranslation --filter=gt-i18n --filter='@generaltranslation/react-core' --filter=gt-react --filter=gt-next
-
-      - name: Install local gt-next with next@latest
+      - name: Install reported GT versions with next@latest
         id: versions
         run: |
-          mkdir -p .turbo/next-latest-package
-          pnpm --filter gt-next pack --pack-destination .turbo/next-latest-package
-          GT_NEXT_TARBALL="$(find "$(pwd)/.turbo/next-latest-package" -name '*.tgz' -print -quit)"
           LATEST_NEXT_VERSION="$(pnpm view next@latest version)"
-          pnpm --filter gt-test-next-latest-locale-switch add "${GT_NEXT_TARBALL}" "next@${LATEST_NEXT_VERSION}" --save-exact --lockfile=false
+          pnpm --filter gt-test-next-latest-locale-switch add gt-next@6.16.37 gt-react@10.20.5 "next@${LATEST_NEXT_VERSION}" --save-exact --lockfile=false
           NEXT_VERSION="$(pnpm --filter gt-test-next-latest-locale-switch exec next --version)"
-          GT_NEXT_VERSION="$(pnpm --filter gt-next exec node -p "require('./package.json').version")"
+          GT_NEXT_VERSION='6.16.37'
           test "${NEXT_VERSION}" = "Next.js v${LATEST_NEXT_VERSION}"
           echo "next-version=${NEXT_VERSION}" >> "$GITHUB_OUTPUT"
           echo "gt-next-version=${GT_NEXT_VERSION}" >> "$GITHUB_OUTPUT"
           echo "### Compatibility versions" >> "$GITHUB_STEP_SUMMARY"
           echo "- Next.js: \`${NEXT_VERSION}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- gt-next: \`${GT_NEXT_VERSION}\` (local build)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- gt-next: \`${GT_NEXT_VERSION}\` (published reproduction)" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Install Chromium
         run: pnpm --filter gt-test-next-latest-locale-switch test:e2e:install
