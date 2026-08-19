@@ -1,32 +1,103 @@
-import { _isValidLocale, _standardizeLocale } from './isValidLocale';
-import { _isSameLanguage } from './isSameLanguage';
 import {
-  _getLocaleProperties,
-  type LocaleProperties,
-} from './getLocaleProperties';
+  _prepareApprovedLocales,
+  type ApprovedLocales,
+} from './approvedLocales';
+import { intlCache } from '../cache/IntlCache';
 import { CustomMapping } from './customLocaleMapping';
+import { _getLocaleLanguage } from './isSameLanguage';
+import { _isValidLocale, _standardizeLocale } from './isValidLocale';
 
-function standardizeValidLocales(
-  locales: string[],
-  customMapping?: CustomMapping
-) {
-  return locales
-    .filter((locale) => _isValidLocale(locale, customMapping))
-    .map(_standardizeLocale);
+type LocaleMatchCodes = {
+  languageCode: string;
+  regionCode: string;
+  scriptCode: string;
+  minimizedCode: string;
+};
+
+/**
+ * Derives the subtag codes used for matching. Mirrors how
+ * _getLocaleProperties derives languageCode, regionCode, scriptCode, and
+ * minimizedCode without a custom mapping, but skips the display-name and
+ * emoji lookups that matching never reads.
+ */
+function getLocaleMatchCodes(locale: string): LocaleMatchCodes {
+  try {
+    const localeObject = intlCache.get('Locale', locale);
+    const languageCode = localeObject.language;
+    let regionCode = localeObject.region || '';
+    let scriptCode = localeObject.script || '';
+    if (!regionCode || !scriptCode) {
+      const maximizedLocale = localeObject.maximize();
+      regionCode ||= maximizedLocale.region || '';
+      scriptCode ||= maximizedLocale.script || '';
+    }
+    return {
+      languageCode,
+      regionCode,
+      scriptCode,
+      minimizedCode: localeObject.minimize().toString(),
+    };
+  } catch {
+    const code = _isValidLocale(locale) ? _standardizeLocale(locale) : locale;
+    const codeParts = code.split('-');
+    return {
+      languageCode: codeParts[0] || code,
+      regionCode: codeParts.length > 2 ? codeParts[2] : codeParts[1] || '',
+      scriptCode: codeParts[3] || '',
+      minimizedCode: code,
+    };
+  }
 }
 
-function getMatchingCode(
+/**
+ * Matches a valid, standardized locale against standardized candidate codes.
+ * Callers are responsible for validation and canonicalization before matching.
+ * @internal
+ */
+export function findMatchingCode(
   locale: string,
-  { languageCode, minimizedCode, regionCode, scriptCode }: LocaleProperties,
   candidates: Set<string>
-) {
-  const localeCodes = [
-    locale, // If the full locale is supported under this language category
-    `${languageCode}-${regionCode}`, // Attempt to match parts
-    `${languageCode}-${scriptCode}`,
-    minimizedCode, // If a minimized variant of this locale is supported
-  ];
-  return localeCodes.find((localeCode) => candidates.has(localeCode));
+): string | undefined {
+  // Preference order: the full locale, then partial and minimized variants.
+  // The exact match needs no derived codes, so check it first.
+  if (candidates.has(locale)) return locale;
+  const { languageCode, regionCode, scriptCode, minimizedCode } =
+    getLocaleMatchCodes(locale);
+  const languageRegionCode = `${languageCode}-${regionCode}`;
+  if (candidates.has(languageRegionCode)) return languageRegionCode;
+  const languageScriptCode = `${languageCode}-${scriptCode}`;
+  if (candidates.has(languageScriptCode)) return languageScriptCode;
+  if (candidates.has(minimizedCode)) return minimizedCode;
+  return undefined;
+}
+
+/**
+ * Same contract as _determineLocale, with the approved-locales work hoisted
+ * into a prepared index.
+ * @internal
+ */
+export function _determineLocaleWithIndex(
+  locales: string | string[],
+  approvedIndex: ApprovedLocales,
+  customMapping?: CustomMapping
+): string | undefined {
+  const candidateLocales = Array.isArray(locales) ? locales : [locales];
+  for (const candidateLocale of candidateLocales) {
+    if (!_isValidLocale(candidateLocale, customMapping)) continue;
+    const locale = _standardizeLocale(candidateLocale);
+    const language = _getLocaleLanguage(locale);
+    if (language === undefined) continue;
+    // Only approved locales of the same language can match.
+    const candidates = approvedIndex.byLanguage.get(language);
+    if (candidates === undefined) continue;
+    const matchingCode =
+      findMatchingCode(locale, candidates) ||
+      // Fall back to matching through the bare language code, whose derived
+      // codes carry the language's most likely region and script.
+      findMatchingCode(language, candidates);
+    if (matchingCode) return matchingCode;
+  }
+  return undefined;
 }
 
 /**
@@ -39,26 +110,9 @@ export function _determineLocale(
   approvedLocales: string[],
   customMapping?: CustomMapping
 ): string | undefined {
-  locales = standardizeValidLocales(
-    Array.isArray(locales) ? locales : [locales],
+  return _determineLocaleWithIndex(
+    locales,
+    _prepareApprovedLocales(approvedLocales, customMapping),
     customMapping
   );
-  approvedLocales = standardizeValidLocales(approvedLocales, customMapping);
-  for (const locale of locales) {
-    const candidates = new Set(
-      approvedLocales.filter((approvedLocale) =>
-        _isSameLanguage(locale, approvedLocale)
-      )
-    );
-    const properties = _getLocaleProperties(locale);
-    const matchingCode =
-      getMatchingCode(locale, properties, candidates) ||
-      getMatchingCode(
-        properties.languageCode,
-        _getLocaleProperties(properties.languageCode),
-        candidates
-      );
-    if (matchingCode) return matchingCode;
-  }
-  return undefined;
 }

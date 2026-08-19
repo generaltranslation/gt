@@ -61,9 +61,9 @@ export const SingleDocumentView: React.FC = () => {
 
   return (
     <Box>
-      <Stack space={4}>
+      <Stack gap={4}>
         <Card shadow={1} padding={3}>
-          <Stack space={3}>
+          <Stack gap={3}>
             <Flex justify='space-between' align='flex-start'>
               <Box flex={1}>
                 <Text weight='semibold' size={1}>
@@ -75,7 +75,7 @@ export const SingleDocumentView: React.FC = () => {
               </Box>
             </Flex>
 
-            <Stack space={2}>
+            <Stack gap={2}>
               {locales.length > 0 ? (
                 locales
                   .filter((locale) => locale.enabled !== false)

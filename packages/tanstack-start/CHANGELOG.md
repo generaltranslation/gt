@@ -22,6 +22,56 @@
   - gt-react@11.1.6-iris.0
   - @generaltranslation/react-core@11.1.6-iris.0
 
+## 11.1.11
+
+### Patch Changes
+
+- Updated dependencies [[`53b2100`](https://github.com/generaltranslation/gt/commit/53b2100abe824b81d3c2d0a3acaf7201c77da87c)]:
+  - @generaltranslation/react-core@11.1.11
+  - gt-react@11.1.11
+  - generaltranslation@9.1.6
+  - gt-i18n@1.0.16
+
+## 11.1.10
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.1.5
+  - gt-i18n@1.0.15
+  - @generaltranslation/react-core@11.1.10
+  - gt-react@11.1.10
+
+## 11.1.9
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.1.9
+  - gt-react@11.1.9
+
+## 11.1.8
+
+### Patch Changes
+
+- Updated dependencies [[`6607925`](https://github.com/generaltranslation/gt/commit/660792523b15d2e43e9752ea599e5229c1b45bc7)]:
+  - generaltranslation@9.1.4
+  - @generaltranslation/react-core@11.1.8
+  - gt-i18n@1.0.14
+  - gt-react@11.1.8
+
+## 11.1.7
+
+### Patch Changes
+
+- [#2074](https://github.com/generaltranslation/gt/pull/2074) [`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8) Thanks [@eoinest](https://github.com/eoinest)! - Migrate the package license from FSL-1.1-ALv2 to MIT.
+
+- Updated dependencies [[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)]:
+  - @generaltranslation/react-core@11.1.7
+  - generaltranslation@9.1.3
+  - gt-i18n@1.0.13
+  - gt-react@11.1.7
+
 ## 11.1.6
 
 ### Patch Changes
