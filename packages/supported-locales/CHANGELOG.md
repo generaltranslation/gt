@@ -1,5 +1,19 @@
 # @generaltranslation/supported-locales
 
+## 2.1.19
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.1.6
+
+## 2.1.18
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.1.5
+
 ## 2.1.17
 
 ### Patch Changes

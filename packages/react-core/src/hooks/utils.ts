@@ -1,6 +1,6 @@
 import type { LocaleProperties } from '@generaltranslation/format/types';
 import { useMemo } from 'react';
-import { useEnableI18n, useLocale } from './condition-store';
+import { useConditionStore, useEnableI18n, useLocale } from './condition-store';
 import { getFormatLocales } from './utils/getFormatLocales';
 import { getI18nConfig } from 'gt-i18n/internal';
 
@@ -28,6 +28,22 @@ export function useShouldTranslate(): boolean {
   const enableI18n = useEnableI18n();
   const locale = useLocale();
   return enableI18n && getI18nConfig().requiresTranslation(locale);
+}
+
+/**
+ * Resolves the condition values shared by translation hooks once per render.
+ */
+export function useTranslationConditions(): {
+  locale: string;
+  shouldTranslate: boolean;
+} {
+  const conditionStore = useConditionStore();
+  const locale = conditionStore.getLocale();
+  const enableI18n = conditionStore.getEnableI18n();
+  return {
+    locale,
+    shouldTranslate: enableI18n && getI18nConfig().requiresTranslation(locale),
+  };
 }
 
 export function useLocaleProperties(locale: string): LocaleProperties {

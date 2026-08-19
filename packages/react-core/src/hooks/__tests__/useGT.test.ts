@@ -1,17 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useLocale } from '../condition-store';
 import { useTrackedTranslationResolver } from '../external-store/useTrackedTranslationResolver';
 import { useDefaultLocale } from '../i18n-config';
-import { useShouldTranslate } from '../utils';
+import { useTranslationConditions } from '../utils';
 import { useGT } from '../useGT';
 
 vi.mock('react', () => ({
   useCallback: <T extends (...args: unknown[]) => unknown>(callback: T) =>
     callback,
-}));
-
-vi.mock('../condition-store', () => ({
-  useLocale: vi.fn(),
 }));
 
 vi.mock('../external-store/useTrackedTranslationResolver', () => ({
@@ -23,14 +18,16 @@ vi.mock('../i18n-config', () => ({
 }));
 
 vi.mock('../utils', () => ({
-  useShouldTranslate: vi.fn(),
+  useTranslationConditions: vi.fn(),
 }));
 
 describe('useGT', () => {
   beforeEach(() => {
-    vi.mocked(useLocale).mockReturnValue('en');
     vi.mocked(useDefaultLocale).mockReturnValue('en');
-    vi.mocked(useShouldTranslate).mockReturnValue(false);
+    vi.mocked(useTranslationConditions).mockReturnValue({
+      locale: 'en',
+      shouldTranslate: false,
+    });
     vi.mocked(useTrackedTranslationResolver).mockReturnValue(vi.fn());
   });
 
@@ -38,5 +35,21 @@ describe('useGT', () => {
     const gt = useGT();
 
     expect(gt('hello, {name}', { name: 'brian' })).toBe('hello, brian');
+  });
+
+  it('reuses the resolved translation conditions in the tracked resolver', () => {
+    const messages = [{ message: 'hello' }];
+    vi.mocked(useTranslationConditions).mockReturnValue({
+      locale: 'fr',
+      shouldTranslate: true,
+    });
+
+    useGT(messages);
+
+    expect(useTrackedTranslationResolver).toHaveBeenCalledWith(
+      messages,
+      'fr',
+      true
+    );
   });
 });

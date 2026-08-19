@@ -1,7 +1,7 @@
 {
-  "name": "@generaltranslation/supported-locales",
-  "version": "2.1.19",
-  "description": "List of supported locales for General Translation",
+  "name": "gt-rrweb",
+  "version": "0.0.2",
+  "description": "Record a product walkthrough once with rrweb and replay it per-locale using General Translation's own published translations",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
   "types": "dist/index.d.cts",
@@ -9,33 +9,41 @@
     "dist",
     "CHANGELOG.md"
   ],
+  "sideEffects": false,
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
   "scripts": {
-    "build:release": "pnpm run build:clean",
-    "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
     "build": "tsdown",
-    "test": "vitest run --passWithNoTests",
-    "test:watch": "vitest",
+    "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
+    "build:release": "pnpm run build:clean",
     "release": "pnpm run build:clean && pnpm publish",
     "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",
     "release:beta": "pnpm run build:clean && pnpm publish --tag beta",
     "release:latest": "pnpm run build:clean && pnpm publish --tag latest",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/generaltranslation/gt.git"
+    "url": "git+https://github.com/generaltranslation/gt.git",
+    "directory": "packages/rrweb"
   },
-  "keywords": [
-    "internal"
-  ],
   "author": "General Translation, Inc.",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/generaltranslation/gt/issues"
   },
   "homepage": "https://generaltranslation.com/",
-  "typescript": {
-    "definition": "dist/index.d.cts"
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/react": ">=18.0.0 <20.0.0",
+    "@types/react-dom": ">=18.0.0 <20.0.0",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "exports": {
     ".": {
@@ -49,11 +57,15 @@
       }
     }
   },
-  "dependencies": {
-    "generaltranslation": "workspace:*"
-  },
-  "devDependencies": {
-    "tsdown": "catalog:",
-    "typescript": "catalog:"
-  }
+  "keywords": [
+    "rrweb",
+    "replay",
+    "recorder",
+    "demo",
+    "react",
+    "translation",
+    "internationalization",
+    "localization",
+    "i18n"
+  ]
 }
