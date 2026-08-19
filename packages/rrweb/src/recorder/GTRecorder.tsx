@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 
-import RecordingOverlay from './RecordingOverlay';
+import { RecordingOverlay } from './RecordingOverlay';
 import { useRecorder } from './useRecorder';
 import {
   abort,
@@ -10,6 +10,7 @@ import {
   start as coreStart,
   stop as coreStop,
 } from './recorderCore';
+import { aspectOf } from '../types';
 import type { FrameOption, HarvestOptions, RecorderBundle } from '../types';
 
 export type GTRecorderProps = {
@@ -29,19 +30,12 @@ export type GTRecorderProps = {
   labels?: { rec?: string; stop?: string };
 };
 
-function aspectOf(frame: FrameOption | undefined): number | null {
-  if (frame === '16:9') return 16 / 9;
-  if (frame && typeof frame === 'object' && frame.aspect > 0)
-    return frame.aspect;
-  return null;
-}
-
 /**
  * Mount once (e.g. at the app root, inside <GTProvider>). Renders nothing until
  * recording, then the capture overlay. Owns capture config; drive it from anywhere
  * with useRecorder().
  */
-export default function GTRecorder({
+export function GTRecorder({
   enabled = true,
   contentSelector,
   frame = 'none',

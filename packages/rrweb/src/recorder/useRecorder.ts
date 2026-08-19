@@ -15,8 +15,8 @@ export type UseRecorder = {
   status: RecorderStatus;
   /** Convenience for `status === 'recording'`. */
   isRecording: boolean;
-  /** Begin capture. `config.locales` is SOURCE-first. */
-  start: (config: RecorderConfig) => void;
+  /** Begin capture (embeds fonts before snapshotting). `config.locales` is SOURCE-first. */
+  start: (config: RecorderConfig) => Promise<void>;
   /** Stop capture; resolves after harvest with the assembled bundle. */
   stop: () => Promise<RecorderBundle | null>;
 };
@@ -35,7 +35,10 @@ export function useRecorder(): UseRecorder {
     return subscribe(setStatus);
   }, []);
 
-  const start = useCallback((config: RecorderConfig) => coreStart(config), []);
+  const start = useCallback(
+    (config: RecorderConfig): Promise<void> => coreStart(config),
+    []
+  );
   const stop = useCallback(() => coreStop(), []);
 
   return { status, isRecording: status === 'recording', start, stop };

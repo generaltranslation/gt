@@ -3,7 +3,9 @@ import { EventType } from '@rrweb/types';
 import type { eventWithTime } from '@rrweb/types';
 
 import { harvestLocales } from '../harvest/harvestLocales';
+import { collectInlinedFontFaceCss } from './inlineFonts';
 import {
+  aspectOf,
   DEFAULT_CONTENT_SELECTOR,
   GT_EVENT,
   type FrameOption,
@@ -36,6 +38,10 @@ let activeStop: (() => void) | undefined;
 let activeEvents: eventWithTime[] = [];
 let activeLocales: string[] = [];
 let navCleanup: (() => void) | undefined;
+// Bumped on every start(). stop() captures it before its async harvest so a stop
+// whose harvest resolves AFTER a new recording began won't reset the shared status
+// (which would tear down the new recording's overlay + Stop control).
+let generation = 0;
 const listeners = new Set<(status: RecorderStatus) => void>();
 
 function setStatus(next: RecorderStatus): void {
@@ -63,13 +69,9 @@ export function configure(config: Partial<CoreConfig>): void {
 // ----- capture framing ----- //
 
 const FRAME_STYLE_ID = 'gt-rrweb-frame';
-const CHROME_V = 144; // vertical reserve so the overlay's Stop button stays on-screen
-
-function aspectOf(frame: FrameOption): number | null {
-  if (frame === '16:9') return 16 / 9;
-  if (typeof frame === 'object' && frame.aspect > 0) return frame.aspect;
-  return null;
-}
+// Vertical space (px) reserved above+below the framed content so the overlay's Stop
+// button stays on-screen; must match RecordingOverlay's CHROME_V.
+const CHROME_V = 144;
 
 // Reflow the content region into a centered box of the given aspect. Injected as a
 // stylesheet + an <html> class so it's captured by rrweb (applied BEFORE the
@@ -100,22 +102,47 @@ function removeFrame(): void {
   document.documentElement.classList.remove('gt-recording');
 }
 
+// ----- self-contained fonts ----- //
+
+const FONT_STYLE_ID = 'gt-rrweb-fonts';
+
+// Embed same-origin web fonts as data: URIs in a <style> appended to <head> BEFORE
+// the snapshot, so the recording carries its own fonts (see inlineFonts). Best
+// effort: a fetch/CORS failure just leaves the replay on fallback fonts.
+async function injectInlinedFonts(): Promise<void> {
+  if (document.getElementById(FONT_STYLE_ID)) return;
+  try {
+    const css = await collectInlinedFontFaceCss();
+    if (!css) return;
+    const style = document.createElement('style');
+    style.id = FONT_STYLE_ID;
+    style.textContent = css;
+    document.head.appendChild(style);
+  } catch {
+    // Best effort: on failure the replay falls back to system fonts.
+  }
+}
+
+function removeInlinedFonts(): void {
+  document.getElementById(FONT_STYLE_ID)?.remove();
+}
+
 // ----- SPA navigation capture ----- //
 
 // rrweb only captures the initial href; record SPA navigations as custom events so
 // the harvest knows which URLs were visited. Patches the History API for the
 // recording and restores it on stop.
 function startNavCapture(): void {
-  const origPush = history.pushState;
-  const origReplace = history.replaceState;
+  const origPush = window.history.pushState;
+  const origReplace = window.history.replaceState;
   const emit = () => {
     try {
-      record.addCustomEvent(GT_EVENT.nav, { href: location.href });
+      record.addCustomEvent(GT_EVENT.nav, { href: window.location.href });
     } catch {
       /* recorder not active */
     }
   };
-  history.pushState = function (
+  window.history.pushState = function (
     this: History,
     ...args: Parameters<History['pushState']>
   ) {
@@ -123,7 +150,7 @@ function startNavCapture(): void {
     emit();
     return result;
   };
-  history.replaceState = function (
+  window.history.replaceState = function (
     this: History,
     ...args: Parameters<History['replaceState']>
   ) {
@@ -133,8 +160,8 @@ function startNavCapture(): void {
   };
   window.addEventListener('popstate', emit);
   navCleanup = () => {
-    history.pushState = origPush;
-    history.replaceState = origReplace;
+    window.history.pushState = origPush;
+    window.history.replaceState = origReplace;
     window.removeEventListener('popstate', emit);
     navCleanup = undefined;
   };
@@ -162,9 +189,12 @@ function injectOverlay(
 
 // ----- lifecycle ----- //
 
-export function start(runConfig: RecorderConfig): void {
+export async function start(runConfig: RecorderConfig): Promise<void> {
   if (activeStop) return;
+  setStatus('preparing');
   applyFrame();
+  // Embed fonts BEFORE the snapshot so they're captured self-contained.
+  await injectInlinedFonts();
   activeEvents = [];
   activeLocales = runConfig.locales;
   const stop = record({
@@ -179,17 +209,22 @@ export function start(runConfig: RecorderConfig): void {
     maskAllInputs: true,
     // Do NOT re-serialize the app's stylesheets — rrweb's CSSOM inlining is lossy
     // for modern CSS (nesting, @layer, color-mix). Keeping the (absolutized)
-    // <link href>s makes the replay load the real CSS. Inline the fonts so they
-    // don't need a cross-origin fetch.
+    // <link href>s makes the replay load the real CSS. Fonts referenced by those
+    // sheets can't be fetched cross-origin at replay time, so we embed them as
+    // data: URIs ourselves (injectInlinedFonts, above) — `collectFonts` only
+    // captures the @font-face RULES, not the binaries.
     inlineStylesheet: false,
     collectFonts: true,
   });
   // `record()` returns undefined if it can't start (e.g. no document).
   if (!stop) {
     removeFrame();
+    removeInlinedFonts();
+    setStatus('idle');
     return;
   }
   activeStop = stop;
+  generation += 1;
   startNavCapture();
   // Stamp the traced locales (source first) so the recording is self-describing.
   if (runConfig.locales.length) {
@@ -205,10 +240,12 @@ export function start(runConfig: RecorderConfig): void {
 // failure is non-fatal — the bundle falls back to source-only (empty overlay).
 export async function stop(): Promise<RecorderBundle | null> {
   if (!activeStop) return null;
+  const stoppedGeneration = generation;
   activeStop();
   activeStop = undefined;
   navCleanup?.();
   removeFrame();
+  removeInlinedFonts();
   const events = activeEvents;
   const locales = activeLocales;
   activeEvents = [];
@@ -225,14 +262,15 @@ export async function stop(): Promise<RecorderBundle | null> {
     try {
       overlay = await harvestLocales(events, locales, coreConfig.harvest);
       output = injectOverlay(events, overlay);
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error('[gt-rrweb] locale harvest failed; source only', err);
+    } catch {
+      // Non-fatal: the bundle falls back to source-only (empty overlay).
     }
   }
 
   const bundle: RecorderBundle = { events: output, locales, overlay };
-  setStatus('idle');
+  // Only reset status if no new recording started while we were harvesting —
+  // otherwise we'd clear the in-progress recording's status/overlay.
+  if (generation === stoppedGeneration) setStatus('idle');
   coreConfig.onComplete?.(bundle);
   return bundle;
 }
@@ -244,6 +282,7 @@ export function abort(): void {
   activeStop = undefined;
   navCleanup?.();
   removeFrame();
+  removeInlinedFonts();
   activeEvents = [];
   activeLocales = [];
   setStatus('idle');

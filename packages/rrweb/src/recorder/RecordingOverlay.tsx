@@ -39,7 +39,7 @@ export type RecordingOverlayProps = {
 
 const RED = '#ef4444';
 
-export default function RecordingOverlay({
+export function RecordingOverlay({
   onStop,
   aspect = null,
   labels,

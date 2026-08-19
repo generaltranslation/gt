@@ -25,6 +25,17 @@ export type RecorderStatus = 'idle' | 'recording' | 'preparing';
  */
 export type FrameOption = 'none' | '16:9' | { aspect: number };
 
+/** 16:9 as a numeric ratio — the default capture aspect. */
+export const ASPECT_16_9 = 16 / 9;
+
+/** Resolve a FrameOption to a numeric aspect ratio, or null for 'none'. */
+export function aspectOf(frame: FrameOption | undefined): number | null {
+  if (frame === '16:9') return ASPECT_16_9;
+  if (frame && typeof frame === 'object' && frame.aspect > 0)
+    return frame.aspect;
+  return null;
+}
+
 /**
  * How to fetch a locale's translations for `key: 'hash'` harvest. Mirrors GT's own
  * `TranslationsLoader`; the default resolves through the app's configured loader so
@@ -35,10 +46,23 @@ export type TranslationsLoader = (locale: string) => Promise<unknown>;
 export type HarvestOptions = {
   /**
    * Turn (path, source, target) into the URL to render for the structural harvest.
-   * Default swaps the leading locale path segment (GT path routing). Override for
-   * cookie/query locale strategies.
+   * The default assumes LOCALE-PREFIXED routing — it swaps the source-locale path
+   * segment (wherever it appears) for the target, or prepends one. An app is NOT
+   * guaranteed to encode the locale in the path at all (cookie/domain/query
+   * strategies), so those apps MUST pass this.
    */
   localeToUrl?: (path: string, source: string, target: string) => string;
+  /**
+   * The locale the recording was captured in (the source render). Defaults to the
+   * GT locale cookie (`localeCookieName`), then `locales[0]`. Set this when the app
+   * doesn't rely on the GT cookie.
+   */
+  sourceLocale?: string;
+  /**
+   * Cookie the GT library stores the active locale in — read to detect `sourceLocale`
+   * rather than assuming the default locale. Defaults to `generaltranslation.locale`.
+   */
+  localeCookieName?: string;
   /**
    * 'auto' (default): hash if the recording carries `data-_gt-hash`, else structural.
    * 'structural': pair source↔target text by DOM structure (renders each locale).

@@ -102,7 +102,7 @@ function visitedPaths(events: eventWithTime[], maxPaths: number): string[] {
   const paths: string[] = [];
   const push = (href: string) => {
     try {
-      paths.push(new URL(href, location.origin).pathname);
+      paths.push(new URL(href, window.location.origin).pathname);
     } catch {
       /* ignore malformed */
     }
@@ -120,22 +120,41 @@ function visitedPaths(events: eventWithTime[], maxPaths: number): string[] {
   return [...new Set(paths)].slice(0, maxPaths);
 }
 
-// Default: swap the leading locale segment (…/en-US/x → …/fr/x). If the source
-// locale isn't the first segment (unprefixed default), prepend the target.
-function defaultLocaleToUrl(
+// GT stores the active locale here by default; read it so we don't assume the
+// recording was made in the default locale (see harvestLocales).
+const DEFAULT_LOCALE_COOKIE = 'generaltranslation.locale';
+
+/** Read a cookie value in the browser (undefined if absent / non-browser). */
+function readCookie(name: string): string | undefined {
+  if (typeof document === 'undefined' || !document.cookie) return undefined;
+  for (const c of document.cookie.split('; ')) {
+    const i = c.indexOf('=');
+    if (i > 0 && decodeURIComponent(c.slice(0, i)) === name)
+      return decodeURIComponent(c.slice(i + 1));
+  }
+  return undefined;
+}
+
+// Default URL builder for LOCALE-PREFIXED routing: swap the source-locale path
+// segment — WHEREVER it sits, not just the first — for the target, or prepend one if
+// the path has no source-locale segment. An app that encodes the locale outside the
+// path (cookie/domain/query) has no segment to swap and must pass its own
+// `localeToUrl`.
+function prefixLocaleToUrl(
   path: string,
   source: string,
   target: string
 ): string {
   const segs = path.split('/');
-  if (segs[1] === source) segs[1] = target;
+  const i = segs.findIndex((s) => s === source);
+  if (i > 0) segs[i] = target;
   else segs.splice(1, 0, target);
   return segs.join('/') || '/';
 }
 
 function countText(doc: Document, root: Node): number {
   let n = 0;
-  const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const walker = doc.createTreeWalker(root, window.NodeFilter.SHOW_TEXT);
   while (walker.nextNode()) n++;
   return n;
 }
@@ -195,9 +214,9 @@ function textByKey(root: Element): Map<string, string> {
     const own: string[] = [];
     const tagCounts: Record<string, number> = {};
     el.childNodes.forEach((c) => {
-      if (c.nodeType === Node.TEXT_NODE) {
+      if (c.nodeType === window.Node.TEXT_NODE) {
         if ((c.textContent ?? '').trim()) own.push(c.textContent ?? '');
-      } else if (c.nodeType === Node.ELEMENT_NODE) {
+      } else if (c.nodeType === window.Node.ELEMENT_NODE) {
         const child = c as Element;
         const nth = (tagCounts[child.tagName] =
           (tagCounts[child.tagName] ?? 0) + 1);
@@ -210,19 +229,23 @@ function textByKey(root: Element): Map<string, string> {
   return map;
 }
 
+// Per-target source→target dictionary plus the set of source texts that resolved to
+// MORE THAN ONE distinct translation (context-dependent) and are therefore dropped.
+type TargetDict = { bag: Map<string, string>; ambiguous: Set<string> };
+
 async function harvestStructural(
   events: eventWithTime[],
   locales: string[],
   opts: Required<
     Pick<HarvestOptions, 'localeToUrl' | 'contentSelector' | 'maxPaths'>
-  >
+  > & { source: string }
 ): Promise<LocaleTextOverlay> {
-  const source = locales[0];
+  const source = opts.source;
   if (!source) return {};
-  const targets = locales.slice(1);
+  const targets = locales.filter((l) => l && l !== source);
   const paths = visitedPaths(events, opts.maxPaths);
-  const dict: Record<string, Map<string, string>> = {};
-  for (const t of targets) dict[t] = new Map();
+  const dict: Record<string, TargetDict> = {};
+  for (const t of targets) dict[t] = { bag: new Map(), ambiguous: new Set() };
 
   for (const path of paths) {
     const src = await renderShell(
@@ -231,16 +254,27 @@ async function harvestStructural(
     );
     const srcMap = src.shell ? textByKey(src.shell) : null;
     for (const target of targets) {
-      const bag = dict[target];
+      const entry = dict[target];
       const tgt = await renderShell(
         opts.localeToUrl(path, source, target),
         opts.contentSelector
       );
-      if (bag && srcMap && tgt.shell) {
+      if (entry && srcMap && tgt.shell) {
         const tgtMap = textByKey(tgt.shell);
         for (const [key, s] of srcMap) {
           const g = tgtMap.get(key);
-          if (g !== undefined && s.trim() && g.trim() && s !== g) bag.set(s, g);
+          if (g === undefined || !s.trim() || !g.trim() || s === g) continue;
+          if (entry.ambiguous.has(s)) continue;
+          const prev = entry.bag.get(s);
+          // Identical source text with DIFFERENT translations can't be
+          // disambiguated by text alone → drop it so every matching node renders
+          // SOURCE (safe) rather than one occurrence's wrong translation.
+          if (prev !== undefined && prev !== g) {
+            entry.ambiguous.add(s);
+            entry.bag.delete(s);
+            continue;
+          }
+          entry.bag.set(s, g);
         }
       }
       tgt.dispose();
@@ -248,15 +282,16 @@ async function harvestStructural(
     src.dispose();
   }
 
-  // Map the dictionary onto the recording's nodes by source text.
+  // Map each target dictionary onto the recording's nodes by source text.
   const recorded = collectRecordedText(events);
   const overlay: LocaleTextOverlay = {};
   for (const target of targets) {
-    const d = dict[target];
+    const entry = dict[target];
     const bag: Record<number, string> = {};
     overlay[target] = bag;
     for (const [id, text] of recorded) {
-      const tr = d?.get(text);
+      if (!entry || entry.ambiguous.has(text)) continue;
+      const tr = entry.bag.get(text);
       if (tr !== undefined) bag[id] = tr;
     }
   }
@@ -270,28 +305,24 @@ export async function harvestLocales(
   locales: string[],
   options: HarvestOptions = {}
 ): Promise<LocaleTextOverlay> {
+  // The recording's source locale = the locale actually rendered while recording.
+  // Don't assume it's the default/`locales[0]`: read the GT locale cookie the library
+  // maintains, then fall back to locales[0].
+  const localeCookieName = options.localeCookieName ?? DEFAULT_LOCALE_COOKIE;
+  const source =
+    options.sourceLocale ?? readCookie(localeCookieName) ?? locales[0];
+
   const resolved = {
-    localeToUrl: options.localeToUrl ?? defaultLocaleToUrl,
+    localeToUrl: options.localeToUrl ?? prefixLocaleToUrl,
     contentSelector: options.contentSelector ?? DEFAULT_CONTENT_SELECTOR,
     maxPaths: options.maxPaths ?? DEFAULT_MAX_PATHS,
+    source,
   };
 
-  const requested = options.key ?? 'auto';
-  const useHash =
-    requested === 'hash' ||
-    (requested === 'auto' && recordingHasHashes(events));
-
-  if (useHash) {
-    // The `data-_gt-hash` id-tagging is SHIPPED (@generaltranslation/react-core
-    // >=11.1.9, opt-in via `_tagIds`), so hashes are available. What's not done yet
-    // is gt-rrweb's hash MAPPING (flatten a <T>'s translation dict onto individual
-    // nodes via `getTranslations`) — so fall back to structural for now; 'auto'
-    // stays safe. TODO(gt-rrweb): implement hash mapping.
-    // eslint-disable-next-line no-console
-    console.warn(
-      '[gt-rrweb] hash harvest not implemented yet; using structural harvest.'
-    );
-  }
+  // NOTE: the `key: 'hash'` harvest (map recorded `data-_gt-hash` nodes to a
+  // translations dict via `getTranslations`) isn't implemented yet; 'auto'/'hash'
+  // both fall back to the structural harvest below, which stays safe.
+  // TODO(gt-rrweb): implement hash mapping.
 
   return harvestStructural(events, locales, resolved);
 }
