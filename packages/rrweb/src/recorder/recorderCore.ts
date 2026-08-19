@@ -38,10 +38,14 @@ let activeStop: (() => void) | undefined;
 let activeEvents: eventWithTime[] = [];
 let activeLocales: string[] = [];
 let navCleanup: (() => void) | undefined;
-// Bumped on every start(). stop() captures it before its async harvest so a stop
-// whose harvest resolves AFTER a new recording began won't reset the shared status
-// (which would tear down the new recording's overlay + Stop control).
-let generation = 0;
+// A recording is "owned" once `activeStop` is set — but start() must await font
+// inlining BEFORE it can call record(), so ownership is reserved SYNCHRONOUSLY with
+// `preparing` (a concurrent start() bails on the guard) plus a monotonic `sessionId`:
+// stop()/abort() during the prep window bump `sessionId` to cancel the pending start
+// (so recording can't begin after the caller stopped it), and it also guards the
+// post-harvest status reset so a slow harvest can't clobber a newer recording.
+let preparing = false;
+let sessionId = 0;
 const listeners = new Set<(status: RecorderStatus) => void>();
 
 function setStatus(next: RecorderStatus): void {
@@ -190,11 +194,23 @@ function injectOverlay(
 // ----- lifecycle ----- //
 
 export async function start(runConfig: RecorderConfig): Promise<void> {
-  if (activeStop) return;
+  // Reserve ownership SYNCHRONOUSLY (before any await) so a second start() during the
+  // font-inlining window can't create a competing recorder.
+  if (activeStop || preparing) return;
+  preparing = true;
+  const mySession = ++sessionId;
   setStatus('preparing');
   applyFrame();
   // Embed fonts BEFORE the snapshot so they're captured self-contained.
   await injectInlinedFonts();
+  // If stop()/abort() ran during prep, this session is stale — do NOT begin recording
+  // after the caller stopped it. Our applyFrame()/injectInlinedFonts() may have landed
+  // after the canceller's cleanup, so remove them and bail.
+  if (sessionId !== mySession) {
+    removeFrame();
+    removeInlinedFonts();
+    return;
+  }
   activeEvents = [];
   activeLocales = runConfig.locales;
   const stop = record({
@@ -220,11 +236,12 @@ export async function start(runConfig: RecorderConfig): Promise<void> {
   if (!stop) {
     removeFrame();
     removeInlinedFonts();
+    preparing = false;
     setStatus('idle');
     return;
   }
   activeStop = stop;
-  generation += 1;
+  preparing = false;
   startNavCapture();
   // Stamp the traced locales (source first) so the recording is self-describing.
   if (runConfig.locales.length) {
@@ -239,8 +256,18 @@ export async function start(runConfig: RecorderConfig): Promise<void> {
 // Stop capture, HARVEST the traced locales, and return the assembled bundle. Harvest
 // failure is non-fatal — the bundle falls back to source-only (empty overlay).
 export async function stop(): Promise<RecorderBundle | null> {
+  // stop() during the prep window (recorder not yet owned): cancel the pending start
+  // so recording doesn't begin after this call.
+  if (preparing && !activeStop) {
+    preparing = false;
+    sessionId += 1;
+    removeFrame();
+    removeInlinedFonts();
+    setStatus('idle');
+    return null;
+  }
   if (!activeStop) return null;
-  const stoppedGeneration = generation;
+  const stoppedSession = sessionId;
   activeStop();
   activeStop = undefined;
   navCleanup?.();
@@ -251,7 +278,7 @@ export async function stop(): Promise<RecorderBundle | null> {
   activeEvents = [];
   activeLocales = [];
   if (events.length === 0) {
-    setStatus('idle');
+    if (sessionId === stoppedSession) setStatus('idle');
     return null;
   }
 
@@ -260,7 +287,13 @@ export async function stop(): Promise<RecorderBundle | null> {
   if (locales.length > 1) {
     setStatus('preparing');
     try {
-      overlay = await harvestLocales(events, locales, coreConfig.harvest);
+      // Harvest the SAME region we record/frame (e.g. the app shell incl. its
+      // sidebar) — not just <main> — so sidebar-only text is translated too. An
+      // explicit harvest.contentSelector still overrides.
+      overlay = await harvestLocales(events, locales, {
+        contentSelector: coreConfig.contentSelector,
+        ...coreConfig.harvest,
+      });
       output = injectOverlay(events, overlay);
     } catch {
       // Non-fatal: the bundle falls back to source-only (empty overlay).
@@ -270,13 +303,22 @@ export async function stop(): Promise<RecorderBundle | null> {
   const bundle: RecorderBundle = { events: output, locales, overlay };
   // Only reset status if no new recording started while we were harvesting —
   // otherwise we'd clear the in-progress recording's status/overlay.
-  if (generation === stoppedGeneration) setStatus('idle');
+  if (sessionId === stoppedSession) setStatus('idle');
   coreConfig.onComplete?.(bundle);
   return bundle;
 }
 
 /** Stop rrweb's observers without harvesting (e.g. on page unload). */
 export function abort(): void {
+  // Cancel a pending prep (see stop()).
+  if (preparing && !activeStop) {
+    preparing = false;
+    sessionId += 1;
+    removeFrame();
+    removeInlinedFonts();
+    setStatus('idle');
+    return;
+  }
   if (!activeStop) return;
   activeStop();
   activeStop = undefined;

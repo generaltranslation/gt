@@ -59,8 +59,10 @@ export type HarvestOptions = {
    */
   sourceLocale?: string;
   /**
-   * Cookie the GT library stores the active locale in — read to detect `sourceLocale`
-   * rather than assuming the default locale. Defaults to `generaltranslation.locale`.
+   * Name of the cookie the GT library stores the active locale in. When set, it's
+   * read to detect the source locale (instead of falling back to `locales[0]`). Pass
+   * GT's `defaultLocaleCookieName` (from `@generaltranslation/react-core`) or a custom
+   * name; omitted by default so gt-rrweb doesn't hardcode a framework's cookie.
    */
   localeCookieName?: string;
   /**
@@ -71,7 +73,11 @@ export type HarvestOptions = {
   key?: 'auto' | 'structural' | 'hash';
   /** Translation source for `key: 'hash'` (see TranslationsLoader). */
   getTranslations?: TranslationsLoader;
-  /** CSS selector for the content region to harvest within. */
+  /**
+   * CSS selector for the region to harvest within. Defaults to the recorder's own
+   * content selector (what was recorded/framed) so the harvest covers the SAME region
+   * — including a sidebar — not just `<main>`.
+   */
   contentSelector?: string;
   /** Upper bound on distinct paths rendered (structural harvest cost guard). */
   maxPaths?: number;

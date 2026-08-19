@@ -120,10 +120,6 @@ function visitedPaths(events: eventWithTime[], maxPaths: number): string[] {
   return [...new Set(paths)].slice(0, maxPaths);
 }
 
-// GT stores the active locale here by default; read it so we don't assume the
-// recording was made in the default locale (see harvestLocales).
-const DEFAULT_LOCALE_COOKIE = 'generaltranslation.locale';
-
 /** Read a cookie value in the browser (undefined if absent / non-browser). */
 function readCookie(name: string): string | undefined {
   if (typeof document === 'undefined' || !document.cookie) return undefined;
@@ -229,8 +225,10 @@ function textByKey(root: Element): Map<string, string> {
   return map;
 }
 
-// Per-target source→target dictionary plus the set of source texts that resolved to
-// MORE THAN ONE distinct translation (context-dependent) and are therefore dropped.
+// Per-target dictionary. `bag` holds the SINGLE observation that every occurrence of
+// a source text agreed on (a real translation, or the source text itself =
+// "untranslated"); `ambiguous` holds source texts whose occurrences DISAGREED and are
+// therefore dropped.
 type TargetDict = { bag: Map<string, string>; ambiguous: Set<string> };
 
 async function harvestStructural(
@@ -262,19 +260,23 @@ async function harvestStructural(
       if (entry && srcMap && tgt.shell) {
         const tgtMap = textByKey(tgt.shell);
         for (const [key, s] of srcMap) {
+          if (!s.trim() || entry.ambiguous.has(s)) continue;
           const g = tgtMap.get(key);
-          if (g === undefined || !s.trim() || !g.trim() || s === g) continue;
-          if (entry.ambiguous.has(s)) continue;
+          // What THIS occurrence renders in the target: a real translation, or the
+          // source text itself when missing/blank/identical ("untranslated"). Every
+          // occurrence is recorded as an observation — a skipped one must NOT let a
+          // later translated occurrence be applied source-text-wide.
+          const observed = g !== undefined && g.trim() && g !== s ? g : s;
           const prev = entry.bag.get(s);
-          // Identical source text with DIFFERENT translations can't be
-          // disambiguated by text alone → drop it so every matching node renders
-          // SOURCE (safe) rather than one occurrence's wrong translation.
-          if (prev !== undefined && prev !== g) {
+          if (prev === undefined) {
+            entry.bag.set(s, observed);
+          } else if (prev !== observed) {
+            // Occurrences DISAGREE — different translations, or translated in one
+            // place and untranslated in another → context-dependent. Drop it so every
+            // matching node renders SOURCE (safe) rather than one occurrence's value.
             entry.ambiguous.add(s);
             entry.bag.delete(s);
-            continue;
           }
-          entry.bag.set(s, g);
         }
       }
       tgt.dispose();
@@ -292,7 +294,9 @@ async function harvestStructural(
     for (const [id, text] of recorded) {
       if (!entry || entry.ambiguous.has(text)) continue;
       const tr = entry.bag.get(text);
-      if (tr !== undefined) bag[id] = tr;
+      // Emit only REAL translations; a value equal to the source means every
+      // occurrence was untranslated, so that node renders source.
+      if (tr !== undefined && tr !== text) bag[id] = tr;
     }
   }
   return overlay;
@@ -305,12 +309,17 @@ export async function harvestLocales(
   locales: string[],
   options: HarvestOptions = {}
 ): Promise<LocaleTextOverlay> {
-  // The recording's source locale = the locale actually rendered while recording.
-  // Don't assume it's the default/`locales[0]`: read the GT locale cookie the library
-  // maintains, then fall back to locales[0].
-  const localeCookieName = options.localeCookieName ?? DEFAULT_LOCALE_COOKIE;
+  // Source locale = the locale actually rendered while recording. Prefer an explicit
+  // `sourceLocale`, then the GT locale cookie IF the consumer names it via
+  // `localeCookieName` (we don't hardcode GT's cookie name — gt-rrweb stays
+  // framework-agnostic; a GT app passes react-core's `defaultLocaleCookieName`), then
+  // `locales[0]` (the caller-provided, SOURCE-FIRST locale — not an assumed default).
   const source =
-    options.sourceLocale ?? readCookie(localeCookieName) ?? locales[0];
+    options.sourceLocale ??
+    (options.localeCookieName
+      ? readCookie(options.localeCookieName)
+      : undefined) ??
+    locales[0];
 
   const resolved = {
     localeToUrl: options.localeToUrl ?? prefixLocaleToUrl,
