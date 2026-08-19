@@ -14,7 +14,7 @@ for (const route of [
   { name: 'root', suffix: '' },
   { name: 'nested', suffix: '/nested' },
 ] as const) {
-  test(`${route.name}: default to nondefault to nondefault to default`, async ({
+  test(`${route.name}: default to nondefault to default, then prefixed to prefixed`, async ({
     page,
   }) => {
     await page.context().clearCookies();
@@ -23,10 +23,12 @@ for (const route of [
     await expectLocale(page, 'en', route.name, route.suffix);
     await selectLocale(page, 'fr');
     await expectLocale(page, 'fr', route.name, route.suffix);
-    await selectLocale(page, 'de');
-    await expectLocale(page, 'de', route.name, route.suffix);
     await selectLocale(page, 'en');
     await expectLocale(page, 'en', route.name, route.suffix);
+    await selectLocale(page, 'fr');
+    await expectLocale(page, 'fr', route.name, route.suffix);
+    await selectLocale(page, 'de');
+    await expectLocale(page, 'de', route.name, route.suffix);
   });
 }
 
