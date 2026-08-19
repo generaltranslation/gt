@@ -40,59 +40,67 @@ if (typeof window !== 'undefined') {
  */
 export function Client_GTProvider(props: SharedGTProviderProps) {
   const router = useRouter();
-  const refresh = useCallback(() => {
+  const refreshServerComponents = useCallback(() => {
     router.refresh();
   }, [router]);
-  const reloadPage = useCallback(() => {
+  const reloadBrowserPage = useCallback(() => {
     globalThis.location.reload();
   }, []);
-  const reload = useCallback<NonNullable<SharedGTProviderProps['_reload']>>(
+  const syncServerContent = useCallback<
+    NonNullable<SharedGTProviderProps['_reload']>
+  >(
     ({ locale }) => {
       const i18nConfig = getI18nConfig();
-      const middlewareEnabled =
+      const localeRoutingEnabled =
         getCookieValue(
           document.cookie,
           defaultLocaleRoutingEnabledCookieName
         ) === 'true';
       const defaultLocale = i18nConfig.getDefaultLocale();
-      const pathLocale = extractLocale(
-        globalThis.location.pathname,
-        i18nConfig
-      );
+      const currentPathname = globalThis.location.pathname;
+      const localeRoutingApplies =
+        localeRoutingEnabled &&
+        pathnameMatchesRegex(currentPathname, pathRegex);
+      const currentPathLocale = localeRoutingApplies
+        ? extractLocale(currentPathname, i18nConfig)
+        : null;
 
       if (
-        middlewareEnabled &&
+        localeRoutingApplies &&
         locale === defaultLocale &&
-        pathLocale &&
-        pathLocale !== defaultLocale
+        currentPathLocale &&
+        currentPathLocale !== defaultLocale
       ) {
-        reloadPage();
+        reloadBrowserPage();
         return;
       }
 
-      // Reload server components
-      refresh();
+      refreshServerComponents();
     },
-    [refresh, reloadPage]
+    [refreshServerComponents, reloadBrowserPage]
   );
-  // TODO: when routing is enabled, validate the path matches the locale
-  usePathCheck({ reloadPage, reloadServer: refresh, locale: props.locale });
-  return <GTProvider {...props} _reload={reload} />;
+  usePathCheck({
+    reloadBrowserPage,
+    refreshServerComponents,
+    locale: props.locale,
+  });
+  return <GTProvider {...props} _reload={syncServerContent} />;
 }
 
 /**
- * Reloads content if the URL locale does not match the selected locale.
+ * Synchronizes server content if the URL locale does not match the selected
+ * locale.
  * TODO: optimize this hook
  */
 function usePathCheck({
-  reloadPage,
-  reloadServer,
+  reloadBrowserPage,
+  refreshServerComponents,
   locale,
   referrerLocaleCookieName = defaultReferrerLocaleCookieName,
   localeRoutingEnabledCookieName = defaultLocaleRoutingEnabledCookieName,
 }: {
-  reloadPage: () => void;
-  reloadServer: () => void;
+  reloadBrowserPage: () => void;
+  refreshServerComponents: () => void;
   locale: string;
   referrerLocaleCookieName?: string;
   localeRoutingEnabledCookieName?: string;
@@ -104,17 +112,17 @@ function usePathCheck({
     const i18nConfig = getI18nConfig();
     document.cookie = `${referrerLocaleCookieName}=${i18nConfig.resolveAliasLocale(locale)};path=/`;
 
-    // Reload the server components if the pathname changes
+    // Synchronize server content if the pathname changes
     const locales = i18nConfig.getLocales();
     const defaultLocale = i18nConfig.getDefaultLocale();
-    const middlewareEnabled =
+    const localeRoutingEnabled =
       getCookieValue(document.cookie, localeRoutingEnabledCookieName) ===
       'true';
-    if (middlewareEnabled && pathnameMatchesRegex(pathname, pathRegex)) {
+    if (localeRoutingEnabled && pathnameMatchesRegex(pathname, pathRegex)) {
       // Extract locale from pathname
       const extractedLocale =
         extractLocale(pathname, i18nConfig) || defaultLocale;
-      let pathLocale = i18nConfig.determineLocale(
+      let currentPathLocale = i18nConfig.determineLocale(
         [
           i18nConfig.isGTServicesEnabled()
             ? i18nConfig.standardizeLocale(extractedLocale)
@@ -123,20 +131,24 @@ function usePathCheck({
         ],
         locales
       );
-      if (pathLocale) {
-        pathLocale = i18nConfig.resolveAliasLocale(pathLocale);
+      if (currentPathLocale) {
+        currentPathLocale = i18nConfig.resolveAliasLocale(currentPathLocale);
       }
 
-      if (pathLocale && locales.includes(pathLocale) && pathLocale !== locale) {
+      if (
+        currentPathLocale &&
+        locales.includes(currentPathLocale) &&
+        currentPathLocale !== locale
+      ) {
         // clear cookie (avoids infinite loop when there is no middleware)
         document.cookie = `${localeRoutingEnabledCookieName}=;path=/`;
 
         if (locale === defaultLocale) {
           // A browser navigation follows the middleware redirect that removes
           // the default locale prefix. Next.js router.refresh() does not.
-          reloadPage();
+          reloadBrowserPage();
         } else {
-          reloadServer();
+          refreshServerComponents();
         }
       }
     }
@@ -145,8 +157,8 @@ function usePathCheck({
     locale,
     referrerLocaleCookieName,
     localeRoutingEnabledCookieName,
-    reloadPage,
-    reloadServer,
+    reloadBrowserPage,
+    refreshServerComponents,
   ]);
 }
 
