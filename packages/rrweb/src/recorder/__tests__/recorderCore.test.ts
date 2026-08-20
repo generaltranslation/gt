@@ -159,6 +159,33 @@ describe('recorder lifecycle', () => {
     expect(core.getStatus()).toBe('recording');
   });
 
+  // Greptile P1: "Completion callback crosses sessions"
+  it('delivers the bundle to the onComplete captured at stop, not one set during harvest', async () => {
+    const core = await loadCore();
+    const cb1 = vi.fn();
+    const cb2 = vi.fn();
+    core.configure({ onComplete: cb1 });
+
+    const fontsA = deferred<string>();
+    h.holder.fonts = fontsA.promise;
+    const a = core.start({ locales: ['en', 'fr'] });
+    fontsA.resolve('');
+    await a;
+
+    const harvest = deferred<Record<string, unknown>>();
+    h.holder.harvest = () => harvest.promise;
+    const stopP = core.stop();
+    await Promise.resolve(); // let stop() enter the harvest await
+
+    core.configure({ onComplete: cb2 }); // reconfigured mid-harvest
+
+    harvest.resolve({});
+    await stopP;
+
+    expect(cb1).toHaveBeenCalledTimes(1);
+    expect(cb2).not.toHaveBeenCalled();
+  });
+
   it('stop() with no active recording returns null', async () => {
     const core = await loadCore();
     expect(await core.stop()).toBeNull();

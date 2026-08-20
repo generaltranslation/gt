@@ -268,6 +268,15 @@ export async function stop(): Promise<RecorderBundle | null> {
   }
   if (!activeStop) return null;
   const stoppedSession = sessionId;
+  // Snapshot per-session config BEFORE the async harvest: configure() may replace
+  // coreConfig during the wait (e.g. a <GTRecorder> remount), but THIS stopped
+  // session's bundle must use the harvest options — and reach the onComplete — that
+  // were set while it was recording, never a later session's.
+  const onComplete = coreConfig.onComplete;
+  const harvestOptions: HarvestOptions = {
+    contentSelector: coreConfig.contentSelector,
+    ...coreConfig.harvest,
+  };
   activeStop();
   activeStop = undefined;
   navCleanup?.();
@@ -290,10 +299,7 @@ export async function stop(): Promise<RecorderBundle | null> {
       // Harvest the SAME region we record/frame (e.g. the app shell incl. its
       // sidebar) — not just <main> — so sidebar-only text is translated too. An
       // explicit harvest.contentSelector still overrides.
-      overlay = await harvestLocales(events, locales, {
-        contentSelector: coreConfig.contentSelector,
-        ...coreConfig.harvest,
-      });
+      overlay = await harvestLocales(events, locales, harvestOptions);
       output = injectOverlay(events, overlay);
     } catch {
       // Non-fatal: the bundle falls back to source-only (empty overlay).
@@ -304,7 +310,7 @@ export async function stop(): Promise<RecorderBundle | null> {
   // Only reset status if no new recording started while we were harvesting —
   // otherwise we'd clear the in-progress recording's status/overlay.
   if (sessionId === stoppedSession) setStatus('idle');
-  coreConfig.onComplete?.(bundle);
+  onComplete?.(bundle);
   return bundle;
 }
 
