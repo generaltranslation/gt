@@ -15,7 +15,8 @@ dependencies, so no manual linking or per-app install is required.
 | `next-app-router-locale-routing`           | Next.js locale routes           | `gt-next`           |
 | `next-app-router-locale-routing-ssg`       | Next.js locale routes with SSG  | `gt-next`           |
 | `next-app-router-locale-routing-use-cache` | Next.js Cache Components        | `gt-next`           |
-| `next-latest-locale-switch`                | Latest Next.js compatibility    | `gt-next`           |
+| `next-latest-locale-switch-no-routing`     | Latest Next.js without routing  | `gt-next`           |
+| `next-latest-locale-switch-routing`        | Latest Next.js locale routing   | `gt-next`           |
 | `next-pages-router`                        | Next.js Pages Router            | `gt-next`           |
 | `tanstack-start`                           | TanStack Start                  | `gt-tanstack-start` |
 | `gt-node-express`                          | Express                         | `gt-node`           |
@@ -38,9 +39,10 @@ All apps use bundled empty or local translations and build without credentials.
 `gt-node-express` optionally reads `PORT` (default `3001`) and `GT_PROJECT_ID`.
 No environment files are committed.
 
-`next-latest-locale-switch` is a dedicated scheduled compatibility fixture. Its
-workflow installs `next@latest` at runtime and checks production locale switches
-across the routing and default-prefix matrix; see the app's README for details.
+The two `next-latest-locale-switch-*` apps are dedicated scheduled compatibility
+fixtures. Their workflow installs `next@latest` at runtime and separately checks
+a proxy-free app plus locale routing with both default-prefix settings; see each
+app's README for details.
 
 Run the browser automation for every browser-capable development app, or select
 a comma-separated subset. The React Native app remains a manual native test:

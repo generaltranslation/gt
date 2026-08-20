@@ -12,7 +12,7 @@ on:
       - 'packages/next/**'
       - 'packages/react/**'
       - 'packages/react-core/**'
-      - 'tests/apps/next-latest-locale-switch/**'
+      - 'tests/apps/next-latest-locale-switch-*/**'
       - 'tests/apps/next/turbopackRoot.ts'
   schedule:
     # Run daily at 07:00 UTC, after the general test-app browser checks.
@@ -68,21 +68,27 @@ jobs:
           pnpm --filter gt-next pack --pack-destination .turbo/next-latest-package
           GT_NEXT_TARBALL="$(find "$(pwd)/.turbo/next-latest-package" -name '*.tgz' -print -quit)"
           LATEST_NEXT_VERSION="$(pnpm view next@latest version)"
-          pnpm --filter gt-test-next-latest-locale-switch add "${GT_NEXT_TARBALL}" "next@${LATEST_NEXT_VERSION}" --save-exact --lockfile=false
-          NEXT_VERSION="$(pnpm --filter gt-test-next-latest-locale-switch exec next --version)"
+          pnpm --filter gt-test-next-latest-locale-switch-no-routing add "${GT_NEXT_TARBALL}" "next@${LATEST_NEXT_VERSION}" --save-exact --lockfile=false
+          pnpm --filter gt-test-next-latest-locale-switch-routing add "${GT_NEXT_TARBALL}" "next@${LATEST_NEXT_VERSION}" --save-exact --lockfile=false
+          NO_ROUTING_NEXT_VERSION="$(pnpm --filter gt-test-next-latest-locale-switch-no-routing exec next --version)"
+          ROUTING_NEXT_VERSION="$(pnpm --filter gt-test-next-latest-locale-switch-routing exec next --version)"
           GT_NEXT_VERSION="$(pnpm --filter gt-next exec node -p "require('./package.json').version")"
-          test "${NEXT_VERSION}" = "Next.js v${LATEST_NEXT_VERSION}"
-          echo "next-version=${NEXT_VERSION}" >> "$GITHUB_OUTPUT"
+          test "${NO_ROUTING_NEXT_VERSION}" = "Next.js v${LATEST_NEXT_VERSION}"
+          test "${ROUTING_NEXT_VERSION}" = "Next.js v${LATEST_NEXT_VERSION}"
+          echo "next-version=${NO_ROUTING_NEXT_VERSION}" >> "$GITHUB_OUTPUT"
           echo "gt-next-version=${GT_NEXT_VERSION}" >> "$GITHUB_OUTPUT"
           echo "### Compatibility versions" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Next.js: \`${NEXT_VERSION}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Next.js: \`${NO_ROUTING_NEXT_VERSION}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- gt-next: \`${GT_NEXT_VERSION}\` (local build)" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Install Chromium
-        run: pnpm --filter gt-test-next-latest-locale-switch test:e2e:install
+        run: pnpm --filter gt-test-next-latest-locale-switch-no-routing test:e2e:install
 
-      - name: Test production locale-switch matrix
-        run: pnpm --filter gt-test-next-latest-locale-switch test:matrix
+      - name: Test production app without locale routing
+        run: pnpm --filter gt-test-next-latest-locale-switch-no-routing test:production
+
+      - name: Test production locale-routing matrix
+        run: pnpm --filter gt-test-next-latest-locale-switch-routing test:matrix
 
       - name: Upload Playwright artifacts
         if: failure()

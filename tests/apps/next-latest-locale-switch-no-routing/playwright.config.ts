@@ -4,19 +4,13 @@ import { fileURLToPath } from 'node:url';
 
 const packageDir = path.dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = path.resolve(packageDir, '../../..');
-const localeRouting = process.env.GT_LOCALE_ROUTING === 'true';
-const prefixDefaultLocale = process.env.GT_PREFIX_DEFAULT_LOCALE === 'true';
-const configuration = localeRouting
-  ? `routing-prefix-default-${prefixDefaultLocale}`
-  : 'no-routing';
-
 export default defineConfig({
   expect: { timeout: 15_000 },
   fullyParallel: false,
   outputDir: path.join(
     repositoryRoot,
     '.turbo/playwright/next-latest-locale-switch',
-    configuration
+    'no-routing'
   ),
   projects: [{ name: 'chromium', use: devices['Desktop Chrome'] }],
   reporter: 'line',
@@ -24,18 +18,18 @@ export default defineConfig({
   testDir: './e2e',
   timeout: 90_000,
   use: {
-    baseURL: 'http://127.0.0.1:3010',
+    baseURL: 'http://127.0.0.1:3011',
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
   },
   webServer: {
-    command: 'pnpm start --port 3010',
+    command: 'pnpm start --port 3011',
     cwd: packageDir,
     reuseExistingServer: false,
     stderr: 'pipe',
     stdout: 'pipe',
     timeout: 180_000,
-    url: 'http://127.0.0.1:3010/',
+    url: 'http://127.0.0.1:3011/',
   },
   workers: 1,
 });
