@@ -9,6 +9,7 @@ const h = vi.hoisted(() => {
   const holder: {
     fonts: Promise<string>;
     harvest: () => Promise<Record<string, unknown>>;
+    lastHarvestOpts?: { contentSelector?: string };
   } = { fonts: Promise.resolve(''), harvest: () => Promise.resolve({}) };
   const record = Object.assign(
     vi.fn((config: { emit: (e: eventWithTime) => void }) => {
@@ -30,7 +31,10 @@ vi.mock('../inlineFonts', () => ({
   collectInlinedFontFaceCss: () => h.holder.fonts,
 }));
 vi.mock('../../harvest/harvestLocales', () => ({
-  harvestLocales: () => h.holder.harvest(),
+  harvestLocales: (...args: unknown[]) => {
+    h.holder.lastHarvestOpts = args[2] as { contentSelector?: string };
+    return h.holder.harvest();
+  },
 }));
 
 function deferred<T>() {
@@ -76,6 +80,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   h.holder.fonts = Promise.resolve('');
   h.holder.harvest = () => Promise.resolve({});
+  h.holder.lastHarvestOpts = undefined;
   stubDom();
 });
 afterEach(() => vi.unstubAllGlobals());
@@ -159,8 +164,9 @@ describe('recorder lifecycle', () => {
     expect(core.getStatus()).toBe('recording');
   });
 
-  // Greptile P1: "Completion callback crosses sessions"
-  it('delivers the bundle to the onComplete captured at stop, not one set during harvest', async () => {
+  // Greptile P1: "Completion callback crosses sessions" / "Active recordings use a
+  // later mount's harvest settings" — the session must use the config it started with.
+  it('uses the onComplete from start(), ignoring configure() during recording or harvest', async () => {
     const core = await loadCore();
     const cb1 = vi.fn();
     const cb2 = vi.fn();
@@ -172,18 +178,35 @@ describe('recorder lifecycle', () => {
     fontsA.resolve('');
     await a;
 
+    core.configure({ onComplete: cb2 }); // reconfigured DURING recording
+
     const harvest = deferred<Record<string, unknown>>();
     h.holder.harvest = () => harvest.promise;
     const stopP = core.stop();
     await Promise.resolve(); // let stop() enter the harvest await
-
-    core.configure({ onComplete: cb2 }); // reconfigured mid-harvest
+    core.configure({ onComplete: vi.fn() }); // ...and again during harvest
 
     harvest.resolve({});
     await stopP;
 
-    expect(cb1).toHaveBeenCalledTimes(1);
+    expect(cb1).toHaveBeenCalledTimes(1); // the callback set before start() wins
     expect(cb2).not.toHaveBeenCalled();
+  });
+
+  it('harvests with the config snapshot from start(), not a later configure()', async () => {
+    const core = await loadCore();
+    core.configure({ contentSelector: '[data-a]' });
+
+    const fonts = deferred<string>();
+    h.holder.fonts = fonts.promise;
+    const a = core.start({ locales: ['en', 'fr'] });
+    fonts.resolve('');
+    await a;
+
+    core.configure({ contentSelector: '[data-b]' }); // during recording
+    await core.stop();
+
+    expect(h.holder.lastHarvestOpts?.contentSelector).toBe('[data-a]');
   });
 
   it('stop() with no active recording returns null', async () => {

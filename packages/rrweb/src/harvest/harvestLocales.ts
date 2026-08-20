@@ -198,20 +198,22 @@ function renderShell(url: string, selector: string): Promise<Rendered> {
   });
 }
 
-// Index each element's own text by a STRUCTURAL KEY = its path of `tagName[nth-of-
-// type]` from the content root. GT preserves element structure across locales (it
-// only swaps text), so the SAME element carries the SAME key in every locale. Keys
-// are computed per element from ELEMENTS only, so whitespace/comment nodes and
-// active-item markup elsewhere can't shift alignment; elements present in only one
-// render (dynamic/async) simply don't match — safe, never mis-paired.
+// Index EACH TEXT NODE by a STRUCTURAL KEY = its element path (`tagName[nth-of-type]`
+// from the content root) plus its position among that element's children. GT preserves
+// DOM structure across locales (it only swaps text), so the same text node carries the
+// same key in every locale. Per-TEXT-NODE granularity (not per-element joined text)
+// matters: it matches collectRecordedText, so every occurrence — including text nodes
+// inside multi-text-node elements — contributes an observation to foldObservations (an
+// untranslated one can flag ambiguity), and there's no joined-text artifact that could
+// collide with an unrelated recorded node.
 function textByKey(root: Element): Map<string, string> {
   const map = new Map<string, string>();
   const visit = (el: Element, prefix: string) => {
-    const own: string[] = [];
     const tagCounts: Record<string, number> = {};
-    el.childNodes.forEach((c) => {
+    el.childNodes.forEach((c, i) => {
       if (c.nodeType === window.Node.TEXT_NODE) {
-        if ((c.textContent ?? '').trim()) own.push(c.textContent ?? '');
+        const t = c.textContent ?? '';
+        if (t.trim()) map.set(`${prefix}#${i}`, t);
       } else if (c.nodeType === window.Node.ELEMENT_NODE) {
         const child = c as Element;
         const nth = (tagCounts[child.tagName] =
@@ -219,12 +221,6 @@ function textByKey(root: Element): Map<string, string> {
         visit(child, `${prefix}/${child.tagName}[${nth}]`);
       }
     });
-    // Key ONLY single-text-node elements. The value is then exactly one text node's
-    // content, matching collectRecordedText's per-node granularity. JOINING multiple
-    // own text nodes would create an artifact string that can collide with an
-    // unrelated single recorded node's text (applying the wrong translation), and it's
-    // usually a dynamic concatenation (e.g. "Hello {name}") we shouldn't translate.
-    if (own.length === 1) map.set(prefix, own[0]);
   };
   visit(root, '');
   return map;

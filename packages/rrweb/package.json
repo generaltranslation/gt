@@ -14,7 +14,13 @@
     "react": ">=18.0.0",
     "react-dom": ">=18.0.0",
     "@rrweb/record": ">=2.0.0",
-    "@rrweb/types": ">=2.0.0"
+    "@rrweb/types": ">=2.0.0",
+    "gt-react": ">=11.0.0"
+  },
+  "peerDependenciesMeta": {
+    "gt-react": {
+      "optional": true
+    }
   },
   "scripts": {
     "build": "tsdown",

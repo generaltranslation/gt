@@ -46,6 +46,10 @@ let navCleanup: (() => void) | undefined;
 // post-harvest status reset so a slow harvest can't clobber a newer recording.
 let preparing = false;
 let sessionId = 0;
+// Snapshot of coreConfig taken when a recording claims the session, so stop()/harvest
+// use THIS session's settings + onComplete even if configure() runs (another mount)
+// during recording or the async harvest.
+let activeConfig: CoreConfig | undefined;
 const listeners = new Set<(status: RecorderStatus) => void>();
 
 function setStatus(next: RecorderStatus): void {
@@ -209,6 +213,9 @@ export async function start(runConfig: RecorderConfig): Promise<void> {
   // can't remove a newer session's frame/fonts (they share element ids).
   const fontCss = await fetchInlinedFontCss();
   if (sessionId !== mySession) return; // superseded during the fetch; nothing to undo
+  // Freeze this session's config now — a later configure() must not change how it's
+  // framed, harvested, or which onComplete receives its bundle.
+  activeConfig = { ...coreConfig };
   applyFrame();
   injectFontStyle(fontCss); // embed fonts before the snapshot (self-contained)
   activeEvents = [];
@@ -268,14 +275,15 @@ export async function stop(): Promise<RecorderBundle | null> {
   }
   if (!activeStop) return null;
   const stoppedSession = sessionId;
-  // Snapshot per-session config BEFORE the async harvest: configure() may replace
-  // coreConfig during the wait (e.g. a <GTRecorder> remount), but THIS stopped
-  // session's bundle must use the harvest options — and reach the onComplete — that
-  // were set while it was recording, never a later session's.
-  const onComplete = coreConfig.onComplete;
+  // Use the config SNAPSHOT taken when this session started (see activeConfig) — not
+  // live coreConfig, which a later configure() (another mount) may have changed during
+  // recording or the harvest. This session's bundle must use its own selector/URL
+  // mapping/harvest options and reach its own onComplete.
+  const cfg = activeConfig ?? coreConfig;
+  const onComplete = cfg.onComplete;
   const harvestOptions: HarvestOptions = {
-    contentSelector: coreConfig.contentSelector,
-    ...coreConfig.harvest,
+    contentSelector: cfg.contentSelector,
+    ...cfg.harvest,
   };
   activeStop();
   activeStop = undefined;
