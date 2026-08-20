@@ -1,5 +1,50 @@
 # gt-next
 
+## 11.1.11
+
+### Patch Changes
+
+- Updated dependencies [[`53b2100`](https://github.com/generaltranslation/gt/commit/53b2100abe824b81d3c2d0a3acaf7201c77da87c), [`bb08d8c`](https://github.com/generaltranslation/gt/commit/bb08d8cc5df87c71dd2a31416087821dbae38aa8)]:
+  - @generaltranslation/react-core@11.1.11
+  - @generaltranslation/format@0.1.7
+  - gt-react@11.1.11
+  - @generaltranslation/compiler@1.3.41
+  - generaltranslation@9.1.6
+  - gt-i18n@1.0.16
+
+## 11.1.10
+
+### Patch Changes
+
+- Updated dependencies [[`d0ae632`](https://github.com/generaltranslation/gt/commit/d0ae632ac0cd53600f6b893c23754dde06fbe808)]:
+  - @generaltranslation/format@0.1.6
+  - @generaltranslation/compiler@1.3.40
+  - generaltranslation@9.1.5
+  - gt-i18n@1.0.15
+  - @generaltranslation/react-core@11.1.10
+  - gt-react@11.1.10
+
+## 11.1.9
+
+### Patch Changes
+
+- [#2104](https://github.com/generaltranslation/gt/pull/2104) [`524dd7d`](https://github.com/generaltranslation/gt/commit/524dd7d3e1b6657ce953b24db5fef1b6c6157c19) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - Stop adding the deprecated `experimental.rootParams` option on Next.js 16.3 and newer.
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.1.9
+  - gt-react@11.1.9
+
+## 11.1.8
+
+### Patch Changes
+
+- Updated dependencies [[`6607925`](https://github.com/generaltranslation/gt/commit/660792523b15d2e43e9752ea599e5229c1b45bc7)]:
+  - generaltranslation@9.1.4
+  - @generaltranslation/react-core@11.1.8
+  - @generaltranslation/compiler@1.3.39
+  - gt-i18n@1.0.14
+  - gt-react@11.1.8
+
 ## 11.1.7
 
 ### Patch Changes

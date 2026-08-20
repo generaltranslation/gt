@@ -1,5 +1,25 @@
 # generaltranslation
 
+## 9.1.6
+
+### Patch Changes
+
+- Updated dependencies [[`bb08d8c`](https://github.com/generaltranslation/gt/commit/bb08d8cc5df87c71dd2a31416087821dbae38aa8)]:
+  - @generaltranslation/format@0.1.7
+
+## 9.1.5
+
+### Patch Changes
+
+- Updated dependencies [[`d0ae632`](https://github.com/generaltranslation/gt/commit/d0ae632ac0cd53600f6b893c23754dde06fbe808)]:
+  - @generaltranslation/format@0.1.6
+
+## 9.1.4
+
+### Patch Changes
+
+- [#2059](https://github.com/generaltranslation/gt/pull/2059) [`6607925`](https://github.com/generaltranslation/gt/commit/660792523b15d2e43e9752ea599e5229c1b45bc7) Thanks [@rupaut98](https://github.com/rupaut98)! - Fall back to `plural` or `other` for the `zero` and `one` plural categories.
+
 ## 9.1.3
 
 ### Patch Changes
