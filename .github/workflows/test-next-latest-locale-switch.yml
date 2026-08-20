@@ -12,6 +12,7 @@ on:
       - 'packages/react/**'
       - 'packages/react-core/**'
       - 'tests/apps/next-latest-locale-switch/**'
+      - 'tests/apps/next/turbopackRoot.ts'
   schedule:
     # Run daily at 07:00 UTC, after the general test-app browser checks.
     - cron: '0 7 * * *'
