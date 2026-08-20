@@ -1,3 +1,7 @@
+import {
+  createDiagnosticMessage,
+  formatDiagnosticErrorDetails,
+} from 'generaltranslation/internal';
 import { getTranslateListenerKey } from 'gt-i18n/internal';
 import type {
   DictionaryEntrySnapshot,
@@ -36,6 +40,7 @@ export class I18nStore {
   private translateListeners = new Set<TranslateEventListener>();
   private dictionaryEntryListeners = new Set<DictionaryStoreListener>();
   private dictionaryObjectListeners = new Set<DictionaryStoreListener>();
+  private loggedRuntimeTranslationErrors = new Set<string>();
 
   /**
    * I18nCache must be already initialized
@@ -70,7 +75,8 @@ export class I18nStore {
           // TODO: warn about runtime translation failure
         }
         this.emitTranslateEvent(lookup);
-      });
+      })
+      .catch((error) => this.logRuntimeTranslationError(error));
   };
 
   translateDictionaryEntry = (lookup: DictionaryLookup): void => {
@@ -81,7 +87,8 @@ export class I18nStore {
           // TODO: warn about runtime dictionary translation failure
         }
         this.emitDictionaryEvent(lookup);
-      });
+      })
+      .catch((error) => this.logRuntimeTranslationError(error));
   };
 
   translateDictionaryObject = (lookup: DictionaryLookup): void => {
@@ -92,8 +99,31 @@ export class I18nStore {
           // TODO: warn about runtime dictionary translation failure
         }
         this.emitDictionaryEvent(lookup);
-      });
+      })
+      .catch((error) => this.logRuntimeTranslationError(error));
   };
+
+  /**
+   * Runtime translation runs fire-and-forget, so a rejected request (for
+   * example a 401 from an invalid dev API key) is logged here instead of
+   * escaping as an unhandled rejection that kills the dev server during SSR.
+   * Identical failures log once.
+   */
+  private logRuntimeTranslationError(error: unknown): void {
+    const details = formatDiagnosticErrorDetails(error);
+    const dedupeKey = details ?? '';
+    if (this.loggedRuntimeTranslationErrors.has(dedupeKey)) return;
+    this.loggedRuntimeTranslationErrors.add(dedupeKey);
+    console.error(
+      createDiagnosticMessage({
+        source: '@generaltranslation/react-core',
+        severity: 'Error',
+        whatHappened: 'A runtime translation request failed.',
+        wayOut: 'Rendering falls back to untranslated content.',
+        details,
+      })
+    );
+  }
 
   // ========== UseSyncExternalStore ========== //
 
