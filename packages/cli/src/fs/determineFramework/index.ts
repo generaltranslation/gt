@@ -8,9 +8,11 @@ import { detectPythonLibrary } from './detectPythonLibrary.js';
 export function determineLibrary(): {
   library: SupportedLibraries;
   additionalModules: SupportedLibraries[];
+  hasPackageJson: boolean;
 } {
   let library: SupportedLibraries = 'base';
   const additionalModules: SupportedLibraries[] = [];
+  let hasPackageJson = false;
   try {
     // Get the current working directory (where the CLI is being run)
     const cwd = process.cwd();
@@ -18,6 +20,7 @@ export function determineLibrary(): {
 
     // Check if package.json exists
     if (fs.existsSync(packageJsonPath)) {
+      hasPackageJson = true;
       // Read and parse package.json
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
       const dependencies = {
@@ -56,9 +59,9 @@ export function determineLibrary(): {
     }
 
     // Fallback to base if neither is found
-    return { library, additionalModules };
+    return { library, additionalModules, hasPackageJson };
   } catch (error) {
     logger.error('Error determining framework: ' + String(error));
-    return { library: 'base', additionalModules: [] };
+    return { library: 'base', additionalModules: [], hasPackageJson };
   }
 }

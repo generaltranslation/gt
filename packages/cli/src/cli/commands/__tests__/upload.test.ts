@@ -59,7 +59,11 @@ vi.mock('node:fs', () => ({
   readFileSync: mockFs.readFileSync,
 }));
 vi.mock('../../../fs/determineFramework/index.js', () => ({
-  determineLibrary: vi.fn(() => ({ library: 'base', additionalModules: [] })),
+  determineLibrary: vi.fn(() => ({
+    library: 'base',
+    additionalModules: [],
+    hasPackageJson: false,
+  })),
 }));
 
 import { readFile, readBinaryFileBase64 } from '../../../fs/findFilepath.js';

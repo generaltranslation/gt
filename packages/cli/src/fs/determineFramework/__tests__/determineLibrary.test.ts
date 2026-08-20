@@ -71,6 +71,7 @@ describe('determineLibrary', () => {
 
       const result = determineLibrary();
       expect(result.library).toBe('base');
+      expect(result.hasPackageJson).toBe(true);
     });
 
     it("returns 'base' without warning when no JS or Python project file exists", () => {
@@ -79,7 +80,21 @@ describe('determineLibrary', () => {
       const result = determineLibrary();
 
       expect(result.library).toBe('base');
+      expect(result.hasPackageJson).toBe(false);
       expect(mockWarn).not.toHaveBeenCalled();
+    });
+
+    it('reports hasPackageJson when package.json cannot be parsed', () => {
+      mockExistsSync.mockImplementation((path) => {
+        if (String(path).endsWith('package.json')) return true;
+        return false;
+      });
+      mockReadFileSync.mockReturnValue('not json');
+
+      const result = determineLibrary();
+
+      expect(result.library).toBe('base');
+      expect(result.hasPackageJson).toBe(true);
     });
 
     it('detects i18next-icu as additional module', () => {

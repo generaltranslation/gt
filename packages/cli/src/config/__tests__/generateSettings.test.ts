@@ -14,6 +14,7 @@ vi.mock('../../fs/determineFramework/index.js', () => ({
   determineLibrary: vi.fn(() => ({
     library: 'base',
     additionalModules: [],
+    hasPackageJson: false,
   })),
 }));
 
@@ -97,6 +98,7 @@ describe('generateSettings - composite patterns', () => {
     mockDetermineLibrary.mockReturnValue({
       library: 'base',
       additionalModules: [],
+      hasPackageJson: false,
     });
   });
 
@@ -172,6 +174,20 @@ describe('generateSettings - composite patterns', () => {
 
     expect(mockLogWarning).toHaveBeenCalledWith(
       expect.stringContaining('No package.json or Python project file found')
+    );
+  });
+
+  it('suppresses the warning when package.json exists without a supported library', async () => {
+    mockDetermineLibrary.mockReturnValue({
+      library: 'base',
+      additionalModules: [],
+      hasPackageJson: true,
+    });
+
+    await generateSettings({}, '/test/cwd');
+
+    expect(mockLogWarning).not.toHaveBeenCalledWith(
+      expect.stringContaining('No package.json')
     );
   });
 
