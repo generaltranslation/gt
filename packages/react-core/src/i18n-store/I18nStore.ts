@@ -25,6 +25,8 @@ import {
 
 export type DictionaryStoreListener = (event: DictionaryLookup) => void;
 
+const MAX_LOGGED_RUNTIME_TRANSLATION_ERRORS = 100;
+
 /**
  * I18nStore gives us the ability to perform client-side updates to translations.
  * Primarily useful for dev hot reload.
@@ -114,6 +116,15 @@ export class I18nStore {
     const dedupeKey = details ?? '';
     if (this.loggedRuntimeTranslationErrors.has(dedupeKey)) return;
     this.loggedRuntimeTranslationErrors.add(dedupeKey);
+    if (
+      this.loggedRuntimeTranslationErrors.size >
+      MAX_LOGGED_RUNTIME_TRANSLATION_ERRORS
+    ) {
+      const oldest = this.loggedRuntimeTranslationErrors.values().next().value;
+      if (oldest !== undefined) {
+        this.loggedRuntimeTranslationErrors.delete(oldest);
+      }
+    }
     console.error(
       createDiagnosticMessage({
         source: '@generaltranslation/react-core',

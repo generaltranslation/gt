@@ -95,6 +95,22 @@ describe('I18nStore runtime translation failure handling', () => {
     await vi.waitFor(() => expect(consoleError).toHaveBeenCalledTimes(1));
   });
 
+  it('re-logs a failure after it is evicted from the bounded dedupe set', async () => {
+    const store = new I18nStore();
+    for (let i = 0; i <= 100; i++) {
+      lookupTranslationWithFallback.mockRejectedValueOnce(
+        new Error(`failure ${i}`)
+      );
+      await store.translate({ ...lookup, message: `message ${i}` });
+    }
+    expect(consoleError).toHaveBeenCalledTimes(101);
+
+    lookupTranslationWithFallback.mockRejectedValueOnce(new Error('failure 0'));
+    await store.translate(lookup);
+
+    expect(consoleError).toHaveBeenCalledTimes(102);
+  });
+
   it('translateDictionaryObject() logs instead of leaving an unhandled rejection', async () => {
     lookupDictionaryObjWithFallback.mockRejectedValue(rejectedKeyError);
     const store = new I18nStore();
