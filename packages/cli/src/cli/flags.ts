@@ -34,8 +34,11 @@ export function attachTranslateFlags(command: Command) {
     )
     .option(
       '--timeout <seconds>',
-      'Translation wait timeout in seconds',
+      'Translation wait timeout in seconds, or "none" to wait indefinitely',
       (value) => {
+        if (value === 'none') {
+          return Infinity;
+        }
         const parsedValue = parseInt(value, 10);
         if (isNaN(parsedValue)) {
           throw new Error('Invalid timeout: not a number.');
