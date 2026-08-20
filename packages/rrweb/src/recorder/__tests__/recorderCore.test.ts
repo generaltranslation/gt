@@ -29,6 +29,10 @@ const h = vi.hoisted(() => {
 vi.mock('@rrweb/record', () => ({ record: h.record }));
 vi.mock('../inlineFonts', () => ({
   collectInlinedFontFaceCss: () => h.holder.fonts,
+  // recorderCore now imports these wrappers from inlineFonts (moved out of core).
+  fetchInlinedFontCss: () => h.holder.fonts,
+  injectFontStyle: () => {},
+  removeInlinedFonts: () => {},
 }));
 vi.mock('../../harvest/harvestLocales', () => ({
   harvestLocales: (...args: unknown[]) => {

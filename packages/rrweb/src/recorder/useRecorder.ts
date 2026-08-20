@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 
 import {
   getStatus,
@@ -9,6 +9,9 @@ import {
   subscribe,
 } from './recorderCore';
 import type { RecorderBundle, RecorderConfig, RecorderStatus } from '../types';
+
+// The recorder lives in module state; there is no recording during SSR.
+const getServerStatus = (): RecorderStatus => 'idle';
 
 export type UseRecorder = {
   /** 'idle' | 'recording' | 'preparing' (harvest running after stop). */
@@ -27,13 +30,9 @@ export type UseRecorder = {
  * or <GTRecorder> is mounted, and survives remounts mid-recording.
  */
 export function useRecorder(): UseRecorder {
-  const [status, setStatus] = useState<RecorderStatus>(() => getStatus());
-
-  useEffect(() => {
-    // Sync immediately in case status changed between render and effect, then track.
-    setStatus(getStatus());
-    return subscribe(setStatus);
-  }, []);
+  // useSyncExternalStore is purpose-built for subscribing to an external store like
+  // our module-level recorder — no manual useEffect/useState, and no tearing.
+  const status = useSyncExternalStore(subscribe, getStatus, getServerStatus);
 
   const start = useCallback(
     (config: RecorderConfig): Promise<void> => coreStart(config),

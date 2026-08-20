@@ -3,7 +3,11 @@ import { EventType } from '@rrweb/types';
 import type { eventWithTime } from '@rrweb/types';
 
 import { harvestLocales } from '../harvest/harvestLocales';
-import { collectInlinedFontFaceCss } from './inlineFonts';
+import {
+  fetchInlinedFontCss,
+  injectFontStyle,
+  removeInlinedFonts,
+} from './inlineFonts';
 import {
   aspectOf,
   DEFAULT_CONTENT_SELECTOR,
@@ -90,9 +94,14 @@ function applyFrame(): void {
   if (document.getElementById(FRAME_STYLE_ID)) return;
   const w = `min(94vw, calc((100vh - ${CHROME_V}px) * ${ar}))`;
   const h = `min(calc(100vh - ${CHROME_V}px), calc(94vw / ${ar}))`;
+  // `overflow:hidden` clips content to the frame: a descendant sized to the VIEWPORT
+  // (e.g. `height:100vh`) is laid out against the window, not this box, so it would
+  // otherwise spill past the 16:9 edges. Clipping keeps the capture inside the frame
+  // (inner scroll containers still scroll; rrweb records their scroll either way).
   const box =
     `inset:auto !important;left:50% !important;top:50% !important;` +
-    `transform:translate(-50%,-50%) !important;width:${w} !important;height:${h} !important;`;
+    `transform:translate(-50%,-50%) !important;width:${w} !important;height:${h} !important;` +
+    `overflow:hidden !important;`;
   // Prefix each comma-separated selector with the recording class.
   const rule = coreConfig.contentSelector
     .split(',')
@@ -110,34 +119,8 @@ function removeFrame(): void {
   document.documentElement.classList.remove('gt-recording');
 }
 
-// ----- self-contained fonts ----- //
-
-const FONT_STYLE_ID = 'gt-rrweb-fonts';
-
-// Fetch the inlined-font stylesheet (see inlineFonts) — the ASYNC part, which does NOT
-// mutate the DOM, so it's safe to await before we've committed to recording. Best
-// effort: a fetch/CORS failure just leaves the replay on fallback fonts.
-async function fetchInlinedFontCss(): Promise<string> {
-  try {
-    return await collectInlinedFontFaceCss();
-  } catch {
-    return '';
-  }
-}
-
-// Append the inlined fonts to <head> BEFORE the snapshot so the recording carries its
-// own fonts. Synchronous DOM mutation — only called once we own the recording.
-function injectFontStyle(css: string): void {
-  if (!css || document.getElementById(FONT_STYLE_ID)) return;
-  const style = document.createElement('style');
-  style.id = FONT_STYLE_ID;
-  style.textContent = css;
-  document.head.appendChild(style);
-}
-
-function removeInlinedFonts(): void {
-  document.getElementById(FONT_STYLE_ID)?.remove();
-}
+// Self-contained fonts: fetchInlinedFontCss / injectFontStyle / removeInlinedFonts live
+// in ./inlineFonts alongside the CSS collection they wrap.
 
 // ----- SPA navigation capture ----- //
 
@@ -218,8 +201,10 @@ export async function start(runConfig: RecorderConfig): Promise<void> {
   activeConfig = { ...coreConfig };
   applyFrame();
   injectFontStyle(fontCss); // embed fonts before the snapshot (self-contained)
+  // Set up this session's event storage: drop any prior events, record its locales.
   activeEvents = [];
-  activeLocales = runConfig.locales;
+  activeLocales = [...runConfig.locales];
+  // Start rrweb capture — record() streams events to emit() and returns the stop fn.
   const stop = record({
     emit(event) {
       activeEvents.push(event);
@@ -285,7 +270,7 @@ export async function stop(): Promise<RecorderBundle | null> {
     contentSelector: cfg.contentSelector,
     ...cfg.harvest,
   };
-  activeStop();
+  activeStop(); // stop rrweb recording
   activeStop = undefined;
   navCleanup?.();
   removeFrame();

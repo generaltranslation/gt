@@ -82,10 +82,12 @@ async function inlineUrls(
 }
 
 /**
- * Collect every url()-based `@font-face` from same-origin stylesheets (cross-origin
- * sheets throw on `.cssRules` and are skipped) and return a stylesheet that
- * re-declares them with embedded `data:` fonts. Empty string if there is nothing to
- * inline. Never throws.
+ * For each url()-based `@font-face` in the page's same-origin stylesheets: (1) download
+ * the font file, (2) base64-serialize it into a `data:` URI, (3) rewrite the rule's
+ * src to that URI. Returns a single stylesheet string of these self-contained
+ * @font-face rules (empty if none). The recorder injects that string into <head>
+ * before the snapshot (see injectFontStyle) so the recording carries its own fonts.
+ * Cross-origin sheets (unreadable `.cssRules`) are skipped. Never throws.
  */
 export async function collectInlinedFontFaceCss(): Promise<string> {
   if (typeof document === 'undefined') return '';
@@ -110,4 +112,35 @@ export async function collectInlinedFontFaceCss(): Promise<string> {
     }
   }
   return out.join('\n');
+}
+
+// ----- <head> injection (recorder lifecycle) ----- //
+
+const FONT_STYLE_ID = 'gt-rrweb-fonts';
+
+// Fetch the inlined-font stylesheet — the ASYNC part, which does NOT mutate the DOM, so
+// the recorder can await it before committing to a recording. Best effort: a
+// fetch/CORS failure just leaves the replay on fallback fonts.
+export async function fetchInlinedFontCss(): Promise<string> {
+  try {
+    return await collectInlinedFontFaceCss();
+  } catch {
+    return '';
+  }
+}
+
+// Append the inlined fonts to <head> BEFORE the snapshot so the recording carries its
+// own fonts. Synchronous DOM mutation — only called once the recorder owns a recording.
+export function injectFontStyle(css: string): void {
+  if (typeof document === 'undefined') return;
+  if (!css || document.getElementById(FONT_STYLE_ID)) return;
+  const style = document.createElement('style');
+  style.id = FONT_STYLE_ID;
+  style.textContent = css;
+  document.head.appendChild(style);
+}
+
+export function removeInlinedFonts(): void {
+  if (typeof document === 'undefined') return;
+  document.getElementById(FONT_STYLE_ID)?.remove();
 }

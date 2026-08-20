@@ -16,9 +16,7 @@ const CHROME_V = 144; // keep in sync with recorderCore's frame reserve
 
 type Frame = { left: number; top: number; width: number; height: number };
 
-function computeFrame(aspect: number): Frame {
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
+function computeFrame(aspect: number, vw: number, vh: number): Frame {
   const availW = vw * 0.94;
   const availH = vh - CHROME_V;
   let width = availW;
@@ -44,24 +42,26 @@ export function RecordingOverlay({
   aspect = null,
   labels,
 }: RecordingOverlayProps) {
-  const [frame, setFrame] = useState<Frame | null>(() =>
-    typeof window === 'undefined' || aspect == null
-      ? null
-      : computeFrame(aspect)
-  );
+  // Track only the viewport in state; derive `frame` during render so it stays correct
+  // the instant `aspect` changes — no waiting for an effect to recompute it.
+  const [viewport, setViewport] = useState(() => ({
+    width: typeof window === 'undefined' ? 0 : window.innerWidth,
+    height: typeof window === 'undefined' ? 0 : window.innerHeight,
+  }));
 
   useEffect(() => {
-    if (aspect == null) {
-      setFrame(null);
-      return;
-    }
-    const update = () => setFrame(computeFrame(aspect));
-    update();
+    const update = () =>
+      setViewport({ width: window.innerWidth, height: window.innerHeight });
     window.addEventListener('resize', update);
     return () => window.removeEventListener('resize', update);
-  }, [aspect]);
+  }, []);
 
   if (typeof document === 'undefined') return null;
+
+  const frame =
+    aspect == null
+      ? null
+      : computeFrame(aspect, viewport.width, viewport.height);
 
   const recLabel = labels?.rec ?? (aspect ? 'REC · 16:9' : 'REC');
   const stopLabel = labels?.stop ?? 'Stop recording';

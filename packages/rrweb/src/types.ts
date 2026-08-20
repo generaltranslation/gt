@@ -5,7 +5,7 @@ export type LocaleTextOverlay = Record<string, Record<number, string>>;
 
 /** Passed to `start()` — the locales this recording traces, SOURCE FIRST. */
 export type RecorderConfig = {
-  locales: string[];
+  readonly locales: readonly string[];
 };
 
 /** The finished recording: the rrweb stream + the harvested per-locale overlay. */
@@ -66,13 +66,23 @@ export type HarvestOptions = {
    */
   localeCookieName?: string;
   /**
-   * 'auto' (default): hash if the recording carries `data-_gt-hash`, else structural.
+   * 'auto' (default): hash when a `getTranslations` loader is provided AND the recording
+   * carries message hashes (or a `hashMessage` is given), else structural.
    * 'structural': pair source↔target text by DOM structure (renders each locale).
-   * 'hash': map recorded node hashes to a translations dict (needs `_tagIds`).
+   * 'hash': map recorded translations to a dict via `getTranslations` (needs `_tagIds`
+   * for `<T>` content and/or `hashMessage` for `gt()` strings).
    */
   key?: 'auto' | 'structural' | 'hash';
   /** Translation source for `key: 'hash'` (see TranslationsLoader). */
   getTranslations?: TranslationsLoader;
+  /**
+   * Hash a plain SOURCE string to its GT message hash, so the hash strategy can also
+   * cover `gt()` / `useGT()` string translations — which render as bare text with no
+   * `data-_gt` marker, unlike `<T>` components. A GT app passes
+   * `(m) => hashMessage(m, { $format: 'ICU' })` from `gt-i18n/internal`. Omit it and only
+   * `<T>` content (which carries a DOM hash) is harvested by the hash strategy.
+   */
+  hashMessage?: (message: string) => string | undefined;
   /**
    * CSS selector for the region to harvest within. Defaults to the recorder's own
    * content selector (what was recorded/framed) so the harvest covers the SAME region

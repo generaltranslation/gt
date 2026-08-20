@@ -1,6 +1,14 @@
 import { EventType, IncrementalSource } from '@rrweb/types';
 import type { eventWithTime } from '@rrweb/types';
 
+import { harvestHash } from './hashHarvest';
+import { collectRecordedText, hashOf, type SerializedNode } from './serialized';
+import {
+  foldObservations,
+  newTargetDict,
+  overlayFromDict,
+  type TargetDict,
+} from './structuralDict';
 import {
   DEFAULT_CONTENT_SELECTOR,
   type HarvestOptions,
@@ -8,76 +16,36 @@ import {
 } from '../types';
 
 // Per-locale HARVEST (the "Process" step, run in-browser right after a recording
-// stops). We do NOT translate — we read the site's OWN rendered translations, using
-// only what every GT site guarantees (it can render each locale + preserves DOM
-// structure across locales):
+// stops). We do NOT translate — we read the site's OWN translations. Two strategies:
 //
-//   1. Collect the visited paths (initial URL + captured SPA navigations).
-//   2. For each path, render the SOURCE locale and each TARGET locale in a hidden,
-//      same-origin (authenticated) iframe and read the content-region text in
-//      document order. Same clean structure across locales ⇒ pair by structural key
-//      → a { sourceText → targetText } dictionary per locale.
-//   3. Map that onto the recording: every recorded text node (by rrweb id) whose
-//      source text is in the dictionary gets its target text.
+//   • "hash" (preferred): map recorded text onto the target locale's translation read
+//     from the app's translations (getTranslations, e.g. the GT CDN) — `<T>` content by
+//     the message hash each carries (tag-ids), and `gt()`/`useGT()` strings by hashing
+//     their source text (hashMessage). No re-rendering; also covers interaction-only
+//     states. See hashHarvest.
+//   • "structural" (fallback): render the SOURCE + each TARGET locale in a hidden,
+//     same-origin iframe per visited path and pair text by DOM structure. Needs
+//     reconstructable per-locale URLs and a stable DOM shape across locales.
 //
-// This is the "structural" strategy. The "hash" strategy (keyed by data-_gt-hash)
-// is more robust and also covers interaction-only states, but requires the id-tagging
-// feature (`_tagIds`) to be enabled so the recorded DOM carries hashes.
+// `key: 'auto'` (default) uses hash when a getTranslations loader is provided AND the
+// recording carries hashes (or a hashMessage is given), else structural.
 
 const RENDER_TIMEOUT_MS = 20000;
 const SETTLE_TICKS = 3; // consecutive stable polls before we read
 const DEFAULT_MAX_PATHS = 12; // bound total renders
 
-type SerializedNode = {
-  type: number;
-  id: number;
-  tagName?: string;
-  textContent?: string;
-  attributes?: Record<string, unknown>;
-  childNodes?: SerializedNode[];
-};
-
 // ----- shared: recorded text + hash presence ----- //
 
-/** Every recorded text node (rrweb id → text) across the FullSnapshot + mutations. */
-export function collectRecordedText(
-  events: eventWithTime[]
-): Map<number, string> {
-  const map = new Map<number, string>();
-  const walk = (n: SerializedNode | undefined) => {
-    if (!n) return;
-    if (
-      n.type === 3 &&
-      typeof n.textContent === 'string' &&
-      n.textContent.trim()
-    ) {
-      map.set(n.id, n.textContent);
-    }
-    n.childNodes?.forEach(walk);
-  };
-  for (const e of events) {
-    if (e.type === EventType.FullSnapshot) {
-      walk(e.data.node as SerializedNode);
-    } else if (
-      e.type === EventType.IncrementalSnapshot &&
-      e.data.source === IncrementalSource.Mutation
-    ) {
-      for (const add of e.data.adds) walk(add.node as SerializedNode);
-      for (const t of e.data.texts) {
-        if (typeof t.value === 'string' && t.value.trim())
-          map.set(t.id, t.value);
-      }
-    }
-  }
-  return map;
-}
+// `collectRecordedText` (rrweb id → text) lives in ./serialized so hashHarvest can share
+// it without a circular import; re-exported here for the public ./harvest entry.
+export { collectRecordedText } from './serialized';
 
-/** True if the recording carries `data-_gt-hash` (i.e. `_tagIds` was enabled). */
+/** True if the recording carries GT message hashes (i.e. tag-ids was enabled). */
 export function recordingHasHashes(events: eventWithTime[]): boolean {
   let found = false;
   const walk = (n: SerializedNode | undefined) => {
     if (!n || found) return;
-    if (n.attributes && n.attributes['data-_gt-hash'] != null) {
+    if (hashOf(n)) {
       found = true;
       return;
     }
@@ -199,21 +167,26 @@ function renderShell(url: string, selector: string): Promise<Rendered> {
 }
 
 // Index EACH TEXT NODE by a STRUCTURAL KEY = its element path (`tagName[nth-of-type]`
-// from the content root) plus its position among that element's children. GT preserves
-// DOM structure across locales (it only swaps text), so the same text node carries the
-// same key in every locale. Per-TEXT-NODE granularity (not per-element joined text)
-// matters: it matches collectRecordedText, so every occurrence — including text nodes
-// inside multi-text-node elements — contributes an observation to foldObservations (an
-// untranslated one can flag ambiguity), and there's no joined-text artifact that could
-// collide with an unrelated recorded node.
+// from the content root) plus its position among that element's MEANINGFUL text nodes.
+// GT preserves DOM structure across locales (it only swaps text), so the same text node
+// carries the same key in every locale. The text index counts only non-blank text
+// nodes: a whitespace-only or comment node that appears in one locale's render but not
+// another must NOT shift the key, or source text would pair with an unrelated target
+// string. Per-TEXT-NODE granularity (not per-element joined text) matches
+// collectRecordedText, so every occurrence contributes an observation to
+// foldObservations and there's no joined-text artifact that could collide.
 function textByKey(root: Element): Map<string, string> {
   const map = new Map<string, string>();
   const visit = (el: Element, prefix: string) => {
     const tagCounts: Record<string, number> = {};
-    el.childNodes.forEach((c, i) => {
+    let textIdx = 0;
+    el.childNodes.forEach((c) => {
       if (c.nodeType === window.Node.TEXT_NODE) {
         const t = c.textContent ?? '';
-        if (t.trim()) map.set(`${prefix}#${i}`, t);
+        if (t.trim()) {
+          map.set(`${prefix}#${textIdx}`, t);
+          textIdx++;
+        }
       } else if (c.nodeType === window.Node.ELEMENT_NODE) {
         const child = c as Element;
         const nth = (tagCounts[child.tagName] =
@@ -224,58 +197,6 @@ function textByKey(root: Element): Map<string, string> {
   };
   visit(root, '');
   return map;
-}
-
-// Per-target dictionary. `bag` holds the SINGLE observation that every occurrence of
-// a source text agreed on (a real translation, or the source text itself =
-// "untranslated"); `ambiguous` holds source texts whose occurrences DISAGREED and are
-// therefore dropped.
-export type TargetDict = { bag: Map<string, string>; ambiguous: Set<string> };
-
-export function newTargetDict(): TargetDict {
-  return { bag: new Map(), ambiguous: new Set() };
-}
-
-// Fold one render's structural alignment (source key→text vs target key→text) into a
-// target's dictionary. Every source-text occurrence is recorded as an observation —
-// a real translation, or the source itself when the target is missing/blank/identical
-// ("untranslated"). If a source text is observed with MORE THAN ONE distinct value
-// (different translations, or translated in one place and untranslated in another) it
-// is context-dependent → marked ambiguous and dropped, so every matching node renders
-// SOURCE rather than one occurrence's value applied everywhere. Pure (mutates entry).
-export function foldObservations(
-  entry: TargetDict,
-  srcMap: Map<string, string>,
-  tgtMap: Map<string, string>
-): void {
-  for (const [key, s] of srcMap) {
-    if (!s.trim() || entry.ambiguous.has(s)) continue;
-    const g = tgtMap.get(key);
-    const observed = g !== undefined && g.trim() && g !== s ? g : s;
-    const prev = entry.bag.get(s);
-    if (prev === undefined) {
-      entry.bag.set(s, observed);
-    } else if (prev !== observed) {
-      entry.ambiguous.add(s);
-      entry.bag.delete(s);
-    }
-  }
-}
-
-// Map a finished target dictionary onto the recording's nodes by source text. Emits
-// only REAL translations (a bag value equal to the source means every occurrence was
-// untranslated → that node renders source). Pure.
-export function overlayFromDict(
-  entry: TargetDict,
-  recorded: Map<number, string>
-): Record<number, string> {
-  const bag: Record<number, string> = {};
-  for (const [id, text] of recorded) {
-    if (entry.ambiguous.has(text)) continue;
-    const tr = entry.bag.get(text);
-    if (tr !== undefined && tr !== text) bag[id] = tr;
-  }
-  return bag;
 }
 
 async function harvestStructural(
@@ -339,17 +260,26 @@ export async function harvestLocales(
       : undefined) ??
     locales[0];
 
-  const resolved = {
+  // Choose the strategy. The hash strategy needs a translations loader plus SOMETHING to
+  // key by: recorded `<T>` hashes (data-_gt) and/or a `hashMessage` for `gt()` strings.
+  // 'auto' uses hash when possible, else structural; 'structural' is forced; 'hash' falls
+  // back to structural when it can't run (still safe).
+  const strategy = options.key ?? 'auto';
+  const canHash =
+    typeof options.getTranslations === 'function' &&
+    (recordingHasHashes(events) || typeof options.hashMessage === 'function');
+  if ((strategy === 'auto' || strategy === 'hash') && canHash) {
+    return harvestHash(events, locales, {
+      source,
+      getTranslations: options.getTranslations!,
+      hashMessage: options.hashMessage,
+    });
+  }
+
+  return harvestStructural(events, locales, {
     localeToUrl: options.localeToUrl ?? prefixLocaleToUrl,
     contentSelector: options.contentSelector ?? DEFAULT_CONTENT_SELECTOR,
     maxPaths: options.maxPaths ?? DEFAULT_MAX_PATHS,
     source,
-  };
-
-  // NOTE: the `key: 'hash'` harvest (map recorded `data-_gt-hash` nodes to a
-  // translations dict via `getTranslations`) isn't implemented yet; 'auto'/'hash'
-  // both fall back to the structural harvest below, which stays safe.
-  // TODO(gt-rrweb): implement hash mapping.
-
-  return harvestStructural(events, locales, resolved);
+  });
 }

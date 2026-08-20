@@ -2,13 +2,12 @@ import { EventType, IncrementalSource } from '@rrweb/types';
 import type { eventWithTime } from '@rrweb/types';
 import { describe, expect, it } from 'vitest';
 
+import { collectRecordedText, recordingHasHashes } from '../harvestLocales';
 import {
-  collectRecordedText,
   foldObservations,
   newTargetDict,
   overlayFromDict,
-  recordingHasHashes,
-} from '../harvestLocales';
+} from '../structuralDict';
 
 // ----- minimal serialized-node + event builders (only fields the harvest reads) ----- //
 
@@ -85,10 +84,27 @@ describe('recordingHasHashes', () => {
     expect(recordingHasHashes([fullSnapshot(tree)])).toBe(true);
   });
 
+  it('true for the runtime-wrapper attribute (data-_gt string hash)', () => {
+    const tree = el(1, 'DIV', [
+      el(2, 'SPAN', [text(3, 'x')], {
+        'data-_gt': 'H9',
+        style: 'display:contents',
+      }),
+    ]);
+    expect(recordingHasHashes([fullSnapshot(tree)])).toBe(true);
+  });
+
   it('false when no node carries the hash attribute', () => {
     expect(
       recordingHasHashes([fullSnapshot(el(1, 'DIV', [text(2, 'x')]))])
     ).toBe(false);
+  });
+
+  it('ignores a non-hash object-valued data-_gt (defensive)', () => {
+    const tree = el(1, 'DIV', [
+      el(2, 'SPAN', [text(3, 'x')], { 'data-_gt': '[object Object]' }),
+    ]);
+    expect(recordingHasHashes([fullSnapshot(tree)])).toBe(false);
   });
 });
 
