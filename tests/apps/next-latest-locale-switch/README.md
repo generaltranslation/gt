@@ -7,7 +7,8 @@ production mode, and drives the rendered `LocaleSelector` with Playwright.
 
 The matrix covers:
 
-- locale routing disabled;
+- locale routing disabled, with unprefixed URLs and client state preserved
+  across locale switches;
 - locale routing enabled with `prefixDefaultLocale: false`;
 - locale routing enabled with `prefixDefaultLocale: true`;
 - default to nondefault, nondefault to another nondefault, and nondefault to

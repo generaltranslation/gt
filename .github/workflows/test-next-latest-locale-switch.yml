@@ -8,6 +8,7 @@ on:
       - 'packages/core/**'
       - 'packages/format/**'
       - 'packages/i18n/**'
+      - 'packages/icu/**'
       - 'packages/next/**'
       - 'packages/react/**'
       - 'packages/react-core/**'

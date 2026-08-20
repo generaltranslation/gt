@@ -4,6 +4,8 @@ import type { Page } from '@playwright/test';
 const localeRouting = process.env.GT_LOCALE_ROUTING === 'true';
 const prefixDefaultLocale = process.env.GT_PREFIX_DEFAULT_LOCALE === 'true';
 const localeSelectorName = 'General Translation locale selector';
+const clientStateMarkerName = 'Client state marker';
+const clientStateMarkerValue = 'Preserved across locale changes';
 const content = {
   en: 'English content',
   fr: 'Contenu français',
@@ -14,11 +16,16 @@ for (const route of [
   { name: 'root', suffix: '' },
   { name: 'nested', suffix: '/nested' },
 ] as const) {
-  test(`${route.name}: default to nondefault to default, then prefixed to prefixed`, async ({
-    page,
-  }) => {
+  const behavior = localeRouting
+    ? 'default to nondefault to default, then prefixed to prefixed'
+    : 'switches locales without changing the URL or losing client state';
+
+  test(`${route.name}: ${behavior}`, async ({ page }) => {
     await page.context().clearCookies();
     await page.goto(route.suffix || '/');
+    if (!localeRouting) {
+      await page.getByLabel(clientStateMarkerName).fill(clientStateMarkerValue);
+    }
 
     await expectLocale(page, 'en', route.name, route.suffix);
     await selectLocale(page, 'fr');
@@ -60,6 +67,11 @@ async function expectLocale(
   await expect(
     page.getByRole('combobox', { name: localeSelectorName })
   ).toHaveValue(locale);
+  if (!localeRouting) {
+    await expect(page.getByLabel(clientStateMarkerName)).toHaveValue(
+      clientStateMarkerValue
+    );
+  }
 }
 
 function pathFor(locale: keyof typeof content, suffix: '' | '/nested') {
