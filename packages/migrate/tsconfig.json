@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "node16",
+    "moduleResolution": "node16",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": true,
+    "stripInternal": true
+  },
+  "include": ["src"],
+  "exclude": ["**/__tests__/**/*", "**/__mocks__/**/*"]
+}

@@ -1,6 +1,7 @@
 // This file is MIT licensed and was adapted from https://github.com/getsentry/sentry-wizard/blob/master/src/utils/package-manager.ts and https://github.com/getsentry/sentry-wizard/blob/master/src/utils/clack/index.ts
 import * as fs from 'fs';
 import * as path from 'path';
+import YAML from 'yaml';
 import { getPackageJson, updatePackageJson } from './packageJson.js';
 import { promptSelect } from '../console/logging.js';
 
@@ -263,6 +264,145 @@ export function _detectPackageManger(cwd: string): PackageManager | null {
   }
 
   return null;
+}
+
+/**
+ * The workspace member patterns a directory declares: pnpm-workspace.yaml
+ * `packages` entries when the file exists (parsed as real YAML, so flow-style
+ * arrays work), else the package.json `workspaces` field (array or
+ * `{ packages: [...] }`). null when the directory declares no workspace at
+ * all.
+ */
+function workspacePatternsOf(dir: string): string[] | null {
+  try {
+    const yamlPath = path.join(dir, 'pnpm-workspace.yaml');
+    if (fs.existsSync(yamlPath)) {
+      const doc = YAML.parse(fs.readFileSync(yamlPath, 'utf-8')) as {
+        packages?: unknown;
+      } | null;
+      if (doc && Array.isArray(doc.packages)) {
+        return doc.packages.filter(
+          (entry): entry is string => typeof entry === 'string'
+        );
+      }
+      return [];
+    }
+  } catch {
+    // fall through to package.json
+  }
+  try {
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(dir, 'package.json'), 'utf-8')
+    ) as { workspaces?: string[] | { packages?: string[] } };
+    if (Array.isArray(pkg.workspaces)) return pkg.workspaces;
+    if (pkg.workspaces && Array.isArray(pkg.workspaces.packages)) {
+      return pkg.workspaces.packages;
+    }
+  } catch {
+    // not a workspace root
+  }
+  return null;
+}
+
+function escapeRegExp(literal: string): string {
+  return literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function workspacePatternToRegExp(pattern: string): RegExp {
+  // `./packages/*` and `packages/*/` are the same pattern.
+  const body = pattern.replace(/^\.\//, '').replace(/\/+$/, '');
+  const segments = body.split('/');
+  let source = '';
+  for (let i = 0; i < segments.length; i++) {
+    const segment = segments[i];
+    if (segment === '**') {
+      // Globstar matches zero or more whole segments, so `packages/**`
+      // covers `packages/a/b` (and `packages` itself), and
+      // `packages/**/lib` covers `packages/lib`.
+      if (i === segments.length - 1) {
+        source = source.replace(/\/$/, '');
+        source += source ? '(?:/.+)?' : '.*';
+      } else {
+        source += '(?:[^/]+/)*';
+      }
+      continue;
+    }
+    source += segment.split('*').map(escapeRegExp).join('[^/]*');
+    if (i < segments.length - 1) source += '/';
+  }
+  return new RegExp('^' + source + '$');
+}
+
+/**
+ * Whether a member path (relative to the workspace root) is covered by the
+ * root's workspace patterns. Supports the common glob subset: literal paths,
+ * `*` for one path segment, `**` for any depth (including zero). Negations
+ * subtract: a member matching a `!pattern` is not covered. Targeting an
+ * uncovered directory would make the install fail ("npm error No workspaces
+ * found"), so an uncovered member is treated as not belonging to that root
+ * at all.
+ */
+function matchesWorkspacePattern(member: string, patterns: string[]): boolean {
+  const memberPosix = member.split(path.sep).join('/');
+  const positive = patterns.filter((pattern) => !pattern.startsWith('!'));
+  const negative = patterns
+    .filter((pattern) => pattern.startsWith('!'))
+    .map((pattern) => pattern.slice(1));
+  return (
+    positive.some((pattern) =>
+      workspacePatternToRegExp(pattern).test(memberPosix)
+    ) &&
+    !negative.some((pattern) =>
+      workspacePatternToRegExp(pattern).test(memberPosix)
+    )
+  );
+}
+
+/**
+ * Resolves the package manager for a directory whose lockfile may live at a
+ * monorepo root. Checks `cwd` itself first (same single-match rule as
+ * _detectPackageManger); on a miss, walks up looking for a directory with a
+ * lockfile that is also a workspace root (a `workspaces` field in its
+ * package.json, or a pnpm-workspace.yaml). The workspace requirement keeps a
+ * stray lockfile in an unrelated ancestor (e.g. the home directory) from
+ * being picked up.
+ */
+export function detectPackageManagerWithRoot(
+  cwd: string
+): { packageManager: PackageManager; root: string } | null {
+  const resolved = path.resolve(cwd);
+  const atLeaf = packageManagers.filter((packageManager) =>
+    packageManager.detect(resolved)
+  );
+  if (atLeaf.length === 1) {
+    return { packageManager: atLeaf[0], root: resolved };
+  }
+  if (atLeaf.length > 1) return null;
+
+  let dir = path.dirname(resolved);
+  while (true) {
+    const found = packageManagers.filter((packageManager) =>
+      packageManager.detect(dir)
+    );
+    // Ambiguity keeps the no-assumptions rule from _detectPackageManger.
+    if (found.length > 1) return null;
+    if (found.length === 1) {
+      const patterns = workspacePatternsOf(dir);
+      // Only a workspace root whose patterns actually cover the member
+      // counts; a lockfile-bearing ancestor that merely sits above the
+      // directory (a clone dropped inside an unrelated monorepo, a stray
+      // workspaces field in the home directory) must not claim it.
+      if (
+        patterns !== null &&
+        matchesWorkspacePattern(path.relative(dir, resolved), patterns)
+      ) {
+        return { packageManager: found[0], root: dir };
+      }
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) return null;
+    dir = parent;
+  }
 }
 
 // Get the package manager for the current project

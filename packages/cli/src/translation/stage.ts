@@ -14,14 +14,20 @@ export async function aggregateInlineTranslations(
   library: InlineLibrary
 ): Promise<Updates> {
   if (!options.dictionary) {
-    options.dictionary = findFilepath([
-      './dictionary.js',
-      './src/dictionary.js',
-      './dictionary.json',
-      './src/dictionary.json',
-      './dictionary.ts',
-      './src/dictionary.ts',
-    ]);
+    // Honor the config before falling back to convention paths (the same
+    // chain validate.ts uses): a migrated project records its dictionary in
+    // gt.config.json, and ignoring it made bare `gt generate` write empty
+    // templates on a tree whose config named the catalogs (round-9 audit).
+    options.dictionary =
+      settings.dictionary ||
+      findFilepath([
+        './dictionary.js',
+        './src/dictionary.js',
+        './dictionary.json',
+        './src/dictionary.json',
+        './dictionary.ts',
+        './src/dictionary.ts',
+      ]);
   }
 
   // ---- CREATING UPDATES ---- //
