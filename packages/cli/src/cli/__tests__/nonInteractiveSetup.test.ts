@@ -166,6 +166,44 @@ describe('non-interactive init and configure', () => {
     expect(existsSync(path.join(projectDir, 'gt.config.json'))).toBe(false);
   });
 
+  it.each(['init', 'configure'])(
+    'rejects an empty locales list from %s --yes',
+    async (command) => {
+      const seededConfig = { defaultLocale: 'en', locales: [] };
+      writeFileSync(
+        path.join(projectDir, 'gt.config.json'),
+        JSON.stringify(seededConfig)
+      );
+
+      await expect(runCommand([command, '--yes'])).rejects.toThrow('locales');
+
+      expect(readConfig(projectDir)).toEqual(seededConfig);
+    }
+  );
+
+  it('reads locales from the config file passed with --config', async () => {
+    const seededFiles = {
+      json: { include: ['./content/[locale]/*.json'] },
+    };
+    writeFileSync(
+      path.join(projectDir, 'custom.json'),
+      JSON.stringify({
+        defaultLocale: 'en',
+        locales: ['es'],
+        files: seededFiles,
+      })
+    );
+
+    await runCommand(['init', '--yes', '--config', 'custom.json']);
+
+    const config = JSON.parse(
+      readFileSync(path.join(projectDir, 'custom.json'), 'utf8')
+    );
+    expect(config.locales).toEqual(['es']);
+    expect(config.files).toEqual(seededFiles);
+    expect(existsSync(path.join(projectDir, 'gt.config.json'))).toBe(false);
+  });
+
   it('defaults to npm for the gt install when no package manager is detectable', async () => {
     writeFileSync(
       path.join(projectDir, 'package.json'),

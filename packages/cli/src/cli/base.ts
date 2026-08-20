@@ -620,9 +620,13 @@ export class BaseCLI {
         '--yes',
         'Skip all prompts and accept the recommended defaults; requires locales in gt.config.json'
       )
-      .action(async (options: SetupOptions) => {
+      .action(async (options: SetupOptions, command: Command) => {
         await exitIfUnsupportedSetupTarget();
         exitIfNonInteractiveSetup(options.yes);
+        const explicitConfigPath =
+          command.getOptionValueSource('config') === 'cli'
+            ? options.config
+            : undefined;
         const settings = await generateSettings(options);
         displayHeader('Running setup wizard...');
 
@@ -718,7 +722,8 @@ export class BaseCLI {
             ranReactSetup,
             useDefaults,
             framework.name === 'vite',
-            Boolean(options.yes)
+            Boolean(options.yes),
+            explicitConfigPath
           );
 
           logger.endCommand(
@@ -778,12 +783,14 @@ export class BaseCLI {
     ranReactSetup: boolean,
     useDefaults: boolean = false,
     isVite: boolean = false,
-    assumeYes: boolean = false
+    assumeYes: boolean = false,
+    configPath?: string
   ): Promise<void> {
     const configFilepath =
-      !isVite && fs.existsSync('src/gt.config.json')
+      configPath ??
+      (!isVite && fs.existsSync('src/gt.config.json')
         ? 'src/gt.config.json'
-        : 'gt.config.json';
+        : 'gt.config.json');
     const existingConfig = loadConfig(configFilepath);
     const { defaultLocale, locales } = await getDesiredLocales(
       existingConfig,

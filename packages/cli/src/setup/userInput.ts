@@ -36,7 +36,10 @@ export async function getDesiredLocales(
           defaultValue: libraryDefaultLocale,
         }));
 
-  if (nonInteractive && !configuredLocales) {
+  if (
+    nonInteractive &&
+    (!configuredLocales || configuredLocales.length === 0)
+  ) {
     logErrorAndExit(
       'No locales are configured. Add defaultLocale and locales to gt.config.json, or rerun without --yes to be prompted.'
     );
