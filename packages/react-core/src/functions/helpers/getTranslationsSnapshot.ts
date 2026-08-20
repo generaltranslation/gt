@@ -8,14 +8,14 @@ import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 
 /**
  * Serializable cached translations for provider hydration; a failed load
- * degrades to an empty snapshot. TODO: perhaps move to /i18n for type generics
+ * yields a snapshot with no entry for the locale, so hydration caches nothing
+ * and a later lookup retries. TODO: perhaps move to /i18n for type generics
  */
 export async function getTranslationsSnapshot(
   locale: Locale
 ): Promise<Record<Locale, Record<Hash, Translation>>> {
   const i18nCache = getReactI18nCache();
   try {
-    // Only pass translations for the given locale to minimize the snapshot
     return { [locale]: await i18nCache.loadTranslations(locale) };
   } catch (error) {
     console.warn(
@@ -28,6 +28,6 @@ export async function getTranslationsSnapshot(
         details: formatDiagnosticErrorDetails(error),
       })
     );
-    return { [locale]: {} };
+    return {};
   }
 }
