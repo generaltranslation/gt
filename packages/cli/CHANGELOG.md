@@ -1,5 +1,118 @@
 # gtx-cli
 
+## 2.16.8
+
+### Patch Changes
+
+- Updated dependencies [[`bb08d8c`](https://github.com/generaltranslation/gt/commit/bb08d8cc5df87c71dd2a31416087821dbae38aa8)]:
+  - @generaltranslation/format@0.1.7
+  - generaltranslation@9.1.6
+  - @generaltranslation/python-extractor@0.2.39
+  - @generaltranslation/supported-locales@2.1.19
+
+## 2.16.7
+
+### Patch Changes
+
+- Updated dependencies [[`d0ae632`](https://github.com/generaltranslation/gt/commit/d0ae632ac0cd53600f6b893c23754dde06fbe808)]:
+  - @generaltranslation/format@0.1.6
+  - generaltranslation@9.1.5
+  - @generaltranslation/python-extractor@0.2.38
+  - @generaltranslation/supported-locales@2.1.18
+
+## 2.16.6
+
+### Patch Changes
+
+- Updated dependencies [[`6607925`](https://github.com/generaltranslation/gt/commit/660792523b15d2e43e9752ea599e5229c1b45bc7)]:
+  - generaltranslation@9.1.4
+  - @generaltranslation/python-extractor@0.2.37
+  - @generaltranslation/supported-locales@2.1.17
+
+## 2.16.5
+
+### Patch Changes
+
+- [#2074](https://github.com/generaltranslation/gt/pull/2074) [`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8) Thanks [@eoinest](https://github.com/eoinest)! - Migrate the package license from FSL-1.1-ALv2 to MIT.
+
+- Updated dependencies [[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)]:
+  - @generaltranslation/format@0.1.5
+  - @generaltranslation/icu@0.1.2
+  - @generaltranslation/python-extractor@0.2.36
+  - @generaltranslation/supported-locales@2.1.16
+  - generaltranslation@9.1.3
+  - gt-remark@1.0.12
+
+## 2.16.4
+
+### Patch Changes
+
+- Updated dependencies [[`b00b93e`](https://github.com/generaltranslation/gt/commit/b00b93eb3b830b8528ef3dbd5f503ff76d1b338a)]:
+  - generaltranslation@9.1.2
+  - @generaltranslation/python-extractor@0.2.35
+  - @generaltranslation/supported-locales@2.1.15
+
+## 2.16.3
+
+### Patch Changes
+
+- [#2040](https://github.com/generaltranslation/gt/pull/2040) [`79e6836`](https://github.com/generaltranslation/gt/commit/79e6836349191220ee8f5848b5e6ff287246f162) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Use the locale exactly as configured when substituting `{locale}` in file and JSON transforms, instead of canonicalizing it. Projects that configure a non-canonical tag such as `fr-ca` or `ja-jp` were getting content written to `docs/fr-CA/` while `[locale]` substitution and localized URLs used `docs/fr-ca/`, so every internal link in the translated output pointed at a directory that did not exist.
+
+## 2.16.2
+
+### Patch Changes
+
+- [#2029](https://github.com/generaltranslation/gt/pull/2029) [`c1fd8a0`](https://github.com/generaltranslation/gt/commit/c1fd8a05c5325775e3ec8104e2d48d35da864de6) Thanks [@eoinest](https://github.com/eoinest)! - Configure Vite React apps with `initializeGTSPA` and bundled translation loading without adding the compiler.
+
+## 2.16.1
+
+### Patch Changes
+
+- [#2019](https://github.com/generaltranslation/gt/pull/2019) [`60d154c`](https://github.com/generaltranslation/gt/commit/60d154c851d6ae0510447b7d66ec5e12104f0d1b) Thanks [@eoinest](https://github.com/eoinest)! - Save local edits before translation by default, with a `--no-save-local` flag to opt out.
+
+- [#2028](https://github.com/generaltranslation/gt/pull/2028) [`8066d0a`](https://github.com/generaltranslation/gt/commit/8066d0ad64d4f9c3475a935e6bbb27d9f7389b20) Thanks [@eoinest](https://github.com/eoinest)! - Stop the setup wizard at monorepo workspace roots and direct users to run it from the app they want to localize.
+
+- Updated dependencies [[`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9)]:
+  - generaltranslation@9.1.1
+  - @generaltranslation/python-extractor@0.2.34
+  - @generaltranslation/supported-locales@2.1.14
+
+## 2.16.0
+
+### Minor Changes
+
+- [#1994](https://github.com/generaltranslation/gt/pull/1994) [`bd961d1`](https://github.com/generaltranslation/gt/commit/bd961d1474547f7c6d470583c1b1190dce0112ca) Thanks [@logflash](https://github.com/logflash)! - Add Lottie file support and project font syncing.
+  - Support `.lottie` files as a new `LOTTIE` file format. Lottie bundles are binary (zip), so their content is carried base64-encoded end-to-end — including existing translated `.lottie` targets on `gt upload` — and skips the UTF-8 encode/decode and text merge paths (new `isBinaryFileFormat` / `BINARY_FILE_FORMATS` exports). Lottie translations are processed asynchronously and require the `gt stage` + `gt download` flow, so `gt translate` now exits with an error pointing users there when a project has Lottie files and staging isn't enabled. (As before, enabling staging makes `gt translate` download staged results rather than translating inline.)
+  - Reject `.lottie` files that use After Effects expressions (executable code): the upload fails and names every offending file, since expression-driven text can't be translated safely.
+  - Add `GT.uploadFonts` and a `fonts` config option (include/exclude globs) so project fonts are synced to the API before translating formats that need them (including during `gt stage`, so async Lottie jobs get the real fonts). Globs resolve from the project root. Font sync is idempotent and non-fatal on failure.
+  - Keep staged lock entries staged until every configured locale has downloaded, and only require `_versionId` for `gt download` when an inline GTJSON template is part of the download and config IDs aren't omitted (staged downloads resolve versions from `gt-lock.json`, file-only projects never have a `_versionId`, and `omitConfigIds` projects use the GTJSON's own content-derived version).
+
+### Patch Changes
+
+- Updated dependencies [[`bd961d1`](https://github.com/generaltranslation/gt/commit/bd961d1474547f7c6d470583c1b1190dce0112ca)]:
+  - generaltranslation@9.1.0
+  - @generaltranslation/python-extractor@0.2.33
+  - @generaltranslation/supported-locales@2.1.13
+
+## 2.15.0
+
+### Minor Changes
+
+- [#1920](https://github.com/generaltranslation/gt/pull/1920) [`f2c196b`](https://github.com/generaltranslation/gt/commit/f2c196b6d37c4abb646961826f2a2154f8cabbc8) Thanks [@JoshKappler](https://github.com/JoshKappler)! - Add a global `--quiet` / `-q` flag to the CLI that suppresses informational output. Under `--quiet` the CLI drops the info/step/success/spinner chatter and the ASCII banner in both the default and `GT_LOG_FORMAT=json` paths, while warnings, errors, exit codes, and command results stay the same. In JSON mode the remaining output keeps its shape: only info/debug/trace lines are dropped, and warn/error and above still print. The flag takes precedence over `GT_LOG_LEVEL` without lowering an already-more-restrictive level, and interactive prompts still run when a command genuinely needs input.
+
+### Patch Changes
+
+- [#1889](https://github.com/generaltranslation/gt/pull/1889) [`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b) Thanks [@bgub](https://github.com/bgub)! - Allow `awaitJobs()` to poll job IDs directly and reuse that shared polling implementation for CLI and Sanity project setup.
+
+- [#1886](https://github.com/generaltranslation/gt/pull/1886) [`7cb2dfe`](https://github.com/generaltranslation/gt/commit/7cb2dfef077ee642f211996b0d729844a18258a8) Thanks [@bgub](https://github.com/bgub)! - Flatten the CLI workflow step lifecycle by folding completion behavior into each step's `run()` method and removing the unused shared step protocol.
+
+- Updated dependencies [[`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b), [`e55aaa9`](https://github.com/generaltranslation/gt/commit/e55aaa9cfdf6dfe3ab96d0eea927f255b66cd20d)]:
+  - generaltranslation@9.0.5
+  - @generaltranslation/icu@0.1.1
+  - @generaltranslation/python-extractor@0.2.32
+  - @generaltranslation/supported-locales@2.1.12
+  - @generaltranslation/format@0.1.4
+
 ## 2.14.66
 
 ### Patch Changes

@@ -1,4 +1,5 @@
 import type { AppProps } from 'next/app';
+import Router from 'next/router';
 import { GTProvider, WithGTServerSideProps } from 'gt-next';
 import '../styles/globals.css';
 
@@ -6,11 +7,15 @@ export default function App({
   Component,
   pageProps,
 }: AppProps<WithGTServerSideProps>) {
-  const { locale, translations, ...restPageProps } = pageProps;
-
   return (
-    <GTProvider locale={locale} translations={translations}>
-      <Component {...restPageProps} />
+    <GTProvider
+      locale={pageProps.locale}
+      translations={pageProps.translations}
+      _reload={({ locale }) => {
+        void Router.push(Router.pathname, Router.asPath, { locale });
+      }}
+    >
+      <Component {...pageProps} />
     </GTProvider>
   );
 }

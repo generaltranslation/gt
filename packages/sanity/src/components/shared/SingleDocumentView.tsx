@@ -1,6 +1,7 @@
 import React from 'react';
 import { Stack, Box, Card, Text, Flex, Spinner } from '@sanity/ui';
 import { LanguageStatus } from './LanguageStatus';
+import { resolveLanguageStatusState } from '../../utils/languageStatusState';
 import { useTranslations } from '../TranslationsProvider';
 import { pluginConfig } from '../../adapter/core';
 import {
@@ -14,6 +15,7 @@ export const SingleDocumentView: React.FC = () => {
     locales,
     loadingDocuments,
     translationStatuses,
+    pendingTranslations,
     downloadStatus,
     importedTranslations,
     handleImportDocument,
@@ -59,9 +61,9 @@ export const SingleDocumentView: React.FC = () => {
 
   return (
     <Box>
-      <Stack space={4}>
+      <Stack gap={4}>
         <Card shadow={1} padding={3}>
-          <Stack space={3}>
+          <Stack gap={3}>
             <Flex justify='space-between' align='flex-start'>
               <Box flex={1}>
                 <Text weight='semibold' size={1}>
@@ -73,7 +75,7 @@ export const SingleDocumentView: React.FC = () => {
               </Box>
             </Flex>
 
-            <Stack space={2}>
+            <Stack gap={2}>
               {locales.length > 0 ? (
                 locales
                   .filter((locale) => locale.enabled !== false)
@@ -94,8 +96,11 @@ export const SingleDocumentView: React.FC = () => {
                       <LanguageStatus
                         key={`${document._id}-${versionId}-${locale.localeId}`}
                         localeId={locale.localeId}
-                        progress={status?.progress || 0}
-                        isImported={isImported || isDownloaded}
+                        state={resolveLanguageStatusState({
+                          status,
+                          isImported: isImported || isDownloaded,
+                          isPending: pendingTranslations.has(key),
+                        })}
                         importFile={async () => {
                           await handleImportDocument(
                             documentId,

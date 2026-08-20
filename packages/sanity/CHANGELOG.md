@@ -1,5 +1,197 @@
 # gt-sanity
 
+## 4.0.3
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.1.6
+
+## 4.0.2
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.1.5
+
+## 4.0.1
+
+### Patch Changes
+
+- Updated dependencies [[`6607925`](https://github.com/generaltranslation/gt/commit/660792523b15d2e43e9752ea599e5229c1b45bc7)]:
+  - generaltranslation@9.1.4
+
+## 4.0.0
+
+### Major Changes
+
+- [#2096](https://github.com/generaltranslation/gt/pull/2096) [`88db50b`](https://github.com/generaltranslation/gt/commit/88db50b2ef3cc60871b516119e93f7fcdae9ed27) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add Sanity 6 support and drop the Sanity 5 generation.
+
+  `gt-sanity` now targets `sanity` 6.9.2+ and `@sanity/ui` 4. Sanity moved from `@sanity/ui` 3 to 4 in 6.9.2, so Studios on 6.0 through 6.8 are still on the `@sanity/ui` 3 generation and should stay on `gt-sanity` 3.1.x.
+
+  **Breaking changes**
+  - **ESM-only.** The CommonJS build and the `require` export condition are removed, following `@sanity/ui` 4.
+  - **Node.js 22.12+ required**, up from 18, matching `sanity` and `@sanity/ui` 4.
+  - **Peer dependencies replace bundled Studio packages.** `@sanity/ui`, `@sanity/icons`, `@sanity/schema` and `@sanity/mutator` were previously regular dependencies. Because they are Studio runtime singletons, installing alongside a different Sanity generation nested a second copy, producing duplicate schema registries and duplicate styled-components theme contexts. They are now peer dependencies resolved from the host Studio.
+
+  **Dependency fixes**
+  - The `sanity` peer range was `>=5.0.0`, which admitted Sanity 6 even though the dependencies pinned the Sanity 5 generation. Installs resolved cleanly instead of warning, so the duplicate runtime was silent. The range is now `^6.9.2`.
+  - Raised the `@sanity/document-internationalization` and `sanity-plugin-internationalized-array` floors to `^6.2.30` and `^5.1.27`. The previous floors could resolve to releases that only support `sanity` 5, a second path to a duplicated runtime.
+  - Removed the unused `@sanity/util` dependency.
+
+  **Fixes**
+  - `gtStructureItems` now pins an `apiVersion` on the document lists it builds. Those lists supply a custom filter, and Sanity warns once per list when the version is omitted, which it has said will become an error. The version is shared with the plugin's Sanity client as `SANITY_API_VERSION`.
+  - **Publish Translations silently skipped documents whose source locale had been relabelled.** Publish found the source entry in `translation.metadata` by matching `language` against the configured source locale. A metadata document written before that label changed — `en` to `en-US`, say — still carries the old code, so the subquery matched nothing and the whole group was dropped before publishing started, with no error. Importing was unaffected because it resolves documents by a different key, so publishing appeared to do nothing with no indication why. The inverse test had the same cause and a worse outcome: `language != $sourceLocale` treated a relabelled source entry as a translation and queued the source document itself for publishing. Source and translation entries are now told apart by which document they reference rather than by their language label.
+
+  **Translation progress in the Translations tool**
+  - **Translate All** stayed idle while a run was still in flight. The button only tracked the request, which resolves long before General Translation finishes, so the tool looked like the click had not registered. It now reads "Translating…" with a spinner until every enqueued locale reports back, and is disabled meanwhile so the same run cannot be submitted twice. The document-level view already behaved this way.
+  - **Locale rows showed nothing during a bulk import.** Each row only tracked its own Import button, so `Import All` left every row reading "Ready to import" until it finished. Rows queued by a bulk import now read "Importing…" with a spinner and flip to "Imported" individually as each one lands. `getReadyFilesForImport` accepts an `onSelectedKeys` callback reporting the translation-status keys it selected; those keys index the status map the rows are built from, unlike the keys passed to `onImportSuccess`, which come from the downloaded file and can carry a different version than the one pinned at upload.
+
+### Patch Changes
+
+- [#2074](https://github.com/generaltranslation/gt/pull/2074) [`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8) Thanks [@eoinest](https://github.com/eoinest)! - Migrate the package license from FSL-1.1-ALv2 to MIT.
+
+- Updated dependencies [[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)]:
+  - generaltranslation@9.1.3
+
+## 3.1.6
+
+### Patch Changes
+
+- [#2075](https://github.com/generaltranslation/gt/pull/2075) [`55f94e9`](https://github.com/generaltranslation/gt/commit/55f94e9ab5cae58589f5a658a4ff2e0858b965d7) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Stop document-level import from overwriting published translations.
+
+  When a translation document already existed as a published document with no
+  draft, importing a translation patched that published document directly, so
+  translated content went live immediately with no draft to review, no publish
+  step, and no regard for the auto-publish switch. Studios that already had
+  localized documents — including ones set up with
+  `@sanity/document-internationalization` before installing this plugin — hit
+  this on their first import, because the existing `translation.metadata` is
+  adopted and already points at published translations.
+
+  Imports now seed a draft from the published state and patch the draft, matching
+  what `internationalizedArrayPatch` and `commitResolvedRefs` already do.
+
+## 3.1.5
+
+### Patch Changes
+
+- Updated dependencies [[`b00b93e`](https://github.com/generaltranslation/gt/commit/b00b93eb3b830b8528ef3dbd5f503ff76d1b338a)]:
+  - generaltranslation@9.1.2
+
+## 3.1.4
+
+### Patch Changes
+
+- [#2034](https://github.com/generaltranslation/gt/pull/2034) [`425292d`](https://github.com/generaltranslation/gt/commit/425292d534b82e9120baaff8ebf5a717f4338199) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Make the translation dialog's preferences configurable and persistent, stop
+  reference patching from writing to published documents, and add a debug view.
+
+  `autoRefresh`, `autoImport`, `autoPatchReferences`, `autoPublish`, and
+  `preserveExistingTranslations` are now `gtPlugin` options, and whatever the user
+  sets in the Studio is remembered in `localStorage` per project and dataset
+  instead of resetting. Previously the document Translate dialog force-enabled
+  auto-refresh, auto-patch-references, and auto-publish on every mount, so turning
+  a switch off only lasted until the dialog was closed.
+
+  The Translations tool footer now shows the installed plugin version alongside a
+  **Debug info** button, which opens the plugin's effective configuration and
+  offers to copy it: resolved source and target locales, `translationLevel`,
+  matched documents, ignore/dedupe/skip rules, additional serializers, the active
+  preferences, the Sanity project and dataset, and whether the secrets document
+  was found. Intended to be pasted into a support request so a Studio's setup can
+  be seen without a screenshare. The General Translation API key is never
+  included — only whether one is set.
+
+  Adds `gtStructureItems` and `gtStructure`, opt-in Studio structure helpers that
+  group a translatable type's documents into a pane per locale instead of listing
+  every translation alongside its source. The structure tool's layout belongs to
+  `structureTool()` in the Studio config, so these are composed in rather than
+  applied by the plugin.
+
+  Clarifies the translation status UI:
+  - Each locale now shows an explicit state — Not translated, Translating…, Ready
+    to import, or Imported — instead of a progress bar that could only ever read
+    0% or 100%, where 0% meant both "never translated" and "in progress".
+  - The Translate button stays disabled and reads "Translating…" while a run is
+    outstanding, so it cannot be enqueued twice.
+  - The 10-second status poll no longer raises a toast on every tick; only a
+    refresh the user asked for reports back.
+  - The imported counter reads "N of M imported" against the configured locales.
+    It previously divided by the number of currently-ready translations, which
+    decays to zero as they are imported — producing "6/0".
+
+  **Behavior changes:**
+  - `autoPublish` and `autoPatchReferences` now default to `false`. Publishing
+    puts content in front of readers and cannot be undone by turning the switch
+    back off; reference patching edits documents you may consider finished. Set
+    either to `true` to keep the previous behavior. Auto-import and auto-refresh
+    still default to on, so translations continue to land without extra clicks.
+  - **Auto-import no longer re-imports translations that were already complete
+    when the dialog opened.** It fired for anything the API reported as ready,
+    so reopening the Translate dialog silently re-imported every locale in turn,
+    rewriting the translated documents and discarding edits made to them. It now
+    applies only to translations that complete while the dialog is open, which is
+    what "Auto-import when complete" describes. Translating again resets that
+    baseline, so a fresh run still imports.
+  - **Patch References no longer writes to published documents.** It resolved the
+    translated document through `findLatestDraft`, which returns the published
+    document when no draft exists — the normal state for an already-published
+    translation — and patched that id, putting rewritten references live with no
+    review step. It now seeds a draft from the published state and patches that,
+    matching how internationalized-array imports already behave. The patch also
+    no longer includes system fields (`_id`, `_rev`, `_createdAt`, `_updatedAt`).
+
+## 3.1.3
+
+### Patch Changes
+
+- Updated dependencies [[`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9)]:
+  - generaltranslation@9.1.1
+
+## 3.1.2
+
+### Patch Changes
+
+- Updated dependencies [[`bd961d1`](https://github.com/generaltranslation/gt/commit/bd961d1474547f7c6d470583c1b1190dce0112ca)]:
+  - generaltranslation@9.1.0
+
+## 3.1.1
+
+### Patch Changes
+
+- [#2006](https://github.com/generaltranslation/gt/pull/2006) [`8b1a01f`](https://github.com/generaltranslation/gt/commit/8b1a01f33168c90d5124d5987ddec08d5e8d47d4) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Fix a Studio crash when `locales` repeats a locale or includes the source locale
+
+  `gtPlugin` built the `supportedLanguages` list as `[sourceLocale, ...locales]`
+  without deduplicating, so a config like `{sourceLocale: 'en-US', locales:
+['de-DE', 'en-US', ...]}` — the shape you get from spreading `gt.config.json` —
+  registered `en-US` twice with `@sanity/document-internationalization`.
+
+  That duplicate made the Translations menu list the locale twice and offset every
+  language after it in `sanity-plugin-internationalized-array`, whose reorder
+  effect then rewrote the translations array on every render and crashed the
+  Studio with "Maximum update depth exceeded". It also produced duplicate
+  initial-value template ids for each translatable document type.
+
+  `locales` is now normalized to unique translation targets with the source locale
+  removed.
+
+## 3.1.0
+
+### Minor Changes
+
+- [#1997](https://github.com/generaltranslation/gt/pull/1997) [`d614ee0`](https://github.com/generaltranslation/gt/commit/d614ee07336c8dbad539f7c95403a704d621d83c) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add opt-in preservation of human-edited translations. With the new **Save local edits** toggle enabled, the translations Sanity already holds are uploaded to General Translation before a translation run, so content whose source text did not change keeps its existing wording instead of being regenerated. Translated documents (via `translation.metadata`, preferring drafts) and internationalized-array locale values are both covered.
+
+  The toggle is off by default and shows an explanation before it can be enabled — turning it on means local content overwrites whatever General Translation holds for that source version, including a completed translation that has not been imported yet. Its initial state can be set with the `preserveExistingTranslations` plugin option.
+
+  Also adds a **Save Local Edits** action, which uploads the translations already in Sanity (seeding source files as needed) without enqueueing a translation, and a **Retranslate from scratch** option in the Translate All dialog for deliberately regenerating translations — the plugin previously had no way to force a retranslation.
+
+### Patch Changes
+
+- [#1889](https://github.com/generaltranslation/gt/pull/1889) [`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b) Thanks [@bgub](https://github.com/bgub)! - Allow `awaitJobs()` to poll job IDs directly and reuse that shared polling implementation for CLI and Sanity project setup.
+
+- Updated dependencies [[`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b)]:
+  - generaltranslation@9.0.5
+
 ## 3.0.0
 
 ### Major Changes

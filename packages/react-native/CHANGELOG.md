@@ -1,5 +1,123 @@
 # gt-react-native
 
+## 11.1.12
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.1.12
+
+## 11.1.11
+
+### Patch Changes
+
+- Updated dependencies [[`53b2100`](https://github.com/generaltranslation/gt/commit/53b2100abe824b81d3c2d0a3acaf7201c77da87c), [`bb08d8c`](https://github.com/generaltranslation/gt/commit/bb08d8cc5df87c71dd2a31416087821dbae38aa8)]:
+  - @generaltranslation/react-core@11.1.11
+  - @generaltranslation/format@0.1.7
+  - generaltranslation@9.1.6
+  - gt-i18n@1.0.16
+  - @generaltranslation/supported-locales@2.1.19
+
+## 11.1.10
+
+### Patch Changes
+
+- Updated dependencies [[`d0ae632`](https://github.com/generaltranslation/gt/commit/d0ae632ac0cd53600f6b893c23754dde06fbe808)]:
+  - @generaltranslation/format@0.1.6
+  - generaltranslation@9.1.5
+  - gt-i18n@1.0.15
+  - @generaltranslation/react-core@11.1.10
+  - @generaltranslation/supported-locales@2.1.18
+
+## 11.1.9
+
+### Patch Changes
+
+- [#2086](https://github.com/generaltranslation/gt/pull/2086) [`45da777`](https://github.com/generaltranslation/gt/commit/45da777854560bc33ce0cb5a1b487fd7217443d2) Thanks [@eoinest](https://github.com/eoinest)! - Add an opt-in `forcePolyfills` Babel plugin option to bypass FormatJS locale matching for selected polyfills. Capability detection remains the default, `excludePolyfills` takes precedence, and existing normal or forced imports are not duplicated.
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.1.9
+
+## 11.1.8
+
+### Patch Changes
+
+- Updated dependencies [[`6607925`](https://github.com/generaltranslation/gt/commit/660792523b15d2e43e9752ea599e5229c1b45bc7)]:
+  - generaltranslation@9.1.4
+  - @generaltranslation/react-core@11.1.8
+  - gt-i18n@1.0.14
+  - @generaltranslation/supported-locales@2.1.17
+
+## 11.1.7
+
+### Patch Changes
+
+- [#2074](https://github.com/generaltranslation/gt/pull/2074) [`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8) Thanks [@eoinest](https://github.com/eoinest)! - Migrate the package license from FSL-1.1-ALv2 to MIT.
+
+- Updated dependencies [[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)]:
+  - @generaltranslation/format@0.1.5
+  - @generaltranslation/react-core@11.1.7
+  - @generaltranslation/supported-locales@2.1.16
+  - generaltranslation@9.1.3
+  - gt-i18n@1.0.13
+
+## 11.1.6
+
+### Patch Changes
+
+- Updated dependencies [[`b00b93e`](https://github.com/generaltranslation/gt/commit/b00b93eb3b830b8528ef3dbd5f503ff76d1b338a)]:
+  - generaltranslation@9.1.2
+  - gt-i18n@1.0.12
+  - @generaltranslation/react-core@11.1.6
+  - @generaltranslation/supported-locales@2.1.15
+
+## 11.1.5
+
+### Patch Changes
+
+- Updated dependencies [[`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9)]:
+  - generaltranslation@9.1.1
+  - @generaltranslation/react-core@11.1.5
+  - gt-i18n@1.0.11
+  - @generaltranslation/supported-locales@2.1.14
+
+## 11.1.4
+
+### Patch Changes
+
+- Updated dependencies [[`bd961d1`](https://github.com/generaltranslation/gt/commit/bd961d1474547f7c6d470583c1b1190dce0112ca)]:
+  - generaltranslation@9.1.0
+  - gt-i18n@1.0.10
+  - @generaltranslation/react-core@11.1.4
+  - @generaltranslation/supported-locales@2.1.13
+
+## 11.1.3
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.1.3
+
+## 11.1.2
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.1.2
+
+## 11.1.1
+
+### Patch Changes
+
+- [#1936](https://github.com/generaltranslation/gt/pull/1936) [`f51dde0`](https://github.com/generaltranslation/gt/commit/f51dde0fa13920a962a869ec947ec0a30bd68025) Thanks [@JoshKappler](https://github.com/JoshKappler)! - Guard the native module lookup on web so importing gt-react-native no longer crashes web renders (react-native-web and Expo web). The native TurboModule now resolves to null on web, where the existing Platform.OS guards already handle it, and native platforms are unchanged.
+
+- Updated dependencies [[`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b)]:
+  - generaltranslation@9.0.5
+  - gt-i18n@1.0.9
+  - @generaltranslation/react-core@11.1.1
+  - @generaltranslation/supported-locales@2.1.12
+  - @generaltranslation/format@0.1.4
+
 ## 11.1.0
 
 ### Patch Changes

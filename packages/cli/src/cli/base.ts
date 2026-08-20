@@ -16,6 +16,7 @@ import {
   promptGlobPatterns,
 } from '../console/logging.js';
 import { logger } from '../console/logger.js';
+import { lottieTranslateError } from '../console/index.js';
 import { parseGlobPatterns } from '../console/promptParsing.js';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -58,6 +59,7 @@ import {
 import { clearWarnings } from '../state/translateWarnings.js';
 import { displayTranslateSummary } from '../console/displayTranslateSummary.js';
 import updateConfig from '../fs/config/updateConfig.js';
+import { loadConfig } from '../fs/config/loadConfig.js';
 import { createLoadTranslationsFile } from '../fs/createLoadTranslationsFile.js';
 import { saveLocalEdits } from '../api/saveLocalEdits.js';
 import processSharedStaticAssets, {
@@ -75,6 +77,8 @@ import { splitMintlifyLanguageRefs } from '../utils/splitMintlifyLanguageRefs.js
 import { runMergeDriver, type MergeDriverName } from '../git/mergeDrivers.js';
 import { setupGitMergeDrivers } from '../git/setupMergeDrivers.js';
 import { warnReactPackageCompatibility } from '../utils/reactPackageCompatibility.js';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { setupViteSPA } from '../setup/setupViteSPA.js';
 
 const ID_COMPATIBILITY_WARNING_COMMANDS = new Set([
   'download',
@@ -85,6 +89,33 @@ const ID_COMPATIBILITY_WARNING_COMMANDS = new Set([
   'translate',
   'validate',
 ]);
+const workspaceRootSetupError = createDiagnosticMessage({
+  source: 'gt',
+  severity: 'Error',
+  whatHappened: 'The setup wizard cannot run from a monorepo workspace root',
+  why: 'GT must be configured in the specific app you want to localize',
+  fix: "Change to that app's directory and rerun `npx gt@latest`",
+});
+const electronSetupError = createDiagnosticMessage({
+  source: 'gt',
+  severity: 'Error',
+  whatHappened:
+    'The automatic setup wizard is not ready for Electron applications',
+  docsUrl: 'https://generaltranslation.com/docs/react',
+});
+
+async function exitIfUnsupportedSetupTarget(): Promise<void> {
+  const packageJson = await searchForPackageJson();
+  if (packageJson && isPackageInstalled('electron', packageJson, false, true)) {
+    logErrorAndExit(electronSetupError);
+  }
+  if (
+    fs.existsSync(path.join(process.cwd(), 'pnpm-workspace.yaml')) ||
+    packageJson?.workspaces
+  ) {
+    logErrorAndExit(workspaceRootSetupError);
+  }
+}
 
 export type UploadOptions = {
   config?: string;
@@ -454,6 +485,13 @@ export class BaseCLI {
     await processSharedStaticAssets(settings);
 
     if (!settings.stageTranslations) {
+      // Lottie translations finish asynchronously server-side (layout
+      // refinement runs after the translation job completes), so the immediate
+      // translate flow would try to download them before they're ready. Only
+      // the stage + download flow supports them.
+      if (settings.files?.resolvedPaths.lottie?.length) {
+        return logErrorAndExit(lottieTranslateError);
+      }
       const results = await handleStage(
         initOptions,
         settings,
@@ -596,6 +634,7 @@ export class BaseCLI {
         findFilepath(['gt.config.json'])
       )
       .action(async (options: SetupOptions) => {
+        await exitIfUnsupportedSetupTarget();
         const settings = await generateSettings(options);
         displayHeader('Running setup wizard...');
 
@@ -641,9 +680,11 @@ export class BaseCLI {
               : DEFAULT_TRANSLATIONS_DIR;
 
           const defaultsDescription =
-            framework.type === 'react'
-              ? `${library} & GTProvider, ${frameworkDisplayName}, Files saved locally in ${defaultTranslationsDir}`
-              : `Files saved locally in ${defaultTranslationsDir}`;
+            framework.name === 'vite'
+              ? `${library} & initializeGTSPA, ${frameworkDisplayName}, Files saved locally in ${defaultTranslationsDir}`
+              : framework.type === 'react'
+                ? `${library} & GTProvider, ${frameworkDisplayName}, Files saved locally in ${defaultTranslationsDir}`
+                : `Files saved locally in ${defaultTranslationsDir}`;
 
           // Ask if user wants to use defaults
           const useDefaults = await promptConfirm({
@@ -658,7 +699,10 @@ export class BaseCLI {
             const wrap = useDefaults
               ? true
               : await promptConfirm({
-                  message: `Would you like to install ${library} and add the GTProvider? See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`,
+                  message:
+                    framework.name === 'vite'
+                      ? `Would you like to install ${library} and configure initializeGTSPA? See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`
+                      : `Would you like to install ${library} and add the GTProvider? See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`,
                   defaultValue: true,
                 });
 
@@ -699,6 +743,7 @@ export class BaseCLI {
         'Configure your project for General Translation. This will create a gt.config.json file in your codebase.'
       )
       .action(async () => {
+        await exitIfUnsupportedSetupTarget();
         displayHeader('Configuring project...');
 
         logger.info(
@@ -732,7 +777,12 @@ export class BaseCLI {
     useDefaults: boolean = false,
     isVite: boolean = false
   ): Promise<void> {
-    const { defaultLocale, locales } = await getDesiredLocales(); // Locales should still be asked for even if using defaults
+    const configFilepath =
+      !isVite && fs.existsSync('src/gt.config.json')
+        ? 'src/gt.config.json'
+        : 'gt.config.json';
+    const existingConfig = loadConfig(configFilepath);
+    const { defaultLocale, locales } = await getDesiredLocales(existingConfig);
 
     const packageJson = await searchForPackageJson();
 
@@ -777,7 +827,7 @@ export class BaseCLI {
     const finalTranslationsDir =
       translationsDir?.trim() || defaultTranslationsDir;
 
-    if (isUsingGT && !usingCDN) {
+    if (isUsingGT && !usingCDN && !isVite) {
       // Create loadTranslations.js file for local translations
       await createLoadTranslationsFile(
         process.cwd(),
@@ -834,16 +884,12 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
       };
     }
 
-    let configFilepath = 'gt.config.json';
-    if (fs.existsSync('src/gt.config.json')) {
-      configFilepath = 'src/gt.config.json';
-    }
-
     // Create gt.config.json
     await createOrUpdateConfig(configFilepath, {
       defaultLocale,
       locales,
       files: Object.keys(files).length > 0 ? files : undefined,
+      framework: isVite ? 'vite' : undefined,
       publish: isUsingGT && usingCDN,
     });
 
@@ -853,12 +899,22 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
       )} to customize your translation setup. Docs: https://generaltranslation.com/docs/cli/reference/config`
     );
 
+    if (ranReactSetup && isVite) {
+      await setupViteSPA({
+        appDirectory: process.cwd(),
+        configFilepath,
+        defaultLocale,
+        locales,
+        translationsDir: usingCDN ? undefined : finalTranslationsDir,
+      });
+    }
+
     // Install gt if not installed
     const isCLIInstalled = packageJson
       ? isPackageInstalled('gt', packageJson, true, true)
       : true; // if no package.json, we can't install it
 
-    if (!isCLIInstalled) {
+    if (!isCLIInstalled && !(isUsingGT && isVite)) {
       const packageManager = await getPackageManager();
       const spinner = logger.createSpinner();
       spinner.start(
@@ -869,7 +925,7 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
     }
 
     // Set credentials
-    if (!areCredentialsSet()) {
+    if ((!isVite || !isUsingGT || usingCDN) && !areCredentialsSet()) {
       const loginQuestion = useDefaults
         ? true
         : await promptConfirm({
@@ -891,7 +947,7 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
               defaultValue: 'all',
             });
         const credentials = await retrieveCredentials(settings, keyType);
-        await setCredentials(credentials, settings.framework);
+        await setCredentials(credentials, isVite ? 'vite' : settings.framework);
       }
     }
   }

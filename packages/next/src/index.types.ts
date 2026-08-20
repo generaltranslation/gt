@@ -355,10 +355,11 @@ export const RegionSelector: typeof _RegionSelector = () => {
 };
 
 /**
- * Resolve the user's locale from a Next Pages Router server-side request.
+ * Read the active locale resolved by Next.js internationalized routing.
  *
  * @param context - The GetServerSideProps context for the request.
- * @returns The resolved locale.
+ * @returns The active Next.js locale, or the legacy request-detected locale
+ * when Next.js does not provide one.
  */
 export function parseLocale<
   Params extends ParsedUrlQuery = ParsedUrlQuery,

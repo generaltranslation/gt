@@ -14,6 +14,7 @@ import {
   conflictingConfigurationBuildError,
   createBadFilepathWarning,
   createGTCompilerUnresolvedWarning,
+  createNextI18nConfigMismatchWarning,
   devApiKeyIncludedInProductionError,
   invalidCanonicalLocalesError,
   invalidLocalesError,
@@ -46,6 +47,7 @@ import {
   cacheComponentsMissingLoadTranslationsError,
 } from './errors/cacheComponents';
 import { getRuntimeCredentials } from './setup/runtimeCredentials';
+import { nextLocaleCookieName } from './utils/cookies';
 
 type AutoderiveConfig = boolean | { jsx?: boolean; strings?: boolean };
 
@@ -74,6 +76,7 @@ type InternalGTConfigProps = BaseWithGTConfigProps &
     _dictionaryFileType?: string;
     _cacheComponentsEnabled?: boolean;
     _disableDevHotReload?: boolean;
+    // _tagIds is declared on BaseWithGTConfigProps (the public props).
   };
 
 type WithGTConfigValue<T> =
@@ -95,6 +98,50 @@ function isThenable(value: unknown): value is PromiseLike<NextConfig> {
     value !== null &&
     'then' in value &&
     typeof value.then === 'function'
+  );
+}
+
+function getNextI18nConfigMismatches(
+  gtConfig: Partial<InternalGTConfigProps>,
+  nextI18n: NonNullable<NextConfig['i18n']>
+): string[] {
+  const mismatches: string[] = [];
+
+  if (
+    gtConfig.defaultLocale !== undefined &&
+    gtConfig.defaultLocale !== nextI18n.defaultLocale
+  ) {
+    mismatches.push(
+      `defaultLocale: GT has ${JSON.stringify(gtConfig.defaultLocale)}; Next.js has ${JSON.stringify(nextI18n.defaultLocale)}`
+    );
+  }
+
+  if (
+    gtConfig.locales !== undefined &&
+    !haveSameLocales(
+      gtConfig.defaultLocale === undefined
+        ? gtConfig.locales
+        : [gtConfig.defaultLocale, ...gtConfig.locales],
+      nextI18n.locales
+    )
+  ) {
+    mismatches.push(
+      `locales: GT has ${JSON.stringify(gtConfig.locales)}; Next.js has ${JSON.stringify(nextI18n.locales)}`
+    );
+  }
+
+  return mismatches;
+}
+
+function haveSameLocales(
+  gtLocales: readonly string[],
+  nextLocales: readonly string[]
+): boolean {
+  const gtLocaleSet = new Set(gtLocales);
+  const nextLocaleSet = new Set(nextLocales);
+  return (
+    gtLocaleSet.size === nextLocaleSet.size &&
+    Array.from(gtLocaleSet).every((locale) => nextLocaleSet.has(locale))
   );
 }
 
@@ -191,6 +238,15 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     console.error('Error reading GT config file:', error);
   }
 
+  // This warning intentionally compares Next.js i18n against explicit values
+  // from the GT config file. Inline props use the conflict and merge paths below.
+  const nextI18nConfigMismatches = internalNextConfig.i18n
+    ? getNextI18nConfigMismatches(loadedConfig, internalNextConfig.i18n)
+    : [];
+  if (nextI18nConfigMismatches.length > 0) {
+    console.warn(createNextI18nConfigMismatchWarning(nextI18nConfigMismatches));
+  }
+
   // ---------- LOAD ENVIRONMENT VARIABLES ---------- //
 
   const { projectId, apiKey, devApiKey } = getRuntimeCredentials();
@@ -257,9 +313,19 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   // ---------- MERGE CONFIGS ---------- //
 
   // Merge cookie and header names
+  const nextLocaleDetectionEnabled =
+    internalNextConfig.i18n !== null &&
+    internalNextConfig.i18n !== undefined &&
+    internalNextConfig.i18n.localeDetection !== false;
   const mergedHeadersAndCookies = {
     ...defaultWithGTConfigProps.headersAndCookies,
     ...props.headersAndCookies,
+    // Next.js internationalized routing only reads its standard preference
+    // cookie. Keep the user's i18n config untouched while aligning GT's
+    // client-side locale persistence with the router.
+    ...(nextLocaleDetectionEnabled && {
+      localeCookieName: nextLocaleCookieName,
+    }),
   };
 
   // Merge compiler options
@@ -615,6 +681,7 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     },
     _versionId: mergedConfig._versionId,
     _disableDevHotReload: mergedConfig._disableDevHotReload,
+    _tagIds: mergedConfig._tagIds,
   };
 
   const { type: _type, ...compilerOptions } =

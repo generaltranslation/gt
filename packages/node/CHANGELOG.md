@@ -1,5 +1,71 @@
 # gt-node
 
+## 1.0.17
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.1.6
+  - gt-i18n@1.0.16
+
+## 1.0.16
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.1.5
+  - gt-i18n@1.0.15
+
+## 1.0.15
+
+### Patch Changes
+
+- Updated dependencies [[`6607925`](https://github.com/generaltranslation/gt/commit/660792523b15d2e43e9752ea599e5229c1b45bc7)]:
+  - generaltranslation@9.1.4
+  - gt-i18n@1.0.14
+
+## 1.0.14
+
+### Patch Changes
+
+- [#2074](https://github.com/generaltranslation/gt/pull/2074) [`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8) Thanks [@eoinest](https://github.com/eoinest)! - Migrate the package license from FSL-1.1-ALv2 to MIT.
+
+- Updated dependencies [[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)]:
+  - generaltranslation@9.1.3
+  - gt-i18n@1.0.13
+
+## 1.0.13
+
+### Patch Changes
+
+- Updated dependencies [[`b00b93e`](https://github.com/generaltranslation/gt/commit/b00b93eb3b830b8528ef3dbd5f503ff76d1b338a)]:
+  - generaltranslation@9.1.2
+  - gt-i18n@1.0.12
+
+## 1.0.12
+
+### Patch Changes
+
+- Updated dependencies [[`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9)]:
+  - generaltranslation@9.1.1
+  - gt-i18n@1.0.11
+
+## 1.0.11
+
+### Patch Changes
+
+- Updated dependencies [[`bd961d1`](https://github.com/generaltranslation/gt/commit/bd961d1474547f7c6d470583c1b1190dce0112ca)]:
+  - generaltranslation@9.1.0
+  - gt-i18n@1.0.10
+
+## 1.0.10
+
+### Patch Changes
+
+- Updated dependencies [[`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b)]:
+  - generaltranslation@9.0.5
+  - gt-i18n@1.0.9
+
 ## 1.0.9
 
 ### Patch Changes

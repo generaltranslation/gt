@@ -1,5 +1,77 @@
 # gtx-cli
 
+## 2.16.8
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.16.8
+
+## 2.16.7
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.16.7
+
+## 2.16.6
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.16.6
+
+## 2.16.5
+
+### Patch Changes
+
+- [#2074](https://github.com/generaltranslation/gt/pull/2074) [`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8) Thanks [@eoinest](https://github.com/eoinest)! - Migrate the package license from FSL-1.1-ALv2 to MIT.
+
+- Updated dependencies [[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)]:
+  - gt@2.16.5
+
+## 2.16.4
+
+### Patch Changes
+
+- Updated dependencies []:
+  - gt@2.16.4
+
+## 2.16.3
+
+### Patch Changes
+
+- Updated dependencies [[`79e6836`](https://github.com/generaltranslation/gt/commit/79e6836349191220ee8f5848b5e6ff287246f162)]:
+  - gt@2.16.3
+
+## 2.16.2
+
+### Patch Changes
+
+- Updated dependencies [[`c1fd8a0`](https://github.com/generaltranslation/gt/commit/c1fd8a05c5325775e3ec8104e2d48d35da864de6)]:
+  - gt@2.16.2
+
+## 2.16.1
+
+### Patch Changes
+
+- Updated dependencies [[`60d154c`](https://github.com/generaltranslation/gt/commit/60d154c851d6ae0510447b7d66ec5e12104f0d1b), [`8066d0a`](https://github.com/generaltranslation/gt/commit/8066d0ad64d4f9c3475a935e6bbb27d9f7389b20)]:
+  - gt@2.16.1
+
+## 2.16.0
+
+### Patch Changes
+
+- Updated dependencies [[`bd961d1`](https://github.com/generaltranslation/gt/commit/bd961d1474547f7c6d470583c1b1190dce0112ca)]:
+  - gt@2.16.0
+
+## 2.15.0
+
+### Patch Changes
+
+- Updated dependencies [[`f2c196b`](https://github.com/generaltranslation/gt/commit/f2c196b6d37c4abb646961826f2a2154f8cabbc8), [`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b), [`7cb2dfe`](https://github.com/generaltranslation/gt/commit/7cb2dfef077ee642f211996b0d729844a18258a8)]:
+  - gt@2.15.0
+
 ## 2.14.66
 
 ### Patch Changes

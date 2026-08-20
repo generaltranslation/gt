@@ -30,6 +30,18 @@ describe('createDiagnosticMessage', () => {
     );
   });
 
+  it('preserves proper nouns in combined why clauses', () => {
+    expect(
+      createDiagnosticMessage({
+        whatHappened:
+          'Next.js internationalized routing does not match the GT config file',
+        why: 'Next.js may select a locale that GT is not configured to translate',
+      })
+    ).toBe(
+      'Next.js internationalized routing does not match the GT config file because Next.js may select a locale that GT is not configured to translate.'
+    );
+  });
+
   it('formats details and docs links', () => {
     expect(
       createDiagnosticMessage({

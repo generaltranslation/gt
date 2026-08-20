@@ -8,7 +8,7 @@ import React, {
   ReactNode,
 } from 'react';
 import { SanityDocument, useSchema } from 'sanity';
-import { useToast } from '@sanity/ui';
+import { useToast } from '@sanity/ui/toast';
 import { useClient } from '../hooks/useClient';
 import { useSecrets } from '../hooks/useSecrets';
 import {
@@ -22,10 +22,13 @@ import { getTranslationStrategy } from '../translation/strategy';
 import { uploadFiles } from '../translation/uploadFiles';
 import { initProject } from '../translation/initProject';
 import { createJobs } from '../translation/createJobs';
+import { captureExistingTranslations } from '../translation/captureExistingTranslations';
+import { collectExistingTranslations } from '../translation/collectExistingTranslations';
+import { uploadTranslations } from '../translation/uploadTranslations';
 import { downloadTranslations } from '../translation/downloadTranslations';
 import { checkTranslationStatus } from '../translation/checkTranslationStatus';
 import { importDocument } from '../translation/importDocument';
-import { resolveRefs } from '../sanity-api/resolveRefs';
+import { commitResolvedRefs, resolveRefs } from '../sanity-api/resolveRefs';
 import { findTranslatedDocumentForLocale } from '../sanity-api/findDocuments';
 import {
   getReadyFilesForImport,
@@ -33,9 +36,16 @@ import {
   ImportOptions,
 } from '../utils/importUtils';
 import { processBatch } from '../utils/batchProcessor';
-import { publishTranslations } from '../sanity-api/publishDocuments';
+import {
+  publishTranslations,
+  TRANSLATION_DOCS_FOR_PUBLISH_QUERY,
+} from '../sanity-api/publishDocuments';
 import { getLocales } from '../adapter/getLocales';
-import type { FileProperties, TranslationStatus } from '../adapter/types';
+import type {
+  FileProperties,
+  TranslationPreferences,
+  TranslationStatus,
+} from '../adapter/types';
 import {
   createStableTranslationKey,
   createTranslationStatusKey,
@@ -43,6 +53,11 @@ import {
   getDocumentPublishedId,
   getPublishedId,
 } from '../utils/documentIds';
+import {
+  getPreferencesStorageKey,
+  readPreferences,
+  writePreferences,
+} from '../utils/translationPreferences';
 
 interface ImportProgress {
   current: number;
@@ -65,6 +80,16 @@ type TranslationDocumentMetadata = {
   translationDocs?: { docId?: string }[];
 };
 
+export type TranslateAllOptions = {
+  /**
+   * Discard the translations GT already holds and retranslate from source.
+   * Also skips capturing Studio-side edits — capturing them would immediately
+   * be reused as the baseline, which is the opposite of what a retranslate is
+   * asking for.
+   */
+  force?: boolean;
+};
+
 interface TranslationsContextType {
   // State
   isBusy: boolean;
@@ -74,12 +99,25 @@ interface TranslationsContextType {
   autoImport: boolean;
   autoPatchReferences: boolean;
   autoPublish: boolean;
+  preserveExistingTranslations: boolean;
   loadingDocuments: boolean;
   importProgress: ImportProgress;
   importedTranslations: Set<string>;
   existingTranslations: Set<string>;
   downloadStatus: DownloadStatus;
   translationStatuses: Map<string, TranslationStatus>;
+  /**
+   * Status keys enqueued this session and not yet reported ready. Non-empty
+   * means General Translation is still working, which nothing else in the
+   * status map distinguishes from "never translated" — both read as 0%.
+   */
+  pendingTranslations: Set<string>;
+  /**
+   * Status keys currently being written to Sanity. `importProgress` only counts
+   * how many are done, so without this a locale row cannot tell "queued in this
+   * import" from "not part of it" while a bulk import runs.
+   */
+  importingTranslations: Set<string>;
   isRefreshing: boolean;
   loadingSecrets: boolean;
   secrets: Secrets | null;
@@ -96,10 +134,12 @@ interface TranslationsContextType {
   setAutoImport: (value: boolean) => void;
   setAutoPatchReferences: (value: boolean) => void;
   setAutoPublish: (value: boolean) => void;
-  handleTranslateAll: () => Promise<void>;
+  setPreserveExistingTranslations: (value: boolean) => void;
+  handleTranslateAll: (options?: TranslateAllOptions) => Promise<void>;
+  handleUploadExistingTranslations: () => Promise<void>;
   handleImportAll: () => Promise<void>;
   handleImportMissing: () => Promise<void>;
-  handleRefreshAll: () => Promise<void>;
+  handleRefreshAll: (options?: { silent?: boolean }) => Promise<void>;
   handleImportDocument: (
     documentId: string,
     versionId: string,
@@ -176,10 +216,6 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   const [isBusy, setIsBusy] = useState(false);
   const [documents, setDocuments] = useState<SanityDocument[]>([]);
   const [locales, setLocales] = useState<TranslationLocale[]>([]);
-  const [autoRefresh, setAutoRefresh] = useState(true);
-  const [autoImport, setAutoImport] = useState(false);
-  const [autoPatchReferences, setAutoPatchReferences] = useState(false);
-  const [autoPublish, setAutoPublish] = useState(false);
   const [loadingDocuments, setLoadingDocuments] = useState(false);
   const [importProgress, setImportProgress] = useState<ImportProgress>({
     current: 0,
@@ -201,6 +237,12 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   const [translationStatuses, setTranslationStatuses] = useState<
     Map<string, TranslationStatus>
   >(new Map());
+  const [pendingTranslations, setPendingTranslations] = useState<Set<string>>(
+    new Set()
+  );
+  const [importingTranslations, setImportingTranslations] = useState<
+    Set<string>
+  >(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const client = useClient();
@@ -211,6 +253,48 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   );
   const [uploadedVersions, setUploadedVersions] = useState<Map<string, string>>(
     () => readUploadedVersions(uploadedVersionsStorageKey)
+  );
+  const preferencesStorageKey = getPreferencesStorageKey(projectId, dataset);
+  const [preferences, setPreferences] = useState<TranslationPreferences>(() =>
+    readPreferences(preferencesStorageKey, pluginConfig.getPreferences())
+  );
+  const {
+    autoRefresh,
+    autoImport,
+    autoPatchReferences,
+    autoPublish,
+    preserveExistingTranslations,
+  } = preferences;
+
+  // Persist from the event handler rather than an effect: these only ever
+  // change in response to the user flipping a switch.
+  const setPreference = useCallback(
+    (key: keyof TranslationPreferences, value: boolean) => {
+      const next = { ...preferences, [key]: value };
+      setPreferences(next);
+      writePreferences(preferencesStorageKey, next);
+    },
+    [preferences, preferencesStorageKey]
+  );
+  const setAutoRefresh = useCallback(
+    (value: boolean) => setPreference('autoRefresh', value),
+    [setPreference]
+  );
+  const setAutoImport = useCallback(
+    (value: boolean) => setPreference('autoImport', value),
+    [setPreference]
+  );
+  const setAutoPatchReferences = useCallback(
+    (value: boolean) => setPreference('autoPatchReferences', value),
+    [setPreference]
+  );
+  const setAutoPublish = useCallback(
+    (value: boolean) => setPreference('autoPublish', value),
+    [setPreference]
+  );
+  const setPreserveExistingTranslations = useCallback(
+    (value: boolean) => setPreference('preserveExistingTranslations', value),
+    [setPreference]
   );
   const schema = useSchema();
   const translationContext: TranslationFunctionContext = { client, schema };
@@ -348,81 +432,234 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     }
   }, [documents, locales, client]);
 
-  const handleTranslateAll = useCallback(async () => {
-    if (!secrets || documents.length === 0) return;
-
-    setIsBusy(true);
-
-    try {
-      const availableLocaleIds = locales
-        .filter((locale) => locale.enabled !== false)
-        .map((locale) => locale.localeId);
-
-      const transformedDocuments = documents
+  const serializeSourceDocuments = useCallback(
+    () =>
+      documents
         .map((doc) => {
           const { [pluginConfig.getLanguageField()]: _, ...cleanDoc } = doc;
           const baseLanguage = pluginConfig.getSourceLocale();
           try {
             const strategy = getTranslationStrategy(doc);
-            const serialized = strategy.serialize(
-              cleanDoc as typeof doc,
-              schema,
-              baseLanguage
-            );
             return {
               info: {
                 documentId: getDocumentPublishedId(doc),
                 versionId: doc._rev,
               },
-              serializedDocument: serialized,
+              serializedDocument: strategy.serialize(
+                cleanDoc as typeof doc,
+                schema,
+                baseLanguage
+              ),
             };
           } catch (error) {
             console.error('Error transforming document', doc._id, error);
           }
           return null;
         })
-        .filter((doc) => doc !== null);
+        .filter((doc) => doc !== null),
+    [documents, schema]
+  );
 
-      const uploadResult = await uploadFiles(transformedDocuments, secrets);
-      await initProject(uploadResult, { timeout: 600 }, secrets);
-      await createJobs(uploadResult, availableLocaleIds, secrets);
+  const handleTranslateAll = useCallback(
+    async ({ force = false }: TranslateAllOptions = {}) => {
+      if (!secrets || documents.length === 0) return;
 
-      // Pin the _rev each file was uploaded under. GT status queries need the
-      // exact uploaded versionId, and the live _rev moves on (in-place array
-      // imports bump it), so status lookups go through getVersionId instead.
-      // Persisted to sessionStorage so the pins survive a page refresh.
-      const nextUploadedVersions = new Map(uploadedVersions);
-      for (const { info } of transformedDocuments) {
-        if (info.versionId) {
-          nextUploadedVersions.set(info.documentId, info.versionId);
+      setIsBusy(true);
+
+      try {
+        const availableLocaleIds = locales
+          .filter((locale) => locale.enabled !== false)
+          .map((locale) => locale.localeId);
+
+        // Send any Studio-side edits to existing translations back to GT first,
+        // pinned to the source version they belong to. This has to happen before
+        // the upload below, which makes the new revision the latest version and
+        // would leave the edits attached to nothing. Best-effort: a failure here
+        // costs edit preservation, and must not block the translation itself.
+        if (preserveExistingTranslations && !force) {
+          try {
+            const captured = await captureExistingTranslations({
+              documents,
+              localeIds: availableLocaleIds,
+              secrets,
+              context: translationContext,
+              branchId,
+            });
+            if (captured.capturedCount > 0) {
+              toast.push({
+                title: `Preserved ${captured.capturedCount} existing translation(s) across ${captured.documentCount} document(s)`,
+                status: 'info',
+                closable: true,
+              });
+            }
+          } catch (error) {
+            console.error(
+              'Could not preserve existing translations. Continuing — edits made to translated documents may be overwritten by this run.',
+              error
+            );
+            toast.push({
+              title:
+                'Existing translations could not be preserved. Translation is continuing, but edits made to translated documents may be overwritten.',
+              status: 'warning',
+              closable: true,
+            });
+          }
         }
-      }
-      writeUploadedVersions(uploadedVersionsStorageKey, nextUploadedVersions);
-      setUploadedVersions(nextUploadedVersions);
 
-      toast.push({
-        title: `Translation tasks created for ${documents.length} documents`,
-        status: 'success',
-        closable: true,
-      });
-    } catch {
+        const transformedDocuments = serializeSourceDocuments();
+
+        const uploadResult = await uploadFiles(transformedDocuments, secrets);
+        await initProject(uploadResult, { timeout: 600 }, secrets);
+        await createJobs(uploadResult, availableLocaleIds, secrets, force);
+
+        // Pin the _rev each file was uploaded under. GT status queries need the
+        // exact uploaded versionId, and the live _rev moves on (in-place array
+        // imports bump it), so status lookups go through getVersionId instead.
+        // Persisted to sessionStorage so the pins survive a page refresh.
+        const nextUploadedVersions = new Map(uploadedVersions);
+        for (const { info } of transformedDocuments) {
+          if (info.versionId) {
+            nextUploadedVersions.set(info.documentId, info.versionId);
+          }
+        }
+        writeUploadedVersions(uploadedVersionsStorageKey, nextUploadedVersions);
+        setUploadedVersions(nextUploadedVersions);
+
+        const enqueuedStatusKeys = new Set<string>();
+        const enqueuedStableKeys = new Set<string>();
+        for (const { info } of transformedDocuments) {
+          for (const localeId of availableLocaleIds) {
+            enqueuedStatusKeys.add(
+              createTranslationStatusKey(
+                branchId,
+                info.documentId,
+                info.versionId ?? '',
+                localeId
+              )
+            );
+            enqueuedStableKeys.add(
+              createStableTranslationKey(branchId, info.documentId, localeId)
+            );
+          }
+        }
+
+        // A key already downloaded this session is skipped by the status
+        // query, so re-translating one would leave it outstanding forever:
+        // enqueued as pending, never reported ready, never cleared. Drop the
+        // markers for everything being retranslated — the previous download is
+        // superseded by the run starting now.
+        setDownloadStatus((prev) => ({
+          downloaded: new Set(
+            [...prev.downloaded].filter(
+              (key) =>
+                !enqueuedStatusKeys.has(key) && !enqueuedStableKeys.has(key)
+            )
+          ),
+          failed: new Set(
+            [...prev.failed].filter(
+              (key) =>
+                !enqueuedStatusKeys.has(key) && !enqueuedStableKeys.has(key)
+            )
+          ),
+          skipped: new Set(
+            [...prev.skipped].filter(
+              (key) =>
+                !enqueuedStatusKeys.has(key) && !enqueuedStableKeys.has(key)
+            )
+          ),
+        }));
+
+        // Everything just enqueued is outstanding until a refresh reports it
+        // ready. Without this the UI cannot tell "General Translation is
+        // working on it" from "never translated" — both sit at 0%.
+        setPendingTranslations(
+          (prev) => new Set([...prev, ...enqueuedStatusKeys])
+        );
+
+        toast.push({
+          title: force
+            ? `Retranslating ${documents.length} documents from scratch`
+            : `Translation tasks created for ${documents.length} documents`,
+          status: 'success',
+          closable: true,
+        });
+      } catch {
+        toast.push({
+          title:
+            'Translation tasks could not be created. No documents were changed. Try again or check the console for details.',
+          status: 'error',
+          closable: true,
+        });
+      } finally {
+        setIsBusy(false);
+      }
+    },
+    [
+      secrets,
+      documents,
+      locales,
+      schema,
+      client,
+      branchId,
+      preserveExistingTranslations,
+      serializeSourceDocuments,
+      uploadedVersions,
+      uploadedVersionsStorageKey,
+    ]
+  );
+
+  const handleUploadExistingTranslations = useCallback(async () => {
+    if (!secrets || documents.length === 0) return;
+
+    setIsBusy(true);
+    try {
+      const availableLocaleIds = locales
+        .filter((locale) => locale.enabled !== false)
+        .map((locale) => locale.localeId);
+
+      const transformedDocuments = serializeSourceDocuments();
+
+      // Seed the source files first. uploadTranslations requires the source to
+      // exist, and this action exists for projects whose translations predate
+      // General Translation, where no source has been uploaded yet. Enqueueing
+      // is deliberately skipped so nothing is retranslated.
+      await uploadFiles(transformedDocuments, secrets);
+
+      const existing = await collectExistingTranslations(
+        documents,
+        availableLocaleIds,
+        translationContext
+      );
+      const withTranslations = transformedDocuments
+        .map((document) => ({
+          ...document,
+          translations: existing.get(document.info.documentId) ?? [],
+        }))
+        .filter((document) => document.translations.length > 0);
+
+      const response = await uploadTranslations(withTranslations, secrets);
+      const count = response?.uploadedFiles.length ?? 0;
+
       toast.push({
         title:
-          'Translation tasks could not be created. No documents were changed. Try again or check the console for details.',
+          count > 0
+            ? `Uploaded ${count} existing translation(s) across ${withTranslations.length} document(s)`
+            : 'No existing translations found to upload',
+        status: count > 0 ? 'success' : 'warning',
+        closable: true,
+      });
+    } catch (error) {
+      console.error('Error uploading existing translations:', error);
+      toast.push({
+        title:
+          'Existing translations could not be uploaded. No documents were changed. Try again or check the console for details.',
         status: 'error',
         closable: true,
       });
     } finally {
       setIsBusy(false);
     }
-  }, [
-    secrets,
-    documents,
-    locales,
-    schema,
-    uploadedVersions,
-    uploadedVersionsStorageKey,
-  ]);
+  }, [secrets, documents, locales, client, schema, serializeSourceDocuments]);
 
   const handleImportAll = useCallback(async () => {
     if (!secrets || documents.length === 0 || !branchId) return;
@@ -430,7 +667,9 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     setIsBusy(true);
 
     try {
-      const readyFiles = await getReadyFilesForImport(translationStatuses);
+      const readyFiles = await getReadyFilesForImport(translationStatuses, {
+        onSelectedKeys: (keys) => setImportingTranslations(new Set(keys)),
+      });
 
       if (readyFiles.length === 0) {
         toast.push({
@@ -493,6 +732,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } finally {
       setIsBusy(false);
       setImportProgress({ current: 0, total: 0, isImporting: false });
+      setImportingTranslations(new Set());
     }
   }, [
     secrets,
@@ -567,6 +807,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       );
 
       const readyFiles = await getReadyFilesForImport(translationStatuses, {
+        onSelectedKeys: (keys) => setImportingTranslations(new Set(keys)),
         filterReadyFiles: (_key, status) =>
           !existingTranslations.has(
             createStableTranslationKey(
@@ -639,6 +880,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     } finally {
       setIsBusy(false);
       setImportProgress({ current: 0, total: 0, isImporting: false });
+      setImportingTranslations(new Set());
     }
   }, [
     secrets,
@@ -663,36 +905,41 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     [secrets]
   );
 
-  const handleRefreshAll = useCallback(async () => {
-    if (!secrets || documents.length === 0 || !branchId) return;
-    setIsRefreshing(true);
+  // `silent` suppresses the success toast. The poll runs every 10 seconds, so
+  // only a refresh the user asked for should announce itself.
+  const handleRefreshAll = useCallback(
+    async ({ silent = false }: { silent?: boolean } = {}) => {
+      if (!secrets || documents.length === 0 || !branchId) return;
+      setIsRefreshing(true);
 
-    try {
-      const availableLocaleIds = locales
-        .filter((locale) => locale.enabled !== false)
-        .map((locale) => locale.localeId);
+      try {
+        const availableLocaleIds = locales
+          .filter((locale) => locale.enabled !== false)
+          .map((locale) => locale.localeId);
 
-      const fileQueryData: FileProperties[] = [];
-      for (const doc of documents) {
-        for (const localeId of availableLocaleIds) {
-          const documentId = getDocumentPublishedId(doc);
-          fileQueryData.push({
-            versionId: getVersionId(doc),
-            fileId: documentId,
-            branchId: branchId,
-            locale: localeId,
-          });
+        const fileQueryData: FileProperties[] = [];
+        for (const doc of documents) {
+          for (const localeId of availableLocaleIds) {
+            const documentId = getDocumentPublishedId(doc);
+            fileQueryData.push({
+              versionId: getVersionId(doc),
+              fileId: documentId,
+              branchId: branchId,
+              locale: localeId,
+            });
+          }
         }
-      }
 
-      const readyTranslations = await checkTranslationStatus(
-        fileQueryData,
-        downloadStatusRef.current,
-        secrets
-      );
+        const readyTranslations = await checkTranslationStatus(
+          fileQueryData,
+          downloadStatusRef.current,
+          secrets
+        );
 
-      setTranslationStatuses(() => {
-        const newStatuses = new Map();
+        // Built here rather than inside an updater: it derives from the
+        // response, not from previous state, and a state updater has to stay
+        // pure — React may run it more than once.
+        const newStatuses = new Map<string, TranslationStatus>();
 
         for (const doc of documents) {
           for (const localeId of availableLocaleIds) {
@@ -729,26 +976,39 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
           }
         }
 
-        return newStatuses;
-      });
+        setTranslationStatuses(newStatuses);
 
-      toast.push({
-        title: `Refreshed status for ${documents.length} document(s)`,
-        status: 'success',
-        closable: true,
-      });
-    } catch (error) {
-      console.error('Error refreshing translation status:', error);
-      toast.push({
-        title:
-          'Translation status could not be refreshed. Try again before importing.',
-        status: 'error',
-        closable: true,
-      });
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [secrets, documents, locales, branchId, getVersionId]);
+        // A translation that has arrived is no longer outstanding.
+        setPendingTranslations((prev) => {
+          if (prev.size === 0) return prev;
+          const next = new Set(prev);
+          for (const [key, status] of newStatuses) {
+            if (status.isReady) next.delete(key);
+          }
+          return next.size === prev.size ? prev : next;
+        });
+
+        if (!silent) {
+          toast.push({
+            title: `Refreshed status for ${documents.length} document(s)`,
+            status: 'success',
+            closable: true,
+          });
+        }
+      } catch (error) {
+        console.error('Error refreshing translation status:', error);
+        toast.push({
+          title:
+            'Translation status could not be refreshed. Try again before importing.',
+          status: 'error',
+          closable: true,
+        });
+      } finally {
+        setIsRefreshing(false);
+      }
+    },
+    [secrets, documents, locales, branchId, getVersionId]
+  );
 
   const handleImportDocument = useCallback(
     async (documentId: string, versionId: string, localeId: string) => {
@@ -908,14 +1168,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
           );
 
           if (resolvedDoc !== translatedDoc) {
-            const mutation = {
-              patch: {
-                id: translatedDoc._id,
-                set: resolvedDoc,
-              },
-            };
-
-            await client.mutate([mutation]);
+            await commitResolvedRefs(translatedDoc, resolvedDoc, client);
             return { patched: true, doc: translatedDoc, localeId };
           }
           return { patched: false, doc: translatedDoc, localeId };
@@ -970,7 +1223,6 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     setIsBusy(true);
 
     try {
-      const sourceLocale = pluginConfig.getSourceLocale();
       const sourceDocumentIds = documents.map(getDocumentPublishedId);
       const publishedDocumentIds = await client.fetch(
         `*[_id in $sourceDocumentIds]._id`,
@@ -987,22 +1239,11 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         return 0;
       }
 
-      const query = `*[
-        _type == 'translation.metadata' &&
-        translations[language == $sourceLocale][0].value._ref in $publishedDocumentIds
-      ] {
-        'sourceDocId': translations[language == $sourceLocale][0].value._ref,
-        'translationDocs': translations[language != $sourceLocale && defined(value._ref)]{
-          _key,
-          'docId': value._ref
-        }
-      }`;
-
       const translationMetadata = await client.fetch<
         TranslationDocumentMetadata[]
-      >(query, {
-        sourceLocale,
+      >(TRANSLATION_DOCS_FOR_PUBLISH_QUERY, {
         publishedDocumentIds,
+        sourceDocumentIds,
       });
 
       const translationDocIds = new Set<string>();
@@ -1014,7 +1255,9 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
         });
       });
 
-      if (translationDocIds.size === 0) {
+      const publishableIds = Array.from(translationDocIds);
+
+      if (publishableIds.length === 0) {
         toast.push({
           title: 'No translation documents found to publish',
           status: 'warning',
@@ -1024,7 +1267,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       }
 
       const translatedDocumentIds = await publishTranslations(
-        Array.from(translationDocIds),
+        publishableIds,
         client
       );
 
@@ -1073,7 +1316,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
       !loadingDocuments &&
       branchId
     ) {
-      handleRefreshAll();
+      handleRefreshAll({ silent: true });
     }
   }, [
     documents,
@@ -1088,7 +1331,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     if (!autoRefresh || documents.length === 0 || !secrets) return;
 
     const interval = setInterval(async () => {
-      await handleRefreshAll();
+      await handleRefreshAll({ silent: true });
     }, 10000);
 
     return () => clearInterval(interval);
@@ -1113,12 +1356,15 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     autoImport,
     autoPatchReferences,
     autoPublish,
+    preserveExistingTranslations,
     loadingDocuments,
     importProgress,
     importedTranslations,
     existingTranslations,
     downloadStatus,
     translationStatuses,
+    pendingTranslations,
+    importingTranslations,
     isRefreshing,
     loadingSecrets,
     secrets,
@@ -1131,7 +1377,9 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
     setAutoImport,
     setAutoPatchReferences,
     setAutoPublish,
+    setPreserveExistingTranslations,
     handleTranslateAll,
+    handleUploadExistingTranslations,
     handleImportAll,
     handleImportMissing,
     handleRefreshAll,

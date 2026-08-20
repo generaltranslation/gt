@@ -8,6 +8,7 @@ import {
 } from 'sanity';
 import { randomKey } from '../../../utils/randomKey';
 import { getPublishedId } from '../../../utils/documentIds';
+import { TRANSLATION_METADATA_TYPE } from '../../../utils/translationMetadata';
 
 type TranslationReference = KeyedObject & {
   _type: 'internationalizedArrayReferenceValue';
@@ -42,7 +43,7 @@ export const createTranslationMetadata = (
   }
 
   return client.create({
-    _type: 'translation.metadata',
+    _type: TRANSLATION_METADATA_TYPE,
     translations: [baseLangEntry],
   });
 };

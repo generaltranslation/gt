@@ -1,5 +1,69 @@
 # generaltranslation
 
+## 9.1.6
+
+### Patch Changes
+
+- Updated dependencies [[`bb08d8c`](https://github.com/generaltranslation/gt/commit/bb08d8cc5df87c71dd2a31416087821dbae38aa8)]:
+  - @generaltranslation/format@0.1.7
+
+## 9.1.5
+
+### Patch Changes
+
+- Updated dependencies [[`d0ae632`](https://github.com/generaltranslation/gt/commit/d0ae632ac0cd53600f6b893c23754dde06fbe808)]:
+  - @generaltranslation/format@0.1.6
+
+## 9.1.4
+
+### Patch Changes
+
+- [#2059](https://github.com/generaltranslation/gt/pull/2059) [`6607925`](https://github.com/generaltranslation/gt/commit/660792523b15d2e43e9752ea599e5229c1b45bc7) Thanks [@rupaut98](https://github.com/rupaut98)! - Fall back to `plural` or `other` for the `zero` and `one` plural categories.
+
+## 9.1.3
+
+### Patch Changes
+
+- [#2074](https://github.com/generaltranslation/gt/pull/2074) [`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8) Thanks [@eoinest](https://github.com/eoinest)! - Migrate the package license from FSL-1.1-ALv2 to MIT.
+
+- Updated dependencies [[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)]:
+  - @generaltranslation/format@0.1.5
+  - @generaltranslation/icu@0.1.2
+
+## 9.1.2
+
+### Patch Changes
+
+- [#2017](https://github.com/generaltranslation/gt/pull/2017) [`b00b93e`](https://github.com/generaltranslation/gt/commit/b00b93eb3b830b8528ef3dbd5f503ff76d1b338a) Thanks [@logflash](https://github.com/logflash)! - Add opt-in `<T>` id-tagging (`_tagIds`). When enabled via `withGTConfig(config, { _tagIds: true })`, each `<T>`/`<Tx>` exposes its published-translation hash as a `data-_gt-hash` attribute, so tooling (localized replay, in-context QA) can map a rendered DOM node back to its published translation. Off by default; apps not using it pay nothing. No effect on `gt()` strings, and DOM-only — skipped on React Native.
+
+  Span injection is kept to the minimum necessary: when a `<T>` renders a single host element the attribute is placed directly on that element (no wrapper), so `<T>` keeps copying the source 1:1 and stays valid inside parents that reject a `<span>` (e.g. `<tr>`/`<select>`/`<ul>`). A layout-neutral `display:contents` span is injected only when there is no element to carry the attribute (bare text or a fragment).
+
+## 9.1.1
+
+### Patch Changes
+
+- [#2018](https://github.com/generaltranslation/gt/pull/2018) [`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9) Thanks [@eoinest](https://github.com/eoinest)! - Preserve proper-noun casing when diagnostic reasons are combined into user-facing messages.
+
+## 9.1.0
+
+### Minor Changes
+
+- [#1994](https://github.com/generaltranslation/gt/pull/1994) [`bd961d1`](https://github.com/generaltranslation/gt/commit/bd961d1474547f7c6d470583c1b1190dce0112ca) Thanks [@logflash](https://github.com/logflash)! - Add Lottie file support and project font syncing.
+  - Support `.lottie` files as a new `LOTTIE` file format. Lottie bundles are binary (zip), so their content is carried base64-encoded end-to-end — including existing translated `.lottie` targets on `gt upload` — and skips the UTF-8 encode/decode and text merge paths (new `isBinaryFileFormat` / `BINARY_FILE_FORMATS` exports). Lottie translations are processed asynchronously and require the `gt stage` + `gt download` flow, so `gt translate` now exits with an error pointing users there when a project has Lottie files and staging isn't enabled. (As before, enabling staging makes `gt translate` download staged results rather than translating inline.)
+  - Reject `.lottie` files that use After Effects expressions (executable code): the upload fails and names every offending file, since expression-driven text can't be translated safely.
+  - Add `GT.uploadFonts` and a `fonts` config option (include/exclude globs) so project fonts are synced to the API before translating formats that need them (including during `gt stage`, so async Lottie jobs get the real fonts). Globs resolve from the project root. Font sync is idempotent and non-fatal on failure.
+  - Keep staged lock entries staged until every configured locale has downloaded, and only require `_versionId` for `gt download` when an inline GTJSON template is part of the download and config IDs aren't omitted (staged downloads resolve versions from `gt-lock.json`, file-only projects never have a `_versionId`, and `omitConfigIds` projects use the GTJSON's own content-derived version).
+
+## 9.0.5
+
+### Patch Changes
+
+- [#1889](https://github.com/generaltranslation/gt/pull/1889) [`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b) Thanks [@bgub](https://github.com/bgub)! - Allow `awaitJobs()` to poll job IDs directly and reuse that shared polling implementation for CLI and Sanity project setup.
+
+- Updated dependencies [[`e55aaa9`](https://github.com/generaltranslation/gt/commit/e55aaa9cfdf6dfe3ab96d0eea927f255b66cd20d)]:
+  - @generaltranslation/icu@0.1.1
+  - @generaltranslation/format@0.1.4
+
 ## 9.0.4
 
 ### Patch Changes

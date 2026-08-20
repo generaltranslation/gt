@@ -1,5 +1,151 @@
 # gt-next
 
+## 11.1.12
+
+### Patch Changes
+
+- [#2105](https://github.com/generaltranslation/gt/pull/2105) [`ff8a52e`](https://github.com/generaltranslation/gt/commit/ff8a52e4e318aab9ca3f8a6c21958d2643b09996) Thanks [@eoinest](https://github.com/eoinest)! - Use a browser navigation when switching back to an unprefixed default locale.
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.1.12
+  - gt-react@11.1.12
+
+## 11.1.11
+
+### Patch Changes
+
+- Updated dependencies [[`53b2100`](https://github.com/generaltranslation/gt/commit/53b2100abe824b81d3c2d0a3acaf7201c77da87c), [`bb08d8c`](https://github.com/generaltranslation/gt/commit/bb08d8cc5df87c71dd2a31416087821dbae38aa8)]:
+  - @generaltranslation/react-core@11.1.11
+  - @generaltranslation/format@0.1.7
+  - gt-react@11.1.11
+  - @generaltranslation/compiler@1.3.41
+  - generaltranslation@9.1.6
+  - gt-i18n@1.0.16
+
+## 11.1.10
+
+### Patch Changes
+
+- Updated dependencies [[`d0ae632`](https://github.com/generaltranslation/gt/commit/d0ae632ac0cd53600f6b893c23754dde06fbe808)]:
+  - @generaltranslation/format@0.1.6
+  - @generaltranslation/compiler@1.3.40
+  - generaltranslation@9.1.5
+  - gt-i18n@1.0.15
+  - @generaltranslation/react-core@11.1.10
+  - gt-react@11.1.10
+
+## 11.1.9
+
+### Patch Changes
+
+- [#2104](https://github.com/generaltranslation/gt/pull/2104) [`524dd7d`](https://github.com/generaltranslation/gt/commit/524dd7d3e1b6657ce953b24db5fef1b6c6157c19) Thanks [@archie-mckenzie](https://github.com/archie-mckenzie)! - Stop adding the deprecated `experimental.rootParams` option on Next.js 16.3 and newer.
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.1.9
+  - gt-react@11.1.9
+
+## 11.1.8
+
+### Patch Changes
+
+- Updated dependencies [[`6607925`](https://github.com/generaltranslation/gt/commit/660792523b15d2e43e9752ea599e5229c1b45bc7)]:
+  - generaltranslation@9.1.4
+  - @generaltranslation/react-core@11.1.8
+  - @generaltranslation/compiler@1.3.39
+  - gt-i18n@1.0.14
+  - gt-react@11.1.8
+
+## 11.1.7
+
+### Patch Changes
+
+- [#2074](https://github.com/generaltranslation/gt/pull/2074) [`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8) Thanks [@eoinest](https://github.com/eoinest)! - Migrate the package license from FSL-1.1-ALv2 to MIT.
+
+- Updated dependencies [[`240a65e`](https://github.com/generaltranslation/gt/commit/240a65e9305a74cdfd4df07537fb4cfae8a2eac8)]:
+  - @generaltranslation/compiler@1.3.38
+  - @generaltranslation/format@0.1.5
+  - @generaltranslation/react-core@11.1.7
+  - generaltranslation@9.1.3
+  - gt-i18n@1.0.13
+  - gt-react@11.1.7
+
+## 11.1.6
+
+### Patch Changes
+
+- [#2017](https://github.com/generaltranslation/gt/pull/2017) [`b00b93e`](https://github.com/generaltranslation/gt/commit/b00b93eb3b830b8528ef3dbd5f503ff76d1b338a) Thanks [@logflash](https://github.com/logflash)! - Add opt-in `<T>` id-tagging (`_tagIds`). When enabled via `withGTConfig(config, { _tagIds: true })`, each `<T>`/`<Tx>` exposes its published-translation hash as a `data-_gt-hash` attribute, so tooling (localized replay, in-context QA) can map a rendered DOM node back to its published translation. Off by default; apps not using it pay nothing. No effect on `gt()` strings, and DOM-only — skipped on React Native.
+
+  Span injection is kept to the minimum necessary: when a `<T>` renders a single host element the attribute is placed directly on that element (no wrapper), so `<T>` keeps copying the source 1:1 and stays valid inside parents that reject a `<span>` (e.g. `<tr>`/`<select>`/`<ul>`). A layout-neutral `display:contents` span is injected only when there is no element to carry the attribute (bare text or a fragment).
+
+- Updated dependencies [[`b00b93e`](https://github.com/generaltranslation/gt/commit/b00b93eb3b830b8528ef3dbd5f503ff76d1b338a)]:
+  - generaltranslation@9.1.2
+  - gt-i18n@1.0.12
+  - @generaltranslation/react-core@11.1.6
+  - @generaltranslation/compiler@1.3.37
+  - gt-react@11.1.6
+
+## 11.1.5
+
+### Patch Changes
+
+- [#2018](https://github.com/generaltranslation/gt/pull/2018) [`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9) Thanks [@eoinest](https://github.com/eoinest)! - Preserve proper-noun casing when diagnostic reasons are combined into user-facing messages.
+
+- Updated dependencies [[`9b3eb92`](https://github.com/generaltranslation/gt/commit/9b3eb92fb1a916b5f47d15f51a9f39f6c62840a9)]:
+  - generaltranslation@9.1.1
+  - @generaltranslation/react-core@11.1.5
+  - @generaltranslation/compiler@1.3.36
+  - gt-i18n@1.0.11
+  - gt-react@11.1.5
+
+## 11.1.4
+
+### Patch Changes
+
+- [#2005](https://github.com/generaltranslation/gt/pull/2005) [`6264532`](https://github.com/generaltranslation/gt/commit/62645327e27a6b55cf55c58201dd43a63bf31f53) Thanks [@eoinest](https://github.com/eoinest)! - Warn when locale settings in the GT config file differ from Next.js internationalized routing configuration.
+
+- Updated dependencies [[`bd961d1`](https://github.com/generaltranslation/gt/commit/bd961d1474547f7c6d470583c1b1190dce0112ca)]:
+  - generaltranslation@9.1.0
+  - @generaltranslation/compiler@1.3.35
+  - gt-i18n@1.0.10
+  - gt-react@11.1.4
+  - @generaltranslation/react-core@11.1.4
+
+## 11.1.3
+
+### Patch Changes
+
+- [#2004](https://github.com/generaltranslation/gt/pull/2004) [`e54d376`](https://github.com/generaltranslation/gt/commit/e54d376ab948e4081ddc372487918a9155fcb8b2) Thanks [@eoinest](https://github.com/eoinest)! - Delegate Pages Router locale routing and active-locale resolution to Next.js internationalized routing. Pages data wrappers prefer `context.locale` while retaining the previous request detector as a compatibility fallback, `withGTConfig` selects `NEXT_LOCALE` when Next.js locale detection is enabled, and applications can navigate with the Pages Router locale option through the existing provider reload callback. App Router middleware and `GTProvider` behavior are unchanged.
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.1.3
+  - gt-react@11.1.3
+
+## 11.1.2
+
+### Patch Changes
+
+- [#2002](https://github.com/generaltranslation/gt/pull/2002) [`11d9a36`](https://github.com/generaltranslation/gt/commit/11d9a36eca6346b5dde2b1f5cb394a4abde625ad) Thanks [@eoinest](https://github.com/eoinest)! - Resolve the server build in worker runtimes by prioritizing `workerd` and `worker` export conditions ahead of `browser`, while preserving the React Server Components entrypoint's precedence.
+
+- Updated dependencies [[`06fbf97`](https://github.com/generaltranslation/gt/commit/06fbf97731178d9892ab0e02b81acb62df8e38c5)]:
+  - gt-react@11.1.2
+  - @generaltranslation/react-core@11.1.2
+
+## 11.1.1
+
+### Patch Changes
+
+- [#1988](https://github.com/generaltranslation/gt/pull/1988) [`9cd206f`](https://github.com/generaltranslation/gt/commit/9cd206fd7708e7abdad7a14687b086dca658fb23) Thanks [@bgub](https://github.com/bgub)! - Stop inlining server-only configuration and arbitrary metadata into client bundles.
+
+- [#1986](https://github.com/generaltranslation/gt/pull/1986) [`ef82647`](https://github.com/generaltranslation/gt/commit/ef82647a7c776f7cd0b994fe56a35b81885ece03) Thanks [@bgub](https://github.com/bgub)! - Split browser, request, middleware, and loader diagnostics into runtime-specific modules.
+
+- Updated dependencies [[`132f34f`](https://github.com/generaltranslation/gt/commit/132f34f6512b0fd91b0bc33ef89df0896e41b1fc), [`29cd6b8`](https://github.com/generaltranslation/gt/commit/29cd6b89f3587d3253cfadde6bec925d8697324b)]:
+  - gt-react@11.1.1
+  - generaltranslation@9.0.5
+  - @generaltranslation/compiler@1.3.34
+  - gt-i18n@1.0.9
+  - @generaltranslation/react-core@11.1.1
+  - @generaltranslation/format@0.1.4
+
 ## 11.1.0
 
 ### Patch Changes

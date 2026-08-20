@@ -1,5 +1,11 @@
 import { SanityClient, SanityDocument } from 'sanity';
 import { pluginConfig } from '../adapter/core';
+import { getPublishedId } from '../utils/documentIds';
+import {
+  metadataTranslationRef,
+  metadataTranslations,
+  TRANSLATION_METADATA_TYPE,
+} from '../utils/translationMetadata';
 
 interface Reference {
   _type: 'reference';
@@ -38,6 +44,44 @@ export async function resolveRefs(
     client
   );
   return updateDocumentReferences(doc, translatedRefs);
+}
+
+/**
+ * Write resolved references back without publishing them.
+ *
+ * `findLatestDraft` falls back to the published document when no draft exists,
+ * which is the normal state for a translation that has already been published.
+ * Patching that id would put the rewritten references live with no review step,
+ * so seed a draft from the published state and patch that instead — the same
+ * approach `internationalizedArrayPatch` takes.
+ *
+ * System fields are dropped from the patch: only the resolved content should be
+ * written, and `_id` / `_rev` are the document's identity, not its content.
+ */
+export async function commitResolvedRefs(
+  translatedDoc: SanityDocument,
+  resolvedDoc: SanityDocument,
+  client: SanityClient
+): Promise<void> {
+  const {
+    _id: _resolvedId,
+    _rev: _resolvedRev,
+    _createdAt: _resolvedCreatedAt,
+    _updatedAt: _resolvedUpdatedAt,
+    ...changes
+  } = resolvedDoc;
+
+  if (translatedDoc._id.startsWith('drafts.')) {
+    await client.patch(translatedDoc._id).set(changes).commit();
+    return;
+  }
+
+  const draftId = `drafts.${getPublishedId(translatedDoc._id)}`;
+  await client
+    .transaction()
+    .createIfNotExists({ ...translatedDoc, _id: draftId })
+    .patch(draftId, (patch) => patch.set(changes))
+    .commit();
 }
 
 /**
@@ -88,9 +132,9 @@ async function resolveTranslatedReferences(
   const sourceLocale = pluginConfig.getSourceLocale();
 
   // Optimized GROQ query that directly returns only the needed translation pairs
-  const query = `*[_type == "translation.metadata" && count(translations[language == $sourceLocale && value._ref in $refIds]) > 0] {
-    "originalRef": translations[language == $sourceLocale][0].value._ref,
-    "translatedRefs": translations[language == $locale].value._ref
+  const query = `*[_type == "${TRANSLATION_METADATA_TYPE}" && count(${metadataTranslations('== $sourceLocale', 'value._ref in $refIds')}) > 0] {
+    "originalRef": ${metadataTranslationRef('$sourceLocale')},
+    "translatedRefs": ${metadataTranslations('== $locale')}.value._ref
   }[defined(originalRef) && count(translatedRefs) > 0]`;
 
   const translationPairs: { originalRef: string; translatedRefs: string[] }[] =

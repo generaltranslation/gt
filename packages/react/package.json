@@ -1,6 +1,6 @@
 {
   "name": "gt-react",
-  "version": "11.1.0",
+  "version": "11.1.12",
   "description": "A React library for automatic internationalization.",
   "main": "./dist/index.server.cjs",
   "module": "./dist/index.server.mjs",
@@ -40,7 +40,7 @@
     "url": "git+https://github.com/generaltranslation/gt.git"
   },
   "author": "General Translation, Inc.",
-  "license": "FSL-1.1-ALv2",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/generaltranslation/gt/issues"
   },
@@ -64,6 +64,28 @@
           "default": "./dist/index.rsc.mjs"
         },
         "default": "./dist/index.rsc.mjs"
+      },
+      "workerd": {
+        "require": {
+          "types": "./dist/index.types.d.cts",
+          "default": "./dist/index.server.cjs"
+        },
+        "import": {
+          "types": "./dist/index.types.d.mts",
+          "default": "./dist/index.server.mjs"
+        },
+        "default": "./dist/index.server.mjs"
+      },
+      "worker": {
+        "require": {
+          "types": "./dist/index.types.d.cts",
+          "default": "./dist/index.server.cjs"
+        },
+        "import": {
+          "types": "./dist/index.types.d.mts",
+          "default": "./dist/index.server.mjs"
+        },
+        "default": "./dist/index.server.mjs"
       },
       "browser": {
         "require": {

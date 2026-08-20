@@ -1,7 +1,46 @@
+import {
+  _prepareApprovedLocales,
+  type ApprovedLocales,
+} from './approvedLocales';
 import { CustomMapping } from './customLocaleMapping';
 import { _isSameDialect } from './isSameDialect';
-import { _isSameLanguage } from './isSameLanguage';
+import { _getLocaleLanguage } from './isSameLanguage';
 import { _isValidLocale } from './isValidLocale';
+
+/**
+ * Same contract as _requiresTranslation, with the approved-locales work
+ * hoisted into a prepared scope. An undefined scope means no approved-locales
+ * restriction.
+ * @internal
+ */
+export function _requiresTranslationWithScope(
+  sourceLocale: string,
+  targetLocale: string,
+  approvedScope: ApprovedLocales | undefined,
+  customMapping?: CustomMapping
+): boolean {
+  // If codes are invalid
+  if (
+    (approvedScope && !approvedScope.allValid) ||
+    !_isValidLocale(sourceLocale, customMapping) ||
+    !_isValidLocale(targetLocale, customMapping)
+  ) {
+    return false;
+  }
+
+  // Check if the languages are identical, if so, a translation is not required
+  if (_isSameDialect(sourceLocale, targetLocale)) {
+    return false;
+  }
+
+  // Check that the target locale is within the approvedLocales scope, if not, a translation is not required
+  // Language-level rather than dialect-level membership so we can show different dialects as a fallback
+  if (!approvedScope) return true;
+  const targetLanguage = _getLocaleLanguage(targetLocale);
+  return (
+    targetLanguage !== undefined && approvedScope.languages.has(targetLanguage)
+  );
+}
 
 /**
  * Given a target locale and a source locale, determines whether a translation is required
@@ -15,27 +54,12 @@ export function _requiresTranslation(
   approvedLocales?: string[],
   customMapping?: CustomMapping
 ): boolean {
-  // If codes are invalid
-  const localesToValidate = [
+  return _requiresTranslationWithScope(
     sourceLocale,
     targetLocale,
-    ...(approvedLocales ?? []),
-  ];
-  if (
-    localesToValidate.some((locale) => !_isValidLocale(locale, customMapping))
-  ) {
-    return false;
-  }
-
-  // Check if the languages are identical, if so, a translation is not required
-  if (_isSameDialect(sourceLocale, targetLocale)) {
-    return false;
-  }
-
-  // Check that the target locale is within the approvedLocales scope, if not, a translation is not required
-  // isSameLanguage rather than checkTwoLocalesAreSameDialect so we can show different dialects as a fallback
-  if (!approvedLocales) return true;
-  return approvedLocales.some((approvedLocale) =>
-    _isSameLanguage(targetLocale, approvedLocale)
+    approvedLocales
+      ? _prepareApprovedLocales(approvedLocales, customMapping)
+      : undefined,
+    customMapping
   );
 }

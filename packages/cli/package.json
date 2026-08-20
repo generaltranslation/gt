@@ -1,6 +1,6 @@
 {
   "name": "gt",
-  "version": "2.14.66",
+  "version": "2.16.8",
   "main": "dist/index.js",
   "bin": "bin/main.js",
   "files": [
@@ -101,7 +101,7 @@
     "cli"
   ],
   "author": "General Translation, Inc.",
-  "license": "FSL-1.1-ALv2",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/generaltranslation/gt/issues"
   },
@@ -124,6 +124,7 @@
     "enhanced-resolve": "^5.18.3",
     "esbuild": "^0.27.2",
     "fast-glob": "^3.3.3",
+    "fflate": "^0.8.2",
     "fast-json-stable-stringify": "^2.1.0",
     "generaltranslation": "workspace:*",
     "gt-remark": "workspace:*",

@@ -4,29 +4,24 @@
  * Add cleanup function to cancel async tasks
  */
 
-import { useMemo, useState, useCallback, useEffect } from 'react';
-import {
-  Stack,
-  Text,
-  Card,
-  Button,
-  Grid,
-  Flex,
-  Switch,
-  Tooltip,
-  useToast,
-} from '@sanity/ui';
+import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import { Stack, Text, Card, Button, Grid, Flex, Switch } from '@sanity/ui';
+import { Tooltip } from '@sanity/ui/tooltip';
+import { useToast } from '@sanity/ui/toast';
 import { pluginConfig } from '../../adapter/core';
+import { SaveLocalTranslationsDialog } from '../page/SaveLocalTranslationsDialog';
+import { DebugInfoDialog } from '../page/DebugInfoDialog';
+import { version as PACKAGE_VERSION } from '../../../package.json';
 import { useTranslations } from '../TranslationsProvider';
 import { LanguageStatus } from '../shared/LanguageStatus';
+import { resolveLanguageStatusState } from '../../utils/languageStatusState';
 import { LocaleCheckbox } from '../shared/LocaleCheckbox';
-import {
-  DownloadIcon,
-  LinkIcon,
-  PublishIcon,
-  RefreshIcon,
-  TranslateIcon,
-} from '@sanity/icons';
+import { DownloadIcon } from '@sanity/icons/Download';
+import { LinkIcon } from '@sanity/icons/Link';
+import { PublishIcon } from '@sanity/icons/Publish';
+import { RefreshIcon } from '@sanity/icons/Refresh';
+import { TranslateIcon } from '@sanity/icons/Translate';
+import { UploadIcon } from '@sanity/icons/Upload';
 import {
   createTranslationStatusKey,
   getDocumentPublishedId,
@@ -37,9 +32,12 @@ export const TranslationView = () => {
     documents,
     locales,
     translationStatuses,
+    pendingTranslations,
+    importingTranslations,
     branchId,
     isBusy,
     handleTranslateAll,
+    handleUploadExistingTranslations,
     handleImportDocument,
     handleRefreshAll,
     isRefreshing,
@@ -55,11 +53,16 @@ export const TranslationView = () => {
     setAutoPatchReferences,
     autoPublish,
     setAutoPublish,
+    preserveExistingTranslations,
+    setPreserveExistingTranslations,
     getVersionId,
   } = useTranslations();
 
   const [isImporting, setIsImporting] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isUploadingExisting, setIsUploadingExisting] = useState(false);
+  const [isSaveLocalDialogOpen, setIsSaveLocalDialogOpen] = useState(false);
+  const [isDebugInfoDialogOpen, setIsDebugInfoDialogOpen] = useState(false);
 
   const toast = useToast();
 
@@ -114,6 +117,43 @@ export const TranslationView = () => {
     return getVersionId(document);
   }, [document, getVersionId]);
 
+  // Translations that were already complete when this dialog opened. Auto-import
+  // means "import a translation that finishes while I am watching", so these are
+  // left alone: importing them would rewrite translated documents — discarding
+  // any edits made to them — every time the dialog is opened. Reset on Translate,
+  // so a fresh run's results are imported even for a locale that already had one.
+  const alreadyCompleteRef = useRef<Set<string> | null>(null);
+
+  const statusKeyFor = useCallback(
+    (localeId: string) =>
+      createTranslationStatusKey(
+        branchId,
+        documentId ?? '',
+        versionId ?? '',
+        localeId
+      ),
+    [branchId, documentId, versionId]
+  );
+
+  if (
+    alreadyCompleteRef.current === null &&
+    documentId &&
+    versionId &&
+    translationStatuses.size > 0
+  ) {
+    alreadyCompleteRef.current = new Set(
+      statusLocales
+        .map((locale) => statusKeyFor(locale.localeId))
+        .filter((key) => translationStatuses.get(key)?.isReady)
+    );
+  }
+
+  // The per-locale rows already read "Translating…"; this only guards the
+  // button against enqueueing the same run twice.
+  const isWaitingOnTranslations = statusLocales.some((locale) =>
+    pendingTranslations.has(statusKeyFor(locale.localeId))
+  );
+
   // Unified import functionality
   const handleImportTranslations = useCallback(
     async (options: { autoOnly?: boolean } = {}) => {
@@ -133,7 +173,8 @@ export const TranslationView = () => {
           locale.localeId
         );
         const status = translationStatuses.get(key);
-        return status?.isReady && !importedTranslations.has(key);
+        if (!status?.isReady || importedTranslations.has(key)) return false;
+        return !(autoOnly && alreadyCompleteRef.current?.has(key));
       });
 
       if (readyTranslations.length === 0) return;
@@ -182,13 +223,6 @@ export const TranslationView = () => {
     handleImportTranslations({ autoOnly: true });
   }, [handleImportTranslations]);
 
-  // Enable auto features on mount
-  useEffect(() => {
-    setAutoRefresh(true);
-    setAutoPatchReferences(true);
-    setAutoPublish(true);
-  }, [setAutoRefresh, setAutoPatchReferences, setAutoPublish]);
-
   // Locale toggle functionality
   const toggleLocale = useCallback(
     (localeId: string, shouldEnable: boolean) => {
@@ -232,15 +266,15 @@ export const TranslationView = () => {
   }
 
   return (
-    <Stack space={6} padding={4}>
+    <Stack gap={6} padding={4}>
       {/* Translate Section */}
-      <Stack space={4}>
+      <Stack gap={4}>
         <Text as='h2' weight='semibold' size={2}>
           Translate
         </Text>
 
         {/* Locale Selection */}
-        <Stack space={3}>
+        <Stack gap={3}>
           <Flex align='center' justify='space-between'>
             <Text weight='semibold' size={1}>
               {availableLocales.length === 1
@@ -256,7 +290,7 @@ export const TranslationView = () => {
             />
           </Flex>
 
-          <Grid columns={[1, 1, 2, 3]} gap={1}>
+          <Grid gridTemplateColumns={[1, 1, 2, 3]} gap={1}>
             {locales
               .filter(
                 (locale) => locale.localeId !== pluginConfig.getSourceLocale()
@@ -276,19 +310,32 @@ export const TranslationView = () => {
 
         <Button
           onClick={() => {
-            setAutoImport(true);
+            // A new run's results should import even for locales that already
+            // had a translation when the dialog opened.
+            alreadyCompleteRef.current = new Set();
             handleTranslateAll();
           }}
-          disabled={isBusy || !availableLocales.length}
+          disabled={
+            isBusy || isWaitingOnTranslations || !availableLocales.length
+          }
           icon={TranslateIcon}
-          text='Translate'
-          loading={isBusy}
+          text={isWaitingOnTranslations ? 'Translating…' : 'Translate'}
+          loading={(isBusy && !isUploadingExisting) || isWaitingOnTranslations}
         />
       </Stack>
 
+      <SaveLocalTranslationsDialog
+        isOpen={isSaveLocalDialogOpen}
+        onClose={() => setIsSaveLocalDialogOpen(false)}
+        onConfirm={() => {
+          setPreserveExistingTranslations(true);
+          setIsSaveLocalDialogOpen(false);
+        }}
+      />
+
       {/* Translation Status Section */}
       {documentId && versionId && statusLocales.length > 0 && (
-        <Stack space={4}>
+        <Stack gap={4}>
           <Flex align='center' justify='space-between'>
             <Text as='h2' weight='semibold' size={2}>
               Translation Status
@@ -308,7 +355,7 @@ export const TranslationView = () => {
                 icon={RefreshIcon}
                 text='Refresh'
                 loading={isRefreshing}
-                onClick={handleRefreshAll}
+                onClick={() => handleRefreshAll()}
                 disabled={isRefreshing || isBusy}
               />
             </Flex>
@@ -323,15 +370,18 @@ export const TranslationView = () => {
                 locale.localeId
               );
               const status = translationStatuses.get(key);
-              const progress = status?.progress || 0;
               const isImported = importedTranslations.has(key);
 
               return (
                 <LanguageStatus
                   key={key}
                   localeId={locale.localeId}
-                  progress={progress}
-                  isImported={isImported}
+                  state={resolveLanguageStatusState({
+                    status,
+                    isImported,
+                    isPending: pendingTranslations.has(key),
+                  })}
+                  isImporting={importingTranslations.has(key)}
                   importFile={async () => {
                     if (!isImported && status?.isReady) {
                       await handleImportDocument(
@@ -347,7 +397,40 @@ export const TranslationView = () => {
           </Card>
 
           {/* Import Controls */}
-          <Stack space={3}>
+          <Stack gap={3}>
+            <Flex gap={2} align='center' justify='flex-start'>
+              <Button
+                mode='ghost'
+                onClick={async () => {
+                  setIsUploadingExisting(true);
+                  try {
+                    await handleUploadExistingTranslations();
+                  } finally {
+                    setIsUploadingExisting(false);
+                  }
+                }}
+                disabled={isBusy || !availableLocales.length}
+                icon={UploadIcon}
+                text='Save Local Edits'
+                loading={isUploadingExisting}
+                style={{ minWidth: '180px' }}
+              />
+              <Flex gap={2} align='center'>
+                <Switch
+                  checked={preserveExistingTranslations}
+                  onChange={() => {
+                    // Turning it on changes what wins on a conflict, so explain
+                    // before enabling; turning it off is safe.
+                    if (preserveExistingTranslations) {
+                      setPreserveExistingTranslations(false);
+                    } else {
+                      setIsSaveLocalDialogOpen(true);
+                    }
+                  }}
+                />
+                <Text size={1}>Save local edits before translating</Text>
+              </Flex>
+            </Flex>
             <Flex gap={3} align='center' justify='space-between'>
               <Flex gap={2} align='center'>
                 <Button
@@ -380,32 +463,17 @@ export const TranslationView = () => {
                   <Text size={1}>Auto-import when complete</Text>
                 </Flex>
               </Flex>
+              {/* Counted against every configured locale. The number of
+                  currently-ready translations decays to zero as they are
+                  imported, because a downloaded file drops out of the status
+                  query — which made the old denominator read "6/0". */}
               <Text size={1} muted>
-                Imported{' '}
                 {
-                  statusLocales.filter((locale) => {
-                    const key = createTranslationStatusKey(
-                      branchId,
-                      documentId,
-                      versionId,
-                      locale.localeId
-                    );
-                    return importedTranslations.has(key);
-                  }).length
-                }
-                /
-                {
-                  statusLocales.filter((locale) => {
-                    const key = createTranslationStatusKey(
-                      branchId,
-                      documentId,
-                      versionId,
-                      locale.localeId
-                    );
-                    const status = translationStatuses.get(key);
-                    return status?.isReady;
-                  }).length
-                }
+                  statusLocales.filter((locale) =>
+                    importedTranslations.has(statusKeyFor(locale.localeId))
+                  ).length
+                }{' '}
+                of {statusLocales.length} imported
               </Text>
             </Flex>
 
@@ -470,6 +538,26 @@ export const TranslationView = () => {
           </Stack>
         </Stack>
       )}
+
+      <Card borderTop paddingTop={3}>
+        <Flex align='center' justify='flex-end' gap={2}>
+          <Text size={1} muted>
+            gt-sanity v{PACKAGE_VERSION}
+          </Text>
+          <Button
+            fontSize={1}
+            padding={2}
+            mode='bleed'
+            text='Debug info'
+            onClick={() => setIsDebugInfoDialogOpen(true)}
+          />
+        </Flex>
+      </Card>
+
+      <DebugInfoDialog
+        isOpen={isDebugInfoDialogOpen}
+        onClose={() => setIsDebugInfoDialogOpen(false)}
+      />
     </Stack>
   );
 };

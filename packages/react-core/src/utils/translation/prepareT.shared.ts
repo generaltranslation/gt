@@ -6,6 +6,7 @@ import type { JsxChildren } from 'generaltranslation/types';
 import type { ReactNode } from 'react';
 import type { RenderPreparedTParams } from '../rendering/renderPreparedT.shared';
 import type { TaggedChildren } from '../types';
+import { resolveTagHash } from './resolveTagHash';
 
 // Pure preparation logic shared by the hook wrapper (usePrepareT) and the RSC
 // code path. This module must stay free of hook/context imports so it can be
@@ -54,6 +55,9 @@ function prepareT({
   const sourceJsxChildren = prepareSourceJsxChildren(taggedSourceChildren);
   const options = normalizeParameters(params);
   const targetOptions = prepareTargetOptions({ options, locale });
+
+  // Caches the id-tagging hash onto targetOptions.$_hash so the lookup reuses it.
+  resolveTagHash(sourceJsxChildren, targetOptions);
 
   return {
     taggedSourceChildren,

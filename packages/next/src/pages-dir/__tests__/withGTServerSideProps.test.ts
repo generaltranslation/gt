@@ -3,20 +3,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 
 const mockGetTranslationsSnapshot = vi.hoisted(() => vi.fn());
-const mockParseLocale = vi.hoisted(() => vi.fn());
 
 vi.mock('gt-react', () => ({
   getTranslationsSnapshot: (...args: unknown[]) =>
     mockGetTranslationsSnapshot(...args),
 }));
 
-vi.mock('../parseLocale', () => ({
-  parseLocale: (...args: unknown[]) => mockParseLocale(...args),
-}));
-
 import { withGTServerSideProps } from '../withGTServerSideProps';
 
-const context = { req: {} } as GetServerSidePropsContext;
+const context = {
+  locale: 'fr',
+  defaultLocale: 'en',
+  req: { cookies: {} },
+} as GetServerSidePropsContext;
 
 type TestGlobal = typeof globalThis & {
   __generaltranslation?: unknown;
@@ -29,12 +28,15 @@ function resetGTGlobals() {
 describe('withGTServerSideProps', () => {
   beforeEach(() => {
     resetGTGlobals();
-    initializeI18nConfig();
+    initializeI18nConfig({
+      defaultLocale: 'en',
+      locales: ['en', 'fr', 'es'],
+    });
     delete process.env._GENERALTRANSLATION_I18N_CONFIG_PARAMS;
-    mockParseLocale.mockReset();
-    mockParseLocale.mockReturnValue('fr');
     mockGetTranslationsSnapshot.mockReset();
-    mockGetTranslationsSnapshot.mockResolvedValue({ fr: { hash: 'Bonjour' } });
+    mockGetTranslationsSnapshot.mockImplementation(async (locale: string) => ({
+      [locale]: { hash: `${locale} translation` },
+    }));
   });
 
   it('adds locale and translations without a page handler', async () => {
@@ -44,10 +46,9 @@ describe('withGTServerSideProps', () => {
       props: {
         locale: 'fr',
         enableI18n: true,
-        translations: { fr: { hash: 'Bonjour' } },
+        translations: { fr: { hash: 'fr translation' } },
       },
     });
-    expect(mockParseLocale).toHaveBeenCalledWith(context);
     expect(mockGetTranslationsSnapshot).toHaveBeenCalledWith('fr');
   });
 
@@ -65,7 +66,7 @@ describe('withGTServerSideProps', () => {
         renderedAt: 'now',
         locale: 'fr',
         enableI18n: true,
-        translations: { fr: { hash: 'Bonjour' } },
+        translations: { fr: { hash: 'fr translation' } },
       },
     });
   });
@@ -80,14 +81,57 @@ describe('withGTServerSideProps', () => {
             'generaltranslation.enable-i18n': 'false',
           },
         },
+        locale: 'fr',
+        defaultLocale: 'en',
       } as GetServerSidePropsContext)
     ).resolves.toEqual({
       props: {
         locale: 'fr',
         enableI18n: false,
-        translations: { fr: { hash: 'Bonjour' } },
+        translations: { fr: { hash: 'fr translation' } },
       },
     });
+  });
+
+  it('ignores the legacy GT locale cookie in favor of context.locale', async () => {
+    const getServerSideProps = withGTServerSideProps();
+
+    await expect(
+      getServerSideProps({
+        ...context,
+        req: {
+          cookies: {
+            'generaltranslation.locale': 'es',
+          },
+        },
+      } as GetServerSidePropsContext)
+    ).resolves.toMatchObject({
+      props: {
+        locale: 'fr',
+      },
+    });
+
+    expect(mockGetTranslationsSnapshot).toHaveBeenCalledWith('fr');
+  });
+
+  it('uses legacy request detection when context.locale is unavailable', async () => {
+    const getServerSideProps = withGTServerSideProps();
+
+    await expect(
+      getServerSideProps({
+        req: {
+          headers: { 'accept-language': 'fr,en;q=0.8' },
+          cookies: { 'generaltranslation.locale': 'es' },
+        },
+      } as GetServerSidePropsContext)
+    ).resolves.toMatchObject({
+      props: {
+        locale: 'es',
+        translations: { es: { hash: 'es translation' } },
+      },
+    });
+
+    expect(mockGetTranslationsSnapshot).toHaveBeenCalledWith('es');
   });
 
   it('preserves redirects without loading translations', async () => {
@@ -102,7 +146,6 @@ describe('withGTServerSideProps', () => {
     );
 
     await expect(getServerSideProps(context)).resolves.toEqual({ redirect });
-    expect(mockParseLocale).not.toHaveBeenCalled();
     expect(mockGetTranslationsSnapshot).not.toHaveBeenCalled();
   });
 });

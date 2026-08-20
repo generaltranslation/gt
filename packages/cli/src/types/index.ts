@@ -226,6 +226,11 @@ export type FilesOptions = {
 };
 
 // Shared settings between all API-related commands
+export type FontsConfig = {
+  include: string[]; // globs of .ttf/.otf files
+  exclude?: string[];
+};
+
 export type Settings = {
   config: string;
   configDirectory: string;
@@ -270,6 +275,7 @@ export type Settings = {
   version?: string; // for specifying a custom version id to use. Should be unique
   description?: string;
   src?: string[]; // list of glob patterns for source file scanning
+  fonts?: FontsConfig; // fonts to sync to the API before translating
   framework?: SupportedFrameworks;
   options?: AdditionalOptions;
   modelProvider?: string;

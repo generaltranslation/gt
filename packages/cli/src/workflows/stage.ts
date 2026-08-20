@@ -13,6 +13,7 @@ import { UserEditDiffsStep } from './steps/UserEditDiffsStep.js';
 import { BranchData } from '../types/branch.js';
 import { calculateTimeoutMs } from '../utils/calculateTimeoutMs.js';
 import { filterFilesForEnqueue } from './utils/filterFilesForEnqueue.js';
+import { syncFonts } from './utils/syncFonts.js';
 
 /**
  * Sends multiple files for translation to the API using a workflow pattern
@@ -36,6 +37,10 @@ export async function runStageFilesWorkflow({
   try {
     // Log files to be translated
     logCollectedFiles(files);
+
+    // Sync fonts before enqueueing so the translation jobs (e.g. Lottie
+    // layout refinement) can use them instead of fallback fonts.
+    await syncFonts(settings);
 
     // Calculate timeout for setup step
     const timeoutMs = calculateTimeoutMs(options.timeout);

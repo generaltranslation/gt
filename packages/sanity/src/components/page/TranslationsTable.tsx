@@ -3,6 +3,7 @@ import { Badge, Box, Card, Flex, Spinner, Stack, Text } from '@sanity/ui';
 import { Preview, useSchema, type SanityDocument } from 'sanity';
 import { useIntentLink } from 'sanity/router';
 import { LanguageStatus } from '../shared/LanguageStatus';
+import { resolveLanguageStatusState } from '../../utils/languageStatusState';
 import { useTranslations } from '../TranslationsProvider';
 import {
   createTranslationStatusKey,
@@ -13,6 +14,8 @@ const DocumentRow: React.FC<{ document: SanityDocument }> = ({ document }) => {
   const {
     locales,
     translationStatuses,
+    pendingTranslations,
+    importingTranslations,
     downloadStatus,
     importedTranslations,
     handleImportDocument,
@@ -61,7 +64,7 @@ const DocumentRow: React.FC<{ document: SanityDocument }> = ({ document }) => {
 
       <Box paddingY={1}>
         {enabledLocales.length > 0 ? (
-          <Stack space={1}>
+          <Stack gap={1}>
             {enabledLocales.map((locale) => {
               const versionId = getVersionId(document);
               const key = createTranslationStatusKey(
@@ -78,8 +81,12 @@ const DocumentRow: React.FC<{ document: SanityDocument }> = ({ document }) => {
                 <LanguageStatus
                   key={`${document._id}-${versionId}-${locale.localeId}`}
                   localeId={locale.localeId}
-                  progress={status?.progress || 0}
-                  isImported={isImported || isDownloaded}
+                  state={resolveLanguageStatusState({
+                    status,
+                    isImported: isImported || isDownloaded,
+                    isPending: pendingTranslations.has(key),
+                  })}
+                  isImporting={importingTranslations.has(key)}
                   importFile={async () => {
                     await handleImportDocument(
                       publishedId,
@@ -116,7 +123,7 @@ export const TranslationsTable: React.FC = () => {
 
   return (
     <Box style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-      <Stack space={2}>
+      <Stack gap={2}>
         {documents.map((document) => (
           <DocumentRow key={document._id} document={document} />
         ))}

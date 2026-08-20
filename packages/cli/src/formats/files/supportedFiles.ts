@@ -9,6 +9,7 @@ export const SUPPORTED_FILE_EXTENSIONS = [
   'html',
   'txt',
   'twilioContentJson',
+  'lottie',
 ] as const;
 
 export const FILE_EXT_TO_EXT_LABEL = {
@@ -22,4 +23,5 @@ export const FILE_EXT_TO_EXT_LABEL = {
   html: 'HTML',
   txt: 'Text',
   twilioContentJson: 'Twilio Content JSON',
+  lottie: 'Lottie',
 };

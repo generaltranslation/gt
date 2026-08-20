@@ -10,16 +10,15 @@ import {
   Stack,
   Switch,
   Text,
-  Tooltip,
 } from '@sanity/ui';
-import {
-  CheckmarkCircleIcon,
-  DownloadIcon,
-  LinkIcon,
-  PublishIcon,
-  RefreshIcon,
-  TranslateIcon,
-} from '@sanity/icons';
+import { Tooltip } from '@sanity/ui/tooltip';
+import { CheckmarkCircleIcon } from '@sanity/icons/CheckmarkCircle';
+import { DownloadIcon } from '@sanity/icons/Download';
+import { LinkIcon } from '@sanity/icons/Link';
+import { PublishIcon } from '@sanity/icons/Publish';
+import { RefreshIcon } from '@sanity/icons/Refresh';
+import { TranslateIcon } from '@sanity/icons/Translate';
+import { UploadIcon } from '@sanity/icons/Upload';
 import { Link } from 'sanity/router';
 import { BaseTranslationWrapper } from '../shared/BaseTranslationWrapper';
 import { TranslationsProvider, useTranslations } from '../TranslationsProvider';
@@ -27,7 +26,11 @@ import { TranslationsTable } from './TranslationsTable';
 import { TranslateAllDialog } from './TranslateAllDialog';
 import { ImportAllDialog } from './ImportAllDialog';
 import { ImportMissingDialog } from './ImportMissingDialog';
+import { UploadExistingDialog } from './UploadExistingDialog';
+import { SaveLocalTranslationsDialog } from './SaveLocalTranslationsDialog';
+import { DebugInfoDialog } from './DebugInfoDialog';
 import { BatchProgress } from './BatchProgress';
+import { version as PACKAGE_VERSION } from '../../../package.json';
 
 const TranslationsToolContent: React.FC = () => {
   const [isTranslateAllDialogOpen, setIsTranslateAllDialogOpen] =
@@ -35,6 +38,10 @@ const TranslationsToolContent: React.FC = () => {
   const [isImportAllDialogOpen, setIsImportAllDialogOpen] = useState(false);
   const [isImportMissingDialogOpen, setIsImportMissingDialogOpen] =
     useState(false);
+  const [isUploadExistingDialogOpen, setIsUploadExistingDialogOpen] =
+    useState(false);
+  const [isSaveLocalDialogOpen, setIsSaveLocalDialogOpen] = useState(false);
+  const [isDebugInfoDialogOpen, setIsDebugInfoDialogOpen] = useState(false);
 
   const {
     isBusy,
@@ -44,8 +51,11 @@ const TranslationsToolContent: React.FC = () => {
     loadingDocuments,
     importProgress,
     importedTranslations,
+    pendingTranslations,
     isRefreshing,
     setAutoRefresh,
+    preserveExistingTranslations,
+    setPreserveExistingTranslations,
     handleRefreshAll,
     handlePatchDocumentReferences,
     handlePublishAllTranslations,
@@ -60,6 +70,8 @@ const TranslationsToolContent: React.FC = () => {
         return 'Importing';
       case 'Import Missing':
         return 'Importing missing';
+      case 'Save Local Edits':
+        return 'Uploading existing';
       case 'Patch References':
         return 'Patching';
       case 'Publish Translations':
@@ -76,6 +88,12 @@ const TranslationsToolContent: React.FC = () => {
     }
   }, [isBusy, importProgress.isImporting]);
 
+  // A translation run stays in flight after the request resolves, so `isBusy`
+  // alone drops the button back to idle while work is still happening. The
+  // per-locale rows already read "Translating…"; this keeps the top-level
+  // button honest and guards against enqueueing the same run twice.
+  const isWaitingOnTranslations = pendingTranslations.size > 0;
+
   const enabledLocaleCount = locales.filter((l) => l.enabled !== false).length;
   const totalTranslations = documents.length * enabledLocaleCount;
   const actionsDisabled = isBusy || loadingDocuments || documents.length === 0;
@@ -83,9 +101,9 @@ const TranslationsToolContent: React.FC = () => {
   return (
     <Container width={2}>
       <Box padding={4} marginTop={5}>
-        <Stack space={5}>
+        <Stack gap={5}>
           <Flex align='flex-start' justify='space-between' gap={4}>
-            <Stack space={3}>
+            <Stack gap={3}>
               <Heading as='h2' size={3}>
                 Translations
               </Heading>
@@ -97,17 +115,20 @@ const TranslationsToolContent: React.FC = () => {
 
             <Button
               icon={TranslateIcon}
-              text='Translate All'
-              loading={isBusy && currentOperation === 'Translate All'}
+              text={isWaitingOnTranslations ? 'Translating…' : 'Translate All'}
+              loading={
+                (isBusy && currentOperation === 'Translate All') ||
+                isWaitingOnTranslations
+              }
               onClick={() => {
                 setCurrentOperation('Translate All');
                 setIsTranslateAllDialogOpen(true);
               }}
-              disabled={actionsDisabled}
+              disabled={actionsDisabled || isWaitingOnTranslations}
             />
           </Flex>
 
-          <Stack space={3}>
+          <Stack gap={3}>
             <Flex align='center' justify='space-between' gap={3}>
               <Text size={1} muted>
                 {loadingDocuments
@@ -118,6 +139,23 @@ const TranslationsToolContent: React.FC = () => {
               </Text>
 
               <Flex gap={3} align='center'>
+                <Flex gap={2} align='center'>
+                  <Text size={1} muted>
+                    Save local edits
+                  </Text>
+                  <Switch
+                    checked={preserveExistingTranslations}
+                    onChange={() => {
+                      // Turning it on changes what wins on a conflict, so
+                      // explain before enabling; turning it off is safe.
+                      if (preserveExistingTranslations) {
+                        setPreserveExistingTranslations(false);
+                      } else {
+                        setIsSaveLocalDialogOpen(true);
+                      }
+                    }}
+                  />
+                </Flex>
                 <Flex gap={2} align='center'>
                   <Text size={1} muted>
                     Auto-refresh
@@ -134,7 +172,7 @@ const TranslationsToolContent: React.FC = () => {
                   icon={RefreshIcon}
                   text='Refresh'
                   loading={isRefreshing}
-                  onClick={handleRefreshAll}
+                  onClick={() => handleRefreshAll()}
                   disabled={isRefreshing || actionsDisabled}
                 />
               </Flex>
@@ -143,7 +181,7 @@ const TranslationsToolContent: React.FC = () => {
             <TranslationsTable />
           </Stack>
 
-          <Stack space={3}>
+          <Stack gap={3}>
             <Flex gap={2} align='center' justify='space-between'>
               <Flex gap={2} align='center' wrap='wrap'>
                 <Tooltip
@@ -177,6 +215,23 @@ const TranslationsToolContent: React.FC = () => {
                     text='Import Missing'
                     loading={isBusy && currentOperation === 'Import Missing'}
                     icon={DownloadIcon}
+                    disabled={actionsDisabled}
+                  />
+                </Tooltip>
+                <Tooltip
+                  placement='top'
+                  content='Uploads the translations already in Sanity to General Translation, preserving human edits'
+                >
+                  <Button
+                    mode='ghost'
+                    fontSize={1}
+                    onClick={() => {
+                      setCurrentOperation('Save Local Edits');
+                      setIsUploadExistingDialogOpen(true);
+                    }}
+                    text='Save Local Edits'
+                    loading={isBusy && currentOperation === 'Save Local Edits'}
+                    icon={UploadIcon}
                     disabled={actionsDisabled}
                   />
                 </Tooltip>
@@ -244,13 +299,27 @@ const TranslationsToolContent: React.FC = () => {
           </Stack>
 
           <Card borderTop paddingTop={4}>
-            <Text size={1} muted>
-              For more information, see the{' '}
-              <Link href='https://dash.generaltranslation.com'>
-                General Translation Dashboard
-              </Link>
-              .
-            </Text>
+            <Flex align='center' justify='space-between' gap={3} wrap='wrap'>
+              <Text size={1} muted>
+                For more information, see the{' '}
+                <Link href='https://dash.generaltranslation.com'>
+                  General Translation Dashboard
+                </Link>
+                .
+              </Text>
+              <Flex align='center' gap={2}>
+                <Text size={1} muted>
+                  gt-sanity v{PACKAGE_VERSION}
+                </Text>
+                <Button
+                  fontSize={1}
+                  padding={2}
+                  mode='bleed'
+                  text='Debug info'
+                  onClick={() => setIsDebugInfoDialogOpen(true)}
+                />
+              </Flex>
+            </Flex>
           </Card>
         </Stack>
       </Box>
@@ -266,6 +335,22 @@ const TranslationsToolContent: React.FC = () => {
       <ImportMissingDialog
         isOpen={isImportMissingDialogOpen}
         onClose={() => setIsImportMissingDialogOpen(false)}
+      />
+      <SaveLocalTranslationsDialog
+        isOpen={isSaveLocalDialogOpen}
+        onClose={() => setIsSaveLocalDialogOpen(false)}
+        onConfirm={() => {
+          setPreserveExistingTranslations(true);
+          setIsSaveLocalDialogOpen(false);
+        }}
+      />
+      <UploadExistingDialog
+        isOpen={isUploadExistingDialogOpen}
+        onClose={() => setIsUploadExistingDialogOpen(false)}
+      />
+      <DebugInfoDialog
+        isOpen={isDebugInfoDialogOpen}
+        onClose={() => setIsDebugInfoDialogOpen(false)}
       />
     </Container>
   );

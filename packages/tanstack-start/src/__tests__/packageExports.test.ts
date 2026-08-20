@@ -95,12 +95,33 @@ describe('gt-tanstack-start package exports', () => {
       '-e',
       `
         import assert from 'node:assert/strict';
-        import { getGT, getLocale, initializeGT } from 'gt-tanstack-start';
+        import { getGT, getLocale, gtMiddleware, initializeGT } from 'gt-tanstack-start';
 
         assert.equal(typeof getGT, 'function');
         assert.equal(typeof getLocale, 'function');
+        assert.equal(typeof gtMiddleware, 'object');
         assert.equal(typeof initializeGT, 'function');
       `,
     ]);
   });
+
+  it.each(['workerd', 'worker'])(
+    'resolves the server ESM entrypoint when %s and browser conditions are active',
+    (workerCondition) => {
+      node([
+        `--conditions=${workerCondition}`,
+        '--conditions=browser',
+        '--input-type=module',
+        '-e',
+        `
+          import assert from 'node:assert/strict';
+
+          assert.equal(
+            import.meta.resolve('gt-tanstack-start').endsWith('/dist/index.server.mjs'),
+            true
+          );
+        `,
+      ]);
+    }
+  );
 });

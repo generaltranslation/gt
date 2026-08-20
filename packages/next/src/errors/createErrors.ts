@@ -94,7 +94,7 @@ export const withGTStaticPropsRscError = createGtNextDiagnostic({
   severity: 'Error',
   whatHappened:
     'withGTStaticProps() is not available for React Server Components',
-  why: 'This helper supports the Pages Router, not the App Router',
+  why: 'this helper supports the Pages Router, not the App Router',
   fix: 'Use gt-next build-time translation helpers in the App Router, or export withGTStaticProps() from a Pages Router page module',
 });
 
@@ -138,6 +138,16 @@ export const standardizedLocalesWarning = (locales: string[]) =>
 
 export const standardizedCanonicalLocalesWarning = (locales: string[]) =>
   `gt-next: The following canonical locales were standardized: ${locales.join(', ')}. Use the standardized codes in your config to avoid this warning.`;
+
+export const createNextI18nConfigMismatchWarning = (details: string[]) =>
+  createGtNextPluginDiagnostic({
+    severity: 'Warning',
+    whatHappened:
+      'Next.js internationalized routing does not match the GT config file',
+    why: 'Next.js may select a locale that GT is not configured to translate',
+    fix: 'Use the same defaultLocale and locales values in both configurations',
+    details,
+  });
 
 export const createGTCompilerUnresolvedWarning = (type: 'babel' | 'swc') =>
   createGtNextPluginDiagnostic({

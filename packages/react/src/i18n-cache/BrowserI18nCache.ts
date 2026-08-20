@@ -5,8 +5,6 @@ import type {
 import { getI18nConfig, I18nCache } from 'gt-i18n/internal';
 import type { HtmlTagOptions } from './types';
 import type { Translation } from 'gt-i18n/types';
-import { DEFAULT_HTML_TAG_OPTIONS } from './constants';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
 
 type LocalStorageTranslationCache =
   import('./LocalStorageTranslationCache').LocalStorageTranslationCache;
@@ -32,15 +30,13 @@ export type BrowserI18nCacheParams = I18nCacheConstructorParams & {
  * I18nCache implementation for Browser.
  */
 export class BrowserI18nCache extends I18nCache<Translation> {
-  /** Customize browser-related behavior */
-  private htmlTagOptions?: HtmlTagOptions;
-
   /** Whether dev hot reload JSX (Suspense-based <T>) is active */
   private _devHotReloadJsx = false;
 
   constructor(config: BrowserI18nCacheParams) {
     // Must be initialized before super()
-    const { htmlTagOptions, ...managerConfig } = config;
+    // Keep accepting htmlTagOptions without passing it to the translation cache.
+    const { htmlTagOptions: _htmlTagOptions, ...managerConfig } = config;
     const localStorageCaches: LocalStorageCachePromises = {};
     const i18nConfig = getI18nConfig();
     const devHotReloadEnabled =
@@ -62,11 +58,6 @@ export class BrowserI18nCache extends I18nCache<Translation> {
 
     this._devHotReloadJsx = devHotReloadEnabled;
 
-    this.htmlTagOptions = {
-      ...DEFAULT_HTML_TAG_OPTIONS,
-      ...htmlTagOptions,
-    };
-
     // For dev hot reload, we need to write the translations to the localStorage cache
     if (devHotReloadEnabled) {
       this.onTranslationsCacheMiss = ({ locale, hash, translation }) => {
@@ -83,45 +74,6 @@ export class BrowserI18nCache extends I18nCache<Translation> {
    */
   isDevHotReloadJsx(): boolean {
     return this._devHotReloadJsx;
-  }
-
-  /**
-   * Update the html tag (lang, dir)
-   *
-   * @deprecated, TODO: we should use a different system for managing this html tag
-   * this should just be for managing translations
-   */
-  updateHtmlTag(
-    locale: string,
-    htmlTagOptions?: { lang?: string; dir?: 'ltr' | 'rtl' } & HtmlTagOptions
-  ): void {
-    // Get parameters
-    const htmlLocale = htmlTagOptions?.lang || locale;
-    const i18nConfig = getI18nConfig();
-    const canonicalLocale = i18nConfig.resolveCanonicalLocale(htmlLocale);
-
-    // Validate parameters
-    if (!i18nConfig.isValidLocale(canonicalLocale)) {
-      console.warn(createInvalidLocaleWarning(htmlLocale));
-      return;
-    }
-
-    const localeDirection =
-      htmlTagOptions?.dir || i18nConfig.getLocaleDirection(canonicalLocale);
-
-    // Merge options
-    const mergedHtmlTagOptions = {
-      ...this.htmlTagOptions,
-      ...htmlTagOptions,
-    };
-
-    // Update html tag
-    if (mergedHtmlTagOptions.updateHtmlLangTag) {
-      document.documentElement.lang = canonicalLocale;
-    }
-    if (mergedHtmlTagOptions.updateHtmlDirTag) {
-      document.documentElement.dir = localeDirection;
-    }
   }
 }
 
@@ -150,7 +102,6 @@ function wrapLoaderWithLocalStorage(
     return cache.getInternalCache();
   };
 }
-
 function getOrCreateLocalStorageCache(
   localStorageCaches: LocalStorageCachePromises,
   params: {
@@ -170,11 +121,3 @@ function loadLocalStorageCache() {
   return (localStorageCacheModulePromise ??=
     import('./LocalStorageTranslationCache'));
 }
-
-const createInvalidLocaleWarning = (locale: string) =>
-  createDiagnosticMessage({
-    source: 'gt-react',
-    severity: 'Warning',
-    whatHappened: `Locale "${locale}" is not valid`,
-    fix: 'Use a valid BCP 47 locale code or add a custom mapping',
-  });

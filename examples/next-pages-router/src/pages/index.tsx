@@ -1,5 +1,6 @@
-import { LocaleSelector } from 'gt-react';
-import { T } from 'gt-react';
+import { LocaleSelector, T, withGTStaticProps } from 'gt-next';
+
+export const getStaticProps = withGTStaticProps();
 
 export default function Home() {
   return (

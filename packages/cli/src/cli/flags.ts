@@ -50,7 +50,11 @@ export function attachTranslateFlags(command: Command) {
     .option(
       '--save-local',
       'Detect and save local edits before enqueuing translations',
-      false
+      true
+    )
+    .option(
+      '--no-save-local',
+      'Skip detecting and saving local edits before enqueuing translations'
     )
     .option('--publish', 'Publish translations to the CDN', false)
     .option(
