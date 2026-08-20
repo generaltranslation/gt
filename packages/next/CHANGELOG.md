@@ -1,5 +1,15 @@
 # gt-next
 
+## 11.1.12
+
+### Patch Changes
+
+- [#2105](https://github.com/generaltranslation/gt/pull/2105) [`ff8a52e`](https://github.com/generaltranslation/gt/commit/ff8a52e4e318aab9ca3f8a6c21958d2643b09996) Thanks [@eoinest](https://github.com/eoinest)! - Use a browser navigation when switching back to an unprefixed default locale.
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.1.12
+  - gt-react@11.1.12
+
 ## 11.1.11
 
 ### Patch Changes
