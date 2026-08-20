@@ -1,18 +1,33 @@
 import { Hash, Locale } from 'gt-i18n/internal/types';
 import { Translation } from 'gt-i18n/types';
+import {
+  createDiagnosticMessage,
+  formatDiagnosticErrorDetails,
+} from 'generaltranslation/internal';
 import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 
 /**
- * Returns a promise of serializable cached translations that
- * can be passed to a provider for hydration
- *
- * TODO: perhaps should be moved to /i18n if allowing for type generics
+ * Serializable cached translations for provider hydration; a failed load
+ * degrades to an empty snapshot. TODO: perhaps move to /i18n for type generics
  */
 export async function getTranslationsSnapshot(
   locale: Locale
 ): Promise<Record<Locale, Record<Hash, Translation>>> {
   const i18nCache = getReactI18nCache();
-  const translations = await i18nCache.loadTranslations(locale);
-  // Only pass translations for the given locale to minimize the size of the snapshot
-  return { [locale]: translations };
+  try {
+    // Only pass translations for the given locale to minimize the snapshot
+    return { [locale]: await i18nCache.loadTranslations(locale) };
+  } catch (error) {
+    console.warn(
+      createDiagnosticMessage({
+        source: '@generaltranslation/react-core',
+        severity: 'Warning',
+        whatHappened: `Could not load translations for locale "${locale}", so content for this locale renders untranslated`,
+        why: 'the translation loader failed, usually because translations for this locale have not been generated yet',
+        fix: 'Generate translations for this locale, or check your loadTranslations configuration.',
+        details: formatDiagnosticErrorDetails(error),
+      })
+    );
+    return { [locale]: {} };
+  }
 }
