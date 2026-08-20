@@ -29,6 +29,15 @@ Set up your project:
 npx gt init
 ```
 
+In CI or other non-interactive environments, `gt init` and `gt configure` exit
+with an error unless you pass `--yes`, which accepts the recommended defaults.
+`--yes` reads `locales` from an existing `gt.config.json` and uses the
+`GT_API_KEY` and `GT_PROJECT_ID` environment variables for credentials.
+
+```bash
+npx gt init --yes
+```
+
 Generate translations:
 
 ```bash

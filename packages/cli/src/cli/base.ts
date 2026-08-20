@@ -101,6 +101,20 @@ const electronSetupError = createDiagnosticMessage({
     'The automatic setup wizard is not ready for Electron applications',
   docsUrl: 'https://generaltranslation.com/docs/react',
 });
+const nonInteractiveSetupError = createDiagnosticMessage({
+  source: 'gt',
+  severity: 'Error',
+  whatHappened: 'The setup wizard cannot prompt for input',
+  why: 'stdin is not an interactive terminal',
+  fix: 'Rerun with --yes to accept the recommended defaults, or write gt.config.json by hand and set the GT_API_KEY and GT_PROJECT_ID environment variables',
+  docsUrl: 'https://generaltranslation.com/docs/cli/reference/config',
+});
+
+function exitIfNonInteractiveSetup(assumeYes: boolean | undefined): void {
+  if (!assumeYes && process.stdin.isTTY !== true) {
+    logErrorAndExit(nonInteractiveSetupError);
+  }
+}
 
 async function exitIfUnsupportedSetupTarget(): Promise<void> {
   const packageJson = await searchForPackageJson();
@@ -602,14 +616,20 @@ export class BaseCLI {
         'Filepath to config file, by default gt.config.json',
         findFilepath(['gt.config.json'])
       )
+      .option(
+        '--yes',
+        'Skip all prompts and accept the recommended defaults; requires locales in gt.config.json'
+      )
       .action(async (options: SetupOptions) => {
         await exitIfUnsupportedSetupTarget();
+        exitIfNonInteractiveSetup(options.yes);
         const settings = await generateSettings(options);
         displayHeader('Running setup wizard...');
 
         const framework = await detectFramework();
 
         const useAgent = await (async () => {
+          if (options.yes) return false;
           let useAgentMessage;
           if (framework.name === 'mintlify') {
             useAgentMessage = `Mintlify project detected. Would you like to connect to GitHub so that the Locadex AI Agent can translate your project automatically?`;
@@ -656,10 +676,12 @@ export class BaseCLI {
                 : `Files saved locally in ${defaultTranslationsDir}`;
 
           // Ask if user wants to use defaults
-          const useDefaults = await promptConfirm({
-            message: `Would you like to use the recommended General Translation defaults? ${chalk.dim(`(${defaultsDescription})`)}`,
-            defaultValue: true,
-          });
+          const useDefaults =
+            options.yes ||
+            (await promptConfirm({
+              message: `Would you like to use the recommended General Translation defaults? ${chalk.dim(`(${defaultsDescription})`)}`,
+              defaultValue: true,
+            }));
 
           let ranReactSetup = false;
 
@@ -695,7 +717,8 @@ export class BaseCLI {
           await this.handleInitCommand(
             ranReactSetup,
             useDefaults,
-            framework.name === 'vite'
+            framework.name === 'vite',
+            Boolean(options.yes)
           );
 
           logger.endCommand(
@@ -711,8 +734,13 @@ export class BaseCLI {
       .description(
         'Configure your project for General Translation. This will create a gt.config.json file in your codebase.'
       )
-      .action(async () => {
+      .option(
+        '--yes',
+        'Skip all prompts and accept the recommended defaults; requires locales in gt.config.json'
+      )
+      .action(async (options: { yes?: boolean }) => {
         await exitIfUnsupportedSetupTarget();
+        exitIfNonInteractiveSetup(options.yes);
         displayHeader('Configuring project...');
 
         logger.info(
@@ -721,7 +749,12 @@ export class BaseCLI {
 
         // Configure gt.config.json
         const framework = await detectFramework();
-        await this.handleInitCommand(false, false, framework.name === 'vite');
+        await this.handleInitCommand(
+          false,
+          Boolean(options.yes),
+          framework.name === 'vite',
+          Boolean(options.yes)
+        );
 
         logger.endCommand(
           'Done! Make sure you have an API key and project ID to use General Translation. Get them on the dashboard: https://generaltranslation.com/dashboard'
@@ -744,14 +777,18 @@ export class BaseCLI {
   protected async handleInitCommand(
     ranReactSetup: boolean,
     useDefaults: boolean = false,
-    isVite: boolean = false
+    isVite: boolean = false,
+    assumeYes: boolean = false
   ): Promise<void> {
     const configFilepath =
       !isVite && fs.existsSync('src/gt.config.json')
         ? 'src/gt.config.json'
         : 'gt.config.json';
     const existingConfig = loadConfig(configFilepath);
-    const { defaultLocale, locales } = await getDesiredLocales(existingConfig);
+    const { defaultLocale, locales } = await getDesiredLocales(
+      existingConfig,
+      assumeYes
+    );
 
     const packageJson = await searchForPackageJson();
 
@@ -815,8 +852,13 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
       : `Do you have any additional files in this project to translate? For example, Markdown files for docs. ${chalk.dim(
           '(To continue without selecting press Enter)'
         )}`;
+    if (assumeYes && !isUsingGT && !existingConfig.files) {
+      logErrorAndExit(
+        'No translatable files are configured. Add a files entry to gt.config.json, or rerun without --yes to select file formats.'
+      );
+    }
     const fileExtensions =
-      useDefaults && isUsingGT
+      assumeYes || (useDefaults && isUsingGT)
         ? [] // Skip for GT projects when using defaults
         : await promptMultiSelect({
             message,
@@ -895,6 +937,12 @@ See https://generaltranslation.com/en/docs/next/guides/local-tx`
 
     // Set credentials
     if ((!isVite || !isUsingGT || usingCDN) && !areCredentialsSet()) {
+      if (assumeYes) {
+        logger.info(
+          'Skipping API key generation. Set the GT_API_KEY and GT_PROJECT_ID environment variables to authenticate.'
+        );
+        return;
+      }
       const loginQuestion = useDefaults
         ? true
         : await promptConfirm({
