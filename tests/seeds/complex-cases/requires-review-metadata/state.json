@@ -1,0 +1,61 @@
+{
+  "children": {
+    "type": "StringLiteral",
+    "start": 154,
+    "end": 174,
+    "loc": {
+      "start": {
+        "line": 4,
+        "column": 66,
+        "index": 154
+      },
+      "end": {
+        "line": 4,
+        "column": 86,
+        "index": 174
+      }
+    },
+    "extra": {
+      "rawValue": "Needs human review",
+      "raw": "\"Needs human review\""
+    },
+    "value": "Needs human review"
+  },
+  "state": {
+    "stringCollector": {
+      "contentAggregators": {},
+      "jsxAggregators": {},
+      "hashAggregators": {},
+      "globalCallCounter": 0
+    },
+    "scopeTracker": {
+      "nextScopeId": 3,
+      "currentScope": 0,
+      "scopeStack": [],
+      "scopeInfo": {},
+      "scopedVariables": {
+        "jsx": [
+          {
+            "scopeId": 0,
+            "canonicalName": "jsx",
+            "aliasName": "jsx",
+            "isTranslationFunction": false,
+            "type": "react",
+            "identifier": 0
+          }
+        ],
+        "T": [
+          {
+            "scopeId": 0,
+            "canonicalName": "T",
+            "aliasName": "T",
+            "isTranslationFunction": true,
+            "type": "generaltranslation",
+            "identifier": 0
+          }
+        ]
+      },
+      "namespaceImports": []
+    }
+  }
+}

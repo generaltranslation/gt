@@ -6,19 +6,22 @@ import { describe, expect, it } from 'vitest';
 import {
   MINIMUM_EXACT_SEED_COUNT,
   NON_PORTABLE_SEEDS,
+  REACT_ONLY_SEEDS,
 } from '../../../../../test-fixtures/react-vue-seed-contract.js';
 import { extractFromVueSource } from './testVueCompiler.js';
 
 const repositoryRoot = path.resolve(__dirname, '../../../../..');
 const seedRoot = path.join(repositoryRoot, 'tests/seeds');
-const reactSeedIds = collectSeedIds(seedRoot, 'page.tsx');
+const allReactSeedIds = collectSeedIds(seedRoot, 'page.tsx');
 const vueSeedIds = collectSeedIds(seedRoot, 'page.vue');
+const reactOnlyIds = new Set(REACT_ONLY_SEEDS.map(({ id }) => id));
+const reactSeedIds = allReactSeedIds.filter((id) => !reactOnlyIds.has(id));
 const nonPortableIds = new Set(NON_PORTABLE_SEEDS.map(({ id }) => id));
 const exactSeedIds = reactSeedIds.filter((id) => !nonPortableIds.has(id));
 
 describe('React seed oracle parity for the Vue extractor', () => {
   it('discovers the same complete seed corpus as the runtime contract', () => {
-    expect(reactSeedIds).toHaveLength(84);
+    expect(reactSeedIds).toHaveLength(85);
     expect(vueSeedIds).toEqual(reactSeedIds);
     expect(exactSeedIds.length).toBeGreaterThanOrEqual(
       MINIMUM_EXACT_SEED_COUNT

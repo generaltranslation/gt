@@ -48,6 +48,10 @@ async function createTest(dirPath: string) {
     // Read the expected JSX children structure
     const expectedPath = path.join(dirPath, 'expected.json');
     const expected = JSON.parse(fs.readFileSync(expectedPath, 'utf8'));
+    const runtimePath = path.join(dirPath, 'runtime.json');
+    const runtime = fs.existsSync(runtimePath)
+      ? JSON.parse(fs.readFileSync(runtimePath, 'utf8'))
+      : undefined;
 
     // Read the page.tsx file path
     const pagePath = path.join(dirPath, 'page.tsx');
@@ -71,6 +75,10 @@ async function createTest(dirPath: string) {
         parsingOptions
       );
 
+      if (runtime) {
+        expect(result.updates).toHaveLength(1);
+      }
+
       // Verify we got updates from files that have T components
       if (result.updates.length === 0) {
         expect(result.warnings.length || result.errors.length).toBeGreaterThan(
@@ -83,6 +91,17 @@ async function createTest(dirPath: string) {
       expect(result.warnings).toHaveLength(0);
       expect(result.errors).toHaveLength(0);
       expect(result.updates).not.toHaveLength(0);
+
+      if (runtime) {
+        const [update] = result.updates;
+        expect(normalizeSemanticWire(update.source)).toEqual(
+          normalizeSemanticWire(expected)
+        );
+        expect(update.metadata.hash).toBe(runtime.hash);
+        expect(selectRuntimeMetadata(update.metadata)).toEqual(
+          runtime.metadata ?? {}
+        );
+      }
 
       // For each update that came from parsing T components, verify the hash
       for (const update of result.updates) {
@@ -97,8 +116,11 @@ async function createTest(dirPath: string) {
           const expectedHash = hashSource({
             source: update.source,
             ...(context && { context }),
-            ...(update.metadata.maxChars && {
+            ...(update.metadata.maxChars != null && {
               maxChars: update.metadata.maxChars,
+            }),
+            ...(update.metadata.requiresReview === true && {
+              requiresReview: true,
             }),
             dataFormat: update.dataFormat,
           });
@@ -119,6 +141,34 @@ async function createTest(dirPath: string) {
     console.error(`Error creating test ${testName}:`, error);
     throw error;
   }
+}
+
+function selectRuntimeMetadata(metadata: {
+  context?: string;
+  id?: string;
+  maxChars?: number;
+  requiresReview?: boolean;
+}): Record<string, unknown> {
+  return {
+    ...(metadata.context && { context: metadata.context }),
+    ...(metadata.id && { id: metadata.id }),
+    ...(metadata.maxChars != null && { maxChars: metadata.maxChars }),
+    ...(metadata.requiresReview === true && { requiresReview: true }),
+  };
+}
+
+function normalizeSemanticWire(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(normalizeSemanticWire);
+  if (!isRecord(value)) return value;
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([key]) => key !== 't' || !('i' in value) || 'k' in value)
+      .map(([key, child]) => [key, normalizeSemanticWire(child)])
+  );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
 }
 
 function createTests(seedsPath: string): void {
