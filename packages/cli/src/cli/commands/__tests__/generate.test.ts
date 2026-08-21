@@ -150,4 +150,34 @@ describe('handleGenerate', () => {
     expect(existsSync('messages/fr/common.json')).toBe(false);
     expect(postProcessTranslations).not.toHaveBeenCalled();
   });
+
+  it('rejects filesystem aliases to a pre-existing output', async () => {
+    mkdirSync('sources/en', { recursive: true });
+    mkdirSync('messages/fr', { recursive: true });
+    writeFileSync('sources/en/alpha.json', '{"value":"Alpha"}');
+    writeFileSync('sources/en/beta.json', '{"value":"Beta"}');
+    writeFileSync('messages/fr/common.json', '{"value":"Existing"}');
+    symlinkSync(
+      path.resolve('messages'),
+      'messages-alias',
+      process.platform === 'win32' ? 'junction' : 'dir'
+    );
+    const settings = createSettings([
+      'sources/en/alpha.json',
+      'sources/en/beta.json',
+    ]);
+    settings.files.placeholderPaths.json = [
+      path.resolve('messages/[locale]/common.json'),
+      path.resolve('messages-alias/[locale]/common.json'),
+    ];
+
+    await expect(handleGenerate(settings)).rejects.toThrow(
+      'Multiple source files map to the same generated output'
+    );
+
+    expect(readFileSync('messages/fr/common.json', 'utf8')).toBe(
+      '{"value":"Existing"}'
+    );
+    expect(postProcessTranslations).not.toHaveBeenCalled();
+  });
 });

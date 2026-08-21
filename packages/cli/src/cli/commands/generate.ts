@@ -111,7 +111,7 @@ function createGenerationPlan(settings: Settings): GenerationTarget[] {
 
 export async function handleGenerate(settings: Settings): Promise<void> {
   const generatedFiles = new Set<string>();
-  const generatedTargets: GenerationTarget[] = [];
+  const processedTargets: GenerationTarget[] = [];
 
   try {
     for (const target of createGenerationPlan(settings)) {
@@ -120,15 +120,15 @@ export async function handleGenerate(settings: Settings): Promise<void> {
       try {
         await fs.promises.copyFile(source, output, fs.constants.COPYFILE_EXCL);
         generatedFiles.add(outputPath);
-        generatedTargets.push(target);
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
 
-        const existing = generatedTargets.find((generatedTarget) =>
-          isSameFile(generatedTarget.output, output)
+        const existing = processedTargets.find((processedTarget) =>
+          isSameFile(processedTarget.output, output)
         );
         if (existing) throw createOutputCollisionError(existing, target);
       }
+      processedTargets.push(target);
     }
 
     if (generatedFiles.size > 0) {
