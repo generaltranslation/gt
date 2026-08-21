@@ -10,17 +10,15 @@ import {
   Stack,
   Switch,
   Text,
-  Tooltip,
 } from '@sanity/ui';
-import {
-  CheckmarkCircleIcon,
-  DownloadIcon,
-  LinkIcon,
-  PublishIcon,
-  RefreshIcon,
-  TranslateIcon,
-  UploadIcon,
-} from '@sanity/icons';
+import { Tooltip } from '@sanity/ui/tooltip';
+import { CheckmarkCircleIcon } from '@sanity/icons/CheckmarkCircle';
+import { DownloadIcon } from '@sanity/icons/Download';
+import { LinkIcon } from '@sanity/icons/Link';
+import { PublishIcon } from '@sanity/icons/Publish';
+import { RefreshIcon } from '@sanity/icons/Refresh';
+import { TranslateIcon } from '@sanity/icons/Translate';
+import { UploadIcon } from '@sanity/icons/Upload';
 import { Link } from 'sanity/router';
 import { BaseTranslationWrapper } from '../shared/BaseTranslationWrapper';
 import { TranslationsProvider, useTranslations } from '../TranslationsProvider';
@@ -53,6 +51,7 @@ const TranslationsToolContent: React.FC = () => {
     loadingDocuments,
     importProgress,
     importedTranslations,
+    pendingTranslations,
     isRefreshing,
     setAutoRefresh,
     preserveExistingTranslations,
@@ -89,6 +88,12 @@ const TranslationsToolContent: React.FC = () => {
     }
   }, [isBusy, importProgress.isImporting]);
 
+  // A translation run stays in flight after the request resolves, so `isBusy`
+  // alone drops the button back to idle while work is still happening. The
+  // per-locale rows already read "Translating…"; this keeps the top-level
+  // button honest and guards against enqueueing the same run twice.
+  const isWaitingOnTranslations = pendingTranslations.size > 0;
+
   const enabledLocaleCount = locales.filter((l) => l.enabled !== false).length;
   const totalTranslations = documents.length * enabledLocaleCount;
   const actionsDisabled = isBusy || loadingDocuments || documents.length === 0;
@@ -96,9 +101,9 @@ const TranslationsToolContent: React.FC = () => {
   return (
     <Container width={2}>
       <Box padding={4} marginTop={5}>
-        <Stack space={5}>
+        <Stack gap={5}>
           <Flex align='flex-start' justify='space-between' gap={4}>
-            <Stack space={3}>
+            <Stack gap={3}>
               <Heading as='h2' size={3}>
                 Translations
               </Heading>
@@ -110,17 +115,20 @@ const TranslationsToolContent: React.FC = () => {
 
             <Button
               icon={TranslateIcon}
-              text='Translate All'
-              loading={isBusy && currentOperation === 'Translate All'}
+              text={isWaitingOnTranslations ? 'Translating…' : 'Translate All'}
+              loading={
+                (isBusy && currentOperation === 'Translate All') ||
+                isWaitingOnTranslations
+              }
               onClick={() => {
                 setCurrentOperation('Translate All');
                 setIsTranslateAllDialogOpen(true);
               }}
-              disabled={actionsDisabled}
+              disabled={actionsDisabled || isWaitingOnTranslations}
             />
           </Flex>
 
-          <Stack space={3}>
+          <Stack gap={3}>
             <Flex align='center' justify='space-between' gap={3}>
               <Text size={1} muted>
                 {loadingDocuments
@@ -173,7 +181,7 @@ const TranslationsToolContent: React.FC = () => {
             <TranslationsTable />
           </Stack>
 
-          <Stack space={3}>
+          <Stack gap={3}>
             <Flex gap={2} align='center' justify='space-between'>
               <Flex gap={2} align='center' wrap='wrap'>
                 <Tooltip

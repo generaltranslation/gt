@@ -55,8 +55,8 @@ export const TranslateAllDialog: React.FC<TranslateAllDialogProps> = ({
       }
     >
       <Box padding={4}>
-        <Stack space={4}>
-          <Stack space={3}>
+        <Stack gap={4}>
+          <Stack gap={3}>
             <Text>
               Are you sure you want to create translations for all{' '}
               {documents.length} documents?
@@ -81,7 +81,7 @@ export const TranslateAllDialog: React.FC<TranslateAllDialogProps> = ({
                   setForce(event.currentTarget.checked)
                 }
               />
-              <Stack space={2} flex={1}>
+              <Stack gap={2} flex={1}>
                 <Text size={1} weight='medium'>
                   <label htmlFor='translate-all-force'>
                     Retranslate from scratch

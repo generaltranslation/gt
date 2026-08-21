@@ -1,7 +1,6 @@
 import { useCallback } from 'react';
 import { createLookupOptions, interpolateMessage } from 'gt-i18n/internal';
-import { useLocale } from './condition-store';
-import { useShouldTranslate } from './utils';
+import { useTranslationConditions } from './utils';
 import type { GTFunctionType, GTTranslationOptions } from 'gt-i18n/types';
 import type { StringFormat } from '@generaltranslation/format/types';
 import { useDefaultLocale } from './i18n-config';
@@ -13,10 +12,13 @@ import {
 // ===== Hook ===== //
 
 export function useGT(_messages?: Message[]): GTFunctionType {
-  const locale = useLocale();
+  const { locale, shouldTranslate } = useTranslationConditions();
   const defaultLocale = useDefaultLocale();
-  const shouldTranslate = useShouldTranslate();
-  const resolveTranslation = useTrackedTranslationResolver(_messages);
+  const resolveTranslation = useTrackedTranslationResolver(
+    _messages,
+    locale,
+    shouldTranslate
+  );
 
   /**
    * gt() string translation callback
