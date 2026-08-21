@@ -1498,6 +1498,9 @@ importers:
 
   packages/rrweb:
     dependencies:
+      gt-react:
+        specifier: '>=11.0.0'
+        version: link:../react
       react:
         specifier: '>=18.0.0'
         version: 19.2.3
@@ -1520,9 +1523,6 @@ importers:
       '@types/react-dom':
         specifier: '>=18.0.0 <20.0.0'
         version: 19.1.9(@types/react@19.2.7)
-      gt-react:
-        specifier: workspace:*
-        version: link:../react
       tsdown:
         specifier: 'catalog:'
         version: 0.21.10(synckit@0.11.11)(typescript@5.9.3)
