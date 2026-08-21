@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { getPackageJson, updatePackageJson } from './packageJson.js';
 import { promptSelect } from '../console/logging.js';
+import { logger } from '../console/logger.js';
 
 export interface PackageManager {
   id: string;
@@ -299,6 +300,14 @@ export async function getPackageManager(
 
   if (errorIfNotFound) {
     throw new NoPackageManagerError('No package manager found');
+  }
+
+  if (process.stdin.isTTY !== true) {
+    logger.info(
+      'No package manager detected and no interactive terminal to ask; defaulting to npm.'
+    );
+    globalWizard._gt_wizard_cached_package_manager = NPM;
+    return NPM;
   }
 
   const selectedPackageManager: PackageManager =

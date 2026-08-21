@@ -102,6 +102,7 @@ export type WrapOptions = {
 export type SetupOptions = {
   src?: string[];
   config: string;
+  yes?: boolean;
 };
 
 export type GenerateSourceOptions = {

@@ -1,10 +1,17 @@
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-import { promptLocale, promptLocaleList } from '../console/logging.js';
+import {
+  logErrorAndExit,
+  promptLocale,
+  promptLocaleList,
+} from '../console/logging.js';
 
-export async function getDesiredLocales(existingConfig?: {
-  defaultLocale?: unknown;
-  locales?: unknown;
-}): Promise<{
+export async function getDesiredLocales(
+  existingConfig?: {
+    defaultLocale?: unknown;
+    locales?: unknown;
+  },
+  nonInteractive: boolean = false
+): Promise<{
   defaultLocale: string;
   locales: string[];
 }> {
@@ -22,10 +29,21 @@ export async function getDesiredLocales(existingConfig?: {
   // Ask for the default locale
   const defaultLocale =
     configuredDefaultLocale ??
-    (await promptLocale({
-      message: 'What is the default locale for your project?',
-      defaultValue: libraryDefaultLocale,
-    }));
+    (nonInteractive
+      ? libraryDefaultLocale
+      : await promptLocale({
+          message: 'What is the default locale for your project?',
+          defaultValue: libraryDefaultLocale,
+        }));
+
+  if (
+    nonInteractive &&
+    (!configuredLocales || configuredLocales.length === 0)
+  ) {
+    logErrorAndExit(
+      'No locales are configured. Add defaultLocale and locales to gt.config.json, or rerun without --yes to be prompted.'
+    );
+  }
 
   // Ask for the locales
   const locales =
