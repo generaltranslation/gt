@@ -1,3 +1,4 @@
+import type { VueCompilerOptions } from '@generaltranslation/vue-extractor/types';
 import type { SupportedFileExtension } from './index.js';
 
 /**
@@ -37,12 +38,16 @@ export type BaseParsingFlags = Record<string, unknown>;
  * @property {boolean} includeSourceCodeContext - Include surrounding source code lines as context for translations.
  * @property {boolean} enableAutoJsxInjection - Whether to enable auto-jsx injection for the internal <_T> and <_Var> components.
  * @property {boolean} legacyGtReactImportSource - Whether compiler-injected gt-react imports should use gt-react/browser.
+ * @property {string} viteConfigPath - Vite config used to resolve hash-affecting Vue compiler behavior.
+ * @property {VueCompilerOptions} vueCompilerOptions - Hash-affecting Vue template compiler options.
  */
 export type GTParsingFlags = BaseParsingFlags & {
   autoderive: boolean | { jsx?: boolean; strings?: boolean };
   includeSourceCodeContext: boolean;
   enableAutoJsxInjection: boolean;
   legacyGtReactImportSource: boolean;
+  viteConfigPath?: string;
+  vueCompilerOptions?: VueCompilerOptions;
 };
 
 /**

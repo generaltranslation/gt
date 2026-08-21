@@ -35,6 +35,7 @@ Visit [https://generaltranslation.com/docs](https://generaltranslation.com/docs)
 | ------------------------------------------------------------------- | ------------------------------------------------- |
 | [gt-next](packages/next)                                            | Automatic i18n for Next.js                        |
 | [gt-react](packages/react)                                          | Automatic i18n for React                          |
+| [gt-vue](packages/vue)                                              | Lightweight i18n for Vue                          |
 | [gt-i18n](packages/i18n)                                            | Pure JavaScript i18n library                      |
 | [gt](packages/cli)                                                  | CLI tool for continuous localization              |
 | [gt-sanity](packages/sanity)                                        | Plugin for Sanity Studio v3                       |

@@ -1,5 +1,15 @@
 # @generaltranslation/supported-locales
 
+## 2.1.16-iris.0
+
+### Patch Changes
+
+- 5d8b78a: Migrate the package license from FSL-1.1-ALv2 to MIT.
+- Updated dependencies [f2204b9]
+- Updated dependencies [b05b470]
+- Updated dependencies [5d8b78a]
+  - generaltranslation@9.1.3-iris.0
+
 ## 2.1.19
 
 ### Patch Changes

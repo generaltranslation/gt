@@ -23,7 +23,7 @@ import { Libraries, InlineLibrary } from '../types/libraries.js';
 export class InlineCLI extends BaseCLI {
   constructor(
     command: Command,
-    library: InlineLibrary,
+    library: SupportedLibraries,
     additionalModules?: SupportedLibraries[]
   ) {
     super(command, library, additionalModules);
@@ -37,6 +37,16 @@ export class InlineCLI extends BaseCLI {
     this.setupEnqueueCommand();
   }
 
+  /** Allows framework adapters to describe their own default source scope. */
+  protected getInlineSourceHelp(): string | undefined {
+    return undefined;
+  }
+
+  /** Returns the inline parser used by generate and targeted validation. */
+  protected getInlineLibrary(): InlineLibrary {
+    return fallbackToGtReact(this.library);
+  }
+
   protected setupStageCommand(): void {
     attachInlineTranslateFlags(
       attachTranslateFlags(
@@ -45,7 +55,8 @@ export class InlineCLI extends BaseCLI {
           .description(
             'Submits the project to the General Translation API for translation. Translations created using this command will require human approval.'
           )
-      )
+      ),
+      this.getInlineSourceHelp()
     ).action(async (options: TranslateFlags) => {
       displayHeader(
         'Staging project for translation with approval required...'
@@ -63,7 +74,8 @@ export class InlineCLI extends BaseCLI {
           .description(
             'Scans the project for a dictionary and inline translations and sends the updates to the General Translation API for translation.'
           )
-      )
+      ),
+      this.getInlineSourceHelp()
     ).action(async (options: TranslateFlags) => {
       displayHeader('Translating project...');
       await this.handleTranslate(options);
@@ -77,7 +89,8 @@ export class InlineCLI extends BaseCLI {
         .command('validate [files...]')
         .description(
           'Scans the project for a dictionary and/or inline content and validates the project for errors.'
-        )
+        ),
+      this.getInlineSourceHelp()
     ).action(async (files: string[], options: Options) => {
       // startCommand here since we don't want to show the ascii title; it
       // renders the same intro while honoring --quiet.
@@ -95,7 +108,8 @@ export class InlineCLI extends BaseCLI {
           .description(
             'Generate a translation file for the source locale. This command should be used if you are handling your own translations.'
           )
-      )
+      ),
+      this.getInlineSourceHelp()
     ).action(async (initOptions: TranslateFlags) => {
       displayHeader('Generating source templates...');
       await this.handleGenerateSourceCommand(initOptions);
@@ -113,7 +127,7 @@ export class InlineCLI extends BaseCLI {
     const updates = await aggregateInlineTranslations(
       initOptions,
       settings,
-      fallbackToGtReact(this.library)
+      this.getInlineLibrary()
     );
 
     // Convert updates to the proper data format
@@ -175,7 +189,7 @@ export class InlineCLI extends BaseCLI {
     const options = { ...initOptions, ...settings };
 
     // Fallback to gt-react
-    const pkg = fallbackToGtReact(this.library);
+    const pkg = this.getInlineLibrary();
 
     if (files && files.length > 0) {
       // Validate specific files using createInlineUpdates
@@ -195,6 +209,7 @@ function fallbackToGtReact(library: SupportedLibraries): InlineLibrary {
     Libraries.GT_TANSTACK_START,
     Libraries.GT_FLASK,
     Libraries.GT_FASTAPI,
+    Libraries.GT_VUE,
   ].includes(library as Libraries)
     ? (library as
         | typeof Libraries.GT_NEXT
@@ -202,6 +217,7 @@ function fallbackToGtReact(library: SupportedLibraries): InlineLibrary {
         | typeof Libraries.GT_REACT_NATIVE
         | typeof Libraries.GT_TANSTACK_START
         | typeof Libraries.GT_FLASK
-        | typeof Libraries.GT_FASTAPI)
+        | typeof Libraries.GT_FASTAPI
+        | typeof Libraries.GT_VUE)
     : Libraries.GT_REACT;
 }

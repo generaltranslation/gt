@@ -9,7 +9,15 @@ import createESBuildConfig from '../react/config/createESBuildConfig.js';
 import chalk from 'chalk';
 import type { ParsingConfigOptions, GTParsingFlags } from '../types/parsing.js';
 import { exitSync } from '../console/logging.js';
-import { InlineLibrary, isPythonLibrary } from '../types/libraries.js';
+import {
+  InlineLibrary,
+  isPythonLibrary,
+  Libraries,
+} from '../types/libraries.js';
+import {
+  extractInlineFromProject,
+  type PrimaryInlineExtractor,
+} from './extractInline.js';
 
 /**
  * Searches for gt-react or gt-next dictionary files and creates updates for them,
@@ -70,19 +78,31 @@ export async function createUpdates(
     }
   }
   // Scan through project for translatable content
+  const extractPrimary: PrimaryInlineExtractor | undefined =
+    pkg === Libraries.GT_VUE
+      ? undefined
+      : (primaryPatterns) =>
+          isPythonLibrary(pkg)
+            ? createPythonInlineUpdates(primaryPatterns)
+            : createInlineUpdates(
+                pkg,
+                validate,
+                primaryPatterns,
+                parsingFlags,
+                parsingOptions
+              );
   const {
     updates: newUpdates,
     errors: newErrors,
     warnings: newWarnings,
-  } = isPythonLibrary(pkg)
-    ? await createPythonInlineUpdates(src)
-    : await createInlineUpdates(
-        pkg,
-        validate,
-        src,
-        parsingFlags,
-        parsingOptions
-      );
+  } = await extractInlineFromProject(
+    pkg,
+    src,
+    parsingFlags,
+    parsingOptions,
+    extractPrimary,
+    options.jsconfig || undefined
+  );
 
   errors = [...errors, ...newErrors];
   warnings = [...warnings, ...newWarnings];
