@@ -23,12 +23,32 @@ export type NonPortableSeed = {
   | { reason: 'vue-text-coalescing' }
 );
 
+/** React seed cases that cannot yet be represented by the Vue seed surface. */
+export const REACT_ONLY_SEEDS = [
+  {
+    id: 'complex-cases/async-metadata-formatters',
+    reason: 'async-react-page',
+  },
+  {
+    id: 'complex-cases/date-and-number-formatters',
+    reason: 'unsupported-named-variable',
+  },
+  {
+    id: 'complex-cases/nested-branch-variable',
+    reason: 'unsupported-named-variable',
+  },
+  {
+    id: 'complex-cases/relative-time-formatter',
+    reason: 'unsupported-relative-time',
+  },
+] as const;
+
 /**
  * Exhaustive allowlist of presently non-portable React seeds.
  *
  * Keep this list narrow. Adding an entry removes a seed only from cross-runtime
  * React/Vue parity. The test harness still requires the Vue extractor to match
- * the Vue runtime for all 84 seeds. Each primary reason is evidenced against
+ * the Vue runtime for every paired seed. Each primary reason is evidenced against
  * its source fixture; implementing it should remove entries from this list and
  * increase the exact cross-runtime parity count.
  */

@@ -19,6 +19,7 @@ import { extractFromVueSource } from '../../../vue-extractor/src/internal/__test
 import {
   MINIMUM_EXACT_SEED_COUNT,
   NON_PORTABLE_SEEDS,
+  REACT_ONLY_SEEDS,
   type NonPortableSeed,
 } from '../../../../test-fixtures/react-vue-seed-contract';
 import { initializeI18nConfig as initializeReactI18nConfig } from '@generaltranslation/react-core/pure';
@@ -83,8 +84,12 @@ const ReactJsxRuntime = requireFromReactCore('react/jsx-runtime') as Record<
   unknown
 >;
 const seedRoot = path.join(repositoryRoot, 'tests/seeds');
-const reactSeedIds = collectSeedIds(seedRoot, 'page.tsx');
+const allReactSeedIds = collectSeedIds(seedRoot, 'page.tsx');
 const vueSeedIds = collectSeedIds(seedRoot, 'page.vue');
+const reactOnlyById = new Map(
+  REACT_ONLY_SEEDS.map((fixture) => [fixture.id, fixture])
+);
+const reactSeedIds = allReactSeedIds.filter((id) => !reactOnlyById.has(id));
 const fixtures = reactSeedIds.map((id): ParitySeed => ({ id }));
 const nonPortableById = new Map(
   NON_PORTABLE_SEEDS.map((fixture) => [fixture.id, fixture])
@@ -131,9 +136,21 @@ const vueSeedImports = Object.freeze({
 });
 
 describe('React and Vue seed runtime parity', () => {
-  it('pairs every one of the 84 React seeds with a Vue seed', () => {
-    expect(reactSeedIds).toHaveLength(84);
+  it('pairs every supported React seed with a Vue seed', () => {
+    expect(reactSeedIds).toHaveLength(85);
     expect(vueSeedIds).toEqual(reactSeedIds);
+  });
+
+  it('keeps the React-only allowlist narrow, sorted, and exhaustive', () => {
+    const ids = REACT_ONLY_SEEDS.map(({ id }) => id);
+    const unpairedReactIds = allReactSeedIds.filter(
+      (id) => !vueSeedIds.includes(id)
+    );
+
+    expect(ids).toHaveLength(4);
+    expect(ids).toEqual([...ids].sort());
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids).toEqual(unpairedReactIds);
   });
 
   it('keeps the non-portable allowlist narrow, sorted, and exhaustive', () => {
