@@ -1,5 +1,12 @@
 # gt-react
 
+## 11.1.13
+
+### Patch Changes
+
+- Updated dependencies [[`4422032`](https://github.com/generaltranslation/gt/commit/4422032bb5d365aabe095ee1ff103fd5bfdee578), [`4422032`](https://github.com/generaltranslation/gt/commit/4422032bb5d365aabe095ee1ff103fd5bfdee578)]:
+  - @generaltranslation/react-core@11.1.13
+
 ## 11.1.12
 
 ### Patch Changes

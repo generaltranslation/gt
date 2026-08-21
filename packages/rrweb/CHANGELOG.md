@@ -1,5 +1,11 @@
 # gt-rrweb
 
+## 0.1.0
+
+### Minor Changes
+
+- [#2144](https://github.com/generaltranslation/gt/pull/2144) [`4422032`](https://github.com/generaltranslation/gt/commit/4422032bb5d365aabe095ee1ff103fd5bfdee578) Thanks [@eoinest](https://github.com/eoinest)! - Add the recorder: `GTRecorder` + `useRecorder()` capture a product walkthrough once with rrweb, and `gt-rrweb/harvest` reads each locale's own published translations (source-agnostic; honors a custom `loadTranslations`). Replays via any rrweb replayer.
+
 ## 0.0.2
 
 ### Patch Changes
