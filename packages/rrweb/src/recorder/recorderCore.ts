@@ -87,9 +87,10 @@ const CHROME_V = 144;
 
 // Reflow the content region into a centered box of the given aspect. Injected as a
 // stylesheet + an <html> class so it's captured by rrweb (applied BEFORE the
-// snapshot) — the replay reproduces the same framing.
-function applyFrame(): void {
-  const ar = aspectOf(coreConfig.frame);
+// snapshot) — the replay reproduces the same framing. Reads the session's frozen
+// config (not mutable coreConfig) so a mid-prep configure() can't reframe it.
+function applyFrame(cfg: CoreConfig): void {
+  const ar = aspectOf(cfg.frame);
   if (ar == null) return;
   if (document.getElementById(FRAME_STYLE_ID)) return;
   const w = `min(94vw, calc((100vh - ${CHROME_V}px) * ${ar}))`;
@@ -103,7 +104,7 @@ function applyFrame(): void {
     `transform:translate(-50%,-50%) !important;width:${w} !important;height:${h} !important;` +
     `overflow:hidden !important;`;
   // Prefix each comma-separated selector with the recording class.
-  const rule = coreConfig.contentSelector
+  const rule = cfg.contentSelector
     .split(',')
     .map((s) => `html.gt-recording ${s.trim()}`)
     .join(',');
@@ -190,16 +191,20 @@ export async function start(runConfig: RecorderConfig): Promise<void> {
   if (activeStop || preparing) return;
   preparing = true;
   const mySession = ++sessionId;
+  // Freeze this session's config SYNCHRONOUSLY as it claims the recorder — a
+  // configure() from another <GTRecorder> mount during the await below must not change
+  // how THIS recording is framed, harvested, or which onComplete receives its bundle.
+  // Everything downstream (applyFrame, stop's harvest) reads this snapshot, never the
+  // mutable coreConfig.
+  const myConfig: CoreConfig = { ...coreConfig };
   setStatus('preparing');
   // Do the ONLY await (font fetch) BEFORE mutating the DOM. If stop()/abort()
   // supersedes this prep during the fetch, we bail having touched nothing — so we
   // can't remove a newer session's frame/fonts (they share element ids).
   const fontCss = await fetchInlinedFontCss();
   if (sessionId !== mySession) return; // superseded during the fetch; nothing to undo
-  // Freeze this session's config now — a later configure() must not change how it's
-  // framed, harvested, or which onComplete receives its bundle.
-  activeConfig = { ...coreConfig };
-  applyFrame();
+  activeConfig = myConfig;
+  applyFrame(myConfig);
   injectFontStyle(fontCss); // embed fonts before the snapshot (self-contained)
   // Set up this session's event storage: drop any prior events, record its locales.
   activeEvents = [];

@@ -213,6 +213,28 @@ describe('recorder lifecycle', () => {
     expect(h.holder.lastHarvestOpts?.contentSelector).toBe('[data-a]');
   });
 
+  // Greptile P1: "Preparation adopts later configuration" — a configure() DURING the
+  // prep font-await (before the recording begins) must not change how this session is
+  // framed/harvested or which onComplete gets its bundle. The snapshot is taken
+  // synchronously when start() claims the session, not after the await.
+  it('freezes config at the start() claim, ignoring configure() during the prep await', async () => {
+    const core = await loadCore();
+    const cb1 = vi.fn();
+    core.configure({ contentSelector: '[data-a]', onComplete: cb1 });
+
+    const fonts = deferred<string>();
+    h.holder.fonts = fonts.promise;
+    const a = core.start({ locales: ['en', 'fr'] }); // claims session, awaits fonts
+    // Reconfigure WHILE prep is still awaiting fonts (before the snapshot).
+    core.configure({ contentSelector: '[data-b]', onComplete: vi.fn() });
+    fonts.resolve('');
+    await a;
+
+    await core.stop();
+    expect(h.holder.lastHarvestOpts?.contentSelector).toBe('[data-a]');
+    expect(cb1).toHaveBeenCalledTimes(1);
+  });
+
   it('stop() with no active recording returns null', async () => {
     const core = await loadCore();
     expect(await core.stop()).toBeNull();
