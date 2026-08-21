@@ -1,0 +1,140 @@
+name: Latest Next.js - Locale Switching
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/test-next-latest-locale-switch.yml'
+      - 'packages/compiler/**'
+      - 'packages/core/**'
+      - 'packages/format/**'
+      - 'packages/i18n/**'
+      - 'packages/icu/**'
+      - 'packages/next/**'
+      - 'packages/react/**'
+      - 'packages/react-core/**'
+      - 'tests/apps/next-latest-locale-switch-*/**'
+      - 'tests/apps/next/turbopackRoot.ts'
+  schedule:
+    # Run daily at 07:00 UTC, after the general test-app browser checks.
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CI: true
+  CARGO_HTTP_MULTIPLEXING: false
+  CARGO_NET_RETRY: 10
+
+concurrency:
+  group: next-latest-locale-switch-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-next-latest:
+    name: Test locale switching on next@latest
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        name: Install pnpm
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
+        with:
+          targets: wasm32-wasip1
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build local GT packages
+        run: pnpm exec turbo build --filter='@generaltranslation/format' --filter='@generaltranslation/compiler' --filter=generaltranslation --filter=gt-i18n --filter='@generaltranslation/react-core' --filter=gt-react --filter=gt-next
+
+      - name: Install local gt-next with next@latest
+        id: versions
+        run: |
+          mkdir -p .turbo/next-latest-package
+          pnpm --filter gt-next pack --pack-destination .turbo/next-latest-package
+          GT_NEXT_TARBALL="$(find "$(pwd)/.turbo/next-latest-package" -name '*.tgz' -print -quit)"
+          LATEST_NEXT_VERSION="$(pnpm view next@latest version)"
+          pnpm --filter gt-test-next-latest-locale-switch-no-routing add "${GT_NEXT_TARBALL}" "next@${LATEST_NEXT_VERSION}" --save-exact --lockfile=false
+          pnpm --filter gt-test-next-latest-locale-switch-routing add "${GT_NEXT_TARBALL}" "next@${LATEST_NEXT_VERSION}" --save-exact --lockfile=false
+          NO_ROUTING_NEXT_VERSION="$(pnpm --filter gt-test-next-latest-locale-switch-no-routing exec next --version)"
+          ROUTING_NEXT_VERSION="$(pnpm --filter gt-test-next-latest-locale-switch-routing exec next --version)"
+          GT_NEXT_VERSION="$(pnpm --filter gt-next exec node -p "require('./package.json').version")"
+          test "${NO_ROUTING_NEXT_VERSION}" = "Next.js v${LATEST_NEXT_VERSION}"
+          test "${ROUTING_NEXT_VERSION}" = "Next.js v${LATEST_NEXT_VERSION}"
+          echo "next-version=${NO_ROUTING_NEXT_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "gt-next-version=${GT_NEXT_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "### Compatibility versions" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Next.js: \`${NO_ROUTING_NEXT_VERSION}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- gt-next: \`${GT_NEXT_VERSION}\` (local build)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Install Chromium
+        run: pnpm --filter gt-test-next-latest-locale-switch-no-routing test:e2e:install
+
+      - name: Test production app without locale routing
+        run: pnpm --filter gt-test-next-latest-locale-switch-no-routing test:production
+
+      - name: Test production locale-routing matrix
+        run: pnpm --filter gt-test-next-latest-locale-switch-routing test:matrix
+
+      - name: Upload Playwright artifacts
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: next-latest-locale-switch-${{ github.run_id }}
+          path: .turbo/playwright/next-latest-locale-switch/
+          retention-days: 30
+          if-no-files-found: ignore
+
+  notify-failure:
+    name: Notify libraries pager
+    if: ${{ always() && github.event_name != 'pull_request' && needs.test-next-latest.result != 'success' }}
+    needs: test-next-latest
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "Latest Next.js locale-switch checks failed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "🚨 *Latest Next.js locale-switch checks failed!*\n\n• Result: `${{ needs.test-next-latest.result }}`\n• Repository: `${{ github.repository }}`\n• Branch: `${{ github.ref_name }}`\n• Commit: `${{ github.sha }}`\n• Trigger: `${{ github.event_name }}`"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Run"
+                      },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
+                  ]
+                }
+              ]
+            }
