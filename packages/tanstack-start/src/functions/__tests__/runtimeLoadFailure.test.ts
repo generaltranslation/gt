@@ -35,8 +35,8 @@ const config = {
   locales: ['en', 'es'],
 };
 
-const failingLoader = () =>
-  Promise.reject(new Error("Cannot find module './_gt/es.json'"));
+const failingLoader = (message: string) => () =>
+  Promise.reject(new Error(message));
 
 function setup(cacheParams: ConstructorParameters<typeof ReactI18nCache>[0]) {
   initializeI18nConfig(config);
@@ -88,7 +88,11 @@ describe.sequential('server functions when translation loading fails', () => {
     // Same failure class as gt#1937: the cache rethrows in dev, which used to
     // reject the server function and turn the request into an HTTP 500
     vi.stubEnv('NODE_ENV', 'development');
-    setup({ loadTranslations: failingLoader });
+    setup({
+      loadTranslations: failingLoader(
+        "Cannot find module './_gt/es.json' (getGT)"
+      ),
+    });
 
     await runRequest(async () => {
       const gt = await getGT();
@@ -102,7 +106,11 @@ describe.sequential('server functions when translation loading fails', () => {
 
   it('development: getMessages falls back to source content when the loader fails', async () => {
     vi.stubEnv('NODE_ENV', 'development');
-    setup({ loadTranslations: failingLoader });
+    setup({
+      loadTranslations: failingLoader(
+        "Cannot find module './_gt/es.json' (getMessages)"
+      ),
+    });
 
     await runRequest(async () => {
       const m = await getMessages();
@@ -115,8 +123,8 @@ describe.sequential('server functions when translation loading fails', () => {
     vi.stubEnv('NODE_ENV', 'development');
     setup({
       dictionary: { greeting: 'Hello {name}!' },
-      loadDictionary: failingLoader,
-      loadTranslations: failingLoader,
+      loadDictionary: failingLoader('missing dictionary (getTranslations)'),
+      loadTranslations: failingLoader('missing translations (getTranslations)'),
     });
 
     await runRequest(async () => {
@@ -130,7 +138,9 @@ describe.sequential('server functions when translation loading fails', () => {
     vi.stubEnv('NODE_ENV', 'development');
     const loadTranslations = vi
       .fn()
-      .mockRejectedValueOnce(new Error("Cannot find module './_gt/es.json'"))
+      .mockRejectedValueOnce(
+        new Error("Cannot find module './_gt/es.json' (recovers)")
+      )
       .mockResolvedValue({
         [hashMessage('Hello, world!', { $format: 'ICU' })]: 'Hola, mundo!',
       });
@@ -147,9 +157,26 @@ describe.sequential('server functions when translation loading fails', () => {
     expect(loadTranslations).toHaveBeenCalledTimes(2);
   });
 
+  it('development: an identical repeated failure warns only once', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    setup({ loadTranslations: failingLoader('repeat failure (dedupe)') });
+
+    await runRequest(async () => {
+      const gt = await getGT();
+      expect(gt('Hello, world!')).toBe('Hello, world!');
+    });
+    await runRequest(async () => {
+      const gt = await getGT();
+      expect(gt('Hello, world!')).toBe('Hello, world!');
+    });
+    expect(consoleWarnSpy).toHaveBeenCalledTimes(1);
+  });
+
   it('production: the loader failure stays inside the cache and logs no warning', async () => {
     vi.stubEnv('NODE_ENV', 'production');
-    setup({ loadTranslations: failingLoader });
+    setup({
+      loadTranslations: failingLoader('missing translations (production)'),
+    });
 
     await runRequest(async () => {
       const gt = await getGT();

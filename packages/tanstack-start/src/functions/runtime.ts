@@ -28,6 +28,17 @@ type LocaleConditions = {
  * which would turn the server-function request into an HTTP 500; warn once
  * and degrade the request to source content instead.
  */
+const MAX_WARNED_RUNTIME_LOAD_FAILURES = 100;
+const warnedRuntimeLoadFailures = new Set<string>();
+
+function getRuntimeLoadFailureKey(locale: string, error: unknown): string {
+  const errorKey =
+    error instanceof Error
+      ? `${error.name}|${error.message}`
+      : `${typeof error}|${String(error)}`;
+  return `${locale}|${errorKey}`;
+}
+
 async function resolveWithSourceFallback<T>(
   conditions: LocaleConditions,
   create: (conditions: LocaleConditions) => Promise<T>
@@ -36,6 +47,17 @@ async function resolveWithSourceFallback<T>(
     return await create(conditions);
   } catch (error) {
     if (getRuntimeEnvironment() !== 'development') throw error;
+    const failureKey = getRuntimeLoadFailureKey(conditions.locale, error);
+    if (warnedRuntimeLoadFailures.has(failureKey)) {
+      return create({ ...conditions, enableI18n: false });
+    }
+    warnedRuntimeLoadFailures.add(failureKey);
+    if (warnedRuntimeLoadFailures.size > MAX_WARNED_RUNTIME_LOAD_FAILURES) {
+      const oldest = warnedRuntimeLoadFailures.values().next().value;
+      if (oldest !== undefined) {
+        warnedRuntimeLoadFailures.delete(oldest);
+      }
+    }
     console.warn(
       createDiagnosticMessage({
         source: 'gt-tanstack-start',
