@@ -147,6 +147,7 @@ export async function upload(
     const { branchData } = await runUploadFilesWorkflow({
       files: uploadData,
       options: settings,
+      force: settings.force,
     });
 
     // Publish files to CDN if publish config exists

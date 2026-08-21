@@ -599,3 +599,30 @@ describe('upload - composite JSON', () => {
     expect(plainFile?.translations[0].content).toBe(translatedPlain);
   });
 });
+
+describe('upload - force flag', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(existsSync).mockReturnValue(false);
+    vi.mocked(readFileSync).mockReturnValue('');
+    vi.mocked(createFileMapping).mockReturnValue({});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('forwards the force flag to the upload workflow', async () => {
+    const content = JSON.stringify({ title: 'Hello' });
+    setMockFiles({ 'plain.json': content });
+
+    const filePaths: ResolvedFiles = { json: ['plain.json'] };
+    const settings = makeSettings({ options: {}, force: true });
+
+    await uploadWithFiles(filePaths, settings);
+
+    expect(runUploadFilesWorkflow).toHaveBeenCalledTimes(1);
+    const call = vi.mocked(runUploadFilesWorkflow).mock.calls[0][0];
+    expect(call.force).toBe(true);
+  });
+});

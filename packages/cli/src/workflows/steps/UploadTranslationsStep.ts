@@ -61,7 +61,8 @@ export class UploadTranslationsStep {
 
   constructor(
     private gt: GT,
-    private settings: Settings
+    private settings: Settings,
+    private force?: boolean
   ) {}
 
   async run({ files }: UploadTranslationsInput): Promise<FileReference[]> {
@@ -79,12 +80,12 @@ export class UploadTranslationsStep {
     // uploaded (the endpoint is an upsert, so existing translations are
     // overwritten). The one optimization is the lockfile: files whose content
     // hash still matches gt-lock.json are unchanged since the last sync and
-    // can be skipped. Without a lockfile, everything uploads.
+    // can be skipped. Without a lockfile, everything uploads, and --force
+    // uploads everything regardless of the lockfile.
     const lockfile = readLockfile(this.settings);
-    const { filesToUpload, skippedCount } = partitionTranslationsByLockfile(
-      withTranslations,
-      lockfile.entryMap
-    );
+    const { filesToUpload, skippedCount } = this.force
+      ? { filesToUpload: withTranslations, skippedCount: 0 }
+      : partitionTranslationsByLockfile(withTranslations, lockfile.entryMap);
 
     if (filesToUpload.length === 0) {
       logger.info(
