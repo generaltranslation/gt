@@ -1,5 +1,16 @@
 # gt-react-native
 
+## 11.1.14
+
+### Patch Changes
+
+- Updated dependencies [[`f2204b9`](https://github.com/generaltranslation/gt/commit/f2204b990278865c54d14d337392930ea1ec31bf), [`b05b470`](https://github.com/generaltranslation/gt/commit/b05b4703fbbfd34a3cbee335c786e2e606346167), [`8d376e2`](https://github.com/generaltranslation/gt/commit/8d376e23c80828dfd8756e2f0fbf0f7725e0f178)]:
+  - @generaltranslation/format@0.1.8
+  - generaltranslation@9.1.7
+  - gt-i18n@1.0.17
+  - @generaltranslation/react-core@11.1.14
+  - @generaltranslation/supported-locales@2.1.20
+
 ## 11.1.7-iris.0
 
 ### Patch Changes

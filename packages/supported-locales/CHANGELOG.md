@@ -1,5 +1,12 @@
 # @generaltranslation/supported-locales
 
+## 2.1.20
+
+### Patch Changes
+
+- Updated dependencies [[`f2204b9`](https://github.com/generaltranslation/gt/commit/f2204b990278865c54d14d337392930ea1ec31bf), [`b05b470`](https://github.com/generaltranslation/gt/commit/b05b4703fbbfd34a3cbee335c786e2e606346167)]:
+  - generaltranslation@9.1.7
+
 ## 2.1.16-iris.0
 
 ### Patch Changes
