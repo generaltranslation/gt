@@ -163,7 +163,11 @@ function createRenderPreparedT({
   }): ReactNode {
     return renderTranslatedChildren({
       source: taggedSourceChildren,
-      target: targetJsxChildren,
+      // The shared persisted wire also admits empty-rendering boolean/null
+      // values. The outer null check and existing renderer fallback own those
+      // cases; this narrower internal renderer type describes its recursive
+      // element/string grammar without changing React runtime behavior.
+      target: targetJsxChildren as RenderTranslatedChildrenArgs['target'],
       locales,
       enableI18n,
     });

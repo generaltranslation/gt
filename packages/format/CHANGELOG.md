@@ -1,5 +1,15 @@
 # @generaltranslation/format
 
+## 0.1.5-iris.0
+
+### Patch Changes
+
+- f2204b9: Represent React's persisted boolean and null rich-content values in the shared
+  JSX wire types used by framework runtimes and translation catalogs.
+- 5d8b78a: Migrate the package license from FSL-1.1-ALv2 to MIT.
+- Updated dependencies [5d8b78a]
+  - @generaltranslation/icu@0.1.2-iris.0
+
 ## 0.1.7
 
 ### Patch Changes

@@ -8,6 +8,10 @@ import {
   getFileTranslationKey,
   queryCompletedTranslationKeys,
 } from '../utils/queryCompletedTranslations.js';
+import {
+  getInlineElementsLabel,
+  type InlineLibrary,
+} from '../../types/libraries.js';
 
 export type PollJobsInput = {
   fileTracker: FileStatusTracker;
@@ -33,7 +37,10 @@ export class PollTranslationJobsStep {
   private spinner: ReturnType<typeof logger.createProgressBar> | null = null;
   private previousProgress = 0;
 
-  constructor(private gt: GT) {}
+  constructor(
+    private gt: GT,
+    private inlineLibrary?: InlineLibrary
+  ) {}
 
   async run({
     fileTracker,
@@ -378,7 +385,9 @@ export class PollTranslationJobsStep {
 
       // Format the line
       const prettyFileName =
-        fileName === TEMPLATE_FILE_NAME ? '<React Elements>' : fileName;
+        fileName === TEMPLATE_FILE_NAME
+          ? `<${getInlineElementsLabel(this.inlineLibrary)}>`
+          : fileName;
       newSuffixText.push(`${chalk.bold(prettyFileName)} [${localeString}]`);
     }
 

@@ -14,6 +14,7 @@ import { BranchData } from '../types/branch.js';
 import { calculateTimeoutMs } from '../utils/calculateTimeoutMs.js';
 import { filterFilesForEnqueue } from './utils/filterFilesForEnqueue.js';
 import { syncFonts } from './utils/syncFonts.js';
+import type { InlineLibrary } from '../types/libraries.js';
 
 /**
  * Sends multiple files for translation to the API using a workflow pattern
@@ -26,17 +27,19 @@ export async function runStageFilesWorkflow({
   files,
   options,
   settings,
+  inlineLibrary,
 }: {
   files: FileToUpload[];
   options: TranslateFlags;
   settings: Settings;
+  inlineLibrary?: InlineLibrary;
 }): Promise<{
   branchData: BranchData;
   enqueueResult: EnqueueFilesResult;
 }> {
   try {
     // Log files to be translated
-    logCollectedFiles(files);
+    logCollectedFiles(files, undefined, inlineLibrary);
 
     // Sync fonts before enqueueing so the translation jobs (e.g. Lottie
     // layout refinement) can use them instead of fallback fonts.
