@@ -10,6 +10,19 @@ export const POLYFILLS = [
   '@formatjs/intl-datetimeformat/add-all-tz',
 ] as const;
 
+export type Polyfill = (typeof POLYFILLS)[number];
+
+export const FORCED_POLYFILL_IMPORTS = {
+  '@formatjs/intl-displaynames/polyfill':
+    '@formatjs/intl-displaynames/polyfill-force',
+  '@formatjs/intl-listformat/polyfill':
+    '@formatjs/intl-listformat/polyfill-force',
+  '@formatjs/intl-relativetimeformat/polyfill':
+    '@formatjs/intl-relativetimeformat/polyfill-force',
+} as const satisfies Partial<Record<Polyfill, string>>;
+
+export type ForceablePolyfill = keyof typeof FORCED_POLYFILL_IMPORTS;
+
 export const LOCALE_POLYFILLS = [
   `@formatjs/intl-displaynames/locale-data`,
   `@formatjs/intl-listformat/locale-data`,
@@ -32,5 +45,7 @@ export interface PluginOptions {
   /* Resolved from package.json */
   entryPointFilePath?: string;
   /* Polyfills to exclude */
-  excludePolyfills?: (typeof POLYFILLS)[number][];
+  excludePolyfills?: Polyfill[];
+  /* Polyfills that should bypass runtime capability detection */
+  forcePolyfills?: ForceablePolyfill[];
 }

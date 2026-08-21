@@ -1,13 +1,6 @@
 import React from 'react';
-import {
-  ThemeProvider,
-  ToastProvider,
-  Box,
-  Card,
-  Flex,
-  Spinner,
-  Text,
-} from '@sanity/ui';
+import { ThemeProvider, Box, Card, Flex, Spinner, Text } from '@sanity/ui';
+import { ToastProvider } from '@sanity/ui/toast';
 import { buildTheme } from '@sanity/ui/theme';
 import { useSecrets } from '../../hooks/useSecrets';
 import { Secrets } from '../../types';

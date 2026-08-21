@@ -5,17 +5,9 @@
  */
 
 import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
-import {
-  Stack,
-  Text,
-  Card,
-  Button,
-  Grid,
-  Flex,
-  Switch,
-  Tooltip,
-  useToast,
-} from '@sanity/ui';
+import { Stack, Text, Card, Button, Grid, Flex, Switch } from '@sanity/ui';
+import { Tooltip } from '@sanity/ui/tooltip';
+import { useToast } from '@sanity/ui/toast';
 import { pluginConfig } from '../../adapter/core';
 import { SaveLocalTranslationsDialog } from '../page/SaveLocalTranslationsDialog';
 import { DebugInfoDialog } from '../page/DebugInfoDialog';
@@ -24,14 +16,12 @@ import { useTranslations } from '../TranslationsProvider';
 import { LanguageStatus } from '../shared/LanguageStatus';
 import { resolveLanguageStatusState } from '../../utils/languageStatusState';
 import { LocaleCheckbox } from '../shared/LocaleCheckbox';
-import {
-  DownloadIcon,
-  LinkIcon,
-  PublishIcon,
-  RefreshIcon,
-  TranslateIcon,
-  UploadIcon,
-} from '@sanity/icons';
+import { DownloadIcon } from '@sanity/icons/Download';
+import { LinkIcon } from '@sanity/icons/Link';
+import { PublishIcon } from '@sanity/icons/Publish';
+import { RefreshIcon } from '@sanity/icons/Refresh';
+import { TranslateIcon } from '@sanity/icons/Translate';
+import { UploadIcon } from '@sanity/icons/Upload';
 import {
   createTranslationStatusKey,
   getDocumentPublishedId,
@@ -43,6 +33,7 @@ export const TranslationView = () => {
     locales,
     translationStatuses,
     pendingTranslations,
+    importingTranslations,
     branchId,
     isBusy,
     handleTranslateAll,
@@ -275,15 +266,15 @@ export const TranslationView = () => {
   }
 
   return (
-    <Stack space={6} padding={4}>
+    <Stack gap={6} padding={4}>
       {/* Translate Section */}
-      <Stack space={4}>
+      <Stack gap={4}>
         <Text as='h2' weight='semibold' size={2}>
           Translate
         </Text>
 
         {/* Locale Selection */}
-        <Stack space={3}>
+        <Stack gap={3}>
           <Flex align='center' justify='space-between'>
             <Text weight='semibold' size={1}>
               {availableLocales.length === 1
@@ -299,7 +290,7 @@ export const TranslationView = () => {
             />
           </Flex>
 
-          <Grid columns={[1, 1, 2, 3]} gap={1}>
+          <Grid gridTemplateColumns={[1, 1, 2, 3]} gap={1}>
             {locales
               .filter(
                 (locale) => locale.localeId !== pluginConfig.getSourceLocale()
@@ -344,7 +335,7 @@ export const TranslationView = () => {
 
       {/* Translation Status Section */}
       {documentId && versionId && statusLocales.length > 0 && (
-        <Stack space={4}>
+        <Stack gap={4}>
           <Flex align='center' justify='space-between'>
             <Text as='h2' weight='semibold' size={2}>
               Translation Status
@@ -390,6 +381,7 @@ export const TranslationView = () => {
                     isImported,
                     isPending: pendingTranslations.has(key),
                   })}
+                  isImporting={importingTranslations.has(key)}
                   importFile={async () => {
                     if (!isImported && status?.isReady) {
                       await handleImportDocument(
@@ -405,7 +397,7 @@ export const TranslationView = () => {
           </Card>
 
           {/* Import Controls */}
-          <Stack space={3}>
+          <Stack gap={3}>
             <Flex gap={2} align='center' justify='flex-start'>
               <Button
                 mode='ghost'

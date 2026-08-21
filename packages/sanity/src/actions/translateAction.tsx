@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { DocumentActionComponent } from 'sanity';
-import { TranslateIcon } from '@sanity/icons';
+import { TranslateIcon } from '@sanity/icons/Translate';
 import { BaseTranslationWrapper } from '../components/shared/BaseTranslationWrapper';
 import { TranslationsProvider } from '../components/TranslationsProvider';
 import { TranslationView } from '../components/tab/TranslationView';

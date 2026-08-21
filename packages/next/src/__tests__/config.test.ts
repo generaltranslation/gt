@@ -305,6 +305,14 @@ describe('withGTConfig', () => {
 
       expect(result.experimental!.rootParams).toBe(true);
     });
+
+    it('omits experimental.rootParams when root params are stable', async () => {
+      const withGTConfig = await getWithGTConfig();
+      mockVersionInfo.rootParamStability = 'stable';
+      const result = withGTConfig();
+
+      expect(result.experimental).not.toHaveProperty('rootParams');
+    });
   });
 
   // ==============================
