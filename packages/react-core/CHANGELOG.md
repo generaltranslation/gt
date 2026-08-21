@@ -19,6 +19,8 @@
 - Updated dependencies [8d376e2]
   - gt-i18n@1.0.12-iris.0
 
+## 11.1.12
+
 ## 11.1.11
 
 ### Patch Changes
