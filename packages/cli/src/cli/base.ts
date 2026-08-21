@@ -78,7 +78,7 @@ import { warnReactPackageCompatibility } from '../utils/reactPackageCompatibilit
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { setupViteSPA } from '../setup/setupViteSPA.js';
 import { manifestDirectlyDeclaresGTVue } from '@generaltranslation/vue-extractor/integration';
-import { createFileMapping } from '../formats/files/fileMapping.js';
+import { handleGenerate } from './commands/generate.js';
 
 const ID_COMPATIBILITY_WARNING_COMMANDS = new Set([
   'download',
@@ -303,55 +303,9 @@ export class BaseCLI {
       const settings = await generateSettings(initOptions, undefined, {
         requireConfig: true,
       });
-      await this.generateFileTemplates(settings);
+      await handleGenerate(settings);
       logger.endCommand('Done!');
     });
-  }
-
-  protected async generateFileTemplates(settings: Settings): Promise<void> {
-    const {
-      resolvedPaths,
-      placeholderPaths,
-      transformPaths,
-      transformFormats,
-    } = settings.files;
-    const fileMapping = createFileMapping(
-      resolvedPaths,
-      placeholderPaths,
-      transformPaths,
-      transformFormats,
-      settings.locales,
-      settings.defaultLocale
-    );
-    const generatedFiles = new Set<string>();
-
-    for (const localeMapping of Object.values(fileMapping)) {
-      for (const [sourcePath, outputPath] of Object.entries(localeMapping)) {
-        const source = path.resolve(sourcePath);
-        const output = path.resolve(outputPath);
-        if (source === output || !fs.existsSync(source)) {
-          continue;
-        }
-        await fs.promises.mkdir(path.dirname(output), { recursive: true });
-        try {
-          await fs.promises.copyFile(
-            source,
-            output,
-            fs.constants.COPYFILE_EXCL
-          );
-          generatedFiles.add(outputPath);
-        } catch (error) {
-          if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
-        }
-      }
-    }
-
-    if (generatedFiles.size > 0) {
-      await postProcessTranslations(settings, generatedFiles);
-      logger.step(
-        `Generated ${generatedFiles.size} translation template files.`
-      );
-    }
   }
 
   protected setupSendDiffsCommand(): void {
