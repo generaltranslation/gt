@@ -323,7 +323,7 @@ export class BaseCLI {
       settings.locales,
       settings.defaultLocale
     );
-    let generatedFiles = 0;
+    const generatedFiles = new Set<string>();
 
     for (const localeMapping of Object.values(fileMapping)) {
       for (const [sourcePath, outputPath] of Object.entries(localeMapping)) {
@@ -339,15 +339,18 @@ export class BaseCLI {
             output,
             fs.constants.COPYFILE_EXCL
           );
-          generatedFiles++;
+          generatedFiles.add(outputPath);
         } catch (error) {
           if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
         }
       }
     }
 
-    if (generatedFiles > 0) {
-      logger.step(`Generated ${generatedFiles} translation template files.`);
+    if (generatedFiles.size > 0) {
+      await postProcessTranslations(settings, generatedFiles);
+      logger.step(
+        `Generated ${generatedFiles.size} translation template files.`
+      );
     }
   }
 

@@ -8,22 +8,23 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { BaseCLI } from '../base.js';
 
 describe('gt generate', () => {
+  const originalCwd = process.cwd();
   let projectDir: string;
 
   beforeEach(() => {
     projectDir = mkdtempSync(path.join(tmpdir(), 'gt-generate-'));
-    vi.spyOn(process, 'cwd').mockReturnValue(projectDir);
+    process.chdir(projectDir);
 
     mkdirSync(path.join(projectDir, 'content', 'en'), { recursive: true });
     mkdirSync(path.join(projectDir, 'messages', 'en'), { recursive: true });
     mkdirSync(path.join(projectDir, 'content', 'es'), { recursive: true });
     writeFileSync(
       path.join(projectDir, 'content', 'en', 'intro.mdx'),
-      '# Hello'
+      'Hello\n\n[Guide](/en/blah)'
     );
     writeFileSync(
       path.join(projectDir, 'messages', 'en', 'common.json'),
@@ -42,12 +43,13 @@ describe('gt generate', () => {
           mdx: { include: ['content/[locale]/*.mdx'] },
           json: { include: ['messages/[locale]/*.json'] },
         },
+        options: { experimentalLocalizeStaticUrls: true },
       })
     );
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    process.chdir(originalCwd);
     rmSync(projectDir, { recursive: true, force: true });
   });
 
@@ -66,7 +68,7 @@ describe('gt generate', () => {
     ).toBe('# Hola');
     expect(
       readFileSync(path.join(projectDir, 'content', 'fr', 'intro.mdx'), 'utf8')
-    ).toBe('# Hello');
+    ).toBe('Hello\n\n[Guide](/fr/blah)');
     expect(
       JSON.parse(
         readFileSync(
