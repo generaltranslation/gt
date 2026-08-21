@@ -1,7 +1,3 @@
-import {
-  createDiagnosticMessage,
-  formatDiagnosticErrorDetails,
-} from 'generaltranslation/internal';
 import { getTranslateListenerKey } from 'gt-i18n/internal';
 import type {
   DictionaryEntrySnapshot,
@@ -22,24 +18,9 @@ import {
   lookupDictionaryEntry,
   lookupDictionaryObject,
 } from './utils/dictionaries';
+import { logRuntimeTranslationError } from '../utils/errors/logRuntimeTranslationError';
 
 export type DictionaryStoreListener = (event: DictionaryLookup) => void;
-
-const MAX_LOGGED_RUNTIME_TRANSLATION_ERRORS = 100;
-
-function getRuntimeTranslationErrorDedupeKey(error: unknown): string {
-  if (error instanceof Error) {
-    return `${error.name}|${error.message}`;
-  }
-  if (error !== null && typeof error === 'object') {
-    try {
-      return `object|${JSON.stringify(error)}`;
-    } catch {
-      return `object|${String(error)}`;
-    }
-  }
-  return `${typeof error}|${String(error)}`;
-}
 
 /**
  * I18nStore gives us the ability to perform client-side updates to translations.
@@ -114,31 +95,10 @@ export class I18nStore {
    * Runtime translation runs fire-and-forget, so a rejected request (for
    * example a 401 from an invalid dev API key) is logged here instead of
    * escaping as an unhandled rejection that kills the dev server during SSR.
-   * Identical failures log once.
+   * Identical failures log once per store instance.
    */
   private logRuntimeTranslationError(error: unknown): void {
-    const details = formatDiagnosticErrorDetails(error);
-    const dedupeKey = getRuntimeTranslationErrorDedupeKey(error);
-    if (this.loggedRuntimeTranslationErrors.has(dedupeKey)) return;
-    this.loggedRuntimeTranslationErrors.add(dedupeKey);
-    if (
-      this.loggedRuntimeTranslationErrors.size >
-      MAX_LOGGED_RUNTIME_TRANSLATION_ERRORS
-    ) {
-      const oldest = this.loggedRuntimeTranslationErrors.values().next().value;
-      if (oldest !== undefined) {
-        this.loggedRuntimeTranslationErrors.delete(oldest);
-      }
-    }
-    console.error(
-      createDiagnosticMessage({
-        source: '@generaltranslation/react-core',
-        severity: 'Error',
-        whatHappened: 'A runtime translation request failed.',
-        wayOut: 'Rendering falls back to untranslated content.',
-        details,
-      })
-    );
+    logRuntimeTranslationError(error, this.loggedRuntimeTranslationErrors);
   }
 
   // ========== UseSyncExternalStore ========== //
