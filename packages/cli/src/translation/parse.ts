@@ -105,8 +105,13 @@ export async function createUpdates(
   };
 
   updates = updates.map((update) => {
-    const { id, hash } = update.metadata;
+    const { id, hash, staticId } = update.metadata;
     if (!id) return update;
+    // Derive variants intentionally share their <T>'s id, one entry per
+    // variant hash. Extraction already warns that a static id or hash pins
+    // the runtime lookup to a single variant, so don't also report them as
+    // accidentally duplicated ids.
+    if (staticId) return update;
     if (!hash) {
       if (hashlessIds.has(id) || idHashMap.has(id)) {
         warnHashlessDuplicateId(id);
