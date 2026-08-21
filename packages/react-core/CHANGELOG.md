@@ -1,13 +1,5 @@
 # @generaltranslation/react-core
 
-## 11.1.13
-
-### Patch Changes
-
-- [#2122](https://github.com/generaltranslation/gt/pull/2122) [`dd545ea`](https://github.com/generaltranslation/gt/commit/dd545eaab8e1bc2c459440aed8c47611b178bad8) Thanks [@JoshKappler](https://github.com/JoshKappler)! - Log runtime translation failures from the i18n store instead of letting them escape as unhandled promise rejections that crash the dev server during SSR
-
-- [#2126](https://github.com/generaltranslation/gt/pull/2126) [`190e589`](https://github.com/generaltranslation/gt/commit/190e589b953cc131413137095773de4ebbf3932c) Thanks [@JoshKappler](https://github.com/JoshKappler)! - Return a snapshot with no entry for the locale, and warn, when `getTranslationsSnapshot()` cannot load translations for that locale, instead of letting the loader error propagate. Selecting a locale whose translation files do not exist yet crashed server route loaders (such as the TanStack Start root loader) with an HTTP 500 in development; content for that locale now renders untranslated. Because the failed locale is omitted rather than hydrated as an empty cache entry, a later lookup retries the loader once translations exist.
-
 ## 11.1.12
 
 ## 11.1.11
