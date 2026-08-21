@@ -23,6 +23,7 @@ tmp/
 .mcp.json
 .vscode/mcp.json
 .codex
+.gt/runtime-seeds/
 
 # React Native
 examples/expo-react-native/.expo/
