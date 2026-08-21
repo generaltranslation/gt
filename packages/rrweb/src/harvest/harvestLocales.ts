@@ -167,24 +167,34 @@ function renderShell(url: string, selector: string): Promise<Rendered> {
 }
 
 // Index EACH TEXT NODE by a STRUCTURAL KEY = its element path (`tagName[nth-of-type]`
-// from the content root) plus its position among that element's MEANINGFUL text nodes.
-// GT preserves DOM structure across locales (it only swaps text), so the same text node
-// carries the same key in every locale. The text index counts only non-blank text
-// nodes: a whitespace-only or comment node that appears in one locale's render but not
-// another must NOT shift the key, or source text would pair with an unrelated target
-// string. Per-TEXT-NODE granularity (not per-element joined text) matches
-// collectRecordedText, so every occurrence contributes an observation to
-// foldObservations and there's no joined-text artifact that could collide.
+// from the content root) plus its position AND count among that element's MEANINGFUL
+// (non-blank) direct text nodes: `${path}#${index}/${count}`. GT preserves DOM structure
+// across locales (it only swaps text), so a text node carries the same key in every
+// locale — BUT only when the element renders the SAME number of non-blank text nodes in
+// both. If a position is blank in one locale and text in the other (e.g. an empty
+// variable), the non-blank COUNT differs, and the compacted index alone would mispair
+// (source `[blank, "Later"]` → "Later"#0 vs target `["Earlier", "Later"]` → "Earlier"#0,
+// so foldObservations would learn "Later"→"Earlier"). Encoding the count in the key makes
+// those keys differ, so a count-mismatched element never cross-pairs — the text stays on
+// source (a safe miss) instead of getting a wrong translation. Per-TEXT-NODE granularity
+// (not per-element joined text) matches collectRecordedText, so every occurrence
+// contributes an observation and there's no joined-text artifact that could collide.
 function textByKey(root: Element): Map<string, string> {
   const map = new Map<string, string>();
   const visit = (el: Element, prefix: string) => {
     const tagCounts: Record<string, number> = {};
+    // Count this element's non-blank direct text nodes first, so each key can carry it.
+    let textCount = 0;
+    el.childNodes.forEach((c) => {
+      if (c.nodeType === window.Node.TEXT_NODE && (c.textContent ?? '').trim())
+        textCount++;
+    });
     let textIdx = 0;
     el.childNodes.forEach((c) => {
       if (c.nodeType === window.Node.TEXT_NODE) {
         const t = c.textContent ?? '';
         if (t.trim()) {
-          map.set(`${prefix}#${textIdx}`, t);
+          map.set(`${prefix}#${textIdx}/${textCount}`, t);
           textIdx++;
         }
       } else if (c.nodeType === window.Node.ELEMENT_NODE) {
