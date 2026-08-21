@@ -81,6 +81,7 @@ export function msg(
   try {
     interpolatedString = formatMessage(message, {
       locales: [libraryDefaultLocale], // TODO: use compiler to insert locales
+      dataFormat: options.$format,
       variables: {
         ...variables,
         [VAR_IDENTIFIER]: 'other',

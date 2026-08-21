@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { msg } from '../msg';
 import { decodeMsg } from '../decodeMsg';
+import { decodeOptions } from '../decodeOptions';
 import { derive, declareVar } from 'generaltranslation/internal';
 import type { RegisterableMessages } from '../../types/message';
+import { hashMessage } from '../../../utils/hashMessage';
 
 describe('msg function integration', () => {
   it('should not format messages without variables', () => {
@@ -15,6 +17,36 @@ describe('msg function integration', () => {
     const result = msg('Hello {name}', { name: 'World' });
     const decoded = decodeMsg(result);
     expect(decoded).toBe('Hello World');
+  });
+
+  it('should format explicit ICU messages with variables', () => {
+    const result = msg('Hello {name}', {
+      $format: 'ICU',
+      name: 'World',
+    });
+    const decoded = decodeMsg(result);
+    expect(decoded).toBe('Hello World');
+  });
+
+  it('should preserve variables in STRING messages and encode the options', () => {
+    const message = 'Hello {name}';
+    const options = {
+      $format: 'STRING' as const,
+      $context: 'Greeting shown on the home page',
+      $id: 'home.greeting',
+      $locale: 'en-US',
+      $maxChars: 40,
+      $requiresReview: true,
+      name: 'Ada',
+    };
+    const result = msg(message, options);
+
+    expect(decodeMsg(result)).toBe(message);
+    expect(decodeOptions(result)).toEqual({
+      ...options,
+      $_source: message,
+      $_hash: hashMessage(message, options),
+    });
   });
 
   it('should not format variables in quoted text', () => {
