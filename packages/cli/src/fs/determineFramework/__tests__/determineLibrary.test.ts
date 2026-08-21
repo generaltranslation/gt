@@ -71,7 +71,7 @@ describe('determineLibrary', () => {
 
       const result = determineLibrary();
       expect(result.library).toBe('base');
-      expect(result.hasPackageJson).toBe(true);
+      expect(result.hasProjectFile).toBe(true);
     });
 
     it("returns 'base' without warning when no JS or Python project file exists", () => {
@@ -80,11 +80,24 @@ describe('determineLibrary', () => {
       const result = determineLibrary();
 
       expect(result.library).toBe('base');
-      expect(result.hasPackageJson).toBe(false);
+      expect(result.hasProjectFile).toBe(false);
       expect(mockWarn).not.toHaveBeenCalled();
     });
 
-    it('reports hasPackageJson when package.json cannot be parsed', () => {
+    it('reports hasProjectFile for a Python project with no recognized library', () => {
+      mockExistsSync.mockImplementation((path) => {
+        if (String(path).endsWith('pyproject.toml')) return true;
+        return false;
+      });
+      mockReadFileSync.mockReturnValue('[project]\nname = "example"\n');
+
+      const result = determineLibrary();
+
+      expect(result.library).toBe('base');
+      expect(result.hasProjectFile).toBe(true);
+    });
+
+    it('reports hasProjectFile when package.json cannot be parsed', () => {
       mockExistsSync.mockImplementation((path) => {
         if (String(path).endsWith('package.json')) return true;
         return false;
@@ -94,7 +107,7 @@ describe('determineLibrary', () => {
       const result = determineLibrary();
 
       expect(result.library).toBe('base');
-      expect(result.hasPackageJson).toBe(true);
+      expect(result.hasProjectFile).toBe(true);
     });
 
     it('detects i18next-icu as additional module', () => {

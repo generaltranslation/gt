@@ -3,16 +3,19 @@ import fs from 'node:fs';
 import { SupportedLibraries } from '../../types/index.js';
 import { logger } from '../../console/logger.js';
 import { Libraries } from '../../types/libraries.js';
-import { detectPythonLibrary } from './detectPythonLibrary.js';
+import {
+  detectPythonLibrary,
+  hasPythonProjectFile,
+} from './detectPythonLibrary.js';
 
 export function determineLibrary(): {
   library: SupportedLibraries;
   additionalModules: SupportedLibraries[];
-  hasPackageJson: boolean;
+  hasProjectFile: boolean;
 } {
   let library: SupportedLibraries = 'base';
   const additionalModules: SupportedLibraries[] = [];
-  let hasPackageJson = false;
+  let hasProjectFile = false;
   try {
     // Get the current working directory (where the CLI is being run)
     const cwd = process.cwd();
@@ -20,7 +23,7 @@ export function determineLibrary(): {
 
     // Check if package.json exists
     if (fs.existsSync(packageJsonPath)) {
-      hasPackageJson = true;
+      hasProjectFile = true;
       // Read and parse package.json
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
       const dependencies = {
@@ -52,6 +55,7 @@ export function determineLibrary(): {
 
     // If no JS library found, check for Python project files
     if (library === 'base') {
+      hasProjectFile = hasProjectFile || hasPythonProjectFile(cwd);
       const pythonLibrary = detectPythonLibrary(cwd);
       if (pythonLibrary) {
         library = pythonLibrary;
@@ -59,9 +63,9 @@ export function determineLibrary(): {
     }
 
     // Fallback to base if neither is found
-    return { library, additionalModules, hasPackageJson };
+    return { library, additionalModules, hasProjectFile };
   } catch (error) {
     logger.error('Error determining framework: ' + String(error));
-    return { library: 'base', additionalModules: [], hasPackageJson };
+    return { library: 'base', additionalModules: [], hasProjectFile };
   }
 }

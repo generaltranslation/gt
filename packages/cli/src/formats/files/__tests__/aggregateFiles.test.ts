@@ -45,7 +45,7 @@ describe('aggregateFiles - Empty File Handling', () => {
     mockDetermineLibrary.mockReturnValue({
       library: 'next-intl',
       additionalModules: [],
-      hasPackageJson: true,
+      hasProjectFile: true,
     });
 
     // Mock parseJson to return empty string for empty/null content, valid content otherwise
@@ -81,7 +81,7 @@ describe('aggregateFiles - Empty File Handling', () => {
       mockDetermineLibrary.mockReturnValueOnce({
         library: 'base',
         additionalModules: [],
-        hasPackageJson: true,
+        hasProjectFile: true,
       });
 
       const settings = {

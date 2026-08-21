@@ -14,7 +14,7 @@ vi.mock('../../fs/determineFramework/index.js', () => ({
   determineLibrary: vi.fn(() => ({
     library: 'base',
     additionalModules: [],
-    hasPackageJson: false,
+    hasProjectFile: false,
   })),
 }));
 
@@ -98,7 +98,7 @@ describe('generateSettings - composite patterns', () => {
     mockDetermineLibrary.mockReturnValue({
       library: 'base',
       additionalModules: [],
-      hasPackageJson: false,
+      hasProjectFile: false,
     });
   });
 
@@ -181,7 +181,7 @@ describe('generateSettings - composite patterns', () => {
     mockDetermineLibrary.mockReturnValue({
       library: 'base',
       additionalModules: [],
-      hasPackageJson: true,
+      hasProjectFile: true,
     });
 
     await generateSettings({}, '/test/cwd');

@@ -62,7 +62,7 @@ vi.mock('../../../fs/determineFramework/index.js', () => ({
   determineLibrary: vi.fn(() => ({
     library: 'base',
     additionalModules: [],
-    hasPackageJson: false,
+    hasProjectFile: false,
   })),
 }));
 
