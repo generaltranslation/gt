@@ -1,6 +1,6 @@
 {
   "name": "gt-rrweb",
-  "version": "0.1.0",
+  "version": "0.0.2",
   "description": "Record a product walkthrough once with rrweb and replay it per-locale using General Translation's own published translations",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
@@ -11,16 +11,10 @@
   ],
   "sideEffects": false,
   "peerDependencies": {
-    "react": ">=18.0.0",
-    "react-dom": ">=18.0.0",
     "@rrweb/record": ">=2.0.0",
     "@rrweb/types": ">=2.0.0",
-    "gt-react": ">=11.1.13"
-  },
-  "peerDependenciesMeta": {
-    "gt-react": {
-      "optional": true
-    }
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
   },
   "scripts": {
     "build": "tsdown",
