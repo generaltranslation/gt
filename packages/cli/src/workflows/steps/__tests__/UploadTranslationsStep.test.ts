@@ -278,6 +278,41 @@ describe('UploadTranslationsStep', () => {
     );
   });
 
+  it('uploads translations matching the lockfile hash when force is set', async () => {
+    const translation = makeTranslation('file-1', 'es');
+    mockLockfile([
+      {
+        fileId: 'file-1',
+        versionId: 'version-file-1',
+        translations: {
+          es: { postProcessHash: hashStringSync(translation.content) },
+        },
+      },
+    ]);
+    mockGt.uploadTranslations.mockResolvedValue({
+      uploadedFiles: [{ fileId: 'file-1', locale: 'es' }],
+    });
+
+    const files = [
+      { source: makeSource('file-1'), translations: [translation] },
+    ];
+    const step = new UploadTranslationsStep(
+      mockGt as unknown as GT,
+      mockSettings,
+      true
+    );
+    await step.run({ files });
+
+    expect(mockGt.uploadTranslations).toHaveBeenCalledTimes(1);
+    expect(mockGt.uploadTranslations).toHaveBeenCalledWith(
+      files,
+      expect.any(Object)
+    );
+    expect(logger.info).not.toHaveBeenCalledWith(
+      expect.stringContaining('unchanged since the last sync')
+    );
+  });
+
   it('records content hashes for server-confirmed uploads in the lockfile', async () => {
     const es = makeTranslation('file-1', 'es');
     const fr = makeTranslation('file-1', 'fr');

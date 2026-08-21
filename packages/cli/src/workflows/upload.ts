@@ -20,12 +20,14 @@ import { BranchData } from '../types/branch.js';
 export async function runUploadFilesWorkflow({
   files,
   options,
+  force,
 }: {
   files: {
     source: FileToUpload;
     translations: FileToUpload[];
   }[];
   options: Settings;
+  force?: boolean;
 }): Promise<{ branchData: BranchData }> {
   try {
     logger.message(
@@ -46,7 +48,11 @@ export async function runUploadFilesWorkflow({
     // Create workflow steps
     const branchStep = new BranchStep(gt, options);
     const uploadStep = new UploadSourcesStep(gt, options);
-    const uploadTranslationsStep = new UploadTranslationsStep(gt, options);
+    const uploadTranslationsStep = new UploadTranslationsStep(
+      gt,
+      options,
+      force
+    );
 
     // Step 1: Resolve branch information
     const branchData = await branchStep.run();

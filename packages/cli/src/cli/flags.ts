@@ -84,7 +84,7 @@ export function attachTranslateFlags(command: Command) {
     )
     .option(
       '--force',
-      'Force a retranslation, invalidating all existing cached translations if they exist.',
+      'Force a retranslation, invalidating all existing cached translations if they exist. With upload, re-uploads translation files even if gt-lock.json marks them unchanged, overwriting existing remote translations.',
       false
     )
     .option(

@@ -120,6 +120,7 @@ export type UploadOptions = {
   apiKey?: string;
   projectId?: string;
   defaultLocale?: string;
+  force?: boolean;
 };
 
 export type LoginOptions = {
