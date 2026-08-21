@@ -1,0 +1,28 @@
+{
+  "name": "gt-test-next-latest-locale-switch-routing",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "next build",
+    "start": "next start",
+    "test:e2e": "playwright test",
+    "test:e2e:install": "playwright install chromium-headless-shell",
+    "test:matrix": "node scripts/run-matrix.mjs",
+    "lint": "oxlint --config ../../../examples/.oxlintrc.next.json .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "gt-next": "workspace:*",
+    "next": "16.2.9",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^5"
+  }
+}
