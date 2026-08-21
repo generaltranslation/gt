@@ -4,7 +4,7 @@ import { decodeMsg } from '../decodeMsg';
 import { decodeOptions } from '../decodeOptions';
 import { derive, declareVar } from 'generaltranslation/internal';
 import type { RegisterableMessages } from '../../types/message';
-import { hashMessage } from '../../../utils/hashMessage';
+import { hashStringMessage } from '../../../utils/hashStringMessage';
 
 describe('msg function integration', () => {
   it('should not format messages without variables', () => {
@@ -45,7 +45,7 @@ describe('msg function integration', () => {
     expect(decodeOptions(result)).toEqual({
       ...options,
       $_source: message,
-      $_hash: hashMessage(message, options),
+      $_hash: hashStringMessage(message, options),
     });
   });
 
@@ -112,6 +112,29 @@ describe('msg function with arrays', () => {
     expect(Array.isArray(result)).toBe(true);
     const decoded = (result as string[]).map(decodeMsg);
     expect(decoded).toEqual(['Hello Alice', 'Goodbye Alice']);
+  });
+
+  it('should preserve literal STRING arrays and suffix their ids', () => {
+    const messages = ['Hello {name}', 'Goodbye {name}'];
+    const result = msg(messages, {
+      $format: 'STRING',
+      $id: 'greetings',
+      name: 'Ada',
+    });
+
+    expect(result.map(decodeMsg)).toEqual(messages);
+    expect(result.map(decodeOptions)).toEqual([
+      expect.objectContaining({
+        $format: 'STRING',
+        $id: 'greetings.0',
+        $_source: messages[0],
+      }),
+      expect.objectContaining({
+        $format: 'STRING',
+        $id: 'greetings.1',
+        $_source: messages[1],
+      }),
+    ]);
   });
 
   it('should handle an empty array', () => {
