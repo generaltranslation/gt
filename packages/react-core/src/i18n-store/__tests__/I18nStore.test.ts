@@ -111,6 +111,26 @@ describe('I18nStore runtime translation failure handling', () => {
     expect(consoleError).toHaveBeenCalledTimes(102);
   });
 
+  it('logs distinct non-Error rejection reasons separately', async () => {
+    const store = new I18nStore();
+
+    lookupTranslationWithFallback.mockRejectedValueOnce({ code: 'A' });
+    await store.translate({ ...lookup, message: 'm1' });
+    lookupTranslationWithFallback.mockRejectedValueOnce({ code: 'B' });
+    await store.translate({ ...lookup, message: 'm2' });
+    expect(consoleError).toHaveBeenCalledTimes(2);
+
+    lookupTranslationWithFallback.mockRejectedValueOnce(null);
+    await store.translate({ ...lookup, message: 'm3' });
+    lookupTranslationWithFallback.mockRejectedValueOnce(undefined);
+    await store.translate({ ...lookup, message: 'm4' });
+    expect(consoleError).toHaveBeenCalledTimes(4);
+
+    lookupTranslationWithFallback.mockRejectedValueOnce({ code: 'A' });
+    await store.translate({ ...lookup, message: 'm5' });
+    expect(consoleError).toHaveBeenCalledTimes(4);
+  });
+
   it('translateDictionaryObject() logs instead of leaving an unhandled rejection', async () => {
     lookupDictionaryObjWithFallback.mockRejectedValue(rejectedKeyError);
     const store = new I18nStore();

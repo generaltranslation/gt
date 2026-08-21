@@ -27,6 +27,20 @@ export type DictionaryStoreListener = (event: DictionaryLookup) => void;
 
 const MAX_LOGGED_RUNTIME_TRANSLATION_ERRORS = 100;
 
+function getRuntimeTranslationErrorDedupeKey(error: unknown): string {
+  if (error instanceof Error) {
+    return `${error.name}|${error.message}`;
+  }
+  if (error !== null && typeof error === 'object') {
+    try {
+      return `object|${JSON.stringify(error)}`;
+    } catch {
+      return `object|${String(error)}`;
+    }
+  }
+  return `${typeof error}|${String(error)}`;
+}
+
 /**
  * I18nStore gives us the ability to perform client-side updates to translations.
  * Primarily useful for dev hot reload.
@@ -104,7 +118,7 @@ export class I18nStore {
    */
   private logRuntimeTranslationError(error: unknown): void {
     const details = formatDiagnosticErrorDetails(error);
-    const dedupeKey = details ?? '';
+    const dedupeKey = getRuntimeTranslationErrorDedupeKey(error);
     if (this.loggedRuntimeTranslationErrors.has(dedupeKey)) return;
     this.loggedRuntimeTranslationErrors.add(dedupeKey);
     if (
