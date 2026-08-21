@@ -72,10 +72,7 @@ export class I18nStore {
         lookup.message,
         lookup.options
       )
-      .then((translation) => {
-        if (translation == null) {
-          // TODO: warn about runtime translation failure
-        }
+      .then(() => {
         this.emitTranslateEvent(lookup);
       })
       .catch((error) => this.logRuntimeTranslationError(error));
@@ -84,10 +81,7 @@ export class I18nStore {
   translateDictionaryEntry = (lookup: DictionaryLookup): void => {
     getReactI18nCache()
       .lookupDictionaryWithFallback(lookup.locale, lookup.id)
-      .then((dictionaryEntry) => {
-        if (dictionaryEntry == null) {
-          // TODO: warn about runtime dictionary translation failure
-        }
+      .then(() => {
         this.emitDictionaryEvent(lookup);
       })
       .catch((error) => this.logRuntimeTranslationError(error));
@@ -96,10 +90,7 @@ export class I18nStore {
   translateDictionaryObject = (lookup: DictionaryLookup): void => {
     getReactI18nCache()
       .lookupDictionaryObjWithFallback(lookup.locale, lookup.id)
-      .then((dictionaryObject) => {
-        if (dictionaryObject == null) {
-          // TODO: warn about runtime dictionary translation failure
-        }
+      .then(() => {
         this.emitDictionaryEvent(lookup);
       })
       .catch((error) => this.logRuntimeTranslationError(error));
