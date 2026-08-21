@@ -204,6 +204,122 @@ describe('downloadFileBatch', () => {
     expect(result.failed).toHaveLength(0);
   });
 
+  it('should skip the API request when the lockfile has the requested output', async () => {
+    const files = createBatchedFiles(1);
+    const fileTracker = createMockFileTracker(files);
+    const existingEntry: DownloadedVersionEntry = {
+      fileId: 'file-1',
+      versionId: 'version-1',
+      translations: {
+        en: {
+          updatedAt: '2026-01-01T00:00:00.000Z',
+          fileName: 'file1.json',
+        },
+      },
+    };
+
+    vi.mocked(readLockfile).mockReturnValue({
+      data: { version: 2, branchId: 'branch-1', entries: [existingEntry] },
+      entryMap: new Map([['file-1', existingEntry]]),
+      originalV1: null,
+    });
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+
+    const result = await downloadFileBatch(
+      fileTracker,
+      files,
+      createMockSettings()
+    );
+
+    expect(gt.downloadFileBatch).not.toHaveBeenCalled();
+    expect(fs.promises.writeFile).not.toHaveBeenCalled();
+    expect(result.skipped).toEqual(files);
+    expect(result.successful).toHaveLength(0);
+    expect(result.failed).toHaveLength(0);
+  });
+
+  it('should request only outputs that are not already current', async () => {
+    const files = createBatchedFiles();
+    const fileTracker = createMockFileTracker(files);
+    const existingEntry: DownloadedVersionEntry = {
+      fileId: 'file-1',
+      versionId: 'version-1',
+      translations: {
+        en: {
+          updatedAt: '2026-01-01T00:00:00.000Z',
+          fileName: 'file1.json',
+        },
+      },
+    };
+    vi.mocked(readLockfile).mockReturnValue({
+      data: { version: 2, branchId: 'branch-1', entries: [existingEntry] },
+      entryMap: new Map([['file-1', existingEntry]]),
+      originalV1: null,
+    });
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+    vi.mocked(gt.downloadFileBatch).mockResolvedValue({
+      files: [createMockResponseData().files[1]],
+      count: 1,
+    });
+
+    const result = await downloadFileBatch(
+      fileTracker,
+      files,
+      createMockSettings()
+    );
+
+    expect(gt.downloadFileBatch).toHaveBeenCalledWith([
+      {
+        branchId: 'branch-2',
+        fileId: 'file-2',
+        versionId: 'version-2',
+        locale: 'en',
+      },
+    ]);
+    expect(result.skipped).toEqual([files[0]]);
+    expect(result.successful).toEqual([files[1]]);
+    expect(result.failed).toEqual([]);
+  });
+
+  it('should keep an unreadable completed GTJSON output skipped', async () => {
+    const files = createBatchedFiles(1);
+    const fileTracker = createMockFileTracker(files);
+    const fileKey = 'branch-1:file-1:version-1:en';
+    const fileProperties = fileTracker.completed.get(fileKey);
+    if (!fileProperties) throw new Error('Missing test file properties');
+    fileProperties.componentCount = 2;
+    const existingEntry: DownloadedVersionEntry = {
+      fileId: 'file-1',
+      versionId: 'version-1',
+      translations: {
+        en: {
+          updatedAt: '2026-01-01T00:00:00.000Z',
+          fileName: 'file1.json',
+        },
+      },
+    };
+
+    vi.mocked(readLockfile).mockReturnValue({
+      data: { version: 2, branchId: 'branch-1', entries: [existingEntry] },
+      entryMap: new Map([['file-1', existingEntry]]),
+      originalV1: null,
+    });
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+    vi.mocked(fs.readFileSync).mockImplementation(() => {
+      throw new Error('file disappeared');
+    });
+
+    const result = await downloadFileBatch(
+      fileTracker,
+      files,
+      createMockSettings()
+    );
+
+    expect(gt.downloadFileBatch).not.toHaveBeenCalled();
+    expect(result.skipped).toEqual(files);
+    expect(result.failed).toHaveLength(0);
+  });
+
   it('should sort JSON keys when writing JSON output files', async () => {
     const mockResponseData = createMockResponseData({
       files: [
@@ -265,7 +381,7 @@ describe('downloadFileBatch', () => {
 
     vi.mocked(gt.downloadFileBatch).mockResolvedValue(mockResponseData);
     vi.mocked(path.dirname).mockReturnValue('/output/dir');
-    vi.mocked(fs.existsSync).mockReturnValueOnce(false).mockReturnValue(true);
+    vi.mocked(fs.existsSync).mockReturnValue(false);
     vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
 
     const result = await downloadFileBatch(
@@ -463,7 +579,7 @@ describe('downloadFileBatch', () => {
       createMockSettings()
     );
 
-    expect(gt.downloadFileBatch).toHaveBeenCalled();
+    expect(gt.downloadFileBatch).not.toHaveBeenCalled();
     expect(result.successful).toHaveLength(0);
     expect(result.failed).toHaveLength(0);
   });
