@@ -1499,7 +1499,7 @@ importers:
   packages/rrweb:
     dependencies:
       gt-react:
-        specifier: '>=11.0.0'
+        specifier: '>=11.1.13'
         version: link:../react
       react:
         specifier: '>=18.0.0'
