@@ -78,7 +78,9 @@ export async function handleGenerate(settings: Settings): Promise<void> {
     }
 
     if (generatedFiles.size > 0) {
-      await postProcessTranslations(settings, generatedFiles);
+      await postProcessTranslations(settings, generatedFiles, {
+        restrictToIncludedFiles: true,
+      });
     }
   } catch (error) {
     await Promise.all(

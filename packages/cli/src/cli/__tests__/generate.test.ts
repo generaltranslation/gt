@@ -21,18 +21,23 @@ describe('gt generate', () => {
 
     mkdirSync(path.join(projectDir, 'content', 'en'), { recursive: true });
     mkdirSync(path.join(projectDir, 'messages', 'en'), { recursive: true });
+    mkdirSync(path.join(projectDir, 'api', 'en'), { recursive: true });
     mkdirSync(path.join(projectDir, 'content', 'es'), { recursive: true });
     writeFileSync(
       path.join(projectDir, 'content', 'en', 'intro.mdx'),
-      'Hello\n\n[Guide](/en/blah)'
+      '---\nopenapi: GET /pets\n---\nHello\n\n[Guide](/en/blah)'
     );
     writeFileSync(
       path.join(projectDir, 'messages', 'en', 'common.json'),
       JSON.stringify({ hello: 'Hello' })
     );
     writeFileSync(
+      path.join(projectDir, 'api', 'en', 'openapi.json'),
+      JSON.stringify({ openapi: '3.0.0', paths: { '/pets': { get: {} } } })
+    );
+    writeFileSync(
       path.join(projectDir, 'content', 'es', 'intro.mdx'),
-      '# Hola'
+      '---\nopenapi: GET /pets\n---\n# Hola'
     );
     writeFileSync(
       path.join(projectDir, 'gt.config.json'),
@@ -41,9 +46,14 @@ describe('gt generate', () => {
         locales: ['es', 'fr'],
         files: {
           mdx: { include: ['content/[locale]/*.mdx'] },
-          json: { include: ['messages/[locale]/*.json'] },
+          json: {
+            include: ['messages/[locale]/*.json', 'api/[locale]/*.json'],
+          },
         },
-        options: { experimentalLocalizeStaticUrls: true },
+        options: {
+          experimentalLocalizeStaticUrls: true,
+          mintlify: { openapi: { files: ['api/en/openapi.json'] } },
+        },
       })
     );
   });
@@ -65,10 +75,15 @@ describe('gt generate', () => {
 
     expect(
       readFileSync(path.join(projectDir, 'content', 'es', 'intro.mdx'), 'utf8')
-    ).toBe('# Hola');
+    ).toBe('---\nopenapi: GET /pets\n---\n# Hola');
     expect(
       readFileSync(path.join(projectDir, 'content', 'fr', 'intro.mdx'), 'utf8')
-    ).toBe('Hello\n\n[Guide](/fr/blah)');
+    ).toBe(
+      '---\nopenapi: /api/fr/openapi.json GET /pets\n---\n\nHello\n\n[Guide](/fr/blah)'
+    );
+    expect(
+      readFileSync(path.join(projectDir, 'content', 'en', 'intro.mdx'), 'utf8')
+    ).toBe('---\nopenapi: GET /pets\n---\nHello\n\n[Guide](/en/blah)');
     expect(
       JSON.parse(
         readFileSync(

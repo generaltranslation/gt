@@ -5,6 +5,7 @@ import type { Settings } from '../../../types/index.js';
 import flattenJsonFiles from '../../../utils/flattenJsonFiles.js';
 import { postprocessMintlify } from '../../../formats/files/postprocess/mintlify.js';
 import { persistPostProcessHashes } from '../../../utils/persistPostprocessHashes.js';
+import copyFile from '../../../fs/copyFile.js';
 
 vi.mock('../../../utils/flattenJsonFiles.js', () => ({
   default: vi.fn(),
@@ -78,7 +79,8 @@ describe('postProcessTranslations', () => {
 
     expect(postprocessMintlify).toHaveBeenCalledWith(
       expect.anything(),
-      new Set(['locales/fr/messages.json'])
+      new Set(['locales/fr/messages.json']),
+      { processDefaultLocaleFiles: true }
     );
     expect(flattenJsonFiles).toHaveBeenCalledWith(
       expect.anything(),
@@ -89,5 +91,22 @@ describe('postProcessTranslations', () => {
       new Set(['locales/fr/messages.json']),
       expect.anything()
     );
+  });
+
+  it('restricts generated-file postprocessing to included outputs', async () => {
+    const settings = makeSettings();
+    settings.options!.copyFiles = ['assets/[locale]/logo.svg'];
+    const includeFiles = new Set(['locales/fr/messages.json']);
+
+    await postProcessTranslations(settings, includeFiles, {
+      restrictToIncludedFiles: true,
+    });
+
+    expect(postprocessMintlify).toHaveBeenCalledWith(settings, includeFiles, {
+      processDefaultLocaleFiles: false,
+    });
+    expect(flattenJsonFiles).toHaveBeenCalledWith(settings, includeFiles);
+    expect(copyFile).not.toHaveBeenCalled();
+    expect(persistPostProcessHashes).not.toHaveBeenCalled();
   });
 });
