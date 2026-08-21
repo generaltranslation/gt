@@ -14,6 +14,35 @@ type GenerationTarget = {
   output: string;
 };
 
+function createOutputCollisionError(
+  existing: GenerationTarget,
+  target: GenerationTarget
+): Error {
+  return new Error(
+    createDiagnosticMessage({
+      source: 'gt',
+      severity: 'Error',
+      whatHappened: 'Multiple source files map to the same generated output',
+      why: 'the configured file transforms produce a duplicate path',
+      fix: 'Update the file transforms so every source and locale has a unique output path',
+      details: [
+        `Output: ${target.outputPath}`,
+        `Sources: ${existing.sourcePath} (${existing.locale}), ${target.sourcePath} (${target.locale})`,
+      ],
+    })
+  );
+}
+
+function isSameFile(left: string, right: string): boolean {
+  try {
+    const leftStat = fs.statSync(left);
+    const rightStat = fs.statSync(right);
+    return leftStat.dev === rightStat.dev && leftStat.ino === rightStat.ino;
+  } catch {
+    return false;
+  }
+}
+
 function createGenerationPlan(settings: Settings): GenerationTarget[] {
   const { resolvedPaths, placeholderPaths, transformPaths, transformFormats } =
     settings.files;
@@ -34,25 +63,12 @@ function createGenerationPlan(settings: Settings): GenerationTarget[] {
       const output = path.resolve(outputPath);
       if (source === output || !fs.existsSync(source)) continue;
 
+      const target = { locale, sourcePath, outputPath, source, output };
       const existing = outputs.get(output);
       if (existing) {
-        throw new Error(
-          createDiagnosticMessage({
-            source: 'gt',
-            severity: 'Error',
-            whatHappened:
-              'Multiple source files map to the same generated output',
-            why: 'the configured file transforms produce a duplicate path',
-            fix: 'Update the file transforms so every source and locale has a unique output path',
-            details: [
-              `Output: ${outputPath}`,
-              `Sources: ${existing.sourcePath} (${existing.locale}), ${sourcePath} (${locale})`,
-            ],
-          })
-        );
+        throw createOutputCollisionError(existing, target);
       }
 
-      const target = { locale, sourcePath, outputPath, source, output };
       outputs.set(output, target);
       plan.push(target);
     }
@@ -63,17 +79,23 @@ function createGenerationPlan(settings: Settings): GenerationTarget[] {
 
 export async function handleGenerate(settings: Settings): Promise<void> {
   const generatedFiles = new Set<string>();
+  const generatedTargets: GenerationTarget[] = [];
 
   try {
-    for (const { source, output, outputPath } of createGenerationPlan(
-      settings
-    )) {
+    for (const target of createGenerationPlan(settings)) {
+      const { source, output, outputPath } = target;
       await fs.promises.mkdir(path.dirname(output), { recursive: true });
       try {
         await fs.promises.copyFile(source, output, fs.constants.COPYFILE_EXCL);
         generatedFiles.add(outputPath);
+        generatedTargets.push(target);
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+
+        const existing = generatedTargets.find((generatedTarget) =>
+          isSameFile(generatedTarget.output, output)
+        );
+        if (existing) throw createOutputCollisionError(existing, target);
       }
     }
 
