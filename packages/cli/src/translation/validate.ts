@@ -1,12 +1,16 @@
 import { logErrorAndExit, stripAnsi } from '../console/logging.js';
 import chalk from 'chalk';
 import findFilepath from '../fs/findFilepath.js';
-import { Framework, Options, Settings, Updates } from '../types/index.js';
+import { Options, Settings, Updates } from '../types/index.js';
 import { logger } from '../console/logger.js';
 
 import { createUpdates } from './parse.js';
 import { createInlineUpdates } from '../react/parse/createInlineUpdates.js';
 import { InlineLibrary, Libraries } from '../types/libraries.js';
+import {
+  extractInlineFromProject,
+  type PrimaryInlineExtractor,
+} from './extractInline.js';
 
 // Types for programmatic validation API
 export type ValidationLevel = 'error' | 'warning';
@@ -27,12 +31,24 @@ async function runValidation(
   files?: string[]
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   if (files && files.length > 0) {
-    return createInlineUpdates(
+    const extractPrimary: PrimaryInlineExtractor | undefined =
+      pkg === Libraries.GT_VUE
+        ? undefined
+        : (primaryFiles) =>
+            createInlineUpdates(
+              pkg,
+              true,
+              primaryFiles,
+              settings.files.gtJson.parsingFlags,
+              settings.parsingOptions
+            );
+    return extractInlineFromProject(
       pkg,
-      true,
       files,
       settings.files.gtJson.parsingFlags,
-      settings.parsingOptions
+      settings.parsingOptions,
+      extractPrimary,
+      settings.jsconfig || undefined
     );
   }
 
@@ -94,15 +110,18 @@ export async function getValidateJson(
   pkg:
     | `${typeof Libraries.GT_REACT}`
     | `${typeof Libraries.GT_NEXT}`
-    | `${typeof Libraries.GT_REACT_NATIVE}`,
+    | `${typeof Libraries.GT_REACT_NATIVE}`
+    | `${typeof Libraries.GT_VUE}`,
   files?: string[]
 ): Promise<ValidationResult> {
-  const validatedPkg: Framework =
-    pkg === Libraries.GT_NEXT
-      ? Libraries.GT_NEXT
-      : pkg === Libraries.GT_REACT_NATIVE
-        ? Libraries.GT_REACT_NATIVE
-        : Libraries.GT_REACT;
+  const validatedPkg: InlineLibrary =
+    pkg === Libraries.GT_VUE
+      ? Libraries.GT_VUE
+      : pkg === Libraries.GT_NEXT
+        ? Libraries.GT_NEXT
+        : pkg === Libraries.GT_REACT_NATIVE
+          ? Libraries.GT_REACT_NATIVE
+          : Libraries.GT_REACT;
   const { errors, warnings } = await runValidation(
     settings,
     validatedPkg,

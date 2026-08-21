@@ -1,0 +1,129 @@
+[
+  {
+    "id": "nested-element",
+    "description": "Nested elements keep depth-first identifiers.",
+    "source": [
+      "Hello ",
+      {
+        "t": "strong",
+        "i": 1,
+        "c": [
+          "wonderful ",
+          {
+            "t": "em",
+            "i": 2,
+            "c": "world"
+          }
+        ]
+      },
+      "."
+    ],
+    "hash": "5353942e57d68988"
+  },
+  {
+    "id": "typed-variables",
+    "description": "Variable identifiers and generated names follow source order.",
+    "source": [
+      "Hello ",
+      {
+        "i": 1,
+        "k": "_gt_value_1",
+        "v": "v"
+      },
+      ", you have ",
+      {
+        "i": 2,
+        "k": "_gt_n_2",
+        "v": "n"
+      },
+      " messages."
+    ],
+    "hash": "d7e2eed57565bcd8"
+  },
+  {
+    "id": "independent-branch-numbering",
+    "description": "Mutually exclusive Branch slots restart after the parent and do not shift following siblings.",
+    "source": [
+      {
+        "t": "Branch",
+        "i": 1,
+        "d": {
+          "b": {
+            "formal": [
+              {
+                "t": "strong",
+                "i": 2,
+                "c": "Hello"
+              },
+              " ",
+              {
+                "i": 3,
+                "k": "_gt_value_3",
+                "v": "v"
+              }
+            ],
+            "casual": [
+              {
+                "t": "em",
+                "i": 2,
+                "c": "Hi"
+              },
+              " ",
+              {
+                "i": 3,
+                "k": "_gt_value_3",
+                "v": "v"
+              }
+            ]
+          },
+          "t": "b"
+        },
+        "c": "Fallback"
+      },
+      {
+        "t": "span",
+        "i": 2,
+        "c": "After"
+      }
+    ],
+    "hash": "b2a3f3f7f2bdac6f"
+  },
+  {
+    "id": "independent-plural-numbering",
+    "description": "Plural forms use the same independent numbering contract as Branch slots.",
+    "source": [
+      {
+        "t": "Plural",
+        "i": 1,
+        "d": {
+          "b": {
+            "one": [
+              "One ",
+              {
+                "i": 2,
+                "k": "_gt_n_2",
+                "v": "n"
+              }
+            ],
+            "other": [
+              "Many ",
+              {
+                "i": 2,
+                "k": "_gt_n_2",
+                "v": "n"
+              }
+            ]
+          },
+          "t": "p"
+        },
+        "c": "Fallback"
+      },
+      {
+        "t": "span",
+        "i": 2,
+        "c": "After"
+      }
+    ],
+    "hash": "6155c9e9b46b73ad"
+  }
+]

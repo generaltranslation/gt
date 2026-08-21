@@ -52,6 +52,8 @@
     "gt-test-rollup-react",
     "gt-test-tanstack-start",
     "gt-test-vite-react",
-    "gt-test-webpack-react"
+    "gt-test-vite-vue",
+    "gt-test-webpack-react",
+    "cli-vue-binary-test"
   ]
 }

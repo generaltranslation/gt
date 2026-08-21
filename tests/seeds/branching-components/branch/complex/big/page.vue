@@ -1,0 +1,13 @@
+<script setup lang="ts">
+import { Fragment } from 'vue';
+import { Branch, Currency, DateTime, Plural, T, Var } from 'gt-vue';
+
+const variable = 'test';
+const createdAt = new Date();
+const multilineFile = `
+            Multiline
+            File
+          `;
+</script>
+
+<template><T><Plural :n="1" singular="File" plural="Files" /><Branch branch="file" file="file.svg" directory="public" /><Plural :n="1" singular="File" :plural="42" /><Plural :n="1" :singular="true" :plural="false" /><Plural :n="1" :singular="null" plural="Files" /><Plural :n="1" :singular="`File`" :plural="`Files`" /><Plural :n="1" singular="File" :plural="42" /><Plural :n="1"><template #singular><Fragment>Single file</Fragment></template><template #plural><Fragment>Multiple files</Fragment></template></Plural><Plural :n="1"><template #singular><span>Single file</span></template><template #plural><span>Multiple files</span></template></Plural><Plural :n="1"><template #singular><Var>{{ variable }}</Var></template><template #plural><Fragment>Multiple <Var>{{ variable }}</Var>s</Fragment></template></Plural><div><Fragment>Yo</Fragment><Var>test</Var></div><Plural :n="1"><template #singular><Var>{{ variable }}</Var></template><template #plural><div><Fragment>Multiple <Var>{{ variable }}</Var>s</Fragment></div></template></Plural><Plural :n="1" plural="Multiple top-level items"><template #singular><Branch branch="type"><template #file><Plural :n="1" plural="Multiple nested files"><template #singular><Fragment>Single nested file</Fragment></template></Plural></template><template #directory><Fragment>Public directory</Fragment></template></Branch></template></Plural><Plural :n="1" singular="" plural="Files" /><Plural :n="1" singular="File" plural="" /><Plural :n="1" singular="   File   " plural="   Files   " /><Plural :n="1" :singular="multilineFile" plural="Files" /><Plural :n="1" singular="File with emoji 📁" plural="Files with emoji 📁📂" /><Branch branch="file" file="special-chars!@#$%^&amp;*().svg" directory="unicode-path-ñáéíóú" /><div>hello</div><Branch branch="level1" option2="Level 1 option 2"><template #option1><Branch branch="level2" option2="Level 2 option 2"><template #option1><Plural :n="1"><template #singular><Branch branch="level3"><template #option1><Fragment>Deep option 1</Fragment></template><template #option2><Var>{{ variable }}</Var></template></Branch></template><template #plural><Branch branch="level3"><template #option1><Currency :value="100" currency="USD" /></template><template #option2><DateTime :value="createdAt" /></template></Branch></template></Plural></template></Branch></template></Branch></T></template>

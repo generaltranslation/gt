@@ -1,5 +1,28 @@
 # locadex
 
+## 1.0.208-iris.1
+
+### Patch Changes
+
+- Updated dependencies [c47eed5]
+  - gt@2.17.0-iris.1
+
+## 1.0.208-iris.0
+
+### Patch Changes
+
+- 5d8b78a: Migrate the package license from FSL-1.1-ALv2 to MIT.
+- Updated dependencies [5d8b78a]
+- Updated dependencies [b05b470]
+  - gt@2.17.0-iris.0
+
+## 1.0.206-iris.0
+
+### Patch Changes
+
+- Updated dependencies [01ba884]
+  - gt@2.16.3-iris.0
+
 ## 1.0.211
 
 ### Patch Changes
