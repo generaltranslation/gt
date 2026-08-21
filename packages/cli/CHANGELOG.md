@@ -1,5 +1,24 @@
 # gtx-cli
 
+## 2.17.0
+
+### Minor Changes
+
+- [#2070](https://github.com/generaltranslation/gt/pull/2070) [`b05b470`](https://github.com/generaltranslation/gt/commit/b05b4703fbbfd34a3cbee335c786e2e606346167) Thanks [@eoinest](https://github.com/eoinest)! - Add Vue source extraction through the standalone `@generaltranslation/vue-extractor` package.
+
+### Patch Changes
+
+- [#2092](https://github.com/generaltranslation/gt/pull/2092) [`c47eed5`](https://github.com/generaltranslation/gt/commit/c47eed504a90505490cb30cd640ca53ba0ae10e8) Thanks [@eoinest](https://github.com/eoinest)! - Generate catalogs for gt-vue module-level `t()` calls through the CLI.
+
+- [#2044](https://github.com/generaltranslation/gt/pull/2044) [`01ba884`](https://github.com/generaltranslation/gt/commit/01ba88485971eadde117b3b31e8dea7b36cb4571) Thanks [@eoinest](https://github.com/eoinest)! - Exercise Iris prerelease publishing for the CLI.
+
+- Updated dependencies [[`697093a`](https://github.com/generaltranslation/gt/commit/697093a5dd5777994f589cded268b719e989f8c3), [`f2204b9`](https://github.com/generaltranslation/gt/commit/f2204b990278865c54d14d337392930ea1ec31bf), [`b05b470`](https://github.com/generaltranslation/gt/commit/b05b4703fbbfd34a3cbee335c786e2e606346167), [`8178815`](https://github.com/generaltranslation/gt/commit/81788154f5e5a697cf5edd2a0151fac979ce8fce), [`8e13e37`](https://github.com/generaltranslation/gt/commit/8e13e37ec2f9c425ee2da12d641c60eca5861dea)]:
+  - @generaltranslation/vue-extractor@0.1.0
+  - @generaltranslation/format@0.1.8
+  - generaltranslation@9.1.7
+  - @generaltranslation/python-extractor@0.2.40
+  - @generaltranslation/supported-locales@2.1.20
+
 ## 2.17.0-iris.1
 
 ### Patch Changes
