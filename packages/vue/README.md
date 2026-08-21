@@ -87,8 +87,8 @@ applied.
 ## Module-level translations in a Vite SPA
 
 Browser-only SPAs can call `t()` at module scope after `initializeGTSPA()` has
-loaded the active locale. Use a bootstrap module with top-level `await`, and
-dynamically import the rest of the application only after initialization.
+loaded the active locale. Use an async bootstrap function, and dynamically
+import the rest of the application only after initialization.
 This complements rather than replaces the `gt()` callback from `useGT()`,
 which remains the normal API inside Vue components and for SSR applications.
 
@@ -98,9 +98,15 @@ import { initializeGTSPA } from 'gt-vue';
 import gtConfig from '../gt.config.json';
 import loadTranslations from './loadTranslations';
 
-const gt = await initializeGTSPA({ ...gtConfig, loadTranslations });
-const { mount } = await import('./main');
-mount(gt);
+async function bootstrap() {
+  const gt = await initializeGTSPA({ ...gtConfig, loadTranslations });
+  const { mount } = await import('./main');
+  mount(gt);
+}
+
+void bootstrap().catch((error: unknown) => {
+  console.error(error);
+});
 ```
 
 Configure the CLI output and the Vite loader to use the same directory:
