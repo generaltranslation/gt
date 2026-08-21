@@ -7,6 +7,7 @@ import {
   mergeGtLockJson,
   runMergeDriver,
 } from '../mergeDrivers.js';
+import { hashStringSync } from '../../utils/hash.js';
 
 const json = (value: unknown) => JSON.stringify(value, null, 2);
 
@@ -410,6 +411,59 @@ describe('mergeGtLockJson', () => {
         ],
       }) + '\n'
     );
+  });
+
+  it('merges a legacy Windows side with its migrated counterpart', () => {
+    const windowsFileName = 'src\\content\\a.mdx';
+    const posixFileName = 'src/content/a.mdx';
+    const legacyEntry = {
+      fileId: hashStringSync(windowsFileName),
+      versionId: 'version-a',
+      fileName: windowsFileName,
+      translations: {
+        es: { updatedAt: '2026-01-01T00:00:00.000Z' },
+      },
+    };
+    const migratedEntry = {
+      ...legacyEntry,
+      fileId: hashStringSync(posixFileName),
+      fileName: posixFileName,
+    };
+    const result = mergeGtLockJson(
+      lock({ entries: [legacyEntry] }),
+      lock({ entries: [migratedEntry] }),
+      lock({
+        entries: [
+          {
+            ...legacyEntry,
+            translations: {
+              ...legacyEntry.translations,
+              fr: {
+                updatedAt: '2026-01-02T00:00:00.000Z',
+                fileName: 'content\\fr\\a.mdx',
+              },
+            },
+          },
+        ],
+      })
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(JSON.parse(result.content).entries).toEqual([
+      {
+        fileId: hashStringSync(posixFileName),
+        versionId: 'version-a',
+        translations: {
+          es: { updatedAt: '2026-01-01T00:00:00.000Z' },
+          fr: {
+            updatedAt: '2026-01-02T00:00:00.000Z',
+            fileName: 'content/fr/a.mdx',
+          },
+        },
+        fileName: posixFileName,
+      },
+    ]);
   });
 
   it('fails on malformed JSON', () => {

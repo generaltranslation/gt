@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { logger } from '../../console/logger.js';
 import type { Settings } from '../../types/index.js';
+import { hashStringSync } from '../../utils/hash.js';
 
 const GT_LOCK_FILE = 'gt-lock.json';
 
@@ -48,6 +49,34 @@ export type DownloadedVersionsV1 = {
     };
   };
 };
+
+export function normalizeLockfilePaths(data: DownloadedVersions): void {
+  for (const entry of data.entries) {
+    if (typeof entry.fileName === 'string') {
+      const originalFileName = entry.fileName;
+      const normalizedFileName = originalFileName.replace(/\\/g, '/');
+
+      // getRelative() historically produced backslashes on Windows, and the
+      // file ID is the hash of that relative path. Re-key legacy entries when
+      // their ID still matches the old path so lookups keep their translations.
+      if (
+        normalizedFileName !== originalFileName &&
+        entry.fileId === hashStringSync(originalFileName)
+      ) {
+        entry.fileId = hashStringSync(normalizedFileName);
+      }
+      entry.fileName = normalizedFileName;
+    }
+    if (!entry.translations || typeof entry.translations !== 'object') {
+      continue;
+    }
+    for (const translation of Object.values(entry.translations)) {
+      if (translation && typeof translation.fileName === 'string') {
+        translation.fileName = translation.fileName.replace(/\\/g, '/');
+      }
+    }
+  }
+}
 
 // ── Conversion helpers ──────────────────────────────────────────────
 
@@ -170,6 +199,8 @@ export function readLockfile(settings: Settings): {
     data = { version: 2, branchId, entries: [] };
   }
 
+  normalizeLockfilePaths(data);
+
   return { data, entryMap: buildEntryMap(data.entries), originalV1 };
 }
 
@@ -183,6 +214,7 @@ export function writeLockfile(
   originalV1: DownloadedVersionsV1 | null
 ): void {
   try {
+    normalizeLockfilePaths(data);
     const filepath = path.join(process.cwd(), GT_LOCK_FILE);
     fs.mkdirSync(path.dirname(filepath), { recursive: true });
 

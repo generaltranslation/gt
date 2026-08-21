@@ -12,6 +12,7 @@ import { escapeHtmlInTextNodes, normalizeCJKCharacters } from 'gt-remark';
 import type { Settings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import { TEMPLATE_FILE_NAME } from './constants.js';
+import { toPosixPath } from './paths.js';
 
 type MdxAssetNode = {
   type?: string;
@@ -222,7 +223,9 @@ function resolveAssetPaths(include: string[], cwd: string): Set<string> {
   const assetPaths = new Set<string>();
   for (let pattern of include) {
     if (pattern.startsWith('/')) pattern = pattern.slice(1);
-    const matches = fg.sync(path.resolve(cwd, pattern), { absolute: true });
+    const matches = fg.sync(toPosixPath(path.resolve(cwd, pattern)), {
+      absolute: true,
+    });
     for (const m of matches) assetPaths.add(path.normalize(m));
   }
   return assetPaths;
@@ -368,7 +371,7 @@ export default async function processSharedStaticAssets(settings: Settings) {
   // Map original absolute path -> public URL
   const originalToPublic = new Map<string, string>();
   for (const abs of assetPaths) {
-    const relFromRoot = path.relative(cwd, abs).replace(/\\/g, '/');
+    const relFromRoot = toPosixPath(path.relative(cwd, abs));
     const publicUrl =
       (publicPath.endsWith('/') ? publicPath.slice(0, -1) : publicPath) +
       '/' +

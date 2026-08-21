@@ -5,6 +5,7 @@ import type {
   DownloadedVersionEntry,
   DownloadedVersions,
 } from '../fs/config/downloadedVersions.js';
+import { normalizeLockfilePaths } from '../fs/config/downloadedVersions.js';
 
 export type MergeDriverName = 'gt-lock' | 'gtjson';
 
@@ -122,6 +123,14 @@ export function mergeGtLockJson(
   if (!base.ok) return base;
   if (!ours.ok) return ours;
   if (!theirs.ok) return theirs;
+
+  // A side written by a pre-normalization Windows CLI stores backslash
+  // fileNames and fileIds hashed from them; normalize all three sides so
+  // separator-only differences don't read as changes and legacy entries
+  // merge under the same fileId as their migrated counterparts.
+  normalizeLockfilePaths(base.value);
+  normalizeLockfilePaths(ours.value);
+  normalizeLockfilePaths(theirs.value);
 
   const baseMap = buildEntryMap(base.value.entries);
   const oursMap = buildEntryMap(ours.value.entries);

@@ -1,9 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { afterEach, describe, it, expect, vi, beforeEach } from 'vitest';
 import path from 'node:path';
 import type { FileToUpload } from 'generaltranslation/types';
 import type { Settings } from '../../types/index.js';
 import { warnManualReviewSetup } from '../reviewSetupWarning.js';
 import { logger } from '../../console/logger.js';
+import { toPosixPath } from '../../utils/paths.js';
 
 vi.mock('../../console/logger.js', () => ({
   logger: {
@@ -25,7 +26,7 @@ const makeSettings = (reviewPaths: string[] = []): Settings =>
     dashboardUrl: 'https://dash.generaltranslation.com',
     files: {
       requiresReviewPaths: new Set(
-        reviewPaths.map((p) => path.resolve(process.cwd(), p))
+        reviewPaths.map((p) => toPosixPath(path.resolve(process.cwd(), p)))
       ),
     },
   }) as unknown as Settings;
@@ -54,10 +55,16 @@ const gtjsonFile = (
   }) as unknown as FileToUpload;
 
 describe('warnManualReviewSetup', () => {
+  const originalSeparator = Object.getOwnPropertyDescriptor(path, 'sep')!;
+
   beforeEach(() => {
     vi.clearAllMocks();
     // Default: setting unavailable (older API / no credentials)
     vi.mocked(gt.getProjectInfo).mockRejectedValue(new Error('unavailable'));
+  });
+
+  afterEach(() => {
+    Object.defineProperty(path, 'sep', originalSeparator);
   });
 
   it('does not warn when nothing requires review', async () => {
@@ -76,6 +83,23 @@ describe('warnManualReviewSetup', () => {
     expect(vi.mocked(logger.warn).mock.calls[0][0]).toContain(
       'https://dash.generaltranslation.com/project/proj-123/settings'
     );
+  });
+
+  it('matches Windows native paths against the normalized review set', async () => {
+    Object.defineProperty(path, 'sep', {
+      ...originalSeparator,
+      value: path.win32.sep,
+    });
+    const resolveSpy = vi
+      .spyOn(path, 'resolve')
+      .mockReturnValue('C:\\project\\messages.json');
+    const settings = makeSettings();
+    settings.files.requiresReviewPaths = new Set(['C:/project/messages.json']);
+
+    await warnManualReviewSetup(settings, [normalFile('messages.json')]);
+
+    expect(logger.warn).toHaveBeenCalledTimes(1);
+    resolveSpy.mockRestore();
   });
 
   it('does not warn when the review-gated file is not part of the upload', async () => {

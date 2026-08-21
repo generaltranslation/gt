@@ -10,11 +10,11 @@ import { GT_ATTRIBUTES_WITH_SUGAR } from '../../constants.js';
 import { containsDeriveCall } from '../derivation/containsDeriveCall.js';
 import generateModule from '@babel/generator';
 import { mapAttributeName } from '../../mapAttributeName.js';
-import pathModule from 'node:path';
 import { isNumberLiteral } from '../../isNumberLiteral.js';
 import { extractSourceCode } from '../../extractSourceCode.js';
 import type { SourceCode } from '../../extractSourceCode.js';
 import { SURROUNDING_LINE_COUNT } from '../../../../../utils/constants.js';
+import { getRelative } from '../../../../../fs/findFilepath.js';
 
 // Handle CommonJS/ESM interop
 const generate = generateModule.default || generateModule;
@@ -62,7 +62,7 @@ export function extractStringEntryMetadata({
   surroundingLineCount?: number;
 }): InlineMetadata {
   // extract filepath for entry
-  const relativeFilepath = pathModule.relative(process.cwd(), config.file);
+  const relativeFilepath = getRelative(config.file);
 
   // extract inline metadata
   const inlineMetadata = extractInlineMetadata({

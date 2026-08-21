@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import path from 'node:path';
 import type { GT } from 'generaltranslation';
 import type { Settings } from '../../../types/index.js';
@@ -10,6 +10,7 @@ import {
 } from '../../../state/translateWarnings.js';
 import { DownloadTranslationsStep } from '../DownloadStep.js';
 import { TEMPLATE_FILE_NAME } from '../../../utils/constants.js';
+import { toPosixPath } from '../../../utils/paths.js';
 
 vi.mock('../../../console/logger.js', () => ({
   logger: {
@@ -96,6 +97,7 @@ describe('DownloadTranslationsStep', () => {
 });
 
 describe('DownloadTranslationsStep review gating', () => {
+  const originalSeparator = Object.getOwnPropertyDescriptor(path, 'sep')!;
   const mockGt = {
     queryFileData: vi.fn(),
   };
@@ -136,7 +138,7 @@ describe('DownloadTranslationsStep review gating', () => {
     ({
       files: {
         requiresReviewPaths: new Set(
-          reviewPaths.map((p) => path.resolve(process.cwd(), p))
+          reviewPaths.map((p) => toPosixPath(path.resolve(process.cwd(), p)))
         ),
       },
     }) as unknown as Settings;
@@ -172,6 +174,10 @@ describe('DownloadTranslationsStep review gating', () => {
     clearWarnings();
   });
 
+  afterEach(() => {
+    Object.defineProperty(path, 'sep', originalSeparator);
+  });
+
   it('skips unapproved review-gated files without failing', async () => {
     const { success, fileTracker } = await runStep('messages.json', null, [
       'messages.json',
@@ -190,6 +196,25 @@ describe('DownloadTranslationsStep review gating', () => {
           'Translation for locale fr requires review and is not approved yet',
       },
     ]);
+  });
+
+  it('matches Windows native paths against the normalized review set', async () => {
+    Object.defineProperty(path, 'sep', {
+      ...originalSeparator,
+      value: path.win32.sep,
+    });
+    const resolveSpy = vi
+      .spyOn(path, 'resolve')
+      .mockReturnValue('C:\\project\\messages.json');
+
+    const { fileTracker } = await runStep('messages.json', null, [
+      'messages.json',
+    ]);
+
+    expect(downloadFileBatch).not.toHaveBeenCalled();
+    expect(fileTracker.completed.size).toBe(0);
+    expect(fileTracker.skipped.size).toBe(1);
+    resolveSpy.mockRestore();
   });
 
   it('downloads approved review-gated files', async () => {

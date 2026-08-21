@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { logger } from '../console/logger.js';
 import { exitSync } from '../console/logging.js';
+import { toPosixPath } from '../utils/paths.js';
 
 /**
  * Resolve the file path from the given file path or default paths.
@@ -41,12 +42,12 @@ export function findFilepaths(
 
 export function getRelativePath(file: string, srcDirectory: string): string {
   // Create relative path from src directory and remove extension
-  return path
-    .relative(
+  return toPosixPath(
+    path.relative(
       srcDirectory,
       file.replace(/\.[^/.]+$/, '') // Remove file extension
     )
-    .replace(/\\/g, '.') // Replace Windows backslashes with dots
+  )
     .split(/[./]/) // Split on dots or forward slashes
     .filter(Boolean) // Remove empty segments that might cause extra dots
     .map((segment) => segment.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()) // Convert each segment to snake case
@@ -114,5 +115,5 @@ export function findFileInDir(dir: string, file: string): string {
 
 export function getRelative(absolutePath: string): string {
   const path2 = path.resolve(absolutePath);
-  return path.relative(process.cwd(), path2);
+  return toPosixPath(path.relative(process.cwd(), path2));
 }
