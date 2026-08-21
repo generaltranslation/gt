@@ -29,7 +29,7 @@ describe('postprocessMintlify', () => {
 
     await postprocessMintlify(settings);
 
-    expect(processOpenApi).toHaveBeenCalledWith(settings, undefined);
+    expect(processOpenApi).toHaveBeenCalledWith(settings, undefined, {});
     expect(localizeMintlifyFrontmatterUrls).not.toHaveBeenCalled();
   });
 
@@ -39,9 +39,13 @@ describe('postprocessMintlify', () => {
     } as Settings;
     const includeFiles = new Set(['ja/sandboxes.mdx']);
 
-    await postprocessMintlify(settings, includeFiles);
+    await postprocessMintlify(settings, includeFiles, {
+      processDefaultLocaleFiles: false,
+    });
 
-    expect(processOpenApi).toHaveBeenCalledWith(settings, includeFiles);
+    expect(processOpenApi).toHaveBeenCalledWith(settings, includeFiles, {
+      processDefaultLocaleFiles: false,
+    });
     expect(localizeMintlifyFrontmatterUrls).toHaveBeenCalledWith(
       settings,
       includeFiles
