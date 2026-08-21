@@ -78,6 +78,7 @@ import { warnReactPackageCompatibility } from '../utils/reactPackageCompatibilit
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { setupViteSPA } from '../setup/setupViteSPA.js';
 import { manifestDirectlyDeclaresGTVue } from '@generaltranslation/vue-extractor/integration';
+import { createFileMapping } from '../formats/files/fileMapping.js';
 
 const ID_COMPATIBILITY_WARNING_COMMANDS = new Set([
   'download',
@@ -202,6 +203,7 @@ export class BaseCLI {
     this.setupSetupProjectCommand();
     this.setupStageCommand();
     this.setupTranslateCommand();
+    this.setupGenerateSourceCommand();
     this.setupDownloadCommand();
     this.setupEnqueueCommand();
   }
@@ -287,6 +289,66 @@ export class BaseCLI {
       await this.handleTranslate(initOptions);
       logger.endCommand('Done!');
     });
+  }
+
+  protected setupGenerateSourceCommand(): void {
+    attachTranslateFlags(
+      this.program
+        .command('generate')
+        .description(
+          'Generate translation files populated with source-locale content.'
+        )
+    ).action(async (initOptions: TranslateFlags) => {
+      displayHeader('Generating translation templates...');
+      const settings = await generateSettings(initOptions, undefined, {
+        requireConfig: true,
+      });
+      await this.generateFileTemplates(settings);
+      logger.endCommand('Done!');
+    });
+  }
+
+  protected async generateFileTemplates(settings: Settings): Promise<void> {
+    const {
+      resolvedPaths,
+      placeholderPaths,
+      transformPaths,
+      transformFormats,
+    } = settings.files;
+    const fileMapping = createFileMapping(
+      resolvedPaths,
+      placeholderPaths,
+      transformPaths,
+      transformFormats,
+      settings.locales,
+      settings.defaultLocale
+    );
+    let generatedFiles = 0;
+
+    for (const localeMapping of Object.values(fileMapping)) {
+      for (const [sourcePath, outputPath] of Object.entries(localeMapping)) {
+        const source = path.resolve(sourcePath);
+        const output = path.resolve(outputPath);
+        if (source === output || !fs.existsSync(source)) {
+          continue;
+        }
+        await fs.promises.mkdir(path.dirname(output), { recursive: true });
+        try {
+          await fs.promises.copyFile(
+            source,
+            output,
+            fs.constants.COPYFILE_EXCL
+          );
+          generatedFiles++;
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+        }
+      }
+    }
+
+    if (generatedFiles > 0) {
+      logger.step(`Generated ${generatedFiles} translation template files.`);
+    }
   }
 
   protected setupSendDiffsCommand(): void {
