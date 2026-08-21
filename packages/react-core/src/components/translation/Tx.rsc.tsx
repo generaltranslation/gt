@@ -6,6 +6,8 @@ import {
   prepareT,
   type ResolvedTProps,
 } from '../../utils/translation/prepareT.shared';
+import { JsxChildren } from '@generaltranslation/format/types';
+import { logRuntimeTranslationRenderError } from '../../utils/errors/logRuntimeTranslationError';
 
 // RSC implementation: request conditions are passed explicitly instead of
 // being read from hooks. This module must stay free of hook/context imports
@@ -43,11 +45,19 @@ async function RscTx({
   }
 
   const i18nCache = getReactI18nCache();
-  const targetJsxChildren = await i18nCache.lookupTranslationWithFallback(
-    locale,
-    prepared.sourceJsxChildren,
-    prepared.targetOptions
-  );
+  let targetJsxChildren: JsxChildren | undefined;
+  // In development the cache rethrows lookup failures (for example a 401 from
+  // an invalid dev API key); degrade to source content instead of letting the
+  // rejection crash the server render.
+  try {
+    targetJsxChildren = await i18nCache.lookupTranslationWithFallback(
+      locale,
+      prepared.sourceJsxChildren,
+      prepared.targetOptions
+    );
+  } catch (error) {
+    logRuntimeTranslationRenderError(error);
+  }
 
   return _renderPreparedT({
     ...prepared,
