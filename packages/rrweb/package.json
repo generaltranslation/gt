@@ -11,16 +11,10 @@
   ],
   "sideEffects": false,
   "peerDependencies": {
-    "react": ">=18.0.0",
-    "react-dom": ">=18.0.0",
     "@rrweb/record": ">=2.0.0",
     "@rrweb/types": ">=2.0.0",
-    "gt-react": ">=11.1.13"
-  },
-  "peerDependenciesMeta": {
-    "gt-react": {
-      "optional": true
-    }
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
   },
   "scripts": {
     "build": "tsdown",
@@ -51,7 +45,6 @@
     "@types/node": "catalog:",
     "@types/react": ">=18.0.0 <20.0.0",
     "@types/react-dom": ">=18.0.0 <20.0.0",
-    "gt-react": "workspace:*",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

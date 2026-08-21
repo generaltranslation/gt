@@ -26,7 +26,7 @@
 
 ### Patch Changes
 
-- Updated dependencies [[`dd545ea`](https://github.com/generaltranslation/gt/commit/dd545eaab8e1bc2c459440aed8c47611b178bad8), [`190e589`](https://github.com/generaltranslation/gt/commit/190e589b953cc131413137095773de4ebbf3932c)]:
+- Updated dependencies [[`4422032`](https://github.com/generaltranslation/gt/commit/4422032bb5d365aabe095ee1ff103fd5bfdee578), [`4422032`](https://github.com/generaltranslation/gt/commit/4422032bb5d365aabe095ee1ff103fd5bfdee578)]:
   - @generaltranslation/react-core@11.1.13
 
 ## 11.1.12

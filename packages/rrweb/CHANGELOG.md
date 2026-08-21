@@ -4,12 +4,7 @@
 
 ### Minor Changes
 
-- [#2117](https://github.com/generaltranslation/gt/pull/2117) [`ad8d826`](https://github.com/generaltranslation/gt/commit/ad8d826db103f9c048dbb5d9ca0e89d8c5f38eab) Thanks [@logflash](https://github.com/logflash)! - Add the recorder: `GTRecorder` + `useRecorder()` capture a product walkthrough once with rrweb, and `gt-rrweb/harvest` reads each locale's own published translations (source-agnostic; honors a custom `loadTranslations`). Replays via any rrweb replayer.
-
-### Patch Changes
-
-- Updated dependencies []:
-  - gt-react@11.1.13
+- [#2144](https://github.com/generaltranslation/gt/pull/2144) [`4422032`](https://github.com/generaltranslation/gt/commit/4422032bb5d365aabe095ee1ff103fd5bfdee578) Thanks [@eoinest](https://github.com/eoinest)! - Add the recorder: `GTRecorder` + `useRecorder()` capture a product walkthrough once with rrweb, and `gt-rrweb/harvest` reads each locale's own published translations (source-agnostic; honors a custom `loadTranslations`). Replays via any rrweb replayer.
 
 ## 0.0.2
 
