@@ -166,37 +166,59 @@ describe('foldObservations + overlayFromDict', () => {
     expect(overlayFromDict(d, recorded)[13]).toBeUndefined();
   });
 
-  // Greptile P1: "Blank nodes shift translation keys". textByKey encodes each element's
-  // non-blank text-node COUNT in the key (`path#idx/count`). When a position is blank in
-  // one locale but text in the other, the counts differ so the keys DON'T align — the
-  // source text must NOT pick up the mispositioned target translation.
-  it('does NOT cross-pair when the non-blank text-node count differs across locales', () => {
+  // Greptile P1: blank text-node layouts must not cross-pair. textByKey's key carries a
+  // signature of the element's blank pattern (`path#idx@rawPositions`): two locales pair
+  // ONLY when the pattern is identical. These keys use that format; they must never learn
+  // a wrong translation when a blank sits at a different position/count across locales.
+  it('does NOT cross-pair when the non-blank COUNT differs (blank vs text)', () => {
+    // source [blank,"Later"] → sig "1"; target ["Earlier","Later"] → sig "0,1".
     const rec = new Map<number, string>([[20, 'Later']]);
     const d = newTargetDict();
-    // source element: [blank, "Later"] → 1 non-blank; target: ["Earlier", "Later"] → 2.
     foldObservations(
       d,
-      new Map([['/DIV[1]#0/1', 'Later']]),
+      new Map([['/DIV[1]#0@1', 'Later']]),
       new Map([
-        ['/DIV[1]#0/2', 'Earlier target'],
-        ['/DIV[1]#1/2', 'Later target'],
+        ['/DIV[1]#0@0,1', 'Earlier target'],
+        ['/DIV[1]#1@0,1', 'Later target'],
       ])
     );
-    // "Later" must not become "Earlier target"; the count-mismatch leaves it on source.
     expect(overlayFromDict(d, rec)[20]).toBeUndefined();
   });
 
-  // Greptile P1 (#216): a leading blank in the TARGET (same non-blank count) must still
-  // pair correctly — the count in the key matches, so compacted indices align.
-  it('pairs correctly when a target leading blank keeps the non-blank count equal', () => {
+  // Greptile P1: "Blank text-node positions collide" — same count, blank MOVED.
+  it('does NOT cross-pair when a same-count blank sits at a different position', () => {
+    // source [blank,"Later"] → sig "1"; target ["Earlier",blank] → sig "0".
     const rec = new Map<number, string>([[21, 'Later']]);
     const d = newTargetDict();
-    // source: ["Later"] → 1 non-blank; target: [blank, "Later"] → 1 non-blank.
     foldObservations(
       d,
-      new Map([['/DIV[1]#0/1', 'Later']]),
-      new Map([['/DIV[1]#0/1', 'Later target']])
+      new Map([['/DIV[1]#0@1', 'Later']]),
+      new Map([['/DIV[1]#0@0', 'Earlier target']])
     );
-    expect(overlayFromDict(d, rec)[21]).toBe('Later target');
+    // "Later" must NOT become "Earlier target"; mismatched patterns leave it on source.
+    expect(overlayFromDict(d, rec)[21]).toBeUndefined();
+  });
+
+  it('pairs correctly when the blank pattern is identical across locales', () => {
+    // both elements: ["A","B"] at the same raw positions → sig "0,1" → aligned 1:1.
+    const rec = new Map<number, string>([
+      [22, 'Open'],
+      [23, 'Usage'],
+    ]);
+    const d = newTargetDict();
+    foldObservations(
+      d,
+      new Map([
+        ['/DIV[1]#0@0,1', 'Open'],
+        ['/DIV[1]#1@0,1', 'Usage'],
+      ]),
+      new Map([
+        ['/DIV[1]#0@0,1', 'Abrir'],
+        ['/DIV[1]#1@0,1', 'Uso'],
+      ])
+    );
+    const ov = overlayFromDict(d, rec);
+    expect(ov[22]).toBe('Abrir');
+    expect(ov[23]).toBe('Uso');
   });
 });

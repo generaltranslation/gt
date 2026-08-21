@@ -167,34 +167,40 @@ function renderShell(url: string, selector: string): Promise<Rendered> {
 }
 
 // Index EACH TEXT NODE by a STRUCTURAL KEY = its element path (`tagName[nth-of-type]`
-// from the content root) plus its position AND count among that element's MEANINGFUL
-// (non-blank) direct text nodes: `${path}#${index}/${count}`. GT preserves DOM structure
-// across locales (it only swaps text), so a text node carries the same key in every
-// locale — BUT only when the element renders the SAME number of non-blank text nodes in
-// both. If a position is blank in one locale and text in the other (e.g. an empty
-// variable), the non-blank COUNT differs, and the compacted index alone would mispair
-// (source `[blank, "Later"]` → "Later"#0 vs target `["Earlier", "Later"]` → "Earlier"#0,
-// so foldObservations would learn "Later"→"Earlier"). Encoding the count in the key makes
-// those keys differ, so a count-mismatched element never cross-pairs — the text stays on
-// source (a safe miss) instead of getting a wrong translation. Per-TEXT-NODE granularity
-// (not per-element joined text) matches collectRecordedText, so every occurrence
-// contributes an observation and there's no joined-text artifact that could collide.
+// from the content root), its compacted index among the element's MEANINGFUL (non-blank)
+// direct text nodes, AND a SIGNATURE of that element's blank pattern — the raw child
+// indices of its non-blank text nodes: `${path}#${index}@${sig}`. GT preserves DOM
+// structure across locales (it only swaps text), so a text node carries the same key in
+// every locale ONLY when the element's blank/non-blank layout is identical. Positional
+// keys alone mispair whenever the pattern differs across locales — a blank in one but not
+// the other, at ANY position (leading, trailing, interior) or in different counts:
+//   source [blank,"Later"]  target ["Earlier","Later"]   (count differs)
+//   source [blank,"Later"]  target ["Earlier",blank]     (same count, blank moved)
+// would otherwise both give "Later" and the wrong target the same key, so foldObservations
+// learns the wrong translation. Baking the pattern signature into the key makes such
+// keys differ, so an element with a different blank layout in the other locale never
+// cross-pairs — the text stays on source (a safe miss) rather than getting a wrong
+// translation. When the patterns DO match, the signatures match and the compacted index
+// aligns the nodes 1:1. Per-TEXT-NODE granularity (not per-element joined text) matches
+// collectRecordedText, so every occurrence contributes an observation with no joined-text
+// artifact that could collide.
 function textByKey(root: Element): Map<string, string> {
   const map = new Map<string, string>();
   const visit = (el: Element, prefix: string) => {
     const tagCounts: Record<string, number> = {};
-    // Count this element's non-blank direct text nodes first, so each key can carry it.
-    let textCount = 0;
-    el.childNodes.forEach((c) => {
+    // Signature = the raw child indices of this element's non-blank direct text nodes.
+    const sig: number[] = [];
+    el.childNodes.forEach((c, i) => {
       if (c.nodeType === window.Node.TEXT_NODE && (c.textContent ?? '').trim())
-        textCount++;
+        sig.push(i);
     });
+    const sigStr = sig.join(',');
     let textIdx = 0;
     el.childNodes.forEach((c) => {
       if (c.nodeType === window.Node.TEXT_NODE) {
         const t = c.textContent ?? '';
         if (t.trim()) {
-          map.set(`${prefix}#${textIdx}/${textCount}`, t);
+          map.set(`${prefix}#${textIdx}@${sigStr}`, t);
           textIdx++;
         }
       } else if (c.nodeType === window.Node.ELEMENT_NODE) {
