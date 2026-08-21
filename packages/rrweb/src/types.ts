@@ -37,60 +37,41 @@ export function aspectOf(frame: FrameOption | undefined): number | null {
 }
 
 /**
- * How to fetch a locale's translations for `key: 'hash'` harvest. Mirrors GT's own
- * `TranslationsLoader`; the default resolves through the app's configured loader so
- * a custom `loadTranslations` (or the CDN) is honored without hardcoding a source.
+ * Load a locale's published translations (hash → content). Mirrors GT's own
+ * `loadTranslations`; a GT app resolves it through the app's configured loader / the CDN
+ * so the harvest reads the site's OWN translations without hardcoding a source.
  */
 export type TranslationsLoader = (locale: string) => Promise<unknown>;
 
 export type HarvestOptions = {
   /**
-   * Turn (path, source, target) into the URL to render for the structural harvest.
-   * The default assumes LOCALE-PREFIXED routing — it swaps the source-locale path
-   * segment (wherever it appears) for the target, or prepends one. An app is NOT
-   * guaranteed to encode the locale in the path at all (cookie/domain/query
-   * strategies), so those apps MUST pass this.
+   * Load a locale's published translations (hash → content) — e.g. GT's `loadTranslations`
+   * or a CDN fetch. This is the ONLY source the harvest reads: it maps the loaded
+   * translations onto the recording by message hash. Without it the overlay is empty and
+   * the replay renders source.
    */
-  localeToUrl?: (path: string, source: string, target: string) => string;
+  loadTranslations?: TranslationsLoader;
   /**
-   * The locale the recording was captured in (the source render). Defaults to the
-   * GT locale cookie (`localeCookieName`), then `locales[0]`. Set this when the app
-   * doesn't rely on the GT cookie.
-   */
-  sourceLocale?: string;
-  /**
-   * Name of the cookie the GT library stores the active locale in. When set, it's
-   * read to detect the source locale (instead of falling back to `locales[0]`). Pass
-   * GT's `defaultLocaleCookieName` (from `@generaltranslation/react-core`) or a custom
-   * name; omitted by default so gt-rrweb doesn't hardcode a framework's cookie.
-   */
-  localeCookieName?: string;
-  /**
-   * 'auto' (default): hash when a `getTranslations` loader is provided AND the recording
-   * carries message hashes (or a `hashMessage` is given), else structural.
-   * 'structural': pair source↔target text by DOM structure (renders each locale).
-   * 'hash': map recorded translations to a dict via `getTranslations` (needs `_tagIds`
-   * for `<T>` content and/or `hashMessage` for `gt()` strings).
-   */
-  key?: 'auto' | 'structural' | 'hash';
-  /** Translation source for `key: 'hash'` (see TranslationsLoader). */
-  getTranslations?: TranslationsLoader;
-  /**
-   * Hash a plain SOURCE string to its GT message hash, so the hash strategy can also
-   * cover `gt()` / `useGT()` string translations — which render as bare text with no
+   * Hash a plain SOURCE string to its GT message hash, so the harvest also covers
+   * `gt()` / `useGT()` string translations — which render as bare text with no
    * `data-_gt` marker, unlike `<T>` components. A GT app passes
    * `(m) => hashMessage(m, { $format: 'ICU' })` from `gt-i18n/internal`. Omit it and only
-   * `<T>` content (which carries a DOM hash) is harvested by the hash strategy.
+   * `<T>` content (which carries a DOM hash) is harvested.
    */
   hashMessage?: (message: string) => string | undefined;
   /**
-   * CSS selector for the region to harvest within. Defaults to the recorder's own
-   * content selector (what was recorded/framed) so the harvest covers the SAME region
-   * — including a sidebar — not just `<main>`.
+   * The locale the recording was captured in (the source render). Defaults to the GT
+   * locale cookie (`localeCookieName`), then `locales[0]`. Set this when the app doesn't
+   * rely on the GT cookie.
    */
-  contentSelector?: string;
-  /** Upper bound on distinct paths rendered (structural harvest cost guard). */
-  maxPaths?: number;
+  sourceLocale?: string;
+  /**
+   * Name of the cookie the GT library stores the active locale in. When set, it's read to
+   * detect the source locale (instead of falling back to `locales[0]`). Pass GT's
+   * `defaultLocaleCookieName` (from `@generaltranslation/react-core`) or a custom name;
+   * omitted by default so gt-rrweb doesn't hardcode a framework's cookie.
+   */
+  localeCookieName?: string;
 };
 
 /**

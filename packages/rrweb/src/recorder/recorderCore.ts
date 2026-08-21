@@ -2,7 +2,7 @@ import { record } from '@rrweb/record';
 import { EventType } from '@rrweb/types';
 import type { eventWithTime } from '@rrweb/types';
 
-import { harvestLocales } from '../harvest/harvestLocales';
+import { harvestLocales } from '../harvest';
 import {
   fetchInlinedFontCss,
   injectFontStyle,
@@ -267,14 +267,11 @@ export async function stop(): Promise<RecorderBundle | null> {
   const stoppedSession = sessionId;
   // Use the config SNAPSHOT taken when this session started (see activeConfig) — not
   // live coreConfig, which a later configure() (another mount) may have changed during
-  // recording or the harvest. This session's bundle must use its own selector/URL
-  // mapping/harvest options and reach its own onComplete.
+  // recording or the harvest. This session's bundle must use its own harvest options
+  // (loadTranslations / hashMessage) and reach its own onComplete.
   const cfg = activeConfig ?? coreConfig;
   const onComplete = cfg.onComplete;
-  const harvestOptions: HarvestOptions = {
-    contentSelector: cfg.contentSelector,
-    ...cfg.harvest,
-  };
+  const harvestOptions: HarvestOptions = { ...cfg.harvest };
   activeStop(); // stop rrweb recording
   activeStop = undefined;
   navCleanup?.();
@@ -294,9 +291,9 @@ export async function stop(): Promise<RecorderBundle | null> {
   if (locales.length > 1) {
     setStatus('preparing');
     try {
-      // Harvest the SAME region we record/frame (e.g. the app shell incl. its
-      // sidebar) — not just <main> — so sidebar-only text is translated too. An
-      // explicit harvest.contentSelector still overrides.
+      // Read each locale's published translations via the app's loadTranslations and
+      // map them onto the recording by message hash (see ../harvest). No loader → an
+      // empty overlay (replay renders source).
       overlay = await harvestLocales(events, locales, harvestOptions);
       output = injectOverlay(events, overlay);
     } catch {

@@ -9,7 +9,7 @@ const h = vi.hoisted(() => {
   const holder: {
     fonts: Promise<string>;
     harvest: () => Promise<Record<string, unknown>>;
-    lastHarvestOpts?: { contentSelector?: string };
+    lastHarvestOpts?: { sourceLocale?: string };
   } = { fonts: Promise.resolve(''), harvest: () => Promise.resolve({}) };
   const record = Object.assign(
     vi.fn((config: { emit: (e: eventWithTime) => void }) => {
@@ -34,9 +34,9 @@ vi.mock('../inlineFonts', () => ({
   injectFontStyle: () => {},
   removeInlinedFonts: () => {},
 }));
-vi.mock('../../harvest/harvestLocales', () => ({
+vi.mock('../../harvest', () => ({
   harvestLocales: (...args: unknown[]) => {
-    h.holder.lastHarvestOpts = args[2] as { contentSelector?: string };
+    h.holder.lastHarvestOpts = args[2] as { sourceLocale?: string };
     return h.holder.harvest();
   },
 }));
@@ -199,7 +199,7 @@ describe('recorder lifecycle', () => {
 
   it('harvests with the config snapshot from start(), not a later configure()', async () => {
     const core = await loadCore();
-    core.configure({ contentSelector: '[data-a]' });
+    core.configure({ harvest: { sourceLocale: 'from-A' } });
 
     const fonts = deferred<string>();
     h.holder.fonts = fonts.promise;
@@ -207,10 +207,10 @@ describe('recorder lifecycle', () => {
     fonts.resolve('');
     await a;
 
-    core.configure({ contentSelector: '[data-b]' }); // during recording
+    core.configure({ harvest: { sourceLocale: 'from-B' } }); // during recording
     await core.stop();
 
-    expect(h.holder.lastHarvestOpts?.contentSelector).toBe('[data-a]');
+    expect(h.holder.lastHarvestOpts?.sourceLocale).toBe('from-A');
   });
 
   // Greptile P1: "Preparation adopts later configuration" — a configure() DURING the
@@ -220,18 +220,21 @@ describe('recorder lifecycle', () => {
   it('freezes config at the start() claim, ignoring configure() during the prep await', async () => {
     const core = await loadCore();
     const cb1 = vi.fn();
-    core.configure({ contentSelector: '[data-a]', onComplete: cb1 });
+    core.configure({ harvest: { sourceLocale: 'from-A' }, onComplete: cb1 });
 
     const fonts = deferred<string>();
     h.holder.fonts = fonts.promise;
     const a = core.start({ locales: ['en', 'fr'] }); // claims session, awaits fonts
     // Reconfigure WHILE prep is still awaiting fonts (before the snapshot).
-    core.configure({ contentSelector: '[data-b]', onComplete: vi.fn() });
+    core.configure({
+      harvest: { sourceLocale: 'from-B' },
+      onComplete: vi.fn(),
+    });
     fonts.resolve('');
     await a;
 
     await core.stop();
-    expect(h.holder.lastHarvestOpts?.contentSelector).toBe('[data-a]');
+    expect(h.holder.lastHarvestOpts?.sourceLocale).toBe('from-A');
     expect(cb1).toHaveBeenCalledTimes(1);
   });
 
