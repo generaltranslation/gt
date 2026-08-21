@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1787345370180,
+  "lastUpdate": 1787353781057,
   "repoUrl": "https://github.com/generaltranslation/gt",
   "entries": {
     "Middleware Benchmarks": [
@@ -9048,6 +9048,122 @@ window.BENCHMARK_DATA = {
             "value": 76.30000000001746,
             "unit": "ms",
             "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.13\"\n}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Ernest McCarter",
+            "username": "eoinest",
+            "email": "ernest@generaltranslation.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "92748123fe94f798ca975a20a77a5ddff3328213",
+          "message": "[ci] release (#2149)\n\nThis PR was opened by the [Changesets\nrelease](https://github.com/changesets/action) GitHub action. When\nyou're ready to do a release, you can merge this and the packages will\nbe published to npm automatically. If you're not ready to do a release\nyet, that's fine, whenever you add more changesets to main, this PR will\nbe updated.\n\n\n# Releases\n## gt@2.17.0\n\n### Minor Changes\n\n- [#2070](https://github.com/generaltranslation/gt/pull/2070)\n[`b05b470`](https://github.com/generaltranslation/gt/commit/b05b4703fbbfd34a3cbee335c786e2e606346167)\nThanks [@eoinest](https://github.com/eoinest)! - Add Vue source\nextraction through the standalone `@generaltranslation/vue-extractor`\npackage.\n\n### Patch Changes\n\n- [#2092](https://github.com/generaltranslation/gt/pull/2092)\n[`c47eed5`](https://github.com/generaltranslation/gt/commit/c47eed504a90505490cb30cd640ca53ba0ae10e8)\nThanks [@eoinest](https://github.com/eoinest)! - Generate catalogs for\ngt-vue module-level `t()` calls through the CLI.\n\n- [#2044](https://github.com/generaltranslation/gt/pull/2044)\n[`01ba884`](https://github.com/generaltranslation/gt/commit/01ba88485971eadde117b3b31e8dea7b36cb4571)\nThanks [@eoinest](https://github.com/eoinest)! - Exercise Iris\nprerelease publishing for the CLI.\n\n- Updated dependencies\n[[`697093a`](https://github.com/generaltranslation/gt/commit/697093a5dd5777994f589cded268b719e989f8c3),\n[`f2204b9`](https://github.com/generaltranslation/gt/commit/f2204b990278865c54d14d337392930ea1ec31bf),\n[`b05b470`](https://github.com/generaltranslation/gt/commit/b05b4703fbbfd34a3cbee335c786e2e606346167),\n[`8178815`](https://github.com/generaltranslation/gt/commit/81788154f5e5a697cf5edd2a0151fac979ce8fce),\n[`8e13e37`](https://github.com/generaltranslation/gt/commit/8e13e37ec2f9c425ee2da12d641c60eca5861dea)]:\n  - @generaltranslation/vue-extractor@0.1.0\n  - @generaltranslation/format@0.1.8\n  - generaltranslation@9.1.7\n  - @generaltranslation/python-extractor@0.2.40\n  - @generaltranslation/supported-locales@2.1.20\n## gt-vue@0.1.0\n\n### Minor Changes\n\n- [#2012](https://github.com/generaltranslation/gt/pull/2012)\n[`8d376e2`](https://github.com/generaltranslation/gt/commit/8d376e23c80828dfd8756e2f0fbf0f7725e0f178)\nThanks [@eoinest](https://github.com/eoinest)! - Add a lightweight Vue 3\nruntime with catalog-backed string and rich-content\ntranslation, cookie-backed reactive locale switching, child-only\nvariables,\nand typed value props for number, currency, and date formatting. Browser\nSPAs\nrestore the locale from a configurable cookie, while an explicit server\nlocale\n  wins during SSR hydration.\n\n### Patch Changes\n\n- [#2068](https://github.com/generaltranslation/gt/pull/2068)\n[`f2204b9`](https://github.com/generaltranslation/gt/commit/f2204b990278865c54d14d337392930ea1ec31bf)\nThanks [@eoinest](https://github.com/eoinest)! - Translate statically\nauthored custom-component default slots, preserve authored\nFragments, and align Branch and Plural wire values, rendering fallbacks,\nand\nlocale selection with React. Add React-compatible `context`, `id`,\n`maxChars`,\nand `requiresReview` metadata to `<T>`, including compiler-facing `$`\naliases.\n\n- [#2080](https://github.com/generaltranslation/gt/pull/2080)\n[`5d8b78a`](https://github.com/generaltranslation/gt/commit/5d8b78a1085d5dadc5bdc7435b3c6addf8981c38)\nThanks [@eoinest](https://github.com/eoinest)! - Migrate the package\nlicense from FSL-1.1-ALv2 to MIT.\n\n- [#2090](https://github.com/generaltranslation/gt/pull/2090)\n[`95b48df`](https://github.com/generaltranslation/gt/commit/95b48df677d27f41a336f13e01ae7aa9aa484c73)\nThanks [@eoinest](https://github.com/eoinest)! - Add browser SPA\ninitialization and synchronous module-level `t()` translations\n  to gt-vue.\n- Updated dependencies\n[[`f2204b9`](https://github.com/generaltranslation/gt/commit/f2204b990278865c54d14d337392930ea1ec31bf),\n[`b05b470`](https://github.com/generaltranslation/gt/commit/b05b4703fbbfd34a3cbee335c786e2e606346167),\n[`8d376e2`](https://github.com/generaltranslation/gt/commit/8d376e23c80828dfd8756e2f0fbf0f7725e0f178)]:\n  - @generaltranslation/format@0.1.8\n  - generaltranslation@9.1.7\n  - gt-i18n@1.0.17\n## @generaltranslation/vue-extractor@0.1.0\n\n### Minor Changes\n\n- [#2069](https://github.com/generaltranslation/gt/pull/2069)\n[`697093a`](https://github.com/generaltranslation/gt/commit/697093a5dd5777994f589cded268b719e989f8c3)\nThanks [@eoinest](https://github.com/eoinest)! - Add the Vue source\nextraction package with project discovery, Vue SFC and JSX\n  analysis, and compiler-compatible translation hashing.\n\n### Patch Changes\n\n- [#2091](https://github.com/generaltranslation/gt/pull/2091)\n[`8178815`](https://github.com/generaltranslation/gt/commit/81788154f5e5a697cf5edd2a0151fac979ce8fce)\nThanks [@eoinest](https://github.com/eoinest)! - Extract static\nmodule-level `t()` calls from gt-vue projects.\n\n- [#2123](https://github.com/generaltranslation/gt/pull/2123)\n[`8e13e37`](https://github.com/generaltranslation/gt/commit/8e13e37ec2f9c425ee2da12d641c60eca5861dea)\nThanks [@eoinest](https://github.com/eoinest)! - Avoid slow extraction\nwhen malformed Vue-owned scripts end with nested block closers.\n\n- Updated dependencies\n[[`f2204b9`](https://github.com/generaltranslation/gt/commit/f2204b990278865c54d14d337392930ea1ec31bf),\n[`b05b470`](https://github.com/generaltranslation/gt/commit/b05b4703fbbfd34a3cbee335c786e2e606346167)]:\n  - @generaltranslation/format@0.1.8\n  - generaltranslation@9.1.7\n## @generaltranslation/compiler@1.3.42\n\n### Patch Changes\n\n- [#2068](https://github.com/generaltranslation/gt/pull/2068)\n[`f2204b9`](https://github.com/generaltranslation/gt/commit/f2204b990278865c54d14d337392930ea1ec31bf)\nThanks [@eoinest](https://github.com/eoinest)! - Represent React's\npersisted boolean and null rich-content values in the shared\n  JSX wire types used by framework runtimes and translation catalogs.\n- Updated dependencies\n[[`f2204b9`](https://github.com/generaltranslation/gt/commit/f2204b990278865c54d14d337392930ea1ec31bf),\n[`b05b470`](https://github.com/generaltranslation/gt/commit/b05b4703fbbfd34a3cbee335c786e2e606346167)]:\n  - @generaltranslation/format@0.1.8\n  - generaltranslation@9.1.7\n## generaltranslation@9.1.7\n\n### Patch Changes\n\n- [#2068](https://github.com/generaltranslation/gt/pull/2068)\n[`f2204b9`](https://github.com/generaltranslation/gt/commit/f2204b990278865c54d14d337392930ea1ec31bf)\nThanks [@eoinest](https://github.com/eoinest)! - Represent React's\npersisted boolean and null rich-content values in the shared\n  JSX wire types used by framework runtimes and translation catalogs.\n\n- [#2070](https://github.com/generaltranslation/gt/pull/2070)\n[`b05b470`](https://github.com/generaltranslation/gt/commit/b05b4703fbbfd34a3cbee335c786e2e606346167)\nThanks [@eoinest](https://github.com/eoinest)! - Accept Vue compiler\nsettings in the shared GT configuration type.\n\n- Updated dependencies\n[[`f2204b9`](https://github.com/generaltranslation/gt/commit/f2204b990278865c54d14d337392930ea1ec31bf)]:\n  - @generaltranslation/format@0.1.8\n## @generaltranslation/format@0.1.8\n\n### Patch Changes\n\n- [#2068](https://github.com/generaltranslation/gt/pull/2068)\n[`f2204b9`](https://github.com/generaltranslation/gt/commit/f2204b990278865c54d14d337392930ea1ec31bf)\nThanks [@eoinest](https://github.com/eoinest)! - Represent React's\npersisted boolean and null rich-content values in the shared\n  JSX wire types used by framework runtimes and translation catalogs.\n## gtx-cli@2.17.0\n\n### Patch Changes\n\n- Updated dependencies\n[[`c47eed5`](https://github.com/generaltranslation/gt/commit/c47eed504a90505490cb30cd640ca53ba0ae10e8),\n[`01ba884`](https://github.com/generaltranslation/gt/commit/01ba88485971eadde117b3b31e8dea7b36cb4571),\n[`b05b470`](https://github.com/generaltranslation/gt/commit/b05b4703fbbfd34a3cbee335c786e2e606346167)]:\n  - gt@2.17.0\n## gt-i18n@1.0.17\n\n### Patch Changes\n\n- [#2012](https://github.com/generaltranslation/gt/pull/2012)\n[`8d376e2`](https://github.com/generaltranslation/gt/commit/8d376e23c80828dfd8756e2f0fbf0f7725e0f178)\nThanks [@eoinest](https://github.com/eoinest)! - Make `msg(..., {\n$format: 'STRING' })` preserve source text literally instead\n  of applying ICU interpolation. For example, `msg('Hello {name}', {\n$format: 'STRING', name: 'Ada' })` now encodes `Hello {name}` rather\nthan\n`Hello Ada`. Add lightweight shared helpers for registering, hashing,\nand\ndecoding literal STRING messages, browser cookie access, and canonical\nGT\n  cookie names, and validate encoded fields by type.\n- Updated dependencies\n[[`f2204b9`](https://github.com/generaltranslation/gt/commit/f2204b990278865c54d14d337392930ea1ec31bf),\n[`b05b470`](https://github.com/generaltranslation/gt/commit/b05b4703fbbfd34a3cbee335c786e2e606346167)]:\n  - @generaltranslation/format@0.1.8\n  - generaltranslation@9.1.7\n## locadex@1.0.212\n\n### Patch Changes\n\n- Updated dependencies\n[[`c47eed5`](https://github.com/generaltranslation/gt/commit/c47eed504a90505490cb30cd640ca53ba0ae10e8),\n[`01ba884`](https://github.com/generaltranslation/gt/commit/01ba88485971eadde117b3b31e8dea7b36cb4571),\n[`b05b470`](https://github.com/generaltranslation/gt/commit/b05b4703fbbfd34a3cbee335c786e2e606346167)]:\n  - gt@2.17.0\n## gt-next@11.1.14\n\n### Patch Changes\n\n- Updated dependencies\n[[`f2204b9`](https://github.com/generaltranslation/gt/commit/f2204b990278865c54d14d337392930ea1ec31bf),\n[`b05b470`](https://github.com/generaltranslation/gt/commit/b05b4703fbbfd34a3cbee335c786e2e606346167),\n[`8d376e2`](https://github.com/generaltranslation/gt/commit/8d376e23c80828dfd8756e2f0fbf0f7725e0f178)]:\n  - @generaltranslation/format@0.1.8\n  - generaltranslation@9.1.7\n  - @generaltranslation/compiler@1.3.42\n  - gt-i18n@1.0.17\n  - @generaltranslation/react-core@11.1.14\n  - gt-react@11.1.14\n## gt-node@1.0.18\n\n### Patch Changes\n\n- Updated dependencies\n[[`f2204b9`](https://github.com/generaltranslation/gt/commit/f2204b990278865c54d14d337392930ea1ec31bf),\n[`b05b470`](https://github.com/generaltranslation/gt/commit/b05b4703fbbfd34a3cbee335c786e2e606346167),\n[`8d376e2`](https://github.com/generaltranslation/gt/commit/8d376e23c80828dfd8756e2f0fbf0f7725e0f178)]:\n  - generaltranslation@9.1.7\n  - gt-i18n@1.0.17\n## @generaltranslation/python-extractor@0.2.40\n\n### Patch Changes\n\n- Updated dependencies\n[[`f2204b9`](https://github.com/generaltranslation/gt/commit/f2204b990278865c54d14d337392930ea1ec31bf),\n[`b05b470`](https://github.com/generaltranslation/gt/commit/b05b4703fbbfd34a3cbee335c786e2e606346167)]:\n  - generaltranslation@9.1.7\n## gt-react@11.1.14\n\n### Patch Changes\n\n- Updated dependencies\n[[`f2204b9`](https://github.com/generaltranslation/gt/commit/f2204b990278865c54d14d337392930ea1ec31bf),\n[`b05b470`](https://github.com/generaltranslation/gt/commit/b05b4703fbbfd34a3cbee335c786e2e606346167),\n[`8d376e2`](https://github.com/generaltranslation/gt/commit/8d376e23c80828dfd8756e2f0fbf0f7725e0f178)]:\n  - generaltranslation@9.1.7\n  - gt-i18n@1.0.17\n  - @generaltranslation/react-core@11.1.14\n## @generaltranslation/react-core@11.1.14\n\n### Patch Changes\n\n- Updated dependencies\n[[`f2204b9`](https://github.com/generaltranslation/gt/commit/f2204b990278865c54d14d337392930ea1ec31bf),\n[`b05b470`](https://github.com/generaltranslation/gt/commit/b05b4703fbbfd34a3cbee335c786e2e606346167),\n[`8d376e2`](https://github.com/generaltranslation/gt/commit/8d376e23c80828dfd8756e2f0fbf0f7725e0f178)]:\n  - @generaltranslation/format@0.1.8\n  - generaltranslation@9.1.7\n  - gt-i18n@1.0.17\n## gt-react-native@11.1.14\n\n### Patch Changes\n\n- Updated dependencies\n[[`f2204b9`](https://github.com/generaltranslation/gt/commit/f2204b990278865c54d14d337392930ea1ec31bf),\n[`b05b470`](https://github.com/generaltranslation/gt/commit/b05b4703fbbfd34a3cbee335c786e2e606346167),\n[`8d376e2`](https://github.com/generaltranslation/gt/commit/8d376e23c80828dfd8756e2f0fbf0f7725e0f178)]:\n  - @generaltranslation/format@0.1.8\n  - generaltranslation@9.1.7\n  - gt-i18n@1.0.17\n  - @generaltranslation/react-core@11.1.14\n  - @generaltranslation/supported-locales@2.1.20\n## gt-sanity@4.0.4\n\n### Patch Changes\n\n- Updated dependencies\n[[`f2204b9`](https://github.com/generaltranslation/gt/commit/f2204b990278865c54d14d337392930ea1ec31bf),\n[`b05b470`](https://github.com/generaltranslation/gt/commit/b05b4703fbbfd34a3cbee335c786e2e606346167)]:\n  - generaltranslation@9.1.7\n## @generaltranslation/supported-locales@2.1.20\n\n### Patch Changes\n\n- Updated dependencies\n[[`f2204b9`](https://github.com/generaltranslation/gt/commit/f2204b990278865c54d14d337392930ea1ec31bf),\n[`b05b470`](https://github.com/generaltranslation/gt/commit/b05b4703fbbfd34a3cbee335c786e2e606346167)]:\n  - generaltranslation@9.1.7\n## gt-tanstack-start@11.1.14\n\n### Patch Changes\n\n- Updated dependencies\n[[`f2204b9`](https://github.com/generaltranslation/gt/commit/f2204b990278865c54d14d337392930ea1ec31bf),\n[`b05b470`](https://github.com/generaltranslation/gt/commit/b05b4703fbbfd34a3cbee335c786e2e606346167),\n[`8d376e2`](https://github.com/generaltranslation/gt/commit/8d376e23c80828dfd8756e2f0fbf0f7725e0f178)]:\n  - generaltranslation@9.1.7\n  - gt-i18n@1.0.17\n  - @generaltranslation/react-core@11.1.14\n  - gt-react@11.1.14\n## gt-test-apps-e2e@0.1.1",
+          "timestamp": "2026-08-21T23:01:23Z",
+          "url": "https://github.com/generaltranslation/gt/commit/92748123fe94f798ca975a20a77a5ddff3328213"
+        },
+        "date": 1787353779985,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "gt-next > unit > middleware: factory creation latency > createNextMiddleware() (mean)",
+            "value": 0.044732294749082135,
+            "range": "±0.0214",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.14\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > default locale request (/) (mean)",
+            "value": 0.15295841602936547,
+            "range": "±0.0562",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.14\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > non-default locale request (/fr) (mean)",
+            "value": 0.20671166033057714,
+            "range": "±0.0642",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.14\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > nested route (/fr/about) (mean)",
+            "value": 0.20591247550432054,
+            "range": "±0.0656",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.14\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > ttfb",
+            "value": 136.29999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.14\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > domContentLoaded",
+            "value": 156.90000000002328,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.14\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > load",
+            "value": 257.20000000001164,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.14\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > elapsed",
+            "value": 99,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.14\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > ttfb",
+            "value": 19.100000000034925,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.14\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > domContentLoaded",
+            "value": 27.800000000046566,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.14\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > load",
+            "value": 91.10000000003492,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.14\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: locale-switch-en-to-fr > elapsed",
+            "value": 602,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.14\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > ttfb",
+            "value": 9.900000000023283,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.14\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > domContentLoaded",
+            "value": 18.5,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.14\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > load",
+            "value": 78.60000000003492,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.14\"\n}"
           }
         ]
       }
