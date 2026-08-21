@@ -38,3 +38,9 @@ export function detectPythonLibrary(
 
   return null;
 }
+
+export function hasPythonProjectFile(cwd: string): boolean {
+  return ['pyproject.toml', 'requirements.txt', 'setup.py'].some((file) =>
+    fs.existsSync(path.join(cwd, file))
+  );
+}

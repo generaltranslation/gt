@@ -180,8 +180,10 @@ export async function generateSettings(
   // merge options
   const mergedOptions: Settings = { ...gtConfig, ...flags } as Settings;
 
+  const { library, hasProjectFile } = determineLibrary();
   if (
-    determineLibrary().library === 'base' &&
+    library === 'base' &&
+    !hasProjectFile &&
     !hasConfiguredTranslationFiles(mergedOptions.files)
   ) {
     logger.warn(
