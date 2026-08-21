@@ -1,0 +1,15 @@
+body {
+  font-family: system-ui, sans-serif;
+  margin: 2rem;
+}
+
+main {
+  display: grid;
+  gap: 1rem;
+  max-width: 48rem;
+}
+
+section {
+  border: 1px solid #999;
+  padding: 1rem;
+}
