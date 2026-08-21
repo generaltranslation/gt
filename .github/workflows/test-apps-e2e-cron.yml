@@ -49,7 +49,7 @@ jobs:
         run: pnpm install
 
       - name: Build local GT packages
-        run: pnpm exec turbo build --filter='@generaltranslation/format' --filter='@generaltranslation/compiler' --filter=generaltranslation --filter=gt-i18n --filter='@generaltranslation/react-core' --filter=gt-react --filter=gt-node --filter=gt-tanstack-start --filter=gt-next
+        run: pnpm exec turbo build --filter='@generaltranslation/format' --filter='@generaltranslation/compiler' --filter=generaltranslation --filter=gt-i18n --filter='@generaltranslation/react-core' --filter=gt-react --filter=gt-vue --filter=gt --filter=gt-node --filter=gt-tanstack-start --filter=gt-next
 
       - name: Install Chromium
         run: pnpm --filter gt-test-apps-e2e test:e2e:install

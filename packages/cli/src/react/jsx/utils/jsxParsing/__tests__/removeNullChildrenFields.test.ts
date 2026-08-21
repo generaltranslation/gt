@@ -17,6 +17,12 @@ describe('removeNullChildrenFields', () => {
     });
   });
 
+  describe('empty-rendering scalar children', () => {
+    it.each([false, true, null])('preserves %s', (input) => {
+      expect(removeNullChildrenFields(input)).toBe(input);
+    });
+  });
+
   describe('array of children', () => {
     it('should handle array of strings', () => {
       const input: JsxChildren = ['Hello', ' ', 'world'];

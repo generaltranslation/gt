@@ -1,0 +1,73 @@
+{
+  "name": "gt-vue",
+  "version": "0.1.0",
+  "description": "A lightweight Vue internationalization library for General Translation.",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.cts",
+  "files": [
+    "dist",
+    "CHANGELOG.md",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "peerDependencies": {
+    "vue": ">=3.3.0 <4.0.0"
+  },
+  "dependencies": {
+    "@generaltranslation/format": "workspace:*",
+    "generaltranslation": "workspace:*",
+    "gt-i18n": "workspace:*"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
+    "build:release": "pnpm run build:clean",
+    "release": "pnpm run build:clean && pnpm publish",
+    "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",
+    "release:beta": "pnpm run build:clean && pnpm publish --tag beta",
+    "release:latest": "pnpm run build:clean && pnpm publish --tag latest",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/generaltranslation/gt.git"
+  },
+  "author": "General Translation, Inc.",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/generaltranslation/gt/issues"
+  },
+  "homepage": "https://generaltranslation.com/",
+  "devDependencies": {
+    "@generaltranslation/react-core": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/react": "19.1.15",
+    "react": "19.1.1",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "vue": "^3.5.0"
+  },
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      },
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      }
+    }
+  },
+  "keywords": [
+    "vue",
+    "translation",
+    "internationalization",
+    "localization",
+    "i18n"
+  ]
+}

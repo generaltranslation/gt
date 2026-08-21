@@ -1,0 +1,11 @@
+{
+  "name": "cli-vue-binary-test",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@vue/compiler-sfc": "^3.5.0",
+    "gt-vue": "workspace:*",
+    "vue": "^3.5.0"
+  }
+}

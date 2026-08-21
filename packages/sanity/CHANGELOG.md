@@ -1,5 +1,22 @@
 # gt-sanity
 
+## 4.0.4
+
+### Patch Changes
+
+- Updated dependencies [[`f2204b9`](https://github.com/generaltranslation/gt/commit/f2204b990278865c54d14d337392930ea1ec31bf), [`b05b470`](https://github.com/generaltranslation/gt/commit/b05b4703fbbfd34a3cbee335c786e2e606346167)]:
+  - generaltranslation@9.1.7
+
+## 3.1.7-iris.0
+
+### Patch Changes
+
+- 5d8b78a: Migrate the package license from FSL-1.1-ALv2 to MIT.
+- Updated dependencies [f2204b9]
+- Updated dependencies [b05b470]
+- Updated dependencies [5d8b78a]
+  - generaltranslation@9.1.3-iris.0
+
 ## 4.0.3
 
 ### Patch Changes

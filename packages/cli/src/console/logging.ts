@@ -18,6 +18,10 @@ import {
   validateLocale,
   validateLocaleList,
 } from './promptParsing.js';
+import {
+  getInlineElementsLabel,
+  type InlineLibrary,
+} from '../types/libraries.js';
 
 function cancelPromptAndExit(message: string): never {
   endTerminalSession();
@@ -424,15 +428,17 @@ export function warnDeprecatedField(
  */
 export function logCollectedFiles(
   files: Pick<FileToUpload, 'fileName'>[],
-  reactComponents?: number
+  inlineComponents?: number,
+  inlineLibrary?: InlineLibrary
 ): void {
+  const elementLabel = getInlineElementsLabel(inlineLibrary);
   logger.message(
     chalk.cyan('Files found in project:') +
       '\n' +
       files
         .map((file) => {
           if (file.fileName === TEMPLATE_FILE_NAME) {
-            return `- <React Elements>${reactComponents ? ` (${reactComponents})` : ''}`;
+            return `- <${elementLabel}>${inlineComponents ? ` (${inlineComponents})` : ''}`;
           }
           return `- ${file.fileName}`;
         })

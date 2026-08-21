@@ -1,0 +1,10 @@
+{
+  "defaultLocale": "en",
+  "locales": [],
+  "src": ["src/**/*.{ts,vue}"],
+  "files": {
+    "gt": {
+      "output": "dist/_gt/[locale].json"
+    }
+  }
+}

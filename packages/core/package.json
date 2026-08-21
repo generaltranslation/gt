@@ -1,6 +1,6 @@
 {
   "name": "generaltranslation",
-  "version": "9.1.6",
+  "version": "9.1.7",
   "description": "A language toolkit for AI developers",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
@@ -20,7 +20,7 @@
     "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",
     "release:beta": "pnpm run build:clean && pnpm publish --tag beta",
     "release:latest": "pnpm run build:clean && pnpm publish --tag latest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.type-tests.json"
   },
   "repository": {
     "type": "git",

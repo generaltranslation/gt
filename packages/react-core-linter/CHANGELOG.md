@@ -1,5 +1,13 @@
 # @generaltranslation/react-core-linter
 
+## 0.1.15-iris.0
+
+### Patch Changes
+
+- 5d8b78a: Migrate the package license from FSL-1.1-ALv2 to MIT.
+- Updated dependencies [5d8b78a]
+  - @generaltranslation/icu@0.1.2-iris.0
+
 ## 0.1.15
 
 ### Patch Changes

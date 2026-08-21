@@ -43,6 +43,8 @@
     "gt-test-next-app-router-locale-routing",
     "gt-test-next-app-router-locale-routing-ssg",
     "gt-test-next-app-router-locale-routing-use-cache",
+    "gt-test-next-latest-locale-switch-no-routing",
+    "gt-test-next-latest-locale-switch-routing",
     "gt-test-next-pages-router",
     "gt-test-node-express",
     "gt-test-react-native",
@@ -50,6 +52,8 @@
     "gt-test-rollup-react",
     "gt-test-tanstack-start",
     "gt-test-vite-react",
-    "gt-test-webpack-react"
+    "gt-test-vite-vue",
+    "gt-test-webpack-react",
+    "cli-vue-binary-test"
   ]
 }

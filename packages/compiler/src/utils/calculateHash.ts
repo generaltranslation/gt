@@ -54,6 +54,9 @@ function containsStatic(source: JsxChildren): boolean {
 }
 
 function handleChildren(source: JsxChildren): boolean {
+  if (source === null || typeof source === 'boolean') {
+    return false;
+  }
   if (Array.isArray(source)) {
     return source.some((child) => handleChild(child));
   }

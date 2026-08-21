@@ -4,7 +4,6 @@ import type {
 } from '../types/options';
 import { formatMessage } from '@generaltranslation/format';
 import {
-  encode,
   libraryDefaultLocale,
   VAR_IDENTIFIER,
 } from 'generaltranslation/internal';
@@ -13,6 +12,8 @@ import logger from '../../logs/logger';
 import { extractVariables } from '../../utils/extractVariables';
 import { hashMessage } from '../../utils/hashMessage';
 import { RegisterableMessages } from '../types/message';
+import { encodeMsg } from './encodeMsg';
+import { msgString } from './msgString';
 
 /**
  * Registers a message to be translated. Returns the message unchanged if no options are provided.
@@ -57,6 +58,8 @@ export function msg(
   message: RegisterableMessages,
   options?: GTTranslationOptions
 ): RegisterableMessages {
+  if (options?.$format === 'STRING') return msgString(message, options);
+
   // Handle array
   if (typeof message !== 'string') {
     if (!options) return message;
@@ -73,15 +76,11 @@ export function msg(
     return message;
   }
 
-  // Extract variables
   const variables = extractVariables(options);
-
-  // Interpolate string
-  let interpolatedString: string = message;
+  let interpolatedString: string;
   try {
     interpolatedString = formatMessage(message, {
       locales: [libraryDefaultLocale], // TODO: use compiler to insert locales
-      dataFormat: options.$format,
       variables: {
         ...variables,
         [VAR_IDENTIFIER]: 'other',
@@ -106,8 +105,5 @@ export function msg(
     $_source,
     $_hash,
   };
-  const optionsEncoding = encode(JSON.stringify(encodedOptions));
-
-  // Construct result
-  return `${interpolatedString}:${optionsEncoding}`;
+  return encodeMsg(interpolatedString, encodedOptions);
 }

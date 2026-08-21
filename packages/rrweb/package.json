@@ -1,6 +1,6 @@
 {
   "name": "gt-rrweb",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "Record a product walkthrough once with rrweb and replay it per-locale using General Translation's own published translations",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
@@ -11,6 +11,8 @@
   ],
   "sideEffects": false,
   "peerDependencies": {
+    "@rrweb/record": ">=2.0.0",
+    "@rrweb/types": ">=2.0.0",
     "react": ">=18.0.0",
     "react-dom": ">=18.0.0"
   },
@@ -38,6 +40,8 @@
   },
   "homepage": "https://generaltranslation.com/",
   "devDependencies": {
+    "@rrweb/record": "^2.1.1",
+    "@rrweb/types": "^2.1.1",
     "@types/node": "catalog:",
     "@types/react": ">=18.0.0 <20.0.0",
     "@types/react-dom": ">=18.0.0 <20.0.0",
@@ -55,6 +59,23 @@
         "types": "./dist/index.d.mts",
         "default": "./dist/index.mjs"
       }
+    },
+    "./harvest": {
+      "require": {
+        "types": "./dist/harvest.d.cts",
+        "default": "./dist/harvest.cjs"
+      },
+      "import": {
+        "types": "./dist/harvest.d.mts",
+        "default": "./dist/harvest.mjs"
+      }
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "harvest": [
+        "./dist/harvest.d.cts"
+      ]
     }
   },
   "keywords": [

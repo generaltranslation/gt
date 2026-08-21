@@ -1,5 +1,41 @@
 # @generaltranslation/react-core
 
+## 11.1.14
+
+### Patch Changes
+
+- Updated dependencies [[`f2204b9`](https://github.com/generaltranslation/gt/commit/f2204b990278865c54d14d337392930ea1ec31bf), [`b05b470`](https://github.com/generaltranslation/gt/commit/b05b4703fbbfd34a3cbee335c786e2e606346167), [`8d376e2`](https://github.com/generaltranslation/gt/commit/8d376e23c80828dfd8756e2f0fbf0f7725e0f178)]:
+  - @generaltranslation/format@0.1.8
+  - generaltranslation@9.1.7
+  - gt-i18n@1.0.17
+
+## 11.1.7-iris.0
+
+### Patch Changes
+
+- 5d8b78a: Migrate the package license from FSL-1.1-ALv2 to MIT.
+- Updated dependencies [f2204b9]
+- Updated dependencies [b05b470]
+- Updated dependencies [5d8b78a]
+  - @generaltranslation/format@0.1.5-iris.0
+  - generaltranslation@9.1.3-iris.0
+  - gt-i18n@1.0.13-iris.0
+
+## 11.1.6-iris.0
+
+### Patch Changes
+
+- Updated dependencies [8d376e2]
+  - gt-i18n@1.0.12-iris.0
+
+## 11.1.13
+
+### Patch Changes
+
+- [#2144](https://github.com/generaltranslation/gt/pull/2144) [`4422032`](https://github.com/generaltranslation/gt/commit/4422032bb5d365aabe095ee1ff103fd5bfdee578) Thanks [@eoinest](https://github.com/eoinest)! - Log runtime translation failures from the i18n store instead of letting them escape as unhandled promise rejections that crash the dev server during SSR
+
+- [#2144](https://github.com/generaltranslation/gt/pull/2144) [`4422032`](https://github.com/generaltranslation/gt/commit/4422032bb5d365aabe095ee1ff103fd5bfdee578) Thanks [@eoinest](https://github.com/eoinest)! - Return a snapshot with no entry for the locale, and warn, when `getTranslationsSnapshot()` cannot load translations for that locale, instead of letting the loader error propagate. Selecting a locale whose translation files do not exist yet crashed server route loaders (such as the TanStack Start root loader) with an HTTP 500 in development; content for that locale now renders untranslated. Because the failed locale is omitted rather than hydrated as an empty cache entry, a later lookup retries the loader once translations exist.
+
 ## 11.1.12
 
 ## 11.1.11

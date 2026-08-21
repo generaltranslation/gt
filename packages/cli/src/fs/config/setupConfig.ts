@@ -17,16 +17,20 @@ export async function createOrUpdateConfig(
     projectId?: string;
     defaultLocale?: string;
     locales?: string[];
+    src?: string[];
     files?: FilesOptions;
     framework?: SupportedFrameworks;
     baseUrl?: string;
     publish?: boolean;
+    /** Removes stale global CDN intent when the selected runtime forbids it. */
+    clearPublish?: boolean;
   }
 ): Promise<string> {
   // Filter out empty string values from the config object
   const newContent = {
     ...(options.projectId && { projectId: options.projectId }),
     ...(options.defaultLocale && { defaultLocale: options.defaultLocale }),
+    ...(options.src && { src: options.src }),
     ...(options.files && { files: options.files }),
     ...(options.framework && { framework: options.framework }),
     ...(options.baseUrl && { baseUrl: options.baseUrl }),
@@ -51,6 +55,10 @@ export async function createOrUpdateConfig(
       ...oldContent,
       ...newContent,
     } as Record<string, unknown> & { locales?: string[] };
+
+    if (options.clearPublish) {
+      delete mergedContent.publish;
+    }
 
     // Preserve unrelated file configuration and nested GT options when setup
     // only needs to add or update a translation output path.

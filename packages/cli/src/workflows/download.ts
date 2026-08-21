@@ -16,6 +16,7 @@ import { recordWarning } from '../state/translateWarnings.js';
 import { BranchStep } from './steps/BranchStep.js';
 import { FileProperties } from '../types/files.js';
 import chalk from 'chalk';
+import type { InlineLibrary } from '../types/libraries.js';
 
 export type FileTranslationData = {
   [fileId: string]: {
@@ -46,6 +47,7 @@ export async function runDownloadWorkflow({
   timeoutDuration,
   resolveOutputPath,
   options,
+  inlineLibrary,
   forceRetranslation,
   forceDownload,
 }: {
@@ -56,6 +58,7 @@ export async function runDownloadWorkflow({
   timeoutDuration: number;
   resolveOutputPath: (sourcePath: string, locale: string) => string | null;
   options: Settings;
+  inlineLibrary?: InlineLibrary;
   forceRetranslation?: boolean;
   forceDownload?: boolean;
 }): Promise<boolean> {
@@ -92,7 +95,7 @@ export async function runDownloadWorkflow({
   // Step 1: Poll translation jobs if jobData exists
   let pollTimedOut = false;
   if (jobData) {
-    const pollStep = new PollTranslationJobsStep(gt);
+    const pollStep = new PollTranslationJobsStep(gt, inlineLibrary);
     const pollResult = await pollStep.run({
       fileTracker,
       fileQueryData,
@@ -154,7 +157,11 @@ export async function runDownloadWorkflow({
   });
 
   // Step 2: Download translations
-  const downloadStep = new DownloadTranslationsStep(gt, settingsForBranch);
+  const downloadStep = new DownloadTranslationsStep(
+    gt,
+    settingsForBranch,
+    inlineLibrary
+  );
   const downloadResult = await downloadStep.run({
     fileTracker,
     resolveOutputPath,

@@ -16,6 +16,7 @@ import {
 } from '../../fs/config/downloadedVersions.js';
 import type { DownloadedVersionEntry } from '../../fs/config/downloadedVersions.js';
 import type { FileStatusTracker } from '../../workflows/steps/PollJobsStep.js';
+import { clearWarnings, getWarnings } from '../../state/translateWarnings.js';
 
 // Mock dependencies
 vi.mock('../../utils/gt.js', () => ({
@@ -170,6 +171,7 @@ describe('downloadFileBatch', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    clearWarnings();
   });
 
   afterEach(() => {
@@ -543,6 +545,53 @@ describe('downloadFileBatch', () => {
     expect(result.successful).toHaveLength(1);
     expect(lockEntry.translations.es.fileName).toBe('public/gt/es.json');
   });
+
+  it.each([
+    ['gt-vue', '<Vue Elements>'],
+    ['gt-react', '<React Elements>'],
+  ] as const)(
+    'labels review-withheld %s catalogs with their framework',
+    async (inlineLibrary, expectedLabel) => {
+      const files = createBatchedFiles(1, { locale: 'es' });
+      const fileTracker = createMockFileTracker(files);
+      const fileProperties = fileTracker.completed.values().next().value;
+      if (!fileProperties) throw new Error('Expected one completed file');
+      fileProperties.componentCount = 2;
+
+      vi.mocked(gt.downloadFileBatch).mockResolvedValue({
+        files: [
+          {
+            id: 'translation-1',
+            branchId: 'branch-1',
+            fileId: 'file-1',
+            versionId: 'version-1',
+            locale: 'es',
+            fileFormat: 'GTJSON' as FileFormat,
+            data: '{"hello":"Hola"}',
+            fileName: 'es.json',
+            metadata: {},
+          },
+        ],
+        count: 1,
+      });
+      setupFileSystemMocks();
+
+      await downloadFileBatch(
+        fileTracker,
+        files,
+        createMockSettings(),
+        false,
+        inlineLibrary
+      );
+
+      expect(getWarnings()).toContainEqual({
+        category: 'pending_review',
+        fileName: expectedLabel,
+        reason:
+          '1 component translation(s) for locale es require review and are not approved yet',
+      });
+    }
+  );
 
   it('should handle directory creation errors', async () => {
     const mockResponseData = createMockResponseData({
