@@ -69,6 +69,11 @@ describe('handleGenerate', () => {
       '{"hello":"Hello"}'
     );
     expect(postProcessTranslations).toHaveBeenCalledTimes(2);
+    expect(postProcessTranslations).toHaveBeenLastCalledWith(
+      settings,
+      new Set(['messages/fr/common.json']),
+      { restrictToIncludedFiles: true }
+    );
   });
 
   it('rejects colliding output mappings before writing files', async () => {
