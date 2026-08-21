@@ -470,7 +470,15 @@ function malformedSuffixHasGTProvenance(
 
 /** Removes block closers orphaned when recovery starts inside a function. */
 function trimTrailingRecoveryClosers(sourceCode: string): string {
-  return sourceCode.replace(/(?:\s*\}\s*)+$/u, '').trimEnd();
+  let end = sourceCode.length;
+  while (end > 0 && sourceCode[end - 1]!.trim() === '') end -= 1;
+  if (sourceCode[end - 1] !== '}') return sourceCode.slice(0, end);
+
+  do {
+    end -= 1;
+    while (end > 0 && sourceCode[end - 1]!.trim() === '') end -= 1;
+  } while (sourceCode[end - 1] === '}');
+  return sourceCode.slice(0, end);
 }
 
 /** Chooses the grammar that parsed furthest before a recoverable error. */

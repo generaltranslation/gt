@@ -990,6 +990,27 @@ describe('standalone script provenance gating', () => {
     ]);
   });
 
+  it('bounds malformed recovery when trailing block closers almost match', async () => {
+    const depth = 26;
+    const openingFunctions = Array.from(
+      { length: depth },
+      (_, index) => `function f${index}(){`
+    ).join('');
+    const output = await extractFromVueSource(
+      `import type { X } from 'gt-vue';
+         ${openingFunctions}const broken = @;${' }'.repeat(depth)};`,
+      path.join(fixtureRoot, 'almost-trailing-closers.ts'),
+      {
+        projectRoot: fixtureRoot,
+        requireGTProvenance: true,
+        resolveModule: () => undefined,
+      }
+    );
+
+    expect(output.results).toEqual([]);
+    expect(output.errors).toEqual([]);
+  }, 1_000);
+
   it.each([
     `// import { msg } from 'gt-vue'\nconst broken = @;`,
     `const text = "import { msg } from 'gt-vue'"; const broken = @;`,
