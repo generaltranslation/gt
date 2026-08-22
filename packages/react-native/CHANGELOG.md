@@ -1,5 +1,14 @@
 # gt-react-native
 
+## 11.1.15
+
+### Patch Changes
+
+- [#2151](https://github.com/generaltranslation/gt/pull/2151) [`4348bbb`](https://github.com/generaltranslation/gt/commit/4348bbb136db6d45b524648f5b45697bf68e02d5) Thanks [@kevinwu98](https://github.com/kevinwu98)! - Re-export `getLocaleProperties` from the package entrypoint, matching `gt-react`.
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.1.15
+
 ## 11.1.14
 
 ### Patch Changes

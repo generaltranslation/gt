@@ -1,5 +1,11 @@
 # gt-vue
 
+## 0.1.1
+
+### Patch Changes
+
+- [#2130](https://github.com/generaltranslation/gt/pull/2130) [`b25c1d8`](https://github.com/generaltranslation/gt/commit/b25c1d87def728352d3dc089d954ef48bb3bd40e) Thanks [@eoinest](https://github.com/eoinest)! - Support custom locale mappings in request-scoped `createGT()` plugins.
+
 ## 0.1.0
 
 ### Minor Changes
