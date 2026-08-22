@@ -136,8 +136,9 @@ function createPlayerInstance(
     return el as unknown as T;
   }
 
+  // Rendered in-player only — shouldn't also write to the
+  // host app's console for a condition the player already surfaces.
   const showError = (msg: string): void => {
-    console.error('[gt-replayer]', msg);
     const s = container.querySelector('#stage');
     if (s)
       s.insertAdjacentHTML(
