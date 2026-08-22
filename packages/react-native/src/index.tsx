@@ -42,6 +42,7 @@ export {
   derive,
   getDefaultLocale,
   getFormatLocales,
+  getLocaleProperties,
   getLocales,
   resolveCanonicalLocale,
   getReactI18nCache,
