@@ -2405,6 +2405,101 @@ describe('gt-vue runtime', () => {
     ).toBe(`<span title="Source title">${expected('fr-FR')}</span>`);
   });
 
+  it('keeps custom locale formatting isolated across SSR plugins', async () => {
+    const date = new Date('2024-01-02T00:00:00.000Z');
+    const dateOptions = {
+      day: 'numeric',
+      month: 'long',
+      timeZone: 'UTC',
+      year: 'numeric',
+    } as const;
+    const renderFormatters = () => [
+      h(Num, { value: 1234.5 }),
+      '|',
+      h(Currency, { currency: 'EUR', value: 1234.5 }),
+      '|',
+      h(DateTime, { options: dateOptions, value: date }),
+    ];
+    const expectedFormatters = (locale: string) =>
+      [
+        new Intl.NumberFormat(locale).format(1234.5),
+        new Intl.NumberFormat(locale, {
+          currency: 'EUR',
+          style: 'currency',
+        }).format(1234.5),
+        new Intl.DateTimeFormat(locale, dateOptions)
+          .format(date)
+          .replace(/[\u200F\u202B\u202E]/g, ''),
+      ].join('|');
+    const loadTranslations = vi.fn(async () => ({
+      formatters: [
+        { i: 1, k: '_gt_n_1', v: 'n' as const },
+        '|',
+        { i: 2, k: '_gt_cost_2', v: 'c' as const },
+        '|',
+        { i: 3, k: '_gt_date_3', v: 'd' as const },
+      ],
+      plural: {
+        t: 'Plural',
+        i: 1,
+        d: { b: { one: 'un', other: 'autres' }, t: 'p' },
+      },
+    }));
+    const french = createGT({
+      customMapping: {
+        pirate: { code: 'fr-FR' },
+        source: { code: 'en-US' },
+      },
+      defaultLocale: 'source',
+      loadTranslations,
+      locale: 'pirate',
+    });
+    await french.loadTranslations('pirate');
+    const pluralSlots = {
+      one: () => 'one',
+      other: () => 'other',
+    };
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h('div', [
+            ...renderFormatters(),
+            '|',
+            h(Plural, { n: 0 }, pluralSlots),
+            '|',
+            h(T, { _hash: 'formatters' }, { default: renderFormatters }),
+            '|',
+            h(
+              T,
+              { _hash: 'plural' },
+              { default: () => h(Plural, { n: 0 }, pluralSlots) }
+            ),
+          ]);
+      },
+    });
+
+    expect(stripFragmentMarkers(await renderWithPlugin(Root, french))).toBe(
+      `<div>${expectedFormatters('fr-FR')}|one|${expectedFormatters('fr-FR')}|un</div>`
+    );
+    expect(french.getLocale()).toBe('pirate');
+    expect(loadTranslations).toHaveBeenCalledOnce();
+    expect(loadTranslations).toHaveBeenCalledWith('pirate');
+
+    const german = createGT({
+      customMapping: { pirate: { code: 'de-DE' } },
+      locale: 'pirate',
+    });
+    const IsolatedRoot = defineComponent({
+      setup() {
+        return () => h(Num, { value: 1234.5 });
+      },
+    });
+
+    expect(
+      stripFragmentMarkers(await renderWithPlugin(IsolatedRoot, german))
+    ).toBe(new Intl.NumberFormat('de-DE').format(1234.5));
+  });
+
   it('requires explicit preloading for an asynchronous SSR locale', async () => {
     const source = 'Hello';
     let resolveCatalog!: (catalog: TranslationCatalog) => void;
