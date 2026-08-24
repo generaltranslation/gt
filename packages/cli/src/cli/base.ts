@@ -78,7 +78,6 @@ import { warnReactPackageCompatibility } from '../utils/reactPackageCompatibilit
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { setupViteSPA } from '../setup/setupViteSPA.js';
 import { manifestDirectlyDeclaresGTVue } from '@generaltranslation/vue-extractor/integration';
-import { handleGenerate } from './commands/generate.js';
 
 const ID_COMPATIBILITY_WARNING_COMMANDS = new Set([
   'download',
@@ -203,7 +202,7 @@ export class BaseCLI {
     this.setupSetupProjectCommand();
     this.setupStageCommand();
     this.setupTranslateCommand();
-    this.setupGenerateSourceCommand();
+    this.setupGenerateCommand();
     this.setupDownloadCommand();
     this.setupEnqueueCommand();
   }
@@ -291,21 +290,13 @@ export class BaseCLI {
     });
   }
 
-  protected setupGenerateSourceCommand(): void {
-    attachTranslateFlags(
-      this.program
-        .command('generate')
-        .description(
-          'Generate translation files populated with source-locale content.'
-        )
-    ).action(async (initOptions: TranslateFlags) => {
-      displayHeader('Generating translation templates...');
-      const settings = await generateSettings(initOptions, undefined, {
-        requireConfig: true,
+  protected setupGenerateCommand(): void {
+    this.program
+      .command('generate')
+      .description('Generate translation files.')
+      .action(() => {
+        logger.info('gt generate is not implemented yet.');
       });
-      await handleGenerate(settings);
-      logger.endCommand('Done!');
-    });
   }
 
   protected setupSendDiffsCommand(): void {
