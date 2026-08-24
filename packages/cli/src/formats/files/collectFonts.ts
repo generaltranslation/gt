@@ -4,6 +4,7 @@ import path from 'node:path';
 import fg from 'fast-glob';
 
 import type { Settings } from '../../types/index.js';
+import { toPosixPath } from '../../utils/paths.js';
 
 // One font to upload to /v2/project/assets. Structurally matches the SDK's
 // AssetUpload; content is base64 (fonts are binary).
@@ -26,9 +27,9 @@ export async function collectFonts(settings: Settings): Promise<FontUpload[]> {
   const cwd = settings.configDirectory
     ? path.dirname(settings.configDirectory)
     : process.cwd();
-  const matches = await fg(fonts.include, {
+  const matches = await fg(fonts.include.map(toPosixPath), {
     cwd,
-    ignore: fonts.exclude ?? [],
+    ignore: fonts.exclude?.map(toPosixPath) ?? [],
     absolute: true,
     onlyFiles: true,
     unique: true,

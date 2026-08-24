@@ -21,6 +21,7 @@ import {
   GT_PARSING_FLAGS_DEFAULT,
 } from '../../config/defaults.js';
 import { resolveTransformationFormat } from '../../formats/files/transformFormat.js';
+import { toPosixPath } from '../../utils/paths.js';
 
 /**
  * Resolves the files from the files object
@@ -247,18 +248,20 @@ export function expandGlobPatterns(
     const expandedPattern = pattern.replace(/\[locale\]/g, locale);
 
     // Resolve the absolute pattern path
-    const absolutePattern = path.resolve(cwd, expandedPattern);
+    const absolutePattern = toPosixPath(path.resolve(cwd, expandedPattern));
 
     // Prepare exclude patterns with locale replaced
     const expandedExcludePatterns = Array.from(
       new Set(
         excludePatterns.flatMap((p) =>
           locales.map((targetLocale) =>
-            path.resolve(
-              cwd,
-              p
-                .replace(/\[locale\]/g, locale)
-                .replace(/\[locales\]/g, targetLocale)
+            toPosixPath(
+              path.resolve(
+                cwd,
+                p
+                  .replace(/\[locale\]/g, locale)
+                  .replace(/\[locales\]/g, targetLocale)
+              )
             )
           )
         )
@@ -341,10 +344,6 @@ function buildPlaceholderPathFromPattern(
   }
 
   return path.normalize(placeholderPosixPath);
-}
-
-function toPosixPath(value: string): string {
-  return value.split(path.sep).join(path.posix.sep);
 }
 
 /**
@@ -436,7 +435,7 @@ function classifyRequiresReviewPaths(
   if (typeof config === 'boolean' || config === undefined) {
     if (config ?? requiresReviewDefault) {
       for (const resolvedPath of resolvedPaths) {
-        requiresReviewPaths.add(resolvedPath);
+        requiresReviewPaths.add(toPosixPath(resolvedPath));
       }
     }
     return;
@@ -463,7 +462,7 @@ function classifyRequiresReviewPaths(
       ? false
       : included.has(posixPaths[i]) || requiresReviewDefault;
     if (requiresReview) {
-      requiresReviewPaths.add(resolvedPaths[i]);
+      requiresReviewPaths.add(posixPaths[i]);
     }
   }
 }

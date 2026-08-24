@@ -5,6 +5,7 @@ import { Settings, JsonSchema, SourceObjectOptions } from '../types/index.js';
 import type { RefMap } from './resolveMintlifyRefs.js';
 import { validateJsonSchema } from '../formats/json/utils.js';
 import { getStoredRefMap, clearStoredRefMap } from '../state/mintlifyRefMap.js';
+import { toPosixPath } from './paths.js';
 import { JSONPath } from 'jsonpath-plus';
 import { getLocaleProperties } from '@generaltranslation/format';
 
@@ -502,7 +503,7 @@ function writeJsonFile(filePath: string, data: unknown): void {
  * languages array to a written entry file.
  */
 function toRelativeRefPath(fromDir: string, toPath: string): string {
-  const rel = path.relative(fromDir, toPath).split(path.sep).join('/');
+  const rel = toPosixPath(path.relative(fromDir, toPath));
   return rel.startsWith('.') || rel.startsWith('/') ? rel : `./${rel}`;
 }
 

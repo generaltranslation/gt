@@ -3,9 +3,10 @@ import path from 'node:path';
 import { logger } from '../console/logger.js';
 import chalk from 'chalk';
 import { DEFAULT_TRANSLATIONS_DIR } from '../utils/constants.js';
+import { toPosixPath } from '../utils/paths.js';
 
 function toRelativeImportPath(relativePath: string) {
-  const normalizedPath = relativePath.split(path.sep).join(path.posix.sep);
+  const normalizedPath = toPosixPath(relativePath);
 
   if (!normalizedPath) {
     return './';

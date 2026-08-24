@@ -428,6 +428,35 @@ describe('clearLocaleDirs', () => {
       ).resolves.toBeUndefined();
     });
 
+    it.runIf(path.sep === path.posix.sep)(
+      'should preserve escaped exclude patterns on POSIX',
+      async () => {
+        const esDir = path.join(testDir, 'docs', 'es');
+        const protectedDir = path.join(esDir, '(protected)');
+        await fs.mkdir(protectedDir, { recursive: true });
+
+        await fs.writeFile(path.join(esDir, 'delete.mdx'), 'content');
+        await fs.writeFile(path.join(protectedDir, 'keep.mdx'), 'preserved');
+
+        const filePaths = new Set([
+          path.join(esDir, 'delete.mdx'),
+          path.join(protectedDir, 'keep.mdx'),
+        ]);
+        const excludePatterns = [
+          path.join(testDir, 'docs', '[locale]', '\\(protected\\)', '**'),
+        ];
+
+        await clearLocaleDirs(filePaths, ['es'], excludePatterns);
+
+        await expect(
+          fs.access(path.join(esDir, 'delete.mdx'))
+        ).rejects.toThrow();
+        await expect(
+          fs.access(path.join(protectedDir, 'keep.mdx'))
+        ).resolves.toBeUndefined();
+      }
+    );
+
     it('should handle [locales] placeholder to exclude across all locales', async () => {
       const esDir = path.join(testDir, 'content', 'es');
       const frDir = path.join(testDir, 'content', 'fr');
