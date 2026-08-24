@@ -5,6 +5,7 @@ import * as t from '@babel/types';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { getRelative } from '../../../../../../fs/findFilepath.js';
 import { processTaggedTemplateCall } from '../index.js';
 import { ParsingConfig, ParsingOutput } from '../../types.js';
 import { Updates } from '../../../../../../types/index.js';
@@ -188,7 +189,7 @@ describe('processTaggedTemplateCall', () => {
       'const sentence = t`The ${derive(getSubject())} is playing in the park.`;',
     ].join('\n');
     const filePath = writeTempFile(code);
-    const relativeFilePath = path.relative(process.cwd(), filePath);
+    const relativeFilePath = getRelative(filePath);
 
     const output = runProcessTaggedTemplateCall(code, 't', {
       file: filePath,
