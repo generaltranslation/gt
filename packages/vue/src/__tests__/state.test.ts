@@ -8,7 +8,7 @@ import {
 } from 'vue';
 import { hashSource } from 'generaltranslation/id';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createGT, useGT, useLocale } from '../index';
+import { Num, Plural, createGT, useGT, useLocale } from '../index';
 import type { GTPlugin, TranslationCatalog } from '../index';
 
 describe('gt-vue runtime state', () => {
@@ -172,6 +172,52 @@ describe('gt-vue runtime state', () => {
     expect(cookieDocument.writes).toEqual([
       'generaltranslation.locale=fr;path=/',
     ]);
+    mounted.app.unmount();
+  });
+
+  it('reactively formats custom aliases while preserving loader and cookie values', async () => {
+    const cookieDocument = installCookieDocument();
+    const loadTranslations = vi.fn(async () => ({}));
+    const plugin = createGT({
+      customMapping: {
+        pirate: { code: 'fr-FR' },
+        source: { code: 'en-US' },
+      },
+      defaultLocale: 'source',
+      loadTranslations,
+    });
+    const Root = defineComponent({
+      setup() {
+        const locale = useLocale();
+        const pluralSlots = {
+          one: () => 'one',
+          other: () => 'other',
+        };
+        return () =>
+          h('p', [
+            `${locale.value}|`,
+            h(Num, { value: 1234.5 }),
+            '|',
+            h(Plural, { n: 0 }, pluralSlots),
+          ]);
+      },
+    });
+    const mounted = mount(Root, plugin);
+
+    expect(textContent(mounted.root)).toBe(
+      `source|${new Intl.NumberFormat('en-US').format(1234.5)}|other`
+    );
+    expect(cookieDocument.get('generaltranslation.locale')).toBe('source');
+
+    await plugin.setLocale('pirate');
+    await nextTick();
+
+    expect(textContent(mounted.root)).toBe(
+      `pirate|${new Intl.NumberFormat('fr-FR').format(1234.5)}|one`
+    );
+    expect(loadTranslations).toHaveBeenCalledOnce();
+    expect(loadTranslations).toHaveBeenCalledWith('pirate');
+    expect(cookieDocument.get('generaltranslation.locale')).toBe('pirate');
     mounted.app.unmount();
   });
 

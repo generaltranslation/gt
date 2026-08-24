@@ -1,5 +1,11 @@
 # gt-rrweb
 
+## 0.2.0
+
+### Minor Changes
+
+- [#2154](https://github.com/generaltranslation/gt/pull/2154) [`8855e5e`](https://github.com/generaltranslation/gt/commit/8855e5e9161b7816e7ec266a85aa706b9a21b9b5) Thanks [@logflash](https://github.com/logflash)! - Add the replayer: `createGTReplayer()` (framework-agnostic) + `<GTReplayer>` via the new `gt-rrweb/replay` entry play a recording in any of its traced locales — live in-player locale switching, a synthesized cursor that follows the recorded clicks, scrubbing, light/dark toggle, and full-screen. Options: `initialLocale`, `switchLocalesAllowed`, `debug` (drop a recording JSON to hot-swap). Events-only exports still replay localized via the locale/overlay events the recorder embeds in the stream. `@rrweb/replay` joins `@rrweb/record` as an optional peer.
+
 ## 0.1.0
 
 ### Minor Changes

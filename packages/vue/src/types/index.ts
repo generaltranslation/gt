@@ -56,6 +56,11 @@ export type MessagesFunction = <T extends string | null | undefined>(
 /** Options used to create an isolated gt-vue plugin instance. */
 export type CreateGTOptions = {
   /**
+   * Custom locale aliases used for locale-sensitive formatting and plural
+   * selection. Catalog loading and persisted locale values keep the alias.
+   */
+  customMapping?: CustomMapping;
+  /**
    * Source and fallback locale. Defaults to GT's library default locale.
    * Its source text is the catalog, so the loader is never called for it.
    */
@@ -83,8 +88,6 @@ export type CreateGTOptions = {
  * {@link loadTranslations}.
  */
 export type InitializeGTSPAOptions = CreateGTOptions & {
-  /** Custom locale aliases declared by the application's GT configuration. */
-  customMapping?: CustomMapping;
   /**
    * Target locales declared by the application's GT configuration.
    * Unsupported persisted or requested locales fall back to `defaultLocale`.

@@ -80,6 +80,7 @@ export function createGT(options: CreateGTOptions = {}): GTPlugin {
  */
 export function createGTRuntime(
   {
+    customMapping,
     defaultLocale = libraryDefaultLocale,
     loadTranslations,
     locale: explicitLocale,
@@ -100,6 +101,9 @@ export function createGTRuntime(
   const getLocale = runtimeOptions.pinLocale
     ? () => initialLocale
     : () => localeAccessor.getLocale();
+  const resolveFormattingLocale =
+    runtimeOptions.resolveFormattingLocale ??
+    createFormattingLocaleResolver(customMapping);
   let localeRequest = 0;
 
   const load = async (locale: string): Promise<TranslationCatalog> => {
@@ -167,7 +171,7 @@ export function createGTRuntime(
       return getLocale();
     },
     loadTranslations: load,
-    resolveFormattingLocale: runtimeOptions.resolveFormattingLocale,
+    resolveFormattingLocale,
     revision,
     setLocale,
   };
@@ -185,6 +189,29 @@ export function createGTRuntime(
   };
 
   return { plugin, state };
+}
+
+/** Creates a formatting-only alias resolver without changing catalog keys. */
+function createFormattingLocaleResolver(
+  customMapping: CreateGTOptions['customMapping']
+): ((locale: string) => string) | undefined {
+  if (customMapping === undefined) return undefined;
+
+  return (locale) => {
+    const customLocale = customMapping[locale];
+    const mappedLocale =
+      typeof customLocale === 'object' &&
+      customLocale !== null &&
+      typeof customLocale.code === 'string'
+        ? customLocale.code
+        : locale;
+
+    try {
+      return Intl.getCanonicalLocales(mappedLocale)[0] ?? locale;
+    } catch {
+      return locale;
+    }
+  };
 }
 
 /** @internal Returns the GT state provided to the current Vue component. */
