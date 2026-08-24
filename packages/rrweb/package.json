@@ -57,7 +57,6 @@
     "@types/node": "catalog:",
     "@types/react": ">=18.0.0 <20.0.0",
     "@types/react-dom": ">=18.0.0 <20.0.0",
-    "gt-react": "workspace:*",
     "morphdom": "^2.7.5",
     "playwright-core": "^1.57.0",
     "tsdown": "catalog:",

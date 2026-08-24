@@ -1529,9 +1529,6 @@ importers:
       '@types/react-dom':
         specifier: '>=18.0.0 <20.0.0'
         version: 19.1.9(@types/react@19.2.7)
-      gt-react:
-        specifier: workspace:*
-        version: link:../react
       morphdom:
         specifier: ^2.7.5
         version: 2.7.8
@@ -2578,13 +2575,13 @@ importers:
     dependencies:
       '@babel/parser':
         specifier: ^7.25.7
-        version: 7.28.4
+        version: 7.29.8
       '@babel/traverse':
         specifier: ^7.25.7
-        version: 7.28.4
+        version: 7.29.8
       '@babel/types':
         specifier: ^7.25.7
-        version: 7.28.4
+        version: 7.29.8
       '@generaltranslation/format':
         specifier: workspace:*
         version: link:../../packages/format
