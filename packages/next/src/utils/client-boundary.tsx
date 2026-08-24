@@ -62,17 +62,17 @@ export function Client_GTProvider(props: SharedGTProviderProps) {
       const localeRoutingApplies =
         localeRoutingEnabled &&
         pathnameMatchesRegex(currentPathname, pathRegex);
-      const currentPath = localeRoutingApplies
-        ? resolvePathLocale(currentPathname, i18nConfig, defaultLocale, locales)
-        : null;
-
-      if (
-        localeRoutingApplies &&
-        locale === defaultLocale &&
-        currentPath?.isLocalePrefixed
-      ) {
-        reloadBrowserPage();
-        return;
+      if (localeRoutingApplies && locale === defaultLocale) {
+        const currentPathLocale = resolvePathLocale(
+          currentPathname,
+          i18nConfig,
+          defaultLocale,
+          locales
+        );
+        if (currentPathLocale !== defaultLocale) {
+          reloadBrowserPage();
+          return;
+        }
       }
 
       refreshServerComponents();
@@ -120,7 +120,7 @@ function usePathCheck({
       'true';
     if (localeRoutingEnabled && pathnameMatchesRegex(pathname, pathRegex)) {
       // Extract locale from pathname
-      const { locale: currentPathLocale } = resolvePathLocale(
+      const currentPathLocale = resolvePathLocale(
         pathname,
         i18nConfig,
         defaultLocale,
@@ -159,10 +159,10 @@ function resolvePathLocale(
   i18nConfig: I18nConfig,
   defaultLocale: string,
   locales: string[]
-): { locale: string; isLocalePrefixed: boolean } {
+): string {
   const extractedLocale = extractLocale(pathname, i18nConfig);
   if (!extractedLocale) {
-    return { locale: defaultLocale, isLocalePrefixed: false };
+    return defaultLocale;
   }
 
   const currentPathLocale = i18nConfig.determineLocale(
@@ -174,11 +174,8 @@ function resolvePathLocale(
     locales
   );
   return currentPathLocale
-    ? {
-        locale: i18nConfig.resolveAliasLocale(currentPathLocale),
-        isLocalePrefixed: true,
-      }
-    : { locale: defaultLocale, isLocalePrefixed: false };
+    ? i18nConfig.resolveAliasLocale(currentPathLocale)
+    : defaultLocale;
 }
 
 function extractLocale(

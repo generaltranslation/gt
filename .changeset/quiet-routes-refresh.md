@@ -2,4 +2,4 @@
 'gt-next': patch
 ---
 
-Avoid a full browser reload when the default locale is reselected on an unprefixed route.
+Avoid a full browser reload when a route already resolves to the default locale.

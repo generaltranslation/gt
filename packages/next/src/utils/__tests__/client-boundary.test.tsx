@@ -164,7 +164,7 @@ describe('Client_GTProvider', () => {
     await act(async () => root.unmount());
   });
 
-  it('reloads when an explicit locale prefix aliases the default locale', async () => {
+  it('refreshes when an explicit locale prefix aliases the default locale', async () => {
     process.env._GENERALTRANSLATION_PATH_REGEX = '.*';
     mockPathname.mockReturnValue('/en-US/dashboard');
     vi.stubGlobal('location', {
@@ -195,8 +195,8 @@ describe('Client_GTProvider', () => {
     const syncServerContent = mockGTProvider.mock.calls.at(-1)?.[0]._reload;
     syncServerContent({ enableI18n: true, locale: 'en', region: undefined });
 
-    expect(mockReloadBrowserPage).toHaveBeenCalledOnce();
-    expect(mockRefreshServerComponents).not.toHaveBeenCalled();
+    expect(mockRefreshServerComponents).toHaveBeenCalledOnce();
+    expect(mockReloadBrowserPage).not.toHaveBeenCalled();
 
     await act(async () => root.unmount());
   });
