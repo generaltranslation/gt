@@ -2,7 +2,11 @@ import fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { generateCredentialsSession, setCredentials } from '../credentials.js';
+import {
+  exchangeCliWizardCredentials,
+  generateCredentialsSession,
+  setCredentials,
+} from '../credentials.js';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -38,6 +42,71 @@ describe('generateCredentialsSession', () => {
         }),
       })
     );
+  });
+});
+
+describe('exchangeCliWizardCredentials', () => {
+  it('sends the verifier and authorization code to the session exchange', async () => {
+    const fetchMock = vi.fn(async () =>
+      Response.json({
+        apiKeys: [{ key: 'gtx-api-synthetic', type: 'production' }],
+        projectId: 'project_1',
+      })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      exchangeCliWizardCredentials(
+        'https://api.example',
+        'cli_synthetic',
+        'V'.repeat(43),
+        'A'.repeat(43)
+      )
+    ).resolves.toEqual({
+      apiKeys: [{ key: 'gtx-api-synthetic', type: 'production' }],
+      projectId: 'project_1',
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.example/cli/wizard/cli_synthetic/exchange',
+      expect.objectContaining({
+        body: JSON.stringify({ authorizationCode: 'A'.repeat(43) }),
+        headers: expect.objectContaining({
+          'x-gt-cli-verifier': 'V'.repeat(43),
+        }),
+      })
+    );
+  });
+
+  it('rejects an unsuccessful exchange response', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(null, { status: 404 }))
+    );
+
+    await expect(
+      exchangeCliWizardCredentials(
+        'https://api.example',
+        'cli_synthetic',
+        'V'.repeat(43),
+        'A'.repeat(43)
+      )
+    ).rejects.toThrow('Credential exchange returned HTTP 404');
+  });
+
+  it('rejects credentials with an invalid response shape', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json({ apiKeys: [] }))
+    );
+
+    await expect(
+      exchangeCliWizardCredentials(
+        'https://api.example',
+        'cli_synthetic',
+        'V'.repeat(43),
+        'A'.repeat(43)
+      )
+    ).rejects.toThrow('Credential exchange returned an invalid response');
   });
 });
 

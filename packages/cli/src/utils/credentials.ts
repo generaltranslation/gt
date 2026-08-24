@@ -54,22 +54,12 @@ export async function retrieveCredentials(
     );
     spinner.start('Waiting for response from dashboard...');
 
-    const response = await apiRequest(
+    const credentials = await exchangeCliWizardCredentials(
       settings.baseUrl,
-      `/cli/wizard/${sessionId}/exchange`,
-      {
-        body: { authorizationCode: await authorizationCode },
-        headers: { 'x-gt-cli-verifier': verifier },
-      }
+      sessionId,
+      verifier,
+      await authorizationCode
     );
-    if (!response.ok) {
-      throw new Error(`Credential exchange returned HTTP ${response.status}`);
-    }
-
-    const credentials = await response.json();
-    if (!isCredentials(credentials)) {
-      throw new Error('Credential exchange returned an invalid response');
-    }
 
     spinner.stop('Received credentials');
     return credentials;
@@ -86,6 +76,31 @@ export async function retrieveCredentials(
       })
     );
   }
+}
+
+export async function exchangeCliWizardCredentials(
+  baseUrl: string,
+  sessionId: string,
+  verifier: string,
+  authorizationCode: string
+): Promise<Credentials> {
+  const response = await apiRequest(
+    baseUrl,
+    `/cli/wizard/${sessionId}/exchange`,
+    {
+      body: { authorizationCode },
+      headers: { 'x-gt-cli-verifier': verifier },
+    }
+  );
+  if (!response.ok) {
+    throw new Error(`Credential exchange returned HTTP ${response.status}`);
+  }
+
+  const credentials = await response.json();
+  if (!isCredentials(credentials)) {
+    throw new Error('Credential exchange returned an invalid response');
+  }
+  return credentials;
 }
 
 export async function generateCredentialsSession(
