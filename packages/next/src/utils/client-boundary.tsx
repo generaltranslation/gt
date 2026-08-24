@@ -119,6 +119,7 @@ function usePathCheck({
       getCookieValue(document.cookie, localeRoutingEnabledCookieName) ===
       'true';
     if (localeRoutingEnabled && pathnameMatchesRegex(pathname, pathRegex)) {
+      // Extract locale from pathname
       const { locale: currentPathLocale } = resolvePathLocale(
         pathname,
         i18nConfig,
@@ -159,7 +160,6 @@ function resolvePathLocale(
   defaultLocale: string,
   locales: string[]
 ): { locale: string; isLocalePrefixed: boolean } {
-  // Extract locale from pathname
   const extractedLocale = extractLocale(pathname, i18nConfig);
   if (!extractedLocale) {
     return { locale: defaultLocale, isLocalePrefixed: false };
