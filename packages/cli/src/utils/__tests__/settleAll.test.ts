@@ -17,4 +17,16 @@ describe('settleAll', () => {
     );
     expect(siblingFinished).toBe(true);
   });
+
+  it('rethrows the first observed failure', async () => {
+    const firstFailure = new Error('failed first');
+    const laterFailure = new Error('failed later');
+    const earlierOperation = new Promise<void>((_resolve, reject) => {
+      setTimeout(() => reject(laterFailure), 5);
+    });
+
+    await expect(
+      settleAll([earlierOperation, Promise.reject(firstFailure)])
+    ).rejects.toBe(firstFailure);
+  });
 });
