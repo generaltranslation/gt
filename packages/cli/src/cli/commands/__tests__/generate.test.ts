@@ -1,4 +1,4 @@
-import {
+import fs, {
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -10,6 +10,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Settings } from '../../../types/index.js';
+import { logger } from '../../../console/logger.js';
 
 const postProcessTranslations = vi.hoisted(() => vi.fn());
 
@@ -29,6 +30,7 @@ describe('handleGenerate', () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     process.chdir(originalCwd);
     rmSync(projectDir, { recursive: true, force: true });
   });
@@ -69,6 +71,33 @@ describe('handleGenerate', () => {
       '{"hello":"Hello"}'
     );
     expect(postProcessTranslations).toHaveBeenCalledTimes(2);
+  });
+
+  it('attempts every rollback while preserving the generation error', async () => {
+    writeFileSync('messages/en/alpha.json', '{"value":"Alpha"}');
+    writeFileSync('messages/en/beta.json', '{"value":"Beta"}');
+    const settings = createSettings([
+      'messages/en/alpha.json',
+      'messages/en/beta.json',
+    ]);
+    postProcessTranslations.mockRejectedValueOnce(
+      new Error('Postprocessing failed')
+    );
+    const remove = vi
+      .spyOn(fs.promises, 'rm')
+      .mockRejectedValueOnce(new Error('Cleanup failed'));
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+
+    await expect(handleGenerate(settings)).rejects.toThrow(
+      'Postprocessing failed'
+    );
+
+    expect(remove).toHaveBeenCalledTimes(2);
+    expect(existsSync('messages/fr/alpha.json')).toBe(true);
+    expect(existsSync('messages/fr/beta.json')).toBe(false);
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('could not be removed')
+    );
   });
 
   it('rejects colliding output mappings before writing files', async () => {
