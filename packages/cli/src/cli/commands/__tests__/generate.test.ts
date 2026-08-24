@@ -3,6 +3,7 @@ import fs, {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  renameSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -84,8 +85,9 @@ describe('handleGenerate', () => {
     const settings = createSettings(['messages/en/common.json']);
     const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
     postProcessTranslations.mockImplementationOnce(async () => {
+      writeFileSync('messages/fr/replacement.json', '{"hello":"User edit"}');
       rmSync('messages/fr/common.json');
-      writeFileSync('messages/fr/common.json', '{"hello":"User edit"}');
+      renameSync('messages/fr/replacement.json', 'messages/fr/common.json');
       throw new Error('Postprocessing failed');
     });
 
