@@ -1,6 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import {
+  createDiagnosticMessage,
+  formatDiagnosticErrorDetails,
+} from 'generaltranslation/internal';
 import { logger } from '../../console/logger.js';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
 import type { Settings } from '../../types/index.js';
@@ -13,6 +16,35 @@ type GenerationTarget = {
   source: string;
   output: string;
 };
+
+async function rollbackGeneratedFiles(filePaths: Set<string>): Promise<void> {
+  const files = [...filePaths];
+  const results = await Promise.allSettled(
+    files.map((filePath) =>
+      fs.promises.rm(path.resolve(filePath), { force: true })
+    )
+  );
+  const failures = results.flatMap((result, index) =>
+    result.status === 'rejected'
+      ? [
+          `${files[index]}: ${formatDiagnosticErrorDetails(result.reason) ?? 'Unknown error'}`,
+        ]
+      : []
+  );
+
+  if (failures.length > 0) {
+    logger.warn(
+      createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Warning',
+        whatHappened:
+          'Some generated template files could not be removed after generation failed',
+        fix: 'Remove the listed files before running gt generate again',
+        details: failures,
+      })
+    );
+  }
+}
 
 function createGenerationPlan(settings: Settings): GenerationTarget[] {
   const { resolvedPaths, placeholderPaths, transformPaths, transformFormats } =
@@ -81,11 +113,7 @@ export async function handleGenerate(settings: Settings): Promise<void> {
       await postProcessTranslations(settings, generatedFiles);
     }
   } catch (error) {
-    await Promise.all(
-      [...generatedFiles].map((filePath) =>
-        fs.promises.rm(path.resolve(filePath), { force: true })
-      )
-    );
+    await rollbackGeneratedFiles(generatedFiles);
     throw error;
   }
 
