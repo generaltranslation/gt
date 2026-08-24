@@ -7,13 +7,17 @@ import {
   TEMPLATE_FILE_NAME,
 } from '../../../utils/constants.js';
 import { handleDownload } from '../download.js';
-import { collectFiles } from '../../../formats/files/collectFiles.js';
+import {
+  collectFiles,
+  resolveInlineLibrary,
+} from '../../../formats/files/collectFiles.js';
 import { runDownloadWorkflow } from '../../../workflows/download.js';
 import { logErrorAndExit } from '../../../console/logging.js';
 import { noVersionIdError } from '../../../console/index.js';
 
 vi.mock('../../../formats/files/collectFiles.js', () => ({
   collectFiles: vi.fn(),
+  resolveInlineLibrary: vi.fn(),
 }));
 
 vi.mock('../../../workflows/download.js', () => ({
@@ -65,6 +69,7 @@ function settings(overrides: Partial<Settings> = {}): Settings {
 describe('handleDownload GTJSON versionId guard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(resolveInlineLibrary).mockReturnValue(undefined);
     vi.mocked(collectFiles).mockResolvedValue({
       files: [gtjsonFile],
       reactComponents: 1,
@@ -107,4 +112,70 @@ describe('handleDownload GTJSON versionId guard', () => {
     expect(logErrorAndExit).not.toHaveBeenCalled();
     expect(runDownloadWorkflow).toHaveBeenCalledOnce();
   });
+
+  it('passes the collected inline runtime to the download workflow', async () => {
+    vi.mocked(collectFiles).mockResolvedValue({
+      files: [gtjsonFile],
+      reactComponents: 1,
+      inlineLibrary: 'gt-vue',
+      publishMap: new Map(),
+    });
+
+    await handleDownload(options, settings({ omitConfigIds: true }), 'gt-vue');
+
+    expect(runDownloadWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({ inlineLibrary: 'gt-vue' })
+    );
+  });
+
+  it('uses the selected Vue runtime when downloading staged translations', async () => {
+    vi.mocked(resolveInlineLibrary).mockReturnValue('gt-vue');
+
+    await handleDownload(
+      options,
+      settings({ stageTranslations: true }),
+      'gt-vue'
+    );
+
+    expect(collectFiles).not.toHaveBeenCalled();
+    expect(resolveInlineLibrary).toHaveBeenCalledWith('gt-vue');
+    expect(runDownloadWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({ inlineLibrary: 'gt-vue' })
+    );
+  });
+
+  it('resolves Vue ownership for a staged non-inline project', async () => {
+    vi.mocked(resolveInlineLibrary).mockReturnValue('gt-vue');
+
+    await handleDownload(
+      options,
+      settings({ stageTranslations: true }),
+      'next-intl'
+    );
+
+    expect(collectFiles).not.toHaveBeenCalled();
+    expect(resolveInlineLibrary).toHaveBeenCalledWith('next-intl');
+    expect(runDownloadWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({ inlineLibrary: 'gt-vue' })
+    );
+  });
+
+  it.each(['gt-react', 'gt-node', 'gt-fastapi'] as const)(
+    'labels a staged mixed %s and Vue catalog as Vue',
+    async (library) => {
+      vi.mocked(resolveInlineLibrary).mockReturnValue('gt-vue');
+
+      await handleDownload(
+        options,
+        settings({ stageTranslations: true }),
+        library
+      );
+
+      expect(collectFiles).not.toHaveBeenCalled();
+      expect(resolveInlineLibrary).toHaveBeenCalledWith(library);
+      expect(runDownloadWorkflow).toHaveBeenCalledWith(
+        expect.objectContaining({ inlineLibrary: 'gt-vue' })
+      );
+    }
+  );
 });

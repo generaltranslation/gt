@@ -1,5 +1,28 @@
 # @generaltranslation/compiler
 
+## 1.3.42
+
+### Patch Changes
+
+- [#2068](https://github.com/generaltranslation/gt/pull/2068) [`f2204b9`](https://github.com/generaltranslation/gt/commit/f2204b990278865c54d14d337392930ea1ec31bf) Thanks [@eoinest](https://github.com/eoinest)! - Represent React's persisted boolean and null rich-content values in the shared
+  JSX wire types used by framework runtimes and translation catalogs.
+- Updated dependencies [[`f2204b9`](https://github.com/generaltranslation/gt/commit/f2204b990278865c54d14d337392930ea1ec31bf), [`b05b470`](https://github.com/generaltranslation/gt/commit/b05b4703fbbfd34a3cbee335c786e2e606346167)]:
+  - @generaltranslation/format@0.1.8
+  - generaltranslation@9.1.7
+
+## 1.3.38-iris.0
+
+### Patch Changes
+
+- f2204b9: Represent React's persisted boolean and null rich-content values in the shared
+  JSX wire types used by framework runtimes and translation catalogs.
+- 5d8b78a: Migrate the package license from FSL-1.1-ALv2 to MIT.
+- Updated dependencies [f2204b9]
+- Updated dependencies [b05b470]
+- Updated dependencies [5d8b78a]
+  - @generaltranslation/format@0.1.5-iris.0
+  - generaltranslation@9.1.3-iris.0
+
 ## 1.3.41
 
 ### Patch Changes

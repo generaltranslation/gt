@@ -41,4 +41,23 @@ describe('createOrUpdateConfig', () => {
       output: 'src/_gt/[locale].json',
     });
   });
+
+  it('writes explicitly selected source patterns to the requested config', async () => {
+    testDirectory = fs.mkdtempSync(path.join(tmpdir(), 'gt-config-'));
+    const configPath = path.join(testDirectory, 'custom.gt.config.json');
+
+    await createOrUpdateConfig(configPath, {
+      defaultLocale: 'en',
+      locales: ['fr'],
+      src: ['src/**/*.vue', 'app.vue'],
+      framework: 'vite',
+    });
+
+    expect(JSON.parse(fs.readFileSync(configPath, 'utf8'))).toMatchObject({
+      defaultLocale: 'en',
+      locales: ['fr'],
+      src: ['src/**/*.vue', 'app.vue'],
+      framework: 'vite',
+    });
+  });
 });

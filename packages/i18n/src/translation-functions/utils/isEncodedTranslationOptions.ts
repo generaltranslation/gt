@@ -7,5 +7,8 @@ import { EncodedTranslationOptions } from '../types/options';
 export function isEncodedTranslationOptions(
   decodedOptions: Record<string, unknown> // TODO: next major version, this should be Record<string, string>
 ): decodedOptions is EncodedTranslationOptions {
-  return !!(decodedOptions.$_hash && decodedOptions.$_source);
+  return (
+    typeof decodedOptions.$_hash === 'string' &&
+    typeof decodedOptions.$_source === 'string'
+  );
 }

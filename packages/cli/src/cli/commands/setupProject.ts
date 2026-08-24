@@ -23,16 +23,16 @@ export async function handleSetupProject(
   // Validate credentials if not in dry run
   if (!options.dryRun && !hasValidCredentials(settings)) return exitSync(1);
 
-  const { files: allFiles, reactComponents } = await collectFiles(
-    options,
-    settings,
-    library
-  );
+  const {
+    files: allFiles,
+    reactComponents,
+    inlineLibrary,
+  } = await collectFiles(options, settings, library);
 
   // Dry run
   if (options.dryRun) {
     logger.success(`Dry run: No files were uploaded to General Translation.`);
-    logCollectedFiles(allFiles, reactComponents);
+    logCollectedFiles(allFiles, reactComponents, inlineLibrary);
     return null;
   }
 
@@ -49,7 +49,8 @@ export async function handleSetupProject(
     const { branchData: branchDataResult } = await runSetupProjectWorkflow(
       allFiles,
       options,
-      settings
+      settings,
+      inlineLibrary
     );
     branchData = branchDataResult;
 

@@ -1,0 +1,574 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import {
+  compileScript,
+  parse,
+  version as vueCompilerVersion,
+} from '@vue/compiler-sfc';
+import { afterEach, describe, expect, it } from 'vitest';
+import { detectVueProject } from '../../detect.js';
+import {
+  createProjectFixture,
+  removeProjectFixture,
+} from './projectTestUtils.js';
+
+const temporaryDirectories: string[] = [];
+
+afterEach(() => {
+  for (const directory of temporaryDirectories.splice(0)) {
+    removeProjectFixture(directory);
+  }
+});
+
+describe('Vue wrapper use in lexically scoped component tags', () => {
+  it.each([
+    {
+      name: 'a namespace beneath a slot binding',
+      template: '<Child v-slot="{ Mixed }"><Mixed.VueT /></Child>',
+    },
+    {
+      name: 'a named component beneath a slot binding',
+      template: '<Child v-slot="{ VueT }"><VueT /></Child>',
+    },
+    {
+      name: 'a namespace beneath a simple v-for binding',
+      template: '<main v-for="Mixed in rows"><Mixed.VueT /></main>',
+    },
+    {
+      name: 'a named component beneath a simple v-for binding',
+      template: '<main v-for="VueT in rows"><VueT /></main>',
+    },
+    {
+      name: 'a namespace on the element declaring its v-for binding',
+      template: '<Mixed.VueT v-for="Mixed in rows" />',
+    },
+    {
+      name: 'a named component on the element declaring its v-for binding',
+      template: '<VueT v-for="VueT in rows" />',
+    },
+    {
+      name: 'a parenthesized v-for binding',
+      template: '<main v-for="(Mixed, index) in rows"><Mixed.VueT /></main>',
+    },
+    {
+      name: 'a parenthesized array v-for binding',
+      template: '<main v-for="([Mixed], index) in rows"><Mixed.VueT /></main>',
+    },
+    {
+      name: 'a parenthesized object v-for binding',
+      template:
+        '<main v-for="({ Mixed }, index) in rows"><Mixed.VueT /></main>',
+    },
+    {
+      name: 'a parenthesized v-for binding used by a dynamic component',
+      template:
+        '<main v-for="(Mixed, index) in rows"><component :is="Mixed.VueT" /></main>',
+    },
+  ])('does not attribute $name to the wrapper import', ({ template }) => {
+    const root = createConsumerFixture(template);
+
+    expect(detectVueProject(root)).toBe(false);
+  });
+
+  it.each(['component', 'Component'])(
+    'does not treat dynamic <%s> as an import use',
+    (component) => {
+      const root = createConsumerFixture(`<${component} :is="'div'" />`);
+
+      expect(detectVueProject(root)).toBe(false);
+    }
+  );
+
+  it.each(['component', 'Component'])(
+    'retains imported static <%s> as a runtime use',
+    (component) => {
+      const root = createConsumerFixture(`<${component} />`);
+
+      expect(detectVueProject(root)).toBe(true);
+    }
+  );
+
+  it.each(['COMPONENT', 'cOmPoNeNt'])(
+    'retains imported non-builtin casing <%s> with an is binding',
+    (component) => {
+      const root = createConsumerFixture(`<${component} :is="'div'" />`);
+
+      expect(detectVueProject(root)).toBe(true);
+    }
+  );
+
+  it.each(['component', 'Component'])(
+    'retains imported static <%s> when boolean is has no value',
+    (component) => {
+      const root = createConsumerFixture(`<${component} is />`);
+
+      expect(detectVueProject(root)).toBe(true);
+    }
+  );
+
+  it('does not attribute a dot-shorthand dynamic component to a static component import', () => {
+    const root = createConsumerFixture(
+      `<component .is="'div'" />`,
+      "import { VueT as component } from '@fixture/multi/vue';"
+    );
+
+    expect(detectVueProject(root)).toBe(false);
+  });
+
+  it('tracks a wrapper passed through the dot-shorthand dynamic component expression', () => {
+    const root = createConsumerFixture(
+      '<component .is="VueT" />',
+      "import { VueT } from '@fixture/multi/vue';"
+    );
+
+    expect(detectVueProject(root)).toBe(true);
+  });
+
+  it.each([
+    {
+      imports: "import { VueT } from '@fixture/multi/vue';",
+      name: 'a named component from a native element',
+      template: '<div is="vue:VueT" />',
+    },
+    {
+      imports: "import * as Mixed from '@fixture/multi/vue';",
+      name: 'a namespace component from a native element',
+      template: '<div is="vue:Mixed.VueT" />',
+    },
+    {
+      imports: "import { VueT } from '@fixture/multi/vue';",
+      name: 'a named component from a Vue builtin',
+      template: '<Teleport is="vue:VueT" />',
+    },
+    {
+      imports: "import { VueT as div } from '@fixture/multi/vue';",
+      name: 'a native-named component target',
+      template: '<main is="vue:div" />',
+    },
+    {
+      imports: "import { VueT as slot } from '@fixture/multi/vue';",
+      name: 'a slot-named component target',
+      template: '<main is="vue:slot" />',
+    },
+    {
+      imports: "import { VueT as template } from '@fixture/multi/vue';",
+      name: 'a template-named component target',
+      template: '<main is="vue:template" />',
+    },
+  ])('tracks $name selected by static vue:is', ({ imports, template }) => {
+    const root = createConsumerFixture(template, imports);
+
+    expect(detectVueProject(root)).toBe(true);
+  });
+
+  it.each([
+    {
+      name: 'a wrapper source tag replaced by a native target',
+      template: '<VueT is="vue:div" />',
+    },
+    {
+      name: 'a wrapper source tag replaced by an empty target',
+      template: '<VueT is="vue:" />',
+    },
+    {
+      name: 'a wrapper source tag replaced by a builtin target',
+      template: '<VueT is="vue:Teleport" />',
+    },
+    {
+      name: 'a dynamic component with a static vue-prefixed value',
+      template: '<component is="vue:VueT" />',
+    },
+    {
+      name: 'a slot with a static vue-prefixed value',
+      template: '<slot is="vue:VueT" />',
+    },
+    {
+      name: 'a version-ambiguous template element',
+      template: '<template is="vue:VueT" />',
+    },
+    {
+      name: 'a compiler-option-ambiguous custom element',
+      template: '<x-box is="vue:VueT" />',
+    },
+  ])('does not attribute $name to a wrapper import', ({ template }) => {
+    const root = createConsumerFixture(
+      template,
+      "import { VueT } from '@fixture/multi/vue';"
+    );
+
+    expect(detectVueProject(root)).toBe(false);
+  });
+
+  it('lets a core builtin static target outrank a same-named import', () => {
+    const root = createConsumerFixture(
+      '<main is="vue:Teleport" />',
+      "import { VueT as Teleport } from '@fixture/multi/vue';"
+    );
+
+    expect(detectVueProject(root)).toBe(false);
+  });
+
+  it.each([
+    '<div v-is="VueT" />',
+    '<VueT v-is="\'div\'" />',
+    '<VueT v-is="Mixed.Other" />',
+  ])('does not promote version-ambiguous valued v-is source %s', (template) => {
+    const root = createConsumerFixture(template);
+
+    expect(detectVueProject(root)).toBe(false);
+  });
+
+  it('retains a wrapper source tag for no-value v-is', () => {
+    const root = createConsumerFixture(
+      '<VueT v-is />',
+      "import { VueT } from '@fixture/multi/vue';"
+    );
+
+    expect(detectVueProject(root)).toBe(true);
+  });
+
+  it('does not execute the dynamic argument of no-value v-is', () => {
+    const root = createConsumerFixture(
+      '<div v-is:[VueT] />',
+      "import { VueT } from '@fixture/multi/vue';"
+    );
+
+    expect(detectVueProject(root)).toBe(false);
+  });
+
+  it.each([
+    {
+      imports: "import { VueT } from '@fixture/multi/vue';",
+      template: '<VueT v-is="VueT" />',
+    },
+    {
+      imports: "import * as Mixed from '@fixture/multi/vue';",
+      template: '<Mixed.VueT v-is="Mixed.VueT" />',
+    },
+    {
+      imports: "import { VueT } from '@fixture/multi/vue';",
+      template: '<div is="vue:VueT" v-is="VueT" />',
+    },
+  ])(
+    'retains a wrapper used by both interpretations of valued v-is',
+    ({ imports, template }) => {
+      const root = createConsumerFixture(template, imports);
+
+      expect(detectVueProject(root)).toBe(true);
+    }
+  );
+
+  it.each([
+    {
+      name: 'an explicit template slot scope',
+      template:
+        '<Child><template #default="{ Mixed }"><Mixed.VueT /></template></Child>',
+    },
+    {
+      name: 'a three-parameter parenthesized v-for scope',
+      template:
+        '<main v-for="(Mixed, index, key) of rows"><Mixed.VueT /></main>',
+    },
+    {
+      name: 'an exact Pascal binding rendered through kebab casing',
+      imports: "import { VueT } from '@fixture/multi/vue';",
+      template: '<main v-for="VueT in rows"><vue-t /></main>',
+    },
+    {
+      name: 'an exact camel binding rendered through kebab casing',
+      imports: "import { VueT as vueT } from '@fixture/multi/vue';",
+      template: '<main v-for="vueT in rows"><vue-t /></main>',
+    },
+    {
+      name: 'a self-referential slot binding default',
+      imports: "import { VueT } from '@fixture/multi/vue';",
+      template: '<Child v-slot="{ VueT = VueT }"><VueT /></Child>',
+    },
+    {
+      name: 'a Pascal import when a camel setup binding has precedence',
+      imports:
+        "import { VueT } from '@fixture/multi/vue'; const vueT = 'section';",
+      template: '<vue-t />',
+    },
+    {
+      name: 'a Pascal namespace when a camel setup binding has precedence',
+      imports:
+        "import * as Mixed from '@fixture/multi/vue'; const mixed = { VueT: 'section' };",
+      template: '<mixed.VueT />',
+    },
+    {
+      name: 'an exact camel import when a Pascal literal has type precedence',
+      imports:
+        "import { VueT as vueT } from '@fixture/multi/vue'; const VueT = 'section';",
+      template: '<vue-t />',
+    },
+    {
+      name: 'an exact camel import when a static template has type precedence',
+      imports:
+        "import { VueT as vueT } from '@fixture/multi/vue'; const VueT = `section${1}`;",
+      template: '<vue-t />',
+    },
+    {
+      name: 'an exact camel import when an object rest binding has type precedence',
+      imports:
+        "import { VueT as vueT } from '@fixture/multi/vue'; const { ...VueT } = source;",
+      template: '<vue-t />',
+    },
+    {
+      name: 'an exact camel import when a RegExp binding has type precedence',
+      imports:
+        "import { VueT as vueT } from '@fixture/multi/vue'; const VueT = /section/;",
+      template: '<vue-t />',
+    },
+  ])(
+    'does not attribute $name to the wrapper import',
+    ({ imports, template }) => {
+      const root = createConsumerFixture(template, imports);
+
+      expect(detectVueProject(root)).toBe(false);
+    }
+  );
+
+  it.each([
+    {
+      name: 'the component owning a same-named slot binding',
+      template: '<VueT v-slot="{ VueT }"><span /></VueT>',
+    },
+    {
+      name: 'a same-named component in the v-for source',
+      template: '<VueT v-for="VueT in [VueT]" />',
+    },
+    {
+      name: 'a same-named component in a higher-precedence v-if',
+      template: '<VueT v-for="VueT in rows" v-if="VueT" />',
+    },
+    {
+      name: 'a namespace not bound by an aliased object pattern',
+      imports: "import * as Mixed from '@fixture/multi/vue';",
+      template:
+        '<main v-for="({ Mixed: local }, index) in rows"><Mixed.VueT /></main>',
+    },
+    {
+      name: 'a Pascal import when only its camel variant is scoped',
+      template: '<main v-for="vueT in rows"><vue-t /></main>',
+    },
+    {
+      name: 'a Pascal namespace rendered through lowercase casing',
+      imports: "import * as Mixed from '@fixture/multi/vue';",
+      template: '<mixed.VueT />',
+    },
+    {
+      name: 'a Pascal namespace rendered through kebab casing',
+      imports: "import * as MyComponents from '@fixture/multi/vue';",
+      template: '<my-components.VueT />',
+    },
+    {
+      name: 'a camel namespace rendered through kebab casing',
+      imports: "import * as myComponents from '@fixture/multi/vue';",
+      template: '<my-components.VueT />',
+    },
+    {
+      name: 'a Pascal namespace with type precedence over a camel binding',
+      imports:
+        "import * as MyComponents from '@fixture/multi/vue'; const myComponents = getComponents();",
+      template: '<my-components.VueT />',
+    },
+    {
+      name: 'a camel import ahead of a Pascal member-call binding',
+      imports:
+        "import { VueT as vueT } from '@fixture/multi/vue'; const VueT = factory.make();",
+      template: '<vue-t />',
+    },
+  ])('retains $name as a wrapper import use', ({ imports, template }) => {
+    const root = createConsumerFixture(template, imports);
+
+    expect(detectVueProject(root)).toBe(true);
+  });
+
+  it('does not attribute a normalized namespace tag to its shadowed Pascal binding', () => {
+    const root = createConsumerFixture(
+      '<Child v-slot="{ Mixed }"><mixed.VueT /></Child>',
+      "import * as Mixed from '@fixture/multi/vue';"
+    );
+
+    expect(detectVueProject(root)).toBe(false);
+  });
+
+  it.each([
+    {
+      imports: "import { VueT as component } from '@fixture/multi/vue';",
+      name: 'the Vue 3.3 static component interpretation',
+    },
+    {
+      imports: "import { VueT as is } from '@fixture/multi/vue';",
+      name: 'the Vue 3.5 same-name binding interpretation',
+    },
+  ])(
+    'conservatively retains $name of no-value :is shorthand',
+    ({ imports }) => {
+      const root = createConsumerFixture('<component :is />', imports);
+
+      expect(detectVueProject(root)).toBe(true);
+    }
+  );
+
+  it('matches Vue 3.5 lexical resolution for slot and v-for component tags', () => {
+    const slot = compileInlineTemplate(
+      '<Child v-slot="{ Mixed }"><Mixed.VueT /></Child>'
+    );
+    const loop = compileInlineTemplate(
+      '<main v-for="(Mixed, index) in rows"><Mixed.VueT /></main>'
+    );
+
+    expect(slot).toContain('default: _withCtx(({ Mixed }) => [');
+    expect(slot).toContain('_createVNode(Mixed.VueT)');
+    expect(loop).toContain('_renderList(rows, (Mixed, index) => {');
+    expect(loop).toContain('_createVNode(Mixed.VueT)');
+  });
+
+  it('matches Vue 3.5 resolution of the lowercase component builtin', () => {
+    const output = compileInlineTemplate('<component :is="\'div\'" />');
+
+    expect(output).toContain("_resolveDynamicComponent('div')");
+    expect(output).not.toContain('_unref(component)');
+  });
+
+  it('matches Vue 3.5 static vue:is component resolution', () => {
+    const named = compileInlineTemplate(
+      '<div is="vue:VueT" />',
+      "import { VueT } from '@fixture/multi/vue';"
+    );
+    const native = compileInlineTemplate(
+      '<VueT is="vue:div" />',
+      "import { VueT } from '@fixture/multi/vue';"
+    );
+    const namespace = compileInlineTemplate(
+      '<div is="vue:Mixed.VueT" />',
+      "import * as Mixed from '@fixture/multi/vue';"
+    );
+
+    expect(named).toContain('_createBlock(_unref(VueT))');
+    expect(native).toContain('_resolveComponent("div")');
+    expect(native).not.toContain('_unref(VueT)');
+    expect(namespace).toContain('_createBlock(Mixed.VueT)');
+  });
+
+  it('documents installed Vue semantics for valued v-is', () => {
+    const output = compileInlineTemplate(
+      '<div v-is="VueT" />',
+      "import { VueT } from '@fixture/multi/vue';"
+    );
+
+    if (vueCompilerVersion.startsWith('3.3.')) {
+      expect(output).toContain('_resolveDynamicComponent(_unref(VueT))');
+    } else {
+      expect(output).toContain('_createElementBlock("div")');
+      expect(output).not.toContain('_unref(VueT)');
+    }
+  });
+
+  it('matches Vue component lookup precedence for camel setup bindings', () => {
+    const output = compileInlineTemplate(
+      '<vue-t />',
+      "import { VueT } from '@fixture/multi/vue'; const vueT = 'section';"
+    );
+
+    expect(output).toContain('_createBlock(vueT)');
+    expect(output).not.toContain('_unref(VueT)');
+  });
+
+  it('matches Vue binding-type precedence ahead of normalized spelling', () => {
+    const literalOutput = compileInlineTemplate(
+      '<vue-t />',
+      "import { VueT as vueT } from '@fixture/multi/vue'; const VueT = 'section';"
+    );
+    const namespaceOutput = compileInlineTemplate(
+      '<my-components.VueT />',
+      "import * as MyComponents from '@fixture/multi/vue'; const myComponents = getComponents();"
+    );
+    const restOutput = compileInlineTemplate(
+      '<vue-t />',
+      "import { VueT as vueT } from '@fixture/multi/vue'; const { ...VueT } = source;"
+    );
+    const memberCallOutput = compileInlineTemplate(
+      '<vue-t />',
+      "import { VueT as vueT } from '@fixture/multi/vue'; const VueT = factory.make();"
+    );
+
+    expect(literalOutput).toContain('_createBlock(VueT)');
+    expect(literalOutput).not.toContain('_unref(vueT)');
+    expect(namespaceOutput).toContain('MyComponents.VueT');
+    expect(namespaceOutput).not.toContain('myComponents.VueT');
+    expect(restOutput).toContain('_createBlock(VueT)');
+    expect(restOutput).not.toContain('_unref(vueT)');
+    expect(memberCallOutput).toContain('_createBlock(_unref(vueT))');
+    expect(memberCallOutput).not.toContain('_unref(VueT)');
+  });
+
+  it('selects a setup binding before applying lexical shadowing', () => {
+    const output = compileInlineTemplate(
+      '<main v-for="vueT in rows"><vue-t /></main>',
+      "import { VueT } from '@fixture/multi/vue';"
+    );
+
+    expect(output).toContain('_unref(VueT)');
+    expect(output).not.toContain('_createVNode(vueT)');
+  });
+});
+
+function createConsumerFixture(
+  template: string,
+  imports = defaultImports
+): string {
+  const root = createProjectFixture({
+    'package.json': JSON.stringify({
+      name: '@fixture/react-app',
+      dependencies: { '@fixture/multi': 'file:./vendor/multi' },
+    }),
+    'vendor/multi/package.json': JSON.stringify({
+      name: '@fixture/multi',
+      version: '1.0.0',
+      exports: { './vue': './src/vue.ts' },
+      dependencies: { 'gt-vue': '*' },
+    }),
+    'vendor/multi/src/vue.ts': "export { T as VueT } from 'gt-vue';\n",
+    'src/App.vue': createSfc(template, imports),
+  });
+  temporaryDirectories.push(root);
+
+  const destination = path.join(root, 'node_modules', '@fixture', 'multi');
+  fs.mkdirSync(path.dirname(destination), { recursive: true });
+  fs.symlinkSync(path.join(root, 'vendor/multi'), destination, 'dir');
+  return root;
+}
+
+function compileInlineTemplate(
+  template: string,
+  imports = defaultImports
+): string {
+  const { descriptor, errors } = parse(createSfc(template, imports), {
+    filename: 'Scope.vue',
+  });
+  expect(errors).toEqual([]);
+  return compileScript(descriptor, {
+    id: 'consumer-template-scope-regression',
+    inlineTemplate: true,
+  }).content;
+}
+
+function createSfc(template: string, imports = defaultImports): string {
+  return `<script setup>
+${imports}
+const rows = [];
+</script>
+<template>${template}</template>`;
+}
+
+const defaultImports = `import * as Mixed from '@fixture/multi/vue';
+import {
+  VueT,
+  VueT as component,
+  VueT as Component,
+  VueT as COMPONENT,
+  VueT as cOmPoNeNt,
+} from '@fixture/multi/vue';`;

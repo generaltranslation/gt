@@ -121,7 +121,7 @@ describe('validateRepository', () => {
     expect(cookieGroup).toBeDefined();
 
     const repositoryRoot = await createRepository({
-      'packages/react-core/src/setup/cookieNames.ts':
+      'packages/i18n/src/utils/cookieNames.ts':
         "export const defaultLocaleCookieName = 'generaltranslation.locale';\n",
       'packages/consumer/src/index.ts':
         "export const cookieName = 'generaltranslation.locale';\n",

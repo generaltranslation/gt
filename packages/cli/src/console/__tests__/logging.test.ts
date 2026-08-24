@@ -74,4 +74,28 @@ describe('logging prompt fallback', () => {
     expect(validate('en')).toBeUndefined();
     expect(validate('not_a_locale')).toBe('Enter a valid locale (e.g., en)');
   });
+
+  it('labels Vue and React inline catalogs without conflating frameworks', async () => {
+    const { logCollectedFiles } = await import('../logging.js');
+
+    logCollectedFiles(
+      [{ fileName: '__INTERNAL_GT_TEMPLATE_NAME__' }],
+      2,
+      'gt-vue'
+    );
+    expect(clack.log.message).toHaveBeenLastCalledWith(
+      expect.stringContaining('<Vue Elements> (2)'),
+      undefined
+    );
+
+    logCollectedFiles(
+      [{ fileName: '__INTERNAL_GT_TEMPLATE_NAME__' }],
+      3,
+      'gt-react'
+    );
+    expect(clack.log.message).toHaveBeenLastCalledWith(
+      expect.stringContaining('<React Elements> (3)'),
+      undefined
+    );
+  });
 });

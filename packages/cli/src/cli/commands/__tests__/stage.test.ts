@@ -109,6 +109,19 @@ describe('handleStage config ids', () => {
     });
   });
 
+  it('returns the collected inline runtime for downstream status labels', async () => {
+    vi.mocked(collectFiles).mockResolvedValue({
+      files: [templateFile],
+      reactComponents: 1,
+      inlineLibrary: 'gt-vue',
+      publishMap: new Map(),
+    });
+
+    const result = await handleStage(options, settings(), 'gt-vue', false);
+
+    expect(result?.inlineLibrary).toBe('gt-vue');
+  });
+
   it('removes existing config ids and skips writing new ids when omitted', async () => {
     await handleStage(
       options,
