@@ -66,6 +66,12 @@ describe('handleGenerate', () => {
     return path.join(directory, recoveryFile);
   }
 
+  function getGenerationMarkers(filePath: string): string[] {
+    return readdirSync(path.dirname(filePath)).filter((file) =>
+      file.startsWith('.gt-generate-')
+    );
+  }
+
   it('removes generated files when postprocessing fails so a retry can finish', async () => {
     writeFileSync('messages/en/common.json', '{"hello":"Hello"}');
     const settings = createSettings(['messages/en/common.json']);
@@ -89,6 +95,7 @@ describe('handleGenerate', () => {
       new Set(['messages/fr/common.json']),
       { restrictToIncludedFiles: true }
     );
+    expect(getGenerationMarkers('messages/fr/common.json')).toEqual([]);
   });
 
   it('preserves a concurrently replaced output during rollback', async () => {
@@ -175,6 +182,92 @@ describe('handleGenerate', () => {
     );
   });
 
+  it('blocks a retry when a generated output could not be recovered', async () => {
+    writeFileSync('messages/en/common.json', '{"hello":"Hello"}');
+    const settings = createSettings(['messages/en/common.json']);
+    postProcessTranslations.mockRejectedValueOnce(
+      new Error('Postprocessing failed')
+    );
+    const rename = vi
+      .spyOn(fs.promises, 'rename')
+      .mockRejectedValueOnce(new Error('Cleanup failed'));
+    vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+
+    await expect(handleGenerate(settings)).rejects.toThrow(
+      'Postprocessing failed'
+    );
+    expect(existsSync('messages/fr/common.json')).toBe(true);
+    expect(getGenerationMarkers('messages/fr/common.json')).toHaveLength(1);
+
+    rename.mockRestore();
+    await expect(handleGenerate(settings)).rejects.toThrow(
+      'Another or interrupted template generation owns this output'
+    );
+    expect(postProcessTranslations).toHaveBeenCalledTimes(1);
+  });
+
+  it('blocks an overlapping generator while postprocessing is running', async () => {
+    writeFileSync('messages/en/common.json', '{"hello":"Hello"}');
+    const settings = createSettings(['messages/en/common.json']);
+    let releasePostprocessing: () => void;
+    const postprocessingStarted = Promise.withResolvers<void>();
+    const postprocessingFinished = new Promise<void>((resolve) => {
+      releasePostprocessing = resolve;
+    });
+    postProcessTranslations.mockImplementationOnce(async () => {
+      postprocessingStarted.resolve();
+      await postprocessingFinished;
+    });
+
+    const firstGeneration = handleGenerate(settings);
+    await postprocessingStarted.promise;
+
+    await expect(handleGenerate(settings)).rejects.toThrow(
+      'Another or interrupted template generation owns this output'
+    );
+    expect(postProcessTranslations).toHaveBeenCalledTimes(1);
+
+    releasePostprocessing!();
+    await firstGeneration;
+    expect(getGenerationMarkers('messages/fr/common.json')).toEqual([]);
+  });
+
+  it('blocks overlapping generators with case-equivalent output paths', async () => {
+    writeFileSync('messages/case-probe', '');
+    const caseInsensitive = existsSync('messages/CASE-PROBE');
+    rmSync('messages/case-probe');
+    if (!caseInsensitive) return;
+
+    writeFileSync('messages/en/common.json', '{"hello":"Hello"}');
+    const upperCaseSettings = createSettings(['messages/en/common.json']);
+    upperCaseSettings.files.placeholderPaths.json = [
+      path.resolve('messages/[locale]/Common.json'),
+    ];
+    const lowerCaseSettings = createSettings(['messages/en/common.json']);
+    let releasePostprocessing: () => void;
+    const postprocessingStarted = Promise.withResolvers<void>();
+    const postprocessingFinished = new Promise<void>((resolve) => {
+      releasePostprocessing = resolve;
+    });
+    postProcessTranslations.mockImplementationOnce(async () => {
+      postprocessingStarted.resolve();
+      await postprocessingFinished;
+    });
+
+    const firstGeneration = handleGenerate(upperCaseSettings);
+    await postprocessingStarted.promise;
+
+    try {
+      await expect(handleGenerate(lowerCaseSettings)).rejects.toThrow(
+        'Another or interrupted template generation owns this output'
+      );
+    } finally {
+      releasePostprocessing!();
+    }
+    await firstGeneration;
+    expect(postProcessTranslations).toHaveBeenCalledTimes(1);
+  });
+
   it('rejects colliding output mappings before writing files', async () => {
     writeFileSync('messages/en/alpha.json', '{"value":"Alpha"}');
     writeFileSync('messages/en/beta.json', '{"value":"Beta"}');
@@ -259,6 +352,28 @@ describe('handleGenerate', () => {
     ).rejects.toThrow('generated output path is not a regular file');
 
     expect(postProcessTranslations).not.toHaveBeenCalled();
+  });
+
+  it('removes its marker when classifying an existing output fails', async () => {
+    writeFileSync('messages/en/common.json', '{"value":"Hello"}');
+    mkdirSync('messages/fr', { recursive: true });
+    writeFileSync('messages/fr/common.json', '{"value":"Existing"}');
+    const realpath = fs.promises.realpath.bind(fs.promises);
+    vi.spyOn(fs.promises, 'realpath').mockImplementation(async (filePath) => {
+      if (filePath === path.resolve('messages/fr/common.json')) {
+        throw new Error('Canonical lookup failed');
+      }
+      return realpath(filePath);
+    });
+
+    await expect(
+      handleGenerate(createSettings(['messages/en/common.json']))
+    ).rejects.toThrow('Canonical lookup failed');
+
+    expect(getGenerationMarkers('messages/fr/common.json')).toEqual([]);
+    expect(readFileSync('messages/fr/common.json', 'utf8')).toBe(
+      '{"value":"Existing"}'
+    );
   });
 
   it('checks each generated output identity once', async () => {
@@ -360,6 +475,7 @@ describe('handleGenerate', () => {
       '{"title":"Existing"}'
     );
     expect(postProcessTranslations).not.toHaveBeenCalled();
+    expect(getGenerationMarkers('content/fr/config.json')).toEqual([]);
   });
 
   it('applies schema transformations when creating YAML templates', async () => {

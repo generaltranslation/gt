@@ -11,6 +11,7 @@ import { createSourceTemplate } from '../../formats/files/mergeWithSource.js';
 import { SUPPORTED_FILE_EXTENSIONS } from '../../formats/files/supportedFiles.js';
 import { hasNonIdentityFileFormatTransformForType } from '../../formats/files/transformFormat.js';
 import type { Settings } from '../../types/index.js';
+import { hashStringSync } from '../../utils/hash.js';
 import { postProcessTranslations } from './translate.js';
 
 type GenerationTarget = {
@@ -21,6 +22,8 @@ type GenerationTarget = {
   output: string;
   changesFormat: boolean;
 };
+
+type GeneratedFilesByMarker = Map<string, string>;
 
 function createOutputCollisionError(
   existing: GenerationTarget,
@@ -77,6 +80,59 @@ function createChangedOutputError(target: GenerationTarget): Error {
   );
 }
 
+function createPendingGenerationError(
+  target: GenerationTarget,
+  marker: string
+): Error {
+  return new Error(
+    createDiagnosticMessage({
+      source: 'gt',
+      severity: 'Error',
+      whatHappened:
+        'Another or interrupted template generation owns this output',
+      fix: 'Ensure no gt generate process is using the output, then review it and remove the generation marker and any incomplete output before retrying',
+      details: [`Output: ${target.outputPath}`, `Marker: ${marker}`],
+    })
+  );
+}
+
+function getCanonicalGenerationMarker(canonicalOutput: string): string {
+  return path.join(
+    path.dirname(canonicalOutput),
+    `.gt-generate-${hashStringSync(canonicalOutput)}`
+  );
+}
+
+async function getGenerationMarker(output: string): Promise<string> {
+  const directory = await fs.promises.realpath(path.dirname(output));
+  return getCanonicalGenerationMarker(
+    path.join(directory, path.basename(output))
+  );
+}
+
+async function findExistingGenerationMarker(
+  output: string
+): Promise<string | null> {
+  const marker = getCanonicalGenerationMarker(
+    await fs.promises.realpath(output)
+  );
+  try {
+    await fs.promises.lstat(marker);
+    return marker;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
+    throw error;
+  }
+}
+
+async function removeGenerationMarker(marker: string): Promise<void> {
+  try {
+    await fs.promises.rm(marker);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+  }
+}
+
 async function getFileIdentity(filePath: string): Promise<string | null> {
   try {
     const stat = await fs.promises.stat(filePath);
@@ -87,11 +143,11 @@ async function getFileIdentity(filePath: string): Promise<string | null> {
 }
 
 async function rollbackGeneratedFiles(
-  generatedFiles: Set<string>
+  generatedFiles: GeneratedFilesByMarker
 ): Promise<void> {
   const files = [...generatedFiles];
   const results = await Promise.allSettled(
-    files.map(async (filePath) => {
+    files.map(async ([marker, filePath]) => {
       const file = path.resolve(filePath);
       const recoveryFile = path.join(
         path.dirname(file),
@@ -100,8 +156,16 @@ async function rollbackGeneratedFiles(
       try {
         await fs.promises.rename(file, recoveryFile);
       } catch (error) {
-        if ((error as NodeJS.ErrnoException).code === 'ENOENT') return;
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+          await removeGenerationMarker(marker);
+          return;
+        }
         throw error;
+      }
+      try {
+        await removeGenerationMarker(marker);
+      } catch (error) {
+        return `${filePath}: preserved at ${recoveryFile}; generation marker ${marker} could not be removed: ${formatDiagnosticErrorDetails(error) ?? 'Unknown error'}`;
       }
       return `${filePath}: preserved at ${recoveryFile}`;
     })
@@ -109,7 +173,7 @@ async function rollbackGeneratedFiles(
   const failures = results.flatMap((result, index) =>
     result.status === 'rejected'
       ? [
-          `${files[index]}: ${formatDiagnosticErrorDetails(result.reason) ?? 'Unknown error'}`,
+          `${files[index][1]}: ${formatDiagnosticErrorDetails(result.reason) ?? 'Unknown error'} (generation marker: ${files[index][0]})`,
         ]
       : result.value
         ? [result.value]
@@ -123,7 +187,7 @@ async function rollbackGeneratedFiles(
         severity: 'Warning',
         whatHappened:
           'Generated template files were preserved after generation failed',
-        fix: 'Review or remove the listed recovery files after retrying gt generate',
+        fix: 'Review the listed recovery files or incomplete outputs, then remove retained generation markers before retrying gt generate',
         details: failures,
       })
     );
@@ -182,26 +246,55 @@ function createGenerationPlan(settings: Settings): GenerationTarget[] {
 async function createTargetFile(
   target: GenerationTarget,
   settings: Settings,
-  generatedFiles: Set<string>
+  generatedFiles: GeneratedFilesByMarker
 ): Promise<string> {
   const { source, output, outputPath } = target;
   await fs.promises.mkdir(path.dirname(output), { recursive: true });
+  const marker = await getGenerationMarker(output);
+
+  try {
+    await fs.promises.writeFile(marker, output, { flag: 'wx' });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
+      if (generatedFiles.has(marker)) {
+        const identity = await getFileIdentity(output);
+        if (!identity) throw createInvalidOutputError(target);
+        return identity;
+      }
+      throw createPendingGenerationError(target, marker);
+    }
+    throw error;
+  }
 
   let fileHandle: fs.promises.FileHandle;
   try {
     fileHandle = await fs.promises.open(output, 'wx');
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
-    const identity = await getFileIdentity(output);
-    if (!identity) throw createInvalidOutputError(target);
-    return identity;
+    if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
+      try {
+        const existingMarker = await findExistingGenerationMarker(output);
+        if (existingMarker && existingMarker !== marker) {
+          if (!generatedFiles.has(existingMarker)) {
+            throw createPendingGenerationError(target, existingMarker);
+          }
+        }
+        const identity = await getFileIdentity(output);
+        if (!identity) throw createInvalidOutputError(target);
+        return identity;
+      } finally {
+        await removeGenerationMarker(marker);
+      }
+    } else {
+      await removeGenerationMarker(marker);
+      throw error;
+    }
   }
 
   let identity: string;
   try {
     const stat = await fileHandle.stat();
     identity = `${stat.dev}:${stat.ino}`;
-    generatedFiles.add(outputPath);
+    generatedFiles.set(marker, outputPath);
 
     if (target.changesFormat) {
       throw createUnsupportedFormatTransformError();
@@ -224,7 +317,7 @@ async function createTargetFile(
 }
 
 export async function handleGenerate(settings: Settings): Promise<void> {
-  const generatedFiles = new Set<string>();
+  const generatedFiles: GeneratedFilesByMarker = new Map();
   const processedOutputs = new Map<string, GenerationTarget>();
 
   try {
@@ -236,13 +329,41 @@ export async function handleGenerate(settings: Settings): Promise<void> {
     }
 
     if (generatedFiles.size > 0) {
-      await postProcessTranslations(settings, generatedFiles, {
-        restrictToIncludedFiles: true,
-      });
+      await postProcessTranslations(
+        settings,
+        new Set(generatedFiles.values()),
+        {
+          restrictToIncludedFiles: true,
+        }
+      );
     }
   } catch (error) {
     await rollbackGeneratedFiles(generatedFiles);
     throw error;
+  }
+
+  const markers = [...generatedFiles.keys()];
+  const markerResults = await Promise.allSettled(
+    markers.map(removeGenerationMarker)
+  );
+  const markerFailures = markerResults.flatMap((result, index) =>
+    result.status === 'rejected'
+      ? [
+          `${markers[index]}: ${formatDiagnosticErrorDetails(result.reason) ?? 'Unknown error'}`,
+        ]
+      : []
+  );
+  if (markerFailures.length > 0) {
+    logger.warn(
+      createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Warning',
+        whatHappened:
+          'Some completed template generation markers could not be removed',
+        fix: 'Remove the listed markers before running gt generate again',
+        details: markerFailures,
+      })
+    );
   }
 
   if (generatedFiles.size > 0) {
