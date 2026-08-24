@@ -13,6 +13,7 @@ import remarkFrontmatter from 'remark-frontmatter';
 import { visit } from 'unist-util-visit';
 import type { Root } from 'mdast';
 import type { MdxjsEsm } from 'mdast-util-mdxjs-esm';
+import { settleAll } from './settleAll.js';
 
 const { isMatch } = micromatch;
 
@@ -70,7 +71,7 @@ export default async function localizeStaticImports(
     }
 
     if (defaultLocaleFiles.length > 0) {
-      const defaultPromise = Promise.all(
+      const defaultPromise = settleAll(
         defaultLocaleFiles.map(async (filePath: string) => {
           // Check if file exists before processing
           if (!fs.existsSync(filePath)) {
@@ -108,7 +109,7 @@ export default async function localizeStaticImports(
       );
 
       // Replace the placeholder path with the target path
-      await Promise.all(
+      await settleAll(
         targetFiles.map(async (filePath) => {
           // Check if file exists before processing
           if (!fs.existsSync(filePath)) {
@@ -135,7 +136,7 @@ export default async function localizeStaticImports(
   );
   processPromises.push(...mappingPromises);
 
-  await Promise.all(processPromises);
+  await settleAll(processPromises);
 }
 
 interface ImportTransformResult {

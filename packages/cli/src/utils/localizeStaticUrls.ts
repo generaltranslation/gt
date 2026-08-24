@@ -12,6 +12,7 @@ import type { Root, Link, Literal } from 'mdast';
 import type { MdxJsxFlowElement, MdxJsxTextElement } from 'mdast-util-mdx-jsx';
 import { escapeHtmlInTextNodes, normalizeCJKCharacters } from 'gt-remark';
 import { parse as parseBabel } from '@babel/parser';
+import { settleAll } from './settleAll.js';
 
 const { isMatch } = micromatch;
 
@@ -223,7 +224,7 @@ export default async function localizeStaticUrls(
     }
 
     if (defaultLocaleFiles.length > 0) {
-      const defaultPromise = Promise.all(
+      const defaultPromise = settleAll(
         defaultLocaleFiles.map(async (filePath: string) => {
           // Check if file exists before processing
           if (!fs.existsSync(filePath)) {
@@ -263,7 +264,7 @@ export default async function localizeStaticUrls(
       );
 
       // Replace the placeholder path with the target path
-      await Promise.all(
+      await settleAll(
         targetFiles.map(async (filePath) => {
           // Check if file exists before processing
           if (!fs.existsSync(filePath)) {
@@ -290,7 +291,7 @@ export default async function localizeStaticUrls(
     });
   processPromises.push(...mappingPromises);
 
-  await Promise.all(processPromises);
+  await settleAll(processPromises);
 }
 
 interface UrlTransformResult {

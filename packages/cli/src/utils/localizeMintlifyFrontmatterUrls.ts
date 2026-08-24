@@ -7,6 +7,7 @@ import YAML, { isMap, isScalar } from 'yaml';
 import type { Content, Root, Yaml } from 'mdast';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import type { Settings } from '../types/index.js';
+import { settleAll } from './settleAll.js';
 
 const SKIPPABLE_URL_REGEX = /^(?:[a-z][a-z0-9+.-]*:|\/\/|#|\.\/|\.\.\/)/i;
 
@@ -140,7 +141,7 @@ export default async function localizeMintlifyFrontmatterUrls(
         shouldProcessFile(filePath, includeFiles)
     );
 
-    await Promise.all(
+    await settleAll(
       targetFiles.map(async (filePath) => {
         if (!fs.existsSync(filePath)) return;
 
