@@ -1,6 +1,7 @@
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import fs from 'node:fs';
 import { Settings } from '../types/index.js';
+import { settleAll } from './settleAll.js';
 
 export default async function flattenJsonFiles(
   settings: Settings,
@@ -24,13 +25,13 @@ export default async function flattenJsonFiles(
     settings.defaultLocale
   );
 
-  await Promise.all(
+  await settleAll(
     Object.values(fileMapping).map(async (filesMap) => {
       const targetFiles = Object.values(filesMap).filter(
         (p) => p.endsWith('.json') && (!includeFiles || includeFiles.has(p))
       );
 
-      await Promise.all(
+      await settleAll(
         targetFiles.map(async (file) => {
           // Read each json file
           const json = JSON.parse(fs.readFileSync(file, 'utf8'));
