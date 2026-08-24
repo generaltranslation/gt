@@ -1,8 +1,45 @@
 import fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { setCredentials } from '../credentials.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { generateCredentialsSession, setCredentials } from '../credentials.js';
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+describe('generateCredentialsSession', () => {
+  it('registers the loopback callback and new flow version', async () => {
+    const fetchMock = vi.fn(async () =>
+      Response.json({
+        sessionId: 'cli_synthetic',
+        verifier: 'V'.repeat(43),
+      })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      generateCredentialsSession(
+        'https://api.example',
+        'production',
+        'http://127.0.0.1:49152/cli/callback'
+      )
+    ).resolves.toEqual({
+      sessionId: 'cli_synthetic',
+      verifier: 'V'.repeat(43),
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.example/cli/wizard/session',
+      expect.objectContaining({
+        body: JSON.stringify({
+          callbackUrl: 'http://127.0.0.1:49152/cli/callback',
+          flowVersion: 2,
+          keyType: 'production',
+        }),
+      })
+    );
+  });
+});
 
 describe('setCredentials', () => {
   let appDirectory: string;
