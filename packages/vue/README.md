@@ -251,6 +251,19 @@ and then the default locale. Inside `<T>`, the rich translation pipeline owns
 formatting locales: source fallbacks use the default locale, while translated
 content uses the active locale followed by the default.
 
+Pass `customMapping` to `createGT()` when a catalog uses a locale alias that
+should format with a canonical locale. The alias remains the catalog loader,
+cache, and cookie value; only formatters and plural rules use the mapped code.
+
+```ts
+const gt = createGT({
+  defaultLocale: 'en-US',
+  locale: 'pirate',
+  customMapping: { pirate: { code: 'fr-FR' } },
+  loadTranslations,
+});
+```
+
 In a browser, gt-vue persists the active locale in the
 `generaltranslation.locale` path-wide session cookie. When `locale` is omitted
 from `createGT()`, that cookie wins over `defaultLocale`. Use

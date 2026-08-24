@@ -1,0 +1,68 @@
+<!doctype html>
+<!-- The page make-fixture.mjs records into e2e/fixture.json. It mirrors what a
+     gt-rrweb capture looks like: html.gt-recording + a #gt-rrweb-frame style box
+     around <main> (so the replayer's capture-frame crop path is exercised), a
+     .dark-class theme convention (so the theme toggle path is exercised), and a
+     button whose click mutates the DOM (so click waypoints + glide-hold logic have
+     real mutations to work with). -->
+<html lang="en" class="gt-recording">
+  <head>
+    <meta charset="utf-8" />
+    <title>gt-rrweb e2e fixture</title>
+    <style id="gt-rrweb-frame">
+      html.gt-recording main {
+        inset: auto !important;
+        left: 50% !important;
+        top: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: 640px !important;
+        height: 360px !important;
+        overflow: hidden !important;
+        position: fixed;
+      }
+    </style>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        font-family: system-ui, sans-serif;
+        background: #f6f5f2;
+        color: #1c1c1c;
+      }
+      html.dark body {
+        background: #141416;
+        color: #ececec;
+      }
+      main {
+        background: inherit;
+        padding: 24px;
+        box-sizing: border-box;
+        border: 1px solid #8884;
+      }
+      button {
+        font: inherit;
+        padding: 6px 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <!-- data-_gt-hash marks <T> content for the harvest's hash path; the bare
+           <p> below is covered by the string (hashMessage) path instead. -->
+      <h1 data-_gt-hash="fx-welcome">Welcome to the fixture</h1>
+      <p id="status">Nothing clicked yet</p>
+      <button id="go" type="button" data-_gt-hash="fx-run">Run the demo</button>
+      <p>Settings and Projects live here</p>
+    </main>
+    <script>
+      // Each click mutates the DOM so the recording carries click→mutation pairs.
+      let n = 0;
+      document.getElementById('go').addEventListener('click', () => {
+        n += 1;
+        document.getElementById('status').textContent =
+          'Clicked ' + n + ' times';
+      });
+    </script>
+  </body>
+</html>
