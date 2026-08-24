@@ -60,7 +60,7 @@ const OPENAPI_SPEC_EXTENSIONS = new Set(['.json', '.yaml', '.yml']);
 export default async function processOpenApi(
   settings: Settings,
   includeFiles?: Set<string>,
-  options: ProcessOpenApiOptions = {}
+  { processDefaultLocaleFiles = true }: ProcessOpenApiOptions = {}
 ) {
   const openapiConfig = settings.options?.mintlify?.openapi;
   if (!openapiConfig || !openapiConfig.files?.length) return;
@@ -92,7 +92,7 @@ export default async function processOpenApi(
   }
 
   // Also rewrite default-locale source files so they use the deterministic spec selection
-  if (options.processDefaultLocaleFiles !== false) {
+  if (processDefaultLocaleFiles) {
     const defaultFiles = [
       ...(resolvedPaths.mdx || []),
       ...(resolvedPaths.md || []),
