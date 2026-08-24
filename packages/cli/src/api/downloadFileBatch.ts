@@ -5,10 +5,7 @@ import { logger } from '../console/logger.js';
 import { gt } from '../utils/gt.js';
 import { Settings } from '../types/index.js';
 import { validateJsonSchema } from '../formats/json/utils.js';
-import { validateYamlSchema } from '../formats/yaml/utils.js';
-import { mergeJson } from '../formats/json/mergeJson.js';
 import { extractJson } from '../formats/json/extractJson.js';
-import mergeYaml from '../formats/yaml/mergeYaml.js';
 import { extractYaml } from '../formats/yaml/extractYaml.js';
 import {
   resolveMintlifyRefs,
@@ -23,9 +20,8 @@ import { recordDownloaded, recordRemerged } from '../state/recentDownloads.js';
 import { recordWarning } from '../state/translateWarnings.js';
 import stringify from 'fast-json-stable-stringify';
 import type { FileStatusTracker } from '../workflows/steps/PollJobsStep.js';
-import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
-import { hasNonIdentityFileFormatTransformForType } from '../formats/files/transformFormat.js';
 import { getRelative } from '../fs/findFilepath.js';
+import { mergeWithSource } from '../formats/files/mergeWithSource.js';
 import {
   getInlineElementsLabel,
   type InlineLibrary,
@@ -83,90 +79,6 @@ function countGtJsonEntries(content: string): number | undefined {
 function sortJsonString(data: string): string {
   const sortedData = stringify(JSON.parse(data));
   return JSON.stringify(JSON.parse(sortedData), null, 2);
-}
-
-/**
- * Merges translated content with the current source file for schema-based formats.
- */
-function mergeWithSource(
-  translatedContent: string,
-  locale: string,
-  inputPath: string,
-  options: Settings
-): string {
-  if (shouldSkipSourceFormatMerge(inputPath, options)) {
-    return translatedContent;
-  }
-  if (!options.options) return translatedContent;
-
-  const jsonSchema = options.options.jsonSchema
-    ? validateJsonSchema(options.options, inputPath)
-    : null;
-  const yamlSchema =
-    !jsonSchema && options.options.yamlSchema
-      ? validateYamlSchema(options.options, inputPath)
-      : null;
-
-  if (!jsonSchema && !yamlSchema) return translatedContent;
-
-  const sourceContent = fs.readFileSync(inputPath, 'utf8');
-  if (!sourceContent) return translatedContent;
-
-  if (jsonSchema) {
-    // Resolve $ref before merging if configured
-    let resolvedSourceContent = sourceContent;
-    if (shouldResolveRefs(inputPath, options.options)) {
-      try {
-        const json = JSON.parse(sourceContent);
-        const { resolved } = resolveMintlifyRefs(json, inputPath);
-        resolvedSourceContent = JSON.stringify(resolved, null, 2);
-      } catch {
-        // Fall through with original content
-      }
-    }
-    return mergeJson(
-      resolvedSourceContent,
-      inputPath,
-      options.options,
-      [{ translatedContent, targetLocale: locale }],
-      options.defaultLocale,
-      options.locales
-    )[0];
-  } else {
-    return mergeYaml(
-      sourceContent,
-      inputPath,
-      options.options,
-      [{ translatedContent, targetLocale: locale }],
-      options.defaultLocale
-    )[0];
-  }
-}
-
-/**
- * Determines whether a source file should be skipped for schema re-merging.
- * @param inputPath - The path of the source file
- * @param options - The settings for the project
- * @returns True if the source file should be skipped for schema re-merging, false otherwise
- */
-function shouldSkipSourceFormatMerge(
-  inputPath: string,
-  options: Settings
-): boolean {
-  for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
-    if (!hasNonIdentityFileFormatTransformForType(options, fileType)) continue;
-
-    const transformedSourcePaths = options.files.resolvedPaths[fileType] || [];
-    if (
-      transformedSourcePaths.some(
-        (sourcePath) => getRelative(sourcePath) === inputPath
-      )
-    ) {
-      return true;
-    }
-  }
-
-  return false;
 }
 
 export type BatchedFiles = {

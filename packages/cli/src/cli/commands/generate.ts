@@ -6,6 +6,9 @@ import {
 } from 'generaltranslation/internal';
 import { logger } from '../../console/logger.js';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
+import { createSourceTemplate } from '../../formats/files/mergeWithSource.js';
+import { SUPPORTED_FILE_EXTENSIONS } from '../../formats/files/supportedFiles.js';
+import { hasNonIdentityFileFormatTransformForType } from '../../formats/files/transformFormat.js';
 import type { Settings } from '../../types/index.js';
 import { postProcessTranslations } from './translate.js';
 
@@ -15,6 +18,7 @@ type GenerationTarget = {
   outputPath: string;
   source: string;
   output: string;
+  changesFormat: boolean;
 };
 
 function createOutputCollisionError(
@@ -36,29 +40,74 @@ function createOutputCollisionError(
   );
 }
 
-function isSameFile(left: string, right: string): boolean {
+function createInvalidOutputError(target: GenerationTarget): Error {
+  return new Error(
+    createDiagnosticMessage({
+      source: 'gt',
+      severity: 'Error',
+      whatHappened: 'A generated output path is not a regular file',
+      fix: 'Remove or rename the existing path before running gt generate again',
+      details: `Output: ${target.outputPath}`,
+    })
+  );
+}
+
+function createUnsupportedFormatTransformError(): Error {
+  return new Error(
+    createDiagnosticMessage({
+      source: 'gt',
+      severity: 'Error',
+      whatHappened:
+        'gt generate cannot create templates that change the source file format',
+      fix: 'Remove transformationFormat or use gt translate to create the converted files',
+    })
+  );
+}
+
+function createChangedOutputError(target: GenerationTarget): Error {
+  return new Error(
+    createDiagnosticMessage({
+      source: 'gt',
+      severity: 'Error',
+      whatHappened: 'A generated output changed while it was being created',
+      fix: 'Stop the process changing the output and run gt generate again',
+      details: `Output: ${target.outputPath}`,
+    })
+  );
+}
+
+async function getFileIdentity(filePath: string): Promise<string | null> {
   try {
-    const leftStat = fs.statSync(left);
-    const rightStat = fs.statSync(right);
-    return leftStat.dev === rightStat.dev && leftStat.ino === rightStat.ino;
+    const stat = await fs.promises.stat(filePath);
+    return stat.isFile() ? `${stat.dev}:${stat.ino}` : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
-async function rollbackGeneratedFiles(filePaths: Set<string>): Promise<void> {
-  const files = [...filePaths];
+async function rollbackGeneratedFiles(
+  generatedFiles: Map<string, string>
+): Promise<void> {
+  const files = [...generatedFiles];
   const results = await Promise.allSettled(
-    files.map((filePath) =>
-      fs.promises.rm(path.resolve(filePath), { force: true })
-    )
+    files.map(async ([filePath, expectedIdentity]) => {
+      const file = path.resolve(filePath);
+      const currentIdentity = await getFileIdentity(file);
+      if (!currentIdentity) return;
+      if (currentIdentity !== expectedIdentity) {
+        return `${filePath}: the file changed after it was generated`;
+      }
+      await fs.promises.rm(file, { force: true });
+    })
   );
   const failures = results.flatMap((result, index) =>
     result.status === 'rejected'
       ? [
-          `${files[index]}: ${formatDiagnosticErrorDetails(result.reason) ?? 'Unknown error'}`,
+          `${files[index][0]}: ${formatDiagnosticErrorDetails(result.reason) ?? 'Unknown error'}`,
         ]
-      : []
+      : result.value
+        ? [result.value]
+        : []
   );
 
   if (failures.length > 0) {
@@ -76,6 +125,14 @@ async function rollbackGeneratedFiles(filePaths: Set<string>): Promise<void> {
 }
 
 function createGenerationPlan(settings: Settings): GenerationTarget[] {
+  const formatChangingSources = new Set<string>();
+  for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
+    if (!hasNonIdentityFileFormatTransformForType(settings, fileType)) continue;
+    for (const sourcePath of settings.files.resolvedPaths[fileType] || []) {
+      formatChangingSources.add(path.resolve(sourcePath));
+    }
+  }
+
   const { resolvedPaths, placeholderPaths, transformPaths, transformFormats } =
     settings.files;
   const fileMapping = createFileMapping(
@@ -95,7 +152,14 @@ function createGenerationPlan(settings: Settings): GenerationTarget[] {
       const output = path.resolve(outputPath);
       if (source === output || !fs.existsSync(source)) continue;
 
-      const target = { locale, sourcePath, outputPath, source, output };
+      const target = {
+        locale,
+        sourcePath,
+        outputPath,
+        source,
+        output,
+        changesFormat: formatChangingSources.has(source),
+      };
       const existing = outputs.get(output);
       if (existing) {
         throw createOutputCollisionError(existing, target);
@@ -109,30 +173,65 @@ function createGenerationPlan(settings: Settings): GenerationTarget[] {
   return plan;
 }
 
+async function createTargetFile(
+  target: GenerationTarget,
+  settings: Settings,
+  generatedFiles: Map<string, string>
+): Promise<string> {
+  const { source, output, outputPath } = target;
+  await fs.promises.mkdir(path.dirname(output), { recursive: true });
+
+  let fileHandle: fs.promises.FileHandle;
+  try {
+    fileHandle = await fs.promises.open(output, 'wx');
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+    const identity = await getFileIdentity(output);
+    if (!identity) throw createInvalidOutputError(target);
+    return identity;
+  }
+
+  let identity: string;
+  try {
+    const stat = await fileHandle.stat();
+    identity = `${stat.dev}:${stat.ino}`;
+    generatedFiles.set(outputPath, identity);
+
+    if (target.changesFormat) {
+      throw createUnsupportedFormatTransformError();
+    }
+    const sourceTemplate = createSourceTemplate(
+      target.locale,
+      source,
+      settings
+    );
+    await fileHandle.writeFile(
+      sourceTemplate ?? (await fs.promises.readFile(source))
+    );
+  } finally {
+    await fileHandle.close();
+  }
+
+  if ((await getFileIdentity(output)) !== identity) {
+    throw createChangedOutputError(target);
+  }
+  return identity;
+}
+
 export async function handleGenerate(settings: Settings): Promise<void> {
-  const generatedFiles = new Set<string>();
-  const processedTargets: GenerationTarget[] = [];
+  const generatedFiles = new Map<string, string>();
+  const processedOutputs = new Map<string, GenerationTarget>();
 
   try {
     for (const target of createGenerationPlan(settings)) {
-      const { source, output, outputPath } = target;
-      await fs.promises.mkdir(path.dirname(output), { recursive: true });
-      try {
-        await fs.promises.copyFile(source, output, fs.constants.COPYFILE_EXCL);
-        generatedFiles.add(outputPath);
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
-
-        const existing = processedTargets.find((processedTarget) =>
-          isSameFile(processedTarget.output, output)
-        );
-        if (existing) throw createOutputCollisionError(existing, target);
-      }
-      processedTargets.push(target);
+      const identity = await createTargetFile(target, settings, generatedFiles);
+      const existing = processedOutputs.get(identity);
+      if (existing) throw createOutputCollisionError(existing, target);
+      processedOutputs.set(identity, target);
     }
 
     if (generatedFiles.size > 0) {
-      await postProcessTranslations(settings, generatedFiles, {
+      await postProcessTranslations(settings, new Set(generatedFiles.keys()), {
         restrictToIncludedFiles: true,
       });
     }
