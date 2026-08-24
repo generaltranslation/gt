@@ -1,5 +1,41 @@
 # gt-i18n
 
+## 1.0.17
+
+### Patch Changes
+
+- [#2012](https://github.com/generaltranslation/gt/pull/2012) [`8d376e2`](https://github.com/generaltranslation/gt/commit/8d376e23c80828dfd8756e2f0fbf0f7725e0f178) Thanks [@eoinest](https://github.com/eoinest)! - Make `msg(..., { $format: 'STRING' })` preserve source text literally instead
+  of applying ICU interpolation. For example, `msg('Hello {name}', {
+$format: 'STRING', name: 'Ada' })` now encodes `Hello {name}` rather than
+  `Hello Ada`. Add lightweight shared helpers for registering, hashing, and
+  decoding literal STRING messages, browser cookie access, and canonical GT
+  cookie names, and validate encoded fields by type.
+- Updated dependencies [[`f2204b9`](https://github.com/generaltranslation/gt/commit/f2204b990278865c54d14d337392930ea1ec31bf), [`b05b470`](https://github.com/generaltranslation/gt/commit/b05b4703fbbfd34a3cbee335c786e2e606346167)]:
+  - @generaltranslation/format@0.1.8
+  - generaltranslation@9.1.7
+
+## 1.0.13-iris.0
+
+### Patch Changes
+
+- 5d8b78a: Migrate the package license from FSL-1.1-ALv2 to MIT.
+- Updated dependencies [f2204b9]
+- Updated dependencies [b05b470]
+- Updated dependencies [5d8b78a]
+  - @generaltranslation/format@0.1.5-iris.0
+  - generaltranslation@9.1.3-iris.0
+
+## 1.0.12-iris.0
+
+### Patch Changes
+
+- 8d376e2: Make `msg(..., { $format: 'STRING' })` preserve source text literally instead
+  of applying ICU interpolation. For example, `msg('Hello {name}', {
+$format: 'STRING', name: 'Ada' })` now encodes `Hello {name}` rather than
+  `Hello Ada`. Add lightweight shared helpers for registering, hashing, and
+  decoding literal STRING messages, browser cookie access, and canonical GT
+  cookie names, and validate encoded fields by type.
+
 ## 1.0.16
 
 ### Patch Changes

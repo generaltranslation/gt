@@ -1,0 +1,104 @@
+{
+  "name": "@generaltranslation/vue-extractor",
+  "version": "0.1.0",
+  "description": "Vue source code extraction for General Translation",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "sideEffects": false,
+  "imports": {
+    "#vue-compiler-sfc": {
+      "bun": "@vue/compiler-sfc/dist/compiler-sfc.esm-browser.js",
+      "default": "@vue/compiler-sfc"
+    }
+  },
+  "author": "General Translation, Inc.",
+  "license": "MIT",
+  "scripts": {
+    "emit-types": "sh ../../scripts/emit-types.sh",
+    "transpile": "tsdown && pnpm run emit-types",
+    "build": "pnpm run transpile",
+    "build:watch": "tsdown --watch",
+    "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
+    "build:release": "pnpm run build:clean",
+    "format": "oxfmt src",
+    "patch": "pnpm version patch",
+    "release": "pnpm run build:clean && pnpm publish",
+    "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",
+    "release:beta": "pnpm run build:clean && pnpm publish --tag beta",
+    "release:latest": "pnpm run build:clean && pnpm publish --tag latest",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./config": {
+      "import": "./dist/config.js",
+      "types": "./dist/config.d.ts"
+    },
+    "./detect": {
+      "import": "./dist/detect.js",
+      "types": "./dist/detect.d.ts"
+    },
+    "./inspect": {
+      "import": "./dist/inspect.js",
+      "types": "./dist/inspect.d.ts"
+    },
+    "./integration": {
+      "import": "./dist/integration.js",
+      "types": "./dist/integration.d.ts"
+    },
+    "./project": {
+      "import": "./dist/project.js",
+      "types": "./dist/project.d.ts"
+    },
+    "./types": {
+      "import": "./dist/types.js",
+      "types": "./dist/types.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/generaltranslation/gt.git"
+  },
+  "keywords": [
+    "vue",
+    "extraction",
+    "translation",
+    "i18n"
+  ],
+  "dependencies": {
+    "@babel/parser": "^7.25.7",
+    "@babel/traverse": "^7.25.7",
+    "@babel/types": "^7.25.7",
+    "@generaltranslation/format": "workspace:*",
+    "@vue/shared": "^3.5.0",
+    "enhanced-resolve": "^5.18.3",
+    "entities": "^7.0.1",
+    "es-module-lexer": "^2.3.1",
+    "fast-glob": "^3.3.3",
+    "generaltranslation": "workspace:*",
+    "semver": "^7.8.5",
+    "tsconfig-paths": "^4.2.0",
+    "yaml": "^2.8.0"
+  },
+  "devDependencies": {
+    "@types/babel__traverse": "^7.20.6",
+    "@types/node": "catalog:",
+    "@types/semver": "^7.7.1",
+    "@vue/compiler-dom": "^3.5.0",
+    "@vue/compiler-sfc": "^3.5.0",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vue": "^3.5.0",
+    "vite": "^7.1.7",
+    "vitest": "catalog:"
+  }
+}

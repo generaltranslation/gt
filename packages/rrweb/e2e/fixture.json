@@ -1,0 +1,444 @@
+{
+  "events": [
+    {
+      "type": 4,
+      "data": {
+        "href": "http://localhost:5641/fixture-page.html",
+        "width": 1280,
+        "height": 800
+      },
+      "timestamp": 1787359320505
+    },
+    {
+      "type": 2,
+      "data": {
+        "node": {
+          "type": 0,
+          "childNodes": [
+            {
+              "type": 1,
+              "name": "html",
+              "publicId": "",
+              "systemId": "",
+              "id": 2
+            },
+            {
+              "type": 5,
+              "textContent": " The page make-fixture.mjs records into e2e/fixture.json. It mirrors what a\n     gt-rrweb capture looks like: html.gt-recording + a #gt-rrweb-frame style box\n     around <main> (so the replayer's capture-frame crop path is exercised), a\n     .dark-class theme convention (so the theme toggle path is exercised), and a\n     button whose click mutates the DOM (so click waypoints + glide-hold logic have\n     real mutations to work with). ",
+              "id": 3
+            },
+            {
+              "type": 2,
+              "tagName": "html",
+              "attributes": {
+                "lang": "en",
+                "class": "gt-recording"
+              },
+              "childNodes": [
+                {
+                  "type": 2,
+                  "tagName": "head",
+                  "attributes": {},
+                  "childNodes": [
+                    {
+                      "type": 3,
+                      "textContent": "\n    ",
+                      "id": 6
+                    },
+                    {
+                      "type": 2,
+                      "tagName": "meta",
+                      "attributes": {
+                        "charset": "utf-8"
+                      },
+                      "childNodes": [],
+                      "id": 7
+                    },
+                    {
+                      "type": 3,
+                      "textContent": "\n    ",
+                      "id": 8
+                    },
+                    {
+                      "type": 2,
+                      "tagName": "title",
+                      "attributes": {},
+                      "childNodes": [
+                        {
+                          "type": 3,
+                          "textContent": "gt-rrweb e2e fixture",
+                          "id": 10
+                        }
+                      ],
+                      "id": 9
+                    },
+                    {
+                      "type": 3,
+                      "textContent": "\n    ",
+                      "id": 11
+                    },
+                    {
+                      "type": 2,
+                      "tagName": "style",
+                      "attributes": {
+                        "id": "gt-rrweb-frame",
+                        "_cssText": "html.gt-recording main { position: fixed; inset: 50% auto auto 50% !important; transform: translate(-50%, -50%) !important; width: 640px !important; height: 360px !important; overflow: hidden !important; }"
+                      },
+                      "childNodes": [
+                        {
+                          "type": 3,
+                          "textContent": "",
+                          "id": 13
+                        }
+                      ],
+                      "id": 12
+                    },
+                    {
+                      "type": 3,
+                      "textContent": "\n    ",
+                      "id": 14
+                    },
+                    {
+                      "type": 2,
+                      "tagName": "style",
+                      "attributes": {
+                        "_cssText": "html, body { margin: 0px; height: 100%; font-family: system-ui, sans-serif; background: rgb(246, 245, 242); color: rgb(28, 28, 28); }html.dark body { background: rgb(20, 20, 22); color: rgb(236, 236, 236); }main { background: inherit; padding: 24px; box-sizing: border-box; border: 1px solid rgba(136, 136, 136, 0.267); }button { font: inherit; padding: 6px 14px; }"
+                      },
+                      "childNodes": [
+                        {
+                          "type": 3,
+                          "textContent": "",
+                          "id": 16
+                        }
+                      ],
+                      "id": 15
+                    },
+                    {
+                      "type": 3,
+                      "textContent": "\n  ",
+                      "id": 17
+                    }
+                  ],
+                  "id": 5
+                },
+                {
+                  "type": 3,
+                  "textContent": "\n  ",
+                  "id": 18
+                },
+                {
+                  "type": 2,
+                  "tagName": "body",
+                  "attributes": {},
+                  "childNodes": [
+                    {
+                      "type": 3,
+                      "textContent": "\n    ",
+                      "id": 20
+                    },
+                    {
+                      "type": 2,
+                      "tagName": "main",
+                      "attributes": {},
+                      "childNodes": [
+                        {
+                          "type": 3,
+                          "textContent": "\n      ",
+                          "id": 22
+                        },
+                        {
+                          "type": 5,
+                          "textContent": " data-_gt-hash marks <T> content for the harvest's hash path; the bare\n           <p> below is covered by the string (hashMessage) path instead. ",
+                          "id": 23
+                        },
+                        {
+                          "type": 3,
+                          "textContent": "\n      ",
+                          "id": 24
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "h1",
+                          "attributes": {
+                            "data-_gt-hash": "fx-welcome"
+                          },
+                          "childNodes": [
+                            {
+                              "type": 3,
+                              "textContent": "Welcome to the fixture",
+                              "id": 26
+                            }
+                          ],
+                          "id": 25
+                        },
+                        {
+                          "type": 3,
+                          "textContent": "\n      ",
+                          "id": 27
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "p",
+                          "attributes": {
+                            "id": "status"
+                          },
+                          "childNodes": [
+                            {
+                              "type": 3,
+                              "textContent": "Nothing clicked yet",
+                              "id": 29
+                            }
+                          ],
+                          "id": 28
+                        },
+                        {
+                          "type": 3,
+                          "textContent": "\n      ",
+                          "id": 30
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "button",
+                          "attributes": {
+                            "id": "go",
+                            "type": "button",
+                            "data-_gt-hash": "fx-run"
+                          },
+                          "childNodes": [
+                            {
+                              "type": 3,
+                              "textContent": "Run the demo",
+                              "id": 32
+                            }
+                          ],
+                          "id": 31
+                        },
+                        {
+                          "type": 3,
+                          "textContent": "\n      ",
+                          "id": 33
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "p",
+                          "attributes": {},
+                          "childNodes": [
+                            {
+                              "type": 3,
+                              "textContent": "Settings and Projects live here",
+                              "id": 35
+                            }
+                          ],
+                          "id": 34
+                        },
+                        {
+                          "type": 3,
+                          "textContent": "\n    ",
+                          "id": 36
+                        }
+                      ],
+                      "id": 21
+                    },
+                    {
+                      "type": 3,
+                      "textContent": "\n    ",
+                      "id": 37
+                    },
+                    {
+                      "type": 2,
+                      "tagName": "script",
+                      "attributes": {},
+                      "childNodes": [
+                        {
+                          "type": 3,
+                          "textContent": "SCRIPT_PLACEHOLDER",
+                          "id": 39
+                        }
+                      ],
+                      "id": 38
+                    },
+                    {
+                      "type": 3,
+                      "textContent": "\n  \n\n",
+                      "id": 40
+                    }
+                  ],
+                  "id": 19
+                }
+              ],
+              "id": 4
+            }
+          ],
+          "id": 1
+        },
+        "initialOffset": {
+          "left": 0,
+          "top": 0
+        }
+      },
+      "timestamp": 1787359320509
+    },
+    {
+      "type": 5,
+      "data": {
+        "tag": "gt-i18n",
+        "payload": {
+          "es": {
+            "26": "Bienvenido al fixture",
+            "32": "Ejecutar la demo",
+            "35": "Los ajustes y proyectos viven aquí"
+          }
+        }
+      },
+      "timestamp": 1787359320509
+    },
+    {
+      "type": 5,
+      "data": {
+        "tag": "gt-locales",
+        "payload": {
+          "locales": ["en", "es"],
+          "sourceLocale": "en"
+        }
+      },
+      "timestamp": 1787359320511
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 2,
+        "type": 1,
+        "id": 31,
+        "x": 411.546875,
+        "y": 376.875
+      },
+      "timestamp": 1787359320554
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 2,
+        "type": 5,
+        "id": 31
+      },
+      "timestamp": 1787359320554
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 2,
+        "type": 0,
+        "id": 31,
+        "x": 411.546875,
+        "y": 376.875
+      },
+      "timestamp": 1787359320554
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 2,
+        "type": 2,
+        "id": 31,
+        "x": 411,
+        "y": 376,
+        "pointerType": 0
+      },
+      "timestamp": 1787359320554
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 0,
+        "texts": [],
+        "attributes": [],
+        "removes": [
+          {
+            "parentId": 28,
+            "id": 29
+          }
+        ],
+        "adds": [
+          {
+            "parentId": 28,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": "Clicked 1 times",
+              "id": 41
+            }
+          }
+        ]
+      },
+      "timestamp": 1787359320554
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 2,
+        "type": 1,
+        "id": 31,
+        "x": 355,
+        "y": 376.875
+      },
+      "timestamp": 1787359321256
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 2,
+        "type": 0,
+        "id": 31,
+        "x": 355,
+        "y": 376.875
+      },
+      "timestamp": 1787359321257
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 2,
+        "type": 2,
+        "id": 31,
+        "x": 355,
+        "y": 376,
+        "pointerType": 0
+      },
+      "timestamp": 1787359321257
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 0,
+        "texts": [],
+        "attributes": [],
+        "removes": [
+          {
+            "parentId": 28,
+            "id": 41
+          }
+        ],
+        "adds": [
+          {
+            "parentId": 28,
+            "nextId": null,
+            "node": {
+              "type": 3,
+              "textContent": "Clicked 2 times",
+              "id": 42
+            }
+          }
+        ]
+      },
+      "timestamp": 1787359321257
+    }
+  ],
+  "locales": ["en", "es"],
+  "overlay": {
+    "es": {
+      "26": "Bienvenido al fixture",
+      "32": "Ejecutar la demo",
+      "35": "Los ajustes y proyectos viven aquí"
+    }
+  }
+}

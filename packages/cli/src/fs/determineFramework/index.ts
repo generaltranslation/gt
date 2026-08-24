@@ -4,13 +4,29 @@ import { SupportedLibraries } from '../../types/index.js';
 import { logger } from '../../console/logger.js';
 import { Libraries } from '../../types/libraries.js';
 import { detectPythonLibrary } from './detectPythonLibrary.js';
+import { manifestDirectlyDeclaresGTVue } from '@generaltranslation/vue-extractor/integration';
 
-export function determineLibrary(): {
+type DeterminedLibrary = {
   library: SupportedLibraries;
   additionalModules: SupportedLibraries[];
-} {
+};
+
+type DeterminedCLILibrary = DeterminedLibrary & {
+  directlyDeclaresVue: boolean;
+};
+
+/** Preserves the historical public detection result shape. */
+export function determineLibrary(): DeterminedLibrary {
+  const { directlyDeclaresVue: _directlyDeclaresVue, ...selection } =
+    determineLibraryForCLI();
+  return selection;
+}
+
+/** Includes the direct Vue signal needed to select a mixed command adapter. */
+export function determineLibraryForCLI(): DeterminedCLILibrary {
   let library: SupportedLibraries = 'base';
   const additionalModules: SupportedLibraries[] = [];
+  let directlyDeclaresVue = false;
   try {
     // Get the current working directory (where the CLI is being run)
     const cwd = process.cwd();
@@ -20,6 +36,7 @@ export function determineLibrary(): {
     if (fs.existsSync(packageJsonPath)) {
       // Read and parse package.json
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+      directlyDeclaresVue = manifestDirectlyDeclaresGTVue(packageJson);
       const dependencies = {
         ...packageJson.dependencies,
         ...packageJson.devDependencies,
@@ -55,10 +72,20 @@ export function determineLibrary(): {
       }
     }
 
+    // Vue is intentionally the final fallback so every existing framework
+    // keeps its historical command surface and priority in mixed projects.
+    if (library === 'base' && directlyDeclaresVue) {
+      library = Libraries.GT_VUE;
+    }
+
     // Fallback to base if neither is found
-    return { library, additionalModules };
+    return { library, additionalModules, directlyDeclaresVue };
   } catch (error) {
     logger.error('Error determining framework: ' + String(error));
-    return { library: 'base', additionalModules: [] };
+    return {
+      library: 'base',
+      additionalModules: [],
+      directlyDeclaresVue: false,
+    };
   }
 }

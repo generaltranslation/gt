@@ -1,0 +1,64 @@
+<!doctype html>
+<!-- Replayer e2e harness: mounts the BUILT ./replay entry against e2e/fixture.json.
+     Query params drive the scenarios run.mjs asserts on:
+       ?locale=es     initialLocale
+       ?locales=off   switchLocalesAllowed:false (no flag switcher)
+       ?debug=1       debug drag-drop enabled
+       ?strip=1       drop the structured locales/overlay from the bundle, so the
+                      replayer must recover them from the embedded gt-locales /
+                      gt-i18n custom events (the events-only fallback). -->
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>gt-rrweb replay e2e</title>
+    <style>
+      /* Only the player is visible: fill the viewport, center it, never scroll. */
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #0f0f10;
+      }
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      /* Bound the mini-player by BOTH viewport axes (the fixture frame is 16:9) so
+         the whole player always fits; the replayer sets the actual aspect ratio. */
+      #app {
+        width: min(92vw, calc(92vh * 16 / 9), 980px);
+      }
+    </style>
+    <!-- The built replay entry imports react (for the GTReplayer wrapper we don't
+         use here) and @rrweb/replay (a real peer) — map the former to inert stubs
+         and the latter to its browser ESM build. -->
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "/harness/react-stub.mjs",
+          "react/jsx-runtime": "/harness/jsx-runtime-stub.mjs",
+          "@rrweb/replay": "/rrweb-replay/replay.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module">
+      import { createGTReplayer } from '/dist/replay.mjs';
+      const params = new URLSearchParams(location.search);
+      let bundle = await fetch('/fixture.json').then((r) => r.json());
+      if (params.get('strip') === '1') bundle = { events: bundle.events };
+      const handle = createGTReplayer(document.getElementById('app'), bundle, {
+        initialLocale: params.get('locale') || undefined,
+        switchLocalesAllowed: params.get('locales') !== 'off',
+        debug: params.get('debug') === '1',
+      });
+      // Signals for the driver (run.mjs).
+      window.__GT_REPLAYER_READY__ = true;
+      window.__GT_REPLAYER_HANDLE__ = handle;
+    </script>
+  </body>
+</html>

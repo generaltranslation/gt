@@ -2,15 +2,17 @@ import { BaseCLI } from './cli/base.js';
 import { NextCLI } from './cli/next.js';
 import { ReactCLI } from './cli/react.js';
 import { PythonCLI } from './cli/python.js';
-import { determineLibrary } from './fs/determineFramework/index.js';
+import { determineLibraryForCLI } from './fs/determineFramework/index.js';
 import { Command } from 'commander';
 import { NodeCLI } from './cli/node.js';
 import { Libraries, isPythonLibrary } from './types/libraries.js';
+import { VueCLI } from './cli/vue.js';
 
 export function main(program: Command) {
   program.name('gt');
 
-  const { library, additionalModules } = determineLibrary();
+  const { library, additionalModules, directlyDeclaresVue } =
+    determineLibraryForCLI();
   let cli: BaseCLI;
   if (library === Libraries.GT_NEXT) {
     cli = new NextCLI(program, library, additionalModules);
@@ -22,8 +24,15 @@ export function main(program: Command) {
     cli = new ReactCLI(program, library, additionalModules);
   } else if (library === Libraries.GT_NODE) {
     cli = new NodeCLI(program, library, additionalModules);
+  } else if (library === Libraries.GT_VUE) {
+    cli = new VueCLI(program, additionalModules);
   } else if (isPythonLibrary(library)) {
     cli = new PythonCLI(program, library, additionalModules);
+  } else if (
+    directlyDeclaresVue &&
+    (library === 'next-intl' || library === 'i18next')
+  ) {
+    cli = new VueCLI(program, additionalModules, library);
   } else {
     cli = new BaseCLI(program, library, additionalModules);
   }

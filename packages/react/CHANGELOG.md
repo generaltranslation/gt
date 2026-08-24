@@ -1,10 +1,46 @@
 # gt-react
 
+## 11.1.15
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.1.15
+
+## 11.1.14
+
+### Patch Changes
+
+- Updated dependencies [[`f2204b9`](https://github.com/generaltranslation/gt/commit/f2204b990278865c54d14d337392930ea1ec31bf), [`b05b470`](https://github.com/generaltranslation/gt/commit/b05b4703fbbfd34a3cbee335c786e2e606346167), [`8d376e2`](https://github.com/generaltranslation/gt/commit/8d376e23c80828dfd8756e2f0fbf0f7725e0f178)]:
+  - generaltranslation@9.1.7
+  - gt-i18n@1.0.17
+  - @generaltranslation/react-core@11.1.14
+
+## 11.1.7-iris.0
+
+### Patch Changes
+
+- 5d8b78a: Migrate the package license from FSL-1.1-ALv2 to MIT.
+- Updated dependencies [f2204b9]
+- Updated dependencies [b05b470]
+- Updated dependencies [5d8b78a]
+  - generaltranslation@9.1.3-iris.0
+  - @generaltranslation/react-core@11.1.7-iris.0
+  - gt-i18n@1.0.13-iris.0
+
+## 11.1.6-iris.0
+
+### Patch Changes
+
+- Updated dependencies [8d376e2]
+  - gt-i18n@1.0.12-iris.0
+  - @generaltranslation/react-core@11.1.6-iris.0
+
 ## 11.1.13
 
 ### Patch Changes
 
-- Updated dependencies [[`dd545ea`](https://github.com/generaltranslation/gt/commit/dd545eaab8e1bc2c459440aed8c47611b178bad8), [`190e589`](https://github.com/generaltranslation/gt/commit/190e589b953cc131413137095773de4ebbf3932c)]:
+- Updated dependencies [[`4422032`](https://github.com/generaltranslation/gt/commit/4422032bb5d365aabe095ee1ff103fd5bfdee578), [`4422032`](https://github.com/generaltranslation/gt/commit/4422032bb5d365aabe095ee1ff103fd5bfdee578)]:
   - @generaltranslation/react-core@11.1.13
 
 ## 11.1.12

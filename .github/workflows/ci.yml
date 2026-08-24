@@ -162,6 +162,63 @@ jobs:
           pnpm exec turbo build --filter=general-cases... --force
           pnpm exec turbo build:turbopack --filter=general-cases... --force
 
+  test-vue-versions:
+    strategy:
+      matrix:
+        vue: ['3.3.13', '3.5.40']
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if gt-vue or the Vue extractor changed
+        id: gt_vue_changed
+        shell: bash
+        run: |
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -qE "^packages/(vue|vue-extractor)/"; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        if: steps.gt_vue_changed.outputs.changed == 'true'
+        name: Install pnpm
+
+      - name: Setup Node.js
+        if: steps.gt_vue_changed.outputs.changed == 'true'
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        if: steps.gt_vue_changed.outputs.changed == 'true'
+        run: pnpm install
+
+      - name: Use Vue ${{ matrix.vue }}
+        if: steps.gt_vue_changed.outputs.changed == 'true'
+        run: |
+          pnpm --filter gt-vue add --save-dev --save-exact --lockfile=false vue@${{ matrix.vue }}
+          pnpm --filter @generaltranslation/vue-extractor add --save-dev --save-exact --lockfile=false vue@${{ matrix.vue }} @vue/compiler-dom@${{ matrix.vue }} @vue/compiler-sfc@${{ matrix.vue }}
+
+      - name: Verify Vue ${{ matrix.vue }} toolchain
+        if: steps.gt_vue_changed.outputs.changed == 'true'
+        run: |
+          pnpm --filter gt-vue exec node -e "const actual = require('vue/package.json').version; if (actual !== '${{ matrix.vue }}') throw new Error('vue resolved to ' + actual);"
+          pnpm --filter @generaltranslation/vue-extractor exec node -e "for (const dependency of ['vue', '@vue/compiler-dom', '@vue/compiler-sfc']) { const actual = require(dependency + '/package.json').version; if (actual !== '${{ matrix.vue }}') throw new Error(dependency + ' resolved to ' + actual); }"
+
+      - name: Build and test gt-vue and the Vue extractor
+        if: steps.gt_vue_changed.outputs.changed == 'true'
+        run: |
+          pnpm exec turbo build --filter=gt-vue... --filter=@generaltranslation/vue-extractor...
+          pnpm --filter gt-vue typecheck
+          pnpm --filter gt-vue test
+          pnpm --filter @generaltranslation/vue-extractor typecheck
+          pnpm --filter @generaltranslation/vue-extractor test
+
   test-cli-binaries:
     strategy:
       matrix:
@@ -188,11 +245,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check if CLI or Python extractor changed
+      - name: Check if CLI or an embedded extractor changed
         id: gt_cli_changed
         shell: bash
         run: |
-          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -qE "^packages/(cli|python-extractor)/"; then
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -qE "^packages/(cli|python-extractor|vue-extractor)/"; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
             echo "changed=false" >> $GITHUB_OUTPUT
@@ -244,7 +301,21 @@ jobs:
       - name: Test CLI in test environment
         if: steps.gt_cli_changed.outputs.changed == 'true'
         shell: bash
-        run: cd tests/apps/cli-test-app && pnpm install && pnpm gt --help
+        run: |
+          cd tests/apps/cli-test-app
+          pnpm gt --help
+
+      - name: Exercise Vue extraction through the native CLI binary
+        if: steps.gt_cli_changed.outputs.changed == 'true'
+        shell: bash
+        run: |
+          if [[ "$(node -p 'process.arch')" != "${{ matrix.arch }}" ]]; then
+            echo "Skipping execution of the cross-compiled ${{ matrix.arch }} binary on $(node -p 'process.arch')"
+            exit 0
+          fi
+          cd tests/apps/cli-vue-binary-test
+          ../../../packages/cli/binaries/${{ matrix.binary }} generate --config gt.config.json
+          node --input-type=module -e "import fs from 'node:fs'; const catalog = JSON.parse(fs.readFileSync('dist/_gt/en.json', 'utf8')); for (const message of ['Hello from the native Vue extractor', 'Hello from module-level t in the native Vue extractor']) if (!Object.values(catalog).includes(message)) throw new Error('Native CLI did not extract: ' + message);"
 
   size:
     runs-on: ubuntu-latest
@@ -279,7 +350,8 @@ jobs:
           script: pnpm exec size-limit --json
 
   run-tests:
-    needs: [lint, tests, test-builds, test-cli-binaries, size]
+    needs:
+      [lint, tests, test-builds, test-vue-versions, test-cli-binaries, size]
     runs-on: ubuntu-latest
     steps:
       - run: echo "All tests passed"

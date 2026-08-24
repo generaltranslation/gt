@@ -1,5 +1,35 @@
 # gtx-cli
 
+## 2.17.0
+
+### Patch Changes
+
+- Updated dependencies [[`c47eed5`](https://github.com/generaltranslation/gt/commit/c47eed504a90505490cb30cd640ca53ba0ae10e8), [`01ba884`](https://github.com/generaltranslation/gt/commit/01ba88485971eadde117b3b31e8dea7b36cb4571), [`b05b470`](https://github.com/generaltranslation/gt/commit/b05b4703fbbfd34a3cbee335c786e2e606346167)]:
+  - gt@2.17.0
+
+## 2.17.0-iris.1
+
+### Patch Changes
+
+- Updated dependencies [c47eed5]
+  - gt@2.17.0-iris.1
+
+## 2.17.0-iris.0
+
+### Patch Changes
+
+- 5d8b78a: Migrate the package license from FSL-1.1-ALv2 to MIT.
+- Updated dependencies [5d8b78a]
+- Updated dependencies [b05b470]
+  - gt@2.17.0-iris.0
+
+## 2.16.3-iris.0
+
+### Patch Changes
+
+- Updated dependencies [01ba884]
+  - gt@2.16.3-iris.0
+
 ## 2.16.8
 
 ### Patch Changes
