@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { randomUUID } from 'node:crypto';
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
@@ -86,24 +87,29 @@ async function getFileIdentity(filePath: string): Promise<string | null> {
 }
 
 async function rollbackGeneratedFiles(
-  generatedFiles: Map<string, string>
+  generatedFiles: Set<string>
 ): Promise<void> {
   const files = [...generatedFiles];
   const results = await Promise.allSettled(
-    files.map(async ([filePath, expectedIdentity]) => {
+    files.map(async (filePath) => {
       const file = path.resolve(filePath);
-      const currentIdentity = await getFileIdentity(file);
-      if (!currentIdentity) return;
-      if (currentIdentity !== expectedIdentity) {
-        return `${filePath}: the file changed after it was generated`;
+      const recoveryFile = path.join(
+        path.dirname(file),
+        `.gt-rollback-${randomUUID()}`
+      );
+      try {
+        await fs.promises.rename(file, recoveryFile);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') return;
+        throw error;
       }
-      await fs.promises.rm(file, { force: true });
+      return `${filePath}: preserved at ${recoveryFile}`;
     })
   );
   const failures = results.flatMap((result, index) =>
     result.status === 'rejected'
       ? [
-          `${files[index][0]}: ${formatDiagnosticErrorDetails(result.reason) ?? 'Unknown error'}`,
+          `${files[index]}: ${formatDiagnosticErrorDetails(result.reason) ?? 'Unknown error'}`,
         ]
       : result.value
         ? [result.value]
@@ -116,8 +122,8 @@ async function rollbackGeneratedFiles(
         source: 'gt',
         severity: 'Warning',
         whatHappened:
-          'Some generated template files could not be removed after generation failed',
-        fix: 'Remove the listed files before running gt generate again',
+          'Generated template files were preserved after generation failed',
+        fix: 'Review or remove the listed recovery files after retrying gt generate',
         details: failures,
       })
     );
@@ -176,7 +182,7 @@ function createGenerationPlan(settings: Settings): GenerationTarget[] {
 async function createTargetFile(
   target: GenerationTarget,
   settings: Settings,
-  generatedFiles: Map<string, string>
+  generatedFiles: Set<string>
 ): Promise<string> {
   const { source, output, outputPath } = target;
   await fs.promises.mkdir(path.dirname(output), { recursive: true });
@@ -195,7 +201,7 @@ async function createTargetFile(
   try {
     const stat = await fileHandle.stat();
     identity = `${stat.dev}:${stat.ino}`;
-    generatedFiles.set(outputPath, identity);
+    generatedFiles.add(outputPath);
 
     if (target.changesFormat) {
       throw createUnsupportedFormatTransformError();
@@ -205,9 +211,8 @@ async function createTargetFile(
       source,
       settings
     );
-    await fileHandle.writeFile(
-      sourceTemplate ?? (await fs.promises.readFile(source))
-    );
+    const content = sourceTemplate ?? (await fs.promises.readFile(source));
+    await fileHandle.writeFile(content);
   } finally {
     await fileHandle.close();
   }
@@ -219,7 +224,7 @@ async function createTargetFile(
 }
 
 export async function handleGenerate(settings: Settings): Promise<void> {
-  const generatedFiles = new Map<string, string>();
+  const generatedFiles = new Set<string>();
   const processedOutputs = new Map<string, GenerationTarget>();
 
   try {
@@ -231,7 +236,7 @@ export async function handleGenerate(settings: Settings): Promise<void> {
     }
 
     if (generatedFiles.size > 0) {
-      await postProcessTranslations(settings, new Set(generatedFiles.keys()), {
+      await postProcessTranslations(settings, generatedFiles, {
         restrictToIncludedFiles: true,
       });
     }

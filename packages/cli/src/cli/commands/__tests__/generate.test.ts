@@ -3,6 +3,7 @@ import fs, {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   renameSync,
   rmSync,
   symlinkSync,
@@ -55,6 +56,16 @@ describe('handleGenerate', () => {
     } as Settings;
   }
 
+  function getRecoveryPath(filePath: string): string {
+    const directory = path.dirname(filePath);
+    const recoveryFile = readdirSync(directory).find((file) =>
+      file.startsWith('.gt-rollback-')
+    );
+    if (!recoveryFile)
+      throw new Error(`No recovery file found for ${filePath}`);
+    return path.join(directory, recoveryFile);
+  }
+
   it('removes generated files when postprocessing fails so a retry can finish', async () => {
     writeFileSync('messages/en/common.json', '{"hello":"Hello"}');
     const settings = createSettings(['messages/en/common.json']);
@@ -95,10 +106,40 @@ describe('handleGenerate', () => {
       'Postprocessing failed'
     );
 
-    expect(readFileSync('messages/fr/common.json', 'utf8')).toBe(
-      '{"hello":"User edit"}'
+    expect(existsSync('messages/fr/common.json')).toBe(false);
+    expect(
+      readFileSync(getRecoveryPath('messages/fr/common.json'), 'utf8')
+    ).toBe('{"hello":"User edit"}');
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('preserved after generation failed')
     );
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('file changed'));
+  });
+
+  it('preserves an in-place edit for recovery without blocking a retry', async () => {
+    writeFileSync('messages/en/common.json', '{"hello":"Hello"}');
+    const settings = createSettings(['messages/en/common.json']);
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+    postProcessTranslations.mockImplementationOnce(async () => {
+      writeFileSync('messages/fr/common.json', '{"hello":"User edit"}');
+      throw new Error('Postprocessing failed');
+    });
+
+    await expect(handleGenerate(settings)).rejects.toThrow(
+      'Postprocessing failed'
+    );
+
+    expect(existsSync('messages/fr/common.json')).toBe(false);
+    expect(
+      readFileSync(getRecoveryPath('messages/fr/common.json'), 'utf8')
+    ).toBe('{"hello":"User edit"}');
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('preserved after generation failed')
+    );
+
+    await handleGenerate(settings);
+    expect(readFileSync('messages/fr/common.json', 'utf8')).toBe(
+      '{"hello":"Hello"}'
+    );
   });
 
   it('attempts every rollback while preserving the generation error', async () => {
@@ -111,14 +152,14 @@ describe('handleGenerate', () => {
     postProcessTranslations.mockRejectedValueOnce(
       new Error('Postprocessing failed')
     );
-    const removeFile = fs.promises.rm.bind(fs.promises);
-    const remove = vi
-      .spyOn(fs.promises, 'rm')
-      .mockImplementation(async (filePath, options) => {
-        if (filePath === path.resolve('messages/fr/alpha.json')) {
+    const renameFile = fs.promises.rename.bind(fs.promises);
+    const rename = vi
+      .spyOn(fs.promises, 'rename')
+      .mockImplementation(async (oldPath, newPath) => {
+        if (oldPath === path.resolve('messages/fr/alpha.json')) {
           throw new Error('Cleanup failed');
         }
-        await removeFile(filePath, options);
+        await renameFile(oldPath, newPath);
       });
     const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
 
@@ -126,11 +167,11 @@ describe('handleGenerate', () => {
       'Postprocessing failed'
     );
 
-    expect(remove).toHaveBeenCalledTimes(2);
+    expect(rename).toHaveBeenCalledTimes(2);
     expect(existsSync('messages/fr/alpha.json')).toBe(true);
     expect(existsSync('messages/fr/beta.json')).toBe(false);
     expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('could not be removed')
+      expect.stringContaining('preserved after generation failed')
     );
   });
 
