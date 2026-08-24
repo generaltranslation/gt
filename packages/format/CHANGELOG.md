@@ -1,5 +1,12 @@
 # @generaltranslation/format
 
+## 0.1.8
+
+### Patch Changes
+
+- [#2068](https://github.com/generaltranslation/gt/pull/2068) [`f2204b9`](https://github.com/generaltranslation/gt/commit/f2204b990278865c54d14d337392930ea1ec31bf) Thanks [@eoinest](https://github.com/eoinest)! - Represent React's persisted boolean and null rich-content values in the shared
+  JSX wire types used by framework runtimes and translation catalogs.
+
 ## 0.1.5-iris.0
 
 ### Patch Changes
