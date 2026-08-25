@@ -1,14 +1,10 @@
 import { useSyncExternalStore } from 'react';
+import { getI18nConfig, getTranslateListenerKey } from 'gt-i18n/internal';
 import type { Translation } from 'gt-i18n/types';
-import type {
-  TranslateLookup,
-  TranslateSnapshot,
-} from '../i18n-store/storeTypes';
-import {
-  useI18nStore,
-  useTranslationsSnapshot,
-} from '../i18n-store/useI18nStore';
-import { getI18nConfig } from 'gt-i18n/internal';
+import type { TranslateLookup, TranslateSnapshot } from '../i18n-cache/types';
+import { getReactI18nCache } from '../i18n-cache/singleton-operations';
+import { getTranslationSnapshot } from '../i18n-cache/snapshots';
+import { useTranslationsSnapshot } from '../context/context';
 import { useHandleMissingTranslation } from './utils/missing-translation';
 
 /**
@@ -17,18 +13,23 @@ import { useHandleMissingTranslation } from './utils/missing-translation';
 export function useTranslate<T extends Translation>(
   lookup: TranslateLookup<T>
 ): TranslateSnapshot<T> {
-  const i18nStore = useI18nStore();
+  const i18nCache = getReactI18nCache();
   const translationsSnapshot = useTranslationsSnapshot();
   const onMissingTranslation = useHandleMissingTranslation();
+  const lookupKey = getTranslateListenerKey(lookup);
 
-  /**
-   * TODO: for snapshot lookup, we can use the translation snapshot
-   * to avoid the adapter.resolveTranslation call.
-   */
   const storeTranslation = useSyncExternalStore(
-    (listener) => i18nStore.subscribeToTranslate(lookup, listener),
-    () => i18nStore.getTranslateSnapshot(lookup, translationsSnapshot),
-    () => i18nStore.getTranslateSnapshot(lookup, translationsSnapshot)
+    (listener) =>
+      i18nCache.subscribe((event) => {
+        if (
+          event.type === 'translation' &&
+          getTranslateListenerKey(event) === lookupKey
+        ) {
+          listener();
+        }
+      }),
+    () => getTranslationSnapshot(i18nCache, translationsSnapshot, lookup),
+    () => getTranslationSnapshot(i18nCache, translationsSnapshot, lookup)
   );
 
   if (

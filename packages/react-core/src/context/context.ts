@@ -8,12 +8,11 @@ import { Translation } from 'gt-i18n/types';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { createGlobalSingleton } from 'gt-i18n/internal';
 import { createContext, useContext, type Context } from 'react';
-import { I18nStoreCore } from '../i18n-store/I18nStore';
 import { getI18nConfig } from '../setup/i18nConfig';
 import type {
-  OnMissingTranslation,
   OnMissingDictionaryEntry,
   OnMissingDictionaryObj,
+  OnMissingTranslation,
 } from '../hooks/utils/missing-translation';
 
 export type GTContextType = {
@@ -25,22 +24,14 @@ export type GTContextType = {
   translationsSnapshot: Record<Locale, Record<Hash, Translation>>;
   dictionariesSnapshot: Record<Locale, Dictionary>;
   /**
-   * I18nStore allows us to sync state updates in ConditionStore and I18nCache
-   * with renders
-   */
-  i18nStore: I18nStoreCore;
-  /**
-   * ConditionStore should always remain separate from i18nStore as
-   * it manages how we perform lookups
+   * ConditionStore remains separate from the translation cache because it
+   * controls which locale and formatting conditions a lookup uses.
    */
   conditionStore: ReadonlyConditionStoreInterface;
-  /**
-   * Custom override behavior on missing translations
-   * Used for server triggering tx hmr b/c no access to useEffect
-   */
   onMissingTranslation?: OnMissingTranslation;
   onMissingDictionaryEntry?: OnMissingDictionaryEntry;
   onMissingDictionaryObj?: OnMissingDictionaryObj;
+  resolveMissingDuringRender: boolean;
 };
 
 const gtContextSingleton = createGlobalSingleton<
@@ -76,6 +67,14 @@ export function useGTContext(): GTContextType | undefined {
    * TODO: in a separate PR, we should figure out how to make this more of a forgiving system
    */
   throw new Error(createMissingGTProviderError());
+}
+
+export function useTranslationsSnapshot(): GTContextType['translationsSnapshot'] {
+  return useGTContext()?.translationsSnapshot ?? {};
+}
+
+export function useDictionariesSnapshot(): GTContextType['dictionariesSnapshot'] {
+  return useGTContext()?.dictionariesSnapshot ?? {};
 }
 
 function createMissingGTProviderError(): string {

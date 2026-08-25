@@ -1,261 +1,109 @@
-import {
-  createDiagnosticMessage,
-  formatDiagnosticErrorDetails,
-} from 'generaltranslation/internal';
 import { getTranslateListenerKey } from 'gt-i18n/internal';
+import type { Hash, Locale } from 'gt-i18n/internal/types';
+import type { Dictionary, Translation } from 'gt-i18n/types';
+import { getReactI18nCache } from '../i18n-cache/singleton-operations';
+import {
+  getDictionaryEntrySnapshot,
+  getDictionaryObjectSnapshot,
+  getTranslationSnapshot,
+} from '../i18n-cache/snapshots';
 import type {
   DictionaryEntrySnapshot,
   DictionaryLookup,
   DictionaryObjectSnapshot,
-  StoreListener,
-  TranslateEventListener,
   TranslateLookup,
   TranslateSnapshot,
-  Unsubscribe,
-} from './storeTypes';
-import type { Dictionary, Translation } from 'gt-i18n/types';
-import { subscribeToSet } from './utils/subscriptions';
-import { Hash, Locale } from 'gt-i18n/internal/types';
-import { getReactI18nCache } from '../i18n-cache/singleton-operations';
-import { lookupTranslation } from './utils/translations';
-import {
-  lookupDictionaryEntry,
-  lookupDictionaryObject,
-} from './utils/dictionaries';
+} from '../i18n-cache/types';
 
-export type DictionaryStoreListener = (event: DictionaryLookup) => void;
-
-export type I18nStoreLookup =
-  | { type: 'translation'; lookup: TranslateLookup }
-  | {
-      type: 'dictionaryEntry' | 'dictionaryObject';
-      lookup: DictionaryLookup;
-    };
-
-export type ResolveMissing = (lookup: I18nStoreLookup) => Promise<boolean>;
+type StoreListener = () => void;
+type Unsubscribe = () => void;
+type TranslateEventListener = (lookup: TranslateLookup) => void;
+export type DictionaryStoreListener = (lookup: DictionaryLookup) => void;
 
 /**
- * I18nStore gives us the ability to perform client-side updates to translations.
- * Primarily useful for dev hot reload.
- *
- * This is the stateful primitive behind lookup subscriptions and runtime
- * translation requests. It intentionally does not know whether lookups are
- * being served from SPA singletons or SRA provider snapshots; that policy lives
- * in LookupAdapter, not in this store.
+ * @deprecated Runtime translation state now lives in `ReactI18nCache`.
+ * This class remains as a stateless compatibility adapter.
  */
-export class I18nStoreCore {
-  // ----- Listener Sets ----- //
-
-  private translateListeners = new Set<TranslateEventListener>();
-  private dictionaryEntryListeners = new Set<DictionaryStoreListener>();
-  private dictionaryObjectListeners = new Set<DictionaryStoreListener>();
-
-  /**
-   * I18nCache must be already initialized
-   */
-  constructor(private readonly resolveMissing?: ResolveMissing) {}
-
-  // ========== Translation Updates ========== //
-
+export class I18nStore {
   updateTranslations = (
     translations: Record<Locale, Record<Hash, Translation>>
-  ): void => {
-    getReactI18nCache().updateTranslations(translations);
-  };
+  ): void => getReactI18nCache().updateTranslations(translations);
 
-  updateDictionaries = (dictionaries: Record<Locale, Dictionary>): void => {
+  updateDictionaries = (dictionaries: Record<Locale, Dictionary>): void =>
     getReactI18nCache().updateDictionaries(dictionaries);
-  };
 
-  // ========== runtime translation ========== //
-
-  translate = async <T extends Translation>(
+  translate = <T extends Translation>(
     lookup: TranslateLookup<T>
-  ): Promise<void> => {
-    const resolved = await this.resolveMissing?.({
-      type: 'translation',
-      lookup,
-    });
-    if (resolved) this.emitTranslateEvent(lookup);
-  };
+  ): Promise<void> =>
+    getReactI18nCache().resolveMissing({ type: 'translation', ...lookup });
 
   translateDictionaryEntry = (lookup: DictionaryLookup): void => {
-    void this.resolveMissing?.({ type: 'dictionaryEntry', lookup }).then(
-      (resolved) => {
-        if (resolved) this.emitDictionaryEvent(lookup);
-      }
-    );
+    void getReactI18nCache().resolveMissing({
+      type: 'dictionaryEntry',
+      ...lookup,
+    });
   };
 
   translateDictionaryObject = (lookup: DictionaryLookup): void => {
-    void this.resolveMissing?.({ type: 'dictionaryObject', lookup }).then(
-      (resolved) => {
-        if (resolved) this.emitDictionaryEvent(lookup);
-      }
-    );
+    void getReactI18nCache().resolveMissing({
+      type: 'dictionaryObject',
+      ...lookup,
+    });
   };
 
-  // ========== UseSyncExternalStore ========== //
-
-  // ----- Subscriptions ----- //
-
-  // Keep subscription methods as arrow fields so hooks can pass them by
-  // reference without losing access to this store instance.
   subscribeToTranslate = <T extends Translation>(
     lookup: TranslateLookup<T>,
     listener: StoreListener
   ): Unsubscribe => {
-    const lookupKey = getTranslateListenerKey(lookup);
-    const wrappedListener: TranslateEventListener = (lookup) => {
-      if (getTranslateListenerKey(lookup) === lookupKey) {
+    const key = getTranslateListenerKey(lookup);
+    return getReactI18nCache().subscribe((event) => {
+      if (
+        event.type === 'translation' &&
+        getTranslateListenerKey(event) === key
+      ) {
         listener();
       }
-    };
-    return subscribeToSet(this.translateListeners, wrappedListener);
+    });
   };
 
   subscribeToTranslationEvents = (
     listener: TranslateEventListener
-  ): Unsubscribe => {
-    return subscribeToSet(this.translateListeners, listener);
-  };
+  ): Unsubscribe =>
+    getReactI18nCache().subscribe((event) => {
+      if (event.type !== 'translation') return;
+      const { type: _type, ...lookup } = event;
+      listener(lookup);
+    });
 
-  subscribeToDictionaryEntryEvents = (
-    listener: DictionaryStoreListener
-  ): Unsubscribe => {
-    return subscribeToSet(this.dictionaryEntryListeners, listener);
-  };
+  subscribeToDictionaryEntryEvents = subscribeToDictionaryEvents;
 
-  subscribeToDictionaryObjectEvents = (
-    listener: DictionaryStoreListener
-  ): Unsubscribe => {
-    return subscribeToSet(this.dictionaryObjectListeners, listener);
-  };
-
-  // ----- Snapshots ----- //
+  subscribeToDictionaryObjectEvents = subscribeToDictionaryEvents;
 
   getTranslateSnapshot = <T extends Translation>(
     lookup: TranslateLookup<T>,
-    translationsSnapshot: Record<Locale, Record<Hash, Translation>> = {}
-  ): TranslateSnapshot<T> => {
-    return (
-      lookupTranslation(translationsSnapshot, lookup) ??
-      getReactI18nCache().lookupTranslation<T>(
-        lookup.locale,
-        lookup.message,
-        lookup.options
-      )
-    );
-  };
+    translations: Record<Locale, Record<Hash, Translation>> = {}
+  ): TranslateSnapshot<T> =>
+    getTranslationSnapshot(getReactI18nCache(), translations, lookup);
 
   getDictionaryEntrySnapshot = (
     lookup: DictionaryLookup,
-    dictionariesSnapshot: Record<Locale, Dictionary> = {}
-  ): DictionaryEntrySnapshot => {
-    return (
-      lookupDictionaryEntry(dictionariesSnapshot, lookup) ??
-      getReactI18nCache().lookupDictionary(lookup.locale, lookup.id)
-    );
-  };
+    dictionaries: Record<Locale, Dictionary> = {}
+  ): DictionaryEntrySnapshot =>
+    getDictionaryEntrySnapshot(getReactI18nCache(), dictionaries, lookup);
 
   getDictionaryObjectSnapshot = (
     lookup: DictionaryLookup,
-    dictionariesSnapshot: Record<Locale, Dictionary> = {}
-  ): DictionaryObjectSnapshot => {
-    return (
-      lookupDictionaryObject(dictionariesSnapshot, lookup) ??
-      getReactI18nCache().lookupDictionaryObj(lookup.locale, lookup.id)
-    );
-  };
-
-  // ----- Listener Utilities ----- //
-
-  private emitTranslateEvent(event: TranslateLookup): void {
-    this.translateListeners.forEach((listener) => listener(event));
-  }
-
-  private emitDictionaryEvent(event: DictionaryLookup): void {
-    this.dictionaryEntryListeners.forEach((listener) => listener(event));
-    this.dictionaryObjectListeners.forEach((listener) => {
-      listener(event);
-    });
-  }
+    dictionaries: Record<Locale, Dictionary> = {}
+  ): DictionaryObjectSnapshot =>
+    getDictionaryObjectSnapshot(getReactI18nCache(), dictionaries, lookup);
 }
 
-/**
- * I18n store with runtime missing-translation resolution enabled.
- */
-export class I18nStore extends I18nStoreCore {
-  constructor() {
-    super(createResolveMissing());
-  }
-}
-
-const MAX_LOGGED_RUNTIME_TRANSLATION_ERRORS = 100;
-
-function createResolveMissing(): ResolveMissing {
-  const loggedErrors = new Set<string>();
-
-  return (lookup) =>
-    resolveLookup(lookup)
-      .then(() => true)
-      .catch((error) => {
-        logError(loggedErrors, error);
-        return false;
-      });
-}
-
-function resolveLookup(lookup: I18nStoreLookup): Promise<unknown> {
-  const cache = getReactI18nCache();
-  switch (lookup.type) {
-    case 'translation':
-      return cache.lookupTranslationWithFallback(
-        lookup.lookup.locale,
-        lookup.lookup.message,
-        lookup.lookup.options
-      );
-    case 'dictionaryEntry':
-      return cache.lookupDictionaryWithFallback(
-        lookup.lookup.locale,
-        lookup.lookup.id
-      );
-    case 'dictionaryObject':
-      return cache.lookupDictionaryObjWithFallback(
-        lookup.lookup.locale,
-        lookup.lookup.id
-      );
-  }
-}
-
-function logError(loggedErrors: Set<string>, error: unknown): void {
-  const key = getErrorKey(error);
-  if (loggedErrors.has(key)) return;
-
-  loggedErrors.add(key);
-  if (loggedErrors.size > MAX_LOGGED_RUNTIME_TRANSLATION_ERRORS) {
-    const oldest = loggedErrors.values().next().value;
-    if (oldest !== undefined) loggedErrors.delete(oldest);
-  }
-
-  console.error(
-    createDiagnosticMessage({
-      source: '@generaltranslation/react-core',
-      severity: 'Error',
-      whatHappened: 'A runtime translation request failed.',
-      wayOut: 'Rendering falls back to untranslated content.',
-      details: formatDiagnosticErrorDetails(error),
-    })
-  );
-}
-
-function getErrorKey(error: unknown): string {
-  if (error instanceof Error) return `${error.name}|${error.message}`;
-  if (error !== null && typeof error === 'object') {
-    try {
-      return `object|${JSON.stringify(error)}`;
-    } catch {
-      return `object|${String(error)}`;
-    }
-  }
-  return `${typeof error}|${String(error)}`;
+function subscribeToDictionaryEvents(
+  listener: DictionaryStoreListener
+): Unsubscribe {
+  return getReactI18nCache().subscribe((event) => {
+    if (event.type === 'translation') return;
+    const { type: _type, ...lookup } = event;
+    listener(lookup);
+  });
 }

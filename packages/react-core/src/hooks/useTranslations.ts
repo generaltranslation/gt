@@ -13,8 +13,7 @@ import type {
 } from 'gt-i18n/types';
 import { useDefaultLocale } from './i18n-config';
 import { useShouldTranslate } from './utils';
-import { useTrackedDictionaryResolver } from './external-store/useTrackedDictionaryResolver';
-import { useTrackedDictionaryObjResolver } from './external-store/useTrackedDictionaryObjResolver';
+import { useTrackedDictionaryResolvers } from './external-store/useTrackedDictionaryResolver';
 
 // ===== Hook ===== //
 
@@ -23,8 +22,9 @@ export function useTranslations(rootId?: string): UseTranslationsFunction {
   const defaultLocale = useDefaultLocale();
   const shouldTranslate = useShouldTranslate();
   const gt = useGT();
-  const resolveDictionaryEntry = useTrackedDictionaryResolver();
-  const translateObject = useTranslationsObj(rootId);
+  const { entry: resolveDictionaryEntry, object: resolveDictionaryObject } =
+    useTrackedDictionaryResolvers();
+  const translateObject = useTranslationsObj(rootId, resolveDictionaryObject);
 
   const translateEntry = useCallback(
     (suffix: string, options: TranslationVariables = {}) => {
@@ -73,13 +73,16 @@ export function useTranslations(rootId?: string): UseTranslationsFunction {
   );
 }
 
-function useTranslationsObj(rootId?: string): UseTranslationsObjFunction {
+function useTranslationsObj(
+  rootId: string | undefined,
+  resolveDictionaryObject: ReturnType<
+    typeof useTrackedDictionaryResolvers
+  >['object']
+): UseTranslationsObjFunction {
   const locale = useLocale();
   const defaultLocale = useDefaultLocale();
   const shouldTranslate = useShouldTranslate();
   const gt = useGT();
-  const resolveDictionaryObject = useTrackedDictionaryObjResolver();
-
   return useCallback(
     (suffix: string) => {
       const entryId = getId(rootId, suffix);

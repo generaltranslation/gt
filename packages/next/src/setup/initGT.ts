@@ -1,4 +1,8 @@
-import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
+import {
+  createResolveMissing,
+  initializeI18nConfig,
+} from '@generaltranslation/react-core/pure';
+import { createGTMissingTranslationResolver } from 'gt-i18n/internal';
 import {
   NextI18nCache,
   NextI18nCacheParams,
@@ -20,6 +24,10 @@ export function initializeGT(
 ): void {
   initializeI18nConfig(i18nConfigParams);
 
-  const i18nCache = new NextI18nCache(nextI18nCacheParams);
+  const i18nCache = new NextI18nCache(nextI18nCacheParams, {
+    createMissingTranslationResolver:
+      createGTMissingTranslationResolver(nextI18nCacheParams),
+    createResolveMissing,
+  });
   setNextI18nCache(i18nCache);
 }

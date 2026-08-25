@@ -43,7 +43,7 @@ export type GlobalSingleton<T> = {
  * Creates a global singleton backed by `globalThis.__generaltranslation`.
  *
  * Centralizes the global-registry plumbing and overwrite warning shared by the
- * i18nConfig, i18nCache, i18nStore, and conditionStore singletons.
+ * i18nConfig, i18nCache, conditionStore, and React context singletons.
  *
  * @param namespace - The package namespace bag (e.g. `i18n`, `reactCore`).
  * @param key - The slot within the namespace and the name used in the warning.

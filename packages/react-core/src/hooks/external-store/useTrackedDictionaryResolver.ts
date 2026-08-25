@@ -1,68 +1,65 @@
 import { useCallback, useRef } from 'react';
+import { getDictionaryListenerKey, getI18nConfig } from 'gt-i18n/internal';
+import { useDictionariesSnapshot } from '../../context/context';
 import {
-  useDictionariesSnapshot,
-  useI18nStore,
-} from '../../i18n-store/useI18nStore';
+  getDictionaryEntrySnapshot,
+  getDictionaryObjectSnapshot,
+} from '../../i18n-cache/snapshots';
+import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 import type {
   DictionaryEntrySnapshot,
   DictionaryLookup,
-} from '../../i18n-store/storeTypes';
-import { getDictionaryListenerKey, getI18nConfig } from 'gt-i18n/internal';
-import { useHandleMissingDictionaryEntry } from '../utils/missing-translation';
+  DictionaryObjectSnapshot,
+} from '../../i18n-cache/types';
+import { useHandleMissingDictionary } from '../utils/missing-translation';
 import { useSubscribeToTrackedLookups } from './useSubscribeToTrackedLookups';
 
-export type TrackedDictionaryEntryResolver = (
-  lookup: DictionaryLookup
-) => DictionaryEntrySnapshot;
+type TrackedDictionaryResolvers = {
+  entry: (lookup: DictionaryLookup) => DictionaryEntrySnapshot;
+  object: (lookup: DictionaryLookup) => DictionaryObjectSnapshot;
+};
 
-// TODO: rename to useTrackedDictionaryEntryResolver
-export function useTrackedDictionaryResolver(): TrackedDictionaryEntryResolver {
-  const dictionariesSnapshot = useDictionariesSnapshot();
-  const i18nStore = useI18nStore();
+export function useTrackedDictionaryResolvers(): TrackedDictionaryResolvers {
+  const dictionaries = useDictionariesSnapshot();
+  const cache = getReactI18nCache();
   const devHotReloadEnabled =
     process.env.NODE_ENV !== 'production' &&
     getI18nConfig().isDevHotReloadEnabled();
-  const onMissingDictionaryEntry = useHandleMissingDictionaryEntry();
-
+  const onMissing = useHandleMissingDictionary();
   const trackedKeysRef = useRef<Set<string> | null>(null);
-  if (trackedKeysRef.current == null) {
-    trackedKeysRef.current = new Set();
-  }
+  if (trackedKeysRef.current === null) trackedKeysRef.current = new Set();
 
-  // subscribe to dictionary entry updates
-  useSubscribeToTrackedLookups(
-    trackedKeysRef,
-    i18nStore.subscribeToDictionaryEntryEvents,
-    getDictionaryListenerKey
+  useSubscribeToTrackedLookups(trackedKeysRef, cache.subscribe, (event) =>
+    event.type !== 'translation' ? getDictionaryListenerKey(event) : undefined
   );
 
-  // Resolution callback
-  return useCallback(
-    (lookup: DictionaryLookup) => {
-      // Track the lookup for dev hot reload
-      const lookupKey = getDictionaryListenerKey(lookup);
+  const entry = useCallback(
+    (lookup: DictionaryLookup): DictionaryEntrySnapshot => {
       if (devHotReloadEnabled) {
-        trackedKeysRef.current!.add(lookupKey);
+        trackedKeysRef.current!.add(getDictionaryListenerKey(lookup));
       }
-
-      // Resolve the dictionary entry from the store
-      const dictionaryEntry = i18nStore.getDictionaryEntrySnapshot(
-        lookup,
-        dictionariesSnapshot
-      );
-
-      // Hot reload
-      if (dictionaryEntry == null && devHotReloadEnabled) {
-        onMissingDictionaryEntry(lookup);
+      const value = getDictionaryEntrySnapshot(cache, dictionaries, lookup);
+      if (value === undefined && devHotReloadEnabled) {
+        onMissing.dictionaryEntry(lookup);
       }
-
-      return dictionaryEntry;
+      return value;
     },
-    [
-      i18nStore,
-      dictionariesSnapshot,
-      devHotReloadEnabled,
-      onMissingDictionaryEntry,
-    ]
+    [cache, dictionaries, devHotReloadEnabled, onMissing.dictionaryEntry]
   );
+
+  const object = useCallback(
+    (lookup: DictionaryLookup): DictionaryObjectSnapshot => {
+      if (devHotReloadEnabled) {
+        trackedKeysRef.current!.add(getDictionaryListenerKey(lookup));
+      }
+      const value = getDictionaryObjectSnapshot(cache, dictionaries, lookup);
+      if (value === undefined && devHotReloadEnabled) {
+        onMissing.dictionaryObject(lookup);
+      }
+      return value;
+    },
+    [cache, dictionaries, devHotReloadEnabled, onMissing.dictionaryObject]
+  );
+
+  return { entry, object };
 }

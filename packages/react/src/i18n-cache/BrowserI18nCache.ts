@@ -2,7 +2,11 @@ import type {
   I18nCacheConstructorParams,
   TranslationsLoader,
 } from 'gt-i18n/internal/types';
-import { getI18nConfig, I18nCache } from 'gt-i18n/internal';
+import { getI18nConfig } from 'gt-i18n/internal';
+import {
+  ReactI18nCache,
+  type ReactI18nCacheDependencies,
+} from '@generaltranslation/react-core/pure';
 import type { HtmlTagOptions } from './types';
 import type { Translation } from 'gt-i18n/types';
 
@@ -29,11 +33,14 @@ export type BrowserI18nCacheParams = I18nCacheConstructorParams & {
 /**
  * I18nCache implementation for Browser.
  */
-export class BrowserI18nCache extends I18nCache<Translation> {
+export class BrowserI18nCache extends ReactI18nCache {
   /** Whether dev hot reload JSX (Suspense-based <T>) is active */
   private _devHotReloadJsx = false;
 
-  constructor(config: BrowserI18nCacheParams) {
+  constructor(
+    config: BrowserI18nCacheParams,
+    dependencies?: ReactI18nCacheDependencies
+  ) {
     // Must be initialized before super()
     // Keep accepting htmlTagOptions without passing it to the translation cache.
     const { htmlTagOptions: _htmlTagOptions, ...managerConfig } = config;
@@ -51,10 +58,13 @@ export class BrowserI18nCache extends I18nCache<Translation> {
       : config.loadTranslations;
 
     // Initialize the I18nCache
-    super({
-      ...managerConfig,
-      loadTranslations,
-    });
+    super(
+      {
+        ...managerConfig,
+        loadTranslations,
+      },
+      dependencies
+    );
 
     this._devHotReloadJsx = devHotReloadEnabled;
 
@@ -85,7 +95,7 @@ export class BrowserI18nCache extends I18nCache<Translation> {
  * with the result (loader wins over stale localStorage), and returns the merged
  * translations — preserving runtime tx() translations from previous sessions.
  *
- * TODO: this should be moved to wrapping in I18nStore
+ * TODO: consider extracting this into a reusable loader decorator
  */
 function wrapLoaderWithLocalStorage(
   originalLoader: TranslationsLoader,

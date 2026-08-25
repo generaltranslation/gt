@@ -57,7 +57,10 @@ export {
 } from './utils/rendering/renderPipeline.rsc';
 
 // ===== Internal ===== //
-export { internalInitializeGTSRA } from './setup/initializeGTSRA';
+export {
+  internalInitializeGTSRA,
+  internalInitializeStaticGTSRA,
+} from './setup/initializeGTSRA';
 export { getReadonlyConditionStore } from './condition-store/singleton-operations';
 export {
   getReactI18nCache,

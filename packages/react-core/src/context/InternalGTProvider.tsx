@@ -1,5 +1,4 @@
 import { useEffect, useMemo, type ReactNode } from 'react';
-import { I18nStoreCore } from '../i18n-store/I18nStore';
 import type { Dictionary, Translation } from 'gt-i18n/types';
 import type {
   Locale,
@@ -7,6 +6,8 @@ import type {
   WritableConditionStoreInterface,
 } from 'gt-i18n/internal/types';
 import { getGTContext } from './context';
+import { getReactI18nCache } from '../i18n-cache/singleton-operations';
+import type { I18nStore } from '../i18n-store/I18nStore';
 import type {
   OnMissingDictionaryEntry,
   OnMissingDictionaryObj,
@@ -20,11 +21,12 @@ export type InternalGTProviderProps = {
   dictionaries?: Record<Locale, Dictionary>;
   // Declared upstream dependent on environment
   conditionStore: WritableConditionStoreInterface;
-  i18nStore: I18nStoreCore;
-  // Custom override missing translation behavior for dev hot reload
+  /** @deprecated Runtime translation state now lives in `ReactI18nCache`. */
+  i18nStore?: I18nStore;
   onMissingTranslation?: OnMissingTranslation;
   onMissingDictionaryEntry?: OnMissingDictionaryEntry;
   onMissingDictionaryObj?: OnMissingDictionaryObj;
+  resolveMissingDuringRender?: boolean;
 };
 
 // ===== Component ===== //
@@ -46,32 +48,34 @@ export function InternalGTProvider({
   onMissingTranslation,
   onMissingDictionaryEntry,
   onMissingDictionaryObj,
+  resolveMissingDuringRender = false,
 }: InternalGTProviderProps) {
   const value = useMemo(
     () => ({
       translationsSnapshot: translations,
       dictionariesSnapshot: dictionaries ?? {},
-      i18nStore,
       conditionStore,
       onMissingTranslation,
       onMissingDictionaryEntry,
       onMissingDictionaryObj,
+      resolveMissingDuringRender,
     }),
     [
       translations,
       dictionaries,
-      i18nStore,
       conditionStore,
       onMissingTranslation,
       onMissingDictionaryEntry,
       onMissingDictionaryObj,
+      resolveMissingDuringRender,
     ]
   );
 
   // Update cache with data from server, do not emit events
   useEffect(() => {
-    i18nStore.updateTranslations(translations);
-    i18nStore.updateDictionaries(dictionaries ?? {});
+    const target = i18nStore ?? getReactI18nCache();
+    target.updateTranslations(translations);
+    target.updateDictionaries(dictionaries ?? {});
   }, [translations, dictionaries, i18nStore]);
 
   return <GTContext.Provider value={value}>{children}</GTContext.Provider>;

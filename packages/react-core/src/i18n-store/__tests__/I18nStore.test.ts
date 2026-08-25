@@ -1,176 +1,97 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { initializeI18nConfig } from 'gt-i18n/internal';
+import { hashMessage, initializeI18nConfig } from 'gt-i18n/internal';
+import type { LookupOptions } from 'gt-i18n/internal/types';
+import { ReactI18nCache } from '../../i18n-cache/ReactI18nCache';
+import { createResolveMissing } from '../../i18n-cache/createResolveMissing';
 import { setReactI18nCache } from '../../i18n-cache/singleton-operations';
-import { I18nStore, I18nStoreCore } from '../I18nStore';
-import type { ReactI18nCache } from '../../i18n-cache/ReactI18nCache';
-import type { TranslateLookup } from '../storeTypes';
+import { I18nStore } from '../I18nStore';
+
+const options: LookupOptions = { $format: 'ICU' };
 
 type TestGlobal = typeof globalThis & {
   __generaltranslation?: unknown;
 };
 
-function resetGTGlobals() {
-  Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
-}
-
-const lookupTranslationWithFallback = vi.fn();
-const lookupDictionaryWithFallback = vi.fn();
-const lookupDictionaryObjWithFallback = vi.fn();
-
-function setup() {
-  initializeI18nConfig({
-    defaultLocale: 'en',
-    locales: ['en', 'fr'],
-  });
-  setReactI18nCache({
-    lookupTranslationWithFallback,
-    lookupDictionaryWithFallback,
-    lookupDictionaryObjWithFallback,
-  } as unknown as ReactI18nCache);
-}
-
-// In development the cache rejects when the runtime API rejects the request
-// (for example a 401 from an invalid dev API key). SSR fires these store
-// methods without awaiting them, so a rejection here used to become an
-// unhandled rejection that killed the dev server.
-const rejectedKeyError = new Error(
-  'Remote translation request failed: 401 Invalid API key'
-);
-
-const lookup: TranslateLookup = {
-  locale: 'fr',
-  message: 'Hello',
-  options: { $format: 'ICU' },
-};
-
-describe('I18nStore runtime translation failure handling', () => {
-  let consoleError: ReturnType<typeof vi.spyOn>;
+describe('I18nStore compatibility adapter', () => {
+  let cache: ReactI18nCache;
+  let store: I18nStore;
 
   beforeEach(() => {
-    resetGTGlobals();
-    vi.clearAllMocks();
-    setup();
-    consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-  });
-
-  it('translate() resolves and logs when the runtime request is rejected', async () => {
-    lookupTranslationWithFallback.mockRejectedValue(rejectedKeyError);
-    const store = new I18nStore();
-
-    await expect(store.translate(lookup)).resolves.toBeUndefined();
-
-    expect(consoleError).toHaveBeenCalledTimes(1);
-    expect(consoleError).toHaveBeenCalledWith(
-      expect.stringContaining('401 Invalid API key')
+    Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
+    cache = new ReactI18nCache(
+      {
+        loadTranslations: vi.fn().mockResolvedValue({}),
+      },
+      {
+        createResolveMissing,
+      }
     );
+    setReactI18nCache(cache);
+    store = new I18nStore();
   });
 
-  it('translate() does not emit a translate event for a failed request', async () => {
-    lookupTranslationWithFallback.mockRejectedValue(rejectedKeyError);
-    const store = new I18nStore();
+  it('delegates translation and preserves the legacy event shape', async () => {
+    vi.spyOn(cache, 'lookupTranslationWithFallback').mockResolvedValue(
+      'Bonjour'
+    );
+    const lookup = { locale: 'fr', message: 'Hello', options };
     const listener = vi.fn();
     store.subscribeToTranslationEvents(listener);
 
     await store.translate(lookup);
 
-    expect(listener).not.toHaveBeenCalled();
+    expect(listener).toHaveBeenCalledWith(lookup);
   });
 
-  it('translate() logs an identical failure once across lookups', async () => {
-    lookupTranslationWithFallback.mockRejectedValue(rejectedKeyError);
-    const store = new I18nStore();
+  it('keeps lookup-specific translation subscriptions', async () => {
+    vi.spyOn(cache, 'lookupTranslationWithFallback').mockResolvedValue(
+      'Bonjour'
+    );
+    const listener = vi.fn();
+    store.subscribeToTranslate(
+      { locale: 'fr', message: 'Hello', options },
+      listener
+    );
 
-    await store.translate(lookup);
-    await store.translate({ ...lookup, message: 'Goodbye' });
+    await store.translate({ locale: 'fr', message: 'Goodbye', options });
+    await store.translate({ locale: 'fr', message: 'Hello', options });
 
-    expect(consoleError).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledTimes(1);
   });
 
-  it('translateDictionaryEntry() logs instead of leaving an unhandled rejection', async () => {
-    lookupDictionaryWithFallback.mockRejectedValue(rejectedKeyError);
-    const store = new I18nStore();
+  it('notifies both legacy dictionary subscription channels', async () => {
+    vi.spyOn(cache, 'lookupDictionaryWithFallback').mockResolvedValue({
+      entry: 'Bonjour',
+      options: {},
+    });
+    const entryListener = vi.fn();
+    const objectListener = vi.fn();
+    store.subscribeToDictionaryEntryEvents(entryListener);
+    store.subscribeToDictionaryObjectEvents(objectListener);
 
     store.translateDictionaryEntry({ locale: 'fr', id: 'greeting' });
 
-    await vi.waitFor(() => expect(consoleError).toHaveBeenCalledTimes(1));
-  });
-
-  it('re-logs a failure after it is evicted from the bounded dedupe set', async () => {
-    const store = new I18nStore();
-    for (let i = 0; i <= 100; i++) {
-      lookupTranslationWithFallback.mockRejectedValueOnce(
-        new Error(`failure ${i}`)
-      );
-      await store.translate({ ...lookup, message: `message ${i}` });
-    }
-    expect(consoleError).toHaveBeenCalledTimes(101);
-
-    lookupTranslationWithFallback.mockRejectedValueOnce(new Error('failure 0'));
-    await store.translate(lookup);
-
-    expect(consoleError).toHaveBeenCalledTimes(102);
-  });
-
-  it('logs distinct non-Error rejection reasons separately', async () => {
-    const store = new I18nStore();
-
-    lookupTranslationWithFallback.mockRejectedValueOnce({ code: 'A' });
-    await store.translate({ ...lookup, message: 'm1' });
-    lookupTranslationWithFallback.mockRejectedValueOnce({ code: 'B' });
-    await store.translate({ ...lookup, message: 'm2' });
-    expect(consoleError).toHaveBeenCalledTimes(2);
-
-    lookupTranslationWithFallback.mockRejectedValueOnce(null);
-    await store.translate({ ...lookup, message: 'm3' });
-    lookupTranslationWithFallback.mockRejectedValueOnce(undefined);
-    await store.translate({ ...lookup, message: 'm4' });
-    expect(consoleError).toHaveBeenCalledTimes(4);
-
-    lookupTranslationWithFallback.mockRejectedValueOnce({ code: 'A' });
-    await store.translate({ ...lookup, message: 'm5' });
-    expect(consoleError).toHaveBeenCalledTimes(4);
-  });
-
-  it('translateDictionaryObject() logs instead of leaving an unhandled rejection', async () => {
-    lookupDictionaryObjWithFallback.mockRejectedValue(rejectedKeyError);
-    const store = new I18nStore();
-
-    store.translateDictionaryObject({ locale: 'fr', id: 'nav' });
-
-    await vi.waitFor(() => expect(consoleError).toHaveBeenCalledTimes(1));
-  });
-});
-
-describe('I18nStoreCore', () => {
-  beforeEach(() => {
-    resetGTGlobals();
-    vi.clearAllMocks();
-    setup();
-  });
-
-  it('does not request a missing translation without a resolver', async () => {
-    const store = new I18nStoreCore();
-    const listener = vi.fn();
-    store.subscribeToTranslationEvents(listener);
-
-    await store.translate(lookup);
-
-    expect(lookupTranslationWithFallback).not.toHaveBeenCalled();
-    expect(listener).not.toHaveBeenCalled();
-  });
-
-  it('emits after an injected resolver succeeds', async () => {
-    const resolveMissing = vi.fn().mockResolvedValue(true);
-    const store = new I18nStoreCore(resolveMissing);
-    const listener = vi.fn();
-    store.subscribeToTranslationEvents(listener);
-
-    await store.translate(lookup);
-
-    expect(resolveMissing).toHaveBeenCalledWith({
-      type: 'translation',
-      lookup,
+    await vi.waitFor(() => expect(entryListener).toHaveBeenCalledOnce());
+    expect(entryListener).toHaveBeenCalledWith({
+      locale: 'fr',
+      id: 'greeting',
     });
-    expect(listener).toHaveBeenCalledWith(lookup);
+    expect(objectListener).toHaveBeenCalledWith({
+      locale: 'fr',
+      id: 'greeting',
+    });
+  });
+
+  it('reads provider snapshots before the cache', () => {
+    const lookup = { locale: 'fr', message: 'Hello', options };
+    const hash = hashMessage(lookup.message, lookup.options);
+    vi.spyOn(cache, 'lookupTranslation').mockReturnValue('cache value');
+
+    expect(
+      store.getTranslateSnapshot(lookup, {
+        fr: { [hash]: 'provider value' },
+      })
+    ).toBe('provider value');
   });
 });

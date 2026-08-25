@@ -50,11 +50,11 @@ export {
 
 export {
   ReactI18nCache,
-  ReactI18nCacheCore,
+  type ReactI18nCacheDependencies,
   type ReactI18nCacheParams,
 } from './i18n-cache/ReactI18nCache';
-export { setI18nStore } from './i18n-store/singleton-operations';
-export { I18nStore, I18nStoreCore } from './i18n-store/I18nStore';
+export { createResolveMissing } from './i18n-cache/createResolveMissing';
+export { I18nStore } from './i18n-store/I18nStore';
 export { getI18nConfig, initializeI18nConfig } from './setup/i18nConfig';
 export { getReadonlyConditionStore } from './condition-store/singleton-operations';
 export { ReadonlyConditionStore } from 'gt-i18n/internal';

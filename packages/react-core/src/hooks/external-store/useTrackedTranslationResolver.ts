@@ -8,13 +8,12 @@ import type { Translation } from 'gt-i18n/types';
 import type {
   TranslateLookup,
   TranslateSnapshot,
-} from '../../i18n-store/storeTypes';
+} from '../../i18n-cache/types';
 import type { TranslationMetadata } from 'gt-i18n/internal/types';
 import type { StringFormat } from '@generaltranslation/format';
-import {
-  useI18nStore,
-  useTranslationsSnapshot,
-} from '../../i18n-store/useI18nStore';
+import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
+import { getTranslationSnapshot } from '../../i18n-cache/snapshots';
+import { useTranslationsSnapshot } from '../../context/context';
 import { useHandleMissingTranslationWithConditions } from '../utils/missing-translation';
 import { useSubscribeToTrackedLookups } from './useSubscribeToTrackedLookups';
 
@@ -48,7 +47,7 @@ export function useTrackedTranslationResolver(
   shouldTranslate: boolean
 ): TrackedTranslationResolver {
   const translationsSnapshot = useTranslationsSnapshot();
-  const i18nStore = useI18nStore();
+  const i18nCache = getReactI18nCache();
   const devHotReloadEnabled =
     process.env.NODE_ENV !== 'production' &&
     getI18nConfig().isDevHotReloadEnabled();
@@ -67,10 +66,8 @@ export function useTrackedTranslationResolver(
   usePreloadCompilerLookups(messages, trackedKeysRef, locale, shouldTranslate);
 
   // (tx hot reload) Subscribe to translation updates
-  useSubscribeToTrackedLookups(
-    trackedKeysRef,
-    i18nStore.subscribeToTranslationEvents,
-    getTranslateListenerKey
+  useSubscribeToTrackedLookups(trackedKeysRef, i18nCache.subscribe, (event) =>
+    event.type === 'translation' ? getTranslateListenerKey(event) : undefined
   );
 
   /**
@@ -88,10 +85,11 @@ export function useTrackedTranslationResolver(
         trackedKeysRef.current!.add(lookupKey);
       }
 
-      // Resolve the translation from the store
-      const translation = i18nStore.getTranslateSnapshot(
-        lookup,
-        translationsSnapshot
+      // Resolve the translation from the provider snapshot or cache
+      const translation = getTranslationSnapshot(
+        i18nCache,
+        translationsSnapshot,
+        lookup
       );
 
       // Trigger a hot reload if the translation is not found
@@ -100,7 +98,7 @@ export function useTrackedTranslationResolver(
       }
       return translation;
     },
-    [i18nStore, translationsSnapshot, onMissingTranslation, devHotReloadEnabled]
+    [i18nCache, translationsSnapshot, onMissingTranslation, devHotReloadEnabled]
   );
 }
 
@@ -117,7 +115,7 @@ function usePreloadCompilerLookups(
   locale: string,
   shouldTranslate: boolean
 ) {
-  const i18nStore = useI18nStore();
+  const i18nCache = getReactI18nCache();
   const devHotReloadEnabled =
     process.env.NODE_ENV !== 'production' &&
     getI18nConfig().isDevHotReloadEnabled();
@@ -167,8 +165,11 @@ function usePreloadCompilerLookups(
     lookups
       .filter(
         ([lookup]) =>
-          i18nStore.getTranslateSnapshot(lookup, translationsSnapshot) == null
+          getTranslationSnapshot(i18nCache, translationsSnapshot, lookup) ==
+          null
       )
-      .forEach(([lookup]) => i18nStore.translate(lookup));
-  }, [txHotReloadEnabled, i18nStore, lookups, translationsSnapshot]);
+      .forEach(([lookup]) =>
+        i18nCache.resolveMissing({ type: 'translation', ...lookup })
+      );
+  }, [txHotReloadEnabled, i18nCache, lookups, translationsSnapshot]);
 }
