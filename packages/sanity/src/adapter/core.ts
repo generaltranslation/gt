@@ -1,4 +1,7 @@
 import { GT } from 'generaltranslation';
+import { configureApiClient } from './api';
+
+export { api } from './api';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import type { Secrets } from '../types';
 import type {
@@ -38,10 +41,12 @@ export const DEFAULT_TRANSLATION_PREFERENCES: TranslationPreferences = {
 };
 
 export function overrideConfig(secrets: Secrets | null) {
-  gt.setConfig({
-    ...(secrets?.project && { projectId: secrets?.project }),
-    ...(secrets?.secret && { apiKey: secrets?.secret }),
-  });
+  const config = {
+    ...(secrets?.project && { projectId: secrets.project }),
+    ...(secrets?.secret && { apiKey: secrets.secret }),
+  };
+  gt.setConfig(config);
+  configureApiClient({ ...config, customMapping: gt.customMapping });
 }
 
 export class GTConfig {

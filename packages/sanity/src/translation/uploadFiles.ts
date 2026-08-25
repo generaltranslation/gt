@@ -1,5 +1,5 @@
 import type { GTFile, Secrets } from '../types';
-import { gt, overrideConfig } from '../adapter/core';
+import { api, gt, overrideConfig } from '../adapter/core';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import type { SerializedDocument } from '../serialization/types';
 
@@ -11,9 +11,9 @@ export async function uploadFiles(
     serializedDocument: SerializedDocument;
   }[],
   secrets: Secrets | null
-): Promise<Awaited<ReturnType<typeof gt.uploadSourceFiles>>> {
+): Promise<Awaited<ReturnType<typeof api.uploadSourceFiles>>> {
   overrideConfig(secrets);
-  const uploadResult = await gt.uploadSourceFiles(
+  const uploadResult = await api.uploadSourceFiles(
     documents.map(({ info, serializedDocument }) => ({
       source: {
         content: serializedDocument.content,

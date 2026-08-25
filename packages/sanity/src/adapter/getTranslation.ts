@@ -1,5 +1,5 @@
 import type { Adapter, GTFile, Secrets } from '../types';
-import { gt, overrideConfig } from './core';
+import { api, overrideConfig } from './core';
 
 // note: downloads the translation for a given task and locale
 export const getTranslation: Adapter['getTranslation'] = async (
@@ -11,7 +11,7 @@ export const getTranslation: Adapter['getTranslation'] = async (
     return '';
   }
   overrideConfig(secrets);
-  const text = await gt.downloadFile({
+  const text = await api.downloadFile({
     fileId: documentInfo.documentId,
     versionId: documentInfo.versionId || undefined,
     locale: localeId,
