@@ -26,13 +26,12 @@ export default async function flattenJsonFiles(
   );
 
   await settleAll(
-    Object.values(fileMapping).map(async (filesMap) => {
-      const targetFiles = Object.values(filesMap).filter(
-        (p) => p.endsWith('.json') && (!includeFiles || includeFiles.has(p))
-      );
-
-      await settleAll(
-        targetFiles.map(async (file) => {
+    Object.values(fileMapping).flatMap((filesMap) =>
+      Object.values(filesMap)
+        .filter(
+          (p) => p.endsWith('.json') && (!includeFiles || includeFiles.has(p))
+        )
+        .map(async (file) => {
           // Read each json file
           const json = JSON.parse(fs.readFileSync(file, 'utf8'));
           // Flatten the json
@@ -45,8 +44,7 @@ export default async function flattenJsonFiles(
           );
           return flattenedJson;
         })
-      );
-    })
+    )
   );
 }
 
