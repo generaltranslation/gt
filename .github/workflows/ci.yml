@@ -371,6 +371,9 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           package_manager: pnpm
           script: pnpm exec size-limit --json
+          # mise shims dispatch on argv[0]; the action's default (true) wraps
+          # argv0 in literal quotes on every OS, producing an invalid shim name.
+          windows_verbatim_arguments: false
 
   run-tests:
     needs:
