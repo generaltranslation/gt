@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { logger } from '../../console/logger.js';
 import type { Settings } from '../../types/index.js';
+import { hashStringSync } from '../../utils/hash.js';
 
 const GT_LOCK_FILE = 'gt-lock.json';
 
@@ -15,6 +16,7 @@ export type DownloadedTranslation = {
 
 export type DownloadedVersionEntry = {
   fileId: string;
+  previousFileId?: string; // server ID retained until a path migration succeeds
   versionId: string;
   fileName?: string; // source file path
   staged?: boolean; // true if this entry was staged but not yet downloaded
@@ -48,6 +50,82 @@ export type DownloadedVersionsV1 = {
     };
   };
 };
+
+/**
+ * Normalizes serialized v2 lockfile paths to portable forward slashes.
+ * This is intentionally platform-independent because a lockfile written on
+ * Windows may later be read on POSIX. Legacy file IDs are re-keyed only when
+ * they can be proven to be the hash of the original backslash path, and the
+ * previous server identity is retained until the migration succeeds.
+ */
+export function normalizeLockfilePaths(data: DownloadedVersions): void {
+  const existingFileIds = new Set(data.entries.map((entry) => entry.fileId));
+  const plannedFileIds = new Map<string, number>();
+  const plans = data.entries.map((entry) => {
+    const originalFileName = entry.fileName;
+    const normalizedFileName =
+      typeof originalFileName === 'string'
+        ? normalizeSerializedLockfilePath(originalFileName)
+        : originalFileName;
+    const nextFileId =
+      typeof originalFileName === 'string' &&
+      typeof normalizedFileName === 'string' &&
+      originalFileName !== normalizedFileName &&
+      entry.fileId === hashStringSync(originalFileName)
+        ? hashStringSync(normalizedFileName)
+        : undefined;
+
+    if (nextFileId) {
+      plannedFileIds.set(nextFileId, (plannedFileIds.get(nextFileId) ?? 0) + 1);
+    }
+
+    return { entry, normalizedFileName, nextFileId };
+  });
+
+  for (const { entry, normalizedFileName, nextFileId } of plans) {
+    if (typeof entry.fileName === 'string') {
+      const collides =
+        nextFileId !== undefined &&
+        ((existingFileIds.has(nextFileId) && nextFileId !== entry.fileId) ||
+          (plannedFileIds.get(nextFileId) ?? 0) > 1);
+
+      if (!collides) {
+        if (nextFileId) {
+          entry.previousFileId ??= entry.fileId;
+          entry.fileId = nextFileId;
+        }
+        entry.fileName = normalizedFileName;
+      }
+    }
+    if (!entry.translations || typeof entry.translations !== 'object') {
+      continue;
+    }
+    for (const translation of Object.values(entry.translations)) {
+      if (translation && typeof translation.fileName === 'string') {
+        translation.fileName = normalizeSerializedLockfilePath(
+          translation.fileName
+        );
+      }
+    }
+  }
+}
+
+function normalizeSerializedLockfilePath(fileName: string): string {
+  if (!fileName.includes('\\')) return fileName;
+
+  // A pre-normalization Windows CLI emitted only native separators. Mixed
+  // separators therefore indicate a POSIX filename containing a literal
+  // backslash, which must not be rewritten.
+  if (path.sep !== '\\' && fileName.includes('/')) return fileName;
+
+  // The all-backslash form is ambiguous on POSIX. Prefer a real literal path
+  // over a speculative Windows migration when the file still exists.
+  if (path.sep !== '\\' && fs.existsSync(path.resolve(fileName))) {
+    return fileName;
+  }
+
+  return fileName.replace(/\\/g, '/');
+}
 
 // ── Conversion helpers ──────────────────────────────────────────────
 
