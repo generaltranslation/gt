@@ -1,6 +1,6 @@
-import { createClient as createGeneratedClient } from './generated/client';
-import type { Client } from './generated/client';
-import type { GetProjectInfoData } from './generated/types.gen';
+import { createClient as createGeneratedClient } from '../generated/client';
+import type { Client } from '../generated/client';
+import type { GetProjectInfoData } from '../generated/types.gen';
 import { createRetryingFetch, createTimeoutFetch } from './transport';
 import type { RetryPolicy } from './transport';
 

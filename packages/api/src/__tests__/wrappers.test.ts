@@ -1,15 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { awaitJobs, pollJobs } from '../awaitJobs';
+import { awaitJobs, pollJobs } from '../wrappers/awaitJobs';
 import {
   decodeBase64,
   decodeFileContent,
   encodeBase64,
   encodeFileContent,
-} from '../base64';
-import { createBatches, processBatches } from '../batch';
-import { API_VERSION, createApiClient } from '../client';
-import { createRetryingFetch, createTimeoutFetch } from '../transport';
+} from '../wrappers/base64';
+import { createBatches, processBatches } from '../wrappers/batch';
+import { API_VERSION, createApiClient } from '../wrappers/client';
+import { createRetryingFetch, createTimeoutFetch } from '../wrappers/transport';
 
 afterEach(() => {
   vi.useRealTimers();
