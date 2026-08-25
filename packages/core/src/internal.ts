@@ -26,6 +26,11 @@ export { isVariable } from './utils/isVariable';
 export { minifyVariableType } from './utils/minify';
 export { encode, decode } from './utils/base64';
 export { isSupportedFileFormatTransform } from './utils/isSupportedFileFormatTransform';
+export {
+  getFileFormatTransformError,
+  validateFileFormatTransforms,
+} from './translate/utils/validateFileFormatTransform';
+export type { FileFormatTransformInput } from './translate/utils/validateFileFormatTransform';
 export { API_VERSION } from './translate/api';
 
 // derive

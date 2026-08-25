@@ -1,6 +1,6 @@
 import { Settings } from '../types/index.js';
 import { PublishStep } from './steps/PublishStep.js';
-import { gt } from '../utils/gt.js';
+import { api } from '../utils/api.js';
 import { hasPublishConfig } from '../utils/resolvePublish.js';
 import { logger } from '../console/logger.js';
 
@@ -27,7 +27,7 @@ export async function runPublishWorkflow(
         fileName: file.fileName,
       }));
     if (allFileRefs.length === 0) return;
-    const publishStep = new PublishStep(gt);
+    const publishStep = new PublishStep(api);
     await publishStep.run(allFileRefs);
   } catch (error) {
     logger.warn(
