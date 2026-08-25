@@ -202,7 +202,6 @@ export class BaseCLI {
     this.setupSetupProjectCommand();
     this.setupStageCommand();
     this.setupTranslateCommand();
-    this.setupGenerateCommand();
     this.setupDownloadCommand();
     this.setupEnqueueCommand();
   }
@@ -288,15 +287,6 @@ export class BaseCLI {
       await this.handleTranslate(initOptions);
       logger.endCommand('Done!');
     });
-  }
-
-  protected setupGenerateCommand(): void {
-    this.program
-      .command('generate')
-      .description('Generate translation files.')
-      .action(() => {
-        logger.info('gt generate is not implemented yet.');
-      });
   }
 
   protected setupSendDiffsCommand(): void {
