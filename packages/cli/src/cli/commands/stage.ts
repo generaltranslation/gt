@@ -75,14 +75,18 @@ export async function handleStage(
     jobData = enqueueResult;
     branchData = branchDataResult;
 
-    // Continue only with the exact source versions that the API confirmed.
-    // A partial upload response must not create staged/download state for a
-    // source version that does not exist on the server.
+    // Continue only with exact source versions confirmed on the active branch.
+    // A partial or cross-branch upload response must not create staged/download
+    // state for a source version that does not exist on this branch.
     const uploadedFileKeys = new Set(
-      uploadedFiles.map((file) => `${file.fileId}:${file.versionId}`)
+      uploadedFiles.map(
+        (file) => `${file.branchId}:${file.fileId}:${file.versionId}`
+      )
     );
     const confirmedFiles = allFiles.filter((file) =>
-      uploadedFileKeys.has(`${file.fileId}:${file.versionId}`)
+      uploadedFileKeys.has(
+        `${branchDataResult.currentBranch.id}:${file.fileId}:${file.versionId}`
+      )
     );
     if (confirmedFiles.length > 0) {
       fileVersionData = convertToFileTranslationData(confirmedFiles);

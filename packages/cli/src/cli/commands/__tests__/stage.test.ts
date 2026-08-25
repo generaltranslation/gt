@@ -258,4 +258,27 @@ describe('handleStage config ids', () => {
     expect(writeStagedEntries).not.toHaveBeenCalled();
     expect(updateConfig).not.toHaveBeenCalled();
   });
+
+  it('does not accept a source confirmation from another branch', async () => {
+    vi.mocked(runStageFilesWorkflow).mockResolvedValue({
+      branchData,
+      uploadedFiles: [
+        {
+          ...templateFile,
+          branchId: 'branch-2',
+        },
+      ],
+      enqueueResult: {
+        jobData: {},
+        locales: ['es'],
+        message: 'No files need to be enqueued',
+      },
+    });
+
+    const result = await handleStage(options, settings(), 'gt-react', true);
+
+    expect(result?.fileVersionData).toBeUndefined();
+    expect(writeStagedEntries).not.toHaveBeenCalled();
+    expect(updateConfig).not.toHaveBeenCalled();
+  });
 });
