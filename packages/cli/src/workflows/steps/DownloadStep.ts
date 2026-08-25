@@ -6,7 +6,7 @@ import {
   downloadFileBatch,
   DownloadFileBatchResult,
 } from '../../api/downloadFileBatch.js';
-import { GT } from 'generaltranslation';
+import type { ApiClient } from '../../utils/api.js';
 import { Settings } from '../../types/index.js';
 import { recordWarning } from '../../state/translateWarnings.js';
 import { FileStatusTracker } from './PollJobsStep.js';
@@ -23,7 +23,7 @@ export class DownloadTranslationsStep {
   private spinner: ReturnType<typeof logger.createProgressBar> | null = null;
 
   constructor(
-    private gt: GT,
+    private api: ApiClient,
     private settings: Settings,
     private inlineLibrary?: InlineLibrary
   ) {}
@@ -55,7 +55,7 @@ export class DownloadTranslationsStep {
       }
 
       // Check for translations
-      const responseData = await this.gt.queryFileData({
+      const responseData = await this.api.queryFileData({
         translatedFiles: currentQueryData.map((item) => ({
           fileId: item.fileId,
           versionId: item.versionId,

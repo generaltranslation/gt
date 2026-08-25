@@ -1,4 +1,4 @@
-import type { GT } from 'generaltranslation';
+import type { ApiClient } from '../../utils/api.js';
 import type { FileReference } from 'generaltranslation/types';
 import type { FileProperties } from '../../types/files.js';
 import {
@@ -6,7 +6,7 @@ import {
   queryCompletedTranslationKeys,
 } from './queryCompletedTranslations.js';
 
-type FilterFilesForEnqueueClient = Pick<GT, 'queryFileData'>;
+type FilterFilesForEnqueueClient = Pick<ApiClient, 'queryFileData'>;
 
 export type EnqueueFilterResult = {
   filesToEnqueue: FileReference[];

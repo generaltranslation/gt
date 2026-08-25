@@ -1,12 +1,12 @@
 import { logger } from '../../console/logger.js';
-import { GT } from 'generaltranslation';
 import type { PublishFileEntry } from 'generaltranslation/types';
+import type { ApiClient } from '../../utils/api.js';
 import chalk from 'chalk';
 
 export class PublishStep {
   private spinner = logger.createSpinner('dots');
 
-  constructor(private gt: GT) {}
+  constructor(private api: ApiClient) {}
 
   async run(files: PublishFileEntry[]): Promise<void> {
     if (files.length === 0) return;
@@ -14,7 +14,7 @@ export class PublishStep {
     this.spinner.start('Updating CDN...');
 
     try {
-      const result = await this.gt.publishFiles(files);
+      const result = await this.api.publishFiles(files);
 
       const failed = result.results.filter(
         (r: { success: boolean; error?: string }) => !r.success

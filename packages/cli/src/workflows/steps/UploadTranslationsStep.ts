@@ -1,5 +1,5 @@
 import { logger } from '../../console/logger.js';
-import { GT } from 'generaltranslation';
+import type { ApiClient } from '../../utils/api.js';
 import { Settings } from '../../types/index.js';
 import chalk from 'chalk';
 import {
@@ -60,7 +60,7 @@ export class UploadTranslationsStep {
   private spinner = logger.createSpinner('dots');
 
   constructor(
-    private gt: GT,
+    private api: Pick<ApiClient, 'uploadTranslations'>,
     private settings: Settings
   ) {}
 
@@ -104,12 +104,12 @@ export class UploadTranslationsStep {
       `Uploading ${totalTranslations} translation file${totalTranslations !== 1 ? 's' : ''} to the General Translation API...`
     );
 
-    const response = await this.gt.uploadTranslations(filesToUpload, {
+    const response = await this.api.uploadTranslations(filesToUpload, {
       sourceLocale: this.settings.defaultLocale,
       modelProvider: this.settings.modelProvider,
     });
 
-    const result = response.uploadedFiles;
+    const result = response.uploadedFiles as UploadedTranslationReference[];
     // Report the server-confirmed count, not the attempted count — the
     // endpoint drops files it failed to persist without erroring
     const uploadedCount = result.length;
