@@ -247,7 +247,7 @@ export type Settings = {
     transformFormats: TransformFormats; // Output file format transforms keyed by config file type
     publishPaths: Set<string>; // Absolute paths explicitly opted IN to publishing
     unpublishPaths: Set<string>; // Absolute paths explicitly opted OUT of publishing
-    requiresReviewPaths: Set<string>; // Absolute paths whose effective requiresReview policy is true
+    requiresReviewPaths: Set<string>; // Slash-normalized absolute paths whose effective requiresReview policy is true
     parsingFlags: ParseFlagsByFileType;
     gtJson: {
       publish?: boolean; // if true, publish gtjson translations to the CDN

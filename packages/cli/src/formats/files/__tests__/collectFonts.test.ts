@@ -7,12 +7,14 @@ import { collectFonts } from '../collectFonts.js';
 
 describe('collectFonts', () => {
   let projectRoot: string;
+  const originalSeparator = Object.getOwnPropertyDescriptor(path, 'sep')!;
 
   beforeEach(() => {
     projectRoot = mkdtempSync(path.join(tmpdir(), 'gt-collect-fonts-'));
   });
 
   afterEach(() => {
+    Object.defineProperty(path, 'sep', originalSeparator);
     rmSync(projectRoot, { recursive: true, force: true });
   });
 
@@ -62,6 +64,45 @@ describe('collectFonts', () => {
 
     expect(fonts.map((f) => f.fileName)).toEqual(['Keep.ttf']);
   });
+
+  it('normalizes Windows separators in font globs on Windows', async () => {
+    Object.defineProperty(path, 'sep', {
+      ...originalSeparator,
+      value: path.win32.sep,
+    });
+    mkdirSync(path.join(projectRoot, 'public', 'fonts'), { recursive: true });
+    writeFileSync(
+      path.join(projectRoot, 'public', 'fonts', 'Inter.ttf'),
+      Buffer.from([1])
+    );
+
+    const fonts = await collectFonts(
+      makeSettings({ fonts: { include: ['public\\fonts\\*.ttf'] } })
+    );
+
+    expect(fonts.map((font) => font.fileName)).toEqual(['Inter.ttf']);
+  });
+
+  it.runIf(path.sep === path.posix.sep)(
+    'preserves escaped font globs on POSIX',
+    async () => {
+      mkdirSync(path.join(projectRoot, 'fonts', '(brand)'), {
+        recursive: true,
+      });
+      writeFileSync(
+        path.join(projectRoot, 'fonts', '(brand)', 'Inter.ttf'),
+        Buffer.from([1])
+      );
+
+      const fonts = await collectFonts(
+        makeSettings({
+          fonts: { include: ['fonts/\\(brand\\)/*.ttf'] },
+        })
+      );
+
+      expect(fonts.map((font) => font.fileName)).toEqual(['Inter.ttf']);
+    }
+  );
 
   it('returns no fonts when the config is missing or empty', async () => {
     expect(await collectFonts(makeSettings())).toEqual([]);

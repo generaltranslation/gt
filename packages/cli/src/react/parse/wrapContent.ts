@@ -21,6 +21,7 @@ import {
 import { DEFAULT_SRC_PATTERNS } from '../../config/generateSettings.js';
 import { matchFiles } from '../../fs/matchFiles.js';
 import { Libraries } from '../../types/libraries.js';
+import { toPosixPath } from '../../utils/paths.js';
 
 const IMPORT_MAP = {
   T: { name: 'T', source: Libraries.GT_REACT },
@@ -51,9 +52,11 @@ export async function wrapContentReact(
 
   for (const file of files) {
     const baseFileName = path.basename(file);
-    const configPath = path.relative(
-      path.dirname(file),
-      path.resolve(process.cwd(), options.config)
+    const configPath = toPosixPath(
+      path.relative(
+        path.dirname(file),
+        path.resolve(process.cwd(), options.config)
+      )
     );
 
     // Ensure the path starts with ./ or ../

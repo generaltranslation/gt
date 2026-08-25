@@ -33,6 +33,7 @@ vi.mock('node:path', () => ({
     dirname: vi.fn(),
     normalize: vi.fn(),
     basename: vi.fn(),
+    isAbsolute: vi.fn(),
     sep: '/',
   },
 }));
@@ -75,6 +76,7 @@ describe('processSharedStaticAssets', () => {
       const parts = p.split('/');
       return parts[parts.length - 1];
     });
+    vi.mocked(path.isAbsolute).mockImplementation((p) => p.startsWith('/'));
   });
 
   afterEach(() => {

@@ -3,6 +3,7 @@ import path from 'node:path';
 import { logger } from '../console/logger.js';
 import chalk from 'chalk';
 import micromatch from 'micromatch';
+import { toPosixGlob, toPosixPath } from './paths.js';
 
 export type RefMapEntry = {
   sourceFile: string;
@@ -182,10 +183,13 @@ export function shouldResolveRefs(
 ): boolean {
   if (!options?.jsonSchema) return false;
 
-  const relative = path.relative(process.cwd(), filePath);
+  const relative = toPosixPath(path.relative(process.cwd(), filePath));
   for (const [glob, schema] of Object.entries(options.jsonSchema)) {
     const jsonSchema = schema as { resolveRefs?: boolean };
-    if (jsonSchema.resolveRefs && micromatch.isMatch(relative, glob)) {
+    if (
+      jsonSchema.resolveRefs &&
+      micromatch.isMatch(relative, toPosixGlob(glob))
+    ) {
       return true;
     }
   }
