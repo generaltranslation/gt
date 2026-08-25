@@ -122,6 +122,30 @@ describe('handleGenerate', () => {
     );
   });
 
+  it('rejects an output replaced during successful postprocessing', async () => {
+    writeFileSync('messages/en/common.json', '{"hello":"Hello"}');
+    const settings = createSettings(['messages/en/common.json']);
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+    postProcessTranslations.mockImplementationOnce(async () => {
+      writeFileSync('messages/fr/replacement.json', '{"hello":"User edit"}');
+      rmSync('messages/fr/common.json');
+      renameSync('messages/fr/replacement.json', 'messages/fr/common.json');
+    });
+
+    await expect(handleGenerate(settings)).rejects.toThrow(
+      'A generated output changed while it was being created'
+    );
+
+    expect(existsSync('messages/fr/common.json')).toBe(false);
+    expect(
+      readFileSync(getRecoveryPath('messages/fr/common.json'), 'utf8')
+    ).toBe('{"hello":"User edit"}');
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('preserved after generation failed')
+    );
+    expect(getGenerationMarkers('messages/fr/common.json')).toEqual([]);
+  });
+
   it('preserves an in-place edit for recovery without blocking a retry', async () => {
     writeFileSync('messages/en/common.json', '{"hello":"Hello"}');
     const settings = createSettings(['messages/en/common.json']);
@@ -376,7 +400,7 @@ describe('handleGenerate', () => {
     );
   });
 
-  it('checks each generated output identity once', async () => {
+  it('checks each generated output identity before and after postprocessing', async () => {
     const sourceFiles = ['alpha', 'beta', 'gamma'].map((name) => {
       const filePath = `messages/en/${name}.json`;
       writeFileSync(filePath, `{"value":"${name}"}`);
@@ -386,7 +410,7 @@ describe('handleGenerate', () => {
 
     await handleGenerate(createSettings(sourceFiles));
 
-    expect(stat).toHaveBeenCalledTimes(sourceFiles.length);
+    expect(stat).toHaveBeenCalledTimes(sourceFiles.length * 2);
   });
 
   it('rejects file format conversion before writing templates', async () => {

@@ -23,7 +23,13 @@ type GenerationTarget = {
   changesFormat: boolean;
 };
 
-type GeneratedFilesByMarker = Map<string, string>;
+type GeneratedFile = {
+  identity: string;
+  outputPath: string;
+  target: GenerationTarget;
+};
+
+type GeneratedFilesByMarker = Map<string, GeneratedFile>;
 
 function createOutputCollisionError(
   existing: GenerationTarget,
@@ -147,8 +153,8 @@ async function rollbackGeneratedFiles(
 ): Promise<void> {
   const files = [...generatedFiles];
   const results = await Promise.allSettled(
-    files.map(async ([marker, filePath]) => {
-      const file = path.resolve(filePath);
+    files.map(async ([marker, generatedFile]) => {
+      const file = path.resolve(generatedFile.outputPath);
       const recoveryFile = path.join(
         path.dirname(file),
         `.gt-rollback-${randomUUID()}`
@@ -165,15 +171,15 @@ async function rollbackGeneratedFiles(
       try {
         await removeGenerationMarker(marker);
       } catch (error) {
-        return `${filePath}: preserved at ${recoveryFile}; generation marker ${marker} could not be removed: ${formatDiagnosticErrorDetails(error) ?? 'Unknown error'}`;
+        return `${generatedFile.outputPath}: preserved at ${recoveryFile}; generation marker ${marker} could not be removed: ${formatDiagnosticErrorDetails(error) ?? 'Unknown error'}`;
       }
-      return `${filePath}: preserved at ${recoveryFile}`;
+      return `${generatedFile.outputPath}: preserved at ${recoveryFile}`;
     })
   );
   const failures = results.flatMap((result, index) =>
     result.status === 'rejected'
       ? [
-          `${files[index][1]}: ${formatDiagnosticErrorDetails(result.reason) ?? 'Unknown error'} (generation marker: ${files[index][0]})`,
+          `${files[index][1].outputPath}: ${formatDiagnosticErrorDetails(result.reason) ?? 'Unknown error'} (generation marker: ${files[index][0]})`,
         ]
       : result.value
         ? [result.value]
@@ -294,7 +300,7 @@ async function createTargetFile(
   try {
     const stat = await fileHandle.stat();
     identity = `${stat.dev}:${stat.ino}`;
-    generatedFiles.set(marker, outputPath);
+    generatedFiles.set(marker, { identity, outputPath, target });
 
     if (target.changesFormat) {
       throw createUnsupportedFormatTransformError();
@@ -331,11 +337,22 @@ export async function handleGenerate(settings: Settings): Promise<void> {
     if (generatedFiles.size > 0) {
       await postProcessTranslations(
         settings,
-        new Set(generatedFiles.values()),
+        new Set(
+          [...generatedFiles.values()].map(({ outputPath }) => outputPath)
+        ),
         {
           restrictToIncludedFiles: true,
         }
       );
+
+      for (const generatedFile of generatedFiles.values()) {
+        if (
+          (await getFileIdentity(path.resolve(generatedFile.outputPath))) !==
+          generatedFile.identity
+        ) {
+          throw createChangedOutputError(generatedFile.target);
+        }
+      }
     }
   } catch (error) {
     await rollbackGeneratedFiles(generatedFiles);
