@@ -14,6 +14,7 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Settings } from '../../../types/index.js';
 import { logger } from '../../../console/logger.js';
+import { writePostprocessedFile } from '../../../utils/postprocessFileWrites.js';
 
 const postProcessTranslations = vi.hoisted(() => vi.fn());
 
@@ -142,6 +143,42 @@ describe('handleGenerate', () => {
     ).toBe('{"hello":"User edit"}');
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining('preserved after generation failed')
+    );
+    expect(getGenerationMarkers('messages/fr/common.json')).toEqual([]);
+  });
+
+  it('rejects an untracked in-place write during postprocessing', async () => {
+    writeFileSync('messages/en/common.json', '{"hello":"Hello"}');
+    const settings = createSettings(['messages/en/common.json']);
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+    postProcessTranslations.mockImplementationOnce(async () => {
+      writeFileSync('messages/fr/common.json', '{"hello":"User edit"}');
+    });
+
+    await expect(handleGenerate(settings)).rejects.toThrow(
+      'A generated output changed while it was being created'
+    );
+
+    expect(existsSync('messages/fr/common.json')).toBe(false);
+    expect(
+      readFileSync(getRecoveryPath('messages/fr/common.json'), 'utf8')
+    ).toBe('{"hello":"User edit"}');
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('preserved after generation failed')
+    );
+  });
+
+  it('accepts a tracked in-place postprocessor write', async () => {
+    writeFileSync('messages/en/common.json', '{"hello":"Hello"}');
+    const settings = createSettings(['messages/en/common.json']);
+    postProcessTranslations.mockImplementationOnce(() =>
+      writePostprocessedFile('messages/fr/common.json', '{"hello":"Localized"}')
+    );
+
+    await handleGenerate(settings);
+
+    expect(readFileSync('messages/fr/common.json', 'utf8')).toBe(
+      '{"hello":"Localized"}'
     );
     expect(getGenerationMarkers('messages/fr/common.json')).toEqual([]);
   });
@@ -400,7 +437,7 @@ describe('handleGenerate', () => {
     );
   });
 
-  it('checks each generated output identity before and after postprocessing', async () => {
+  it('checks each generated output before and around content verification', async () => {
     const sourceFiles = ['alpha', 'beta', 'gamma'].map((name) => {
       const filePath = `messages/en/${name}.json`;
       writeFileSync(filePath, `{"value":"${name}"}`);
@@ -410,7 +447,7 @@ describe('handleGenerate', () => {
 
     await handleGenerate(createSettings(sourceFiles));
 
-    expect(stat).toHaveBeenCalledTimes(sourceFiles.length * 2);
+    expect(stat).toHaveBeenCalledTimes(sourceFiles.length * 3);
   });
 
   it('rejects file format conversion before writing templates', async () => {
