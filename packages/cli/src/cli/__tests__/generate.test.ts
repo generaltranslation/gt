@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -8,7 +9,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BaseCLI } from '../base.js';
 
 describe('gt generate', () => {
@@ -59,9 +60,31 @@ describe('gt generate', () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     process.chdir(originalCwd);
     rmSync(projectDir, { recursive: true, force: true });
   });
+
+  it.each(['missing.json', 'missing'])(
+    'rejects missing explicit config %s',
+    async (configPath) => {
+      const program = new Command();
+      const cli = new BaseCLI(program, 'base');
+      cli.init();
+      const exit = vi.spyOn(process, 'exit').mockImplementation((code) => {
+        throw new Error(`process.exit(${code})`);
+      });
+
+      await expect(
+        program.parseAsync(['generate', '--config', configPath], {
+          from: 'user',
+        })
+      ).rejects.toThrow('process.exit(1)');
+
+      expect(exit).toHaveBeenCalledWith(1);
+      expect(existsSync(path.join(projectDir, 'content', 'fr'))).toBe(false);
+    }
+  );
 
   it('seeds missing locale files without replacing existing translations', async () => {
     const program = new Command();

@@ -75,7 +75,10 @@ import { splitMintlifyLanguageRefs } from '../utils/splitMintlifyLanguageRefs.js
 import { runMergeDriver, type MergeDriverName } from '../git/mergeDrivers.js';
 import { setupGitMergeDrivers } from '../git/setupMergeDrivers.js';
 import { warnReactPackageCompatibility } from '../utils/reactPackageCompatibility.js';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import {
+  createDiagnosticMessage,
+  formatDiagnosticErrorDetails,
+} from 'generaltranslation/internal';
 import { setupViteSPA } from '../setup/setupViteSPA.js';
 import { manifestDirectlyDeclaresGTVue } from '@generaltranslation/vue-extractor/integration';
 import { handleGenerate } from './commands/generate.js';
@@ -103,6 +106,25 @@ const electronSetupError = createDiagnosticMessage({
     'The automatic setup wizard is not ready for Electron applications',
   docsUrl: 'https://generaltranslation.com/docs/react',
 });
+
+function requireGenerateConfig(configPath: string): void {
+  try {
+    JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  } catch (error) {
+    logErrorAndExit(
+      createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Error',
+        whatHappened: 'The specified config file could not be loaded',
+        fix: 'Check that --config points to a readable JSON file and try again',
+        details: [
+          `Config: ${configPath}`,
+          formatDiagnosticErrorDetails(error) ?? 'Unknown error',
+        ],
+      })
+    );
+  }
+}
 
 async function exitIfUnsupportedSetupTarget(): Promise<void> {
   const packageJson = await searchForPackageJson();
@@ -300,6 +322,12 @@ export class BaseCLI {
         )
     ).action(async (initOptions: TranslateFlags) => {
       displayHeader('Generating translation templates...');
+      if (initOptions.config) {
+        initOptions.config = initOptions.config.endsWith('.json')
+          ? initOptions.config
+          : `${initOptions.config}.json`;
+        requireGenerateConfig(initOptions.config);
+      }
       const settings = await generateSettings(initOptions, undefined, {
         requireConfig: true,
       });
