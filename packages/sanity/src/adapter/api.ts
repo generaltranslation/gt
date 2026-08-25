@@ -2,9 +2,6 @@ import {
   awaitJobs as awaitApiJobs,
   createApiClient,
   createBranch,
-  createBatches,
-  createJobStatusLoader,
-  createTimeoutFetch,
   decodeFileContent,
   downloadFile,
   downloadFiles,
@@ -31,9 +28,7 @@ import { ApiError } from 'generaltranslation/errors';
 import { defaultBaseUrl } from 'generaltranslation/internal';
 import type { DownloadedFile, FileFormat } from 'generaltranslation/types';
 
-const timeoutFetch = createTimeoutFetch();
-
-let client = createApiClient({ baseUrl: defaultBaseUrl, fetch: timeoutFetch });
+let client = createApiClient({ baseUrl: defaultBaseUrl });
 let customMapping: CustomMapping | undefined;
 
 export function configureApiClient(
@@ -45,7 +40,6 @@ export function configureApiClient(
   const { customMapping: mapping, ...clientConfig } = config;
   client = createApiClient({
     baseUrl: defaultBaseUrl,
-    fetch: timeoutFetch,
     ...clientConfig,
   });
   customMapping = mapping;
@@ -107,7 +101,7 @@ export const api = {
       );
       return response.uploadedFiles;
     });
-    return { uploadedFiles: result.data, count: result.count };
+    return { uploadedFiles: result, count: result.length };
   },
 
   async uploadTranslations(
@@ -141,7 +135,7 @@ export const api = {
       );
       return response.uploadedFiles;
     });
-    return { uploadedFiles: result.data, count: result.count };
+    return { uploadedFiles: result, count: result.length };
   },
 
   async enqueueFiles(
@@ -171,7 +165,7 @@ export const api = {
         'jobData' in response ? response.jobData : response.data
       );
     });
-    return { jobData: Object.fromEntries(result.data), locales: targetLocales };
+    return { jobData: Object.fromEntries(result), locales: targetLocales };
   },
 
   async querySourceFile(query: {
@@ -205,11 +199,10 @@ export const api = {
   async downloadFileBatch(files: DownloadFilesData['body']) {
     const request = async (batch: DownloadFilesData['body']) =>
       responseData(await downloadFiles({ body: batch, client }));
-    const responses = await Promise.all(
+    const responses =
       files.length === 0
-        ? [request([])]
-        : createBatches(files).map((batch) => request(batch))
-    );
+        ? [await request([])]
+        : await processBatches(files, async (batch) => [await request(batch)]);
     return {
       files: responses.flatMap((response) =>
         response.files.map((file) => ({
@@ -236,7 +229,7 @@ export const api = {
     jobIds: readonly string[],
     options?: Parameters<typeof awaitApiJobs>[2]
   ) {
-    return awaitApiJobs(jobIds, createJobStatusLoader(client), options);
+    return awaitApiJobs(client, jobIds, options);
   },
 
   async queryFileData(body: GetFileInfoData['body']) {
