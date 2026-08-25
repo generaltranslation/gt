@@ -6,6 +6,7 @@ import { getRelative, readFile } from '../fs/findFilepath.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import { Settings } from '../types/index.js';
 import * as fs from 'fs';
+import { settleAll } from './settleAll.js';
 
 /**
  * Processes all translated MD/MDX files to add explicit anchor IDs
@@ -85,5 +86,5 @@ export default async function processAnchorIds(
       }
     });
 
-  await Promise.all(processPromises);
+  await settleAll(processPromises);
 }
