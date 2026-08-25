@@ -234,7 +234,7 @@ describe('built Vue CLI', () => {
       { optionalDependencies: { 'gt-vue': '*' } },
     ],
   ] as const)(
-    'adds file generation to pure %s projects %s',
+    'keeps the pure %s command surface unchanged %s',
     async (fileLibrary, _description, extraManifest) => {
       const projectRoot = createProject({
         dependencies: {
@@ -254,7 +254,7 @@ describe('built Vue CLI', () => {
           const program = new Command();
           main(program);
           const commandNames = program.commands.map((command) => command.name());
-          assert.equal(commandNames.includes('generate'), true);
+          assert.equal(commandNames.includes('generate'), false);
           assert.equal(commandNames.includes('validate'), false);
           const translateOptions = program.commands
             .find((command) => command.name() === 'translate')
@@ -1269,7 +1269,6 @@ import { LocalT } from '@gt';
         'setup',
         'stage',
         'translate',
-        'generate',
         'download',
         'enqueue',
       ];

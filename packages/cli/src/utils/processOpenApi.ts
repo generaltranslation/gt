@@ -8,7 +8,6 @@ import type { Root, Content, Yaml } from 'mdast';
 import { logger } from '../console/logger.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import { Settings } from '../types/index.js';
-import { writePostprocessedFile } from './postprocessFileWrites.js';
 
 type SpecAnalysis = {
   absPath: string;
@@ -111,7 +110,7 @@ export default async function processOpenApi(
         configDir
       );
       if (updated?.changed) {
-        await writePostprocessedFile(filePath, updated.content, 'utf8');
+        await fs.promises.writeFile(filePath, updated.content, 'utf8');
       }
     }
   }
@@ -137,7 +136,7 @@ export default async function processOpenApi(
       );
 
       if (updated?.changed) {
-        await writePostprocessedFile(filePath, updated.content, 'utf8');
+        await fs.promises.writeFile(filePath, updated.content, 'utf8');
       }
     }
   }
@@ -162,7 +161,7 @@ export default async function processOpenApi(
       settings.defaultLocale
     );
     if (updated?.changed) {
-      await writePostprocessedFile(target.path, updated.content, 'utf8');
+      await fs.promises.writeFile(target.path, updated.content, 'utf8');
     }
   }
 

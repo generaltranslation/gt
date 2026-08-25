@@ -6,8 +6,6 @@ import { getRelative, readFile } from '../fs/findFilepath.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import { Settings } from '../types/index.js';
 import * as fs from 'fs';
-import { writePostprocessedFileSync } from './postprocessFileWrites.js';
-import { settleAll } from './settleAll.js';
 
 /**
  * Processes all translated MD/MDX files to add explicit anchor IDs
@@ -77,7 +75,7 @@ export default async function processAnchorIds(
           );
 
           if (result.hasChanges) {
-            writePostprocessedFileSync(translatedPath, result.content, 'utf8');
+            fs.writeFileSync(translatedPath, result.content, 'utf8');
           }
         } catch (error) {
           console.warn(
@@ -87,5 +85,5 @@ export default async function processAnchorIds(
       }
     });
 
-  await settleAll(processPromises);
+  await Promise.all(processPromises);
 }
