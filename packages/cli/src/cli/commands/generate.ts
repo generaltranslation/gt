@@ -12,6 +12,7 @@ import { SUPPORTED_FILE_EXTENSIONS } from '../../formats/files/supportedFiles.js
 import { hasNonIdentityFileFormatTransformForType } from '../../formats/files/transformFormat.js';
 import type { Settings } from '../../types/index.js';
 import { hashStringSync } from '../../utils/hash.js';
+import { observePostprocessFileWrites } from '../../utils/postprocessFileWrites.js';
 import { postProcessTranslations } from './translate.js';
 
 type GenerationTarget = {
@@ -24,6 +25,7 @@ type GenerationTarget = {
 };
 
 type GeneratedFile = {
+  contentHash: string;
   identity: string;
   outputPath: string;
   target: GenerationTarget;
@@ -145,6 +147,28 @@ async function getFileIdentity(filePath: string): Promise<string | null> {
     return stat.isFile() ? `${stat.dev}:${stat.ino}` : null;
   } catch {
     return null;
+  }
+}
+
+async function matchesGeneratedFile(
+  generatedFile: GeneratedFile
+): Promise<boolean> {
+  const filePath = path.resolve(generatedFile.outputPath);
+  try {
+    const before = await fs.promises.stat(filePath);
+    if (`${before.dev}:${before.ino}` !== generatedFile.identity) return false;
+
+    const content = await fs.promises.readFile(filePath, 'utf8');
+    const after = await fs.promises.stat(filePath);
+    return (
+      before.dev === after.dev &&
+      before.ino === after.ino &&
+      before.size === after.size &&
+      before.mtimeMs === after.mtimeMs &&
+      hashStringSync(content) === generatedFile.contentHash
+    );
+  } catch {
+    return false;
   }
 }
 
@@ -297,10 +321,12 @@ async function createTargetFile(
   }
 
   let identity: string;
+  let generatedFile: GeneratedFile;
   try {
     const stat = await fileHandle.stat();
     identity = `${stat.dev}:${stat.ino}`;
-    generatedFiles.set(marker, { identity, outputPath, target });
+    generatedFile = { contentHash: '', identity, outputPath, target };
+    generatedFiles.set(marker, generatedFile);
 
     if (target.changesFormat) {
       throw createUnsupportedFormatTransformError();
@@ -311,6 +337,7 @@ async function createTargetFile(
       settings
     );
     const content = sourceTemplate ?? (await fs.promises.readFile(source));
+    generatedFile.contentHash = hashStringSync(content.toString());
     await fileHandle.writeFile(content);
   } finally {
     await fileHandle.close();
@@ -335,21 +362,33 @@ export async function handleGenerate(settings: Settings): Promise<void> {
     }
 
     if (generatedFiles.size > 0) {
-      await postProcessTranslations(
-        settings,
-        new Set(
-          [...generatedFiles.values()].map(({ outputPath }) => outputPath)
-        ),
-        {
-          restrictToIncludedFiles: true,
-        }
+      const generatedFilesByOutput = new Map(
+        [...generatedFiles.values()].map((generatedFile) => [
+          path.resolve(generatedFile.outputPath),
+          generatedFile,
+        ])
+      );
+      await observePostprocessFileWrites(
+        (filePath, content) => {
+          const generatedFile = generatedFilesByOutput.get(filePath);
+          if (generatedFile) {
+            generatedFile.contentHash = hashStringSync(content);
+          }
+        },
+        () =>
+          postProcessTranslations(
+            settings,
+            new Set(
+              [...generatedFiles.values()].map(({ outputPath }) => outputPath)
+            ),
+            {
+              restrictToIncludedFiles: true,
+            }
+          )
       );
 
       for (const generatedFile of generatedFiles.values()) {
-        if (
-          (await getFileIdentity(path.resolve(generatedFile.outputPath))) !==
-          generatedFile.identity
-        ) {
+        if (!(await matchesGeneratedFile(generatedFile))) {
           throw createChangedOutputError(generatedFile.target);
         }
       }

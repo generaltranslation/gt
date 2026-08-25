@@ -7,6 +7,7 @@ import YAML, { isMap, isScalar } from 'yaml';
 import type { Content, Root, Yaml } from 'mdast';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import type { Settings } from '../types/index.js';
+import { writePostprocessedFile } from './postprocessFileWrites.js';
 import { settleAll } from './settleAll.js';
 
 const SKIPPABLE_URL_REGEX = /^(?:[a-z][a-z0-9+.-]*:|\/\/|#|\.\/|\.\.\/)/i;
@@ -152,7 +153,7 @@ export default async function localizeMintlifyFrontmatterUrls(
           knownLocaleValues
         );
         if (result.changed) {
-          await fs.promises.writeFile(filePath, result.content, 'utf8');
+          await writePostprocessedFile(filePath, result.content, 'utf8');
         }
       })
     );

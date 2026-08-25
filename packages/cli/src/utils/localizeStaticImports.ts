@@ -13,6 +13,7 @@ import remarkFrontmatter from 'remark-frontmatter';
 import { visit } from 'unist-util-visit';
 import type { Root } from 'mdast';
 import type { MdxjsEsm } from 'mdast-util-mdxjs-esm';
+import { writePostprocessedFile } from './postprocessFileWrites.js';
 import { settleAll } from './settleAll.js';
 
 const { isMatch } = micromatch;
@@ -91,7 +92,7 @@ export default async function localizeStaticImports(
             settings.options
           );
           // Write the localized file back to the same path
-          await fs.promises.writeFile(filePath, localizedFile);
+          await writePostprocessedFile(filePath, localizedFile);
         })
       );
       processPromises.push(defaultPromise);
@@ -129,7 +130,7 @@ export default async function localizeStaticImports(
             settings.options
           );
           // Write the localized file to the target path
-          await fs.promises.writeFile(filePath, localizedFile);
+          await writePostprocessedFile(filePath, localizedFile);
         })
       );
     }
