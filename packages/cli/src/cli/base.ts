@@ -76,7 +76,7 @@ import { splitMintlifyLanguageRefs } from '../utils/splitMintlifyLanguageRefs.js
 import { runMergeDriver, type MergeDriverName } from '../git/mergeDrivers.js';
 import { setupGitMergeDrivers } from '../git/setupMergeDrivers.js';
 import { warnReactPackageCompatibility } from '../utils/reactPackageCompatibility.js';
-import { createDiagnosticMessage } from '@generaltranslation/utils';
+import { createDiagnosticMessage } from '@generaltranslation/utils/diagnostics';
 import { setupViteSPA } from '../setup/setupViteSPA.js';
 import { manifestDirectlyDeclaresGTVue } from '@generaltranslation/vue-extractor/integration';
 import { api } from '../utils/api.js';
