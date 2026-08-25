@@ -4,11 +4,14 @@ import type { GetProjectInfoData } from './generated/types.gen';
 import { createRetryingFetch, createTimeoutFetch } from './transport';
 import type { RetryPolicy } from './transport';
 
-export const API_VERSION = '2026-03-06.v1';
-
 export type ApiVersion = NonNullable<
   NonNullable<GetProjectInfoData['headers']>['gt-api-version']
 >;
+
+// The SDK pins the newest contract version (the server defaults to the
+// oldest). The ApiVersion annotation checks the pin against the spec: if a
+// regenerated spec drops this version, this line fails to compile.
+export const API_VERSION: ApiVersion = '2026-03-06.v1';
 
 export type ApiClientConfig = {
   apiKey?: string;
