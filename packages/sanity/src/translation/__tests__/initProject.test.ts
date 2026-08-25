@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { gt, overrideConfig, pluginConfig } from '../../adapter/core';
+import { api, overrideConfig, pluginConfig } from '../../adapter/core';
 import type { Secrets } from '../../types';
 import { initProject } from '../initProject';
 
 vi.mock('../../adapter/core', () => ({
-  gt: {
+  api: {
     setupProject: vi.fn(),
     awaitJobs: vi.fn(),
   },
@@ -32,13 +32,13 @@ const secrets: Secrets = {
 const consoleLog = vi.fn();
 
 async function runWithAwaitResult(
-  awaitResult: Awaited<ReturnType<typeof gt.awaitJobs>>
+  awaitResult: Awaited<ReturnType<typeof api.awaitJobs>>
 ) {
-  vi.mocked(gt.setupProject).mockResolvedValue({
+  vi.mocked(api.setupProject).mockResolvedValue({
     status: 'queued',
     setupJobId: 'setup-job',
   });
-  vi.mocked(gt.awaitJobs).mockResolvedValue(awaitResult);
+  vi.mocked(api.awaitJobs).mockResolvedValue(awaitResult);
 
   return initProject(uploadResult, { timeout: 30 }, secrets);
 }
@@ -62,7 +62,7 @@ describe('initProject', () => {
 
     expect(consoleLog).toHaveBeenCalledWith('Setup successfully completed');
     expect(overrideConfig).toHaveBeenCalledWith(secrets);
-    expect(gt.awaitJobs).toHaveBeenCalledWith(['setup-job'], {
+    expect(api.awaitJobs).toHaveBeenCalledWith(['setup-job'], {
       pollingIntervalSeconds: 2,
       timeoutSeconds: 30,
     });

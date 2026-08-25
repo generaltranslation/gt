@@ -1,6 +1,6 @@
 import type { Adapter, GTFile, GTSerializedDocument, Secrets } from '../types';
 import { getTranslationTask } from './getTranslationTask';
-import { gt, overrideConfig } from './core';
+import { api, gt, overrideConfig } from './core';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 
 // note: this function is used to create a new translation task
@@ -15,7 +15,7 @@ export const createTask: Adapter['createTask'] = async (
 ) => {
   const fileName = `sanity/${documentInfo.documentId}`;
   overrideConfig(secrets);
-  const uploadResult = await gt.uploadSourceFiles(
+  const uploadResult = await api.uploadSourceFiles(
     [
       {
         source: {
@@ -32,7 +32,7 @@ export const createTask: Adapter['createTask'] = async (
       sourceLocale: gt.sourceLocale || libraryDefaultLocale,
     }
   );
-  await gt.enqueueFiles(uploadResult.uploadedFiles, {
+  await api.enqueueFiles(uploadResult.uploadedFiles, {
     sourceLocale: gt.sourceLocale || libraryDefaultLocale,
     targetLocales: localeIds,
   });
