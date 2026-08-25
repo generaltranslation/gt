@@ -27,6 +27,8 @@ jobs:
         with:
           # Same-repo: check out the branch so we can push to it. Fork: default merge ref.
           ref: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref || '' }}
+          # Push with a PAT so the bot commit triggers CI; GITHUB_TOKEN pushes don't fire workflow events.
+          token: ${{ secrets.GT_SYNC_TOKEN || github.token }}
 
       - name: Install pnpm
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
