@@ -1,3 +1,5 @@
+import type { Client } from './generated/client';
+import { getTranslationJobInfo } from './generated/sdk.gen';
 import type { GetTranslationJobInfoResponse } from './generated/types.gen';
 // Per-poll cap so a hung connection fails fast instead of eating the whole deadline.
 import { DEFAULT_TIMEOUT_MS as MAX_POLL_TIMEOUT_MS } from './transport';
@@ -19,6 +21,28 @@ export type AwaitJobsResult = {
 };
 
 export async function awaitJobs(
+  client: Client,
+  jobIds: readonly string[],
+  options: AwaitJobsOptions = {}
+): Promise<AwaitJobsResult> {
+  return pollJobs(
+    jobIds,
+    async (pendingJobIds, signal) => {
+      const result = await getTranslationJobInfo({
+        body: { jobIds: pendingJobIds },
+        client,
+        signal,
+        throwOnError: true,
+      });
+      return result.data;
+    },
+    options
+  );
+}
+
+// Internal seam: the polling loop with an injected status loader so tests can
+// drive it without a client. Not re-exported from the package index.
+export async function pollJobs(
   jobIds: readonly string[],
   getJobStatuses: GetJobStatuses,
   options: AwaitJobsOptions = {}

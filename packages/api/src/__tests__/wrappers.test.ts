@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { awaitJobs } from '../awaitJobs';
+import { awaitJobs, pollJobs } from '../awaitJobs';
 import {
   decodeBase64,
   decodeFileContent,
@@ -303,13 +303,41 @@ describe('base64 helpers', () => {
 });
 
 describe('awaitJobs', () => {
+  it('polls the jobs endpoint through a configured client', async () => {
+    let request: Request | undefined;
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockImplementation(async (input) => {
+        request = new Request(input);
+        return new Response(
+          JSON.stringify([{ jobId: 'one', status: 'completed' }]),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        );
+      });
+    const client = createApiClient({
+      baseUrl: 'https://example.com',
+      fetch: fetchMock,
+      retryPolicy: 'none',
+    });
+
+    const result = await awaitJobs(client, ['one']);
+
+    expect(result).toEqual({
+      complete: true,
+      jobs: [{ jobId: 'one', status: 'completed' }],
+    });
+    expect(request?.url).toBe('https://example.com/v2/project/jobs/info');
+  });
+});
+
+describe('pollJobs', () => {
   it('polls pending jobs until they reach terminal states', async () => {
     const getJobStatuses = vi
       .fn()
       .mockResolvedValueOnce([{ jobId: 'one', status: 'processing' }])
       .mockResolvedValueOnce([{ jobId: 'one', status: 'completed' }]);
 
-    const result = await awaitJobs(['one'], getJobStatuses, {
+    const result = await pollJobs(['one'], getJobStatuses, {
       pollingIntervalSeconds: 0,
     });
 
@@ -323,7 +351,7 @@ describe('awaitJobs', () => {
   it('reports incomplete unknown jobs when the deadline expires', async () => {
     const getJobStatuses = vi.fn();
 
-    const result = await awaitJobs(['one'], getJobStatuses, {
+    const result = await pollJobs(['one'], getJobStatuses, {
       timeoutSeconds: 0,
     });
 
@@ -337,7 +365,7 @@ describe('awaitJobs', () => {
   it('marks jobs missing from the response as unknown', async () => {
     const getJobStatuses = vi.fn().mockResolvedValue([]);
 
-    const result = await awaitJobs(['one'], getJobStatuses, {
+    const result = await pollJobs(['one'], getJobStatuses, {
       pollingIntervalSeconds: 0,
     });
 
@@ -351,13 +379,13 @@ describe('awaitJobs', () => {
   it('propagates status-loader errors before the deadline', async () => {
     const getJobStatuses = vi.fn().mockRejectedValue(new Error('boom'));
 
-    await expect(awaitJobs(['one'], getJobStatuses)).rejects.toThrow('boom');
+    await expect(pollJobs(['one'], getJobStatuses)).rejects.toThrow('boom');
   });
 
   it('completes immediately for an empty job list', async () => {
     const getJobStatuses = vi.fn();
 
-    await expect(awaitJobs([], getJobStatuses)).resolves.toEqual({
+    await expect(pollJobs([], getJobStatuses)).resolves.toEqual({
       complete: true,
       jobs: [],
     });
