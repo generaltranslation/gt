@@ -84,6 +84,11 @@ describe('handleGenerate', () => {
       'Postprocessing failed'
     );
     expect(existsSync('messages/fr/common.json')).toBe(false);
+    expect(
+      readdirSync('messages/fr').some((file) =>
+        file.startsWith('.gt-rollback-')
+      )
+    ).toBe(false);
 
     await handleGenerate(settings);
 
@@ -97,6 +102,26 @@ describe('handleGenerate', () => {
       { restrictToIncludedFiles: true }
     );
     expect(getGenerationMarkers('messages/fr/common.json')).toEqual([]);
+  });
+
+  it('removes unchanged templates when a later target fails', async () => {
+    writeFileSync('messages/en/alpha.json', '{"value":"Alpha"}');
+    writeFileSync('messages/en/beta.json', '{"value":"Beta"}');
+    mkdirSync('messages/fr/beta.json', { recursive: true });
+
+    await expect(
+      handleGenerate(
+        createSettings(['messages/en/alpha.json', 'messages/en/beta.json'])
+      )
+    ).rejects.toThrow('generated output path is not a regular file');
+
+    expect(existsSync('messages/fr/alpha.json')).toBe(false);
+    expect(
+      readdirSync('messages/fr').some((file) =>
+        file.startsWith('.gt-rollback-')
+      )
+    ).toBe(false);
+    expect(getGenerationMarkers('messages/fr/alpha.json')).toEqual([]);
   });
 
   it('preserves a concurrently replaced output during rollback', async () => {
@@ -121,6 +146,36 @@ describe('handleGenerate', () => {
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining('preserved after generation failed')
     );
+  });
+
+  it('preserves binary content changed before rollback', async () => {
+    writeFileSync('messages/en/animation.lottie', Buffer.from([0xff]));
+    const settings = {
+      ...createSettings([]),
+      files: {
+        resolvedPaths: {
+          lottie: [path.resolve('messages/en/animation.lottie')],
+        },
+        placeholderPaths: {
+          lottie: [path.resolve('messages/[locale]/animation.lottie')],
+        },
+        transformPaths: {},
+        transformFormats: {},
+      },
+    } as Settings;
+    postProcessTranslations.mockImplementationOnce(async () => {
+      writeFileSync('messages/fr/animation.lottie', Buffer.from([0xfe]));
+      throw new Error('Postprocessing failed');
+    });
+    vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+
+    await expect(handleGenerate(settings)).rejects.toThrow(
+      'Postprocessing failed'
+    );
+
+    expect(
+      readFileSync(getRecoveryPath('messages/fr/animation.lottie'))
+    ).toEqual(Buffer.from([0xfe]));
   });
 
   it('rejects an output replaced during successful postprocessing', async () => {
