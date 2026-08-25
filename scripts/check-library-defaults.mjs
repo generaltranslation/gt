@@ -40,6 +40,17 @@ export function normalizeRepositoryPath(relativePath) {
 
 export const defaultGroups = [
   {
+    // The API package owns the pinned gt-api-version contract value. Core's
+    // copy stays synchronized until it migrates to re-export from
+    // @generaltranslation/api.
+    name: 'API_VERSION',
+    declarations: [
+      'packages/api/src/client.ts',
+      'packages/core/src/translate/api.ts',
+    ],
+    exceptions: [],
+  },
+  {
     name: 'libraryDefaultLocale',
     declarations: [
       'packages/core/src/settings/settings.ts',
@@ -228,6 +239,8 @@ function collectSourceFiles(repositoryRoot, directory, files = []) {
     if (!/\.(?:[cm]?[jt]sx?)$/.test(entry.name)) continue;
     if (/\.(?:test|spec)\.[cm]?[jt]sx?$/.test(entry.name)) continue;
     if (/\.d\.[cm]?ts$/.test(entry.name)) continue;
+    // Generated code restates spec-derived values and cannot import constants.
+    if (/\.gen\.[cm]?[jt]sx?$/.test(entry.name)) continue;
     files.push(
       normalizeRepositoryPath(path.relative(repositoryRoot, absolutePath))
     );
