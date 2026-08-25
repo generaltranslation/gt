@@ -139,6 +139,11 @@ Enhancement suggestions are tracked as [GitHub issues](https://github.com/genera
 
 ### Your First Code Contribution
 
+<!-- TODO
+include Setup of env, IDE and typical getting started instructions?
+
+-->
+
 Install [mise](https://mise.jdx.dev/getting-started.html), then set up the pinned development tools and project dependencies:
 
 ```sh
@@ -146,8 +151,6 @@ mise trust # Approves this repository's mise.toml
 mise install
 pnpm install
 ```
-
-mise reads the Node.js version from `.nvmrc` and the pnpm version from `package.json`. It also installs Bun and Python for CLI release development. Work on the gt-next SWC plugin requires rustup; its Rust toolchain and WASM target are selected automatically from `rust-toolchain.toml`.
 
 ### Improving The Documentation
 
