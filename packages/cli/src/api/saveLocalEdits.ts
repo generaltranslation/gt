@@ -1,7 +1,7 @@
 import { Settings } from '../types/index.js';
 import { aggregateFiles } from '../formats/files/aggregateFiles.js';
 import { collectAndSendUserEditDiffs } from './collectUserEditDiffs.js';
-import { gt } from '../utils/gt.js';
+import { api } from '../utils/api.js';
 import { BranchStep } from '../workflows/steps/BranchStep.js';
 import { logErrorAndExit } from '../console/logging.js';
 import { logger } from '../console/logger.js';
@@ -23,7 +23,7 @@ export async function saveLocalEdits(settings: Settings): Promise<void> {
 
   // run branch query to get branch id
   // Run the branch step
-  const branchStep = new BranchStep(gt, settings);
+  const branchStep = new BranchStep(api, settings);
   const branchResult = await branchStep.run();
   if (!branchResult) {
     return logErrorAndExit(branchResolutionError);

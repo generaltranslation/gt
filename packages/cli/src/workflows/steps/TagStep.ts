@@ -1,6 +1,6 @@
 import type { CreateTagResult } from 'generaltranslation/types';
 import { logger } from '../../console/logger.js';
-import { GT } from 'generaltranslation';
+import type { ApiClient } from '../../utils/api.js';
 import { Settings } from '../../types/index.js';
 import type { FileReference } from 'generaltranslation/types';
 import chalk from 'chalk';
@@ -9,7 +9,7 @@ export class TagStep {
   private spinner = logger.createSpinner('dots');
 
   constructor(
-    private gt: GT,
+    private api: ApiClient,
     private settings: Settings,
     private userProvided: boolean
   ) {}
@@ -20,7 +20,7 @@ export class TagStep {
     }
 
     try {
-      const result = await this.gt.createTag({
+      const result = await this.api.createTag({
         tagId: this.settings.tag!,
         files: files.map((f) => ({
           fileId: f.fileId,

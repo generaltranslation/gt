@@ -1,8 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { isBinaryFileFormat } from 'generaltranslation/types';
+import { isBinaryFileFormat, type FileFormat } from 'generaltranslation/types';
 import { logger } from '../console/logger.js';
-import { gt } from '../utils/gt.js';
+import { api } from '../utils/api.js';
 import { Settings } from '../types/index.js';
 import { validateJsonSchema } from '../formats/json/utils.js';
 import { validateYamlSchema } from '../formats/yaml/utils.js';
@@ -230,7 +230,7 @@ export async function downloadFileBatch(
 
   try {
     // Download the files
-    const responseData = await gt.downloadFileBatch(
+    const responseData = await api.downloadFileBatch(
       files.map((file) => ({
         fileId: file.fileId,
         branchId: file.branchId,
@@ -286,7 +286,7 @@ export async function downloadFileBatch(
         // Binary formats (e.g. LOTTIE zip bundles) carry base64 content that must
         // not go through the text merge/sort path — decode straight to bytes and
         // write. Skip only when an unchanged local translation already exists.
-        if (isBinaryFileFormat(file.fileFormat)) {
+        if (isBinaryFileFormat(file.fileFormat as FileFormat)) {
           if (!forceDownload && fileExists && downloadedTranslation) {
             result.skipped.push(requestedFile);
             continue;

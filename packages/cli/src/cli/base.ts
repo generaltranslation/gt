@@ -78,6 +78,7 @@ import { warnReactPackageCompatibility } from '../utils/reactPackageCompatibilit
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { setupViteSPA } from '../setup/setupViteSPA.js';
 import { manifestDirectlyDeclaresGTVue } from '@generaltranslation/vue-extractor/integration';
+import { api } from '../utils/api.js';
 
 const ID_COMPATIBILITY_WARNING_COMMANDS = new Set([
   'download',
@@ -195,6 +196,9 @@ export class BaseCLI {
     this.setupUploadCommand();
     this.setupLoginCommand();
     this.setupSendDiffsCommand();
+    this.setupProjectCreateCommand();
+    this.setupTranslateTextCommand();
+    this.setupStatusCommand();
     this.setupGitCommand();
   }
   // Init is never called in a child class
@@ -306,6 +310,68 @@ export class BaseCLI {
         await saveLocalEdits(settings);
         logger.endCommand('Saved local edits');
       });
+  }
+
+  protected setupProjectCreateCommand(): void {
+    attachSharedFlags(
+      this.program
+        .command('project-create')
+        .description(
+          'Create a General Translation project using an organization API key'
+        )
+        .requiredOption('--name <name>', 'Project name')
+        .requiredOption('--default-locale <locale>', 'Project default locale')
+        .option('--cdn-enabled', 'Enable CDN delivery', false)
+    ).action(async (options) => {
+      await generateSettings(options);
+      const { project } = await api.createProject({
+        name: options.name,
+        defaultLocale: options.defaultLocale,
+        cdnEnabled: options.cdnEnabled,
+      });
+      logger.info(`Created ${project.name} (${project.id})`);
+    });
+  }
+
+  protected setupTranslateTextCommand(): void {
+    attachSharedFlags(
+      this.program
+        .command('translate-text')
+        .description('Translate text without running a project workflow')
+        .requiredOption('--text <text>', 'Text to translate')
+        .requiredOption('--source-locale <locale>', 'Source locale')
+        .requiredOption('--target-locale <locale>', 'Target locale')
+    ).action(async (options) => {
+      await generateSettings(options);
+      const result = await api.translate({
+        requests: { text: { source: options.text } },
+        sourceLocale: options.sourceLocale,
+        targetLocale: options.targetLocale,
+        metadata: {},
+      });
+      const translation = result.text;
+      if (!translation || !translation.success) {
+        throw new Error(translation?.error ?? 'Translation failed');
+      }
+      logger.info(
+        typeof translation.translation === 'string'
+          ? translation.translation
+          : JSON.stringify(translation.translation)
+      );
+    });
+  }
+
+  protected setupStatusCommand(): void {
+    attachSharedFlags(
+      this.program
+        .command('setup-status')
+        .description('Check project setup status')
+        .argument('<job-id>', 'Setup job ID')
+    ).action(async (jobId, options) => {
+      await generateSettings(options);
+      const status = await api.getSetupStatus(jobId);
+      logger.info(status.status);
+    });
   }
 
   protected setupGitCommand(): void {

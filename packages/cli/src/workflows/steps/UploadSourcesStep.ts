@@ -1,15 +1,12 @@
+import type { GetFileInfoResponse } from '@generaltranslation/api';
 import type { FileToUpload } from 'generaltranslation/types';
 import { logger } from '../../console/logger.js';
 import { recordWarning } from '../../state/translateWarnings.js';
-import type { GT } from 'generaltranslation';
+import type { ApiClient } from '../../utils/api.js';
 import type { Settings } from '../../types/index.js';
 import chalk from 'chalk';
 import { BranchData } from '../../types/branch.js';
-import type {
-  FileDataResult,
-  FileReference,
-  OrphanedFile,
-} from 'generaltranslation/types';
+import type { FileReference, OrphanedFile } from 'generaltranslation/types';
 
 type MoveMapping = {
   oldFileId: string;
@@ -18,7 +15,7 @@ type MoveMapping = {
 };
 
 type UploadSourcesClient = Pick<
-  GT,
+  ApiClient,
   | 'queryFileData'
   | 'getOrphanedFiles'
   | 'processFileMoves'
@@ -145,7 +142,7 @@ export class UploadSourcesStep {
     // Build a map of branch:fileId:versionId to fileData
     const fileDataMap = new Map<
       string,
-      NonNullable<FileDataResult['sourceFiles']>[number]
+      GetFileInfoResponse['sourceFiles'][number]
     >();
     fileData.sourceFiles?.forEach((f) => {
       fileDataMap.set(`${f.branchId}:${f.fileId}:${f.versionId}`, f);
@@ -188,10 +185,11 @@ export class UploadSourcesStep {
       const localFile = localFileMap.get(
         `${uploadedFile.fileId}:${uploadedFile.versionId}`
       );
+      const uploadedReference = uploadedFile as FileReference;
       return {
-        ...uploadedFile,
+        ...uploadedReference,
         transformFormat:
-          localFile?.transformFormat ?? uploadedFile.transformFormat,
+          localFile?.transformFormat ?? uploadedReference.transformFormat,
       };
     });
 
