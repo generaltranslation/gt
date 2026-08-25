@@ -121,8 +121,9 @@ export function createSourceTemplate(
           settings.defaultLocale
         )
       : extractYaml(sourceContent, inputPath, settings.options);
+  if (extractedSource === null) return undefined;
   return mergeWithSchema(
-    extractedSource ?? '{}',
+    extractedSource,
     locale,
     inputPath,
     settings,
