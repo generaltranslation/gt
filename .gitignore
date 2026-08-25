@@ -16,6 +16,7 @@ dist/
 .claude/settings.local.json
 .claude/mcp.json
 CLAUDE.local.md
+mise.local.toml
 tsconfig.tsbuildinfo
 target/
 tmp/
