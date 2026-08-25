@@ -3,7 +3,7 @@ import { branchResolutionError, withOriginalError } from '../console/index.js';
 import { logger } from '../console/logger.js';
 import { logErrorAndExit } from '../console/logging.js';
 import { Settings } from '../types/index.js';
-import { gt } from '../utils/gt.js';
+import { api } from '../utils/api.js';
 import { syncFonts } from './utils/syncFonts.js';
 import { BranchStep } from './steps/BranchStep.js';
 import { UploadSourcesStep } from './steps/UploadSourcesStep.js';
@@ -44,9 +44,9 @@ export async function runUploadFilesWorkflow({
     await syncFonts(options);
 
     // Create workflow steps
-    const branchStep = new BranchStep(gt, options);
-    const uploadStep = new UploadSourcesStep(gt, options);
-    const uploadTranslationsStep = new UploadTranslationsStep(gt, options);
+    const branchStep = new BranchStep(api, options);
+    const uploadStep = new UploadSourcesStep(api, options);
+    const uploadTranslationsStep = new UploadTranslationsStep(api, options);
 
     // Step 1: Resolve branch information
     const branchData = await branchStep.run();

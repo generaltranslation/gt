@@ -1,7 +1,7 @@
-import type { GT } from 'generaltranslation';
 import type { FileProperties } from '../../types/files.js';
+import type { ApiClient } from '../../utils/api.js';
 
-export type QueryCompletedTranslationsClient = Pick<GT, 'queryFileData'>;
+export type QueryCompletedTranslationsClient = Pick<ApiClient, 'queryFileData'>;
 
 export function getFileTranslationKey(
   file: Pick<FileProperties, 'branchId' | 'fileId' | 'versionId' | 'locale'>
@@ -10,14 +10,14 @@ export function getFileTranslationKey(
 }
 
 export async function queryCompletedTranslationKeys(
-  gt: QueryCompletedTranslationsClient,
+  api: QueryCompletedTranslationsClient,
   fileQueryData: FileProperties[]
 ): Promise<Set<string>> {
   if (fileQueryData.length === 0) {
     return new Set();
   }
 
-  const fileData = await gt.queryFileData({
+  const fileData = await api.queryFileData({
     translatedFiles: fileQueryData.map((file) => ({
       fileId: file.fileId,
       versionId: file.versionId,

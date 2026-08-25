@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { BatchedFiles, downloadFileBatch } from '../downloadFileBatch.js';
-import { gt } from '../../utils/gt.js';
+import { api } from '../../utils/api.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import nodePath from 'node:path';
@@ -19,8 +19,8 @@ import type { FileStatusTracker } from '../../workflows/steps/PollJobsStep.js';
 import { clearWarnings, getWarnings } from '../../state/translateWarnings.js';
 
 // Mock dependencies
-vi.mock('../../utils/gt.js', () => ({
-  gt: {
+vi.mock('../../utils/api.js', () => ({
+  api: {
     downloadFileBatch: vi.fn(),
     resolveAliasLocale: vi.fn((locale) => locale), // Return locale as-is for testing
     resolveCanonicalLocale: vi.fn((locale) => locale),
@@ -184,7 +184,7 @@ describe('downloadFileBatch', () => {
     const files = createBatchedFiles();
     const fileTracker = createMockFileTracker(files);
 
-    vi.mocked(gt.downloadFileBatch).mockResolvedValue(mockResponseData);
+    vi.mocked(api.downloadFileBatch).mockResolvedValue(mockResponseData);
     setupFileSystemMocks();
 
     const result = await downloadFileBatch(
@@ -193,7 +193,7 @@ describe('downloadFileBatch', () => {
       createMockSettings()
     );
 
-    expect(gt.downloadFileBatch).toHaveBeenCalled();
+    expect(api.downloadFileBatch).toHaveBeenCalled();
     expect(fs.promises.writeFile).toHaveBeenCalledWith(
       '/output/file1.json',
       'content1'
@@ -226,7 +226,7 @@ describe('downloadFileBatch', () => {
     const files = createBatchedFiles(1);
     const fileTracker = createMockFileTracker(files);
 
-    vi.mocked(gt.downloadFileBatch).mockResolvedValue(mockResponseData);
+    vi.mocked(api.downloadFileBatch).mockResolvedValue(mockResponseData);
     setupFileSystemMocks();
 
     const result = await downloadFileBatch(
@@ -265,7 +265,7 @@ describe('downloadFileBatch', () => {
     });
     const fileTracker = createMockFileTracker(files);
 
-    vi.mocked(gt.downloadFileBatch).mockResolvedValue(mockResponseData);
+    vi.mocked(api.downloadFileBatch).mockResolvedValue(mockResponseData);
     vi.mocked(path.dirname).mockReturnValue('/output/dir');
     vi.mocked(fs.existsSync).mockReturnValueOnce(false).mockReturnValue(true);
     vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined);
@@ -287,7 +287,7 @@ describe('downloadFileBatch', () => {
     const files = createBatchedFiles();
     const fileTracker = createMockFileTracker(files);
 
-    vi.mocked(gt.downloadFileBatch).mockResolvedValue(mockResponseData);
+    vi.mocked(api.downloadFileBatch).mockResolvedValue(mockResponseData);
     vi.mocked(path.dirname).mockReturnValue('/output');
     vi.mocked(fs.existsSync).mockReturnValue(true);
     vi.mocked(fs.promises.writeFile)
@@ -350,7 +350,7 @@ describe('downloadFileBatch', () => {
       ],
     });
 
-    vi.mocked(gt.downloadFileBatch).mockResolvedValue(mockResponseData);
+    vi.mocked(api.downloadFileBatch).mockResolvedValue(mockResponseData);
     setupFileSystemMocks();
 
     const result = await downloadFileBatch(
@@ -385,7 +385,7 @@ describe('downloadFileBatch', () => {
       count: 1,
     });
 
-    vi.mocked(gt.downloadFileBatch).mockResolvedValue(mockResponseData);
+    vi.mocked(api.downloadFileBatch).mockResolvedValue(mockResponseData);
     setupFileSystemMocks();
 
     const result = await downloadFileBatch(
@@ -419,7 +419,7 @@ describe('downloadFileBatch', () => {
       count: 1,
     });
 
-    vi.mocked(gt.downloadFileBatch).mockResolvedValue(mockResponseData);
+    vi.mocked(api.downloadFileBatch).mockResolvedValue(mockResponseData);
     setupFileSystemMocks();
 
     const result = await downloadFileBatch(
@@ -439,7 +439,7 @@ describe('downloadFileBatch', () => {
       count: 0,
     });
 
-    vi.mocked(gt.downloadFileBatch).mockResolvedValue(mockResponseData);
+    vi.mocked(api.downloadFileBatch).mockResolvedValue(mockResponseData);
 
     const result = await downloadFileBatch(
       fileTracker,
@@ -457,7 +457,7 @@ describe('downloadFileBatch', () => {
     });
     const fileTracker = createMockFileTracker([]);
 
-    vi.mocked(gt.downloadFileBatch).mockResolvedValue(mockResponseData);
+    vi.mocked(api.downloadFileBatch).mockResolvedValue(mockResponseData);
 
     const result = await downloadFileBatch(
       fileTracker,
@@ -465,7 +465,7 @@ describe('downloadFileBatch', () => {
       createMockSettings()
     );
 
-    expect(gt.downloadFileBatch).toHaveBeenCalled();
+    expect(api.downloadFileBatch).toHaveBeenCalled();
     expect(result.successful).toHaveLength(0);
     expect(result.failed).toHaveLength(0);
   });
@@ -491,7 +491,7 @@ describe('downloadFileBatch', () => {
       count: 1,
     });
 
-    vi.mocked(gt.downloadFileBatch).mockResolvedValue(mockResponseData);
+    vi.mocked(api.downloadFileBatch).mockResolvedValue(mockResponseData);
     setupFileSystemMocks();
 
     const result = await downloadFileBatch(
@@ -518,7 +518,7 @@ describe('downloadFileBatch', () => {
     };
 
     vi.mocked(findOrCreateEntry).mockReturnValue(lockEntry);
-    vi.mocked(gt.downloadFileBatch).mockResolvedValue({
+    vi.mocked(api.downloadFileBatch).mockResolvedValue({
       files: [
         {
           id: 'translation-1',
@@ -558,7 +558,7 @@ describe('downloadFileBatch', () => {
       if (!fileProperties) throw new Error('Expected one completed file');
       fileProperties.componentCount = 2;
 
-      vi.mocked(gt.downloadFileBatch).mockResolvedValue({
+      vi.mocked(api.downloadFileBatch).mockResolvedValue({
         files: [
           {
             id: 'translation-1',
@@ -615,7 +615,7 @@ describe('downloadFileBatch', () => {
     });
     const fileTracker = createMockFileTracker(files);
 
-    vi.mocked(gt.downloadFileBatch).mockResolvedValue(mockResponseData);
+    vi.mocked(api.downloadFileBatch).mockResolvedValue(mockResponseData);
     vi.mocked(path.dirname).mockReturnValue('/output/dir');
     setupFileSystemMocks({
       dirExists: false,
@@ -660,7 +660,7 @@ describe('downloadFileBatch', () => {
     ];
     const fileTracker = createMockFileTracker(files);
 
-    vi.mocked(gt.downloadFileBatch).mockResolvedValue({
+    vi.mocked(api.downloadFileBatch).mockResolvedValue({
       files: [
         {
           id: 'translation-1',

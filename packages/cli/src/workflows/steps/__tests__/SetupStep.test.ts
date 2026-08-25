@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { GT } from 'generaltranslation';
 import type { FileReference } from 'generaltranslation/types';
 import type { Settings } from '../../../types/index.js';
 import { SetupStep } from '../SetupStep.js';
@@ -42,7 +41,7 @@ describe('SetupStep', () => {
     ['a queued response without a job ID', { status: 'queued' }],
   ])('does not poll for %s', async (_description, setupResult) => {
     gt.setupProject.mockResolvedValue(setupResult);
-    const step = new SetupStep(gt as unknown as GT, settings, 1_000);
+    const step = new SetupStep(gt, settings, 1_000);
 
     const result = await step.run(files);
 
@@ -89,7 +88,7 @@ describe('SetupStep', () => {
       setupJobId: 'setup-job',
     });
     gt.awaitJobs.mockResolvedValue(awaitResult);
-    const step = new SetupStep(gt as unknown as GT, settings, 1_000);
+    const step = new SetupStep(gt, settings, 1_000);
 
     const result = await step.run(files);
 

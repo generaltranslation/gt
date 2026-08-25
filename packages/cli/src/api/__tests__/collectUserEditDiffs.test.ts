@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import os from 'node:os';
 import { collectAndSendUserEditDiffs } from '../collectUserEditDiffs.js';
 import { createMockSettings } from '../__mocks__/settings.js';
-import { gt } from '../../utils/gt.js';
+import { api } from '../../utils/api.js';
 import { getGitUnifiedDiff } from '../../utils/gitDiff.js';
 import { hashStringSync } from '../../utils/hash.js';
 import {
@@ -14,8 +14,8 @@ import {
 import { createFileMapping } from '../../formats/files/fileMapping.js';
 import type { FileReference } from 'generaltranslation/types';
 
-vi.mock('../../utils/gt.js', () => ({
-  gt: {
+vi.mock('../../utils/api.js', () => ({
+  api: {
     queryFileData: vi.fn(),
     downloadFileBatch: vi.fn(),
     submitUserEditDiffs: vi.fn(),
@@ -109,9 +109,9 @@ describe('collectAndSendUserEditDiffs', () => {
 
     await collectAndSendUserEditDiffs(files, settings);
 
-    expect(gt.queryFileData).not.toHaveBeenCalled();
-    expect(gt.downloadFileBatch).not.toHaveBeenCalled();
-    expect(gt.submitUserEditDiffs).not.toHaveBeenCalled();
+    expect(api.queryFileData).not.toHaveBeenCalled();
+    expect(api.downloadFileBatch).not.toHaveBeenCalled();
+    expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
   });
 
   it('submits diffs when local file hash differs from postprocessed hash', async () => {
@@ -147,7 +147,7 @@ describe('collectAndSendUserEditDiffs', () => {
       },
     });
 
-    vi.mocked(gt.queryFileData).mockResolvedValue({
+    vi.mocked(api.queryFileData).mockResolvedValue({
       translatedFiles: [
         {
           branchId: 'branch1',
@@ -159,7 +159,7 @@ describe('collectAndSendUserEditDiffs', () => {
       ],
     });
 
-    vi.mocked(gt.downloadFileBatch).mockResolvedValue({
+    vi.mocked(api.downloadFileBatch).mockResolvedValue({
       files: [
         {
           branchId: 'branch1',
@@ -185,10 +185,10 @@ describe('collectAndSendUserEditDiffs', () => {
 
     await collectAndSendUserEditDiffs(files, settings);
 
-    expect(gt.queryFileData).toHaveBeenCalledTimes(1);
-    expect(gt.downloadFileBatch).toHaveBeenCalledTimes(1);
+    expect(api.queryFileData).toHaveBeenCalledTimes(1);
+    expect(api.downloadFileBatch).toHaveBeenCalledTimes(1);
     expect(getGitUnifiedDiff).toHaveBeenCalledTimes(1);
-    expect(gt.submitUserEditDiffs).toHaveBeenCalledTimes(1);
+    expect(api.submitUserEditDiffs).toHaveBeenCalledTimes(1);
   });
 
   it('uses the latest downloaded version when the uploaded version has changed', async () => {
@@ -214,7 +214,7 @@ describe('collectAndSendUserEditDiffs', () => {
       },
     });
 
-    vi.mocked(gt.queryFileData).mockResolvedValue({
+    vi.mocked(api.queryFileData).mockResolvedValue({
       translatedFiles: [
         {
           branchId: 'branch1',
@@ -226,7 +226,7 @@ describe('collectAndSendUserEditDiffs', () => {
       ],
     });
 
-    vi.mocked(gt.downloadFileBatch).mockResolvedValue({
+    vi.mocked(api.downloadFileBatch).mockResolvedValue({
       files: [
         {
           branchId: 'branch1',
@@ -252,11 +252,11 @@ describe('collectAndSendUserEditDiffs', () => {
 
     await collectAndSendUserEditDiffs(files, settings);
 
-    expect(gt.queryFileData).toHaveBeenCalledTimes(1);
+    expect(api.queryFileData).toHaveBeenCalledTimes(1);
     expect(
-      vi.mocked(gt.queryFileData).mock.calls[0][0].translatedFiles[0].versionId
+      vi.mocked(api.queryFileData).mock.calls[0][0].translatedFiles[0].versionId
     ).toBe('version1');
-    expect(gt.downloadFileBatch).toHaveBeenCalledTimes(1);
-    expect(gt.submitUserEditDiffs).toHaveBeenCalledTimes(1);
+    expect(api.downloadFileBatch).toHaveBeenCalledTimes(1);
+    expect(api.submitUserEditDiffs).toHaveBeenCalledTimes(1);
   });
 });
