@@ -12,8 +12,6 @@ import type { Root, Link, Literal } from 'mdast';
 import type { MdxJsxFlowElement, MdxJsxTextElement } from 'mdast-util-mdx-jsx';
 import { escapeHtmlInTextNodes, normalizeCJKCharacters } from 'gt-remark';
 import { parse as parseBabel } from '@babel/parser';
-import { writePostprocessedFile } from './postprocessFileWrites.js';
-import { settleAll } from './settleAll.js';
 
 const { isMatch } = micromatch;
 
@@ -225,7 +223,7 @@ export default async function localizeStaticUrls(
     }
 
     if (defaultLocaleFiles.length > 0) {
-      const defaultPromise = settleAll(
+      const defaultPromise = Promise.all(
         defaultLocaleFiles.map(async (filePath: string) => {
           // Check if file exists before processing
           if (!fs.existsSync(filePath)) {
@@ -245,7 +243,7 @@ export default async function localizeStaticUrls(
           );
           // Only write the file if there were changes
           if (result.hasChanges) {
-            await writePostprocessedFile(filePath, result.content);
+            await fs.promises.writeFile(filePath, result.content);
           }
         })
       );
@@ -265,7 +263,7 @@ export default async function localizeStaticUrls(
       );
 
       // Replace the placeholder path with the target path
-      await settleAll(
+      await Promise.all(
         targetFiles.map(async (filePath) => {
           // Check if file exists before processing
           if (!fs.existsSync(filePath)) {
@@ -285,14 +283,14 @@ export default async function localizeStaticUrls(
           );
           // Only write the file if there were changes
           if (result.hasChanges) {
-            await writePostprocessedFile(filePath, result.content);
+            await fs.promises.writeFile(filePath, result.content);
           }
         })
       );
     });
   processPromises.push(...mappingPromises);
 
-  await settleAll(processPromises);
+  await Promise.all(processPromises);
 }
 
 interface UrlTransformResult {

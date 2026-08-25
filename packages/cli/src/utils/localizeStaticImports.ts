@@ -13,8 +13,6 @@ import remarkFrontmatter from 'remark-frontmatter';
 import { visit } from 'unist-util-visit';
 import type { Root } from 'mdast';
 import type { MdxjsEsm } from 'mdast-util-mdxjs-esm';
-import { writePostprocessedFile } from './postprocessFileWrites.js';
-import { settleAll } from './settleAll.js';
 
 const { isMatch } = micromatch;
 
@@ -72,7 +70,7 @@ export default async function localizeStaticImports(
     }
 
     if (defaultLocaleFiles.length > 0) {
-      const defaultPromise = settleAll(
+      const defaultPromise = Promise.all(
         defaultLocaleFiles.map(async (filePath: string) => {
           // Check if file exists before processing
           if (!fs.existsSync(filePath)) {
@@ -92,7 +90,7 @@ export default async function localizeStaticImports(
             settings.options
           );
           // Write the localized file back to the same path
-          await writePostprocessedFile(filePath, localizedFile);
+          await fs.promises.writeFile(filePath, localizedFile);
         })
       );
       processPromises.push(defaultPromise);
@@ -110,7 +108,7 @@ export default async function localizeStaticImports(
       );
 
       // Replace the placeholder path with the target path
-      await settleAll(
+      await Promise.all(
         targetFiles.map(async (filePath) => {
           // Check if file exists before processing
           if (!fs.existsSync(filePath)) {
@@ -130,14 +128,14 @@ export default async function localizeStaticImports(
             settings.options
           );
           // Write the localized file to the target path
-          await writePostprocessedFile(filePath, localizedFile);
+          await fs.promises.writeFile(filePath, localizedFile);
         })
       );
     }
   );
   processPromises.push(...mappingPromises);
 
-  await settleAll(processPromises);
+  await Promise.all(processPromises);
 }
 
 interface ImportTransformResult {

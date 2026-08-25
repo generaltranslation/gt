@@ -10,8 +10,6 @@ import type { Literal, Root } from 'mdast';
 import { escapeHtmlInTextNodes, normalizeCJKCharacters } from 'gt-remark';
 import type { StaticLocalizationSettings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
-import { writePostprocessedFile } from './postprocessFileWrites.js';
-import { settleAll } from './settleAll.js';
 
 type RewriteResult = { content: string; hasChanges: boolean };
 export type RelativeAssetSettings = StaticLocalizationSettings;
@@ -195,7 +193,7 @@ export default async function localizeRelativeAssets(
           (!includeFiles || includeFiles.has(p))
       );
 
-      await settleAll(
+      await Promise.all(
         targetFiles.map(async (targetPath) => {
           if (!fs.existsSync(targetPath)) return;
           const sourcePath = reverseMap.get(targetPath);
@@ -210,11 +208,11 @@ export default async function localizeRelativeAssets(
             cwd
           );
           if (result.hasChanges) {
-            await writePostprocessedFile(targetPath, result.content);
+            await fs.promises.writeFile(targetPath, result.content);
           }
         })
       );
     });
 
-  await settleAll(processPromises);
+  await Promise.all(processPromises);
 }
