@@ -12,6 +12,7 @@ import type { Root, Link, Literal } from 'mdast';
 import type { MdxJsxFlowElement, MdxJsxTextElement } from 'mdast-util-mdx-jsx';
 import { escapeHtmlInTextNodes, normalizeCJKCharacters } from 'gt-remark';
 import { parse as parseBabel } from '@babel/parser';
+import { writePostprocessedFile } from './postprocessFileWrites.js';
 import { settleAll } from './settleAll.js';
 
 const { isMatch } = micromatch;
@@ -244,7 +245,7 @@ export default async function localizeStaticUrls(
           );
           // Only write the file if there were changes
           if (result.hasChanges) {
-            await fs.promises.writeFile(filePath, result.content);
+            await writePostprocessedFile(filePath, result.content);
           }
         })
       );
@@ -284,7 +285,7 @@ export default async function localizeStaticUrls(
           );
           // Only write the file if there were changes
           if (result.hasChanges) {
-            await fs.promises.writeFile(filePath, result.content);
+            await writePostprocessedFile(filePath, result.content);
           }
         })
       );

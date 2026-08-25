@@ -6,6 +6,7 @@ import { getRelative, readFile } from '../fs/findFilepath.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import { Settings } from '../types/index.js';
 import * as fs from 'fs';
+import { writePostprocessedFileSync } from './postprocessFileWrites.js';
 import { settleAll } from './settleAll.js';
 
 /**
@@ -76,7 +77,7 @@ export default async function processAnchorIds(
           );
 
           if (result.hasChanges) {
-            fs.writeFileSync(translatedPath, result.content, 'utf8');
+            writePostprocessedFileSync(translatedPath, result.content, 'utf8');
           }
         } catch (error) {
           console.warn(
