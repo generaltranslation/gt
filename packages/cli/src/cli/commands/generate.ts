@@ -352,6 +352,7 @@ async function createTargetFile(
 export async function handleGenerate(settings: Settings): Promise<void> {
   const generatedFiles: GeneratedFilesByMarker = new Map();
   const processedOutputs = new Map<string, GenerationTarget>();
+  const markerFailures: string[] = [];
 
   try {
     for (const target of createGenerationPlan(settings)) {
@@ -386,11 +387,21 @@ export async function handleGenerate(settings: Settings): Promise<void> {
             }
           )
       );
+    }
 
-      for (const generatedFile of generatedFiles.values()) {
-        if (!(await matchesGeneratedFile(generatedFile))) {
-          throw createChangedOutputError(generatedFile.target);
-        }
+    for (const [marker, generatedFile] of generatedFiles) {
+      if (!(await matchesGeneratedFile(generatedFile))) {
+        throw createChangedOutputError(generatedFile.target);
+      }
+      try {
+        await removeGenerationMarker(marker);
+      } catch (error) {
+        markerFailures.push(
+          `${marker}: ${formatDiagnosticErrorDetails(error) ?? 'Unknown error'}`
+        );
+      }
+      if (!(await matchesGeneratedFile(generatedFile))) {
+        throw createChangedOutputError(generatedFile.target);
       }
     }
   } catch (error) {
@@ -398,17 +409,6 @@ export async function handleGenerate(settings: Settings): Promise<void> {
     throw error;
   }
 
-  const markers = [...generatedFiles.keys()];
-  const markerResults = await Promise.allSettled(
-    markers.map(removeGenerationMarker)
-  );
-  const markerFailures = markerResults.flatMap((result, index) =>
-    result.status === 'rejected'
-      ? [
-          `${markers[index]}: ${formatDiagnosticErrorDetails(result.reason) ?? 'Unknown error'}`,
-        ]
-      : []
-  );
   if (markerFailures.length > 0) {
     logger.warn(
       createDiagnosticMessage({
