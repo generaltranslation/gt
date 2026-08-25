@@ -1,6 +1,8 @@
 import type { Client } from './generated/client';
 import { getTranslationJobInfo } from './generated/sdk.gen';
 import type { GetTranslationJobInfoResponse } from './generated/types.gen';
+// Per-poll cap so a hung connection fails fast instead of eating the whole deadline.
+import { DEFAULT_TIMEOUT_MS as MAX_POLL_TIMEOUT_MS } from './transport';
 
 const DEFAULT_POLLING_INTERVAL_MS = 5_000;
 const DEFAULT_TIMEOUT_MS = 10 * 60 * 1_000;
@@ -56,7 +58,9 @@ export async function awaitJobs(
     try {
       statuses = await getJobStatuses(
         [...pendingJobIds],
-        AbortSignal.timeout(deadline - Date.now())
+        AbortSignal.timeout(
+          Math.min(deadline - Date.now(), MAX_POLL_TIMEOUT_MS)
+        )
       );
     } catch (error) {
       if (Date.now() >= deadline) break;

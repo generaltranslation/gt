@@ -2,7 +2,7 @@ const MAX_RETRIES = 3;
 const INITIAL_DELAY_MS = 500;
 const RATE_LIMIT_RETRY_DELAY_MS = 60_000;
 const MS_PER_SECOND = 1000;
-const DEFAULT_TIMEOUT_MS = 60_000;
+export const DEFAULT_TIMEOUT_MS = 60_000;
 
 export type RetryPolicy = 'exponential' | 'none';
 
@@ -91,14 +91,21 @@ export function createRetryingFetch({
       try {
         response = await fetchImplementation(request.clone());
       } catch (error) {
-        if (attempt === maxRetries) throw error;
+        if (request.signal.aborted || attempt === maxRetries) throw error;
       }
 
       if (response && response.status !== 429 && response.status < 500) {
         return response;
       }
       if (response && attempt === maxRetries) return response;
+      // Caller gave up (e.g. a poll deadline); don't sleep through the abort.
+      if (request.signal.aborted) {
+        if (response) return response;
+        throw request.signal.reason;
+      }
 
+      // Drain the discarded 429/5xx body so undici can release the socket.
+      void response?.body?.cancel();
       await sleep(retryDelay(response, attempt));
     }
 

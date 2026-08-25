@@ -1,7 +1,7 @@
 import { createClient as createGeneratedClient } from './generated/client';
 import type { Client } from './generated/client';
 import type { GetProjectInfoData } from './generated/types.gen';
-import { createRetryingFetch } from './transport';
+import { createRetryingFetch, createTimeoutFetch } from './transport';
 import type { RetryPolicy } from './transport';
 
 export const API_VERSION = '2026-03-06.v1';
@@ -17,6 +17,7 @@ export type ApiClientConfig = {
   fetch?: typeof fetch;
   projectId?: string;
   retryPolicy?: RetryPolicy;
+  timeoutMs?: number;
 };
 
 export function createApiClient(config: ApiClientConfig): Client {
@@ -29,7 +30,11 @@ export function createApiClient(config: ApiClientConfig): Client {
   return createGeneratedClient({
     baseUrl: config.baseUrl,
     fetch: createRetryingFetch({
-      fetch: config.fetch,
+      // Timeout applies per attempt, inside the retry loop.
+      fetch: createTimeoutFetch({
+        fetch: config.fetch,
+        timeoutMs: config.timeoutMs,
+      }),
       retryPolicy: config.retryPolicy,
     }),
     headers,
