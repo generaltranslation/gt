@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
@@ -32,6 +32,10 @@ type GeneratedFile = {
 };
 
 type GeneratedFilesByMarker = Map<string, GeneratedFile>;
+
+function hashContent(content: string | Buffer): string {
+  return createHash('sha256').update(content).digest('hex');
+}
 
 function createOutputCollisionError(
   existing: GenerationTarget,
@@ -151,21 +155,21 @@ async function getFileIdentity(filePath: string): Promise<string | null> {
 }
 
 async function matchesGeneratedFile(
-  generatedFile: GeneratedFile
+  generatedFile: GeneratedFile,
+  filePath: string = path.resolve(generatedFile.outputPath)
 ): Promise<boolean> {
-  const filePath = path.resolve(generatedFile.outputPath);
   try {
     const before = await fs.promises.stat(filePath);
     if (`${before.dev}:${before.ino}` !== generatedFile.identity) return false;
 
-    const content = await fs.promises.readFile(filePath, 'utf8');
+    const content = await fs.promises.readFile(filePath);
     const after = await fs.promises.stat(filePath);
     return (
       before.dev === after.dev &&
       before.ino === after.ino &&
       before.size === after.size &&
       before.mtimeMs === after.mtimeMs &&
-      hashStringSync(content) === generatedFile.contentHash
+      hashContent(content) === generatedFile.contentHash
     );
   } catch {
     return false;
@@ -192,12 +196,24 @@ async function rollbackGeneratedFiles(
         }
         throw error;
       }
+
+      let recoveryMessage: string | undefined;
+      if (await matchesGeneratedFile(generatedFile, recoveryFile)) {
+        try {
+          await fs.promises.rm(recoveryFile);
+        } catch (error) {
+          recoveryMessage = `${generatedFile.outputPath}: unchanged generated file could not be removed and was preserved at ${recoveryFile}: ${formatDiagnosticErrorDetails(error) ?? 'Unknown error'}`;
+        }
+      } else {
+        recoveryMessage = `${generatedFile.outputPath}: preserved at ${recoveryFile}`;
+      }
+
       try {
         await removeGenerationMarker(marker);
       } catch (error) {
-        return `${generatedFile.outputPath}: preserved at ${recoveryFile}; generation marker ${marker} could not be removed: ${formatDiagnosticErrorDetails(error) ?? 'Unknown error'}`;
+        return `${recoveryMessage ?? `${generatedFile.outputPath}: generated file removed`}; generation marker ${marker} could not be removed: ${formatDiagnosticErrorDetails(error) ?? 'Unknown error'}`;
       }
-      return `${generatedFile.outputPath}: preserved at ${recoveryFile}`;
+      return recoveryMessage;
     })
   );
   const failures = results.flatMap((result, index) =>
@@ -325,7 +341,12 @@ async function createTargetFile(
   try {
     const stat = await fileHandle.stat();
     identity = `${stat.dev}:${stat.ino}`;
-    generatedFile = { contentHash: '', identity, outputPath, target };
+    generatedFile = {
+      contentHash: hashContent(''),
+      identity,
+      outputPath,
+      target,
+    };
     generatedFiles.set(marker, generatedFile);
 
     if (target.changesFormat) {
@@ -337,7 +358,7 @@ async function createTargetFile(
       settings
     );
     const content = sourceTemplate ?? (await fs.promises.readFile(source));
-    generatedFile.contentHash = hashStringSync(content.toString());
+    generatedFile.contentHash = hashContent(content);
     await fileHandle.writeFile(content);
   } finally {
     await fileHandle.close();
@@ -374,7 +395,7 @@ export async function handleGenerate(settings: Settings): Promise<void> {
         (filePath, content) => {
           const generatedFile = generatedFilesByOutput.get(filePath);
           if (generatedFile) {
-            generatedFile.contentHash = hashStringSync(content);
+            generatedFile.contentHash = hashContent(content);
           }
         },
         () =>
