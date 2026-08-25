@@ -1181,7 +1181,13 @@ import { LocalT } from '@gt';
     linkInstalledVue(projectRoot);
 
     await runBuiltCli(
-      ['--config', 'gt.config.json', '--jsconfig', 'config/tsconfig.app.json'],
+      [
+        'generate',
+        '--config',
+        'gt.config.json',
+        '--jsconfig',
+        'config/tsconfig.app.json',
+      ],
       projectRoot
     );
     const catalog = JSON.parse(
@@ -1263,7 +1269,6 @@ import { LocalT } from '@gt';
         'setup',
         'stage',
         'translate',
-        'generate',
         'download',
         'enqueue',
       ];
