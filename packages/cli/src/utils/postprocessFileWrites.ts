@@ -1,17 +1,4 @@
-import { AsyncLocalStorage } from 'node:async_hooks';
 import * as fs from 'fs';
-import path from 'node:path';
-
-type FileWriteObserver = (filePath: string, content: string) => void;
-
-const fileWriteObservers = new AsyncLocalStorage<FileWriteObserver>();
-
-export function observePostprocessFileWrites<T>(
-  observer: FileWriteObserver,
-  operation: () => T
-): T {
-  return fileWriteObservers.run(observer, operation);
-}
 
 export async function writePostprocessedFile(
   filePath: string,
@@ -23,7 +10,6 @@ export async function writePostprocessedFile(
   } else {
     await fs.promises.writeFile(filePath, content);
   }
-  fileWriteObservers.getStore()?.(path.resolve(filePath), content);
 }
 
 export function writePostprocessedFileSync(
@@ -36,5 +22,4 @@ export function writePostprocessedFileSync(
   } else {
     fs.writeFileSync(filePath, content);
   }
-  fileWriteObservers.getStore()?.(path.resolve(filePath), content);
 }
