@@ -98,4 +98,16 @@ describe('createOrUpdateBrowserConditionStore', () => {
       value: 'true',
     });
   });
+
+  it('does not throw when navigator is undefined (e.g. during SSR)', () => {
+    vi.stubGlobal('navigator', undefined);
+
+    expect(() =>
+      createOrUpdateBrowserConditionStore({
+        locale: 'fr',
+      })
+    ).not.toThrow();
+
+    vi.unstubAllGlobals();
+  });
 });
