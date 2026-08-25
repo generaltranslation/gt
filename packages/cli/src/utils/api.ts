@@ -4,12 +4,10 @@ import {
   awaitJobs as awaitApiJobs,
   createApiClient,
   createBranch,
-  createBatches,
-  createJobStatusLoader,
   createProject,
   createTag,
-  createTimeoutFetch,
   decodeFileContent,
+  DEFAULT_BATCH_SIZE,
   downloadFiles,
   encodeFileContent,
   enqueueFileTranslations,
@@ -51,16 +49,14 @@ import {
   type FileFormatTransformInput,
 } from 'generaltranslation/internal';
 
-const timeoutFetch = createTimeoutFetch();
-
-let client = createApiClient({ baseUrl: defaultBaseUrl, fetch: timeoutFetch });
+let client = createApiClient({ baseUrl: defaultBaseUrl });
 let customMapping: CustomMapping | undefined;
 
 export function configureApiClient(
   config: ApiClientConfig & { customMapping?: CustomMapping }
 ): void {
   const { customMapping: mapping, ...clientConfig } = config;
-  client = createApiClient({ fetch: timeoutFetch, ...clientConfig });
+  client = createApiClient(clientConfig);
   customMapping = mapping;
 }
 
@@ -77,6 +73,10 @@ function isErrorResponse(error: unknown): error is { error: string } {
     'error' in error &&
     typeof error.error === 'string'
   );
+}
+
+function batchCount(items: readonly unknown[]): number {
+  return Math.ceil(items.length / DEFAULT_BATCH_SIZE);
 }
 
 function responseData<T>(result: ApiResult<T>): Exclude<T, undefined> {
@@ -119,11 +119,10 @@ export const api = {
   async downloadFileBatch(files: DownloadFilesData['body']) {
     const request = async (batch: DownloadFilesData['body']) =>
       responseData(await downloadFiles({ body: batch, client }));
-    const responses = await Promise.all(
+    const responses =
       files.length === 0
-        ? [request([])]
-        : createBatches(files).map((batch) => request(batch))
-    );
+        ? [await request([])]
+        : await processBatches(files, async (batch) => [await request(batch)]);
     return {
       files: responses.flatMap((response) =>
         response.files.map((file) => ({
@@ -180,9 +179,9 @@ export const api = {
 
     if (fileIds.length === 0) return request([]);
 
-    const results = await Promise.all(
-      createBatches(fileIds).map((batch) => request(batch))
-    );
+    const results = await processBatches(fileIds, async (batch) => [
+      await request(batch),
+    ]);
     const orphanedFiles = new Map(
       results[0].orphanedFiles.map((file) => [file.fileId, file])
     );
@@ -210,14 +209,14 @@ export const api = {
       );
       return response.results;
     });
-    const succeeded = result.data.filter(({ success }) => success).length;
+    const succeeded = result.filter(({ success }) => success).length;
 
     return {
-      results: result.data,
+      results: result,
       summary: {
         total: moves.length,
         succeeded,
-        failed: result.count - succeeded,
+        failed: result.length - succeeded,
       },
     };
   },
@@ -245,7 +244,7 @@ export const api = {
   },
 
   async awaitJobs(jobIds: readonly string[], options?: AwaitJobsOptions) {
-    return awaitApiJobs(jobIds, createJobStatusLoader(client), options);
+    return awaitApiJobs(client, jobIds, options);
   },
 
   async enqueueFiles(
@@ -294,9 +293,9 @@ export const api = {
     });
 
     return {
-      jobData: Object.fromEntries(result.data),
+      jobData: Object.fromEntries(result),
       locales: targetLocales,
-      message: `Successfully enqueued ${result.count} file translation jobs in ${result.batchCount} batch(es)`,
+      message: `Successfully enqueued ${result.length} file translation jobs in ${batchCount(files)} batch(es)`,
     };
   },
 
@@ -330,9 +329,9 @@ export const api = {
     });
 
     return {
-      uploadedFiles: result.data,
-      count: result.count,
-      message: `Successfully uploaded ${result.count} files in ${result.batchCount} batch(es)`,
+      uploadedFiles: result,
+      count: result.length,
+      message: `Successfully uploaded ${result.length} files in ${batchCount(files)} batch(es)`,
     };
   },
 
@@ -369,9 +368,9 @@ export const api = {
     });
 
     return {
-      uploadedFiles: result.data,
-      count: result.count,
-      message: `Successfully uploaded ${result.count} files in ${result.batchCount} batch(es)`,
+      uploadedFiles: result,
+      count: result.length,
+      message: `Successfully uploaded ${result.length} files in ${batchCount(files)} batch(es)`,
     };
   },
 };
