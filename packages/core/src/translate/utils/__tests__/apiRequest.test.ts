@@ -1,9 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createApiClient, translate } from '@generaltranslation/api';
 
 import { apiRequest } from '../apiRequest';
 import { fetchWithTimeout } from '../fetchWithTimeout';
 import { validateResponse } from '../validateResponse';
 
+vi.mock('@generaltranslation/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@generaltranslation/api')>()),
+  createApiClient: vi.fn(),
+  translate: vi.fn(),
+}));
 vi.mock('../fetchWithTimeout');
 vi.mock('../validateResponse');
 
@@ -32,6 +38,70 @@ describe.sequential('apiRequest', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it('routes runtime translation through the SDK without retries', async () => {
+    const client = {} as ReturnType<typeof createApiClient>;
+    vi.mocked(createApiClient).mockReturnValue(client);
+    vi.mocked(translate).mockResolvedValue({
+      data: { hash: { success: false, error: 'failed', code: 500 } },
+      request: {} as Request,
+      response: createResponse(),
+    });
+
+    await expect(
+      apiRequest(
+        { ...config, baseUrl: 'https://runtime.example.com' },
+        '/v2/translate',
+        {
+          body: {
+            requests: {},
+            sourceLocale: 'en',
+            targetLocale: 'es',
+            metadata: {},
+          },
+          retryPolicy: 'none',
+        }
+      )
+    ).resolves.toHaveProperty('hash');
+
+    expect(createApiClient).toHaveBeenCalledWith({
+      apiKey: 'api-key',
+      baseUrl: 'https://runtime.example.com',
+      fetch: expect.any(Function),
+      projectId: 'project-id',
+      retryPolicy: 'none',
+    });
+    expect(translate).toHaveBeenCalledWith(
+      expect.objectContaining({ client, body: expect.any(Object) })
+    );
+    expect(fetchWithTimeout).not.toHaveBeenCalled();
+  });
+
+  it('preserves runtime translation API error details', async () => {
+    vi.mocked(createApiClient).mockReturnValue(
+      {} as ReturnType<typeof createApiClient>
+    );
+    vi.mocked(translate).mockResolvedValue({
+      data: undefined,
+      error: { error: 'invalid translation request' },
+      request: {} as Request,
+      response: createResponse({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+      }),
+    });
+
+    await expect(
+      apiRequest(config, '/v2/translate', { body: {} })
+    ).rejects.toEqual(
+      expect.objectContaining({
+        code: 400,
+        message: 'invalid translation request',
+      })
+    );
+    expect(validateResponse).not.toHaveBeenCalled();
   });
 
   it('retries 429 responses after the rate limit window', async () => {
