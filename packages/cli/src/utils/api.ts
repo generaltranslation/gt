@@ -1,4 +1,7 @@
-import { resolveCanonicalLocale } from '@generaltranslation/format';
+import {
+  resolveAliasLocale,
+  resolveCanonicalLocale,
+} from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import {
   awaitJobs as awaitApiJobs,
@@ -83,12 +86,13 @@ function responseData<T>(result: ApiResult<T>): Exclude<T, undefined> {
   if (result.data !== undefined) {
     return result.data as Exclude<T, undefined>;
   }
-  if (result.response && isErrorResponse(result.error)) {
-    throw new ApiError(
-      result.error.error,
-      result.response.status,
-      result.error.error
-    );
+  if (result.response) {
+    const message = isErrorResponse(result.error)
+      ? result.error.error
+      : typeof result.error === 'string'
+        ? result.error
+        : result.response.statusText;
+    throw new ApiError(message, result.response.status, message);
   }
   throw result.error;
 }
@@ -103,7 +107,32 @@ export const api = {
   },
 
   async queryFileData(body: GetFileInfoData['body']) {
-    return responseData(await getFileInfo({ body, client }));
+    const result = responseData(
+      await getFileInfo({
+        body: {
+          ...body,
+          translatedFiles: body.translatedFiles?.map((file) => ({
+            ...file,
+            locale: resolveCanonicalLocale(file.locale, customMapping),
+          })),
+        },
+        client,
+      })
+    );
+    return {
+      ...result,
+      translatedFiles: result.translatedFiles.map((file) => ({
+        ...file,
+        locale: resolveAliasLocale(file.locale, customMapping),
+      })),
+      sourceFiles: result.sourceFiles.map((file) => ({
+        ...file,
+        sourceLocale: resolveAliasLocale(file.sourceLocale, customMapping),
+        locales: file.locales.map((locale) =>
+          resolveAliasLocale(locale, customMapping)
+        ),
+      })),
+    };
   },
 
   async checkJobStatus(jobIds: string[]) {
@@ -113,20 +142,34 @@ export const api = {
   },
 
   resolveAliasLocale(locale: string) {
-    return resolveCanonicalLocale(locale, customMapping);
+    return resolveAliasLocale(locale, customMapping);
   },
 
   async downloadFileBatch(files: DownloadFilesData['body']) {
+    if (files.length === 0) return { files: [], count: 0, pending: [] };
+
     const request = async (batch: DownloadFilesData['body']) =>
-      responseData(await downloadFiles({ body: batch, client }));
-    const responses =
-      files.length === 0
-        ? [await request([])]
-        : await processBatches(files, async (batch) => [await request(batch)]);
+      responseData(
+        await downloadFiles({
+          body: batch.map((file) => ({
+            ...file,
+            locale: file.locale
+              ? resolveCanonicalLocale(file.locale, customMapping)
+              : undefined,
+          })),
+          client,
+        })
+      );
+    const responses = await processBatches(files, async (batch) => [
+      await request(batch),
+    ]);
     return {
       files: responses.flatMap((response) =>
         response.files.map((file) => ({
           ...file,
+          ...(file.locale && {
+            locale: resolveAliasLocale(file.locale, customMapping),
+          }),
           data: decodeFileContent(file.data, file.fileFormat),
         }))
       ),
@@ -143,7 +186,13 @@ export const api = {
     return processBatches(body.diffs, async (diffs) => [
       responseData(
         await submitUserEditDiffs({
-          body: { projectId: body.projectId, diffs },
+          body: {
+            projectId: body.projectId,
+            diffs: diffs.map((diff) => ({
+              ...diff,
+              locale: resolveCanonicalLocale(diff.locale, customMapping),
+            })),
+          },
           client,
         })
       ),
@@ -350,6 +399,10 @@ export const api = {
               },
               translations: translations.map((translation) => ({
                 ...translation,
+                locale: resolveCanonicalLocale(
+                  translation.locale,
+                  customMapping
+                ),
                 content: encodeFileContent(
                   translation.content,
                   translation.fileFormat
