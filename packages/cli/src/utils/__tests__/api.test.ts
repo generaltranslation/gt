@@ -13,19 +13,59 @@ const uploadedFile = {
 
 describe('CLI API client', () => {
   const fetchMock = vi.fn<typeof fetch>();
-  let requestBodies: Array<{
-    data: Array<{ source: { content: string } }>;
-  }>;
-
-  beforeEach(() => {
-    fetchMock.mockReset();
-    requestBodies = [];
+  const configure = (
+    overrides: Partial<Parameters<typeof configureApiClient>[0]> = {}
+  ) =>
     configureApiClient({
       apiKey: 'api-key',
       baseUrl: 'https://api.example.com',
       projectId: 'project-id',
       fetch: fetchMock,
+      ...overrides,
     });
+
+  beforeEach(() => {
+    fetchMock.mockReset();
+    configure();
+  });
+
+  it('maps canonical server locales back to configured aliases', () => {
+    configure({
+      customMapping: { 'brand-english': { code: 'en-US' } },
+    });
+
+    expect(api.resolveAliasLocale('en-US')).toBe('brand-english');
+  });
+
+  it('maps query file locales between configured aliases and canonical locales', async () => {
+    configure({
+      customMapping: { 'brand-english': { code: 'en-US' } },
+    });
+    fetchMock.mockImplementation(async (request) => {
+      const body = JSON.parse(await request.text()) as {
+        translatedFiles: Array<{ locale: string }>;
+      };
+      expect(body.translatedFiles[0].locale).toBe('en-US');
+      return Response.json({
+        translatedFiles: [{ locale: 'en-US' }],
+        sourceFiles: [{ sourceLocale: 'en-US', locales: ['en-US', 'es'] }],
+      });
+    });
+
+    const result = await api.queryFileData({
+      translatedFiles: [
+        {
+          branchId: 'branch-id',
+          fileId: 'file-id',
+          versionId: 'version-id',
+          locale: 'brand-english',
+        },
+      ],
+    });
+
+    expect(result.translatedFiles[0].locale).toBe('brand-english');
+    expect(result.sourceFiles[0].sourceLocale).toBe('brand-english');
+    expect(result.sourceFiles[0].locales).toEqual(['brand-english', 'es']);
   });
 
   it('preserves HTTP status on API errors', async () => {
@@ -41,7 +81,63 @@ describe('CLI API client', () => {
     );
   });
 
+  it('preserves HTTP status for text API errors', async () => {
+    configure({ retryPolicy: 'none' });
+    fetchMock.mockResolvedValue(
+      new Response('service unavailable', { status: 503 })
+    );
+
+    await expect(api.queryBranchData({ branchNames: [] })).rejects.toEqual(
+      expect.objectContaining<ApiError>({
+        code: 503,
+        message: 'service unavailable',
+      })
+    );
+  });
+
+  it('does not hide network errors', async () => {
+    const networkError = new Error('connection reset');
+    configure({ retryPolicy: 'none' });
+    fetchMock.mockRejectedValue(networkError);
+
+    await expect(api.queryBranchData({ branchNames: [] })).rejects.toBe(
+      networkError
+    );
+  });
+
+  it('canonicalizes user edit diff locales', async () => {
+    configure({
+      customMapping: { 'brand-english': { code: 'en-US' } },
+    });
+    fetchMock.mockImplementation(async (request) => {
+      const body = JSON.parse(await request.text()) as {
+        diffs: Array<{ locale: string }>;
+      };
+      expect(body.diffs[0].locale).toBe('en-US');
+      return Response.json({
+        filesProcessed: 1,
+        entriesReceived: 1,
+        message: 'processed',
+      });
+    });
+
+    await api.submitUserEditDiffs({
+      diffs: [
+        {
+          locale: 'brand-english',
+          diff: 'diff',
+          versionId: 'version-id',
+          fileId: 'file-id',
+          localContent: 'content',
+        },
+      ],
+    });
+  });
+
   it('base64-encodes and uploads source files in batches of 100', async () => {
+    const requestBodies: Array<{
+      data: Array<{ source: { content: string } }>;
+    }> = [];
     fetchMock.mockImplementation(async (request) => {
       const body = JSON.parse(await request.text()) as {
         data: Array<{ source: { content: string } }>;
@@ -116,6 +212,45 @@ describe('CLI API client', () => {
     expect(result.uploadedFiles).toEqual([uploadedFile]);
   });
 
+  it('canonicalizes uploaded translation locales', async () => {
+    configure({
+      customMapping: { 'brand-english': { code: 'en-US' } },
+    });
+    fetchMock.mockImplementation(async (request) => {
+      const body = JSON.parse(await request.text()) as {
+        data: Array<{ translations: Array<{ locale: string }> }>;
+      };
+      expect(body.data[0].translations[0].locale).toBe('en-US');
+      return Response.json({
+        uploadedFiles: [uploadedFile],
+        count: 1,
+        message: 'uploaded',
+      });
+    });
+
+    await api.uploadTranslations(
+      [
+        {
+          source: {
+            content: 'source',
+            fileName: 'messages.json',
+            fileFormat: 'JSON',
+            locale: 'en',
+          },
+          translations: [
+            {
+              content: 'translation',
+              fileName: 'en/messages.json',
+              fileFormat: 'JSON',
+              locale: 'brand-english',
+            },
+          ],
+        },
+      ],
+      { sourceLocale: 'en' }
+    );
+  });
+
   it('decodes text downloads and preserves binary downloads', async () => {
     fetchMock.mockResolvedValue(
       Response.json({
@@ -152,6 +287,48 @@ describe('CLI API client', () => {
       'hello',
       'binary-base64',
     ]);
+  });
+
+  it('maps download locales between configured aliases and canonical locales', async () => {
+    configure({
+      customMapping: { 'brand-english': { code: 'en-US' } },
+    });
+    fetchMock.mockImplementation(async (request) => {
+      const body = JSON.parse(await request.text()) as Array<{
+        locale: string;
+      }>;
+      expect(body[0].locale).toBe('en-US');
+      return Response.json({
+        files: [
+          {
+            id: 'text',
+            branchId: 'branch-id',
+            fileId: 'file-id',
+            versionId: 'version-id',
+            locale: 'en-US',
+            data: 'aGVsbG8=',
+            metadata: {},
+            fileFormat: 'JSON',
+          },
+        ],
+        count: 1,
+      });
+    });
+
+    const result = await api.downloadFileBatch([
+      { fileId: 'file-id', locale: 'brand-english' },
+    ]);
+
+    expect(result.files[0].locale).toBe('brand-english');
+  });
+
+  it('returns an empty download aggregate without an HTTP request', async () => {
+    await expect(api.downloadFileBatch([])).resolves.toEqual({
+      files: [],
+      count: 0,
+      pending: [],
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('downloads files in batches of 100', async () => {
