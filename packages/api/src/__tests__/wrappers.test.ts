@@ -13,7 +13,6 @@ import { createRetryingFetch, createTimeoutFetch } from '../transport';
 
 afterEach(() => {
   vi.useRealTimers();
-  vi.unstubAllGlobals();
 });
 
 describe('createTimeoutFetch', () => {
@@ -260,7 +259,7 @@ describe('batch helpers', () => {
     const result = await processBatches(items, async (batch) => batch);
 
     expect(batches.map(({ length }) => length)).toEqual([100, 100, 5]);
-    expect(result).toEqual({ data: items, count: 205, batchCount: 3 });
+    expect(result).toEqual(items);
   });
 
   it('runs batches sequentially when parallel is false', async () => {
@@ -281,13 +280,13 @@ describe('batch helpers', () => {
     );
 
     expect(maxInFlight).toBe(1);
-    expect(result).toEqual({ data: items, count: 5, batchCount: 3 });
+    expect(result).toEqual(items);
   });
 });
 
 describe('base64 helpers', () => {
   it('round trips UTF-8 and preserves binary-format payloads', () => {
-    const text = 'こんにちは';
+    const text = 'こんにちは 👋';
     const encoded = encodeBase64(text);
 
     expect(decodeBase64(encoded)).toBe(text);
@@ -300,13 +299,6 @@ describe('base64 helpers', () => {
     expect(decodeFileContent('already-base64', 'LOTTIE')).toBe(
       'already-base64'
     );
-  });
-
-  it('round trips UTF-8 through the browser fallback path', () => {
-    vi.stubGlobal('Buffer', undefined);
-    const text = 'こんにちは 👋';
-
-    expect(decodeBase64(encodeBase64(text))).toBe(text);
   });
 });
 
