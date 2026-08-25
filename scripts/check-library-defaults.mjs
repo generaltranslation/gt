@@ -84,6 +84,20 @@ export const defaultGroups = [
         expectedMatches: 1,
       },
       {
+        path: 'packages/api/src/transport.ts',
+        reason:
+          'The matching duration is a rate-limit retry delay, not a request timeout default.',
+        matches: isWithinVariableDeclaration('RATE_LIMIT_RETRY_DELAY_MS'),
+        expectedMatches: 1,
+      },
+      {
+        path: 'packages/api/src/transport.ts',
+        reason:
+          'The standalone API package cannot import the core package that consumes it.',
+        matches: isWithinVariableDeclaration('DEFAULT_TIMEOUT_MS'),
+        expectedMatches: 1,
+      },
+      {
         path: 'packages/i18n/src/i18n-cache/translations-manager/utils/constants.ts',
         reason: 'The matching duration is a translation cache TTL.',
         matches: isWithinVariableDeclaration('DEFAULT_CACHE_EXPIRY_TIME'),

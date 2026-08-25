@@ -1,0 +1,52 @@
+{
+  "name": "@generaltranslation/api",
+  "version": "0.1.0",
+  "description": "Generated TypeScript SDK for the General Translation API",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "spec/openapi.json",
+    "CHANGELOG.md"
+  ],
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.cts",
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      },
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
+    "build:release": "pnpm run build:clean",
+    "codegen": "openapi-ts && oxfmt src/generated spec/openapi.json",
+    "format": "oxfmt --check src openapi-ts.config.ts tsdown.config.mts package.json tsconfig.json spec/openapi.json",
+    "lint": "oxlint src/*.ts src/__tests__",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/generaltranslation/gt.git"
+  },
+  "author": "General Translation, Inc.",
+  "license": "MIT",
+  "devDependencies": {
+    "@hey-api/openapi-ts": "0.88.0",
+    "@types/node": "catalog:",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
