@@ -1,7 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { FileToUpload } from 'generaltranslation/types';
+import type { FileReference, FileToUpload } from 'generaltranslation/types';
 import type { Settings, TranslateFlags } from '../../types/index.js';
 import { runStageFilesWorkflow } from '../stage.js';
+
+const stepMocks = vi.hoisted(() => ({
+  uploadSourcesRun: vi.fn(
+    async (_input: unknown): Promise<FileReference[]> => []
+  ),
+  activateConfirmedFileIdentities: vi.fn(
+    (_files: FileReference[], _branchId: string) => {}
+  ),
+  userEditDiffsRun: vi.fn(
+    async (uploadedFiles: FileReference[]): Promise<FileReference[]> =>
+      uploadedFiles
+  ),
+}));
 
 vi.mock('../../console/logger.js', () => ({
   logger: {
@@ -32,7 +45,8 @@ vi.mock('../steps/BranchStep.js', () => ({
 }));
 vi.mock('../steps/UploadSourcesStep.js', () => ({
   UploadSourcesStep: vi.fn(() => ({
-    run: vi.fn(async () => []),
+    run: stepMocks.uploadSourcesRun,
+    activateConfirmedFileIdentities: stepMocks.activateConfirmedFileIdentities,
     wait: vi.fn(),
   })),
 }));
@@ -49,7 +63,10 @@ vi.mock('../steps/TagStep.js', () => ({
   TagStep: vi.fn(() => ({ run: vi.fn(), wait: vi.fn() })),
 }));
 vi.mock('../steps/UserEditDiffsStep.js', () => ({
-  UserEditDiffsStep: vi.fn(() => ({ run: vi.fn(), wait: vi.fn() })),
+  UserEditDiffsStep: vi.fn(() => ({
+    run: stepMocks.userEditDiffsRun,
+    wait: vi.fn(),
+  })),
 }));
 vi.mock('../utils/filterFilesForEnqueue.js', () => ({
   filterFilesForEnqueue: vi.fn(async ({ files }: { files: unknown[] }) => ({
@@ -118,5 +135,40 @@ describe('runStageFilesWorkflow font sync', () => {
       expect.stringContaining('Font sync failed')
     );
     expect(result.enqueueResult).toEqual({ message: 'enqueued', jobData: {} });
+  });
+
+  it('collects local edits before retiring confirmed legacy identities', async () => {
+    const uploadedFiles: FileReference[] = [
+      {
+        branchId: 'branch-1',
+        fileId: 'file-1',
+        versionId: 'version-1',
+        fileName: 'src/en/anim.lottie',
+        fileFormat: 'LOTTIE',
+      },
+    ];
+    stepMocks.uploadSourcesRun.mockResolvedValueOnce(uploadedFiles);
+
+    await runStageFilesWorkflow({
+      files,
+      options: { ...options, saveLocal: true },
+      settings,
+    });
+
+    expect(stepMocks.uploadSourcesRun).toHaveBeenCalledWith({
+      files,
+      branchData: expect.objectContaining({
+        currentBranch: expect.objectContaining({ id: 'branch-1' }),
+      }),
+      deferIdentityActivation: true,
+    });
+    expect(stepMocks.userEditDiffsRun).toHaveBeenCalledWith(uploadedFiles);
+    expect(stepMocks.activateConfirmedFileIdentities).toHaveBeenCalledWith(
+      uploadedFiles,
+      'branch-1'
+    );
+    expect(stepMocks.userEditDiffsRun.mock.invocationCallOrder[0]).toBeLessThan(
+      stepMocks.activateConfirmedFileIdentities.mock.invocationCallOrder[0]
+    );
   });
 });

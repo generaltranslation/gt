@@ -67,11 +67,19 @@ export async function runStageFilesWorkflow({
     }
 
     // then run the upload step
-    const uploadedFiles = await uploadStep.run({ files, branchData });
+    const uploadedFiles = await uploadStep.run({
+      files,
+      branchData,
+      deferIdentityActivation: options?.saveLocal === true,
+    });
 
     // optionally run the user edit diffs step
     if (options?.saveLocal) {
       await userEditDiffsStep.run(uploadedFiles);
+      uploadStep.activateConfirmedFileIdentities(
+        uploadedFiles,
+        branchData.currentBranch.id
+      );
     }
 
     // then run the tag step (non-fatal — tagging failure should not block translations)

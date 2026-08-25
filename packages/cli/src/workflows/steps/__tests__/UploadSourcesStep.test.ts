@@ -999,6 +999,44 @@ describe('UploadSourcesStep', () => {
       );
     });
 
+    it('accepts only exact branch and version confirmations from uploads', async () => {
+      const localFile: FileToUpload = {
+        content: 'content',
+        fileName: 'docs/page.md',
+        fileFormat: 'MD',
+        locale: 'en',
+        fileId: 'file-id',
+        versionId: 'version-id',
+      };
+      mockGt.queryFileData.mockResolvedValue({ sourceFiles: [] });
+      mockGt.getOrphanedFiles.mockResolvedValue({ orphanedFiles: [] });
+      mockGt.uploadSourceFiles.mockResolvedValue({
+        uploadedFiles: [
+          { ...localFile, branchId: 'other-branch' },
+          {
+            ...localFile,
+            branchId: 'branch-123',
+            versionId: 'other-version',
+          },
+          { ...localFile, branchId: 'branch-123' },
+        ],
+        count: 3,
+      });
+
+      const result = await new UploadSourcesStep(mockGt, mockSettings).run({
+        files: [localFile],
+        branchData: mockBranchData,
+      });
+
+      expect(result).toEqual([
+        expect.objectContaining({
+          branchId: 'branch-123',
+          fileId: 'file-id',
+          versionId: 'version-id',
+        }),
+      ]);
+    });
+
     it('retires a legacy alias after the current source is confirmed', async () => {
       const localFile: FileToUpload = {
         content: 'content',
@@ -1050,6 +1088,69 @@ describe('UploadSourcesStep', () => {
       expect(result).toContainEqual(
         expect.objectContaining({ fileId: 'current-id' })
       );
+      expect(entry.previousFileId).toBeUndefined();
+      expect(entry.translations).toEqual({});
+      expect(writeLockfile).toHaveBeenCalledWith(data, null);
+    });
+
+    it('can defer alias retirement until local edits use its history', async () => {
+      const localFile: FileToUpload = {
+        content: 'content',
+        fileName: 'docs/page.md',
+        fileFormat: 'MD',
+        locale: 'en',
+        fileId: 'current-id',
+        versionId: 'current-version',
+      };
+      const entry = {
+        fileId: 'current-id',
+        previousFileId: 'legacy-id',
+        versionId: 'current-version',
+        translations: { es: { postProcessHash: 'legacy-hash' } },
+      };
+      const data = {
+        version: 2 as const,
+        branchId: 'branch-123',
+        entries: [entry],
+      };
+      vi.mocked(readLockfile).mockReturnValue({
+        data,
+        entryMap: new Map([
+          ['current-id', entry],
+          ['legacy-id', entry],
+        ]),
+        originalV1: null,
+      });
+      mockGt.queryFileData.mockResolvedValue({
+        sourceFiles: [
+          {
+            branchId: 'branch-123',
+            fileId: 'current-id',
+            versionId: 'current-version',
+          },
+        ],
+      });
+      mockGt.getOrphanedFiles.mockResolvedValue({ orphanedFiles: [] });
+      mockGt.uploadSourceFiles.mockResolvedValue({
+        uploadedFiles: [],
+        count: 0,
+      });
+
+      const step = new UploadSourcesStep(mockGt, mockSettings);
+      const result = await step.run({
+        files: [localFile],
+        branchData: mockBranchData,
+        deferIdentityActivation: true,
+      });
+
+      expect(entry.previousFileId).toBe('legacy-id');
+      expect(entry.translations).toEqual({
+        es: { postProcessHash: 'legacy-hash' },
+      });
+      expect(writeLockfile).not.toHaveBeenCalled();
+
+      step.activateConfirmedFileIdentities(result, 'branch-123');
+
       expect(entry.previousFileId).toBeUndefined();
       expect(entry.translations).toEqual({});
       expect(writeLockfile).toHaveBeenCalledWith(data, null);

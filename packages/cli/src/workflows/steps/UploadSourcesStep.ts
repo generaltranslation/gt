@@ -148,9 +148,11 @@ export class UploadSourcesStep {
   async run({
     files,
     branchData,
+    deferIdentityActivation = false,
   }: {
     files: FileToUpload[];
     branchData: BranchData;
+    deferIdentityActivation?: boolean;
   }): Promise<FileReference[]> {
     if (files.length === 0) {
       logger.info('No files to upload found... skipping upload step');
@@ -281,20 +283,27 @@ export class UploadSourcesStep {
       }
     );
 
+    // Accept only records that confirm an exact file requested in this upload.
     // The API may not echo transformFormat, so preserve it from local inputs.
     const localFileMap = new Map(
-      files.map((f) => [`${f.fileId}:${f.versionId}`, f])
+      filesToUpload.map((file) => [
+        `${file.branchId ?? currentBranchId}:${file.fileId}:${file.versionId}`,
+        file,
+      ])
     );
 
-    const result = response.uploadedFiles.map((uploadedFile) => {
+    const result = response.uploadedFiles.flatMap((uploadedFile) => {
       const localFile = localFileMap.get(
-        `${uploadedFile.fileId}:${uploadedFile.versionId}`
+        `${uploadedFile.branchId}:${uploadedFile.fileId}:${uploadedFile.versionId}`
       );
-      return {
-        ...uploadedFile,
-        transformFormat:
-          localFile?.transformFormat ?? uploadedFile.transformFormat,
-      };
+      if (!localFile) return [];
+      return [
+        {
+          ...uploadedFile,
+          transformFormat:
+            localFile.transformFormat ?? uploadedFile.transformFormat,
+        },
+      ];
     });
 
     // Merge files that were already uploaded into the result
@@ -311,17 +320,27 @@ export class UploadSourcesStep {
       }))
     );
 
-    // A query hit, accepted move, or upload response confirms that this exact
-    // source version exists under the current ID. Retire tentative legacy
-    // aliases here so every caller (including `gt upload` and setup) observes
-    // the same identity transition. Ignore unexpected response records.
-    const resultKeys = new Set(
-      result.map((file) => `${file.branchId}:${file.fileId}:${file.versionId}`)
-    );
-    const confirmedCurrentFiles = files.filter((file) =>
-      resultKeys.has(
-        `${file.branchId ?? currentBranchId}:${file.fileId}:${file.versionId}`
-      )
+    if (!deferIdentityActivation) {
+      this.activateConfirmedFileIdentities(result, currentBranchId);
+    }
+
+    const moveMsg = moves.length > 0 ? ` (${moves.length} moved)` : '';
+    this.spinner.stop(chalk.green(`Files uploaded successfully${moveMsg}`));
+
+    return result;
+  }
+
+  /**
+   * Retires tentative legacy aliases after the current source identity has
+   * been confirmed. Stage can defer this until local edits use the legacy
+   * translation history; other workflows activate immediately.
+   */
+  activateConfirmedFileIdentities(
+    files: FileReference[],
+    currentBranchId: string
+  ): void {
+    const confirmedCurrentFiles = files.filter(
+      (file) => file.branchId === currentBranchId
     );
     if (confirmedCurrentFiles.length > 0) {
       const lockfile = readLockfile({ _branchId: currentBranchId });
@@ -336,11 +355,6 @@ export class UploadSourcesStep {
         writeLockfile(lockfile.data, lockfile.originalV1);
       }
     }
-
-    const moveMsg = moves.length > 0 ? ` (${moves.length} moved)` : '';
-    this.spinner.stop(chalk.green(`Files uploaded successfully${moveMsg}`));
-
-    return result;
   }
 }
 
