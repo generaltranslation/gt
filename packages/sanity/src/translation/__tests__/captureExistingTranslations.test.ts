@@ -14,6 +14,8 @@ vi.mock('../../adapter/core', async () => {
     ...actual,
     gt: {
       sourceLocale: 'en',
+    },
+    api: {
       downloadFileBatch: (...args: unknown[]) => downloadFileBatch(...args),
       uploadTranslations: (...args: unknown[]) => uploadTranslations(...args),
     },

@@ -1,3 +1,8 @@
+import {
+  createApiClient,
+  translate,
+  type TranslateData,
+} from '@generaltranslation/api';
 import { TranslationRequestConfig } from '../../types';
 import { defaultBaseUrl } from '../../settings/settingsUrls';
 import { defaultTimeout } from '../../settings/settings';
@@ -5,6 +10,8 @@ import { fetchWithTimeout } from './fetchWithTimeout';
 import { validateResponse } from './validateResponse';
 import { handleFetchError } from './handleFetchError';
 import { generateRequestHeaders } from './generateRequestHeaders';
+import { apiError } from '../../logging/errors';
+import { ApiError } from '../../errors/ApiError';
 
 const MAX_RETRIES = 3;
 const INITIAL_DELAY_MS = 500;
@@ -103,9 +110,44 @@ export async function apiRequest<T>(
   }
 ): Promise<T> {
   const timeout = options?.timeout ?? defaultTimeout;
+  const retryPolicy = options?.retryPolicy ?? 'exponential';
+
+  if (endpoint === '/v2/translate') {
+    const client = createApiClient({
+      apiKey: config.apiKey,
+      baseUrl: config.baseUrl || defaultBaseUrl,
+      fetch: (input, init) => fetchWithTimeout(input, init ?? {}, timeout),
+      projectId: config.projectId,
+      retryPolicy: retryPolicy === 'none' ? 'none' : 'exponential',
+    });
+    const result = await translate({
+      body: options?.body as TranslateData['body'],
+      client,
+    });
+    if (result.data !== undefined) return result.data as T;
+    if (
+      result.response &&
+      typeof result.error === 'object' &&
+      result.error !== null &&
+      'error' in result.error &&
+      typeof result.error.error === 'string'
+    ) {
+      throw new ApiError(
+        apiError(
+          result.response.status,
+          result.response.statusText,
+          result.error.error
+        ),
+        result.response.status,
+        result.error.error
+      );
+    }
+    if (result.response) await validateResponse(result.response);
+    throw result.error;
+  }
+
   const url = `${config.baseUrl || defaultBaseUrl}${endpoint}`;
   const method = options?.method ?? 'POST';
-  const retryPolicy = options?.retryPolicy ?? 'exponential';
   const maxRetries = retryPolicy === 'none' ? 0 : MAX_RETRIES;
 
   const requestInit: RequestInit = {

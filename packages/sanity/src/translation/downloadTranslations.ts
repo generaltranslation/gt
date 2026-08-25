@@ -1,4 +1,4 @@
-import { gt, overrideConfig } from '../adapter/core';
+import { api, overrideConfig } from '../adapter/core';
 import { FileProperties } from '../adapter/types';
 import { DownloadedFile } from 'generaltranslation/types';
 import type { Secrets } from '../types';
@@ -22,7 +22,7 @@ export async function downloadTranslations(
   while (retries <= maxRetries) {
     try {
       // Download the files
-      const responseData = await gt.downloadFileBatch(
+      const responseData = await api.downloadFileBatch(
         files.map((file) => ({
           fileId: file.fileId,
           branchId: file.branchId,
