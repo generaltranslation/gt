@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "composite": true,
+    "stripInternal": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "lib": ["ES2023"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["**/*.test.ts"]
+}

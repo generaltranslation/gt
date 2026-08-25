@@ -825,6 +825,9 @@ importers:
       '@generaltranslation/supported-locales':
         specifier: workspace:*
         version: link:../supported-locales
+      '@generaltranslation/utils':
+        specifier: workspace:*
+        version: link:../utils
       '@generaltranslation/vue-extractor':
         specifier: workspace:*
         version: link:../vue-extractor
@@ -1046,6 +1049,9 @@ importers:
       '@generaltranslation/icu':
         specifier: workspace:*
         version: link:../icu
+      '@generaltranslation/utils':
+        specifier: workspace:*
+        version: link:../utils
       '@noble/hashes':
         specifier: ^2.2.0
         version: 2.2.0
@@ -1721,6 +1727,18 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 3.2.4(@edge-runtime/vm@4.0.4)(@types/debug@4.1.12)(@types/node@22.13.10)(jiti@2.7.0)(jsdom@29.1.1(@noble/hashes@2.2.0))(lightningcss@1.33.0)(terser@5.44.0)(tsx@4.23.12)(yaml@2.9.0)
+
+  packages/utils:
+    devDependencies:
+      tsdown:
+        specifier: 'catalog:'
+        version: 0.21.10(synckit@0.11.11)(typescript@5.9.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@edge-runtime/vm@4.0.4)(@types/debug@4.1.12)(@types/node@24.13.3)(jiti@2.7.0)(jsdom@29.1.1(@noble/hashes@2.2.0))(lightningcss@1.33.0)(terser@5.44.0)(tsx@4.23.12)(yaml@2.9.0)
 
   packages/vue:
     dependencies:

@@ -1,4 +1,4 @@
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from '@generaltranslation/utils';
 import { BRANCH_COMPONENT } from '../react/jsx/utils/constants.js';
 import {
   colorizeFilepath,

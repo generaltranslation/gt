@@ -1,4 +1,4 @@
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from '@generaltranslation/utils';
 import fs from 'node:fs';
 import path from 'node:path';
 import { logger } from '../console/logger.js';
