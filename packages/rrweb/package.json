@@ -1,6 +1,6 @@
 {
   "name": "gt-rrweb",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Record a product walkthrough once with rrweb and replay it per-locale using General Translation's own published translations",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
@@ -12,9 +12,18 @@
   "sideEffects": false,
   "peerDependencies": {
     "@rrweb/record": ">=2.0.0",
+    "@rrweb/replay": ">=2.0.0",
     "@rrweb/types": ">=2.0.0",
     "react": ">=18.0.0",
     "react-dom": ">=18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@rrweb/record": {
+      "optional": true
+    },
+    "@rrweb/replay": {
+      "optional": true
+    }
   },
   "scripts": {
     "build": "tsdown",
@@ -26,6 +35,8 @@
     "release:latest": "pnpm run build:clean && pnpm publish --tag latest",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
+    "e2e": "pnpm run build && node e2e/run.mjs",
+    "e2e:fixture": "pnpm run build && node e2e/make-fixture.mjs",
     "typecheck": "tsc --noEmit"
   },
   "repository": {
@@ -41,10 +52,13 @@
   "homepage": "https://generaltranslation.com/",
   "devDependencies": {
     "@rrweb/record": "^2.1.1",
+    "@rrweb/replay": "^2.1.1",
     "@rrweb/types": "^2.1.1",
     "@types/node": "catalog:",
     "@types/react": ">=18.0.0 <20.0.0",
     "@types/react-dom": ">=18.0.0 <20.0.0",
+    "morphdom": "^2.7.5",
+    "playwright-core": "^1.57.0",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
@@ -69,12 +83,25 @@
         "types": "./dist/harvest.d.mts",
         "default": "./dist/harvest.mjs"
       }
+    },
+    "./replay": {
+      "require": {
+        "types": "./dist/replay.d.cts",
+        "default": "./dist/replay.cjs"
+      },
+      "import": {
+        "types": "./dist/replay.d.mts",
+        "default": "./dist/replay.mjs"
+      }
     }
   },
   "typesVersions": {
     "*": {
       "harvest": [
         "./dist/harvest.d.cts"
+      ],
+      "replay": [
+        "./dist/replay.d.cts"
       ]
     }
   },
