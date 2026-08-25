@@ -1,6 +1,7 @@
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import fs from 'node:fs';
 import { Settings } from '../types/index.js';
+import { writePostprocessedFile } from './postprocessFileWrites.js';
 import { settleAll } from './settleAll.js';
 
 export default async function flattenJsonFiles(
@@ -38,7 +39,7 @@ export default async function flattenJsonFiles(
           const flattenedJson = flattenJson(json);
 
           // Write the flattened json to the target file
-          await fs.promises.writeFile(
+          await writePostprocessedFile(
             file,
             JSON.stringify(flattenedJson, null, 2)
           );

@@ -10,6 +10,7 @@ import type { Literal, Root } from 'mdast';
 import { escapeHtmlInTextNodes, normalizeCJKCharacters } from 'gt-remark';
 import type { StaticLocalizationSettings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
+import { writePostprocessedFile } from './postprocessFileWrites.js';
 import { settleAll } from './settleAll.js';
 
 type RewriteResult = { content: string; hasChanges: boolean };
@@ -209,7 +210,7 @@ export default async function localizeRelativeAssets(
             cwd
           );
           if (result.hasChanges) {
-            await fs.promises.writeFile(targetPath, result.content);
+            await writePostprocessedFile(targetPath, result.content);
           }
         })
       );
