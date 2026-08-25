@@ -1,5 +1,5 @@
 import type { Secrets } from '../types';
-import { gt, overrideConfig } from '../adapter/core';
+import { api, overrideConfig } from '../adapter/core';
 import { FileProperties } from '../adapter/types';
 import {
   createStableTranslationKey,
@@ -45,7 +45,7 @@ export async function checkTranslationStatus(
       return true;
     }
     // Check for translations
-    const responseData = await gt.queryFileData({
+    const responseData = await api.queryFileData({
       translatedFiles: currentQueryData,
     });
 

@@ -1,5 +1,5 @@
 import type { Adapter, GTFile, Secrets } from '../types';
-import { gt, overrideConfig } from './core';
+import { api, overrideConfig } from './core';
 
 // note: this function is used to get the status of a current translation task
 export const getTranslationTask: Adapter['getTranslationTask'] = async (
@@ -13,7 +13,7 @@ export const getTranslationTask: Adapter['getTranslationTask'] = async (
     };
   }
   overrideConfig(secrets);
-  const task = await gt.querySourceFile({
+  const task = await api.querySourceFile({
     fileId: documentInfo.documentId,
     versionId: documentInfo.versionId || undefined,
   });

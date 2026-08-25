@@ -1,0 +1,249 @@
+import {
+  awaitJobs as awaitApiJobs,
+  createApiClient,
+  createBranch,
+  createBatches,
+  createJobStatusLoader,
+  createTimeoutFetch,
+  decodeFileContent,
+  downloadFile,
+  downloadFiles,
+  encodeFileContent,
+  enqueueFileTranslations,
+  generateProjectContext,
+  getFileInfo,
+  getTranslationStatus,
+  processBatches,
+  uploadSourceFiles,
+  uploadTranslations,
+  type ApiClientConfig,
+  type CreateBranchData,
+  type DownloadFilesData,
+  type EnqueueFileTranslationsData,
+  type GenerateProjectContextData,
+  type GetFileInfoData,
+  type UploadSourceFilesData,
+  type UploadTranslationsData,
+} from '@generaltranslation/api';
+import { resolveCanonicalLocale } from '@generaltranslation/format';
+import type { CustomMapping } from '@generaltranslation/format/types';
+import { ApiError } from 'generaltranslation/errors';
+import { defaultBaseUrl } from 'generaltranslation/internal';
+import type { DownloadedFile, FileFormat } from 'generaltranslation/types';
+
+const timeoutFetch = createTimeoutFetch();
+
+let client = createApiClient({ baseUrl: defaultBaseUrl, fetch: timeoutFetch });
+let customMapping: CustomMapping | undefined;
+
+export function configureApiClient(
+  config: Omit<ApiClientConfig, 'baseUrl'> & {
+    baseUrl?: string;
+    customMapping?: CustomMapping;
+  }
+): void {
+  const { customMapping: mapping, ...clientConfig } = config;
+  client = createApiClient({
+    baseUrl: defaultBaseUrl,
+    fetch: timeoutFetch,
+    ...clientConfig,
+  });
+  customMapping = mapping;
+}
+
+type ApiResult<T> = {
+  data: T | undefined;
+  error: unknown;
+  response?: Response;
+};
+
+function isErrorResponse(error: unknown): error is { error: string } {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'error' in error &&
+    typeof error.error === 'string'
+  );
+}
+
+function responseData<T>(result: ApiResult<T>): Exclude<T, undefined> {
+  if (result.data !== undefined) return result.data as Exclude<T, undefined>;
+  if (result.response && isErrorResponse(result.error)) {
+    throw new ApiError(
+      result.error.error,
+      result.response.status,
+      result.error.error
+    );
+  }
+  throw result.error;
+}
+
+export const api = {
+  async uploadSourceFiles(
+    files: Array<{
+      source: UploadSourceFilesData['body']['data'][number]['source'];
+    }>,
+    options: { sourceLocale: string }
+  ) {
+    const sourceLocale = resolveCanonicalLocale(
+      options.sourceLocale,
+      customMapping
+    );
+    const result = await processBatches(files, async (batch) => {
+      const response = responseData(
+        await uploadSourceFiles({
+          body: {
+            data: batch.map(({ source }) => ({
+              source: {
+                ...source,
+                content: encodeFileContent(source.content, source.fileFormat),
+                locale: resolveCanonicalLocale(source.locale, customMapping),
+              },
+            })),
+            sourceLocale,
+          },
+          client,
+        })
+      );
+      return response.uploadedFiles;
+    });
+    return { uploadedFiles: result.data, count: result.count };
+  },
+
+  async uploadTranslations(
+    files: UploadTranslationsData['body']['data'],
+    options: { sourceLocale: string }
+  ) {
+    const result = await processBatches(files, async (batch) => {
+      const response = responseData(
+        await uploadTranslations({
+          body: {
+            data: batch.map(({ source, translations }) => ({
+              source: {
+                ...source,
+                content: encodeFileContent(source.content, source.fileFormat),
+              },
+              translations: translations.map((translation) => ({
+                ...translation,
+                content: encodeFileContent(
+                  translation.content,
+                  translation.fileFormat
+                ),
+              })),
+            })),
+            sourceLocale: resolveCanonicalLocale(
+              options.sourceLocale,
+              customMapping
+            ),
+          },
+          client,
+        })
+      );
+      return response.uploadedFiles;
+    });
+    return { uploadedFiles: result.data, count: result.count };
+  },
+
+  async enqueueFiles(
+    files: EnqueueFileTranslationsData['body']['files'],
+    options: {
+      sourceLocale?: string;
+      targetLocales: string[];
+      force?: boolean;
+    }
+  ) {
+    const targetLocales = options.targetLocales.map((locale) =>
+      resolveCanonicalLocale(locale, customMapping)
+    );
+    const result = await processBatches(files, async (batch) => {
+      const response = responseData(
+        await enqueueFileTranslations({
+          body: {
+            files: batch,
+            sourceLocale: options.sourceLocale,
+            targetLocales,
+            force: options.force,
+          },
+          client,
+        })
+      );
+      return Object.entries(
+        'jobData' in response ? response.jobData : response.data
+      );
+    });
+    return { jobData: Object.fromEntries(result.data), locales: targetLocales };
+  },
+
+  async querySourceFile(query: {
+    fileId: string;
+    versionId?: string;
+    branchId?: string;
+  }) {
+    const { fileId, ...queryParams } = query;
+    return responseData(
+      await getTranslationStatus({
+        path: { fileId },
+        query: queryParams,
+        client,
+      })
+    );
+  },
+
+  async downloadFile(query: {
+    fileId: string;
+    versionId?: string;
+    branchId?: string;
+    locale?: string;
+  }) {
+    const { fileId, ...queryParams } = query;
+    const response = responseData(
+      await downloadFile({ path: { fileId }, query: queryParams, client })
+    );
+    return decodeFileContent(response.data, 'HTML');
+  },
+
+  async downloadFileBatch(files: DownloadFilesData['body']) {
+    const request = async (batch: DownloadFilesData['body']) =>
+      responseData(await downloadFiles({ body: batch, client }));
+    const responses = await Promise.all(
+      files.length === 0
+        ? [request([])]
+        : createBatches(files).map((batch) => request(batch))
+    );
+    return {
+      files: responses.flatMap((response) =>
+        response.files.map((file) => ({
+          ...file,
+          data: decodeFileContent(file.data, file.fileFormat),
+          fileFormat: file.fileFormat as FileFormat,
+          metadata: file.metadata as DownloadedFile['metadata'],
+        }))
+      ),
+      count: responses.reduce((count, response) => count + response.count, 0),
+    };
+  },
+
+  async setupProject(
+    files: GenerateProjectContextData['body']['files'],
+    options: Omit<GenerateProjectContextData['body'], 'files'> = {}
+  ) {
+    return responseData(
+      await generateProjectContext({ body: { files, ...options }, client })
+    );
+  },
+
+  async awaitJobs(
+    jobIds: readonly string[],
+    options?: Parameters<typeof awaitApiJobs>[2]
+  ) {
+    return awaitApiJobs(jobIds, createJobStatusLoader(client), options);
+  },
+
+  async queryFileData(body: GetFileInfoData['body']) {
+    return responseData(await getFileInfo({ body, client }));
+  },
+
+  async createBranch(body: CreateBranchData['body']) {
+    return responseData(await createBranch({ body, client }));
+  },
+};
