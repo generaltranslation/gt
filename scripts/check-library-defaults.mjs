@@ -40,14 +40,10 @@ export function normalizeRepositoryPath(relativePath) {
 
 export const defaultGroups = [
   {
-    // The API package owns the pinned gt-api-version contract value. Core's
-    // copy stays synchronized until it migrates to re-export from
-    // @generaltranslation/api.
+    // The API package owns the pinned gt-api-version contract value; core
+    // re-exports it from @generaltranslation/api.
     name: 'API_VERSION',
-    declarations: [
-      'packages/api/src/wrappers/client.ts',
-      'packages/core/src/translate/api.ts',
-    ],
+    declarations: ['packages/api/src/wrappers/client.ts'],
     exceptions: [],
   },
   {
