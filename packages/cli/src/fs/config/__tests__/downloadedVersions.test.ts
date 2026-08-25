@@ -7,11 +7,14 @@ import {
   writeLockfile,
   findOrCreateEntry,
   buildEntryMap,
+  activateCurrentFileIdentity,
   writeStagedEntries,
   getStagedEntriesFromLockfile,
+  migrateLockfileFileIds,
   DownloadedVersionEntry,
 } from '../downloadedVersions.js';
 import { createMockSettings } from '../../../api/__mocks__/settings.js';
+import { hashStringSync } from '../../../utils/hash.js';
 
 describe('readLockfile / writeLockfile', () => {
   const originalCwd = process.cwd();
@@ -79,6 +82,101 @@ describe('readLockfile / writeLockfile', () => {
         '2025-01-01T00:00:00Z'
       );
       expect(originalV1).toBeNull();
+    });
+
+    it('normalizes Windows paths from a v2 lockfile', () => {
+      writeLockFile({
+        version: 2,
+        branchId: 'brc_abc',
+        entries: [
+          {
+            fileId: 'f1',
+            versionId: 'v1',
+            fileName: 'src\\content\\page.mdx',
+            staged: true,
+            translations: {
+              es: { fileName: 'content\\es\\page.mdx' },
+            },
+          },
+        ],
+      });
+
+      const { data } = readLockfile(settings('brc_abc'));
+
+      expect(data.entries[0].fileName).toBe('src/content/page.mdx');
+      expect(data.entries[0].translations.es.fileName).toBe(
+        'content/es/page.mdx'
+      );
+    });
+
+    it('re-keys path-derived file IDs when normalizing Windows paths', () => {
+      const windowsFileName = 'src\\content\\page.mdx';
+      const posixFileName = 'src/content/page.mdx';
+      writeLockFile({
+        version: 2,
+        branchId: 'brc_abc',
+        entries: [
+          {
+            fileId: hashStringSync(windowsFileName),
+            versionId: 'v1',
+            fileName: windowsFileName,
+            translations: {
+              es: {
+                fileName: 'content\\es\\page.mdx',
+                postProcessHash: 'translation-hash',
+              },
+            },
+          },
+        ],
+      });
+
+      const { data, entryMap } = readLockfile(settings('brc_abc'));
+      const normalizedFileId = hashStringSync(posixFileName);
+
+      expect(data.entries[0]).toMatchObject({
+        fileId: normalizedFileId,
+        previousFileId: hashStringSync(windowsFileName),
+        fileName: posixFileName,
+        translations: {
+          es: {
+            fileName: 'content/es/page.mdx',
+            postProcessHash: 'translation-hash',
+          },
+        },
+      });
+      expect(entryMap.get(normalizedFileId)).toBe(data.entries[0]);
+      expect(entryMap.get(hashStringSync(windowsFileName))).toBe(
+        data.entries[0]
+      );
+    });
+
+    it('does not mutate caller data while normalizing a write', () => {
+      const windowsFileName = 'src\\content\\page.mdx';
+      const data = {
+        version: 2 as const,
+        branchId: 'brc_abc',
+        entries: [
+          {
+            fileId: hashStringSync(windowsFileName),
+            versionId: 'v1',
+            fileName: windowsFileName,
+            translations: {},
+          },
+        ],
+      };
+
+      writeLockfile(data, null);
+
+      expect(data.entries[0]).toEqual({
+        fileId: hashStringSync(windowsFileName),
+        versionId: 'v1',
+        fileName: windowsFileName,
+        translations: {},
+      });
+      expect(readLockFile().entries[0]).toMatchObject({
+        fileId: hashStringSync('src/content/page.mdx'),
+        previousFileId: hashStringSync(windowsFileName),
+      });
     });
 
     it('updates branchId on v2 file to current branch', () => {
@@ -186,6 +284,125 @@ describe('readLockfile / writeLockfile', () => {
       expect(written.version).toBe(2);
       expect(written.branchId).toBe('brc_123');
       expect(written.entries).toHaveLength(1);
+    });
+
+    it('writes lockfile paths with forward slashes', () => {
+      writeLockfile(
+        {
+          version: 2,
+          branchId: 'brc_123',
+          entries: [
+            {
+              fileId: 'f1',
+              versionId: 'v1',
+              fileName: 'src\\content\\page.mdx',
+              translations: {
+                es: { fileName: 'content\\es\\page.mdx' },
+              },
+            },
+          ],
+        },
+        null
+      );
+
+      const written = readLockFile();
+      expect(written.entries[0].fileName).toBe('src/content/page.mdx');
+      expect(written.entries[0].translations.es.fileName).toBe(
+        'content/es/page.mdx'
+      );
+    });
+
+    it('keeps migrated entry key order stable across no-op writes', () => {
+      const windowsFileName = 'src\\content\\page.mdx';
+      writeLockfile(
+        {
+          version: 2,
+          branchId: 'brc_main',
+          entries: [
+            {
+              fileId: hashStringSync(windowsFileName),
+              versionId: 'v1',
+              fileName: windowsFileName,
+              staged: true,
+              translations: {
+                es: { fileName: 'content\\es\\page.mdx' },
+              },
+            },
+          ],
+        },
+        null
+      );
+      const firstWrite = fs.readFileSync(
+        path.join(tempDir, 'gt-lock.json'),
+        'utf8'
+      );
+
+      const { data, originalV1 } = readLockfile(settings('brc_main'));
+      writeLockfile(data, originalV1);
+
+      expect(fs.readFileSync(path.join(tempDir, 'gt-lock.json'), 'utf8')).toBe(
+        firstWrite
+      );
+    });
+
+    it('preserves malformed translation maps while writing unrelated entries', () => {
+      writeLockFile({
+        version: 2,
+        branchId: 'brc_main',
+        entries: [
+          {
+            fileId: 'malformed',
+            versionId: 'v1',
+            translations: null,
+          },
+        ],
+      });
+
+      writeStagedEntries(settings('brc_main'), [
+        { fileId: 'valid', versionId: 'v2', fileName: 'src/valid.md' },
+      ]);
+
+      expect(readLockFile().entries).toEqual([
+        {
+          fileId: 'malformed',
+          versionId: 'v1',
+          translations: null,
+        },
+        {
+          fileId: 'valid',
+          versionId: 'v2',
+          translations: {},
+          fileName: 'src/valid.md',
+          staged: true,
+        },
+      ]);
+    });
+
+    it('does not mutate malformed translation arrays while cloning', () => {
+      const malformedTranslations = [
+        { fileName: 'content\\es\\page.mdx' },
+      ] as unknown as DownloadedVersionEntry['translations'];
+      const data = {
+        version: 2 as const,
+        branchId: 'brc_main',
+        entries: [
+          {
+            fileId: 'malformed',
+            versionId: 'v1',
+            fileName: 'src/page.mdx',
+            translations: malformedTranslations,
+          },
+        ],
+      };
+
+      writeLockfile(data, null);
+
+      expect(
+        (malformedTranslations as unknown as { fileName: string }[])[0].fileName
+      ).toBe('content\\es\\page.mdx');
+      expect(readLockFile().entries[0].translations[0].fileName).toBe(
+        'content/es/page.mdx'
+      );
     });
 
     it('writes v1 format when originalV1 is provided, preserving other branches', () => {
@@ -302,6 +519,19 @@ describe('readLockfile / writeLockfile', () => {
       expect(map.get('c')).toBeUndefined();
     });
 
+    it('indexes a migrated entry by both current and previous file IDs', () => {
+      const entry: DownloadedVersionEntry = {
+        fileId: 'current',
+        previousFileId: 'previous',
+        versionId: 'v1',
+        translations: {},
+      };
+      const map = buildEntryMap([entry]);
+
+      expect(map.get('current')).toBe(entry);
+      expect(map.get('previous')).toBe(entry);
+    });
+
     it('findOrCreateEntry creates a new entry if not found', () => {
       const entries: DownloadedVersionEntry[] = [];
       const map = buildEntryMap(entries);
@@ -349,6 +579,46 @@ describe('readLockfile / writeLockfile', () => {
       expect(entry.translations).toEqual({});
       // Map should return the updated entry
       expect(map.get('f1')?.versionId).toBe('v2');
+    });
+
+    it('activates the current identity and removes the legacy map alias', () => {
+      const entry: DownloadedVersionEntry = {
+        fileId: 'current',
+        previousFileId: 'legacy',
+        versionId: 'v1',
+        translations: {
+          es: { postProcessHash: 'legacy-hash' },
+        },
+      };
+      const map = buildEntryMap([entry]);
+
+      activateCurrentFileIdentity(entry, 'current', map);
+
+      expect(entry.previousFileId).toBeUndefined();
+      expect(entry.translations).toEqual({});
+      expect(map.get('current')).toBe(entry);
+      expect(map.has('legacy')).toBe(false);
+    });
+
+    it('does not remove a distinct entry that owns the legacy map key', () => {
+      const current: DownloadedVersionEntry = {
+        fileId: 'current',
+        previousFileId: 'legacy',
+        versionId: 'v2',
+        translations: { es: { postProcessHash: 'old-hash' } },
+      };
+      const legacy: DownloadedVersionEntry = {
+        fileId: 'legacy',
+        versionId: 'v1',
+        translations: {},
+      };
+      const map = buildEntryMap([current, legacy]);
+
+      activateCurrentFileIdentity(current, 'current', map);
+
+      expect(map.get('legacy')).toBe(legacy);
+      expect(current.previousFileId).toBeUndefined();
+      expect(current.translations).toEqual({});
     });
   });
 
@@ -486,6 +756,51 @@ describe('readLockfile / writeLockfile', () => {
       );
       expect(newEntry?.staged).toBe(true);
     });
+
+    it('drops legacy metadata after staging succeeds for the current identity', () => {
+      writeLockFile({
+        version: 2,
+        branchId: 'brc_main',
+        entries: [
+          {
+            fileId: 'portable-id',
+            previousFileId: 'windows-id',
+            versionId: 'v1',
+            fileName: 'src/page.mdx',
+            translations: {
+              es: {
+                updatedAt: '2025-01-01T00:00:00Z',
+                postProcessHash: 'legacy-hash',
+              },
+            },
+          },
+        ],
+      });
+
+      writeStagedEntries(settings('brc_main'), [
+        {
+          fileId: 'portable-id',
+          versionId: 'v1',
+          fileName: 'src/page.mdx',
+        },
+      ]);
+
+      expect(readLockFile().entries).toEqual([
+        {
+          fileId: 'portable-id',
+          versionId: 'v1',
+          translations: {},
+          fileName: 'src/page.mdx',
+          staged: true,
+        },
+      ]);
+      expect(getStagedEntriesFromLockfile(settings('brc_main'))).toEqual({
+        'portable-id': {
+          versionId: 'v1',
+          fileName: 'src/page.mdx',
+        },
+      });
+    });
   });
 
   describe('getStagedEntriesFromLockfile', () => {
@@ -553,9 +868,120 @@ describe('readLockfile / writeLockfile', () => {
       expect(Object.keys(result)).toHaveLength(0);
     });
 
+    it('uses the previous server ID for a migrated staged entry', () => {
+      writeLockFile({
+        version: 2,
+        branchId: 'brc_main',
+        entries: [
+          {
+            fileId: 'portable-id',
+            previousFileId: 'windows-id',
+            versionId: 'v1',
+            fileName: 'src/page.mdx',
+            staged: true,
+            translations: {},
+          },
+        ],
+      });
+
+      expect(getStagedEntriesFromLockfile(settings('brc_main'))).toEqual({
+        'windows-id': {
+          versionId: 'v1',
+          fileName: 'src/page.mdx',
+        },
+      });
+    });
+
     it('returns empty object when lockfile does not exist', () => {
       const result = getStagedEntriesFromLockfile(settings('brc_main'));
       expect(Object.keys(result)).toHaveLength(0);
+    });
+  });
+
+  describe('migrateLockfileFileIds', () => {
+    it('clears a V2 legacy alias after the server accepts the move', () => {
+      writeLockFile({
+        version: 2,
+        branchId: 'brc_main',
+        entries: [
+          {
+            fileId: 'portable-id',
+            previousFileId: 'windows-id',
+            versionId: 'v1',
+            fileName: 'src/page.mdx',
+            translations: {
+              ja: { updatedAt: '2025-01-01T00:00:00Z' },
+            },
+          },
+        ],
+      });
+
+      expect(
+        migrateLockfileFileIds('brc_main', [
+          {
+            oldFileId: 'windows-id',
+            newFileId: 'portable-id',
+            newFileName: 'src/page.mdx',
+          },
+        ])
+      ).toBe(1);
+
+      expect(readLockFile().entries).toEqual([
+        {
+          fileId: 'portable-id',
+          versionId: 'v1',
+          translations: {
+            ja: { updatedAt: '2025-01-01T00:00:00Z' },
+          },
+          fileName: 'src/page.mdx',
+        },
+      ]);
+    });
+
+    it('removes a stale legacy entry when the accepted target has a newer version', () => {
+      writeLockFile({
+        version: 2,
+        branchId: 'brc_main',
+        entries: [
+          {
+            fileId: 'windows-id',
+            versionId: 'old-version',
+            fileName: 'src\\page.mdx',
+            translations: {
+              ja: { updatedAt: '2025-01-01T00:00:00Z' },
+            },
+          },
+          {
+            fileId: 'portable-id',
+            versionId: 'new-version',
+            fileName: 'src/page.mdx',
+            translations: {
+              fr: { updatedAt: '2026-01-01T00:00:00Z' },
+            },
+          },
+        ],
+      });
+
+      expect(
+        migrateLockfileFileIds('brc_main', [
+          {
+            oldFileId: 'windows-id',
+            newFileId: 'portable-id',
+            newFileName: 'src/page.mdx',
+          },
+        ])
+      ).toBe(1);
+
+      expect(readLockFile().entries).toEqual([
+        {
+          fileId: 'portable-id',
+          versionId: 'new-version',
+          translations: {
+            fr: { updatedAt: '2026-01-01T00:00:00Z' },
+          },
+          fileName: 'src/page.mdx',
+        },
+      ]);
     });
   });
 
@@ -655,6 +1081,127 @@ describe('readLockfile / writeLockfile', () => {
       // Should stay V1 since no staged entries
       expect(written.version).toBe(1);
       expect(written.entries.brc_other).toBeDefined();
+    });
+
+    it('migrates a V1 lock key after the server accepts a path move', () => {
+      writeLockFile({
+        version: 1,
+        entries: {
+          brc_main: {
+            'windows-id': {
+              ver1: {
+                ja: { updatedAt: '2025-01-01T00:00:00Z' },
+              },
+            },
+          },
+        },
+      });
+
+      expect(
+        migrateLockfileFileIds('brc_main', [
+          {
+            oldFileId: 'windows-id',
+            newFileId: 'portable-id',
+            newFileName: 'src/page.mdx',
+          },
+        ])
+      ).toBe(1);
+
+      const written = readLockFile();
+      expect(written.version).toBe(1);
+      expect(written.entries.brc_main['windows-id']).toBeUndefined();
+      expect(written.entries.brc_main['portable-id'].ver1.ja.updatedAt).toBe(
+        '2025-01-01T00:00:00Z'
+      );
+    });
+
+    it('migrates V1 keys without dropping versions, locales, or legacy fields', () => {
+      writeLockFile({
+        version: 1,
+        entries: {
+          brc_main: {
+            'windows-id': {
+              version1: {
+                ja: {
+                  updatedAt: '2026-01-02T00:00:00Z',
+                  fileName: 'ja\\page.md',
+                  sourceHash: 'source-ja',
+                },
+                es: {
+                  updatedAt: '2025-01-01T00:00:00Z',
+                  postProcessHash: 'post-es',
+                },
+              },
+              version2: {
+                fr: {
+                  updatedAt: '2026-02-01T00:00:00Z',
+                  sourceHash: 'source-fr',
+                },
+              },
+            },
+            'portable-id': {
+              version1: {
+                ja: {
+                  updatedAt: '2026-01-01T00:00:00Z',
+                  postProcessHash: 'target-post-ja',
+                },
+              },
+              version3: {
+                de: { updatedAt: '2026-03-01T00:00:00Z' },
+              },
+            },
+          },
+          brc_other: {
+            untouched: {
+              otherVersion: {
+                ko: { updatedAt: '2026-04-01T00:00:00Z' },
+              },
+            },
+          },
+        },
+      });
+
+      expect(
+        migrateLockfileFileIds('brc_main', [
+          {
+            oldFileId: 'windows-id',
+            newFileId: 'portable-id',
+            newFileName: 'src/page.md',
+          },
+        ])
+      ).toBe(1);
+
+      const written = readLockFile();
+      expect(written.version).toBe(1);
+      expect(written.entries.brc_main['windows-id']).toBeUndefined();
+      expect(written.entries.brc_main['portable-id']).toEqual({
+        version1: {
+          ja: {
+            updatedAt: '2026-01-02T00:00:00Z',
+            postProcessHash: 'target-post-ja',
+            fileName: 'ja\\page.md',
+            sourceHash: 'source-ja',
+          },
+          es: {
+            updatedAt: '2025-01-01T00:00:00Z',
+            postProcessHash: 'post-es',
+          },
+        },
+        version2: {
+          fr: {
+            updatedAt: '2026-02-01T00:00:00Z',
+            sourceHash: 'source-fr',
+          },
+        },
+        version3: {
+          de: { updatedAt: '2026-03-01T00:00:00Z' },
+        },
+      });
+      expect(written.entries.brc_other.untouched).toEqual({
+        otherVersion: {
+          ko: { updatedAt: '2026-04-01T00:00:00Z' },
+        },
+      });
     });
   });
 });

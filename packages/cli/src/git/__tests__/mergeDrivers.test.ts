@@ -1,12 +1,13 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   mergeGtJson,
   mergeGtLockJson,
   runMergeDriver,
 } from '../mergeDrivers.js';
+import { hashStringSync } from '../../utils/hash.js';
 
 const json = (value: unknown) => JSON.stringify(value, null, 2);
 
@@ -410,6 +411,241 @@ describe('mergeGtLockJson', () => {
         ],
       }) + '\n'
     );
+  });
+
+  it('preserves a previous server file ID during unrelated merges', () => {
+    const migratedEntry = {
+      ...entry('portable-id', 'version-a', 'es'),
+      previousFileId: 'windows-id',
+      fileName: 'src/a.json',
+    };
+    const result = mergeGtLockJson(
+      lock({ entries: [migratedEntry] }),
+      lock({ entries: [migratedEntry] }),
+      lock({
+        entries: [
+          {
+            ...migratedEntry,
+            translations: {
+              ...migratedEntry.translations,
+              fr: { updatedAt: '2026-01-02T00:00:00.000Z' },
+            },
+          },
+        ],
+      })
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(JSON.parse(result.content).entries[0].previousFileId).toBe(
+      'windows-id'
+    );
+  });
+
+  it('merges a legacy Windows side with its migrated counterpart', () => {
+    const windowsFileName = 'src\\content\\a.mdx';
+    const posixFileName = 'src/content/a.mdx';
+    const legacyEntry = {
+      fileId: hashStringSync(windowsFileName),
+      versionId: 'version-a',
+      fileName: windowsFileName,
+      translations: {
+        es: { updatedAt: '2026-01-01T00:00:00.000Z' },
+      },
+    };
+    const migratedEntry = {
+      ...legacyEntry,
+      fileId: hashStringSync(posixFileName),
+      fileName: posixFileName,
+    };
+    const result = mergeGtLockJson(
+      lock({ entries: [legacyEntry] }),
+      lock({ entries: [migratedEntry] }),
+      lock({
+        entries: [
+          {
+            ...legacyEntry,
+            translations: {
+              ...legacyEntry.translations,
+              fr: {
+                updatedAt: '2026-01-02T00:00:00.000Z',
+                fileName: 'content\\fr\\a.mdx',
+              },
+            },
+          },
+        ],
+      })
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(JSON.parse(result.content).entries).toEqual([
+      {
+        fileId: hashStringSync(posixFileName),
+        versionId: 'version-a',
+        translations: {
+          es: { updatedAt: '2026-01-01T00:00:00.000Z' },
+          fr: {
+            updatedAt: '2026-01-02T00:00:00.000Z',
+            fileName: 'content/fr/a.mdx',
+          },
+        },
+        fileName: posixFileName,
+      },
+    ]);
+  });
+
+  it('merges literal backslash paths independently of working-tree files', () => {
+    const literalFileName = 'docs\\page.md';
+    const literalEntry = {
+      ...entry(hashStringSync(literalFileName), 'version-a', 'es'),
+      fileName: literalFileName,
+    };
+    const input = lock({ entries: [literalEntry] });
+    const existsSync = vi.spyOn(fs, 'existsSync');
+    const originalSeparator = Object.getOwnPropertyDescriptor(path, 'sep')!;
+
+    let posixWithoutLiteralFile;
+    let posixWithLiteralFile;
+    let windowsResult;
+    try {
+      Object.defineProperty(path, 'sep', {
+        ...originalSeparator,
+        value: path.posix.sep,
+      });
+      existsSync.mockReturnValue(false);
+      posixWithoutLiteralFile = mergeGtLockJson(input, input, input);
+      existsSync.mockReturnValue(true);
+      posixWithLiteralFile = mergeGtLockJson(input, input, input);
+      Object.defineProperty(path, 'sep', {
+        ...originalSeparator,
+        value: path.win32.sep,
+      });
+      windowsResult = mergeGtLockJson(input, input, input);
+    } finally {
+      existsSync.mockRestore();
+      Object.defineProperty(path, 'sep', originalSeparator);
+    }
+
+    expect(posixWithLiteralFile).toEqual(posixWithoutLiteralFile);
+    expect(windowsResult).toEqual(posixWithoutLiteralFile);
+    expect(windowsResult.ok).toBe(true);
+    if (!windowsResult.ok) return;
+    expect(JSON.parse(windowsResult.content).entries[0]).toMatchObject({
+      fileId: hashStringSync(literalFileName),
+      fileName: literalFileName,
+    });
+  });
+
+  it('does not coalesce distinct path styles added after the merge base', () => {
+    const literalFileName = 'docs\\page.md';
+    const portableFileName = 'docs/page.md';
+    const literalEntry = {
+      ...entry(hashStringSync(literalFileName), 'literal-version', 'es'),
+      fileName: literalFileName,
+    };
+    const portableEntry = {
+      ...entry(hashStringSync(portableFileName), 'portable-version', 'fr'),
+      fileName: portableFileName,
+    };
+
+    const result = mergeGtLockJson(
+      lock(),
+      lock({ entries: [literalEntry] }),
+      lock({ entries: [portableEntry] })
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(JSON.parse(result.content).entries).toEqual([
+      literalEntry,
+      portableEntry,
+    ]);
+  });
+
+  it('preserves a deliberate rename from a portable base to a literal path', () => {
+    const literalFileName = 'docs\\page.md';
+    const portableFileName = 'docs/page.md';
+    const literalEntry = {
+      ...entry(hashStringSync(literalFileName), 'version-a', 'es'),
+      fileName: literalFileName,
+    };
+    const portableEntry = {
+      ...entry(hashStringSync(portableFileName), 'version-a', 'es'),
+      fileName: portableFileName,
+    };
+
+    const result = mergeGtLockJson(
+      lock({ entries: [portableEntry] }),
+      lock({ entries: [literalEntry] }),
+      lock({ entries: [portableEntry] })
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(JSON.parse(result.content).entries).toEqual([literalEntry]);
+  });
+
+  it('preserves both path styles when one side adds the portable path', () => {
+    const literalFileName = 'docs\\page.md';
+    const portableFileName = 'docs/page.md';
+    const literalEntry = {
+      ...entry(hashStringSync(literalFileName), 'literal-version', 'es'),
+      fileName: literalFileName,
+    };
+    const portableEntry = {
+      ...entry(hashStringSync(portableFileName), 'portable-version', 'fr'),
+      fileName: portableFileName,
+    };
+
+    const result = mergeGtLockJson(
+      lock({ entries: [literalEntry] }),
+      lock({ entries: [literalEntry] }),
+      lock({ entries: [literalEntry, portableEntry] })
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(JSON.parse(result.content).entries).toEqual([
+      literalEntry,
+      portableEntry,
+    ]);
+  });
+
+  it('does not borrow translation-path evidence from another entry', () => {
+    const literalEntry = {
+      ...entry('literal-source', 'literal-version', 'es'),
+      fileName: 'literal-source.md',
+      translations: {
+        es: {
+          updatedAt: '2026-01-01T00:00:00.000Z',
+          fileName: 'locale\\page.md',
+        },
+      },
+    };
+    const portableEntry = {
+      ...entry('portable-source', 'portable-version', 'fr'),
+      fileName: 'portable-source.md',
+      translations: {
+        fr: {
+          updatedAt: '2026-01-02T00:00:00.000Z',
+          fileName: 'locale/page.md',
+        },
+      },
+    };
+
+    const result = mergeGtLockJson(
+      lock({ entries: [literalEntry] }),
+      lock({ entries: [literalEntry] }),
+      lock({ entries: [literalEntry, portableEntry] })
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(JSON.parse(result.content).entries).toEqual([
+      literalEntry,
+      portableEntry,
+    ]);
   });
 
   it('fails on malformed JSON', () => {

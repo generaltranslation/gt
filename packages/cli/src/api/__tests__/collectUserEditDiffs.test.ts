@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as fs from 'node:fs';
-import * as path from 'node:path';
+import path from 'node:path';
 import os from 'node:os';
 import { collectAndSendUserEditDiffs } from '../collectUserEditDiffs.js';
 import { createMockSettings } from '../__mocks__/settings.js';
@@ -9,6 +9,8 @@ import { getGitUnifiedDiff } from '../../utils/gitDiff.js';
 import { hashStringSync } from '../../utils/hash.js';
 import {
   readLockfile,
+  migrateLockfileFileIds,
+  DownloadedVersions,
   DownloadedVersionsV1,
 } from '../../fs/config/downloadedVersions.js';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
@@ -62,7 +64,9 @@ describe('collectAndSendUserEditDiffs', () => {
       },
     });
 
-  const writeLockFile = (content: DownloadedVersionsV1) => {
+  const writeLockFile = (
+    content: DownloadedVersions | DownloadedVersionsV1
+  ) => {
     fs.writeFileSync(
       path.join(tempDir, 'gt-lock.json'),
       JSON.stringify(content, null, 2)
@@ -190,6 +194,350 @@ describe('collectAndSendUserEditDiffs', () => {
     expect(getGitUnifiedDiff).toHaveBeenCalledTimes(1);
     expect(gt.submitUserEditDiffs).toHaveBeenCalledTimes(1);
   });
+
+  it.skipIf(path.sep === '\\')(
+    'skips a tentative V2 alias on POSIX until the server accepts the move',
+    async () => {
+      const settings = buildSettings();
+      const translatedPath = path.join(tempDir, 'docs', 'ja', 'doc.md');
+      fs.mkdirSync(path.dirname(translatedPath), { recursive: true });
+      fs.writeFileSync(translatedPath, 'changed content');
+
+      const windowsFileName = 'docs\\doc.md';
+      const windowsFileId = hashStringSync(windowsFileName);
+      writeLockFile({
+        version: 2,
+        branchId: 'branch1',
+        entries: [
+          {
+            fileId: windowsFileId,
+            versionId: 'version1',
+            fileName: windowsFileName,
+            translations: {
+              ja: {
+                updatedAt: new Date().toISOString(),
+                postProcessHash: hashStringSync('original content'),
+              },
+            },
+          },
+        ],
+      });
+
+      await collectAndSendUserEditDiffs(
+        [
+          {
+            fileName: 'docs/doc.md',
+            fileFormat: 'MD',
+            branchId: 'branch1',
+            fileId: hashStringSync('docs/doc.md'),
+            versionId: 'version2',
+          },
+        ],
+        settings
+      );
+
+      expect(gt.queryFileData).not.toHaveBeenCalled();
+      expect(gt.downloadFileBatch).not.toHaveBeenCalled();
+      expect(gt.submitUserEditDiffs).not.toHaveBeenCalled();
+    }
+  );
+
+  it('uses a V2 legacy alias for standalone save-local on Windows', async () => {
+    const originalSeparator = Object.getOwnPropertyDescriptor(path, 'sep')!;
+    const settings = buildSettings();
+    const translatedPath = path.join(tempDir, 'docs', 'ja', 'doc.md');
+    fs.mkdirSync(path.dirname(translatedPath), { recursive: true });
+    fs.writeFileSync(translatedPath, 'changed content');
+
+    const windowsFileName = 'docs\\doc.md';
+    const windowsFileId = hashStringSync(windowsFileName);
+    const portableFileId = hashStringSync('docs/doc.md');
+    writeLockFile({
+      version: 2,
+      branchId: 'branch1',
+      entries: [
+        {
+          fileId: windowsFileId,
+          versionId: 'version1',
+          fileName: windowsFileName,
+          translations: {
+            ja: { postProcessHash: hashStringSync('original content') },
+          },
+        },
+      ],
+    });
+    vi.mocked(gt.queryFileData).mockResolvedValue({
+      translatedFiles: [
+        {
+          branchId: 'branch1',
+          fileId: windowsFileId,
+          versionId: 'version1',
+          locale: 'ja',
+          completedAt: new Date().toISOString(),
+        },
+      ],
+    });
+    vi.mocked(gt.downloadFileBatch).mockResolvedValue({
+      files: [
+        {
+          branchId: 'branch1',
+          fileId: windowsFileId,
+          versionId: 'version1',
+          locale: 'ja',
+          data: 'server content',
+        },
+      ],
+    });
+    vi.mocked(getGitUnifiedDiff).mockResolvedValue('mock-diff');
+
+    try {
+      Object.defineProperty(path, 'sep', {
+        ...originalSeparator,
+        value: path.win32.sep,
+      });
+      await collectAndSendUserEditDiffs(
+        [
+          {
+            fileName: 'docs/doc.md',
+            fileFormat: 'MD',
+            branchId: 'branch1',
+            fileId: portableFileId,
+            versionId: 'version2',
+          },
+        ],
+        settings
+      );
+    } finally {
+      Object.defineProperty(path, 'sep', originalSeparator);
+    }
+
+    expect(gt.queryFileData).toHaveBeenCalledWith({
+      translatedFiles: [
+        {
+          branchId: 'branch1',
+          fileId: windowsFileId,
+          versionId: 'version1',
+          locale: 'ja',
+        },
+      ],
+    });
+    expect(gt.submitUserEditDiffs).toHaveBeenCalledWith({
+      diffs: [expect.objectContaining({ fileId: windowsFileId })],
+    });
+  });
+
+  it('finds a V1 legacy ID for standalone save-local on Windows', async () => {
+    const originalSeparator = Object.getOwnPropertyDescriptor(path, 'sep')!;
+    const settings = buildSettings();
+    const translatedPath = path.join(tempDir, 'docs', 'ja', 'doc.md');
+    fs.mkdirSync(path.dirname(translatedPath), { recursive: true });
+    fs.writeFileSync(translatedPath, 'changed content');
+
+    const windowsFileId = hashStringSync('docs\\doc.md');
+    const portableFileId = hashStringSync('docs/doc.md');
+    writeLockFile({
+      version: 1,
+      entries: {
+        branch1: {
+          [windowsFileId]: {
+            version1: {
+              ja: { postProcessHash: hashStringSync('original content') },
+            },
+          },
+        },
+      },
+    });
+    vi.mocked(gt.queryFileData).mockResolvedValue({
+      translatedFiles: [
+        {
+          branchId: 'branch1',
+          fileId: windowsFileId,
+          versionId: 'version1',
+          locale: 'ja',
+          completedAt: new Date().toISOString(),
+        },
+      ],
+    });
+    vi.mocked(gt.downloadFileBatch).mockResolvedValue({
+      files: [
+        {
+          branchId: 'branch1',
+          fileId: windowsFileId,
+          versionId: 'version1',
+          locale: 'ja',
+          data: 'server content',
+        },
+      ],
+    });
+    vi.mocked(getGitUnifiedDiff).mockResolvedValue('mock-diff');
+
+    try {
+      Object.defineProperty(path, 'sep', {
+        ...originalSeparator,
+        value: path.win32.sep,
+      });
+      await collectAndSendUserEditDiffs(
+        [
+          {
+            fileName: 'docs/doc.md',
+            fileFormat: 'MD',
+            branchId: 'branch1',
+            fileId: portableFileId,
+            versionId: 'version2',
+          },
+        ],
+        settings
+      );
+    } finally {
+      Object.defineProperty(path, 'sep', originalSeparator);
+    }
+
+    expect(gt.queryFileData).toHaveBeenCalledWith({
+      translatedFiles: [
+        {
+          branchId: 'branch1',
+          fileId: windowsFileId,
+          versionId: 'version1',
+          locale: 'ja',
+        },
+      ],
+    });
+    expect(gt.submitUserEditDiffs).toHaveBeenCalledWith({
+      diffs: [expect.objectContaining({ fileId: windowsFileId })],
+    });
+  });
+
+  it('uses migrated V1 history after the server accepts the move', async () => {
+    const settings = buildSettings();
+    const translatedPath = path.join(tempDir, 'docs', 'ja', 'doc.md');
+    fs.mkdirSync(path.dirname(translatedPath), { recursive: true });
+    fs.writeFileSync(translatedPath, 'changed content');
+
+    const windowsFileId = hashStringSync('docs\\doc.md');
+    writeLockFile({
+      version: 1,
+      entries: {
+        branch1: {
+          [windowsFileId]: {
+            version1: {
+              ja: {
+                updatedAt: new Date().toISOString(),
+                postProcessHash: hashStringSync('original content'),
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const portableFileId = hashStringSync('docs/doc.md');
+    expect(
+      migrateLockfileFileIds('branch1', [
+        {
+          oldFileId: windowsFileId,
+          newFileId: portableFileId,
+          newFileName: 'docs/doc.md',
+        },
+      ])
+    ).toBe(1);
+
+    vi.mocked(gt.queryFileData).mockResolvedValue({
+      translatedFiles: [
+        {
+          branchId: 'branch1',
+          fileId: portableFileId,
+          versionId: 'version1',
+          locale: 'ja',
+          completedAt: new Date().toISOString(),
+        },
+      ],
+    });
+    vi.mocked(gt.downloadFileBatch).mockResolvedValue({
+      files: [
+        {
+          branchId: 'branch1',
+          fileId: portableFileId,
+          versionId: 'version1',
+          locale: 'ja',
+          data: 'server content',
+        },
+      ],
+    });
+    vi.mocked(getGitUnifiedDiff).mockResolvedValue('mock-diff');
+
+    await collectAndSendUserEditDiffs(
+      [
+        {
+          fileName: 'docs/doc.md',
+          fileFormat: 'MD',
+          branchId: 'branch1',
+          fileId: portableFileId,
+          versionId: 'version2',
+        },
+      ],
+      settings
+    );
+
+    expect(gt.queryFileData).toHaveBeenCalledWith({
+      translatedFiles: [
+        {
+          branchId: 'branch1',
+          fileId: portableFileId,
+          versionId: 'version1',
+          locale: 'ja',
+        },
+      ],
+    });
+    expect(gt.submitUserEditDiffs).toHaveBeenCalledWith({
+      diffs: [expect.objectContaining({ fileId: portableFileId })],
+    });
+  });
+
+  it.skipIf(path.sep === '\\')(
+    'does not borrow an unconfirmed V1 ID for an absent literal POSIX path',
+    async () => {
+      const settings = buildSettings();
+      const translatedPath = path.join(tempDir, 'docs', 'ja', 'doc.md');
+      fs.mkdirSync(path.dirname(translatedPath), { recursive: true });
+      fs.writeFileSync(translatedPath, 'changed content');
+      const literalFileId = hashStringSync('docs\\doc.md');
+      writeLockFile({
+        version: 1,
+        entries: {
+          branch1: {
+            [literalFileId]: {
+              version1: {
+                ja: {
+                  updatedAt: new Date().toISOString(),
+                  postProcessHash: hashStringSync('original content'),
+                },
+              },
+            },
+          },
+        },
+      });
+
+      vi.mocked(gt.queryFileData).mockResolvedValue({ translatedFiles: [] });
+      vi.mocked(gt.downloadFileBatch).mockResolvedValue({ files: [] });
+
+      await collectAndSendUserEditDiffs(
+        [
+          {
+            fileName: 'docs/doc.md',
+            fileFormat: 'MD',
+            branchId: 'branch1',
+            fileId: hashStringSync('docs/doc.md'),
+            versionId: 'version2',
+          },
+        ],
+        settings
+      );
+
+      expect(gt.queryFileData).not.toHaveBeenCalled();
+      expect(gt.downloadFileBatch).not.toHaveBeenCalled();
+      expect(gt.submitUserEditDiffs).not.toHaveBeenCalled();
+    }
+  );
 
   it('uses the latest downloaded version when the uploaded version has changed', async () => {
     const settings = buildSettings();

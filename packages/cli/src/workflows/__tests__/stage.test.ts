@@ -95,6 +95,7 @@ describe('runStageFilesWorkflow font sync', () => {
     expect(collectFonts).toHaveBeenCalledWith(settings);
     expect(gt.uploadFonts).toHaveBeenCalledWith(fonts);
     expect(result.enqueueResult).toEqual({ message: 'enqueued', jobData: {} });
+    expect(result.uploadedFiles).toEqual([]);
   });
 
   it('skips the upload when no fonts are configured', async () => {

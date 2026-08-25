@@ -94,6 +94,19 @@ describe('normalizeLockfilePaths', () => {
     });
   });
 
+  it('preserves a mixed translation path when its source path is migrated', () => {
+    const windowsPath = 'src\\content\\page.mdx';
+    const data = lockfile(hashStringSync(windowsPath), windowsPath);
+    data.entries[0].translations.es.fileName = 'content/es/literal\\page.mdx';
+
+    normalizeLockfilePaths(data);
+
+    expect(data.entries[0].fileName).toBe('src/content/page.mdx');
+    expect(data.entries[0].translations.es.fileName).toBe(
+      'content/es/literal\\page.mdx'
+    );
+  });
+
   it('preserves an existing all-backslash POSIX filename', () => {
     const literalPath = 'literal\\page.mdx';
     const data = lockfile(hashStringSync(literalPath), literalPath);

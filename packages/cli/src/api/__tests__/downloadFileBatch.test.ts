@@ -52,15 +52,22 @@ vi.mock('path', async () => {
   };
 });
 
-vi.mock('../../fs/config/downloadedVersions.js', () => ({
-  readLockfile: vi.fn(() => ({
-    data: { entries: [] },
-    entryMap: new Map(),
-    originalV1: false,
-  })),
-  writeLockfile: vi.fn(),
-  findOrCreateEntry: vi.fn(() => ({ translations: {} })),
-}));
+vi.mock('../../fs/config/downloadedVersions.js', async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import('../../fs/config/downloadedVersions.js')
+    >();
+  return {
+    ...actual,
+    readLockfile: vi.fn(() => ({
+      data: { entries: [] },
+      entryMap: new Map(),
+      originalV1: false,
+    })),
+    writeLockfile: vi.fn(),
+    findOrCreateEntry: vi.fn(() => ({ translations: {} })),
+  };
+});
 
 vi.mock('../../console/logger.js', () => ({
   logger: {
@@ -544,6 +551,117 @@ describe('downloadFileBatch', () => {
 
     expect(result.successful).toHaveLength(1);
     expect(lockEntry.translations.es.fileName).toBe('public/gt/es.json');
+  });
+
+  it('retires legacy identity metadata after a current-ID download succeeds', async () => {
+    const files = createBatchedFiles(1, { locale: 'es' });
+    const fileTracker = createMockFileTracker(files);
+    const lockEntry: DownloadedVersionEntry = {
+      fileId: 'file-1',
+      previousFileId: 'windows-file-1',
+      versionId: 'version-1',
+      translations: {
+        es: { postProcessHash: 'old-es-hash' },
+        fr: { postProcessHash: 'old-fr-hash' },
+      },
+    };
+    const entryMap = new Map([
+      ['file-1', lockEntry],
+      ['windows-file-1', lockEntry],
+    ]);
+    vi.mocked(readLockfile).mockReturnValue({
+      data: {
+        version: 2,
+        branchId: 'branch-1',
+        entries: [lockEntry],
+      },
+      entryMap,
+      originalV1: null,
+    });
+    vi.mocked(findOrCreateEntry).mockReturnValue(lockEntry);
+    vi.mocked(gt.downloadFileBatch).mockResolvedValue({
+      files: [
+        {
+          id: 'translation-1',
+          branchId: 'branch-1',
+          fileId: 'file-1',
+          versionId: 'version-1',
+          locale: 'es',
+          fileFormat: 'GTJSON' as FileFormat,
+          data: '{"hello":"Hola"}',
+          fileName: 'es.json',
+          metadata: {},
+        },
+      ],
+      count: 1,
+    });
+    setupFileSystemMocks();
+
+    const result = await downloadFileBatch(
+      fileTracker,
+      files,
+      createMockSettings()
+    );
+
+    expect(result.successful).toHaveLength(1);
+    expect(lockEntry.previousFileId).toBeUndefined();
+    expect(Object.keys(lockEntry.translations)).toEqual(['es']);
+    expect(entryMap.has('windows-file-1')).toBe(false);
+  });
+
+  it('still trusts legacy metadata when downloading by the legacy server ID', async () => {
+    const files = createBatchedFiles(1, {
+      fileId: 'windows-file-1',
+      locale: 'es',
+    });
+    const fileTracker = createMockFileTracker(files);
+    const lockEntry: DownloadedVersionEntry = {
+      fileId: 'file-1',
+      previousFileId: 'windows-file-1',
+      versionId: 'version-1',
+      translations: {
+        es: { postProcessHash: 'legacy-es-hash' },
+      },
+    };
+    vi.mocked(readLockfile).mockReturnValue({
+      data: {
+        version: 2,
+        branchId: 'branch-1',
+        entries: [lockEntry],
+      },
+      entryMap: new Map([
+        ['file-1', lockEntry],
+        ['windows-file-1', lockEntry],
+      ]),
+      originalV1: null,
+    });
+    vi.mocked(gt.downloadFileBatch).mockResolvedValue({
+      files: [
+        {
+          id: 'translation-1',
+          branchId: 'branch-1',
+          fileId: 'windows-file-1',
+          versionId: 'version-1',
+          locale: 'es',
+          fileFormat: 'GTJSON' as FileFormat,
+          data: '{"hello":"Hola"}',
+          fileName: 'es.json',
+          metadata: {},
+        },
+      ],
+      count: 1,
+    });
+    setupFileSystemMocks();
+
+    const result = await downloadFileBatch(
+      fileTracker,
+      files,
+      createMockSettings()
+    );
+
+    expect(result.skipped).toHaveLength(1);
+    expect(result.successful).toHaveLength(0);
+    expect(lockEntry.previousFileId).toBe('windows-file-1');
   });
 
   it.each([
