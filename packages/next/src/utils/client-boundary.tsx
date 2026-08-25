@@ -57,22 +57,22 @@ export function Client_GTProvider(props: SharedGTProviderProps) {
           defaultLocaleRoutingEnabledCookieName
         ) === 'true';
       const defaultLocale = i18nConfig.getDefaultLocale();
+      const locales = i18nConfig.getLocales();
       const currentPathname = globalThis.location.pathname;
       const localeRoutingApplies =
         localeRoutingEnabled &&
         pathnameMatchesRegex(currentPathname, pathRegex);
-      const currentPathLocale = localeRoutingApplies
-        ? extractLocale(currentPathname, i18nConfig)
-        : null;
-
-      if (
-        localeRoutingApplies &&
-        locale === defaultLocale &&
-        currentPathLocale &&
-        currentPathLocale !== defaultLocale
-      ) {
-        reloadBrowserPage();
-        return;
+      if (localeRoutingApplies && locale === defaultLocale) {
+        const currentPathLocale = resolvePathLocale(
+          currentPathname,
+          i18nConfig,
+          defaultLocale,
+          locales
+        );
+        if (currentPathLocale !== defaultLocale) {
+          reloadBrowserPage();
+          return;
+        }
       }
 
       refreshServerComponents();
@@ -120,20 +120,12 @@ function usePathCheck({
       'true';
     if (localeRoutingEnabled && pathnameMatchesRegex(pathname, pathRegex)) {
       // Extract locale from pathname
-      const extractedLocale =
-        extractLocale(pathname, i18nConfig) || defaultLocale;
-      let currentPathLocale = i18nConfig.determineLocale(
-        [
-          i18nConfig.isGTServicesEnabled()
-            ? i18nConfig.standardizeLocale(extractedLocale)
-            : extractedLocale,
-          defaultLocale,
-        ],
+      const currentPathLocale = resolvePathLocale(
+        pathname,
+        i18nConfig,
+        defaultLocale,
         locales
       );
-      if (currentPathLocale) {
-        currentPathLocale = i18nConfig.resolveAliasLocale(currentPathLocale);
-      }
 
       if (
         currentPathLocale &&
@@ -160,6 +152,30 @@ function usePathCheck({
     reloadBrowserPage,
     refreshServerComponents,
   ]);
+}
+
+function resolvePathLocale(
+  pathname: string,
+  i18nConfig: I18nConfig,
+  defaultLocale: string,
+  locales: string[]
+): string {
+  const extractedLocale = extractLocale(pathname, i18nConfig);
+  if (!extractedLocale) {
+    return defaultLocale;
+  }
+
+  const currentPathLocale = i18nConfig.determineLocale(
+    [
+      i18nConfig.isGTServicesEnabled()
+        ? i18nConfig.standardizeLocale(extractedLocale)
+        : extractedLocale,
+    ],
+    locales
+  );
+  return currentPathLocale
+    ? i18nConfig.resolveAliasLocale(currentPathLocale)
+    : defaultLocale;
 }
 
 function extractLocale(
