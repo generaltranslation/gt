@@ -1,7 +1,6 @@
 const MAX_RETRIES = 3;
 const INITIAL_DELAY_MS = 500;
 const RATE_LIMIT_RETRY_DELAY_MS = 60_000;
-const MS_PER_SECOND = 1000;
 export const DEFAULT_TIMEOUT_MS = 60_000;
 
 export type RetryPolicy = 'exponential' | 'none';
@@ -51,9 +50,7 @@ function parseDelayMs(value: string | null): number | undefined {
   if (!value) return undefined;
 
   const seconds = Number(value.split(',')[0].split(';')[0].trim());
-  return Number.isFinite(seconds) && seconds >= 0
-    ? seconds * MS_PER_SECOND
-    : undefined;
+  return Number.isFinite(seconds) && seconds >= 0 ? seconds * 1000 : undefined;
 }
 
 function parseRetryAfter(value: string | null): number | undefined {
