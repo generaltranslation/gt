@@ -1,19 +1,6 @@
 name: Latest Next.js - Locale Switching
 
 on:
-  pull_request:
-    paths:
-      - '.github/workflows/test-next-latest-locale-switch.yml'
-      - 'packages/compiler/**'
-      - 'packages/core/**'
-      - 'packages/format/**'
-      - 'packages/i18n/**'
-      - 'packages/icu/**'
-      - 'packages/next/**'
-      - 'packages/react/**'
-      - 'packages/react-core/**'
-      - 'tests/apps/next-latest-locale-switch-*/**'
-      - 'tests/apps/next/turbopackRoot.ts'
   schedule:
     # Run daily at 07:00 UTC, after the general test-app browser checks.
     - cron: '0 7 * * *'
