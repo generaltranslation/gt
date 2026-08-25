@@ -353,6 +353,7 @@ export async function handleGenerate(settings: Settings): Promise<void> {
   const generatedFiles: GeneratedFilesByMarker = new Map();
   const processedOutputs = new Map<string, GenerationTarget>();
   const markerFailures: string[] = [];
+  let completedFileCount = 0;
 
   try {
     for (const target of createGenerationPlan(settings)) {
@@ -395,6 +396,7 @@ export async function handleGenerate(settings: Settings): Promise<void> {
       }
       try {
         await removeGenerationMarker(marker);
+        generatedFiles.delete(marker);
       } catch (error) {
         markerFailures.push(
           `${marker}: ${formatDiagnosticErrorDetails(error) ?? 'Unknown error'}`
@@ -403,6 +405,7 @@ export async function handleGenerate(settings: Settings): Promise<void> {
       if (!(await matchesGeneratedFile(generatedFile))) {
         throw createChangedOutputError(generatedFile.target);
       }
+      completedFileCount += 1;
     }
   } catch (error) {
     await rollbackGeneratedFiles(generatedFiles);
@@ -422,9 +425,9 @@ export async function handleGenerate(settings: Settings): Promise<void> {
     );
   }
 
-  if (generatedFiles.size > 0) {
+  if (completedFileCount > 0) {
     logger.step(
-      `Generated ${generatedFiles.size} translation template file${generatedFiles.size === 1 ? '' : 's'}.`
+      `Generated ${completedFileCount} translation template file${completedFileCount === 1 ? '' : 's'}.`
     );
   }
 }

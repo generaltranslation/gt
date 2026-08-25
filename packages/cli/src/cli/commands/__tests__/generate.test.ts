@@ -183,29 +183,34 @@ describe('handleGenerate', () => {
     expect(getGenerationMarkers('messages/fr/common.json')).toEqual([]);
   });
 
-  it('rejects an output replaced while releasing its marker', async () => {
+  it('does not roll back an output acquired after releasing its marker', async () => {
     writeFileSync('messages/en/common.json', '{"hello":"Hello"}');
     const settings = createSettings(['messages/en/common.json']);
     const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
     const removeFile = fs.promises.rm.bind(fs.promises);
     vi.spyOn(fs.promises, 'rm').mockImplementationOnce(async (filePath) => {
-      writeFileSync('messages/fr/replacement.json', '{"hello":"User edit"}');
-      rmSync('messages/fr/common.json');
-      renameSync('messages/fr/replacement.json', 'messages/fr/common.json');
       await removeFile(filePath);
+      rmSync('messages/fr/common.json');
+      writeFileSync(filePath, path.resolve('messages/fr/common.json'), {
+        flag: 'wx',
+      });
+      writeFileSync('messages/fr/common.json', '{"hello":"User edit"}');
     });
 
     await expect(handleGenerate(settings)).rejects.toThrow(
       'A generated output changed while it was being created'
     );
 
-    expect(existsSync('messages/fr/common.json')).toBe(false);
-    expect(
-      readFileSync(getRecoveryPath('messages/fr/common.json'), 'utf8')
-    ).toBe('{"hello":"User edit"}');
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('preserved after generation failed')
+    expect(readFileSync('messages/fr/common.json', 'utf8')).toBe(
+      '{"hello":"User edit"}'
     );
+    expect(
+      readdirSync('messages/fr').some((file) =>
+        file.startsWith('.gt-rollback-')
+      )
+    ).toBe(false);
+    expect(warn).not.toHaveBeenCalled();
+    expect(getGenerationMarkers('messages/fr/common.json')).toHaveLength(1);
   });
 
   it('preserves an in-place edit for recovery without blocking a retry', async () => {
