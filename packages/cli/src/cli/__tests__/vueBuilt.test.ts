@@ -1262,9 +1262,7 @@ import { LocalT } from '@gt';
         'upload',
         'auth',
         'save-local',
-        'project-create',
-        'translate-text',
-        'setup-status',
+        'project',
         'git',
       ];
       const baseCommands = [

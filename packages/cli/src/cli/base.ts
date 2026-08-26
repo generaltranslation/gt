@@ -196,9 +196,7 @@ export class BaseCLI {
     this.setupUploadCommand();
     this.setupLoginCommand();
     this.setupSendDiffsCommand();
-    this.setupProjectCreateCommand();
-    this.setupTranslateTextCommand();
-    this.setupStatusCommand();
+    this.setupProjectCommands();
     this.setupGitCommand();
   }
   // Init is never called in a child class
@@ -312,10 +310,14 @@ export class BaseCLI {
       });
   }
 
-  protected setupProjectCreateCommand(): void {
+  protected setupProjectCommands(): void {
+    const projectCommand = this.program
+      .command('project')
+      .description('Manage General Translation projects');
+
     attachSharedFlags(
-      this.program
-        .command('project-create')
+      projectCommand
+        .command('create')
         .description(
           'Create a General Translation project using an organization API key'
         )
@@ -331,41 +333,11 @@ export class BaseCLI {
       });
       logger.info(`Created ${project.name} (${project.id})`);
     });
-  }
 
-  protected setupTranslateTextCommand(): void {
     attachSharedFlags(
-      this.program
-        .command('translate-text')
-        .description('Translate text without running a project workflow')
-        .requiredOption('--text <text>', 'Text to translate')
-        .requiredOption('--source-locale <locale>', 'Source locale')
-        .requiredOption('--target-locale <locale>', 'Target locale')
-    ).action(async (options) => {
-      await generateSettings(options);
-      const result = await api.translate({
-        requests: { text: { source: options.text } },
-        sourceLocale: options.sourceLocale,
-        targetLocale: options.targetLocale,
-        metadata: {},
-      });
-      const translation = result.text;
-      if (!translation || !translation.success) {
-        throw new Error(translation?.error ?? 'Translation failed');
-      }
-      logger.info(
-        typeof translation.translation === 'string'
-          ? translation.translation
-          : JSON.stringify(translation.translation)
-      );
-    });
-  }
-
-  protected setupStatusCommand(): void {
-    attachSharedFlags(
-      this.program
-        .command('setup-status')
-        .description('Check project setup status')
+      projectCommand
+        .command('status')
+        .description('Check the status of a project setup job')
         .argument('<job-id>', 'Setup job ID')
     ).action(async (jobId, options) => {
       await generateSettings(options);
