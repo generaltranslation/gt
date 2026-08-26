@@ -45,7 +45,7 @@ export const defaultGroups = [
     // @generaltranslation/api.
     name: 'API_VERSION',
     declarations: [
-      'packages/api/src/client.ts',
+      'packages/api/src/wrappers/client.ts',
       'packages/core/src/translate/api.ts',
     ],
     exceptions: [],
@@ -95,14 +95,14 @@ export const defaultGroups = [
         expectedMatches: 1,
       },
       {
-        path: 'packages/api/src/transport.ts',
+        path: 'packages/api/src/wrappers/transport.ts',
         reason:
           'The matching duration is a rate-limit retry delay, not a request timeout default.',
         matches: isWithinVariableDeclaration('RATE_LIMIT_RETRY_DELAY_MS'),
         expectedMatches: 1,
       },
       {
-        path: 'packages/api/src/transport.ts',
+        path: 'packages/api/src/wrappers/transport.ts',
         reason:
           'The standalone API package cannot import the core package that consumes it.',
         matches: isWithinVariableDeclaration('DEFAULT_TIMEOUT_MS'),
