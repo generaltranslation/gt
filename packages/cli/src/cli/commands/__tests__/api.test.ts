@@ -6,6 +6,12 @@ import { handleApiCommand } from '../api.js';
 
 const temporaryDirectories: string[] = [];
 
+type OutputChunk = string | Uint8Array;
+
+function outputText(chunks: OutputChunk[]): string {
+  return Buffer.concat(chunks.map((chunk) => Buffer.from(chunk))).toString();
+}
+
 function writeInput(content: string): string {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-api-test-'));
   temporaryDirectories.push(directory);
@@ -29,20 +35,20 @@ describe('gt api', () => {
       expect(request.method).toBe('POST');
       expect(request.headers.get('authorization')).toBe('Bearer api-key');
       expect(request.headers.get('gt-project-id')).toBe('project-id');
-      expect(request.headers.get('x-test')).toBe('value');
+      expect(request.headers.get('x-test')).toBe('value, second');
       expect(request.headers.get('content-type')).toBe('application/json');
       expect(await request.text()).toBe(requestBody);
       return new Response(responseBody, {
         headers: { 'Content-Type': 'application/json' },
       });
     });
-    const stdout: string[] = [];
+    const stdout: OutputChunk[] = [];
 
     await handleApiCommand(
       'v2/example',
       {
         apiKey: 'api-key',
-        header: ['X-Test: value'],
+        header: ['X-Test: value', 'X-Test: second'],
         input: writeInput(requestBody),
         method: 'post',
         projectId: 'project-id',
@@ -54,7 +60,29 @@ describe('gt api', () => {
     );
 
     expect(fetchMock).toHaveBeenCalledOnce();
-    expect(stdout.join('')).toBe(responseBody);
+    expect(outputText(stdout)).toBe(responseBody);
+  });
+
+  it('preserves binary response bodies', async () => {
+    const responseBody = Uint8Array.from([0, 255, 1, 128]);
+    const stdout: OutputChunk[] = [];
+
+    await handleApiCommand(
+      '/v2/binary',
+      {
+        apiKey: 'api-key',
+        method: 'GET',
+        projectId: 'project-id',
+      },
+      {
+        fetch: async () => new Response(responseBody),
+        writeStdout: (output) => stdout.push(output),
+      }
+    );
+
+    expect(Buffer.concat(stdout.map((chunk) => Buffer.from(chunk)))).toEqual(
+      Buffer.from(responseBody)
+    );
   });
 
   it('writes error bodies verbatim and exits once on HTTP errors', async () => {
@@ -67,7 +95,7 @@ describe('gt api', () => {
         })
       )
     );
-    const stdout: string[] = [];
+    const stdout: OutputChunk[] = [];
     const stderr: string[] = [];
     const exit = vi.fn((code: number): never => {
       throw new Error(`exit ${code}`);
@@ -91,7 +119,7 @@ describe('gt api', () => {
       )
     ).rejects.toThrow('exit 1');
 
-    expect(stdout.join('')).toBe(responseBody);
+    expect(outputText(stdout)).toBe(responseBody);
     expect(stderr.join('')).toBe(
       'GET /v2/missing returned HTTP 404 Not Found\n'
     );
