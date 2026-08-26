@@ -7,10 +7,6 @@ import {
 import { Translation } from './translations-manager/utils/types/translation-data';
 import { LookupOptions } from '../translation-functions/types/options';
 import { SafeTranslationsLoader } from './translations-manager/translations-loaders/types';
-import {
-  createTranslateManyFactory,
-  type CreateTranslateMany,
-} from './translations-manager/utils/createTranslateMany';
 import { routeCreateTranslationLoader } from './translations-manager/translations-loaders/routeCreateTranslationLoader';
 import { getLoadTranslationsType } from './utils/getLoadTranslationsType';
 import { ResourceCache } from './translations-manager/ResourceCache';
@@ -26,11 +22,8 @@ import { resolveDictionaryLookupOptions } from './translations-manager/utils/dic
 import { DictionarySourceNotFoundError } from './translations-manager/utils/DictionarySourceNotFoundError';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
-
-/**
- * Default translation timeout in milliseconds for a runtime translation request
- */
-const DEFAULT_TRANSLATION_TIMEOUT = 12_000; // 12 seconds
+import type { CreateMissingTranslationResolver } from './translations-manager/MissingTranslationResolver';
+import { createGTMissingTranslationResolver } from './createGTMissingTranslationResolver';
 
 /**
  * A translation resolver is a function that synchronously resolves a translation
@@ -89,7 +82,13 @@ export type TranslationsCacheMissEvent<
  * Class for managing translation functionality
  * @template TranslationValue - The type of the translation that will be cached
  */
-class I18nCache<TranslationValue extends Translation = Translation> {
+export type I18nCacheDependencies<
+  TranslationValue extends Translation = Translation,
+> = {
+  createMissingTranslationResolver?: CreateMissingTranslationResolver<TranslationValue>;
+};
+
+class I18nCacheCore<TranslationValue extends Translation = Translation> {
   protected config: I18nCacheConfig;
 
   /**
@@ -110,10 +109,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
   >;
   private dictionaries: ResourceCache<Locale, DictionaryCache>;
 
-  /**
-   * Creates a locale-bound translateMany for runtime translation
-   */
-  private createTranslateMany: CreateTranslateMany;
+  private createMissingTranslationResolver?: CreateMissingTranslationResolver<TranslationValue>;
 
   /**
    * Creates an instance of I18nCache.
@@ -121,7 +117,10 @@ class I18nCache<TranslationValue extends Translation = Translation> {
    * @param params - The parameters for the I18nCache constructor
    * @param params.config - The configuration for the I18nCache
    */
-  constructor(params: I18nCacheConstructorParams) {
+  constructor(
+    params: I18nCacheConstructorParams,
+    dependencies: I18nCacheDependencies<TranslationValue> = {}
+  ) {
     // Validation
     validateCacheParams(params);
 
@@ -149,16 +148,8 @@ class I18nCache<TranslationValue extends Translation = Translation> {
       },
     }) as SafeTranslationsLoader<TranslationValue>;
     const loadDictionary = params.loadDictionary ?? (() => Promise.resolve({}));
-    this.createTranslateMany = createTranslateManyFactory(
-      getI18nConfig().getGTClass(),
-      this.config.runtimeTranslation?.timeout ?? DEFAULT_TRANSLATION_TIMEOUT,
-      {
-        ...(this.config.modelProvider && {
-          modelProvider: this.config.modelProvider,
-        }),
-        ...this.config.runtimeTranslation?.metadata,
-      }
-    );
+    this.createMissingTranslationResolver =
+      dependencies.createMissingTranslationResolver;
 
     // Setup locale-keyed caches
     const ttl = this.config.cacheExpiryTime;
@@ -194,8 +185,8 @@ class I18nCache<TranslationValue extends Translation = Translation> {
   ): TranslationsCache<TranslationValue> {
     return new TranslationsCache<TranslationValue>({
       init,
-      translateMany: this.createTranslateMany(locale),
-      batchConfig: this.config.batchConfig,
+      resolveMissingTranslation:
+        this.createMissingTranslationResolver?.(locale),
       onMiss: (hash, translation) =>
         this.onTranslationsCacheMiss?.({ locale, hash, translation }),
     });
@@ -702,7 +693,22 @@ class I18nCache<TranslationValue extends Translation = Translation> {
   }
 }
 
-export { I18nCache };
+/**
+ * Backwards-compatible cache with General Translation runtime fallback.
+ * Framework adapters can extend I18nCacheCore and inject a different resolver.
+ */
+class I18nCache<
+  TranslationValue extends Translation = Translation,
+> extends I18nCacheCore<TranslationValue> {
+  constructor(params: I18nCacheConstructorParams) {
+    super(params, {
+      createMissingTranslationResolver:
+        createGTMissingTranslationResolver<TranslationValue>(params),
+    });
+  }
+}
+
+export { I18nCache, I18nCacheCore };
 
 // ===== Helper Functions ===== //
 

@@ -1,11 +1,11 @@
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { createGlobalSingleton } from 'gt-i18n/internal';
-import { I18nStore } from './I18nStore';
+import { I18nStoreCore } from './I18nStore';
 import { getI18nConfig } from '../setup/i18nConfig';
 
 // ===== I18n Store ===== //
 
-const i18nStoreSingleton = createGlobalSingleton<I18nStore>({
+const i18nStoreSingleton = createGlobalSingleton<I18nStoreCore>({
   namespace: 'reactCore',
   key: 'i18nStore',
   source: '@generaltranslation/react-core',

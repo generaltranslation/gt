@@ -1,5 +1,5 @@
 import { useEffect, useMemo, type ReactNode } from 'react';
-import { I18nStore } from '../i18n-store/I18nStore';
+import { I18nStoreCore } from '../i18n-store/I18nStore';
 import type { Dictionary, Translation } from 'gt-i18n/types';
 import type {
   Locale,
@@ -20,7 +20,7 @@ export type InternalGTProviderProps = {
   dictionaries?: Record<Locale, Dictionary>;
   // Declared upstream dependent on environment
   conditionStore: WritableConditionStoreInterface;
-  i18nStore: I18nStore;
+  i18nStore: I18nStoreCore;
   // Custom override missing translation behavior for dev hot reload
   onMissingTranslation?: OnMissingTranslation;
   onMissingDictionaryEntry?: OnMissingDictionaryEntry;

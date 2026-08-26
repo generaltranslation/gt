@@ -1,4 +1,7 @@
-import { internalInitializeGTSRA } from '@generaltranslation/react-core/pure';
+import {
+  internalInitializeGTSRA,
+  internalInitializeStaticGTSRA,
+} from '@generaltranslation/react-core/pure';
 import { getParams } from './shared';
 import type { NextSetupI18nConfigParams } from './shared';
 import type { NextI18nCacheParams } from '../i18n-cache/NextI18nCache';
@@ -15,7 +18,11 @@ export function initializeGTClient(
     nextI18nCacheParams: NextI18nCacheParams;
   } = getParams()
 ): void {
-  internalInitializeGTSRA({
+  const initialize =
+    process.env.NODE_ENV === 'production'
+      ? internalInitializeStaticGTSRA
+      : internalInitializeGTSRA;
+  initialize({
     ...i18nConfigParams,
     ...nextI18nCacheParams,
     /**

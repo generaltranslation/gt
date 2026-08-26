@@ -1,6 +1,6 @@
 import type { RuntimeTranslateManyOptions } from 'generaltranslation/internal';
 import type { Locale } from '../TranslationsCache';
-import type { TranslateMany } from '../TranslationsCache';
+import type { TranslateMany } from '../MissingTranslationResolver';
 
 type TranslateManyClient = {
   translateMany(

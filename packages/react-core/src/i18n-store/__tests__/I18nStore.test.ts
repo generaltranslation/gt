@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { initializeI18nConfig } from 'gt-i18n/internal';
 import { setReactI18nCache } from '../../i18n-cache/singleton-operations';
-import { I18nStore } from '../I18nStore';
+import { I18nStore } from '../RuntimeI18nStore';
+import { I18nStoreCore } from '../I18nStore';
 import type { ReactI18nCache } from '../../i18n-cache/ReactI18nCache';
 import type { TranslateLookup } from '../storeTypes';
 
@@ -138,5 +139,39 @@ describe('I18nStore runtime translation failure handling', () => {
     store.translateDictionaryObject({ locale: 'fr', id: 'nav' });
 
     await vi.waitFor(() => expect(consoleError).toHaveBeenCalledTimes(1));
+  });
+});
+
+describe('I18nStoreCore', () => {
+  beforeEach(() => {
+    resetGTGlobals();
+    vi.clearAllMocks();
+    setup();
+  });
+
+  it('does not request a missing translation without a resolver', async () => {
+    const store = new I18nStoreCore();
+    const listener = vi.fn();
+    store.subscribeToTranslationEvents(listener);
+
+    await store.translate(lookup);
+
+    expect(lookupTranslationWithFallback).not.toHaveBeenCalled();
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('emits after an injected resolver succeeds', async () => {
+    const resolveMissing = vi.fn().mockResolvedValue(true);
+    const store = new I18nStoreCore(resolveMissing);
+    const listener = vi.fn();
+    store.subscribeToTranslationEvents(listener);
+
+    await store.translate(lookup);
+
+    expect(resolveMissing).toHaveBeenCalledWith({
+      type: 'translation',
+      lookup,
+    });
+    expect(listener).toHaveBeenCalledWith(lookup);
   });
 });

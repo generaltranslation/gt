@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { TranslationsCache } from '../TranslationsCache';
+import {
+  createBatchedMissingTranslationResolver,
+  type TranslationBatchConfig,
+} from '../MissingTranslationResolver';
 import { hashMessage } from '../../../utils/hashMessage';
 import { LookupOptions } from '../../../translation-functions/types/options';
 import type { Content } from '@generaltranslation/format/types';
@@ -27,6 +31,19 @@ function mockTranslateManyResponse(
 describe('TranslationsCache', () => {
   let mockTranslateMany: ReturnType<typeof vi.fn>;
 
+  function createCache(
+    init: Record<string, string> = {},
+    batchConfig?: TranslationBatchConfig
+  ) {
+    return new TranslationsCache({
+      init,
+      resolveMissingTranslation: createBatchedMissingTranslationResolver(
+        mockTranslateMany,
+        batchConfig
+      ),
+    });
+  }
+
   beforeEach(() => {
     vi.useFakeTimers();
     mockTranslateMany = vi.fn();
@@ -40,10 +57,7 @@ describe('TranslationsCache', () => {
 
   it('get() returns cached translation when init is pre-populated', () => {
     const { message, options, hash } = makeKey('Hello');
-    const cache = new TranslationsCache({
-      init: { [hash]: 'Bonjour' },
-      translateMany: mockTranslateMany,
-    });
+    const cache = createCache({ [hash]: 'Bonjour' });
 
     const result = cache.get({ message, options });
     expect(result).toBe('Bonjour');
@@ -52,13 +66,18 @@ describe('TranslationsCache', () => {
 
   it('get() returns undefined on cache miss', () => {
     const { message, options } = makeKey('Hello');
-    const cache = new TranslationsCache({
-      init: {},
-      translateMany: mockTranslateMany,
-    });
+    const cache = createCache();
 
     const result = cache.get({ message, options });
     expect(result).toBeUndefined();
+  });
+
+  it('returns the source without caching when no miss resolver is configured', async () => {
+    const { message, options } = makeKey('Hello');
+    const cache = new TranslationsCache<string>({ init: {} });
+
+    await expect(cache.miss({ message, options })).resolves.toBe(message);
+    expect(cache.get({ message, options })).toBeUndefined();
   });
 
   it('miss() calls translateMany and returns the translation', async () => {
@@ -67,10 +86,7 @@ describe('TranslationsCache', () => {
       mockTranslateManyResponse([{ hash, translation: 'Bonjour' }])
     );
 
-    const cache = new TranslationsCache({
-      init: {},
-      translateMany: mockTranslateMany,
-    });
+    const cache = createCache();
 
     const promise = cache.miss({ message, options });
     // Flush the batch timer
@@ -87,10 +103,7 @@ describe('TranslationsCache', () => {
       mockTranslateManyResponse([{ hash, translation: 'Bonjour' }])
     );
 
-    const cache = new TranslationsCache({
-      init: {},
-      translateMany: mockTranslateMany,
-    });
+    const cache = createCache();
 
     const promise = cache.miss({ message, options });
     vi.advanceTimersByTime(50);
@@ -114,7 +127,6 @@ describe('TranslationsCache', () => {
     const { options, hash } = makeKey(message, { $format: 'JSX' });
     const cache = new TranslationsCache({
       init: { [hash]: cachedTranslation },
-      translateMany: mockTranslateMany,
     });
 
     const internal = cache.getInternalCache();
@@ -140,10 +152,7 @@ describe('TranslationsCache', () => {
       ])
     );
 
-    const cache = new TranslationsCache({
-      init: {},
-      translateMany: mockTranslateMany,
-    });
+    const cache = createCache();
 
     const p1 = cache.miss({ message: k1.message, options: k1.options });
     const p2 = cache.miss({ message: k2.message, options: k2.options });
@@ -171,10 +180,7 @@ describe('TranslationsCache', () => {
       mockTranslateManyResponse(responseEntries)
     );
 
-    const cache = new TranslationsCache({
-      init: {},
-      translateMany: mockTranslateMany,
-    });
+    const cache = createCache();
 
     const promises = keys.map((k) =>
       cache.miss({ message: k.message, options: k.options })
@@ -196,11 +202,7 @@ describe('TranslationsCache', () => {
         { hash: intervalKey.hash, translation: 'En attente' },
       ])
     );
-    const intervalCache = new TranslationsCache({
-      init: {},
-      translateMany: mockTranslateMany,
-      batchConfig: { batchInterval: 10 },
-    });
+    const intervalCache = createCache({}, { batchInterval: 10 });
     const intervalPromise = intervalCache.miss({
       message: intervalKey.message,
       options: intervalKey.options,
@@ -221,11 +223,7 @@ describe('TranslationsCache', () => {
         { hash: k2.hash, translation: 'Au revoir' },
       ])
     );
-    const sizeCache = new TranslationsCache({
-      init: {},
-      translateMany: mockTranslateMany,
-      batchConfig: { maxBatchSize: 2 },
-    });
+    const sizeCache = createCache({}, { maxBatchSize: 2 });
 
     const p1 = sizeCache.miss({
       message: k1.message,
@@ -251,11 +249,7 @@ describe('TranslationsCache', () => {
       ])
     );
 
-    const intervalCache = new TranslationsCache({
-      init: {},
-      translateMany: mockTranslateMany,
-      batchConfig: { batchInterval: 0 },
-    });
+    const intervalCache = createCache({}, { batchInterval: 0 });
     const intervalPromise = intervalCache.miss({
       message: intervalKey.message,
       options: intervalKey.options,
@@ -275,11 +269,10 @@ describe('TranslationsCache', () => {
       ])
     );
 
-    const sizeCache = new TranslationsCache({
-      init: {},
-      translateMany: mockTranslateMany,
-      batchConfig: { maxBatchSize: 0.5, maxConcurrentRequests: 0.5 },
-    });
+    const sizeCache = createCache(
+      {},
+      { maxBatchSize: 0.5, maxConcurrentRequests: 0.5 }
+    );
     const sizePromise = sizeCache.miss({
       message: sizeKey.message,
       options: sizeKey.options,
@@ -300,10 +293,7 @@ describe('TranslationsCache', () => {
       mockTranslateManyResponse([{ hash, translation: 'Bonjour' }])
     );
 
-    const cache = new TranslationsCache({
-      init: {},
-      translateMany: mockTranslateMany,
-    });
+    const cache = createCache();
 
     const promise = cache.miss({ message, options });
     vi.advanceTimersByTime(50);
@@ -325,10 +315,7 @@ describe('TranslationsCache', () => {
     const { message, options } = makeKey('Hello');
     mockTranslateMany.mockRejectedValue(new Error('API error'));
 
-    const cache = new TranslationsCache({
-      init: {},
-      translateMany: mockTranslateMany,
-    });
+    const cache = createCache();
 
     const promise = cache.miss({ message, options });
     vi.advanceTimersByTime(50);
@@ -342,10 +329,7 @@ describe('TranslationsCache', () => {
       [hash]: { success: false, error: 'Translation failed' },
     });
 
-    const cache = new TranslationsCache({
-      init: {},
-      translateMany: mockTranslateMany,
-    });
+    const cache = createCache();
 
     const promise = cache.miss({ message, options });
     vi.advanceTimersByTime(50);
@@ -359,10 +343,7 @@ describe('TranslationsCache', () => {
       mockTranslateManyResponse([{ hash, translation: 'Bonjour' }])
     );
 
-    const cache = new TranslationsCache({
-      init: {},
-      translateMany: mockTranslateMany,
-    });
+    const cache = createCache();
 
     // Two miss() calls for the same key before resolution
     const p1 = cache.miss({ message, options });

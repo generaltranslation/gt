@@ -1,4 +1,5 @@
 // I18nCache
+export type { I18nCacheDependencies } from './i18n-cache/I18nCache';
 export type {
   I18nCacheConstructorParams,
   TranslationsLoader,

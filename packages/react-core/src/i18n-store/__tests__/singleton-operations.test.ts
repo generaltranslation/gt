@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { I18nStore } from '../I18nStore';
+import type { I18nStoreCore } from '../I18nStore';
 
 type TestGlobal = typeof globalThis & {
   __generaltranslation?: {
@@ -29,8 +29,8 @@ function resetI18nStoreGlobal() {
   }
 }
 
-function createI18nStoreStub(): I18nStore {
-  return {} as I18nStore;
+function createI18nStoreStub(): I18nStoreCore {
+  return {} as I18nStoreCore;
 }
 
 describe('react-core i18n store singleton operations', () => {

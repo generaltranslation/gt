@@ -1,5 +1,6 @@
 import {
   I18nStore,
+  I18nStoreCore,
   InternalGTProvider,
 } from '@generaltranslation/react-core/components';
 import { useMemo, useRef } from 'react';
@@ -15,9 +16,12 @@ export function BrowserGTProvider(props: SharedGTProviderProps) {
     return createOrUpdateBrowserConditionStore(props);
   }, [props.locale, props.region, props.enableI18n, props._reload]);
 
-  const i18nStoreRef = useRef<I18nStore | null>(null);
+  const i18nStoreRef = useRef<I18nStoreCore | null>(null);
   if (i18nStoreRef.current == null) {
-    i18nStoreRef.current = new I18nStore();
+    i18nStoreRef.current =
+      process.env.NODE_ENV === 'production'
+        ? new I18nStoreCore()
+        : new I18nStore();
   }
 
   return (
