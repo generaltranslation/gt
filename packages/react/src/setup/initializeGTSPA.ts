@@ -1,11 +1,15 @@
 import {
   getTranslationsSnapshot,
-  I18nStore,
-  setI18nStore,
+  getI18nConfig,
+  loadTranslationsSnapshot,
+  setClientSnapshots,
   setReactI18nCache,
   getReadonlyConditionStore,
   initializeI18nConfig,
+  I18nStore,
+  setI18nStore,
 } from '@generaltranslation/react-core/pure';
+import { loadTranslationsForLocale } from 'gt-i18n/internal';
 import type { I18nConfigParams } from '@generaltranslation/react-core/pure';
 import { BrowserI18nCache } from '../i18n-cache/BrowserI18nCache';
 import type { BrowserI18nCacheParams } from '../i18n-cache/BrowserI18nCache';
@@ -21,9 +25,9 @@ export type InitializeGTSPAParams = I18nConfigParams &
 
 /**
  * Initialize GT for an SPA
- * - i18nCache
- * - conditionStore
- * - i18nStore
+ * - condition store in every environment
+ * - shared translations snapshot in every environment
+ * - cache and external store in development only
  *
  * This is SPA for browser runtime
  */
@@ -31,14 +35,22 @@ export async function initializeGTSPA(config: InitializeGTSPAParams) {
   const runtimeConfig = addRuntimeCredentials(config);
   initializeI18nConfig(runtimeConfig, 'SPA');
 
-  const i18nCache = new BrowserI18nCache(runtimeConfig);
-  setReactI18nCache(i18nCache);
-
   createOrUpdateBrowserConditionStore(runtimeConfig);
 
-  const i18nStore = new I18nStore();
-  setI18nStore(i18nStore);
+  if (process.env.NODE_ENV !== 'production') {
+    const i18nCache = new BrowserI18nCache(runtimeConfig);
+    setReactI18nCache(i18nCache);
+    setI18nStore(new I18nStore());
+  }
 
-  // Block until translations are loaded
-  await getTranslationsSnapshot(getReadonlyConditionStore().getLocale());
+  const locale = getReadonlyConditionStore().getLocale();
+  const translations =
+    process.env.NODE_ENV === 'production'
+      ? await loadTranslationsSnapshot(locale, (locale) =>
+          loadTranslationsForLocale(runtimeConfig, locale)
+        )
+      : await getTranslationsSnapshot(locale);
+  setClientSnapshots(translations, {
+    [getI18nConfig().getDefaultLocale()]: runtimeConfig.dictionary ?? {},
+  });
 }

@@ -17,6 +17,7 @@
     "react-dom": ">=18.0.0"
   },
   "dependencies": {
+    "@generaltranslation/format": "workspace:*",
     "generaltranslation": "workspace:*",
     "@generaltranslation/react-core": "workspace:*",
     "gt-i18n": "workspace:*"
@@ -88,15 +89,26 @@
         "default": "./dist/index.server.mjs"
       },
       "browser": {
+        "development": {
+          "require": {
+            "types": "./dist/index.types.d.cts",
+            "default": "./dist/index.client.cjs"
+          },
+          "import": {
+            "types": "./dist/index.types.d.mts",
+            "default": "./dist/index.client.mjs"
+          },
+          "default": "./dist/index.client.mjs"
+        },
         "require": {
           "types": "./dist/index.types.d.cts",
-          "default": "./dist/index.client.cjs"
+          "default": "./dist/prod/index.client.prod.cjs"
         },
         "import": {
           "types": "./dist/index.types.d.mts",
-          "default": "./dist/index.client.mjs"
+          "default": "./dist/prod/index.client.prod.mjs"
         },
-        "default": "./dist/index.client.mjs"
+        "default": "./dist/prod/index.client.prod.mjs"
       },
       "require": {
         "types": "./dist/index.types.d.cts",
@@ -117,12 +129,48 @@
         "types": "./dist/macros.d.mts",
         "default": "./dist/macros.mjs"
       }
+    },
+    "./internal": {
+      "browser": {
+        "development": {
+          "require": {
+            "types": "./dist/internal.d.cts",
+            "default": "./dist/internal.cjs"
+          },
+          "import": {
+            "types": "./dist/internal.d.mts",
+            "default": "./dist/internal.mjs"
+          },
+          "default": "./dist/internal.mjs"
+        },
+        "require": {
+          "types": "./dist/internal.d.cts",
+          "default": "./dist/prod/internal.cjs"
+        },
+        "import": {
+          "types": "./dist/internal.d.mts",
+          "default": "./dist/prod/internal.mjs"
+        },
+        "default": "./dist/prod/internal.mjs"
+      },
+      "require": {
+        "types": "./dist/internal.d.cts",
+        "default": "./dist/internal.cjs"
+      },
+      "import": {
+        "types": "./dist/internal.d.mts",
+        "default": "./dist/internal.mjs"
+      },
+      "default": "./dist/internal.mjs"
     }
   },
   "typesVersions": {
     "*": {
       "macros": [
         "./dist/macros.d.cts"
+      ],
+      "internal": [
+        "./dist/internal.d.cts"
       ]
     }
   },

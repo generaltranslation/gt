@@ -41,9 +41,8 @@ describe('runtime credentials', () => {
     vi.stubEnv('VITE_GT_PROJECT_ID', 'vite-project-id');
     vi.stubEnv('VITE_GT_DEV_API_KEY', 'vite-dev-api-key');
 
-    expect(addRuntimeCredentials({})).toMatchObject({
+    expect(addRuntimeCredentials({})).toEqual({
       projectId: 'vite-project-id',
-      devApiKey: undefined,
     });
   });
 });

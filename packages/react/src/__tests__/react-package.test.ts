@@ -7,6 +7,8 @@ import { beforeAll, describe, expect, it } from 'vitest';
 
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const runtimeArtifactNames = [
+  'internal.cjs',
+  'internal.mjs',
   'index.rsc.cjs',
   'index.rsc.mjs',
   'index.client.cjs',
@@ -16,9 +18,13 @@ const runtimeArtifactNames = [
   'macros.cjs',
   'macros.mjs',
 ].sort();
-const builtArtifacts = runtimeArtifactNames.map((artifact) =>
-  join(packageRoot, 'dist', artifact)
-);
+const builtArtifacts = [
+  ...runtimeArtifactNames,
+  'prod/internal.cjs',
+  'prod/internal.mjs',
+  'prod/index.client.prod.cjs',
+  'prod/index.client.prod.mjs',
+].map((artifact) => join(packageRoot, 'dist', artifact));
 
 function hasBuiltArtifacts(): boolean {
   return builtArtifacts.every((artifact) => existsSync(artifact));
@@ -46,6 +52,9 @@ function isAllowedExternalizedSubpath(
   file: string,
   specifier: string
 ): boolean {
+  if (file.startsWith('internal.')) {
+    return specifier === '@generaltranslation/react-core/pure';
+  }
   return (
     file.startsWith('index.') &&
     (specifier.startsWith('@generaltranslation/react-core/') ||
@@ -65,12 +74,15 @@ describe('gt-react package exports', () => {
       `
           const assert = require('node:assert/strict');
           const react = require('gt-react');
+          const internal = require('gt-react/internal');
 
           assert.equal(typeof react.GTProvider, 'function');
           assert.equal(typeof react.T, 'function');
           assert.equal(typeof react.parseLocale, 'function');
           assert.equal(typeof react.GtInternalVar, 'function');
           assert.equal(typeof react.GtInternalRuntimeTranslateString, 'function');
+          assert.equal(react.getSnapshotGT, undefined);
+          assert.equal(typeof internal.snapshotRuntime.getGT, 'function');
         `,
     ]);
   });
@@ -123,6 +135,175 @@ describe('gt-react package exports', () => {
           import { createOrUpdateBrowserConditionStore } from 'gt-react';
 
           assert.equal(typeof createOrUpdateBrowserConditionStore, 'function');
+        `,
+    ]);
+  });
+
+  it('selects production and development browser artifacts', () => {
+    node([
+      '--conditions=browser',
+      '--input-type=module',
+      '-e',
+      `
+          import assert from 'node:assert/strict';
+
+          assert.equal(
+            import.meta.resolve('gt-react').endsWith('/dist/prod/index.client.prod.mjs'),
+            true
+          );
+          assert.equal(
+            import.meta.resolve('gt-react/internal').endsWith('/dist/prod/internal.mjs'),
+            true
+          );
+          assert.equal(
+            import.meta.resolve('gt-i18n/internal').endsWith('/dist/internal-static.mjs'),
+            true
+          );
+        `,
+    ]);
+    node([
+      '--conditions=browser',
+      '--conditions=development',
+      '--input-type=module',
+      '-e',
+      `
+          import assert from 'node:assert/strict';
+
+          assert.equal(
+            import.meta.resolve('gt-react').endsWith('/dist/index.client.mjs'),
+            true
+          );
+          assert.equal(
+            import.meta.resolve('gt-react/internal').endsWith('/dist/internal.mjs'),
+            true
+          );
+          assert.equal(
+            import.meta.resolve('gt-i18n/internal').endsWith('/dist/internal.mjs'),
+            true
+          );
+        `,
+    ]);
+  });
+
+  it('uses locale-only configuration in production browser builds', () => {
+    node([
+      '--conditions=browser',
+      '--input-type=module',
+      '-e',
+      `
+          import assert from 'node:assert/strict';
+          import { I18nConfig } from 'gt-i18n/internal';
+
+          const config = new I18nConfig({
+            defaultLocale: 'en',
+            locales: ['en', 'fr'],
+            projectId: 'test-project',
+          });
+
+          assert.equal(config.resolveSupportedLocale('fr-FR'), 'fr');
+          assert.equal(config.isDevHotReloadEnabled(), false);
+          assert.throws(() => config.getGTClass(), /not available in production browser builds/);
+        `,
+    ]);
+    node([
+      '--conditions=browser',
+      '--conditions=development',
+      '--input-type=module',
+      '-e',
+      `
+          import assert from 'node:assert/strict';
+          import { I18nConfig } from 'gt-i18n/internal';
+
+          const config = new I18nConfig({ defaultLocale: 'en' });
+          assert.equal(typeof config.getGTClass().translateMany, 'function');
+        `,
+    ]);
+  });
+
+  it('translates from the production SPA snapshot without initializing a cache', () => {
+    node([
+      '--conditions=browser',
+      '--input-type=module',
+      '-e',
+      `
+          import assert from 'node:assert/strict';
+          import { getReactI18nCache, initializeGTSPA, t } from 'gt-react';
+          import { createLookupOptions, hashMessage } from 'gt-i18n/internal';
+
+          Object.defineProperty(globalThis, 'navigator', {
+            configurable: true,
+            value: { languages: [] },
+          });
+          const message = 'Hello';
+          const lookupOptions = createLookupOptions('fr', {}, 'ICU');
+          const hash = hashMessage(message, lookupOptions);
+
+          await initializeGTSPA({
+            defaultLocale: 'en',
+            locales: ['fr'],
+            locale: 'fr',
+            _getLocale: () => 'fr',
+            loadTranslations: async (locale) => {
+              assert.equal(locale, 'fr');
+              return { [hash]: 'Bonjour' };
+            },
+          });
+
+          assert.equal(t(message), 'Bonjour');
+          assert.throws(
+            () => getReactI18nCache(),
+            /not available in production browser builds/
+          );
+        `,
+    ]);
+  });
+
+  it('translates from a production provider snapshot without initializing a cache', () => {
+    node([
+      '--conditions=browser',
+      '--input-type=module',
+      '-e',
+      `
+          import assert from 'node:assert/strict';
+          import { createElement } from 'react';
+          import { renderToStaticMarkup } from 'react-dom/server';
+          import { GTProvider, initializeGT, t, useGT } from 'gt-react';
+          import { snapshotRuntime } from 'gt-react/internal';
+          import { createLookupOptions, hashMessage } from 'gt-i18n/internal';
+
+          Object.defineProperty(globalThis, 'navigator', {
+            configurable: true,
+            value: { languages: [] },
+          });
+          const message = 'Hello';
+          const lookupOptions = createLookupOptions('fr', {}, 'ICU');
+          const hash = hashMessage(message, lookupOptions);
+
+          initializeGT({
+            defaultLocale: 'en',
+            locales: ['en', 'fr'],
+          });
+
+          function Child() {
+            const gt = useGT();
+            return createElement('span', null, gt(message), ' / ', t(message));
+          }
+
+          const html = renderToStaticMarkup(
+            createElement(
+              GTProvider,
+              {
+                locale: 'fr',
+                _getLocale: () => 'fr',
+                translations: { fr: { [hash]: 'Bonjour' } },
+              },
+              createElement(Child)
+            )
+          );
+          const snapshotGT = await snapshotRuntime.getGT();
+
+          assert.equal(html, '<span>Bonjour / Bonjour</span>');
+          assert.equal(snapshotGT(message), 'Bonjour');
         `,
     ]);
   });
@@ -253,6 +434,20 @@ describe('gt-react package exports', () => {
         'gt:tx:'
       );
     }
+  });
+
+  it('keeps development runtime machinery out of the production client graph', () => {
+    const productionCode = readdirSync(join(packageRoot, 'dist', 'prod'), {
+      recursive: true,
+    })
+      .map((file) => String(file))
+      .filter((file) => /\.(cjs|mjs)$/.test(file))
+      .map((file) => readFileSync(join(packageRoot, 'dist', 'prod', file)))
+      .join('\n');
+
+    expect(productionCode).not.toMatch(
+      /I18nStore|useSyncExternalStore|subscribeToTranslate|lookupTranslationWithFallback|LocalStorageTranslationCache|BatchedMissingTranslationResolver|RuntimeTranslationsCache|VITE_GT_DEV_API_KEY/
+    );
   });
 
   it('bundles workspace subpath imports in runtime artifacts', () => {

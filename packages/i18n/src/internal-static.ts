@@ -7,16 +7,16 @@ export {
   getTranslations,
   getTranslationsInternal,
 } from './translation-functions/internal/getTranslations';
-export { tx, txInternal } from './translation-functions/internal/tx';
-export {
-  GtInternalRuntimeTranslateString,
-  GtInternalRuntimeTranslateJsx,
-} from './translation-functions/internal/runtime-translate';
 export { createLookupOptions } from './translation-functions/internal/helpers';
 export { renderDictionaryEntry } from './translation-functions/internal/renderDictionaryEntry';
 export { renderDictionaryObject } from './translation-functions/internal/renderDictionaryObject';
-export { I18nCache } from './i18n-cache/I18nCache';
-export type { TranslationsCacheMissEvent } from './i18n-cache/I18nCache';
+class ProductionI18nCache {
+  constructor() {
+    throw new Error('I18nCache is not available in production browser builds.');
+  }
+}
+
+export { ProductionI18nCache as I18nCache };
 export { ReadonlyConditionStore } from './condition-store/ReadonlyConditionStore';
 export type { ReadonlyConditionStoreParams } from './condition-store/ReadonlyConditionStore';
 export { WritableConditionStore } from './condition-store/WritableConditionStore';
@@ -35,23 +35,18 @@ export {
   getDictionaryListenerKey,
   getTranslateListenerKey,
 } from './utils/listenerKeys';
-export type {
-  DictionaryListenerLookup,
-  TranslateListenerLookup,
-} from './utils/listenerKeys';
 export {
   getDictionaryEntry,
   isDictionaryValue,
   getDictionaryValue,
   resolveDictionaryLookupOptions,
 } from './i18n-cache/translations-manager/utils/dictionary-helpers';
-
 export {
   getI18nConfig,
   initializeI18nConfig,
   setI18nConfig,
-} from './i18n-config/singleton-operations';
-export { RuntimeI18nConfig as I18nConfig } from './i18n-config/RuntimeI18nConfig';
+} from './i18n-config/browser-singleton-operations';
+export { I18nConfig } from './i18n-config/I18nConfig';
 export type { I18nConfigParams } from './i18n-config/I18nConfig';
 export { createConditionStoreSingleton } from './condition-store/createConditionStoreSingleton';
 export { createGlobalSingleton } from './globals/createGlobalSingleton';

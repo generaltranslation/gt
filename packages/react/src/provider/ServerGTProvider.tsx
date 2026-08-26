@@ -1,45 +1,27 @@
-import {
-  I18nStore,
-  InternalGTProvider,
-} from '@generaltranslation/react-core/components';
+import { ServerGTProviderDev } from './ServerGTProvider.dev';
+import { InternalGTProvider } from '@generaltranslation/react-core/components';
 import { ReadonlyConditionStore } from '@generaltranslation/react-core/pure';
-import { useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 import type { SharedGTProviderProps } from './GTProviderProps';
-import { useHandleMissingTranslations } from '../hooks/useHandleMissingTranslations';
+import { syncI18nCache } from './syncI18nCache';
 
-/**
- * Consumes snapshot from server
- * Implementation for server-side only
- */
-export function ServerGTProvider({
+function ServerGTProviderProd({
   locale,
   region,
   enableI18n,
   ...props
 }: SharedGTProviderProps) {
-  const conditionStore = useMemo(() => {
-    return new ReadonlyConditionStore({ locale, region, enableI18n });
-  }, [locale, region, enableI18n]);
+  syncI18nCache(props);
 
-  const i18nStoreRef = useRef<I18nStore | null>(null);
-  if (i18nStoreRef.current == null) {
-    i18nStoreRef.current = new I18nStore();
-  }
-
-  const {
-    onMissingTranslation,
-    onMissingDictionaryEntry,
-    onMissingDictionaryObj,
-  } = useHandleMissingTranslations(i18nStoreRef.current);
-
-  return (
-    <InternalGTProvider
-      {...props}
-      conditionStore={conditionStore}
-      i18nStore={i18nStoreRef.current}
-      onMissingTranslation={onMissingTranslation}
-      onMissingDictionaryEntry={onMissingDictionaryEntry}
-      onMissingDictionaryObj={onMissingDictionaryObj}
-    />
+  const conditionStore = useMemo(
+    () => new ReadonlyConditionStore({ locale, region, enableI18n }),
+    [locale, region, enableI18n]
   );
+
+  return <InternalGTProvider {...props} conditionStore={conditionStore} />;
 }
+
+export const ServerGTProvider =
+  process.env.NODE_ENV === 'production'
+    ? ServerGTProviderProd
+    : ServerGTProviderDev;

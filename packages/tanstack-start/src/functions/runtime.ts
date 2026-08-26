@@ -1,5 +1,6 @@
 import { createIsomorphicFn } from '@tanstack/react-start';
 import { getReadonlyConditionStore } from '@generaltranslation/react-core/pure';
+import { snapshotRuntime } from 'gt-react/internal';
 import {
   getGTInternal,
   getMessagesInternal,
@@ -37,14 +38,8 @@ export const getGT: (messages?: Message[]) => Promise<GTFunctionType> =
       );
     })
     .client((messages?: Message[]) => {
-      const conditionStore = getReadonlyConditionStore();
-      return getGTInternal(
-        {
-          locale: conditionStore.getLocale(),
-          enableI18n: conditionStore.getEnableI18n(),
-        },
-        messages
-      );
+      if (process.env.NODE_ENV === 'production') return snapshotRuntime.getGT();
+      return getGTInternal(getClientConditions(), messages);
     });
 
 /** Return a registered-message translation function for the current runtime. */
@@ -57,11 +52,10 @@ export const getMessages: () => Promise<MFunctionType> = createIsomorphicFn()
     });
   })
   .client(() => {
-    const conditionStore = getReadonlyConditionStore();
-    return getMessagesInternal({
-      locale: conditionStore.getLocale(),
-      enableI18n: conditionStore.getEnableI18n(),
-    });
+    if (process.env.NODE_ENV === 'production') {
+      return snapshotRuntime.getMessages();
+    }
+    return getMessagesInternal(getClientConditions());
   });
 
 /** Return a dictionary translation function for the current runtime. */
@@ -76,10 +70,16 @@ export const getTranslations: (rootId?: string) => Promise<TFunctionType> =
       });
     })
     .client((rootId?: string) => {
-      const conditionStore = getReadonlyConditionStore();
-      return getTranslationsInternal({
-        locale: conditionStore.getLocale(),
-        enableI18n: conditionStore.getEnableI18n(),
-        rootId,
-      });
+      if (process.env.NODE_ENV === 'production') {
+        return snapshotRuntime.getTranslations(rootId);
+      }
+      return getTranslationsInternal({ ...getClientConditions(), rootId });
     });
+
+function getClientConditions(): { locale: string; enableI18n: boolean } {
+  const conditionStore = getReadonlyConditionStore();
+  return {
+    locale: conditionStore.getLocale(),
+    enableI18n: conditionStore.getEnableI18n(),
+  };
+}

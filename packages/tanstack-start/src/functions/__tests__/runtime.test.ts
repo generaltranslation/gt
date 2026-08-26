@@ -4,6 +4,9 @@ const {
   mockClientConditionStore,
   mockGetGTInternal,
   mockGetMessagesInternal,
+  mockGetSnapshotGT,
+  mockGetSnapshotMessages,
+  mockGetSnapshotTranslations,
   mockGetTranslationsInternal,
 } = vi.hoisted(() => ({
   mockClientConditionStore: {
@@ -12,6 +15,9 @@ const {
   },
   mockGetGTInternal: vi.fn(async () => 'gt'),
   mockGetMessagesInternal: vi.fn(async () => 'messages'),
+  mockGetSnapshotGT: vi.fn(async () => 'snapshot-gt'),
+  mockGetSnapshotMessages: vi.fn(async () => 'snapshot-messages'),
+  mockGetSnapshotTranslations: vi.fn(async () => 'snapshot-translations'),
   mockGetTranslationsInternal: vi.fn(async () => 'translations'),
 }));
 
@@ -29,6 +35,14 @@ vi.mock('@generaltranslation/react-core/pure', async (importOriginal) => ({
     typeof import('@generaltranslation/react-core/pure')
   >()),
   getReadonlyConditionStore: () => mockClientConditionStore,
+}));
+
+vi.mock('gt-react/internal', () => ({
+  snapshotRuntime: {
+    getGT: mockGetSnapshotGT,
+    getMessages: mockGetSnapshotMessages,
+    getTranslations: mockGetSnapshotTranslations,
+  },
 }));
 
 vi.mock('gt-i18n/internal', async (importOriginal) => ({
@@ -83,6 +97,7 @@ function resetSingletons() {
 
 describe.sequential('isomorphic translation functions', () => {
   beforeEach(() => {
+    vi.unstubAllEnvs();
     resetSingletons();
     initializeI18nConfig(config);
     setConditionStore(new AsyncLocalConditionStore(config));
@@ -90,6 +105,9 @@ describe.sequential('isomorphic translation functions', () => {
     mockClientConditionStore.getEnableI18n.mockClear();
     mockGetGTInternal.mockClear();
     mockGetMessagesInternal.mockClear();
+    mockGetSnapshotGT.mockClear();
+    mockGetSnapshotMessages.mockClear();
+    mockGetSnapshotTranslations.mockClear();
     mockGetTranslationsInternal.mockClear();
   });
 
@@ -131,24 +149,11 @@ describe.sequential('isomorphic translation functions', () => {
     });
   });
 
-  it('passes browser conditions to the internal translation functions', async () => {
-    const clientGetLocale = (
-      getLocale as unknown as { client: typeof getLocale }
-    ).client;
-    const clientGetEnableI18n = (
-      getEnableI18n as unknown as { client: typeof getEnableI18n }
-    ).client;
-    const clientGetGT = (getGT as unknown as { client: typeof getGT }).client;
-    const clientGetMessages = (
-      getMessages as unknown as { client: typeof getMessages }
-    ).client;
-    const clientGetTranslations = (
-      getTranslations as unknown as { client: typeof getTranslations }
-    ).client;
+  it('uses the cache-backed translation runtime in development browsers', async () => {
+    const { clientGetGT, clientGetMessages, clientGetTranslations } =
+      getClientTranslationFunctions();
     const messages = [{ message: 'Hello' }];
 
-    expect(clientGetLocale()).toBe('es');
-    expect(clientGetEnableI18n()).toBe(true);
     await expect(clientGetGT(messages)).resolves.toBe('gt');
     await expect(clientGetMessages()).resolves.toBe('messages');
     await expect(clientGetTranslations('metadata')).resolves.toBe(
@@ -168,5 +173,49 @@ describe.sequential('isomorphic translation functions', () => {
       enableI18n: true,
       rootId: 'metadata',
     });
+    expect(mockGetSnapshotGT).not.toHaveBeenCalled();
+    expect(mockGetSnapshotMessages).not.toHaveBeenCalled();
+    expect(mockGetSnapshotTranslations).not.toHaveBeenCalled();
+  });
+
+  it('uses the cache-free translation runtime in production browsers', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    const clientGetLocale = (
+      getLocale as unknown as { client: typeof getLocale }
+    ).client;
+    const clientGetEnableI18n = (
+      getEnableI18n as unknown as { client: typeof getEnableI18n }
+    ).client;
+    const { clientGetGT, clientGetMessages, clientGetTranslations } =
+      getClientTranslationFunctions();
+    const messages = [{ message: 'Hello' }];
+
+    expect(clientGetLocale()).toBe('es');
+    expect(clientGetEnableI18n()).toBe(true);
+    await expect(clientGetGT(messages)).resolves.toBe('snapshot-gt');
+    await expect(clientGetMessages()).resolves.toBe('snapshot-messages');
+    await expect(clientGetTranslations('metadata')).resolves.toBe(
+      'snapshot-translations'
+    );
+
+    expect(mockGetSnapshotGT).toHaveBeenCalledOnce();
+    expect(mockGetSnapshotGT).toHaveBeenCalledWith();
+    expect(mockGetSnapshotMessages).toHaveBeenCalledOnce();
+    expect(mockGetSnapshotTranslations).toHaveBeenCalledWith('metadata');
+    expect(mockGetGTInternal).not.toHaveBeenCalled();
+    expect(mockGetMessagesInternal).not.toHaveBeenCalled();
+    expect(mockGetTranslationsInternal).not.toHaveBeenCalled();
   });
 });
+
+function getClientTranslationFunctions() {
+  return {
+    clientGetGT: (getGT as unknown as { client: typeof getGT }).client,
+    clientGetMessages: (
+      getMessages as unknown as { client: typeof getMessages }
+    ).client,
+    clientGetTranslations: (
+      getTranslations as unknown as { client: typeof getTranslations }
+    ).client,
+  };
+}

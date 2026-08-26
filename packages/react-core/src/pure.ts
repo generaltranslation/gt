@@ -15,12 +15,30 @@ export {
 
 export { getFormatLocales } from './hooks/utils/getFormatLocales';
 export { getTranslationsSnapshot } from './functions/helpers/getTranslationsSnapshot';
+export { loadTranslationsSnapshot } from './functions/helpers/loadTranslationsSnapshot';
+export {
+  getClientDictionariesSnapshot,
+  getClientTranslationsSnapshot,
+  lookupClientTranslation,
+  setClientSnapshots,
+} from './context/clientSnapshots';
+export {
+  getSnapshotGT,
+  getSnapshotMessages,
+  getSnapshotTranslations,
+} from './functions/translation/snapshotRuntime';
 export { t } from './functions/translation/t';
+export { createT } from './functions/translation/createT';
+export type {
+  StringOrTemplateSyncResolutionFunction,
+  SyncTranslationLookup,
+} from './functions/translation/createT';
 export { createRenderPipeline } from './utils/rendering/createRenderPipeline';
 export type { RenderPipeline } from './utils/rendering/createRenderPipeline';
 export type { RenderPreparedT } from './utils/translation/prepareT.shared';
 export {
   getReactI18nCache,
+  isReactI18nCacheInitialized,
   setReactI18nCache,
 } from './i18n-cache/singleton-operations';
 export {
@@ -44,6 +62,7 @@ export type {
 
 export {
   internalInitializeGTSRA,
+  internalInitializeGTSRAClient,
   type ReactInitializeGTParams,
 } from './setup/initializeGTSRA';
 

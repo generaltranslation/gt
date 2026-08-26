@@ -18,6 +18,10 @@ const i18nCacheSingleton =
       }),
   });
 
+export function isI18nCacheInitialized(): boolean {
+  return i18nCacheSingleton.isInitialized();
+}
+
 /**
  * Get the singleton instance of I18nCache
  * @returns The singleton instance of I18nCache

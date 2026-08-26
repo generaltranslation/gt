@@ -25,11 +25,23 @@ const contextDeps = {
   alwaysBundle: [/^@generaltranslation\/format\//, /^generaltranslation\//],
 };
 
+const productionClientDeps = {
+  neverBundle: [
+    ...deps.neverBundle,
+    /^@generaltranslation\/format(?:$|\/)/,
+    /^generaltranslation(?:$|\/)/,
+    /^gt-i18n$/,
+    /^gt-i18n\//,
+  ],
+  alwaysBundle: [/^@generaltranslation\/react-core\//],
+};
+
 const entries = [
   'src/index.rsc.ts',
   'src/index.client.ts',
   'src/index.server.ts',
   'src/index.types.ts',
+  'src/internal.ts',
   'src/macros.ts',
 ];
 
@@ -38,9 +50,12 @@ const entries = [
 // so they are deleted after each build.
 const typesOnlyEntry = 'src/index.types.ts';
 
-export default defineConfig(
-  entries.flatMap((entry, index) => {
-    const entryDeps = entry.startsWith('src/index.') ? contextDeps : deps;
+export default defineConfig([
+  ...entries.flatMap((entry, index) => {
+    const entryDeps =
+      entry.startsWith('src/index.') || entry === 'src/internal.ts'
+        ? contextDeps
+        : deps;
     const [cjsConfig, esmConfig] = createTsdownConfig([entry], entryDeps);
 
     return [
@@ -85,5 +100,50 @@ export default defineConfig(
         }),
       },
     ];
-  })
-);
+  }),
+  ...createProductionClientConfigs(),
+]);
+
+function createProductionClientConfigs() {
+  const [cjsConfig, esmConfig] = createTsdownConfig(
+    ['src/index.client.ts', 'src/internal.ts'],
+    productionClientDeps
+  );
+  const entry = {
+    'index.client.prod': 'src/index.client.ts',
+    internal: 'src/internal.ts',
+  };
+  const define = {
+    'import.meta.env': '{}',
+    'process.env.NODE_ENV': JSON.stringify('production'),
+  };
+  const treeshake = { moduleSideEffects: false };
+  const outputOptions = {
+    preserveModules: true,
+    preserveModulesRoot: 'src',
+  };
+
+  return [
+    {
+      ...cjsConfig,
+      entry,
+      clean: false,
+      dts: false,
+      define,
+      outDir: 'dist/prod',
+      outputOptions,
+      treeshake,
+    },
+    {
+      ...esmConfig,
+      entry,
+      clean: false,
+      dts: false,
+      deps: { onlyBundle: false, ...productionClientDeps },
+      define,
+      outDir: 'dist/prod',
+      outputOptions,
+      treeshake,
+    },
+  ];
+}

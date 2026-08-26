@@ -12,6 +12,18 @@ export type ReactInitializeGTParams = ReactI18nConfigParams &
 export function internalInitializeGTSRA(config: ReactInitializeGTParams): void {
   initializeI18nConfig(config, 'server-render');
 
+  initializeCache(config);
+}
+
+export function internalInitializeGTSRAClient(
+  config: ReactInitializeGTParams
+): void {
+  initializeI18nConfig(config, 'server-render');
+
+  if (process.env.NODE_ENV !== 'production') initializeCache(config);
+}
+
+function initializeCache(config: ReactInitializeGTParams): void {
   const i18nCache = new ReactI18nCache(config);
   setReactI18nCache(i18nCache);
 }
