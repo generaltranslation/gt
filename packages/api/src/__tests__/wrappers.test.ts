@@ -300,6 +300,16 @@ describe('base64 helpers', () => {
       'already-base64'
     );
   });
+
+  it('round trips UTF-8 without Buffer (browser fallback)', () => {
+    vi.stubGlobal('Buffer', undefined);
+    try {
+      const text = 'こんにちは 👋';
+      expect(decodeBase64(encodeBase64(text))).toBe(text);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });
 
 describe('awaitJobs', () => {
