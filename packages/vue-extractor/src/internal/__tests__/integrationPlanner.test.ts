@@ -16,6 +16,7 @@ import {
 
 const temporaryDirectories: string[] = [];
 const initialCwd = process.cwd();
+const COLD_START_PLAN_RUN_TIMEOUT_MS = 15_000;
 
 afterEach(() => {
   process.chdir(initialCwd);
@@ -165,30 +166,36 @@ describe('planVueExtraction activation', () => {
 });
 
 describe('handled Vue extraction plans', () => {
-  it('starts the default primary extractor synchronously with exact patterns', async () => {
-    const root = createVueFixture({});
-    const primaryUpdate = update('Primary default', 'primary-default');
-    const primary = output([primaryUpdate]);
-    const calls: Array<string[] | undefined> = [];
-    const plan = planVueExtraction({
-      library: 'gt-react',
-      projectRoot: root,
-    });
-    if (!plan.handled) throw new Error('Expected handled plan');
+  it(
+    'starts the default primary extractor synchronously with exact patterns',
+    async () => {
+      const root = createVueFixture({});
+      const primaryUpdate = update('Primary default', 'primary-default');
+      const primary = output([primaryUpdate]);
+      const calls: Array<string[] | undefined> = [];
+      const plan = planVueExtraction({
+        library: 'gt-react',
+        projectRoot: root,
+      });
+      if (!plan.handled) throw new Error('Expected handled plan');
 
-    const resultPromise = plan.run({
-      extractPrimary(patterns) {
-        calls.push(patterns);
-        return Promise.resolve(primary);
-      },
-    });
+      const resultPromise = plan.run({
+        extractPrimary(patterns) {
+          calls.push(patterns);
+          return Promise.resolve(primary);
+        },
+      });
 
-    expect(calls).toEqual([undefined]);
-    const result = await resultPromise;
-    expect(calls).toHaveLength(1);
-    expect(result.updates).toEqual([primaryUpdate]);
-    expect(result.updates[0]).toBe(primaryUpdate);
-  });
+      expect(calls).toEqual([undefined]);
+      const result = await resultPromise;
+      expect(calls).toHaveLength(1);
+      expect(result.updates).toEqual([primaryUpdate]);
+      expect(result.updates[0]).toBe(primaryUpdate);
+    },
+    // First plan.run in the file pays the one-time cold load of the Vue
+    // extraction pipeline; the 5s vitest default flakes on busy CI runners.
+    COLD_START_PLAN_RUN_TIMEOUT_MS
+  );
 
   it('preserves synchronous and asynchronous primary error identity', async () => {
     const root = createVueFixture({});
