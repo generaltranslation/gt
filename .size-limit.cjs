@@ -90,6 +90,8 @@ module.exports = [
   core('generaltranslation/types', 'types'),
   core('generaltranslation/errors', 'errors'),
 
+  entry('@generaltranslation/api', 'packages/api/dist/index.mjs', '6 kB'),
+
   entry(
     '@generaltranslation/utils/diagnostics',
     'packages/utils/dist/diagnostics.mjs',
