@@ -2,4 +2,4 @@
 'gt': minor
 ---
 
-Add project creation, ad-hoc translation, and setup status commands, and migrate CLI API requests to the generated SDK.
+Add `gt project create` and `gt project status` commands, and migrate CLI API requests to the generated SDK.
