@@ -202,7 +202,18 @@ export const api = {
   },
 
   async createProject(body: CreateProjectData['body']) {
-    return responseData(await createProject({ body, client }));
+    return responseData(
+      await createProject({
+        body: {
+          ...body,
+          defaultLocale: resolveCanonicalLocale(
+            body.defaultLocale,
+            customMapping
+          ),
+        },
+        client,
+      })
+    );
   },
 
   async getSetupStatus(jobId: string) {
