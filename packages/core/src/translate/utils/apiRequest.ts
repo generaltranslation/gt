@@ -118,7 +118,7 @@ export async function apiRequest<T>(
       baseUrl: config.baseUrl || defaultBaseUrl,
       fetch: (input, init) => fetchWithTimeout(input, init ?? {}, timeout),
       projectId: config.projectId,
-      retryPolicy: retryPolicy === 'none' ? 'none' : 'exponential',
+      retryPolicy,
     });
     const result = await translate({
       body: options?.body as TranslateData['body'],
