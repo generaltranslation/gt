@@ -4,6 +4,9 @@ import type { GetTranslationJobInfoResponse } from '../generated/types.gen';
 // Per-poll cap so a hung connection fails fast instead of eating the whole deadline.
 import { DEFAULT_TIMEOUT_MS as MAX_POLL_TIMEOUT_MS } from './transport';
 
+const DEFAULT_POLLING_INTERVAL_SECONDS = 5;
+const DEFAULT_TIMEOUT_SECONDS = 600;
+
 export type JobResult = GetTranslationJobInfoResponse[number];
 export type GetJobStatuses = (
   jobIds: string[],
@@ -49,8 +52,10 @@ export async function pollJobs(
 ): Promise<AwaitJobsResult> {
   if (jobIds.length === 0) return { complete: true, jobs: [] };
 
-  const pollingInterval = (options.pollingIntervalSeconds ?? 5) * 1_000;
-  const timeout = (options.timeoutSeconds ?? 600) * 1_000;
+  const pollingInterval =
+    (options.pollingIntervalSeconds ?? DEFAULT_POLLING_INTERVAL_SECONDS) *
+    1_000;
+  const timeout = (options.timeoutSeconds ?? DEFAULT_TIMEOUT_SECONDS) * 1_000;
   const deadline = Date.now() + timeout;
   const finalStatuses = new Map<string, JobResult>(
     jobIds.map((jobId) => [jobId, { jobId, status: 'unknown' }])

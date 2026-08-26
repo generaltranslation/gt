@@ -27,8 +27,9 @@ jobs:
         with:
           # Same-repo: check out the branch so we can push to it. Fork: default merge ref.
           ref: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref || '' }}
-          # Push with a PAT so the bot commit triggers CI; GITHUB_TOKEN pushes don't fire workflow events.
-          token: ${{ secrets.GT_SYNC_TOKEN || github.token }}
+          # Don't leave a write-capable token in .git/config while PR-controlled
+          # install/codegen scripts run; the push step supplies its own credential.
+          persist-credentials: false
 
       - name: Install pnpm
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
@@ -48,6 +49,8 @@ jobs:
       - name: Commit generated SDK or fail if stale
         env:
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          # PAT so the bot commit triggers CI; GITHUB_TOKEN pushes don't fire workflow events.
+          PUSH_TOKEN: ${{ secrets.GT_SYNC_TOKEN || github.token }}
         run: |
           git add packages/api/src/generated packages/api/spec/openapi.json
           if git diff --cached --quiet; then
@@ -61,4 +64,4 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m 'chore(api): regenerate OpenAPI SDK'
-          git push origin "HEAD:${HEAD_REF}"
+          git push "https://x-access-token:${PUSH_TOKEN}@github.com/${{ github.repository }}.git" "HEAD:${HEAD_REF}"
