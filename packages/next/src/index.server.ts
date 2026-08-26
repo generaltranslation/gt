@@ -2,8 +2,8 @@
 
 import { initializeGT } from './setup/initGT';
 /**
- * No initializeGTServer() here because we do not want to
- * initialize the AsyncConditionStore on the server side.
+ * No initializeGTServer() here because request conditions use server-only
+ * Next APIs.
  *
  * No initializeGTClient() here because we do want to enforce
  * expiry times here.
