@@ -111,4 +111,29 @@ describe('getFormatLocales', () => {
       })
     ).toEqual(['en']);
   });
+
+  it('resolves custom locale mappings before formatting', () => {
+    setup({
+      locale: 'brand-french',
+      locales: ['en', 'brand-french', 'brand-canadian'],
+      customMapping: {
+        'brand-french': {
+          code: 'fr-FR',
+          name: 'Brand French',
+        },
+        'brand-canadian': {
+          code: 'fr-CA',
+          name: 'Brand Canadian',
+        },
+      },
+    });
+
+    expect(
+      getFormatLocales({
+        locale: 'brand-french',
+        enableI18n: true,
+        localesProp: ['brand-canadian'],
+      })
+    ).toEqual(['fr-CA', 'fr-FR', 'en']);
+  });
 });

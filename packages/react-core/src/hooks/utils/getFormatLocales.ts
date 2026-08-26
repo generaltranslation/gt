@@ -15,10 +15,11 @@ export function getFormatLocales({
   enableI18n: boolean;
   localesProp?: string[];
 }): string[] {
-  const defaultLocale = getI18nConfig().getDefaultLocale();
-  const shouldTranslate =
-    enableI18n && getI18nConfig().requiresTranslation(locale);
-  return shouldTranslate
+  const i18nConfig = getI18nConfig();
+  const defaultLocale = i18nConfig.getDefaultLocale();
+  const shouldTranslate = enableI18n && i18nConfig.requiresTranslation(locale);
+  const locales = shouldTranslate
     ? [...localesProp, locale, defaultLocale]
     : [defaultLocale];
+  return locales.map((locale) => i18nConfig.resolveCanonicalLocale(locale));
 }
