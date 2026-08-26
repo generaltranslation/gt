@@ -1,5 +1,15 @@
 # gt-next
 
+## 11.1.16
+
+### Patch Changes
+
+- [#2139](https://github.com/generaltranslation/gt/pull/2139) [`bc12b5d`](https://github.com/generaltranslation/gt/commit/bc12b5d85bf050e42f31b38c8aa3fedd60594f61) Thanks [@eoinest](https://github.com/eoinest)! - Avoid a full browser reload when a route already resolves to the default locale.
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.1.16
+  - gt-react@11.1.16
+
 ## 11.1.15
 
 ### Patch Changes
