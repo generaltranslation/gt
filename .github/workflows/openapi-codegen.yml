@@ -9,7 +9,7 @@ on:
       - 'packages/api/openapi-ts.config.ts'
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: openapi-codegen-${{ github.event.pull_request.number }}
@@ -46,11 +46,20 @@ jobs:
       - name: Generate SDK
         run: pnpm --filter @generaltranslation/api codegen
 
+      - name: Generate GitHub App token
+        if: env.SAME_REPO == 'true'
+        id: gt-app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.GT_SYNC_APP_CLIENT_ID }}
+          private-key: ${{ secrets.GT_SYNC_APP_PRIVATE_KEY }}
+          permission-contents: write
+
       - name: Commit generated SDK or fail if stale
         env:
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
           # PAT so the bot commit triggers CI; GITHUB_TOKEN pushes don't fire workflow events.
-          PUSH_TOKEN: ${{ secrets.GT_SYNC_TOKEN || github.token }}
+          PUSH_TOKEN: ${{ steps.gt-app-token.outputs.token }}
         run: |
           git add packages/api/src/generated packages/api/spec/openapi.json
           if git diff --cached --quiet; then
