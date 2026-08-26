@@ -15,7 +15,8 @@ export type FileFormat =
   | 'HTML'
   | 'TXT'
   | 'TWILIO_CONTENT_JSON'
-  | 'LOTTIE';
+  | 'LOTTIE'
+  | 'SVG';
 
 /**
  * File formats whose content is binary (e.g. zip bundles) rather than text.

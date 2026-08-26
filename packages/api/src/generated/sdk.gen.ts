@@ -107,10 +107,7 @@ export const createProject = <ThrowOnError extends boolean = false>(
     CreateProjectErrors,
     ThrowOnError
   >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { name: 'gt-api-key', type: 'apiKey' },
-    ],
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v2/projects',
     ...options,
     headers: {
@@ -127,10 +124,7 @@ export const uploadSourceFiles = <ThrowOnError extends boolean = false>(
     UploadSourceFilesErrors,
     ThrowOnError
   >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { name: 'gt-api-key', type: 'apiKey' },
-    ],
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v2/project/files/upload-files',
     ...options,
     headers: {
@@ -147,10 +141,7 @@ export const uploadTranslations = <ThrowOnError extends boolean = false>(
     UploadTranslationsErrors,
     ThrowOnError
   >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { name: 'gt-api-key', type: 'apiKey' },
-    ],
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v2/project/files/upload-translations',
     ...options,
     headers: {
@@ -163,10 +154,7 @@ export const uploadAssets = <ThrowOnError extends boolean = false>(
   options: Options<UploadAssetsData, ThrowOnError>
 ) =>
   options.client.post<UploadAssetsResponses, UploadAssetsErrors, ThrowOnError>({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { name: 'gt-api-key', type: 'apiKey' },
-    ],
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v2/project/assets',
     ...options,
     headers: {
@@ -183,10 +171,7 @@ export const submitUserEditDiffs = <ThrowOnError extends boolean = false>(
     SubmitUserEditDiffsErrors,
     ThrowOnError
   >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { name: 'gt-api-key', type: 'apiKey' },
-    ],
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v2/project/files/diffs',
     ...options,
     headers: {
@@ -205,10 +190,7 @@ export const shouldGenerateProjectContext = <
     ShouldGenerateProjectContextErrors,
     ThrowOnError
   >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { name: 'gt-api-key', type: 'apiKey' },
-    ],
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v2/project/setup/should-generate',
     ...options,
   });
@@ -221,10 +203,7 @@ export const generateProjectContext = <ThrowOnError extends boolean = false>(
     GenerateProjectContextErrors,
     ThrowOnError
   >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { name: 'gt-api-key', type: 'apiKey' },
-    ],
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v2/project/setup/generate',
     ...options,
     headers: {
@@ -243,10 +222,7 @@ export const getProjectContextGenerationStatus = <
     GetProjectContextGenerationStatusErrors,
     ThrowOnError
   >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { name: 'gt-api-key', type: 'apiKey' },
-    ],
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v2/project/setup/status/{jobId}',
     ...options,
   });
@@ -259,10 +235,7 @@ export const enqueueFileTranslations = <ThrowOnError extends boolean = false>(
     EnqueueFileTranslationsErrors,
     ThrowOnError
   >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { name: 'gt-api-key', type: 'apiKey' },
-    ],
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v2/project/translations/enqueue',
     ...options,
     headers: {
@@ -275,10 +248,7 @@ export const publishFiles = <ThrowOnError extends boolean = false>(
   options: Options<PublishFilesData, ThrowOnError>
 ) =>
   options.client.post<PublishFilesResponses, PublishFilesErrors, ThrowOnError>({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { name: 'gt-api-key', type: 'apiKey' },
-    ],
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v2/project/files/publish',
     ...options,
     headers: {
@@ -291,10 +261,7 @@ export const downloadFile = <ThrowOnError extends boolean = false>(
   options: Options<DownloadFileData, ThrowOnError>
 ) =>
   options.client.get<DownloadFileResponses, DownloadFileErrors, ThrowOnError>({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { name: 'gt-api-key', type: 'apiKey' },
-    ],
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v2/project/files/download/{fileId}',
     ...options,
   });
@@ -307,10 +274,7 @@ export const downloadFiles = <ThrowOnError extends boolean = false>(
     DownloadFilesErrors,
     ThrowOnError
   >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { name: 'gt-api-key', type: 'apiKey' },
-    ],
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v2/project/files/download',
     ...options,
     headers: {
@@ -327,10 +291,7 @@ export const getBranchInfo = <ThrowOnError extends boolean = false>(
     GetBranchInfoErrors,
     ThrowOnError
   >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { name: 'gt-api-key', type: 'apiKey' },
-    ],
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v2/project/branches/info',
     ...options,
     headers: {
@@ -343,10 +304,7 @@ export const createBranch = <ThrowOnError extends boolean = false>(
   options: Options<CreateBranchData, ThrowOnError>
 ) =>
   options.client.post<CreateBranchResponses, CreateBranchErrors, ThrowOnError>({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { name: 'gt-api-key', type: 'apiKey' },
-    ],
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v2/project/branches/create',
     ...options,
     headers: {
@@ -359,10 +317,7 @@ export const createTag = <ThrowOnError extends boolean = false>(
   options: Options<CreateTagData, ThrowOnError>
 ) =>
   options.client.post<CreateTagResponses, CreateTagErrors, ThrowOnError>({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { name: 'gt-api-key', type: 'apiKey' },
-    ],
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v2/project/tags/create',
     ...options,
     headers: {
@@ -379,10 +334,7 @@ export const getProjectInfo = <ThrowOnError extends boolean = false>(
     GetProjectInfoErrors,
     ThrowOnError
   >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { name: 'gt-api-key', type: 'apiKey' },
-    ],
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v2/project/info/{projectId}',
     ...options,
   });
@@ -395,10 +347,7 @@ export const updateProjectInfo = <ThrowOnError extends boolean = false>(
     UpdateProjectInfoErrors,
     ThrowOnError
   >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { name: 'gt-api-key', type: 'apiKey' },
-    ],
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v2/project/info/{projectId}',
     ...options,
     headers: {
@@ -415,10 +364,7 @@ export const getTranslationJobInfo = <ThrowOnError extends boolean = false>(
     GetTranslationJobInfoErrors,
     ThrowOnError
   >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { name: 'gt-api-key', type: 'apiKey' },
-    ],
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v2/project/jobs/info',
     ...options,
     headers: {
@@ -431,10 +377,7 @@ export const translate = <ThrowOnError extends boolean = false>(
   options: Options<TranslateData, ThrowOnError>
 ) =>
   options.client.post<TranslateResponses, TranslateErrors, ThrowOnError>({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { name: 'gt-api-key', type: 'apiKey' },
-    ],
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v2/translate',
     ...options,
     headers: {
@@ -447,10 +390,7 @@ export const getFileInfo = <ThrowOnError extends boolean = false>(
   options: Options<GetFileInfoData, ThrowOnError>
 ) =>
   options.client.post<GetFileInfoResponses, GetFileInfoErrors, ThrowOnError>({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { name: 'gt-api-key', type: 'apiKey' },
-    ],
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v2/project/files/info',
     ...options,
     headers: {
@@ -467,10 +407,7 @@ export const getTranslationStatus = <ThrowOnError extends boolean = false>(
     GetTranslationStatusErrors,
     ThrowOnError
   >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { name: 'gt-api-key', type: 'apiKey' },
-    ],
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v2/project/translations/files/status/{fileId}',
     ...options,
   });
@@ -483,10 +420,7 @@ export const processFileMoves = <ThrowOnError extends boolean = false>(
     ProcessFileMovesErrors,
     ThrowOnError
   >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { name: 'gt-api-key', type: 'apiKey' },
-    ],
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v2/project/files/moves',
     ...options,
     headers: {
@@ -503,10 +437,7 @@ export const getOrphanedFiles = <ThrowOnError extends boolean = false>(
     GetOrphanedFilesErrors,
     ThrowOnError
   >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { name: 'gt-api-key', type: 'apiKey' },
-    ],
+    security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v2/project/files/orphaned',
     ...options,
     headers: {

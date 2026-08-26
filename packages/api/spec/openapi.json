@@ -2,18 +2,13 @@
   "openapi": "3.1.0",
   "info": {
     "title": "General Translation API",
-    "version": "1.0.0"
+    "version": "2026-03-06.v1"
   },
   "components": {
     "securitySchemes": {
       "BearerAuth": {
         "type": "http",
         "scheme": "bearer"
-      },
-      "ApiKeyAuth": {
-        "type": "apiKey",
-        "in": "header",
-        "name": "gt-api-key"
       }
     },
     "schemas": {
@@ -25,6 +20,25 @@
           }
         },
         "required": ["error"]
+      },
+      "FileFormat": {
+        "type": "string",
+        "enum": [
+          "GTJSON",
+          "MDX",
+          "JSON",
+          "YAML",
+          "MD",
+          "TS",
+          "JS",
+          "HTML",
+          "TXT",
+          "PO",
+          "POT",
+          "TWILIO_CONTENT_JSON",
+          "LOTTIE",
+          "SVG"
+        ]
       },
       "Branch": {
         "type": "object",
@@ -252,9 +266,6 @@
         "security": [
           {
             "BearerAuth": []
-          },
-          {
-            "ApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -445,9 +456,6 @@
         "security": [
           {
             "BearerAuth": []
-          },
-          {
-            "ApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -491,7 +499,23 @@
                               "minLength": 1
                             },
                             "fileFormat": {
-                              "type": "string"
+                              "type": "string",
+                              "enum": [
+                                "GTJSON",
+                                "MDX",
+                                "JSON",
+                                "YAML",
+                                "MD",
+                                "TS",
+                                "JS",
+                                "HTML",
+                                "TXT",
+                                "PO",
+                                "POT",
+                                "TWILIO_CONTENT_JSON",
+                                "LOTTIE",
+                                "SVG"
+                              ]
                             },
                             "dataFormat": {
                               "type": "string"
@@ -573,7 +597,7 @@
                             "type": "string"
                           },
                           "fileFormat": {
-                            "type": "string"
+                            "$ref": "#/components/schemas/FileFormat"
                           },
                           "dataFormat": {
                             "type": "string"
@@ -732,9 +756,6 @@
         "security": [
           {
             "BearerAuth": []
-          },
-          {
-            "ApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -778,7 +799,23 @@
                               "minLength": 1
                             },
                             "fileFormat": {
-                              "type": "string"
+                              "type": "string",
+                              "enum": [
+                                "GTJSON",
+                                "MDX",
+                                "JSON",
+                                "YAML",
+                                "MD",
+                                "TS",
+                                "JS",
+                                "HTML",
+                                "TXT",
+                                "PO",
+                                "POT",
+                                "TWILIO_CONTENT_JSON",
+                                "LOTTIE",
+                                "SVG"
+                              ]
                             },
                             "dataFormat": {
                               "type": "string"
@@ -832,7 +869,23 @@
                                 "minLength": 1
                               },
                               "fileFormat": {
-                                "type": "string"
+                                "type": "string",
+                                "enum": [
+                                  "GTJSON",
+                                  "MDX",
+                                  "JSON",
+                                  "YAML",
+                                  "MD",
+                                  "TS",
+                                  "JS",
+                                  "HTML",
+                                  "TXT",
+                                  "PO",
+                                  "POT",
+                                  "TWILIO_CONTENT_JSON",
+                                  "LOTTIE",
+                                  "SVG"
+                                ]
                               },
                               "dataFormat": {
                                 "type": "string"
@@ -842,7 +895,23 @@
                                 "minLength": 1
                               },
                               "transformFormat": {
-                                "type": "string"
+                                "type": "string",
+                                "enum": [
+                                  "GTJSON",
+                                  "MDX",
+                                  "JSON",
+                                  "YAML",
+                                  "MD",
+                                  "TS",
+                                  "JS",
+                                  "HTML",
+                                  "TXT",
+                                  "PO",
+                                  "POT",
+                                  "TWILIO_CONTENT_JSON",
+                                  "LOTTIE",
+                                  "SVG"
+                                ]
                               }
                             },
                             "required": [
@@ -895,7 +964,7 @@
                             "type": "string"
                           },
                           "fileFormat": {
-                            "type": "string"
+                            "$ref": "#/components/schemas/FileFormat"
                           },
                           "dataFormat": {
                             "type": "string"
@@ -1054,9 +1123,6 @@
         "security": [
           {
             "BearerAuth": []
-          },
-          {
-            "ApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -1276,9 +1342,6 @@
         "security": [
           {
             "BearerAuth": []
-          },
-          {
-            "ApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -1478,9 +1541,6 @@
         "security": [
           {
             "BearerAuth": []
-          },
-          {
-            "ApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -1563,6 +1623,21 @@
               }
             }
           },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
           "429": {
             "description": "Request error",
             "content": {
@@ -1603,9 +1678,6 @@
         "security": [
           {
             "BearerAuth": []
-          },
-          {
-            "ApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -1751,6 +1823,21 @@
               }
             }
           },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
           "413": {
             "description": "Request error",
             "content": {
@@ -1806,9 +1893,6 @@
         "security": [
           {
             "BearerAuth": []
-          },
-          {
-            "ApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -1973,9 +2057,6 @@
         "security": [
           {
             "BearerAuth": []
-          },
-          {
-            "ApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -2024,7 +2105,23 @@
                           "type": "string"
                         },
                         "transformFormat": {
-                          "type": "string"
+                          "type": "string",
+                          "enum": [
+                            "GTJSON",
+                            "MDX",
+                            "JSON",
+                            "YAML",
+                            "MD",
+                            "TS",
+                            "JS",
+                            "HTML",
+                            "TXT",
+                            "PO",
+                            "POT",
+                            "TWILIO_CONTENT_JSON",
+                            "LOTTIE",
+                            "SVG"
+                          ]
                         }
                       },
                       "required": ["fileId", "versionId"]
@@ -2099,7 +2196,7 @@
                                 "type": "boolean"
                               },
                               "outputFileFormat": {
-                                "type": "string"
+                                "$ref": "#/components/schemas/FileFormat"
                               },
                               "modelProvider": {
                                 "type": "string",
@@ -2390,9 +2487,6 @@
         "security": [
           {
             "BearerAuth": []
-          },
-          {
-            "ApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -2612,9 +2706,6 @@
         "security": [
           {
             "BearerAuth": []
-          },
-          {
-            "ApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -2805,9 +2896,6 @@
         "security": [
           {
             "BearerAuth": []
-          },
-          {
-            "ApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -2904,7 +2992,7 @@
                             "additionalProperties": {}
                           },
                           "fileFormat": {
-                            "type": "string"
+                            "$ref": "#/components/schemas/FileFormat"
                           }
                         },
                         "required": [
@@ -3053,9 +3141,6 @@
         "security": [
           {
             "BearerAuth": []
-          },
-          {
-            "ApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -3170,6 +3255,21 @@
               }
             }
           },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
           "429": {
             "description": "Request error",
             "content": {
@@ -3210,9 +3310,6 @@
         "security": [
           {
             "BearerAuth": []
-          },
-          {
-            "ApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -3331,6 +3428,21 @@
               }
             }
           },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
           "429": {
             "description": "Request error",
             "content": {
@@ -3371,9 +3483,6 @@
         "security": [
           {
             "BearerAuth": []
-          },
-          {
-            "ApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -3581,9 +3690,6 @@
         "security": [
           {
             "BearerAuth": []
-          },
-          {
-            "ApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -3753,9 +3859,6 @@
         "security": [
           {
             "BearerAuth": []
-          },
-          {
-            "ApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -3866,6 +3969,21 @@
               }
             }
           },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
           "413": {
             "description": "Request error",
             "content": {
@@ -3921,9 +4039,6 @@
         "security": [
           {
             "BearerAuth": []
-          },
-          {
-            "ApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -4169,9 +4284,6 @@
         "security": [
           {
             "BearerAuth": []
-          },
-          {
-            "ApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -4283,6 +4395,21 @@
               }
             }
           },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
           "413": {
             "description": "Request error",
             "content": {
@@ -4338,9 +4465,6 @@
         "security": [
           {
             "BearerAuth": []
-          },
-          {
-            "ApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -4445,7 +4569,7 @@
                             "type": "string"
                           },
                           "fileFormat": {
-                            "type": "string"
+                            "$ref": "#/components/schemas/FileFormat"
                           },
                           "dataFormat": {
                             "type": ["string", "null"]
@@ -4502,7 +4626,7 @@
                             "type": "string"
                           },
                           "fileFormat": {
-                            "type": "string"
+                            "$ref": "#/components/schemas/FileFormat"
                           },
                           "dataFormat": {
                             "type": ["string", "null"]
@@ -4652,9 +4776,6 @@
         "security": [
           {
             "BearerAuth": []
-          },
-          {
-            "ApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -4769,7 +4890,7 @@
                           "type": "string"
                         },
                         "fileFormat": {
-                          "type": "string"
+                          "$ref": "#/components/schemas/FileFormat"
                         },
                         "dataFormat": {
                           "type": ["string", "null"]
@@ -4909,9 +5030,6 @@
         "security": [
           {
             "BearerAuth": []
-          },
-          {
-            "ApiKeyAuth": []
           }
         ],
         "parameters": [
@@ -5143,9 +5261,6 @@
         "security": [
           {
             "BearerAuth": []
-          },
-          {
-            "ApiKeyAuth": []
           }
         ],
         "parameters": [

@@ -8,6 +8,22 @@ export type ErrorResponse = {
   error: string;
 };
 
+export type FileFormat =
+  | 'GTJSON'
+  | 'MDX'
+  | 'JSON'
+  | 'YAML'
+  | 'MD'
+  | 'TS'
+  | 'JS'
+  | 'HTML'
+  | 'TXT'
+  | 'PO'
+  | 'POT'
+  | 'TWILIO_CONTENT_JSON'
+  | 'LOTTIE'
+  | 'SVG';
+
 export type Branch = {
   id: string;
   name: string;
@@ -162,7 +178,21 @@ export type UploadSourceFilesData = {
       source: {
         content: string;
         fileName: string;
-        fileFormat: string;
+        fileFormat:
+          | 'GTJSON'
+          | 'MDX'
+          | 'JSON'
+          | 'YAML'
+          | 'MD'
+          | 'TS'
+          | 'JS'
+          | 'HTML'
+          | 'TXT'
+          | 'PO'
+          | 'POT'
+          | 'TWILIO_CONTENT_JSON'
+          | 'LOTTIE'
+          | 'SVG';
         dataFormat?: string;
         locale: string;
         fileId?: string;
@@ -240,7 +270,7 @@ export type UploadSourceFilesResponses = {
       fileId: string;
       versionId: string;
       fileName: string;
-      fileFormat: string;
+      fileFormat: FileFormat;
       dataFormat?: string;
       locale?: string;
     }>;
@@ -258,7 +288,21 @@ export type UploadTranslationsData = {
       source: {
         content: string;
         fileName: string;
-        fileFormat: string;
+        fileFormat:
+          | 'GTJSON'
+          | 'MDX'
+          | 'JSON'
+          | 'YAML'
+          | 'MD'
+          | 'TS'
+          | 'JS'
+          | 'HTML'
+          | 'TXT'
+          | 'PO'
+          | 'POT'
+          | 'TWILIO_CONTENT_JSON'
+          | 'LOTTIE'
+          | 'SVG';
         dataFormat?: string;
         locale: string;
         fileId?: string;
@@ -273,10 +317,38 @@ export type UploadTranslationsData = {
       translations: Array<{
         content: string;
         fileName: string;
-        fileFormat: string;
+        fileFormat:
+          | 'GTJSON'
+          | 'MDX'
+          | 'JSON'
+          | 'YAML'
+          | 'MD'
+          | 'TS'
+          | 'JS'
+          | 'HTML'
+          | 'TXT'
+          | 'PO'
+          | 'POT'
+          | 'TWILIO_CONTENT_JSON'
+          | 'LOTTIE'
+          | 'SVG';
         dataFormat?: string;
         locale: string;
-        transformFormat?: string;
+        transformFormat?:
+          | 'GTJSON'
+          | 'MDX'
+          | 'JSON'
+          | 'YAML'
+          | 'MD'
+          | 'TS'
+          | 'JS'
+          | 'HTML'
+          | 'TXT'
+          | 'PO'
+          | 'POT'
+          | 'TWILIO_CONTENT_JSON'
+          | 'LOTTIE'
+          | 'SVG';
       }>;
     }>;
     sourceLocale?: string;
@@ -344,7 +416,7 @@ export type UploadTranslationsResponses = {
       fileId: string;
       versionId: string;
       fileName: string;
-      fileFormat: string;
+      fileFormat: FileFormat;
       dataFormat?: string;
       locale?: string;
     }>;
@@ -535,6 +607,10 @@ export type ShouldGenerateProjectContextErrors = {
   /**
    * Request error
    */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
   429: ErrorResponse;
   /**
    * Request error
@@ -595,6 +671,10 @@ export type GenerateProjectContextErrors = {
    * Request error
    */
   403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
   /**
    * Request error
    */
@@ -702,7 +782,21 @@ export type EnqueueFileTranslationsData = {
       fileId: string;
       versionId: string;
       fileName?: string;
-      transformFormat?: string;
+      transformFormat?:
+        | 'GTJSON'
+        | 'MDX'
+        | 'JSON'
+        | 'YAML'
+        | 'MD'
+        | 'TS'
+        | 'JS'
+        | 'HTML'
+        | 'TXT'
+        | 'PO'
+        | 'POT'
+        | 'TWILIO_CONTENT_JSON'
+        | 'LOTTIE'
+        | 'SVG';
     }>;
     targetLocales?: Array<string>;
     sourceLocale?: string;
@@ -788,7 +882,7 @@ export type EnqueueFileTranslationsResponses = {
             targetLocale: string;
             projectId: string;
             force: boolean;
-            outputFileFormat?: string;
+            outputFileFormat?: FileFormat;
             modelProvider?: 'ANTHROPIC' | 'OPENAI' | 'XAI' | 'GOOGLE';
             glossaryRetranslate?: boolean;
             changedGlossaryTerms?: Array<string>;
@@ -1042,7 +1136,7 @@ export type DownloadFilesResponses = {
       metadata: {
         [key: string]: unknown;
       };
-      fileFormat: string;
+      fileFormat: FileFormat;
     }>;
     count: number;
     pending?: Array<{
@@ -1089,6 +1183,10 @@ export type GetBranchInfoErrors = {
    * Request error
    */
   403: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
   /**
    * Request error
    */
@@ -1154,6 +1252,10 @@ export type CreateBranchErrors = {
    * Request error
    */
   409: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
   /**
    * Request error
    */
@@ -1353,6 +1455,10 @@ export type UpdateProjectInfoErrors = {
   /**
    * Request error
    */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
   413: ErrorResponse;
   /**
    * Request error
@@ -1503,6 +1609,10 @@ export type TranslateErrors = {
   /**
    * Request error
    */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
   413: ErrorResponse;
   /**
    * Request error
@@ -1597,7 +1707,7 @@ export type GetFileInfoResponses = {
       fileId: string;
       versionId: string;
       fileName: string;
-      fileFormat: string;
+      fileFormat: FileFormat;
       dataFormat: string | null;
       createdAt: string;
       updatedAt: string;
@@ -1609,7 +1719,7 @@ export type GetFileInfoResponses = {
       branchId: string;
       fileId: string;
       versionId: string;
-      fileFormat: string;
+      fileFormat: FileFormat;
       dataFormat: string | null;
       createdAt: string;
       updatedAt: string;
@@ -1696,7 +1806,7 @@ export type GetTranslationStatusResponses = {
       versionId: string;
       fileName: string;
       sourceLocale: string;
-      fileFormat: string;
+      fileFormat: FileFormat;
       dataFormat: string | null;
       createdAt: string;
       updatedAt: string;

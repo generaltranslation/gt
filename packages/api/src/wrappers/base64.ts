@@ -1,3 +1,5 @@
+import type { FileFormat } from '../generated/types.gen';
+
 export function encodeBase64(data: string): string {
   const bytes = new TextEncoder().encode(data);
   let binary = '';
@@ -12,10 +14,16 @@ export function decodeBase64(base64: string): string {
   return new TextDecoder().decode(bytes);
 }
 
-export function encodeFileContent(content: string, fileFormat: string): string {
+export function encodeFileContent(
+  content: string,
+  fileFormat: FileFormat
+): string {
   return fileFormat === 'LOTTIE' ? content : encodeBase64(content);
 }
 
-export function decodeFileContent(content: string, fileFormat: string): string {
+export function decodeFileContent(
+  content: string,
+  fileFormat: FileFormat
+): string {
   return fileFormat === 'LOTTIE' ? content : decodeBase64(content);
 }
