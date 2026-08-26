@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createDiagnosticMessage } from '../index';
+import { createDiagnosticMessage } from '../diagnostics';
 
 describe('createDiagnosticMessage', () => {
   it('formats a diagnostic with fix and way out', () => {

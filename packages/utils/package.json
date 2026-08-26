@@ -2,9 +2,6 @@
   "name": "@generaltranslation/utils",
   "version": "0.0.0",
   "description": "Dependency-free diagnostic formatting for General Translation",
-  "main": "dist/index.cjs",
-  "module": "dist/index.mjs",
-  "types": "dist/index.d.cts",
   "files": [
     "dist",
     "CHANGELOG.md"
@@ -43,20 +40,7 @@
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
-  "typescript": {
-    "definition": "dist/index.d.cts"
-  },
   "exports": {
-    ".": {
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      },
-      "import": {
-        "types": "./dist/index.d.mts",
-        "default": "./dist/index.mjs"
-      }
-    },
     "./diagnostics": {
       "require": {
         "types": "./dist/diagnostics.d.cts",
