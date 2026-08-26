@@ -55,6 +55,10 @@ export function configureApiClient(
   customMapping = mapping;
 }
 
+export function createNonRetryingApiClient(config: ApiClientConfig) {
+  return createApiClient({ ...config, retryPolicy: 'none' });
+}
+
 function batchCount(items: readonly unknown[]): number {
   return Math.ceil(items.length / DEFAULT_BATCH_SIZE);
 }

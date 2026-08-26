@@ -1,0 +1,206 @@
+import fs from 'node:fs';
+import { createRequire } from 'node:module';
+import type { ApiClientConfig, Client } from '@generaltranslation/api';
+import {
+  createDiagnosticMessage,
+  formatDiagnosticErrorDetails,
+} from 'generaltranslation/internal';
+import { generateSettings } from '../../config/generateSettings.js';
+import { exitSync } from '../../console/logging.js';
+import type { SharedFlags } from '../../types/index.js';
+import { createNonRetryingApiClient } from '../../utils/api.js';
+
+export type ApiCommandOptions = SharedFlags & {
+  header?: string[];
+  include?: boolean;
+  input?: string;
+  method: string;
+  spec?: boolean;
+};
+
+type ApiCommandDependencies = {
+  exit?: (code: number) => never;
+  fetch?: ApiClientConfig['fetch'];
+  writeStderr?: (output: string) => void;
+  writeStdout?: (output: string) => void;
+};
+
+type ApiRequestOptions = Parameters<Client['request']>[0];
+
+const require = createRequire(import.meta.url);
+
+function fail(
+  diagnostic: string,
+  {
+    exit = exitSync,
+    writeStderr = (output) => process.stderr.write(output),
+  }: ApiCommandDependencies
+): never {
+  writeStderr(`${diagnostic}\n`);
+  return exit(1);
+}
+
+function parseHeaders(
+  values: string[],
+  dependencies: ApiCommandDependencies
+): Headers {
+  const headers = new Headers();
+  for (const header of values) {
+    const separator = header.indexOf(':');
+    if (separator < 1) {
+      fail(
+        createDiagnosticMessage({
+          source: 'gt',
+          severity: 'Error',
+          whatHappened: `The API request header is invalid: ${header}`,
+          fix: 'Pass headers as `--header "Key: Value"`',
+        }),
+        dependencies
+      );
+    }
+    headers.set(
+      header.slice(0, separator).trim(),
+      header.slice(separator + 1).trim()
+    );
+  }
+  return headers;
+}
+
+function readInput(
+  input: string,
+  dependencies: ApiCommandDependencies
+): string {
+  try {
+    return fs.readFileSync(input === '-' ? 0 : input, 'utf8');
+  } catch (error) {
+    return fail(
+      createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Error',
+        whatHappened: 'The API request body could not be read',
+        fix:
+          input === '-'
+            ? 'Pipe a request body to standard input or remove `--input -`'
+            : 'Check the `--input` file path and permissions',
+        details: formatDiagnosticErrorDetails(error),
+      }),
+      dependencies
+    );
+  }
+}
+
+function writeResponseMetadata(
+  response: Response,
+  writeStdout: (output: string) => void
+): void {
+  writeStdout(
+    `HTTP/1.1 ${response.status}${response.statusText ? ` ${response.statusText}` : ''}\n`
+  );
+  response.headers.forEach((value, name) => {
+    writeStdout(`${name}: ${value}\n`);
+  });
+  writeStdout('\n');
+}
+
+export async function handleApiCommand(
+  endpoint: string | undefined,
+  options: ApiCommandOptions,
+  dependencies: ApiCommandDependencies = {}
+): Promise<void> {
+  if (!dependencies.writeStdout) {
+    process.stdout.once('error', (error: NodeJS.ErrnoException) => {
+      if (error.code === 'EPIPE') process.exit(0);
+      throw error;
+    });
+  }
+  const writeStdout =
+    dependencies.writeStdout ?? ((output) => process.stdout.write(output));
+  const writeStderr =
+    dependencies.writeStderr ?? ((output) => process.stderr.write(output));
+
+  if (options.spec) {
+    const specPath =
+      require.resolve('@generaltranslation/api/spec/openapi.json');
+    writeStdout(fs.readFileSync(specPath, 'utf8'));
+    return;
+  }
+
+  if (!endpoint) {
+    fail(
+      createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Error',
+        whatHappened: 'No API endpoint was provided',
+        fix: 'Pass an endpoint or use `gt api --spec` to inspect the OpenAPI specification',
+      }),
+      dependencies
+    );
+  }
+
+  const settings = await generateSettings(options, undefined, {
+    suppressOutput: true,
+  });
+  const client = createNonRetryingApiClient({
+    apiKey: settings.apiKey,
+    baseUrl: settings.baseUrl,
+    fetch: dependencies.fetch,
+    projectId: settings.projectId,
+  });
+  const normalizedEndpoint = endpoint.startsWith('/')
+    ? endpoint
+    : `/${endpoint}`;
+  const method = options.method.toUpperCase();
+  const headers = parseHeaders(options.header ?? [], dependencies);
+  const body = options.input
+    ? readInput(options.input, dependencies)
+    : undefined;
+  let rawResponse: Response | undefined;
+
+  client.interceptors.response.use((response) => {
+    rawResponse = response.clone();
+    return response;
+  });
+
+  try {
+    await client.request({
+      body,
+      bodySerializer: body === undefined ? undefined : () => body,
+      headers,
+      method: method as ApiRequestOptions['method'],
+      parseAs: 'stream',
+      throwOnError: false,
+      url: normalizedEndpoint,
+    });
+  } catch (error) {
+    fail(
+      createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Error',
+        whatHappened: 'The API request failed before a response was received',
+        details: formatDiagnosticErrorDetails(error),
+      }),
+      dependencies
+    );
+  }
+
+  if (!rawResponse) {
+    fail(
+      createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Error',
+        whatHappened: 'The API request did not return a response',
+      }),
+      dependencies
+    );
+  }
+
+  if (options.include) writeResponseMetadata(rawResponse, writeStdout);
+  writeStdout(await rawResponse.text());
+
+  if (!rawResponse.ok) {
+    writeStderr(
+      `${method} ${normalizedEndpoint} returned HTTP ${rawResponse.status}${rawResponse.statusText ? ` ${rawResponse.statusText}` : ''}\n`
+    );
+    (dependencies.exit ?? exitSync)(1);
+  }
+}
