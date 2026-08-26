@@ -11,7 +11,7 @@ export function readBrowserLocale(localeCookieName: string): string[] {
 
   // (2) Check navigator locales
   const navigatorLocales =
-    typeof navigator !== 'undefined' ? navigator.languages : [];
+    typeof navigator !== 'undefined' ? (navigator.languages ?? []) : [];
   candidates.push(...navigatorLocales);
 
   return candidates;

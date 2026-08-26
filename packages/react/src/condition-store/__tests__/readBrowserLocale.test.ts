@@ -38,6 +38,8 @@ describe('readBrowserLocale', () => {
         'navigator',
         originalNavigatorDescriptor
       );
+    } else {
+      deleteGlobalNavigator();
     }
   });
 
