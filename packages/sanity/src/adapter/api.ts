@@ -146,6 +146,9 @@ export const api = {
       force?: boolean;
     }
   ) {
+    const sourceLocale = options.sourceLocale
+      ? resolveCanonicalLocale(options.sourceLocale, customMapping)
+      : undefined;
     const targetLocales = options.targetLocales.map((locale) =>
       resolveCanonicalLocale(locale, customMapping)
     );
@@ -154,7 +157,7 @@ export const api = {
         await enqueueFileTranslations({
           body: {
             files: batch,
-            sourceLocale: options.sourceLocale,
+            sourceLocale,
             targetLocales,
             force: options.force,
           },
