@@ -1,6 +1,6 @@
 import fs from 'node:fs';
-import { createRequire } from 'node:module';
 import type { ApiClientConfig, Client } from '@generaltranslation/api';
+import openApiSpec from '@generaltranslation/api/spec/openapi.json' with { type: 'json' };
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
@@ -22,12 +22,10 @@ type ApiCommandDependencies = {
   exit?: (code: number) => never;
   fetch?: ApiClientConfig['fetch'];
   writeStderr?: (output: string) => void;
-  writeStdout?: (output: string) => void;
+  writeStdout?: (output: string | Uint8Array) => void;
 };
 
 type ApiRequestOptions = Parameters<Client['request']>[0];
-
-const require = createRequire(import.meta.url);
 
 function fail(
   diagnostic: string,
@@ -58,7 +56,7 @@ function parseHeaders(
         dependencies
       );
     }
-    headers.set(
+    headers.append(
       header.slice(0, separator).trim(),
       header.slice(separator + 1).trim()
     );
@@ -91,10 +89,10 @@ function readInput(
 
 function writeResponseMetadata(
   response: Response,
-  writeStdout: (output: string) => void
+  writeStdout: (output: string | Uint8Array) => void
 ): void {
   writeStdout(
-    `HTTP/1.1 ${response.status}${response.statusText ? ` ${response.statusText}` : ''}\n`
+    `HTTP ${response.status}${response.statusText ? ` ${response.statusText}` : ''}\n`
   );
   response.headers.forEach((value, name) => {
     writeStdout(`${name}: ${value}\n`);
@@ -119,9 +117,7 @@ export async function handleApiCommand(
     dependencies.writeStderr ?? ((output) => process.stderr.write(output));
 
   if (options.spec) {
-    const specPath =
-      require.resolve('@generaltranslation/api/spec/openapi.json');
-    writeStdout(fs.readFileSync(specPath, 'utf8'));
+    writeStdout(`${JSON.stringify(openApiSpec, null, 2)}\n`);
     return;
   }
 
@@ -157,6 +153,7 @@ export async function handleApiCommand(
   let rawResponse: Response | undefined;
 
   client.interceptors.response.use((response) => {
+    // Keep a clone because the generated client consumes non-2xx bodies.
     rawResponse = response.clone();
     return response;
   });
@@ -195,7 +192,7 @@ export async function handleApiCommand(
   }
 
   if (options.include) writeResponseMetadata(rawResponse, writeStdout);
-  writeStdout(await rawResponse.text());
+  writeStdout(Buffer.from(await rawResponse.arrayBuffer()));
 
   if (!rawResponse.ok) {
     writeStderr(
