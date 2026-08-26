@@ -105,6 +105,34 @@ describe('CLI API client', () => {
     );
   });
 
+  it('canonicalizes the default locale when creating a project', async () => {
+    configure({
+      customMapping: { 'brand-english': { code: 'en-US' } },
+    });
+    fetchMock.mockImplementation(async (request) => {
+      const body = JSON.parse(await request.text()) as {
+        defaultLocale: string;
+      };
+      expect(body.defaultLocale).toBe('en-US');
+      return Response.json(
+        {
+          project: {
+            id: 'project-id',
+            name: 'Project',
+            orgId: 'org-id',
+            defaultLocale: 'en-US',
+          },
+        },
+        { status: 201 }
+      );
+    });
+
+    await api.createProject({
+      name: 'Project',
+      defaultLocale: 'brand-english',
+    });
+  });
+
   it('canonicalizes user edit diff locales', async () => {
     configure({
       customMapping: { 'brand-english': { code: 'en-US' } },
