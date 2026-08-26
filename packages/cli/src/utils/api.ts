@@ -24,7 +24,6 @@ import {
   processFileMoves,
   publishFiles,
   submitUserEditDiffs,
-  translate,
   uploadSourceFiles,
   uploadTranslations,
   type ApiClientConfig,
@@ -41,7 +40,6 @@ import {
   type ProcessFileMovesData,
   type PublishFilesData,
   type SubmitUserEditDiffsData,
-  type TranslateData,
   type UploadSourceFilesData,
   type UploadTranslationsData,
 } from '@generaltranslation/api';
@@ -211,10 +209,6 @@ export const api = {
     return responseData(
       await getProjectContextGenerationStatus({ path: { jobId }, client })
     );
-  },
-
-  async translate(body: TranslateData['body']) {
-    return responseData(await translate({ body, client }));
   },
 
   async getOrphanedFiles(branchId: string, fileIds: string[]) {
