@@ -1,0 +1,6 @@
+[settings]
+idiomatic_version_file_enable_tools = ["node", "pnpm", "rust"]
+
+[tools]
+bun = "1"
+python = "3.13"

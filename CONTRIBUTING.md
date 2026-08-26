@@ -144,6 +144,14 @@ include Setup of env, IDE and typical getting started instructions?
 
 -->
 
+Install [mise](https://mise.jdx.dev/getting-started.html), then set up the pinned development tools and project dependencies:
+
+```sh
+mise trust # Approves this repository's mise.toml
+mise install
+pnpm install
+```
+
 ### Improving The Documentation
 
 <!-- TODO
