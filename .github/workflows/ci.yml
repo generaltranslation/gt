@@ -156,6 +156,8 @@ jobs:
       - name: Get pnpm store directory
         if: steps.gt_next_changed.outputs.changed == 'true'
         id: pnpm-store
+        # bash on all platforms: pwsh (windows default) expands $GITHUB_OUTPUT as empty
+        shell: bash
         run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
 
       - name: Cache pnpm store
@@ -297,6 +299,8 @@ jobs:
       - name: Get pnpm store directory
         if: steps.gt_cli_changed.outputs.changed == 'true'
         id: pnpm-store
+        # bash on all platforms: pwsh (windows default) expands $GITHUB_OUTPUT as empty
+        shell: bash
         run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
 
       - name: Cache pnpm store
