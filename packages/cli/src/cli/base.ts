@@ -86,6 +86,7 @@ import {
 import { setupViteSPA } from '../setup/setupViteSPA.js';
 import { manifestDirectlyDeclaresGTVue } from '@generaltranslation/vue-extractor/integration';
 import { api } from '../utils/api.js';
+import { handleApiCommand, type ApiCommandOptions } from './commands/api.js';
 
 const ID_COMPATIBILITY_WARNING_COMMANDS = new Set([
   'download',
@@ -215,6 +216,7 @@ export class BaseCLI {
     this.setupUploadCommand();
     this.setupLoginCommand();
     this.setupSendDiffsCommand();
+    this.setupApiCommand();
     this.setupProjectCommands();
     this.setupGitCommand();
   }
@@ -328,6 +330,28 @@ export class BaseCLI {
         await saveLocalEdits(settings);
         logger.endCommand('Saved local edits');
       });
+  }
+
+  protected setupApiCommand(): void {
+    attachSharedFlags(
+      this.program
+        .command('api [endpoint]')
+        .description('Make an authenticated request to the GT API')
+        .option('-X, --method <method>', 'HTTP method', 'GET')
+        .option('--input <file>', 'Request body file, or - for standard input')
+        .option(
+          '-H, --header <header>',
+          'Request header in "Key: Value" format',
+          (header, headers: string[] | undefined) => [
+            ...(headers ?? []),
+            header,
+          ]
+        )
+        .option('-i, --include', 'Include response status and headers')
+        .option('--spec', 'Print the bundled OpenAPI specification')
+    ).action((endpoint, options: ApiCommandOptions) =>
+      handleApiCommand(endpoint, options)
+    );
   }
 
   protected setupProjectCommands(): void {
