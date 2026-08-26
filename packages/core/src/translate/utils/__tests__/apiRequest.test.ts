@@ -78,6 +78,26 @@ describe.sequential('apiRequest', () => {
     expect(fetchWithTimeout).not.toHaveBeenCalled();
   });
 
+  it('preserves linear retries for runtime translation', async () => {
+    vi.mocked(createApiClient).mockReturnValue(
+      {} as ReturnType<typeof createApiClient>
+    );
+    vi.mocked(translate).mockResolvedValue({
+      data: { hash: { success: false, error: 'failed', code: 500 } },
+      request: {} as Request,
+      response: createResponse(),
+    });
+
+    await apiRequest(config, '/v2/translate', {
+      body: {},
+      retryPolicy: 'linear',
+    });
+
+    expect(createApiClient).toHaveBeenCalledWith(
+      expect.objectContaining({ retryPolicy: 'linear' })
+    );
+  });
+
   it('preserves runtime translation API error details', async () => {
     vi.mocked(createApiClient).mockReturnValue(
       {} as ReturnType<typeof createApiClient>
