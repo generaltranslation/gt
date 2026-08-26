@@ -1,4 +1,4 @@
-import { getI18nConfig } from 'gt-i18n/internal';
+import { formatNum } from '@generaltranslation/format';
 import { getFormatLocales } from '../../hooks/utils/getFormatLocales';
 
 // Pure compute logic shared by the hook-based and RSC implementations. This
@@ -31,11 +31,13 @@ function computeNum({
     enableI18n: _enableI18n,
     localesProp,
   });
-  const gt = getI18nConfig().getGTClass();
   if (children == null) return null;
   const parsedNumber =
     typeof children === 'string' ? parseFloat(children) : children;
-  return gt.formatNum(parsedNumber, { locales, ...options });
+  return formatNum(parsedNumber, {
+    locales,
+    ...options,
+  });
 }
 
 export { computeNum };

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-import { I18nConfig } from '../I18nConfig';
+import { RuntimeI18nConfig as I18nConfig } from '../RuntimeI18nConfig';
 
 describe('I18nConfig', () => {
   beforeEach(() => {
@@ -22,6 +22,25 @@ describe('I18nConfig', () => {
     const config = new I18nConfig({ defaultLocale: 'fr' });
 
     expect(config.getLocales()).toEqual(['fr']);
+  });
+
+  it('derives localized region overrides from the locale mapping', () => {
+    const config = new I18nConfig({
+      customMapping: {
+        customEnglish: {
+          code: 'en-US',
+          regionCode: 'US',
+          regionName: 'Custom United States',
+          emoji: '🗽',
+        },
+      },
+    });
+
+    expect(config.getRegionProperties('US', 'en')).toMatchObject({
+      name: 'Custom United States',
+      emoji: '🗽',
+      locale: 'customEnglish',
+    });
   });
 
   it('skips locale validation when GT services are disabled', () => {

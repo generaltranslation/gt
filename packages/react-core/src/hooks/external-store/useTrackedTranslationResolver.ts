@@ -11,10 +11,8 @@ import type {
 } from '../../i18n-store/storeTypes';
 import type { TranslationMetadata } from 'gt-i18n/internal/types';
 import type { StringFormat } from '@generaltranslation/format';
-import {
-  useI18nStore,
-  useTranslationsSnapshot,
-} from '../../i18n-store/useI18nStore';
+import { useTranslationsSnapshot } from '../../context/useSnapshots';
+import { useI18nStore } from '../../i18n-store/useI18nStore';
 import { useHandleMissingTranslationWithConditions } from '../utils/missing-translation';
 import { useSubscribeToTrackedLookups } from './useSubscribeToTrackedLookups';
 

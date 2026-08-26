@@ -1,9 +1,20 @@
+import type { ReactNode } from 'react';
 import { useTranslate } from '../../hooks/external-store';
-import { getI18nConfig } from 'gt-i18n/internal';
-import { useRef, type ReactNode } from 'react';
 import { renderPreparedT } from '../../utils/rendering/renderPipeline';
 import type { TProps } from '../../utils/translation/prepareT.shared';
 import { usePrepareT } from '../../utils/translation/usePrepareT';
+import { useComputeTDev } from './useComputeT.dev';
+
+function useComputeTProd(
+  result: ReactNode,
+  _shouldTranslate: boolean,
+  _targetFound: boolean
+): ReactNode {
+  return result;
+}
+
+const finalizeT =
+  process.env.NODE_ENV === 'production' ? useComputeTProd : useComputeTDev;
 
 // ===== Component ===== //
 
@@ -24,9 +35,6 @@ GtInternalTranslateJsx._gtt = 'translate-client-automatic';
 
 export { GtInternalTranslateJsx, T };
 
-/**
- * Render logic
- */
 function useComputeT({
   children: sourceChildren,
   _locale,
@@ -34,7 +42,6 @@ function useComputeT({
   _renderPreparedT = renderPreparedT,
   ...params
 }: TProps): ReactNode {
-  // Prepare our source children for rendering
   const {
     defaultLocale,
     locale,
@@ -49,27 +56,11 @@ function useComputeT({
     _locale,
     _enableI18n,
   });
-
-  // Lookup translation in cache
   const targetJsxChildren = useTranslate({
     locale,
     message: sourceJsxChildren,
     options: targetOptions,
   });
-
-  // Tx hot reload: render previous translation while loading new one
-  // TODO: account for success vs loading vs failed request states
-  const prev = useRef<ReactNode | null>(null);
-  if (
-    process.env.NODE_ENV !== 'production' &&
-    getI18nConfig().isDevHotReloadEnabled() &&
-    targetJsxChildren == null &&
-    prev.current != null &&
-    shouldTranslate
-  ) {
-    return prev.current;
-  }
-
   const result = _renderPreparedT({
     taggedSourceChildren,
     targetJsxChildren,
@@ -80,8 +71,5 @@ function useComputeT({
     hash: targetOptions.$_hash,
   });
 
-  // record previous result
-  prev.current = result;
-
-  return result;
+  return finalizeT(result, shouldTranslate, targetJsxChildren != null);
 }

@@ -1,8 +1,6 @@
 import { useCallback, useRef } from 'react';
-import {
-  useDictionariesSnapshot,
-  useI18nStore,
-} from '../../i18n-store/useI18nStore';
+import { useDictionariesSnapshot } from '../../context/useSnapshots';
+import { useI18nStore } from '../../i18n-store/useI18nStore';
 import type {
   DictionaryEntrySnapshot,
   DictionaryLookup,

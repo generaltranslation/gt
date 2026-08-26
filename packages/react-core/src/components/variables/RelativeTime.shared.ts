@@ -1,4 +1,7 @@
-import { getI18nConfig } from 'gt-i18n/internal';
+import {
+  formatRelativeTime,
+  formatRelativeTimeFromDate,
+} from '@generaltranslation/format';
 import { getFormatLocales } from '../../hooks/utils/getFormatLocales';
 
 // Pure compute logic shared by the hook-based and RSC implementations. This
@@ -39,7 +42,6 @@ function computeRelativeTime({
     enableI18n: _enableI18n,
     localesProp,
   });
-  const gt = getI18nConfig().getGTClass();
   const resolvedDate = date ?? children;
 
   if (process.env.NODE_ENV === 'development' && value !== undefined && !unit) {
@@ -50,7 +52,7 @@ function computeRelativeTime({
   }
 
   if (value !== undefined && unit) {
-    return gt.formatRelativeTime(value, unit, {
+    return formatRelativeTime(value, unit, {
       locales,
       numeric: options.numeric,
       style: options.style,
@@ -59,7 +61,7 @@ function computeRelativeTime({
   }
 
   if (resolvedDate != null) {
-    return gt.formatRelativeTimeFromDate(resolvedDate, {
+    return formatRelativeTimeFromDate(resolvedDate, {
       locales,
       baseDate: baseDate ?? new Date(),
       numeric: options.numeric,

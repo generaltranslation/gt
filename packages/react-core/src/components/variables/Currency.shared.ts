@@ -1,4 +1,4 @@
-import { getI18nConfig } from 'gt-i18n/internal';
+import { formatCurrency } from '@generaltranslation/format';
 import { getFormatLocales } from '../../hooks/utils/getFormatLocales';
 
 // Pure compute logic shared by the hook-based and RSC implementations. This
@@ -33,11 +33,10 @@ function computeCurrency({
     enableI18n: _enableI18n,
     localesProp,
   });
-  const gt = getI18nConfig().getGTClass();
   if (children == null) return null;
   const parsedNumber =
     typeof children === 'string' ? parseFloat(children) : children;
-  return gt.formatCurrency(parsedNumber, currency, {
+  return formatCurrency(parsedNumber, currency, {
     locales,
     ...options,
   });

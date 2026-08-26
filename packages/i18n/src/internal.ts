@@ -47,7 +47,7 @@ export {
   initializeI18nConfig,
   setI18nConfig,
 } from './i18n-config/singleton-operations';
-export { I18nConfig } from './i18n-config/I18nConfig';
+export { RuntimeI18nConfig as I18nConfig } from './i18n-config/RuntimeI18nConfig';
 export type { I18nConfigParams } from './i18n-config/I18nConfig';
 export { createConditionStoreSingleton } from './condition-store/createConditionStoreSingleton';
 export { createGlobalSingleton } from './globals/createGlobalSingleton';

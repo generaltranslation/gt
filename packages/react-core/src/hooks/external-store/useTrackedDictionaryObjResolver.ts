@@ -3,10 +3,8 @@ import type {
   DictionaryLookup,
   DictionaryObjectSnapshot,
 } from '../../i18n-store/storeTypes';
-import {
-  useDictionariesSnapshot,
-  useI18nStore,
-} from '../../i18n-store/useI18nStore';
+import { useDictionariesSnapshot } from '../../context/useSnapshots';
+import { useI18nStore } from '../../i18n-store/useI18nStore';
 import { useCallback, useRef } from 'react';
 import { useHandleMissingDictionaryObject } from '../utils/missing-translation';
 import { useSubscribeToTrackedLookups } from './useSubscribeToTrackedLookups';

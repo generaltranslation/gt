@@ -6,15 +6,15 @@ import type { StringFormat } from '@generaltranslation/format/types';
 import { useDefaultLocale } from './i18n-config';
 import {
   type Message,
-  useTrackedTranslationResolver,
-} from './external-store/useTrackedTranslationResolver';
+  useTranslationResolver,
+} from './resolution/useTranslationResolver';
 
 // ===== Hook ===== //
 
 export function useGT(_messages?: Message[]): GTFunctionType {
   const { locale, shouldTranslate } = useTranslationConditions();
   const defaultLocale = useDefaultLocale();
-  const resolveTranslation = useTrackedTranslationResolver(
+  const resolveTranslation = useTranslationResolver(
     _messages,
     locale,
     shouldTranslate
