@@ -44,11 +44,7 @@ import {
   type UploadTranslationsData,
 } from '@generaltranslation/api';
 import { ApiError } from 'generaltranslation/errors';
-import {
-  defaultBaseUrl,
-  validateFileFormatTransforms,
-  type FileFormatTransformInput,
-} from 'generaltranslation/internal';
+import { defaultBaseUrl } from 'generaltranslation/internal';
 
 let client = createApiClient({ baseUrl: defaultBaseUrl });
 let customMapping: CustomMapping | undefined;
@@ -302,10 +298,7 @@ export const api = {
   },
 
   async enqueueFiles(
-    files: Array<
-      EnqueueFileTranslationsData['body']['files'][number] &
-        FileFormatTransformInput
-    >,
+    files: EnqueueFileTranslationsData['body']['files'],
     options: {
       sourceLocale?: string;
       targetLocales: string[];
@@ -313,7 +306,6 @@ export const api = {
       force?: boolean;
     }
   ) {
-    validateFileFormatTransforms(files);
     const targetLocales = options.targetLocales.map((locale) =>
       resolveCanonicalLocale(locale, customMapping)
     );
