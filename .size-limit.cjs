@@ -90,6 +90,12 @@ module.exports = [
   core('generaltranslation/types', 'types'),
   core('generaltranslation/errors', 'errors'),
 
+  entry(
+    '@generaltranslation/utils/diagnostics',
+    'packages/utils/dist/diagnostics.mjs',
+    '2 kB'
+  ),
+
   format('@generaltranslation/format', 'index'),
   format('@generaltranslation/format/types', 'types'),
   format('@generaltranslation/format/internal', 'internal'),
