@@ -59,7 +59,7 @@ describe('createTimeoutFetch', () => {
 });
 
 describe('createRetryingFetch', () => {
-  it('retries rate limits', async () => {
+  it('retries rate limits for non-idempotent methods', async () => {
     const fetchMock = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(
@@ -71,11 +71,39 @@ describe('createRetryingFetch', () => {
       .mockResolvedValueOnce(new Response('{}', { status: 200 }));
 
     const response = await createRetryingFetch({ fetch: fetchMock })(
-      'https://example.com/test'
+      'https://example.com/test',
+      { method: 'POST' }
     );
 
     expect(response.status).toBe(200);
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not retry non-idempotent methods after server errors', async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(new Response('failed', { status: 500 }));
+
+    const response = await createRetryingFetch({ fetch: fetchMock })(
+      'https://example.com/test',
+      { method: 'POST' }
+    );
+
+    expect(response.status).toBe(500);
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it('does not retry non-idempotent methods after network errors', async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockRejectedValue(new TypeError('fetch failed'));
+
+    await expect(
+      createRetryingFetch({ fetch: fetchMock })('https://example.com/test', {
+        method: 'POST',
+      })
+    ).rejects.toThrow('fetch failed');
+    expect(fetchMock).toHaveBeenCalledOnce();
   });
 
   it('honors Retry-After HTTP dates and RateLimit-Reset fallbacks', async () => {
@@ -117,6 +145,27 @@ describe('createRetryingFetch', () => {
 
     await expect(pendingResponse).resolves.toMatchObject({ status: 200 });
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('uses linear backoff when configured', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(0);
+    const attemptTimes: number[] = [];
+    const fetchMock = vi.fn<typeof fetch>().mockImplementation(async () => {
+      attemptTimes.push(Date.now());
+      return attemptTimes.length === 4
+        ? new Response('{}', { status: 200 })
+        : new Response('failed', { status: 500 });
+    });
+
+    const pendingResponse = createRetryingFetch({
+      fetch: fetchMock,
+      retryPolicy: 'linear',
+    })('https://example.com/test');
+    await vi.runAllTimersAsync();
+
+    await expect(pendingResponse).resolves.toMatchObject({ status: 200 });
+    expect(attemptTimes).toEqual([0, 500, 1_500, 3_000]);
   });
 
   it('returns the last server error after exhausting retries', async () => {

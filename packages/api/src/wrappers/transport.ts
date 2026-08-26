@@ -1,9 +1,10 @@
 const MAX_RETRIES = 3;
 const INITIAL_DELAY_MS = 500;
 const RATE_LIMIT_RETRY_DELAY_MS = 60_000;
+const IDEMPOTENT_METHODS = new Set(['GET', 'HEAD', 'OPTIONS', 'PUT', 'DELETE']);
 export const DEFAULT_TIMEOUT_MS = 60_000;
 
-export type RetryPolicy = 'exponential' | 'none';
+export type RetryPolicy = 'exponential' | 'linear' | 'none';
 
 export type RetryingFetchOptions = {
   fetch?: typeof fetch;
@@ -64,7 +65,11 @@ function parseRetryAfter(value: string | null): number | undefined {
     : Math.max(retryDate - Date.now(), 0);
 }
 
-function retryDelay(response: Response | undefined, attempt: number): number {
+function retryDelay(
+  response: Response | undefined,
+  attempt: number,
+  retryPolicy: RetryPolicy
+): number {
   if (response?.status === 429) {
     return (
       parseRetryAfter(response.headers.get('Retry-After')) ??
@@ -72,7 +77,9 @@ function retryDelay(response: Response | undefined, attempt: number): number {
       RATE_LIMIT_RETRY_DELAY_MS
     );
   }
-  return INITIAL_DELAY_MS * 2 ** attempt;
+  return (
+    INITIAL_DELAY_MS * (retryPolicy === 'linear' ? attempt + 1 : 2 ** attempt)
+  );
 }
 
 export function createRetryingFetch({
@@ -82,16 +89,23 @@ export function createRetryingFetch({
   return async (input, init) => {
     const request = new Request(input, init);
     const maxRetries = retryPolicy === 'none' ? 0 : MAX_RETRIES;
+    const isIdempotent = IDEMPOTENT_METHODS.has(request.method);
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       let response: Response | undefined;
       try {
         response = await fetchImplementation(request.clone());
       } catch (error) {
-        if (request.signal.aborted || attempt === maxRetries) throw error;
+        if (request.signal.aborted || attempt === maxRetries || !isIdempotent) {
+          throw error;
+        }
       }
 
-      if (response && response.status !== 429 && response.status < 500) {
+      if (
+        response &&
+        response.status !== 429 &&
+        (response.status < 500 || !isIdempotent)
+      ) {
         return response;
       }
       if (response && attempt === maxRetries) return response;
@@ -103,7 +117,7 @@ export function createRetryingFetch({
 
       // Drain the discarded 429/5xx body so undici can release the socket.
       void response?.body?.cancel();
-      await sleep(retryDelay(response, attempt));
+      await sleep(retryDelay(response, attempt, retryPolicy));
     }
 
     throw new Error('Max retries exceeded');
