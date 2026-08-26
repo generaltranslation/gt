@@ -1,17 +1,23 @@
 import logger from '../logs/logger';
-import { I18nCacheConfig, I18nCacheConstructorParams } from './types';
+import { I18nCacheConstructorParams } from './types';
 import {
   createDiagnosticMessage,
   defaultRuntimeApiUrl,
 } from 'generaltranslation/internal';
+import type { RuntimeTranslateManyOptions } from 'generaltranslation/internal';
 import { Translation } from './translations-manager/utils/types/translation-data';
 import { LookupOptions } from '../translation-functions/types/options';
 import { SafeTranslationsLoader } from './translations-manager/translations-loaders/types';
 import { routeCreateTranslationLoader } from './translations-manager/translations-loaders/routeCreateTranslationLoader';
 import { getLoadTranslationsType } from './utils/getLoadTranslationsType';
 import { ResourceCache } from './translations-manager/ResourceCache';
-import { TranslationsCache } from './translations-manager/TranslationsCache';
-import type { Hash, Locale } from './translations-manager/TranslationsCache';
+import {
+  createBatchedMissingTranslationResolver,
+  TranslationsCache,
+  type CreateMissingTranslationResolver,
+  type Hash,
+  type Locale,
+} from './translations-manager/TranslationsCache';
 import { DictionaryCache } from './translations-manager/DictionaryCache';
 import type {
   Dictionary,
@@ -22,8 +28,9 @@ import { resolveDictionaryLookupOptions } from './translations-manager/utils/dic
 import { DictionarySourceNotFoundError } from './translations-manager/utils/DictionarySourceNotFoundError';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
-import type { CreateMissingTranslationResolver } from './translations-manager/MissingTranslationResolver';
-import { createGTMissingTranslationResolver } from './createGTMissingTranslationResolver';
+import { createTranslateManyFactory } from './translations-manager/utils/createTranslateMany';
+
+const DEFAULT_TRANSLATION_TIMEOUT = 12_000;
 
 /**
  * A translation resolver is a function that synchronously resolves a translation
@@ -89,8 +96,6 @@ export type I18nCacheDependencies<
 };
 
 class I18nCacheCore<TranslationValue extends Translation = Translation> {
-  protected config: I18nCacheConfig;
-
   /**
    * Single dev hot-reload listener for runtime-translation cache misses.
    * Subclasses that add cache-miss behavior should wrap any existing listener
@@ -110,6 +115,7 @@ class I18nCacheCore<TranslationValue extends Translation = Translation> {
   private dictionaries: ResourceCache<Locale, DictionaryCache>;
 
   private createMissingTranslationResolver?: CreateMissingTranslationResolver<TranslationValue>;
+  private readonly versionId?: string;
 
   /**
    * Creates an instance of I18nCache.
@@ -123,18 +129,6 @@ class I18nCacheCore<TranslationValue extends Translation = Translation> {
   ) {
     // Validation
     validateCacheParams(params);
-
-    this.config = {
-      projectId: params.projectId,
-      devApiKey: params.devApiKey,
-      apiKey: params.apiKey,
-      runtimeUrl: params.runtimeUrl,
-      modelProvider: params.modelProvider,
-      cacheExpiryTime: params.cacheExpiryTime,
-      batchConfig: params.batchConfig,
-      runtimeTranslation: params.runtimeTranslation,
-      _versionId: params._versionId,
-    };
 
     // Create cache miss handlers
     const loadTranslations = routeCreateTranslationLoader({
@@ -150,9 +144,10 @@ class I18nCacheCore<TranslationValue extends Translation = Translation> {
     const loadDictionary = params.loadDictionary ?? (() => Promise.resolve({}));
     this.createMissingTranslationResolver =
       dependencies.createMissingTranslationResolver;
+    this.versionId = params._versionId;
 
     // Setup locale-keyed caches
-    const ttl = this.config.cacheExpiryTime;
+    const ttl = params.cacheExpiryTime;
     this.translations = new ResourceCache<
       Locale,
       TranslationsCache<TranslationValue>
@@ -209,7 +204,7 @@ class I18nCacheCore<TranslationValue extends Translation = Translation> {
    * Get the version ID
    */
   getVersionId(): string | undefined {
-    return this.config._versionId;
+    return this.versionId;
   }
 
   // ========== Translation Updates ========== //
@@ -709,6 +704,35 @@ class I18nCache<
 }
 
 export { I18nCache, I18nCacheCore };
+
+type GTMissingTranslationResolverParams = Pick<
+  I18nCacheConstructorParams,
+  'batchConfig' | 'modelProvider' | 'runtimeTranslation'
+>;
+
+export function createGTMissingTranslationResolver<
+  TranslationValue extends Translation = Translation,
+>({
+  batchConfig,
+  modelProvider,
+  runtimeTranslation,
+}: GTMissingTranslationResolverParams): CreateMissingTranslationResolver<TranslationValue> {
+  const metadata: RuntimeTranslateManyOptions = {
+    ...(modelProvider && { modelProvider }),
+    ...runtimeTranslation?.metadata,
+  };
+  const createTranslateMany = createTranslateManyFactory(
+    getI18nConfig().getGTClass(),
+    runtimeTranslation?.timeout ?? DEFAULT_TRANSLATION_TIMEOUT,
+    metadata
+  );
+
+  return (locale) =>
+    createBatchedMissingTranslationResolver<TranslationValue>(
+      createTranslateMany(locale),
+      batchConfig
+    );
+}
 
 // ===== Helper Functions ===== //
 

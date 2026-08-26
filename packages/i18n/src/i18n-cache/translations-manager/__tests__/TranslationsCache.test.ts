@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { TranslationsCache } from '../TranslationsCache';
 import {
   createBatchedMissingTranslationResolver,
+  TranslationsCache,
   type TranslationBatchConfig,
-} from '../MissingTranslationResolver';
+} from '../TranslationsCache';
 import { hashMessage } from '../../../utils/hashMessage';
 import { LookupOptions } from '../../../translation-functions/types/options';
 import type { Content } from '@generaltranslation/format/types';

@@ -15,12 +15,15 @@ export {
 export { createLookupOptions } from './translation-functions/internal/helpers';
 export { renderDictionaryEntry } from './translation-functions/internal/renderDictionaryEntry';
 export { renderDictionaryObject } from './translation-functions/internal/renderDictionaryObject';
-export { I18nCache, I18nCacheCore } from './i18n-cache/I18nCache';
+export {
+  createGTMissingTranslationResolver,
+  I18nCache,
+  I18nCacheCore,
+} from './i18n-cache/I18nCache';
 export type {
   I18nCacheDependencies,
   TranslationsCacheMissEvent,
 } from './i18n-cache/I18nCache';
-export { createGTMissingTranslationResolver } from './i18n-cache/createGTMissingTranslationResolver';
 export { ReadonlyConditionStore } from './condition-store/ReadonlyConditionStore';
 export type { ReadonlyConditionStoreParams } from './condition-store/ReadonlyConditionStore';
 export { WritableConditionStore } from './condition-store/WritableConditionStore';

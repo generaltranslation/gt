@@ -1,8 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { initializeI18nConfig } from 'gt-i18n/internal';
 import { setReactI18nCache } from '../../i18n-cache/singleton-operations';
-import { I18nStore } from '../RuntimeI18nStore';
-import { I18nStoreCore } from '../I18nStore';
+import { I18nStore, I18nStoreCore } from '../I18nStore';
 import type { ReactI18nCache } from '../../i18n-cache/ReactI18nCache';
 import type { TranslateLookup } from '../storeTypes';
 

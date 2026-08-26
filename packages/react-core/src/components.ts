@@ -17,5 +17,4 @@ export { InternalLocaleSelector } from './components/helpers/InternalLocaleSelec
 export { InternalRegionSelector } from './components/helpers/InternalRegionSelector';
 export { InternalGTProvider } from './context/InternalGTProvider';
 export type { InternalGTProviderProps } from './context/InternalGTProvider';
-export { I18nStoreCore } from './i18n-store/I18nStore';
-export { I18nStore } from './i18n-store/RuntimeI18nStore';
+export { I18nStore, I18nStoreCore } from './i18n-store/I18nStore';
