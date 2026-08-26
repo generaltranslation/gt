@@ -1034,6 +1034,9 @@ importers:
 
   packages/core:
     dependencies:
+      '@generaltranslation/api':
+        specifier: workspace:*
+        version: link:../api
       '@generaltranslation/format':
         specifier: workspace:*
         version: link:../format
