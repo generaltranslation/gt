@@ -2,8 +2,42 @@
   "openapi": "3.1.0",
   "info": {
     "title": "General Translation API",
-    "version": "2026-03-06.v1"
+    "version": "2026-03-06.v1",
+    "description": "The public General Translation API. Use it to upload source content and translated files, download translations, queue and translate content, create projects, manage branches and tags, and read project and job status.\n\nMost endpoints operate on a single project. All endpoints live under `https://api.gtx.dev`.\n\nAuthenticate every request with an API key as a bearer token in the standard `Authorization: Bearer <key>` header. Project keys (`gtx-api-`, `gtx-dev-`) are bound to one project. Organization keys (`gtx-org-`) work across projects but must include the target project in the `gt-project-id` header for project-scoped routes. Organization-scoped routes, such as `POST /v2/projects`, derive the organization from the key and do not use a `gt-project-id` header.",
+    "contact": {
+      "name": "General Translation Support",
+      "email": "support@generaltranslation.com",
+      "url": "https://generaltranslation.com"
+    }
   },
+  "servers": [
+    {
+      "url": "https://api.gtx.dev",
+      "description": "General Translation API"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Files",
+      "description": "Upload, download, publish, move, and inspect project files."
+    },
+    {
+      "name": "Context",
+      "description": "Generate translation context such as glossaries and instructions."
+    },
+    {
+      "name": "Translation",
+      "description": "Translate content, queue files for translation, and read translation job status."
+    },
+    {
+      "name": "Project",
+      "description": "Create and manage projects, assets, branches, and file version tags."
+    },
+    {
+      "name": "CLI Wizard",
+      "description": "Create and manage internal CLI wizard sessions."
+    }
+  ],
   "components": {
     "securitySchemes": {
       "BearerAuth": {
@@ -262,7 +296,8 @@
     "/v2/projects": {
       "post": {
         "operationId": "createProject",
-        "tags": ["Projects"],
+        "summary": "Create a Project",
+        "description": "Create a Project in the Organization associated with an Organization API key. The key must have the `org:projects:create` permission. Project keys cannot use this endpoint. Enabling CDN delivery also requires `project:write`.",
         "security": [
           {
             "BearerAuth": []
@@ -446,13 +481,15 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Project"]
       }
     },
     "/v2/project/files/upload-files": {
       "post": {
         "operationId": "uploadSourceFiles",
-        "tags": ["Files"],
+        "summary": "Upload source files",
+        "description": "Upload one or more source files to the project. Max 100 files per request.",
         "security": [
           {
             "BearerAuth": []
@@ -473,6 +510,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -746,13 +793,15 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Files"]
       }
     },
     "/v2/project/files/upload-translations": {
       "post": {
         "operationId": "uploadTranslations",
-        "tags": ["Files"],
+        "summary": "Upload translated files",
+        "description": "Upload translated files linked to their source files. Max 100 files per request.",
         "security": [
           {
             "BearerAuth": []
@@ -773,6 +822,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -1113,13 +1172,15 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Files"]
       }
     },
     "/v2/project/assets": {
       "post": {
         "operationId": "uploadAssets",
-        "tags": ["Assets"],
+        "summary": "Upload Project assets",
+        "description": "Upload OpenType or TrueType fonts through a Project and make them available to Lottie translation workflows across its Organization. Each font is keyed by a normalized identity derived from its family, weight, and italic style (from the supplied `family` and `style`, or from the font metadata and file name). Re-uploading the same identity overwrites the existing asset, so complete retries after a `500` response are safe.",
         "security": [
           {
             "BearerAuth": []
@@ -1140,6 +1201,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -1167,7 +1238,7 @@
                           "type": "string",
                           "minLength": 1,
                           "maxLength": 255,
-                          "pattern": "\\.(ttf|otf)$/i"
+                          "pattern": "\\.([tT][tT][fF]|[oO][tT][fF])$"
                         },
                         "family": {
                           "type": "string",
@@ -1332,13 +1403,15 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Project"]
       }
     },
     "/v2/project/files/diffs": {
       "post": {
         "operationId": "submitUserEditDiffs",
-        "tags": ["Files"],
+        "summary": "Submit translation diffs",
+        "description": "Overwrite translations with user-provided localized content.",
         "security": [
           {
             "BearerAuth": []
@@ -1359,6 +1432,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -1531,13 +1614,16 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Files"]
       }
     },
     "/v2/project/setup/should-generate": {
       "get": {
         "operationId": "shouldGenerateProjectContext",
-        "tags": ["Project setup"],
+        "summary": "Check if context generation is needed",
+        "deprecated": true,
+        "description": "Check whether the Project needs translation context generated. This deprecated endpoint is retained for backward compatibility and is no longer called by current clients.",
         "security": [
           {
             "BearerAuth": []
@@ -1558,6 +1644,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -1668,13 +1764,15 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Context"]
       }
     },
     "/v2/project/setup/generate": {
       "post": {
         "operationId": "generateProjectContext",
-        "tags": ["Project setup"],
+        "summary": "Generate translation context",
+        "description": "Generate glossaries and translation instructions for the project.",
         "security": [
           {
             "BearerAuth": []
@@ -1695,6 +1793,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -1883,13 +1991,16 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Context"]
       }
     },
     "/v2/project/setup/status/{jobId}": {
       "get": {
         "operationId": "getProjectContextGenerationStatus",
-        "tags": ["Project setup"],
+        "summary": "Get context generation job status",
+        "deprecated": true,
+        "description": "Track a context generation job. This deprecated endpoint is retained for backward compatibility; new integrations should use `POST /v2/project/jobs/info`.",
         "security": [
           {
             "BearerAuth": []
@@ -1919,6 +2030,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -2047,13 +2168,15 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Context"]
       }
     },
     "/v2/project/translations/enqueue": {
       "post": {
         "operationId": "enqueueFileTranslations",
-        "tags": ["Translations"],
+        "summary": "Queue files for translation",
+        "description": "Enqueue uploaded source files for background translation. Max 100 files per request. The response shape depends on the requested `gt-api-version`.",
         "security": [
           {
             "BearerAuth": []
@@ -2074,6 +2197,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -2477,13 +2610,15 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Translation"]
       }
     },
     "/v2/project/files/publish": {
       "post": {
         "operationId": "publishFiles",
-        "tags": ["Files"],
+        "summary": "Publish or unpublish files",
+        "description": "Publish or unpublish translated files to the CDN. Requires CDN to be enabled.",
         "security": [
           {
             "BearerAuth": []
@@ -2504,6 +2639,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -2696,13 +2841,16 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Files"]
       }
     },
     "/v2/project/files/download/{fileId}": {
       "get": {
         "operationId": "downloadFile",
-        "tags": ["Files"],
+        "summary": "Download a single file",
+        "deprecated": true,
+        "description": "Download a single source or translated file. This deprecated endpoint is retained for backward compatibility; new integrations should use `POST /v2/project/files/download`.",
         "security": [
           {
             "BearerAuth": []
@@ -2756,6 +2904,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -2886,13 +3044,15 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Files"]
       }
     },
     "/v2/project/files/download": {
       "post": {
         "operationId": "downloadFiles",
-        "tags": ["Files"],
+        "summary": "Download multiple files",
+        "description": "Download up to 100 source or translated files in one request.",
         "security": [
           {
             "BearerAuth": []
@@ -2913,6 +3073,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -3131,13 +3301,15 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Files"]
       }
     },
     "/v2/project/branches/info": {
       "post": {
         "operationId": "getBranchInfo",
-        "tags": ["Branches"],
+        "summary": "Get branch information",
+        "description": "Return the Project's default branch and any branches requested by name.",
         "security": [
           {
             "BearerAuth": []
@@ -3158,6 +3330,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -3300,13 +3482,15 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Project"]
       }
     },
     "/v2/project/branches/create": {
       "post": {
         "operationId": "createBranch",
-        "tags": ["Branches"],
+        "summary": "Create a branch",
+        "description": "Create a new branch, or rename and confirm the default branch.",
         "security": [
           {
             "BearerAuth": []
@@ -3327,6 +3511,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -3473,13 +3667,15 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Project"]
       }
     },
     "/v2/project/tags/create": {
       "post": {
         "operationId": "createTag",
-        "tags": ["Tags"],
+        "summary": "Create or update a tag",
+        "description": "Create or upsert a tag that points at a set of file versions.",
         "security": [
           {
             "BearerAuth": []
@@ -3500,6 +3696,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -3680,13 +3886,15 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Project"]
       }
     },
     "/v2/project/info/{projectId}": {
       "get": {
         "operationId": "getProjectInfo",
-        "tags": ["Projects"],
+        "summary": "Get Project information",
+        "description": "Read the authenticated Project's name, Organization ID, locale settings, and auto-approval setting.",
         "security": [
           {
             "BearerAuth": []
@@ -3716,6 +3924,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -3851,11 +4069,13 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Project"]
       },
       "post": {
         "operationId": "updateProjectInfo",
-        "tags": ["Projects"],
+        "summary": "Update Project information",
+        "description": "Update the Project's default locale or CDN delivery setting.",
         "security": [
           {
             "BearerAuth": []
@@ -3885,6 +4105,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -4029,13 +4259,15 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Project"]
       }
     },
     "/v2/project/jobs/info": {
       "post": {
         "operationId": "getTranslationJobInfo",
-        "tags": ["Jobs"],
+        "summary": "Get translation job status",
+        "description": "Return normalized status information for one or more queued translation or context generation jobs.",
         "security": [
           {
             "BearerAuth": []
@@ -4056,6 +4288,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -4274,13 +4516,15 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Translation"]
       }
     },
     "/v2/translate": {
       "post": {
         "operationId": "translate",
-        "tags": ["Translation"],
+        "summary": "Translate content at runtime",
+        "description": "Translate one or more strings or structured content entries with caching and memoization. Development API keys are accepted for this endpoint.",
         "security": [
           {
             "BearerAuth": []
@@ -4301,6 +4545,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -4455,13 +4709,15 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Translation"]
       }
     },
     "/v2/project/files/info": {
       "post": {
         "operationId": "getFileInfo",
-        "tags": ["Files"],
+        "summary": "Get file metadata",
+        "description": "Get detailed metadata for specific source and translated files.",
         "security": [
           {
             "BearerAuth": []
@@ -4482,6 +4738,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -4766,13 +5032,15 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Files"]
       }
     },
     "/v2/project/translations/files/status/{fileId}": {
       "get": {
         "operationId": "getTranslationStatus",
-        "tags": ["Files"],
+        "summary": "Get translation status for a file",
+        "description": "Return translation progress and availability by locale for one source file, along with its source metadata.",
         "security": [
           {
             "BearerAuth": []
@@ -4818,6 +5086,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -5020,13 +5298,15 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Files"]
       }
     },
     "/v2/project/files/moves": {
       "post": {
         "operationId": "processFileMoves",
-        "tags": ["Files"],
+        "summary": "Move or rename files",
+        "description": "Clone source files and their translations under new file IDs.",
         "security": [
           {
             "BearerAuth": []
@@ -5047,6 +5327,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -5251,13 +5541,15 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Files"]
       }
     },
     "/v2/project/files/orphaned": {
       "post": {
         "operationId": "getOrphanedFiles",
-        "tags": ["Files"],
+        "summary": "Find orphaned files",
+        "description": "Return files on a branch that are not present in the provided file ID list.",
         "security": [
           {
             "BearerAuth": []
@@ -5278,6 +5570,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -5442,12 +5744,16 @@
               }
             }
           }
-        }
+        },
+        "tags": ["Files"]
       }
     },
     "/cli/wizard/session": {
       "post": {
         "operationId": "createCliWizardSession",
+        "x-internal": true,
+        "summary": "Create a CLI wizard session",
+        "description": "Create a temporary session for CLI browser authentication.",
         "tags": ["CLI Wizard"],
         "parameters": [
           {
@@ -5554,6 +5860,9 @@
     "/cli/wizard/{sessionId}": {
       "get": {
         "operationId": "getCliWizardSession",
+        "x-internal": true,
+        "summary": "Get a CLI wizard session",
+        "description": "Get credentials for a completed CLI wizard session or its current waiting status.",
         "tags": ["CLI Wizard"],
         "parameters": [
           {
@@ -5682,6 +5991,9 @@
       },
       "delete": {
         "operationId": "deleteCliWizardSession",
+        "x-internal": true,
+        "summary": "Delete a CLI wizard session",
+        "description": "Delete a completed or abandoned CLI wizard session.",
         "tags": ["CLI Wizard"],
         "parameters": [
           {
