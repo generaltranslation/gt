@@ -1,7 +1,8 @@
-export { awaitJobs } from './wrappers/awaitJobs';
+export { awaitJobs, pollJobs } from './wrappers/awaitJobs';
 export type {
   AwaitJobsOptions,
   AwaitJobsResult,
+  GetJobStatuses,
   JobResult,
 } from './wrappers/awaitJobs';
 export {
