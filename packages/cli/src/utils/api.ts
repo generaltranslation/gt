@@ -4,7 +4,6 @@ import {
 } from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import {
-  awaitJobs as awaitApiJobs,
   createApiClient,
   createBranch,
   createProject,
@@ -20,6 +19,7 @@ import {
   getOrphanedFiles,
   getProjectContextGenerationStatus,
   getTranslationJobInfo,
+  pollJobs,
   processBatches,
   processFileMoves,
   publishFiles,
@@ -294,7 +294,20 @@ export const api = {
   },
 
   async awaitJobs(jobIds: readonly string[], options?: AwaitJobsOptions) {
-    return awaitApiJobs(client, jobIds, options);
+    // Poll through responseData so HTTP failures throw ApiError with the
+    // status code instead of the decoded response body.
+    return pollJobs(
+      jobIds,
+      async (pendingJobIds, signal) =>
+        responseData(
+          await getTranslationJobInfo({
+            body: { jobIds: pendingJobIds },
+            client,
+            signal,
+          })
+        ),
+      options
+    );
   },
 
   async enqueueFiles(
