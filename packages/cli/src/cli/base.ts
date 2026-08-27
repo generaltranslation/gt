@@ -60,6 +60,7 @@ import updateConfig from '../fs/config/updateConfig.js';
 import { loadConfig } from '../fs/config/loadConfig.js';
 import { createLoadTranslationsFile } from '../fs/createLoadTranslationsFile.js';
 import { saveLocalEdits } from '../api/saveLocalEdits.js';
+import { hasValidCredentials } from './commands/utils/validation.js';
 import processSharedStaticAssets, {
   mirrorAssetsToLocales,
 } from '../utils/sharedStaticAssets.js';
@@ -305,6 +306,7 @@ export class BaseCLI {
         const settings = await generateSettings(initOptions, undefined, {
           requireConfig: true,
         });
+        if (!hasValidCredentials(settings)) return exitSync(1);
         await saveLocalEdits(settings);
         logger.endCommand('Saved local edits');
       });
