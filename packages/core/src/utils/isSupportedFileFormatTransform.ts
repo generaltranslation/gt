@@ -15,6 +15,7 @@ const SUPPORTED_TRANSFORMATIONS = {
   TXT: ['TXT'],
   TWILIO_CONTENT_JSON: ['TWILIO_CONTENT_JSON'],
   LOTTIE: ['LOTTIE'],
+  SVG: ['SVG'],
 } as const satisfies Record<FileFormat, FileFormat[]>;
 
 /**

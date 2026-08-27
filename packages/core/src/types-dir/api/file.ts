@@ -2,20 +2,7 @@ import type { DataFormat } from '@generaltranslation/format/types';
 import { Updates } from './enqueueFiles';
 import type { JsonObject } from './json';
 
-export type FileFormat =
-  | 'GTJSON'
-  | 'JSON'
-  | 'PO'
-  | 'POT'
-  | 'YAML'
-  | 'MDX'
-  | 'MD'
-  | 'TS'
-  | 'JS'
-  | 'HTML'
-  | 'TXT'
-  | 'TWILIO_CONTENT_JSON'
-  | 'LOTTIE';
+export type FileFormat = import('@generaltranslation/api').FileFormat;
 
 /**
  * File formats whose content is binary (e.g. zip bundles) rather than text.

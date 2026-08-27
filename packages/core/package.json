@@ -51,6 +51,7 @@
     "definition": "dist/index.d.cts"
   },
   "dependencies": {
+    "@generaltranslation/api": "workspace:*",
     "@generaltranslation/icu": "workspace:*",
     "@noble/hashes": "^2.2.0",
     "@generaltranslation/format": "workspace:*"

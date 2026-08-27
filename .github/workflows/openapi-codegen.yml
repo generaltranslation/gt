@@ -1,0 +1,76 @@
+name: Regenerate OpenAPI SDK
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'packages/api/spec/openapi.json'
+      - 'packages/api/src/generated/**'
+      - 'packages/api/openapi-ts.config.ts'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: openapi-codegen-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  codegen:
+    runs-on: ubuntu-latest
+    env:
+      # Fork PRs get a read-only token, so we verify instead of pushing.
+      SAME_REPO: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    steps:
+      - name: Checkout pull request
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          # Same-repo: check out the branch so we can push to it. Fork: default merge ref.
+          ref: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref || '' }}
+          # Don't leave a write-capable token in .git/config while PR-controlled
+          # install/codegen scripts run; the push step supplies its own credential.
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate SDK
+        run: pnpm --filter @generaltranslation/api codegen
+
+      - name: Generate GitHub App token
+        if: env.SAME_REPO == 'true'
+        id: gt-app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.GT_SYNC_APP_CLIENT_ID }}
+          private-key: ${{ secrets.GT_SYNC_APP_PRIVATE_KEY }}
+          permission-contents: write
+
+      - name: Commit generated SDK or fail if stale
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          # PAT so the bot commit triggers CI; GITHUB_TOKEN pushes don't fire workflow events.
+          PUSH_TOKEN: ${{ steps.gt-app-token.outputs.token }}
+        run: |
+          git add packages/api/src/generated packages/api/spec/openapi.json
+          if git diff --cached --quiet; then
+            echo 'Generated SDK is already current.'
+            exit 0
+          fi
+          if [ "$SAME_REPO" != 'true' ]; then
+            echo '::error::Generated SDK is out of date. Run `pnpm --filter @generaltranslation/api codegen` and commit the result.'
+            exit 1
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'chore(api): regenerate OpenAPI SDK'
+          git push "https://x-access-token:${PUSH_TOKEN}@github.com/${{ github.repository }}.git" "HEAD:${HEAD_REF}"

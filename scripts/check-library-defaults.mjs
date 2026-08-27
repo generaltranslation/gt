@@ -40,6 +40,17 @@ export function normalizeRepositoryPath(relativePath) {
 
 export const defaultGroups = [
   {
+    // The API package owns the pinned gt-api-version contract value. Core's
+    // copy stays synchronized until it migrates to re-export from
+    // @generaltranslation/api.
+    name: 'API_VERSION',
+    declarations: [
+      'packages/api/src/wrappers/client.ts',
+      'packages/core/src/translate/api.ts',
+    ],
+    exceptions: [],
+  },
+  {
     name: 'libraryDefaultLocale',
     declarations: [
       'packages/core/src/settings/settings.ts',
@@ -81,6 +92,20 @@ export const defaultGroups = [
         reason:
           'The matching duration is a rate-limit retry delay, not a request timeout default.',
         matches: isWithinVariableDeclaration('RATE_LIMIT_RETRY_DELAY_MS'),
+        expectedMatches: 1,
+      },
+      {
+        path: 'packages/api/src/wrappers/transport.ts',
+        reason:
+          'The matching duration is a rate-limit retry delay, not a request timeout default.',
+        matches: isWithinVariableDeclaration('RATE_LIMIT_RETRY_DELAY_MS'),
+        expectedMatches: 1,
+      },
+      {
+        path: 'packages/api/src/wrappers/transport.ts',
+        reason:
+          'The standalone API package cannot import the core package that consumes it.',
+        matches: isWithinVariableDeclaration('DEFAULT_TIMEOUT_MS'),
         expectedMatches: 1,
       },
       {
@@ -214,6 +239,8 @@ function collectSourceFiles(repositoryRoot, directory, files = []) {
     if (!/\.(?:[cm]?[jt]sx?)$/.test(entry.name)) continue;
     if (/\.(?:test|spec)\.[cm]?[jt]sx?$/.test(entry.name)) continue;
     if (/\.d\.[cm]?ts$/.test(entry.name)) continue;
+    // Generated code restates spec-derived values and cannot import constants.
+    if (/\.gen\.[cm]?[jt]sx?$/.test(entry.name)) continue;
     files.push(
       normalizeRepositoryPath(path.relative(repositoryRoot, absolutePath))
     );

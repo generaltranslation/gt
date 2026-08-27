@@ -57,6 +57,7 @@ const FILE_FORMAT_EXTENSIONS = {
   TXT: 'txt',
   TWILIO_CONTENT_JSON: 'json',
   LOTTIE: 'lottie',
+  SVG: 'svg',
 } as const satisfies Record<FileFormat, string>;
 
 /**

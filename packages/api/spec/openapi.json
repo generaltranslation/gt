@@ -1,0 +1,5804 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "General Translation API",
+    "version": "2026-03-06.v1"
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": ["error"]
+      },
+      "FileFormat": {
+        "type": "string",
+        "enum": [
+          "GTJSON",
+          "MDX",
+          "JSON",
+          "YAML",
+          "MD",
+          "TS",
+          "JS",
+          "HTML",
+          "TXT",
+          "PO",
+          "POT",
+          "TWILIO_CONTENT_JSON",
+          "LOTTIE",
+          "SVG"
+        ]
+      },
+      "Branch": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "name"]
+      },
+      "RuntimeTranslationResponse": {
+        "type": "object",
+        "additionalProperties": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "enum": [true]
+                },
+                "translation": {},
+                "dataFormat": {
+                  "type": "string",
+                  "enum": ["JSX", "ICU", "I18NEXT", "STRING"]
+                },
+                "locale": {
+                  "type": "string"
+                }
+              },
+              "required": ["success", "dataFormat", "locale"]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "enum": [false]
+                },
+                "error": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "number"
+                }
+              },
+              "required": ["success", "error", "code"]
+            }
+          ]
+        }
+      },
+      "RuntimeTranslationRequest": {
+        "type": "object",
+        "properties": {
+          "requests": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "source": {},
+                "metadata": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "hash": {
+                      "type": "string"
+                    },
+                    "context": {
+                      "type": "string"
+                    },
+                    "maxChars": {
+                      "type": "number"
+                    },
+                    "dataFormat": {
+                      "type": "string",
+                      "enum": ["JSX", "ICU", "I18NEXT", "STRING"],
+                      "default": "STRING"
+                    },
+                    "actionType": {
+                      "type": "string",
+                      "enum": ["fast"],
+                      "default": "fast"
+                    },
+                    "sourceCode": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "before": {
+                              "type": "string"
+                            },
+                            "target": {
+                              "type": "string"
+                            },
+                            "after": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["before", "target", "after"]
+                        }
+                      }
+                    }
+                  },
+                  "default": {
+                    "dataFormat": "STRING",
+                    "actionType": "fast"
+                  }
+                }
+              }
+            }
+          },
+          "targetLocale": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sourceLocale": {
+            "type": "string",
+            "minLength": 1
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "modelProvider": {
+                "type": "string",
+                "enum": ["ANTHROPIC", "OPENAI", "XAI", "GOOGLE"]
+              }
+            }
+          }
+        },
+        "required": ["requests", "targetLocale", "sourceLocale", "metadata"]
+      },
+      "CreateCliWizardSessionResponse": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          }
+        },
+        "required": ["sessionId"]
+      },
+      "CreateCliWizardSessionRequest": {
+        "type": "object",
+        "properties": {
+          "keyType": {
+            "type": "string",
+            "enum": ["development", "production", "all"],
+            "default": "production"
+          }
+        }
+      },
+      "CliWizardSessionReadyResponse": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "apiKeys": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": ["development", "production"]
+                    }
+                  },
+                  "required": ["key", "type"]
+                }
+              },
+              "projectId": {
+                "type": "string"
+              }
+            },
+            "required": ["apiKeys", "projectId"]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "apiKey": {
+                "type": "string"
+              },
+              "projectId": {
+                "type": "string"
+              }
+            },
+            "required": ["apiKey", "projectId"]
+          }
+        ]
+      },
+      "CliWizardSessionWaitingResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": ["message"]
+      },
+      "DeleteCliWizardSessionResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": ["message"]
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/v2/projects": {
+      "post": {
+        "operationId": "createProject",
+        "tags": ["Projects"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "defaultLocale": {
+                    "type": "string"
+                  },
+                  "cdnEnabled": {
+                    "type": "boolean"
+                  }
+                },
+                "required": ["name", "defaultLocale"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Project created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "project": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "orgId": {
+                          "type": "string"
+                        },
+                        "defaultLocale": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id", "name", "orgId", "defaultLocale"]
+                    }
+                  },
+                  "required": ["project"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/project/files/upload-files": {
+      "post": {
+        "operationId": "uploadSourceFiles",
+        "tags": ["Files"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "data": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "source": {
+                          "type": "object",
+                          "properties": {
+                            "content": {
+                              "type": "string"
+                            },
+                            "fileName": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "fileFormat": {
+                              "type": "string",
+                              "enum": [
+                                "GTJSON",
+                                "MDX",
+                                "JSON",
+                                "YAML",
+                                "MD",
+                                "TS",
+                                "JS",
+                                "HTML",
+                                "TXT",
+                                "PO",
+                                "POT",
+                                "TWILIO_CONTENT_JSON",
+                                "LOTTIE",
+                                "SVG"
+                              ]
+                            },
+                            "dataFormat": {
+                              "type": "string"
+                            },
+                            "locale": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "fileId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "versionId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "branchId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "checkedOutBranchId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "incomingBranchId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "formatMetadata": {
+                              "type": "object",
+                              "additionalProperties": {}
+                            }
+                          },
+                          "required": [
+                            "content",
+                            "fileName",
+                            "fileFormat",
+                            "locale"
+                          ]
+                        }
+                      },
+                      "required": ["source"]
+                    },
+                    "minItems": 1,
+                    "maxItems": 100
+                  },
+                  "sourceLocale": {
+                    "type": "string"
+                  }
+                },
+                "required": ["data"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Uploaded source files",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "uploadedFiles": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "branchId": {
+                            "type": "string"
+                          },
+                          "fileId": {
+                            "type": "string"
+                          },
+                          "versionId": {
+                            "type": "string"
+                          },
+                          "fileName": {
+                            "type": "string"
+                          },
+                          "fileFormat": {
+                            "$ref": "#/components/schemas/FileFormat"
+                          },
+                          "dataFormat": {
+                            "type": "string"
+                          },
+                          "locale": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "fileId",
+                          "versionId",
+                          "fileName",
+                          "fileFormat"
+                        ]
+                      }
+                    },
+                    "count": {
+                      "type": "number"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["uploadedFiles", "count", "message"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/project/files/upload-translations": {
+      "post": {
+        "operationId": "uploadTranslations",
+        "tags": ["Files"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "data": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "source": {
+                          "type": "object",
+                          "properties": {
+                            "content": {
+                              "type": "string"
+                            },
+                            "fileName": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "fileFormat": {
+                              "type": "string",
+                              "enum": [
+                                "GTJSON",
+                                "MDX",
+                                "JSON",
+                                "YAML",
+                                "MD",
+                                "TS",
+                                "JS",
+                                "HTML",
+                                "TXT",
+                                "PO",
+                                "POT",
+                                "TWILIO_CONTENT_JSON",
+                                "LOTTIE",
+                                "SVG"
+                              ]
+                            },
+                            "dataFormat": {
+                              "type": "string"
+                            },
+                            "locale": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "fileId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "versionId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "branchId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "checkedOutBranchId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "incomingBranchId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "formatMetadata": {
+                              "type": "object",
+                              "additionalProperties": {}
+                            }
+                          },
+                          "required": [
+                            "content",
+                            "fileName",
+                            "fileFormat",
+                            "locale"
+                          ]
+                        },
+                        "translations": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "content": {
+                                "type": "string"
+                              },
+                              "fileName": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "fileFormat": {
+                                "type": "string",
+                                "enum": [
+                                  "GTJSON",
+                                  "MDX",
+                                  "JSON",
+                                  "YAML",
+                                  "MD",
+                                  "TS",
+                                  "JS",
+                                  "HTML",
+                                  "TXT",
+                                  "PO",
+                                  "POT",
+                                  "TWILIO_CONTENT_JSON",
+                                  "LOTTIE",
+                                  "SVG"
+                                ]
+                              },
+                              "dataFormat": {
+                                "type": "string"
+                              },
+                              "locale": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "transformFormat": {
+                                "type": "string",
+                                "enum": [
+                                  "GTJSON",
+                                  "MDX",
+                                  "JSON",
+                                  "YAML",
+                                  "MD",
+                                  "TS",
+                                  "JS",
+                                  "HTML",
+                                  "TXT",
+                                  "PO",
+                                  "POT",
+                                  "TWILIO_CONTENT_JSON",
+                                  "LOTTIE",
+                                  "SVG"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "content",
+                              "fileName",
+                              "fileFormat",
+                              "locale"
+                            ]
+                          },
+                          "minItems": 1
+                        }
+                      },
+                      "required": ["source", "translations"]
+                    },
+                    "minItems": 1,
+                    "maxItems": 100
+                  },
+                  "sourceLocale": {
+                    "type": "string"
+                  }
+                },
+                "required": ["data"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Uploaded translation files",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "uploadedFiles": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "branchId": {
+                            "type": "string"
+                          },
+                          "fileId": {
+                            "type": "string"
+                          },
+                          "versionId": {
+                            "type": "string"
+                          },
+                          "fileName": {
+                            "type": "string"
+                          },
+                          "fileFormat": {
+                            "$ref": "#/components/schemas/FileFormat"
+                          },
+                          "dataFormat": {
+                            "type": "string"
+                          },
+                          "locale": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "fileId",
+                          "versionId",
+                          "fileName",
+                          "fileFormat"
+                        ]
+                      }
+                    },
+                    "count": {
+                      "type": "number"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["uploadedFiles", "count", "message"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/project/assets": {
+      "post": {
+        "operationId": "uploadAssets",
+        "tags": ["Assets"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "assets": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "assetType": {
+                          "type": "string",
+                          "enum": ["FONT"]
+                        },
+                        "content": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "fileName": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 255,
+                          "pattern": "\\.(ttf|otf)$/i"
+                        },
+                        "family": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 255
+                        },
+                        "style": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 100
+                        }
+                      },
+                      "required": ["assetType", "content", "fileName"]
+                    },
+                    "minItems": 1,
+                    "maxItems": 50
+                  }
+                },
+                "required": ["assets"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Uploaded assets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "assets": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "assetKey": {
+                            "type": "string"
+                          },
+                          "fileName": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["id", "assetKey", "fileName"]
+                      }
+                    },
+                    "count": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": ["assets", "count"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/project/files/diffs": {
+      "post": {
+        "operationId": "submitUserEditDiffs",
+        "tags": ["Files"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "projectId": {
+                    "type": "string"
+                  },
+                  "diffs": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "locale": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "diff": {
+                          "type": "string"
+                        },
+                        "branchId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "versionId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "fileId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "localContent": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "locale",
+                        "diff",
+                        "versionId",
+                        "fileId",
+                        "localContent"
+                      ]
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": ["diffs"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Processed user translation edits",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "filesProcessed": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "entriesReceived": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["filesProcessed", "entriesReceived", "message"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/project/setup/should-generate": {
+      "get": {
+        "operationId": "shouldGenerateProjectContext",
+        "tags": ["Project setup"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Whether project context should be generated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "shouldSetupProject": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["shouldSetupProject"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/project/setup/generate": {
+      "post": {
+        "operationId": "generateProjectContext",
+        "tags": ["Project setup"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "branchId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "fileId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "versionId": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["fileId", "versionId"]
+                    },
+                    "minItems": 1
+                  },
+                  "locales": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "force": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                },
+                "required": ["files"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Context generation status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": ["completed"]
+                        }
+                      },
+                      "required": ["status"]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "setupJobId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["queued"]
+                        }
+                      },
+                      "required": ["setupJobId", "status"]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/project/setup/status/{jobId}": {
+      "get": {
+        "operationId": "getProjectContextGenerationStatus",
+        "tags": ["Project setup"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "jobId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Context generation job status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": ["completed"]
+                        }
+                      },
+                      "required": ["status"]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "jobId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["queued", "processing", "failed", "unknown"]
+                        }
+                      },
+                      "required": ["jobId", "status"]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/project/translations/enqueue": {
+      "post": {
+        "operationId": "enqueueFileTranslations",
+        "tags": ["Translations"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "branchId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "fileId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "versionId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "fileName": {
+                          "type": "string"
+                        },
+                        "transformFormat": {
+                          "type": "string",
+                          "enum": [
+                            "GTJSON",
+                            "MDX",
+                            "JSON",
+                            "YAML",
+                            "MD",
+                            "TS",
+                            "JS",
+                            "HTML",
+                            "TXT",
+                            "PO",
+                            "POT",
+                            "TWILIO_CONTENT_JSON",
+                            "LOTTIE",
+                            "SVG"
+                          ]
+                        }
+                      },
+                      "required": ["fileId", "versionId"]
+                    },
+                    "minItems": 1,
+                    "maxItems": 100
+                  },
+                  "targetLocales": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "sourceLocale": {
+                    "type": "string"
+                  },
+                  "force": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "modelProvider": {
+                    "type": "string",
+                    "enum": ["ANTHROPIC", "OPENAI", "XAI", "GOOGLE"]
+                  },
+                  "publish": {
+                    "type": "boolean"
+                  }
+                },
+                "required": ["files"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Enqueued translations. Shape depends on gt-api-version (legacy before 2025-11-03.v1).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "jobData": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": ["file_translation"]
+                              },
+                              "sourceFileId": {
+                                "type": "string"
+                              },
+                              "fileId": {
+                                "type": "string"
+                              },
+                              "versionId": {
+                                "type": "string"
+                              },
+                              "branchId": {
+                                "type": "string"
+                              },
+                              "targetLocale": {
+                                "type": "string"
+                              },
+                              "projectId": {
+                                "type": "string"
+                              },
+                              "force": {
+                                "type": "boolean"
+                              },
+                              "outputFileFormat": {
+                                "$ref": "#/components/schemas/FileFormat"
+                              },
+                              "modelProvider": {
+                                "type": "string",
+                                "enum": ["ANTHROPIC", "OPENAI", "XAI", "GOOGLE"]
+                              },
+                              "glossaryRetranslate": {
+                                "type": "boolean"
+                              },
+                              "changedGlossaryTerms": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "onComplete": {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": ["google_drive_apply"]
+                                  },
+                                  "userId": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["kind"]
+                              }
+                            },
+                            "required": [
+                              "sourceFileId",
+                              "fileId",
+                              "versionId",
+                              "branchId",
+                              "targetLocale",
+                              "projectId",
+                              "force"
+                            ]
+                          }
+                        },
+                        "locales": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["jobData", "locales", "message"]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "translations": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "locale": {
+                                "type": "string"
+                              },
+                              "metadata": {},
+                              "fileId": {
+                                "type": "string"
+                              },
+                              "fileName": {
+                                "type": "string"
+                              },
+                              "versionId": {
+                                "type": "string"
+                              },
+                              "branchId": {
+                                "type": "string"
+                              },
+                              "id": {
+                                "type": "string"
+                              },
+                              "isReady": {
+                                "type": "boolean"
+                              },
+                              "downloadUrl": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "locale",
+                              "fileId",
+                              "fileName",
+                              "versionId",
+                              "branchId",
+                              "id",
+                              "isReady",
+                              "downloadUrl"
+                            ]
+                          }
+                        },
+                        "data": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "object",
+                            "properties": {
+                              "fileName": {
+                                "type": "string"
+                              },
+                              "versionId": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["fileName", "versionId"]
+                          }
+                        },
+                        "locales": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["translations", "data", "locales", "message"]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or missing source files",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "string"
+                        },
+                        "missing": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "fileId": {
+                                "type": "string"
+                              },
+                              "versionId": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["fileId", "versionId"]
+                          }
+                        },
+                        "count": {
+                          "type": "number"
+                        }
+                      },
+                      "required": ["error", "missing", "count"]
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/project/files/publish": {
+      "post": {
+        "operationId": "publishFiles",
+        "tags": ["Files"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fileId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "versionId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "branchId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "publish": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": ["fileId", "versionId", "publish"]
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": ["files"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "File publish results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "fileId": {
+                            "type": "string"
+                          },
+                          "versionId": {
+                            "type": "string"
+                          },
+                          "locale": {
+                            "type": "string"
+                          },
+                          "branchId": {
+                            "type": "string"
+                          },
+                          "success": {
+                            "type": "boolean"
+                          },
+                          "error": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "fileId",
+                          "versionId",
+                          "branchId",
+                          "success"
+                        ]
+                      }
+                    }
+                  },
+                  "required": ["results"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/project/files/download/{fileId}": {
+      "get": {
+        "operationId": "downloadFile",
+        "tags": ["Files"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "fileId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "branchId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "versionId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "locale",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Downloaded file",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["data"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "425": {
+            "description": "Translation is still processing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["processing"]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["status", "message"]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/project/files/download": {
+      "post": {
+        "operationId": "downloadFiles",
+        "tags": ["Files"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "fileId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "branchId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "versionId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "locale": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "useLatestAvailableVersion": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["fileId"]
+                },
+                "minItems": 1,
+                "maxItems": 100
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Downloaded files",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "files": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "branchId": {
+                            "type": "string"
+                          },
+                          "fileId": {
+                            "type": "string"
+                          },
+                          "versionId": {
+                            "type": "string"
+                          },
+                          "locale": {
+                            "type": "string"
+                          },
+                          "fileName": {
+                            "type": "string"
+                          },
+                          "data": {
+                            "type": "string"
+                          },
+                          "metadata": {
+                            "type": "object",
+                            "additionalProperties": {}
+                          },
+                          "fileFormat": {
+                            "$ref": "#/components/schemas/FileFormat"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "branchId",
+                          "fileId",
+                          "versionId",
+                          "data",
+                          "metadata",
+                          "fileFormat"
+                        ]
+                      }
+                    },
+                    "count": {
+                      "type": "number"
+                    },
+                    "pending": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "branchId": {
+                            "type": "string"
+                          },
+                          "fileId": {
+                            "type": "string"
+                          },
+                          "locale": {
+                            "type": "string"
+                          },
+                          "versionId": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "branchId",
+                          "fileId",
+                          "locale",
+                          "versionId"
+                        ]
+                      }
+                    }
+                  },
+                  "required": ["files", "count"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/project/branches/info": {
+      "post": {
+        "operationId": "getBranchInfo",
+        "tags": ["Branches"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "branchNames": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "default": []
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Branch information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "branches": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Branch"
+                      }
+                    },
+                    "defaultBranch": {
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/Branch"
+                        },
+                        {
+                          "type": ["object", "null"]
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["branches", "defaultBranch"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/project/branches/create": {
+      "post": {
+        "operationId": "createBranch",
+        "tags": ["Branches"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "branchName": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "defaultBranch": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                },
+                "required": ["branchName"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created or existing branch",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "branch": {
+                      "$ref": "#/components/schemas/Branch"
+                    }
+                  },
+                  "required": ["branch"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/project/tags/create": {
+      "post": {
+        "operationId": "createTag",
+        "tags": ["Tags"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tagId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fileId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "versionId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "branchId": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["fileId", "versionId", "branchId"]
+                    },
+                    "minItems": 1
+                  },
+                  "message": {
+                    "type": "string",
+                    "maxLength": 255
+                  }
+                },
+                "required": ["tagId", "files"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created or updated file tag",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "tag": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "tagId": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": ["string", "null"]
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "tagId",
+                        "message",
+                        "createdAt",
+                        "updatedAt"
+                      ]
+                    }
+                  },
+                  "required": ["tag"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/project/info/{projectId}": {
+      "get": {
+        "operationId": "getProjectInfo",
+        "tags": ["Projects"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "projectId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Project information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "orgId": {
+                      "type": "string"
+                    },
+                    "defaultLocale": {
+                      "type": ["string", "null"]
+                    },
+                    "currentLocales": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "autoApprove": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "orgId",
+                    "defaultLocale",
+                    "currentLocales",
+                    "autoApprove"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "updateProjectInfo",
+        "tags": ["Projects"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "projectId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "defaultLocale": {
+                    "type": "string"
+                  },
+                  "cdnEnabled": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Project settings updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [true]
+                    }
+                  },
+                  "required": ["success"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/project/jobs/info": {
+      "post": {
+        "operationId": "getTranslationJobInfo",
+        "tags": ["Jobs"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "jobIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": ["jobIds"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Translation job statuses",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "status": {
+                            "type": "string",
+                            "enum": ["queued"]
+                          },
+                          "jobId": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["status", "jobId"]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "status": {
+                            "type": "string",
+                            "enum": ["processing"]
+                          },
+                          "jobId": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["status", "jobId"]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "status": {
+                            "type": "string",
+                            "enum": ["failed"]
+                          },
+                          "jobId": {
+                            "type": "string"
+                          },
+                          "error": {
+                            "type": "object",
+                            "properties": {
+                              "message": {
+                                "type": ["string", "null"]
+                              }
+                            },
+                            "required": ["message"]
+                          }
+                        },
+                        "required": ["status", "jobId", "error"]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "status": {
+                            "type": "string",
+                            "enum": ["completed"]
+                          },
+                          "jobId": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["status", "jobId"]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "status": {
+                            "type": "string",
+                            "enum": ["unknown"]
+                          },
+                          "jobId": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["status", "jobId"]
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/translate": {
+      "post": {
+        "operationId": "translate",
+        "tags": ["Translation"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RuntimeTranslationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "All translations were served from cache",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuntimeTranslationResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Translations completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuntimeTranslationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/project/files/info": {
+      "post": {
+        "operationId": "getFileInfo",
+        "tags": ["Files"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sourceFiles": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fileId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "versionId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "branchId": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["fileId", "versionId", "branchId"]
+                    }
+                  },
+                  "translatedFiles": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fileId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "versionId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "branchId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "locale": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["fileId", "versionId", "branchId", "locale"]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "File information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sourceFiles": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "branchId": {
+                            "type": "string"
+                          },
+                          "fileId": {
+                            "type": "string"
+                          },
+                          "versionId": {
+                            "type": "string"
+                          },
+                          "fileName": {
+                            "type": "string"
+                          },
+                          "fileFormat": {
+                            "$ref": "#/components/schemas/FileFormat"
+                          },
+                          "dataFormat": {
+                            "type": ["string", "null"]
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "publishedAt": {
+                            "type": ["string", "null"],
+                            "format": "date-time"
+                          },
+                          "locales": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "sourceLocale": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "branchId",
+                          "fileId",
+                          "versionId",
+                          "fileName",
+                          "fileFormat",
+                          "dataFormat",
+                          "createdAt",
+                          "updatedAt",
+                          "publishedAt",
+                          "locales",
+                          "sourceLocale"
+                        ]
+                      }
+                    },
+                    "translatedFiles": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "branchId": {
+                            "type": "string"
+                          },
+                          "fileId": {
+                            "type": "string"
+                          },
+                          "versionId": {
+                            "type": "string"
+                          },
+                          "fileFormat": {
+                            "$ref": "#/components/schemas/FileFormat"
+                          },
+                          "dataFormat": {
+                            "type": ["string", "null"]
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "approvedAt": {
+                            "type": ["string", "null"],
+                            "format": "date-time"
+                          },
+                          "publishedAt": {
+                            "type": ["string", "null"],
+                            "format": "date-time"
+                          },
+                          "completedAt": {
+                            "type": ["string", "null"],
+                            "format": "date-time"
+                          },
+                          "locale": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "branchId",
+                          "fileId",
+                          "versionId",
+                          "fileFormat",
+                          "dataFormat",
+                          "createdAt",
+                          "updatedAt",
+                          "approvedAt",
+                          "publishedAt",
+                          "completedAt",
+                          "locale"
+                        ]
+                      }
+                    }
+                  },
+                  "required": ["sourceFiles", "translatedFiles"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/project/translations/files/status/{fileId}": {
+      "get": {
+        "operationId": "getTranslationStatus",
+        "tags": ["Files"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "fileId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "versionId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "branchId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Translation status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "translations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "locale": {
+                            "type": "string"
+                          },
+                          "completedAt": {
+                            "type": ["string", "null"],
+                            "format": "date-time"
+                          },
+                          "approvedAt": {
+                            "type": ["string", "null"],
+                            "format": "date-time"
+                          },
+                          "publishedAt": {
+                            "type": ["string", "null"],
+                            "format": "date-time"
+                          },
+                          "createdAt": {
+                            "type": ["string", "null"],
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": ["string", "null"],
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "locale",
+                          "completedAt",
+                          "approvedAt",
+                          "publishedAt",
+                          "createdAt",
+                          "updatedAt"
+                        ]
+                      }
+                    },
+                    "sourceFile": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "branchId": {
+                          "type": "string"
+                        },
+                        "fileId": {
+                          "type": "string"
+                        },
+                        "versionId": {
+                          "type": "string"
+                        },
+                        "fileName": {
+                          "type": "string"
+                        },
+                        "sourceLocale": {
+                          "type": "string"
+                        },
+                        "fileFormat": {
+                          "$ref": "#/components/schemas/FileFormat"
+                        },
+                        "dataFormat": {
+                          "type": ["string", "null"]
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "locales": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "branchId",
+                        "fileId",
+                        "versionId",
+                        "fileName",
+                        "sourceLocale",
+                        "fileFormat",
+                        "dataFormat",
+                        "createdAt",
+                        "updatedAt",
+                        "locales"
+                      ]
+                    }
+                  },
+                  "required": ["translations", "sourceFile"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/project/files/moves": {
+      "post": {
+        "operationId": "processFileMoves",
+        "tags": ["Files"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "branchId": {
+                    "type": "string"
+                  },
+                  "moves": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "oldFileId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "newFileId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "newFileName": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["oldFileId", "newFileId", "newFileName"]
+                    }
+                  }
+                },
+                "required": ["moves"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "File move results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "oldFileId": {
+                            "type": "string"
+                          },
+                          "newFileId": {
+                            "type": "string"
+                          },
+                          "success": {
+                            "type": "boolean"
+                          },
+                          "newSourceFileId": {
+                            "type": "string"
+                          },
+                          "clonedTranslationsCount": {
+                            "type": "integer"
+                          },
+                          "error": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["oldFileId", "newFileId", "success"]
+                      }
+                    },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "succeeded": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "failed": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": ["total", "succeeded", "failed"]
+                    }
+                  },
+                  "required": ["results"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/project/files/orphaned": {
+      "post": {
+        "operationId": "getOrphanedFiles",
+        "tags": ["Files"],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "branchId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "fileIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "default": []
+                  }
+                },
+                "required": ["branchId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Files present on the branch but absent from the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "orphanedFiles": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "fileId": {
+                            "type": "string"
+                          },
+                          "versionId": {
+                            "type": "string"
+                          },
+                          "fileName": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["fileId", "versionId", "fileName"]
+                      }
+                    }
+                  },
+                  "required": ["orphanedFiles"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cli/wizard/session": {
+      "post": {
+        "operationId": "createCliWizardSession",
+        "tags": ["CLI Wizard"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCliWizardSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "CLI wizard session created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateCliWizardSessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cli/wizard/{sessionId}": {
+      "get": {
+        "operationId": "getCliWizardSession",
+        "tags": ["CLI Wizard"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "sessionId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CLI wizard session credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CliWizardSessionReadyResponse"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "CLI wizard session is waiting for sign-in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CliWizardSessionWaitingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteCliWizardSession",
+        "tags": ["CLI Wizard"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "sessionId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CLI wizard session deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteCliWizardSessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {}
+}
