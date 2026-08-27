@@ -85,6 +85,34 @@ describe('gt api', () => {
     );
   });
 
+  it('includes network errors when no response is received', async () => {
+    const stderr: string[] = [];
+    const exit = vi.fn((code: number): never => {
+      throw new Error(`exit ${code}`);
+    });
+
+    await expect(
+      handleApiCommand(
+        '/v2/unreachable',
+        {
+          apiKey: 'api-key',
+          method: 'GET',
+          projectId: 'project-id',
+        },
+        {
+          exit,
+          fetch: async () => {
+            throw new Error('getaddrinfo ENOTFOUND api.example');
+          },
+          writeStderr: (output) => stderr.push(output),
+        }
+      )
+    ).rejects.toThrow('exit 1');
+
+    expect(stderr.join('')).toContain('getaddrinfo ENOTFOUND api.example');
+    expect(exit).toHaveBeenCalledOnce();
+  });
+
   it('writes error bodies verbatim and exits once on HTTP errors', async () => {
     const responseBody = '{\n  "error": "missing"\n}';
     const fetchMock = vi.fn<typeof fetch>(async () =>

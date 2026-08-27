@@ -4,7 +4,7 @@ import openApiSpec from '@generaltranslation/api/spec/openapi.json' with { type:
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
-} from 'generaltranslation/internal';
+} from '@generaltranslation/utils/diagnostics';
 import { generateSettings } from '../../config/generateSettings.js';
 import { exitSync } from '../../console/logging.js';
 import type { SharedFlags } from '../../types/index.js';
@@ -50,7 +50,8 @@ function parseHeaders(
         createDiagnosticMessage({
           source: 'gt',
           severity: 'Error',
-          whatHappened: `The API request header is invalid: ${header}`,
+          whatHappened: 'The API request header is invalid',
+          details: header,
           fix: 'Pass headers as `--header "Key: Value"`',
         }),
         dependencies
@@ -158,8 +159,8 @@ export async function handleApiCommand(
     return response;
   });
 
-  try {
-    await client.request({
+  const result = await client
+    .request({
       body,
       bodySerializer: body === undefined ? undefined : () => body,
       headers,
@@ -167,18 +168,18 @@ export async function handleApiCommand(
       parseAs: 'stream',
       throwOnError: false,
       url: normalizedEndpoint,
-    });
-  } catch (error) {
-    fail(
-      createDiagnosticMessage({
-        source: 'gt',
-        severity: 'Error',
-        whatHappened: 'The API request failed before a response was received',
-        details: formatDiagnosticErrorDetails(error),
-      }),
-      dependencies
+    })
+    .catch((error) =>
+      fail(
+        createDiagnosticMessage({
+          source: 'gt',
+          severity: 'Error',
+          whatHappened: 'The API request failed before a response was received',
+          details: formatDiagnosticErrorDetails(error),
+        }),
+        dependencies
+      )
     );
-  }
 
   if (!rawResponse) {
     fail(
@@ -186,6 +187,7 @@ export async function handleApiCommand(
         source: 'gt',
         severity: 'Error',
         whatHappened: 'The API request did not return a response',
+        details: formatDiagnosticErrorDetails(result?.error),
       }),
       dependencies
     );
