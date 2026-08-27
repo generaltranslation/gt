@@ -42,8 +42,7 @@ import {
   type UploadSourceFilesData,
   type UploadTranslationsData,
 } from 'generaltranslation/api';
-import { ApiError } from 'generaltranslation/errors';
-import { defaultBaseUrl } from 'generaltranslation/internal';
+import { defaultBaseUrl, unwrapApiResult } from 'generaltranslation/internal';
 
 let client = createApiClient({ baseUrl: defaultBaseUrl });
 let customMapping: CustomMapping | undefined;
@@ -56,51 +55,21 @@ export function configureApiClient(
   customMapping = mapping;
 }
 
-type ApiResult<T> = {
-  data: T | undefined;
-  error: unknown;
-  response?: Response;
-};
-
-function isErrorResponse(error: unknown): error is { error: string } {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'error' in error &&
-    typeof error.error === 'string'
-  );
-}
-
 function batchCount(items: readonly unknown[]): number {
   return Math.ceil(items.length / DEFAULT_BATCH_SIZE);
 }
 
-function responseData<T>(result: ApiResult<T>): Exclude<T, undefined> {
-  if (result.data !== undefined) {
-    return result.data as Exclude<T, undefined>;
-  }
-  if (result.response) {
-    const message = isErrorResponse(result.error)
-      ? result.error.error
-      : typeof result.error === 'string'
-        ? result.error
-        : result.response.statusText;
-    throw new ApiError(message, result.response.status, message);
-  }
-  throw result.error;
-}
-
 export const api = {
   async queryBranchData(body: GetBranchInfoData['body']) {
-    return responseData(await getBranchInfo({ body, client }));
+    return unwrapApiResult(await getBranchInfo({ body, client }));
   },
 
   async createBranch(body: CreateBranchData['body']) {
-    return responseData(await createBranch({ body, client }));
+    return unwrapApiResult(await createBranch({ body, client }));
   },
 
   async queryFileData(body: GetFileInfoData['body']) {
-    const result = responseData(
+    const result = unwrapApiResult(
       await getFileInfo({
         body: {
           ...body,
@@ -129,7 +98,7 @@ export const api = {
   },
 
   async checkJobStatus(jobIds: string[]) {
-    return responseData(
+    return unwrapApiResult(
       await getTranslationJobInfo({ body: { jobIds }, client })
     );
   },
@@ -142,7 +111,7 @@ export const api = {
     if (files.length === 0) return { files: [], count: 0, pending: [] };
 
     const request = async (batch: DownloadFilesData['body']) =>
-      responseData(
+      unwrapApiResult(
         await downloadFiles({
           body: batch.map((file) => ({
             ...file,
@@ -172,12 +141,12 @@ export const api = {
   },
 
   async publishFiles(files: PublishFilesData['body']['files']) {
-    return responseData(await publishFiles({ body: { files }, client }));
+    return unwrapApiResult(await publishFiles({ body: { files }, client }));
   },
 
   async submitUserEditDiffs(body: SubmitUserEditDiffsData['body']) {
     return processBatches(body.diffs, async (diffs) => [
-      responseData(
+      unwrapApiResult(
         await submitUserEditDiffs({
           body: {
             projectId: body.projectId,
@@ -193,11 +162,11 @@ export const api = {
   },
 
   async createTag(body: CreateTagData['body']) {
-    return responseData(await createTag({ body, client }));
+    return unwrapApiResult(await createTag({ body, client }));
   },
 
   async createProject(body: CreateProjectData['body']) {
-    return responseData(
+    return unwrapApiResult(
       await createProject({
         body: {
           ...body,
@@ -212,7 +181,7 @@ export const api = {
   },
 
   async getSetupStatus(jobId: string) {
-    const statuses = responseData(
+    const statuses = unwrapApiResult(
       await getTranslationJobInfo({ body: { jobIds: [jobId] }, client })
     );
     return (
@@ -225,7 +194,7 @@ export const api = {
 
   async getOrphanedFiles(branchId: string, fileIds: string[]) {
     const request = async (batch: string[]) =>
-      responseData(
+      unwrapApiResult(
         await getOrphanedFiles({
           body: { branchId, fileIds: batch },
           client,
@@ -237,18 +206,18 @@ export const api = {
     const results = await processBatches(fileIds, async (batch) => [
       await request(batch),
     ]);
-    const orphanedFiles = new Map(
-      results[0].orphanedFiles.map((file) => [file.fileId, file])
-    );
+    // A file is orphaned only if every batch (which each sees a subset of
+    // fileIds) reports it orphaned — intersect across batches.
+    let orphanedFiles = results[0].orphanedFiles;
     for (const result of results.slice(1)) {
       const batchFileIds = new Set(
         result.orphanedFiles.map((file) => file.fileId)
       );
-      for (const fileId of orphanedFiles.keys()) {
-        if (!batchFileIds.has(fileId)) orphanedFiles.delete(fileId);
-      }
+      orphanedFiles = orphanedFiles.filter((file) =>
+        batchFileIds.has(file.fileId)
+      );
     }
-    return { orphanedFiles: [...orphanedFiles.values()] };
+    return { orphanedFiles };
   },
 
   async processFileMoves(
@@ -256,7 +225,7 @@ export const api = {
     options: Pick<ProcessFileMovesData['body'], 'branchId'>
   ) {
     const result = await processBatches(moves, async (batch) => {
-      const response = responseData(
+      const response = unwrapApiResult(
         await processFileMoves({
           body: { branchId: options.branchId, moves: batch },
           client,
@@ -280,7 +249,7 @@ export const api = {
     files: GenerateProjectContextData['body']['files'],
     options: Omit<GenerateProjectContextData['body'], 'files'> = {}
   ) {
-    return responseData(
+    return unwrapApiResult(
       await generateProjectContext({
         body: {
           files: files.map(({ branchId, fileId, versionId }) => ({
@@ -299,12 +268,12 @@ export const api = {
   },
 
   async awaitJobs(jobIds: readonly string[], options?: AwaitJobsOptions) {
-    // Poll through responseData so HTTP failures throw ApiError with the
+    // Poll through unwrapApiResult so HTTP failures throw ApiError with the
     // status code instead of the decoded response body.
     return pollJobs(
       jobIds,
       async (pendingJobIds, signal) =>
-        responseData(
+        unwrapApiResult(
           await getTranslationJobInfo({
             body: { jobIds: pendingJobIds },
             client,
@@ -332,7 +301,7 @@ export const api = {
       { jobData: unknown }
     >;
     const result = await processBatches(files, async (batch) => {
-      const response = responseData(
+      const response = unwrapApiResult(
         await enqueueFileTranslations({
           body: {
             files: batch.map(
@@ -374,7 +343,7 @@ export const api = {
       customMapping
     );
     const result = await processBatches(files, async (batch) => {
-      const response = responseData(
+      const response = unwrapApiResult(
         await uploadSourceFiles({
           body: {
             data: batch.map(({ source }) => ({
@@ -392,11 +361,7 @@ export const api = {
       return response.uploadedFiles;
     });
 
-    return {
-      uploadedFiles: result,
-      count: result.length,
-      message: `Successfully uploaded ${result.length} files in ${batchCount(files)} batch(es)`,
-    };
+    return { uploadedFiles: result };
   },
 
   async uploadTranslations(
@@ -404,7 +369,7 @@ export const api = {
     options: { sourceLocale: string; modelProvider?: string }
   ) {
     const result = await processBatches(files, async (batch) => {
-      const response = responseData(
+      const response = unwrapApiResult(
         await uploadTranslations({
           body: {
             data: batch.map(({ source, translations }) => ({
@@ -435,11 +400,7 @@ export const api = {
       return response.uploadedFiles;
     });
 
-    return {
-      uploadedFiles: result,
-      count: result.length,
-      message: `Successfully uploaded ${result.length} files in ${batchCount(files)} batch(es)`,
-    };
+    return { uploadedFiles: result };
   },
 };
 

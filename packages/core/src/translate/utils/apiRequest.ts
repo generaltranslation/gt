@@ -12,6 +12,7 @@ import { handleFetchError } from './handleFetchError';
 import { generateRequestHeaders } from './generateRequestHeaders';
 import { apiError } from '../../logging/errors';
 import { ApiError } from '../../errors/ApiError';
+import { isErrorResult } from './unwrapApiResult';
 
 const MAX_RETRIES = 3;
 const INITIAL_DELAY_MS = 500;
@@ -125,13 +126,7 @@ export async function apiRequest<T>(
       client,
     });
     if (result.data !== undefined) return result.data as T;
-    if (
-      result.response &&
-      typeof result.error === 'object' &&
-      result.error !== null &&
-      'error' in result.error &&
-      typeof result.error.error === 'string'
-    ) {
+    if (result.response && isErrorResult(result.error)) {
       throw new ApiError(
         apiError(
           result.response.status,

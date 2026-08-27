@@ -229,7 +229,7 @@ describe('CLI API client', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(requestBodies[0].data).toHaveLength(100);
     expect(requestBodies[0].data[0].source.content).toBe('bWVzc2FnZS0w');
-    expect(result.count).toBe(101);
+    expect(result.uploadedFiles).toHaveLength(101);
   });
 
   it('base64-encodes and uploads translation files through the SDK', async () => {
