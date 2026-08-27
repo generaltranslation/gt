@@ -95,6 +95,19 @@ describe('CLI API client', () => {
     );
   });
 
+  it('preserves HTTP status on job polling errors', async () => {
+    fetchMock.mockResolvedValue(
+      Response.json({ error: 'job status unavailable' }, { status: 403 })
+    );
+
+    await expect(api.awaitJobs(['job-1'])).rejects.toEqual(
+      expect.objectContaining<ApiError>({
+        code: 403,
+        message: 'job status unavailable',
+      })
+    );
+  });
+
   it('does not hide network errors', async () => {
     const networkError = new Error('connection reset');
     configure({ retryPolicy: 'none' });
