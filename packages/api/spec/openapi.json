@@ -2,8 +2,42 @@
   "openapi": "3.1.0",
   "info": {
     "title": "General Translation API",
-    "version": "2026-03-06.v1"
+    "version": "2026-03-06.v1",
+    "description": "The public General Translation API. Use it to upload source content and translated files, download translations, queue and translate content, create projects, manage branches and tags, and read project and job status.\n\nMost endpoints operate on a single project. All endpoints live under `https://api.gtx.dev`.\n\nAuthenticate every request with an API key as a bearer token in the standard `Authorization: Bearer <key>` header. Project keys (`gtx-api-`, `gtx-dev-`) are bound to one project. Organization keys (`gtx-org-`) work across projects but must include the target project in the `gt-project-id` header for project-scoped routes. Organization-scoped routes, such as `POST /v2/projects`, derive the organization from the key and do not use a `gt-project-id` header.",
+    "contact": {
+      "name": "General Translation Support",
+      "email": "support@generaltranslation.com",
+      "url": "https://generaltranslation.com"
+    }
   },
+  "servers": [
+    {
+      "url": "https://api.gtx.dev",
+      "description": "General Translation API"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Files",
+      "description": "Upload, download, publish, move, and inspect project files."
+    },
+    {
+      "name": "Context",
+      "description": "Generate translation context such as glossaries and instructions."
+    },
+    {
+      "name": "Translation",
+      "description": "Translate content, queue files for translation, and read translation job status."
+    },
+    {
+      "name": "Project",
+      "description": "Create and manage projects, assets, branches, and file version tags."
+    },
+    {
+      "name": "CLI Wizard",
+      "description": "Create and manage internal CLI wizard sessions."
+    }
+  ],
   "components": {
     "securitySchemes": {
       "BearerAuth": {
@@ -19,7 +53,9 @@
             "type": "string"
           }
         },
-        "required": ["error"]
+        "required": [
+          "error"
+        ]
       },
       "FileFormat": {
         "type": "string",
@@ -50,7 +86,10 @@
             "type": "string"
           }
         },
-        "required": ["id", "name"]
+        "required": [
+          "id",
+          "name"
+        ]
       },
       "RuntimeTranslationResponse": {
         "type": "object",
@@ -61,25 +100,38 @@
               "properties": {
                 "success": {
                   "type": "boolean",
-                  "enum": [true]
+                  "enum": [
+                    true
+                  ]
                 },
                 "translation": {},
                 "dataFormat": {
                   "type": "string",
-                  "enum": ["JSX", "ICU", "I18NEXT", "STRING"]
+                  "enum": [
+                    "JSX",
+                    "ICU",
+                    "I18NEXT",
+                    "STRING"
+                  ]
                 },
                 "locale": {
                   "type": "string"
                 }
               },
-              "required": ["success", "dataFormat", "locale"]
+              "required": [
+                "success",
+                "dataFormat",
+                "locale"
+              ]
             },
             {
               "type": "object",
               "properties": {
                 "success": {
                   "type": "boolean",
-                  "enum": [false]
+                  "enum": [
+                    false
+                  ]
                 },
                 "error": {
                   "type": "string"
@@ -88,7 +140,11 @@
                   "type": "number"
                 }
               },
-              "required": ["success", "error", "code"]
+              "required": [
+                "success",
+                "error",
+                "code"
+              ]
             }
           ]
         }
@@ -119,12 +175,19 @@
                     },
                     "dataFormat": {
                       "type": "string",
-                      "enum": ["JSX", "ICU", "I18NEXT", "STRING"],
+                      "enum": [
+                        "JSX",
+                        "ICU",
+                        "I18NEXT",
+                        "STRING"
+                      ],
                       "default": "STRING"
                     },
                     "actionType": {
                       "type": "string",
-                      "enum": ["fast"],
+                      "enum": [
+                        "fast"
+                      ],
                       "default": "fast"
                     },
                     "sourceCode": {
@@ -144,7 +207,11 @@
                               "type": "string"
                             }
                           },
-                          "required": ["before", "target", "after"]
+                          "required": [
+                            "before",
+                            "target",
+                            "after"
+                          ]
                         }
                       }
                     }
@@ -170,12 +237,22 @@
             "properties": {
               "modelProvider": {
                 "type": "string",
-                "enum": ["ANTHROPIC", "OPENAI", "XAI", "GOOGLE"]
+                "enum": [
+                  "ANTHROPIC",
+                  "OPENAI",
+                  "XAI",
+                  "GOOGLE"
+                ]
               }
             }
           }
         },
-        "required": ["requests", "targetLocale", "sourceLocale", "metadata"]
+        "required": [
+          "requests",
+          "targetLocale",
+          "sourceLocale",
+          "metadata"
+        ]
       },
       "CreateCliWizardSessionResponse": {
         "type": "object",
@@ -184,14 +261,20 @@
             "type": "string"
           }
         },
-        "required": ["sessionId"]
+        "required": [
+          "sessionId"
+        ]
       },
       "CreateCliWizardSessionRequest": {
         "type": "object",
         "properties": {
           "keyType": {
             "type": "string",
-            "enum": ["development", "production", "all"],
+            "enum": [
+              "development",
+              "production",
+              "all"
+            ],
             "default": "production"
           }
         }
@@ -211,17 +294,26 @@
                     },
                     "type": {
                       "type": "string",
-                      "enum": ["development", "production"]
+                      "enum": [
+                        "development",
+                        "production"
+                      ]
                     }
                   },
-                  "required": ["key", "type"]
+                  "required": [
+                    "key",
+                    "type"
+                  ]
                 }
               },
               "projectId": {
                 "type": "string"
               }
             },
-            "required": ["apiKeys", "projectId"]
+            "required": [
+              "apiKeys",
+              "projectId"
+            ]
           },
           {
             "type": "object",
@@ -233,7 +325,10 @@
                 "type": "string"
               }
             },
-            "required": ["apiKey", "projectId"]
+            "required": [
+              "apiKey",
+              "projectId"
+            ]
           }
         ]
       },
@@ -244,7 +339,9 @@
             "type": "string"
           }
         },
-        "required": ["message"]
+        "required": [
+          "message"
+        ]
       },
       "DeleteCliWizardSessionResponse": {
         "type": "object",
@@ -253,7 +350,9 @@
             "type": "string"
           }
         },
-        "required": ["message"]
+        "required": [
+          "message"
+        ]
       }
     },
     "parameters": {}
@@ -262,7 +361,8 @@
     "/v2/projects": {
       "post": {
         "operationId": "createProject",
-        "tags": ["Projects"],
+        "summary": "Create a Project",
+        "description": "Create a Project in the Organization associated with an Organization API key. The key must have the `org:projects:create` permission. Project keys cannot use this endpoint. Enabling CDN delivery also requires `project:write`.",
         "security": [
           {
             "BearerAuth": []
@@ -303,7 +403,10 @@
                     "type": "boolean"
                   }
                 },
-                "required": ["name", "defaultLocale"],
+                "required": [
+                  "name",
+                  "defaultLocale"
+                ],
                 "additionalProperties": false
               }
             }
@@ -333,10 +436,17 @@
                           "type": "string"
                         }
                       },
-                      "required": ["id", "name", "orgId", "defaultLocale"]
+                      "required": [
+                        "id",
+                        "name",
+                        "orgId",
+                        "defaultLocale"
+                      ]
                     }
                   },
-                  "required": ["project"]
+                  "required": [
+                    "project"
+                  ]
                 }
               }
             }
@@ -446,13 +556,17 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Project"
+        ]
       }
     },
     "/v2/project/files/upload-files": {
       "post": {
         "operationId": "uploadSourceFiles",
-        "tags": ["Files"],
+        "summary": "Upload source files",
+        "description": "Upload one or more source files to the project. Max 100 files per request.",
         "security": [
           {
             "BearerAuth": []
@@ -473,6 +587,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -557,7 +681,9 @@
                           ]
                         }
                       },
-                      "required": ["source"]
+                      "required": [
+                        "source"
+                      ]
                     },
                     "minItems": 1,
                     "maxItems": 100
@@ -566,7 +692,9 @@
                     "type": "string"
                   }
                 },
-                "required": ["data"]
+                "required": [
+                  "data"
+                ]
               }
             }
           }
@@ -621,7 +749,11 @@
                       "type": "string"
                     }
                   },
-                  "required": ["uploadedFiles", "count", "message"]
+                  "required": [
+                    "uploadedFiles",
+                    "count",
+                    "message"
+                  ]
                 }
               }
             }
@@ -746,13 +878,17 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Files"
+        ]
       }
     },
     "/v2/project/files/upload-translations": {
       "post": {
         "operationId": "uploadTranslations",
-        "tags": ["Files"],
+        "summary": "Upload translated files",
+        "description": "Upload translated files linked to their source files. Max 100 files per request.",
         "security": [
           {
             "BearerAuth": []
@@ -773,6 +909,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -924,7 +1070,10 @@
                           "minItems": 1
                         }
                       },
-                      "required": ["source", "translations"]
+                      "required": [
+                        "source",
+                        "translations"
+                      ]
                     },
                     "minItems": 1,
                     "maxItems": 100
@@ -933,7 +1082,9 @@
                     "type": "string"
                   }
                 },
-                "required": ["data"]
+                "required": [
+                  "data"
+                ]
               }
             }
           }
@@ -988,7 +1139,11 @@
                       "type": "string"
                     }
                   },
-                  "required": ["uploadedFiles", "count", "message"]
+                  "required": [
+                    "uploadedFiles",
+                    "count",
+                    "message"
+                  ]
                 }
               }
             }
@@ -1113,13 +1268,17 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Files"
+        ]
       }
     },
     "/v2/project/assets": {
       "post": {
         "operationId": "uploadAssets",
-        "tags": ["Assets"],
+        "summary": "Upload Project assets",
+        "description": "Upload OpenType or TrueType fonts through a Project and make them available to Lottie translation workflows across its Organization. Each font is keyed by a normalized identity derived from its family, weight, and italic style (from the supplied `family` and `style`, or from the font metadata and file name). Re-uploading the same identity overwrites the existing asset, so complete retries after a `500` response are safe.",
         "security": [
           {
             "BearerAuth": []
@@ -1141,6 +1300,16 @@
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
             "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
+            "in": "header"
           }
         ],
         "requestBody": {
@@ -1157,7 +1326,9 @@
                       "properties": {
                         "assetType": {
                           "type": "string",
-                          "enum": ["FONT"]
+                          "enum": [
+                            "FONT"
+                          ]
                         },
                         "content": {
                           "type": "string",
@@ -1167,7 +1338,7 @@
                           "type": "string",
                           "minLength": 1,
                           "maxLength": 255,
-                          "pattern": "\\.(ttf|otf)$/i"
+                          "pattern": "\\.([tT][tT][fF]|[oO][tT][fF])$"
                         },
                         "family": {
                           "type": "string",
@@ -1180,13 +1351,19 @@
                           "maxLength": 100
                         }
                       },
-                      "required": ["assetType", "content", "fileName"]
+                      "required": [
+                        "assetType",
+                        "content",
+                        "fileName"
+                      ]
                     },
                     "minItems": 1,
                     "maxItems": 50
                   }
                 },
-                "required": ["assets"]
+                "required": [
+                  "assets"
+                ]
               }
             }
           }
@@ -1214,7 +1391,11 @@
                             "type": "string"
                           }
                         },
-                        "required": ["id", "assetKey", "fileName"]
+                        "required": [
+                          "id",
+                          "assetKey",
+                          "fileName"
+                        ]
                       }
                     },
                     "count": {
@@ -1222,7 +1403,10 @@
                       "minimum": 0
                     }
                   },
-                  "required": ["assets", "count"]
+                  "required": [
+                    "assets",
+                    "count"
+                  ]
                 }
               }
             }
@@ -1332,13 +1516,17 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Project"
+        ]
       }
     },
     "/v2/project/files/diffs": {
       "post": {
         "operationId": "submitUserEditDiffs",
-        "tags": ["Files"],
+        "summary": "Submit translation diffs",
+        "description": "Overwrite translations with user-provided localized content.",
         "security": [
           {
             "BearerAuth": []
@@ -1359,6 +1547,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -1411,7 +1609,9 @@
                     "minItems": 1
                   }
                 },
-                "required": ["diffs"]
+                "required": [
+                  "diffs"
+                ]
               }
             }
           }
@@ -1436,7 +1636,11 @@
                       "type": "string"
                     }
                   },
-                  "required": ["filesProcessed", "entriesReceived", "message"]
+                  "required": [
+                    "filesProcessed",
+                    "entriesReceived",
+                    "message"
+                  ]
                 }
               }
             }
@@ -1531,13 +1735,18 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Files"
+        ]
       }
     },
     "/v2/project/setup/should-generate": {
       "get": {
         "operationId": "shouldGenerateProjectContext",
-        "tags": ["Project setup"],
+        "summary": "Check if context generation is needed",
+        "deprecated": true,
+        "description": "Check whether the Project needs translation context generated. This deprecated endpoint is retained for backward compatibility and is no longer called by current clients.",
         "security": [
           {
             "BearerAuth": []
@@ -1559,6 +1768,16 @@
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
             "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
+            "in": "header"
           }
         ],
         "responses": {
@@ -1573,7 +1792,9 @@
                       "type": "boolean"
                     }
                   },
-                  "required": ["shouldSetupProject"]
+                  "required": [
+                    "shouldSetupProject"
+                  ]
                 }
               }
             }
@@ -1668,13 +1889,17 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Context"
+        ]
       }
     },
     "/v2/project/setup/generate": {
       "post": {
         "operationId": "generateProjectContext",
-        "tags": ["Project setup"],
+        "summary": "Generate translation context",
+        "description": "Generate glossaries and translation instructions for the project.",
         "security": [
           {
             "BearerAuth": []
@@ -1695,6 +1920,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -1723,7 +1958,10 @@
                           "minLength": 1
                         }
                       },
-                      "required": ["fileId", "versionId"]
+                      "required": [
+                        "fileId",
+                        "versionId"
+                      ]
                     },
                     "minItems": 1
                   },
@@ -1738,7 +1976,9 @@
                     "default": false
                   }
                 },
-                "required": ["files"]
+                "required": [
+                  "files"
+                ]
               }
             }
           }
@@ -1755,10 +1995,14 @@
                       "properties": {
                         "status": {
                           "type": "string",
-                          "enum": ["completed"]
+                          "enum": [
+                            "completed"
+                          ]
                         }
                       },
-                      "required": ["status"]
+                      "required": [
+                        "status"
+                      ]
                     },
                     {
                       "type": "object",
@@ -1768,10 +2012,15 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": ["queued"]
+                          "enum": [
+                            "queued"
+                          ]
                         }
                       },
-                      "required": ["setupJobId", "status"]
+                      "required": [
+                        "setupJobId",
+                        "status"
+                      ]
                     }
                   ]
                 }
@@ -1883,13 +2132,18 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Context"
+        ]
       }
     },
     "/v2/project/setup/status/{jobId}": {
       "get": {
         "operationId": "getProjectContextGenerationStatus",
-        "tags": ["Project setup"],
+        "summary": "Get context generation job status",
+        "deprecated": true,
+        "description": "Track a context generation job. This deprecated endpoint is retained for backward compatibility; new integrations should use `POST /v2/project/jobs/info`.",
         "security": [
           {
             "BearerAuth": []
@@ -1920,6 +2174,16 @@
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
             "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
+            "in": "header"
           }
         ],
         "responses": {
@@ -1934,10 +2198,14 @@
                       "properties": {
                         "status": {
                           "type": "string",
-                          "enum": ["completed"]
+                          "enum": [
+                            "completed"
+                          ]
                         }
                       },
-                      "required": ["status"]
+                      "required": [
+                        "status"
+                      ]
                     },
                     {
                       "type": "object",
@@ -1947,10 +2215,18 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": ["queued", "processing", "failed", "unknown"]
+                          "enum": [
+                            "queued",
+                            "processing",
+                            "failed",
+                            "unknown"
+                          ]
                         }
                       },
-                      "required": ["jobId", "status"]
+                      "required": [
+                        "jobId",
+                        "status"
+                      ]
                     }
                   ]
                 }
@@ -2047,13 +2323,17 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Context"
+        ]
       }
     },
     "/v2/project/translations/enqueue": {
       "post": {
         "operationId": "enqueueFileTranslations",
-        "tags": ["Translations"],
+        "summary": "Queue files for translation",
+        "description": "Enqueue uploaded source files for background translation. Max 100 files per request. The response shape depends on the requested `gt-api-version`.",
         "security": [
           {
             "BearerAuth": []
@@ -2074,6 +2354,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -2124,7 +2414,10 @@
                           ]
                         }
                       },
-                      "required": ["fileId", "versionId"]
+                      "required": [
+                        "fileId",
+                        "versionId"
+                      ]
                     },
                     "minItems": 1,
                     "maxItems": 100
@@ -2144,13 +2437,20 @@
                   },
                   "modelProvider": {
                     "type": "string",
-                    "enum": ["ANTHROPIC", "OPENAI", "XAI", "GOOGLE"]
+                    "enum": [
+                      "ANTHROPIC",
+                      "OPENAI",
+                      "XAI",
+                      "GOOGLE"
+                    ]
                   },
                   "publish": {
                     "type": "boolean"
                   }
                 },
-                "required": ["files"]
+                "required": [
+                  "files"
+                ]
               }
             }
           }
@@ -2172,7 +2472,9 @@
                             "properties": {
                               "kind": {
                                 "type": "string",
-                                "enum": ["file_translation"]
+                                "enum": [
+                                  "file_translation"
+                                ]
                               },
                               "sourceFileId": {
                                 "type": "string"
@@ -2200,7 +2502,12 @@
                               },
                               "modelProvider": {
                                 "type": "string",
-                                "enum": ["ANTHROPIC", "OPENAI", "XAI", "GOOGLE"]
+                                "enum": [
+                                  "ANTHROPIC",
+                                  "OPENAI",
+                                  "XAI",
+                                  "GOOGLE"
+                                ]
                               },
                               "glossaryRetranslate": {
                                 "type": "boolean"
@@ -2216,13 +2523,17 @@
                                 "properties": {
                                   "kind": {
                                     "type": "string",
-                                    "enum": ["google_drive_apply"]
+                                    "enum": [
+                                      "google_drive_apply"
+                                    ]
                                   },
                                   "userId": {
                                     "type": "string"
                                   }
                                 },
-                                "required": ["kind"]
+                                "required": [
+                                  "kind"
+                                ]
                               }
                             },
                             "required": [
@@ -2246,7 +2557,11 @@
                           "type": "string"
                         }
                       },
-                      "required": ["jobData", "locales", "message"]
+                      "required": [
+                        "jobData",
+                        "locales",
+                        "message"
+                      ]
                     },
                     {
                       "type": "object",
@@ -2306,7 +2621,10 @@
                                 "type": "string"
                               }
                             },
-                            "required": ["fileName", "versionId"]
+                            "required": [
+                              "fileName",
+                              "versionId"
+                            ]
                           }
                         },
                         "locales": {
@@ -2319,7 +2637,12 @@
                           "type": "string"
                         }
                       },
-                      "required": ["translations", "data", "locales", "message"]
+                      "required": [
+                        "translations",
+                        "data",
+                        "locales",
+                        "message"
+                      ]
                     }
                   ]
                 }
@@ -2353,14 +2676,21 @@
                                 "type": "string"
                               }
                             },
-                            "required": ["fileId", "versionId"]
+                            "required": [
+                              "fileId",
+                              "versionId"
+                            ]
                           }
                         },
                         "count": {
                           "type": "number"
                         }
                       },
-                      "required": ["error", "missing", "count"]
+                      "required": [
+                        "error",
+                        "missing",
+                        "count"
+                      ]
                     }
                   ]
                 }
@@ -2477,13 +2807,17 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Translation"
+        ]
       }
     },
     "/v2/project/files/publish": {
       "post": {
         "operationId": "publishFiles",
-        "tags": ["Files"],
+        "summary": "Publish or unpublish files",
+        "description": "Publish or unpublish translated files to the CDN. Requires CDN to be enabled.",
         "security": [
           {
             "BearerAuth": []
@@ -2504,6 +2838,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -2535,12 +2879,18 @@
                           "type": "boolean"
                         }
                       },
-                      "required": ["fileId", "versionId", "publish"]
+                      "required": [
+                        "fileId",
+                        "versionId",
+                        "publish"
+                      ]
                     },
                     "minItems": 1
                   }
                 },
-                "required": ["files"]
+                "required": [
+                  "files"
+                ]
               }
             }
           }
@@ -2586,7 +2936,9 @@
                       }
                     }
                   },
-                  "required": ["results"]
+                  "required": [
+                    "results"
+                  ]
                 }
               }
             }
@@ -2696,13 +3048,18 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Files"
+        ]
       }
     },
     "/v2/project/files/download/{fileId}": {
       "get": {
         "operationId": "downloadFile",
-        "tags": ["Files"],
+        "summary": "Download a single file",
+        "deprecated": true,
+        "description": "Download a single source or translated file. This deprecated endpoint is retained for backward compatibility; new integrations should use `POST /v2/project/files/download`.",
         "security": [
           {
             "BearerAuth": []
@@ -2757,6 +3114,16 @@
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
             "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
+            "in": "header"
           }
         ],
         "responses": {
@@ -2771,7 +3138,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["data"]
+                  "required": [
+                    "data"
+                  ]
                 }
               }
             }
@@ -2845,13 +3214,18 @@
                   "properties": {
                     "status": {
                       "type": "string",
-                      "enum": ["processing"]
+                      "enum": [
+                        "processing"
+                      ]
                     },
                     "message": {
                       "type": "string"
                     }
                   },
-                  "required": ["status", "message"]
+                  "required": [
+                    "status",
+                    "message"
+                  ]
                 }
               }
             }
@@ -2886,13 +3260,17 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Files"
+        ]
       }
     },
     "/v2/project/files/download": {
       "post": {
         "operationId": "downloadFiles",
-        "tags": ["Files"],
+        "summary": "Download multiple files",
+        "description": "Download up to 100 source or translated files in one request.",
         "security": [
           {
             "BearerAuth": []
@@ -2913,6 +3291,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -2945,7 +3333,9 @@
                       "type": "boolean"
                     }
                   },
-                  "required": ["fileId"]
+                  "required": [
+                    "fileId"
+                  ]
                 },
                 "minItems": 1,
                 "maxItems": 100
@@ -3036,7 +3426,10 @@
                       }
                     }
                   },
-                  "required": ["files", "count"]
+                  "required": [
+                    "files",
+                    "count"
+                  ]
                 }
               }
             }
@@ -3131,13 +3524,17 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Files"
+        ]
       }
     },
     "/v2/project/branches/info": {
       "post": {
         "operationId": "getBranchInfo",
-        "tags": ["Branches"],
+        "summary": "Get branch information",
+        "description": "Return the Project's default branch and any branches requested by name.",
         "security": [
           {
             "BearerAuth": []
@@ -3158,6 +3555,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -3200,12 +3607,18 @@
                           "$ref": "#/components/schemas/Branch"
                         },
                         {
-                          "type": ["object", "null"]
+                          "type": [
+                            "object",
+                            "null"
+                          ]
                         }
                       ]
                     }
                   },
-                  "required": ["branches", "defaultBranch"]
+                  "required": [
+                    "branches",
+                    "defaultBranch"
+                  ]
                 }
               }
             }
@@ -3300,13 +3713,17 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Project"
+        ]
       }
     },
     "/v2/project/branches/create": {
       "post": {
         "operationId": "createBranch",
-        "tags": ["Branches"],
+        "summary": "Create a branch",
+        "description": "Create a new branch, or rename and confirm the default branch.",
         "security": [
           {
             "BearerAuth": []
@@ -3328,6 +3745,16 @@
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
             "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
+            "in": "header"
           }
         ],
         "requestBody": {
@@ -3346,7 +3773,9 @@
                     "default": false
                   }
                 },
-                "required": ["branchName"]
+                "required": [
+                  "branchName"
+                ]
               }
             }
           }
@@ -3363,7 +3792,9 @@
                       "$ref": "#/components/schemas/Branch"
                     }
                   },
-                  "required": ["branch"]
+                  "required": [
+                    "branch"
+                  ]
                 }
               }
             }
@@ -3473,13 +3904,17 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Project"
+        ]
       }
     },
     "/v2/project/tags/create": {
       "post": {
         "operationId": "createTag",
-        "tags": ["Tags"],
+        "summary": "Create or update a tag",
+        "description": "Create or upsert a tag that points at a set of file versions.",
         "security": [
           {
             "BearerAuth": []
@@ -3500,6 +3935,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -3533,7 +3978,11 @@
                           "minLength": 1
                         }
                       },
-                      "required": ["fileId", "versionId", "branchId"]
+                      "required": [
+                        "fileId",
+                        "versionId",
+                        "branchId"
+                      ]
                     },
                     "minItems": 1
                   },
@@ -3542,7 +3991,10 @@
                     "maxLength": 255
                   }
                 },
-                "required": ["tagId", "files"]
+                "required": [
+                  "tagId",
+                  "files"
+                ]
               }
             }
           }
@@ -3565,7 +4017,10 @@
                           "type": "string"
                         },
                         "message": {
-                          "type": ["string", "null"]
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         },
                         "createdAt": {
                           "type": "string",
@@ -3585,7 +4040,9 @@
                       ]
                     }
                   },
-                  "required": ["tag"]
+                  "required": [
+                    "tag"
+                  ]
                 }
               }
             }
@@ -3680,13 +4137,17 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Project"
+        ]
       }
     },
     "/v2/project/info/{projectId}": {
       "get": {
         "operationId": "getProjectInfo",
-        "tags": ["Projects"],
+        "summary": "Get Project information",
+        "description": "Read the authenticated Project's name, Organization ID, locale settings, and auto-approval setting.",
         "security": [
           {
             "BearerAuth": []
@@ -3717,6 +4178,16 @@
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
             "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
+            "in": "header"
           }
         ],
         "responses": {
@@ -3737,7 +4208,10 @@
                       "type": "string"
                     },
                     "defaultLocale": {
-                      "type": ["string", "null"]
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "currentLocales": {
                       "type": "array",
@@ -3851,11 +4325,15 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Project"
+        ]
       },
       "post": {
         "operationId": "updateProjectInfo",
-        "tags": ["Projects"],
+        "summary": "Update Project information",
+        "description": "Update the Project's default locale or CDN delivery setting.",
         "security": [
           {
             "BearerAuth": []
@@ -3885,6 +4363,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -3916,10 +4404,14 @@
                   "properties": {
                     "success": {
                       "type": "boolean",
-                      "enum": [true]
+                      "enum": [
+                        true
+                      ]
                     }
                   },
-                  "required": ["success"]
+                  "required": [
+                    "success"
+                  ]
                 }
               }
             }
@@ -4029,13 +4521,17 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Project"
+        ]
       }
     },
     "/v2/project/jobs/info": {
       "post": {
         "operationId": "getTranslationJobInfo",
-        "tags": ["Jobs"],
+        "summary": "Get translation job status",
+        "description": "Return normalized status information for one or more queued translation or context generation jobs.",
         "security": [
           {
             "BearerAuth": []
@@ -4057,6 +4553,16 @@
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
             "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
+            "in": "header"
           }
         ],
         "requestBody": {
@@ -4075,7 +4581,9 @@
                     "minItems": 1
                   }
                 },
-                "required": ["jobIds"]
+                "required": [
+                  "jobIds"
+                ]
               }
             }
           }
@@ -4094,33 +4602,45 @@
                         "properties": {
                           "status": {
                             "type": "string",
-                            "enum": ["queued"]
+                            "enum": [
+                              "queued"
+                            ]
                           },
                           "jobId": {
                             "type": "string"
                           }
                         },
-                        "required": ["status", "jobId"]
+                        "required": [
+                          "status",
+                          "jobId"
+                        ]
                       },
                       {
                         "type": "object",
                         "properties": {
                           "status": {
                             "type": "string",
-                            "enum": ["processing"]
+                            "enum": [
+                              "processing"
+                            ]
                           },
                           "jobId": {
                             "type": "string"
                           }
                         },
-                        "required": ["status", "jobId"]
+                        "required": [
+                          "status",
+                          "jobId"
+                        ]
                       },
                       {
                         "type": "object",
                         "properties": {
                           "status": {
                             "type": "string",
-                            "enum": ["failed"]
+                            "enum": [
+                              "failed"
+                            ]
                           },
                           "jobId": {
                             "type": "string"
@@ -4129,39 +4649,58 @@
                             "type": "object",
                             "properties": {
                               "message": {
-                                "type": ["string", "null"]
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
                               }
                             },
-                            "required": ["message"]
+                            "required": [
+                              "message"
+                            ]
                           }
                         },
-                        "required": ["status", "jobId", "error"]
+                        "required": [
+                          "status",
+                          "jobId",
+                          "error"
+                        ]
                       },
                       {
                         "type": "object",
                         "properties": {
                           "status": {
                             "type": "string",
-                            "enum": ["completed"]
+                            "enum": [
+                              "completed"
+                            ]
                           },
                           "jobId": {
                             "type": "string"
                           }
                         },
-                        "required": ["status", "jobId"]
+                        "required": [
+                          "status",
+                          "jobId"
+                        ]
                       },
                       {
                         "type": "object",
                         "properties": {
                           "status": {
                             "type": "string",
-                            "enum": ["unknown"]
+                            "enum": [
+                              "unknown"
+                            ]
                           },
                           "jobId": {
                             "type": "string"
                           }
                         },
-                        "required": ["status", "jobId"]
+                        "required": [
+                          "status",
+                          "jobId"
+                        ]
                       }
                     ]
                   }
@@ -4274,13 +4813,17 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Translation"
+        ]
       }
     },
     "/v2/translate": {
       "post": {
         "operationId": "translate",
-        "tags": ["Translation"],
+        "summary": "Translate content at runtime",
+        "description": "Translate one or more strings or structured content entries with caching and memoization. Development API keys are accepted for this endpoint.",
         "security": [
           {
             "BearerAuth": []
@@ -4301,6 +4844,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -4455,13 +5008,17 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Translation"
+        ]
       }
     },
     "/v2/project/files/info": {
       "post": {
         "operationId": "getFileInfo",
-        "tags": ["Files"],
+        "summary": "Get file metadata",
+        "description": "Get detailed metadata for specific source and translated files.",
         "security": [
           {
             "BearerAuth": []
@@ -4482,6 +5039,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -4510,7 +5077,11 @@
                           "minLength": 1
                         }
                       },
-                      "required": ["fileId", "versionId", "branchId"]
+                      "required": [
+                        "fileId",
+                        "versionId",
+                        "branchId"
+                      ]
                     }
                   },
                   "translatedFiles": {
@@ -4535,7 +5106,12 @@
                           "minLength": 1
                         }
                       },
-                      "required": ["fileId", "versionId", "branchId", "locale"]
+                      "required": [
+                        "fileId",
+                        "versionId",
+                        "branchId",
+                        "locale"
+                      ]
                     }
                   }
                 }
@@ -4572,7 +5148,10 @@
                             "$ref": "#/components/schemas/FileFormat"
                           },
                           "dataFormat": {
-                            "type": ["string", "null"]
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           },
                           "createdAt": {
                             "type": "string",
@@ -4583,7 +5162,10 @@
                             "format": "date-time"
                           },
                           "publishedAt": {
-                            "type": ["string", "null"],
+                            "type": [
+                              "string",
+                              "null"
+                            ],
                             "format": "date-time"
                           },
                           "locales": {
@@ -4629,7 +5211,10 @@
                             "$ref": "#/components/schemas/FileFormat"
                           },
                           "dataFormat": {
-                            "type": ["string", "null"]
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           },
                           "createdAt": {
                             "type": "string",
@@ -4640,15 +5225,24 @@
                             "format": "date-time"
                           },
                           "approvedAt": {
-                            "type": ["string", "null"],
+                            "type": [
+                              "string",
+                              "null"
+                            ],
                             "format": "date-time"
                           },
                           "publishedAt": {
-                            "type": ["string", "null"],
+                            "type": [
+                              "string",
+                              "null"
+                            ],
                             "format": "date-time"
                           },
                           "completedAt": {
-                            "type": ["string", "null"],
+                            "type": [
+                              "string",
+                              "null"
+                            ],
                             "format": "date-time"
                           },
                           "locale": {
@@ -4671,7 +5265,10 @@
                       }
                     }
                   },
-                  "required": ["sourceFiles", "translatedFiles"]
+                  "required": [
+                    "sourceFiles",
+                    "translatedFiles"
+                  ]
                 }
               }
             }
@@ -4766,13 +5363,17 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Files"
+        ]
       }
     },
     "/v2/project/translations/files/status/{fileId}": {
       "get": {
         "operationId": "getTranslationStatus",
-        "tags": ["Files"],
+        "summary": "Get translation status for a file",
+        "description": "Return translation progress and availability by locale for one source file, along with its source metadata.",
         "security": [
           {
             "BearerAuth": []
@@ -4819,6 +5420,16 @@
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
             "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
+            "in": "header"
           }
         ],
         "responses": {
@@ -4838,23 +5449,38 @@
                             "type": "string"
                           },
                           "completedAt": {
-                            "type": ["string", "null"],
+                            "type": [
+                              "string",
+                              "null"
+                            ],
                             "format": "date-time"
                           },
                           "approvedAt": {
-                            "type": ["string", "null"],
+                            "type": [
+                              "string",
+                              "null"
+                            ],
                             "format": "date-time"
                           },
                           "publishedAt": {
-                            "type": ["string", "null"],
+                            "type": [
+                              "string",
+                              "null"
+                            ],
                             "format": "date-time"
                           },
                           "createdAt": {
-                            "type": ["string", "null"],
+                            "type": [
+                              "string",
+                              "null"
+                            ],
                             "format": "date-time"
                           },
                           "updatedAt": {
-                            "type": ["string", "null"],
+                            "type": [
+                              "string",
+                              "null"
+                            ],
                             "format": "date-time"
                           }
                         },
@@ -4893,7 +5519,10 @@
                           "$ref": "#/components/schemas/FileFormat"
                         },
                         "dataFormat": {
-                          "type": ["string", "null"]
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         },
                         "createdAt": {
                           "type": "string",
@@ -4925,7 +5554,10 @@
                       ]
                     }
                   },
-                  "required": ["translations", "sourceFile"]
+                  "required": [
+                    "translations",
+                    "sourceFile"
+                  ]
                 }
               }
             }
@@ -5020,13 +5652,17 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Files"
+        ]
       }
     },
     "/v2/project/files/moves": {
       "post": {
         "operationId": "processFileMoves",
-        "tags": ["Files"],
+        "summary": "Move or rename files",
+        "description": "Clone source files and their translations under new file IDs.",
         "security": [
           {
             "BearerAuth": []
@@ -5047,6 +5683,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -5078,11 +5724,17 @@
                           "minLength": 1
                         }
                       },
-                      "required": ["oldFileId", "newFileId", "newFileName"]
+                      "required": [
+                        "oldFileId",
+                        "newFileId",
+                        "newFileName"
+                      ]
                     }
                   }
                 },
-                "required": ["moves"]
+                "required": [
+                  "moves"
+                ]
               }
             }
           }
@@ -5119,7 +5771,11 @@
                             "type": "string"
                           }
                         },
-                        "required": ["oldFileId", "newFileId", "success"]
+                        "required": [
+                          "oldFileId",
+                          "newFileId",
+                          "success"
+                        ]
                       }
                     },
                     "summary": {
@@ -5138,10 +5794,16 @@
                           "minimum": 0
                         }
                       },
-                      "required": ["total", "succeeded", "failed"]
+                      "required": [
+                        "total",
+                        "succeeded",
+                        "failed"
+                      ]
                     }
                   },
-                  "required": ["results"]
+                  "required": [
+                    "results"
+                  ]
                 }
               }
             }
@@ -5251,13 +5913,17 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Files"
+        ]
       }
     },
     "/v2/project/files/orphaned": {
       "post": {
         "operationId": "getOrphanedFiles",
-        "tags": ["Files"],
+        "summary": "Find orphaned files",
+        "description": "Return files on a branch that are not present in the provided file ID list.",
         "security": [
           {
             "BearerAuth": []
@@ -5278,6 +5944,16 @@
             "required": false,
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
             "in": "header"
           }
         ],
@@ -5300,7 +5976,9 @@
                     "default": []
                   }
                 },
-                "required": ["branchId"]
+                "required": [
+                  "branchId"
+                ]
               }
             }
           }
@@ -5328,11 +6006,17 @@
                             "type": "string"
                           }
                         },
-                        "required": ["fileId", "versionId", "fileName"]
+                        "required": [
+                          "fileId",
+                          "versionId",
+                          "fileName"
+                        ]
                       }
                     }
                   },
-                  "required": ["orphanedFiles"]
+                  "required": [
+                    "orphanedFiles"
+                  ]
                 }
               }
             }
@@ -5442,13 +6126,21 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Files"
+        ]
       }
     },
     "/cli/wizard/session": {
       "post": {
         "operationId": "createCliWizardSession",
-        "tags": ["CLI Wizard"],
+        "x-internal": true,
+        "summary": "Create a CLI wizard session",
+        "description": "Create a temporary session for CLI browser authentication.",
+        "tags": [
+          "CLI Wizard"
+        ],
         "parameters": [
           {
             "schema": {
@@ -5554,7 +6246,12 @@
     "/cli/wizard/{sessionId}": {
       "get": {
         "operationId": "getCliWizardSession",
-        "tags": ["CLI Wizard"],
+        "x-internal": true,
+        "summary": "Get a CLI wizard session",
+        "description": "Get credentials for a completed CLI wizard session or its current waiting status.",
+        "tags": [
+          "CLI Wizard"
+        ],
         "parameters": [
           {
             "schema": {
@@ -5682,7 +6379,12 @@
       },
       "delete": {
         "operationId": "deleteCliWizardSession",
-        "tags": ["CLI Wizard"],
+        "x-internal": true,
+        "summary": "Delete a CLI wizard session",
+        "description": "Delete a completed or abandoned CLI wizard session.",
+        "tags": [
+          "CLI Wizard"
+        ],
         "parameters": [
           {
             "schema": {
