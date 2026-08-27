@@ -24,8 +24,7 @@ import {
 } from '@generaltranslation/api';
 import { resolveCanonicalLocale } from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
-import { ApiError } from 'generaltranslation/errors';
-import { defaultBaseUrl } from 'generaltranslation/internal';
+import { defaultBaseUrl, unwrapApiResult } from 'generaltranslation/internal';
 import type { DownloadedFile, FileFormat } from 'generaltranslation/types';
 
 let client = createApiClient({ baseUrl: defaultBaseUrl });
@@ -45,33 +44,6 @@ export function configureApiClient(
   customMapping = mapping;
 }
 
-type ApiResult<T> = {
-  data: T | undefined;
-  error: unknown;
-  response?: Response;
-};
-
-function isErrorResponse(error: unknown): error is { error: string } {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'error' in error &&
-    typeof error.error === 'string'
-  );
-}
-
-function responseData<T>(result: ApiResult<T>): Exclude<T, undefined> {
-  if (result.data !== undefined) return result.data as Exclude<T, undefined>;
-  if (result.response && isErrorResponse(result.error)) {
-    throw new ApiError(
-      result.error.error,
-      result.response.status,
-      result.error.error
-    );
-  }
-  throw result.error;
-}
-
 export const api = {
   async uploadSourceFiles(
     files: Array<{
@@ -84,7 +56,7 @@ export const api = {
       customMapping
     );
     const result = await processBatches(files, async (batch) => {
-      const response = responseData(
+      const response = unwrapApiResult(
         await uploadSourceFiles({
           body: {
             data: batch.map(({ source }) => ({
@@ -101,7 +73,7 @@ export const api = {
       );
       return response.uploadedFiles;
     });
-    return { uploadedFiles: result, count: result.length };
+    return { uploadedFiles: result };
   },
 
   async uploadTranslations(
@@ -109,7 +81,7 @@ export const api = {
     options: { sourceLocale: string }
   ) {
     const result = await processBatches(files, async (batch) => {
-      const response = responseData(
+      const response = unwrapApiResult(
         await uploadTranslations({
           body: {
             data: batch.map(({ source, translations }) => ({
@@ -135,7 +107,7 @@ export const api = {
       );
       return response.uploadedFiles;
     });
-    return { uploadedFiles: result, count: result.length };
+    return { uploadedFiles: result };
   },
 
   async enqueueFiles(
@@ -153,7 +125,7 @@ export const api = {
       resolveCanonicalLocale(locale, customMapping)
     );
     const result = await processBatches(files, async (batch) => {
-      const response = responseData(
+      const response = unwrapApiResult(
         await enqueueFileTranslations({
           body: {
             files: batch,
@@ -177,7 +149,7 @@ export const api = {
     branchId?: string;
   }) {
     const { fileId, ...queryParams } = query;
-    return responseData(
+    return unwrapApiResult(
       await getTranslationStatus({
         path: { fileId },
         query: queryParams,
@@ -193,7 +165,7 @@ export const api = {
     locale?: string;
   }) {
     const { fileId, ...queryParams } = query;
-    const response = responseData(
+    const response = unwrapApiResult(
       await downloadFile({ path: { fileId }, query: queryParams, client })
     );
     return decodeFileContent(response.data, 'HTML');
@@ -201,7 +173,7 @@ export const api = {
 
   async downloadFileBatch(files: DownloadFilesData['body']) {
     const request = async (batch: DownloadFilesData['body']) =>
-      responseData(await downloadFiles({ body: batch, client }));
+      unwrapApiResult(await downloadFiles({ body: batch, client }));
     const responses =
       files.length === 0
         ? [await request([])]
@@ -223,7 +195,7 @@ export const api = {
     files: GenerateProjectContextData['body']['files'],
     options: Omit<GenerateProjectContextData['body'], 'files'> = {}
   ) {
-    return responseData(
+    return unwrapApiResult(
       await generateProjectContext({ body: { files, ...options }, client })
     );
   },
@@ -236,10 +208,10 @@ export const api = {
   },
 
   async queryFileData(body: GetFileInfoData['body']) {
-    return responseData(await getFileInfo({ body, client }));
+    return unwrapApiResult(await getFileInfo({ body, client }));
   },
 
   async createBranch(body: CreateBranchData['body']) {
-    return responseData(await createBranch({ body, client }));
+    return unwrapApiResult(await createBranch({ body, client }));
   },
 };
