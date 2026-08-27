@@ -42,7 +42,7 @@ import {
   type UploadSourceFilesData,
   type UploadTranslationsData,
 } from 'generaltranslation/api';
-import { ApiError } from 'generaltranslation/errors';
+import { unwrapApiResult } from 'generaltranslation/internal';
 
 let client: ReturnType<typeof createApiClient> | undefined;
 let configuredClientConfig: ApiClientConfig | undefined;
@@ -79,49 +79,21 @@ export function configureApiClient(
   customMapping = mapping;
 }
 
-type ApiResult<T> = {
-  data: T | undefined;
-  error: unknown;
-  response?: Response;
-};
-
-function isErrorResponse(error: unknown): error is { error: string } {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'error' in error &&
-    typeof error.error === 'string'
-  );
-}
-
-function responseData<T>(result: ApiResult<T>): Exclude<T, undefined> {
-  if (result.data !== undefined) {
-    // TypeScript cannot narrow a generic T after excluding undefined; the
-    // runtime guard above establishes the exact Exclude<T, undefined> result.
-    return result.data as Exclude<T, undefined>;
-  }
-  if (result.response) {
-    const message = isErrorResponse(result.error)
-      ? result.error.error
-      : typeof result.error === 'string'
-        ? result.error
-        : result.response.statusText;
-    throw new ApiError(message, result.response.status, message);
-  }
-  throw result.error;
-}
-
 export const api = {
   async queryBranchData(body: GetBranchInfoData['body']) {
-    return responseData(await getBranchInfo({ body, client: getClient() }));
+    return unwrapApiResult(
+      await getBranchInfo({ body, client: getClient() })
+    );
   },
 
   async createBranch(body: CreateBranchData['body']) {
-    return responseData(await createBranch({ body, client: getClient() }));
+    return unwrapApiResult(
+      await createBranch({ body, client: getClient() })
+    );
   },
 
   async queryFileData(body: GetFileInfoData['body']) {
-    const result = responseData(
+    const result = unwrapApiResult(
       await getFileInfo({
         body: {
           ...body,
@@ -150,7 +122,7 @@ export const api = {
   },
 
   async checkJobStatus(jobIds: string[]) {
-    return responseData(
+    return unwrapApiResult(
       await getTranslationJobInfo({
         body: { jobIds },
         client: getClient(),
@@ -164,7 +136,7 @@ export const api = {
       throw new Error('Project ID is required to fetch project information');
     }
     const projectInfoClient = createApiClient({ ...config, timeoutMs });
-    return responseData(
+    return unwrapApiResult(
       await getProjectInfo({
         client: projectInfoClient,
         path: { projectId: config.projectId },
@@ -180,7 +152,7 @@ export const api = {
     if (files.length === 0) return { files: [], count: 0, pending: [] };
 
     const request = async (batch: DownloadFilesData['body']) =>
-      responseData(
+      unwrapApiResult(
         await downloadFiles({
           body: batch.map((file) => ({
             ...file,
@@ -210,14 +182,14 @@ export const api = {
   },
 
   async publishFiles(files: PublishFilesData['body']['files']) {
-    return responseData(
+    return unwrapApiResult(
       await publishFiles({ body: { files }, client: getClient() })
     );
   },
 
   async submitUserEditDiffs(body: SubmitUserEditDiffsData['body']) {
     return processBatches(body.diffs, async (diffs) => [
-      responseData(
+      unwrapApiResult(
         await submitUserEditDiffs({
           body: {
             projectId: body.projectId,
@@ -233,11 +205,11 @@ export const api = {
   },
 
   async createTag(body: CreateTagData['body']) {
-    return responseData(await createTag({ body, client: getClient() }));
-  },
+    return unwrapApiResult(await createTag({ body, client: getClient() }));
+  }
 
   async createProject(body: CreateProjectData['body']) {
-    return responseData(
+    return unwrapApiResult(
       await createProject({
         body: {
           ...body,
@@ -255,7 +227,7 @@ export const api = {
   // intersection; delete one copy when utils/gt.ts is removed.
   async getOrphanedFiles(branchId: string, fileIds: string[]) {
     const request = async (batch: string[]) =>
-      responseData(
+      unwrapApiResult(
         await getOrphanedFiles({
           body: { branchId, fileIds: batch },
           client: getClient(),
@@ -286,7 +258,7 @@ export const api = {
     options: Pick<ProcessFileMovesData['body'], 'branchId'>
   ) {
     const result = await processBatches(moves, async (batch) => {
-      const response = responseData(
+      const response = unwrapApiResult(
         await processFileMoves({
           body: { branchId: options.branchId, moves: batch },
           client: getClient(),
@@ -310,7 +282,7 @@ export const api = {
     files: GenerateProjectContextData['body']['files'],
     options: Omit<GenerateProjectContextData['body'], 'files'> = {}
   ) {
-    return responseData(
+    return unwrapApiResult(
       await generateProjectContext({
         body: {
           files: files.map(({ branchId, fileId, versionId }) => ({
@@ -329,12 +301,12 @@ export const api = {
   },
 
   async awaitJobs(jobIds: readonly string[], options?: AwaitJobsOptions) {
-    // Poll through responseData so HTTP failures throw ApiError with the
+    // Poll through unwrapApiResult so HTTP failures throw ApiError with the
     // status code instead of the decoded response body.
     return pollJobs(
       jobIds,
       async (pendingJobIds, signal) =>
-        responseData(
+        unwrapApiResult(
           await getTranslationJobInfo({
             body: { jobIds: pendingJobIds },
             client: getClient(),
@@ -358,7 +330,7 @@ export const api = {
       resolveCanonicalLocale(locale, customMapping)
     );
     const result = await processBatches(files, async (batch) => {
-      const response = responseData(
+      const response = unwrapApiResult(
         await enqueueFileTranslations({
           body: {
             files: batch.map(
@@ -405,7 +377,7 @@ export const api = {
       customMapping
     );
     const result = await processBatches(files, async (batch) => {
-      const response = responseData(
+      const response = unwrapApiResult(
         await uploadSourceFiles({
           body: {
             data: batch.map(({ source }) => ({
@@ -431,7 +403,7 @@ export const api = {
     options: { sourceLocale: string }
   ) {
     const result = await processBatches(files, async (batch) => {
-      const response = responseData(
+      const response = unwrapApiResult(
         await uploadTranslations({
           body: {
             data: batch.map(({ source, translations }) => ({
