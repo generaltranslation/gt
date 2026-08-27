@@ -99,6 +99,11 @@ export type Options<
   meta?: Record<string, unknown>;
 };
 
+/**
+ * Create a Project
+ *
+ * Create a Project in the Organization associated with an Organization API key. The key must have the `org:projects:create` permission. Project keys cannot use this endpoint. Enabling CDN delivery also requires `project:write`.
+ */
 export const createProject = <ThrowOnError extends boolean = false>(
   options: Options<CreateProjectData, ThrowOnError>
 ) =>
@@ -116,6 +121,11 @@ export const createProject = <ThrowOnError extends boolean = false>(
     },
   });
 
+/**
+ * Upload source files
+ *
+ * Upload one or more source files to the project. Max 100 files per request.
+ */
 export const uploadSourceFiles = <ThrowOnError extends boolean = false>(
   options: Options<UploadSourceFilesData, ThrowOnError>
 ) =>
@@ -133,6 +143,11 @@ export const uploadSourceFiles = <ThrowOnError extends boolean = false>(
     },
   });
 
+/**
+ * Upload translated files
+ *
+ * Upload translated files linked to their source files. Max 100 files per request.
+ */
 export const uploadTranslations = <ThrowOnError extends boolean = false>(
   options: Options<UploadTranslationsData, ThrowOnError>
 ) =>
@@ -150,6 +165,11 @@ export const uploadTranslations = <ThrowOnError extends boolean = false>(
     },
   });
 
+/**
+ * Upload Project assets
+ *
+ * Upload OpenType or TrueType fonts through a Project and make them available to Lottie translation workflows across its Organization. Each font is keyed by a normalized identity derived from its family, weight, and italic style (from the supplied `family` and `style`, or from the font metadata and file name). Re-uploading the same identity overwrites the existing asset, so complete retries after a `500` response are safe.
+ */
 export const uploadAssets = <ThrowOnError extends boolean = false>(
   options: Options<UploadAssetsData, ThrowOnError>
 ) =>
@@ -163,6 +183,11 @@ export const uploadAssets = <ThrowOnError extends boolean = false>(
     },
   });
 
+/**
+ * Submit translation diffs
+ *
+ * Overwrite translations with user-provided localized content.
+ */
 export const submitUserEditDiffs = <ThrowOnError extends boolean = false>(
   options: Options<SubmitUserEditDiffsData, ThrowOnError>
 ) =>
@@ -180,6 +205,13 @@ export const submitUserEditDiffs = <ThrowOnError extends boolean = false>(
     },
   });
 
+/**
+ * Check if context generation is needed
+ *
+ * Check whether the Project needs translation context generated. This deprecated endpoint is retained for backward compatibility and is no longer called by current clients.
+ *
+ * @deprecated
+ */
 export const shouldGenerateProjectContext = <
   ThrowOnError extends boolean = false,
 >(
@@ -195,6 +227,11 @@ export const shouldGenerateProjectContext = <
     ...options,
   });
 
+/**
+ * Generate translation context
+ *
+ * Generate glossaries and translation instructions for the project.
+ */
 export const generateProjectContext = <ThrowOnError extends boolean = false>(
   options: Options<GenerateProjectContextData, ThrowOnError>
 ) =>
@@ -212,6 +249,13 @@ export const generateProjectContext = <ThrowOnError extends boolean = false>(
     },
   });
 
+/**
+ * Get context generation job status
+ *
+ * Track a context generation job. This deprecated endpoint is retained for backward compatibility; new integrations should use `POST /v2/project/jobs/info`.
+ *
+ * @deprecated
+ */
 export const getProjectContextGenerationStatus = <
   ThrowOnError extends boolean = false,
 >(
@@ -227,6 +271,11 @@ export const getProjectContextGenerationStatus = <
     ...options,
   });
 
+/**
+ * Queue files for translation
+ *
+ * Enqueue uploaded source files for background translation. Max 100 files per request. The response shape depends on the requested `gt-api-version`.
+ */
 export const enqueueFileTranslations = <ThrowOnError extends boolean = false>(
   options: Options<EnqueueFileTranslationsData, ThrowOnError>
 ) =>
@@ -244,6 +293,11 @@ export const enqueueFileTranslations = <ThrowOnError extends boolean = false>(
     },
   });
 
+/**
+ * Publish or unpublish files
+ *
+ * Publish or unpublish translated files to the CDN. Requires CDN to be enabled.
+ */
 export const publishFiles = <ThrowOnError extends boolean = false>(
   options: Options<PublishFilesData, ThrowOnError>
 ) =>
@@ -257,6 +311,13 @@ export const publishFiles = <ThrowOnError extends boolean = false>(
     },
   });
 
+/**
+ * Download a single file
+ *
+ * Download a single source or translated file. This deprecated endpoint is retained for backward compatibility; new integrations should use `POST /v2/project/files/download`.
+ *
+ * @deprecated
+ */
 export const downloadFile = <ThrowOnError extends boolean = false>(
   options: Options<DownloadFileData, ThrowOnError>
 ) =>
@@ -266,6 +327,11 @@ export const downloadFile = <ThrowOnError extends boolean = false>(
     ...options,
   });
 
+/**
+ * Download multiple files
+ *
+ * Download up to 100 source or translated files in one request.
+ */
 export const downloadFiles = <ThrowOnError extends boolean = false>(
   options: Options<DownloadFilesData, ThrowOnError>
 ) =>
@@ -283,6 +349,11 @@ export const downloadFiles = <ThrowOnError extends boolean = false>(
     },
   });
 
+/**
+ * Get branch information
+ *
+ * Return the Project's default branch and any branches requested by name.
+ */
 export const getBranchInfo = <ThrowOnError extends boolean = false>(
   options: Options<GetBranchInfoData, ThrowOnError>
 ) =>
@@ -300,6 +371,11 @@ export const getBranchInfo = <ThrowOnError extends boolean = false>(
     },
   });
 
+/**
+ * Create a branch
+ *
+ * Create a new branch, or rename and confirm the default branch.
+ */
 export const createBranch = <ThrowOnError extends boolean = false>(
   options: Options<CreateBranchData, ThrowOnError>
 ) =>
@@ -313,6 +389,11 @@ export const createBranch = <ThrowOnError extends boolean = false>(
     },
   });
 
+/**
+ * Create or update a tag
+ *
+ * Create or upsert a tag that points at a set of file versions.
+ */
 export const createTag = <ThrowOnError extends boolean = false>(
   options: Options<CreateTagData, ThrowOnError>
 ) =>
@@ -326,6 +407,11 @@ export const createTag = <ThrowOnError extends boolean = false>(
     },
   });
 
+/**
+ * Get Project information
+ *
+ * Read the authenticated Project's name, Organization ID, locale settings, and auto-approval setting.
+ */
 export const getProjectInfo = <ThrowOnError extends boolean = false>(
   options: Options<GetProjectInfoData, ThrowOnError>
 ) =>
@@ -339,6 +425,11 @@ export const getProjectInfo = <ThrowOnError extends boolean = false>(
     ...options,
   });
 
+/**
+ * Update Project information
+ *
+ * Update the Project's default locale or CDN delivery setting.
+ */
 export const updateProjectInfo = <ThrowOnError extends boolean = false>(
   options: Options<UpdateProjectInfoData, ThrowOnError>
 ) =>
@@ -356,6 +447,11 @@ export const updateProjectInfo = <ThrowOnError extends boolean = false>(
     },
   });
 
+/**
+ * Get translation job status
+ *
+ * Return normalized status information for one or more queued translation or context generation jobs.
+ */
 export const getTranslationJobInfo = <ThrowOnError extends boolean = false>(
   options: Options<GetTranslationJobInfoData, ThrowOnError>
 ) =>
@@ -373,6 +469,11 @@ export const getTranslationJobInfo = <ThrowOnError extends boolean = false>(
     },
   });
 
+/**
+ * Translate content at runtime
+ *
+ * Translate one or more strings or structured content entries with caching and memoization. Development API keys are accepted for this endpoint.
+ */
 export const translate = <ThrowOnError extends boolean = false>(
   options: Options<TranslateData, ThrowOnError>
 ) =>
@@ -386,6 +487,11 @@ export const translate = <ThrowOnError extends boolean = false>(
     },
   });
 
+/**
+ * Get file metadata
+ *
+ * Get detailed metadata for specific source and translated files.
+ */
 export const getFileInfo = <ThrowOnError extends boolean = false>(
   options: Options<GetFileInfoData, ThrowOnError>
 ) =>
@@ -399,6 +505,11 @@ export const getFileInfo = <ThrowOnError extends boolean = false>(
     },
   });
 
+/**
+ * Get translation status for a file
+ *
+ * Return translation progress and availability by locale for one source file, along with its source metadata.
+ */
 export const getTranslationStatus = <ThrowOnError extends boolean = false>(
   options: Options<GetTranslationStatusData, ThrowOnError>
 ) =>
@@ -412,6 +523,11 @@ export const getTranslationStatus = <ThrowOnError extends boolean = false>(
     ...options,
   });
 
+/**
+ * Move or rename files
+ *
+ * Clone source files and their translations under new file IDs.
+ */
 export const processFileMoves = <ThrowOnError extends boolean = false>(
   options: Options<ProcessFileMovesData, ThrowOnError>
 ) =>
@@ -429,6 +545,11 @@ export const processFileMoves = <ThrowOnError extends boolean = false>(
     },
   });
 
+/**
+ * Find orphaned files
+ *
+ * Return files on a branch that are not present in the provided file ID list.
+ */
 export const getOrphanedFiles = <ThrowOnError extends boolean = false>(
   options: Options<GetOrphanedFilesData, ThrowOnError>
 ) =>
@@ -446,6 +567,11 @@ export const getOrphanedFiles = <ThrowOnError extends boolean = false>(
     },
   });
 
+/**
+ * Create a CLI wizard session
+ *
+ * Create a temporary session for CLI browser authentication.
+ */
 export const createCliWizardSession = <ThrowOnError extends boolean = false>(
   options: Options<CreateCliWizardSessionData, ThrowOnError>
 ) =>
@@ -462,6 +588,11 @@ export const createCliWizardSession = <ThrowOnError extends boolean = false>(
     },
   });
 
+/**
+ * Delete a CLI wizard session
+ *
+ * Delete a completed or abandoned CLI wizard session.
+ */
 export const deleteCliWizardSession = <ThrowOnError extends boolean = false>(
   options: Options<DeleteCliWizardSessionData, ThrowOnError>
 ) =>
@@ -471,6 +602,11 @@ export const deleteCliWizardSession = <ThrowOnError extends boolean = false>(
     ThrowOnError
   >({ url: '/cli/wizard/{sessionId}', ...options });
 
+/**
+ * Get a CLI wizard session
+ *
+ * Get credentials for a completed CLI wizard session or its current waiting status.
+ */
 export const getCliWizardSession = <ThrowOnError extends boolean = false>(
   options: Options<GetCliWizardSessionData, ThrowOnError>
 ) =>
