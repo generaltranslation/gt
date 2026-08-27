@@ -43,8 +43,9 @@ export async function awaitJobs(
   );
 }
 
-// Internal seam: the polling loop with an injected status loader so tests can
-// drive it without a client. Not re-exported from the package index.
+// The polling loop with an injected status loader, so callers can supply
+// their own request/error normalization (and tests can drive it without a
+// client).
 export async function pollJobs(
   jobIds: readonly string[],
   getJobStatuses: GetJobStatuses,
