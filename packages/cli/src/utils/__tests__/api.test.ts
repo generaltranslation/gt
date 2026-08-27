@@ -146,6 +146,26 @@ describe('CLI API client', () => {
     });
   });
 
+  it('polls project setup status through the job info endpoint', async () => {
+    fetchMock.mockImplementation(async (request) => {
+      expect(new URL(request.url).pathname).toBe('/v2/project/jobs/info');
+      await expect(request.json()).resolves.toEqual({ jobIds: ['setup-job'] });
+      return Response.json([
+        {
+          jobId: 'setup-job',
+          status: 'failed',
+          error: { message: 'Context generation failed' },
+        },
+      ]);
+    });
+
+    await expect(api.getSetupStatus('setup-job')).resolves.toEqual({
+      jobId: 'setup-job',
+      status: 'failed',
+      error: { message: 'Context generation failed' },
+    });
+  });
+
   it('canonicalizes user edit diff locales', async () => {
     configure({
       customMapping: { 'brand-english': { code: 'en-US' } },

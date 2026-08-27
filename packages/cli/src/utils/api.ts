@@ -17,7 +17,6 @@ import {
   getBranchInfo,
   getFileInfo,
   getOrphanedFiles,
-  getProjectContextGenerationStatus,
   getTranslationJobInfo,
   pollJobs,
   processBatches,
@@ -213,8 +212,14 @@ export const api = {
   },
 
   async getSetupStatus(jobId: string) {
-    return responseData(
-      await getProjectContextGenerationStatus({ path: { jobId }, client })
+    const statuses = responseData(
+      await getTranslationJobInfo({ body: { jobIds: [jobId] }, client })
+    );
+    return (
+      statuses.find((status) => status.jobId === jobId) ?? {
+        jobId,
+        status: 'unknown' as const,
+      }
     );
   },
 
