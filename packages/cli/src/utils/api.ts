@@ -79,10 +79,6 @@ export function configureApiClient(
   customMapping = mapping;
 }
 
-export function createNonRetryingApiClient(config: ApiClientConfig) {
-  return createApiClient({ ...config, retryPolicy: 'none' });
-}
-
 export const api = {
   async queryBranchData(body: GetBranchInfoData['body']) {
     return unwrapApiResult(await getBranchInfo({ body, client: getClient() }));

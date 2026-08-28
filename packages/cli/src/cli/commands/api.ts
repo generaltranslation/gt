@@ -1,6 +1,10 @@
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
-import type { ApiClientConfig, Client } from 'generaltranslation/api';
+import {
+  createApiClient,
+  type ApiClientConfig,
+  type Client,
+} from 'generaltranslation/api';
 import {
   createDiagnosticMessage,
   defaultBaseUrl,
@@ -11,7 +15,6 @@ import { exitSync } from '../../console/logging.js';
 import { loadConfig } from '../../fs/config/loadConfig.js';
 import { resolveProjectId } from '../../fs/utils.js';
 import type { SharedFlags } from '../../types/index.js';
-import { createNonRetryingApiClient } from '../../utils/api.js';
 
 export type ApiCommandOptions = SharedFlags & {
   header?: string[];
@@ -70,13 +73,6 @@ function parseMethod(
   }
   // The set validation narrows Commander input to the generated HTTP method union.
   return method as ApiRequestOptions['method'];
-}
-
-function loadOpenApiSpec(): unknown {
-  const require = createRequire(import.meta.url);
-  const specPath = require.resolve('generaltranslation/api/openapi.json');
-  const spec: unknown = JSON.parse(fs.readFileSync(specPath, 'utf8'));
-  return spec;
 }
 
 function parseHeaders(
@@ -159,7 +155,10 @@ export async function handleApiCommand(
     dependencies.writeStderr ?? ((output) => process.stderr.write(output));
 
   if (options.spec) {
-    writeStdout(`${JSON.stringify(loadOpenApiSpec(), null, 2)}\n`);
+    const require = createRequire(import.meta.url);
+    const specPath = require.resolve('generaltranslation/api/openapi.json');
+    const spec: unknown = JSON.parse(fs.readFileSync(specPath, 'utf8'));
+    writeStdout(`${JSON.stringify(spec, null, 2)}\n`);
     return;
   }
 
@@ -184,7 +183,7 @@ export async function handleApiCommand(
   const config = configPath
     ? loadConfig(configPath)
     : (resolveConfig(process.cwd())?.config ?? {});
-  const client = createNonRetryingApiClient({
+  const client = createApiClient({
     apiKey: options.apiKey ?? process.env.GT_API_KEY,
     baseUrl:
       typeof config.baseUrl === 'string' ? config.baseUrl : defaultBaseUrl,
@@ -194,6 +193,7 @@ export async function handleApiCommand(
       (typeof config.projectId === 'string'
         ? config.projectId
         : resolveProjectId()),
+    retryPolicy: 'none',
   });
   const normalizedEndpoint = endpoint.startsWith('/')
     ? endpoint
@@ -213,7 +213,7 @@ export async function handleApiCommand(
   const result = await client
     .request({
       body,
-      bodySerializer: body === undefined ? undefined : () => body,
+      bodySerializer: () => body,
       headers,
       method,
       parseAs: 'stream',

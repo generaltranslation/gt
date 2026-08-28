@@ -13,7 +13,7 @@
   "scripts": {
     "build:release": "pnpm run build:clean",
     "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
-    "build": "tsdown && node -e \"require('node:fs').copyFileSync(require.resolve('@generaltranslation/api/spec/openapi.json'), 'dist/openapi.json')\"",
+    "build": "tsdown",
     "test": "vitest run --config=./vitest.config.ts",
     "test:watch": "vitest --config=./vitest.config.ts",
     "release": "pnpm run build:clean && pnpm publish",
