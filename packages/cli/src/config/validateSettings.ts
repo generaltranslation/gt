@@ -9,12 +9,8 @@ import { logErrorAndExit } from '../console/logging.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
-type SettingsToValidate = Omit<Settings, 'modelProvider'> & {
-  modelProvider?: unknown;
-};
-
 export function validateSettings(
-  settings: SettingsToValidate
+  settings: Omit<Settings, 'modelProvider'> & { modelProvider?: unknown }
 ): asserts settings is Settings {
   if (
     settings.modelProvider !== undefined &&
