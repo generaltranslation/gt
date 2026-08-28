@@ -219,7 +219,10 @@ describe('OAuth session operations', () => {
       fetch: vi.fn<typeof fetch>().mockResolvedValue(jsonResponse(response)),
     });
 
-    expect((await readOAuthTokens())?.refreshToken).toBe('refresh-1');
+    expect(await readOAuthTokens()).toMatchObject({
+      refreshToken: 'refresh-1',
+      scope: tokens.scope,
+    });
   });
 
   it('revokes the refresh token and removes local credentials on logout', async () => {
