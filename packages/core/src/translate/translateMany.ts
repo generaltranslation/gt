@@ -119,8 +119,8 @@ export async function _translateMany(
   }
 
   const runtimeResponse = unwrapApiResult(result);
-  // OpenAPI exposes successful translations as unknown, while core's public
-  // result type preserves the format-specific Content union.
+  // OpenAPI allows an optional JsonValue translation, while core's published
+  // result requires the format-specific Content union.
   const response = runtimeResponse as Record<string, TranslationResult>;
 
   // If input was an array, map the record response back to an array in input order
