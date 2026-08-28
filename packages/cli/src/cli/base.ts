@@ -343,8 +343,8 @@ export class BaseCLI {
         .argument('<job-id>', 'Setup job ID')
     ).action(async (jobId, options) => {
       await generateSettings(options);
-      const status = await api.getSetupStatus(jobId);
-      logger.info(status.status);
+      const [status] = await api.checkJobStatus([jobId]);
+      logger.info(status?.status ?? 'unknown');
     });
   }
 

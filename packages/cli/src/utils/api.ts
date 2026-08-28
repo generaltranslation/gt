@@ -71,10 +71,6 @@ function isErrorResponse(error: unknown): error is { error: string } {
   );
 }
 
-function batchCount(items: readonly unknown[]): number {
-  return Math.ceil(items.length / DEFAULT_BATCH_SIZE);
-}
-
 function responseData<T>(result: ApiResult<T>): Exclude<T, undefined> {
   if (result.data !== undefined) {
     return result.data as Exclude<T, undefined>;
@@ -211,18 +207,8 @@ export const api = {
     );
   },
 
-  async getSetupStatus(jobId: string) {
-    const statuses = responseData(
-      await getTranslationJobInfo({ body: { jobIds: [jobId] }, client })
-    );
-    return (
-      statuses.find((status) => status.jobId === jobId) ?? {
-        jobId,
-        status: 'unknown' as const,
-      }
-    );
-  },
-
+  // ponytail: duplicates core/src/translate/getOrphanedFiles.ts batching +
+  // intersection; delete one copy when utils/gt.ts is removed.
   async getOrphanedFiles(branchId: string, fileIds: string[]) {
     const request = async (batch: string[]) =>
       responseData(
@@ -359,7 +345,7 @@ export const api = {
     return {
       jobData: Object.fromEntries(result),
       locales: targetLocales,
-      message: `Successfully enqueued ${result.length} file translation jobs in ${batchCount(files)} batch(es)`,
+      message: `Successfully enqueued ${result.length} file translation jobs in ${Math.ceil(files.length / DEFAULT_BATCH_SIZE)} batch(es)`,
     };
   },
 
@@ -392,11 +378,7 @@ export const api = {
       return response.uploadedFiles;
     });
 
-    return {
-      uploadedFiles: result,
-      count: result.length,
-      message: `Successfully uploaded ${result.length} files in ${batchCount(files)} batch(es)`,
-    };
+    return { uploadedFiles: result };
   },
 
   async uploadTranslations(
@@ -435,11 +417,7 @@ export const api = {
       return response.uploadedFiles;
     });
 
-    return {
-      uploadedFiles: result,
-      count: result.length,
-      message: `Successfully uploaded ${result.length} files in ${batchCount(files)} batch(es)`,
-    };
+    return { uploadedFiles: result };
   },
 };
 
