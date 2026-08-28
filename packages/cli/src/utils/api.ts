@@ -1,4 +1,3 @@
-import { resolveCanonicalLocale } from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import {
   createApiClient,
@@ -8,13 +7,11 @@ import {
   getOrphanedFiles,
   getProjectInfo,
   getTranslationJobInfo,
-  pollJobs,
   processBatches,
   processFileMoves,
   publishFiles,
   submitUserEditDiffs,
   type ApiClientConfig,
-  type AwaitJobsOptions,
   type CreateProjectData,
   type CreateTagData,
   type GetBranchInfoData,
@@ -33,13 +30,11 @@ const {
   getClientConfig,
   ...sharedApi
 } = createGtApiAdapter();
-let customMapping: CustomMapping | undefined;
 
 export function configureApiClient(
   config: ApiClientConfig & { customMapping?: CustomMapping }
 ): void {
   configureSharedApi(config);
-  customMapping = config.customMapping;
 }
 
 export function createNonRetryingApiClient(config: ApiClientConfig) {
@@ -91,7 +86,7 @@ export const api = {
             projectId: body.projectId,
             diffs: diffs.map((diff) => ({
               ...diff,
-              locale: resolveCanonicalLocale(diff.locale, customMapping),
+              locale: sharedApi.resolveCanonicalLocale(diff.locale),
             })),
           },
           client: getClient(),
@@ -109,10 +104,7 @@ export const api = {
       await createProject({
         body: {
           ...body,
-          defaultLocale: resolveCanonicalLocale(
-            body.defaultLocale,
-            customMapping
-          ),
+          defaultLocale: sharedApi.resolveCanonicalLocale(body.defaultLocale),
         },
         client: getClient(),
       })
@@ -172,23 +164,6 @@ export const api = {
         failed: result.length - succeeded,
       },
     };
-  },
-
-  async awaitJobs(jobIds: readonly string[], options?: AwaitJobsOptions) {
-    // Poll through unwrapApiResult so HTTP failures throw ApiError with the
-    // status code instead of the decoded response body.
-    return pollJobs(
-      jobIds,
-      async (pendingJobIds, signal) =>
-        unwrapApiResult(
-          await getTranslationJobInfo({
-            body: { jobIds: pendingJobIds },
-            client: getClient(),
-            signal,
-          })
-        ),
-      options
-    );
   },
 };
 
