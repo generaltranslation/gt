@@ -1,10 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { initializeI18nConfig } from 'gt-i18n/internal';
-import {
-  AsyncConditionStore,
-  getAsyncConditionStore,
-  setAsyncConditionStore,
-} from '../../condition-store/AsyncConditionStore';
+import { getLocale } from '../getLocale';
 import { isLocaleSupported, resolveLocaleOrDefault } from '../localeValidation';
 import { registerLocale } from '../registerLocale';
 
@@ -50,11 +46,6 @@ describe('locale validation', () => {
     vi.clearAllMocks();
     delete process.env._GENERALTRANSLATION_DISABLE_INVALID_LOCALE_WARNING;
     setupI18nConfig();
-    setAsyncConditionStore(
-      new AsyncConditionStore({
-        getLocale: async () => 'fr',
-      })
-    );
     consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
@@ -121,6 +112,6 @@ describe('locale validation', () => {
   it('falls back when registering an unsupported locale', async () => {
     registerLocale('llms.txt');
 
-    await expect(getAsyncConditionStore().getLocale()).resolves.toBe('en');
+    await expect(getLocale()).resolves.toBe('en');
   });
 });

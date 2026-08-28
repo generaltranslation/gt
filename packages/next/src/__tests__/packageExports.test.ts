@@ -6,6 +6,8 @@ import { describe, expect, it } from 'vitest';
 
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const distInitGTServerPath = join(packageRoot, 'dist/setup/initGT.server.mjs');
+const distGetLocalePath = join(packageRoot, 'dist/request/getLocale.mjs');
+const distGetRegionPath = join(packageRoot, 'dist/request/getRegion.mjs');
 const distClientPath = join(packageRoot, 'dist/index.client.mjs');
 
 function runNode(args: string[]): void {
@@ -127,12 +129,14 @@ describe('gt-next package exports', () => {
   const distClientIt = existsSync(distClientPath) ? it : it.skip;
 
   distIt('keeps custom request functions visible to bundler aliases', () => {
-    const serverBuild = readFileSync(distInitGTServerPath, 'utf8');
+    const requestBuild = [distGetLocalePath, distGetRegionPath]
+      .map((path) => readFileSync(path, 'utf8'))
+      .join('\n');
 
-    expect(serverBuild).toContain('gt-next/internal/_getLocale');
-    expect(serverBuild).toContain('gt-next/internal/_getRegion');
-    expect(serverBuild).not.toContain('createRequire');
-    expect(serverBuild).not.toContain('serverRequire');
+    expect(requestBuild).toContain('gt-next/internal/_getLocale');
+    expect(requestBuild).toContain('gt-next/internal/_getRegion');
+    expect(requestBuild).not.toContain('createRequire');
+    expect(requestBuild).not.toContain('serverRequire');
   });
 
   distClientIt(
@@ -146,7 +150,7 @@ describe('gt-next package exports', () => {
     }
   );
 
-  distIt('initializes custom resolvers from the ESM server build', () => {
+  distIt('leaves custom resolvers out of server initialization', () => {
     const script = `
       import { initializeGTServer } from ${JSON.stringify(
         pathToFileURL(distInitGTServerPath).href
