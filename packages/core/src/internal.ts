@@ -24,7 +24,12 @@ export type {
 } from './types';
 export { isVariable } from './utils/isVariable';
 export { minifyVariableType } from './utils/minify';
-export { encode, decode } from './utils/base64';
+export {
+  decode,
+  decodeFileContent,
+  encode,
+  encodeFileContent,
+} from './utils/base64';
 export { isSupportedFileFormatTransform } from './utils/isSupportedFileFormatTransform';
 export { API_VERSION } from './translate/api';
 export {

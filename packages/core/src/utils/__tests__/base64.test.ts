@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { encode, decode } from '../base64';
+import {
+  decode,
+  decodeFileContent,
+  encode,
+  encodeFileContent,
+} from '../base64';
 
 describe('base64 utils', () => {
   describe('encode', () => {
@@ -74,6 +79,22 @@ describe('base64 utils', () => {
       const decoded = decode(encoded);
       expect(decoded).toBe('{"key":"value","number":42}');
       expect(JSON.parse(decoded)).toEqual({ key: 'value', number: 42 });
+    });
+  });
+
+  describe('file content encoding', () => {
+    it('encodes text formats and preserves Lottie payloads', () => {
+      const text = 'こんにちは 👋';
+
+      expect(decodeFileContent(encodeFileContent(text, 'JSON'), 'JSON')).toBe(
+        text
+      );
+      expect(encodeFileContent('already-base64', 'LOTTIE')).toBe(
+        'already-base64'
+      );
+      expect(decodeFileContent('already-base64', 'LOTTIE')).toBe(
+        'already-base64'
+      );
     });
   });
 
