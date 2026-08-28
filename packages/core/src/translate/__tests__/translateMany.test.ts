@@ -3,6 +3,7 @@ import {
   translate,
   type TranslateResponse,
 } from '@generaltranslation/api';
+import type { Content } from '@generaltranslation/format/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { defaultRuntimeApiUrl } from '../../settings/settingsUrls';
 import { TranslationRequestConfig } from '../../types';
@@ -189,6 +190,20 @@ describe.sequential('_translateMany', () => {
       _translateMany([], globalMetadata, mockConfig)
     ).rejects.toThrow(validationError);
     expect(validateResponse).toHaveBeenCalledWith(response);
+  });
+
+  it('sends complex JSX content through the SDK', async () => {
+    const source: Content = ['Welcome ', { t: 'strong', c: ['John'] }];
+
+    await _translateMany(
+      [{ source, metadata: { dataFormat: 'JSX' } }],
+      globalMetadata,
+      mockConfig
+    );
+
+    expect(
+      Object.values(vi.mocked(translate).mock.calls[0][0].body.requests)[0]
+    ).toMatchObject({ source });
   });
 
   it('uses content hash keys while preserving custom id metadata', async () => {

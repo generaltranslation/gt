@@ -79,15 +79,11 @@ export function configureApiClient(
 
 export const api = {
   async queryBranchData(body: GetBranchInfoData['body']) {
-    return unwrapApiResult(
-      await getBranchInfo({ body, client: getClient() })
-    );
+    return unwrapApiResult(await getBranchInfo({ body, client: getClient() }));
   },
 
   async createBranch(body: CreateBranchData['body']) {
-    return unwrapApiResult(
-      await createBranch({ body, client: getClient() })
-    );
+    return unwrapApiResult(await createBranch({ body, client: getClient() }));
   },
 
   async queryFileData(body: GetFileInfoData['body']) {
@@ -206,7 +202,7 @@ export const api = {
 
   async createTag(body: CreateTagData['body']) {
     return unwrapApiResult(await createTag({ body, client: getClient() }));
-  }
+  },
 
   async createProject(body: CreateProjectData['body']) {
     return unwrapApiResult(
