@@ -1,4 +1,9 @@
 import {
+  createApiClient,
+  translate,
+  type TranslateData,
+} from '@generaltranslation/api';
+import {
   TranslationRequestConfig,
   TranslateManyResult,
   TranslationResult,
@@ -9,9 +14,11 @@ import {
   TranslateOptions,
   EntryMetadata,
 } from '../types-dir/api/entry';
-import { apiRequest } from './utils/apiRequest';
 import type { Content } from '@generaltranslation/format/types';
 import { hashSource } from '../id';
+import { fetchWithTimeout } from './utils/fetchWithTimeout';
+import { isErrorResult, unwrapApiResult } from './utils/unwrapApiResult';
+import { validateResponse } from './utils/validateResponse';
 
 /**
  * @internal
@@ -82,20 +89,38 @@ export async function _translateMany(
     };
   }
 
-  const response = await apiRequest<Record<string, TranslationResult>>(
-    { ...config, baseUrl: config.baseUrl || defaultRuntimeApiUrl },
-    `/v2/translate`,
-    {
-      body: {
-        requests: requestsObject,
-        targetLocale: globalMetadata.targetLocale,
-        sourceLocale: globalMetadata.sourceLocale,
-        metadata: globalMetadata,
-      },
-      timeout: timeout,
-      retryPolicy: 'none',
-    }
-  );
+  const client = createApiClient({
+    apiKey: config.apiKey,
+    baseUrl: config.baseUrl || defaultRuntimeApiUrl,
+    fetch: (input, init) => fetchWithTimeout(input, init ?? {}, timeout),
+    projectId: config.projectId,
+    retryPolicy: 'none',
+  });
+  const body = {
+    requests: requestsObject,
+    targetLocale: globalMetadata.targetLocale,
+    sourceLocale: globalMetadata.sourceLocale,
+    // Core intentionally accepts custom model-provider strings beyond the
+    // OpenAPI ANTHROPIC|OPENAI|XAI|GOOGLE enum; preserve the pre-migration
+    // wire behavior at this boundary.
+    metadata: globalMetadata as TranslateData['body']['metadata'],
+  } satisfies TranslateData['body'];
+  const result = await translate({ body, client });
+
+  // Preserve validation for non-JSON/HTML runtime API error bodies.
+  if (
+    result.data === undefined &&
+    result.response &&
+    !isErrorResult(result.error)
+  ) {
+    await validateResponse(result.response);
+    throw result.error;
+  }
+
+  const runtimeResponse = unwrapApiResult(result);
+  // OpenAPI exposes successful translations as unknown, while core's public
+  // result type preserves the format-specific Content union.
+  const response = runtimeResponse as Record<string, TranslationResult>;
 
   // If input was an array, map the record response back to an array in input order
   if (hashOrder) {
