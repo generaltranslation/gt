@@ -146,7 +146,7 @@ describe('CLI API client', () => {
     });
   });
 
-  it('polls project setup status through the job info endpoint', async () => {
+  it('checks job status through the job info endpoint', async () => {
     fetchMock.mockImplementation(async (request) => {
       expect(new URL(request.url).pathname).toBe('/v2/project/jobs/info');
       await expect(request.json()).resolves.toEqual({ jobIds: ['setup-job'] });
@@ -159,11 +159,13 @@ describe('CLI API client', () => {
       ]);
     });
 
-    await expect(api.getSetupStatus('setup-job')).resolves.toEqual({
-      jobId: 'setup-job',
-      status: 'failed',
-      error: { message: 'Context generation failed' },
-    });
+    await expect(api.checkJobStatus(['setup-job'])).resolves.toEqual([
+      {
+        jobId: 'setup-job',
+        status: 'failed',
+        error: { message: 'Context generation failed' },
+      },
+    ]);
   });
 
   it('canonicalizes user edit diff locales', async () => {
@@ -229,7 +231,7 @@ describe('CLI API client', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(requestBodies[0].data).toHaveLength(100);
     expect(requestBodies[0].data[0].source.content).toBe('bWVzc2FnZS0w');
-    expect(result.count).toBe(101);
+    expect(result.uploadedFiles).toHaveLength(101);
   });
 
   it('base64-encodes and uploads translation files through the SDK', async () => {
