@@ -63,6 +63,49 @@ describe('gt api', () => {
     expect(outputText(stdout)).toBe(responseBody);
   });
 
+  it('rejects unsupported HTTP methods before making a request', async () => {
+    const fetchMock = vi.fn<typeof fetch>();
+    const stderr: string[] = [];
+    const exit = vi.fn((code: number): never => {
+      throw new Error(`exit ${code}`);
+    });
+
+    await expect(
+      handleApiCommand(
+        '/v2/example',
+        {
+          method: 'BOGUS',
+        },
+        {
+          exit,
+          fetch: fetchMock,
+          writeStderr: (output) => stderr.push(output),
+        }
+      )
+    ).rejects.toThrow('exit 1');
+
+    expect(stderr.join('')).toContain('The API request method is invalid');
+    expect(stderr.join('')).toContain('BOGUS');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('prints the bundled OpenAPI specification', async () => {
+    const stdout: OutputChunk[] = [];
+
+    await handleApiCommand(
+      undefined,
+      {
+        method: 'GET',
+        spec: true,
+      },
+      {
+        writeStdout: (output) => stdout.push(output),
+      }
+    );
+
+    expect(JSON.parse(outputText(stdout))).toMatchObject({ openapi: '3.1.0' });
+  });
+
   it('preserves binary response bodies', async () => {
     const responseBody = Uint8Array.from([0, 255, 1, 128]);
     const stdout: OutputChunk[] = [];
