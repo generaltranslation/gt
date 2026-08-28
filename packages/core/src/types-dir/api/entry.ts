@@ -1,11 +1,11 @@
-import { Content, DataFormat } from '../../types';
+import type { TranslateData } from '@generaltranslation/api';
+import type { Content, DataFormat } from '../../types';
 
-/**
- * ActionType is the type of action to perform on the request.
- *
- * @param fast - The fast action type (mini model).
- */
-export type ActionType = 'fast'; // TODO: Add standard action type when available in the API
+export type ActionType = NonNullable<
+  NonNullable<
+    TranslateData['body']['requests'][string]['metadata']
+  >['actionType']
+>;
 
 /**
  * EntryMetadata is the metadata for a GTRequest.
