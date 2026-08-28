@@ -21,11 +21,14 @@ import {
   type GetFileInfoData,
   type UploadSourceFilesData,
   type UploadTranslationsData,
-} from '@generaltranslation/api';
-import { resolveCanonicalLocale } from '@generaltranslation/format';
-import type { CustomMapping } from '@generaltranslation/format/types';
+} from 'generaltranslation/api';
+import { resolveCanonicalLocale } from 'generaltranslation';
 import { defaultBaseUrl, unwrapApiResult } from 'generaltranslation/internal';
-import type { DownloadedFile, FileFormat } from 'generaltranslation/types';
+import type {
+  CustomMapping,
+  DownloadedFile,
+  FileFormat,
+} from 'generaltranslation/types';
 
 let client = createApiClient({ baseUrl: defaultBaseUrl });
 let customMapping: CustomMapping | undefined;
