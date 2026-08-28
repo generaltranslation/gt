@@ -1,10 +1,10 @@
 import fs from 'node:fs';
-import type { ApiClientConfig, Client } from '@generaltranslation/api';
-import openApiSpec from '@generaltranslation/api/spec/openapi.json' with { type: 'json' };
+import type { ApiClientConfig, Client } from 'generaltranslation/api';
+import openApiSpec from 'generaltranslation/api/openapi.json' with { type: 'json' };
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
-} from '@generaltranslation/utils/diagnostics';
+} from 'generaltranslation/internal';
 import { generateSettings } from '../../config/generateSettings.js';
 import { exitSync } from '../../console/logging.js';
 import type { SharedFlags } from '../../types/index.js';
