@@ -131,20 +131,19 @@ export class BranchStep {
           });
           this.branchData.currentBranch = createBranchResult.branch;
         } catch (error) {
-          if (error instanceof ApiError && error.code === 403) {
-            logger.warn(
-              'To enable translation branching, upgrade your plan. Falling back to default branch.'
-            );
-            // retry with default branch
-            try {
-              const createBranchResult = await this.gt.createBranch({
-                branchName: detectedDefaultBranchName,
-                defaultBranch: true,
-              });
-              this.branchData.currentBranch = createBranchResult.branch;
-            } catch {
-              // The fallback branch may already exist.
-            }
+          if (!(error instanceof ApiError) || error.code !== 403) throw error;
+
+          logger.warn(
+            'To enable translation branching, upgrade your plan. Falling back to default branch.'
+          );
+          if (branchData.defaultBranch) {
+            this.branchData.currentBranch = branchData.defaultBranch;
+          } else {
+            const createBranchResult = await this.gt.createBranch({
+              branchName: detectedDefaultBranchName,
+              defaultBranch: true,
+            });
+            this.branchData.currentBranch = createBranchResult.branch;
           }
         }
       } else {

@@ -26,11 +26,9 @@ export function hasValidLocales(settings: Settings): boolean {
 }
 
 /**
- * Validate credentials
- * @param settings - The settings to validate
- * @returns True if has API key, project ID, and does not have a development API key
+ * Validate an API key without requiring an existing project.
  */
-export function hasValidCredentials(settings: Settings): boolean {
+export function hasValidApiKey(settings: Settings): boolean {
   if (!settings.apiKey) {
     logger.error(noApiKeyError);
     return false;
@@ -39,6 +37,16 @@ export function hasValidCredentials(settings: Settings): boolean {
     logger.error(devApiKeyError);
     return false;
   }
+  return true;
+}
+
+/**
+ * Validate credentials
+ * @param settings - The settings to validate
+ * @returns True if has API key, project ID, and does not have a development API key
+ */
+export function hasValidCredentials(settings: Settings): boolean {
+  if (!hasValidApiKey(settings)) return false;
   if (!settings.projectId) {
     logger.error(noProjectIdError);
     return false;

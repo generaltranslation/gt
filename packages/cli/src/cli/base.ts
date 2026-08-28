@@ -60,7 +60,10 @@ import updateConfig from '../fs/config/updateConfig.js';
 import { loadConfig } from '../fs/config/loadConfig.js';
 import { createLoadTranslationsFile } from '../fs/createLoadTranslationsFile.js';
 import { saveLocalEdits } from '../api/saveLocalEdits.js';
-import { hasValidCredentials } from './commands/utils/validation.js';
+import {
+  hasValidApiKey,
+  hasValidCredentials,
+} from './commands/utils/validation.js';
 import processSharedStaticAssets, {
   mirrorAssetsToLocales,
 } from '../utils/sharedStaticAssets.js';
@@ -73,10 +76,13 @@ import {
 import { INLINE_LIBRARIES, Libraries } from '../types/libraries.js';
 import { handleEnqueue } from './commands/enqueue.js';
 import { splitMintlifyLanguageRefs } from '../utils/splitMintlifyLanguageRefs.js';
-import { runMergeDriver, type MergeDriverName } from '../git/mergeDrivers.js';
+import { runMergeDriver } from '../git/mergeDrivers.js';
 import { setupGitMergeDrivers } from '../git/setupMergeDrivers.js';
 import { warnReactPackageCompatibility } from '../utils/reactPackageCompatibility.js';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import {
+  createDiagnosticMessage,
+  formatDiagnosticErrorDetails,
+} from 'generaltranslation/internal';
 import { setupViteSPA } from '../setup/setupViteSPA.js';
 import { manifestDirectlyDeclaresGTVue } from '@generaltranslation/vue-extractor/integration';
 import { api } from '../utils/api.js';
@@ -97,6 +103,18 @@ const workspaceRootSetupError = createDiagnosticMessage({
   why: 'GT must be configured in the specific app you want to localize',
   fix: "Change to that app's directory and rerun `npx gt@latest`",
 });
+function createProjectCommandError(
+  whatHappened: string,
+  error: unknown
+): string {
+  return createDiagnosticMessage({
+    source: 'gt',
+    severity: 'Error',
+    whatHappened,
+    details: formatDiagnosticErrorDetails(error),
+  });
+}
+
 const electronSetupError = createDiagnosticMessage({
   source: 'gt',
   severity: 'Error',
@@ -327,13 +345,21 @@ export class BaseCLI {
         .requiredOption('--default-locale <locale>', 'Project default locale')
         .option('--cdn-enabled', 'Enable CDN delivery', false)
     ).action(async (options) => {
-      await generateSettings(options);
-      const { project } = await api.createProject({
-        name: options.name,
-        defaultLocale: options.defaultLocale,
-        cdnEnabled: options.cdnEnabled,
-      });
-      logger.info(`Created ${project.name} (${project.id})`);
+      try {
+        const settings = await generateSettings(options);
+        // Project creation uses an organization key before a project ID exists.
+        if (!hasValidApiKey(settings)) return exitSync(1);
+        const { project } = await api.createProject({
+          name: options.name,
+          defaultLocale: options.defaultLocale,
+          cdnEnabled: options.cdnEnabled,
+        });
+        logger.info(`Created ${project.name} (${project.id})`);
+      } catch (error) {
+        return logErrorAndExit(
+          createProjectCommandError('Failed to create the project', error)
+        );
+      }
     });
 
     attachSharedFlags(
@@ -342,9 +368,19 @@ export class BaseCLI {
         .description('Check the status of a project setup job')
         .argument('<job-id>', 'Setup job ID')
     ).action(async (jobId, options) => {
-      await generateSettings(options);
-      const [status] = await api.checkJobStatus([jobId]);
-      logger.info(status?.status ?? 'unknown');
+      try {
+        const settings = await generateSettings(options);
+        if (!hasValidCredentials(settings)) return exitSync(1);
+        const [status] = await api.checkJobStatus([jobId]);
+        logger.info(status?.status ?? 'unknown');
+      } catch (error) {
+        return logErrorAndExit(
+          createProjectCommandError(
+            'Failed to check the project setup status',
+            error
+          )
+        );
+      }
     });
   }
 
@@ -441,12 +477,7 @@ export class BaseCLI {
           logger.error(`Unknown GT merge driver: ${driver}`);
           exitSync(1);
         }
-        const result = runMergeDriver(
-          driver as MergeDriverName,
-          base,
-          ours,
-          theirs
-        );
+        const result = runMergeDriver(driver, base, ours, theirs);
         if (!result.ok) {
           logger.error(result.reason);
           exitSync(1);

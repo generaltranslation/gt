@@ -21,7 +21,7 @@ type UploadSourcesClient = Pick<
   | 'processFileMoves'
   | 'uploadSourceFiles'
 >;
-type UploadSourcesSettings = Pick<Settings, 'defaultLocale' | 'modelProvider'>;
+type UploadSourcesSettings = Pick<Settings, 'defaultLocale'>;
 
 export class UploadSourcesStep {
   private spinner = logger.createSpinner('dots');
@@ -170,10 +170,7 @@ export class UploadSourcesStep {
           checkedOutBranchId: branchData.checkedOutBranch?.id,
         },
       })),
-      {
-        sourceLocale: this.settings.defaultLocale,
-        modelProvider: this.settings.modelProvider,
-      }
+      { sourceLocale: this.settings.defaultLocale }
     );
 
     // The API may not echo transformFormat, so preserve it from local inputs.
@@ -181,17 +178,23 @@ export class UploadSourcesStep {
       files.map((f) => [`${f.fileId}:${f.versionId}`, f])
     );
 
-    const result = response.uploadedFiles.map((uploadedFile) => {
-      const localFile = localFileMap.get(
-        `${uploadedFile.fileId}:${uploadedFile.versionId}`
-      );
-      const uploadedReference = uploadedFile as FileReference;
-      return {
-        ...uploadedReference,
-        transformFormat:
-          localFile?.transformFormat ?? uploadedReference.transformFormat,
-      };
-    });
+    const result: FileReference[] = response.uploadedFiles.map(
+      (uploadedFile) => {
+        const localFile = localFileMap.get(
+          `${uploadedFile.fileId}:${uploadedFile.versionId}`
+        );
+        return {
+          branchId:
+            uploadedFile.branchId ?? localFile?.branchId ?? currentBranchId,
+          fileId: uploadedFile.fileId,
+          versionId: uploadedFile.versionId,
+          fileName: uploadedFile.fileName,
+          fileFormat: uploadedFile.fileFormat,
+          dataFormat: localFile?.dataFormat,
+          transformFormat: localFile?.transformFormat,
+        };
+      }
+    );
 
     // Merge files that were already uploaded into the result
     result.push(
