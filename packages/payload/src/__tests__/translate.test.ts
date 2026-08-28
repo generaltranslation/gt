@@ -1,0 +1,140 @@
+import type { JsxChildren, TranslationResult } from 'generaltranslation/types';
+import { describe, expect, it } from 'vitest';
+
+import type { LexicalState } from '../lexical';
+import { buildGtTree } from '../lexical';
+import { fixtureState, upperCaseTree } from './fixture';
+import {
+  buildFieldEntries,
+  buildLocaleData,
+  toTranslateEntries,
+} from '../translate';
+
+const doc = (): Record<string, unknown> => ({
+  content: fixtureState(),
+  emptyText: '   ',
+  plainObject: { not: 'lexical' },
+  summary: 'A short summary.',
+  title: 'Hello world',
+});
+
+describe('buildFieldEntries', () => {
+  it('skips a richText state with no text nodes', () => {
+    const emptyState = {
+      root: {
+        children: [{ type: 'paragraph', version: 1 }],
+        type: 'root',
+        version: 1,
+      },
+    };
+    const { entries, skipped } = buildFieldEntries({ content: emptyState }, [
+      'content',
+    ]);
+    expect(entries).toEqual([]);
+    expect(skipped).toEqual(['content']);
+  });
+
+  it('classifies strings and lexical states and skips the rest', () => {
+    const { entries, skipped } = buildFieldEntries(doc(), [
+      'title',
+      'summary',
+      'content',
+      'emptyText',
+      'plainObject',
+      'absent',
+    ]);
+    expect(entries.map((entry) => [entry.field, entry.kind])).toEqual([
+      ['title', 'string'],
+      ['summary', 'string'],
+      ['content', 'richText'],
+    ]);
+    expect(skipped).toEqual(['emptyText', 'plainObject', 'absent']);
+  });
+});
+
+describe('toTranslateEntries', () => {
+  it('sends strings bare and trees with the JSX data format', () => {
+    const { entries } = buildFieldEntries(doc(), ['title', 'content']);
+    const requests = toTranslateEntries(entries);
+    expect(requests[0]).toBe('Hello world');
+    expect(requests[1]).toMatchObject({ metadata: { dataFormat: 'JSX' } });
+  });
+});
+
+describe('buildLocaleData', () => {
+  const success = (translation: unknown): TranslationResult =>
+    ({
+      dataFormat: 'STRING',
+      locale: 'es',
+      success: true,
+      translation,
+    }) as TranslationResult;
+
+  it('maps results back to fields by position', () => {
+    const { entries } = buildFieldEntries(doc(), ['title', 'content']);
+    const translatedTree = upperCaseTree(
+      buildGtTree(fixtureState()).tree
+    ) as JsxChildren;
+    const outcome = buildLocaleData(entries, [
+      success('Hola mundo'),
+      success(translatedTree),
+    ]);
+    expect(outcome.data.title).toBe('Hola mundo');
+    const content = outcome.data.content as LexicalState;
+    expect(content.root.children![0].children![0].text).toBe('BREWING AT HOME');
+    expect(outcome.failed).toEqual([]);
+    expect(outcome.partial).toEqual([]);
+  });
+
+  it('records failures without dropping the other fields', () => {
+    const { entries } = buildFieldEntries(doc(), ['title', 'summary']);
+    const outcome = buildLocaleData(entries, [
+      { code: 429, error: 'rate limited', success: false },
+      success('Un resumen corto.'),
+    ]);
+    expect(outcome.data).toEqual({ summary: 'Un resumen corto.' });
+    expect(outcome.failed).toEqual([
+      { error: 'rate limited (429)', field: 'title' },
+    ]);
+  });
+
+  it('rejects a non-string translation for a string field', () => {
+    const { entries } = buildFieldEntries(doc(), ['title']);
+    const outcome = buildLocaleData(entries, [
+      success(['unexpected', 'array']),
+    ]);
+    expect(outcome.data).toEqual({});
+    expect(outcome.failed[0].field).toBe('title');
+  });
+
+  it('refuses to write a locale whose tree echo matches no text nodes', () => {
+    const { entries } = buildFieldEntries(doc(), ['content']);
+    const outcome = buildLocaleData(entries, [
+      success('a bare string echo, no tree'),
+    ]);
+    expect(outcome.data).toEqual({});
+    expect(outcome.failed).toEqual([
+      {
+        error: 'translation returned no matching text nodes',
+        field: 'content',
+      },
+    ]);
+    expect(outcome.partial).toEqual([]);
+  });
+
+  it('flags a missing result and counts untranslated text nodes as partial', () => {
+    const { entries } = buildFieldEntries(doc(), ['content', 'title']);
+    const bare = buildGtTree(fixtureState()).tree;
+    const stripped = structuredClone(bare) as { c: { c?: unknown }[] };
+    delete (stripped.c[0] as { c: { i?: number }[] }).c[0].i;
+    const outcome = buildLocaleData(entries, [
+      success(stripped as JsxChildren),
+    ]);
+    expect(outcome.partial).toEqual([
+      { field: 'content', missingTextNodes: 1 },
+    ]);
+    expect(outcome.failed).toEqual([
+      { error: 'no result returned', field: 'title' },
+    ]);
+  });
+});
