@@ -1,6 +1,6 @@
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import type { ApiClientConfig, Client } from 'generaltranslation/api';
-import openApiSpec from 'generaltranslation/api/openapi.json' with { type: 'json' };
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
@@ -27,6 +27,16 @@ type ApiCommandDependencies = {
 
 type ApiRequestOptions = Parameters<Client['request']>[0];
 
+const STANDARD_HTTP_METHODS = new Set([
+  'GET',
+  'HEAD',
+  'POST',
+  'PUT',
+  'PATCH',
+  'DELETE',
+  'OPTIONS',
+]);
+
 function fail(
   diagnostic: string,
   {
@@ -36,6 +46,34 @@ function fail(
 ): never {
   writeStderr(`${diagnostic}\n`);
   return exit(1);
+}
+
+function parseMethod(
+  value: string,
+  dependencies: ApiCommandDependencies
+): ApiRequestOptions['method'] {
+  const method = value.toUpperCase();
+  if (!STANDARD_HTTP_METHODS.has(method)) {
+    fail(
+      createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Error',
+        whatHappened: 'The API request method is invalid',
+        details: value,
+        fix: `Use one of ${[...STANDARD_HTTP_METHODS].join(', ')}`,
+      }),
+      dependencies
+    );
+  }
+  // The set validation narrows Commander input to the generated HTTP method union.
+  return method as ApiRequestOptions['method'];
+}
+
+function loadOpenApiSpec(): unknown {
+  const require = createRequire(import.meta.url);
+  const specPath = require.resolve('generaltranslation/api/openapi.json');
+  const spec: unknown = JSON.parse(fs.readFileSync(specPath, 'utf8'));
+  return spec;
 }
 
 function parseHeaders(
@@ -118,7 +156,7 @@ export async function handleApiCommand(
     dependencies.writeStderr ?? ((output) => process.stderr.write(output));
 
   if (options.spec) {
-    writeStdout(`${JSON.stringify(openApiSpec, null, 2)}\n`);
+    writeStdout(`${JSON.stringify(loadOpenApiSpec(), null, 2)}\n`);
     return;
   }
 
@@ -134,6 +172,7 @@ export async function handleApiCommand(
     );
   }
 
+  const method = parseMethod(options.method, dependencies);
   const settings = await generateSettings(options, undefined, {
     suppressOutput: true,
   });
@@ -146,7 +185,6 @@ export async function handleApiCommand(
   const normalizedEndpoint = endpoint.startsWith('/')
     ? endpoint
     : `/${endpoint}`;
-  const method = options.method.toUpperCase();
   const headers = parseHeaders(options.header ?? [], dependencies);
   const body = options.input
     ? readInput(options.input, dependencies)
@@ -164,7 +202,7 @@ export async function handleApiCommand(
       body,
       bodySerializer: body === undefined ? undefined : () => body,
       headers,
-      method: method as ApiRequestOptions['method'],
+      method,
       parseAs: 'stream',
       throwOnError: false,
       url: normalizedEndpoint,
