@@ -41,7 +41,7 @@ import {
   type SubmitUserEditDiffsData,
   type UploadSourceFilesData,
   type UploadTranslationsData,
-} from '@generaltranslation/api';
+} from 'generaltranslation/api';
 import { ApiError } from 'generaltranslation/errors';
 import { defaultBaseUrl } from 'generaltranslation/internal';
 
