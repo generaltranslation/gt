@@ -2,6 +2,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { downloadFile, getTranslationStatus } from 'generaltranslation/api';
+import { ApiError } from 'generaltranslation/errors';
 
 import { api, configureApiClient } from './api';
 
@@ -179,6 +180,24 @@ describe('Sanity API adapter', () => {
       count: 0,
     });
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('preserves HTTP status on job polling errors', async () => {
+    fetchMock.mockResolvedValue(
+      Response.json({ error: 'job status unavailable' }, { status: 403 })
+    );
+
+    await expect(api.awaitJobs(['job-id'])).rejects.toEqual(
+      expect.objectContaining<ApiError>({
+        name: 'ApiError',
+        code: 403,
+        message: 'job status unavailable',
+      })
+    );
+  });
+
+  it('does not expose shared adapter configuration internals', () => {
+    expect(api).not.toHaveProperty('getClientConfig');
   });
 
   it('maps file-info locales in both directions', async () => {

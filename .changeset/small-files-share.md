@@ -5,4 +5,4 @@
 'gt-sanity': patch
 ---
 
-Consolidate base64 and file-content helpers in `generaltranslation/internal`, remove the generated API package's workspace dependency surface, and reuse the core helpers in the CLI and Sanity integration.
+Consolidate base64, file-content, locale-mapping, and job-polling seams in `generaltranslation/internal`, remove the generated API package's workspace dependency surface, and reuse the core helpers in the CLI and Sanity integration.

@@ -6,10 +6,13 @@ import {
   enqueueFileTranslations,
   generateProjectContext,
   getFileInfo,
+  getTranslationJobInfo,
+  pollJobs,
   processBatches,
   uploadSourceFiles,
   uploadTranslations,
   type ApiClientConfig,
+  type AwaitJobsOptions,
   type CreateBranchData,
   type DownloadFilesData,
   type EnqueueFileTranslationsData,
@@ -68,6 +71,10 @@ export function createGtApiAdapter(defaultConfig?: ApiClientConfig) {
 
     resolveAliasLocale(locale: string) {
       return resolveAliasLocale(locale, customMapping);
+    },
+
+    resolveCanonicalLocale(locale: string) {
+      return resolveCanonicalLocale(locale, customMapping);
     },
 
     async createBranch(body: CreateBranchData['body']) {
@@ -249,6 +256,21 @@ export function createGtApiAdapter(defaultConfig?: ApiClientConfig) {
       });
 
       return { uploadedFiles: result };
+    },
+
+    async awaitJobs(jobIds: readonly string[], options?: AwaitJobsOptions) {
+      return pollJobs(
+        jobIds,
+        async (pendingJobIds, signal) =>
+          unwrapApiResult(
+            await getTranslationJobInfo({
+              body: { jobIds: pendingJobIds },
+              client: getClient(),
+              signal,
+            })
+          ),
+        options
+      );
     },
 
     async uploadTranslations(

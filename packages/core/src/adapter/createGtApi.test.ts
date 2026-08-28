@@ -34,6 +34,14 @@ describe('createGtApiAdapter', () => {
     );
   });
 
+  it('resolves configured locales in both directions', () => {
+    const adapter = createGtApiAdapter();
+    adapter.configure({ baseUrl: 'https://api.example.com', customMapping });
+
+    expect(adapter.resolveCanonicalLocale('target')).toBe('es-ES');
+    expect(adapter.resolveAliasLocale('es-ES')).toBe('target');
+  });
+
   it('canonicalizes upload locales at the shared boundary', async () => {
     vi.mocked(uploadTranslations).mockResolvedValue(
       result({ uploadedFiles: [], count: 0, message: 'Uploaded files' })
