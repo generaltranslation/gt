@@ -646,8 +646,8 @@ export class GT extends GTRuntime {
       mergedOptions
     );
 
-    // The published upload result requires fields that the generated response
-    // still marks optional, although successful uploads return them.
+    // The published upload result requires branchId, which the generated
+    // response still marks optional although successful uploads return it.
     const uploadedFiles =
       result.uploadedFiles as UploadFilesResponse['uploadedFiles'];
     return {
@@ -730,8 +730,8 @@ export class GT extends GTRuntime {
       mergedOptions
     );
 
-    // The published upload result requires fields that the generated response
-    // still marks optional, although successful uploads return them.
+    // The published upload result requires branchId, which the generated
+    // response still marks optional although successful uploads return it.
     const uploadedFiles =
       result.uploadedFiles as UploadFilesResponse['uploadedFiles'];
     return {

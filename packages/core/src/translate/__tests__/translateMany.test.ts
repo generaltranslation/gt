@@ -74,7 +74,12 @@ describe.sequential('_translateMany', () => {
     });
 
     const result = await _translateMany(
-      { hash: { source: 'Hello world' } },
+      {
+        hash: {
+          source: 'Hello world',
+          metadata: { actionType: 'standard' },
+        },
+      },
       globalMetadata,
       mockConfig
     );
@@ -89,7 +94,10 @@ describe.sequential('_translateMany', () => {
     expect(translate).toHaveBeenCalledWith({
       body: {
         requests: {
-          hash: { source: 'Hello world', metadata: undefined },
+          hash: {
+            source: 'Hello world',
+            metadata: { actionType: 'standard' },
+          },
         },
         targetLocale: 'es',
         sourceLocale: 'en',
@@ -103,6 +111,46 @@ describe.sequential('_translateMany', () => {
         translation: 'Hola mundo',
         locale: 'es',
         dataFormat: 'ICU',
+      },
+    });
+  });
+
+  it('narrows JSON translations to their format-specific content type', async () => {
+    mockTranslateResponse({
+      jsx: {
+        success: true,
+        translation: ['Hola ', { t: 'strong', c: ['mundo'] }],
+        locale: 'es',
+        dataFormat: 'JSX',
+      },
+      invalid: {
+        success: true,
+        translation: 42,
+        locale: 'es',
+        dataFormat: 'STRING',
+      },
+    });
+
+    const result = await _translateMany(
+      {
+        jsx: { source: ['Hello ', { t: 'strong', c: ['world'] }] },
+        invalid: { source: 'Forty-two' },
+      },
+      globalMetadata,
+      mockConfig
+    );
+
+    expect(result).toEqual({
+      jsx: {
+        success: true,
+        translation: ['Hola ', { t: 'strong', c: ['mundo'] }],
+        locale: 'es',
+        dataFormat: 'JSX',
+      },
+      invalid: {
+        success: false,
+        error: 'Invalid translation returned',
+        code: 500,
       },
     });
   });
