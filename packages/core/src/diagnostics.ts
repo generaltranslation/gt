@@ -1,8 +1,6 @@
 export {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
-} from './logging/diagnostics';
-export type {
-  DiagnosticMessageInput,
-  DiagnosticSeverity,
+  type DiagnosticMessageInput,
+  type DiagnosticSeverity,
 } from './logging/diagnostics';
