@@ -1,4 +1,4 @@
-import type { GetFileInfoResponse } from '@generaltranslation/api';
+import type { GetFileInfoResponse } from 'generaltranslation/api';
 import type { FileToUpload } from 'generaltranslation/types';
 import { logger } from '../../console/logger.js';
 import { recordWarning } from '../../state/translateWarnings.js';
