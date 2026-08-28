@@ -103,16 +103,21 @@ async function readJson(response: Response): Promise<Record<string, unknown>> {
 
 function parseTokens(
   value: Record<string, unknown>,
-  previousRefreshToken?: string,
+  previous?: OAuthTokens,
   now = Date.now()
 ): OAuthTokens {
   return {
     accessToken: stringField(value, 'access_token'),
     expiresAt: now + numberField(value, 'expires_in') * 1000,
     refreshToken:
-      optionalStringField(value, 'refresh_token') ?? previousRefreshToken ?? '',
-    scope: optionalStringField(value, 'scope') ?? '',
-    tokenType: optionalStringField(value, 'token_type') ?? 'Bearer',
+      optionalStringField(value, 'refresh_token') ??
+      previous?.refreshToken ??
+      '',
+    scope: optionalStringField(value, 'scope') ?? previous?.scope ?? '',
+    tokenType:
+      optionalStringField(value, 'token_type') ??
+      previous?.tokenType ??
+      'Bearer',
   };
 }
 
@@ -266,7 +271,7 @@ export async function login(options: LoginOptions = {}): Promise<OAuthTokens> {
   options.onDeviceCode?.(deviceCode);
   await (options.openBrowser ?? open)(
     deviceCode.verificationUriComplete ?? deviceCode.verificationUri
-  );
+  ).catch(() => undefined);
   const tokens = await pollDeviceToken({
     authBaseUrl: options.authBaseUrl,
     deviceCode,
@@ -297,7 +302,7 @@ export async function refreshOAuthTokens({
   if (!response.ok) {
     throw new Error('Your login expired. Run `gt login` to sign in again');
   }
-  const tokens = parseTokens(value, current.refreshToken);
+  const tokens = parseTokens(value, current);
   await writeOAuthTokens(tokens);
   return tokens;
 }

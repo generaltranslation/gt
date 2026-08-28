@@ -1261,6 +1261,9 @@ import { LocalT } from '@gt';
         'configure',
         'upload',
         'auth',
+        'login',
+        'logout',
+        'whoami',
         'save-local',
         'git',
       ];
