@@ -106,4 +106,45 @@ describe('PollTranslationJobsStep inline catalog labels', () => {
       expect.any(AbortSignal)
     );
   });
+
+  it('keeps unobserved jobs in progress when polling times out', async () => {
+    const api = {
+      checkJobStatus: vi.fn(),
+      resolveAliasLocale: (locale: string) => locale,
+    } as unknown as ApiClient;
+    const step = new PollTranslationJobsStep(api);
+    const fileTracker: FileStatusTracker = {
+      completed: new Map(),
+      failed: new Map(),
+      inProgress: new Map(),
+      skipped: new Map(),
+    };
+
+    const result = await step.run({
+      fileTracker,
+      fileQueryData: [templateFile],
+      jobData: {
+        jobData: {
+          'job-1': {
+            sourceFileId: 'source-1',
+            fileId: templateFile.fileId,
+            versionId: templateFile.versionId,
+            branchId: templateFile.branchId,
+            targetLocale: templateFile.locale,
+            projectId: 'project-1',
+            force: false,
+          },
+        },
+        locales: [templateFile.locale],
+        message: 'enqueued',
+      },
+      timeoutDuration: 0,
+      forceRetranslation: true,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.fileTracker.inProgress.size).toBe(1);
+    expect(result.fileTracker.skipped.size).toBe(0);
+    expect(api.checkJobStatus).not.toHaveBeenCalled();
+  });
 });
