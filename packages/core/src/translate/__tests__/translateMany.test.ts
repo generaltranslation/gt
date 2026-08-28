@@ -283,10 +283,10 @@ describe.sequential('_translateMany', () => {
     );
   });
 
-  it('preserves custom model-provider strings in request metadata', async () => {
+  it('forwards supported model providers in request metadata', async () => {
     const metadata = {
       ...globalMetadata,
-      modelProvider: 'custom-provider',
+      modelProvider: 'OPENAI' as const,
     };
 
     await _translateMany([], metadata, mockConfig);
@@ -294,6 +294,18 @@ describe.sequential('_translateMany', () => {
     expect(vi.mocked(translate).mock.calls[0][0].body.metadata).toEqual(
       metadata
     );
+  });
+
+  it('rejects unsupported model providers before making API requests', async () => {
+    await expect(
+      _translateMany(
+        [],
+        { ...globalMetadata, modelProvider: 'custom-provider' },
+        mockConfig
+      )
+    ).rejects.toThrow('The configured model provider is not supported');
+
+    expect(translate).not.toHaveBeenCalled();
   });
 
   it('propagates SDK network errors', async () => {

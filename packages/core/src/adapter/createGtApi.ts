@@ -29,6 +29,7 @@ import type { CustomMapping } from '@generaltranslation/format/types';
 import type { DownloadedFile } from '../types-dir/api/downloadFileBatch';
 import { decodeFileContent, encodeFileContent } from '../utils/base64';
 import { unwrapApiResult } from '../translate/utils/unwrapApiResult';
+import type { ModelProvider } from './modelProvider';
 
 export type GtApiAdapterConfig = ApiClientConfig & {
   customMapping?: CustomMapping;
@@ -173,7 +174,7 @@ export function createGtApiAdapter(defaultConfig?: ApiClientConfig) {
       options: {
         sourceLocale?: string;
         targetLocales: string[];
-        modelProvider?: string;
+        modelProvider?: ModelProvider;
         force?: boolean;
       }
     ) {
@@ -203,10 +204,7 @@ export function createGtApiAdapter(defaultConfig?: ApiClientConfig) {
               sourceLocale: options.sourceLocale
                 ? resolveCanonicalLocale(options.sourceLocale, customMapping)
                 : undefined,
-              // Consumers intentionally accept custom model-provider strings beyond
-              // the OpenAPI enum; preserve the existing wire behavior at this boundary.
-              modelProvider:
-                options.modelProvider as EnqueueFileTranslationsData['body']['modelProvider'],
+              modelProvider: options.modelProvider,
               force: options.force,
             },
             client: getClient(),

@@ -38,6 +38,11 @@ export {
 } from './translate/utils/unwrapApiResult';
 export { createGtApiAdapter } from './adapter/createGtApi';
 export type { GtApiAdapter, GtApiAdapterConfig } from './adapter/createGtApi';
+export {
+  isModelProvider,
+  supportedModelProviders,
+} from './adapter/modelProvider';
+export type { ModelProvider } from './adapter/modelProvider';
 
 // derive
 export { decodeVars } from './derive/decodeVars';
