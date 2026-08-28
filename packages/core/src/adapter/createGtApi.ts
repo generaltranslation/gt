@@ -444,9 +444,7 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
                 locale: resolveAliasLocale(file.locale, customMapping),
               }),
               data: decodeFileContent(file.data, file.fileFormat),
-              // OpenAPI currently types metadata as an open object; the API emits
-              // JSON values here, matching DownloadedFile's public contract.
-              metadata: file.metadata as DownloadedFile['metadata'],
+              metadata: file.metadata,
             })
           )
         ),
