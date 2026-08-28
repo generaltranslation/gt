@@ -21,6 +21,7 @@ import type {
   LocaleProperties,
   StringFormat,
 } from '@generaltranslation/format/types';
+import type { UserTokenProvider } from '@generaltranslation/api';
 import {
   TranslateManyResult,
   TranslationError,
@@ -65,6 +66,7 @@ export type GTConstructorParams = {
   projectId?: string;
   baseUrl?: string;
   customMapping?: CustomMapping;
+  userTokenProvider?: UserTokenProvider;
 };
 
 /**
@@ -94,6 +96,9 @@ export class GTRuntime {
 
   /** Development API key for accessing the translation service */
   devApiKey?: string;
+
+  /** User-token provider used when no API key is configured */
+  userTokenProvider?: UserTokenProvider;
 
   /** Source locale for translations */
   sourceLocale?: string;
@@ -156,11 +161,13 @@ export class GTRuntime {
     projectId,
     customMapping,
     baseUrl,
+    userTokenProvider,
   }: GTConstructorParams) {
     // ----- Environment properties ----- //
     if (apiKey) this.apiKey = apiKey;
     if (devApiKey) this.devApiKey = devApiKey;
     if (projectId) this.projectId = projectId;
+    if (userTokenProvider) this.userTokenProvider = userTokenProvider;
 
     // ----- Standardize locales ----- //
 
@@ -222,12 +229,13 @@ export class GTRuntime {
       baseUrl: this.baseUrl,
       apiKey: this.apiKey || this.devApiKey,
       projectId: this.projectId || '',
+      userTokenProvider: this.userTokenProvider,
     };
   }
 
   protected _validateAuth(functionName: string) {
     const errors: string[] = [];
-    if (!this.apiKey && !this.devApiKey) {
+    if (!this.apiKey && !this.devApiKey && !this.userTokenProvider) {
       const error = noApiKeyProvidedError(functionName);
       errors.push(error);
     }

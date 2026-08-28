@@ -26,14 +26,14 @@ export function hasValidLocales(settings: Settings): boolean {
 }
 
 /**
- * Validate an API key without requiring an existing project.
+ * Validate an API key or a signed-in user token without requiring an existing project.
  */
 export function hasValidApiKey(settings: Settings): boolean {
-  if (!settings.apiKey) {
+  if (!settings.apiKey && !settings.userTokenProvider) {
     logger.error(noApiKeyError);
     return false;
   }
-  if (settings.apiKey.startsWith('gtx-dev-')) {
+  if (settings.apiKey?.startsWith('gtx-dev-')) {
     logger.error(devApiKeyError);
     return false;
   }
