@@ -16,6 +16,7 @@ export type GetJobStatuses = (
 export type AwaitJobsOptions = {
   pollingIntervalSeconds?: number;
   timeoutSeconds?: number;
+  onPoll?: (statuses: GetTranslationJobInfoResponse) => void;
 };
 
 export type AwaitJobsResult = {
@@ -78,6 +79,7 @@ export async function pollJobs(
     }
     if (Date.now() >= deadline) break;
 
+    options.onPoll?.(statuses);
     const returnedJobIds = new Set(statuses.map(({ jobId }) => jobId));
 
     for (const job of statuses) {

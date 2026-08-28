@@ -60,12 +60,6 @@ vi.mock('../../fs/utils.js', () => ({
   resolveProjectId: vi.fn().mockReturnValue('test-project-id'),
 }));
 
-vi.mock('../../utils/gt.js', () => ({
-  gt: {
-    setConfig: vi.fn(),
-  },
-}));
-
 vi.mock('../optionPresets.js', () => ({
   generatePreset: vi.fn(),
 }));
