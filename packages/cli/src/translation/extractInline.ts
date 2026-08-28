@@ -3,7 +3,7 @@ import {
   type InlineExtractionOutput,
   type PrimaryInlineExtractor,
 } from '@generaltranslation/vue-extractor/integration';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import type { InlineLibrary } from '../types/libraries.js';
 import type { GTParsingFlags, ParsingConfigOptions } from '../types/parsing.js';
 

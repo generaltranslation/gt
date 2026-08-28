@@ -127,6 +127,16 @@
         "types": "./dist/errors.d.mts",
         "default": "./dist/errors.mjs"
       }
+    },
+    "./diagnostics": {
+      "require": {
+        "types": "./dist/diagnostics.d.cts",
+        "default": "./dist/diagnostics.cjs"
+      },
+      "import": {
+        "types": "./dist/diagnostics.d.mts",
+        "default": "./dist/diagnostics.mjs"
+      }
     }
   },
   "typesVersions": {
@@ -145,6 +155,9 @@
       ],
       "errors": [
         "./dist/errors.d.cts"
+      ],
+      "diagnostics": [
+        "./dist/diagnostics.d.cts"
       ],
       "runtime": [
         "./dist/runtime.d.cts"
