@@ -17,6 +17,7 @@ import {
   getBranchInfo,
   getFileInfo,
   getOrphanedFiles,
+  getProjectInfo,
   getTranslationJobInfo,
   pollJobs,
   processBatches,
@@ -32,7 +33,6 @@ import {
   type CreateTagData,
   type DownloadFilesData,
   type EnqueueFileTranslationsData,
-  type EnqueueFileTranslationsResponse,
   type GenerateProjectContextData,
   type GetBranchInfoData,
   type GetFileInfoData,
@@ -43,16 +43,37 @@ import {
   type UploadTranslationsData,
 } from 'generaltranslation/api';
 import { ApiError } from 'generaltranslation/errors';
-import { defaultBaseUrl } from 'generaltranslation/internal';
 
-let client = createApiClient({ baseUrl: defaultBaseUrl });
+let client: ReturnType<typeof createApiClient> | undefined;
+let configuredClientConfig: ApiClientConfig | undefined;
 let customMapping: CustomMapping | undefined;
+
+function getClient(): ReturnType<typeof createApiClient> {
+  if (!client) {
+    throw new Error(
+      'API client not configured — call configureApiClient first'
+    );
+  }
+  return client;
+}
+
+function getClientConfig(): ApiClientConfig {
+  if (!configuredClientConfig) {
+    throw new Error(
+      'API client not configured — call configureApiClient first'
+    );
+  }
+  return configuredClientConfig;
+}
 
 export function configureApiClient(
   config: ApiClientConfig & { customMapping?: CustomMapping }
 ): void {
   const { customMapping: mapping, ...clientConfig } = config;
   client = createApiClient(clientConfig);
+  // Retain the resolved config for the one project-info call that deliberately
+  // uses a shorter timeout than normal translation requests.
+  configuredClientConfig = clientConfig;
   customMapping = mapping;
 }
 
@@ -73,6 +94,8 @@ function isErrorResponse(error: unknown): error is { error: string } {
 
 function responseData<T>(result: ApiResult<T>): Exclude<T, undefined> {
   if (result.data !== undefined) {
+    // TypeScript cannot narrow a generic T after excluding undefined; the
+    // runtime guard above establishes the exact Exclude<T, undefined> result.
     return result.data as Exclude<T, undefined>;
   }
   if (result.response) {
@@ -88,11 +111,11 @@ function responseData<T>(result: ApiResult<T>): Exclude<T, undefined> {
 
 export const api = {
   async queryBranchData(body: GetBranchInfoData['body']) {
-    return responseData(await getBranchInfo({ body, client }));
+    return responseData(await getBranchInfo({ body, client: getClient() }));
   },
 
   async createBranch(body: CreateBranchData['body']) {
-    return responseData(await createBranch({ body, client }));
+    return responseData(await createBranch({ body, client: getClient() }));
   },
 
   async queryFileData(body: GetFileInfoData['body']) {
@@ -105,7 +128,7 @@ export const api = {
             locale: resolveCanonicalLocale(file.locale, customMapping),
           })),
         },
-        client,
+        client: getClient(),
       })
     );
     return {
@@ -126,7 +149,26 @@ export const api = {
 
   async checkJobStatus(jobIds: string[]) {
     return responseData(
-      await getTranslationJobInfo({ body: { jobIds }, client })
+      await getTranslationJobInfo({
+        body: { jobIds },
+        client: getClient(),
+      })
+    );
+  },
+
+  async getProjectInfo(timeoutMs?: number) {
+    const config = getClientConfig();
+    if (!config.projectId) {
+      throw new Error('Project ID is required to fetch project information');
+    }
+    const projectInfoClient = timeoutMs
+      ? createApiClient({ ...config, timeoutMs })
+      : getClient();
+    return responseData(
+      await getProjectInfo({
+        client: projectInfoClient,
+        path: { projectId: config.projectId },
+      })
     );
   },
 
@@ -146,7 +188,7 @@ export const api = {
               ? resolveCanonicalLocale(file.locale, customMapping)
               : undefined,
           })),
-          client,
+          client: getClient(),
         })
       );
     const responses = await processBatches(files, async (batch) => [
@@ -168,7 +210,9 @@ export const api = {
   },
 
   async publishFiles(files: PublishFilesData['body']['files']) {
-    return responseData(await publishFiles({ body: { files }, client }));
+    return responseData(
+      await publishFiles({ body: { files }, client: getClient() })
+    );
   },
 
   async submitUserEditDiffs(body: SubmitUserEditDiffsData['body']) {
@@ -182,14 +226,14 @@ export const api = {
               locale: resolveCanonicalLocale(diff.locale, customMapping),
             })),
           },
-          client,
+          client: getClient(),
         })
       ),
     ]);
   },
 
   async createTag(body: CreateTagData['body']) {
-    return responseData(await createTag({ body, client }));
+    return responseData(await createTag({ body, client: getClient() }));
   },
 
   async createProject(body: CreateProjectData['body']) {
@@ -202,7 +246,7 @@ export const api = {
             customMapping
           ),
         },
-        client,
+        client: getClient(),
       })
     );
   },
@@ -214,7 +258,7 @@ export const api = {
       responseData(
         await getOrphanedFiles({
           body: { branchId, fileIds: batch },
-          client,
+          client: getClient(),
         })
       );
 
@@ -245,7 +289,7 @@ export const api = {
       const response = responseData(
         await processFileMoves({
           body: { branchId: options.branchId, moves: batch },
-          client,
+          client: getClient(),
         })
       );
       return response.results;
@@ -279,7 +323,7 @@ export const api = {
           ),
           force: options.force,
         },
-        client,
+        client: getClient(),
       })
     );
   },
@@ -293,7 +337,7 @@ export const api = {
         responseData(
           await getTranslationJobInfo({
             body: { jobIds: pendingJobIds },
-            client,
+            client: getClient(),
             signal,
           })
         ),
@@ -313,10 +357,6 @@ export const api = {
     const targetLocales = options.targetLocales.map((locale) =>
       resolveCanonicalLocale(locale, customMapping)
     );
-    type CurrentResponse = Extract<
-      EnqueueFileTranslationsResponse,
-      { jobData: unknown }
-    >;
     const result = await processBatches(files, async (batch) => {
       const response = responseData(
         await enqueueFileTranslations({
@@ -331,15 +371,20 @@ export const api = {
               })
             ),
             targetLocales,
-            sourceLocale: options.sourceLocale,
+            sourceLocale: options.sourceLocale
+              ? resolveCanonicalLocale(options.sourceLocale, customMapping)
+              : undefined,
+            // The CLI intentionally accepts custom model-provider strings beyond
+            // the OpenAPI ANTHROPIC|OPENAI|XAI|GOOGLE enum; preserve wire behavior.
             modelProvider:
               options.modelProvider as EnqueueFileTranslationsData['body']['modelProvider'],
             force: options.force,
           },
-          client,
+          client: getClient(),
         })
-      ) as CurrentResponse;
-      return Object.entries(response.jobData);
+      );
+      const jobData = 'jobData' in response ? response.jobData : response.data;
+      return Object.entries(jobData);
     });
 
     return {
@@ -353,7 +398,7 @@ export const api = {
     files: Array<{
       source: UploadSourceFilesData['body']['data'][number]['source'];
     }>,
-    options: { sourceLocale: string; modelProvider?: string }
+    options: { sourceLocale: string }
   ) {
     const sourceLocale = resolveCanonicalLocale(
       options.sourceLocale,
@@ -372,7 +417,7 @@ export const api = {
             })),
             sourceLocale,
           },
-          client,
+          client: getClient(),
         })
       );
       return response.uploadedFiles;
@@ -383,7 +428,7 @@ export const api = {
 
   async uploadTranslations(
     files: UploadTranslationsData['body']['data'],
-    options: { sourceLocale: string; modelProvider?: string }
+    options: { sourceLocale: string }
   ) {
     const result = await processBatches(files, async (batch) => {
       const response = responseData(
@@ -411,7 +456,7 @@ export const api = {
               customMapping
             ),
           },
-          client,
+          client: getClient(),
         })
       );
       return response.uploadedFiles;

@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { isBinaryFileFormat, type FileFormat } from 'generaltranslation/types';
+import { isBinaryFileFormat } from 'generaltranslation/types';
 import { logger } from '../console/logger.js';
 import { api } from '../utils/api.js';
 import { Settings } from '../types/index.js';
@@ -63,12 +63,14 @@ function reportWithheldGtJsonComponents(
  */
 function countGtJsonEntries(content: string): number | undefined {
   try {
-    const parsed = JSON.parse(content);
+    const parsed: unknown = JSON.parse(content);
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
       return undefined;
     }
     const entries =
+      'type' in parsed &&
       parsed.type === 'GTJSON' &&
+      'data' in parsed &&
       parsed.data &&
       typeof parsed.data === 'object' &&
       !Array.isArray(parsed.data)
@@ -286,7 +288,7 @@ export async function downloadFileBatch(
         // Binary formats (e.g. LOTTIE zip bundles) carry base64 content that must
         // not go through the text merge/sort path — decode straight to bytes and
         // write. Skip only when an unchanged local translation already exists.
-        if (isBinaryFileFormat(file.fileFormat as FileFormat)) {
+        if (isBinaryFileFormat(file.fileFormat)) {
           if (!forceDownload && fileExists && downloadedTranslation) {
             result.skipped.push(requestedFile);
             continue;

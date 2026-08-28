@@ -18,9 +18,11 @@ type UploadTranslationsInput = {
   }[];
 };
 
-// The server includes the locale on each uploaded translation, but the
-// shared FileReference type does not declare it
-type UploadedTranslationReference = FileReference & { locale?: string };
+type UploadedTranslation = Awaited<
+  ReturnType<ApiClient['uploadTranslations']>
+>['uploadedFiles'][number];
+type ConfirmedTranslationReference = FileReference &
+  Pick<UploadedTranslation, 'locale'>;
 
 /**
  * Splits translations into ones that need uploading and ones that can be
@@ -106,10 +108,44 @@ export class UploadTranslationsStep {
 
     const response = await this.api.uploadTranslations(filesToUpload, {
       sourceLocale: this.settings.defaultLocale,
-      modelProvider: this.settings.modelProvider,
     });
 
-    const result = response.uploadedFiles as UploadedTranslationReference[];
+    const localFiles = new Map<
+      string,
+      { source: FileToUpload; translation: FileToUpload }
+    >();
+    for (const { source, translations } of filesToUpload) {
+      for (const translation of translations) {
+        localFiles.set(`${translation.fileId}:${translation.versionId}`, {
+          source,
+          translation,
+        });
+      }
+    }
+    const result: ConfirmedTranslationReference[] = response.uploadedFiles.map(
+      (uploadedFile) => {
+        const localFile = localFiles.get(
+          `${uploadedFile.fileId}:${uploadedFile.versionId}`
+        );
+        const branchId =
+          uploadedFile.branchId ??
+          localFile?.translation.branchId ??
+          localFile?.source.branchId ??
+          lockfile.data.branchId;
+        const dataFormat = localFile?.translation.dataFormat;
+        const transformFormat = localFile?.translation.transformFormat;
+        return {
+          branchId,
+          fileId: uploadedFile.fileId,
+          versionId: uploadedFile.versionId,
+          fileName: uploadedFile.fileName,
+          fileFormat: uploadedFile.fileFormat,
+          ...(dataFormat && { dataFormat }),
+          ...(transformFormat && { transformFormat }),
+          locale: uploadedFile.locale,
+        };
+      }
+    );
     // Report the server-confirmed count, not the attempted count — the
     // endpoint drops files it failed to persist without erroring
     const uploadedCount = result.length;
@@ -139,7 +175,7 @@ export class UploadTranslationsStep {
   private recordUploadedHashes(
     lockfile: ReturnType<typeof readLockfile>,
     uploaded: UploadTranslationsInput['files'],
-    confirmed: UploadedTranslationReference[]
+    confirmed: ConfirmedTranslationReference[]
   ): void {
     const confirmedKeys = new Set(
       confirmed

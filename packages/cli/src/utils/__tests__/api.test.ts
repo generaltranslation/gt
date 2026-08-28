@@ -29,6 +29,17 @@ describe('CLI API client', () => {
     configure();
   });
 
+  it('fails fast when used before configuration', async () => {
+    vi.resetModules();
+    const unconfiguredModule = await import('../api.js');
+
+    await expect(
+      unconfiguredModule.api.queryBranchData({ branchNames: [] })
+    ).rejects.toThrow(
+      'API client not configured — call configureApiClient first'
+    );
+  });
+
   it('maps canonical server locales back to configured aliases', () => {
     configure({
       customMapping: { 'brand-english': { code: 'en-US' } },
@@ -144,6 +155,24 @@ describe('CLI API client', () => {
       name: 'Project',
       defaultLocale: 'brand-english',
     });
+  });
+
+  it('fetches project information through the SDK adapter', async () => {
+    fetchMock.mockImplementation(async (request) => {
+      expect(new URL(request.url).pathname).toBe('/v2/project/info/project-id');
+      return Response.json({
+        id: 'project-id',
+        name: 'Project',
+        orgId: 'org-id',
+        defaultLocale: 'en',
+        currentLocales: ['en', 'es'],
+        autoApprove: false,
+      });
+    });
+
+    await expect(api.getProjectInfo(10_000)).resolves.toEqual(
+      expect.objectContaining({ id: 'project-id', autoApprove: false })
+    );
   });
 
   it('checks job status through the job info endpoint', async () => {
@@ -457,12 +486,17 @@ describe('CLI API client', () => {
   });
 
   it('enqueues files in batches of 100 and merges job data', async () => {
+    configure({
+      customMapping: { 'brand-english': { code: 'en-US' } },
+    });
     let requestCount = 0;
     const batchSizes: number[] = [];
     fetchMock.mockImplementation(async (request) => {
       const body = JSON.parse(await request.text()) as {
         files: unknown[];
+        sourceLocale?: string;
       };
+      expect(body.sourceLocale).toBe('en-US');
       batchSizes.push(body.files.length);
       requestCount += 1;
       return Response.json({
@@ -490,7 +524,7 @@ describe('CLI API client', () => {
         fileName: `messages-${index}.json`,
         fileFormat: 'JSON' as const,
       })),
-      { sourceLocale: 'en', targetLocales: ['es'] }
+      { sourceLocale: 'brand-english', targetLocales: ['es'] }
     );
 
     expect(batchSizes).toEqual([100, 1]);
