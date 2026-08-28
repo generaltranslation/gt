@@ -810,9 +810,6 @@ importers:
       '@clack/prompts':
         specifier: 1.0.0-alpha.6
         version: 1.0.0-alpha.6
-      '@generaltranslation/api':
-        specifier: workspace:*
-        version: link:../api
       '@generaltranslation/format':
         specifier: workspace:*
         version: link:../format
