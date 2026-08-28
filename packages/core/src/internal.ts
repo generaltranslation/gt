@@ -36,6 +36,8 @@ export {
   isErrorResult,
   unwrapApiResult,
 } from './translate/utils/unwrapApiResult';
+export { createGtApiAdapter } from './adapter/createGtApi';
+export type { GtApiAdapter, GtApiAdapterConfig } from './adapter/createGtApi';
 
 // derive
 export { decodeVars } from './derive/decodeVars';
