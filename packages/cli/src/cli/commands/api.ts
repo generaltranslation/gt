@@ -3,9 +3,9 @@ import { createRequire } from 'node:module';
 import type { ApiClientConfig, Client } from 'generaltranslation/api';
 import {
   createDiagnosticMessage,
-  defaultBaseUrl,
   formatDiagnosticErrorDetails,
-} from 'generaltranslation/internal';
+} from 'generaltranslation/diagnostics';
+import { defaultBaseUrl } from 'generaltranslation/internal';
 import { resolveConfig } from '../../config/resolveConfig.js';
 import { exitSync } from '../../console/logging.js';
 import { loadConfig } from '../../fs/config/loadConfig.js';
