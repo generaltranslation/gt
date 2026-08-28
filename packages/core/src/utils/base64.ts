@@ -1,4 +1,4 @@
-import type { FileFormat } from '@generaltranslation/api';
+import { isBinaryFileFormat, type FileFormat } from '../types-dir/api/file';
 
 // Encode a string to base64
 export function encode(data: string): string {
@@ -34,12 +34,12 @@ export function encodeFileContent(
   content: string,
   fileFormat: FileFormat
 ): string {
-  return fileFormat === 'LOTTIE' ? content : encode(content);
+  return isBinaryFileFormat(fileFormat) ? content : encode(content);
 }
 
 export function decodeFileContent(
   content: string,
   fileFormat: FileFormat
 ): string {
-  return fileFormat === 'LOTTIE' ? content : decode(content);
+  return isBinaryFileFormat(fileFormat) ? content : decode(content);
 }
