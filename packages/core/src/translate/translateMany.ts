@@ -19,6 +19,11 @@ import { hashSource } from '../id';
 import { fetchWithTimeout } from './utils/fetchWithTimeout';
 import { hasDecodedError, unwrapApiResult } from './utils/unwrapApiResult';
 import { validateResponse } from './utils/validateResponse';
+import {
+  isModelProvider,
+  supportedModelProviders,
+} from '../adapter/modelProvider';
+import { createDiagnosticMessage } from '../logging/diagnostics';
 
 /**
  * @internal
@@ -89,6 +94,21 @@ export async function _translateMany(
     };
   }
 
+  if (
+    globalMetadata.modelProvider !== undefined &&
+    !isModelProvider(globalMetadata.modelProvider)
+  ) {
+    throw new Error(
+      createDiagnosticMessage({
+        source: 'generaltranslation',
+        severity: 'Error',
+        whatHappened: 'The configured model provider is not supported',
+        details: String(globalMetadata.modelProvider),
+        fix: `Use one of: ${supportedModelProviders.join(', ')}`,
+      })
+    );
+  }
+
   const client = createApiClient({
     apiKey: config.apiKey,
     baseUrl: config.baseUrl || defaultRuntimeApiUrl,
@@ -100,10 +120,10 @@ export async function _translateMany(
     requests: requestsObject,
     targetLocale: globalMetadata.targetLocale,
     sourceLocale: globalMetadata.sourceLocale,
-    // Core intentionally accepts custom model-provider strings beyond the
-    // OpenAPI ANTHROPIC|OPENAI|XAI|GOOGLE enum; preserve the pre-migration
-    // wire behavior at this boundary.
-    metadata: globalMetadata as TranslateData['body']['metadata'],
+    metadata: {
+      ...globalMetadata,
+      modelProvider: globalMetadata.modelProvider,
+    },
   } satisfies TranslateData['body'];
   const result = await translate({ body, client });
 
