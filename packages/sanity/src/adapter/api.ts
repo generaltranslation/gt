@@ -1,10 +1,8 @@
 import {
-  awaitJobs as awaitApiJobs,
   downloadFile,
   getTranslationStatus,
   type ApiClientConfig,
 } from 'generaltranslation/api';
-import { resolveAliasLocale, resolveCanonicalLocale } from 'generaltranslation';
 import {
   createGtApiAdapter,
   decode as decodeBase64,
@@ -16,9 +14,9 @@ import type { CustomMapping } from 'generaltranslation/types';
 const {
   configure: configureSharedApi,
   getClient,
+  getClientConfig: _getClientConfig,
   ...sharedApi
 } = createGtApiAdapter({ baseUrl: defaultBaseUrl });
-let customMapping: CustomMapping | undefined;
 
 export function configureApiClient(
   config: Omit<ApiClientConfig, 'baseUrl'> & {
@@ -27,7 +25,6 @@ export function configureApiClient(
   }
 ): void {
   configureSharedApi({ baseUrl: defaultBaseUrl, ...config });
-  customMapping = config.customMapping;
 }
 
 export const api = {
@@ -50,16 +47,15 @@ export const api = {
       ...result,
       translations: result.translations.map((translation) => ({
         ...translation,
-        locale: resolveAliasLocale(translation.locale, customMapping),
+        locale: sharedApi.resolveAliasLocale(translation.locale),
       })),
       sourceFile: {
         ...result.sourceFile,
-        sourceLocale: resolveAliasLocale(
-          result.sourceFile.sourceLocale,
-          customMapping
+        sourceLocale: sharedApi.resolveAliasLocale(
+          result.sourceFile.sourceLocale
         ),
         locales: result.sourceFile.locales.map((locale) =>
-          resolveAliasLocale(locale, customMapping)
+          sharedApi.resolveAliasLocale(locale)
         ),
       },
     };
@@ -77,9 +73,7 @@ export const api = {
         path: { fileId },
         query: {
           ...queryParams,
-          locale: locale
-            ? resolveCanonicalLocale(locale, customMapping)
-            : undefined,
+          locale: locale ? sharedApi.resolveCanonicalLocale(locale) : undefined,
         },
         client: getClient(),
       })
@@ -95,12 +89,5 @@ export const api = {
     const { pending: _pending, ...result } =
       await sharedApi.downloadFileBatch(files);
     return result;
-  },
-
-  async awaitJobs(
-    jobIds: readonly string[],
-    options?: Parameters<typeof awaitApiJobs>[2]
-  ) {
-    return awaitApiJobs(getClient(), jobIds, options);
   },
 };
