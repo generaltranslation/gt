@@ -227,12 +227,6 @@ export class GT extends GTRuntime {
     options?: SetupProjectOptions
   ): Promise<SetupProjectResult> {
     this._validateAuth('setupProject');
-    options = {
-      ...options,
-      locales: options?.locales?.map((locale) =>
-        this.resolveCanonicalLocale(locale)
-      ),
-    };
     return await this._getApiAdapter().setupProject(files, options);
   }
 
@@ -297,7 +291,7 @@ export class GT extends GTRuntime {
     this._validateAuth('enqueueFiles');
 
     // Merge instance settings with options.
-    let mergedOptions: EnqueueFilesOptions = {
+    const mergedOptions: EnqueueFilesOptions = {
       ...options,
       sourceLocale: options.sourceLocale ?? this.sourceLocale!,
       targetLocales: options.targetLocales ?? [this.targetLocale!],
@@ -319,14 +313,6 @@ export class GT extends GTRuntime {
       gtInstanceLogger.error(error);
       throw new Error(error);
     }
-
-    // Replace target locales with canonical locales
-    mergedOptions = {
-      ...mergedOptions,
-      targetLocales: mergedOptions.targetLocales.map((locale) =>
-        this.resolveCanonicalLocale(locale)
-      ),
-    };
 
     return await this._getApiAdapter().enqueueFiles(files, mergedOptions);
   }
@@ -364,15 +350,7 @@ export class GT extends GTRuntime {
     payload: SubmitUserEditDiffsPayload
   ): Promise<void> {
     this._validateAuth('submitUserEditDiffs');
-    // Normalize locales to canonical form before submission.
-    const normalized: SubmitUserEditDiffsPayload = {
-      ...payload,
-      diffs: (payload.diffs || []).map((d) => ({
-        ...d,
-        locale: this.resolveCanonicalLocale(d.locale),
-      })),
-    };
-    await this._getApiAdapter().submitUserEditDiffs(normalized);
+    await this._getApiAdapter().submitUserEditDiffs(payload);
   }
 
   /**
@@ -420,31 +398,7 @@ export class GT extends GTRuntime {
     // Validation
     this._validateAuth('queryFileData');
 
-    // Replace target locales with canonical locales
-    data.translatedFiles = data.translatedFiles?.map((item) => ({
-      ...item,
-      locale: this.resolveCanonicalLocale(item.locale),
-    }));
-
-    // Request the file translation status
-    const result = await this._getApiAdapter().queryFileData(
-      data,
-      options.timeout
-    );
-
-    // Resolve canonical locales
-    result.translatedFiles = result.translatedFiles?.map((item) => ({
-      ...item,
-      ...(item.locale && { locale: this.resolveAliasLocale(item.locale) }),
-    }));
-    result.sourceFiles = result.sourceFiles?.map((item) => ({
-      ...item,
-      ...(item.sourceLocale && {
-        sourceLocale: this.resolveAliasLocale(item.sourceLocale),
-      }),
-      locales: item.locales.map((locale) => this.resolveAliasLocale(locale)),
-    }));
-    return result;
+    return await this._getApiAdapter().queryFileData(data, options.timeout);
   }
 
   /**
@@ -468,26 +422,11 @@ export class GT extends GTRuntime {
     // Validation
     this._validateAuth('querySourceFile');
 
-    // Request the file translation status
-    const result = await this._getApiAdapter().querySourceFile(
+    return await this._getApiAdapter().querySourceFile(
       { fileId: data.fileId },
       { branchId: data.branchId, versionId: data.versionId },
       options.timeout
     );
-    // Replace locales with canonical locales
-    result.translations = result.translations.map((item) => ({
-      ...item,
-      ...(item.locale && { locale: this.resolveAliasLocale(item.locale) }),
-    }));
-    result.sourceFile.locales = result.sourceFile.locales.map((locale) =>
-      this.resolveAliasLocale(locale)
-    );
-    if (result.sourceFile.sourceLocale) {
-      result.sourceFile.sourceLocale = this.resolveAliasLocale(
-        result.sourceFile.sourceLocale
-      );
-    }
-    return result;
   }
   /**
    * Get project data for a given project ID.
@@ -508,20 +447,11 @@ export class GT extends GTRuntime {
     // Validation
     this._validateAuth('getProjectData');
 
-    // Request the file translation status
-    const result = await this._getApiAdapter().getProjectInfo(
+    // The published result predates the nullable defaultLocale in OpenAPI.
+    return (await this._getApiAdapter().getProjectInfo(
       projectId,
       options.timeout
-    );
-    // The published result predates the nullable defaultLocale in OpenAPI.
-    const compatibleResult = result as ProjectData;
-    compatibleResult.currentLocales = compatibleResult.currentLocales.map(
-      (item) => this.resolveAliasLocale(item)
-    );
-    compatibleResult.defaultLocale = this.resolveAliasLocale(
-      compatibleResult.defaultLocale
-    );
-    return compatibleResult;
+    )) as ProjectData;
   }
 
   /**
@@ -588,13 +518,6 @@ export class GT extends GTRuntime {
     // Validation
     this._validateAuth('downloadFileBatch');
 
-    requests = requests.map((request) => ({
-      ...request,
-      locale: request.locale
-        ? this.resolveCanonicalLocale(request.locale)
-        : undefined,
-    }));
-
     // Request the batch download.
     const result = await this._getApiAdapter().downloadFileBatch(
       requests,
@@ -630,15 +553,6 @@ export class GT extends GTRuntime {
         options.sourceLocale ?? this.sourceLocale ?? libraryDefaultLocale
       ),
     };
-
-    // resolve canonical locales
-    files = files.map((f) => ({
-      ...f,
-      source: {
-        ...f.source,
-        locale: this.resolveCanonicalLocale(f.source.locale),
-      },
-    }));
 
     // Process files in batches and convert result to UploadFilesResponse
     const result = await this._getApiAdapter().uploadSourceFiles(
@@ -711,22 +625,9 @@ export class GT extends GTRuntime {
       throw new Error(error);
     }
 
-    mergedOptions.sourceLocale = this.resolveCanonicalLocale(
-      mergedOptions.sourceLocale
-    );
-
-    // Ensure all translation locales use canonical locales
-    const targetFiles = files.map((f) => ({
-      ...f,
-      translations: f.translations.map((t) => ({
-        ...t,
-        locale: this.resolveCanonicalLocale(t.locale),
-      })),
-    }));
-
     // Process files in batches and convert result to UploadFilesResponse
     const result = await this._getApiAdapter().uploadTranslations(
-      targetFiles,
+      files,
       mergedOptions
     );
 
