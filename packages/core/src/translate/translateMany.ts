@@ -107,11 +107,12 @@ export async function _translateMany(
   } satisfies TranslateData['body'];
   const result = await translate({ body, client });
 
-  // Preserve validation for non-JSON/HTML runtime API error bodies.
+  // Responses without structured or text errors still need body validation.
   if (
     result.data === undefined &&
     result.response &&
-    !isErrorResult(result.error)
+    !isErrorResult(result.error) &&
+    typeof result.error !== 'string'
   ) {
     await validateResponse(result.response);
     throw result.error;

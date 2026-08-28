@@ -4,6 +4,7 @@ import {
   type TranslateResponse,
 } from '@generaltranslation/api';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { defaultRuntimeApiUrl } from '../../settings/settingsUrls';
 import { TranslationRequestConfig } from '../../types';
 import { SharedMetadata, TranslateManyEntry } from '../../types-dir/api/entry';
 import { _translateMany } from '../translateMany';
@@ -145,6 +146,30 @@ describe.sequential('_translateMany', () => {
     expect(validateResponse).not.toHaveBeenCalled();
   });
 
+  it('preserves string SDK error bodies in ApiError', async () => {
+    vi.mocked(translate).mockResolvedValue({
+      data: undefined,
+      error: 'upstream exploded',
+      request: {} as Request,
+      response: createResponse({
+        ok: false,
+        status: 502,
+        statusText: 'Bad Gateway',
+      }),
+    });
+
+    await expect(
+      _translateMany([], globalMetadata, mockConfig)
+    ).rejects.toEqual(
+      expect.objectContaining({
+        name: 'ApiError',
+        code: 502,
+        message: 'upstream exploded',
+      })
+    );
+    expect(validateResponse).not.toHaveBeenCalled();
+  });
+
   it('validates non-structured runtime API error responses', async () => {
     const response = createResponse({
       ok: false,
@@ -239,7 +264,7 @@ describe.sequential('_translateMany', () => {
     });
 
     expect(createApiClient).toHaveBeenCalledWith(
-      expect.objectContaining({ baseUrl: 'https://runtime2.gtx.dev' })
+      expect.objectContaining({ baseUrl: defaultRuntimeApiUrl })
     );
   });
 
