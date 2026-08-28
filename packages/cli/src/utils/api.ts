@@ -48,22 +48,24 @@ let client: ReturnType<typeof createApiClient> | undefined;
 let configuredClientConfig: ApiClientConfig | undefined;
 let customMapping: CustomMapping | undefined;
 
-function getClient(): ReturnType<typeof createApiClient> {
-  if (!client) {
+function getConfiguredClient(): {
+  client: ReturnType<typeof createApiClient>;
+  config: ApiClientConfig;
+} {
+  if (!client || !configuredClientConfig) {
     throw new Error(
       'API client not configured — call configureApiClient first'
     );
   }
-  return client;
+  return { client, config: configuredClientConfig };
+}
+
+function getClient(): ReturnType<typeof createApiClient> {
+  return getConfiguredClient().client;
 }
 
 function getClientConfig(): ApiClientConfig {
-  if (!configuredClientConfig) {
-    throw new Error(
-      'API client not configured — call configureApiClient first'
-    );
-  }
-  return configuredClientConfig;
+  return getConfiguredClient().config;
 }
 
 export function configureApiClient(
@@ -156,14 +158,12 @@ export const api = {
     );
   },
 
-  async getProjectInfo(timeoutMs?: number) {
+  async getProjectInfo(timeoutMs: number) {
     const config = getClientConfig();
     if (!config.projectId) {
       throw new Error('Project ID is required to fetch project information');
     }
-    const projectInfoClient = timeoutMs
-      ? createApiClient({ ...config, timeoutMs })
-      : getClient();
+    const projectInfoClient = createApiClient({ ...config, timeoutMs });
     return responseData(
       await getProjectInfo({
         client: projectInfoClient,
