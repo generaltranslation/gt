@@ -22,13 +22,13 @@ import {
   type UploadSourceFilesData,
   type UploadTranslationsData,
 } from 'generaltranslation/api';
-import { resolveCanonicalLocale } from 'generaltranslation';
-import { defaultBaseUrl, unwrapApiResult } from 'generaltranslation/internal';
-import type {
-  CustomMapping,
-  DownloadedFile,
-  FileFormat,
-} from 'generaltranslation/types';
+import { resolveAliasLocale, resolveCanonicalLocale } from 'generaltranslation';
+import {
+  decode as decodeBase64,
+  defaultBaseUrl,
+  unwrapApiResult,
+} from 'generaltranslation/internal';
+import type { CustomMapping, DownloadedFile } from 'generaltranslation/types';
 
 let client = createApiClient({ baseUrl: defaultBaseUrl });
 let customMapping: CustomMapping | undefined;
@@ -98,6 +98,10 @@ export const api = {
                   translation.content,
                   translation.fileFormat
                 ),
+                locale: resolveCanonicalLocale(
+                  translation.locale,
+                  customMapping
+                ),
               })),
             })),
             sourceLocale: resolveCanonicalLocale(
@@ -152,13 +156,30 @@ export const api = {
     branchId?: string;
   }) {
     const { fileId, ...queryParams } = query;
-    return unwrapApiResult(
+    const result = unwrapApiResult(
       await getTranslationStatus({
         path: { fileId },
         query: queryParams,
         client,
       })
     );
+    return {
+      ...result,
+      translations: result.translations.map((translation) => ({
+        ...translation,
+        locale: resolveAliasLocale(translation.locale, customMapping),
+      })),
+      sourceFile: {
+        ...result.sourceFile,
+        sourceLocale: resolveAliasLocale(
+          result.sourceFile.sourceLocale,
+          customMapping
+        ),
+        locales: result.sourceFile.locales.map((locale) =>
+          resolveAliasLocale(locale, customMapping)
+        ),
+      },
+    };
   },
 
   async downloadFile(query: {
@@ -167,26 +188,52 @@ export const api = {
     branchId?: string;
     locale?: string;
   }) {
-    const { fileId, ...queryParams } = query;
+    const { fileId, locale, ...queryParams } = query;
     const response = unwrapApiResult(
-      await downloadFile({ path: { fileId }, query: queryParams, client })
+      await downloadFile({
+        path: { fileId },
+        query: {
+          ...queryParams,
+          locale: locale
+            ? resolveCanonicalLocale(locale, customMapping)
+            : undefined,
+        },
+        client,
+      })
     );
-    return decodeFileContent(response.data, 'HTML');
+    // The single-file response omits fileFormat; Sanity downloads serialized
+    // document translations here, which are always base64 text (never LOTTIE).
+    return decodeBase64(response.data);
   },
 
   async downloadFileBatch(files: DownloadFilesData['body']) {
+    if (files.length === 0) return { files: [], count: 0 };
+
     const request = async (batch: DownloadFilesData['body']) =>
-      unwrapApiResult(await downloadFiles({ body: batch, client }));
-    const responses =
-      files.length === 0
-        ? [await request([])]
-        : await processBatches(files, async (batch) => [await request(batch)]);
+      unwrapApiResult(
+        await downloadFiles({
+          body: batch.map((file) => ({
+            ...file,
+            locale: file.locale
+              ? resolveCanonicalLocale(file.locale, customMapping)
+              : undefined,
+          })),
+          client,
+        })
+      );
+    const responses = await processBatches(files, async (batch) => [
+      await request(batch),
+    ]);
     return {
       files: responses.flatMap((response) =>
         response.files.map((file) => ({
           ...file,
+          ...(file.locale && {
+            locale: resolveAliasLocale(file.locale, customMapping),
+          }),
           data: decodeFileContent(file.data, file.fileFormat),
-          fileFormat: file.fileFormat as FileFormat,
+          // OpenAPI currently types metadata as an open object; the API emits
+          // JSON values here, matching DownloadedFile's public contract.
           metadata: file.metadata as DownloadedFile['metadata'],
         }))
       ),
@@ -211,7 +258,32 @@ export const api = {
   },
 
   async queryFileData(body: GetFileInfoData['body']) {
-    return unwrapApiResult(await getFileInfo({ body, client }));
+    const result = unwrapApiResult(
+      await getFileInfo({
+        body: {
+          ...body,
+          translatedFiles: body.translatedFiles?.map((file) => ({
+            ...file,
+            locale: resolveCanonicalLocale(file.locale, customMapping),
+          })),
+        },
+        client,
+      })
+    );
+    return {
+      ...result,
+      translatedFiles: result.translatedFiles.map((file) => ({
+        ...file,
+        locale: resolveAliasLocale(file.locale, customMapping),
+      })),
+      sourceFiles: result.sourceFiles.map((file) => ({
+        ...file,
+        sourceLocale: resolveAliasLocale(file.sourceLocale, customMapping),
+        locales: file.locales.map((locale) =>
+          resolveAliasLocale(locale, customMapping)
+        ),
+      })),
+    };
   },
 
   async createBranch(body: CreateBranchData['body']) {
