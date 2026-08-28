@@ -18,8 +18,7 @@ export type BatchDownloadResult = {
   error?: string;
 };
 
-// Compatibility type: decoded data and JSON-only metadata differ from the
-// generated wire response, whose data is base64 and metadata is unknown.
+// Compatibility type: data is decoded from the generated base64 wire response.
 export type DownloadedFile = {
   id: string;
   branchId: string;
