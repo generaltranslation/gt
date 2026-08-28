@@ -4,7 +4,7 @@ import { readFileSync } from 'fs';
 import path from 'path';
 import { logger } from '../../../console/logger.js';
 import { exitSync } from '../../../console/logging.js';
-import { gt } from '../../../utils/gt.js';
+import { configureApiClient } from '../../../utils/api.js';
 
 vi.mock('../../../console/logger.js');
 vi.mock('../../../console/logging.js');
@@ -1585,7 +1585,7 @@ describe('mergeJson', () => {
       const customMapping = {
         'fr-ca': { code: 'fr-CA' },
       };
-      gt.setConfig({ sourceLocale: 'en', customMapping });
+      configureApiClient({ baseUrl: 'https://api.example.com', customMapping });
 
       const result = mergeJson(
         originalContent,
@@ -1609,7 +1609,7 @@ describe('mergeJson', () => {
         ['fr-ca']
       );
 
-      gt.setConfig({ sourceLocale: 'en' });
+      configureApiClient({ baseUrl: 'https://api.example.com' });
 
       const parsed = JSON.parse(result[0]);
       const frenchNav = parsed.navigation.languages.find(hasLanguage('fr-CA'));

@@ -1,9 +1,9 @@
-import { gt } from '../utils/gt.js';
+import { isValidLocale } from 'generaltranslation';
 
 export function validateLocale(value: string) {
   const locale = value.trim();
   if (!locale) return 'Enter a valid locale (e.g., en)';
-  return gt.isValidLocale(locale) || 'Enter a valid locale (e.g., en)';
+  return isValidLocale(locale) || 'Enter a valid locale (e.g., en)';
 }
 
 export function parseTypedLocale(value: string) {
@@ -22,7 +22,7 @@ export function validateLocaleList(value: string) {
     return 'Enter at least one locale';
   }
   for (const locale of locales) {
-    if (!gt.isValidLocale(locale)) {
+    if (!isValidLocale(locale)) {
       return 'Enter a valid locale (e.g., es fr de)';
     }
   }
