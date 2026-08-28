@@ -2,6 +2,8 @@ import { TranslationRequestConfig } from '../types';
 import { apiRequest } from './utils/apiRequest';
 import { processBatches } from './utils/batch';
 
+// Compatibility input: published diffs require fileName and branchId, while
+// the generated request omits fileName and permits a missing branchId.
 export type SubmitUserEditDiff = {
   fileName: string;
   locale: string;

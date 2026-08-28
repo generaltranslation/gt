@@ -1,12 +1,10 @@
 import { TranslationRequestConfig } from '../types';
 import { apiRequest } from './utils/apiRequest';
 
+// Compatibility result: published failed-job messages remain non-null while
+// the adapter normalizes the generated API's null message to an empty string.
 export type JobStatus =
-  | 'queued'
-  | 'processing'
-  | 'completed'
-  | 'failed'
-  | 'unknown';
+  import('@generaltranslation/api').GetTranslationJobInfoResponse[number]['status'];
 
 export type CheckJobStatusResult = {
   jobId: string;
