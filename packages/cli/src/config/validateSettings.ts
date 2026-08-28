@@ -1,10 +1,36 @@
 import { isValidLocale, isSupersetLocale } from '@generaltranslation/format';
-import { Settings } from '../types/index.js';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
+import {
+  isModelProvider,
+  supportedModelProviders,
+} from 'generaltranslation/internal';
+import type { Settings } from '../types/index.js';
 import { logErrorAndExit } from '../console/logging.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
-export function validateSettings(settings: Settings) {
+type SettingsToValidate = Omit<Settings, 'modelProvider'> & {
+  modelProvider?: unknown;
+};
+
+export function validateSettings(
+  settings: SettingsToValidate
+): asserts settings is Settings {
+  if (
+    settings.modelProvider !== undefined &&
+    !isModelProvider(settings.modelProvider)
+  ) {
+    return logErrorAndExit(
+      createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Error',
+        whatHappened: 'The configured model provider is not supported',
+        details: String(settings.modelProvider),
+        fix: `Use one of: ${supportedModelProviders.join(', ')}`,
+      })
+    );
+  }
+
   // Validate locales
   for (const locale of settings.locales) {
     if (!isValidLocale(locale, settings.customMapping)) {
