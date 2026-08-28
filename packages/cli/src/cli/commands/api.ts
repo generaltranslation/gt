@@ -3,10 +3,13 @@ import { createRequire } from 'node:module';
 import type { ApiClientConfig, Client } from 'generaltranslation/api';
 import {
   createDiagnosticMessage,
+  defaultBaseUrl,
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/internal';
-import { generateSettings } from '../../config/generateSettings.js';
+import { resolveConfig } from '../../config/resolveConfig.js';
 import { exitSync } from '../../console/logging.js';
+import { loadConfig } from '../../fs/config/loadConfig.js';
+import { resolveProjectId } from '../../fs/utils.js';
 import type { SharedFlags } from '../../types/index.js';
 import { createNonRetryingApiClient } from '../../utils/api.js';
 
@@ -173,14 +176,24 @@ export async function handleApiCommand(
   }
 
   const method = parseMethod(options.method, dependencies);
-  const settings = await generateSettings(options, undefined, {
-    suppressOutput: true,
-  });
+  const configPath = options.config?.endsWith('.json')
+    ? options.config
+    : options.config
+      ? `${options.config}.json`
+      : undefined;
+  const config = configPath
+    ? loadConfig(configPath)
+    : (resolveConfig(process.cwd())?.config ?? {});
   const client = createNonRetryingApiClient({
-    apiKey: settings.apiKey,
-    baseUrl: settings.baseUrl,
+    apiKey: options.apiKey ?? process.env.GT_API_KEY,
+    baseUrl:
+      typeof config.baseUrl === 'string' ? config.baseUrl : defaultBaseUrl,
     fetch: dependencies.fetch,
-    projectId: settings.projectId,
+    projectId:
+      options.projectId ??
+      (typeof config.projectId === 'string'
+        ? config.projectId
+        : resolveProjectId()),
   });
   const normalizedEndpoint = endpoint.startsWith('/')
     ? endpoint

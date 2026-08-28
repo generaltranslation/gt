@@ -63,6 +63,37 @@ describe('gt api', () => {
     expect(outputText(stdout)).toBe(responseBody);
   });
 
+  it('does not validate translation settings for raw API requests', async () => {
+    const configPath = writeInput(
+      JSON.stringify({
+        baseUrl: 'https://api.example',
+        defaultLocale: 'not a locale',
+        locales: ['also invalid'],
+        projectId: 'config-project',
+      })
+    );
+    const fetchMock = vi.fn<typeof fetch>(async (request) => {
+      expect(request.url).toBe('https://api.example/v2/example');
+      expect(request.headers.get('gt-project-id')).toBe('config-project');
+      return new Response('{}');
+    });
+
+    await handleApiCommand(
+      '/v2/example',
+      {
+        apiKey: 'api-key',
+        config: configPath,
+        method: 'GET',
+      },
+      {
+        fetch: fetchMock,
+        writeStdout: () => undefined,
+      }
+    );
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
   it('rejects unsupported HTTP methods before making a request', async () => {
     const fetchMock = vi.fn<typeof fetch>();
     const stderr: string[] = [];
