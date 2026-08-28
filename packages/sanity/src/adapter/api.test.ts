@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { enqueueFileTranslations } from '@generaltranslation/api';
+import { enqueueFileTranslations } from 'generaltranslation/api';
 
 import { api, configureApiClient } from './api';
 
-vi.mock('@generaltranslation/api', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@generaltranslation/api')>()),
+vi.mock('generaltranslation/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('generaltranslation/api')>()),
   enqueueFileTranslations: vi.fn(),
 }));
 
