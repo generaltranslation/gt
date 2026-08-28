@@ -11,13 +11,13 @@ vi.mock('../../console/logger.js', () => ({
   },
 }));
 
-vi.mock('../../utils/gt.js', () => ({
-  gt: {
+vi.mock('../../utils/api.js', () => ({
+  api: {
     getProjectInfo: vi.fn(),
   },
 }));
 
-import { gt } from '../../utils/gt.js';
+import { api } from '../../utils/api.js';
 
 const makeSettings = (reviewPaths: string[] = []): Settings =>
   ({
@@ -57,7 +57,7 @@ describe('warnManualReviewSetup', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Default: setting unavailable (older API / no credentials)
-    vi.mocked(gt.getProjectInfo).mockRejectedValue(new Error('unavailable'));
+    vi.mocked(api.getProjectInfo).mockRejectedValue(new Error('unavailable'));
   });
 
   it('does not warn when nothing requires review', async () => {
@@ -100,9 +100,9 @@ describe('warnManualReviewSetup', () => {
   });
 
   it('does not warn when the project has manual review enabled (autoApprove false)', async () => {
-    vi.mocked(gt.getProjectInfo).mockResolvedValue({
+    vi.mocked(api.getProjectInfo).mockResolvedValue({
       autoApprove: false,
-    } as Awaited<ReturnType<typeof gt.getProjectInfo>>);
+    });
     await warnManualReviewSetup(makeSettings(['a.json']), [
       normalFile('a.json'),
     ]);
@@ -111,7 +111,7 @@ describe('warnManualReviewSetup', () => {
 
   it('does not fetch project info when nothing requires review', async () => {
     await warnManualReviewSetup(makeSettings(), [normalFile('a.json')]);
-    expect(gt.getProjectInfo).not.toHaveBeenCalled();
+    expect(api.getProjectInfo).not.toHaveBeenCalled();
   });
 
   // Wrapping may break phrases across lines, so assert on unwrapped text
@@ -119,9 +119,9 @@ describe('warnManualReviewSetup', () => {
     (vi.mocked(logger.warn).mock.calls[0][0] as string).replace(/\n/g, ' ');
 
   it('warns definitively when the project auto-approves', async () => {
-    vi.mocked(gt.getProjectInfo).mockResolvedValue({
+    vi.mocked(api.getProjectInfo).mockResolvedValue({
       autoApprove: true,
-    } as Awaited<ReturnType<typeof gt.getProjectInfo>>);
+    });
     await warnManualReviewSetup(makeSettings(['a.json']), [
       normalFile('a.json'),
     ]);
@@ -140,9 +140,9 @@ describe('warnManualReviewSetup', () => {
   });
 
   it('names the exact dashboard setting in the call to action', async () => {
-    vi.mocked(gt.getProjectInfo).mockResolvedValue({
+    vi.mocked(api.getProjectInfo).mockResolvedValue({
       autoApprove: true,
-    } as Awaited<ReturnType<typeof gt.getProjectInfo>>);
+    });
     await warnManualReviewSetup(makeSettings(['a.json']), [
       normalFile('a.json'),
     ]);
