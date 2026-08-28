@@ -6,11 +6,9 @@ import { describe, expect, it } from 'vitest';
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 
 function findTypeScriptFiles(directory: string): string[] {
-  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(directory, entry.name);
-    if (entry.isDirectory()) return findTypeScriptFiles(path);
-    return entry.isFile() && entry.name.endsWith('.ts') ? [path] : [];
-  });
+  return readdirSync(directory, { recursive: true })
+    .filter((file) => file.endsWith('.ts'))
+    .map((file) => join(directory, file));
 }
 
 describe('@generaltranslation/api dependencies', () => {

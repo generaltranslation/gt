@@ -111,8 +111,6 @@ export function createGtApiAdapter(defaultConfig?: ApiClientConfig) {
     },
 
     async downloadFileBatch(files: DownloadFilesData['body']) {
-      if (files.length === 0) return { files: [], count: 0, pending: [] };
-
       const request = async (batch: DownloadFilesData['body']) =>
         unwrapApiResult(
           await downloadFiles({
