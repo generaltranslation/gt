@@ -24,6 +24,20 @@ export type FileFormat =
   | 'LOTTIE'
   | 'SVG';
 
+export type JsonObject = {
+  [key: string]: JsonValue;
+};
+
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | Array<JsonValue | null>
+  | {
+      [key: string]: JsonValue | null;
+    };
+
 export type Branch = {
   id: string;
   name: string;
@@ -33,7 +47,7 @@ export type RuntimeTranslationResponse = {
   [key: string]:
     | {
         success: true;
-        translation?: unknown;
+        translation?: JsonValue;
         dataFormat: 'JSX' | 'ICU' | 'I18NEXT' | 'STRING';
         locale: string;
       }
@@ -54,7 +68,7 @@ export type RuntimeTranslationRequest = {
         context?: string;
         maxChars?: number;
         dataFormat?: 'JSX' | 'ICU' | 'I18NEXT' | 'STRING';
-        actionType?: 'fast';
+        actionType?: 'fast' | 'standard';
         sourceCode?: {
           [key: string]: Array<{
             before: string;
@@ -1177,9 +1191,7 @@ export type DownloadFilesResponses = {
       locale?: string;
       fileName?: string;
       data: string;
-      metadata: {
-        [key: string]: unknown;
-      };
+      metadata: JsonObject;
       fileFormat: FileFormat;
     }>;
     count: number;
