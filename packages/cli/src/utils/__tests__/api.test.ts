@@ -197,6 +197,32 @@ describe('CLI API client', () => {
     ]);
   });
 
+  it('forwards abort signals to in-flight job status requests', async () => {
+    configure({ retryPolicy: 'none' });
+    let requestSignal: AbortSignal | undefined;
+    fetchMock.mockImplementation(
+      (request) =>
+        new Promise<Response>((_resolve, reject) => {
+          requestSignal = request.signal;
+          const rejectOnAbort = () => reject(request.signal.reason);
+          if (request.signal.aborted) rejectOnAbort();
+          else request.signal.addEventListener('abort', rejectOnAbort);
+        })
+    );
+
+    const controller = new AbortController();
+    const pendingRequest = api.checkJobStatus(['setup-job'], controller.signal);
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    const rejection = expect(pendingRequest).rejects.toThrow(
+      'poll deadline exceeded'
+    );
+
+    controller.abort(new Error('poll deadline exceeded'));
+
+    await rejection;
+    expect(requestSignal?.aborted).toBe(true);
+  });
+
   it('canonicalizes user edit diff locales', async () => {
     configure({
       customMapping: { 'brand-english': { code: 'en-US' } },
