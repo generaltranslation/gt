@@ -75,7 +75,11 @@ import { splitMintlifyLanguageRefs } from '../utils/splitMintlifyLanguageRefs.js
 import { runMergeDriver, type MergeDriverName } from '../git/mergeDrivers.js';
 import { setupGitMergeDrivers } from '../git/setupMergeDrivers.js';
 import { warnReactPackageCompatibility } from '../utils/reactPackageCompatibility.js';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import {
+  createDiagnosticMessage,
+  formatDiagnosticErrorDetails,
+} from 'generaltranslation/internal';
+import { login, logout, whoAmI } from '../auth/oauth.js';
 import { setupViteSPA } from '../setup/setupViteSPA.js';
 import { manifestDirectlyDeclaresGTVue } from '@generaltranslation/vue-extractor/integration';
 
@@ -102,6 +106,16 @@ const electronSetupError = createDiagnosticMessage({
     'The automatic setup wizard is not ready for Electron applications',
   docsUrl: 'https://generaltranslation.com/docs/react',
 });
+
+function createUserAuthError(whatHappened: string, error: unknown): string {
+  return createDiagnosticMessage({
+    source: 'gt',
+    severity: 'Error',
+    whatHappened,
+    details: formatDiagnosticErrorDetails(error),
+    fix: 'Run `gt login` and try again',
+  });
+}
 
 async function exitIfUnsupportedSetupTarget(): Promise<void> {
   const packageJson = await searchForPackageJson();
@@ -194,6 +208,7 @@ export class BaseCLI {
     this.setupConfigureCommand();
     this.setupUploadCommand();
     this.setupLoginCommand();
+    this.setupUserAuthCommands();
     this.setupSendDiffsCommand();
     this.setupGitCommand();
   }
@@ -554,6 +569,53 @@ export class BaseCLI {
       await this.handleUploadCommand(options);
       logger.endCommand('Done!');
     });
+  }
+
+  protected setupUserAuthCommands(): void {
+    this.program
+      .command('login')
+      .description('Sign in to your General Translation account')
+      .action(async () => {
+        displayHeader('Signing in to General Translation...');
+        try {
+          await login({
+            onDeviceCode: ({ userCode, verificationUri }) => {
+              logger.message(
+                `Enter code ${chalk.cyan(userCode)} at ${chalk.cyan(verificationUri)}`
+              );
+            },
+          });
+          logger.endCommand('Signed in successfully.');
+        } catch (error) {
+          logErrorAndExit(createUserAuthError('Sign in failed', error));
+        }
+      });
+
+    this.program
+      .command('logout')
+      .description('Sign out of your General Translation account')
+      .action(async () => {
+        try {
+          await logout();
+          logger.endCommand('Signed out successfully.');
+        } catch (error) {
+          logErrorAndExit(createUserAuthError('Sign out failed', error));
+        }
+      });
+
+    this.program
+      .command('whoami')
+      .description('Show the signed-in General Translation account')
+      .action(async () => {
+        try {
+          const user = await whoAmI();
+          logger.message(user.email ?? user.name ?? user.sub);
+        } catch (error) {
+          logErrorAndExit(
+            createUserAuthError('Could not load your account', error)
+          );
+        }
+      });
   }
 
   protected setupLoginCommand(): void {

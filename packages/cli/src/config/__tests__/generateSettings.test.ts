@@ -4,6 +4,7 @@ import { resolveFiles } from '../../fs/config/parseFilesConfig';
 import { determineLibrary } from '../../fs/determineFramework/index.js';
 import { logger } from '../../console/logger.js';
 import { resolveConfig } from '../resolveConfig.js';
+import { getValidAccessToken } from '../../auth/oauth.js';
 
 // Mock resolveFiles
 vi.mock('../../fs/config/parseFilesConfig', () => ({
@@ -66,6 +67,10 @@ vi.mock('../../utils/gt.js', () => ({
   },
 }));
 
+vi.mock('../../auth/oauth.js', () => ({
+  getValidAccessToken: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock('../optionPresets.js', () => ({
   generatePreset: vi.fn(),
 }));
@@ -98,6 +103,7 @@ describe('generateSettings - composite patterns', () => {
       library: 'base',
       additionalModules: [],
     });
+    vi.mocked(getValidAccessToken).mockResolvedValue(undefined);
   });
 
   it('should extract composite patterns from jsonSchema options and pass to resolveFiles', async () => {
@@ -321,6 +327,20 @@ describe('generateSettings - composite patterns', () => {
       ['json-composite-1'],
       false
     );
+  });
+
+  it('uses a stored user token only when no explicit API key exists', async () => {
+    vi.mocked(getValidAccessToken).mockResolvedValue('user-access-token');
+
+    const userSettings = await generateSettings({}, '/test/cwd');
+    const keySettings = await generateSettings(
+      { apiKey: 'explicit-api-key' },
+      '/test/cwd'
+    );
+
+    expect(userSettings.apiKey).toBe('user-access-token');
+    expect(keySettings.apiKey).toBe('explicit-api-key');
+    expect(getValidAccessToken).toHaveBeenCalledOnce();
   });
 
   it('should not call resolveFiles when files are not provided', async () => {
