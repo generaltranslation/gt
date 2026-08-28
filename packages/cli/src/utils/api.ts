@@ -8,10 +8,8 @@ import {
   createBranch,
   createProject,
   createTag,
-  decodeFileContent,
   DEFAULT_BATCH_SIZE,
   downloadFiles,
-  encodeFileContent,
   enqueueFileTranslations,
   generateProjectContext,
   getBranchInfo,
@@ -42,7 +40,12 @@ import {
   type UploadSourceFilesData,
   type UploadTranslationsData,
 } from 'generaltranslation/api';
-import { unwrapApiResult } from 'generaltranslation/internal';
+import {
+  decodeFileContent,
+  defaultBaseUrl,
+  encodeFileContent,
+  unwrapApiResult,
+} from 'generaltranslation/internal';
 
 let client: ReturnType<typeof createApiClient> | undefined;
 let configuredClientConfig: ApiClientConfig | undefined;

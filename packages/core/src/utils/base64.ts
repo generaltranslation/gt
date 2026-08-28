@@ -1,3 +1,5 @@
+import type { FileFormat } from '@generaltranslation/api';
+
 // Encode a string to base64
 export function encode(data: string): string {
   if (typeof Buffer !== 'undefined') {
@@ -26,4 +28,18 @@ export function decode(base64: string): string {
     bytes[i] = binary.charCodeAt(i);
   }
   return new TextDecoder().decode(bytes);
+}
+
+export function encodeFileContent(
+  content: string,
+  fileFormat: FileFormat
+): string {
+  return fileFormat === 'LOTTIE' ? content : encode(content);
+}
+
+export function decodeFileContent(
+  content: string,
+  fileFormat: FileFormat
+): string {
+  return fileFormat === 'LOTTIE' ? content : decode(content);
 }
