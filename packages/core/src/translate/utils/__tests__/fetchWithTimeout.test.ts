@@ -16,7 +16,7 @@ vi.mock('../../../settings/settings.js', () => ({
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
-describe('fetchWithTimeout', () => {
+describe.sequential('fetchWithTimeout', () => {
   // Common mock data factories
   const createMockResponse = (overrides: Partial<Response> = {}): Response => {
     return {
@@ -241,25 +241,36 @@ describe('fetchWithTimeout', () => {
       expect(result.status).toBe(200);
     });
 
-    it('should override existing signal in options', async () => {
+    it('composes the caller signal with its timeout signal', async () => {
       const mockResponse = createMockResponse();
       mockFetch.mockResolvedValue(mockResponse);
 
       const existingController = new AbortController();
-      const options: RequestInit = {
+      await fetchWithTimeout('https://api.example.com/test', {
         method: 'GET',
         signal: existingController.signal,
-      };
+      });
 
-      const result = await fetchWithTimeout(
-        'https://api.example.com/test',
-        options
-      );
+      const signal = mockFetch.mock.calls[0][1].signal as AbortSignal;
+      expect(signal.aborted).toBe(false);
+      existingController.abort();
+      expect(signal.aborted).toBe(true);
+    });
 
-      expect(result).toBe(mockResponse);
-      // Test that the function completed successfully with the expected response
-      expect(result.ok).toBe(true);
-      expect(result.status).toBe(200);
+    it('composes a Request signal with its timeout signal', async () => {
+      const mockResponse = createMockResponse();
+      mockFetch.mockResolvedValue(mockResponse);
+
+      const existingController = new AbortController();
+      const request = new Request('https://api.example.com/test', {
+        signal: existingController.signal,
+      });
+      await fetchWithTimeout(request, { method: 'GET' });
+
+      const signal = mockFetch.mock.calls[0][1].signal as AbortSignal;
+      expect(signal.aborted).toBe(false);
+      existingController.abort();
+      expect(signal.aborted).toBe(true);
     });
   });
 

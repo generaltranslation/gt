@@ -17,7 +17,10 @@ export async function fetchWithTimeout(
   timeout?: number
 ) {
   const controller = new AbortController();
-  const signal = controller.signal;
+  const signals = [controller.signal];
+  if (options.signal) signals.push(options.signal);
+  if (url instanceof Request) signals.push(url.signal);
+  const signal = AbortSignal.any(signals);
 
   timeout = timeout ? timeout : defaultTimeout;
   const timeoutId = timeout
