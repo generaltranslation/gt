@@ -188,7 +188,7 @@ export class PollTranslationJobsStep {
           onPoll: updateJobStatuses,
         }
       );
-      updateJobStatuses(result.jobs);
+      if (result.complete) updateJobStatuses(result.jobs);
     } catch (error) {
       this.spinner.stop(chalk.red('Error checking translation job status'));
       throw error;
