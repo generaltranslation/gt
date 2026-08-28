@@ -1,9 +1,17 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
+
+function findTypeScriptFiles(directory: string): string[] {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) return findTypeScriptFiles(path);
+    return entry.isFile() && entry.name.endsWith('.ts') ? [path] : [];
+  });
+}
 
 describe('@generaltranslation/api dependencies', () => {
   it('has no workspace dependencies', () => {
@@ -23,5 +31,15 @@ describe('@generaltranslation/api dependencies', () => {
     );
 
     expect(workspaceDependencies).toEqual([]);
+  });
+
+  it('does not import workspace packages from source', () => {
+    const workspaceImportPattern =
+      /from '(?:generaltranslation|@generaltranslation\/(?!api)|gt-)/;
+    const workspaceImports = findTypeScriptFiles(
+      join(packageRoot, 'src')
+    ).filter((file) => workspaceImportPattern.test(readFileSync(file, 'utf8')));
+
+    expect(workspaceImports).toEqual([]);
   });
 });
