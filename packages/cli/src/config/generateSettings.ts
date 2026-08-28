@@ -86,13 +86,12 @@ function hasConfiguredTranslationFiles(files: unknown): boolean {
  * @param cwd - The current working directory
  * @param options - Additional options
  * @param options.requireConfig - If true, exit with an error when no config file is found
- * @param options.suppressOutput - If true, suppress non-error settings output
  * @returns The generated settings
  */
 export async function generateSettings(
   flags: GenerateSettingsInput,
   cwd: string = process.cwd(),
-  options?: { requireConfig?: boolean; suppressOutput?: boolean }
+  options?: { requireConfig?: boolean }
 ): Promise<Settings> {
   // Load config file
   let gtConfig: GenerateSettingsInput = {};
@@ -172,10 +171,7 @@ export async function generateSettings(
 
   // Warn on deprecated includeSourceCodeContext
   const configuredFiles = gtConfig.files as FilesOptions | undefined;
-  if (
-    !options?.suppressOutput &&
-    configuredFiles?.gt?.includeSourceCodeContext != null
-  ) {
+  if (configuredFiles?.gt?.includeSourceCodeContext != null) {
     warnDeprecatedField(
       'files.gt.includeSourceCodeContext',
       'files.gt.parsingFlags.includeSourceCodeContext'
@@ -186,7 +182,6 @@ export async function generateSettings(
   const mergedOptions: Settings = { ...gtConfig, ...flags } as Settings;
 
   if (
-    !options?.suppressOutput &&
     determineLibrary().library === 'base' &&
     !hasConfiguredTranslationFiles(mergedOptions.files)
   ) {
@@ -233,7 +228,7 @@ export async function generateSettings(
   }
 
   // Display projectId if present
-  if (!options?.suppressOutput && mergedOptions.projectId) {
+  if (mergedOptions.projectId) {
     displayProjectId(mergedOptions.projectId);
   }
 
@@ -330,7 +325,6 @@ export async function generateSettings(
   };
 
   if (
-    !options?.suppressOutput &&
     mergedOptions.omitConfigIds &&
     (mergedOptions.publish === true ||
       mergedOptions.files.gtJson.publish === true)
