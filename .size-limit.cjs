@@ -84,6 +84,7 @@ const reactNativeNode = (name, file) =>
 
 module.exports = [
   core('generaltranslation', 'index'),
+  core('generaltranslation/api', 'api'),
   core('generaltranslation/runtime', 'runtime'),
   core('generaltranslation/id', 'id'),
   core('generaltranslation/internal', 'internal'),
