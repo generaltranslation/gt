@@ -13,9 +13,6 @@
   "exclude": ["**/__tests__/**/*", "**/__mocks__/**/*"],
   "references": [
     {
-      "path": "../api"
-    },
-    {
       "path": "../core"
     }
   ]
