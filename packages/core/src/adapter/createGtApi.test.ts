@@ -1,10 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getFileInfo, uploadTranslations } from '@generaltranslation/api';
+import {
+  getFileInfo,
+  getOrphanedFiles,
+  uploadTranslations,
+} from '@generaltranslation/api';
 import { createGtApiAdapter } from './createGtApi';
 
 vi.mock('@generaltranslation/api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@generaltranslation/api')>()),
   getFileInfo: vi.fn(),
+  getOrphanedFiles: vi.fn(),
   uploadTranslations: vi.fn(),
 }));
 
@@ -83,6 +88,39 @@ describe('createGtApiAdapter', () => {
         }),
       })
     );
+  });
+
+  it('intersects orphaned files returned across request batches', async () => {
+    vi.mocked(getOrphanedFiles)
+      .mockResolvedValueOnce(
+        result({
+          orphanedFiles: [
+            { fileId: 'only-first', versionId: 'v1', fileName: 'first.json' },
+            { fileId: 'orphan', versionId: 'v2', fileName: 'orphan.json' },
+          ],
+        })
+      )
+      .mockResolvedValueOnce(
+        result({
+          orphanedFiles: [
+            { fileId: 'orphan', versionId: 'v2', fileName: 'orphan.json' },
+            { fileId: 'only-second', versionId: 'v3', fileName: 'second.json' },
+          ],
+        })
+      );
+    const adapter = createGtApiAdapter({
+      baseUrl: 'https://api.example.com',
+    });
+
+    const response = await adapter.getOrphanedFiles(
+      'branch-id',
+      Array.from({ length: 101 }, (_, index) => `file-${index}`)
+    );
+
+    expect(getOrphanedFiles).toHaveBeenCalledTimes(2);
+    expect(response.orphanedFiles).toEqual([
+      { fileId: 'orphan', versionId: 'v2', fileName: 'orphan.json' },
+    ]);
   });
 
   it('maps file-info locales in both directions', async () => {

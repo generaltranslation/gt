@@ -2,21 +2,14 @@ import { TranslationRequestConfig } from '../types';
 import { apiRequest } from './utils/apiRequest';
 import { processBatches } from './utils/batch';
 
-export type MoveMapping = {
-  oldFileId: string;
-  newFileId: string;
-  newFileName: string;
-};
+export type MoveMapping =
+  import('@generaltranslation/api').ProcessFileMovesData['body']['moves'][number];
 
-export type MoveResult = {
-  oldFileId: string;
-  newFileId: string;
-  success: boolean;
-  newSourceFileId?: string;
-  clonedTranslationsCount?: number;
-  error?: string;
-};
+export type MoveResult =
+  import('@generaltranslation/api').ProcessFileMovesResponse['results'][number];
 
+// Compatibility response: the published API guarantees summary while the
+// generated wire response marks it optional.
 export type ProcessMovesResponse = {
   results: MoveResult[];
   summary: {
