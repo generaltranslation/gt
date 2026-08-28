@@ -2,15 +2,11 @@ import { TranslationRequestConfig } from '../types';
 import { apiRequest } from './utils/apiRequest';
 import { createBatches } from './utils/batch';
 
-export type OrphanedFile = {
-  fileId: string;
-  versionId: string;
-  fileName: string;
-};
+export type OrphanedFile =
+  import('@generaltranslation/api').GetOrphanedFilesResponse['orphanedFiles'][number];
 
-export type GetOrphanedFilesResult = {
-  orphanedFiles: OrphanedFile[];
-};
+export type GetOrphanedFilesResult =
+  import('@generaltranslation/api').GetOrphanedFilesResponse;
 
 /**
  * @internal
