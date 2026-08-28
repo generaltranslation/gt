@@ -2,10 +2,8 @@ import {
   awaitJobs as awaitApiJobs,
   createApiClient,
   createBranch,
-  decodeFileContent,
   downloadFile,
   downloadFiles,
-  encodeFileContent,
   enqueueFileTranslations,
   generateProjectContext,
   getFileInfo,
@@ -25,7 +23,9 @@ import {
 import { resolveAliasLocale, resolveCanonicalLocale } from 'generaltranslation';
 import {
   decode as decodeBase64,
+  decodeFileContent,
   defaultBaseUrl,
+  encodeFileContent,
   unwrapApiResult,
 } from 'generaltranslation/internal';
 import type { CustomMapping, DownloadedFile } from 'generaltranslation/types';
