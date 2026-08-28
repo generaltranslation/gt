@@ -1,7 +1,3 @@
-import { TranslationRequestConfig } from '../types';
-import { apiRequest } from './utils/apiRequest';
-import { processBatches } from './utils/batch';
-
 // Compatibility input: published diffs require fileName and branchId, while
 // the generated request omits fileName and permits a missing branchId.
 export type SubmitUserEditDiff = {
@@ -17,27 +13,3 @@ export type SubmitUserEditDiff = {
 export type SubmitUserEditDiffsPayload = {
   diffs: SubmitUserEditDiff[];
 };
-
-/**
- * @internal
- * Submits user edit diffs so the service can learn/persist user-intended rules.
- */
-export async function _submitUserEditDiffs(
-  payload: SubmitUserEditDiffsPayload,
-  config: TranslationRequestConfig,
-  options: { timeout?: number } = {}
-): Promise<{ success: boolean }> {
-  await processBatches(
-    payload.diffs,
-    async (batch) => {
-      await apiRequest(config, '/v2/project/files/diffs', {
-        body: { diffs: batch } satisfies SubmitUserEditDiffsPayload,
-        timeout: options.timeout,
-      });
-      return [{ success: true }];
-    },
-    { batchSize: 100 }
-  );
-
-  return { success: true };
-}
