@@ -4,7 +4,7 @@ import type { ApiClientConfig, Client } from 'generaltranslation/api';
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
-} from 'generaltranslation/internal';
+} from 'generaltranslation/diagnostics';
 import { generateSettings } from '../../config/generateSettings.js';
 import { exitSync } from '../../console/logging.js';
 import type { SharedFlags } from '../../types/index.js';

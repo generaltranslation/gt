@@ -88,6 +88,11 @@ module.exports = [
   core('generaltranslation/runtime', 'runtime'),
   core('generaltranslation/id', 'id'),
   core('generaltranslation/internal', 'internal'),
+  entry(
+    'generaltranslation/diagnostics',
+    'packages/core/dist/diagnostics.mjs',
+    '1 kB'
+  ),
   core('generaltranslation/types', 'types'),
   core('generaltranslation/errors', 'errors'),
 
