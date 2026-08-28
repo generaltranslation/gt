@@ -24,6 +24,14 @@ describe('summarizeLocales', () => {
     ]);
   });
 
+  it('surfaces a locale-level error as trouble', () => {
+    const { clean, trouble } = summarizeLocales({
+      ja: { error: 'network down', failed: [], partial: [], translated: [] },
+    });
+    expect(clean).toEqual([]);
+    expect(trouble).toEqual([{ detail: 'network down', locale: 'ja' }]);
+  });
+
   it('treats a locale with nothing translated and no errors as trouble', () => {
     const { clean, trouble } = summarizeLocales({
       es: { failed: [], partial: [], translated: [] },

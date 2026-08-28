@@ -160,24 +160,36 @@ export const createTranslateEndpoint = (
       const requests = toTranslateEntries(entries);
       const locales: Record<string, LocaleReport> = {};
       for (const targetLocale of targetLocales) {
-        const results = await gt.translateMany(requests, {
-          sourceLocale,
-          targetLocale,
-        });
-        const { data, failed, partial } = buildLocaleData(entries, results);
-        if (Object.keys(data).length > 0) {
-          await req.payload.update({
-            id,
-            collection: options.slug as CollectionSlug,
-            data,
-            locale: targetLocale as TypedLocale,
+        // A throw here must not hide locales already written; it becomes
+        // that locale's report row instead of failing the whole request.
+        try {
+          const results = await gt.translateMany(requests, {
+            sourceLocale,
+            targetLocale,
           });
+          const { data, failed, partial } = buildLocaleData(entries, results);
+          if (Object.keys(data).length > 0) {
+            await req.payload.update({
+              id,
+              collection: options.slug as CollectionSlug,
+              data,
+              locale: targetLocale as TypedLocale,
+            });
+          }
+          locales[targetLocale] = {
+            failed,
+            partial,
+            translated: Object.keys(data),
+          };
+        } catch (error) {
+          locales[targetLocale] = {
+            error:
+              error instanceof Error ? error.message : 'translation failed',
+            failed: [],
+            partial: [],
+            translated: [],
+          };
         }
-        locales[targetLocale] = {
-          failed,
-          partial,
-          translated: Object.keys(data),
-        };
       }
       return Response.json({ locales, skipped, sourceLocale });
     } catch (error) {

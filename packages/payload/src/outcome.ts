@@ -1,4 +1,5 @@
 export type LocaleReport = {
+  error?: string;
   failed: { error: string; field: string }[];
   partial: { field: string; missingTextNodes: number }[];
   translated: string[];
@@ -15,6 +16,7 @@ export const summarizeLocales = (
   const summary: OutcomeSummary = { clean: [], trouble: [] };
   for (const [locale, report] of Object.entries(locales)) {
     const problems = [
+      ...(report.error ? [report.error] : []),
       ...report.failed.map((item) => `${item.field}: ${item.error}`),
       ...report.partial.map(
         (item) =>

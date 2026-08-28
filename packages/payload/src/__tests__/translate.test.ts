@@ -1,5 +1,6 @@
 import type { JsxChildren, TranslationResult } from 'generaltranslation/types';
-import { describe, expect, it } from 'vitest';
+import type { PayloadRequest } from 'payload';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { LexicalState } from '../lexical';
 import { buildGtTree } from '../lexical';
@@ -7,8 +8,17 @@ import { fixtureState, upperCaseTree } from './fixture';
 import {
   buildFieldEntries,
   buildLocaleData,
+  createTranslateEndpoint,
   toTranslateEntries,
 } from '../translate';
+
+const { translateMany } = vi.hoisted(() => ({ translateMany: vi.fn() }));
+
+vi.mock('generaltranslation', () => ({
+  GTRuntime: class {
+    translateMany = translateMany;
+  },
+}));
 
 const doc = (): Record<string, unknown> => ({
   content: fixtureState(),
@@ -136,5 +146,83 @@ describe('buildLocaleData', () => {
     expect(outcome.failed).toEqual([
       { error: 'no result returned', field: 'title' },
     ]);
+  });
+});
+
+describe('createTranslateEndpoint', () => {
+  beforeEach(() => {
+    translateMany.mockReset();
+  });
+
+  const makeReq = (overrides: Record<string, unknown>): PayloadRequest =>
+    ({
+      payload: {
+        config: {
+          localization: {
+            defaultLocale: 'en',
+            localeCodes: ['en', 'es', 'ja'],
+          },
+        },
+        findByID: vi.fn().mockResolvedValue({ title: 'Hello world' }),
+        update: vi.fn().mockResolvedValue({}),
+        ...overrides,
+      },
+      routeParams: { id: '1' },
+      user: { id: 1 },
+    }) as unknown as PayloadRequest;
+
+  const endpoint = createTranslateEndpoint({
+    fields: ['title'],
+    slug: 'posts',
+  });
+
+  it('keeps completed locale reports when a later locale throws', async () => {
+    const update = vi.fn().mockResolvedValue({});
+    const req = makeReq({ update });
+    translateMany
+      .mockResolvedValueOnce([
+        {
+          dataFormat: 'STRING',
+          locale: 'es',
+          success: true,
+          translation: 'Hola mundo',
+        },
+      ])
+      .mockRejectedValueOnce(new Error('network down'));
+
+    const response = await endpoint.handler(req);
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.locales.es).toEqual({
+      failed: [],
+      partial: [],
+      translated: ['title'],
+    });
+    expect(body.locales.ja).toEqual({
+      error: 'network down',
+      failed: [],
+      partial: [],
+      translated: [],
+    });
+    expect(update).toHaveBeenCalledTimes(1);
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { title: 'Hola mundo' }, locale: 'es' })
+    );
+  });
+
+  it('returns 502 with no writes when the source read fails', async () => {
+    const update = vi.fn();
+    const req = makeReq({
+      findByID: vi.fn().mockRejectedValue(new Error('not found')),
+      update,
+    });
+
+    const response = await endpoint.handler(req);
+    const body = await response.json();
+
+    expect(response.status).toBe(502);
+    expect(body).toEqual({ error: 'not found' });
+    expect(update).not.toHaveBeenCalled();
   });
 });
