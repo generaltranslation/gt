@@ -18,8 +18,8 @@ vi.mock('../../console/logging.js', () => ({
     throw new Error(message);
   }),
 }));
-vi.mock('../../utils/gt.js', () => ({
-  gt: { uploadFonts: vi.fn(async () => ({ assets: [], count: 2 })) },
+vi.mock('../../utils/api.js', () => ({
+  api: { uploadFonts: vi.fn(async () => ({ assets: [], count: 2 })) },
 }));
 vi.mock('../../formats/files/collectFonts.js', () => ({
   collectFonts: vi.fn(async () => []),
@@ -58,7 +58,7 @@ vi.mock('../utils/filterFilesForEnqueue.js', () => ({
   })),
 }));
 
-import { gt } from '../../utils/gt.js';
+import { api } from '../../utils/api.js';
 import { collectFonts } from '../../formats/files/collectFonts.js';
 import { logger } from '../../console/logger.js';
 
@@ -93,7 +93,7 @@ describe('runStageFilesWorkflow font sync', () => {
     const result = await runStageFilesWorkflow({ files, options, settings });
 
     expect(collectFonts).toHaveBeenCalledWith(settings);
-    expect(gt.uploadFonts).toHaveBeenCalledWith(fonts);
+    expect(api.uploadFonts).toHaveBeenCalledWith(fonts);
     expect(result.enqueueResult).toEqual({ message: 'enqueued', jobData: {} });
   });
 
@@ -102,14 +102,14 @@ describe('runStageFilesWorkflow font sync', () => {
 
     await runStageFilesWorkflow({ files, options, settings });
 
-    expect(gt.uploadFonts).not.toHaveBeenCalled();
+    expect(api.uploadFonts).not.toHaveBeenCalled();
   });
 
   it('continues staging when the font upload fails', async () => {
     vi.mocked(collectFonts).mockResolvedValue([
       { assetType: 'FONT', fileName: 'Inter.ttf', content: 'Zm9udA==' },
     ]);
-    vi.mocked(gt.uploadFonts).mockRejectedValueOnce(new Error('server down'));
+    vi.mocked(api.uploadFonts).mockRejectedValueOnce(new Error('server down'));
 
     const result = await runStageFilesWorkflow({ files, options, settings });
 

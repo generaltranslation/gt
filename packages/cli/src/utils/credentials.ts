@@ -4,17 +4,17 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { Settings, SupportedFrameworks } from '../types/index.js';
 import chalk from 'chalk';
-import apiRequest from './fetch.js';
-// Type for credentials returned from the dashboard
-type Credentials = {
-  apiKeys: ApiKey[];
-  projectId: string;
-};
+import {
+  createApiClient,
+  createCliWizardSession,
+  deleteCliWizardSession,
+  getCliWizardSession,
+  type CliWizardSessionReadyResponse,
+  type GetCliWizardSessionResponse,
+} from 'generaltranslation/api';
+import { unwrapApiResult } from 'generaltranslation/internal';
 
-type ApiKey = {
-  key: string;
-  type: 'development' | 'production';
-};
+type Credentials = Extract<CliWizardSessionReadyResponse, { apiKeys: unknown }>;
 
 // Fetches project ID and API key by opening the dashboard in the browser
 export async function retrieveCredentials(
@@ -43,26 +43,35 @@ export async function retrieveCredentials(
   const spinner = logger.createSpinner('dots');
   spinner.start('Waiting for response from dashboard...');
 
-  const credentials = await new Promise<Credentials>((resolve) => {
+  const client = createApiClient({
+    baseUrl: settings.baseUrl,
+    retryPolicy: 'none',
+  });
+  const credentials = await new Promise<Credentials>((resolve, reject) => {
     const interval = setInterval(async () => {
-      // Ping the dashboard to see if the credentials are set
       try {
-        const res = await apiRequest(
-          settings.baseUrl,
-          `/cli/wizard/${sessionId}`,
-          {
-            method: 'GET',
-          }
-        );
-        if (res.status === 200) {
-          const data = await res.json();
-          resolve(data as Credentials);
+        const result = await getCliWizardSession({
+          client,
+          path: { sessionId },
+        });
+        if (result.response.status !== 200) return;
+
+        let credentials: Credentials;
+        try {
+          credentials = normalizeCredentials(unwrapApiResult(result), keyType);
+        } catch (error) {
           clearInterval(interval);
           clearTimeout(timeout);
-          apiRequest(settings.baseUrl, `/cli/wizard/${sessionId}`, {
-            method: 'DELETE',
-          });
+          reject(error);
+          return;
         }
+        resolve(credentials);
+        clearInterval(interval);
+        clearTimeout(timeout);
+        void deleteCliWizardSession({
+          client,
+          path: { sessionId },
+        }).catch(console.error);
       } catch (err) {
         console.error(err);
       }
@@ -87,13 +96,30 @@ export async function generateCredentialsSession(
 ): Promise<{
   sessionId: string;
 }> {
-  const res = await apiRequest(url, '/cli/wizard/session', {
-    body: { keyType },
-  });
-  if (!res.ok) {
+  try {
+    return unwrapApiResult(
+      await createCliWizardSession({
+        body: { keyType },
+        client: createApiClient({ baseUrl: url, retryPolicy: 'none' }),
+      })
+    );
+  } catch {
     logErrorAndExit('Failed to generate credentials session');
   }
-  return await res.json();
+}
+
+function normalizeCredentials(
+  response: GetCliWizardSessionResponse,
+  keyType: 'development' | 'production' | 'all'
+): Credentials {
+  if ('apiKeys' in response) return response;
+  if ('apiKey' in response && keyType !== 'all') {
+    return {
+      apiKeys: [{ key: response.apiKey, type: keyType }],
+      projectId: response.projectId,
+    };
+  }
+  throw new Error('The dashboard returned an unsupported credentials response');
 }
 
 // Checks if the credentials are set in the environment variables

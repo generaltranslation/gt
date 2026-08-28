@@ -373,6 +373,48 @@ describe('pollJobs', () => {
     expect(getJobStatuses).toHaveBeenCalledTimes(2);
   });
 
+  it('waits for each status load before starting the next poll', async () => {
+    let activeLoads = 0;
+    let maxActiveLoads = 0;
+    let pollCount = 0;
+    const getJobStatuses = vi.fn(async () => {
+      activeLoads += 1;
+      maxActiveLoads = Math.max(maxActiveLoads, activeLoads);
+      await Promise.resolve();
+      activeLoads -= 1;
+      pollCount += 1;
+      return [
+        {
+          jobId: 'one',
+          status:
+            pollCount === 1 ? ('processing' as const) : ('completed' as const),
+        },
+      ];
+    });
+
+    await pollJobs(['one'], getJobStatuses, { pollingIntervalSeconds: 0 });
+
+    expect(maxActiveLoads).toBe(1);
+    expect(getJobStatuses).toHaveBeenCalledTimes(2);
+  });
+
+  it('reports each successful poll through the hook', async () => {
+    const processing = [{ jobId: 'one', status: 'processing' as const }];
+    const completed = [{ jobId: 'one', status: 'completed' as const }];
+    const getJobStatuses = vi
+      .fn()
+      .mockResolvedValueOnce(processing)
+      .mockResolvedValueOnce(completed);
+    const onPoll = vi.fn();
+
+    await pollJobs(['one'], getJobStatuses, {
+      onPoll,
+      pollingIntervalSeconds: 0,
+    });
+
+    expect(onPoll.mock.calls).toEqual([[processing], [completed]]);
+  });
+
   it('reports incomplete unknown jobs when the deadline expires', async () => {
     const getJobStatuses = vi.fn();
 

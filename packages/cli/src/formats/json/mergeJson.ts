@@ -13,7 +13,7 @@ import {
   getConfiguredLocaleProperties,
   replaceLocalePlaceholders,
 } from '../utils.js';
-import { gt } from '../../utils/gt.js';
+import { api } from '../../utils/api.js';
 import {
   applyStructuralTransforms,
   unapplyStructuralTransforms,
@@ -55,10 +55,10 @@ export function mergeJson(
   const useCanonicalLocaleKeys =
     options?.experimentalCanonicalLocaleKeys ?? false;
   const canonicalDefaultLocale = useCanonicalLocaleKeys
-    ? gt.resolveCanonicalLocale(defaultLocale)
+    ? api.resolveCanonicalLocale(defaultLocale)
     : defaultLocale;
   const canonicalLocaleOrder = useCanonicalLocaleKeys
-    ? localeOrder.map((locale) => gt.resolveCanonicalLocale(locale))
+    ? localeOrder.map((locale) => api.resolveCanonicalLocale(locale))
     : localeOrder;
 
   if (jsonSchema.structuralTransform && jsonSchema.composite) {
@@ -171,7 +171,7 @@ export function mergeJson(
         // 2. Track all array indecies to remove (will be overwritten)
         const targetItemsToRemove = findMatchingItemArray(
           useCanonicalLocaleKeys
-            ? gt.resolveCanonicalLocale(target.targetLocale)
+            ? api.resolveCanonicalLocale(target.targetLocale)
             : target.targetLocale,
           sourceObjectOptions,
           sourceObjectPointer,
@@ -232,7 +232,7 @@ export function mergeJson(
           const { identifyingLocaleProperty: targetLocaleKeyProperty } =
             getSourceObjectOptionsArray(
               useCanonicalLocaleKeys
-                ? gt.resolveCanonicalLocale(target.targetLocale)
+                ? api.resolveCanonicalLocale(target.targetLocale)
                 : target.targetLocale,
               sourceObjectPointer,
               sourceObjectOptions
@@ -350,7 +350,7 @@ export function mergeJson(
         // 2. Find the source item for the target locale
         const matchingTargetItem = findMatchingItemObject(
           useCanonicalLocaleKeys
-            ? gt.resolveCanonicalLocale(target.targetLocale)
+            ? api.resolveCanonicalLocale(target.targetLocale)
             : target.targetLocale,
           sourceObjectPointer,
           sourceObjectOptions,

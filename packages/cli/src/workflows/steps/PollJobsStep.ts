@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import { pollJobs, type JobResult } from 'generaltranslation/api';
 import { logger } from '../../console/logger.js';
 import type { ApiClient } from '../../utils/api.js';
 import { EnqueueFilesResult } from 'generaltranslation/types';
@@ -148,72 +149,58 @@ export class PollTranslationJobsStep {
       }
     }
 
-    // Calculate time until next 5-second interval since startTime
-    const msUntilNextInterval = Math.max(
+    const timeoutSeconds = Math.max(
       0,
-      5000 - ((Date.now() - startTime) % 5000)
+      timeoutDuration - (Date.now() - startTime) / 1000
     );
 
-    return new Promise<PollJobsOutput>((resolve) => {
-      let intervalCheck: NodeJS.Timeout;
+    const updateJobStatuses = (statuses: readonly JobResult[]) => {
+      for (const job of statuses) {
+        const jobFileProperties = jobFileMap.get(job.jobId);
+        if (!jobFileProperties) continue;
 
-      setTimeout(() => {
-        intervalCheck = setInterval(async () => {
-          try {
-            // Query job status
-            const jobIds = Array.from(jobFileMap.keys());
-            const jobStatusResponse = await this.api.checkJobStatus(jobIds);
+        const fileKey = `${jobFileProperties.branchId}:${jobFileProperties.fileId}:${jobFileProperties.versionId}:${jobFileProperties.locale}`;
+        const fileProperties = filePropertiesMap.get(fileKey);
+        if (!fileProperties) continue;
 
-            // Update status based on job completion
-            for (const job of jobStatusResponse) {
-              const jobFileProperties = jobFileMap.get(job.jobId);
-              if (jobFileProperties) {
-                const fileKey = `${jobFileProperties.branchId}:${jobFileProperties.fileId}:${jobFileProperties.versionId}:${jobFileProperties.locale}`;
-                const fileProperties = filePropertiesMap.get(fileKey);
-                if (!fileProperties) {
-                  continue;
-                }
-                if (job.status === 'completed') {
-                  fileTracker.completed.set(fileKey, fileProperties);
-                  fileTracker.inProgress.delete(fileKey);
-                  jobFileMap.delete(job.jobId);
-                } else if (job.status === 'failed') {
-                  fileTracker.failed.set(fileKey, fileProperties);
-                  fileTracker.inProgress.delete(fileKey);
-                  jobFileMap.delete(job.jobId);
-                } else if (job.status === 'unknown') {
-                  fileTracker.skipped.set(fileKey, fileProperties);
-                  fileTracker.inProgress.delete(fileKey);
-                  jobFileMap.delete(job.jobId);
-                }
-              }
-            }
+        if (job.status === 'completed') {
+          fileTracker.completed.set(fileKey, fileProperties);
+        } else if (job.status === 'failed') {
+          fileTracker.failed.set(fileKey, fileProperties);
+        } else if (job.status === 'unknown') {
+          fileTracker.skipped.set(fileKey, fileProperties);
+        } else {
+          continue;
+        }
+        fileTracker.inProgress.delete(fileKey);
+        jobFileMap.delete(job.jobId);
+      }
+      this.updateSpinner(fileTracker, fileQueryData);
+    };
 
-            // Update spinner
-            this.updateSpinner(fileTracker, fileQueryData);
+    try {
+      const result = await pollJobs(
+        [...jobFileMap.keys()],
+        (jobIds) => this.api.checkJobStatus(jobIds),
+        {
+          pollingIntervalSeconds: 5,
+          timeoutSeconds,
+          onPoll: updateJobStatuses,
+        }
+      );
+      updateJobStatuses(result.jobs);
+    } catch (error) {
+      this.spinner.stop(chalk.red('Error checking translation job status'));
+      throw error;
+    }
 
-            const elapsed = Date.now() - startTime;
-            const allJobsProcessed = fileTracker.inProgress.size === 0;
+    if (fileTracker.inProgress.size === 0) {
+      this.spinner.stop(chalk.green('Translation jobs finished'));
+      return { success: true, fileTracker };
+    }
 
-            if (allJobsProcessed || elapsed >= timeoutDuration * 1000) {
-              clearInterval(intervalCheck);
-
-              if (fileTracker.inProgress.size === 0) {
-                this.spinner!.stop(chalk.green('Translation jobs finished'));
-                resolve({ success: true, fileTracker });
-              } else {
-                this.spinner!.stop(
-                  chalk.red('Timed out waiting for translation jobs')
-                );
-                resolve({ success: false, fileTracker });
-              }
-            }
-          } catch (error) {
-            logger.error(chalk.red('Error checking job status: ') + error);
-          }
-        }, 5000);
-      }, msUntilNextInterval);
-    });
+    this.spinner.stop(chalk.red('Timed out waiting for translation jobs'));
+    return { success: false, fileTracker };
   }
 
   private updateSpinner(

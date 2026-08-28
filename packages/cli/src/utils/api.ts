@@ -4,7 +4,6 @@ import {
   createProject,
   createTag,
   getBranchInfo,
-  getOrphanedFiles,
   getProjectInfo,
   getTranslationJobInfo,
   processBatches,
@@ -109,36 +108,6 @@ export const api = {
         client: getClient(),
       })
     );
-  },
-
-  // ponytail: duplicates core/src/translate/getOrphanedFiles.ts batching +
-  // intersection; delete one copy when utils/gt.ts is removed.
-  async getOrphanedFiles(branchId: string, fileIds: string[]) {
-    const request = async (batch: string[]) =>
-      unwrapApiResult(
-        await getOrphanedFiles({
-          body: { branchId, fileIds: batch },
-          client: getClient(),
-        })
-      );
-
-    if (fileIds.length === 0) return request([]);
-
-    const results = await processBatches(fileIds, async (batch) => [
-      await request(batch),
-    ]);
-    const orphanedFiles = new Map(
-      results[0].orphanedFiles.map((file) => [file.fileId, file])
-    );
-    for (const result of results.slice(1)) {
-      const batchFileIds = new Set(
-        result.orphanedFiles.map((file) => file.fileId)
-      );
-      for (const fileId of orphanedFiles.keys()) {
-        if (!batchFileIds.has(fileId)) orphanedFiles.delete(fileId);
-      }
-    }
-    return { orphanedFiles: [...orphanedFiles.values()] };
   },
 
   async processFileMoves(
