@@ -1,19 +1,25 @@
 import {
   createLookupOptions,
+  getI18nRuntime,
   getRuntimeEnvironment,
   interpolateMessage,
 } from 'gt-i18n/internal';
+import type { LookupOptions, LookupOptionsFor } from 'gt-i18n/internal/types';
 import type { GTTranslationOptions } from 'gt-i18n/types';
-import type { LookupOptionsFor } from 'gt-i18n/internal/types';
-import { getI18nConfig } from '../../setup/i18nConfig';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
+import type { StringContent, StringFormat } from 'generaltranslation/types';
 import {
   getReadonlyConditionStore,
   isReadonlyConditionStoreInitialized,
 } from '../../condition-store/singleton-operations';
-import { StringContent, StringFormat } from 'generaltranslation/types';
-import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 import { getShouldTranslate } from '../../hooks/utils/getShouldTranslate';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { getI18nConfig } from '../../setup/i18nConfig';
+
+type SyncTranslationLookup = (
+  locale: string,
+  message: StringContent,
+  options: LookupOptions
+) => StringContent | undefined;
 
 /**
  * Translate a message
@@ -31,95 +37,77 @@ import { createDiagnosticMessage } from 'generaltranslation/internal';
  * t`Hello, ${name}` // Translate via tagged template literal
  *
  */
-export const t: StringOrTemplateSyncResolutionFunction = (
+let runtimeT: StringOrTemplateSyncResolutionFunction | undefined;
+
+export function t(strings: TemplateStringsArray, ...values: unknown[]): string;
+export function t(message: string, options?: GTTranslationOptions): string;
+export function t(
   messageOrStrings: string | TemplateStringsArray,
   ...values: unknown[]
-) => {
-  // Warnings and errors
-  enforceSSRRules(messageOrStrings);
+): string {
+  runtimeT ??= createT((locale, message, options) =>
+    getI18nRuntime().lookupTranslation(locale, message, options)
+  );
+  return typeof messageOrStrings === 'string'
+    ? runtimeT(
+        messageOrStrings,
+        values.at(0) as GTTranslationOptions | undefined
+      )
+    : runtimeT(messageOrStrings, ...values);
+}
 
-  //  t("Hello, {name}!", { name: "John" })
-  if (typeof messageOrStrings === 'string') {
-    const options = values.at(0) as GTTranslationOptions | undefined;
-    const locale = options?.$locale ?? getLocale();
-    return resolveStringContent(
-      locale,
-      messageOrStrings,
-      createLookupOptions(locale, options ?? {}, 'ICU')
-    );
-  }
+export function createT(
+  lookupTranslation: SyncTranslationLookup
+): StringOrTemplateSyncResolutionFunction {
+  function resolveStringContent(
+    locale: string,
+    content: StringContent,
+    options: LookupOptionsFor<StringFormat> = {}
+  ): StringContent {
+    const defaultLocale = getI18nConfig().getDefaultLocale();
+    const lookupOptions = createLookupOptions(locale, options, 'ICU');
+    if (!getShouldTranslate()) {
+      return interpolateMessage({
+        options: lookupOptions,
+        source: content,
+        sourceLocale: defaultLocale,
+      });
+    }
 
-  // t`Hello, ${name}`
-  return handleTaggedTemplateLiteralTranslation(messageOrStrings, values);
-};
-
-// ----- Helper Functions ----- //
-
-export function resolveStringContent(
-  locale: string,
-  content: StringContent,
-  options: LookupOptionsFor<StringFormat> = {}
-): StringContent {
-  const i18nCache = getReactI18nCache();
-  const defaultLocale = getI18nConfig().getDefaultLocale();
-  if (!getShouldTranslate()) {
     return interpolateMessage({
-      options,
       source: content,
+      target: lookupTranslation(lookupOptions.$locale, content, lookupOptions),
+      options: lookupOptions,
       sourceLocale: defaultLocale,
     });
   }
 
-  const lookupOptions = createLookupOptions(locale, options, 'ICU');
-  const translation = i18nCache.lookupTranslation(
-    lookupOptions.$locale,
-    content,
-    lookupOptions
-  );
-  return interpolateMessage({
-    source: content,
-    target: translation,
-    options: lookupOptions,
-    sourceLocale: defaultLocale,
-  });
-}
+  return (messageOrStrings, ...values) => {
+    enforceSSRRules(messageOrStrings);
 
-/**
- * Handle tagged template literal translation
- * @param messageOrStrings - The message or strings to translate.
- * @param values - The values to interpolate.
- * @returns The translated message.
- *
- * This is triggered when there has been no compiler transformation
- *
- * Try looking up interpolated template first
- * If not found, resolve uninterpolated message
- */
-function handleTaggedTemplateLiteralTranslation(
-  messageOrStrings: TemplateStringsArray,
-  values: unknown[]
-): string {
-  const locale = getLocale();
-  // for tagged template literals, there has been no compiler transformation
-  // (1) lookup interpolated template (aka derived message)
-  const interpolatedTemplate = interpolateTemplateLiteral(
-    messageOrStrings,
-    values
-  );
-  const i18nCache = getReactI18nCache();
-  const translatedInterpolatedTemplate = i18nCache.lookupTranslation(
-    locale,
-    interpolatedTemplate,
-    { $format: 'STRING' }
-  );
-  if (translatedInterpolatedTemplate) return translatedInterpolatedTemplate;
+    if (typeof messageOrStrings === 'string') {
+      const options = values.at(0) as GTTranslationOptions | undefined;
+      return resolveStringContent(
+        options?.$locale ?? getLocale(),
+        messageOrStrings,
+        options
+      );
+    }
 
-  // (2) resolve uninterpolated message
-  const { message, variables } = extractInterpolatableValues(
-    messageOrStrings,
-    values
-  );
-  return resolveStringContent(locale, message, variables);
+    const locale = getLocale();
+    const translatedTemplate = lookupTranslation(
+      locale,
+      interpolateTemplateLiteral(messageOrStrings, values),
+      { $format: 'STRING' }
+    );
+    if (translatedTemplate) return translatedTemplate;
+
+    const { message, variables } = extractInterpolatableValues(
+      messageOrStrings,
+      values
+    );
+    return resolveStringContent(locale, message, variables);
+  };
 }
 
 /**
@@ -222,18 +210,7 @@ function getLocale(): string {
  * {@link TemplateSyncResolutionFunction}
  * {@link SyncResolutionFunction}
  */
-interface StringOrTemplateSyncResolutionFunction {
+export interface StringOrTemplateSyncResolutionFunction {
   (strings: TemplateStringsArray, ...values: unknown[]): string;
   (message: string, options?: GTTranslationOptions): string;
 }
-
-/**
- * Type for the `t` function when used as a tagged template literal.
- * @param strings - The template strings.
- * @param values - The values to interpolate.
- * @returns The translated message.
- */
-type TemplateSyncResolutionFunction = (
-  strings: TemplateStringsArray,
-  ...values: unknown[]
-) => string;

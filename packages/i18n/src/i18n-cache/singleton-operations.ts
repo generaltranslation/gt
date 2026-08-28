@@ -1,21 +1,28 @@
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { createGlobalSingleton } from '../globals/createGlobalSingleton';
-import { I18nCache } from './I18nCache';
+import type { I18nCache } from './I18nCache';
 import { Translation } from './translations-manager/utils/types/translation-data';
+import { setI18nRuntime } from './runtime-operations';
+import type { I18nRuntime } from './types';
 
-const i18nCacheSingleton = createGlobalSingleton<I18nCache>({
-  namespace: 'i18n',
-  key: 'i18nCache',
-  source: 'gt-i18n',
-  notInitialized: () =>
-    createDiagnosticMessage({
-      source: 'gt-i18n',
-      severity: 'Error',
-      whatHappened: 'Cannot read I18nCache before it has been initialized',
-      why: 'the internal I18nCache singleton is unavailable',
-      fix: 'Initialize GT before accessing I18nCache (call initializeGT() from your GT framework package).',
-    }),
-});
+const i18nCacheSingleton =
+  /* @__PURE__ */ createGlobalSingleton<I18nCache>({
+    namespace: 'i18n',
+    key: 'i18nCache',
+    source: 'gt-i18n',
+    notInitialized: () =>
+      createDiagnosticMessage({
+        source: 'gt-i18n',
+        severity: 'Error',
+        whatHappened: 'Cannot read I18nCache before it has been initialized',
+        why: 'the internal I18nCache singleton is unavailable',
+        fix: 'Initialize GT before accessing I18nCache (call initializeGT() from your GT framework package).',
+      }),
+  });
+
+export function isI18nCacheInitialized(): boolean {
+  return i18nCacheSingleton.isInitialized();
+}
 
 /**
  * Get the singleton instance of I18nCache
@@ -42,4 +49,5 @@ export function setI18nCache<TranslationValue extends Translation>(
   i18nCacheInstance: I18nCache<TranslationValue>
 ): void {
   i18nCacheSingleton.set(i18nCacheInstance as unknown as I18nCache);
+  setI18nRuntime(i18nCacheInstance as unknown as I18nRuntime);
 }

@@ -5,6 +5,31 @@ import { renderPreparedT } from '../../utils/rendering/renderPipeline';
 import type { TProps } from '../../utils/translation/prepareT.shared';
 import { usePrepareT } from '../../utils/translation/usePrepareT';
 
+function useComputeTDev(
+  result: ReactNode,
+  shouldTranslate: boolean,
+  targetFound: boolean
+): ReactNode {
+  // Tx hot reload: render previous translation while loading new one
+  // TODO: account for success vs loading vs failed request states
+  const prev = useRef<ReactNode | null>(null);
+  if (
+    getI18nConfig().isDevHotReloadEnabled() &&
+    !targetFound &&
+    prev.current != null &&
+    shouldTranslate
+  ) {
+    return prev.current;
+  }
+
+  // record previous result
+  prev.current = result;
+  return result;
+}
+
+const finalizeT: typeof useComputeTDev =
+  process.env.NODE_ENV === 'production' ? (result) => result : useComputeTDev;
+
 // ===== Component ===== //
 
 /**
@@ -56,20 +81,6 @@ function useComputeT({
     message: sourceJsxChildren,
     options: targetOptions,
   });
-
-  // Tx hot reload: render previous translation while loading new one
-  // TODO: account for success vs loading vs failed request states
-  const prev = useRef<ReactNode | null>(null);
-  if (
-    process.env.NODE_ENV !== 'production' &&
-    getI18nConfig().isDevHotReloadEnabled() &&
-    targetJsxChildren == null &&
-    prev.current != null &&
-    shouldTranslate
-  ) {
-    return prev.current;
-  }
-
   const result = _renderPreparedT({
     taggedSourceChildren,
     targetJsxChildren,
@@ -80,8 +91,5 @@ function useComputeT({
     hash: targetOptions.$_hash,
   });
 
-  // record previous result
-  prev.current = result;
-
-  return result;
+  return finalizeT(result, shouldTranslate, targetJsxChildren != null);
 }

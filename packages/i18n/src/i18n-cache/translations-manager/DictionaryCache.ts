@@ -3,7 +3,7 @@ import {
   getDictionaryEntry,
   getDictionaryValue,
   getDictionaryValueAtPath,
-  isDictionaryValue,
+  mergeDictionary,
   setDictionaryValueAtPath,
 } from './utils/dictionary-helpers';
 import { materializeDictionaryValue } from './utils/materialize-dictionary';
@@ -12,7 +12,6 @@ import type {
   Dictionary,
   DictionaryEntry,
   DictionaryKey,
-  DictionaryPath,
   DictionaryValue,
 } from './utils/types/dictionary';
 export type {
@@ -131,16 +130,5 @@ export class DictionaryCache {
         })
       )
     );
-  }
-}
-
-function mergeDictionary(target: Dictionary, source: Dictionary): void {
-  for (const [key, value] of Object.entries(source)) {
-    const targetValue = target[key];
-    if (isDictionaryValue(targetValue) && isDictionaryValue(value)) {
-      mergeDictionary(targetValue, value);
-    } else {
-      target[key] = cloneDictionaryValue(value);
-    }
   }
 }

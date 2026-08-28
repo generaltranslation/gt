@@ -34,9 +34,7 @@ export async function getMessagesInternal({
   locale: string;
   enableI18n: boolean;
 }): Promise<MFunctionType> {
-  // Get the gt function
   const gt = await getGTInternal({ locale, enableI18n });
-
   /**
    * Resolves a registered message to its translation.
    * @param {string | null | undefined} encodedMsg - The encoded message to decode and interpolate.

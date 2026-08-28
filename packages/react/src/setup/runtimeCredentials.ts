@@ -1,4 +1,3 @@
-import { getRuntimeEnvironment } from 'gt-i18n/internal';
 import type { I18nConfigParams } from 'gt-i18n/internal/types';
 
 type RuntimeCredentials = Pick<I18nConfigParams, 'projectId' | 'devApiKey'>;
@@ -15,7 +14,9 @@ export function addRuntimeCredentials<T extends RuntimeCredentials>(
   return {
     ...config,
     projectId: config.projectId || credentials.projectId,
-    devApiKey: config.devApiKey || credentials.devApiKey,
+    ...(process.env.NODE_ENV !== 'production' && {
+      devApiKey: config.devApiKey || credentials.devApiKey,
+    }),
   };
 }
 
@@ -30,15 +31,15 @@ function getRuntimeCredentials(): RuntimeCredentials {
             }
           ).env?.VITE_GT_PROJECT_ID
       ) || readProcessEnvViteProjectId(),
-    devApiKey:
-      getRuntimeEnvironment() === 'development'
-        ? readImportMetaVite(() =>
-            (import.meta as ImportMeta & { env?: RuntimeEnv }).env?.DEV
-              ? (import.meta as ImportMeta & { env?: RuntimeEnv }).env
-                  ?.VITE_GT_DEV_API_KEY
-              : undefined
-          ) || readProcessEnvViteDevApiKey()
-        : undefined,
+    ...(process.env.NODE_ENV !== 'production' && {
+      devApiKey:
+        readImportMetaVite(() =>
+          (import.meta as ImportMeta & { env?: RuntimeEnv }).env?.DEV
+            ? (import.meta as ImportMeta & { env?: RuntimeEnv }).env
+                ?.VITE_GT_DEV_API_KEY
+            : undefined
+        ) || readProcessEnvViteDevApiKey(),
+    }),
   };
 }
 
