@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
-import { I18nConfig } from '../I18nConfig';
+import {
+  I18nConfig as BrowserI18nConfig,
+  type I18nConfigParams,
+} from '../I18nConfig';
+import { RuntimeI18nConfig as I18nConfig } from '../RuntimeI18nConfig';
 
 describe('I18nConfig', () => {
   beforeEach(() => {
@@ -22,6 +26,29 @@ describe('I18nConfig', () => {
     const config = new I18nConfig({ defaultLocale: 'fr' });
 
     expect(config.getLocales()).toEqual(['fr']);
+  });
+
+  it('derives localized region overrides from the locale mapping', () => {
+    const customMapping = {
+      customEnglish: {
+        code: 'en-US',
+        regionCode: 'US',
+        regionName: 'Custom United States',
+        emoji: '🗽',
+      },
+    };
+    const config = new I18nConfig({ customMapping });
+
+    expect(config.getRegionProperties('US', 'en')).toMatchObject({
+      name: 'Custom United States',
+      emoji: '🗽',
+      locale: 'customEnglish',
+    });
+
+    customMapping.customEnglish.regionName = 'Updated United States';
+    expect(config.getRegionProperties('US', 'en').name).toBe(
+      'Updated United States'
+    );
   });
 
   it('skips locale validation when GT services are disabled', () => {
@@ -49,6 +76,20 @@ describe('I18nConfig', () => {
     );
 
     errorSpy.mockRestore();
+  });
+
+  it('validates runtime-only GT configuration in browser builds', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    expect(
+      () =>
+        new BrowserI18nConfig({
+          defaultLocale: 'invalid-locale',
+          projectId: 'test-project',
+          apiKey: 'test-api-key',
+          cacheUrl: null,
+        })
+    ).toThrow('Invalid I18nConfig locale configuration');
   });
 
   it('validates custom mapping locales when GT services are enabled', () => {
@@ -116,6 +157,21 @@ describe('I18nConfig', () => {
     });
 
     expect(config.isDevHotReloadEnabled()).toBe(true);
+  });
+
+  it('copies runtime configuration at initialization', () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    const params: I18nConfigParams = {
+      devApiKey: 'dev-key',
+      projectId: 'project-id',
+    };
+    const config = new I18nConfig(params);
+
+    params.devApiKey = undefined;
+    params.projectId = undefined;
+
+    expect(config.isDevHotReloadEnabled()).toBe(true);
+    expect(config.getProjectId()).toBe('project-id');
   });
 
   it('disables dev hot reload when the config switch is set', () => {

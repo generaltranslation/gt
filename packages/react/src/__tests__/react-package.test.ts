@@ -144,6 +144,10 @@ describe('gt-react package exports', () => {
             import.meta.resolve('gt-react').endsWith('/dist/index.client.mjs'),
             true
           );
+          assert.equal(
+            import.meta.resolve('gt-i18n/internal').endsWith('/dist/internal.mjs'),
+            true
+          );
         `,
     ]);
     node([
@@ -156,6 +160,10 @@ describe('gt-react package exports', () => {
 
           assert.equal(
             import.meta.resolve('gt-react').endsWith('/dist/index.client.mjs'),
+            true
+          );
+          assert.equal(
+            import.meta.resolve('gt-i18n/internal').endsWith('/dist/internal.mjs'),
             true
           );
         `,
@@ -172,6 +180,10 @@ describe('gt-react package exports', () => {
             import.meta.resolve('gt-react').endsWith('/dist/index.client.prod.mjs'),
             true
           );
+          assert.equal(
+            import.meta.resolve('gt-i18n/internal').endsWith('/dist/internal-static.mjs'),
+            true
+          );
         `,
     ]);
   });
@@ -186,7 +198,7 @@ describe('gt-react package exports', () => {
           import assert from 'node:assert/strict';
           import React from 'react';
           import { renderToStaticMarkup } from 'react-dom/server';
-          import { GTProvider, GtInternalRuntimeTranslateJsx, GtInternalRuntimeTranslateString, Num, getReactI18nCache, getTranslationsSnapshot, initializeGTSPA, t, useGT } from 'gt-react';
+          import { GTProvider, GtInternalRuntimeTranslateJsx, GtInternalRuntimeTranslateString, Num, getReactI18nCache, getTranslationsSnapshot, getVersionId, initializeGTSPA, t, useGT } from 'gt-react';
           import { createLookupOptions, hashMessage } from 'gt-i18n/internal';
 
           await Promise.all([
@@ -207,6 +219,7 @@ describe('gt-react package exports', () => {
             defaultLocale: 'en',
             locales: [locale],
             locale,
+            _versionId: 'version-1',
             _getLocale: () => locale,
             customMapping: {
               [locale]: { code: 'fr', name: 'Custom French' },
@@ -220,6 +233,7 @@ describe('gt-react package exports', () => {
           await initializeGTSPA(config);
 
           assert.deepEqual(await getTranslationsSnapshot('en'), { en: {} });
+          assert.equal(getVersionId(), 'version-1');
           assert.equal(loadCount, 1);
           assert.equal(t(message), 'Bonjour');
           function SpaChild() {
@@ -268,11 +282,17 @@ describe('gt-react package exports', () => {
         '-e',
         `
           const assert = require('node:assert/strict');
+          const { initializeGT } = require('gt-react');
 
           assert.equal(
             require.resolve('gt-react').endsWith('/dist/index.server.cjs'),
             true
           );
+          assert.equal(
+            require.resolve('gt-i18n/internal').endsWith('/dist/internal.cjs'),
+            true
+          );
+          assert.doesNotThrow(() => initializeGT({ defaultLocale: 'en' }));
         `,
       ]);
       node([
@@ -282,11 +302,17 @@ describe('gt-react package exports', () => {
         '-e',
         `
           import assert from 'node:assert/strict';
+          import { initializeGT } from 'gt-react';
 
           assert.equal(
             import.meta.resolve('gt-react').endsWith('/dist/index.server.mjs'),
             true
           );
+          assert.equal(
+            import.meta.resolve('gt-i18n/internal').endsWith('/dist/internal.mjs'),
+            true
+          );
+          assert.doesNotThrow(() => initializeGT({ defaultLocale: 'en' }));
         `,
       ]);
     }
@@ -374,11 +400,17 @@ describe('gt-react package exports', () => {
       '-e',
       `
           const assert = require('node:assert/strict');
+          const { initializeGT } = require('gt-react');
 
           assert.equal(
             require.resolve('gt-react').endsWith('/dist/index.rsc.cjs'),
             true
           );
+          assert.equal(
+            require.resolve('gt-i18n/internal').endsWith('/dist/internal.cjs'),
+            true
+          );
+          assert.doesNotThrow(() => initializeGT({ defaultLocale: 'en' }));
         `,
     ]);
   });
