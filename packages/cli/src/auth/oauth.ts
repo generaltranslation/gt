@@ -27,8 +27,16 @@ export type OAuthTokens = {
   tokenType: string;
 };
 
+type StoredOAuthTokens = {
+  access_token: string;
+  expires_at: number;
+  refresh_token: string;
+  scope: string;
+  token_type: string;
+};
+
 type StoredCredentials = {
-  tokens: OAuthTokens;
+  tokens: StoredOAuthTokens;
   version: 1;
 };
 
@@ -101,6 +109,25 @@ async function readJson(response: Response): Promise<Record<string, unknown>> {
   return value;
 }
 
+async function getOAuthErrorMessage(
+  response: Response,
+  fallback: string
+): Promise<string> {
+  try {
+    const value: unknown = await response.json();
+    if (isRecord(value)) {
+      return (
+        optionalStringField(value, 'error_description') ??
+        optionalStringField(value, 'error') ??
+        fallback
+      );
+    }
+  } catch {
+    // OAuth servers may return an empty or non-JSON error response.
+  }
+  return fallback;
+}
+
 function parseTokens(
   value: Record<string, unknown>,
   previous?: OAuthTokens,
@@ -139,24 +166,31 @@ export function getCredentialsPath(): string {
 }
 
 export async function readOAuthTokens(): Promise<OAuthTokens | undefined> {
+  let contents: string;
   try {
-    const parsed: unknown = JSON.parse(
-      await readFile(getCredentialsPath(), 'utf8')
-    );
-    if (!isRecord(parsed) || parsed.version !== 1 || !isRecord(parsed.tokens)) {
-      return undefined;
-    }
-    const tokens = parsed.tokens;
-    return {
-      accessToken: stringField(tokens, 'accessToken'),
-      expiresAt: numberField(tokens, 'expiresAt'),
-      refreshToken: stringField(tokens, 'refreshToken'),
-      scope: stringField(tokens, 'scope'),
-      tokenType: stringField(tokens, 'tokenType'),
-    };
+    contents = await readFile(getCredentialsPath(), 'utf8');
   } catch (error) {
     if (isRecord(error) && error.code === 'ENOENT') return undefined;
-    return undefined;
+    throw error;
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(contents);
+    if (!isRecord(parsed) || parsed.version !== 1 || !isRecord(parsed.tokens)) {
+      throw new Error('expected version 1 with a tokens object');
+    }
+    return {
+      accessToken: stringField(parsed.tokens, 'access_token'),
+      expiresAt: numberField(parsed.tokens, 'expires_at'),
+      refreshToken: stringField(parsed.tokens, 'refresh_token'),
+      scope: stringField(parsed.tokens, 'scope'),
+      tokenType: stringField(parsed.tokens, 'token_type'),
+    };
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : 'unknown error';
+    throw new Error(`Stored OAuth credentials are invalid: ${detail}`, {
+      cause: error,
+    });
   }
 }
 
@@ -167,7 +201,16 @@ export async function writeOAuthTokens(tokens: OAuthTokens): Promise<void> {
     directory,
     `.credentials-${randomUUID()}.tmp`
   );
-  const credentials: StoredCredentials = { version: 1, tokens };
+  const credentials: StoredCredentials = {
+    version: 1,
+    tokens: {
+      access_token: tokens.accessToken,
+      expires_at: tokens.expiresAt,
+      refresh_token: tokens.refreshToken,
+      scope: tokens.scope,
+      token_type: tokens.tokenType,
+    },
+  };
 
   await mkdir(directory, { recursive: true, mode: 0o700 });
   await writeFile(temporaryPath, `${JSON.stringify(credentials, null, 2)}\n`, {
@@ -201,14 +244,15 @@ export async function requestDeviceCode({
       scope: OAUTH_SCOPES,
     }),
   });
-  const value = await readJson(response);
   if (!response.ok) {
     throw new Error(
-      optionalStringField(value, 'error_description') ??
-        optionalStringField(value, 'error') ??
+      await getOAuthErrorMessage(
+        response,
         'Could not start device authorization'
+      )
     );
   }
+  const value = await readJson(response);
   return {
     deviceCode: stringField(value, 'device_code'),
     expiresIn: numberField(value, 'expires_in'),
@@ -238,6 +282,8 @@ export async function pollDeviceToken({
 
   while (now() < deadline) {
     await sleep(intervalSeconds * 1000);
+    if (now() >= deadline) break;
+
     const response = await fetchImplementation(`${authBaseUrl}/oauth2/token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -247,17 +293,25 @@ export async function pollDeviceToken({
         grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
       }),
     });
-    const value = await readJson(response);
-    if (response.ok) return parseTokens(value, undefined, now());
+    if (response.ok) {
+      return parseTokens(await readJson(response), undefined, now());
+    }
 
-    const oauthError = optionalStringField(value, 'error');
+    let value: Record<string, unknown> | undefined;
+    try {
+      const parsed: unknown = await response.json();
+      if (isRecord(parsed)) value = parsed;
+    } catch {
+      // Fall through to the stable device-authorization error below.
+    }
+    const oauthError = value && optionalStringField(value, 'error');
     if (oauthError === 'authorization_pending') continue;
     if (oauthError === 'slow_down') {
       intervalSeconds += SLOW_DOWN_INCREMENT_SECONDS;
       continue;
     }
     throw new Error(
-      optionalStringField(value, 'error_description') ??
+      (value && optionalStringField(value, 'error_description')) ??
         oauthError ??
         'Device authorization failed'
     );
@@ -298,11 +352,10 @@ export async function refreshOAuthTokens({
       refresh_token: current.refreshToken,
     }),
   });
-  const value = await readJson(response);
   if (!response.ok) {
     throw new Error('Your login expired. Run `gt login` to sign in again');
   }
-  const tokens = parseTokens(value, current);
+  const tokens = parseTokens(await readJson(response), current);
   await writeOAuthTokens(tokens);
   return tokens;
 }
@@ -352,8 +405,8 @@ export async function whoAmI({
   const response = await fetchImplementation(`${authBaseUrl}/oauth2/userinfo`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
-  const value = await readJson(response);
   if (!response.ok) throw new Error('Could not load your account');
+  const value = await readJson(response);
   return {
     sub: stringField(value, 'sub'),
     email: optionalStringField(value, 'email'),

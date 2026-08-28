@@ -1,7 +1,7 @@
 import { TranslationRequestConfig } from '../../types';
 import { defaultBaseUrl } from '../../settings/settingsUrls';
 import { defaultTimeout } from '../../settings/settings';
-import { fetchWithTimeout } from './fetchWithTimeout';
+import { fetchAuthenticated } from './fetchAuthenticated';
 import { validateResponse } from './validateResponse';
 import { handleFetchError } from './handleFetchError';
 import { generateRequestHeaders } from './generateRequestHeaders';
@@ -119,7 +119,7 @@ export async function apiRequest<T>(
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     let response: Response;
     try {
-      response = await fetchWithTimeout(url, requestInit, timeout);
+      response = await fetchAuthenticated(config, url, requestInit, timeout);
     } catch (error) {
       if (attempt < maxRetries) {
         await sleep(getRetryDelay(retryPolicy, attempt));

@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, stat } from 'node:fs/promises';
+import { mkdtemp, readFile, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -74,7 +74,13 @@ describe('OAuth credential storage', () => {
     expect(await readOAuthTokens()).toEqual(tokens);
     expect(JSON.parse(await readFile(getCredentialsPath(), 'utf8'))).toEqual({
       version: 1,
-      tokens,
+      tokens: {
+        access_token: tokens.accessToken,
+        expires_at: tokens.expiresAt,
+        refresh_token: tokens.refreshToken,
+        scope: tokens.scope,
+        token_type: tokens.tokenType,
+      },
     });
     if (process.platform !== 'win32') {
       expect((await stat(getCredentialsPath())).mode & 0o777).toBe(0o600);
@@ -87,9 +93,29 @@ describe('OAuth credential storage', () => {
 
     expect((await readOAuthTokens())?.refreshToken).toBe('refresh-2');
   });
+
+  it('reports malformed credential files instead of treating them as logged out', async () => {
+    await writeOAuthTokens(tokens);
+    await writeFile(getCredentialsPath(), '{not json', 'utf8');
+
+    await expect(readOAuthTokens()).rejects.toThrow(
+      'Stored OAuth credentials are invalid'
+    );
+  });
 });
 
 describe('OAuth device flow', () => {
+  it('reports non-JSON device-code failures safely', async () => {
+    await expect(
+      requestDeviceCode({
+        authBaseUrl: 'https://auth.example',
+        fetch: vi
+          .fn<typeof fetch>()
+          .mockResolvedValue(new Response('unavailable', { status: 503 })),
+      })
+    ).rejects.toThrow('Could not start device authorization');
+  });
+
   it('requests codes with the public client, resource, and scopes', async () => {
     const fetchImplementation = vi.fn<typeof fetch>().mockResolvedValue(
       jsonResponse({
@@ -145,6 +171,24 @@ describe('OAuth device flow', () => {
     ]);
   });
 
+  it('does not poll after the device code expires while sleeping', async () => {
+    let currentTime = 1_000;
+    const fetchImplementation = vi.fn<typeof fetch>();
+
+    await expect(
+      pollDeviceToken({
+        authBaseUrl: 'https://auth.example',
+        deviceCode: { ...deviceCode, expiresIn: 1, interval: 2 },
+        fetch: fetchImplementation,
+        now: () => currentTime,
+        sleep: async (milliseconds) => {
+          currentTime += milliseconds;
+        },
+      })
+    ).rejects.toThrow('Device authorization expired');
+    expect(fetchImplementation).not.toHaveBeenCalled();
+  });
+
   it('opens verification_uri_complete and persists the result', async () => {
     const configHome = await mkdtemp(path.join(tmpdir(), 'gt-login-test-'));
     process.env.XDG_CONFIG_HOME = configHome;
@@ -192,6 +236,19 @@ describe('OAuth session operations', () => {
   afterEach(async () => {
     await deleteOAuthTokens();
     delete process.env.XDG_CONFIG_HOME;
+  });
+
+  it('reports expired login when refresh fails with a non-JSON response', async () => {
+    await writeOAuthTokens({ ...tokens, expiresAt: 0 });
+
+    await expect(
+      refreshOAuthTokens({
+        authBaseUrl: 'https://auth.example',
+        fetch: vi
+          .fn<typeof fetch>()
+          .mockResolvedValue(new Response(null, { status: 401 })),
+      })
+    ).rejects.toThrow('Your login expired. Run `gt login` to sign in again');
   });
 
   it('persists refresh-token rotation before returning the new access token', async () => {

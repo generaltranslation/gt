@@ -31,11 +31,11 @@ export function hasValidLocales(settings: Settings): boolean {
  * @returns True if has API key, project ID, and does not have a development API key
  */
 export function hasValidCredentials(settings: Settings): boolean {
-  if (!settings.apiKey) {
+  if (!settings.apiKey && !settings.userTokenProvider) {
     logger.error(noApiKeyError);
     return false;
   }
-  if (settings.apiKey.startsWith('gtx-dev-')) {
+  if (settings.apiKey?.startsWith('gtx-dev-')) {
     logger.error(devApiKeyError);
     return false;
   }
