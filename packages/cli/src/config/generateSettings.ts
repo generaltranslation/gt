@@ -24,7 +24,6 @@ import path from 'node:path';
 import chalk from 'chalk';
 import { resolveConfig } from './resolveConfig.js';
 import { configureApiClient } from '../utils/api.js';
-import { gt } from '../utils/gt.js';
 import { generatePreset } from './optionPresets.js';
 import { GT_PARSING_FLAGS_DEFAULT } from './defaults.js';
 import { normalizeFilesOptions } from '../formats/files/transformFormat.js';
@@ -428,18 +427,10 @@ export async function generateSettings(
 
   validateSettings(mergedOptions);
 
-  // Keep both clients on the same resolved credentials while consumers migrate.
   configureApiClient({
     projectId: mergedOptions.projectId,
     apiKey: mergedOptions.apiKey,
     baseUrl: mergedOptions.baseUrl,
-    customMapping: mergedOptions.customMapping,
-  });
-  gt.setConfig({
-    projectId: mergedOptions.projectId,
-    apiKey: mergedOptions.apiKey,
-    baseUrl: mergedOptions.baseUrl,
-    sourceLocale: mergedOptions.defaultLocale,
     customMapping: mergedOptions.customMapping,
   });
 
