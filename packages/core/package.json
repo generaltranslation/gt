@@ -77,6 +77,16 @@
         "default": "./dist/runtime.mjs"
       }
     },
+    "./api": {
+      "require": {
+        "types": "./dist/api.d.cts",
+        "default": "./dist/api.cjs"
+      },
+      "import": {
+        "types": "./dist/api.d.mts",
+        "default": "./dist/api.mjs"
+      }
+    },
     "./id": {
       "require": {
         "types": "./dist/id.d.cts",
@@ -122,6 +132,9 @@
     "*": {
       "internal": [
         "./dist/internal.d.cts"
+      ],
+      "api": [
+        "./dist/api.d.cts"
       ],
       "id": [
         "./dist/id.d.cts"
