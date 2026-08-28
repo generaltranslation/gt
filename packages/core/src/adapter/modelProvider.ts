@@ -11,6 +11,12 @@ export const supportedModelProviders = [
   'GOOGLE',
 ] as const satisfies readonly ModelProvider[];
 
+const _modelProvidersAreExhaustive: [ModelProvider] extends [
+  (typeof supportedModelProviders)[number],
+]
+  ? true
+  : never = true;
+
 export function isModelProvider(value: unknown): value is ModelProvider {
   return (
     typeof value === 'string' &&
