@@ -181,7 +181,7 @@ export class PollTranslationJobsStep {
     try {
       const result = await pollJobs(
         [...jobFileMap.keys()],
-        (jobIds) => this.api.checkJobStatus(jobIds),
+        (jobIds, signal) => this.api.checkJobStatus(jobIds, signal),
         {
           pollingIntervalSeconds: 5,
           timeoutSeconds,

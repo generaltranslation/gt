@@ -42,11 +42,12 @@ export const api = {
     return unwrapApiResult(await getBranchInfo({ body, client: getClient() }));
   },
 
-  async checkJobStatus(jobIds: string[]) {
+  async checkJobStatus(jobIds: string[], signal?: AbortSignal) {
     return unwrapApiResult(
       await getTranslationJobInfo({
         body: { jobIds },
         client: getClient(),
+        signal,
       })
     );
   },
