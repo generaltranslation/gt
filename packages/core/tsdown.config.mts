@@ -8,6 +8,7 @@ const [cjsConfig, esmConfig] = createTsdownConfig(
     'src/runtime.ts',
     'src/id.ts',
     'src/internal.ts',
+    'src/diagnostics.ts',
     'src/errors.ts',
     'src/types.ts',
   ],

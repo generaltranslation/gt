@@ -1,4 +1,4 @@
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { minVersion } from 'semver';
 import { logger } from '../console/logger.js';
 import { REACT_LIBRARIES } from '../types/libraries.js';
