@@ -186,6 +186,22 @@ describe('gt-react package exports', () => {
           );
         `,
     ]);
+    node([
+      '--conditions=browser',
+      '--conditions=production',
+      '-e',
+      `
+          const assert = require('node:assert/strict');
+          const i18n = require('gt-i18n/internal');
+
+          assert.equal(
+            require.resolve('gt-i18n/internal').endsWith('/dist/internal-static.cjs'),
+            true
+          );
+          assert.equal(typeof i18n.tx, 'function');
+          assert.equal(typeof i18n.txInternal, 'function');
+        `,
+    ]);
   });
 
   it('shares production snapshots without initializing a cache', () => {
@@ -199,12 +215,29 @@ describe('gt-react package exports', () => {
           import React from 'react';
           import { renderToStaticMarkup } from 'react-dom/server';
           import { GTProvider, GtInternalRuntimeTranslateJsx, GtInternalRuntimeTranslateString, Num, getReactI18nCache, getTranslationsSnapshot, getVersionId, initializeGTSPA, t, useGT } from 'gt-react';
-          import { createLookupOptions, hashMessage } from 'gt-i18n/internal';
+          import { createLookupOptions, getI18nConfig, hashMessage, I18nCache, tx, txInternal } from 'gt-i18n/internal';
 
           await Promise.all([
             GtInternalRuntimeTranslateJsx('Hello'),
             GtInternalRuntimeTranslateString('Hello'),
           ]);
+          await assert.rejects(
+            tx('Hello'),
+            /gt-i18n Error: Runtime translation is not available in production browser builds/
+          );
+          await assert.rejects(
+            txInternal({
+              locale: 'en',
+              enableI18n: true,
+              content: 'Hello',
+              options: {},
+            }),
+            /gt-i18n Error: Runtime translation is not available in production browser builds/
+          );
+          assert.throws(
+            () => new I18nCache(),
+            /gt-i18n Error: I18nCache is not available in production browser builds/
+          );
 
           Object.defineProperty(globalThis, 'navigator', {
             configurable: true,
@@ -233,6 +266,10 @@ describe('gt-react package exports', () => {
           await initializeGTSPA(config);
 
           assert.deepEqual(await getTranslationsSnapshot('en'), { en: {} });
+          assert.throws(
+            () => getI18nConfig().getGTClass(),
+            /gt-i18n Error: GTRuntime is not available in production browser builds/
+          );
           assert.equal(getVersionId(), 'version-1');
           assert.equal(loadCount, 1);
           assert.equal(t(message), 'Bonjour');

@@ -8,7 +8,10 @@ import type {
   CustomRegionMapping,
 } from '@generaltranslation/format/types';
 import type { GTRuntime } from 'generaltranslation/runtime';
-import { libraryDefaultLocale } from 'generaltranslation/internal';
+import {
+  createDiagnosticMessage,
+  libraryDefaultLocale,
+} from 'generaltranslation/internal';
 import type { GTConfig } from '../config/types';
 import {
   getLoadTranslationsType,
@@ -35,6 +38,14 @@ export type I18nConfigParams = Pick<
 >;
 
 export type LocaleCandidates = string | string[] | undefined;
+
+const gtRuntimeUnavailableError = createDiagnosticMessage({
+  source: 'gt-i18n',
+  severity: 'Error',
+  whatHappened: 'GTRuntime is not available in production browser builds',
+  why: 'production browser builds use the lightweight locale configuration',
+  fix: 'Import formatting helpers from @generaltranslation/format, or run GTRuntime on the server.',
+});
 
 /** Locale and catalog configuration shared by browser and full runtimes. */
 export class I18nConfig extends LocaleResolver {
@@ -86,9 +97,7 @@ export class I18nConfig extends LocaleResolver {
   }
 
   getGTClass(_locale?: string): GTRuntime {
-    throw new Error(
-      'GTRuntime is not available in production browser builds. Import formatting helpers from @generaltranslation/format.'
-    );
+    throw new Error(gtRuntimeUnavailableError);
   }
 
   determineLocale(

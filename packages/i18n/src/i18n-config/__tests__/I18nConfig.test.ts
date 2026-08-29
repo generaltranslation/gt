@@ -92,6 +92,14 @@ describe('I18nConfig', () => {
     ).toThrow('Invalid I18nConfig locale configuration');
   });
 
+  it('reports unavailable browser runtime APIs with a diagnostic', () => {
+    const config = new BrowserI18nConfig();
+
+    expect(() => config.getGTClass()).toThrow(
+      'gt-i18n Error: GTRuntime is not available in production browser builds'
+    );
+  });
+
   it('validates custom mapping locales when GT services are enabled', () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 

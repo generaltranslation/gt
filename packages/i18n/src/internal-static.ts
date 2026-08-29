@@ -1,3 +1,27 @@
+import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { I18nConfig, type I18nConfigParams } from './i18n-config/I18nConfig';
+import {
+  getI18nConfig,
+  setI18nConfig,
+} from './i18n-config/singleton-operations';
+
+const i18nCacheUnavailableError = createDiagnosticMessage({
+  source: 'gt-i18n',
+  severity: 'Error',
+  whatHappened: 'I18nCache is not available in production browser builds',
+  why: 'production browser builds use the lightweight client runtime',
+  fix: 'Use translations supplied by your framework provider instead.',
+});
+
+const runtimeTranslationUnavailableError = createDiagnosticMessage({
+  source: 'gt-i18n',
+  severity: 'Error',
+  whatHappened:
+    'Runtime translation is not available in production browser builds',
+  why: 'it requires the full i18n cache and service runtime',
+  fix: 'Use preloaded translations or perform runtime translation on the server.',
+});
+
 export {
   getGT,
   getGTInternal,
@@ -39,11 +63,20 @@ export {
   dedupePending,
 } from './internal';
 function ProductionI18nCache(): never {
-  throw new Error('I18nCache is not available in production browser builds.');
+  throw new Error(i18nCacheUnavailableError);
 }
 
 export { ProductionI18nCache as I18nCache };
 export { getI18nConfig, I18nConfig, setI18nConfig };
+
+async function unavailableRuntimeTranslation(): Promise<never> {
+  throw new Error(runtimeTranslationUnavailableError);
+}
+
+export const tx: typeof import('./translation-functions/internal/tx').tx =
+  unavailableRuntimeTranslation;
+export const txInternal: typeof import('./translation-functions/internal/tx').txInternal =
+  unavailableRuntimeTranslation;
 
 export const GtInternalRuntimeTranslateJsx = () => {};
 export const GtInternalRuntimeTranslateString = () => {};
@@ -55,8 +88,3 @@ export function initializeI18nConfig(
   setI18nConfig(config);
   return config;
 }
-import { I18nConfig, type I18nConfigParams } from './i18n-config/I18nConfig';
-import {
-  getI18nConfig,
-  setI18nConfig,
-} from './i18n-config/singleton-operations';
