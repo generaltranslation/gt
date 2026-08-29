@@ -74,6 +74,10 @@
           "SVG"
         ]
       },
+      "ModelProvider": {
+        "type": "string",
+        "enum": ["ANTHROPIC", "OPENAI", "XAI", "GOOGLE"]
+      },
       "JsonObject": {
         "type": "object",
         "additionalProperties": {
@@ -253,8 +257,7 @@
             "type": "object",
             "properties": {
               "modelProvider": {
-                "type": "string",
-                "enum": ["ANTHROPIC", "OPENAI", "XAI", "GOOGLE"]
+                "$ref": "#/components/schemas/ModelProvider"
               }
             }
           }
@@ -2326,8 +2329,7 @@
                     "default": false
                   },
                   "modelProvider": {
-                    "type": "string",
-                    "enum": ["ANTHROPIC", "OPENAI", "XAI", "GOOGLE"]
+                    "$ref": "#/components/schemas/ModelProvider"
                   },
                   "publish": {
                     "type": "boolean"
@@ -2382,8 +2384,7 @@
                                 "$ref": "#/components/schemas/FileFormat"
                               },
                               "modelProvider": {
-                                "type": "string",
-                                "enum": ["ANTHROPIC", "OPENAI", "XAI", "GOOGLE"]
+                                "$ref": "#/components/schemas/ModelProvider"
                               },
                               "glossaryRetranslate": {
                                 "type": "boolean"

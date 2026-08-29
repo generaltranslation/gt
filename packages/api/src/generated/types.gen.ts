@@ -24,6 +24,8 @@ export type FileFormat =
   | 'LOTTIE'
   | 'SVG';
 
+export type ModelProvider = 'ANTHROPIC' | 'OPENAI' | 'XAI' | 'GOOGLE';
+
 export type JsonObject = {
   [key: string]: JsonValue;
 };
@@ -82,7 +84,7 @@ export type RuntimeTranslationRequest = {
   targetLocale: string;
   sourceLocale: string;
   metadata: {
-    modelProvider?: 'ANTHROPIC' | 'OPENAI' | 'XAI' | 'GOOGLE';
+    modelProvider?: ModelProvider;
   };
 };
 
@@ -843,7 +845,7 @@ export type EnqueueFileTranslationsData = {
     targetLocales?: Array<string>;
     sourceLocale?: string;
     force?: boolean;
-    modelProvider?: 'ANTHROPIC' | 'OPENAI' | 'XAI' | 'GOOGLE';
+    modelProvider?: ModelProvider;
     publish?: boolean;
   };
   headers?: {
@@ -929,7 +931,7 @@ export type EnqueueFileTranslationsResponses = {
             projectId: string;
             force: boolean;
             outputFileFormat?: FileFormat;
-            modelProvider?: 'ANTHROPIC' | 'OPENAI' | 'XAI' | 'GOOGLE';
+            modelProvider?: ModelProvider;
             glossaryRetranslate?: boolean;
             changedGlossaryTerms?: Array<string>;
             onComplete?: {
