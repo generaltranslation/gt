@@ -144,6 +144,10 @@ describe('gt-react package exports', () => {
             import.meta.resolve('gt-react').endsWith('/dist/index.client.mjs'),
             true
           );
+          assert.equal(
+            import.meta.resolve('gt-i18n/internal').endsWith('/dist/internal.mjs'),
+            true
+          );
         `,
     ]);
     node([
@@ -156,6 +160,10 @@ describe('gt-react package exports', () => {
 
           assert.equal(
             import.meta.resolve('gt-react').endsWith('/dist/index.client.mjs'),
+            true
+          );
+          assert.equal(
+            import.meta.resolve('gt-i18n/internal').endsWith('/dist/internal.mjs'),
             true
           );
         `,
@@ -172,6 +180,26 @@ describe('gt-react package exports', () => {
             import.meta.resolve('gt-react').endsWith('/dist/index.client.prod.mjs'),
             true
           );
+          assert.equal(
+            import.meta.resolve('gt-i18n/internal').endsWith('/dist/internal-static.mjs'),
+            true
+          );
+        `,
+    ]);
+    node([
+      '--conditions=browser',
+      '--conditions=production',
+      '-e',
+      `
+          const assert = require('node:assert/strict');
+          const i18n = require('gt-i18n/internal');
+
+          assert.equal(
+            require.resolve('gt-i18n/internal').endsWith('/dist/internal-static.cjs'),
+            true
+          );
+          assert.equal(typeof i18n.tx, 'function');
+          assert.equal(typeof i18n.txInternal, 'function');
         `,
     ]);
   });
@@ -186,13 +214,30 @@ describe('gt-react package exports', () => {
           import assert from 'node:assert/strict';
           import React from 'react';
           import { renderToStaticMarkup } from 'react-dom/server';
-          import { GTProvider, GtInternalRuntimeTranslateJsx, GtInternalRuntimeTranslateString, Num, getReactI18nCache, getTranslationsSnapshot, initializeGTSPA, t, useGT } from 'gt-react';
-          import { createLookupOptions, hashMessage } from 'gt-i18n/internal';
+          import { GTProvider, GtInternalRuntimeTranslateJsx, GtInternalRuntimeTranslateString, Num, getReactI18nCache, getTranslationsSnapshot, getVersionId, initializeGTSPA, t, useGT } from 'gt-react';
+          import { createLookupOptions, getI18nConfig, hashMessage, I18nCache, tx, txInternal } from 'gt-i18n/internal';
 
           await Promise.all([
             GtInternalRuntimeTranslateJsx('Hello'),
             GtInternalRuntimeTranslateString('Hello'),
           ]);
+          await assert.rejects(
+            tx('Hello'),
+            /gt-i18n Error: Runtime translation is not available in production browser builds/
+          );
+          await assert.rejects(
+            txInternal({
+              locale: 'en',
+              enableI18n: true,
+              content: 'Hello',
+              options: {},
+            }),
+            /gt-i18n Error: Runtime translation is not available in production browser builds/
+          );
+          assert.throws(
+            () => new I18nCache(),
+            /gt-i18n Error: I18nCache is not available in production browser builds/
+          );
 
           Object.defineProperty(globalThis, 'navigator', {
             configurable: true,
@@ -207,6 +252,7 @@ describe('gt-react package exports', () => {
             defaultLocale: 'en',
             locales: [locale],
             locale,
+            _versionId: 'version-1',
             _getLocale: () => locale,
             customMapping: {
               [locale]: { code: 'fr', name: 'Custom French' },
@@ -220,6 +266,11 @@ describe('gt-react package exports', () => {
           await initializeGTSPA(config);
 
           assert.deepEqual(await getTranslationsSnapshot('en'), { en: {} });
+          assert.throws(
+            () => getI18nConfig().getGTClass(),
+            /gt-i18n Error: GTRuntime is not available in production browser builds/
+          );
+          assert.equal(getVersionId(), 'version-1');
           assert.equal(loadCount, 1);
           assert.equal(t(message), 'Bonjour');
           function SpaChild() {
@@ -268,11 +319,17 @@ describe('gt-react package exports', () => {
         '-e',
         `
           const assert = require('node:assert/strict');
+          const { initializeGT } = require('gt-react');
 
           assert.equal(
             require.resolve('gt-react').endsWith('/dist/index.server.cjs'),
             true
           );
+          assert.equal(
+            require.resolve('gt-i18n/internal').endsWith('/dist/internal.cjs'),
+            true
+          );
+          assert.doesNotThrow(() => initializeGT({ defaultLocale: 'en' }));
         `,
       ]);
       node([
@@ -282,11 +339,17 @@ describe('gt-react package exports', () => {
         '-e',
         `
           import assert from 'node:assert/strict';
+          import { initializeGT } from 'gt-react';
 
           assert.equal(
             import.meta.resolve('gt-react').endsWith('/dist/index.server.mjs'),
             true
           );
+          assert.equal(
+            import.meta.resolve('gt-i18n/internal').endsWith('/dist/internal.mjs'),
+            true
+          );
+          assert.doesNotThrow(() => initializeGT({ defaultLocale: 'en' }));
         `,
       ]);
     }
@@ -374,11 +437,17 @@ describe('gt-react package exports', () => {
       '-e',
       `
           const assert = require('node:assert/strict');
+          const { initializeGT } = require('gt-react');
 
           assert.equal(
             require.resolve('gt-react').endsWith('/dist/index.rsc.cjs'),
             true
           );
+          assert.equal(
+            require.resolve('gt-i18n/internal').endsWith('/dist/internal.cjs'),
+            true
+          );
+          assert.doesNotThrow(() => initializeGT({ defaultLocale: 'en' }));
         `,
     ]);
   });

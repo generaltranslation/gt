@@ -30,12 +30,14 @@ const defaultRenderStrategy: RenderStrategy = 'server-render';
 const reactI18nConfigBrand = Symbol.for(
   'generaltranslation.react-core.ReactI18nConfig'
 );
+type BaseI18nConfig = ReturnType<typeof getBaseI18nConfig>;
 
 export class ReactI18nConfig extends I18nConfig {
   private renderStrategy: RenderStrategy;
   private localeCookieName: string;
   private regionCookieName: string;
   private enableI18nCookieName: string;
+  private idTaggingEnabled: boolean;
 
   constructor(
     params: ReactI18nConfigParams = {},
@@ -49,6 +51,7 @@ export class ReactI18nConfig extends I18nConfig {
     this.regionCookieName = params.regionCookieName ?? defaultRegionCookieName;
     this.enableI18nCookieName =
       params.enableI18nCookieName ?? defaultEnableI18nCookieName;
+    this.idTaggingEnabled = params._tagIds === true;
   }
 
   getRenderStrategy(): RenderStrategy {
@@ -72,7 +75,7 @@ export class ReactI18nConfig extends I18nConfig {
    * a `data-_gt-hash` attribute for tooling. Requires the literal `true`.
    */
   isIdTaggingEnabled(): boolean {
-    return this.runtimeConfig._tagIds === true;
+    return this.idTaggingEnabled;
   }
 }
 
@@ -121,8 +124,8 @@ function validateRenderStrategy(
 }
 
 function isReactI18nConfig(
-  i18nConfig: I18nConfig
-): i18nConfig is ReactI18nConfig {
+  i18nConfig: BaseI18nConfig
+): i18nConfig is BaseI18nConfig & ReactI18nConfig {
   if (i18nConfig instanceof ReactI18nConfig) return true;
 
   const maybeReactI18nConfig = i18nConfig as I18nConfig &

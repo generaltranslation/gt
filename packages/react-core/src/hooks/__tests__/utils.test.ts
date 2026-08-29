@@ -111,4 +111,24 @@ describe('getFormatLocales', () => {
       })
     ).toEqual(['en']);
   });
+
+  it('preserves custom aliases for public consumers', () => {
+    setup({
+      locale: 'brand-french',
+      locales: ['en', 'brand-french'],
+      customMapping: {
+        'brand-french': {
+          code: 'fr',
+          name: 'Brand French',
+        },
+      },
+    });
+
+    expect(
+      getFormatLocales({
+        locale: 'brand-french',
+        enableI18n: true,
+      })
+    ).toEqual(['brand-french', 'en']);
+  });
 });
