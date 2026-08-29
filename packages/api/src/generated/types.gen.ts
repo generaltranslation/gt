@@ -8,23 +8,33 @@ export type ErrorResponse = {
   error: string;
 };
 
-export type FileFormat =
-  | 'GTJSON'
-  | 'MDX'
-  | 'JSON'
-  | 'YAML'
-  | 'MD'
-  | 'TS'
-  | 'JS'
-  | 'HTML'
-  | 'TXT'
-  | 'PO'
-  | 'POT'
-  | 'TWILIO_CONTENT_JSON'
-  | 'LOTTIE'
-  | 'SVG';
+export const FileFormat = {
+  GTJSON: 'GTJSON',
+  MDX: 'MDX',
+  JSON: 'JSON',
+  YAML: 'YAML',
+  MD: 'MD',
+  TS: 'TS',
+  JS: 'JS',
+  HTML: 'HTML',
+  TXT: 'TXT',
+  PO: 'PO',
+  POT: 'POT',
+  TWILIO_CONTENT_JSON: 'TWILIO_CONTENT_JSON',
+  LOTTIE: 'LOTTIE',
+  SVG: 'SVG',
+} as const;
 
-export type ModelProvider = 'ANTHROPIC' | 'OPENAI' | 'XAI' | 'GOOGLE';
+export type FileFormat = (typeof FileFormat)[keyof typeof FileFormat];
+
+export const ModelProvider = {
+  ANTHROPIC: 'ANTHROPIC',
+  OPENAI: 'OPENAI',
+  XAI: 'XAI',
+  GOOGLE: 'GOOGLE',
+} as const;
+
+export type ModelProvider = (typeof ModelProvider)[keyof typeof ModelProvider];
 
 export type JsonObject = {
   [key: string]: JsonValue;
