@@ -21,6 +21,9 @@ export const CONFIG_FILE_TYPE_TO_FILE_FORMAT = {
   txt: 'TXT',
   twilioContentJson: 'TWILIO_CONTENT_JSON',
   lottie: 'LOTTIE',
+  strings: 'APPLE_STRINGS',
+  stringsdict: 'APPLE_STRINGSDICT',
+  xcstrings: 'XCSTRINGS',
 } as const satisfies Record<SupportedFileExtension, FileFormat>;
 
 /**
@@ -38,6 +41,9 @@ export const FILE_FORMAT_TO_CONFIG_FILE_TYPE = {
   TXT: 'txt',
   TWILIO_CONTENT_JSON: 'twilioContentJson',
   LOTTIE: 'lottie',
+  APPLE_STRINGS: 'strings',
+  APPLE_STRINGSDICT: 'stringsdict',
+  XCSTRINGS: 'xcstrings',
 } as const satisfies Partial<Record<FileFormat, SupportedFileExtension>>;
 
 /**
@@ -58,6 +64,9 @@ const FILE_FORMAT_EXTENSIONS = {
   TWILIO_CONTENT_JSON: 'json',
   LOTTIE: 'lottie',
   SVG: 'svg',
+  APPLE_STRINGS: 'strings',
+  APPLE_STRINGSDICT: 'stringsdict',
+  XCSTRINGS: 'xcstrings',
 } as const satisfies Record<FileFormat, string>;
 
 /**

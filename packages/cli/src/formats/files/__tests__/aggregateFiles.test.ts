@@ -7,6 +7,7 @@ import parseYaml from '../../yaml/parseYaml.js';
 import sanitizeFileContent from '../../../utils/sanitizeFileContent.js';
 import { determineLibrary } from '../../../fs/determineFramework/index.js';
 import { isValidMdx } from '../../../utils/validateMdx.js';
+import { hashStringSync, hashVersionId } from '../../../utils/hash.js';
 import type { Settings } from '../../../types/index.js';
 
 const aggregateTestFiles = (settings: Partial<Settings>) =>
@@ -24,6 +25,13 @@ vi.mock('../../yaml/parseYaml.js');
 vi.mock('../../../utils/sanitizeFileContent.js');
 vi.mock('../../../fs/determineFramework/index.js');
 vi.mock('../../../utils/validateMdx.js');
+// Surface logErrorAndExit as a throw so tests can assert on it
+vi.mock('../../../console/logging.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../console/logging.js')>()),
+  logErrorAndExit: vi.fn((message: string) => {
+    throw new Error(message);
+  }),
+}));
 
 const mockLogWarning = vi.mocked(logger.warn);
 const mockReadFile = vi.mocked(readFile);
@@ -579,6 +587,124 @@ describe('aggregateFiles - Empty File Handling', () => {
       expect(mockLogWarning).not.toHaveBeenCalled();
       expect(result).toHaveLength(1);
       expect(result[0].fileName).toBe('invalid.json');
+    });
+  });
+
+  describe('Apple string catalog files', () => {
+    // Escape sequences below are load-bearing: they must reach the API verbatim.
+    const stringsContent =
+      '/* Greeting */\n"hello" = "Line1\\nLine2 \\"quoted\\"";\n';
+    const stringsdictContent =
+      '<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0">\n<dict>\n  <key>%d file(s) \\"quoted\\"</key>\n</dict>\n</plist>\n';
+
+    beforeEach(() => {
+      // Make any pass through the markdown-oriented sanitizer detectable:
+      // it would strip the backslash escapes the assertions depend on.
+      mockSanitizeFileContent.mockImplementation((content) =>
+        content.replace(/\\/g, '')
+      );
+    });
+
+    it('should upload .strings files verbatim with the APPLE_STRINGS format', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            strings: ['/full/path/en.lproj/Localizable.strings'],
+          },
+          placeholderPaths: {},
+        },
+        options: {},
+        defaultLocale: 'en',
+      };
+
+      mockReadFile.mockReturnValueOnce(stringsContent);
+
+      const { files: result } = await aggregateTestFiles(settings);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        fileName: 'en.lproj/Localizable.strings',
+        fileFormat: 'APPLE_STRINGS',
+        locale: 'en',
+      });
+      expect(result[0].content).toBe(stringsContent);
+      expect(result[0].fileId).toBe(
+        hashStringSync('en.lproj/Localizable.strings')
+      );
+      expect(result[0].versionId).toBe(hashVersionId(stringsContent, false));
+    });
+
+    it('should upload .stringsdict files verbatim with the APPLE_STRINGSDICT format', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            stringsdict: ['/full/path/en.lproj/Localizable.stringsdict'],
+          },
+          placeholderPaths: {},
+        },
+        options: {},
+        defaultLocale: 'en',
+      };
+
+      mockReadFile.mockReturnValueOnce(stringsdictContent);
+
+      const { files: result } = await aggregateTestFiles(settings);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        fileName: 'en.lproj/Localizable.stringsdict',
+        fileFormat: 'APPLE_STRINGSDICT',
+        locale: 'en',
+      });
+      expect(result[0].content).toBe(stringsdictContent);
+      expect(result[0].fileId).toBe(
+        hashStringSync('en.lproj/Localizable.stringsdict')
+      );
+      expect(result[0].versionId).toBe(
+        hashVersionId(stringsdictContent, false)
+      );
+    });
+
+    it('should skip empty .strings files and log warning', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            strings: ['/full/path/empty.strings', '/full/path/valid.strings'],
+          },
+          placeholderPaths: {},
+        },
+        options: {},
+        defaultLocale: 'en',
+      };
+
+      mockReadFile
+        .mockReturnValueOnce('   \n\t  ') // whitespace only
+        .mockReturnValueOnce(stringsContent); // valid file
+
+      const { files: result } = await aggregateTestFiles(settings);
+
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        'Skipping empty.strings: File is empty'
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0].fileName).toBe('valid.strings');
+    });
+
+    it('should reject xcstrings files until client-side slicing lands', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            xcstrings: ['/full/path/Localizable.xcstrings'],
+          },
+          placeholderPaths: {},
+        },
+        options: {},
+        defaultLocale: 'en',
+      };
+
+      await expect(aggregateTestFiles(settings)).rejects.toThrow(
+        'xcstrings support requires client-side slicing, coming in the next release'
+      );
     });
   });
 

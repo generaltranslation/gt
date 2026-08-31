@@ -1,6 +1,9 @@
 import { logger } from '../../console/logger.js';
 import { logErrorAndExit } from '../../console/logging.js';
-import { lottieExpressionsError } from '../../console/index.js';
+import {
+  lottieExpressionsError,
+  xcstringsNotSupportedError,
+} from '../../console/index.js';
 import { recordWarning } from '../../state/translateWarnings.js';
 import { lottieHasExpressions } from './detectLottieExpressions.js';
 import {
@@ -395,12 +398,53 @@ export async function aggregateFiles(
     files.push(...lottieFiles);
   }
 
+  // Process Apple .strings/.stringsdict files. Content is uploaded verbatim:
+  // their escape sequences must survive byte-for-byte, so no preprocessing.
+  for (const [fileType, fileFormat] of [
+    ['strings', 'APPLE_STRINGS'],
+    ['stringsdict', 'APPLE_STRINGSDICT'],
+  ] as const) {
+    if (!filePaths[fileType]) continue;
+    const appleFiles = filePaths[fileType]
+      .map((filePath) => {
+        const content = readFile(filePath);
+        const relativePath = getRelative(filePath);
+        return {
+          content,
+          fileName: relativePath,
+          fileFormat,
+          ...getTransformFormatProperty(settings, fileType),
+          fileId: hashStringSync(relativePath),
+          versionId: hashVersionId(content, requiresReviewPaths.has(filePath)),
+          locale: settings.defaultLocale,
+        } satisfies FileToUpload;
+      })
+      .filter((file) => {
+        if (!file.content.trim()) {
+          logger.warn(`Skipping ${file.fileName}: File is empty`);
+          recordWarning('skipped_file', file.fileName, 'File is empty');
+          return false;
+        }
+        return true;
+      });
+    files.push(...appleFiles);
+  }
+
+  // xcstrings catalogs are multi-locale, so uploading one whole through the
+  // per-locale pipeline is blocked until client-side slicing lands.
+  if (filePaths.xcstrings?.length) {
+    logErrorAndExit(xcstringsNotSupportedError);
+  }
+
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
     if (
       fileType === 'json' ||
       fileType === 'yaml' ||
       fileType === 'twilioContentJson' ||
-      fileType === 'lottie'
+      fileType === 'lottie' ||
+      fileType === 'strings' ||
+      fileType === 'stringsdict' ||
+      fileType === 'xcstrings'
     )
       continue;
     if (filePaths[fileType]) {
