@@ -8,6 +8,7 @@ import sanitizeFileContent from '../../../utils/sanitizeFileContent.js';
 import { determineLibrary } from '../../../fs/determineFramework/index.js';
 import { isValidMdx } from '../../../utils/validateMdx.js';
 import { hashStringSync, hashVersionId } from '../../../utils/hash.js';
+import { parseXcstrings } from '../../xcstrings/parseXcstrings.js';
 import type { Settings } from '../../../types/index.js';
 
 const aggregateTestFiles = (settings: Partial<Settings>) =>
@@ -690,7 +691,20 @@ describe('aggregateFiles - Empty File Handling', () => {
       expect(result[0].fileName).toBe('valid.strings');
     });
 
-    it('should reject xcstrings files until client-side slicing lands', async () => {
+    it('should upload the source-language slice of xcstrings catalogs with the XCSTRINGS format', async () => {
+      const catalogContent = JSON.stringify({
+        sourceLanguage: 'en',
+        version: '1.0',
+        strings: {
+          greeting: {
+            comment: 'Home screen',
+            localizations: {
+              en: { stringUnit: { state: 'translated', value: 'Hello' } },
+              es: { stringUnit: { state: 'translated', value: 'Hola' } },
+            },
+          },
+        },
+      });
       const settings = {
         files: {
           resolvedPaths: {
@@ -702,9 +716,56 @@ describe('aggregateFiles - Empty File Handling', () => {
         defaultLocale: 'en',
       };
 
-      await expect(aggregateTestFiles(settings)).rejects.toThrow(
-        'xcstrings support requires client-side slicing, coming in the next release'
+      mockReadFile.mockReturnValueOnce(catalogContent);
+
+      const { files: result } = await aggregateTestFiles(settings);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        fileName: 'Localizable.xcstrings',
+        fileFormat: 'XCSTRINGS',
+        locale: 'en',
+      });
+      const expectedSlice = parseXcstrings(catalogContent);
+      expect(result[0].content).toBe(expectedSlice);
+      const uploadedCatalog = JSON.parse(result[0].content) as {
+        strings: Record<string, { localizations?: Record<string, unknown> }>;
+      };
+      expect(
+        Object.keys(uploadedCatalog.strings.greeting.localizations!)
+      ).toEqual(['en']);
+      expect(result[0].fileId).toBe(hashStringSync('Localizable.xcstrings'));
+      expect(result[0].versionId).toBe(hashVersionId(expectedSlice, false));
+    });
+
+    it('should skip invalid xcstrings catalogs and log a warning', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            xcstrings: [
+              '/full/path/bad.xcstrings',
+              '/full/path/Localizable.xcstrings',
+            ],
+          },
+          placeholderPaths: {},
+        },
+        options: {},
+        defaultLocale: 'en',
+      };
+
+      mockReadFile
+        .mockReturnValueOnce('{"strings": []}')
+        .mockReturnValueOnce(
+          JSON.stringify({ sourceLanguage: 'en', strings: {} })
+        );
+
+      const { files: result } = await aggregateTestFiles(settings);
+
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        'Skipping bad.xcstrings: Invalid .xcstrings content: sourceLanguage must be a non-empty string'
       );
+      expect(result).toHaveLength(1);
+      expect(result[0].fileName).toBe('Localizable.xcstrings');
     });
   });
 

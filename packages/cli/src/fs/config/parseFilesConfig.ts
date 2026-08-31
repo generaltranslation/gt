@@ -5,6 +5,7 @@ import {
   RequiresReviewConfig,
   ResolvedFiles,
   Settings,
+  SupportedFileExtension,
   TransformFormats,
   TransformFiles,
   TransformOption,
@@ -139,7 +140,8 @@ export function resolveFiles(
         locale,
         locales,
         transformPaths[fileType] || undefined,
-        compositePatterns
+        compositePatterns,
+        fileType
       );
       resolvedPaths[fileType] = filePaths.resolvedPaths;
       placeholderResult[fileType] = filePaths.placeholderPaths;
@@ -207,7 +209,8 @@ export function expandGlobPatterns(
   locale: string,
   locales: string[],
   transformPatterns?: TransformOption | string | TransformOption[],
-  compositePatterns?: string[]
+  compositePatterns?: string[],
+  fileType?: SupportedFileExtension
 ): {
   resolvedPaths: string[];
   placeholderPaths: string[];
@@ -222,10 +225,13 @@ export function expandGlobPatterns(
     // It must be included in the pattern, otherwise the CLI tool will not be able to find the correct output path
     // Warn if it's not included
     // Ignore if is composite pattern
+    // xcstrings catalogs hold every locale in one shared file, so a pattern
+    // without [locale] is the expected layout there, not a misconfiguration
     if (
       !pattern.includes('[locale]') &&
       !transformPatterns &&
-      !compositePatterns?.includes(pattern)
+      !compositePatterns?.includes(pattern) &&
+      fileType !== 'xcstrings'
     ) {
       logger.warn(
         chalk.yellow(

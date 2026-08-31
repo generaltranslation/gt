@@ -1,9 +1,6 @@
 import { logger } from '../../console/logger.js';
 import { logErrorAndExit } from '../../console/logging.js';
-import {
-  lottieExpressionsError,
-  xcstringsNotSupportedError,
-} from '../../console/index.js';
+import { lottieExpressionsError } from '../../console/index.js';
 import { recordWarning } from '../../state/translateWarnings.js';
 import { lottieHasExpressions } from './detectLottieExpressions.js';
 import {
@@ -15,6 +12,7 @@ import { Settings } from '../../types/index.js';
 import type { FileFormat, DataFormat, FileToUpload } from '../../types/data.js';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
 import { parseJson } from '../json/parseJson.js';
+import { parseXcstrings } from '../xcstrings/parseXcstrings.js';
 import {
   resolveMintlifyRefs,
   shouldResolveRefs,
@@ -430,10 +428,43 @@ export async function aggregateFiles(
     files.push(...appleFiles);
   }
 
-  // xcstrings catalogs are multi-locale, so uploading one whole through the
-  // per-locale pipeline is blocked until client-side slicing lands.
-  if (filePaths.xcstrings?.length) {
-    logErrorAndExit(xcstringsNotSupportedError);
+  // Process Apple .xcstrings catalogs. One catalog holds every locale; only
+  // the source-language slice is uploaded as the source document. Per-locale
+  // slices are extracted at upload time (see cli/commands/upload.ts).
+  if (filePaths.xcstrings) {
+    const xcstringsFiles = filePaths.xcstrings
+      .map((filePath) => {
+        const content = readFile(filePath);
+        const relativePath = getRelative(filePath);
+
+        let sourceSlice: string;
+        try {
+          sourceSlice = parseXcstrings(content);
+        } catch (error) {
+          const reason =
+            error instanceof Error
+              ? error.message
+              : 'xcstrings file is not parsable';
+          logger.warn(`Skipping ${relativePath}: ${reason}`);
+          recordWarning('skipped_file', relativePath, reason);
+          return null;
+        }
+
+        return {
+          content: sourceSlice,
+          fileName: relativePath,
+          fileFormat: 'XCSTRINGS' as const,
+          ...getTransformFormatProperty(settings, 'xcstrings'),
+          fileId: hashStringSync(relativePath),
+          versionId: hashVersionId(
+            sourceSlice,
+            requiresReviewPaths.has(filePath)
+          ),
+          locale: settings.defaultLocale,
+        } satisfies FileToUpload;
+      })
+      .filter((file) => file !== null);
+    files.push(...xcstringsFiles);
   }
 
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {

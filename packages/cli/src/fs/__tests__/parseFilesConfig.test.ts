@@ -504,6 +504,27 @@ describe('parseFilesConfig', () => {
       );
     });
 
+    it('should not warn when an xcstrings pattern does not include [locale]', () => {
+      // xcstrings catalogs hold every locale in one shared file, so a
+      // pattern without [locale] is the expected layout
+      const files = {
+        xcstrings: {
+          include: ['Cascade/Localizable.xcstrings'],
+        },
+      };
+
+      vi.mocked(fg.sync).mockReturnValue([
+        '/project/Cascade/Localizable.xcstrings',
+      ]);
+
+      const result = resolveFiles(files, 'en', defaultLocales, '/project');
+
+      expect(result.resolvedPaths.xcstrings).toEqual([
+        '/project/Cascade/Localizable.xcstrings',
+      ]);
+      expect(vi.mocked(logger.warn)).not.toHaveBeenCalled();
+    });
+
     it('should not warn when pattern does not include [locale] but has string transform patterns', () => {
       const includePatterns = ['src/static/*.json'];
       const excludePatterns = [];

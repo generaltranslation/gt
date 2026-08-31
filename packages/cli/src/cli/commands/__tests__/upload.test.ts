@@ -599,3 +599,101 @@ describe('upload - composite JSON', () => {
     expect(plainFile?.translations[0].content).toBe(translatedPlain);
   });
 });
+
+describe('upload - xcstrings catalogs', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(existsSync).mockReturnValue(false);
+    vi.mocked(readFileSync).mockReturnValue('');
+    vi.mocked(createFileMapping).mockReturnValue({});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('should slice xcstrings catalogs into per-locale translations with the source identity', async () => {
+    const catalogContent = JSON.stringify({
+      sourceLanguage: 'en',
+      version: '1.0',
+      strings: {
+        greeting: {
+          comment: 'Home screen',
+          localizations: {
+            en: { stringUnit: { state: 'translated', value: 'Hello' } },
+            es: { stringUnit: { state: 'translated', value: 'Hola' } },
+            fr: { stringUnit: { state: 'translated', value: 'Bonjour' } },
+          },
+        },
+        farewell: {
+          localizations: {
+            en: { stringUnit: { state: 'translated', value: 'Bye' } },
+            es: { stringUnit: { state: 'translated', value: 'Adiós' } },
+          },
+        },
+      },
+    });
+
+    setMockFiles({ 'Localizable.xcstrings': catalogContent });
+
+    const filePaths: ResolvedFiles = {
+      xcstrings: ['Localizable.xcstrings'],
+    };
+    // ko is not in the catalog, so it must not produce a translation upload
+    const settings = makeSettings({ locales: ['es', 'fr', 'ko'], options: {} });
+
+    await uploadWithFiles(filePaths, settings);
+
+    expect(runUploadFilesWorkflow).toHaveBeenCalledTimes(1);
+    const call = vi.mocked(runUploadFilesWorkflow).mock.calls[0][0];
+    expect(call.files).toHaveLength(1);
+    const { source, translations } = call.files[0];
+
+    expect(source.fileFormat).toBe('XCSTRINGS');
+    expect(source.locale).toBe('en');
+    const sourceCatalog = JSON.parse(source.content) as {
+      strings: Record<string, { localizations: Record<string, unknown> }>;
+    };
+    expect(Object.keys(sourceCatalog.strings.greeting.localizations)).toEqual([
+      'en',
+    ]);
+    expect(Object.keys(sourceCatalog.strings.farewell.localizations)).toEqual([
+      'en',
+    ]);
+
+    expect(translations).toHaveLength(2);
+    expect(translations.map((t) => t.locale)).toEqual(['es', 'fr']);
+    for (const translation of translations) {
+      // Per-locale slices are attached with the source's identity
+      expect(translation.fileId).toBe(source.fileId);
+      expect(translation.versionId).toBe(source.versionId);
+      expect(translation.fileFormat).toBe('XCSTRINGS');
+      expect(translation.fileName).toBe('Localizable.xcstrings');
+    }
+
+    const esCatalog = JSON.parse(translations[0].content) as {
+      strings: Record<
+        string,
+        { localizations: Record<string, { stringUnit: { value: string } }> }
+      >;
+    };
+    expect(Object.keys(esCatalog.strings)).toEqual(['greeting', 'farewell']);
+    expect(esCatalog.strings.greeting.localizations.es.stringUnit.value).toBe(
+      'Hola'
+    );
+
+    const frCatalog = JSON.parse(translations[1].content) as {
+      strings: Record<
+        string,
+        { localizations: Record<string, { stringUnit: { value: string } }> }
+      >;
+    };
+    expect(Object.keys(frCatalog.strings)).toEqual(['greeting']);
+    expect(frCatalog.strings.greeting.localizations.fr.stringUnit.value).toBe(
+      'Bonjour'
+    );
+
+    // Translations come from the shared catalog, never from fileMapping reads
+    expect(readFileSync).not.toHaveBeenCalled();
+  });
+});

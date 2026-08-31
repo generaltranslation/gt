@@ -437,7 +437,6 @@ export const noVersionIdError = `No version ID was found. Pass --version-id or a
 export const invalidConfigurationError = `The files configuration cannot be used for this operation. Provide a valid download configuration or set --publish true to upload translations to the CDN.`;
 export const lottieTranslateError = `Lottie translations are processed asynchronously, so the translate command cannot complete them in one run. Use the stage and download flow instead:\n  1. Stage the files for translation: npx gt stage\n  2. Fetch the finished translations: npx gt download\nTranslations that are still processing are skipped, so re-run npx gt download until all of them have been downloaded.`;
 export const branchResolutionError = `The current git branch could not be resolved. Specify a branch explicitly or run the command from a git worktree with branch metadata available.`;
-export const xcstringsNotSupportedError = `xcstrings support requires client-side slicing, coming in the next release. Remove the xcstrings entry from the files section in gt.config.json for now.`;
 
 export const lottieExpressionsError = (files: string[]): string =>
   `The following Lottie file(s) use After Effects expressions, which contain executable code and are not supported yet:\n${files

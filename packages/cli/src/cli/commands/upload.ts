@@ -10,6 +10,7 @@ import { isBinaryFileFormat } from 'generaltranslation/types';
 import { Settings } from '../../types/index.js';
 import { UploadOptions } from '../base.js';
 import { extractJson } from '../../formats/json/extractJson.js';
+import { extractXcstrings } from '../../formats/xcstrings/extractXcstrings.js';
 import { validateJsonSchema } from '../../formats/json/utils.js';
 import { runUploadFilesWorkflow } from '../../workflows/upload.js';
 import { existsSync, readFileSync } from 'node:fs';
@@ -42,24 +43,42 @@ export async function upload(
   // Reuse the same source aggregation path as translate/stage so source
   // parsing behavior stays consistent across commands.
   const { files: allFiles, publishMap } = await aggregateFiles(settings);
-  const compositeJsonFiles = new Map<
+
+  // Files whose translations live in the same on-disk file as the source:
+  // composite JSON (per jsonSchema) and xcstrings catalogs (per format).
+  // Their per-locale content is extracted from the raw file at upload time.
+  const inPlaceTranslationFiles = new Map<
     string,
-    { filePath: string; content: string }
+    { filePath: string; content: string; fileType: 'json' | 'xcstrings' }
   >();
+  const sourceFileNames = new Set(allFiles.map((file) => file.fileName));
 
   if (filePaths.json) {
-    const sourceFileNames = new Set(allFiles.map((file) => file.fileName));
     for (const filePath of filePaths.json) {
       const relativePath = getRelative(filePath);
       if (!sourceFileNames.has(relativePath)) continue;
 
       const jsonSchema = validateJsonSchema(additionalOptions, filePath);
       if (jsonSchema?.composite) {
-        compositeJsonFiles.set(relativePath, {
+        inPlaceTranslationFiles.set(relativePath, {
           filePath,
           content: readFile(filePath),
+          fileType: 'json',
         });
       }
+    }
+  }
+
+  if (filePaths.xcstrings) {
+    for (const filePath of filePaths.xcstrings) {
+      const relativePath = getRelative(filePath);
+      if (!sourceFileNames.has(relativePath)) continue;
+
+      inPlaceTranslationFiles.set(relativePath, {
+        filePath,
+        content: readFile(filePath),
+        fileType: 'xcstrings',
+      });
     }
   }
 
@@ -91,18 +110,21 @@ export async function upload(
     const sourceFile: FileToUpload = { ...file };
 
     const translations: FileToUpload[] = [];
-    const compositeInfo = compositeJsonFiles.get(file.fileName);
+    const inPlaceInfo = inPlaceTranslationFiles.get(file.fileName);
 
     for (const locale of locales) {
-      if (compositeInfo) {
-        // Composite JSON: extract translations from the same source file
-        const extracted = extractJson(
-          compositeInfo.content,
-          compositeInfo.filePath,
-          additionalOptions,
-          locale,
-          settings.defaultLocale
-        );
+      if (inPlaceInfo) {
+        // In-place translations: extract each locale from the source file
+        const extracted =
+          inPlaceInfo.fileType === 'xcstrings'
+            ? extractXcstrings(inPlaceInfo.content, file.fileName, locale)
+            : extractJson(
+                inPlaceInfo.content,
+                inPlaceInfo.filePath,
+                additionalOptions,
+                locale,
+                settings.defaultLocale
+              );
         if (extracted) {
           translations.push({
             content: extracted,
