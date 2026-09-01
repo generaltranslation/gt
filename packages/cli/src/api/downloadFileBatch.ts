@@ -20,7 +20,11 @@ import {
   writeLockfile,
   findOrCreateEntry,
 } from '../fs/config/downloadedVersions.js';
-import { recordDownloaded, recordRemerged } from '../state/recentDownloads.js';
+import {
+  getDownloaded,
+  recordDownloaded,
+  recordRemerged,
+} from '../state/recentDownloads.js';
 import { recordWarning } from '../state/translateWarnings.js';
 import stringify from 'fast-json-stable-stringify';
 import type { FileStatusTracker } from '../workflows/steps/PollJobsStep.js';
@@ -93,17 +97,19 @@ function mergeWithSource(
   translatedContent: string,
   locale: string,
   inputPath: string,
-  options: Settings
+  options: Settings,
+  xcstringsMergeBasePath: string = inputPath
 ): string {
   if (shouldSkipSourceFormatMerge(inputPath, options)) {
     return translatedContent;
   }
   // Xcstrings: fold the downloaded locale slice into the current on-disk
   // catalog. Read fresh each merge — the download loop is sequential, so
-  // each locale sees the previous locale's write.
+  // each locale sees the previous locale's write (via the merge base when a
+  // path transform sends every locale to one shared non-source output).
   if (inputPath.endsWith('.xcstrings')) {
     return mergeXcstrings(
-      fs.readFileSync(inputPath, 'utf8'),
+      fs.readFileSync(xcstringsMergeBasePath, 'utf8'),
       translatedContent,
       locale
     );
@@ -435,7 +441,23 @@ export async function downloadFileBatch(
           result.skipped.push(requestedFile);
           continue;
         }
-        let data = mergeWithSource(file.data, locale, inputPath, options);
+        // When a path transform maps every locale's merge to one shared
+        // output that is not the source catalog, the source never sees those
+        // merges; later locales must fold into the output written earlier in
+        // this run or each write discards the locales merged before it.
+        const xcstringsMergeBasePath =
+          isXcstringsCatalogMerge &&
+          outputPath !== inputPath &&
+          getDownloaded().has(outputPath)
+            ? outputPath
+            : inputPath;
+        let data = mergeWithSource(
+          file.data,
+          locale,
+          inputPath,
+          options,
+          xcstringsMergeBasePath
+        );
 
         // Stable sort JSON keys for deterministic output. Merged xcstrings
         // catalogs are byte-pinned by serializeXcstrings and must never pass

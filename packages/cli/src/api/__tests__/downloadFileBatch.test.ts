@@ -977,6 +977,52 @@ describe('downloadFileBatch', () => {
       );
     });
 
+    it('accumulates every locale when a path transform shares one non-source output', async () => {
+      // Without [locale] in the transform, all locales merge into one output
+      // file that is not the source catalog. The source never sees those
+      // merges, so later locales must build on the output written earlier in
+      // this run rather than rereading the source and discarding them.
+      const transformedPath = 'Cascade/Localizable.translated.xcstrings';
+      const esSlice = buildSlice(realisticCatalog, 'es', 'nuevo');
+      const frSlice = buildSlice(realisticCatalog, 'fr', 'nouveau');
+      const files = [
+        xcstringsBatchFile('es', { outputPath: transformedPath }),
+        xcstringsBatchFile('fr', { outputPath: transformedPath }),
+      ];
+      const fileTracker = createMockFileTracker(files);
+      const lockEntry: DownloadedVersionEntry = {
+        fileId: 'file-1',
+        versionId: 'version-1',
+        translations: {},
+      };
+      vi.mocked(findOrCreateEntry).mockReturnValue(lockEntry);
+
+      vi.mocked(gt.downloadFileBatch).mockResolvedValue({
+        files: [
+          xcstringsResponseFile('es', esSlice),
+          xcstringsResponseFile('fr', frSlice),
+        ],
+        count: 2,
+      });
+      const store = new Map([[catalogPath, realisticCatalog]]);
+      setupInMemoryFs(store, ['Cascade']);
+
+      const result = await downloadFileBatch(
+        fileTracker,
+        files,
+        createMockSettings({ locales: ['es', 'fr'] })
+      );
+
+      expect(result.successful).toHaveLength(2);
+      expect(result.failed).toHaveLength(0);
+
+      // The source catalog is untouched; the shared output holds both merges
+      expect(store.get(catalogPath)).toBe(realisticCatalog);
+      const afterEs = mergeXcstrings(realisticCatalog, esSlice, 'es');
+      const afterFr = mergeXcstrings(afterEs, frSlice, 'fr');
+      expect(store.get(transformedPath)).toBe(afterFr);
+    });
+
     it('touches only the catalog when it coexists with legacy .strings files', async () => {
       const fixtureCatalogPath =
         'Sources/FieldNotesKit/Resources/Localizable.xcstrings';
