@@ -103,13 +103,16 @@ function parseHeadingContent(text: string): {
  * are never renumbered, only reserved.
  */
 function assignUniqueSlugs(headings: HeadingInfo[]): void {
-  const used = new Set<string>();
+  // Reserve every explicit ID up front, including ones later in the document,
+  // so a generated slug never claims an ID an author asked for.
+  const used = new Set(
+    headings
+      .filter((heading) => heading.explicit)
+      .map((heading) => heading.slug)
+  );
 
   for (const heading of headings) {
-    if (heading.explicit) {
-      used.add(heading.slug);
-      continue;
-    }
+    if (heading.explicit) continue;
 
     // Headings with no slug-able characters would produce id="".
     const base = heading.slug || 'section';

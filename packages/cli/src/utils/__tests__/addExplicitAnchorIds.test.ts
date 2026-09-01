@@ -976,6 +976,21 @@ Más contenido.`;
       expect(out).toContain('<div id="response-status-codes-3">');
     });
 
+    it('does not let a generated slug claim a later explicit ID', () => {
+      const doc = `## Setup
+
+## Configuration {#setup}
+`;
+      expect(extractHeadingInfo(doc).map((h) => h.slug)).toEqual([
+        'setup-2',
+        'setup',
+      ]);
+
+      const out = wrap(doc, doc);
+      expect(out).toContain('<div id="setup-2">');
+      expect(out).toContain('## Configuration {#setup}');
+    });
+
     it('does not renumber author-written IDs', () => {
       const doc = `## Setup {#setup-plain}
 
