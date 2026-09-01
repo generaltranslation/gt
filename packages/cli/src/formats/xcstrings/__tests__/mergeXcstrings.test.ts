@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { mergeXcstrings } from '../mergeXcstrings.js';
 import { extractXcstrings } from '../extractXcstrings.js';
-import type { XcstringsCatalog } from '../parseXcstrings.js';
+import { parseXcstrings, type XcstringsCatalog } from '../parseXcstrings.js';
 import { logger } from '../../../console/logger.js';
 
 vi.mock('../../../console/logger.js');
@@ -146,6 +146,60 @@ describe('mergeXcstrings', () => {
     expect(
       Object.keys(parseCatalog(deThenIt).strings.greeting.localizations!)
     ).toEqual(['de', 'en', 'fr', 'it']);
+  });
+
+  it('leaves the source slice (and so versionId) byte-stable across merges', () => {
+    // Implicit entries gain a localizations object holding only target
+    // locales when translations merge in. Re-slicing the merged catalog must
+    // reproduce the original source slice, or every translate run re-versions
+    // the file and re-triggers translation.
+    const catalogContent = JSON.stringify({
+      sourceLanguage: 'en',
+      strings: {
+        Save: {},
+        Cancel: { comment: 'toolbar' },
+        greeting: {
+          localizations: {
+            en: { stringUnit: { state: 'translated', value: 'Hello' } },
+          },
+        },
+      },
+    });
+    const makeSlice = (locale: string, values: Record<string, string>) =>
+      JSON.stringify({
+        sourceLanguage: 'en',
+        strings: Object.fromEntries(
+          Object.entries(values).map(([key, value]) => [
+            key,
+            {
+              localizations: {
+                [locale]: { stringUnit: { state: 'translated', value } },
+              },
+            },
+          ])
+        ),
+      });
+
+    let merged = mergeXcstrings(
+      catalogContent,
+      makeSlice('es', {
+        Save: 'Guardar',
+        Cancel: 'Cancelar',
+        greeting: 'Hola',
+      }),
+      'es'
+    );
+    merged = mergeXcstrings(
+      merged,
+      makeSlice('fr', {
+        Save: 'Enregistrer',
+        Cancel: 'Annuler',
+        greeting: 'Salut',
+      }),
+      'fr'
+    );
+
+    expect(parseXcstrings(merged)).toBe(parseXcstrings(catalogContent));
   });
 
   it('skips slice entries with no matching catalog entry and warns', () => {

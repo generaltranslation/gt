@@ -96,8 +96,11 @@ export function filterLocalizations(
  * Produces the source-language slice of a catalog: a valid single-locale
  * catalog containing, per entry, only the source-language localization.
  * Entries with no localizations (the key is the source) and
- * shouldTranslate:false entries are kept verbatim. Entry order and unknown
- * fields are preserved. Throws on invalid content.
+ * shouldTranslate:false entries are kept verbatim. An entry holding only
+ * non-source locales slices to the same implicit form (no localizations
+ * key), so the slice — and the versionId hashed from it — is invariant to
+ * target-locale translations merged into the catalog. Entry order and
+ * unknown fields are preserved. Throws on invalid content.
  */
 export function parseXcstrings(content: string): string {
   const catalog = parseXcstringsCatalog(content);
@@ -107,16 +110,16 @@ export function parseXcstrings(content: string): string {
       slicedEntries.push([key, entry]);
       continue;
     }
-    slicedEntries.push([
-      key,
-      {
-        ...entry,
-        localizations: filterLocalizations(
-          entry.localizations,
-          catalog.sourceLanguage
-        ),
-      },
-    ]);
+    const localizations = filterLocalizations(
+      entry.localizations,
+      catalog.sourceLanguage
+    );
+    if (Object.keys(localizations).length === 0) {
+      const { localizations: _dropped, ...implicitEntry } = entry;
+      slicedEntries.push([key, implicitEntry]);
+      continue;
+    }
+    slicedEntries.push([key, { ...entry, localizations }]);
   }
   return serializeXcstrings({
     ...catalog,

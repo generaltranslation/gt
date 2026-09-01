@@ -53,11 +53,12 @@ describe('parseXcstrings - source slice', () => {
         expect(slicedEntry).toEqual(inputEntry);
         continue;
       }
-      // Only the source language remains; its content is untouched
+      // Only the source language remains; its content is untouched. Entries
+      // with no source-language unit slice as implicit (no localizations key).
       expect(slicedEntry.localizations).toEqual(
         'en' in inputEntry.localizations
           ? { en: inputEntry.localizations.en }
-          : {}
+          : undefined
       );
       // Entry-level fields other than localizations are untouched
       expect({ ...slicedEntry, localizations: undefined }).toEqual({
@@ -83,6 +84,28 @@ describe('parseXcstrings - source slice', () => {
       comment: 'toolbar',
       extractionState: 'manual',
     });
+  });
+
+  it('slices entries with no source-language localization as implicit entries', () => {
+    // After a download merge, formerly-implicit entries carry only target
+    // locales. Their slice must match the pre-merge implicit form byte-for-
+    // byte, or versionId changes on every run and re-triggers translation.
+    const content = JSON.stringify({
+      sourceLanguage: 'en',
+      strings: {
+        Save: {
+          comment: 'toolbar',
+          localizations: {
+            es: { stringUnit: { state: 'translated', value: 'Guardar' } },
+          },
+        },
+      },
+    });
+
+    const slice = parseCatalog(parseXcstrings(content));
+
+    expect(slice.strings.Save).toEqual({ comment: 'toolbar' });
+    expect('localizations' in slice.strings.Save).toBe(false);
   });
 
   it('keeps shouldTranslate:false entries verbatim, including non-source locales', () => {
