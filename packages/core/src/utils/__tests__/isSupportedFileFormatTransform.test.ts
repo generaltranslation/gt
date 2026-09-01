@@ -17,6 +17,7 @@ describe('isSupportedFileFormatTransform', () => {
     'TXT',
     'TWILIO_CONTENT_JSON',
     'SVG',
+    'APPLE_STRINGS',
   ];
 
   it('supports identity transforms by default', () => {

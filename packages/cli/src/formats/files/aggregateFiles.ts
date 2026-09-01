@@ -395,12 +395,42 @@ export async function aggregateFiles(
     files.push(...lottieFiles);
   }
 
+  // Apple .strings files are uploaded verbatim. Their backslash escapes and
+  // format specifiers must survive byte-for-byte, so they skip the generic
+  // markdown-oriented preprocessing below.
+  if (filePaths.strings) {
+    const stringsFiles = filePaths.strings
+      .map((filePath) => {
+        const content = readFile(filePath);
+        const relativePath = getRelative(filePath);
+        return {
+          content,
+          fileName: relativePath,
+          fileFormat: 'APPLE_STRINGS' as const,
+          ...getTransformFormatProperty(settings, 'strings'),
+          fileId: hashStringSync(relativePath),
+          versionId: hashVersionId(content, requiresReviewPaths.has(filePath)),
+          locale: settings.defaultLocale,
+        } satisfies FileToUpload;
+      })
+      .filter((file) => {
+        if (!file.content.trim()) {
+          logger.warn(`Skipping ${file.fileName}: File is empty`);
+          recordWarning('skipped_file', file.fileName, 'File is empty');
+          return false;
+        }
+        return true;
+      });
+    files.push(...stringsFiles);
+  }
+
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
     if (
       fileType === 'json' ||
       fileType === 'yaml' ||
       fileType === 'twilioContentJson' ||
-      fileType === 'lottie'
+      fileType === 'lottie' ||
+      fileType === 'strings'
     )
       continue;
     if (filePaths[fileType]) {

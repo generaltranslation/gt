@@ -71,7 +71,8 @@
           "POT",
           "TWILIO_CONTENT_JSON",
           "LOTTIE",
-          "SVG"
+          "SVG",
+          "APPLE_STRINGS"
         ]
       },
       "ModelProvider": {
@@ -614,7 +615,8 @@
                                 "POT",
                                 "TWILIO_CONTENT_JSON",
                                 "LOTTIE",
-                                "SVG"
+                                "SVG",
+                                "APPLE_STRINGS"
                               ]
                             },
                             "dataFormat": {
@@ -926,7 +928,8 @@
                                 "POT",
                                 "TWILIO_CONTENT_JSON",
                                 "LOTTIE",
-                                "SVG"
+                                "SVG",
+                                "APPLE_STRINGS"
                               ]
                             },
                             "dataFormat": {
@@ -996,7 +999,8 @@
                                   "POT",
                                   "TWILIO_CONTENT_JSON",
                                   "LOTTIE",
-                                  "SVG"
+                                  "SVG",
+                                  "APPLE_STRINGS"
                                 ]
                               },
                               "dataFormat": {
@@ -1022,7 +1026,8 @@
                                   "POT",
                                   "TWILIO_CONTENT_JSON",
                                   "LOTTIE",
-                                  "SVG"
+                                  "SVG",
+                                  "APPLE_STRINGS"
                                 ]
                               }
                             },
@@ -2306,7 +2311,8 @@
                             "POT",
                             "TWILIO_CONTENT_JSON",
                             "LOTTIE",
-                            "SVG"
+                            "SVG",
+                            "APPLE_STRINGS"
                           ]
                         }
                       },
