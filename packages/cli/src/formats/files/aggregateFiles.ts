@@ -12,7 +12,10 @@ import { Settings } from '../../types/index.js';
 import type { FileFormat, DataFormat, FileToUpload } from '../../types/data.js';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
 import { parseJson } from '../json/parseJson.js';
-import { parseXcstrings } from '../xcstrings/parseXcstrings.js';
+import {
+  parseXcstrings,
+  parseXcstringsCatalog,
+} from '../xcstrings/parseXcstrings.js';
 import {
   resolveMintlifyRefs,
   shouldResolveRefs,
@@ -439,6 +442,15 @@ export async function aggregateFiles(
 
         let sourceSlice: string;
         try {
+          // Slicing follows the catalog's own sourceLanguage while the upload
+          // is labeled settings.defaultLocale; a mismatch would upload
+          // mislabeled source content, so treat it as a config error.
+          const catalog = parseXcstringsCatalog(content);
+          if (catalog.sourceLanguage !== settings.defaultLocale) {
+            throw new Error(
+              `catalog sourceLanguage "${catalog.sourceLanguage}" does not match the configured defaultLocale "${settings.defaultLocale}"`
+            );
+          }
           sourceSlice = parseXcstrings(content);
         } catch (error) {
           const reason =

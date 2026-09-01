@@ -767,6 +767,32 @@ describe('aggregateFiles - Empty File Handling', () => {
       expect(result).toHaveLength(1);
       expect(result[0].fileName).toBe('Localizable.xcstrings');
     });
+
+    it('should skip xcstrings catalogs whose sourceLanguage differs from defaultLocale', async () => {
+      // The slice is keyed by the catalog's own sourceLanguage but the upload
+      // is labeled defaultLocale — a mismatch would upload mislabeled content.
+      const settings = {
+        files: {
+          resolvedPaths: {
+            xcstrings: ['/full/path/Localizable.xcstrings'],
+          },
+          placeholderPaths: {},
+        },
+        options: {},
+        defaultLocale: 'fr',
+      };
+
+      mockReadFile.mockReturnValueOnce(
+        JSON.stringify({ sourceLanguage: 'en', strings: {} })
+      );
+
+      const { files: result } = await aggregateTestFiles(settings);
+
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        'Skipping Localizable.xcstrings: catalog sourceLanguage "en" does not match the configured defaultLocale "fr"'
+      );
+      expect(result).toHaveLength(0);
+    });
   });
 
   describe('Mixed file types with empty files', () => {
