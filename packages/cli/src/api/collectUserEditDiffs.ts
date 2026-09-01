@@ -42,6 +42,22 @@ const findLatestDownloadedVersion = (
 };
 
 /**
+ * Canonicalizes one locale's editable content in an xcstrings slice: a
+ * stable-stringified map of entry key -> that locale's localization. Entries
+ * without the locale are irrelevant to edit detection, as is every other
+ * field and any serialization ordering.
+ */
+function projectXcstringsLocale(sliceContent: string, locale: string): string {
+  const catalog = parseXcstringsCatalog(sliceContent);
+  const projection: Record<string, unknown> = {};
+  for (const [key, entry] of Object.entries(catalog.strings)) {
+    const localization = entry.localizations?.[locale];
+    if (localization !== undefined) projection[key] = localization;
+  }
+  return stringify(projection);
+}
+
+/**
  * Collects local user edits by diffing the latest downloaded server translation version
  * against the current local translation file, and submits the diffs upstream.
  *
@@ -194,11 +210,13 @@ export async function collectAndSendUserEditDiffs(
           } catch {
             continue;
           }
-          // Key order is serialization-dependent (the server orders top-level
-          // fields its own way); only content differences are user edits.
+          // Only this locale's localizations are user-editable here. Compare
+          // that projection: key order is serialization-dependent, and the
+          // server slice legitimately carries entries with no target-locale
+          // localization (e.g. shouldTranslate:false entries kept verbatim).
           if (
-            stringify(JSON.parse(serverSlice)) ===
-            stringify(JSON.parse(localSlice))
+            projectXcstringsLocale(serverSlice, c.locale) ===
+            projectXcstringsLocale(localSlice, c.locale)
           ) {
             continue;
           }

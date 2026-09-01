@@ -319,6 +319,38 @@ describe('collectAndSendUserEditDiffs', () => {
       expect(gt.submitUserEditDiffs).not.toHaveBeenCalled();
     });
 
+    it('ignores server slice entries with no target-locale localization', async () => {
+      const settings = buildXcstringsSettings();
+      seedCatalogAndLock(catalogContent);
+      mockServerResponses();
+      // The server keeps shouldTranslate:false entries verbatim in every
+      // locale's slice, so its slice can hold entries — and locales — the
+      // local extract legitimately omits.
+      const serverDoc = JSON.parse(serverEsSlice);
+      serverDoc.strings['brand.name'] = {
+        shouldTranslate: false,
+        localizations: {
+          en: { stringUnit: { state: 'translated', value: 'Cascade Pro' } },
+        },
+      };
+      vi.mocked(gt.downloadFileBatch).mockResolvedValue({
+        files: [
+          {
+            branchId: 'branch1',
+            fileId: 'file1',
+            versionId: 'version1',
+            locale: 'es',
+            data: JSON.stringify(serverDoc),
+          },
+        ],
+      });
+
+      await collectAndSendUserEditDiffs(files, settings);
+
+      expect(getGitUnifiedDiff).not.toHaveBeenCalled();
+      expect(gt.submitUserEditDiffs).not.toHaveBeenCalled();
+    });
+
     it('submits the extracted locale slice, not the catalog, when edited', async () => {
       const settings = buildXcstringsSettings();
       seedCatalogAndLock(catalogContent.replace('Guardar', 'GUARDAR!'));
