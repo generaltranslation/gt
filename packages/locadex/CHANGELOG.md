@@ -1,5 +1,12 @@
 # locadex
 
+## 1.0.215
+
+### Patch Changes
+
+- Updated dependencies [[`cadd04a`](https://github.com/generaltranslation/gt/commit/cadd04a07d73fd6090c3f72a199f03e443b5db10)]:
+  - gt@2.17.3
+
 ## 1.0.214
 
 ### Patch Changes

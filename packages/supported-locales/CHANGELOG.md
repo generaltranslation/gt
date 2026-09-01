@@ -1,5 +1,12 @@
 # @generaltranslation/supported-locales
 
+## 2.1.23
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.1.10
+
 ## 2.1.22
 
 ### Patch Changes
