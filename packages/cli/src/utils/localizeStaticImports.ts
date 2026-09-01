@@ -6,13 +6,10 @@ import type {
 } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import micromatch from 'micromatch';
-import { unified } from 'unified';
-import remarkParse from 'remark-parse';
-import remarkMdx from 'remark-mdx';
-import remarkFrontmatter from 'remark-frontmatter';
 import { visit } from 'unist-util-visit';
 import type { Root } from 'mdast';
 import type { MdxjsEsm } from 'mdast-util-mdxjs-esm';
+import { parseMdxTolerantly } from './mdxAnchorSyntax.js';
 
 const { isMatch } = micromatch;
 
@@ -442,13 +439,9 @@ function transformMdxImports(
   // Parse the MDX content into an AST
   let processedAst: Root;
   try {
-    const parseProcessor = unified()
-      .use(remarkParse)
-      .use(remarkFrontmatter, ['yaml', 'toml'])
-      .use(remarkMdx);
-
-    const ast = parseProcessor.parse(mdxContent);
-    processedAst = parseProcessor.runSync(ast) as Root;
+    // Parsed only to locate import nodes; edits below are applied to the
+    // original string, so a neutralized parse cannot leak into the output.
+    processedAst = parseMdxTolerantly(mdxContent);
   } catch {
     return transformImportsStringFallback(
       mdxContent,
