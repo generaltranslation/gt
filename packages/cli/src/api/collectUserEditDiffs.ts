@@ -15,7 +15,6 @@ import { randomUUID } from 'node:crypto';
 import { hashStringSync } from '../utils/hash.js';
 import { extractJson } from '../formats/json/extractJson.js';
 import { extractYaml } from '../formats/yaml/extractYaml.js';
-import { extractXcstrings } from '../formats/xcstrings/extractXcstrings.js';
 
 type LatestDownloadedVersion = {
   versionId: string;
@@ -182,18 +181,7 @@ export async function collectAndSendUserEditDiffs(
 
           // For JSON files with jsonSchema config, extract to composite format
           let localContent = rawLocalContent;
-          if (c.fileName.endsWith('.xcstrings')) {
-            // One catalog holds every locale; submitting the raw file would
-            // overwrite each locale's stored translation with the whole
-            // multi-locale catalog. Submit only this locale's slice.
-            const extractedContent = extractXcstrings(
-              rawLocalContent,
-              c.fileName,
-              c.locale
-            );
-            if (!extractedContent) continue;
-            localContent = extractedContent;
-          } else if (
+          if (
             c.fileName.endsWith('.json') &&
             settings.options?.jsonSchema &&
             c.locale !== settings.defaultLocale
