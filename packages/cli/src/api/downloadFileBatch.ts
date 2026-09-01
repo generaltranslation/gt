@@ -8,6 +8,7 @@ import { validateJsonSchema } from '../formats/json/utils.js';
 import { validateYamlSchema } from '../formats/yaml/utils.js';
 import { mergeJson } from '../formats/json/mergeJson.js';
 import { extractJson } from '../formats/json/extractJson.js';
+import { mergeXcstrings } from '../formats/xcstrings/mergeXcstrings.js';
 import mergeYaml from '../formats/yaml/mergeYaml.js';
 import { extractYaml } from '../formats/yaml/extractYaml.js';
 import {
@@ -96,6 +97,16 @@ function mergeWithSource(
 ): string {
   if (shouldSkipSourceFormatMerge(inputPath, options)) {
     return translatedContent;
+  }
+  // Xcstrings: fold the downloaded locale slice into the current on-disk
+  // catalog. Read fresh each merge — the download loop is sequential, so
+  // each locale sees the previous locale's write.
+  if (inputPath.endsWith('.xcstrings')) {
+    return mergeXcstrings(
+      fs.readFileSync(inputPath, 'utf8'),
+      translatedContent,
+      locale
+    );
   }
   if (!options.options) return translatedContent;
 
@@ -330,20 +341,30 @@ export async function downloadFileBatch(
           continue;
         }
 
-        // Composite schema files merge translations into the source file itself,
-        // so outputPath always exists and the lock can't tell whether derived
-        // split outputs (e.g. {locale}/docs.json) are still on disk. Always
-        // merge fresh API data so derived files are regenerated every run;
-        // local edits to translated output are preserved via `gt save-local`.
-        const isInPlaceComposite = options.options?.jsonSchema
-          ? !!validateJsonSchema(options.options, inputPath)?.composite
-          : false;
+        // Xcstrings catalogs merge each downloaded locale slice into the
+        // source catalog itself, unless a format transform redirects output
+        // to a derived file instead.
+        const isXcstringsCatalogMerge =
+          inputPath.endsWith('.xcstrings') &&
+          !shouldSkipSourceFormatMerge(inputPath, options);
+
+        // In-place translation files (composite schema JSON, xcstrings
+        // catalogs) merge translations into the source file itself, so
+        // outputPath always exists and the lock can't tell whether this
+        // locale's content (or derived split outputs, e.g. {locale}/docs.json)
+        // is still on disk. Always merge fresh API data; local edits to
+        // translated output are preserved via `gt save-local`.
+        const isInPlaceTranslationFile =
+          isXcstringsCatalogMerge ||
+          (options.options?.jsonSchema
+            ? !!validateJsonSchema(options.options, inputPath)?.composite
+            : false);
 
         if (
           !forceDownload &&
           fileExists &&
           downloadedTranslation &&
-          !isInPlaceComposite
+          !isInPlaceTranslationFile
         ) {
           // For schema-based files, re-merge with current source in case
           // non-translatable fields changed (skip the API download, not the merge)
@@ -416,8 +437,14 @@ export async function downloadFileBatch(
         }
         let data = mergeWithSource(file.data, locale, inputPath, options);
 
-        // Stable sort JSON keys for deterministic output
-        if (file.fileFormat === 'GTJSON' || outputPath.endsWith('.json')) {
+        // Stable sort JSON keys for deterministic output. Merged xcstrings
+        // catalogs are byte-pinned by serializeXcstrings and must never pass
+        // through the JSON sorter, even if a transform maps the output to a
+        // .json path.
+        if (
+          !isXcstringsCatalogMerge &&
+          (file.fileFormat === 'GTJSON' || outputPath.endsWith('.json'))
+        ) {
           try {
             data = sortJsonString(data);
           } catch (error) {

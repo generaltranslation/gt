@@ -2,7 +2,7 @@ import { logger } from '../../console/logger.js';
 import {
   filterLocalizations,
   parseXcstringsCatalog,
-  serializeXcstringsSlice,
+  serializeXcstrings,
   type XcstringsEntry,
 } from './parseXcstrings.js';
 
@@ -39,7 +39,7 @@ export function extractXcstrings(
   }
   if (slicedEntries.length === 0) return null;
 
-  return serializeXcstringsSlice({
+  return serializeXcstrings({
     ...catalog,
     strings: Object.fromEntries(slicedEntries),
   });

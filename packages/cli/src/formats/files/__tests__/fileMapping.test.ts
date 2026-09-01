@@ -37,6 +37,28 @@ describe('createFileMapping', () => {
     );
   });
 
+  it('maps every locale of an xcstrings catalog to the same shared file', () => {
+    // Catalog include patterns carry no [locale], so the placeholder path
+    // equals the source path and download merges target the one on-disk file
+    const catalogPath = path.resolve('Cascade/Localizable.xcstrings');
+
+    const mapping = createFileMapping(
+      { xcstrings: [catalogPath] },
+      { xcstrings: [catalogPath] },
+      {},
+      {},
+      ['es', 'fr'],
+      'en'
+    );
+
+    expect(mapping.es['Cascade/Localizable.xcstrings']).toBe(
+      'Cascade/Localizable.xcstrings'
+    );
+    expect(mapping.fr['Cascade/Localizable.xcstrings']).toBe(
+      'Cascade/Localizable.xcstrings'
+    );
+  });
+
   describe('non-canonical locale tags', () => {
     // A locale written as "fr-ca" canonicalizes to "fr-CA". Everything that
     // names a path must use the tag as configured, because [locale]

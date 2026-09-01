@@ -1,0 +1,22 @@
+/* FieldNotes — German strings that were never migrated to Localizable.xcstrings.
+   Everything below except settings.title exists ONLY here. */
+
+"legacy.error.generic" = "Ein unbekannter Fehler ist aufgetreten.";
+"legacy.error.network" = "Keine Internetverbindung. Bitte versuche es später erneut.";
+
+/* Account */
+"legacy.logout.button" = "Abmelden";
+"legacy.logout.confirm" = "Möchtest du dich wirklich abmelden?";
+
+/* First-run flow */
+"legacy.onboarding.next" = "Weiter";
+"legacy.onboarding.skip" = "Überspringen";
+
+"legacy.rating.prompt" = "Gefällt dir FieldNotes? Bewerte uns im App Store!";
+"legacy.share.subject" = "Notiz aus FieldNotes";
+"legacy.support.email_subject" = "FieldNotes Support-Anfrage";
+"legacy.whatsnew.title" = "Neu in dieser Version";
+
+/* Migrated to Localizable.xcstrings but never deleted here.
+   The catalog's de value is intentionally different. */
+"settings.title" = "App-Einstellungen (Legacy)";

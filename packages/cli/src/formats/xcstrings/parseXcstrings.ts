@@ -73,10 +73,12 @@ export function parseXcstringsCatalog(content: string): XcstringsCatalog {
  *
  * versionId is a hash of this exact byte output (hashVersionId over the
  * slice in aggregateFiles), so any change here re-versions every customer
- * xcstrings file and re-triggers translation fleet-wide. The byte-exact
- * tests on this format are the contract.
+ * xcstrings file and re-triggers translation fleet-wide. Download merges
+ * (mergeXcstrings) also write catalogs through it, so repeated merges must
+ * round-trip byte-identically. The byte-exact tests on this format are the
+ * contract.
  */
-export function serializeXcstringsSlice(catalog: XcstringsCatalog): string {
+export function serializeXcstrings(catalog: XcstringsCatalog): string {
   return JSON.stringify(catalog, null, 2) + '\n';
 }
 
@@ -116,7 +118,7 @@ export function parseXcstrings(content: string): string {
       },
     ]);
   }
-  return serializeXcstringsSlice({
+  return serializeXcstrings({
     ...catalog,
     strings: Object.fromEntries(slicedEntries),
   });
