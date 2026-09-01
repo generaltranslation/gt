@@ -1,5 +1,13 @@
 # @generaltranslation/react-core
 
+## 11.1.19
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.1.10
+  - gt-i18n@1.0.20
+
 ## 11.1.18
 
 ### Patch Changes
