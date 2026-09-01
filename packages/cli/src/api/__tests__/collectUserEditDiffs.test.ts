@@ -259,4 +259,146 @@ describe('collectAndSendUserEditDiffs', () => {
     expect(gt.downloadFileBatch).toHaveBeenCalledTimes(1);
     expect(gt.submitUserEditDiffs).toHaveBeenCalledTimes(1);
   });
+
+  const buildXcstringsSettings = (catalogPath: string) =>
+    createMockSettings({
+      configDirectory: tempDir,
+      config: path.join(tempDir, 'gt.config.json'),
+      defaultLocale: 'en',
+      locales: ['ja'],
+      _branchId: 'branch1',
+      files: {
+        resolvedPaths: { xcstrings: [catalogPath] },
+        placeholderPaths: { xcstrings: [catalogPath] },
+        transformPaths: {},
+      },
+    });
+
+  const mockOneServerTranslation = (locale: string) => {
+    vi.mocked(gt.queryFileData).mockResolvedValue({
+      translatedFiles: [
+        {
+          branchId: 'branch1',
+          fileId: 'file1',
+          versionId: 'version1',
+          locale,
+          completedAt: new Date().toISOString(),
+        },
+      ],
+    });
+    vi.mocked(gt.downloadFileBatch).mockResolvedValue({
+      files: [
+        {
+          branchId: 'branch1',
+          fileId: 'file1',
+          versionId: 'version1',
+          locale,
+          data: 'server slice',
+        },
+      ],
+    });
+    vi.mocked(getGitUnifiedDiff).mockResolvedValue('mock-diff');
+  };
+
+  const xcstringsFiles: FileReference[] = [
+    {
+      fileName: 'Localizable.xcstrings',
+      fileFormat: 'XCSTRINGS',
+      branchId: 'branch1',
+      fileId: 'file1',
+      versionId: 'version1',
+    },
+  ];
+
+  it('submits per-locale xcstrings slices, never the whole catalog', async () => {
+    // One catalog holds every locale; submitting the raw file would overwrite
+    // each locale's stored translation with the multi-locale catalog.
+    const catalogPath = path.join(tempDir, 'Localizable.xcstrings');
+    fs.writeFileSync(
+      catalogPath,
+      JSON.stringify({
+        sourceLanguage: 'en',
+        strings: {
+          greeting: {
+            localizations: {
+              en: { stringUnit: { state: 'translated', value: 'Hello' } },
+              ja: { stringUnit: { state: 'translated', value: 'Edited' } },
+            },
+          },
+        },
+      })
+    );
+    const settings = buildXcstringsSettings(catalogPath);
+
+    writeLockFile({
+      version: 1,
+      entries: {
+        branch1: {
+          file1: {
+            version1: {
+              ja: {
+                updatedAt: new Date().toISOString(),
+                postProcessHash: hashStringSync('stale content'),
+              },
+            },
+          },
+        },
+      },
+    });
+
+    mockOneServerTranslation('ja');
+
+    await collectAndSendUserEditDiffs(xcstringsFiles, settings);
+
+    expect(gt.submitUserEditDiffs).toHaveBeenCalledTimes(1);
+    const { diffs } = vi.mocked(gt.submitUserEditDiffs).mock.calls[0][0];
+    expect(diffs).toHaveLength(1);
+    expect(diffs[0].locale).toBe('ja');
+    const submitted = JSON.parse(diffs[0].localContent) as {
+      strings: Record<string, { localizations?: Record<string, unknown> }>;
+    };
+    expect(Object.keys(submitted.strings.greeting.localizations!)).toEqual([
+      'ja',
+    ]);
+  });
+
+  it('skips xcstrings candidates whose catalog holds nothing for the locale', async () => {
+    const catalogPath = path.join(tempDir, 'Localizable.xcstrings');
+    fs.writeFileSync(
+      catalogPath,
+      JSON.stringify({
+        sourceLanguage: 'en',
+        strings: {
+          greeting: {
+            localizations: {
+              en: { stringUnit: { state: 'translated', value: 'Hello' } },
+            },
+          },
+        },
+      })
+    );
+    const settings = buildXcstringsSettings(catalogPath);
+
+    writeLockFile({
+      version: 1,
+      entries: {
+        branch1: {
+          file1: {
+            version1: {
+              ja: {
+                updatedAt: new Date().toISOString(),
+                postProcessHash: hashStringSync('stale content'),
+              },
+            },
+          },
+        },
+      },
+    });
+
+    mockOneServerTranslation('ja');
+
+    await collectAndSendUserEditDiffs(xcstringsFiles, settings);
+
+    expect(gt.submitUserEditDiffs).not.toHaveBeenCalled();
+  });
 });
