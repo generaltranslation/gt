@@ -664,6 +664,79 @@ describe('aggregateFiles - Empty File Handling', () => {
     });
   });
 
+  describe('Apple .stringsdict files', () => {
+    // The escapes below are load-bearing: they must reach the API verbatim.
+    const stringsdictContent =
+      '<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0">\n<dict>\n  <key>%d file(s) \\"quoted\\"</key>\n</dict>\n</plist>\n';
+
+    beforeEach(() => {
+      // Make any trip through the markdown-oriented sanitizer detectable: it
+      // would strip the backslash escapes the assertions below depend on.
+      mockSanitizeFileContent.mockImplementation((content) =>
+        content.replace(/\\/g, '')
+      );
+    });
+
+    it('should upload .stringsdict files verbatim with the APPLE_STRINGSDICT format', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            stringsdict: ['/full/path/en.lproj/Localizable.stringsdict'],
+          },
+          placeholderPaths: {},
+        },
+        options: {},
+        defaultLocale: 'en',
+      };
+
+      mockReadFile.mockReturnValueOnce(stringsdictContent);
+
+      const { files: result } = await aggregateTestFiles(settings);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        fileName: 'en.lproj/Localizable.stringsdict',
+        fileFormat: 'APPLE_STRINGSDICT',
+        locale: 'en',
+      });
+      expect(result[0].content).toBe(stringsdictContent);
+      expect(result[0].fileId).toBe(
+        hashStringSync('en.lproj/Localizable.stringsdict')
+      );
+      expect(result[0].versionId).toBe(
+        hashVersionId(stringsdictContent, false)
+      );
+    });
+
+    it('should skip empty .stringsdict files and log a warning', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            stringsdict: [
+              '/full/path/empty.stringsdict',
+              '/full/path/valid.stringsdict',
+            ],
+          },
+          placeholderPaths: {},
+        },
+        options: {},
+        defaultLocale: 'en',
+      };
+
+      mockReadFile
+        .mockReturnValueOnce('   \n\t  ') // whitespace only
+        .mockReturnValueOnce(stringsdictContent); // valid file
+
+      const { files: result } = await aggregateTestFiles(settings);
+
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        'Skipping empty.stringsdict: File is empty'
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0].fileName).toBe('valid.stringsdict');
+    });
+  });
+
   describe('Mixed file types with empty files', () => {
     it('should skip empty files across all file types and process valid ones', async () => {
       const settings = {

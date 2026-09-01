@@ -72,7 +72,8 @@
           "TWILIO_CONTENT_JSON",
           "LOTTIE",
           "SVG",
-          "APPLE_STRINGS"
+          "APPLE_STRINGS",
+          "APPLE_STRINGSDICT"
         ]
       },
       "ModelProvider": {
@@ -616,7 +617,8 @@
                                 "TWILIO_CONTENT_JSON",
                                 "LOTTIE",
                                 "SVG",
-                                "APPLE_STRINGS"
+                                "APPLE_STRINGS",
+                                "APPLE_STRINGSDICT"
                               ]
                             },
                             "dataFormat": {
@@ -929,7 +931,8 @@
                                 "TWILIO_CONTENT_JSON",
                                 "LOTTIE",
                                 "SVG",
-                                "APPLE_STRINGS"
+                                "APPLE_STRINGS",
+                                "APPLE_STRINGSDICT"
                               ]
                             },
                             "dataFormat": {
@@ -1000,7 +1003,8 @@
                                   "TWILIO_CONTENT_JSON",
                                   "LOTTIE",
                                   "SVG",
-                                  "APPLE_STRINGS"
+                                  "APPLE_STRINGS",
+                                  "APPLE_STRINGSDICT"
                                 ]
                               },
                               "dataFormat": {
@@ -1027,7 +1031,8 @@
                                   "TWILIO_CONTENT_JSON",
                                   "LOTTIE",
                                   "SVG",
-                                  "APPLE_STRINGS"
+                                  "APPLE_STRINGS",
+                                  "APPLE_STRINGSDICT"
                                 ]
                               }
                             },
@@ -2312,7 +2317,8 @@
                             "TWILIO_CONTENT_JSON",
                             "LOTTIE",
                             "SVG",
-                            "APPLE_STRINGS"
+                            "APPLE_STRINGS",
+                            "APPLE_STRINGSDICT"
                           ]
                         }
                       },

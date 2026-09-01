@@ -18,3 +18,21 @@ describe('transformFormat - Apple .strings', () => {
     expect(getFileExtensionForFormat('APPLE_STRINGS')).toBe('strings');
   });
 });
+
+describe('transformFormat - Apple .stringsdict', () => {
+  it('maps the config file key to the API file format enum value', () => {
+    expect(CONFIG_FILE_TYPE_TO_FILE_FORMAT.stringsdict).toBe(
+      'APPLE_STRINGSDICT'
+    );
+  });
+
+  it('maps the API file format enum value back to the config file key', () => {
+    expect(FILE_FORMAT_TO_CONFIG_FILE_TYPE.APPLE_STRINGSDICT).toBe(
+      'stringsdict'
+    );
+  });
+
+  it('writes translated files with the matching extension', () => {
+    expect(getFileExtensionForFormat('APPLE_STRINGSDICT')).toBe('stringsdict');
+  });
+});

@@ -17,6 +17,7 @@ const SUPPORTED_TRANSFORMATIONS = {
   LOTTIE: ['LOTTIE'],
   SVG: ['SVG'],
   APPLE_STRINGS: ['APPLE_STRINGS'],
+  APPLE_STRINGSDICT: ['APPLE_STRINGSDICT'],
 } as const satisfies Record<FileFormat, FileFormat[]>;
 
 /**

@@ -8,6 +8,7 @@ import {
   readFile,
   readBinaryFileBase64,
 } from '../../fs/findFilepath.js';
+import { isBinaryFileFormat } from 'generaltranslation/types';
 import { Settings } from '../../types/index.js';
 import type { FileFormat, DataFormat, FileToUpload } from '../../types/data.js';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
@@ -395,40 +396,50 @@ export async function aggregateFiles(
     files.push(...lottieFiles);
   }
 
-  // Apple .strings files are uploaded verbatim. Their backslash escapes and
-  // format specifiers must survive byte-for-byte, so they skip the generic
-  // markdown-oriented preprocessing below.
-  //
-  // The raw bytes are carried base64 rather than read as UTF-8 because older
-  // Xcode wrote .strings as UTF-16. The API selects a decoder from the byte
-  // order mark, so decoding here would destroy the only signal it has.
-  if (filePaths.strings) {
-    const stringsFiles = filePaths.strings
+  // Apple .strings/.stringsdict files are uploaded verbatim. Their backslash
+  // escapes and format specifiers must survive byte-for-byte, so they skip the
+  // generic markdown-oriented preprocessing below.
+  for (const [fileType, fileFormat] of [
+    ['strings', 'APPLE_STRINGS'],
+    ['stringsdict', 'APPLE_STRINGSDICT'],
+  ] as const) {
+    if (!filePaths[fileType]) continue;
+    // Content must already be base64 exactly when the format is binary, or the
+    // upload path encodes it a second time. Only .strings qualifies today: its
+    // UTF-16 bytes reach an API decoder that reads the byte order mark, and
+    // .stringsdict has no such decoder yet.
+    const readsRawBytes = isBinaryFileFormat(fileFormat);
+    const appleFiles = filePaths[fileType]
       .map((filePath) => {
-        const content = readBinaryFileBase64(filePath);
+        const content = readsRawBytes
+          ? readBinaryFileBase64(filePath)
+          : readFile(filePath);
         const relativePath = getRelative(filePath);
         return {
           content,
           fileName: relativePath,
-          fileFormat: 'APPLE_STRINGS' as const,
-          ...getTransformFormatProperty(settings, 'strings'),
+          fileFormat,
+          ...getTransformFormatProperty(settings, fileType),
           fileId: hashStringSync(relativePath),
           versionId: hashVersionId(content, requiresReviewPaths.has(filePath)),
           locale: settings.defaultLocale,
         } satisfies FileToUpload;
       })
       .filter((file) => {
-        // The bytes travel untouched; they are read as UTF-8 here only to spot
-        // a file with nothing to translate. UTF-16 reads as non-blank, which is
-        // the safe default — the API decodes it properly.
-        if (!Buffer.from(file.content, 'base64').toString('utf8').trim()) {
+        // Blank check only; the content itself travels untouched. A UTF-16
+        // file reads as non-blank here, which is the safe default — the API
+        // decodes it properly.
+        const text = readsRawBytes
+          ? Buffer.from(file.content, 'base64').toString('utf8')
+          : file.content;
+        if (!text.trim()) {
           logger.warn(`Skipping ${file.fileName}: File is empty`);
           recordWarning('skipped_file', file.fileName, 'File is empty');
           return false;
         }
         return true;
       });
-    files.push(...stringsFiles);
+    files.push(...appleFiles);
   }
 
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
@@ -437,7 +448,8 @@ export async function aggregateFiles(
       fileType === 'yaml' ||
       fileType === 'twilioContentJson' ||
       fileType === 'lottie' ||
-      fileType === 'strings'
+      fileType === 'strings' ||
+      fileType === 'stringsdict'
     )
       continue;
     if (filePaths[fileType]) {
