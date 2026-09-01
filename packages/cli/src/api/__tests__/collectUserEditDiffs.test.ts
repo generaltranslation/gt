@@ -191,6 +191,157 @@ describe('collectAndSendUserEditDiffs', () => {
     expect(gt.submitUserEditDiffs).toHaveBeenCalledTimes(1);
   });
 
+  describe('xcstrings catalogs', () => {
+    const catalogRelPath = 'Sources/Localizable.xcstrings';
+
+    const buildXcstringsSettings = () =>
+      createMockSettings({
+        configDirectory: tempDir,
+        config: path.join(tempDir, 'gt.config.json'),
+        defaultLocale: 'en',
+        locales: ['es'],
+        _branchId: 'branch1',
+        files: {
+          resolvedPaths: {
+            xcstrings: [path.join(tempDir, catalogRelPath)],
+          },
+          placeholderPaths: {
+            xcstrings: [path.join(tempDir, catalogRelPath)],
+          },
+          transformPaths: {},
+        },
+      });
+
+    const catalogContent = JSON.stringify(
+      {
+        sourceLanguage: 'en',
+        strings: {
+          greeting: {
+            localizations: {
+              en: { stringUnit: { state: 'translated', value: 'Hello' } },
+              es: { stringUnit: { state: 'translated', value: 'Hola' } },
+            },
+          },
+          Save: {
+            localizations: {
+              es: { stringUnit: { state: 'translated', value: 'Guardar' } },
+            },
+          },
+        },
+        version: '1.0',
+      },
+      null,
+      2
+    );
+
+    // The server serializes with its own top-level key order and whitespace.
+    const serverEsSlice = JSON.stringify({
+      sourceLanguage: 'en',
+      version: '1.0',
+      strings: {
+        greeting: {
+          localizations: {
+            es: { stringUnit: { state: 'translated', value: 'Hola' } },
+          },
+        },
+        Save: {
+          localizations: {
+            es: { stringUnit: { state: 'translated', value: 'Guardar' } },
+          },
+        },
+      },
+    });
+
+    const seedCatalogAndLock = (localCatalog: string) => {
+      const catalogPath = path.join(tempDir, catalogRelPath);
+      fs.mkdirSync(path.dirname(catalogPath), { recursive: true });
+      fs.writeFileSync(catalogPath, localCatalog);
+      // No postProcessHash: the locale is always a diff candidate.
+      writeLockFile({
+        version: 1,
+        entries: {
+          branch1: {
+            file1: {
+              version1: {
+                es: { updatedAt: new Date().toISOString() },
+              },
+            },
+          },
+        },
+      });
+    };
+
+    const mockServerResponses = () => {
+      vi.mocked(gt.queryFileData).mockResolvedValue({
+        translatedFiles: [
+          {
+            branchId: 'branch1',
+            fileId: 'file1',
+            versionId: 'version1',
+            locale: 'es',
+            completedAt: new Date().toISOString(),
+          },
+        ],
+      });
+      vi.mocked(gt.downloadFileBatch).mockResolvedValue({
+        files: [
+          {
+            branchId: 'branch1',
+            fileId: 'file1',
+            versionId: 'version1',
+            locale: 'es',
+            data: serverEsSlice,
+          },
+        ],
+      });
+    };
+
+    const files: FileReference[] = [
+      {
+        fileName: catalogRelPath,
+        fileFormat: 'XCSTRINGS',
+        branchId: 'branch1',
+        fileId: 'file1',
+        versionId: 'version1',
+      },
+    ];
+
+    it('submits nothing when the catalog locale matches the server slice', async () => {
+      const settings = buildXcstringsSettings();
+      seedCatalogAndLock(catalogContent);
+      mockServerResponses();
+
+      await collectAndSendUserEditDiffs(files, settings);
+
+      // The multi-locale catalog itself never gets diffed against the
+      // single-locale server slice.
+      expect(getGitUnifiedDiff).not.toHaveBeenCalled();
+      expect(gt.submitUserEditDiffs).not.toHaveBeenCalled();
+    });
+
+    it('submits the extracted locale slice, not the catalog, when edited', async () => {
+      const settings = buildXcstringsSettings();
+      seedCatalogAndLock(catalogContent.replace('Guardar', 'GUARDAR!'));
+      mockServerResponses();
+      vi.mocked(getGitUnifiedDiff).mockResolvedValue('mock-diff');
+
+      await collectAndSendUserEditDiffs(files, settings);
+
+      expect(gt.submitUserEditDiffs).toHaveBeenCalledTimes(1);
+      const submitted = vi.mocked(gt.submitUserEditDiffs).mock.calls[0][0]
+        .diffs[0];
+      expect(submitted.locale).toBe('es');
+      const localContent = JSON.parse(submitted.localContent);
+      // Single-locale slice with the local edit, no other locales leaked
+      expect(localContent.strings.Save.localizations).toEqual({
+        es: { stringUnit: { state: 'translated', value: 'GUARDAR!' } },
+      });
+      expect(localContent.strings.greeting.localizations).toEqual({
+        es: { stringUnit: { state: 'translated', value: 'Hola' } },
+      });
+    });
+  });
+
   it('uses the latest downloaded version when the uploaded version has changed', async () => {
     const settings = buildSettings();
     const translatedPath = path.join(tempDir, 'docs', 'ja', 'doc.md');

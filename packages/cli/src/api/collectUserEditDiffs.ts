@@ -15,6 +15,12 @@ import { randomUUID } from 'node:crypto';
 import { hashStringSync } from '../utils/hash.js';
 import { extractJson } from '../formats/json/extractJson.js';
 import { extractYaml } from '../formats/yaml/extractYaml.js';
+import { extractXcstrings } from '../formats/xcstrings/extractXcstrings.js';
+import {
+  parseXcstringsCatalog,
+  serializeXcstrings,
+} from '../formats/xcstrings/parseXcstrings.js';
+import stringify from 'fast-json-stable-stringify';
 
 type LatestDownloadedVersion = {
   versionId: string;
@@ -163,6 +169,65 @@ export async function collectAndSendUserEditDiffs(
         )
           .toString('base64')
           .replace(/=+$/g, '');
+
+        // Xcstrings catalogs hold every locale in one on-disk file, so the
+        // local comparand is the extracted target-locale slice, never the
+        // whole catalog — diffing the catalog against the server's
+        // single-locale slice would read as an edit on every run and submit
+        // the full catalog (other locales included) as this locale's content.
+        if (c.fileName.endsWith('.xcstrings')) {
+          const rawLocalContent = await fs.promises.readFile(
+            c.outputPath,
+            'utf8'
+          );
+          const localSlice = extractXcstrings(
+            rawLocalContent,
+            c.fileName,
+            c.locale
+          );
+          if (!localSlice) continue;
+          let serverSlice: string;
+          try {
+            serverSlice = serializeXcstrings(
+              parseXcstringsCatalog(serverContent)
+            );
+          } catch {
+            continue;
+          }
+          // Key order is serialization-dependent (the server orders top-level
+          // fields its own way); only content differences are user edits.
+          if (
+            stringify(JSON.parse(serverSlice)) ===
+            stringify(JSON.parse(localSlice))
+          ) {
+            continue;
+          }
+          const tempServerFile = path.join(tempDir, `${safeName}.server`);
+          const tempLocalFile = path.join(tempDir, `${safeName}.local`);
+          await fs.promises.writeFile(tempServerFile, serverSlice, 'utf8');
+          await fs.promises.writeFile(tempLocalFile, localSlice, 'utf8');
+          const diff = await getGitUnifiedDiff(tempServerFile, tempLocalFile);
+          for (const tempFile of [tempServerFile, tempLocalFile]) {
+            try {
+              await fs.promises.unlink(tempFile);
+            } catch {
+              // Ignore cleanup errors for temporary comparison files.
+            }
+          }
+          if (diff && diff.trim().length > 0) {
+            collectedDiffs.push({
+              fileName: c.fileName,
+              locale: c.locale,
+              diff,
+              branchId: c.branchId,
+              versionId: c.versionId,
+              fileId: c.fileId,
+              localContent: localSlice,
+            } satisfies SubmitUserEditDiff);
+          }
+          continue;
+        }
+
         const tempServerFile = path.join(tempDir, `${safeName}.server`);
         await fs.promises.writeFile(tempServerFile, serverContent, 'utf8');
 
