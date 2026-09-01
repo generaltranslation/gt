@@ -1,7 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { aggregateFiles } from '../aggregateFiles.js';
 import { logger } from '../../../console/logger.js';
-import { readFile, getRelative } from '../../../fs/findFilepath.js';
+import {
+  readFile,
+  readBinaryFileBase64,
+  getRelative,
+} from '../../../fs/findFilepath.js';
 import { parseJson } from '../../json/parseJson.js';
 import parseYaml from '../../yaml/parseYaml.js';
 import sanitizeFileContent from '../../../utils/sanitizeFileContent.js';
@@ -28,6 +32,7 @@ vi.mock('../../../utils/validateMdx.js');
 
 const mockLogWarning = vi.mocked(logger.warn);
 const mockReadFile = vi.mocked(readFile);
+const mockReadBinaryFileBase64 = vi.mocked(readBinaryFileBase64);
 const mockGetRelative = vi.mocked(getRelative);
 const mockParseJson = vi.mocked(parseJson);
 const mockParseYaml = vi.mocked(parseYaml);
@@ -587,6 +592,9 @@ describe('aggregateFiles - Empty File Handling', () => {
     // The escapes below are load-bearing: they must reach the API verbatim.
     const stringsContent =
       '/* Greeting */\n"hello" = "Line1\\nLine2 \\"quoted\\" 100%%";\n';
+    const stringsBase64 = Buffer.from(stringsContent, 'utf8').toString(
+      'base64'
+    );
 
     beforeEach(() => {
       // Make any trip through the markdown-oriented sanitizer detectable: it
@@ -608,7 +616,7 @@ describe('aggregateFiles - Empty File Handling', () => {
         defaultLocale: 'en',
       };
 
-      mockReadFile.mockReturnValueOnce(stringsContent);
+      mockReadBinaryFileBase64.mockReturnValueOnce(stringsBase64);
 
       const { files: result } = await aggregateTestFiles(settings);
 
@@ -618,11 +626,14 @@ describe('aggregateFiles - Empty File Handling', () => {
         fileFormat: 'APPLE_STRINGS',
         locale: 'en',
       });
-      expect(result[0].content).toBe(stringsContent);
+      expect(result[0].content).toBe(stringsBase64);
+      expect(Buffer.from(result[0].content, 'base64').toString('utf8')).toBe(
+        stringsContent
+      );
       expect(result[0].fileId).toBe(
         hashStringSync('en.lproj/Localizable.strings')
       );
-      expect(result[0].versionId).toBe(hashVersionId(stringsContent, false));
+      expect(result[0].versionId).toBe(hashVersionId(stringsBase64, false));
     });
 
     it('should skip empty .strings files and log a warning', async () => {
@@ -637,9 +648,11 @@ describe('aggregateFiles - Empty File Handling', () => {
         defaultLocale: 'en',
       };
 
-      mockReadFile
-        .mockReturnValueOnce('   \n\t  ') // whitespace only
-        .mockReturnValueOnce(stringsContent); // valid file
+      mockReadBinaryFileBase64
+        .mockReturnValueOnce(
+          Buffer.from('   \n\t  ', 'utf8').toString('base64')
+        ) // whitespace only
+        .mockReturnValueOnce(stringsBase64); // valid file
 
       const { files: result } = await aggregateTestFiles(settings);
 

@@ -398,10 +398,14 @@ export async function aggregateFiles(
   // Apple .strings files are uploaded verbatim. Their backslash escapes and
   // format specifiers must survive byte-for-byte, so they skip the generic
   // markdown-oriented preprocessing below.
+  //
+  // The raw bytes are carried base64 rather than read as UTF-8 because older
+  // Xcode wrote .strings as UTF-16. The API selects a decoder from the byte
+  // order mark, so decoding here would destroy the only signal it has.
   if (filePaths.strings) {
     const stringsFiles = filePaths.strings
       .map((filePath) => {
-        const content = readFile(filePath);
+        const content = readBinaryFileBase64(filePath);
         const relativePath = getRelative(filePath);
         return {
           content,
@@ -414,7 +418,10 @@ export async function aggregateFiles(
         } satisfies FileToUpload;
       })
       .filter((file) => {
-        if (!file.content.trim()) {
+        // The bytes travel untouched; they are read as UTF-8 here only to spot
+        // a file with nothing to translate. UTF-16 reads as non-blank, which is
+        // the safe default — the API decodes it properly.
+        if (!Buffer.from(file.content, 'base64').toString('utf8').trim()) {
           logger.warn(`Skipping ${file.fileName}: File is empty`);
           recordWarning('skipped_file', file.fileName, 'File is empty');
           return false;
