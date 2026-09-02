@@ -22,7 +22,9 @@ export type FileFormat =
   | 'POT'
   | 'TWILIO_CONTENT_JSON'
   | 'LOTTIE'
-  | 'SVG';
+  | 'SVG'
+  | 'APPLE_STRINGS'
+  | 'APPLE_STRINGSDICT';
 
 export type ModelProvider = 'ANTHROPIC' | 'OPENAI' | 'XAI' | 'GOOGLE';
 
@@ -208,7 +210,9 @@ export type UploadSourceFilesData = {
           | 'POT'
           | 'TWILIO_CONTENT_JSON'
           | 'LOTTIE'
-          | 'SVG';
+          | 'SVG'
+          | 'APPLE_STRINGS'
+          | 'APPLE_STRINGSDICT';
         dataFormat?: string;
         locale: string;
         fileId?: string;
@@ -322,7 +326,9 @@ export type UploadTranslationsData = {
           | 'POT'
           | 'TWILIO_CONTENT_JSON'
           | 'LOTTIE'
-          | 'SVG';
+          | 'SVG'
+          | 'APPLE_STRINGS'
+          | 'APPLE_STRINGSDICT';
         dataFormat?: string;
         locale: string;
         fileId?: string;
@@ -351,7 +357,9 @@ export type UploadTranslationsData = {
           | 'POT'
           | 'TWILIO_CONTENT_JSON'
           | 'LOTTIE'
-          | 'SVG';
+          | 'SVG'
+          | 'APPLE_STRINGS'
+          | 'APPLE_STRINGSDICT';
         dataFormat?: string;
         locale: string;
         transformFormat?:
@@ -368,7 +376,9 @@ export type UploadTranslationsData = {
           | 'POT'
           | 'TWILIO_CONTENT_JSON'
           | 'LOTTIE'
-          | 'SVG';
+          | 'SVG'
+          | 'APPLE_STRINGS'
+          | 'APPLE_STRINGSDICT';
       }>;
     }>;
     sourceLocale?: string;
@@ -840,7 +850,9 @@ export type EnqueueFileTranslationsData = {
         | 'POT'
         | 'TWILIO_CONTENT_JSON'
         | 'LOTTIE'
-        | 'SVG';
+        | 'SVG'
+        | 'APPLE_STRINGS'
+        | 'APPLE_STRINGSDICT';
     }>;
     targetLocales?: Array<string>;
     sourceLocale?: string;
