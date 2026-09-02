@@ -66,14 +66,14 @@ describe('parseFilesConfig', () => {
       const files = {
         androidStrings: ['res/values-[locale]/strings.xml'],
         json: ['src/[locale]/messages.json'],
-        strings: ['[locale].lproj/Localizable.strings'],
+        dotStrings: ['[locale].lproj/Localizable.strings'],
         gt: 'dist/[locale].json',
       };
 
       expect(resolveLocaleFiles(files, 'fr-CA')).toMatchObject({
         androidStrings: ['res/values-fr-rCA/strings.xml'],
         json: ['src/fr-CA/messages.json'],
-        strings: ['fr-CA.lproj/Localizable.strings'],
+        dotStrings: ['fr-CA.lproj/Localizable.strings'],
         gt: 'dist/fr-CA.json',
       });
     });

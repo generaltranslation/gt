@@ -16,10 +16,12 @@ export function androidLocaleQualifier(locale: string): string {
     return locale;
   }
 
-  // Subtags come from the tag as written. `Intl.Locale` resolves CLDR aliases,
-  // reading `tl` as `fil` and `cnr` as `sr-ME`, and Android matches those
-  // directories to different devices. `getLocaleProperties` is also wrong here
-  // because it maximizes, reporting script `Latn` and region `ES` for `es`.
+  // Subtags come from the tag as written. The locale helpers in
+  // `@generaltranslation/format` each answer a different question and give the
+  // wrong directory here: `standardizeLocale` reads `tl` as `fil` and `cnr` as
+  // `sr-ME`, which Android matches to different devices, `getLocaleProperties`
+  // maximizes and reports script `Latn` for a bare `es`, and `isValidLocale`
+  // rejects supported locales including `el-EL`.
   const [language, ...rest] = locale.split('-');
   const script = rest.find((part) => /^[A-Za-z]{4}$/.test(part));
   const region = rest.find(

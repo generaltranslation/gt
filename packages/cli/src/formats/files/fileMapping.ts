@@ -58,10 +58,21 @@ export function createFileMapping(
       const transformFormat = transformFormats?.[typeIndex];
 
       if (transformPath) {
+        // `[locale]` and `{locale}` both name a path here, so both take the
+        // spelling `resolveLocaleFiles` uses. Otherwise a configured transform
+        // names a file nothing else writes to. The match side takes it too: it
+        // runs against a source path already in that spelling.
+        const pathLocale = localeForFilePath(typeIndex, locale);
+        const targetLocaleProperties = {
+          ...getConfiguredLocaleProperties(locale),
+          code: pathLocale,
+        };
+        const defaultLocaleProperties = {
+          ...getConfiguredLocaleProperties(defaultLocale),
+          code: localeForFilePath(typeIndex, defaultLocale),
+        };
+
         if (typeof transformPath === 'string') {
-          // Must match the spelling `resolveLocaleFiles` uses, or a configured
-          // transform names a file nothing else writes to.
-          const pathLocale = localeForFilePath(typeIndex, locale);
           translatedFiles = translatedFiles.map((filePath) => {
             const directory = path.dirname(filePath);
             const fileName = path.basename(filePath);
@@ -72,11 +83,6 @@ export function createFileMapping(
             return path.join(directory, transformedFileName);
           });
         } else if (Array.isArray(transformPath)) {
-          // transformPath is an array of TransformOption objects
-          const targetLocaleProperties = getConfiguredLocaleProperties(locale);
-          const defaultLocaleProperties =
-            getConfiguredLocaleProperties(defaultLocale);
-
           translatedFiles = translatedFiles.map((filePath) => {
             const relativePath = getRelative(filePath);
 
@@ -119,10 +125,6 @@ export function createFileMapping(
             return filePath;
           });
         } else {
-          // transformPath is an object
-          const targetLocaleProperties = getConfiguredLocaleProperties(locale);
-          const defaultLocaleProperties =
-            getConfiguredLocaleProperties(defaultLocale);
           if (
             !transformPath.replace ||
             typeof transformPath.replace !== 'string'

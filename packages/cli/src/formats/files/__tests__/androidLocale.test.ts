@@ -183,8 +183,8 @@ describe('localeForFilePath', () => {
     // The registry is opt-in. Only Android is listed.
     for (const fileType of [
       'json',
-      'strings',
-      'stringsdict',
+      'dotStrings',
+      'dotStringsdict',
       'pot',
       'mdx',
     ] as const) {
