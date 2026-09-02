@@ -5,6 +5,8 @@ import os from 'node:os';
 import { collectAndSendUserEditDiffs } from '../collectUserEditDiffs.js';
 import { createMockSettings } from '../__mocks__/settings.js';
 import { gt } from '../../utils/gt.js';
+import { logger } from '../../console/logger.js';
+import { clearWarnings, getWarnings } from '../../state/translateWarnings.js';
 import type { FileReference } from 'generaltranslation/types';
 import type { DownloadedVersionsV1 } from '../../fs/config/downloadedVersions.js';
 
@@ -31,6 +33,7 @@ const utf16leWithBom = (text: string) =>
 describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
   const originalCwd = process.cwd();
   let tempDir: string;
+  let warn: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     tempDir = fs.realpathSync(
@@ -38,11 +41,14 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
     );
     process.chdir(tempDir);
     vi.clearAllMocks();
+    clearWarnings();
+    warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
   });
 
   afterEach(() => {
     process.chdir(originalCwd);
     fs.rmSync(tempDir, { recursive: true, force: true });
+    clearWarnings();
     vi.resetAllMocks();
   });
 
@@ -185,7 +191,7 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
     expect(diffs[0].localContent).toContain('"welcome" = "¡Hola!";');
   });
 
-  it('submits nothing for a UTF-16 .strings translation it cannot represent as text', async () => {
+  it('warns instead of submitting a UTF-16 .strings edit it cannot represent as text', async () => {
     const settings = buildSettings();
     seedLockFile();
     writeTranslation(
@@ -202,11 +208,39 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
     );
 
     // Reading UTF-16 bytes as UTF-8 yields U+FFFD, so there is no faithful
-    // diff or localContent to send. Sending nothing beats sending mojibake.
+    // diff or localContent to send. Sending nothing beats sending mojibake,
+    // but dropping the edit without saying so is its own failure.
     expect(gt.submitUserEditDiffs).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('Guardian/es.lproj/Localizable.strings')
+    );
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('UTF-8'));
+    expect(getWarnings()).toContainEqual({
+      category: 'skipped_file',
+      fileName: 'Guardian/es.lproj/Localizable.strings',
+      reason: expect.stringContaining('UTF-8'),
+    });
   });
 
-  it('submits nothing for a Lottie bundle, whose bytes have no text form', async () => {
+  it('stays quiet when a translation is byte-identical to the server copy', async () => {
+    const settings = buildSettings();
+    seedLockFile();
+    const unchanged = utf16leWithBom(TRANSLATION);
+    writeTranslation(unchanged);
+    mockServerDownload(unchanged.toString('base64'), 'APPLE_STRINGS');
+
+    await collectAndSendUserEditDiffs(
+      filesUnderTest('APPLE_STRINGS'),
+      settings
+    );
+
+    // Nothing was edited, so there is nothing to warn about.
+    expect(gt.submitUserEditDiffs).not.toHaveBeenCalled();
+    expect(warn).not.toHaveBeenCalled();
+    expect(getWarnings()).toHaveLength(0);
+  });
+
+  it('warns instead of submitting a changed Lottie bundle, whose bytes have no text form', async () => {
     const settings = createMockSettings({
       configDirectory: tempDir,
       config: path.join(tempDir, 'gt.config.json'),
@@ -247,5 +281,10 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
     );
 
     expect(gt.submitUserEditDiffs).not.toHaveBeenCalled();
+    expect(getWarnings()).toContainEqual({
+      category: 'skipped_file',
+      fileName: 'anim/es/spinner.lottie',
+      reason: expect.stringContaining('UTF-8'),
+    });
   });
 });
