@@ -405,9 +405,8 @@ export async function aggregateFiles(
   ] as const) {
     if (!filePaths[fileType]) continue;
     // Content must already be base64 exactly when the format is binary, or the
-    // upload path encodes it a second time. Only .strings qualifies today: its
-    // UTF-16 bytes reach an API decoder that reads the byte order mark, and
-    // .stringsdict has no such decoder yet.
+    // upload path encodes it a second time. Both formats qualify: their UTF-16
+    // bytes reach an API decoder that reads the byte order mark.
     const readsRawBytes = isBinaryFileFormat(fileFormat);
     const verbatimFiles = filePaths[fileType]
       .map((filePath) => {

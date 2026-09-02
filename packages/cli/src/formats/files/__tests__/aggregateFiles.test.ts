@@ -671,6 +671,9 @@ describe('aggregateFiles - Empty File Handling', () => {
     // The escapes below are load-bearing: they must reach the API verbatim.
     const stringsdictContent =
       '<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0">\n<dict>\n  <key>%d file(s) \\"quoted\\"</key>\n</dict>\n</plist>\n';
+    const stringsdictBase64 = Buffer.from(stringsdictContent, 'utf8').toString(
+      'base64'
+    );
 
     beforeEach(() => {
       // Make any trip through the markdown-oriented sanitizer detectable: it
@@ -692,7 +695,7 @@ describe('aggregateFiles - Empty File Handling', () => {
         defaultLocale: 'en',
       };
 
-      mockReadFile.mockReturnValueOnce(stringsdictContent);
+      mockReadBinaryFileBase64.mockReturnValueOnce(stringsdictBase64);
 
       const { files: result } = await aggregateTestFiles(settings);
 
@@ -702,13 +705,14 @@ describe('aggregateFiles - Empty File Handling', () => {
         fileFormat: 'DOT_STRINGSDICT',
         locale: 'en',
       });
-      expect(result[0].content).toBe(stringsdictContent);
+      expect(result[0].content).toBe(stringsdictBase64);
+      expect(Buffer.from(result[0].content, 'base64').toString('utf8')).toBe(
+        stringsdictContent
+      );
       expect(result[0].fileId).toBe(
         hashStringSync('en.lproj/Localizable.stringsdict')
       );
-      expect(result[0].versionId).toBe(
-        hashVersionId(stringsdictContent, false)
-      );
+      expect(result[0].versionId).toBe(hashVersionId(stringsdictBase64, false));
     });
 
     it('should skip empty .stringsdict files and log a warning', async () => {
@@ -726,9 +730,11 @@ describe('aggregateFiles - Empty File Handling', () => {
         defaultLocale: 'en',
       };
 
-      mockReadFile
-        .mockReturnValueOnce('   \n\t  ') // whitespace only
-        .mockReturnValueOnce(stringsdictContent); // valid file
+      mockReadBinaryFileBase64
+        .mockReturnValueOnce(
+          Buffer.from('   \n\t  ', 'utf8').toString('base64')
+        ) // whitespace only
+        .mockReturnValueOnce(stringsdictBase64); // valid file
 
       const { files: result } = await aggregateTestFiles(settings);
 
