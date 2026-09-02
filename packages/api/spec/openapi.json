@@ -73,7 +73,8 @@
           "LOTTIE",
           "SVG",
           "DOT_STRINGS",
-          "DOT_STRINGSDICT"
+          "DOT_STRINGSDICT",
+          "ANDROID_STRINGS"
         ]
       },
       "ModelProvider": {
@@ -618,7 +619,8 @@
                                 "LOTTIE",
                                 "SVG",
                                 "DOT_STRINGS",
-                                "DOT_STRINGSDICT"
+                                "DOT_STRINGSDICT",
+                                "ANDROID_STRINGS"
                               ]
                             },
                             "dataFormat": {
@@ -932,7 +934,8 @@
                                 "LOTTIE",
                                 "SVG",
                                 "DOT_STRINGS",
-                                "DOT_STRINGSDICT"
+                                "DOT_STRINGSDICT",
+                                "ANDROID_STRINGS"
                               ]
                             },
                             "dataFormat": {
@@ -1004,7 +1007,8 @@
                                   "LOTTIE",
                                   "SVG",
                                   "DOT_STRINGS",
-                                  "DOT_STRINGSDICT"
+                                  "DOT_STRINGSDICT",
+                                  "ANDROID_STRINGS"
                                 ]
                               },
                               "dataFormat": {
@@ -1032,7 +1036,8 @@
                                   "LOTTIE",
                                   "SVG",
                                   "DOT_STRINGS",
-                                  "DOT_STRINGSDICT"
+                                  "DOT_STRINGSDICT",
+                                  "ANDROID_STRINGS"
                                 ]
                               }
                             },
@@ -2318,7 +2323,8 @@
                             "LOTTIE",
                             "SVG",
                             "DOT_STRINGS",
-                            "DOT_STRINGSDICT"
+                            "DOT_STRINGSDICT",
+                            "ANDROID_STRINGS"
                           ]
                         }
                       },

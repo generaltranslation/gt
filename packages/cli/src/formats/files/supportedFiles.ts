@@ -12,6 +12,7 @@ export const SUPPORTED_FILE_EXTENSIONS = [
   'lottie',
   'dotStrings',
   'dotStringsdict',
+  'androidStrings',
 ] as const;
 
 export const FILE_EXT_TO_EXT_LABEL = {
@@ -28,4 +29,5 @@ export const FILE_EXT_TO_EXT_LABEL = {
   lottie: 'Lottie',
   dotStrings: '.strings',
   dotStringsdict: '.stringsdict',
+  androidStrings: 'Android strings.xml',
 };

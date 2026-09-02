@@ -19,6 +19,7 @@ describe('isSupportedFileFormatTransform', () => {
     'SVG',
     'DOT_STRINGS',
     'DOT_STRINGSDICT',
+    'ANDROID_STRINGS',
   ];
 
   it('supports identity transforms by default', () => {
