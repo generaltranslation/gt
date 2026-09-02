@@ -400,8 +400,8 @@ export async function aggregateFiles(
   // escapes and format specifiers must survive byte-for-byte, so they skip the
   // generic markdown-oriented preprocessing below.
   for (const [fileType, fileFormat] of [
-    ['strings', 'APPLE_STRINGS'],
-    ['stringsdict', 'APPLE_STRINGSDICT'],
+    ['strings', 'DOT_STRINGS'],
+    ['stringsdict', 'DOT_STRINGSDICT'],
   ] as const) {
     if (!filePaths[fileType]) continue;
     // Content must already be base64 exactly when the format is binary, or the
@@ -409,7 +409,7 @@ export async function aggregateFiles(
     // UTF-16 bytes reach an API decoder that reads the byte order mark, and
     // .stringsdict has no such decoder yet.
     const readsRawBytes = isBinaryFileFormat(fileFormat);
-    const appleFiles = filePaths[fileType]
+    const verbatimFiles = filePaths[fileType]
       .map((filePath) => {
         const content = readsRawBytes
           ? readBinaryFileBase64(filePath)
@@ -439,7 +439,7 @@ export async function aggregateFiles(
         }
         return true;
       });
-    files.push(...appleFiles);
+    files.push(...verbatimFiles);
   }
 
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {

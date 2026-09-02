@@ -604,7 +604,7 @@ describe('aggregateFiles - Empty File Handling', () => {
       );
     });
 
-    it('should upload .strings files verbatim with the APPLE_STRINGS format', async () => {
+    it('should upload .strings files verbatim with the DOT_STRINGS format', async () => {
       const settings = {
         files: {
           resolvedPaths: {
@@ -623,7 +623,7 @@ describe('aggregateFiles - Empty File Handling', () => {
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({
         fileName: 'en.lproj/Localizable.strings',
-        fileFormat: 'APPLE_STRINGS',
+        fileFormat: 'DOT_STRINGS',
         locale: 'en',
       });
       expect(result[0].content).toBe(stringsBase64);
@@ -677,7 +677,7 @@ describe('aggregateFiles - Empty File Handling', () => {
       );
     });
 
-    it('should upload .stringsdict files verbatim with the APPLE_STRINGSDICT format', async () => {
+    it('should upload .stringsdict files verbatim with the DOT_STRINGSDICT format', async () => {
       const settings = {
         files: {
           resolvedPaths: {
@@ -696,7 +696,7 @@ describe('aggregateFiles - Empty File Handling', () => {
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({
         fileName: 'en.lproj/Localizable.stringsdict',
-        fileFormat: 'APPLE_STRINGSDICT',
+        fileFormat: 'DOT_STRINGSDICT',
         locale: 'en',
       });
       expect(result[0].content).toBe(stringsdictContent);

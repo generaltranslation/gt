@@ -71,7 +71,7 @@ describe('aggregateFiles - Apple .strings encodings', () => {
     } as unknown as Settings);
 
     expect(files).toHaveLength(1);
-    expect(files[0].fileFormat).toBe('APPLE_STRINGS');
+    expect(files[0].fileFormat).toBe('DOT_STRINGS');
 
     // Same branch _uploadSourceFiles takes when building the request body.
     const wire = isBinaryFileFormat(files[0].fileFormat)
