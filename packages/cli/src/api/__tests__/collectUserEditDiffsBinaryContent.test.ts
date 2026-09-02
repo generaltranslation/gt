@@ -191,6 +191,54 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
     expect(diffs[0].localContent).toContain('"welcome" = "¡Hola!";');
   });
 
+  it('submits the edit when the recorded server baseline is empty', async () => {
+    const settings = buildSettings();
+    seedLockFile();
+    writeTranslation(Buffer.from(TRANSLATION, 'utf8'));
+    // An empty payload is a baseline of "nothing", not a missing download.
+    // Treating the two alike drops everything the user wrote against it.
+    mockServerDownload('', 'APPLE_STRINGS');
+
+    await collectAndSendUserEditDiffs(
+      filesUnderTest('APPLE_STRINGS'),
+      settings
+    );
+
+    expect(gt.submitUserEditDiffs).toHaveBeenCalledTimes(1);
+    const [{ diffs }] = vi.mocked(gt.submitUserEditDiffs).mock.calls[0];
+    expect(diffs[0].diff).toContain('+"welcome" = "¡Bienvenido!";');
+    expect(diffs[0].localContent).toBe(TRANSLATION);
+  });
+
+  it('skips silently when the batch download returned no copy of the file', async () => {
+    const settings = buildSettings();
+    seedLockFile();
+    writeTranslation(Buffer.from(TRANSLATION, 'utf8'));
+    vi.mocked(gt.queryFileData).mockResolvedValue({
+      translatedFiles: [
+        {
+          branchId: 'branch1',
+          fileId: 'file1',
+          versionId: 'version1',
+          locale: 'es',
+          completedAt: new Date().toISOString(),
+        },
+      ],
+    });
+    vi.mocked(gt.downloadFileBatch).mockResolvedValue({
+      files: [],
+    } as unknown as Awaited<ReturnType<typeof gt.downloadFileBatch>>);
+
+    await collectAndSendUserEditDiffs(
+      filesUnderTest('APPLE_STRINGS'),
+      settings
+    );
+
+    // No baseline at all, so there is nothing to diff and nothing to report.
+    expect(gt.submitUserEditDiffs).not.toHaveBeenCalled();
+    expect(warn).not.toHaveBeenCalled();
+  });
+
   it('warns instead of submitting a UTF-16 .strings edit it cannot represent as text', async () => {
     const settings = buildSettings();
     seedLockFile();
