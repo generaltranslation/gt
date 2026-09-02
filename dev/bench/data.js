@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788300289009,
+  "lastUpdate": 1788375120029,
   "repoUrl": "https://github.com/generaltranslation/gt",
   "entries": {
     "Middleware Benchmarks": [
@@ -9744,6 +9744,122 @@ window.BENCHMARK_DATA = {
             "value": 82,
             "unit": "ms",
             "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.19\"\n}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Ernest McCarter",
+            "username": "eoinest",
+            "email": "ernest@generaltranslation.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "771857f21e4e26b75cfeb00d94d1c3410cbb66f6",
+          "message": "[ci] release (#2225)\n\nThis PR was opened by the [Changesets\nrelease](https://github.com/changesets/action) GitHub action. When\nyou're ready to do a release, you can merge this and the packages will\nbe published to npm automatically. If you're not ready to do a release\nyet, that's fine, whenever you add more changesets to main, this PR will\nbe updated.\n\n\n# Releases\n## gt@2.18.0\n\n### Minor Changes\n\n- [#2222](https://github.com/generaltranslation/gt/pull/2222)\n[`091c964`](https://github.com/generaltranslation/gt/commit/091c964b45eba191d6e35bc1cdb93cc3683a3f71)\nThanks [@eoinest](https://github.com/eoinest)! - Add Apple `.strings`\nsupport to the CLI. Configure a `strings` entry under `files` in\n`gt.config.json` to upload `.strings` sources and download the\ntranslated per-locale files. `.strings` files written as UTF-16 by older\nversions of Xcode upload correctly: their bytes are sent unmodified so\nthe API can read the byte order mark.\n\nFix `save-local` for formats whose content travels base64. It compared\nthe local file against the still-encoded server copy, so a Lottie\ntranslation reported an edit on every run. Unchanged files are now\nrecognised, and an edited file whose bytes are not valid UTF-8 is\nreported by name rather than submitted as unreadable text.\n\n- [#2222](https://github.com/generaltranslation/gt/pull/2222)\n[`b8a9679`](https://github.com/generaltranslation/gt/commit/b8a96797860f2bb7b12f3c307d47c9b1fead2096)\nThanks [@eoinest](https://github.com/eoinest)! - Add Apple\n`.stringsdict` support to the CLI. Configure a `stringsdict` entry under\n`files` in `gt.config.json` to upload `.stringsdict` plural rule sources\nand download the translated per-locale files.\n\n### Patch Changes\n\n- Updated dependencies\n[[`091c964`](https://github.com/generaltranslation/gt/commit/091c964b45eba191d6e35bc1cdb93cc3683a3f71),\n[`b8a9679`](https://github.com/generaltranslation/gt/commit/b8a96797860f2bb7b12f3c307d47c9b1fead2096)]:\n  - generaltranslation@9.1.11\n  - @generaltranslation/python-extractor@0.2.44\n  - @generaltranslation/supported-locales@2.1.24\n  - @generaltranslation/vue-extractor@0.1.4\n## @generaltranslation/api@0.0.4\n\n### Patch Changes\n\n- [#2222](https://github.com/generaltranslation/gt/pull/2222)\n[`091c964`](https://github.com/generaltranslation/gt/commit/091c964b45eba191d6e35bc1cdb93cc3683a3f71)\nThanks [@eoinest](https://github.com/eoinest)! - Add Apple `.strings`\nsupport to the CLI. Configure a `strings` entry under `files` in\n`gt.config.json` to upload `.strings` sources and download the\ntranslated per-locale files. `.strings` files written as UTF-16 by older\nversions of Xcode upload correctly: their bytes are sent unmodified so\nthe API can read the byte order mark.\n\nFix `save-local` for formats whose content travels base64. It compared\nthe local file against the still-encoded server copy, so a Lottie\ntranslation reported an edit on every run. Unchanged files are now\nrecognised, and an edited file whose bytes are not valid UTF-8 is\nreported by name rather than submitted as unreadable text.\n\n- [#2222](https://github.com/generaltranslation/gt/pull/2222)\n[`b8a9679`](https://github.com/generaltranslation/gt/commit/b8a96797860f2bb7b12f3c307d47c9b1fead2096)\nThanks [@eoinest](https://github.com/eoinest)! - Add Apple\n`.stringsdict` support to the CLI. Configure a `stringsdict` entry under\n`files` in `gt.config.json` to upload `.stringsdict` plural rule sources\nand download the translated per-locale files.\n## @generaltranslation/compiler@1.3.46\n\n### Patch Changes\n\n- Updated dependencies\n[[`091c964`](https://github.com/generaltranslation/gt/commit/091c964b45eba191d6e35bc1cdb93cc3683a3f71),\n[`b8a9679`](https://github.com/generaltranslation/gt/commit/b8a96797860f2bb7b12f3c307d47c9b1fead2096)]:\n  - generaltranslation@9.1.11\n## generaltranslation@9.1.11\n\n### Patch Changes\n\n- [#2222](https://github.com/generaltranslation/gt/pull/2222)\n[`091c964`](https://github.com/generaltranslation/gt/commit/091c964b45eba191d6e35bc1cdb93cc3683a3f71)\nThanks [@eoinest](https://github.com/eoinest)! - Add Apple `.strings`\nsupport to the CLI. Configure a `strings` entry under `files` in\n`gt.config.json` to upload `.strings` sources and download the\ntranslated per-locale files. `.strings` files written as UTF-16 by older\nversions of Xcode upload correctly: their bytes are sent unmodified so\nthe API can read the byte order mark.\n\nFix `save-local` for formats whose content travels base64. It compared\nthe local file against the still-encoded server copy, so a Lottie\ntranslation reported an edit on every run. Unchanged files are now\nrecognised, and an edited file whose bytes are not valid UTF-8 is\nreported by name rather than submitted as unreadable text.\n\n- [#2222](https://github.com/generaltranslation/gt/pull/2222)\n[`b8a9679`](https://github.com/generaltranslation/gt/commit/b8a96797860f2bb7b12f3c307d47c9b1fead2096)\nThanks [@eoinest](https://github.com/eoinest)! - Add Apple\n`.stringsdict` support to the CLI. Configure a `stringsdict` entry under\n`files` in `gt.config.json` to upload `.stringsdict` plural rule sources\nand download the translated per-locale files.\n\n- Updated dependencies\n[[`091c964`](https://github.com/generaltranslation/gt/commit/091c964b45eba191d6e35bc1cdb93cc3683a3f71),\n[`b8a9679`](https://github.com/generaltranslation/gt/commit/b8a96797860f2bb7b12f3c307d47c9b1fead2096)]:\n  - @generaltranslation/api@0.0.4\n## gtx-cli@2.18.0\n\n### Patch Changes\n\n- Updated dependencies\n[[`091c964`](https://github.com/generaltranslation/gt/commit/091c964b45eba191d6e35bc1cdb93cc3683a3f71),\n[`b8a9679`](https://github.com/generaltranslation/gt/commit/b8a96797860f2bb7b12f3c307d47c9b1fead2096)]:\n  - gt@2.18.0\n## gt-i18n@1.0.21\n\n### Patch Changes\n\n- Updated dependencies\n[[`091c964`](https://github.com/generaltranslation/gt/commit/091c964b45eba191d6e35bc1cdb93cc3683a3f71),\n[`b8a9679`](https://github.com/generaltranslation/gt/commit/b8a96797860f2bb7b12f3c307d47c9b1fead2096)]:\n  - generaltranslation@9.1.11\n## locadex@1.0.216\n\n### Patch Changes\n\n- Updated dependencies\n[[`091c964`](https://github.com/generaltranslation/gt/commit/091c964b45eba191d6e35bc1cdb93cc3683a3f71),\n[`b8a9679`](https://github.com/generaltranslation/gt/commit/b8a96797860f2bb7b12f3c307d47c9b1fead2096)]:\n  - gt@2.18.0\n## gt-next@11.1.20\n\n### Patch Changes\n\n- Updated dependencies\n[[`091c964`](https://github.com/generaltranslation/gt/commit/091c964b45eba191d6e35bc1cdb93cc3683a3f71),\n[`b8a9679`](https://github.com/generaltranslation/gt/commit/b8a96797860f2bb7b12f3c307d47c9b1fead2096)]:\n  - generaltranslation@9.1.11\n  - @generaltranslation/compiler@1.3.46\n  - gt-i18n@1.0.21\n  - gt-react@11.1.20\n  - @generaltranslation/react-core@11.1.20\n## gt-node@1.0.22\n\n### Patch Changes\n\n- Updated dependencies\n[[`091c964`](https://github.com/generaltranslation/gt/commit/091c964b45eba191d6e35bc1cdb93cc3683a3f71),\n[`b8a9679`](https://github.com/generaltranslation/gt/commit/b8a96797860f2bb7b12f3c307d47c9b1fead2096)]:\n  - generaltranslation@9.1.11\n  - gt-i18n@1.0.21\n## @generaltranslation/python-extractor@0.2.44\n\n### Patch Changes\n\n- Updated dependencies\n[[`091c964`](https://github.com/generaltranslation/gt/commit/091c964b45eba191d6e35bc1cdb93cc3683a3f71),\n[`b8a9679`](https://github.com/generaltranslation/gt/commit/b8a96797860f2bb7b12f3c307d47c9b1fead2096)]:\n  - generaltranslation@9.1.11\n## gt-react@11.1.20\n\n### Patch Changes\n\n- Updated dependencies\n[[`091c964`](https://github.com/generaltranslation/gt/commit/091c964b45eba191d6e35bc1cdb93cc3683a3f71),\n[`b8a9679`](https://github.com/generaltranslation/gt/commit/b8a96797860f2bb7b12f3c307d47c9b1fead2096)]:\n  - generaltranslation@9.1.11\n  - gt-i18n@1.0.21\n  - @generaltranslation/react-core@11.1.20\n## @generaltranslation/react-core@11.1.20\n\n### Patch Changes\n\n- Updated dependencies\n[[`091c964`](https://github.com/generaltranslation/gt/commit/091c964b45eba191d6e35bc1cdb93cc3683a3f71),\n[`b8a9679`](https://github.com/generaltranslation/gt/commit/b8a96797860f2bb7b12f3c307d47c9b1fead2096)]:\n  - generaltranslation@9.1.11\n  - gt-i18n@1.0.21\n## gt-react-native@11.1.20\n\n### Patch Changes\n\n- Updated dependencies\n[[`091c964`](https://github.com/generaltranslation/gt/commit/091c964b45eba191d6e35bc1cdb93cc3683a3f71),\n[`b8a9679`](https://github.com/generaltranslation/gt/commit/b8a96797860f2bb7b12f3c307d47c9b1fead2096)]:\n  - generaltranslation@9.1.11\n  - gt-i18n@1.0.21\n  - @generaltranslation/react-core@11.1.20\n  - @generaltranslation/supported-locales@2.1.24\n## gt-sanity@4.0.8\n\n### Patch Changes\n\n- Updated dependencies\n[[`091c964`](https://github.com/generaltranslation/gt/commit/091c964b45eba191d6e35bc1cdb93cc3683a3f71),\n[`b8a9679`](https://github.com/generaltranslation/gt/commit/b8a96797860f2bb7b12f3c307d47c9b1fead2096)]:\n  - generaltranslation@9.1.11\n## @generaltranslation/supported-locales@2.1.24\n\n### Patch Changes\n\n- Updated dependencies\n[[`091c964`](https://github.com/generaltranslation/gt/commit/091c964b45eba191d6e35bc1cdb93cc3683a3f71),\n[`b8a9679`](https://github.com/generaltranslation/gt/commit/b8a96797860f2bb7b12f3c307d47c9b1fead2096)]:\n  - generaltranslation@9.1.11\n## gt-tanstack-start@11.1.20\n\n### Patch Changes\n\n- Updated dependencies\n[[`091c964`](https://github.com/generaltranslation/gt/commit/091c964b45eba191d6e35bc1cdb93cc3683a3f71),\n[`b8a9679`](https://github.com/generaltranslation/gt/commit/b8a96797860f2bb7b12f3c307d47c9b1fead2096)]:\n  - generaltranslation@9.1.11\n  - gt-i18n@1.0.21\n  - gt-react@11.1.20\n  - @generaltranslation/react-core@11.1.20\n## gt-vue@0.1.5\n\n### Patch Changes\n\n- Updated dependencies\n[[`091c964`](https://github.com/generaltranslation/gt/commit/091c964b45eba191d6e35bc1cdb93cc3683a3f71),\n[`b8a9679`](https://github.com/generaltranslation/gt/commit/b8a96797860f2bb7b12f3c307d47c9b1fead2096)]:\n  - generaltranslation@9.1.11\n  - gt-i18n@1.0.21\n## @generaltranslation/vue-extractor@0.1.4\n\n### Patch Changes\n\n- Updated dependencies\n[[`091c964`](https://github.com/generaltranslation/gt/commit/091c964b45eba191d6e35bc1cdb93cc3683a3f71),\n[`b8a9679`](https://github.com/generaltranslation/gt/commit/b8a96797860f2bb7b12f3c307d47c9b1fead2096)]:\n  - generaltranslation@9.1.11",
+          "timestamp": "2026-09-02T18:43:56Z",
+          "url": "https://github.com/generaltranslation/gt/commit/771857f21e4e26b75cfeb00d94d1c3410cbb66f6"
+        },
+        "date": 1788375119157,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "gt-next > unit > middleware: factory creation latency > createNextMiddleware() (mean)",
+            "value": 0.04495440771374651,
+            "range": "±0.0215",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.20\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > default locale request (/) (mean)",
+            "value": 0.1530991233925298,
+            "range": "±0.0621",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.20\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > non-default locale request (/fr) (mean)",
+            "value": 0.2097569077181178,
+            "range": "±0.0732",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.20\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > nested route (/fr/about) (mean)",
+            "value": 0.2027886394971624,
+            "range": "±0.0754",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.20\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > ttfb",
+            "value": 131.5,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.20\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > domContentLoaded",
+            "value": 142.89999999999418,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.20\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > load",
+            "value": 219.79999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.20\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > elapsed",
+            "value": 123,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.20\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > ttfb",
+            "value": 22.900000000023283,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.20\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > domContentLoaded",
+            "value": 32,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.20\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > load",
+            "value": 114.90000000002328,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.20\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: locale-switch-en-to-fr > elapsed",
+            "value": 618,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.20\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > ttfb",
+            "value": 12,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.20\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > domContentLoaded",
+            "value": 20.900000000023283,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.20\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > load",
+            "value": 81.40000000002328,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.20\"\n}"
           }
         ]
       }
