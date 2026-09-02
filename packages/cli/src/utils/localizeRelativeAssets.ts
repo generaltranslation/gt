@@ -10,6 +10,7 @@ import { escapeHtmlInTextNodes, normalizeCJKCharacters } from 'gt-remark';
 import { parseMdxForRoundTrip, restoreAnchorIds } from './mdxAnchorSyntax.js';
 import type { StaticLocalizationSettings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
+import { toPosixPath } from './paths.js';
 
 type RewriteResult = { content: string; hasChanges: boolean };
 export type RelativeAssetSettings = StaticLocalizationSettings;
@@ -43,10 +44,6 @@ function isSkippableUrl(url: string): boolean {
   if (url.startsWith('mailto:')) return true;
   if (url.startsWith('tel:')) return true;
   return false;
-}
-
-function toPosix(p: string): string {
-  return p.replace(/\\/g, '/');
 }
 
 function isSubPath(child: string, parent: string): boolean {
@@ -92,10 +89,10 @@ export function localizeRelativeAssetsForContent(
 
     let newPath: string;
     if (isSubPath(sourceResolved, cwd)) {
-      newPath = '/' + toPosix(path.relative(cwd, sourceResolved));
+      newPath = '/' + toPosixPath(path.relative(cwd, sourceResolved));
     } else {
-      const rel = toPosix(path.relative(targetDir, sourceResolved));
-      newPath = rel || toPosix(path.basename(sourceResolved));
+      const rel = toPosixPath(path.relative(targetDir, sourceResolved));
+      newPath = rel || toPosixPath(path.basename(sourceResolved));
     }
 
     if (newPath === base) return null;

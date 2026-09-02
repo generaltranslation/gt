@@ -3,6 +3,7 @@ import path from 'node:path';
 import { logger } from '../console/logger.js';
 import fg from 'fast-glob';
 import micromatch from 'micromatch';
+import { resolvePosixGlob, toPosixPath } from '../utils/paths.js';
 
 /**
  * Extracts locale directories from translated file paths.
@@ -17,14 +18,14 @@ function extractLocaleDirectories(
   const localeSet = new Set(locales);
 
   for (const filePath of filePaths) {
-    const parts = filePath.split(path.sep);
+    const parts = toPosixPath(filePath).split('/');
 
     // Find directory segments that match the provided locales
     for (let i = 0; i < parts.length - 1; i++) {
       const segment = parts[i];
       if (localeSet.has(segment)) {
         // Found a locale directory, capture up to and including this segment
-        const localeDir = parts.slice(0, i + 1).join(path.sep);
+        const localeDir = path.normalize(parts.slice(0, i + 1).join('/'));
         localeDirs.add(localeDir);
         break;
       }
@@ -35,7 +36,7 @@ function extractLocaleDirectories(
 }
 
 async function getAllFiles(dirPath: string): Promise<string[]> {
-  return await fg(path.join(dirPath, '**/*'), {
+  return await fg(resolvePosixGlob(dirPath, '**/*'), {
     absolute: true,
     onlyFiles: true,
   });
@@ -51,18 +52,21 @@ async function getFilesToDelete(
 
   const absoluteCwd = path.resolve(cwd);
   const expandedExcludePatterns = excludePatterns.map((p) => {
-    const resolvedPattern = path.isAbsolute(p) ? p : path.join(absoluteCwd, p);
-    return resolvedPattern
-      .replace(/\[locale\]/g, currentLocale)
-      .replace(/\[locales\]/g, currentLocale);
+    return resolvePosixGlob(
+      absoluteCwd,
+      p
+        .replace(/\[locale\]/g, currentLocale)
+        .replace(/\[locales\]/g, currentLocale)
+    );
   });
 
-  const filesToKeep = micromatch(allFiles, expandedExcludePatterns, {
+  const posixFiles = allFiles.map(toPosixPath);
+  const filesToKeep = micromatch(posixFiles, expandedExcludePatterns, {
     dot: true,
   });
 
   const filesToKeepSet = new Set(filesToKeep);
-  return allFiles.filter((file) => !filesToKeepSet.has(file));
+  return allFiles.filter((_, index) => !filesToKeepSet.has(posixFiles[index]));
 }
 
 /**
@@ -86,7 +90,7 @@ export async function clearLocaleDirs(
       await fs.stat(dir);
 
       // Extract locale from directory path
-      const dirParts = dir.split(path.sep);
+      const dirParts = toPosixPath(dir).split('/');
       const locale = locales.find((loc) => dirParts.includes(loc));
 
       if (!locale) {

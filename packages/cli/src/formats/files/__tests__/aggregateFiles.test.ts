@@ -13,6 +13,8 @@ import { determineLibrary } from '../../../fs/determineFramework/index.js';
 import { isValidMdx } from '../../../utils/validateMdx.js';
 import { hashStringSync, hashVersionId } from '../../../utils/hash.js';
 import type { Settings } from '../../../types/index.js';
+import path from 'node:path';
+import { hashVersionId } from '../../../utils/hash.js';
 
 const aggregateTestFiles = (settings: Partial<Settings>) =>
   aggregateFiles(settings as Settings);
@@ -41,6 +43,8 @@ const mockDetermineLibrary = vi.mocked(determineLibrary);
 const mockIsValidMdx = vi.mocked(isValidMdx);
 
 describe('aggregateFiles - Empty File Handling', () => {
+  const originalSeparator = Object.getOwnPropertyDescriptor(path, 'sep')!;
+
   beforeEach(() => {
     vi.clearAllMocks();
 
@@ -78,10 +82,35 @@ describe('aggregateFiles - Empty File Handling', () => {
   });
 
   afterEach(() => {
+    Object.defineProperty(path, 'sep', originalSeparator);
     vi.clearAllMocks();
   });
 
   describe('JSON files', () => {
+    it('matches Windows paths in the normalized review set', async () => {
+      Object.defineProperty(path, 'sep', {
+        ...originalSeparator,
+        value: path.win32.sep,
+      });
+      const filePath = 'C:\\project\\messages.json';
+      const settings = {
+        files: {
+          resolvedPaths: { json: [filePath] },
+          placeholderPaths: {},
+          requiresReviewPaths: new Set(['C:/project/messages.json']),
+        },
+        options: {},
+        defaultLocale: 'en',
+      };
+      mockReadFile.mockReturnValueOnce('{"key":"value"}');
+
+      const { files } = await aggregateTestFiles(settings);
+
+      expect(files[0].versionId).toBe(
+        hashVersionId('parsed-json-content', true)
+      );
+    });
+
     it('detects JSON data format without project warnings', async () => {
       mockDetermineLibrary.mockReturnValueOnce({
         library: 'base',

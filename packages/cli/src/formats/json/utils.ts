@@ -11,6 +11,7 @@ import { flattenJson } from './flattenJson.js';
 import chalk from 'chalk';
 import path from 'node:path';
 import micromatch from 'micromatch';
+import { toPosixGlob, toPosixPath } from '../../utils/paths.js';
 import type { JSONObject, JSONValue } from '../../types/data/json.js';
 import { getJSONPathMatches } from './jsonPath.js';
 const { isMatch } = micromatch;
@@ -226,9 +227,10 @@ export function validateJsonSchema(
     return null;
   }
 
+  const relativeFilePath = toPosixPath(path.relative(process.cwd(), filePath));
   const fileGlobs = Object.keys(options.jsonSchema);
   const matchingGlob = fileGlobs.find((fileGlob) =>
-    isMatch(path.relative(process.cwd(), filePath), fileGlob)
+    isMatch(relativeFilePath, toPosixGlob(fileGlob))
   );
   if (!matchingGlob || !options.jsonSchema[matchingGlob]) {
     return null;

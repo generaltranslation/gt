@@ -21,6 +21,11 @@ import {
   GT_PARSING_FLAGS_DEFAULT,
 } from '../../config/defaults.js';
 import { resolveTransformationFormat } from '../../formats/files/transformFormat.js';
+import {
+  resolvePosixGlob,
+  toPosixGlob,
+  toPosixPath,
+} from '../../utils/paths.js';
 
 /**
  * Resolves the files from the files object
@@ -247,14 +252,14 @@ export function expandGlobPatterns(
     const expandedPattern = pattern.replace(/\[locale\]/g, locale);
 
     // Resolve the absolute pattern path
-    const absolutePattern = path.resolve(cwd, expandedPattern);
+    const absolutePattern = resolvePosixGlob(cwd, expandedPattern);
 
     // Prepare exclude patterns with locale replaced
     const expandedExcludePatterns = Array.from(
       new Set(
         excludePatterns.flatMap((p) =>
           locales.map((targetLocale) =>
-            path.resolve(
+            resolvePosixGlob(
               cwd,
               p
                 .replace(/\[locale\]/g, locale)
@@ -276,7 +281,7 @@ export function expandGlobPatterns(
     // For each match, create a version with [locale] in the correct positions
     matches.forEach((match) => {
       const absolutePath = path.resolve(cwd, match);
-      const patternPath = path.resolve(cwd, pattern);
+      const patternPath = resolvePosixGlob(cwd, pattern);
       let originalAbsolutePath = absolutePath;
 
       if (localePositions.length > 0) {
@@ -304,7 +309,7 @@ function buildPlaceholderPathFromPattern(
     return absolutePath;
   }
 
-  const posixPattern = toPosixPath(patternPath);
+  const posixPattern = toPosixGlob(patternPath);
   const posixPath = toPosixPath(absolutePath);
 
   const baseRegex = micromatch.makeRe(posixPattern, {
@@ -343,10 +348,6 @@ function buildPlaceholderPathFromPattern(
   return path.normalize(placeholderPosixPath);
 }
 
-function toPosixPath(value: string): string {
-  return value.split(path.sep).join(path.posix.sep);
-}
-
 /**
  * Classifies resolved file paths into publish/unpublish sets by matching
  * them against the given glob patterns. Uses POSIX paths for micromatch
@@ -365,7 +366,7 @@ function classifyPublishPaths(
 
   const posixPaths = resolvedPaths.map(toPosixPath);
   const toAbsoluteGlob = (p: string) =>
-    toPosixPath(path.resolve(cwd, p.replace(/\[locale\]/g, locale)));
+    resolvePosixGlob(cwd, p.replace(/\[locale\]/g, locale));
 
   for (const pattern of publishPatterns) {
     const matched = new Set(micromatch(posixPaths, toAbsoluteGlob(pattern)));
@@ -436,7 +437,7 @@ function classifyRequiresReviewPaths(
   if (typeof config === 'boolean' || config === undefined) {
     if (config ?? requiresReviewDefault) {
       for (const resolvedPath of resolvedPaths) {
-        requiresReviewPaths.add(resolvedPath);
+        requiresReviewPaths.add(toPosixPath(resolvedPath));
       }
     }
     return;
@@ -444,7 +445,7 @@ function classifyRequiresReviewPaths(
 
   const posixPaths = resolvedPaths.map(toPosixPath);
   const toAbsoluteGlob = (p: string) =>
-    toPosixPath(path.resolve(cwd, p.replace(/\[locale\]/g, locale)));
+    resolvePosixGlob(cwd, p.replace(/\[locale\]/g, locale));
   const matchAny = (patterns: string[]) => {
     const matched = new Set<string>();
     for (const pattern of patterns) {
@@ -463,7 +464,7 @@ function classifyRequiresReviewPaths(
       ? false
       : included.has(posixPaths[i]) || requiresReviewDefault;
     if (requiresReview) {
-      requiresReviewPaths.add(resolvedPaths[i]);
+      requiresReviewPaths.add(posixPaths[i]);
     }
   }
 }
