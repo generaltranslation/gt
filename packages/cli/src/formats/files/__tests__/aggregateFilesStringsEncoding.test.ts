@@ -49,7 +49,7 @@ describe('aggregateFiles - .strings encodings', () => {
   let dir: string;
 
   beforeAll(() => {
-    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-apple-strings-'));
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-dot-strings-'));
     for (const [name, bytes] of Object.entries(FIXTURES)) {
       fs.writeFileSync(path.join(dir, name), bytes);
     }

@@ -72,8 +72,8 @@
           "TWILIO_CONTENT_JSON",
           "LOTTIE",
           "SVG",
-          "APPLE_STRINGS",
-          "APPLE_STRINGSDICT"
+          "DOT_STRINGS",
+          "DOT_STRINGSDICT"
         ]
       },
       "ModelProvider": {
@@ -617,8 +617,8 @@
                                 "TWILIO_CONTENT_JSON",
                                 "LOTTIE",
                                 "SVG",
-                                "APPLE_STRINGS",
-                                "APPLE_STRINGSDICT"
+                                "DOT_STRINGS",
+                                "DOT_STRINGSDICT"
                               ]
                             },
                             "dataFormat": {
@@ -931,8 +931,8 @@
                                 "TWILIO_CONTENT_JSON",
                                 "LOTTIE",
                                 "SVG",
-                                "APPLE_STRINGS",
-                                "APPLE_STRINGSDICT"
+                                "DOT_STRINGS",
+                                "DOT_STRINGSDICT"
                               ]
                             },
                             "dataFormat": {
@@ -1003,8 +1003,8 @@
                                   "TWILIO_CONTENT_JSON",
                                   "LOTTIE",
                                   "SVG",
-                                  "APPLE_STRINGS",
-                                  "APPLE_STRINGSDICT"
+                                  "DOT_STRINGS",
+                                  "DOT_STRINGSDICT"
                                 ]
                               },
                               "dataFormat": {
@@ -1031,8 +1031,8 @@
                                   "TWILIO_CONTENT_JSON",
                                   "LOTTIE",
                                   "SVG",
-                                  "APPLE_STRINGS",
-                                  "APPLE_STRINGSDICT"
+                                  "DOT_STRINGS",
+                                  "DOT_STRINGSDICT"
                                 ]
                               }
                             },
@@ -2317,8 +2317,8 @@
                             "TWILIO_CONTENT_JSON",
                             "LOTTIE",
                             "SVG",
-                            "APPLE_STRINGS",
-                            "APPLE_STRINGSDICT"
+                            "DOT_STRINGS",
+                            "DOT_STRINGSDICT"
                           ]
                         }
                       },

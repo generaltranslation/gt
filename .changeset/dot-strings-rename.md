@@ -1,6 +1,7 @@
 ---
-'gt': minor
+'@generaltranslation/api': patch
 'generaltranslation': patch
+'gt': patch
 ---
 
 Rename the `.strings` and `.stringsdict` file formats. The API format names become `DOT_STRINGS` and `DOT_STRINGSDICT`, and the `gt.config.json` keys under `files` become `dotStrings` and `dotStringsdict`.
