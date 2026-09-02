@@ -178,7 +178,10 @@ export async function collectAndSendUserEditDiffs(
     for (const c of candidates) {
       const key = `${c.branchId}:${c.fileId}:${c.versionId}:${c.locale}`;
       const serverBytes = serverContentByKey.get(key);
-      if (!serverBytes?.length) continue;
+      // Absent means the batch did not return this file, so there is no
+      // baseline. An empty payload is a baseline of nothing, which the user
+      // may well have written against.
+      if (!serverBytes) continue;
 
       try {
         const localBytes = await fs.promises.readFile(c.outputPath);
