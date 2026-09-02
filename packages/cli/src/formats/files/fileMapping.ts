@@ -14,6 +14,7 @@ import {
 import { FileMapping } from '../../types/files.js';
 import { TEMPLATE_FILE_NAME } from '../../utils/constants.js';
 import { replaceFileExtensionForFormat } from './transformFormat.js';
+import { localeForFilePath } from './localePath.js';
 
 /**
  * Creates a mapping between source files and their translated counterparts for each locale
@@ -58,13 +59,16 @@ export function createFileMapping(
 
       if (transformPath) {
         if (typeof transformPath === 'string') {
+          // Must match the spelling `resolveLocaleFiles` uses, or a configured
+          // transform names a file nothing else writes to.
+          const pathLocale = localeForFilePath(typeIndex, locale);
           translatedFiles = translatedFiles.map((filePath) => {
             const directory = path.dirname(filePath);
             const fileName = path.basename(filePath);
             const baseName = fileName.split('.')[0];
             const transformedFileName = transformPath
               .replace('*', baseName)
-              .replace('[locale]', locale);
+              .replace('[locale]', pathLocale);
             return path.join(directory, transformedFileName);
           });
         } else if (Array.isArray(transformPath)) {
