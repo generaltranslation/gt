@@ -19,6 +19,9 @@ import { randomUUID } from 'node:crypto';
 import { hashStringSync } from '../utils/hash.js';
 import { extractJson } from '../formats/json/extractJson.js';
 import { extractYaml } from '../formats/yaml/extractYaml.js';
+import { logger } from '../console/logger.js';
+import { recordWarning } from '../state/translateWarnings.js';
+import { getRelative } from '../fs/findFilepath.js';
 
 type LatestDownloadedVersion = {
   versionId: string;
@@ -180,11 +183,22 @@ export async function collectAndSendUserEditDiffs(
       try {
         const localBytes = await fs.promises.readFile(c.outputPath);
 
+        // Nothing was edited, so there is no diff to compute or report.
+        if (localBytes.equals(serverBytes)) continue;
+
         // A unified diff and localContent are both UTF-8 text. Content that is
         // not valid UTF-8 — a Lottie zip, a UTF-16 .strings file — has no
         // faithful text form here, and sending mojibake upstream is worse than
-        // sending nothing.
-        if (!isUtf8Text(serverBytes) || !isUtf8Text(localBytes)) continue;
+        // sending nothing. Say so: the edit is real and will be lost on the
+        // next download.
+        if (!isUtf8Text(serverBytes) || !isUtf8Text(localBytes)) {
+          const relativePath = getRelative(c.outputPath);
+          const reason =
+            'Edited file is not valid UTF-8, so its changes cannot be submitted';
+          logger.warn(`Skipping local edits to ${relativePath}: ${reason}`);
+          recordWarning('skipped_file', relativePath, reason);
+          continue;
+        }
 
         const safeName = Buffer.from(
           `${c.branchId}:${c.fileId}:${c.versionId}:${c.locale}`
