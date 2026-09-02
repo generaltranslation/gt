@@ -3,6 +3,7 @@ import { GT } from 'generaltranslation';
 import { Settings } from '../../types/index.js';
 import chalk from 'chalk';
 import {
+  activateCurrentFileIdentity,
   readLockfile,
   writeLockfile,
   findOrCreateEntry,
@@ -41,6 +42,12 @@ export function partitionTranslationsByLockfile(
       const translations = file.translations.filter((translation) => {
         const entry = entryMap.get(translation.fileId);
         if (!entry || entry.versionId !== translation.versionId) return true;
+        // Translation hashes on an aliased entry belong to the legacy server
+        // identity. A current-ID upload must be confirmed before they can be
+        // used to skip local files.
+        if (entry.previousFileId && translation.fileId === entry.fileId) {
+          return true;
+        }
         const lockHash =
           entry.translations[translation.locale]?.postProcessHash;
         if (!lockHash || lockHash !== hashStringSync(translation.content)) {
@@ -159,6 +166,11 @@ export class UploadTranslationsStep {
           lockfile.data.entries,
           translation.fileId,
           translation.versionId
+        );
+        activateCurrentFileIdentity(
+          entry,
+          translation.fileId,
+          lockfile.entryMap
         );
         entry.translations[translation.locale] = {
           ...entry.translations[translation.locale],

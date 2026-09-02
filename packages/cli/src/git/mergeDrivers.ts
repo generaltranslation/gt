@@ -5,6 +5,7 @@ import type {
   DownloadedVersionEntry,
   DownloadedVersions,
 } from '../fs/config/downloadedVersions.js';
+import { normalizeLockfilePaths } from '../fs/config/downloadedVersions.js';
 
 export type MergeDriverName = 'gt-lock' | 'gtjson';
 
@@ -26,6 +27,7 @@ type ValueState = {
 const LOCK_TOP_LEVEL_KEYS = new Set(['version', 'branchId', 'entries']);
 const LOCK_ENTRY_KEYS = new Set([
   'fileId',
+  'previousFileId',
   'versionId',
   'fileName',
   'staged',
@@ -123,6 +125,23 @@ export function mergeGtLockJson(
   if (!ours.ok) return ours;
   if (!theirs.ok) return theirs;
 
+  // A side written by a pre-normalization Windows CLI stores backslash
+  // fileNames and fileIds hashed from them; normalize all three sides so
+  // separator-only differences don't read as changes and legacy entries
+  // merge under the same fileId as their migrated counterparts.
+  const pathEvidence = collectPortableLockfilePathEvidence(
+    base.value,
+    ours.value,
+    theirs.value
+  );
+  const normalizationOptions = {
+    ...pathEvidence,
+    preserveAmbiguousPaths: true,
+  };
+  normalizeLockfilePaths(base.value, normalizationOptions);
+  normalizeLockfilePaths(ours.value, normalizationOptions);
+  normalizeLockfilePaths(theirs.value, normalizationOptions);
+
   const baseMap = buildEntryMap(base.value.entries);
   const oursMap = buildEntryMap(ours.value.entries);
   const theirsMap = buildEntryMap(theirs.value.entries);
@@ -157,10 +176,152 @@ export function mergeGtLockJson(
   return { ok: true, content: `${JSON.stringify(merged, null, 2)}\n` };
 }
 
+function collectPortableLockfilePathEvidence(
+  base: DownloadedVersions,
+  ours: DownloadedVersions,
+  theirs: DownloadedVersions
+): {
+  portableSourcePathEvidence: Set<string>;
+  portableTranslationPathEvidence: Set<string>;
+} {
+  const lockfiles = [base, ours, theirs];
+  const ambiguousSourcePaths = collectCoexistingPathStyles(
+    lockfiles,
+    (lockfile) => lockfile.entries.map((entry) => entry.fileName)
+  );
+  const ambiguousTranslationPaths = collectCoexistingPathStyles(
+    lockfiles,
+    (lockfile) =>
+      lockfile.entries.flatMap((entry) =>
+        Object.values(entry.translations).map(
+          (translation) => translation.fileName
+        )
+      )
+  );
+  const portableSourcePaths = new Set<string>();
+  const portableTranslationPaths = new Set<string>();
+  for (const lockfile of lockfiles) {
+    for (const entry of lockfile.entries) {
+      addPortablePath(entry.fileName, portableSourcePaths);
+      for (const translation of Object.values(entry.translations)) {
+        addPortablePath(translation.fileName, portableTranslationPaths);
+      }
+    }
+  }
+
+  const portableSourcePathEvidence = collectBasePathEvidence(
+    base.entries.map((entry) => entry.fileName),
+    portableSourcePaths,
+    ambiguousSourcePaths
+  );
+  const portableTranslationPathEvidence = collectBasePathEvidence(
+    base.entries.flatMap((entry) =>
+      Object.values(entry.translations).map(
+        (translation) => translation.fileName
+      )
+    ),
+    portableTranslationPaths,
+    ambiguousTranslationPaths
+  );
+
+  // previousFileId is explicit evidence that the portable entry replaced a
+  // legacy Windows identity, even when that entry was added after the merge
+  // base. Its serialized translation paths came from that same identity.
+  for (const lockfile of lockfiles) {
+    for (const entry of lockfile.entries) {
+      if (!entry.previousFileId) continue;
+      addPortablePath(
+        entry.fileName,
+        portableSourcePathEvidence,
+        ambiguousSourcePaths
+      );
+      for (const translation of Object.values(entry.translations)) {
+        addNormalizedWindowsPath(
+          translation.fileName,
+          portableTranslationPathEvidence,
+          ambiguousTranslationPaths
+        );
+      }
+    }
+  }
+
+  return { portableSourcePathEvidence, portableTranslationPathEvidence };
+}
+
+function collectBasePathEvidence(
+  basePaths: (string | undefined)[],
+  portablePaths: ReadonlySet<string>,
+  ambiguousPaths: ReadonlySet<string>
+): Set<string> {
+  const evidence = new Set<string>();
+  for (const basePath of basePaths) {
+    if (!basePath) continue;
+    // A portable base does not prove that a later backslash path is legacy;
+    // on POSIX it may be a deliberate rename to a distinct literal filename.
+    if (!basePath.includes('\\')) continue;
+    if (basePath.includes('/')) continue;
+    const portablePath = basePath.replace(/\\/g, '/');
+    if (portablePaths.has(portablePath) && !ambiguousPaths.has(portablePath)) {
+      evidence.add(portablePath);
+    }
+  }
+  return evidence;
+}
+
+function collectCoexistingPathStyles(
+  lockfiles: DownloadedVersions[],
+  getPaths: (lockfile: DownloadedVersions) => (string | undefined)[]
+): Set<string> {
+  const ambiguousPaths = new Set<string>();
+  for (const lockfile of lockfiles) {
+    const portablePaths = new Set<string>();
+    const normalizedBackslashPaths = new Set<string>();
+    for (const fileName of getPaths(lockfile)) {
+      if (!fileName) continue;
+      if (!fileName.includes('\\')) {
+        portablePaths.add(fileName);
+      } else if (!fileName.includes('/')) {
+        normalizedBackslashPaths.add(fileName.replace(/\\/g, '/'));
+      }
+    }
+    for (const portablePath of portablePaths) {
+      if (normalizedBackslashPaths.has(portablePath)) {
+        ambiguousPaths.add(portablePath);
+      }
+    }
+  }
+  return ambiguousPaths;
+}
+
+function addPortablePath(
+  fileName: string | undefined,
+  paths: Set<string>,
+  ambiguousPaths?: ReadonlySet<string>
+): void {
+  if (fileName && !fileName.includes('\\') && !ambiguousPaths?.has(fileName)) {
+    paths.add(fileName);
+  }
+}
+
+function addNormalizedWindowsPath(
+  fileName: string | undefined,
+  paths: Set<string>,
+  ambiguousPaths: ReadonlySet<string>
+): void {
+  if (!fileName) return;
+  if (!fileName.includes('\\')) {
+    if (!ambiguousPaths.has(fileName)) paths.add(fileName);
+  } else if (!fileName.includes('/')) {
+    const portablePath = fileName.replace(/\\/g, '/');
+    if (!ambiguousPaths.has(portablePath)) paths.add(portablePath);
+  }
+}
+
 // Matches the key order findOrCreateEntry/writeStagedEntries produce
 function normalizeEntry(entry: DownloadedVersionEntry): DownloadedVersionEntry {
   const normalized: DownloadedVersionEntry = {
     fileId: entry.fileId,
+    ...(entry.previousFileId ? { previousFileId: entry.previousFileId } : {}),
     versionId: entry.versionId,
     translations: entry.translations,
   };
@@ -199,6 +360,16 @@ function mergeLockEntry(
       theirs.translations
     ),
   };
+
+  const previousFileId = mergeScalarField(
+    base?.previousFileId,
+    ours.previousFileId,
+    theirs.previousFileId,
+    latest.previousFileId
+  );
+  if (previousFileId !== undefined) {
+    merged.previousFileId = previousFileId;
+  }
 
   const fileName = mergeScalarField(
     base?.fileName,
@@ -349,6 +520,12 @@ function validateLockfile(
     }
     if (typeof entry.fileId !== 'string') {
       return `${label} gt-lock.json entry must contain a fileId string`;
+    }
+    if (
+      entry.previousFileId !== undefined &&
+      typeof entry.previousFileId !== 'string'
+    ) {
+      return `${label} gt-lock.json entry previousFileId must be a string`;
     }
     if (typeof entry.versionId !== 'string') {
       return `${label} gt-lock.json entry must contain a versionId string`;

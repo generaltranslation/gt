@@ -62,20 +62,38 @@ export async function handleStage(
   let jobData: EnqueueFilesResult | undefined;
   let branchData: BranchData | undefined;
   if (allFiles.length > 0) {
-    const { branchData: branchDataResult, enqueueResult } =
-      await runStageFilesWorkflow({
-        files: allFiles,
-        options,
-        settings,
-        inlineLibrary,
-      });
+    const {
+      branchData: branchDataResult,
+      enqueueResult,
+      uploadedFiles,
+    } = await runStageFilesWorkflow({
+      files: allFiles,
+      options,
+      settings,
+      inlineLibrary,
+    });
     jobData = enqueueResult;
     branchData = branchDataResult;
 
-    fileVersionData = convertToFileTranslationData(allFiles);
+    // Continue only with exact source versions confirmed on the active branch.
+    // A partial or cross-branch upload response must not create staged/download
+    // state for a source version that does not exist on this branch.
+    const uploadedFileKeys = new Set(
+      uploadedFiles.map(
+        (file) => `${file.branchId}:${file.fileId}:${file.versionId}`
+      )
+    );
+    const confirmedFiles = allFiles.filter((file) =>
+      uploadedFileKeys.has(
+        `${branchDataResult.currentBranch.id}:${file.fileId}:${file.versionId}`
+      )
+    );
+    if (confirmedFiles.length > 0) {
+      fileVersionData = convertToFileTranslationData(confirmedFiles);
+    }
 
     // Write staged entries to the lockfile
-    if (stage) {
+    if (stage && fileVersionData) {
       const stagedFiles = Object.entries(fileVersionData).map(
         ([fileId, data]) => ({
           fileId,
@@ -85,10 +103,10 @@ export async function handleStage(
       );
       writeStagedEntries(settings, stagedFiles, branchData.currentBranch.id);
     }
-    const templateData = allFiles.find(
+    const templateData = confirmedFiles.find(
       (file) => file.fileId === TEMPLATE_FILE_ID
     );
-    if (settings.omitConfigIds) {
+    if (settings.omitConfigIds && confirmedFiles.length > 0) {
       // Remove persisted config IDs only after staging has succeeded, so
       // failed and empty runs keep the previous pinned version/branch state
       await updateConfig(settings.config, {

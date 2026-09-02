@@ -1,5 +1,5 @@
 import * as fs from 'node:fs';
-import * as path from 'node:path';
+import path from 'node:path';
 import {
   readLockfile,
   EntryMap,
@@ -24,6 +24,7 @@ import { recordWarning } from '../state/translateWarnings.js';
 import { getRelative } from '../fs/findFilepath.js';
 
 type LatestDownloadedVersion = {
+  serverFileId: string;
   versionId: string;
   entry: DownloadedTranslation;
 };
@@ -43,15 +44,36 @@ const isUtf8Text = (bytes: Buffer): boolean => {
 const findLatestDownloadedVersion = (
   entryMap: EntryMap,
   fileId: string,
+  fileName: string,
   locale: string
 ): LatestDownloadedVersion | null => {
-  const entry = entryMap.get(fileId);
-  if (!entry) return null;
+  const candidates = [entryMap.get(fileId)];
+  // A V1 lockfile has no filename to normalize. On Windows, reconstructing
+  // its old native-separator ID is unambiguous and keeps standalone
+  // `gt save-local` working before any upload/move workflow runs.
+  if (path.sep === '\\' && !fileName.includes('\\')) {
+    const legacyWindowsFileId = hashStringSync(fileName.replace(/\//g, '\\'));
+    if (legacyWindowsFileId !== fileId) {
+      const legacyEntry = entryMap.get(legacyWindowsFileId);
+      if (!candidates.includes(legacyEntry)) candidates.push(legacyEntry);
+    }
+  }
 
-  const translation = entry.translations[locale];
-  if (!translation) return null;
-
-  return { versionId: entry.versionId, entry: translation };
+  for (const entry of candidates) {
+    // On POSIX, previousFileId is only a tentative alias: an absent literal
+    // backslash path is indistinguishable from a legacy Windows path. Windows
+    // has no such ambiguity, so standalone save-local may use the old ID.
+    if (!entry || (entry.previousFileId && path.sep !== '\\')) continue;
+    const translation = entry.translations[locale];
+    if (translation) {
+      return {
+        serverFileId: entry.previousFileId ?? entry.fileId,
+        versionId: entry.versionId,
+        entry: translation,
+      };
+    }
+  }
+  return null;
 };
 
 /**
@@ -102,6 +124,7 @@ export async function collectAndSendUserEditDiffs(
       const latestDownloaded = findLatestDownloadedVersion(
         entryMap,
         uploadedFile.fileId,
+        uploadedFile.fileName,
         locale
       );
 
@@ -124,7 +147,7 @@ export async function collectAndSendUserEditDiffs(
       candidates.push({
         branchId: uploadedFile.branchId,
         fileName: uploadedFile.fileName,
-        fileId: uploadedFile.fileId,
+        fileId: latestDownloaded.serverFileId,
         versionId: latestDownloaded.versionId,
         locale: locale,
         outputPath,

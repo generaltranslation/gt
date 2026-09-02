@@ -10,6 +10,7 @@ import { handleStage } from '../stage.js';
 import { collectFiles } from '../../../formats/files/collectFiles.js';
 import { runStageFilesWorkflow } from '../../../workflows/stage.js';
 import updateConfig from '../../../fs/config/updateConfig.js';
+import { writeStagedEntries } from '../../../fs/config/downloadedVersions.js';
 
 vi.mock('../../../formats/files/collectFiles.js', () => ({
   collectFiles: vi.fn(),
@@ -92,6 +93,12 @@ describe('handleStage config ids', () => {
     });
     vi.mocked(runStageFilesWorkflow).mockResolvedValue({
       branchData,
+      uploadedFiles: [
+        {
+          ...templateFile,
+          branchId: branchData.currentBranch.id,
+        },
+      ],
       enqueueResult: {
         jobData: {},
         locales: ['es'],
@@ -194,6 +201,84 @@ describe('handleStage config ids', () => {
       false
     );
 
+    expect(updateConfig).not.toHaveBeenCalled();
+  });
+
+  it('stages and returns only source versions confirmed by the API', async () => {
+    const omittedFile = {
+      fileName: 'src/omitted.json',
+      content: '{}',
+      fileFormat: 'JSON',
+      fileId: 'omitted-file',
+      versionId: 'omitted-version',
+      locale: 'en',
+    } satisfies FileToUpload;
+    vi.mocked(collectFiles).mockResolvedValue({
+      files: [templateFile, omittedFile],
+      reactComponents: 1,
+      publishMap: new Map(),
+    });
+
+    const result = await handleStage(options, settings(), 'gt-react', true);
+
+    expect(result?.fileVersionData).toEqual({
+      [TEMPLATE_FILE_ID]: {
+        versionId: templateFile.versionId,
+        fileName: templateFile.fileName,
+        componentCount: 0,
+      },
+    });
+    expect(writeStagedEntries).toHaveBeenCalledWith(
+      expect.any(Object),
+      [
+        {
+          fileId: TEMPLATE_FILE_ID,
+          versionId: templateFile.versionId,
+          fileName: templateFile.fileName,
+        },
+      ],
+      branchData.currentBranch.id
+    );
+  });
+
+  it('does not stage, download, or pin an unconfirmed source version', async () => {
+    vi.mocked(runStageFilesWorkflow).mockResolvedValue({
+      branchData,
+      uploadedFiles: [],
+      enqueueResult: {
+        jobData: {},
+        locales: ['es'],
+        message: 'No files need to be enqueued',
+      },
+    });
+
+    const result = await handleStage(options, settings(), 'gt-react', true);
+
+    expect(result?.fileVersionData).toBeUndefined();
+    expect(writeStagedEntries).not.toHaveBeenCalled();
+    expect(updateConfig).not.toHaveBeenCalled();
+  });
+
+  it('does not accept a source confirmation from another branch', async () => {
+    vi.mocked(runStageFilesWorkflow).mockResolvedValue({
+      branchData,
+      uploadedFiles: [
+        {
+          ...templateFile,
+          branchId: 'branch-2',
+        },
+      ],
+      enqueueResult: {
+        jobData: {},
+        locales: ['es'],
+        message: 'No files need to be enqueued',
+      },
+    });
+
+    const result = await handleStage(options, settings(), 'gt-react', true);
+
+    expect(result?.fileVersionData).toBeUndefined();
+    expect(writeStagedEntries).not.toHaveBeenCalled();
     expect(updateConfig).not.toHaveBeenCalled();
   });
 });

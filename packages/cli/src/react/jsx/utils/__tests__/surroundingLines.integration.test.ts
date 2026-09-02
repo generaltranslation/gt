@@ -8,6 +8,7 @@ import os from 'node:os';
 import { parseStrings } from '../parseStringFunction.js';
 import { parseTranslationComponent } from '../jsxParsing/parseJsx.js';
 import { Updates } from '../../../../types/index.js';
+import { getRelative } from '../../../../fs/findFilepath.js';
 
 describe('sourceCode metadata integration', () => {
   const tempFiles: string[] = [];
@@ -46,7 +47,7 @@ describe('sourceCode metadata integration', () => {
     ].join('\n');
 
     const filePath = writeTempFile(code);
-    const relativeFilePath = path.relative(process.cwd(), filePath);
+    const relativeFilePath = getRelative(filePath);
     const ast = parse(code, {
       sourceType: 'module',
       plugins: ['jsx', 'typescript'],
@@ -113,7 +114,7 @@ describe('sourceCode metadata integration', () => {
     ].join('\n');
 
     const filePath = writeTempFile(code);
-    const relativeFilePath = path.relative(process.cwd(), filePath);
+    const relativeFilePath = getRelative(filePath);
     const ast = parse(code, {
       sourceType: 'module',
       plugins: ['jsx', 'typescript'],
@@ -174,7 +175,7 @@ describe('sourceCode metadata integration', () => {
     ].join('\n');
 
     const filePath = writeTempFile(code);
-    const relativeFilePath = path.relative(process.cwd(), filePath);
+    const relativeFilePath = getRelative(filePath);
     const ast = parse(code, {
       sourceType: 'module',
       plugins: ['jsx', 'typescript'],

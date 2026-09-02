@@ -52,11 +52,11 @@ import {
   autoInsertJsxComponents,
 } from './autoInsertion.js';
 import { GTLibrary } from '../../../../types/libraries.js';
-import path from 'node:path';
 import { extractSourceCode } from '../extractSourceCode.js';
 import { SURROUNDING_LINE_COUNT } from '../../../../utils/constants.js';
 import { handleDerivation } from '../stringParsing/derivation/handleDerivation.js';
 import { parseStringExpression, nodeToStrings } from '../parseString.js';
+import { getRelative } from '../../../../fs/findFilepath.js';
 
 // Handle CommonJS/ESM interop
 const traverse = traverseModule.default || traverseModule;
@@ -694,7 +694,7 @@ function parseJSXElement({
   const componentErrors: string[] = [];
   const componentWarnings: Set<string> = new Set();
   const metadata: Metadata = {};
-  const relativeFilepath = path.relative(process.cwd(), config.file);
+  const relativeFilepath = getRelative(config.file);
   metadata.filePaths = [relativeFilepath];
 
   // Extract surrounding lines from source file

@@ -3,7 +3,11 @@ import { branchResolutionError, withOriginalError } from '../console/index.js';
 import { logger } from '../console/logger.js';
 import { Settings, TranslateFlags } from '../types/index.js';
 import { gt } from '../utils/gt.js';
-import { EnqueueFilesResult, FileToUpload } from 'generaltranslation/types';
+import type {
+  EnqueueFilesResult,
+  FileReference,
+  FileToUpload,
+} from 'generaltranslation/types';
 import { UploadSourcesStep } from './steps/UploadSourcesStep.js';
 import { SetupStep } from './steps/SetupStep.js';
 import { EnqueueStep } from './steps/EnqueueStep.js';
@@ -36,6 +40,7 @@ export async function runStageFilesWorkflow({
 }): Promise<{
   branchData: BranchData;
   enqueueResult: EnqueueFilesResult;
+  uploadedFiles: FileReference[];
 }> {
   try {
     // Log files to be translated
@@ -62,11 +67,19 @@ export async function runStageFilesWorkflow({
     }
 
     // then run the upload step
-    const uploadedFiles = await uploadStep.run({ files, branchData });
+    const uploadedFiles = await uploadStep.run({
+      files,
+      branchData,
+      deferIdentityActivation: options?.saveLocal === true,
+    });
 
     // optionally run the user edit diffs step
     if (options?.saveLocal) {
       await userEditDiffsStep.run(uploadedFiles);
+      uploadStep.activateConfirmedFileIdentities(
+        uploadedFiles,
+        branchData.currentBranch.id
+      );
     }
 
     // then run the tag step (non-fatal — tagging failure should not block translations)
@@ -98,7 +111,7 @@ export async function runStageFilesWorkflow({
 
     const enqueueResult = await enqueueStep.run(filesToEnqueue);
 
-    return { branchData, enqueueResult };
+    return { branchData, enqueueResult, uploadedFiles };
   } catch (error) {
     return logErrorAndExit(
       withOriginalError(

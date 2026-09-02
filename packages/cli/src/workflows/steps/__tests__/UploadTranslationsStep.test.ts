@@ -305,6 +305,46 @@ describe('UploadTranslationsStep', () => {
     expect(entry?.translations.fr).toBeUndefined();
   });
 
+  it('retires a legacy alias only after a current-ID translation is confirmed', async () => {
+    const es = makeTranslation('file-1', 'es');
+    const fr = makeTranslation('file-1', 'fr');
+    mockLockfile([
+      {
+        fileId: 'file-1',
+        previousFileId: 'windows-file-1',
+        versionId: 'version-file-1',
+        translations: {
+          es: { postProcessHash: hashStringSync(es.content) },
+          fr: { postProcessHash: hashStringSync(fr.content) },
+        },
+      },
+    ]);
+    mockGt.uploadTranslations.mockResolvedValue({
+      uploadedFiles: [{ fileId: 'file-1', locale: 'es' }],
+    });
+
+    const step = new UploadTranslationsStep(
+      mockGt as unknown as GT,
+      mockSettings
+    );
+    await step.run({
+      files: [{ source: makeSource('file-1'), translations: [es, fr] }],
+    });
+
+    expect(mockGt.uploadTranslations).toHaveBeenCalledWith(
+      [{ source: makeSource('file-1'), translations: [es, fr] }],
+      expect.any(Object)
+    );
+    const [written] = vi.mocked(writeLockfile).mock.calls[0]!;
+    expect(written.entries).toHaveLength(1);
+    expect(written.entries[0].previousFileId).toBeUndefined();
+    expect(written.entries[0].translations).toEqual({
+      es: expect.objectContaining({
+        postProcessHash: hashStringSync(es.content),
+      }),
+    });
+  });
+
   it('reports the server-confirmed number of uploaded translation files', async () => {
     const files = [
       {
@@ -413,6 +453,32 @@ describe('partitionTranslationsByLockfile', () => {
         },
       ])
     );
+    expect(filesToUpload).toEqual(files);
+    expect(skippedCount).toBe(0);
+  });
+
+  it('does not trust legacy hashes for the current server identity', () => {
+    const unchanged = makeTranslation('file-1', 'es');
+    const files = [
+      {
+        source: makeSource('file-1'),
+        translations: [unchanged],
+      },
+    ];
+    const { filesToUpload, skippedCount } = partitionTranslationsByLockfile(
+      files,
+      buildEntryMap([
+        {
+          fileId: 'file-1',
+          previousFileId: 'windows-file-1',
+          versionId: 'version-file-1',
+          translations: {
+            es: { postProcessHash: hashStringSync(unchanged.content) },
+          },
+        },
+      ])
+    );
+
     expect(filesToUpload).toEqual(files);
     expect(skippedCount).toBe(0);
   });

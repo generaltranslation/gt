@@ -15,6 +15,7 @@ import {
   shouldResolveRefs,
 } from '../utils/resolveMintlifyRefs.js';
 import {
+  activateCurrentFileIdentity,
   readLockfile,
   writeLockfile,
   findOrCreateEntry,
@@ -277,8 +278,12 @@ export async function downloadFileBatch(
         }
         // If a local translation already exists for the same source version, skip overwrite
         const existingEntry = entryMap.get(fileId);
+        const metadataMatchesServerIdentity =
+          !existingEntry?.previousFileId ||
+          fileId === existingEntry.previousFileId;
         const downloadedTranslation =
-          existingEntry?.versionId === versionId
+          existingEntry?.versionId === versionId &&
+          metadataMatchesServerIdentity
             ? existingEntry.translations[locale]
             : undefined;
         const fileExists = fs.existsSync(outputPath);
@@ -310,6 +315,7 @@ export async function downloadFileBatch(
               fileId,
               versionId
             );
+            activateCurrentFileIdentity(entry, fileId, entryMap);
             entry.fileName = inputPath;
             entry.translations[locale] = {
               updatedAt: new Date().toISOString(),
@@ -452,6 +458,7 @@ export async function downloadFileBatch(
             fileId,
             versionId
           );
+          activateCurrentFileIdentity(entry, fileId, entryMap);
           entry.fileName = inputPath;
           entry.translations[locale] = {
             updatedAt: new Date().toISOString(),
