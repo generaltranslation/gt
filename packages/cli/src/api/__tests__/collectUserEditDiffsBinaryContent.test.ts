@@ -61,10 +61,10 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
       _branchId: 'branch1',
       files: {
         resolvedPaths: {
-          strings: [path.join(tempDir, SOURCE)],
+          dotStrings: [path.join(tempDir, SOURCE)],
         },
         placeholderPaths: {
-          strings: [
+          dotStrings: [
             path.join(
               tempDir,
               'Guardian',

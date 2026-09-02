@@ -588,7 +588,7 @@ describe('aggregateFiles - Empty File Handling', () => {
     });
   });
 
-  describe('Apple .strings files', () => {
+  describe('.strings files', () => {
     // The escapes below are load-bearing: they must reach the API verbatim.
     const stringsContent =
       '/* Greeting */\n"hello" = "Line1\\nLine2 \\"quoted\\" 100%%";\n';
@@ -608,7 +608,7 @@ describe('aggregateFiles - Empty File Handling', () => {
       const settings = {
         files: {
           resolvedPaths: {
-            strings: ['/full/path/en.lproj/Localizable.strings'],
+            dotStrings: ['/full/path/en.lproj/Localizable.strings'],
           },
           placeholderPaths: {},
         },
@@ -640,7 +640,10 @@ describe('aggregateFiles - Empty File Handling', () => {
       const settings = {
         files: {
           resolvedPaths: {
-            strings: ['/full/path/empty.strings', '/full/path/valid.strings'],
+            dotStrings: [
+              '/full/path/empty.strings',
+              '/full/path/valid.strings',
+            ],
           },
           placeholderPaths: {},
         },
@@ -664,7 +667,7 @@ describe('aggregateFiles - Empty File Handling', () => {
     });
   });
 
-  describe('Apple .stringsdict files', () => {
+  describe('.stringsdict files', () => {
     // The escapes below are load-bearing: they must reach the API verbatim.
     const stringsdictContent =
       '<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0">\n<dict>\n  <key>%d file(s) \\"quoted\\"</key>\n</dict>\n</plist>\n';
@@ -681,7 +684,7 @@ describe('aggregateFiles - Empty File Handling', () => {
       const settings = {
         files: {
           resolvedPaths: {
-            stringsdict: ['/full/path/en.lproj/Localizable.stringsdict'],
+            dotStringsdict: ['/full/path/en.lproj/Localizable.stringsdict'],
           },
           placeholderPaths: {},
         },
@@ -712,7 +715,7 @@ describe('aggregateFiles - Empty File Handling', () => {
       const settings = {
         files: {
           resolvedPaths: {
-            stringsdict: [
+            dotStringsdict: [
               '/full/path/empty.stringsdict',
               '/full/path/valid.stringsdict',
             ],

@@ -45,7 +45,7 @@ function decodeByBom(bytes: Buffer): string {
   return bytes.toString('utf8');
 }
 
-describe('aggregateFiles - Apple .strings encodings', () => {
+describe('aggregateFiles - .strings encodings', () => {
   let dir: string;
 
   beforeAll(() => {
@@ -63,7 +63,7 @@ describe('aggregateFiles - Apple .strings encodings', () => {
   async function wireBytesFor(name: string): Promise<Buffer> {
     const { files } = await aggregateFiles({
       files: {
-        resolvedPaths: { strings: [path.join(dir, name)] },
+        resolvedPaths: { dotStrings: [path.join(dir, name)] },
         placeholderPaths: {},
       },
       options: {},

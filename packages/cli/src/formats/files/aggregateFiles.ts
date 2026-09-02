@@ -396,12 +396,12 @@ export async function aggregateFiles(
     files.push(...lottieFiles);
   }
 
-  // Apple .strings/.stringsdict files are uploaded verbatim. Their backslash
+  // .strings and .stringsdict files are uploaded verbatim. Their backslash
   // escapes and format specifiers must survive byte-for-byte, so they skip the
   // generic markdown-oriented preprocessing below.
   for (const [fileType, fileFormat] of [
-    ['strings', 'DOT_STRINGS'],
-    ['stringsdict', 'DOT_STRINGSDICT'],
+    ['dotStrings', 'DOT_STRINGS'],
+    ['dotStringsdict', 'DOT_STRINGSDICT'],
   ] as const) {
     if (!filePaths[fileType]) continue;
     // Content must already be base64 exactly when the format is binary, or the
@@ -448,8 +448,8 @@ export async function aggregateFiles(
       fileType === 'yaml' ||
       fileType === 'twilioContentJson' ||
       fileType === 'lottie' ||
-      fileType === 'strings' ||
-      fileType === 'stringsdict'
+      fileType === 'dotStrings' ||
+      fileType === 'dotStringsdict'
     )
       continue;
     if (filePaths[fileType]) {
