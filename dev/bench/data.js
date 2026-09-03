@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788375120029,
+  "lastUpdate": 1788395366850,
   "repoUrl": "https://github.com/generaltranslation/gt",
   "entries": {
     "Middleware Benchmarks": [
@@ -9860,6 +9860,122 @@ window.BENCHMARK_DATA = {
             "value": 81.40000000002328,
             "unit": "ms",
             "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.20\"\n}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Ernest McCarter",
+            "username": "eoinest",
+            "email": "ernest@generaltranslation.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "1122522c4a4be995e4c4e1d12d05817b55cc198b",
+          "message": "[ci] release (#2232)\n\nThis PR was opened by the [Changesets\nrelease](https://github.com/changesets/action) GitHub action. When\nyou're ready to do a release, you can merge this and the packages will\nbe published to npm automatically. If you're not ready to do a release\nyet, that's fine, whenever you add more changesets to main, this PR will\nbe updated.\n\n\n# Releases\n## @generaltranslation/api@0.0.5\n\n### Patch Changes\n\n- [#2226](https://github.com/generaltranslation/gt/pull/2226)\n[`44aabc7`](https://github.com/generaltranslation/gt/commit/44aabc734d99fab4fcab7faedc84d20b5772bde3)\nThanks [@eoinest](https://github.com/eoinest)! - Rename the `.strings`\nand `.stringsdict` file formats. The API format names become\n`DOT_STRINGS` and `DOT_STRINGSDICT`, and the `gt.config.json` keys under\n`files` become `dotStrings` and `dotStringsdict`.\n\n**This is a breaking configuration change.** A `gt.config.json` that\nstill uses `files.strings` or `files.stringsdict` will silently stop\nmatching those files, because the old keys are no longer recognised file\ntypes. Rename them to `files.dotStrings` and `files.dotStringsdict`. The\nfile extensions on disk are unchanged, and translated output is still\nwritten as `.strings` and `.stringsdict`.\n\nThe old names identified a vendor rather than a file. Apple ships four\nstring formats — `.strings`, `.stringsdict`, `.xcstrings` and `.plist` —\nso `APPLE_STRINGS` never said which one it meant. The new names identify\nthe extension itself, the way developers say it out loud.\n## gt@2.18.1\n\n### Patch Changes\n\n- [#2226](https://github.com/generaltranslation/gt/pull/2226)\n[`44aabc7`](https://github.com/generaltranslation/gt/commit/44aabc734d99fab4fcab7faedc84d20b5772bde3)\nThanks [@eoinest](https://github.com/eoinest)! - Rename the `.strings`\nand `.stringsdict` file formats. The API format names become\n`DOT_STRINGS` and `DOT_STRINGSDICT`, and the `gt.config.json` keys under\n`files` become `dotStrings` and `dotStringsdict`.\n\n**This is a breaking configuration change.** A `gt.config.json` that\nstill uses `files.strings` or `files.stringsdict` will silently stop\nmatching those files, because the old keys are no longer recognised file\ntypes. Rename them to `files.dotStrings` and `files.dotStringsdict`. The\nfile extensions on disk are unchanged, and translated output is still\nwritten as `.strings` and `.stringsdict`.\n\nThe old names identified a vendor rather than a file. Apple ships four\nstring formats — `.strings`, `.stringsdict`, `.xcstrings` and `.plist` —\nso `APPLE_STRINGS` never said which one it meant. The new names identify\nthe extension itself, the way developers say it out loud.\n\n- Updated dependencies\n[[`44aabc7`](https://github.com/generaltranslation/gt/commit/44aabc734d99fab4fcab7faedc84d20b5772bde3)]:\n  - generaltranslation@9.1.12\n  - @generaltranslation/python-extractor@0.2.45\n  - @generaltranslation/supported-locales@2.1.25\n  - @generaltranslation/vue-extractor@0.1.5\n## @generaltranslation/compiler@1.3.47\n\n### Patch Changes\n\n- Updated dependencies\n[[`44aabc7`](https://github.com/generaltranslation/gt/commit/44aabc734d99fab4fcab7faedc84d20b5772bde3)]:\n  - generaltranslation@9.1.12\n## generaltranslation@9.1.12\n\n### Patch Changes\n\n- [#2226](https://github.com/generaltranslation/gt/pull/2226)\n[`44aabc7`](https://github.com/generaltranslation/gt/commit/44aabc734d99fab4fcab7faedc84d20b5772bde3)\nThanks [@eoinest](https://github.com/eoinest)! - Rename the `.strings`\nand `.stringsdict` file formats. The API format names become\n`DOT_STRINGS` and `DOT_STRINGSDICT`, and the `gt.config.json` keys under\n`files` become `dotStrings` and `dotStringsdict`.\n\n**This is a breaking configuration change.** A `gt.config.json` that\nstill uses `files.strings` or `files.stringsdict` will silently stop\nmatching those files, because the old keys are no longer recognised file\ntypes. Rename them to `files.dotStrings` and `files.dotStringsdict`. The\nfile extensions on disk are unchanged, and translated output is still\nwritten as `.strings` and `.stringsdict`.\n\nThe old names identified a vendor rather than a file. Apple ships four\nstring formats — `.strings`, `.stringsdict`, `.xcstrings` and `.plist` —\nso `APPLE_STRINGS` never said which one it meant. The new names identify\nthe extension itself, the way developers say it out loud.\n\n- Updated dependencies\n[[`44aabc7`](https://github.com/generaltranslation/gt/commit/44aabc734d99fab4fcab7faedc84d20b5772bde3)]:\n  - @generaltranslation/api@0.0.5\n## gtx-cli@2.18.1\n\n### Patch Changes\n\n- Updated dependencies\n[[`44aabc7`](https://github.com/generaltranslation/gt/commit/44aabc734d99fab4fcab7faedc84d20b5772bde3)]:\n  - gt@2.18.1\n## gt-i18n@1.0.22\n\n### Patch Changes\n\n- Updated dependencies\n[[`44aabc7`](https://github.com/generaltranslation/gt/commit/44aabc734d99fab4fcab7faedc84d20b5772bde3)]:\n  - generaltranslation@9.1.12\n## locadex@1.0.217\n\n### Patch Changes\n\n- Updated dependencies\n[[`44aabc7`](https://github.com/generaltranslation/gt/commit/44aabc734d99fab4fcab7faedc84d20b5772bde3)]:\n  - gt@2.18.1\n## gt-next@11.1.21\n\n### Patch Changes\n\n- Updated dependencies\n[[`44aabc7`](https://github.com/generaltranslation/gt/commit/44aabc734d99fab4fcab7faedc84d20b5772bde3)]:\n  - generaltranslation@9.1.12\n  - @generaltranslation/compiler@1.3.47\n  - gt-i18n@1.0.22\n  - gt-react@11.1.21\n  - @generaltranslation/react-core@11.1.21\n## gt-node@1.0.23\n\n### Patch Changes\n\n- Updated dependencies\n[[`44aabc7`](https://github.com/generaltranslation/gt/commit/44aabc734d99fab4fcab7faedc84d20b5772bde3)]:\n  - generaltranslation@9.1.12\n  - gt-i18n@1.0.22\n## @generaltranslation/python-extractor@0.2.45\n\n### Patch Changes\n\n- Updated dependencies\n[[`44aabc7`](https://github.com/generaltranslation/gt/commit/44aabc734d99fab4fcab7faedc84d20b5772bde3)]:\n  - generaltranslation@9.1.12\n## gt-react@11.1.21\n\n### Patch Changes\n\n- Updated dependencies\n[[`44aabc7`](https://github.com/generaltranslation/gt/commit/44aabc734d99fab4fcab7faedc84d20b5772bde3)]:\n  - generaltranslation@9.1.12\n  - gt-i18n@1.0.22\n  - @generaltranslation/react-core@11.1.21\n## @generaltranslation/react-core@11.1.21\n\n### Patch Changes\n\n- Updated dependencies\n[[`44aabc7`](https://github.com/generaltranslation/gt/commit/44aabc734d99fab4fcab7faedc84d20b5772bde3)]:\n  - generaltranslation@9.1.12\n  - gt-i18n@1.0.22\n## gt-react-native@11.1.21\n\n### Patch Changes\n\n- Updated dependencies\n[[`44aabc7`](https://github.com/generaltranslation/gt/commit/44aabc734d99fab4fcab7faedc84d20b5772bde3)]:\n  - generaltranslation@9.1.12\n  - gt-i18n@1.0.22\n  - @generaltranslation/react-core@11.1.21\n  - @generaltranslation/supported-locales@2.1.25\n## gt-sanity@4.0.9\n\n### Patch Changes\n\n- Updated dependencies\n[[`44aabc7`](https://github.com/generaltranslation/gt/commit/44aabc734d99fab4fcab7faedc84d20b5772bde3)]:\n  - generaltranslation@9.1.12\n## @generaltranslation/supported-locales@2.1.25\n\n### Patch Changes\n\n- Updated dependencies\n[[`44aabc7`](https://github.com/generaltranslation/gt/commit/44aabc734d99fab4fcab7faedc84d20b5772bde3)]:\n  - generaltranslation@9.1.12\n## gt-tanstack-start@11.1.21\n\n### Patch Changes\n\n- Updated dependencies\n[[`44aabc7`](https://github.com/generaltranslation/gt/commit/44aabc734d99fab4fcab7faedc84d20b5772bde3)]:\n  - generaltranslation@9.1.12\n  - gt-i18n@1.0.22\n  - gt-react@11.1.21\n  - @generaltranslation/react-core@11.1.21\n## gt-vue@0.1.6\n\n### Patch Changes\n\n- Updated dependencies\n[[`44aabc7`](https://github.com/generaltranslation/gt/commit/44aabc734d99fab4fcab7faedc84d20b5772bde3)]:\n  - generaltranslation@9.1.12\n  - gt-i18n@1.0.22\n## @generaltranslation/vue-extractor@0.1.5\n\n### Patch Changes\n\n- Updated dependencies\n[[`44aabc7`](https://github.com/generaltranslation/gt/commit/44aabc734d99fab4fcab7faedc84d20b5772bde3)]:\n  - generaltranslation@9.1.12",
+          "timestamp": "2026-09-03T00:21:20Z",
+          "url": "https://github.com/generaltranslation/gt/commit/1122522c4a4be995e4c4e1d12d05817b55cc198b"
+        },
+        "date": 1788395366193,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "gt-next > unit > middleware: factory creation latency > createNextMiddleware() (mean)",
+            "value": 0.046591264163249844,
+            "range": "±0.0231",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.21\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > default locale request (/) (mean)",
+            "value": 0.16367941342062545,
+            "range": "±0.0662",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.21\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > non-default locale request (/fr) (mean)",
+            "value": 0.20967946079664337,
+            "range": "±0.0517",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.21\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > nested route (/fr/about) (mean)",
+            "value": 0.2208145147902899,
+            "range": "±0.1255",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > ttfb",
+            "value": 138.89999999996508,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > domContentLoaded",
+            "value": 169.20000000001164,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > load",
+            "value": 250.89999999996508,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > elapsed",
+            "value": 103,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > ttfb",
+            "value": 18,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > domContentLoaded",
+            "value": 29.099999999976717,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > load",
+            "value": 94.89999999996508,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: locale-switch-en-to-fr > elapsed",
+            "value": 610,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > ttfb",
+            "value": 10.200000000011642,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > domContentLoaded",
+            "value": 19.29999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.21\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > load",
+            "value": 81.39999999996508,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.1.21\"\n}"
           }
         ]
       }
