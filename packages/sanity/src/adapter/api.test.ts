@@ -1,23 +1,15 @@
+// @vitest-environment node
+
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  downloadFile,
-  downloadFiles,
-  enqueueFileTranslations,
-  getFileInfo,
-  getTranslationStatus,
-  uploadTranslations,
-} from 'generaltranslation/api';
+import { downloadFile, getTranslationStatus } from 'generaltranslation/api';
+import { ApiError } from 'generaltranslation/errors';
 
 import { api, configureApiClient } from './api';
 
 vi.mock('generaltranslation/api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('generaltranslation/api')>()),
   downloadFile: vi.fn(),
-  downloadFiles: vi.fn(),
-  enqueueFileTranslations: vi.fn(),
-  getFileInfo: vi.fn(),
   getTranslationStatus: vi.fn(),
-  uploadTranslations: vi.fn(),
 }));
 
 function result<T>(data: T) {
@@ -57,10 +49,13 @@ const translatedFile = {
 };
 
 describe('Sanity API adapter', () => {
+  const fetchMock = vi.fn<typeof fetch>();
+
   beforeEach(() => {
     vi.resetAllMocks();
     configureApiClient({
       baseUrl: 'https://api.example.com',
+      fetch: fetchMock,
       customMapping: {
         source: { code: 'en-US' },
         target: { code: 'es-ES' },
@@ -69,29 +64,42 @@ describe('Sanity API adapter', () => {
   });
 
   it('canonicalizes the optional source locale when enqueueing files', async () => {
-    vi.mocked(enqueueFileTranslations).mockResolvedValue(
-      result({ jobData: {}, locales: [], message: 'Enqueued files' })
-    );
+    fetchMock.mockImplementation(async (request) => {
+      const body = JSON.parse(await new Request(request).text()) as {
+        sourceLocale?: string;
+        targetLocales: string[];
+      };
+      expect(body.sourceLocale).toBe('en-US');
+      expect(body.targetLocales).toEqual(['es-ES']);
+      return Response.json({
+        jobData: {},
+        locales: [],
+        message: 'Enqueued files',
+      });
+    });
 
     await api.enqueueFiles([{ fileId: 'file-id', versionId: 'version-id' }], {
       sourceLocale: 'source',
       targetLocales: ['target'],
     });
 
-    expect(enqueueFileTranslations).toHaveBeenCalledWith(
-      expect.objectContaining({
-        body: expect.objectContaining({
-          sourceLocale: 'en-US',
-          targetLocales: ['es-ES'],
-        }),
-      })
-    );
+    expect(fetchMock).toHaveBeenCalledOnce();
   });
 
   it('canonicalizes translation locales when uploading translations', async () => {
-    vi.mocked(uploadTranslations).mockResolvedValue(
-      result({ uploadedFiles: [], count: 0, message: 'Uploaded files' })
-    );
+    fetchMock.mockImplementation(async (request) => {
+      const body = JSON.parse(await new Request(request).text()) as {
+        sourceLocale: string;
+        data: Array<{ translations: Array<{ locale: string }> }>;
+      };
+      expect(body.sourceLocale).toBe('en-US');
+      expect(body.data[0].translations[0].locale).toBe('es-ES');
+      return Response.json({
+        uploadedFiles: [],
+        count: 0,
+        message: 'Uploaded files',
+      });
+    });
 
     await api.uploadTranslations(
       [
@@ -115,18 +123,7 @@ describe('Sanity API adapter', () => {
       { sourceLocale: 'source' }
     );
 
-    expect(uploadTranslations).toHaveBeenCalledWith(
-      expect.objectContaining({
-        body: expect.objectContaining({
-          sourceLocale: 'en-US',
-          data: [
-            expect.objectContaining({
-              translations: [expect.objectContaining({ locale: 'es-ES' })],
-            }),
-          ],
-        }),
-      })
-    );
+    expect(fetchMock).toHaveBeenCalledOnce();
   });
 
   it('canonicalizes the locale when downloading one file', async () => {
@@ -145,8 +142,12 @@ describe('Sanity API adapter', () => {
   });
 
   it('maps batch-download locales in both directions', async () => {
-    vi.mocked(downloadFiles).mockResolvedValue(
-      result({
+    fetchMock.mockImplementation(async (request) => {
+      const body = JSON.parse(await new Request(request).text()) as Array<{
+        locale?: string;
+      }>;
+      expect(body).toEqual([{ fileId: 'file-id', locale: 'es-ES' }]);
+      return Response.json({
         files: [
           {
             id: 'id',
@@ -162,18 +163,14 @@ describe('Sanity API adapter', () => {
         ],
         count: 1,
         pending: [],
-      })
-    );
+      });
+    });
 
     const response = await api.downloadFileBatch([
       { fileId: 'file-id', locale: 'target' },
     ]);
 
-    expect(downloadFiles).toHaveBeenCalledWith(
-      expect.objectContaining({
-        body: [{ fileId: 'file-id', locale: 'es-ES' }],
-      })
-    );
+    expect(fetchMock).toHaveBeenCalledOnce();
     expect(response.files[0].locale).toBe('target');
   });
 
@@ -182,13 +179,38 @@ describe('Sanity API adapter', () => {
       files: [],
       count: 0,
     });
-    expect(downloadFiles).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('preserves HTTP status on job polling errors', async () => {
+    fetchMock.mockResolvedValue(
+      Response.json({ error: 'job status unavailable' }, { status: 403 })
+    );
+
+    await expect(api.awaitJobs(['job-id'])).rejects.toEqual(
+      expect.objectContaining<ApiError>({
+        name: 'ApiError',
+        code: 403,
+        message: 'job status unavailable',
+      })
+    );
+  });
+
+  it('does not expose shared adapter configuration internals', () => {
+    expect(api).not.toHaveProperty('getClientConfig');
   });
 
   it('maps file-info locales in both directions', async () => {
-    vi.mocked(getFileInfo).mockResolvedValue(
-      result({ sourceFiles: [sourceFile], translatedFiles: [translatedFile] })
-    );
+    fetchMock.mockImplementation(async (request) => {
+      const body = JSON.parse(await new Request(request).text()) as {
+        translatedFiles: Array<{ locale: string }>;
+      };
+      expect(body.translatedFiles[0].locale).toBe('es-ES');
+      return Response.json({
+        sourceFiles: [sourceFile],
+        translatedFiles: [translatedFile],
+      });
+    });
 
     const response = await api.queryFileData({
       translatedFiles: [
@@ -201,13 +223,7 @@ describe('Sanity API adapter', () => {
       ],
     });
 
-    expect(getFileInfo).toHaveBeenCalledWith(
-      expect.objectContaining({
-        body: expect.objectContaining({
-          translatedFiles: [expect.objectContaining({ locale: 'es-ES' })],
-        }),
-      })
-    );
+    expect(fetchMock).toHaveBeenCalledOnce();
     expect(response.translatedFiles[0].locale).toBe('target');
     expect(response.sourceFiles[0]).toMatchObject({
       sourceLocale: 'source',

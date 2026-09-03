@@ -24,13 +24,20 @@ export type {
 } from './types';
 export { isVariable } from './utils/isVariable';
 export { minifyVariableType } from './utils/minify';
-export { encode, decode } from './utils/base64';
+export {
+  decode,
+  decodeFileContent,
+  encode,
+  encodeFileContent,
+} from './utils/base64';
 export { isSupportedFileFormatTransform } from './utils/isSupportedFileFormatTransform';
 export { API_VERSION } from './translate/api';
 export {
   isErrorResult,
   unwrapApiResult,
 } from './translate/utils/unwrapApiResult';
+export { createGtApiAdapter } from './adapter/createGtApi';
+export type { GtApiAdapter, GtApiAdapterConfig } from './adapter/createGtApi';
 
 // derive
 export { decodeVars } from './derive/decodeVars';
