@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { isBinaryFileFormat } from 'generaltranslation/types';
 import { logger } from '../console/logger.js';
-import { gt } from '../utils/gt.js';
+import { api } from '../utils/api.js';
 import { Settings } from '../types/index.js';
 import { validateJsonSchema } from '../formats/json/utils.js';
 import { validateYamlSchema } from '../formats/yaml/utils.js';
@@ -63,12 +63,14 @@ function reportWithheldGtJsonComponents(
  */
 function countGtJsonEntries(content: string): number | undefined {
   try {
-    const parsed = JSON.parse(content);
+    const parsed: unknown = JSON.parse(content);
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
       return undefined;
     }
     const entries =
+      'type' in parsed &&
       parsed.type === 'GTJSON' &&
+      'data' in parsed &&
       parsed.data &&
       typeof parsed.data === 'object' &&
       !Array.isArray(parsed.data)
@@ -230,7 +232,7 @@ export async function downloadFileBatch(
 
   try {
     // Download the files
-    const responseData = await gt.downloadFileBatch(
+    const responseData = await api.downloadFileBatch(
       files.map((file) => ({
         fileId: file.fileId,
         branchId: file.branchId,
