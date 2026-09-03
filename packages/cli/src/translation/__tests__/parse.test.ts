@@ -56,6 +56,50 @@ describe('createUpdates', () => {
     expect(result.updates).toEqual([]);
   });
 
+  it('allows derive variants (staticId) to share an id with distinct hashes', async () => {
+    vi.mocked(createInlineUpdates).mockResolvedValue({
+      updates: [
+        {
+          dataFormat: 'JSX',
+          source: ['Hello', { t: 'Derive', i: 1, c: 'boy' }],
+          metadata: {
+            id: 'landing',
+            hash: 'first-hash',
+            staticId: 'shared-derive-id',
+          },
+        },
+        {
+          dataFormat: 'JSX',
+          source: ['Hello', { t: 'Derive', i: 1, c: 'girl' }],
+          metadata: {
+            id: 'landing',
+            hash: 'second-hash',
+            staticId: 'shared-derive-id',
+          },
+        },
+      ],
+      errors: [],
+      warnings: [],
+    });
+
+    const result = await createUpdates(
+      {} as TranslateFlags,
+      [],
+      undefined,
+      Libraries.GT_REACT,
+      false,
+      {},
+      {} as ParsingConfigOptions
+    );
+
+    expect(result.errors).toEqual([]);
+    expect(result.updates).toHaveLength(2);
+    expect(result.updates.map((update) => update.metadata.id)).toEqual([
+      'landing',
+      'landing',
+    ]);
+  });
+
   it('allows duplicate custom ids when entries have matching hashes', async () => {
     vi.mocked(createInlineUpdates).mockResolvedValue({
       updates: [
