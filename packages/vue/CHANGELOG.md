@@ -1,5 +1,37 @@
 # gt-vue
 
+## 0.1.7
+
+### Patch Changes
+
+- Updated dependencies [[`de66e5f`](https://github.com/generaltranslation/gt/commit/de66e5f41e05f22d51661faacae78b4fb3d86035)]:
+  - generaltranslation@9.1.13
+  - gt-i18n@1.0.23
+
+## 0.1.6
+
+### Patch Changes
+
+- Updated dependencies [[`44aabc7`](https://github.com/generaltranslation/gt/commit/44aabc734d99fab4fcab7faedc84d20b5772bde3)]:
+  - generaltranslation@9.1.12
+  - gt-i18n@1.0.22
+
+## 0.1.5
+
+### Patch Changes
+
+- Updated dependencies [[`091c964`](https://github.com/generaltranslation/gt/commit/091c964b45eba191d6e35bc1cdb93cc3683a3f71), [`b8a9679`](https://github.com/generaltranslation/gt/commit/b8a96797860f2bb7b12f3c307d47c9b1fead2096)]:
+  - generaltranslation@9.1.11
+  - gt-i18n@1.0.21
+
+## 0.1.4
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.1.10
+  - gt-i18n@1.0.20
+
 ## 0.1.3
 
 ### Patch Changes

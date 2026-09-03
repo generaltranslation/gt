@@ -9,16 +9,35 @@ import { Settings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import { getGitUnifiedDiff } from '../utils/gitDiff.js';
 import { api } from '../utils/api.js';
-import { FileReference, SubmitUserEditDiff } from 'generaltranslation/types';
+import {
+  FileReference,
+  isBinaryFileFormat,
+  SubmitUserEditDiff,
+} from 'generaltranslation/types';
 import os from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { hashStringSync } from '../utils/hash.js';
 import { extractJson } from '../formats/json/extractJson.js';
 import { extractYaml } from '../formats/yaml/extractYaml.js';
+import { logger } from '../console/logger.js';
+import { recordWarning } from '../state/translateWarnings.js';
+import { getRelative } from '../fs/findFilepath.js';
 
 type LatestDownloadedVersion = {
   versionId: string;
   entry: DownloadedTranslation;
+};
+
+const utf8Decoder = new TextDecoder('utf-8', { fatal: true });
+
+/** Whether these bytes round trip as UTF-8 text. */
+const isUtf8Text = (bytes: Buffer): boolean => {
+  try {
+    utf8Decoder.decode(bytes);
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 const findLatestDownloadedVersion = (
@@ -130,7 +149,7 @@ export async function collectAndSendUserEditDiffs(
     const translatedFiles =
       checkResponse.translatedFiles?.filter((t) => t.completedAt) ?? [];
 
-    const serverContentByKey = new Map<string, string>();
+    const serverContentByKey = new Map<string, Buffer>();
     try {
       const resp = await api.downloadFileBatch(
         translatedFiles.map((file) => ({
@@ -144,7 +163,11 @@ export async function collectAndSendUserEditDiffs(
       for (const f of files) {
         serverContentByKey.set(
           `${f.branchId}:${f.fileId}:${f.versionId}:${f.locale}`,
-          f.data
+          // Formats in BINARY_FILE_FORMATS are still base64 at this point;
+          // everything else has already been decoded to a UTF-8 string.
+          isBinaryFileFormat(f.fileFormat)
+            ? Buffer.from(f.data, 'base64')
+            : Buffer.from(f.data, 'utf8')
         );
       }
     } catch {
@@ -154,17 +177,39 @@ export async function collectAndSendUserEditDiffs(
     // Compute diffs using fetched server contents
     for (const c of candidates) {
       const key = `${c.branchId}:${c.fileId}:${c.versionId}:${c.locale}`;
-      const serverContent = serverContentByKey.get(key);
-      if (!serverContent) continue;
+      const serverBytes = serverContentByKey.get(key);
+      // Absent means the batch did not return this file, so there is no
+      // baseline. An empty payload is a baseline of nothing, which the user
+      // may well have written against.
+      if (!serverBytes) continue;
 
       try {
+        const localBytes = await fs.promises.readFile(c.outputPath);
+
+        // Nothing was edited, so there is no diff to compute or report.
+        if (localBytes.equals(serverBytes)) continue;
+
+        // A unified diff and localContent are both UTF-8 text. Content that is
+        // not valid UTF-8 — a Lottie zip, a UTF-16 .strings file — has no
+        // faithful text form here, and sending mojibake upstream is worse than
+        // sending nothing. Say so: the edit is real and will be lost on the
+        // next download.
+        if (!isUtf8Text(serverBytes) || !isUtf8Text(localBytes)) {
+          const relativePath = getRelative(c.outputPath);
+          const reason =
+            'Edited file is not valid UTF-8, so its changes cannot be submitted';
+          logger.warn(`Skipping local edits to ${relativePath}: ${reason}`);
+          recordWarning('skipped_file', relativePath, reason);
+          continue;
+        }
+
         const safeName = Buffer.from(
           `${c.branchId}:${c.fileId}:${c.versionId}:${c.locale}`
         )
           .toString('base64')
           .replace(/=+$/g, '');
         const tempServerFile = path.join(tempDir, `${safeName}.server`);
-        await fs.promises.writeFile(tempServerFile, serverContent, 'utf8');
+        await fs.promises.writeFile(tempServerFile, serverBytes);
 
         const diff = await getGitUnifiedDiff(tempServerFile, c.outputPath);
         try {
@@ -174,10 +219,7 @@ export async function collectAndSendUserEditDiffs(
         }
 
         if (diff && diff.trim().length > 0) {
-          const rawLocalContent = await fs.promises.readFile(
-            c.outputPath,
-            'utf8'
-          );
+          const rawLocalContent = localBytes.toString('utf8');
 
           // For JSON files with jsonSchema config, extract to composite format
           let localContent = rawLocalContent;
