@@ -1,5 +1,5 @@
 import {
-  fileEncodingError,
+  fileEncodingSkipReason,
   noDefaultLocaleError,
 } from '../../console/index.js';
 import { exitSync, logErrorAndExit } from '../../console/logging.js';
@@ -17,6 +17,7 @@ import type { FileToUpload } from 'generaltranslation/types';
 import { hasValidCredentials } from './utils/validation.js';
 import { runPublishWorkflow } from '../../workflows/publish.js';
 import { aggregateFiles } from '../../formats/files/aggregateFiles.js';
+import { recordWarning } from '../../state/translateWarnings.js';
 
 /**
  * Sends multiple files to the API for translation
@@ -125,9 +126,13 @@ export async function upload(
               translationFormat
             );
           } catch (error) {
-            logErrorAndExit(
-              fileEncodingError(getRelative(translatedFileName), error)
-            );
+            // One undecodable locale should not block the others: skip it and
+            // report it in the summary.
+            const relativePath = getRelative(translatedFileName);
+            const reason = fileEncodingSkipReason(error);
+            logger.warn(`Skipping ${relativePath}: ${reason}`);
+            recordWarning('skipped_file', relativePath, reason);
+            continue;
           }
           translations.push({
             content: translatedContent,

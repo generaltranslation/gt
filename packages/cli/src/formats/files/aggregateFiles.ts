@@ -1,7 +1,7 @@
 import { logger } from '../../console/logger.js';
 import { logErrorAndExit } from '../../console/logging.js';
 import {
-  fileEncodingError,
+  fileEncodingSkipReason,
   lottieExpressionsError,
 } from '../../console/index.js';
 import { recordWarning } from '../../state/translateWarnings.js';
@@ -417,7 +417,12 @@ export async function aggregateFiles(
         try {
           content = readFileContent(filePath, fileFormat);
         } catch (error) {
-          logErrorAndExit(fileEncodingError(relativePath, error));
+          // One unreadable file should not abort the whole run: skip it and
+          // report it in the summary
+          const reason = fileEncodingSkipReason(error);
+          logger.warn(`Skipping ${relativePath}: ${reason}`);
+          recordWarning('skipped_file', relativePath, reason);
+          return null;
         }
         return {
           content,
@@ -430,6 +435,7 @@ export async function aggregateFiles(
         } satisfies FileToUpload;
       })
       .filter((file) => {
+        if (!file) return false;
         if (!file.content.trim()) {
           logger.warn(`Skipping ${file.fileName}: File is empty`);
           recordWarning('skipped_file', file.fileName, 'File is empty');
@@ -437,7 +443,7 @@ export async function aggregateFiles(
         }
         return true;
       });
-    files.push(...verbatimFiles);
+    files.push(...verbatimFiles.filter((file) => file !== null));
   }
 
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {

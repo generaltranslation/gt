@@ -626,7 +626,7 @@ describe('upload - Apple .strings translations that cannot be decoded', () => {
     vi.restoreAllMocks();
   });
 
-  it('names the file that could not be read instead of uploading it', async () => {
+  it('names the file that could not be read and uploads the rest', async () => {
     const source = Buffer.from('"welcome" = "Welcome!";\n', 'utf8');
     // A UTF-16 byte order mark over an odd number of bytes: the file claims an
     // encoding its contents cannot be read as.
@@ -646,7 +646,20 @@ describe('upload - Apple .strings translations that cannot be decoded', () => {
       makeSettings({ locales: ['es'], options: {} })
     );
 
-    expect(logErrorAndExit).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(logErrorAndExit).mock.calls[0][0]).toContain(TRANSLATION);
+    // The run continues rather than aborting on the one unreadable file.
+    expect(logErrorAndExit).not.toHaveBeenCalled();
+
+    const warning = vi
+      .mocked(logger.warn)
+      .mock.calls.map((call) => String(call[0]))
+      .find((message) => message.includes(TRANSLATION));
+    expect(warning).toBeDefined();
+
+    // The source still uploads; only the locale that could not be decoded is
+    // left out, so the rest of the run is unaffected.
+    const call = vi.mocked(runUploadFilesWorkflow).mock.calls[0][0];
+    const uploaded = call.files.find((f) => f.source.fileName === SOURCE);
+    expect(uploaded).toBeDefined();
+    expect(uploaded?.translations).toHaveLength(0);
   });
 });
