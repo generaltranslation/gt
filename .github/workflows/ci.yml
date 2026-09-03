@@ -12,23 +12,24 @@ permissions:
   contents: read
 
 jobs:
-  # Changesets owns this branch namespace. Release PRs only contain generated
-  # version and changelog updates for changes that already passed CI on main.
+  # Changesets owns this same-repository branch namespace. Release PRs only
+  # contain generated version and changelog updates for changes that already
+  # passed CI on main.
   release-merge-gate:
     runs-on: ubuntu-latest
     steps:
       - name: Require an admin to merge release PRs
-        if: ${{ startsWith(github.head_ref, 'changeset-release/') }}
+        if: ${{ github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.head_ref, 'changeset-release/') }}
         run: |
           echo '::error title=Admin merge required::Automated release PRs must be merged by a repository admin using the ruleset bypass.'
           exit 1
 
       - name: Allow standard PRs
-        if: ${{ !startsWith(github.head_ref, 'changeset-release/') }}
+        if: ${{ github.event.pull_request.head.repo.full_name != github.repository || !startsWith(github.head_ref, 'changeset-release/') }}
         run: echo 'This is not an automated release PR.'
 
   lint:
-    if: ${{ !startsWith(github.head_ref, 'changeset-release/') }}
+    if: ${{ github.event.pull_request.head.repo.full_name != github.repository || !startsWith(github.head_ref, 'changeset-release/') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -65,7 +66,7 @@ jobs:
         run: pnpm lint
 
   tests:
-    if: ${{ !startsWith(github.head_ref, 'changeset-release/') }}
+    if: ${{ github.event.pull_request.head.repo.full_name != github.repository || !startsWith(github.head_ref, 'changeset-release/') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -105,7 +106,7 @@ jobs:
         run: pnpm exec turbo test --filter='...[origin/${{ github.base_ref }}]' --filter='!gt-next-middleware-e2e' --filter='!./examples/*'
 
   test-builds:
-    if: ${{ !startsWith(github.head_ref, 'changeset-release/') }}
+    if: ${{ github.event.pull_request.head.repo.full_name != github.repository || !startsWith(github.head_ref, 'changeset-release/') }}
     strategy:
       matrix:
         include:
@@ -204,7 +205,7 @@ jobs:
           pnpm exec turbo build:turbopack --filter=general-cases... --force
 
   test-vue-versions:
-    if: ${{ !startsWith(github.head_ref, 'changeset-release/') }}
+    if: ${{ github.event.pull_request.head.repo.full_name != github.repository || !startsWith(github.head_ref, 'changeset-release/') }}
     strategy:
       matrix:
         vue: ['3.3.13', '3.5.40']
@@ -270,7 +271,7 @@ jobs:
           pnpm --filter @generaltranslation/vue-extractor test
 
   test-cli-binaries:
-    if: ${{ !startsWith(github.head_ref, 'changeset-release/') }}
+    if: ${{ github.event.pull_request.head.repo.full_name != github.repository || !startsWith(github.head_ref, 'changeset-release/') }}
     strategy:
       matrix:
         include:
@@ -371,7 +372,7 @@ jobs:
           node --input-type=module -e "import fs from 'node:fs'; const catalog = JSON.parse(fs.readFileSync('dist/_gt/en.json', 'utf8')); for (const message of ['Hello from the native Vue extractor', 'Hello from module-level t in the native Vue extractor']) if (!Object.values(catalog).includes(message)) throw new Error('Native CLI did not extract: ' + message);"
 
   size:
-    if: ${{ !startsWith(github.head_ref, 'changeset-release/') }}
+    if: ${{ github.event.pull_request.head.repo.full_name != github.repository || !startsWith(github.head_ref, 'changeset-release/') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -424,7 +425,7 @@ jobs:
           windows_verbatim_arguments: false
 
   run-tests:
-    if: ${{ always() && !startsWith(github.head_ref, 'changeset-release/') }}
+    if: ${{ always() && (github.event.pull_request.head.repo.full_name != github.repository || !startsWith(github.head_ref, 'changeset-release/')) }}
     needs:
       [lint, tests, test-builds, test-vue-versions, test-cli-binaries, size]
     runs-on: ubuntu-latest
