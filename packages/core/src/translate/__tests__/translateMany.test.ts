@@ -85,6 +85,7 @@ describe.sequential('_translateMany', () => {
       fetch: expect.any(Function),
       projectId: 'test-project',
       retryPolicy: 'none',
+      timeoutMs: false,
     });
     expect(translate).toHaveBeenCalledWith({
       body: {
@@ -107,19 +108,20 @@ describe.sequential('_translateMany', () => {
     });
   });
 
-  it('forwards the timeout through the SDK client fetch wrapper', async () => {
-    await _translateMany([], globalMetadata, mockConfig, 5000);
+  it('forwards long timeouts without the SDK applying its own cap', async () => {
+    await _translateMany([], globalMetadata, mockConfig, 99_999);
 
-    const fetchImplementation =
-      vi.mocked(createApiClient).mock.calls[0][0].fetch;
+    const clientConfig = vi.mocked(createApiClient).mock.calls[0][0];
+    const fetchImplementation = clientConfig.fetch;
     await fetchImplementation?.('https://api.test.com/v2/translate', {
       method: 'POST',
     });
 
+    expect(clientConfig.timeoutMs).toBe(false);
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       'https://api.test.com/v2/translate',
       { method: 'POST' },
-      5000
+      99_999
     );
   });
 

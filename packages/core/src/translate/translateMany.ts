@@ -95,6 +95,7 @@ export async function _translateMany(
     fetch: (input, init) => fetchWithTimeout(input, init ?? {}, timeout),
     projectId: config.projectId,
     retryPolicy: 'none',
+    timeoutMs: false,
   });
   const body = {
     requests: requestsObject,
