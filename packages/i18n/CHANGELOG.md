@@ -1,5 +1,12 @@
 # gt-i18n
 
+## 1.0.23
+
+### Patch Changes
+
+- Updated dependencies [[`de66e5f`](https://github.com/generaltranslation/gt/commit/de66e5f41e05f22d51661faacae78b4fb3d86035)]:
+  - generaltranslation@9.1.13
+
 ## 1.0.22
 
 ### Patch Changes

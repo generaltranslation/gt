@@ -1,5 +1,12 @@
 # @generaltranslation/supported-locales
 
+## 2.1.26
+
+### Patch Changes
+
+- Updated dependencies [[`de66e5f`](https://github.com/generaltranslation/gt/commit/de66e5f41e05f22d51661faacae78b4fb3d86035)]:
+  - generaltranslation@9.1.13
+
 ## 2.1.25
 
 ### Patch Changes
