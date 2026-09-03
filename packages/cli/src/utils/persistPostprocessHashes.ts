@@ -5,6 +5,10 @@ import {
   writeLockfile,
 } from '../fs/config/downloadedVersions.js';
 import { hashStringSync } from './hash.js';
+import { fileEncodingSkipReason } from '../console/index.js';
+import { logger } from '../console/logger.js';
+import { getRelative } from '../fs/findFilepath.js';
+import { recordWarning } from '../state/translateWarnings.js';
 import { readFileContent } from '../fs/fileContent.js';
 import type { DownloadMeta } from '../state/recentDownloads.js';
 import type { Settings } from '../types/index.js';
@@ -37,7 +41,18 @@ export function persistPostProcessHashes(
 
     // The hash stands for the file's pipeline content, which is what every
     // other producer and consumer of it compares against.
-    const hash = hashStringSync(readFileContent(filePath, meta.fileFormat));
+    let hash: string;
+    try {
+      hash = hashStringSync(readFileContent(filePath, meta.fileFormat));
+    } catch (error) {
+      // The translation is already written; failing here would lose the whole
+      // run's lockfile update over one unreadable file. Skip it and report it
+      const relativePath = getRelative(filePath);
+      const reason = fileEncodingSkipReason(error);
+      logger.warn(`Skipping ${relativePath}: ${reason}`);
+      recordWarning('skipped_file', relativePath, reason);
+      continue;
+    }
 
     const entry = findOrCreateEntry(
       entryMap,
