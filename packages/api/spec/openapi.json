@@ -71,7 +71,10 @@
           "POT",
           "TWILIO_CONTENT_JSON",
           "LOTTIE",
-          "SVG"
+          "SVG",
+          "DOT_STRINGS",
+          "DOT_STRINGSDICT",
+          "ANDROID_STRINGS"
         ]
       },
       "ModelProvider": {
@@ -614,7 +617,10 @@
                                 "POT",
                                 "TWILIO_CONTENT_JSON",
                                 "LOTTIE",
-                                "SVG"
+                                "SVG",
+                                "DOT_STRINGS",
+                                "DOT_STRINGSDICT",
+                                "ANDROID_STRINGS"
                               ]
                             },
                             "dataFormat": {
@@ -926,7 +932,10 @@
                                 "POT",
                                 "TWILIO_CONTENT_JSON",
                                 "LOTTIE",
-                                "SVG"
+                                "SVG",
+                                "DOT_STRINGS",
+                                "DOT_STRINGSDICT",
+                                "ANDROID_STRINGS"
                               ]
                             },
                             "dataFormat": {
@@ -996,7 +1005,10 @@
                                   "POT",
                                   "TWILIO_CONTENT_JSON",
                                   "LOTTIE",
-                                  "SVG"
+                                  "SVG",
+                                  "DOT_STRINGS",
+                                  "DOT_STRINGSDICT",
+                                  "ANDROID_STRINGS"
                                 ]
                               },
                               "dataFormat": {
@@ -1022,7 +1034,10 @@
                                   "POT",
                                   "TWILIO_CONTENT_JSON",
                                   "LOTTIE",
-                                  "SVG"
+                                  "SVG",
+                                  "DOT_STRINGS",
+                                  "DOT_STRINGSDICT",
+                                  "ANDROID_STRINGS"
                                 ]
                               }
                             },
@@ -2306,7 +2321,10 @@
                             "POT",
                             "TWILIO_CONTENT_JSON",
                             "LOTTIE",
-                            "SVG"
+                            "SVG",
+                            "DOT_STRINGS",
+                            "DOT_STRINGSDICT",
+                            "ANDROID_STRINGS"
                           ]
                         }
                       },

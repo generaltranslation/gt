@@ -3,7 +3,6 @@ import type { StaticLocalizationSettings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import micromatch from 'micromatch';
 import { unified } from 'unified';
-import remarkParse from 'remark-parse';
 import remarkMdx from 'remark-mdx';
 import remarkFrontmatter from 'remark-frontmatter';
 import remarkStringify from 'remark-stringify';
@@ -12,6 +11,7 @@ import type { Root, Link, Literal } from 'mdast';
 import type { MdxJsxFlowElement, MdxJsxTextElement } from 'mdast-util-mdx-jsx';
 import { escapeHtmlInTextNodes, normalizeCJKCharacters } from 'gt-remark';
 import { parse as parseBabel } from '@babel/parser';
+import { parseMdxForRoundTrip, restoreAnchorIds } from './mdxAnchorSyntax.js';
 
 const { isMatch } = micromatch;
 
@@ -500,14 +500,11 @@ function transformMdxUrls(
 
   // Parse the MDX content into an AST
   let processedAst: Root;
+  let neutralizedAnchors: boolean;
   try {
-    const parseProcessor = unified()
-      .use(remarkParse)
-      .use(remarkFrontmatter, ['yaml', 'toml'])
-      .use(remarkMdx);
-
-    const ast = parseProcessor.parse(mdxContent);
-    processedAst = parseProcessor.runSync(ast) as Root;
+    const parsed = parseMdxForRoundTrip(mdxContent);
+    processedAst = parsed.ast;
+    neutralizedAnchors = parsed.neutralized;
   } catch {
     return {
       content: mdxContent,
@@ -739,6 +736,9 @@ function transformMdxUrls(
 
     const outTree = stringifyProcessor.runSync(processedAst) as Root;
     content = stringifyProcessor.stringify(outTree);
+    if (neutralizedAnchors) {
+      content = restoreAnchorIds(content);
+    }
   } catch (error) {
     console.warn(
       `Failed to stringify MDX content: ${error instanceof Error ? error.message : String(error)}`

@@ -1,13 +1,13 @@
 import * as fs from 'fs';
 import path from 'node:path';
 import { unified } from 'unified';
-import remarkParse from 'remark-parse';
 import remarkMdx from 'remark-mdx';
 import remarkFrontmatter from 'remark-frontmatter';
 import remarkStringify from 'remark-stringify';
 import { visit } from 'unist-util-visit';
 import type { Literal, Root } from 'mdast';
 import { escapeHtmlInTextNodes, normalizeCJKCharacters } from 'gt-remark';
+import { parseMdxForRoundTrip, restoreAnchorIds } from './mdxAnchorSyntax.js';
 import type { StaticLocalizationSettings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 
@@ -63,12 +63,11 @@ export function localizeRelativeAssetsForContent(
   let changed = false;
 
   let ast: Root;
+  let neutralizedAnchors: boolean;
   try {
-    const processor = unified()
-      .use(remarkParse)
-      .use(remarkFrontmatter, ['yaml', 'toml'])
-      .use(remarkMdx);
-    ast = processor.runSync(processor.parse(content)) as Root;
+    const parsed = parseMdxForRoundTrip(content);
+    ast = parsed.ast;
+    neutralizedAnchors = parsed.neutralized;
   } catch {
     return { content, hasChanges: false };
   }
@@ -146,6 +145,7 @@ export function localizeRelativeAssetsForContent(
       });
     const outTree = s.runSync(ast) as Root;
     let out = s.stringify(outTree);
+    if (neutralizedAnchors) out = restoreAnchorIds(out);
     if (out.endsWith('\n') && !content.endsWith('\n')) out = out.slice(0, -1);
     if (content.startsWith('\n') && !out.startsWith('\n')) out = '\n' + out;
     return { content: out, hasChanges: changed };

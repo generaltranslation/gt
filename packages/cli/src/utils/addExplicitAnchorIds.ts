@@ -1,18 +1,23 @@
-import { unified } from 'unified';
-import remarkParse from 'remark-parse';
-import remarkMdx from 'remark-mdx';
-import remarkFrontmatter from 'remark-frontmatter';
-import remarkStringify from 'remark-stringify';
 import { visit } from 'unist-util-visit';
-import type { Root, Heading, Literal, Node } from 'mdast';
+import type { Heading, Node } from 'mdast';
+import type { MdxJsxFlowElement } from 'mdast-util-mdx-jsx';
 import { logger } from '../console/logger.js';
-import { escapeHtmlInTextNodes, normalizeCJKCharacters } from 'gt-remark';
-import { decode } from 'html-entities';
 import type { AdditionalOptions } from '../types/index.js';
+import {
+  forEachLineOutsideCodeFences,
+  mapLinesOutsideCodeFences,
+  parseMdxTolerantly,
+} from './mdxAnchorSyntax.js';
 
 type AnchorIdSettings = {
   options?: Pick<AdditionalOptions, 'experimentalAddHeaderAnchorIds'>;
 };
+
+/** An ATX heading line, split into indentation, marker and text. */
+const ATX_HEADING = /^([ \t]*)(#{1,6}[ \t]+)(.*)$/;
+
+/** A trailing custom anchor ID, in either the plain or MDX-escaped form. */
+const TRAILING_ANCHOR = /\s*(?:\\\{#[^}]+\\\}|\{#[^}]+\})\s*$/;
 
 /**
  * Generates a slug from heading text
@@ -43,58 +48,36 @@ function extractHeadingText(heading: Heading): string {
 }
 
 /**
- * Simple line-by-line heading extractor that skips fenced code blocks.
- * Used as a fallback when MDX parsing fails.
+ * Line-by-line heading extractor used when MDX parsing fails outright.
  */
 function extractHeadingsWithFallback(mdxContent: string): HeadingInfo[] {
   const headings: HeadingInfo[] = [];
-  const lines = mdxContent.split('\n');
-
   let position = 0;
-  let inFence = false;
-  let fenceChar: string | null = null;
 
-  for (const line of lines) {
-    const fenceMatch = line.match(/^(\s*)(`{3,}|~{3,})/);
-    if (fenceMatch) {
-      const fenceString = fenceMatch[2];
-      if (!inFence) {
-        inFence = true;
-        fenceChar = fenceString;
-      } else if (
-        fenceChar &&
-        fenceString[0] === fenceChar[0] &&
-        fenceString.length >= fenceChar.length
-      ) {
-        inFence = false;
-        fenceChar = null;
-      }
-      continue;
-    }
+  forEachLineOutsideCodeFences(mdxContent, (line, index) => {
+    const headingMatch = line.match(ATX_HEADING);
+    if (!headingMatch) return;
 
-    if (inFence) {
-      continue;
-    }
-
-    const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
-    if (!headingMatch) {
-      continue;
-    }
-
-    const hashes = headingMatch[1];
-    const rawText = headingMatch[2];
+    const [, indent, marker, rawText] = headingMatch;
     const { cleanedText, explicitId } = parseHeadingContent(rawText);
+    if (!cleanedText && !explicitId) return;
 
-    if (cleanedText || explicitId) {
-      headings.push({
-        text: cleanedText,
-        level: hashes.length,
-        slug: explicitId ?? generateSlug(cleanedText),
-        position: position++,
-      });
-    }
-  }
+    headings.push({
+      text: cleanedText,
+      level: marker.trim().length,
+      slug: explicitId ?? generateSlug(cleanedText),
+      position: position++,
+      startLine: index + 1,
+      endLine: index + 1,
+      startColumn: indent.length + 1,
+      // Without a parser there is nothing finer to go on than end of line.
+      textEndColumn: line.length + 1,
+      wrapperId: null,
+      explicit: explicitId !== undefined,
+    });
+  });
 
+  assignUniqueSlugs(headings);
   return headings;
 }
 
@@ -116,14 +99,40 @@ function parseHeadingContent(text: string): {
 }
 
 /**
- * Checks if a heading is already wrapped in a div with id
+ * Suffixes repeated slugs `-2`, `-3`, ... as Mintlify does. Author-written IDs
+ * are never renumbered, only reserved.
  */
-function hasExplicitId(heading: Heading, _ast: Root): boolean {
-  const lastChild = heading.children[heading.children.length - 1];
-  if (lastChild?.type === 'text') {
-    return /(\{#[^}]+\}|\\\{#[^}]+\\\}|\[[^\]]+\])\s*$/.test(lastChild.value);
+function assignUniqueSlugs(headings: HeadingInfo[]): void {
+  // Reserve every explicit ID up front, including ones later in the document,
+  // so a generated slug never claims an ID an author asked for.
+  const used = new Set(
+    headings
+      .filter((heading) => heading.explicit)
+      .map((heading) => heading.slug)
+  );
+
+  for (const heading of headings) {
+    if (heading.explicit) continue;
+
+    // Headings with no slug-able characters would produce id="".
+    const base = heading.slug || 'section';
+    let slug = base;
+    let suffix = 1;
+    while (used.has(slug)) {
+      suffix += 1;
+      slug = `${base}-${suffix}`;
+    }
+
+    heading.slug = slug;
+    used.add(slug);
   }
-  return false;
+}
+
+/** A source range on a single line, as 1-based inclusive/exclusive columns. */
+interface ColumnRange {
+  line: number;
+  startColumn: number;
+  endColumn: number;
 }
 
 /**
@@ -134,44 +143,89 @@ export interface HeadingInfo {
   level: number;
   slug: string;
   position: number;
+  /** 1-based line the heading starts on. */
+  startLine: number;
+  /** 1-based line the heading ends on (differs from startLine for setext). */
+  endLine: number;
+  /** 1-based column of the heading marker; anything left of it is indentation. */
+  startColumn: number;
+  /** 1-based column just past the text, before any closing `##`; -1 if unknown. */
+  textEndColumn: number;
+  /** `id` attribute of a wrapper element already anchoring this heading. */
+  wrapperId: ColumnRange | null;
+  /** Whether the author wrote an explicit `{#id}`. */
+  explicit: boolean;
 }
 
 /**
- * Extracts heading information from content (read-only, no modifications)
+ * Finds the `id` of a wrapper element already anchoring this heading. Requiring
+ * the heading to be its only child rules out containers like `<Tab>`.
+ */
+function findWrapperId(
+  heading: Heading,
+  parent: Node | undefined
+): ColumnRange | null {
+  if (!parent || parent.type !== 'mdxJsxFlowElement') return null;
+
+  const element = parent as MdxJsxFlowElement;
+  if (element.children.length !== 1 || element.children[0] !== heading) {
+    return null;
+  }
+
+  const id = element.attributes.find(
+    (attribute) =>
+      attribute.type === 'mdxJsxAttribute' && attribute.name === 'id'
+  );
+  const position = id?.position;
+  if (!position || position.start.line !== position.end.line) return null;
+
+  return {
+    line: position.start.line,
+    startColumn: position.start.column,
+    endColumn: position.end.column,
+  };
+}
+
+/**
+ * Extracts heading information from content (read-only, no modifications).
+ * Source and translation are matched by position, so both must parse the same
+ * way — the fallback extractor misses headings nested in JSX.
  */
 export function extractHeadingInfo(mdxContent: string): HeadingInfo[] {
-  const headings: HeadingInfo[] = [];
-
-  // Parse the MDX content into an AST
-  let processedAst: Root;
+  let ast;
   try {
-    const parseProcessor = unified()
-      .use(remarkParse)
-      .use(remarkFrontmatter, ['yaml', 'toml'])
-      .use(remarkMdx);
-
-    const ast = parseProcessor.parse(mdxContent);
-    processedAst = parseProcessor.runSync(ast) as Root;
+    ast = parseMdxTolerantly(mdxContent);
   } catch {
     // Fallback: line-by-line extraction skipping fenced code blocks
     return extractHeadingsWithFallback(mdxContent);
   }
 
+  const headings: HeadingInfo[] = [];
   let position = 0;
-  visit(processedAst, 'heading', (heading: Heading) => {
+
+  visit(ast, 'heading', (heading: Heading, _index, parent) => {
     const headingText = extractHeadingText(heading);
     const { cleanedText, explicitId } = parseHeadingContent(headingText);
-    if (cleanedText || explicitId) {
-      const slug = explicitId ?? generateSlug(cleanedText);
-      headings.push({
-        text: cleanedText,
-        level: heading.depth,
-        slug,
-        position: position++,
-      });
-    }
+    if (!cleanedText && !explicitId) return;
+
+    const lastChild = heading.children[heading.children.length - 1];
+
+    headings.push({
+      text: cleanedText,
+      level: heading.depth,
+      slug: explicitId ?? generateSlug(cleanedText),
+      position: position++,
+      startLine: heading.position?.start.line ?? -1,
+      endLine: heading.position?.end.line ?? -1,
+      startColumn: heading.position?.start.column ?? 1,
+      textEndColumn:
+        lastChild?.position?.end.column ?? heading.position?.end.column ?? -1,
+      wrapperId: findWrapperId(heading, parent),
+      explicit: explicitId !== undefined,
+    });
   });
 
+  assignUniqueSlugs(headings);
   return headings;
 }
 
@@ -214,26 +268,21 @@ export function addExplicitAnchorIds(
   }
 
   // Create ID mapping based on positional matching
-  const idMappings = new Map<number, string>();
+  const idMappings = new Map<number, { id: string; explicit: boolean }>();
   sourceHeadingMap.forEach((sourceHeading, index) => {
     const translatedHeading = translatedHeadings[index];
     // Match by position and level for safety
     if (translatedHeading && translatedHeading.level === sourceHeading.level) {
-      idMappings.set(index, sourceHeading.slug);
+      idMappings.set(index, {
+        id: sourceHeading.slug,
+        explicit: sourceHeading.explicit,
+      });
       addedIds.push({
         heading: translatedHeading.text,
         id: sourceHeading.slug,
       });
     }
   });
-
-  if (idMappings.size === 0) {
-    return {
-      content: translatedContent,
-      hasChanges: false,
-      addedIds: [],
-    };
-  }
 
   const translatedIsMdx = translatedPath
     ? translatedPath.toLowerCase().endsWith('.mdx')
@@ -245,20 +294,28 @@ export function addExplicitAnchorIds(
         ? false
         : translatedIsMdx;
 
-  // Apply IDs to translated content
-  let content: string;
-  if (useDivWrapping) {
-    content = applyDivWrappedIds(
-      translatedContent,
-      translatedHeadings,
-      idMappings
-    );
-  } else {
-    content = applyInlineIds(
-      translatedContent,
-      idMappings,
-      shouldEscapeAnchors
-    );
+  if (idMappings.size === 0) {
+    // Normalize anchors the translation carried over.
+    const content = useDivWrapping
+      ? translatedContent
+      : normalizeInlineAnchors(translatedContent, shouldEscapeAnchors);
+    return {
+      content,
+      hasChanges: content !== translatedContent,
+      addedIds: [],
+    };
+  }
+
+  let content = applyAnchorIds(
+    translatedContent,
+    translatedHeadings,
+    idMappings,
+    useDivWrapping,
+    shouldEscapeAnchors
+  );
+
+  if (!useDivWrapping) {
+    content = normalizeInlineAnchors(content, shouldEscapeAnchors);
   }
 
   return {
@@ -269,281 +326,96 @@ export function addExplicitAnchorIds(
 }
 
 /**
- * Adds inline {#id} syntax to headings (standard markdown approach)
+ * Writes anchor IDs onto the translated document, locating headings by parser
+ * line position rather than by text. Edits run bottom-up to keep lines valid.
  */
-function applyInlineIds(
-  translatedContent: string,
-  idMappings: Map<number, string>,
-  escapeAnchors: boolean
-): string {
-  const escapeInlineAnchors = (content: string): string => {
-    if (!escapeAnchors) return content;
-    return content.replace(
-      /\{#([A-Za-z0-9-_]+)\}/g,
-      (match, id, offset, str) => {
-        if (offset > 0 && str[offset - 1] === '\\') {
-          return match;
-        }
-        return `\\{#${id}\\}`;
-      }
-    );
-  };
-
-  // Parse the translated content
-  let processedAst: Root;
-  try {
-    const parseProcessor = unified()
-      .use(remarkParse)
-      .use(remarkFrontmatter, ['yaml', 'toml'])
-      .use(remarkMdx);
-
-    const ast = parseProcessor.parse(translatedContent);
-    processedAst = parseProcessor.runSync(ast) as Root;
-  } catch {
-    return applyInlineIdsStringFallback(
-      translatedContent,
-      idMappings,
-      escapeAnchors
-    );
-  }
-
-  // Apply IDs to headings based on position
-  let headingIndex = 0;
-  let actuallyModifiedContent = false;
-
-  visit(processedAst, 'heading', (heading: Heading) => {
-    const id = idMappings.get(headingIndex);
-    if (id) {
-      // Skip if heading already has explicit ID
-      if (hasExplicitId(heading, processedAst)) {
-        if (escapeAnchors) {
-          // Normalize existing inline IDs to escaped form
-          const lastChild = heading.children[heading.children.length - 1];
-          if (lastChild?.type === 'text') {
-            const match = lastChild.value.match(/\{#([^}]+)\}\s*$/);
-            const alreadyEscaped = lastChild.value.match(/\\\{#[^}]+\\\}\s*$/);
-            if (match && !alreadyEscaped) {
-              const anchorId = match[1];
-              const base = lastChild.value.replace(/\s*\{#[^}]+\}\s*$/, '');
-              lastChild.value = `${base} \\{#${anchorId}\\}`;
-              actuallyModifiedContent = true;
-            }
-          }
-        }
-        headingIndex++;
-        return;
-      }
-
-      // Add the ID to the heading
-      const lastChild = heading.children[heading.children.length - 1];
-      if (lastChild?.type === 'text') {
-        lastChild.value += escapeAnchors ? ` \\{#${id}\\}` : ` {#${id}}`;
-      } else {
-        // If last child is not text, add a new text node
-        heading.children.push({
-          type: 'text',
-          value: escapeAnchors ? ` \\{#${id}\\}` : ` {#${id}}`,
-        });
-      }
-      actuallyModifiedContent = true;
-    }
-    headingIndex++;
-  });
-
-  // If we didn't modify any headings, return original content
-  if (!actuallyModifiedContent) {
-    const escaped = escapeInlineAnchors(translatedContent);
-    return escaped;
-  }
-
-  // Convert the modified AST back to MDX string
-  try {
-    const stringifyProcessor = unified()
-      .use(remarkFrontmatter, ['yaml', 'toml'])
-      .use(remarkMdx)
-      .use(normalizeCJKCharacters)
-      .use(escapeHtmlInTextNodes)
-      .use(remarkStringify, {
-        handlers: {
-          // Custom handler to prevent escaping of {#id} syntax
-          text(node: Literal) {
-            return node.value;
-          },
-        },
-      });
-
-    const outTree = stringifyProcessor.runSync(processedAst) as Root;
-    let content = stringifyProcessor.stringify(outTree);
-
-    // Handle newline formatting to match original input
-    if (content.endsWith('\n') && !translatedContent.endsWith('\n')) {
-      content = content.slice(0, -1);
-    }
-
-    // Preserve leading newlines from original content
-    if (translatedContent.startsWith('\n') && !content.startsWith('\n')) {
-      content = '\n' + content;
-    }
-
-    return content;
-  } catch {
-    return translatedContent;
-  }
-}
-
-/**
- * Fallback string-based inline ID application when AST parsing fails
- */
-function applyInlineIdsStringFallback(
-  translatedContent: string,
-  idMappings: Map<number, string>,
-  escapeAnchors: boolean
-): string {
-  let headingIndex = 0;
-  let inFence = false;
-  let fenceChar: string | null = null;
-
-  const processedLines = translatedContent.split('\n').map((line) => {
-    const fenceMatch = line.match(/^(\s*)(`{3,}|~{3,})/);
-    if (fenceMatch) {
-      const fenceString = fenceMatch[2];
-      if (!inFence) {
-        inFence = true;
-        fenceChar = fenceString;
-      } else if (
-        fenceChar &&
-        fenceString[0] === fenceChar[0] &&
-        fenceString.length >= fenceChar.length
-      ) {
-        inFence = false;
-        fenceChar = null;
-      }
-      return line;
-    }
-
-    if (inFence) {
-      return line;
-    }
-
-    const headingMatch = line.match(/^(#{1,6}\s+)(.*)$/);
-    if (!headingMatch) {
-      return line;
-    }
-
-    const prefix = headingMatch[1];
-    const text = headingMatch[2];
-    const id = idMappings.get(headingIndex++);
-
-    if (!id) {
-      return line;
-    }
-
-    const hasEscaped = /\\\{#[^}]+\\\}\s*$/.test(text);
-    const hasUnescaped = /\{#[^}]+\}\s*$/.test(text);
-
-    if (hasEscaped) {
-      return line;
-    }
-
-    if (hasUnescaped) {
-      if (!escapeAnchors) {
-        return line;
-      }
-      return `${prefix}${text.replace(/\{#([^}]+)\}\s*$/, '\\{#$1\\}')}`;
-    }
-
-    const suffix = escapeAnchors ? ` \\{#${id}\\}` : ` {#${id}}`;
-    return `${prefix}${text}${suffix}`;
-  });
-
-  return processedLines.join('\n');
-}
-
-/**
- * Wraps headings in divs with IDs (Mintlify approach)
- */
-function applyDivWrappedIds(
+function applyAnchorIds(
   translatedContent: string,
   translatedHeadings: HeadingInfo[],
-  idMappings: Map<number, string>
+  idMappings: Map<number, { id: string; explicit: boolean }>,
+  useDivWrapping: boolean,
+  escapeAnchors: boolean
 ): string {
-  // Extract all heading lines from the translated markdown
   const lines = translatedContent.split('\n');
-  const headingLines: Array<{ line: string; level: number; index: number }> =
-    [];
 
-  lines.forEach((line, index) => {
-    const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
-    if (headingMatch) {
-      const level = headingMatch[1].length;
-      headingLines.push({ line, level, index });
+  const ordered = [...translatedHeadings].sort(
+    (a, b) => b.startLine - a.startLine
+  );
+
+  for (const heading of ordered) {
+    const mapping = idMappings.get(heading.position);
+    if (!mapping) continue;
+    if (heading.startLine < 1 || heading.endLine > lines.length) continue;
+
+    const index = heading.startLine - 1;
+
+    // Author-written IDs stay inline; derived ones go in a wrapper.
+    const inline = !useDivWrapping || mapping.explicit;
+
+    if (inline) {
+      // Setext headings have no column to append to.
+      if (heading.textEndColumn < 1) continue;
+
+      const escape = escapeAnchors && !mapping.explicit;
+      const anchor = escape ? `\\{#${mapping.id}\\}` : `{#${mapping.id}}`;
+      const line = lines[index];
+      const text = line
+        .slice(0, heading.textEndColumn - 1)
+        .replace(TRAILING_ANCHOR, '');
+      const trailer = line.slice(heading.textEndColumn - 1);
+
+      lines[index] = `${text} ${anchor}${trailer}`;
+      continue;
     }
-  });
 
-  // Use string-based approach to wrap headings in divs
-  let content = translatedContent;
-  const headingsToWrap: Array<{
-    originalLine: string;
-    id: string;
-  }> = [];
-
-  // Match translated headings with their corresponding lines by position and level
-  translatedHeadings.forEach((heading, position) => {
-    const id = idMappings.get(position);
-    if (id) {
-      // Find the corresponding original line for this heading
-      const matchingLine = headingLines.find((hl) => {
-        // Extract clean text from the original line for comparison
-        const lineCleanText = hl.line.replace(/^#{1,6}\s+/, '').trim();
-        // Create a version without markdown formatting for comparison
-        const cleanLineText = lineCleanText
-          .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
-          .replace(/\*(.*?)\*/g, '$1') // Remove italic
-          .replace(/`(.*?)`/g, '$1') // Remove inline code
-          .replace(/\[(.*?)\]\(.*?\)/g, '$1') // Remove links, keep text
-          .trim();
-
-        const normalizedLineText = decode(cleanLineText).trim();
-        const normalizedHeadingText = decode(heading.text).trim();
-
-        return (
-          normalizedLineText === normalizedHeadingText &&
-          hl.level === heading.level
-        );
-      });
-
-      if (matchingLine) {
-        headingsToWrap.push({
-          originalLine: matchingLine.line,
-          id,
-        });
-      }
+    if (heading.wrapperId) {
+      // Already wrapped: fix the ID in place rather than nesting another.
+      const { line, startColumn, endColumn } = heading.wrapperId;
+      const wrapper = lines[line - 1];
+      lines[line - 1] =
+        wrapper.slice(0, startColumn - 1) +
+        `id="${mapping.id}"` +
+        wrapper.slice(endColumn - 1);
+      continue;
     }
-  });
 
-  if (headingsToWrap.length > 0) {
-    // Process headings from longest to shortest original line to avoid partial matches
-    const sortedHeadings = headingsToWrap.sort(
-      (a, b) => b.originalLine.length - a.originalLine.length
+    const indent = lines[index].slice(0, Math.max(0, heading.startColumn - 1));
+    const body = lines.slice(index, heading.endLine).map((line) => `  ${line}`);
+
+    lines.splice(
+      index,
+      heading.endLine - heading.startLine + 1,
+      `${indent}<div id="${mapping.id}">`,
+      ...body,
+      `${indent}</div>`
     );
-
-    for (const heading of sortedHeadings) {
-      // If already wrapped with this id, skip (idempotent)
-      if (content.includes(`<div id="${heading.id}">`)) {
-        continue;
-      }
-      // Escape the original line for use in regex
-      const escapedLine = heading.originalLine.replace(
-        /[.*+?^${}()|[\]\\]/g,
-        '\\$&'
-      );
-      const headingPattern = new RegExp(`^${escapedLine}\\s*$`, 'gm');
-
-      content = content.replace(headingPattern, (match) => {
-        return `<div id="${heading.id}">\n  ${match.trim()}\n</div>\n`;
-      });
-    }
   }
 
-  return content;
+  return lines.join('\n');
+}
+
+/**
+ * Normalizes every inline anchor: escaped for MDX, bare for Markdown.
+ */
+function normalizeInlineAnchors(
+  content: string,
+  escapeAnchors: boolean
+): string {
+  return mapLinesOutsideCodeFences(content, (line) => {
+    const atx = line.match(ATX_HEADING);
+    if (!atx) return line;
+
+    const escaped = atx[3].match(/\\\{#([A-Za-z0-9_-]+)\\\}\s*$/);
+    const bare = atx[3].match(/(?<!\\)\{#([A-Za-z0-9_-]+)\}\s*$/);
+
+    if (escapeAnchors && bare) {
+      const text = atx[3].replace(TRAILING_ANCHOR, '');
+      return `${atx[1]}${atx[2]}${text} \\{#${bare[1]}\\}`;
+    }
+    if (!escapeAnchors && escaped) {
+      const text = atx[3].replace(TRAILING_ANCHOR, '');
+      return `${atx[1]}${atx[2]}${text} {#${escaped[1]}}`;
+    }
+    return line;
+  });
 }
