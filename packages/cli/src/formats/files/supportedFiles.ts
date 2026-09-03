@@ -10,8 +10,8 @@ export const SUPPORTED_FILE_EXTENSIONS = [
   'txt',
   'twilioContentJson',
   'lottie',
-  'strings',
-  'stringsdict',
+  'dotStrings',
+  'dotStringsdict',
 ] as const;
 
 export const FILE_EXT_TO_EXT_LABEL = {
@@ -26,6 +26,6 @@ export const FILE_EXT_TO_EXT_LABEL = {
   txt: 'Text',
   twilioContentJson: 'Twilio Content JSON',
   lottie: 'Lottie',
-  strings: 'Apple .strings',
-  stringsdict: 'Apple .stringsdict',
+  dotStrings: '.strings',
+  dotStringsdict: '.stringsdict',
 };

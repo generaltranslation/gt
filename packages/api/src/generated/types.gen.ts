@@ -23,8 +23,8 @@ export type FileFormat =
   | 'TWILIO_CONTENT_JSON'
   | 'LOTTIE'
   | 'SVG'
-  | 'APPLE_STRINGS'
-  | 'APPLE_STRINGSDICT';
+  | 'DOT_STRINGS'
+  | 'DOT_STRINGSDICT';
 
 export type ModelProvider = 'ANTHROPIC' | 'OPENAI' | 'XAI' | 'GOOGLE';
 
@@ -211,8 +211,8 @@ export type UploadSourceFilesData = {
           | 'TWILIO_CONTENT_JSON'
           | 'LOTTIE'
           | 'SVG'
-          | 'APPLE_STRINGS'
-          | 'APPLE_STRINGSDICT';
+          | 'DOT_STRINGS'
+          | 'DOT_STRINGSDICT';
         dataFormat?: string;
         locale: string;
         fileId?: string;
@@ -327,8 +327,8 @@ export type UploadTranslationsData = {
           | 'TWILIO_CONTENT_JSON'
           | 'LOTTIE'
           | 'SVG'
-          | 'APPLE_STRINGS'
-          | 'APPLE_STRINGSDICT';
+          | 'DOT_STRINGS'
+          | 'DOT_STRINGSDICT';
         dataFormat?: string;
         locale: string;
         fileId?: string;
@@ -358,8 +358,8 @@ export type UploadTranslationsData = {
           | 'TWILIO_CONTENT_JSON'
           | 'LOTTIE'
           | 'SVG'
-          | 'APPLE_STRINGS'
-          | 'APPLE_STRINGSDICT';
+          | 'DOT_STRINGS'
+          | 'DOT_STRINGSDICT';
         dataFormat?: string;
         locale: string;
         transformFormat?:
@@ -377,8 +377,8 @@ export type UploadTranslationsData = {
           | 'TWILIO_CONTENT_JSON'
           | 'LOTTIE'
           | 'SVG'
-          | 'APPLE_STRINGS'
-          | 'APPLE_STRINGSDICT';
+          | 'DOT_STRINGS'
+          | 'DOT_STRINGSDICT';
       }>;
     }>;
     sourceLocale?: string;
@@ -851,8 +851,8 @@ export type EnqueueFileTranslationsData = {
         | 'TWILIO_CONTENT_JSON'
         | 'LOTTIE'
         | 'SVG'
-        | 'APPLE_STRINGS'
-        | 'APPLE_STRINGSDICT';
+        | 'DOT_STRINGS'
+        | 'DOT_STRINGSDICT';
     }>;
     targetLocales?: Array<string>;
     sourceLocale?: string;

@@ -45,11 +45,11 @@ function decodeByBom(bytes: Buffer): string {
   return bytes.toString('utf8');
 }
 
-describe('aggregateFiles - Apple .strings encodings', () => {
+describe('aggregateFiles - .strings encodings', () => {
   let dir: string;
 
   beforeAll(() => {
-    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-apple-strings-'));
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-dot-strings-'));
     for (const [name, bytes] of Object.entries(FIXTURES)) {
       fs.writeFileSync(path.join(dir, name), bytes);
     }
@@ -63,7 +63,7 @@ describe('aggregateFiles - Apple .strings encodings', () => {
   async function wireBytesFor(name: string): Promise<Buffer> {
     const { files } = await aggregateFiles({
       files: {
-        resolvedPaths: { strings: [path.join(dir, name)] },
+        resolvedPaths: { dotStrings: [path.join(dir, name)] },
         placeholderPaths: {},
       },
       options: {},
@@ -71,7 +71,7 @@ describe('aggregateFiles - Apple .strings encodings', () => {
     } as unknown as Settings);
 
     expect(files).toHaveLength(1);
-    expect(files[0].fileFormat).toBe('APPLE_STRINGS');
+    expect(files[0].fileFormat).toBe('DOT_STRINGS');
 
     // Same branch _uploadSourceFiles takes when building the request body.
     const wire = isBinaryFileFormat(files[0].fileFormat)

@@ -588,7 +588,7 @@ describe('aggregateFiles - Empty File Handling', () => {
     });
   });
 
-  describe('Apple .strings files', () => {
+  describe('.strings files', () => {
     // The escapes below are load-bearing: they must reach the API verbatim.
     const stringsContent =
       '/* Greeting */\n"hello" = "Line1\\nLine2 \\"quoted\\" 100%%";\n';
@@ -604,11 +604,11 @@ describe('aggregateFiles - Empty File Handling', () => {
       );
     });
 
-    it('should upload .strings files verbatim with the APPLE_STRINGS format', async () => {
+    it('should upload .strings files verbatim with the DOT_STRINGS format', async () => {
       const settings = {
         files: {
           resolvedPaths: {
-            strings: ['/full/path/en.lproj/Localizable.strings'],
+            dotStrings: ['/full/path/en.lproj/Localizable.strings'],
           },
           placeholderPaths: {},
         },
@@ -623,7 +623,7 @@ describe('aggregateFiles - Empty File Handling', () => {
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({
         fileName: 'en.lproj/Localizable.strings',
-        fileFormat: 'APPLE_STRINGS',
+        fileFormat: 'DOT_STRINGS',
         locale: 'en',
       });
       expect(result[0].content).toBe(stringsBase64);
@@ -640,7 +640,10 @@ describe('aggregateFiles - Empty File Handling', () => {
       const settings = {
         files: {
           resolvedPaths: {
-            strings: ['/full/path/empty.strings', '/full/path/valid.strings'],
+            dotStrings: [
+              '/full/path/empty.strings',
+              '/full/path/valid.strings',
+            ],
           },
           placeholderPaths: {},
         },
@@ -664,7 +667,7 @@ describe('aggregateFiles - Empty File Handling', () => {
     });
   });
 
-  describe('Apple .stringsdict files', () => {
+  describe('.stringsdict files', () => {
     // The escapes below are load-bearing: they must reach the API verbatim.
     const stringsdictContent =
       '<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0">\n<dict>\n  <key>%d file(s) \\"quoted\\"</key>\n</dict>\n</plist>\n';
@@ -677,11 +680,11 @@ describe('aggregateFiles - Empty File Handling', () => {
       );
     });
 
-    it('should upload .stringsdict files verbatim with the APPLE_STRINGSDICT format', async () => {
+    it('should upload .stringsdict files verbatim with the DOT_STRINGSDICT format', async () => {
       const settings = {
         files: {
           resolvedPaths: {
-            stringsdict: ['/full/path/en.lproj/Localizable.stringsdict'],
+            dotStringsdict: ['/full/path/en.lproj/Localizable.stringsdict'],
           },
           placeholderPaths: {},
         },
@@ -696,7 +699,7 @@ describe('aggregateFiles - Empty File Handling', () => {
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({
         fileName: 'en.lproj/Localizable.stringsdict',
-        fileFormat: 'APPLE_STRINGSDICT',
+        fileFormat: 'DOT_STRINGSDICT',
         locale: 'en',
       });
       expect(result[0].content).toBe(stringsdictContent);
@@ -712,7 +715,7 @@ describe('aggregateFiles - Empty File Handling', () => {
       const settings = {
         files: {
           resolvedPaths: {
-            stringsdict: [
+            dotStringsdict: [
               '/full/path/empty.stringsdict',
               '/full/path/valid.stringsdict',
             ],

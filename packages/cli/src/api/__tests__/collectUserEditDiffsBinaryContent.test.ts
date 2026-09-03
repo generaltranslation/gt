@@ -61,10 +61,10 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
       _branchId: 'branch1',
       files: {
         resolvedPaths: {
-          strings: [path.join(tempDir, SOURCE)],
+          dotStrings: [path.join(tempDir, SOURCE)],
         },
         placeholderPaths: {
-          strings: [
+          dotStrings: [
             path.join(
               tempDir,
               'Guardian',
@@ -154,11 +154,11 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
     writeTranslation(Buffer.from(TRANSLATION, 'utf8'));
     mockServerDownload(
       Buffer.from(TRANSLATION, 'utf8').toString('base64'),
-      'APPLE_STRINGS'
+      'DOT_STRINGS'
     );
 
     const hadDiffs = await collectAndSendUserEditDiffs(
-      filesUnderTest('APPLE_STRINGS'),
+      filesUnderTest('DOT_STRINGS'),
       settings
     );
 
@@ -175,13 +175,10 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
     );
     mockServerDownload(
       Buffer.from(TRANSLATION, 'utf8').toString('base64'),
-      'APPLE_STRINGS'
+      'DOT_STRINGS'
     );
 
-    await collectAndSendUserEditDiffs(
-      filesUnderTest('APPLE_STRINGS'),
-      settings
-    );
+    await collectAndSendUserEditDiffs(filesUnderTest('DOT_STRINGS'), settings);
 
     expect(gt.submitUserEditDiffs).toHaveBeenCalledTimes(1);
     const [{ diffs }] = vi.mocked(gt.submitUserEditDiffs).mock.calls[0];
@@ -197,12 +194,9 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
     writeTranslation(Buffer.from(TRANSLATION, 'utf8'));
     // An empty payload is a baseline of "nothing", not a missing download.
     // Treating the two alike drops everything the user wrote against it.
-    mockServerDownload('', 'APPLE_STRINGS');
+    mockServerDownload('', 'DOT_STRINGS');
 
-    await collectAndSendUserEditDiffs(
-      filesUnderTest('APPLE_STRINGS'),
-      settings
-    );
+    await collectAndSendUserEditDiffs(filesUnderTest('DOT_STRINGS'), settings);
 
     expect(gt.submitUserEditDiffs).toHaveBeenCalledTimes(1);
     const [{ diffs }] = vi.mocked(gt.submitUserEditDiffs).mock.calls[0];
@@ -229,10 +223,7 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
       files: [],
     } as unknown as Awaited<ReturnType<typeof gt.downloadFileBatch>>);
 
-    await collectAndSendUserEditDiffs(
-      filesUnderTest('APPLE_STRINGS'),
-      settings
-    );
+    await collectAndSendUserEditDiffs(filesUnderTest('DOT_STRINGS'), settings);
 
     // No baseline at all, so there is nothing to diff and nothing to report.
     expect(gt.submitUserEditDiffs).not.toHaveBeenCalled();
@@ -247,13 +238,10 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
     );
     mockServerDownload(
       utf16leWithBom(TRANSLATION).toString('base64'),
-      'APPLE_STRINGS'
+      'DOT_STRINGS'
     );
 
-    await collectAndSendUserEditDiffs(
-      filesUnderTest('APPLE_STRINGS'),
-      settings
-    );
+    await collectAndSendUserEditDiffs(filesUnderTest('DOT_STRINGS'), settings);
 
     // Reading UTF-16 bytes as UTF-8 yields U+FFFD, so there is no faithful
     // diff or localContent to send. Sending nothing beats sending mojibake,
@@ -275,12 +263,9 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
     seedLockFile();
     const unchanged = utf16leWithBom(TRANSLATION);
     writeTranslation(unchanged);
-    mockServerDownload(unchanged.toString('base64'), 'APPLE_STRINGS');
+    mockServerDownload(unchanged.toString('base64'), 'DOT_STRINGS');
 
-    await collectAndSendUserEditDiffs(
-      filesUnderTest('APPLE_STRINGS'),
-      settings
-    );
+    await collectAndSendUserEditDiffs(filesUnderTest('DOT_STRINGS'), settings);
 
     // Nothing was edited, so there is nothing to warn about.
     expect(gt.submitUserEditDiffs).not.toHaveBeenCalled();

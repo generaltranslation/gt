@@ -156,7 +156,7 @@ describe('parseFilesConfig', () => {
 
     it('should handle [locale] embedded mid-segment (Apple .lproj layout)', () => {
       const files = {
-        strings: {
+        dotStrings: {
           include: ['Guardian/[locale].lproj/Localizable.strings'],
         },
       };
@@ -171,15 +171,15 @@ describe('parseFilesConfig', () => {
         '/project/Guardian/en.lproj/Localizable.strings',
         { absolute: true, ignore: [] }
       );
-      expect(result.resolvedPaths.strings).toEqual([
+      expect(result.resolvedPaths.dotStrings).toEqual([
         '/project/Guardian/en.lproj/Localizable.strings',
       ]);
-      expect(result.placeholderPaths.strings).toEqual([
+      expect(result.placeholderPaths.dotStrings).toEqual([
         '/project/Guardian/[locale].lproj/Localizable.strings',
       ]);
 
       const localized = resolveLocaleFiles(result.placeholderPaths, 'es');
-      expect(localized.strings).toEqual([
+      expect(localized.dotStrings).toEqual([
         '/project/Guardian/es.lproj/Localizable.strings',
       ]);
     });
