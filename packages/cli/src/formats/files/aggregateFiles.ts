@@ -1,6 +1,9 @@
 import { logger } from '../../console/logger.js';
 import { logErrorAndExit } from '../../console/logging.js';
-import { lottieExpressionsError } from '../../console/index.js';
+import {
+  fileEncodingSkipReason,
+  lottieExpressionsError,
+} from '../../console/index.js';
 import { recordWarning } from '../../state/translateWarnings.js';
 import { lottieHasExpressions } from './detectLottieExpressions.js';
 import {
@@ -8,7 +11,7 @@ import {
   readFile,
   readBinaryFileBase64,
 } from '../../fs/findFilepath.js';
-import { isBinaryFileFormat } from 'generaltranslation/types';
+import { readFileContent } from '../../fs/fileContent.js';
 import { Settings } from '../../types/index.js';
 import type { FileFormat, DataFormat, FileToUpload } from '../../types/data.js';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
@@ -405,17 +408,22 @@ export async function aggregateFiles(
     ['androidStrings', 'ANDROID_STRINGS'],
   ] as const) {
     if (!filePaths[fileType]) continue;
-    // Content must already be base64 exactly when the format is binary, or the
-    // upload path encodes it a second time. Only .strings qualifies today: its
-    // UTF-16 bytes reach an API decoder that reads the byte order mark.
-    // .stringsdict has no such decoder yet, and strings.xml is always UTF-8.
-    const readsRawBytes = isBinaryFileFormat(fileFormat);
     const verbatimFiles = filePaths[fileType]
       .map((filePath) => {
-        const content = readsRawBytes
-          ? readBinaryFileBase64(filePath)
-          : readFile(filePath);
         const relativePath = getRelative(filePath);
+        // Reading is the one place an encoding is resolved; from here on the
+        // content is a UTF-8 string like every other format's.
+        let content: string;
+        try {
+          content = readFileContent(filePath, fileFormat);
+        } catch (error) {
+          // One unreadable file should not abort the whole run: skip it and
+          // report it in the summary
+          const reason = fileEncodingSkipReason(error);
+          logger.warn(`Skipping ${relativePath}: ${reason}`);
+          recordWarning('skipped_file', relativePath, reason);
+          return null;
+        }
         return {
           content,
           fileName: relativePath,
@@ -427,20 +435,15 @@ export async function aggregateFiles(
         } satisfies FileToUpload;
       })
       .filter((file) => {
-        // Blank check only; the content itself travels untouched. A UTF-16
-        // file reads as non-blank here, which is the safe default — the API
-        // decodes it properly.
-        const text = readsRawBytes
-          ? Buffer.from(file.content, 'base64').toString('utf8')
-          : file.content;
-        if (!text.trim()) {
+        if (!file) return false;
+        if (!file.content.trim()) {
           logger.warn(`Skipping ${file.fileName}: File is empty`);
           recordWarning('skipped_file', file.fileName, 'File is empty');
           return false;
         }
         return true;
       });
-    files.push(...verbatimFiles);
+    files.push(...verbatimFiles.filter((file) => file !== null));
   }
 
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
