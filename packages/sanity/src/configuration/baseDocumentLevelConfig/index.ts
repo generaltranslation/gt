@@ -5,7 +5,7 @@ import {
   GTSerializedDocument,
   ImportTranslation,
 } from '../../types';
-import { findLatestDraft } from '../utils/findLatestDraft';
+import { requireLatestDraft } from '../utils/requireSourceDocument';
 import { pluginConfig } from '../../adapter/core';
 import { importDocument } from '../../translation/importDocument';
 import { serializeDocument } from '../../utils/serialize';
@@ -17,7 +17,7 @@ export const baseDocumentLevelConfig = {
   ): Promise<GTSerializedDocument> => {
     const { client, schema } = context;
     const languageField = pluginConfig.getLanguageField();
-    const doc = await findLatestDraft(docInfo.documentId, client);
+    const doc = await requireLatestDraft(docInfo.documentId, client);
     delete doc[languageField];
     const baseLanguage = pluginConfig.getSourceLocale();
     const serialized = serializeDocument(doc, schema, baseLanguage);
