@@ -40,15 +40,18 @@ const BYTE_ORDER_MARK_FORMATS: ReadonlySet<FileFormat> = new Set<FileFormat>([
  * Ingress. Reads a file as the content the pipeline carries for its format:
  * base64 for binary formats, otherwise UTF-8 text decoded from whatever
  * encoding the file happens to be stored in.
+ *
+ * A file that cannot be read throws rather than reading as empty, which the
+ * pipeline cannot tell apart from a file that is genuinely empty and would
+ * upload as a deletion of every string in it.
  * @param {string} filePath - The path to the file to read.
  * @param {FileFormat} fileFormat - The format the file is configured as.
- * @returns {string} - The content, or '' if the file is absent.
+ * @returns {string} - The content.
  */
 export function readFileContent(
   filePath: string,
   fileFormat: FileFormat
 ): string {
-  if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) return '';
   if (isBinaryFileFormat(fileFormat)) {
     return fs.readFileSync(filePath).toString('base64');
   }

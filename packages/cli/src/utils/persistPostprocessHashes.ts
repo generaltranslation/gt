@@ -5,14 +5,9 @@ import {
   writeLockfile,
 } from '../fs/config/downloadedVersions.js';
 import { hashStringSync } from './hash.js';
+import { readFileContent } from '../fs/fileContent.js';
+import type { DownloadMeta } from '../state/recentDownloads.js';
 import type { Settings } from '../types/index.js';
-
-type DownloadMeta = {
-  branchId: string;
-  fileId: string;
-  versionId: string;
-  locale: string;
-};
 
 /**
  * Persist postprocessed content hashes for recently downloaded files into gt-lock.json.
@@ -40,8 +35,9 @@ export function persistPostProcessHashes(
     if (!meta) continue;
     if (!fs.existsSync(filePath)) continue;
 
-    const content = fs.readFileSync(filePath, 'utf8');
-    const hash = hashStringSync(content);
+    // The hash stands for the file's pipeline content, which is what every
+    // other producer and consumer of it compares against.
+    const hash = hashStringSync(readFileContent(filePath, meta.fileFormat));
 
     const entry = findOrCreateEntry(
       entryMap,

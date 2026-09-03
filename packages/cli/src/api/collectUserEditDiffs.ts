@@ -40,18 +40,6 @@ const contentBytes = (content: string, fileFormat: FileFormat): Buffer =>
     ? Buffer.from(content, 'base64')
     : Buffer.from(content, 'utf8');
 
-const utf8Decoder = new TextDecoder('utf-8', { fatal: true });
-
-/** Whether these bytes round trip as UTF-8 text. */
-const isUtf8Text = (bytes: Buffer): boolean => {
-  try {
-    utf8Decoder.decode(bytes);
-    return true;
-  } catch {
-    return false;
-  }
-};
-
 const findLatestDownloadedVersion = (
   entryMap: EntryMap,
   fileId: string,
@@ -124,7 +112,12 @@ export async function collectAndSendUserEditDiffs(
       // Skip if local file matches the last postprocessed content hash
       if (downloadedVersion.postProcessHash) {
         try {
-          const localContent = await fs.promises.readFile(outputPath, 'utf8');
+          // Hashed from the same pipeline content the hash was recorded from,
+          // so a file stored in UTF-16 still matches when it is untouched.
+          const localContent = readFileContent(
+            outputPath,
+            uploadedFile.fileFormat
+          );
           const localHash = hashStringSync(localContent);
           if (localHash === downloadedVersion.postProcessHash) {
             continue;
@@ -206,14 +199,14 @@ export async function collectAndSendUserEditDiffs(
         // Nothing was edited, so there is no diff to compute or report.
         if (localBytes.equals(serverBytes)) continue;
 
-        // A unified diff and localContent are both UTF-8 text. Content with no
-        // text form at all — a Lottie zip — cannot be sent, and sending
-        // mojibake upstream is worse than sending nothing. Say so: the edit is
-        // real and will be lost on the next download.
-        if (!isUtf8Text(serverBytes) || !isUtf8Text(localBytes)) {
+        // A unified diff and localContent are both UTF-8 text, and every text
+        // format's content is UTF-8 by the time it reaches here. Only a binary
+        // format's bytes — a Lottie zip — have no text form at all. Say so:
+        // the edit is real and will be lost on the next download.
+        if (isBinaryFileFormat(c.fileFormat)) {
           const relativePath = getRelative(c.outputPath);
           const reason =
-            'Edited file is not valid UTF-8, so its changes cannot be submitted';
+            'Edited file is a binary format, so its changes cannot be submitted';
           logger.warn(`Skipping local edits to ${relativePath}: ${reason}`);
           recordWarning('skipped_file', relativePath, reason);
           continue;

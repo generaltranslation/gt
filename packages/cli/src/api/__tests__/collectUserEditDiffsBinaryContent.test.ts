@@ -308,7 +308,7 @@ describe('collectAndSendUserEditDiffs - formats whose bytes are not UTF-8', () =
     expect(getWarnings()).toContainEqual({
       category: 'skipped_file',
       fileName: 'anim/es/spinner.lottie',
-      reason: expect.stringContaining('UTF-8'),
+      reason: expect.stringContaining('binary format'),
     });
   });
 });

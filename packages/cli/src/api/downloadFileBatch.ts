@@ -301,6 +301,7 @@ export async function downloadFileBatch(
             fileId,
             versionId,
             locale,
+            fileFormat: file.fileFormat,
             inputPath,
           });
           result.successful.push(requestedFile);
@@ -437,6 +438,7 @@ export async function downloadFileBatch(
           fileId,
           versionId,
           locale,
+          fileFormat: file.fileFormat,
           inputPath,
         });
 

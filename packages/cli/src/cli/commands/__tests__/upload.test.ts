@@ -70,6 +70,7 @@ import { runPublishWorkflow } from '../../../workflows/publish.js';
 import { createFileMapping } from '../../../formats/files/fileMapping.js';
 import { logger } from '../../../console/logger.js';
 import { existsSync, readFileSync } from 'node:fs';
+import { logErrorAndExit } from '../../../console/logging.js';
 
 function setMockFiles(files: Record<string, string>) {
   (vi as unknown).__mockFiles = files;
@@ -607,5 +608,45 @@ describe('upload - composite JSON', () => {
     );
     expect(plainFile?.translations).toHaveLength(1);
     expect(plainFile?.translations[0].content).toBe(translatedPlain);
+  });
+});
+
+describe('upload - Apple .strings translations that cannot be decoded', () => {
+  const SOURCE = 'Guardian/en.lproj/Localizable.strings';
+  const TRANSLATION = 'Guardian/es.lproj/Localizable.strings';
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(existsSync).mockReturnValue(false);
+    vi.mocked(readFileSync).mockReturnValue('');
+    vi.mocked(createFileMapping).mockReturnValue({});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('names the file that could not be read instead of uploading it', async () => {
+    const source = Buffer.from('"welcome" = "Welcome!";\n', 'utf8');
+    // A UTF-16 byte order mark over an odd number of bytes: the file claims an
+    // encoding its contents cannot be read as.
+    const truncated = Buffer.from([0xff, 0xfe, 0x22, 0x61, 0x22]);
+
+    setMockFiles({});
+    vi.mocked(readFileSync).mockImplementation((filePath) =>
+      String(filePath) === TRANSLATION ? truncated : source
+    );
+    vi.mocked(existsSync).mockReturnValue(true);
+    vi.mocked(createFileMapping).mockReturnValue({
+      es: { [SOURCE]: TRANSLATION },
+    });
+
+    await uploadWithFiles(
+      { dotStrings: [SOURCE] },
+      makeSettings({ locales: ['es'], options: {} })
+    );
+
+    expect(logErrorAndExit).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(logErrorAndExit).mock.calls[0][0]).toContain(TRANSLATION);
   });
 });

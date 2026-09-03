@@ -1,4 +1,7 @@
-import { noDefaultLocaleError } from '../../console/index.js';
+import {
+  fileEncodingError,
+  noDefaultLocaleError,
+} from '../../console/index.js';
 import { exitSync, logErrorAndExit } from '../../console/logging.js';
 import { logger } from '../../console/logger.js';
 import { getRelative, readFile } from '../../fs/findFilepath.js';
@@ -115,10 +118,17 @@ export async function upload(
         const translatedFileName = fileMapping[locale]?.[file.fileName];
         if (translatedFileName && existsSync(translatedFileName)) {
           const translationFormat = file.transformFormat ?? file.fileFormat;
-          const translatedContent = readFileContent(
-            translatedFileName,
-            translationFormat
-          );
+          let translatedContent: string;
+          try {
+            translatedContent = readFileContent(
+              translatedFileName,
+              translationFormat
+            );
+          } catch (error) {
+            logErrorAndExit(
+              fileEncodingError(getRelative(translatedFileName), error)
+            );
+          }
           translations.push({
             content: translatedContent,
             fileName: translatedFileName,

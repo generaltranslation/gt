@@ -223,10 +223,12 @@ describe('readFileContent / encodeFileContent', () => {
     expect(readFileContent(filePath, 'LOTTIE')).toBe(bytes.toString('base64'));
   });
 
-  it('returns empty content for a file that is not there', () => {
-    expect(
+  it('throws rather than reading a file that is not there as empty', () => {
+    // Empty content is indistinguishable from a file with no strings in it,
+    // which would upload as a deletion of everything the file used to hold.
+    expect(() =>
       readFileContent(path.join(dir, 'missing.strings'), 'DOT_STRINGS')
-    ).toBe('');
+    ).toThrow();
   });
 
   it.each([
