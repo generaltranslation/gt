@@ -396,18 +396,19 @@ export async function aggregateFiles(
     files.push(...lottieFiles);
   }
 
-  // .strings and .stringsdict files are uploaded verbatim. Their backslash
-  // escapes and format specifiers must survive byte-for-byte, so they skip the
-  // generic markdown-oriented preprocessing below.
+  // These formats are uploaded verbatim. Their backslash escapes and format
+  // specifiers must survive byte-for-byte, so they skip the generic
+  // markdown-oriented preprocessing below.
   for (const [fileType, fileFormat] of [
     ['dotStrings', 'DOT_STRINGS'],
     ['dotStringsdict', 'DOT_STRINGSDICT'],
+    ['androidStrings', 'ANDROID_STRINGS'],
   ] as const) {
     if (!filePaths[fileType]) continue;
     // Content must already be base64 exactly when the format is binary, or the
     // upload path encodes it a second time. Only .strings qualifies today: its
-    // UTF-16 bytes reach an API decoder that reads the byte order mark, and
-    // .stringsdict has no such decoder yet.
+    // UTF-16 bytes reach an API decoder that reads the byte order mark.
+    // .stringsdict has no such decoder yet, and strings.xml is always UTF-8.
     const readsRawBytes = isBinaryFileFormat(fileFormat);
     const verbatimFiles = filePaths[fileType]
       .map((filePath) => {
@@ -449,7 +450,8 @@ export async function aggregateFiles(
       fileType === 'twilioContentJson' ||
       fileType === 'lottie' ||
       fileType === 'dotStrings' ||
-      fileType === 'dotStringsdict'
+      fileType === 'dotStringsdict' ||
+      fileType === 'androidStrings'
     )
       continue;
     if (filePaths[fileType]) {

@@ -23,6 +23,7 @@ export const CONFIG_FILE_TYPE_TO_FILE_FORMAT = {
   lottie: 'LOTTIE',
   dotStrings: 'DOT_STRINGS',
   dotStringsdict: 'DOT_STRINGSDICT',
+  androidStrings: 'ANDROID_STRINGS',
 } as const satisfies Record<SupportedFileExtension, FileFormat>;
 
 /**
@@ -42,6 +43,7 @@ export const FILE_FORMAT_TO_CONFIG_FILE_TYPE = {
   LOTTIE: 'lottie',
   DOT_STRINGS: 'dotStrings',
   DOT_STRINGSDICT: 'dotStringsdict',
+  ANDROID_STRINGS: 'androidStrings',
 } as const satisfies Partial<Record<FileFormat, SupportedFileExtension>>;
 
 /**
@@ -64,6 +66,7 @@ const FILE_FORMAT_EXTENSIONS = {
   SVG: 'svg',
   DOT_STRINGS: 'strings',
   DOT_STRINGSDICT: 'stringsdict',
+  ANDROID_STRINGS: 'xml',
 } as const satisfies Record<FileFormat, string>;
 
 /**

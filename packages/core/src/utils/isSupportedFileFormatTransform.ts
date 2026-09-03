@@ -18,6 +18,7 @@ const SUPPORTED_TRANSFORMATIONS = {
   SVG: ['SVG'],
   DOT_STRINGS: ['DOT_STRINGS'],
   DOT_STRINGSDICT: ['DOT_STRINGSDICT'],
+  ANDROID_STRINGS: ['ANDROID_STRINGS'],
 } as const satisfies Record<FileFormat, FileFormat[]>;
 
 /**
