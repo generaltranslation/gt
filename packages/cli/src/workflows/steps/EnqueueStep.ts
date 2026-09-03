@@ -1,15 +1,17 @@
 import type { EnqueueFilesResult } from 'generaltranslation/types';
 import { logger } from '../../console/logger.js';
-import { GT } from 'generaltranslation';
-import { Settings } from '../../types/index.js';
+import type { ApiClient } from '../../utils/api.js';
+import type { Settings } from '../../types/index.js';
 import type { FileReference } from 'generaltranslation/types';
 import chalk from 'chalk';
+
+type EnqueueClient = Pick<ApiClient, 'enqueueFiles'>;
 
 export class EnqueueStep {
   private spinner = logger.createSpinner('dots');
 
   constructor(
-    private gt: GT,
+    private gt: EnqueueClient,
     private settings: Settings,
     private force?: boolean
   ) {}

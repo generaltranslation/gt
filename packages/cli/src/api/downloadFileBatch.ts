@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { isBinaryFileFormat } from 'generaltranslation/types';
 import { logger } from '../console/logger.js';
-import { gt } from '../utils/gt.js';
+import { api } from '../utils/api.js';
 import { Settings } from '../types/index.js';
 import { validateJsonSchema } from '../formats/json/utils.js';
 import { validateYamlSchema } from '../formats/yaml/utils.js';
@@ -26,6 +26,7 @@ import type { FileStatusTracker } from '../workflows/steps/PollJobsStep.js';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import { hasNonIdentityFileFormatTransformForType } from '../formats/files/transformFormat.js';
 import { getRelative } from '../fs/findFilepath.js';
+import { encodeFileContent } from '../fs/fileContent.js';
 import {
   getInlineElementsLabel,
   type InlineLibrary,
@@ -63,12 +64,14 @@ function reportWithheldGtJsonComponents(
  */
 function countGtJsonEntries(content: string): number | undefined {
   try {
-    const parsed = JSON.parse(content);
+    const parsed: unknown = JSON.parse(content);
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
       return undefined;
     }
     const entries =
+      'type' in parsed &&
       parsed.type === 'GTJSON' &&
+      'data' in parsed &&
       parsed.data &&
       typeof parsed.data === 'object' &&
       !Array.isArray(parsed.data)
@@ -230,7 +233,7 @@ export async function downloadFileBatch(
 
   try {
     // Download the files
-    const responseData = await gt.downloadFileBatch(
+    const responseData = await api.downloadFileBatch(
       files.map((file) => ({
         fileId: file.fileId,
         branchId: file.branchId,
@@ -300,6 +303,7 @@ export async function downloadFileBatch(
             fileId,
             versionId,
             locale,
+            fileFormat: file.fileFormat,
             inputPath,
           });
           result.successful.push(requestedFile);
@@ -426,13 +430,17 @@ export async function downloadFileBatch(
         }
 
         // Write the file to disk
-        await fs.promises.writeFile(outputPath, data);
+        await fs.promises.writeFile(
+          outputPath,
+          encodeFileContent(data, file.fileFormat, inputPath, outputPath)
+        );
         // Track as downloaded with metadata for downstream postprocessing
         recordDownloaded(outputPath, {
           branchId,
           fileId,
           versionId,
           locale,
+          fileFormat: file.fileFormat,
           inputPath,
         });
 

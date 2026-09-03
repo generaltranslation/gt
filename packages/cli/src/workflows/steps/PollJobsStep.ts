@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import { logger } from '../../console/logger.js';
-import { GT } from 'generaltranslation';
+import type { ApiClient } from '../../utils/api.js';
 import { EnqueueFilesResult } from 'generaltranslation/types';
 import { TEMPLATE_FILE_NAME } from '../../utils/constants.js';
 import type { FileProperties } from '../../types/files.js';
@@ -38,7 +38,7 @@ export class PollTranslationJobsStep {
   private previousProgress = 0;
 
   constructor(
-    private gt: GT,
+    private api: ApiClient,
     private inlineLibrary?: InlineLibrary
   ) {}
 
@@ -67,7 +67,7 @@ export class PollTranslationJobsStep {
     // no longer marks force-retranslated files as incomplete
     if (!forceRetranslation) {
       const completedKeys = await queryCompletedTranslationKeys(
-        this.gt,
+        this.api,
         fileQueryData
       );
 
@@ -86,7 +86,7 @@ export class PollTranslationJobsStep {
       (typeof jobData.jobData)[number] & { jobId: string }
     >();
     Object.entries(jobData.jobData).forEach(([jobId, job]) => {
-      const jobLocale = this.gt.resolveAliasLocale(job.targetLocale);
+      const jobLocale = this.api.resolveAliasLocale(job.targetLocale);
       const key = `${job.branchId}:${job.fileId}:${job.versionId}:${jobLocale}`;
       jobMap.set(key, { ...job, jobId, targetLocale: jobLocale });
     });
@@ -103,7 +103,7 @@ export class PollTranslationJobsStep {
       }
     >();
     Object.entries(jobData.jobData).forEach(([jobId, job]) => {
-      const jobLocale = this.gt.resolveAliasLocale(job.targetLocale);
+      const jobLocale = this.api.resolveAliasLocale(job.targetLocale);
       jobFileMap.set(jobId, {
         branchId: job.branchId,
         fileId: job.fileId,
@@ -162,7 +162,7 @@ export class PollTranslationJobsStep {
           try {
             // Query job status
             const jobIds = Array.from(jobFileMap.keys());
-            const jobStatusResponse = await this.gt.checkJobStatus(jobIds);
+            const jobStatusResponse = await this.api.checkJobStatus(jobIds);
 
             // Update status based on job completion
             for (const job of jobStatusResponse) {

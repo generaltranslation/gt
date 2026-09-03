@@ -22075,7 +22075,7 @@ snapshots:
 
   '@babel/helper-wrap-function@7.28.3':
     dependencies:
-      '@babel/template': 7.28.6
+      '@babel/template': 7.29.7
       '@babel/traverse': 7.29.0
       '@babel/types': 7.29.8
     transitivePeerDependencies:
@@ -41996,7 +41996,7 @@ snapshots:
 
   rollup-plugin-terser@7.0.2(rollup@2.80.0):
     dependencies:
-      '@babel/code-frame': 7.29.0
+      '@babel/code-frame': 7.29.7
       jest-worker: 26.6.2
       rollup: 2.80.0
       serialize-javascript: 4.0.0

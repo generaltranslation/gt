@@ -6,12 +6,15 @@ import {
   writeLockfile,
 } from '../../fs/config/downloadedVersions.js';
 import type { Settings } from '../../types/index.js';
+import { hashStringSync } from '../hash.js';
 import { persistPostProcessHashes } from '../persistPostprocessHashes.js';
 
-vi.mock('node:fs', () => ({
+const mockFs = vi.hoisted(() => ({
   existsSync: vi.fn(),
   readFileSync: vi.fn(),
 }));
+
+vi.mock('node:fs', () => ({ default: mockFs, ...mockFs }));
 
 vi.mock('../../fs/config/downloadedVersions.js', () => ({
   findOrCreateEntry: vi.fn(),
@@ -52,6 +55,7 @@ describe('persistPostProcessHashes', () => {
             fileId: 'file-1',
             versionId: 'version-1',
             locale: 'es',
+            fileFormat: 'JSON' as const,
           },
         ],
       ])
@@ -61,5 +65,34 @@ describe('persistPostProcessHashes', () => {
       expect.objectContaining({ _branchId: 'branch-1' })
     );
     expect(writeLockfile).toHaveBeenCalled();
+  });
+
+  it('hashes the decoded text of a translation stored in UTF-16', () => {
+    const text = '"welcome" = "\u00a1Bienvenido!";\n';
+    const filePath = 'Guardian/es.lproj/Localizable.strings';
+    vi.mocked(fs.readFileSync).mockReturnValue(
+      Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(text, 'utf16le')])
+    );
+
+    persistPostProcessHashes(
+      {} as Settings,
+      new Set([filePath]),
+      new Map([
+        [
+          filePath,
+          {
+            branchId: 'branch-1',
+            fileId: 'file-1',
+            versionId: 'version-1',
+            locale: 'es',
+            fileFormat: 'DOT_STRINGS' as const,
+          },
+        ],
+      ])
+    );
+
+    // The recorded hash has to stand for the same content every other producer
+    // and consumer of it uses, not for the file's UTF-16 bytes read as UTF-8.
+    expect(hashStringSync).toHaveBeenCalledWith(text);
   });
 });

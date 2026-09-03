@@ -1,15 +1,12 @@
+import type { GetFileInfoResponse } from 'generaltranslation/api';
 import type { FileToUpload } from 'generaltranslation/types';
 import { logger } from '../../console/logger.js';
 import { recordWarning } from '../../state/translateWarnings.js';
-import type { GT } from 'generaltranslation';
+import type { ApiClient } from '../../utils/api.js';
 import type { Settings } from '../../types/index.js';
 import chalk from 'chalk';
 import { BranchData } from '../../types/branch.js';
-import type {
-  FileDataResult,
-  FileReference,
-  OrphanedFile,
-} from 'generaltranslation/types';
+import type { FileReference, OrphanedFile } from 'generaltranslation/types';
 
 type MoveMapping = {
   oldFileId: string;
@@ -18,13 +15,13 @@ type MoveMapping = {
 };
 
 type UploadSourcesClient = Pick<
-  GT,
+  ApiClient,
   | 'queryFileData'
   | 'getOrphanedFiles'
   | 'processFileMoves'
   | 'uploadSourceFiles'
 >;
-type UploadSourcesSettings = Pick<Settings, 'defaultLocale' | 'modelProvider'>;
+type UploadSourcesSettings = Pick<Settings, 'defaultLocale'>;
 
 export class UploadSourcesStep {
   private spinner = logger.createSpinner('dots');
@@ -145,7 +142,7 @@ export class UploadSourcesStep {
     // Build a map of branch:fileId:versionId to fileData
     const fileDataMap = new Map<
       string,
-      NonNullable<FileDataResult['sourceFiles']>[number]
+      GetFileInfoResponse['sourceFiles'][number]
     >();
     fileData.sourceFiles?.forEach((f) => {
       fileDataMap.set(`${f.branchId}:${f.fileId}:${f.versionId}`, f);
@@ -173,10 +170,7 @@ export class UploadSourcesStep {
           checkedOutBranchId: branchData.checkedOutBranch?.id,
         },
       })),
-      {
-        sourceLocale: this.settings.defaultLocale,
-        modelProvider: this.settings.modelProvider,
-      }
+      { sourceLocale: this.settings.defaultLocale }
     );
 
     // The API may not echo transformFormat, so preserve it from local inputs.
@@ -184,16 +178,23 @@ export class UploadSourcesStep {
       files.map((f) => [`${f.fileId}:${f.versionId}`, f])
     );
 
-    const result = response.uploadedFiles.map((uploadedFile) => {
-      const localFile = localFileMap.get(
-        `${uploadedFile.fileId}:${uploadedFile.versionId}`
-      );
-      return {
-        ...uploadedFile,
-        transformFormat:
-          localFile?.transformFormat ?? uploadedFile.transformFormat,
-      };
-    });
+    const result: FileReference[] = response.uploadedFiles.map(
+      (uploadedFile) => {
+        const localFile = localFileMap.get(
+          `${uploadedFile.fileId}:${uploadedFile.versionId}`
+        );
+        return {
+          branchId:
+            uploadedFile.branchId ?? localFile?.branchId ?? currentBranchId,
+          fileId: uploadedFile.fileId,
+          versionId: uploadedFile.versionId,
+          fileName: uploadedFile.fileName,
+          fileFormat: uploadedFile.fileFormat,
+          dataFormat: localFile?.dataFormat,
+          transformFormat: localFile?.transformFormat,
+        };
+      }
+    );
 
     // Merge files that were already uploaded into the result
     result.push(

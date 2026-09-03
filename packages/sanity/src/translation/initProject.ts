@@ -1,8 +1,8 @@
-import { gt, overrideConfig, pluginConfig } from '../adapter/core';
+import { api, overrideConfig, pluginConfig } from '../adapter/core';
 import type { Secrets } from '../types';
 
 export async function initProject(
-  uploadResult: Awaited<ReturnType<typeof gt.uploadSourceFiles>>,
+  uploadResult: Awaited<ReturnType<typeof api.uploadSourceFiles>>,
   options: { timeout?: number },
   secrets: Secrets
 ): Promise<boolean> {
@@ -13,12 +13,12 @@ export async function initProject(
     options?.timeout !== undefined ? Number(options.timeout) : 600;
   const setupTimeoutSeconds = Number.isFinite(timeoutVal) ? timeoutVal : 600;
 
-  const setupResult = await gt.setupProject(uploadResult.uploadedFiles, {
+  const setupResult = await api.setupProject(uploadResult.uploadedFiles, {
     locales: pluginConfig.getLocales(),
   });
 
   if (setupResult.status === 'queued') {
-    const { complete, jobs } = await gt.awaitJobs([setupResult.setupJobId], {
+    const { complete, jobs } = await api.awaitJobs([setupResult.setupJobId], {
       pollingIntervalSeconds: 2,
       timeoutSeconds: setupTimeoutSeconds,
     });

@@ -445,5 +445,8 @@ export const lottieExpressionsError = (files: string[]): string =>
       '\n'
     )}\nRe-export the animation with expressions baked into keyframes (or removed), then try again.`;
 
+export const fileEncodingSkipReason = (error: unknown): string =>
+  `File could not be decoded: ${error instanceof Error ? error.message : String(error)}`;
+
 export const withOriginalError = (message: string, error: unknown): string =>
   error != null ? `${message} Original error: ${String(error)}` : message;

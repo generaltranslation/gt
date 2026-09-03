@@ -13,7 +13,7 @@ export type RetryingFetchOptions = {
 
 export type TimeoutFetchOptions = {
   fetch?: typeof fetch;
-  timeoutMs?: number;
+  timeoutMs?: number | false;
 };
 
 export function createTimeoutFetch({
@@ -21,6 +21,10 @@ export function createTimeoutFetch({
   timeoutMs = DEFAULT_TIMEOUT_MS,
 }: TimeoutFetchOptions = {}): typeof fetch {
   return async (input, init) => {
+    if (timeoutMs === false) {
+      return fetchImplementation(input, init);
+    }
+
     const request = new Request(input, init);
     const controller = new AbortController();
     const forwardAbort = () => controller.abort(request.signal.reason);

@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import os from 'node:os';
 import { collectAndSendUserEditDiffs } from '../collectUserEditDiffs.js';
 import { createMockSettings } from '../__mocks__/settings.js';
-import { gt } from '../../utils/gt.js';
+import { api } from '../../utils/api.js';
 import { logger } from '../../console/logger.js';
 import { clearWarnings, getWarnings } from '../../state/translateWarnings.js';
 import type { FileReference } from 'generaltranslation/types';
@@ -12,8 +12,8 @@ import type { DownloadedVersionsV1 } from '../../fs/config/downloadedVersions.js
 
 // Runs the real `git diff --no-index` rather than mocking it: the defect here is
 // what gets written to the comparison file, which a mocked differ cannot see.
-vi.mock('../../utils/gt.js', () => ({
-  gt: {
+vi.mock('../../utils/api.js', () => ({
+  api: {
     queryFileData: vi.fn(),
     downloadFileBatch: vi.fn(),
     submitUserEditDiffs: vi.fn(),
@@ -30,7 +30,7 @@ const TRANSLATION =
 const utf16leWithBom = (text: string) =>
   Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(text, 'utf16le')]);
 
-describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
+describe('collectAndSendUserEditDiffs - formats whose bytes are not UTF-8', () => {
   const originalCwd = process.cwd();
   let tempDir: string;
   let warn: ReturnType<typeof vi.spyOn>;
@@ -111,9 +111,12 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
     return outputPath;
   };
 
-  /** Mirrors core's downloadFileBatch, which leaves base64 formats encoded. */
-  const mockServerDownload = (base64Data: string, fileFormat: string) => {
-    vi.mocked(gt.queryFileData).mockResolvedValue({
+  /**
+   * Mirrors core's downloadFileBatch: binary formats stay base64, everything
+   * else — `.strings` included — arrives already decoded to a UTF-8 string.
+   */
+  const mockServerDownload = (data: string, fileFormat: string) => {
+    vi.mocked(api.queryFileData).mockResolvedValue({
       translatedFiles: [
         {
           branchId: 'branch1',
@@ -124,7 +127,7 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
         },
       ],
     });
-    vi.mocked(gt.downloadFileBatch).mockResolvedValue({
+    vi.mocked(api.downloadFileBatch).mockResolvedValue({
       files: [
         {
           branchId: 'branch1',
@@ -132,10 +135,10 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
           versionId: 'version1',
           locale: 'es',
           fileFormat,
-          data: base64Data,
+          data,
         },
       ],
-    } as unknown as Awaited<ReturnType<typeof gt.downloadFileBatch>>);
+    } as unknown as Awaited<ReturnType<typeof api.downloadFileBatch>>);
   };
 
   const filesUnderTest = (fileFormat: string): FileReference[] => [
@@ -152,18 +155,15 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
     const settings = buildSettings();
     seedLockFile();
     writeTranslation(Buffer.from(TRANSLATION, 'utf8'));
-    mockServerDownload(
-      Buffer.from(TRANSLATION, 'utf8').toString('base64'),
-      'DOT_STRINGS'
-    );
+    mockServerDownload(TRANSLATION, 'DOT_STRINGS');
 
     const hadDiffs = await collectAndSendUserEditDiffs(
       filesUnderTest('DOT_STRINGS'),
       settings
     );
 
-    expect(gt.downloadFileBatch).toHaveBeenCalledTimes(1);
-    expect(gt.submitUserEditDiffs).not.toHaveBeenCalled();
+    expect(api.downloadFileBatch).toHaveBeenCalledTimes(1);
+    expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
     expect(hadDiffs).toBe(false);
   });
 
@@ -173,15 +173,12 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
     writeTranslation(
       Buffer.from(TRANSLATION.replace('¡Bienvenido!', '¡Hola!'), 'utf8')
     );
-    mockServerDownload(
-      Buffer.from(TRANSLATION, 'utf8').toString('base64'),
-      'DOT_STRINGS'
-    );
+    mockServerDownload(TRANSLATION, 'DOT_STRINGS');
 
     await collectAndSendUserEditDiffs(filesUnderTest('DOT_STRINGS'), settings);
 
-    expect(gt.submitUserEditDiffs).toHaveBeenCalledTimes(1);
-    const [{ diffs }] = vi.mocked(gt.submitUserEditDiffs).mock.calls[0];
+    expect(api.submitUserEditDiffs).toHaveBeenCalledTimes(1);
+    const [{ diffs }] = vi.mocked(api.submitUserEditDiffs).mock.calls[0];
     expect(diffs).toHaveLength(1);
     expect(diffs[0].diff).toContain('-"welcome" = "¡Bienvenido!";');
     expect(diffs[0].diff).toContain('+"welcome" = "¡Hola!";');
@@ -198,8 +195,8 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
 
     await collectAndSendUserEditDiffs(filesUnderTest('DOT_STRINGS'), settings);
 
-    expect(gt.submitUserEditDiffs).toHaveBeenCalledTimes(1);
-    const [{ diffs }] = vi.mocked(gt.submitUserEditDiffs).mock.calls[0];
+    expect(api.submitUserEditDiffs).toHaveBeenCalledTimes(1);
+    const [{ diffs }] = vi.mocked(api.submitUserEditDiffs).mock.calls[0];
     expect(diffs[0].diff).toContain('+"welcome" = "¡Bienvenido!";');
     expect(diffs[0].localContent).toBe(TRANSLATION);
   });
@@ -208,7 +205,7 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
     const settings = buildSettings();
     seedLockFile();
     writeTranslation(Buffer.from(TRANSLATION, 'utf8'));
-    vi.mocked(gt.queryFileData).mockResolvedValue({
+    vi.mocked(api.queryFileData).mockResolvedValue({
       translatedFiles: [
         {
           branchId: 'branch1',
@@ -219,56 +216,50 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
         },
       ],
     });
-    vi.mocked(gt.downloadFileBatch).mockResolvedValue({
+    vi.mocked(api.downloadFileBatch).mockResolvedValue({
       files: [],
-    } as unknown as Awaited<ReturnType<typeof gt.downloadFileBatch>>);
+    } as unknown as Awaited<ReturnType<typeof api.downloadFileBatch>>);
 
     await collectAndSendUserEditDiffs(filesUnderTest('DOT_STRINGS'), settings);
 
     // No baseline at all, so there is nothing to diff and nothing to report.
-    expect(gt.submitUserEditDiffs).not.toHaveBeenCalled();
+    expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
     expect(warn).not.toHaveBeenCalled();
   });
 
-  it('warns instead of submitting a UTF-16 .strings edit it cannot represent as text', async () => {
+  it('submits a UTF-16 .strings edit as text rather than dropping it', async () => {
     const settings = buildSettings();
     seedLockFile();
     writeTranslation(
       utf16leWithBom(TRANSLATION.replace('¡Bienvenido!', '¡Hola!'))
     );
-    mockServerDownload(
-      utf16leWithBom(TRANSLATION).toString('base64'),
-      'DOT_STRINGS'
-    );
+    mockServerDownload(TRANSLATION, 'DOT_STRINGS');
 
     await collectAndSendUserEditDiffs(filesUnderTest('DOT_STRINGS'), settings);
 
-    // Reading UTF-16 bytes as UTF-8 yields U+FFFD, so there is no faithful
-    // diff or localContent to send. Sending nothing beats sending mojibake,
-    // but dropping the edit without saying so is its own failure.
-    expect(gt.submitUserEditDiffs).not.toHaveBeenCalled();
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('Guardian/es.lproj/Localizable.strings')
-    );
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('UTF-8'));
-    expect(getWarnings()).toContainEqual({
-      category: 'skipped_file',
-      fileName: 'Guardian/es.lproj/Localizable.strings',
-      reason: expect.stringContaining('UTF-8'),
-    });
+    // The local file decodes by its byte order mark, so a UTF-16 edit has a
+    // faithful text form and travels upstream like any other.
+    expect(api.submitUserEditDiffs).toHaveBeenCalledTimes(1);
+    const [{ diffs }] = vi.mocked(api.submitUserEditDiffs).mock.calls[0];
+    expect(diffs[0].diff).toContain('-"welcome" = "¡Bienvenido!";');
+    expect(diffs[0].diff).toContain('+"welcome" = "¡Hola!";');
+    expect(diffs[0].diff).not.toContain('�');
+    expect(diffs[0].localContent).toContain('"welcome" = "¡Hola!";');
+    expect(warn).not.toHaveBeenCalled();
   });
 
-  it('stays quiet when a translation is byte-identical to the server copy', async () => {
+  it('stays quiet when a UTF-16 translation still matches the server copy', async () => {
     const settings = buildSettings();
     seedLockFile();
-    const unchanged = utf16leWithBom(TRANSLATION);
-    writeTranslation(unchanged);
-    mockServerDownload(unchanged.toString('base64'), 'DOT_STRINGS');
+    writeTranslation(utf16leWithBom(TRANSLATION));
+    mockServerDownload(TRANSLATION, 'DOT_STRINGS');
 
     await collectAndSendUserEditDiffs(filesUnderTest('DOT_STRINGS'), settings);
 
-    // Nothing was edited, so there is nothing to warn about.
-    expect(gt.submitUserEditDiffs).not.toHaveBeenCalled();
+    // The file differs from the server byte for byte but not as text, and
+    // re-encoding on download is what put it in UTF-16. Reporting that as a
+    // user edit would flag every UTF-16 file on every run.
+    expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
     expect(warn).not.toHaveBeenCalled();
     expect(getWarnings()).toHaveLength(0);
   });
@@ -313,11 +304,11 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
       settings
     );
 
-    expect(gt.submitUserEditDiffs).not.toHaveBeenCalled();
+    expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
     expect(getWarnings()).toContainEqual({
       category: 'skipped_file',
       fileName: 'anim/es/spinner.lottie',
-      reason: expect.stringContaining('UTF-8'),
+      reason: expect.stringContaining('binary format'),
     });
   });
 });

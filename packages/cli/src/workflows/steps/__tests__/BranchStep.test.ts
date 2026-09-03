@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { ApiError } from 'generaltranslation/errors';
 import { BranchStep } from '../BranchStep.js';
 
 // Mock git branch detection
@@ -218,6 +219,45 @@ describe('BranchStep', () => {
   });
 
   describe('new branch creation', () => {
+    it('should propagate non-branching API errors', async () => {
+      mockGetCurrentBranch.mockResolvedValue({
+        currentBranchName: 'new-branch',
+        defaultBranch: false,
+        defaultBranchName: 'main',
+      });
+      mockGt.queryBranchData.mockResolvedValue({
+        branches: [],
+        defaultBranch,
+      });
+      const error = new ApiError('server failed', 500, 'server failed');
+      mockGt.createBranch.mockRejectedValue(error);
+
+      const step = new BranchStep(mockGt, makeSettings());
+
+      await expect(step.run()).rejects.toBe(error);
+    });
+
+    it('should reuse the fetched default branch when branching is unavailable', async () => {
+      mockGetCurrentBranch.mockResolvedValue({
+        currentBranchName: 'new-branch',
+        defaultBranch: false,
+        defaultBranchName: 'main',
+      });
+      mockGt.queryBranchData.mockResolvedValue({
+        branches: [],
+        defaultBranch,
+      });
+      mockGt.createBranch.mockRejectedValueOnce(
+        new ApiError('branching unavailable', 403, 'branching unavailable')
+      );
+
+      const step = new BranchStep(mockGt, makeSettings());
+      const result = await step.run();
+
+      expect(result?.currentBranch).toEqual(defaultBranch);
+      expect(mockGt.createBranch).toHaveBeenCalledTimes(1);
+    });
+
     it('should create a new branch when not found on server', async () => {
       mockGetCurrentBranch.mockResolvedValue({
         currentBranchName: 'new-branch',

@@ -2,7 +2,7 @@ import path from 'node:path';
 import chalk from 'chalk';
 import type { FileToUpload } from 'generaltranslation/types';
 import { logger } from '../console/logger.js';
-import { gt } from '../utils/gt.js';
+import { api } from '../utils/api.js';
 import { Settings } from '../types/index.js';
 
 const PROJECT_INFO_TIMEOUT_MS = 10_000;
@@ -31,7 +31,10 @@ export async function warnManualReviewSetup(
       // Uploaded GTJSON metadata carries the platform's snake_case key
       return Object.values(file.formatMetadata ?? {}).some(
         (metadata) =>
-          (metadata as { requires_review?: boolean })?.requires_review === true
+          typeof metadata === 'object' &&
+          metadata !== null &&
+          'requires_review' in metadata &&
+          metadata.requires_review === true
       );
     }
     return requiresReviewPaths?.has(path.resolve(process.cwd(), file.fileName));
@@ -40,9 +43,8 @@ export async function warnManualReviewSetup(
 
   let autoApprove: boolean | undefined;
   try {
-    autoApprove = (
-      await gt.getProjectInfo({ timeout: PROJECT_INFO_TIMEOUT_MS })
-    ).autoApprove;
+    autoApprove = (await api.getProjectInfo(PROJECT_INFO_TIMEOUT_MS))
+      .autoApprove;
   } catch {
     // Setting unavailable — fall through to the conditional wording
   }

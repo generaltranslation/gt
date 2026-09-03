@@ -1,145 +1,224 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import {
+  createApiClient,
+  translate,
+  type TranslateResponse,
+} from '@generaltranslation/api';
+import type { Content } from '@generaltranslation/format/types';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { defaultRuntimeApiUrl } from '../../settings/settingsUrls';
+import { TranslationRequestConfig } from '../../types';
+import { SharedMetadata, TranslateManyEntry } from '../../types-dir/api/entry';
 import { _translateMany } from '../translateMany';
-import { apiRequest } from '../utils/apiRequest';
-import { TranslationRequestConfig, TranslationResult } from '../../types';
-import { TranslateManyEntry, SharedMetadata } from '../../types-dir/api/entry';
+import { fetchWithTimeout } from '../utils/fetchWithTimeout';
+import { validateResponse } from '../utils/validateResponse';
 
-vi.mock('../utils/apiRequest');
+vi.mock('@generaltranslation/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@generaltranslation/api')>()),
+  createApiClient: vi.fn(),
+  translate: vi.fn(),
+}));
+vi.mock('../utils/fetchWithTimeout');
+vi.mock('../utils/validateResponse');
+
+const mockConfig: TranslationRequestConfig = {
+  baseUrl: 'https://api.test.com',
+  projectId: 'test-project',
+  apiKey: 'test-api-key',
+};
+const globalMetadata: {
+  targetLocale: string;
+  sourceLocale: string;
+} & SharedMetadata = {
+  targetLocale: 'es',
+  sourceLocale: 'en',
+};
+
+function createResponse(overrides: Partial<Response> = {}): Response {
+  return {
+    ok: true,
+    status: 200,
+    statusText: 'OK',
+    headers: new Headers(),
+    json: vi.fn(),
+    text: vi.fn(),
+    ...overrides,
+  } as unknown as Response;
+}
+
+function mockTranslateResponse(data: TranslateResponse): void {
+  vi.mocked(translate).mockResolvedValue({
+    data,
+    request: {} as Request,
+    response: createResponse(),
+  });
+}
 
 describe.sequential('_translateMany', () => {
-  const mockConfig: TranslationRequestConfig = {
-    baseUrl: 'https://api.test.com',
-    projectId: 'test-project',
-    apiKey: 'test-api-key',
-  };
-
-  const mockResponseRecord: Record<string, TranslationResult> = {
-    hash1: {
-      translation: 'Hola mundo',
-      reference: {
-        id: 'test-id-1',
-        hash: 'hash1',
-      },
-      locale: 'es',
-      dataFormat: 'ICU',
-    },
-    hash2: {
-      translation: 'Adiós mundo',
-      reference: {
-        id: 'test-id-2',
-        hash: 'hash2',
-      },
-      locale: 'es',
-      dataFormat: 'ICU',
-    },
-  };
-
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
+    vi.mocked(createApiClient).mockReturnValue(
+      {} as ReturnType<typeof createApiClient>
+    );
+    mockTranslateResponse({});
+    vi.mocked(validateResponse).mockResolvedValue(undefined);
   });
 
-  it('should translate multiple entries successfully', async () => {
-    vi.mocked(apiRequest).mockResolvedValue(mockResponseRecord);
+  it('routes runtime translation through the SDK at the call site', async () => {
+    mockTranslateResponse({
+      hash: {
+        success: true,
+        translation: 'Hola mundo',
+        locale: 'es',
+        dataFormat: 'ICU',
+      },
+    });
 
-    const requests: TranslateManyEntry[] = [
-      { source: 'Hello world', metadata: {} },
-      { source: 'Goodbye world', metadata: {} },
-    ];
-    const globalMetadata: {
-      targetLocale: string;
-      sourceLocale: string;
-    } & SharedMetadata = {
-      targetLocale: 'es',
-      sourceLocale: 'en',
-    };
-
-    const result = await _translateMany(requests, globalMetadata, mockConfig);
-
-    expect(apiRequest).toHaveBeenCalledWith(
-      expect.objectContaining({ baseUrl: 'https://api.test.com' }),
-      '/v2/translate',
-      expect.objectContaining({
-        body: expect.objectContaining({
-          targetLocale: 'es',
-          sourceLocale: 'en',
-          metadata: globalMetadata,
-        }),
-        timeout: undefined,
-        retryPolicy: 'none',
-      })
+    const result = await _translateMany(
+      { hash: { source: 'Hello world' } },
+      globalMetadata,
+      mockConfig
     );
-    // Result is an array when input is an array
-    expect(Array.isArray(result)).toBe(true);
+
+    expect(createApiClient).toHaveBeenCalledWith({
+      apiKey: 'test-api-key',
+      baseUrl: 'https://api.test.com',
+      fetch: expect.any(Function),
+      projectId: 'test-project',
+      retryPolicy: 'none',
+      timeoutMs: false,
+    });
+    expect(translate).toHaveBeenCalledWith({
+      body: {
+        requests: {
+          hash: { source: 'Hello world', metadata: undefined },
+        },
+        targetLocale: 'es',
+        sourceLocale: 'en',
+        metadata: globalMetadata,
+      },
+      client: expect.any(Object),
+    });
+    expect(result).toEqual({
+      hash: {
+        success: true,
+        translation: 'Hola mundo',
+        locale: 'es',
+        dataFormat: 'ICU',
+      },
+    });
   });
 
-  it('should handle complex JSX entries', async () => {
-    vi.mocked(apiRequest).mockResolvedValue(mockResponseRecord);
+  it('forwards long timeouts without the SDK applying its own cap', async () => {
+    await _translateMany([], globalMetadata, mockConfig, 99_999);
 
-    const requests: TranslateManyEntry[] = [
-      {
-        source: [
-          'Welcome ',
-          {
-            t: 'strong',
-            c: ['John'],
-          },
-        ],
-      },
-      {
-        source: 'Hello {name}',
-      },
-    ];
-    const globalMetadata: {
-      targetLocale: string;
-      sourceLocale: string;
-    } & SharedMetadata = {
-      targetLocale: 'es',
-      sourceLocale: 'en',
-    };
+    const clientConfig = vi.mocked(createApiClient).mock.calls[0][0];
+    const fetchImplementation = clientConfig.fetch;
+    await fetchImplementation?.('https://api.test.com/v2/translate', {
+      method: 'POST',
+    });
 
-    const result = await _translateMany(requests, globalMetadata, mockConfig);
+    expect(clientConfig.timeoutMs).toBe(false);
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
+      'https://api.test.com/v2/translate',
+      { method: 'POST' },
+      99_999
+    );
+  });
 
-    expect(apiRequest).toHaveBeenCalledWith(
-      expect.objectContaining({ baseUrl: 'https://api.test.com' }),
-      '/v2/translate',
+  it('maps structured SDK errors to ApiError', async () => {
+    vi.mocked(translate).mockResolvedValue({
+      data: undefined,
+      error: { error: 'invalid translation request' },
+      request: {} as Request,
+      response: createResponse({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+      }),
+    });
+
+    await expect(
+      _translateMany([], globalMetadata, mockConfig)
+    ).rejects.toEqual(
       expect.objectContaining({
-        body: expect.objectContaining({
-          targetLocale: 'es',
-          sourceLocale: 'en',
-          metadata: globalMetadata,
-        }),
-        timeout: undefined,
-        retryPolicy: 'none',
+        name: 'ApiError',
+        code: 400,
+        message: 'invalid translation request',
       })
     );
-    expect(Array.isArray(result)).toBe(true);
+    expect(validateResponse).not.toHaveBeenCalled();
+  });
+
+  it('preserves string SDK error bodies in ApiError', async () => {
+    vi.mocked(translate).mockResolvedValue({
+      data: undefined,
+      error: 'upstream exploded',
+      request: {} as Request,
+      response: createResponse({
+        ok: false,
+        status: 502,
+        statusText: 'Bad Gateway',
+      }),
+    });
+
+    await expect(
+      _translateMany([], globalMetadata, mockConfig)
+    ).rejects.toEqual(
+      expect.objectContaining({
+        name: 'ApiError',
+        code: 502,
+        message: 'upstream exploded',
+      })
+    );
+    expect(validateResponse).not.toHaveBeenCalled();
+  });
+
+  it('validates non-structured runtime API error responses', async () => {
+    const response = createResponse({
+      ok: false,
+      status: 502,
+      statusText: 'Bad Gateway',
+    });
+    const validationError = new Error('non-JSON runtime error');
+    vi.mocked(translate).mockResolvedValue({
+      data: undefined,
+      error: new Error('request failed'),
+      request: {} as Request,
+      response,
+    });
+    vi.mocked(validateResponse).mockRejectedValue(validationError);
+
+    await expect(
+      _translateMany([], globalMetadata, mockConfig)
+    ).rejects.toThrow(validationError);
+    expect(validateResponse).toHaveBeenCalledWith(response);
+  });
+
+  it('sends complex JSX content through the SDK', async () => {
+    const source: Content = ['Welcome ', { t: 'strong', c: ['John'] }];
+
+    await _translateMany(
+      [{ source, metadata: { dataFormat: 'JSX' } }],
+      globalMetadata,
+      mockConfig
+    );
+
+    expect(
+      Object.values(vi.mocked(translate).mock.calls[0][0].body.requests)[0]
+    ).toMatchObject({ source });
   });
 
   it('uses content hash keys while preserving custom id metadata', async () => {
-    vi.mocked(apiRequest).mockResolvedValue({});
-
     const requests: TranslateManyEntry[] = [
       {
         source: 'Hello',
         metadata: { id: 'custom-id', dataFormat: 'ICU' },
       },
     ];
-    const globalMetadata: {
-      targetLocale: string;
-      sourceLocale: string;
-    } & SharedMetadata = {
-      targetLocale: 'es',
-      sourceLocale: 'en',
-    };
 
     await _translateMany(requests, globalMetadata, mockConfig);
 
-    const body = vi.mocked(apiRequest).mock.calls[0][2].body as {
-      requests: Record<
-        string,
-        { source: string; metadata?: { id?: string; hash?: string } }
-      >;
-    };
+    const body = vi.mocked(translate).mock.calls[0][0].body;
     const key = Object.keys(body.requests)[0];
     expect(key).not.toBe('custom-id');
     expect(body.requests[key].source).toBe('Hello');
@@ -147,202 +226,83 @@ describe.sequential('_translateMany', () => {
   });
 
   it('uses explicit hash keys before calculating a hash', async () => {
-    vi.mocked(apiRequest).mockResolvedValue({});
+    await _translateMany(
+      [
+        {
+          source: 'Hello',
+          metadata: { id: 'custom-id', hash: 'precomputed-hash' },
+        },
+      ],
+      globalMetadata,
+      mockConfig
+    );
 
-    const requests: TranslateManyEntry[] = [
-      {
-        source: 'Hello',
-        metadata: { id: 'custom-id', hash: 'precomputed-hash' },
-      },
-    ];
-    const globalMetadata: {
-      targetLocale: string;
-      sourceLocale: string;
-    } & SharedMetadata = {
-      targetLocale: 'es',
-      sourceLocale: 'en',
-    };
-
-    await _translateMany(requests, globalMetadata, mockConfig);
-
-    const body = vi.mocked(apiRequest).mock.calls[0][2].body as {
-      requests: Record<string, unknown>;
-    };
+    const body = vi.mocked(translate).mock.calls[0][0].body;
     expect(Object.keys(body.requests)).toEqual(['precomputed-hash']);
   });
 
-  it('should use default timeout when not specified', async () => {
-    vi.mocked(apiRequest).mockResolvedValue(mockResponseRecord);
-
-    const requests: TranslateManyEntry[] = [{ source: 'Hello' }];
-    const globalMetadata: {
-      targetLocale: string;
-      sourceLocale: string;
-    } & SharedMetadata = {
-      targetLocale: 'es',
-      sourceLocale: 'en',
-    };
+  it('maps record responses back to array input order', async () => {
+    const requests: TranslateManyEntry[] = [
+      { source: 'Hello' },
+      { source: 'Goodbye' },
+    ];
 
     await _translateMany(requests, globalMetadata, mockConfig);
-
-    expect(apiRequest).toHaveBeenCalledWith(
-      expect.any(Object),
-      expect.any(String),
-      expect.objectContaining({ timeout: undefined })
+    const hashes = Object.keys(
+      vi.mocked(translate).mock.calls[0][0].body.requests
     );
-  });
-
-  it('should respect custom timeout parameter', async () => {
-    vi.mocked(apiRequest).mockResolvedValue(mockResponseRecord);
-
-    const requests: TranslateManyEntry[] = [{ source: 'Hello' }];
-    const globalMetadata: {
-      targetLocale: string;
-      sourceLocale: string;
-    } & SharedMetadata = {
-      targetLocale: 'es',
-      sourceLocale: 'en',
-    };
-
-    await _translateMany(requests, globalMetadata, mockConfig, 5000);
-
-    expect(apiRequest).toHaveBeenCalledWith(
-      expect.any(Object),
-      expect.any(String),
-      expect.objectContaining({ timeout: 5000 })
-    );
-  });
-
-  it('should pass through large timeout values', async () => {
-    vi.mocked(apiRequest).mockResolvedValue(mockResponseRecord);
-
-    const requests: TranslateManyEntry[] = [{ source: 'Hello' }];
-    const globalMetadata: {
-      targetLocale: string;
-      sourceLocale: string;
-    } & SharedMetadata = {
-      targetLocale: 'es',
-      sourceLocale: 'en',
-    };
-
-    await _translateMany(requests, globalMetadata, mockConfig, 99999);
-
-    expect(apiRequest).toHaveBeenCalledWith(
-      expect.any(Object),
-      expect.any(String),
-      expect.objectContaining({ timeout: 99999 })
-    );
-  });
-
-  it('should use default URL when baseUrl not provided in config', async () => {
-    vi.mocked(apiRequest).mockResolvedValue(mockResponseRecord);
-
-    const configWithoutUrl: TranslationRequestConfig = {
-      projectId: 'test-project',
-      apiKey: 'test-api-key',
-    };
-
-    const requests: TranslateManyEntry[] = [{ source: 'Hello' }];
-    const globalMetadata: {
-      targetLocale: string;
-      sourceLocale: string;
-    } & SharedMetadata = {
-      targetLocale: 'es',
-      sourceLocale: 'en',
-    };
-
-    await _translateMany(requests, globalMetadata, configWithoutUrl);
-
-    expect(apiRequest).toHaveBeenCalledWith(
-      expect.objectContaining({ baseUrl: 'https://runtime2.gtx.dev' }),
-      '/v2/translate',
-      expect.any(Object)
-    );
-  });
-
-  it('should handle fetch errors', async () => {
-    const fetchError = new Error('Network error');
-    vi.mocked(apiRequest).mockRejectedValue(fetchError);
-
-    const requests: TranslateManyEntry[] = [{ source: 'Hello' }];
-    const globalMetadata: {
-      targetLocale: string;
-      sourceLocale: string;
-    } & SharedMetadata = {
-      targetLocale: 'es',
-      sourceLocale: 'en',
-    };
-
-    await expect(
-      _translateMany(requests, globalMetadata, mockConfig)
-    ).rejects.toThrow('Network error');
-  });
-
-  it('should handle validation errors', async () => {
-    vi.mocked(apiRequest).mockRejectedValue(new Error('Validation failed'));
-
-    const requests: TranslateManyEntry[] = [{ source: 'Hello' }];
-    const globalMetadata: {
-      targetLocale: string;
-      sourceLocale: string;
-    } & SharedMetadata = {
-      targetLocale: 'es',
-      sourceLocale: 'en',
-    };
-
-    await expect(
-      _translateMany(requests, globalMetadata, mockConfig)
-    ).rejects.toThrow('Validation failed');
-  });
-
-  it('should handle empty requests array', async () => {
-    vi.mocked(apiRequest).mockResolvedValue({});
-
-    const requests: TranslateManyEntry[] = [];
-    const globalMetadata: {
-      targetLocale: string;
-      sourceLocale: string;
-    } & SharedMetadata = {
-      targetLocale: 'es',
-      sourceLocale: 'en',
-    };
+    mockTranslateResponse({
+      [hashes[0]]: {
+        success: true,
+        translation: 'Hola',
+        locale: 'es',
+        dataFormat: 'ICU',
+      },
+      [hashes[1]]: { success: false, error: 'failed', code: 500 },
+    });
 
     const result = await _translateMany(requests, globalMetadata, mockConfig);
 
-    expect(apiRequest).toHaveBeenCalledWith(
-      expect.any(Object),
-      '/v2/translate',
-      expect.objectContaining({
-        body: expect.objectContaining({ requests: {} }),
-      })
-    );
-    expect(result).toEqual([]);
+    expect(result).toEqual([
+      {
+        success: true,
+        translation: 'Hola',
+        locale: 'es',
+        dataFormat: 'ICU',
+      },
+      { success: false, error: 'failed', code: 500 },
+    ]);
   });
 
-  it('should include all global metadata in request', async () => {
-    vi.mocked(apiRequest).mockResolvedValue(mockResponseRecord);
+  it('uses the runtime API URL by default', async () => {
+    await _translateMany([], globalMetadata, {
+      projectId: 'test-project',
+      apiKey: 'test-api-key',
+    });
 
-    const requests: TranslateManyEntry[] = [{ source: 'Hello' }];
-    const globalMetadata: {
-      targetLocale: string;
-      sourceLocale: string;
-    } & SharedMetadata = {
-      targetLocale: 'es',
-      sourceLocale: 'en',
+    expect(createApiClient).toHaveBeenCalledWith(
+      expect.objectContaining({ baseUrl: defaultRuntimeApiUrl })
+    );
+  });
+
+  it('preserves custom model-provider strings in request metadata', async () => {
+    const metadata = {
+      ...globalMetadata,
       modelProvider: 'custom-provider',
     };
 
-    await _translateMany(requests, globalMetadata, mockConfig, 5000);
+    await _translateMany([], metadata, mockConfig);
 
-    expect(apiRequest).toHaveBeenCalledWith(
-      expect.any(Object),
-      expect.any(String),
-      expect.objectContaining({
-        body: expect.objectContaining({
-          metadata: globalMetadata,
-        }),
-        timeout: 5000,
-      })
+    expect(vi.mocked(translate).mock.calls[0][0].body.metadata).toEqual(
+      metadata
     );
+  });
+
+  it('propagates SDK network errors', async () => {
+    vi.mocked(translate).mockRejectedValue(new Error('Network error'));
+
+    await expect(
+      _translateMany([], globalMetadata, mockConfig)
+    ).rejects.toThrow('Network error');
   });
 });

@@ -2,7 +2,7 @@ import { logCollectedFiles, logErrorAndExit } from '../console/logging.js';
 import { branchResolutionError, withOriginalError } from '../console/index.js';
 import { logger } from '../console/logger.js';
 import { Settings, TranslateFlags } from '../types/index.js';
-import { gt } from '../utils/gt.js';
+import { api } from '../utils/api.js';
 import { EnqueueFilesResult, FileToUpload } from 'generaltranslation/types';
 import { UploadSourcesStep } from './steps/UploadSourcesStep.js';
 import { SetupStep } from './steps/SetupStep.js';
@@ -49,11 +49,11 @@ export async function runStageFilesWorkflow({
     const timeoutMs = calculateTimeoutMs(options.timeout);
 
     // Create workflow with steps
-    const branchStep = new BranchStep(gt, settings);
-    const uploadStep = new UploadSourcesStep(gt, settings);
+    const branchStep = new BranchStep(api, settings);
+    const uploadStep = new UploadSourcesStep(api, settings);
     const userEditDiffsStep = new UserEditDiffsStep(settings);
-    const setupStep = new SetupStep(gt, settings, timeoutMs);
-    const enqueueStep = new EnqueueStep(gt, settings, options.force);
+    const setupStep = new SetupStep(api, settings, timeoutMs);
+    const enqueueStep = new EnqueueStep(api, settings, options.force);
 
     // first run the branch step
     const branchData = await branchStep.run();
@@ -73,7 +73,7 @@ export async function runStageFilesWorkflow({
     if (settings.tag) {
       try {
         const userProvidedTag = !!options.tag;
-        const tagStep = new TagStep(gt, settings, userProvidedTag);
+        const tagStep = new TagStep(api, settings, userProvidedTag);
         await tagStep.run(uploadedFiles);
       } catch {
         logger.warn('Failed to create translation tag. Continuing...');
@@ -85,7 +85,7 @@ export async function runStageFilesWorkflow({
 
     // then run the enqueue step
     const { filesToEnqueue, skippedFiles } = await filterFilesForEnqueue({
-      gt,
+      gt: api,
       files: uploadedFiles,
       locales: settings.locales,
       force: options.force,
