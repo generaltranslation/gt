@@ -590,9 +590,9 @@ describe('aggregateFiles - Empty File Handling', () => {
 
   describe('.strings files', () => {
     // The escapes below are load-bearing: they must reach the API verbatim.
-    const stringsContent =
+    const dotStringsContent =
       '/* Greeting */\n"hello" = "Line1\\nLine2 \\"quoted\\" 100%%";\n';
-    const stringsBase64 = Buffer.from(stringsContent, 'utf8').toString(
+    const dotStringsBase64 = Buffer.from(dotStringsContent, 'utf8').toString(
       'base64'
     );
 
@@ -616,7 +616,7 @@ describe('aggregateFiles - Empty File Handling', () => {
         defaultLocale: 'en',
       };
 
-      mockReadBinaryFileBase64.mockReturnValueOnce(stringsBase64);
+      mockReadBinaryFileBase64.mockReturnValueOnce(dotStringsBase64);
 
       const { files: result } = await aggregateTestFiles(settings);
 
@@ -626,14 +626,14 @@ describe('aggregateFiles - Empty File Handling', () => {
         fileFormat: 'DOT_STRINGS',
         locale: 'en',
       });
-      expect(result[0].content).toBe(stringsBase64);
+      expect(result[0].content).toBe(dotStringsBase64);
       expect(Buffer.from(result[0].content, 'base64').toString('utf8')).toBe(
-        stringsContent
+        dotStringsContent
       );
       expect(result[0].fileId).toBe(
         hashStringSync('en.lproj/Localizable.strings')
       );
-      expect(result[0].versionId).toBe(hashVersionId(stringsBase64, false));
+      expect(result[0].versionId).toBe(hashVersionId(dotStringsBase64, false));
     });
 
     it('should skip empty .strings files and log a warning', async () => {
@@ -655,7 +655,7 @@ describe('aggregateFiles - Empty File Handling', () => {
         .mockReturnValueOnce(
           Buffer.from('   \n\t  ', 'utf8').toString('base64')
         ) // whitespace only
-        .mockReturnValueOnce(stringsBase64); // valid file
+        .mockReturnValueOnce(dotStringsBase64); // valid file
 
       const { files: result } = await aggregateTestFiles(settings);
 
@@ -669,7 +669,7 @@ describe('aggregateFiles - Empty File Handling', () => {
 
   describe('.stringsdict files', () => {
     // The escapes below are load-bearing: they must reach the API verbatim.
-    const stringsdictContent =
+    const dotStringsdictContent =
       '<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0">\n<dict>\n  <key>%d file(s) \\"quoted\\"</key>\n</dict>\n</plist>\n';
 
     beforeEach(() => {
@@ -692,7 +692,7 @@ describe('aggregateFiles - Empty File Handling', () => {
         defaultLocale: 'en',
       };
 
-      mockReadFile.mockReturnValueOnce(stringsdictContent);
+      mockReadFile.mockReturnValueOnce(dotStringsdictContent);
 
       const { files: result } = await aggregateTestFiles(settings);
 
@@ -702,12 +702,12 @@ describe('aggregateFiles - Empty File Handling', () => {
         fileFormat: 'DOT_STRINGSDICT',
         locale: 'en',
       });
-      expect(result[0].content).toBe(stringsdictContent);
+      expect(result[0].content).toBe(dotStringsdictContent);
       expect(result[0].fileId).toBe(
         hashStringSync('en.lproj/Localizable.stringsdict')
       );
       expect(result[0].versionId).toBe(
-        hashVersionId(stringsdictContent, false)
+        hashVersionId(dotStringsdictContent, false)
       );
     });
 
@@ -728,7 +728,7 @@ describe('aggregateFiles - Empty File Handling', () => {
 
       mockReadFile
         .mockReturnValueOnce('   \n\t  ') // whitespace only
-        .mockReturnValueOnce(stringsdictContent); // valid file
+        .mockReturnValueOnce(dotStringsdictContent); // valid file
 
       const { files: result } = await aggregateTestFiles(settings);
 

@@ -20,9 +20,9 @@ vi.mock('../../utils/gt.js', () => ({
   },
 }));
 
-const SOURCE = 'Guardian/en.lproj/Localizable.strings';
+const DOT_STRINGS_SOURCE = 'Guardian/en.lproj/Localizable.strings';
 
-const TRANSLATION =
+const DOT_STRINGS_TRANSLATION =
   '/* Localizable.strings */\n' +
   '"app.title" = "Pocket Café";\n' +
   '"welcome" = "¡Bienvenido!";\n';
@@ -61,7 +61,7 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
       _branchId: 'branch1',
       files: {
         resolvedPaths: {
-          dotStrings: [path.join(tempDir, SOURCE)],
+          dotStrings: [path.join(tempDir, DOT_STRINGS_SOURCE)],
         },
         placeholderPaths: {
           dotStrings: [
@@ -99,7 +99,7 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
     });
 
   /** Writes the translated output the user would have downloaded and edited. */
-  const writeTranslation = (bytes: Buffer) => {
+  const writeDotStringsTranslation = (bytes: Buffer) => {
     const outputPath = path.join(
       tempDir,
       'Guardian',
@@ -140,7 +140,7 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
 
   const filesUnderTest = (fileFormat: string): FileReference[] => [
     {
-      fileName: SOURCE,
+      fileName: DOT_STRINGS_SOURCE,
       fileFormat,
       branchId: 'branch1',
       fileId: 'file1',
@@ -151,9 +151,9 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
   it('reports no edit when an untouched .strings translation matches the server', async () => {
     const settings = buildSettings();
     seedLockFile();
-    writeTranslation(Buffer.from(TRANSLATION, 'utf8'));
+    writeDotStringsTranslation(Buffer.from(DOT_STRINGS_TRANSLATION, 'utf8'));
     mockServerDownload(
-      Buffer.from(TRANSLATION, 'utf8').toString('base64'),
+      Buffer.from(DOT_STRINGS_TRANSLATION, 'utf8').toString('base64'),
       'DOT_STRINGS'
     );
 
@@ -170,11 +170,14 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
   it('diffs an edited .strings translation against the decoded server text', async () => {
     const settings = buildSettings();
     seedLockFile();
-    writeTranslation(
-      Buffer.from(TRANSLATION.replace('¡Bienvenido!', '¡Hola!'), 'utf8')
+    writeDotStringsTranslation(
+      Buffer.from(
+        DOT_STRINGS_TRANSLATION.replace('¡Bienvenido!', '¡Hola!'),
+        'utf8'
+      )
     );
     mockServerDownload(
-      Buffer.from(TRANSLATION, 'utf8').toString('base64'),
+      Buffer.from(DOT_STRINGS_TRANSLATION, 'utf8').toString('base64'),
       'DOT_STRINGS'
     );
 
@@ -191,7 +194,7 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
   it('submits the edit when the recorded server baseline is empty', async () => {
     const settings = buildSettings();
     seedLockFile();
-    writeTranslation(Buffer.from(TRANSLATION, 'utf8'));
+    writeDotStringsTranslation(Buffer.from(DOT_STRINGS_TRANSLATION, 'utf8'));
     // An empty payload is a baseline of "nothing", not a missing download.
     // Treating the two alike drops everything the user wrote against it.
     mockServerDownload('', 'DOT_STRINGS');
@@ -201,13 +204,13 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
     expect(gt.submitUserEditDiffs).toHaveBeenCalledTimes(1);
     const [{ diffs }] = vi.mocked(gt.submitUserEditDiffs).mock.calls[0];
     expect(diffs[0].diff).toContain('+"welcome" = "¡Bienvenido!";');
-    expect(diffs[0].localContent).toBe(TRANSLATION);
+    expect(diffs[0].localContent).toBe(DOT_STRINGS_TRANSLATION);
   });
 
   it('skips silently when the batch download returned no copy of the file', async () => {
     const settings = buildSettings();
     seedLockFile();
-    writeTranslation(Buffer.from(TRANSLATION, 'utf8'));
+    writeDotStringsTranslation(Buffer.from(DOT_STRINGS_TRANSLATION, 'utf8'));
     vi.mocked(gt.queryFileData).mockResolvedValue({
       translatedFiles: [
         {
@@ -233,11 +236,11 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
   it('warns instead of submitting a UTF-16 .strings edit it cannot represent as text', async () => {
     const settings = buildSettings();
     seedLockFile();
-    writeTranslation(
-      utf16leWithBom(TRANSLATION.replace('¡Bienvenido!', '¡Hola!'))
+    writeDotStringsTranslation(
+      utf16leWithBom(DOT_STRINGS_TRANSLATION.replace('¡Bienvenido!', '¡Hola!'))
     );
     mockServerDownload(
-      utf16leWithBom(TRANSLATION).toString('base64'),
+      utf16leWithBom(DOT_STRINGS_TRANSLATION).toString('base64'),
       'DOT_STRINGS'
     );
 
@@ -261,8 +264,8 @@ describe('collectAndSendUserEditDiffs - base64-carried formats', () => {
   it('stays quiet when a translation is byte-identical to the server copy', async () => {
     const settings = buildSettings();
     seedLockFile();
-    const unchanged = utf16leWithBom(TRANSLATION);
-    writeTranslation(unchanged);
+    const unchanged = utf16leWithBom(DOT_STRINGS_TRANSLATION);
+    writeDotStringsTranslation(unchanged);
     mockServerDownload(unchanged.toString('base64'), 'DOT_STRINGS');
 
     await collectAndSendUserEditDiffs(filesUnderTest('DOT_STRINGS'), settings);

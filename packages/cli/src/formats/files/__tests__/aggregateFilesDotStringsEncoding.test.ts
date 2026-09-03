@@ -9,7 +9,7 @@ import type { Settings } from '../../../types/index.js';
 // Exercises the real filesystem helpers rather than mocks: the bug this covers
 // was in how the bytes were read, so a mocked read cannot see it.
 
-const BODY =
+const DOT_STRINGS_BODY =
   '/* Localizable.strings */\n' +
   '"app.title" = "Pocket Café";\n' +
   '"welcome" = "¡Bienvenido — te echábamos de menos!";\n' +
@@ -18,16 +18,19 @@ const BODY =
 const utf16le = (text: string) => Buffer.from(text, 'utf16le');
 
 // Byte layouts Xcode has shipped over the years, byte order marks included.
-const FIXTURES: Record<string, Buffer> = {
-  'utf16le.strings': Buffer.concat([Buffer.from([0xff, 0xfe]), utf16le(BODY)]),
+const DOT_STRINGS_FIXTURES: Record<string, Buffer> = {
+  'utf16le.strings': Buffer.concat([
+    Buffer.from([0xff, 0xfe]),
+    utf16le(DOT_STRINGS_BODY),
+  ]),
   'utf16be.strings': Buffer.concat([
     Buffer.from([0xfe, 0xff]),
-    utf16le(BODY).swap16(),
+    utf16le(DOT_STRINGS_BODY).swap16(),
   ]),
-  'utf8.strings': Buffer.from(BODY, 'utf8'),
+  'utf8.strings': Buffer.from(DOT_STRINGS_BODY, 'utf8'),
   'utf8-bom.strings': Buffer.concat([
     Buffer.from([0xef, 0xbb, 0xbf]),
-    Buffer.from(BODY, 'utf8'),
+    Buffer.from(DOT_STRINGS_BODY, 'utf8'),
   ]),
 };
 
@@ -50,7 +53,7 @@ describe('aggregateFiles - .strings encodings', () => {
 
   beforeAll(() => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-dot-strings-'));
-    for (const [name, bytes] of Object.entries(FIXTURES)) {
+    for (const [name, bytes] of Object.entries(DOT_STRINGS_FIXTURES)) {
       fs.writeFileSync(path.join(dir, name), bytes);
     }
   });
@@ -60,7 +63,7 @@ describe('aggregateFiles - .strings encodings', () => {
   });
 
   /** The base64 the SDK puts on the wire for a single aggregated source file. */
-  async function wireBytesFor(name: string): Promise<Buffer> {
+  async function dotStringsWireBytesFor(name: string): Promise<Buffer> {
     const { files } = await aggregateFiles({
       files: {
         resolvedPaths: { dotStrings: [path.join(dir, name)] },
@@ -80,25 +83,25 @@ describe('aggregateFiles - .strings encodings', () => {
     return Buffer.from(wire, 'base64');
   }
 
-  it.each(Object.keys(FIXTURES))(
+  it.each(Object.keys(DOT_STRINGS_FIXTURES))(
     'delivers %s to the API byte for byte',
     async (name) => {
-      const bytes = await wireBytesFor(name);
-      expect(bytes.equals(FIXTURES[name])).toBe(true);
-      expect(decodeByBom(bytes)).toBe(BODY);
+      const bytes = await dotStringsWireBytesFor(name);
+      expect(bytes.equals(DOT_STRINGS_FIXTURES[name])).toBe(true);
+      expect(decodeByBom(bytes)).toBe(DOT_STRINGS_BODY);
       expect(decodeByBom(bytes)).not.toContain('�');
     }
   );
 
   it('keeps the byte order mark the API decodes by', async () => {
     expect(
-      (await wireBytesFor('utf16le.strings')).subarray(0, 2)
+      (await dotStringsWireBytesFor('utf16le.strings')).subarray(0, 2)
     ).toStrictEqual(Buffer.from([0xff, 0xfe]));
     expect(
-      (await wireBytesFor('utf16be.strings')).subarray(0, 2)
+      (await dotStringsWireBytesFor('utf16be.strings')).subarray(0, 2)
     ).toStrictEqual(Buffer.from([0xfe, 0xff]));
     expect(
-      (await wireBytesFor('utf8-bom.strings')).subarray(0, 3)
+      (await dotStringsWireBytesFor('utf8-bom.strings')).subarray(0, 3)
     ).toStrictEqual(Buffer.from([0xef, 0xbb, 0xbf]));
   });
 });
