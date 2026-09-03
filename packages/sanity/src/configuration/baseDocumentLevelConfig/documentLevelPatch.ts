@@ -4,7 +4,7 @@ import { SanityClient, SanityDocument, SanityDocumentLike } from 'sanity';
 import { BaseDocumentMerger } from '../../serialization/BaseDocumentMerger';
 
 import { findLatestDraft } from '../utils/findLatestDraft';
-import { findDocumentAtRevision } from '../utils/findDocumentAtRevision';
+import { requireSourceDocument } from '../utils/requireSourceDocument';
 import { createI18nDocAndPatchMetadata } from './helpers/createI18nDocAndPatchMetadata';
 import { getOrCreateTranslationMetadata } from './helpers/getOrCreateTranslationMetadata';
 import { patchI18nDoc } from './helpers/patchI18nDoc';
@@ -27,27 +27,21 @@ export const documentLevelPatch = async (
   mergeWithTargetLocale: boolean = false
 ): Promise<void> => {
   const baseLanguage = pluginConfig.getSourceLocale();
-  //this is the document we use to merge with the translated fields
-  let baseDoc: SanityDocument | null = null;
 
   //this is the document that will serve as the translated doc
-  let i18nDoc: SanityDocument | null = null;
+  let i18nDoc: SanityDocument | undefined;
 
   /*
    * we send over the _rev with our translation file so we can
    * accurately coalesce the translations in case something has
    * changed in the base document since translating
    */
-  if (docInfo.documentId && docInfo.versionId) {
-    baseDoc = await findDocumentAtRevision(
-      docInfo.documentId,
-      docInfo.versionId,
-      client
-    );
-  }
-  if (!baseDoc) {
-    baseDoc = await findLatestDraft(docInfo.documentId, client);
-  }
+  //this is the document we use to merge with the translated fields
+  let baseDoc = await requireSourceDocument(
+    docInfo.documentId,
+    docInfo.versionId,
+    client
+  );
 
   /* first, check our metadata to see if a translated document exists
    * if no metadata exists, we create it atomically
@@ -81,15 +75,11 @@ export const documentLevelPatch = async (
      * accurately coalesce the translations in case something has
      * changed in the base document since translating
      */
-    baseDoc = await findDocumentAtRevision(
+    baseDoc = await requireSourceDocument(
       docInfo.documentId,
       docInfo.versionId,
       client
     );
-  }
-
-  if (!baseDoc) {
-    baseDoc = await findLatestDraft(docInfo.documentId, client);
   }
   /*
    * we then merge the translation with the base document
@@ -127,8 +117,11 @@ export const documentLevelPatch = async (
       (translation) => translation.language === localeId
     )?.value?._ref;
 
-    if (freshI18nDocId) {
-      const freshI18nDoc = await findLatestDraft(freshI18nDocId, client);
+    const freshI18nDoc = freshI18nDocId
+      ? await findLatestDraft(freshI18nDocId, client)
+      : undefined;
+
+    if (freshI18nDoc) {
       await patchI18nDoc(
         docInfo.documentId,
         freshI18nDoc._id,
@@ -141,6 +134,14 @@ export const documentLevelPatch = async (
       return;
     }
 
+    /*
+     * A metadata entry for this locale can outlive the document it points at.
+     * Since the references are weak, deleting a translation leaves the entry
+     * behind.
+     *
+     * `createI18nDocAndPatchMetadata` replaces the existing entry for the
+     * locale.
+     */
     await createI18nDocAndPatchMetadata(
       baseDoc,
       merged,
