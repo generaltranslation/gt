@@ -1,10 +1,9 @@
 import { initializeGT as initializeReactGT } from 'gt-react';
-import { AsyncLocalConditionStore } from '../condition-store/AsyncLocalConditionStore';
-import { setConditionStore } from '../condition-store/singleton';
+import { initializeRequestConditions } from '../functions/requestConditions';
 import type { InitializeGTParams } from '../types/InitializeGTParams';
 
-/** Initialize GT and its server request condition store. */
+/** Initialize GT and server request condition resolution. */
 export function initializeGT(config: InitializeGTParams): void {
   initializeReactGT(config);
-  setConditionStore(new AsyncLocalConditionStore(config));
+  initializeRequestConditions(config.localeRouting === true);
 }

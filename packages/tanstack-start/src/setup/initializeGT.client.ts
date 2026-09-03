@@ -2,7 +2,6 @@ import {
   createOrUpdateBrowserConditionStore,
   initializeGT as initializeReactGT,
 } from 'gt-react';
-import { determineLocaleClient } from '../functions/parseLocale';
 import { getPathnameForLocale } from '../functions/localeRouting';
 import type { InitializeGTParams } from '../types/InitializeGTParams';
 
@@ -25,8 +24,5 @@ export function initializeGT(config: InitializeGTParams): void {
       : config;
 
   initializeReactGT(config);
-  createOrUpdateBrowserConditionStore({
-    ...browserConfig,
-    locale: determineLocaleClient(config),
-  });
+  createOrUpdateBrowserConditionStore(browserConfig);
 }

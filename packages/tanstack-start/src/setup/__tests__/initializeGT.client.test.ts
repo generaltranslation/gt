@@ -2,12 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   mockCreateOrUpdateBrowserConditionStore,
-  mockDetermineLocaleClient,
   mockGetPathnameForLocale,
   mockInitializeReactGT,
 } = vi.hoisted(() => ({
   mockCreateOrUpdateBrowserConditionStore: vi.fn(),
-  mockDetermineLocaleClient: vi.fn(() => 'fr'),
   mockGetPathnameForLocale: vi.fn(() => '/fr/about'),
   mockInitializeReactGT: vi.fn(),
 }));
@@ -15,10 +13,6 @@ const {
 vi.mock('gt-react', () => ({
   createOrUpdateBrowserConditionStore: mockCreateOrUpdateBrowserConditionStore,
   initializeGT: mockInitializeReactGT,
-}));
-
-vi.mock('../../functions/parseLocale', () => ({
-  determineLocaleClient: mockDetermineLocaleClient,
 }));
 
 vi.mock('../../functions/localeRouting', () => ({
@@ -30,7 +24,6 @@ import { initializeGT } from '../initializeGT.client';
 describe('initializeGT client', () => {
   beforeEach(() => {
     mockCreateOrUpdateBrowserConditionStore.mockReset();
-    mockDetermineLocaleClient.mockClear();
     mockGetPathnameForLocale.mockClear();
     mockInitializeReactGT.mockReset();
     vi.unstubAllGlobals();
@@ -107,7 +100,7 @@ describe('initializeGT client', () => {
     expect(browserConfig._reload).toBe(customReload);
   });
 
-  it('initializes React with the cookie locale', () => {
+  it('lets the shared browser store resolve locale and cookie conditions', () => {
     const config = {
       defaultLocale: 'en',
       locales: ['en', 'fr'],
@@ -116,13 +109,8 @@ describe('initializeGT client', () => {
     initializeGT(config);
 
     expect(mockInitializeReactGT).toHaveBeenCalledWith(config);
-    expect(mockDetermineLocaleClient).toHaveBeenCalledWith(config);
-    expect(mockCreateOrUpdateBrowserConditionStore).toHaveBeenCalledWith({
-      ...config,
-      locale: 'fr',
-    });
-    expect(mockInitializeReactGT.mock.invocationCallOrder[0]).toBeLessThan(
-      mockDetermineLocaleClient.mock.invocationCallOrder[0]
+    expect(mockCreateOrUpdateBrowserConditionStore).toHaveBeenCalledWith(
+      config
     );
   });
 });
