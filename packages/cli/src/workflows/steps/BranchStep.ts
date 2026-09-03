@@ -1,6 +1,6 @@
 import { logErrorAndExit } from '../../console/logging.js';
 import { logger } from '../../console/logger.js';
-import type { GT } from 'generaltranslation';
+import type { ApiClient } from '../../utils/api.js';
 import type { Settings } from '../../types/index.js';
 import chalk from 'chalk';
 import {
@@ -11,7 +11,7 @@ import {
 import { BranchData } from '../../types/branch.js';
 import { ApiError } from 'generaltranslation/errors';
 
-type BranchStepClient = Pick<GT, 'queryBranchData' | 'createBranch'>;
+type BranchStepClient = Pick<ApiClient, 'queryBranchData' | 'createBranch'>;
 type BranchStepSettings = Pick<Settings, 'branchOptions'>;
 
 // Step 1: Resolve the current branch id & update API with branch information
@@ -131,20 +131,19 @@ export class BranchStep {
           });
           this.branchData.currentBranch = createBranchResult.branch;
         } catch (error) {
-          if (error instanceof ApiError && error.code === 403) {
-            logger.warn(
-              'To enable translation branching, upgrade your plan. Falling back to default branch.'
-            );
-            // retry with default branch
-            try {
-              const createBranchResult = await this.gt.createBranch({
-                branchName: detectedDefaultBranchName,
-                defaultBranch: true,
-              });
-              this.branchData.currentBranch = createBranchResult.branch;
-            } catch {
-              // The fallback branch may already exist.
-            }
+          if (!(error instanceof ApiError) || error.code !== 403) throw error;
+
+          logger.warn(
+            'To enable translation branching, upgrade your plan. Falling back to default branch.'
+          );
+          if (branchData.defaultBranch) {
+            this.branchData.currentBranch = branchData.defaultBranch;
+          } else {
+            const createBranchResult = await this.gt.createBranch({
+              branchName: detectedDefaultBranchName,
+              defaultBranch: true,
+            });
+            this.branchData.currentBranch = createBranchResult.branch;
           }
         }
       } else {

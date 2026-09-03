@@ -79,6 +79,27 @@ function makeTranslation(fileId: string, locale: string): FileToUpload {
   };
 }
 
+function confirmedUpload(
+  fileId: string,
+  locale: string
+): {
+  branchId: string;
+  fileId: string;
+  versionId: string;
+  fileName: string;
+  fileFormat: 'JSON';
+  locale: string;
+} {
+  return {
+    branchId: 'branch-123',
+    fileId,
+    versionId: `version-${fileId}`,
+    fileName: `${locale}/${fileId}.json`,
+    fileFormat: 'JSON',
+    locale,
+  };
+}
+
 function mockLockfile(entries: DownloadedVersionEntry[]): void {
   vi.mocked(readLockfile).mockReturnValue({
     data: { version: 2, branchId: 'branch-123', entries },
@@ -125,8 +146,8 @@ describe('UploadTranslationsStep', () => {
     });
     mockGt.uploadTranslations.mockResolvedValue({
       uploadedFiles: [
-        { fileId: 'file-1', locale: 'es' },
-        { fileId: 'file-1', locale: 'fr' },
+        confirmedUpload('file-1', 'es'),
+        confirmedUpload('file-1', 'fr'),
       ],
     });
 
@@ -141,11 +162,10 @@ describe('UploadTranslationsStep', () => {
     expect(mockGt.uploadTranslations).toHaveBeenCalledTimes(1);
     expect(mockGt.uploadTranslations).toHaveBeenCalledWith(files, {
       sourceLocale: 'en',
-      modelProvider: undefined,
     });
     expect(result).toEqual([
-      { fileId: 'file-1', locale: 'es' },
-      { fileId: 'file-1', locale: 'fr' },
+      confirmedUpload('file-1', 'es'),
+      confirmedUpload('file-1', 'fr'),
     ]);
   });
 
@@ -160,7 +180,7 @@ describe('UploadTranslationsStep', () => {
     };
 
     mockGt.uploadTranslations.mockResolvedValue({
-      uploadedFiles: [{ fileId: 'file-1', locale: 'es' }],
+      uploadedFiles: [confirmedUpload('file-1', 'es')],
     });
 
     const step = new UploadTranslationsStep(
@@ -203,7 +223,7 @@ describe('UploadTranslationsStep', () => {
       },
     ]);
     mockGt.uploadTranslations.mockResolvedValue({
-      uploadedFiles: [{ fileId: 'file-1', locale: 'fr' }],
+      uploadedFiles: [confirmedUpload('file-1', 'fr')],
     });
 
     const step = new UploadTranslationsStep(
@@ -237,7 +257,7 @@ describe('UploadTranslationsStep', () => {
       },
     ]);
     mockGt.uploadTranslations.mockResolvedValue({
-      uploadedFiles: [{ fileId: 'file-1', locale: 'es' }],
+      uploadedFiles: [confirmedUpload('file-1', 'es')],
     });
 
     const step = new UploadTranslationsStep(
@@ -283,7 +303,7 @@ describe('UploadTranslationsStep', () => {
     const fr = makeTranslation('file-1', 'fr');
     // Server confirms es but silently drops fr
     mockGt.uploadTranslations.mockResolvedValue({
-      uploadedFiles: [{ fileId: 'file-1', locale: 'es' }],
+      uploadedFiles: [confirmedUpload('file-1', 'es')],
     });
 
     const step = new UploadTranslationsStep(
@@ -322,9 +342,9 @@ describe('UploadTranslationsStep', () => {
 
     mockGt.uploadTranslations.mockResolvedValue({
       uploadedFiles: [
-        { fileId: 'file-1', locale: 'es' },
-        { fileId: 'file-1', locale: 'fr' },
-        { fileId: 'file-2', locale: 'es' },
+        confirmedUpload('file-1', 'es'),
+        confirmedUpload('file-1', 'fr'),
+        confirmedUpload('file-2', 'es'),
       ],
     });
 
@@ -359,8 +379,8 @@ describe('UploadTranslationsStep', () => {
     // just a smaller uploadedFiles array)
     mockGt.uploadTranslations.mockResolvedValue({
       uploadedFiles: [
-        { fileId: 'file-1', locale: 'es' },
-        { fileId: 'file-2', locale: 'es' },
+        confirmedUpload('file-1', 'es'),
+        confirmedUpload('file-2', 'es'),
       ],
     });
 

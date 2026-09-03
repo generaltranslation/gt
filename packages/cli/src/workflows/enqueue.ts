@@ -1,7 +1,7 @@
 import { logCollectedFiles, logErrorAndExit } from '../console/logging.js';
 import { branchResolutionError, withOriginalError } from '../console/index.js';
 import { Settings, TranslateFlags } from '../types/index.js';
-import { gt } from '../utils/gt.js';
+import { api } from '../utils/api.js';
 import { EnqueueFilesResult, FileToUpload } from 'generaltranslation/types';
 import { EnqueueStep } from './steps/EnqueueStep.js';
 import { BranchStep } from './steps/BranchStep.js';
@@ -42,9 +42,9 @@ export async function runEnqueueWorkflow({
     await syncFonts(settings);
 
     // Create workflow with steps
-    const branchStep = new BranchStep(gt, settings);
+    const branchStep = new BranchStep(api, settings);
     // const queryFileDataStep = new QueryFileDataStep(gt);
-    const enqueueStep = new EnqueueStep(gt, settings, options.force);
+    const enqueueStep = new EnqueueStep(api, settings, options.force);
 
     // (1) run the branch step
     const branchData = await branchStep.run();
@@ -59,7 +59,7 @@ export async function runEnqueueWorkflow({
       ...files,
     }));
     const { filesToEnqueue, skippedFiles } = await filterFilesForEnqueue({
-      gt,
+      gt: api,
       files: filesWithBranch,
       locales: settings.locales,
       force: options.force,

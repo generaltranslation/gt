@@ -4,13 +4,13 @@ import * as path from 'node:path';
 import os from 'node:os';
 import { downloadFileBatch } from '../downloadFileBatch.js';
 import { createMockSettings } from '../__mocks__/settings.js';
-import { gt } from '../../utils/gt.js';
+import { api } from '../../utils/api.js';
 import type { FileStatusTracker } from '../../workflows/steps/PollJobsStep.js';
 
 // Writes to a real temporary directory rather than a mocked `fs`: the point of
 // this path is the bytes that land on disk, which a mocked writer cannot show.
-vi.mock('../../utils/gt.js', () => ({
-  gt: {
+vi.mock('../../utils/api.js', () => ({
+  api: {
     downloadFileBatch: vi.fn(),
     resolveAliasLocale: vi.fn((locale: string) => locale),
     resolveCanonicalLocale: vi.fn((locale: string) => locale),
@@ -125,7 +125,7 @@ describe('downloadFileBatch - source file encodings', () => {
     } as unknown as FileStatusTracker;
 
     // Text formats arrive already decoded to a UTF-8 string from core.
-    vi.mocked(gt.downloadFileBatch).mockResolvedValue({
+    vi.mocked(api.downloadFileBatch).mockResolvedValue({
       files: [
         {
           branchId: 'branch1',
@@ -136,7 +136,7 @@ describe('downloadFileBatch - source file encodings', () => {
           data: translatedBody,
         },
       ],
-    } as unknown as Awaited<ReturnType<typeof gt.downloadFileBatch>>);
+    } as unknown as Awaited<ReturnType<typeof api.downloadFileBatch>>);
 
     const result = await downloadFileBatch(
       fileTracker,

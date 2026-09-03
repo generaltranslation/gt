@@ -1,14 +1,16 @@
-import { FileReference } from 'generaltranslation/types';
+import type { FileReference } from 'generaltranslation/types';
 import { logger } from '../../console/logger.js';
-import { GT } from 'generaltranslation';
-import { Settings } from '../../types/index.js';
+import type { ApiClient } from '../../utils/api.js';
+import type { Settings } from '../../types/index.js';
 import chalk from 'chalk';
+
+type SetupClient = Pick<ApiClient, 'setupProject' | 'awaitJobs'>;
 
 export class SetupStep {
   private spinner = logger.createSpinner('dots');
 
   constructor(
-    private gt: GT,
+    private gt: SetupClient,
     private settings: Settings,
     private timeoutMs: number
   ) {}

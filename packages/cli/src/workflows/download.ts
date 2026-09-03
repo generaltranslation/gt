@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { Settings } from '../types/index.js';
-import { gt } from '../utils/gt.js';
+import { api } from '../utils/api.js';
 import { EnqueueFilesResult } from 'generaltranslation/types';
 import { clearLocaleDirs } from '../fs/clearLocaleDirs.js';
 import {
@@ -64,7 +64,7 @@ export async function runDownloadWorkflow({
 }): Promise<boolean> {
   if (!branchData) {
     // Run the branch step
-    const branchStep = new BranchStep(gt, options);
+    const branchStep = new BranchStep(api, options);
     const branchResult = await branchStep.run();
     if (!branchResult) {
       return logErrorAndExit(branchResolutionError);
@@ -95,7 +95,7 @@ export async function runDownloadWorkflow({
   // Step 1: Poll translation jobs if jobData exists
   let pollTimedOut = false;
   if (jobData) {
-    const pollStep = new PollTranslationJobsStep(gt, inlineLibrary);
+    const pollStep = new PollTranslationJobsStep(api, inlineLibrary);
     const pollResult = await pollStep.run({
       fileTracker,
       fileQueryData,
@@ -158,7 +158,7 @@ export async function runDownloadWorkflow({
 
   // Step 2: Download translations
   const downloadStep = new DownloadTranslationsStep(
-    gt,
+    api,
     settingsForBranch,
     inlineLibrary
   );

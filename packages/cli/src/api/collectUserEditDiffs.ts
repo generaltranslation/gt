@@ -8,7 +8,7 @@ import {
 import { Settings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import { getGitUnifiedDiff } from '../utils/gitDiff.js';
-import { gt } from '../utils/gt.js';
+import { api } from '../utils/api.js';
 import {
   FileReference,
   isBinaryFileFormat,
@@ -150,7 +150,7 @@ export async function collectAndSendUserEditDiffs(
     }));
 
     // Single batched check to obtain translation IDs
-    const checkResponse = await gt.queryFileData({
+    const checkResponse = await api.queryFileData({
       translatedFiles: fileQueryData,
     });
     const translatedFiles =
@@ -158,7 +158,7 @@ export async function collectAndSendUserEditDiffs(
 
     const serverContentByKey = new Map<string, Buffer>();
     try {
-      const resp = await gt.downloadFileBatch(
+      const resp = await api.downloadFileBatch(
         translatedFiles.map((file) => ({
           branchId: file.branchId,
           fileId: file.fileId,
@@ -286,7 +286,7 @@ export async function collectAndSendUserEditDiffs(
   }
 
   if (collectedDiffs.length > 0) {
-    await gt.submitUserEditDiffs({ diffs: collectedDiffs });
+    await api.submitUserEditDiffs({ diffs: collectedDiffs });
   }
 
   return collectedDiffs.length > 0;
