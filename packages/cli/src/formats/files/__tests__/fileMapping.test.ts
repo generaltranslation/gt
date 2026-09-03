@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import path from 'node:path';
 import { createFileMapping } from '../fileMapping.js';
 import { TEMPLATE_FILE_NAME } from '../../../utils/constants.js';
+import { getRelative } from '../../../fs/findFilepath.js';
 
 describe('createFileMapping', () => {
   it('uses a relative output path for GTJSON template files', () => {
@@ -122,6 +123,76 @@ describe('createFileMapping', () => {
       });
 
       expect(mapping['fr-ca']['docs/guide.mdx']).toBe('docs/fr-CA/guide.mdx');
+    });
+  });
+
+  describe('Android resource directory qualifiers', () => {
+    // A transform runs against the already-resolved translated path, so the
+    // form that matters is a placeholder with no [locale] in it: the transform
+    // is what routes the file per locale, and its `{locale}` has to spell the
+    // directory the same way `resolveLocaleFiles` would.
+    const source = path.resolve('res/values/strings.xml');
+    const unlocalized = path.resolve('res/values/strings.xml');
+
+    const androidMapping = (
+      transform: Record<string, unknown>,
+      locale: string
+    ) =>
+      createFileMapping(
+        { androidStrings: [source] },
+        { androidStrings: [unlocalized] },
+        { androidStrings: transform } as never,
+        {},
+        [locale],
+        'en'
+      )[locale][getRelative(source)];
+
+    it('uses the qualifier in an array-form transform', () => {
+      expect(
+        androidMapping(
+          [{ match: 'res/values/(.*)', replace: 'res/values-{locale}/$1' }],
+          'fr-CA'
+        )
+      ).toBe('res/values-fr-rCA/strings.xml');
+    });
+
+    it('uses the qualifier in an object-form transform', () => {
+      expect(
+        androidMapping(
+          { match: 'res/values/(.*)', replace: 'res/values-{locale}/$1' },
+          'zh-Hans'
+        )
+      ).toBe('res/values-b+zh+Hans/strings.xml');
+    });
+
+    it('uses the qualifier with the [locale] placeholder', () => {
+      const placeholder = path.resolve('res/values-[locale]/strings.xml');
+      const mapping = createFileMapping(
+        { androidStrings: [path.resolve('res/values-en/strings.xml')] },
+        { androidStrings: [placeholder] },
+        {},
+        {},
+        ['fr-CA'],
+        'en'
+      );
+      expect(
+        mapping['fr-CA'][getRelative(path.resolve('res/values-en/strings.xml'))]
+      ).toBe('res/values-fr-rCA/strings.xml');
+    });
+
+    it('leaves every other file type verbatim', () => {
+      const jsonSource = path.resolve('i18n/source.json');
+      const mapping = createFileMapping(
+        { json: [jsonSource] },
+        { json: [jsonSource] },
+        {
+          json: [{ match: 'i18n/source.json', replace: 'i18n/{locale}.json' }],
+        },
+        {},
+        ['fr-CA'],
+        'en'
+      );
+      expect(mapping['fr-CA'][getRelative(jsonSource)]).toBe('i18n/fr-CA.json');
     });
   });
 });

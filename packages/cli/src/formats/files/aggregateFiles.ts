@@ -399,12 +399,13 @@ export async function aggregateFiles(
     files.push(...lottieFiles);
   }
 
-  // .strings and .stringsdict files are uploaded verbatim. Their backslash
-  // escapes and format specifiers must survive byte-for-byte, so they skip the
-  // generic markdown-oriented preprocessing below.
+  // These formats are uploaded verbatim. Their backslash escapes and format
+  // specifiers must survive byte-for-byte, so they skip the generic
+  // markdown-oriented preprocessing below.
   for (const [fileType, fileFormat] of [
     ['dotStrings', 'DOT_STRINGS'],
     ['dotStringsdict', 'DOT_STRINGSDICT'],
+    ['androidStrings', 'ANDROID_STRINGS'],
   ] as const) {
     if (!filePaths[fileType]) continue;
     const verbatimFiles = filePaths[fileType]
@@ -446,7 +447,8 @@ export async function aggregateFiles(
       fileType === 'twilioContentJson' ||
       fileType === 'lottie' ||
       fileType === 'dotStrings' ||
-      fileType === 'dotStringsdict'
+      fileType === 'dotStringsdict' ||
+      fileType === 'androidStrings'
     )
       continue;
     if (filePaths[fileType]) {

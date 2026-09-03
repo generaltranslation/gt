@@ -36,3 +36,21 @@ describe('transformFormat - .stringsdict', () => {
     expect(getFileExtensionForFormat('DOT_STRINGSDICT')).toBe('stringsdict');
   });
 });
+
+describe('transformFormat - Android strings.xml', () => {
+  it('maps the config file key to the API file format enum value', () => {
+    expect(CONFIG_FILE_TYPE_TO_FILE_FORMAT.androidStrings).toBe(
+      'ANDROID_STRINGS'
+    );
+  });
+
+  it('maps the API file format enum value back to the config file key', () => {
+    expect(FILE_FORMAT_TO_CONFIG_FILE_TYPE.ANDROID_STRINGS).toBe(
+      'androidStrings'
+    );
+  });
+
+  it('writes translated files with the matching extension', () => {
+    expect(getFileExtensionForFormat('ANDROID_STRINGS')).toBe('xml');
+  });
+});

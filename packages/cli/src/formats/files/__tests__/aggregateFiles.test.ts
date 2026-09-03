@@ -696,6 +696,81 @@ describe('aggregateFiles - Empty File Handling', () => {
     });
   });
 
+  describe('Android strings.xml files', () => {
+    // The escapes below are load-bearing: AAPT requires \' and \", and the
+    // API relies on receiving them exactly as authored.
+    const androidStringsContent =
+      '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n  <string name="greeting">You can\\\'t say \\\"no\\\"</string>\n</resources>\n';
+
+    beforeEach(() => {
+      // Make any trip through the markdown-oriented sanitizer detectable: it
+      // would strip the backslash escapes the assertions below depend on.
+      mockSanitizeFileContent.mockImplementation((content) =>
+        content.replace(/\\/g, '')
+      );
+    });
+
+    it('should upload strings.xml files verbatim with the ANDROID_STRINGS format', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            androidStrings: ['/full/path/res/values/strings.xml'],
+          },
+          placeholderPaths: {},
+        },
+        options: {},
+        defaultLocale: 'en',
+      };
+
+      mockReadFileContent.mockReturnValueOnce(androidStringsContent);
+
+      const { files: result } = await aggregateTestFiles(settings);
+
+      // Exactly one entry: the generic preprocessing loop must skip this file
+      // type, or it uploads a second copy under the bogus format
+      // `fileType.toUpperCase()`.
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        fileName: 'res/values/strings.xml',
+        fileFormat: 'ANDROID_STRINGS',
+        locale: 'en',
+      });
+      expect(result[0].content).toBe(androidStringsContent);
+      expect(result[0].fileId).toBe(hashStringSync('res/values/strings.xml'));
+      expect(result[0].versionId).toBe(
+        hashVersionId(androidStringsContent, false)
+      );
+    });
+
+    it('should skip empty strings.xml files and log a warning', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            androidStrings: [
+              '/full/path/empty.xml',
+              '/full/path/res/values/strings.xml',
+            ],
+          },
+          placeholderPaths: {},
+        },
+        options: {},
+        defaultLocale: 'en',
+      };
+
+      mockReadFileContent
+        .mockReturnValueOnce('   \n\t  ') // whitespace only
+        .mockReturnValueOnce(androidStringsContent); // valid file
+
+      const { files: result } = await aggregateTestFiles(settings);
+
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        'Skipping empty.xml: File is empty'
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0].fileName).toBe('res/values/strings.xml');
+    });
+  });
+
   describe('Mixed file types with empty files', () => {
     it('should skip empty files across all file types and process valid ones', async () => {
       const settings = {

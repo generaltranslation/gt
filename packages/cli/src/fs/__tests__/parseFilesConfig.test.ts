@@ -60,6 +60,33 @@ describe('parseFilesConfig', () => {
       });
     });
 
+    it('spells the locale as an Android resource qualifier, and only there', () => {
+      // Only Android is respelled. Every other file type keeps the locale as
+      // configured, which transforms and static URLs also depend on.
+      const files = {
+        androidStrings: ['res/values-[locale]/strings.xml'],
+        json: ['src/[locale]/messages.json'],
+        dotStrings: ['[locale].lproj/Localizable.strings'],
+        gt: 'dist/[locale].json',
+      };
+
+      expect(resolveLocaleFiles(files, 'fr-CA')).toMatchObject({
+        androidStrings: ['res/values-fr-rCA/strings.xml'],
+        json: ['src/fr-CA/messages.json'],
+        dotStrings: ['fr-CA.lproj/Localizable.strings'],
+        gt: 'dist/fr-CA.json',
+      });
+    });
+
+    it('leaves a plain language alone for Android', () => {
+      expect(
+        resolveLocaleFiles(
+          { androidStrings: ['res/values-[locale]/s.xml'] },
+          'es'
+        )
+      ).toMatchObject({ androidStrings: ['res/values-es/s.xml'] });
+    });
+
     it('should handle empty file arrays', () => {
       const files = {
         json: [],
