@@ -21,6 +21,7 @@ import {
   GT_PARSING_FLAGS_DEFAULT,
 } from '../../config/defaults.js';
 import { resolveTransformationFormat } from '../../formats/files/transformFormat.js';
+import { localeForFilePath } from '../../formats/files/localePath.js';
 
 /**
  * Resolves the files from the files object
@@ -37,8 +38,9 @@ export function resolveLocaleFiles(
   const result: ResolvedFiles = {};
 
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
+    const replacement = localeForFilePath(fileType, locale);
     result[fileType] = files[fileType]?.map((filepath) =>
-      filepath.replace(/\[locale\]/g, locale)
+      filepath.replace(/\[locale\]/g, replacement)
     );
   }
 
