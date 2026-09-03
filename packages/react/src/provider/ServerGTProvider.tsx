@@ -11,16 +11,23 @@ import { useHandleMissingTranslations } from '../hooks/useHandleMissingTranslati
  * Consumes snapshot from server
  * Implementation for server-side only
  */
-export function ServerGTProvider({
-  locale,
-  region,
-  enableI18n,
-  ...props
-}: SharedGTProviderProps) {
+export function ServerGTProvider(props: SharedGTProviderProps) {
+  const { locale, region, enableI18n } = props;
   const conditionStore = useMemo(() => {
     return new ReadonlyConditionStore({ locale, region, enableI18n });
   }, [locale, region, enableI18n]);
 
+  return process.env.NODE_ENV === 'production' ? (
+    <InternalGTProvider {...props} conditionStore={conditionStore} />
+  ) : (
+    <ServerGTProviderDev {...props} conditionStore={conditionStore} />
+  );
+}
+
+function ServerGTProviderDev({
+  conditionStore,
+  ...props
+}: SharedGTProviderProps & { conditionStore: ReadonlyConditionStore }) {
   const i18nStoreRef = useRef<I18nStore | null>(null);
   if (i18nStoreRef.current == null) {
     i18nStoreRef.current = new I18nStore();

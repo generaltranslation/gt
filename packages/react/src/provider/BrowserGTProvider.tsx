@@ -16,7 +16,7 @@ export function BrowserGTProvider(props: SharedGTProviderProps) {
   }, [props.locale, props.region, props.enableI18n, props._reload]);
 
   const i18nStoreRef = useRef<I18nStore | null>(null);
-  if (i18nStoreRef.current == null) {
+  if (process.env.NODE_ENV !== 'production' && i18nStoreRef.current == null) {
     i18nStoreRef.current = new I18nStore();
   }
 
@@ -24,7 +24,7 @@ export function BrowserGTProvider(props: SharedGTProviderProps) {
     <InternalGTProvider
       {...props}
       conditionStore={conditionStore}
-      i18nStore={i18nStoreRef.current}
+      i18nStore={i18nStoreRef.current ?? undefined}
     />
   );
 }

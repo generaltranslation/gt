@@ -1,5 +1,13 @@
 import logger from '../logs/logger';
-import { I18nCacheConfig, I18nCacheConstructorParams } from './types';
+import {
+  type I18nCacheConfig,
+  type I18nCacheConstructorParams,
+  type I18nRuntime,
+  type DictionaryResolvers,
+  type PrefetchEntry,
+  type PrefetchEntries,
+  type TranslationResolver,
+} from './types';
 import {
   createDiagnosticMessage,
   defaultRuntimeApiUrl,
@@ -11,8 +19,7 @@ import {
   createTranslateManyFactory,
   type CreateTranslateMany,
 } from './translations-manager/utils/createTranslateMany';
-import { routeCreateTranslationLoader } from './translations-manager/translations-loaders/routeCreateTranslationLoader';
-import { getLoadTranslationsType } from './utils/getLoadTranslationsType';
+import { createTranslationLoader } from './translations-manager/translations-loaders/routeCreateTranslationLoader';
 import { ResourceCache } from './translations-manager/ResourceCache';
 import { TranslationsCache } from './translations-manager/TranslationsCache';
 import type { Hash, Locale } from './translations-manager/TranslationsCache';
@@ -26,53 +33,12 @@ import { resolveDictionaryLookupOptions } from './translations-manager/utils/dic
 import { DictionarySourceNotFoundError } from './translations-manager/utils/DictionarySourceNotFoundError';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
+import { validateDictionaryConfig } from './validateDictionaryConfig';
 
 /**
  * Default translation timeout in milliseconds for a runtime translation request
  */
 const DEFAULT_TRANSLATION_TIMEOUT = 12_000; // 12 seconds
-
-/**
- * A translation resolver is a function that synchronously resolves a translation
- * @template U - The type of the translation (default: Translation)
- * @param {U} message - The message to get the translation for
- * @param {LookupOptions} [options] - The options for the translation
- * @returns {U | undefined} The translation for the given message and options or undefined if the translation is not found
- */
-type TranslationResolver<U extends Translation = Translation> = <
-  T extends U = U,
->(
-  message: T,
-  options?: LookupOptions
-) => T | undefined;
-
-type DictionaryResolver = (id: string) => DictionaryEntry | undefined;
-
-type DictionaryObjResolver = (id: string) => DictionaryObject | undefined;
-
-type DictionaryResolvers = {
-  lookupDictionary: DictionaryResolver;
-  lookupDictionaryObj: DictionaryObjResolver;
-};
-
-/**
- * A prefetch entry is an entry that we want to prefetch during the async period
- * @template TranslationType - The type of the translation
- * @param {TranslationType} message - The message to prefetch
- * @param {LookupOptions} options - The options for the prefetch
- * @returns {PrefetchEntry<TranslationType>} The prefetch entry
- */
-type PrefetchEntry<TranslationType extends Translation> = {
-  message: TranslationType;
-  options: LookupOptions;
-};
-
-/**
- * Callback function to prefetch entries during the async period
- */
-type PrefetchEntriesType<TranslationType extends Translation> = (
-  prefetchEntries: PrefetchEntry<TranslationType>[]
-) => Promise<void>;
 
 /**
  * Event fired when a runtime translation resolves a cache miss
@@ -89,7 +55,9 @@ export type TranslationsCacheMissEvent<
  * Class for managing translation functionality
  * @template TranslationValue - The type of the translation that will be cached
  */
-class I18nCache<TranslationValue extends Translation = Translation> {
+class I18nCache<
+  TranslationValue extends Translation = Translation,
+> implements I18nRuntime<TranslationValue> {
   protected config: I18nCacheConfig;
 
   /**
@@ -138,16 +106,9 @@ class I18nCache<TranslationValue extends Translation = Translation> {
     };
 
     // Create cache miss handlers
-    const loadTranslations = routeCreateTranslationLoader({
-      loadTranslations: params.loadTranslations,
-      type: getLoadTranslationsType(params),
-      remoteTranslationLoaderParams: {
-        cacheUrl: params.cacheUrl,
-        projectId: params.projectId,
-        _versionId: params._versionId,
-        _branchId: params._branchId,
-      },
-    }) as SafeTranslationsLoader<TranslationValue>;
+    const loadTranslations = createTranslationLoader(
+      params
+    ) as SafeTranslationsLoader<TranslationValue>;
     const loadDictionary = params.loadDictionary ?? (() => Promise.resolve({}));
     this.createTranslateMany = createTranslateManyFactory(
       getI18nConfig().getGTClass(),
@@ -500,7 +461,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
    */
   async getLookupTranslation(locale: string): Promise<
     TranslationResolver<TranslationValue> & {
-      prefetchEntries?: PrefetchEntriesType<TranslationValue>;
+      prefetchEntries?: PrefetchEntries<TranslationValue>;
     }
   > {
     return this.guardAsync<TranslationResolver<TranslationValue>>(
@@ -535,7 +496,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
               asyncBoundaryLocale,
               (entryLocale) =>
                 this._resolveCacheLocale(entryLocale) ??
-                this._resolveLocale(entryLocale)
+                getI18nConfig().resolveLocale(entryLocale)
             );
             if (resolvedPrefetchEntries.length !== prefetchEntries.length) {
               logger.warn(
@@ -624,36 +585,12 @@ class I18nCache<TranslationValue extends Translation = Translation> {
     }
   }
 
-  private _resolveLocale(locale: string) {
-    const i18nConfig = getI18nConfig();
-    const resolvedLocale = i18nConfig.determineLocale(locale);
-    if (!i18nConfig.isValidLocale(locale) || !resolvedLocale) {
-      throw new Error(
-        `Locale "${locale}" is not valid. Use a valid BCP 47 locale code or add a custom mapping.`
-      );
-    }
-    return resolvedLocale;
-  }
-
   /**
    * Resolve the locale key used to load/read locale caches.
    * Returns undefined when the requested locale can use source content.
    */
   private _resolveCacheLocale(locale: string) {
-    const resolvedLocale = this._resolveLocale(locale);
-    const i18nConfig = getI18nConfig();
-    if (i18nConfig.requiresTranslation(resolvedLocale)) {
-      return resolvedLocale;
-    }
-
-    const aliasLocale = i18nConfig.resolveAliasLocale(
-      i18nConfig.standardizeLocale(locale)
-    );
-    if (i18nConfig.requiresTranslation(aliasLocale)) {
-      return aliasLocale;
-    }
-
-    return undefined;
+    return getI18nConfig().resolveTranslationLocale(locale);
   }
 
   private resolveLookupParams(locale: string, options: LookupOptions) {
@@ -678,7 +615,7 @@ class I18nCache<TranslationValue extends Translation = Translation> {
       $locale:
         translationLocale ??
         this._resolveCacheLocale(options.$locale) ??
-        this._resolveLocale(options.$locale),
+        getI18nConfig().resolveLocale(options.$locale),
     };
   }
 
@@ -706,12 +643,7 @@ export { I18nCache };
 
 // ===== Helper Functions ===== //
 
-/**
- * Validate constructor params: log warnings for suspicious configs and throw
- * on hard misconfigurations.
- */
 function validateCacheParams(params: I18nCacheConstructorParams): void {
-  // Runtime translation against a custom API URL still needs GT credentials
   if (params.runtimeUrl && params.runtimeUrl !== defaultRuntimeApiUrl) {
     if (!params.projectId) {
       logger.warn(
@@ -733,18 +665,7 @@ function validateCacheParams(params: I18nCacheConstructorParams): void {
     }
   }
 
-  // loadDictionary requires dictionary so the default locale always has a
-  // source dictionary
-  if (params.loadDictionary && !params.dictionary) {
-    logger.error(
-      'I18nCache: ' +
-        createDiagnosticMessage({
-          whatHappened: 'loadDictionary needs a source dictionary',
-          fix: 'Provide dictionary so the default locale has source content',
-        })
-    );
-    throw new Error('Validation errors occurred');
-  }
+  validateDictionaryConfig(params);
 }
 
 /**

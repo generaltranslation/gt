@@ -1,5 +1,9 @@
 import { TranslationsLoader } from './types';
-import { LoadTranslationsType } from '../../utils/getLoadTranslationsType';
+import {
+  getLoadTranslationsType,
+  LoadTranslationsType,
+} from '../../utils/getLoadTranslationsType';
+import type { I18nCacheConstructorParams } from '../../types';
 import logger from '../../../logs/logger';
 import { createRemoteTranslationLoader } from './createRemoteTranslationLoader';
 import { getI18nConfig } from '../../../i18n-config/singleton-operations';
@@ -68,6 +72,21 @@ export function routeCreateTranslationLoader({
         })
       );
   }
+}
+
+export function createTranslationLoader(
+  params: I18nCacheConstructorParams
+): TranslationsLoader {
+  return routeCreateTranslationLoader({
+    loadTranslations: params.loadTranslations,
+    type: getLoadTranslationsType(params),
+    remoteTranslationLoaderParams: {
+      cacheUrl: params.cacheUrl,
+      projectId: params.projectId,
+      _versionId: params._versionId,
+      _branchId: params._branchId,
+    },
+  });
 }
 
 /**

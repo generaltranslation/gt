@@ -2,11 +2,60 @@ import type { RuntimeTranslateManyOptions } from 'generaltranslation/internal';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import type { GTConfig } from '../config/types';
 import type { TranslationsLoader } from './translations-manager/translations-loaders/types';
-import type { TranslationBatchConfig } from './translations-manager/TranslationsCache';
+import type {
+  Hash,
+  TranslationBatchConfig,
+} from './translations-manager/TranslationsCache';
 import type {
   Dictionary,
+  DictionaryEntry,
   DictionaryLoader,
+  DictionaryObject,
 } from './translations-manager/DictionaryCache';
+import type { Translation } from './translations-manager/utils/types/translation-data';
+import type { LookupOptions } from '../translation-functions/types/options';
+
+export type TranslationResolver<U extends Translation = Translation> = <
+  T extends U = U,
+>(
+  message: T,
+  options?: LookupOptions
+) => T | undefined;
+
+export type DictionaryResolvers = {
+  lookupDictionary: (id: string) => DictionaryEntry | undefined;
+  lookupDictionaryObj: (id: string) => DictionaryObject | undefined;
+};
+
+export type PrefetchEntry<TranslationValue extends Translation> = {
+  message: TranslationValue;
+  options: LookupOptions;
+};
+
+export type PrefetchEntries<TranslationValue extends Translation> = (
+  entries: PrefetchEntry<TranslationValue>[]
+) => Promise<void>;
+
+export interface I18nRuntime<
+  TranslationValue extends Translation = Translation,
+> {
+  getVersionId(): string | undefined;
+  loadTranslations(locale: string): Promise<Record<Hash, TranslationValue>>;
+  loadDictionary(locale: string): Promise<Dictionary>;
+  lookupTranslation<T extends TranslationValue = TranslationValue>(
+    locale: string,
+    message: T,
+    options: LookupOptions
+  ): T | undefined;
+  lookupDictionary(locale: string, id: string): DictionaryEntry | undefined;
+  lookupDictionaryObj(locale: string, id: string): DictionaryObject | undefined;
+  getLookupTranslation(locale: string): Promise<
+    TranslationResolver<TranslationValue> & {
+      prefetchEntries?: PrefetchEntries<TranslationValue>;
+    }
+  >;
+  getLookupDictionary(locale: string): Promise<DictionaryResolvers>;
+}
 
 export type DictionaryConfig = {
   dictionary?: Dictionary;

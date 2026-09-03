@@ -11,6 +11,7 @@ export type {
   Dictionary,
   DictionaryLoader,
   DictionaryConfig,
+  I18nRuntime,
 } from './i18n-cache/types';
 export type { I18nConfigParams } from './i18n-config/I18nConfig';
 export type { LocaleCandidates } from './i18n-config/I18nConfig';
