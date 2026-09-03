@@ -151,18 +151,6 @@ export function replaceFileExtensionForFormat(
 }
 
 /**
- * Detects whether any configured format transform changes the output file type.
- */
-export function hasNonIdentityFileFormatTransform(settings: Settings): boolean {
-  return Object.entries(settings.files?.transformFormats || {}).some(
-    ([fileType, transformFormat]) =>
-      transformFormat &&
-      CONFIG_FILE_TYPE_TO_FILE_FORMAT[fileType as SupportedFileExtension] !==
-        transformFormat
-  );
-}
-
-/**
  * Returns true when the configured transform for a file type changes its format.
  */
 export function hasNonIdentityFileFormatTransformForType(
