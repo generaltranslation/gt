@@ -2,6 +2,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { logger } from '../console/logger.js';
 import { exitSync } from '../console/logging.js';
+import {
+  decodeAppleText,
+  detectAppleTextEncoding,
+  LONGEST_BYTE_ORDER_MARK,
+  type AppleTextEncoding,
+} from './appleEncoding.js';
 
 /**
  * Resolve the file path from the given file path or default paths.
@@ -92,6 +98,45 @@ export function readBinaryFileBase64(filePath: string): string {
     return fs.readFileSync(filePath).toString('base64');
   }
   return '';
+}
+
+/**
+ * Read a `.strings` or `.stringsdict` file, decoding it by its byte order mark.
+ * Older Xcode wrote both as UTF-16, and reading those bytes as UTF-8 replaces
+ * them with U+FFFD. The encoding comes back so a translated file can be written
+ * in the same layout as the source it came from.
+ * @param {string} filePath - The path to the file to read.
+ * @returns The decoded text and the encoding the file was stored in.
+ */
+export function readAppleTextFile(filePath: string): {
+  text: string;
+  encoding: AppleTextEncoding;
+} {
+  if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+    return decodeAppleText(fs.readFileSync(filePath));
+  }
+  return { text: '', encoding: 'utf8' };
+}
+
+/**
+ * Read only the byte order mark of a `.strings` or `.stringsdict` file. Used
+ * when writing a translation, where the source file's encoding is wanted but
+ * its content is not.
+ * @param {string} filePath - The path to the file to inspect.
+ * @returns The encoding the file is stored in, defaulting to UTF-8.
+ */
+export function readAppleTextEncoding(filePath: string): AppleTextEncoding {
+  if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
+    return 'utf8';
+  }
+  const handle = fs.openSync(filePath, 'r');
+  try {
+    const mark = Buffer.alloc(LONGEST_BYTE_ORDER_MARK);
+    const read = fs.readSync(handle, mark, 0, mark.length, 0);
+    return detectAppleTextEncoding(mark.subarray(0, read));
+  } finally {
+    fs.closeSync(handle);
+  }
 }
 
 /**

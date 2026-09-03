@@ -1,14 +1,17 @@
 import { logger } from '../../console/logger.js';
 import { logErrorAndExit } from '../../console/logging.js';
-import { lottieExpressionsError } from '../../console/index.js';
+import {
+  appleEncodingError,
+  lottieExpressionsError,
+} from '../../console/index.js';
 import { recordWarning } from '../../state/translateWarnings.js';
 import { lottieHasExpressions } from './detectLottieExpressions.js';
 import {
   getRelative,
   readFile,
   readBinaryFileBase64,
+  readAppleTextFile,
 } from '../../fs/findFilepath.js';
-import { isBinaryFileFormat } from 'generaltranslation/types';
 import { Settings } from '../../types/index.js';
 import type { FileFormat, DataFormat, FileToUpload } from '../../types/data.js';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
@@ -404,17 +407,19 @@ export async function aggregateFiles(
     ['dotStringsdict', 'DOT_STRINGSDICT'],
   ] as const) {
     if (!filePaths[fileType]) continue;
-    // Content must already be base64 exactly when the format is binary, or the
-    // upload path encodes it a second time. Only .strings qualifies today: its
-    // UTF-16 bytes reach an API decoder that reads the byte order mark, and
-    // .stringsdict has no such decoder yet.
-    const readsRawBytes = isBinaryFileFormat(fileFormat);
     const verbatimFiles = filePaths[fileType]
       .map((filePath) => {
-        const content = readsRawBytes
-          ? readBinaryFileBase64(filePath)
-          : readFile(filePath);
         const relativePath = getRelative(filePath);
+        // Xcode has written both formats as UTF-16 and as UTF-8 with a byte
+        // order mark. Decoding here is what keeps encoding a client concern:
+        // the API only ever sees UTF-8, and the writer restores the source
+        // file's layout on the way back out.
+        let content: string;
+        try {
+          content = readAppleTextFile(filePath).text;
+        } catch (error) {
+          logErrorAndExit(appleEncodingError(relativePath, error));
+        }
         return {
           content,
           fileName: relativePath,
@@ -426,13 +431,7 @@ export async function aggregateFiles(
         } satisfies FileToUpload;
       })
       .filter((file) => {
-        // Blank check only; the content itself travels untouched. A UTF-16
-        // file reads as non-blank here, which is the safe default — the API
-        // decodes it properly.
-        const text = readsRawBytes
-          ? Buffer.from(file.content, 'base64').toString('utf8')
-          : file.content;
-        if (!text.trim()) {
+        if (!file.content.trim()) {
           logger.warn(`Skipping ${file.fileName}: File is empty`);
           recordWarning('skipped_file', file.fileName, 'File is empty');
           return false;

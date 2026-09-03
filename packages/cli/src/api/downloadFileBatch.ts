@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { isBinaryFileFormat } from 'generaltranslation/types';
+import { isBinaryFileFormat, type FileFormat } from 'generaltranslation/types';
 import { logger } from '../console/logger.js';
 import { gt } from '../utils/gt.js';
 import { Settings } from '../types/index.js';
@@ -25,7 +25,8 @@ import stringify from 'fast-json-stable-stringify';
 import type { FileStatusTracker } from '../workflows/steps/PollJobsStep.js';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import { hasNonIdentityFileFormatTransformForType } from '../formats/files/transformFormat.js';
-import { getRelative } from '../fs/findFilepath.js';
+import { getRelative, readAppleTextEncoding } from '../fs/findFilepath.js';
+import { encodeAppleText, isAppleTextFileFormat } from '../fs/appleEncoding.js';
 import {
   getInlineElementsLabel,
   type InlineLibrary,
@@ -83,6 +84,24 @@ function countGtJsonEntries(content: string): number | undefined {
 function sortJsonString(data: string): string {
   const sortedData = stringify(JSON.parse(data));
   return JSON.stringify(JSON.parse(sortedData), null, 2);
+}
+
+/**
+ * Renders translated content for disk.
+ *
+ * `.strings` and `.stringsdict` go back out in whatever encoding their source
+ * file uses, so a repository of UTF-16 files stays UTF-16 instead of showing
+ * every one of them as rewritten. The source is the only record of that
+ * encoding, and it is already on disk, so nothing has to be stored for it.
+ */
+function encodeForDisk(
+  fileFormat: FileFormat | undefined,
+  inputPath: string,
+  data: string
+): string | Buffer {
+  if (!fileFormat || !isAppleTextFileFormat(fileFormat)) return data;
+  const encoding = readAppleTextEncoding(inputPath);
+  return encoding === 'utf8' ? data : encodeAppleText(data, encoding);
 }
 
 /**
@@ -426,7 +445,10 @@ export async function downloadFileBatch(
         }
 
         // Write the file to disk
-        await fs.promises.writeFile(outputPath, data);
+        await fs.promises.writeFile(
+          outputPath,
+          encodeForDisk(file.fileFormat, inputPath, data)
+        );
         // Track as downloaded with metadata for downstream postprocessing
         recordDownloaded(outputPath, {
           branchId,

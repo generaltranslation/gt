@@ -4,6 +4,7 @@ import { logger } from '../../../console/logger.js';
 import {
   readFile,
   readBinaryFileBase64,
+  readAppleTextFile,
   getRelative,
 } from '../../../fs/findFilepath.js';
 import { parseJson } from '../../json/parseJson.js';
@@ -33,6 +34,7 @@ vi.mock('../../../utils/validateMdx.js');
 const mockLogWarning = vi.mocked(logger.warn);
 const mockReadFile = vi.mocked(readFile);
 const mockReadBinaryFileBase64 = vi.mocked(readBinaryFileBase64);
+const mockReadAppleTextFile = vi.mocked(readAppleTextFile);
 const mockGetRelative = vi.mocked(getRelative);
 const mockParseJson = vi.mocked(parseJson);
 const mockParseYaml = vi.mocked(parseYaml);
@@ -48,6 +50,7 @@ describe('aggregateFiles - Empty File Handling', () => {
     mockGetRelative.mockImplementation((path) =>
       path.replace('/full/path/', '')
     );
+    mockReadAppleTextFile.mockReturnValue({ text: '', encoding: 'utf8' });
     mockDetermineLibrary.mockReturnValue({
       library: 'next-intl',
       additionalModules: [],
@@ -588,27 +591,40 @@ describe('aggregateFiles - Empty File Handling', () => {
     });
   });
 
-  describe('.strings files', () => {
-    // The escapes below are load-bearing: they must reach the API verbatim.
-    const stringsContent =
-      '/* Greeting */\n"hello" = "Line1\\nLine2 \\"quoted\\" 100%%";\n';
-    const stringsBase64 = Buffer.from(stringsContent, 'utf8').toString(
-      'base64'
-    );
-
+  // Both Apple formats read through the same byte-order-mark-aware helper and
+  // upload the decoded text, so they assert the same things.
+  describe.each([
+    {
+      label: '.strings',
+      settingsKey: 'dotStrings',
+      fileFormat: 'DOT_STRINGS',
+      extension: 'strings',
+      // The escapes below are load-bearing: they must reach the API verbatim.
+      content:
+        '/* Greeting */\n"hello" = "Line1\\nLine2 \\"quoted\\" 100%%";\n',
+    },
+    {
+      label: '.stringsdict',
+      settingsKey: 'dotStringsdict',
+      fileFormat: 'DOT_STRINGSDICT',
+      extension: 'stringsdict',
+      content:
+        '<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0">\n<dict>\n  <key>%d file(s) \\"quoted\\"</key>\n</dict>\n</plist>\n',
+    },
+  ])('$label files', ({ settingsKey, fileFormat, extension, content }) => {
     beforeEach(() => {
       // Make any trip through the markdown-oriented sanitizer detectable: it
       // would strip the backslash escapes the assertions below depend on.
-      mockSanitizeFileContent.mockImplementation((content) =>
-        content.replace(/\\/g, '')
+      mockSanitizeFileContent.mockImplementation((value) =>
+        value.replace(/\\/g, '')
       );
     });
 
-    it('should upload .strings files verbatim with the DOT_STRINGS format', async () => {
+    it(`should upload ${extension} files verbatim with the ${fileFormat} format`, async () => {
       const settings = {
         files: {
           resolvedPaths: {
-            dotStrings: ['/full/path/en.lproj/Localizable.strings'],
+            [settingsKey]: [`/full/path/en.lproj/Localizable.${extension}`],
           },
           placeholderPaths: {},
         },
@@ -616,33 +632,58 @@ describe('aggregateFiles - Empty File Handling', () => {
         defaultLocale: 'en',
       };
 
-      mockReadBinaryFileBase64.mockReturnValueOnce(stringsBase64);
+      mockReadAppleTextFile.mockReturnValueOnce({
+        text: content,
+        encoding: 'utf8',
+      });
 
       const { files: result } = await aggregateTestFiles(settings);
 
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({
-        fileName: 'en.lproj/Localizable.strings',
-        fileFormat: 'DOT_STRINGS',
+        fileName: `en.lproj/Localizable.${extension}`,
+        fileFormat,
         locale: 'en',
       });
-      expect(result[0].content).toBe(stringsBase64);
-      expect(Buffer.from(result[0].content, 'base64').toString('utf8')).toBe(
-        stringsContent
-      );
+      expect(result[0].content).toBe(content);
       expect(result[0].fileId).toBe(
-        hashStringSync('en.lproj/Localizable.strings')
+        hashStringSync(`en.lproj/Localizable.${extension}`)
       );
-      expect(result[0].versionId).toBe(hashVersionId(stringsBase64, false));
+      expect(result[0].versionId).toBe(hashVersionId(content, false));
     });
 
-    it('should skip empty .strings files and log a warning', async () => {
+    it(`should upload the decoded text of a UTF-16 ${extension} file`, async () => {
       const settings = {
         files: {
           resolvedPaths: {
-            dotStrings: [
-              '/full/path/empty.strings',
-              '/full/path/valid.strings',
+            [settingsKey]: [`/full/path/ja.lproj/Localizable.${extension}`],
+          },
+          placeholderPaths: {},
+        },
+        options: {},
+        defaultLocale: 'en',
+      };
+
+      mockReadAppleTextFile.mockReturnValueOnce({
+        text: content,
+        encoding: 'utf16le',
+      });
+
+      const { files: result } = await aggregateTestFiles(settings);
+
+      expect(result).toHaveLength(1);
+      // The source encoding stays on the client; the API is handed text.
+      expect(result[0].content).toBe(content);
+      expect(result[0].content).not.toContain('�');
+    });
+
+    it(`should skip empty ${extension} files and log a warning`, async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            [settingsKey]: [
+              `/full/path/empty.${extension}`,
+              `/full/path/valid.${extension}`,
             ],
           },
           placeholderPaths: {},
@@ -651,92 +692,17 @@ describe('aggregateFiles - Empty File Handling', () => {
         defaultLocale: 'en',
       };
 
-      mockReadBinaryFileBase64
-        .mockReturnValueOnce(
-          Buffer.from('   \n\t  ', 'utf8').toString('base64')
-        ) // whitespace only
-        .mockReturnValueOnce(stringsBase64); // valid file
+      mockReadAppleTextFile
+        .mockReturnValueOnce({ text: '   \n\t  ', encoding: 'utf8' }) // whitespace only
+        .mockReturnValueOnce({ text: content, encoding: 'utf8' }); // valid file
 
       const { files: result } = await aggregateTestFiles(settings);
 
       expect(mockLogWarning).toHaveBeenCalledWith(
-        'Skipping empty.strings: File is empty'
+        `Skipping empty.${extension}: File is empty`
       );
       expect(result).toHaveLength(1);
-      expect(result[0].fileName).toBe('valid.strings');
-    });
-  });
-
-  describe('.stringsdict files', () => {
-    // The escapes below are load-bearing: they must reach the API verbatim.
-    const stringsdictContent =
-      '<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0">\n<dict>\n  <key>%d file(s) \\"quoted\\"</key>\n</dict>\n</plist>\n';
-
-    beforeEach(() => {
-      // Make any trip through the markdown-oriented sanitizer detectable: it
-      // would strip the backslash escapes the assertions below depend on.
-      mockSanitizeFileContent.mockImplementation((content) =>
-        content.replace(/\\/g, '')
-      );
-    });
-
-    it('should upload .stringsdict files verbatim with the DOT_STRINGSDICT format', async () => {
-      const settings = {
-        files: {
-          resolvedPaths: {
-            dotStringsdict: ['/full/path/en.lproj/Localizable.stringsdict'],
-          },
-          placeholderPaths: {},
-        },
-        options: {},
-        defaultLocale: 'en',
-      };
-
-      mockReadFile.mockReturnValueOnce(stringsdictContent);
-
-      const { files: result } = await aggregateTestFiles(settings);
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toMatchObject({
-        fileName: 'en.lproj/Localizable.stringsdict',
-        fileFormat: 'DOT_STRINGSDICT',
-        locale: 'en',
-      });
-      expect(result[0].content).toBe(stringsdictContent);
-      expect(result[0].fileId).toBe(
-        hashStringSync('en.lproj/Localizable.stringsdict')
-      );
-      expect(result[0].versionId).toBe(
-        hashVersionId(stringsdictContent, false)
-      );
-    });
-
-    it('should skip empty .stringsdict files and log a warning', async () => {
-      const settings = {
-        files: {
-          resolvedPaths: {
-            dotStringsdict: [
-              '/full/path/empty.stringsdict',
-              '/full/path/valid.stringsdict',
-            ],
-          },
-          placeholderPaths: {},
-        },
-        options: {},
-        defaultLocale: 'en',
-      };
-
-      mockReadFile
-        .mockReturnValueOnce('   \n\t  ') // whitespace only
-        .mockReturnValueOnce(stringsdictContent); // valid file
-
-      const { files: result } = await aggregateTestFiles(settings);
-
-      expect(mockLogWarning).toHaveBeenCalledWith(
-        'Skipping empty.stringsdict: File is empty'
-      );
-      expect(result).toHaveLength(1);
-      expect(result[0].fileName).toBe('valid.stringsdict');
+      expect(result[0].fileName).toBe(`valid.${extension}`);
     });
   });
 

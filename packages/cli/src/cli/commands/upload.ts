@@ -5,7 +5,9 @@ import {
   getRelative,
   readFile,
   readBinaryFileBase64,
+  readAppleTextFile,
 } from '../../fs/findFilepath.js';
+import { isAppleTextFileFormat } from '../../fs/appleEncoding.js';
 import { isBinaryFileFormat } from 'generaltranslation/types';
 import { Settings } from '../../types/index.js';
 import { UploadOptions } from '../base.js';
@@ -120,10 +122,18 @@ export async function upload(
         if (translatedFileName && existsSync(translatedFileName)) {
           const translationFormat = file.transformFormat ?? file.fileFormat;
           // Binary formats (e.g. LOTTIE zip bundles) travel base64-encoded;
-          // decoding their bytes as UTF-8 would corrupt the archive.
-          const translatedContent = isBinaryFileFormat(translationFormat)
-            ? readBinaryFileBase64(translatedFileName)
-            : readFileSync(translatedFileName, 'utf8');
+          // decoding their bytes as UTF-8 would corrupt the archive. A
+          // translated `.strings` or `.stringsdict` is text, but not
+          // necessarily UTF-8 text — it carries whatever encoding it was
+          // written in, so it decodes by byte order mark.
+          let translatedContent: string;
+          if (isBinaryFileFormat(translationFormat)) {
+            translatedContent = readBinaryFileBase64(translatedFileName);
+          } else if (isAppleTextFileFormat(translationFormat)) {
+            translatedContent = readAppleTextFile(translatedFileName).text;
+          } else {
+            translatedContent = readFileSync(translatedFileName, 'utf8');
+          }
           translations.push({
             content: translatedContent,
             fileName: translatedFileName,

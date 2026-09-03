@@ -13,7 +13,9 @@ import {
   FileReference,
   isBinaryFileFormat,
   SubmitUserEditDiff,
+  type FileFormat,
 } from 'generaltranslation/types';
+import { decodeAppleText, isAppleTextFileFormat } from '../fs/appleEncoding.js';
 import os from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { hashStringSync } from '../utils/hash.js';
@@ -90,6 +92,7 @@ export async function collectAndSendUserEditDiffs(
     versionId: string;
     locale: string; // resolved
     outputPath: string;
+    fileFormat: FileFormat;
   };
   const candidates: DiffCandidate[] = [];
 
@@ -128,6 +131,7 @@ export async function collectAndSendUserEditDiffs(
         versionId: latestDownloaded.versionId,
         locale: locale,
         outputPath,
+        fileFormat: uploadedFile.fileFormat,
       });
     }
   }
@@ -184,7 +188,15 @@ export async function collectAndSendUserEditDiffs(
       if (!serverBytes) continue;
 
       try {
-        const localBytes = await fs.promises.readFile(c.outputPath);
+        const rawLocalBytes = await fs.promises.readFile(c.outputPath);
+        // A `.strings` or `.stringsdict` on disk carries whatever encoding its
+        // source file uses, while the server's copy is always UTF-8. Compare
+        // the decoded text so an untouched UTF-16 file does not read as edited
+        // on every run.
+        const decodesByByteOrderMark = isAppleTextFileFormat(c.fileFormat);
+        const localBytes = decodesByByteOrderMark
+          ? Buffer.from(decodeAppleText(rawLocalBytes).text, 'utf8')
+          : rawLocalBytes;
 
         // Nothing was edited, so there is no diff to compute or report.
         if (localBytes.equals(serverBytes)) continue;
@@ -211,11 +223,26 @@ export async function collectAndSendUserEditDiffs(
         const tempServerFile = path.join(tempDir, `${safeName}.server`);
         await fs.promises.writeFile(tempServerFile, serverBytes);
 
-        const diff = await getGitUnifiedDiff(tempServerFile, c.outputPath);
-        try {
-          await fs.promises.unlink(tempServerFile);
-        } catch {
-          // Ignore cleanup errors for temporary comparison files.
+        // git diff reads bytes, so a re-encoded file has to be diffed from its
+        // decoded form too, or every line reads as changed.
+        const tempLocalFile = decodesByByteOrderMark
+          ? path.join(tempDir, `${safeName}.local`)
+          : null;
+        if (tempLocalFile) {
+          await fs.promises.writeFile(tempLocalFile, localBytes);
+        }
+
+        const diff = await getGitUnifiedDiff(
+          tempServerFile,
+          tempLocalFile ?? c.outputPath
+        );
+        for (const tempFile of [tempServerFile, tempLocalFile]) {
+          if (!tempFile) continue;
+          try {
+            await fs.promises.unlink(tempFile);
+          } catch {
+            // Ignore cleanup errors for temporary comparison files.
+          }
         }
 
         if (diff && diff.trim().length > 0) {
