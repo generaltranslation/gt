@@ -1,5 +1,16 @@
 # generaltranslation
 
+## 9.1.13
+
+### Patch Changes
+
+- [#2228](https://github.com/generaltranslation/gt/pull/2228) [`de66e5f`](https://github.com/generaltranslation/gt/commit/de66e5f41e05f22d51661faacae78b4fb3d86035) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add Android `strings.xml` support to the CLI. Configure an `androidStrings` entry under `files` in `gt.config.json` to upload Android string resources and download the translated per-locale files.
+
+  Translations are written to the resource directory the platform expects, so `fr-CA` becomes `values-fr-rCA` and `zh-Hans` becomes `values-b+zh+Hans`. Android reads the locale out of the directory name and fails the build on one it cannot parse.
+
+- Updated dependencies [[`de66e5f`](https://github.com/generaltranslation/gt/commit/de66e5f41e05f22d51661faacae78b4fb3d86035)]:
+  - @generaltranslation/api@0.0.6
+
 ## 9.1.12
 
 ### Patch Changes

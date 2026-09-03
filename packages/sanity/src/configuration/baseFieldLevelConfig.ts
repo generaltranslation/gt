@@ -9,8 +9,10 @@ import type {
   GTSerializedDocument,
   ImportTranslation,
 } from '../types';
-import { findLatestDraft } from './utils/findLatestDraft';
-import { findDocumentAtRevision } from './utils/findDocumentAtRevision';
+import {
+  requireLatestDraft,
+  requireSourceDocument,
+} from './utils/requireSourceDocument';
 import { pluginConfig } from '../adapter/core';
 import { deserializeDocument, serializeDocument } from '../utils/serialize';
 
@@ -21,17 +23,12 @@ export const fieldLevelPatch = async (
   client: SanityClient,
   mergeWithTargetLocale: boolean = false
 ): Promise<void> => {
-  let baseDoc: SanityDocument;
   const baseLanguage = pluginConfig.getSourceLocale();
-  if (docInfo.documentId && docInfo.versionId) {
-    baseDoc = await findDocumentAtRevision(
-      docInfo.documentId,
-      docInfo.versionId,
-      client
-    );
-  } else {
-    baseDoc = await findLatestDraft(docInfo.documentId, client);
-  }
+  const baseDoc = await requireSourceDocument(
+    docInfo.documentId,
+    docInfo.versionId,
+    client
+  );
 
   const merged = BaseDocumentMerger.fieldLevelMerge(
     translatedFields,
@@ -50,7 +47,7 @@ export const baseFieldLevelConfig = {
   ): Promise<GTSerializedDocument> => {
     const baseLanguage = pluginConfig.getSourceLocale();
     const { client, schema } = context;
-    const doc = await findLatestDraft(docInfo.documentId, client);
+    const doc = await requireLatestDraft(docInfo.documentId, client);
     const serialized = serializeDocument(doc, schema, baseLanguage);
     return {
       content: serialized.content,
