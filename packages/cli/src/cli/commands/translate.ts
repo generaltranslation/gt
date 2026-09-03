@@ -22,6 +22,10 @@ import { hasNonIdentityFileFormatTransformForType } from '../../formats/files/tr
 import { getRelative } from '../../fs/findFilepath.js';
 import type { InlineLibrary } from '../../types/libraries.js';
 
+type PostProcessTranslationsOptions = {
+  restrictToIncludedFiles?: boolean;
+};
+
 // Downloads translations that were completed
 export async function handleTranslate(
   options: TranslateFlags,
@@ -82,7 +86,8 @@ export async function handleTranslate(
 
 export async function postProcessTranslations(
   settings: Settings,
-  includeFiles?: Set<string>
+  includeFiles?: Set<string>,
+  options: PostProcessTranslationsOptions = {}
 ) {
   const postProcessIncludes = filterPostProcessIncludesForFormatTransforms(
     settings,
@@ -90,7 +95,9 @@ export async function postProcessTranslations(
   );
   if (includeFiles && postProcessIncludes?.size === 0) return;
 
-  await postprocessMintlify(settings, postProcessIncludes);
+  await postprocessMintlify(settings, postProcessIncludes, {
+    processDefaultLocaleFiles: !options.restrictToIncludedFiles,
+  });
 
   // Localize static urls (/docs -> /[locale]/docs) and preserve anchor IDs for non-default locales
   // Default locale is processed earlier in the flow in base.ts
@@ -146,12 +153,18 @@ export async function postProcessTranslations(
   }
 
   // Copy files to the target locale
-  if (settings.options?.copyFiles) {
+  if (!options.restrictToIncludedFiles && settings.options?.copyFiles) {
     await copyFile(settings);
   }
 
   // Record postprocessed content hashes for newly downloaded files
-  persistPostProcessHashes(settings, postProcessIncludes, getDownloadedMeta());
+  if (!options.restrictToIncludedFiles) {
+    persistPostProcessHashes(
+      settings,
+      postProcessIncludes,
+      getDownloadedMeta()
+    );
+  }
 }
 
 /**

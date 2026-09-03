@@ -17,6 +17,10 @@ type SpecAnalysis = {
   webhooks: Set<string>;
 };
 
+type ProcessOpenApiOptions = {
+  processDefaultLocaleFiles?: boolean;
+};
+
 type ParsedOpenApiValue =
   | {
       kind: 'operation';
@@ -55,7 +59,8 @@ const OPENAPI_SPEC_EXTENSIONS = new Set(['.json', '.yaml', '.yml']);
  */
 export default async function processOpenApi(
   settings: Settings,
-  includeFiles?: Set<string>
+  includeFiles?: Set<string>,
+  { processDefaultLocaleFiles = true }: ProcessOpenApiOptions = {}
 ) {
   const openapiConfig = settings.options?.mintlify?.openapi;
   if (!openapiConfig || !openapiConfig.files?.length) return;
@@ -87,24 +92,26 @@ export default async function processOpenApi(
   }
 
   // Also rewrite default-locale source files so they use the deterministic spec selection
-  const defaultFiles = [
-    ...(resolvedPaths.mdx || []),
-    ...(resolvedPaths.md || []),
-  ];
-  for (const filePath of defaultFiles) {
-    if (!fs.existsSync(filePath)) continue;
-    const content = fs.readFileSync(filePath, 'utf8');
-    const updated = rewriteFrontmatter(
-      content,
-      filePath,
-      settings.defaultLocale,
-      specAnalyses,
-      fileMappingAbs,
-      warnings,
-      configDir
-    );
-    if (updated?.changed) {
-      await fs.promises.writeFile(filePath, updated.content, 'utf8');
+  if (processDefaultLocaleFiles) {
+    const defaultFiles = [
+      ...(resolvedPaths.mdx || []),
+      ...(resolvedPaths.md || []),
+    ];
+    for (const filePath of defaultFiles) {
+      if (!fs.existsSync(filePath)) continue;
+      const content = fs.readFileSync(filePath, 'utf8');
+      const updated = rewriteFrontmatter(
+        content,
+        filePath,
+        settings.defaultLocale,
+        specAnalyses,
+        fileMappingAbs,
+        warnings,
+        configDir
+      );
+      if (updated?.changed) {
+        await fs.promises.writeFile(filePath, updated.content, 'utf8');
+      }
     }
   }
 
