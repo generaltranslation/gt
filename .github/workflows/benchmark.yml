@@ -21,6 +21,7 @@ env:
 
 jobs:
   benchmark:
+    if: ${{ !startsWith(github.head_ref, 'changeset-release/') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
