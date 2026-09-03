@@ -1,6 +1,9 @@
 import { logger } from '../../console/logger.js';
 import { logErrorAndExit } from '../../console/logging.js';
-import { lottieExpressionsError } from '../../console/index.js';
+import {
+  fileEncodingSkipReason,
+  lottieExpressionsError,
+} from '../../console/index.js';
 import { recordWarning } from '../../state/translateWarnings.js';
 import { lottieHasExpressions } from './detectLottieExpressions.js';
 import {
@@ -8,6 +11,7 @@ import {
   readFile,
   readBinaryFileBase64,
 } from '../../fs/findFilepath.js';
+import { readFileContent } from '../../fs/fileContent.js';
 import { Settings } from '../../types/index.js';
 import type { FileFormat, DataFormat, FileToUpload } from '../../types/data.js';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
@@ -395,12 +399,62 @@ export async function aggregateFiles(
     files.push(...lottieFiles);
   }
 
+  // These formats are uploaded verbatim. Their backslash escapes and format
+  // specifiers must survive byte-for-byte, so they skip the generic
+  // markdown-oriented preprocessing below.
+  for (const [fileType, fileFormat] of [
+    ['dotStrings', 'DOT_STRINGS'],
+    ['dotStringsdict', 'DOT_STRINGSDICT'],
+    ['androidStrings', 'ANDROID_STRINGS'],
+  ] as const) {
+    if (!filePaths[fileType]) continue;
+    const verbatimFiles = filePaths[fileType]
+      .map((filePath) => {
+        const relativePath = getRelative(filePath);
+        // Reading is the one place an encoding is resolved; from here on the
+        // content is a UTF-8 string like every other format's.
+        let content: string;
+        try {
+          content = readFileContent(filePath, fileFormat);
+        } catch (error) {
+          // One unreadable file should not abort the whole run: skip it and
+          // report it in the summary
+          const reason = fileEncodingSkipReason(error);
+          logger.warn(`Skipping ${relativePath}: ${reason}`);
+          recordWarning('skipped_file', relativePath, reason);
+          return null;
+        }
+        return {
+          content,
+          fileName: relativePath,
+          fileFormat,
+          ...getTransformFormatProperty(settings, fileType),
+          fileId: hashStringSync(relativePath),
+          versionId: hashVersionId(content, requiresReviewPaths.has(filePath)),
+          locale: settings.defaultLocale,
+        } satisfies FileToUpload;
+      })
+      .filter((file) => {
+        if (!file) return false;
+        if (!file.content.trim()) {
+          logger.warn(`Skipping ${file.fileName}: File is empty`);
+          recordWarning('skipped_file', file.fileName, 'File is empty');
+          return false;
+        }
+        return true;
+      });
+    files.push(...verbatimFiles.filter((file) => file !== null));
+  }
+
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
     if (
       fileType === 'json' ||
       fileType === 'yaml' ||
       fileType === 'twilioContentJson' ||
-      fileType === 'lottie'
+      fileType === 'lottie' ||
+      fileType === 'dotStrings' ||
+      fileType === 'dotStringsdict' ||
+      fileType === 'androidStrings'
     )
       continue;
     if (filePaths[fileType]) {

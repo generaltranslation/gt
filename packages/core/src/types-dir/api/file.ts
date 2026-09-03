@@ -5,17 +5,22 @@ import type { JsonObject } from './json';
 export type FileFormat = import('@generaltranslation/api').FileFormat;
 
 /**
- * File formats whose content is binary (e.g. zip bundles) rather than text.
- * Their content travels through the pipeline already base64-encoded, so the
- * usual UTF-8 encode/decode steps must be skipped to avoid corrupting bytes.
+ * File formats whose content travels through the pipeline already
+ * base64-encoded, so the usual UTF-8 encode/decode steps are skipped and the
+ * bytes reach the API unaltered.
+ *
+ * LOTTIE qualifies because it is a zip bundle. Apple's `.strings` and
+ * `.stringsdict` do not: they are text in whichever encoding Xcode wrote, and
+ * the client decodes that to UTF-8 before upload and restores it on write, so
+ * only the client ever handles their bytes.
  */
 export const BINARY_FILE_FORMATS: ReadonlySet<FileFormat> = new Set<FileFormat>(
   ['LOTTIE']
 );
 
 /**
- * Whether a file format's content is binary (carried as base64 end-to-end)
- * rather than a UTF-8 text string.
+ * Whether a file format's content is carried as base64 end-to-end rather than
+ * as a UTF-8 text string.
  */
 export function isBinaryFileFormat(fileFormat: FileFormat): boolean {
   return BINARY_FILE_FORMATS.has(fileFormat);

@@ -9,17 +9,36 @@ import { Settings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import { getGitUnifiedDiff } from '../utils/gitDiff.js';
 import { api } from '../utils/api.js';
-import { FileReference, SubmitUserEditDiff } from 'generaltranslation/types';
+import {
+  FileReference,
+  isBinaryFileFormat,
+  SubmitUserEditDiff,
+  type FileFormat,
+} from 'generaltranslation/types';
+import { readFileContent } from '../fs/fileContent.js';
 import os from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { hashStringSync } from '../utils/hash.js';
 import { extractJson } from '../formats/json/extractJson.js';
 import { extractYaml } from '../formats/yaml/extractYaml.js';
+import { logger } from '../console/logger.js';
+import { recordWarning } from '../state/translateWarnings.js';
+import { getRelative } from '../fs/findFilepath.js';
 
 type LatestDownloadedVersion = {
   versionId: string;
   entry: DownloadedTranslation;
 };
+
+/**
+ * The bytes a file's pipeline content stands for: binary formats carry base64,
+ * everything else carries UTF-8 text. Applied to both sides of the comparison
+ * so they are measured the same way.
+ */
+const contentBytes = (content: string, fileFormat: FileFormat): Buffer =>
+  isBinaryFileFormat(fileFormat)
+    ? Buffer.from(content, 'base64')
+    : Buffer.from(content, 'utf8');
 
 const findLatestDownloadedVersion = (
   entryMap: EntryMap,
@@ -71,6 +90,7 @@ export async function collectAndSendUserEditDiffs(
     versionId: string;
     locale: string; // resolved
     outputPath: string;
+    fileFormat: FileFormat;
   };
   const candidates: DiffCandidate[] = [];
 
@@ -92,7 +112,12 @@ export async function collectAndSendUserEditDiffs(
       // Skip if local file matches the last postprocessed content hash
       if (downloadedVersion.postProcessHash) {
         try {
-          const localContent = await fs.promises.readFile(outputPath, 'utf8');
+          // Hashed from the same pipeline content the hash was recorded from,
+          // so a file stored in UTF-16 still matches when it is untouched.
+          const localContent = readFileContent(
+            outputPath,
+            uploadedFile.fileFormat
+          );
           const localHash = hashStringSync(localContent);
           if (localHash === downloadedVersion.postProcessHash) {
             continue;
@@ -109,6 +134,7 @@ export async function collectAndSendUserEditDiffs(
         versionId: latestDownloaded.versionId,
         locale: locale,
         outputPath,
+        fileFormat: uploadedFile.fileFormat,
       });
     }
   }
@@ -130,7 +156,7 @@ export async function collectAndSendUserEditDiffs(
     const translatedFiles =
       checkResponse.translatedFiles?.filter((t) => t.completedAt) ?? [];
 
-    const serverContentByKey = new Map<string, string>();
+    const serverContentByKey = new Map<string, Buffer>();
     try {
       const resp = await api.downloadFileBatch(
         translatedFiles.map((file) => ({
@@ -144,7 +170,7 @@ export async function collectAndSendUserEditDiffs(
       for (const f of files) {
         serverContentByKey.set(
           `${f.branchId}:${f.fileId}:${f.versionId}:${f.locale}`,
-          f.data
+          contentBytes(f.data, f.fileFormat)
         );
       }
     } catch {
@@ -154,30 +180,62 @@ export async function collectAndSendUserEditDiffs(
     // Compute diffs using fetched server contents
     for (const c of candidates) {
       const key = `${c.branchId}:${c.fileId}:${c.versionId}:${c.locale}`;
-      const serverContent = serverContentByKey.get(key);
-      if (!serverContent) continue;
+      const serverBytes = serverContentByKey.get(key);
+      // Absent means the batch did not return this file, so there is no
+      // baseline. An empty payload is a baseline of nothing, which the user
+      // may well have written against.
+      if (!serverBytes) continue;
 
       try {
+        // Read the local file the same way the pipeline read it originally, so
+        // a file stored differently on disk than the server's copy is compared
+        // as content rather than as bytes. Otherwise every such file would read
+        // as edited on every run.
+        const localBytes = contentBytes(
+          readFileContent(c.outputPath, c.fileFormat),
+          c.fileFormat
+        );
+
+        // Nothing was edited, so there is no diff to compute or report.
+        if (localBytes.equals(serverBytes)) continue;
+
+        // A unified diff and localContent are both UTF-8 text, and every text
+        // format's content is UTF-8 by the time it reaches here. Only a binary
+        // format's bytes — a Lottie zip — have no text form at all. Say so:
+        // the edit is real and will be lost on the next download.
+        if (isBinaryFileFormat(c.fileFormat)) {
+          const relativePath = getRelative(c.outputPath);
+          const reason =
+            'Edited file is a binary format, so its changes cannot be submitted';
+          logger.warn(`Skipping local edits to ${relativePath}: ${reason}`);
+          recordWarning('skipped_file', relativePath, reason);
+          continue;
+        }
+
         const safeName = Buffer.from(
           `${c.branchId}:${c.fileId}:${c.versionId}:${c.locale}`
         )
           .toString('base64')
           .replace(/=+$/g, '');
         const tempServerFile = path.join(tempDir, `${safeName}.server`);
-        await fs.promises.writeFile(tempServerFile, serverContent, 'utf8');
+        await fs.promises.writeFile(tempServerFile, serverBytes);
 
-        const diff = await getGitUnifiedDiff(tempServerFile, c.outputPath);
-        try {
-          await fs.promises.unlink(tempServerFile);
-        } catch {
-          // Ignore cleanup errors for temporary comparison files.
+        // git diff reads bytes, so both sides are written from the content
+        // they represent rather than diffing the file as it sits on disk.
+        const tempLocalFile = path.join(tempDir, `${safeName}.local`);
+        await fs.promises.writeFile(tempLocalFile, localBytes);
+
+        const diff = await getGitUnifiedDiff(tempServerFile, tempLocalFile);
+        for (const tempFile of [tempServerFile, tempLocalFile]) {
+          try {
+            await fs.promises.unlink(tempFile);
+          } catch {
+            // Ignore cleanup errors for temporary comparison files.
+          }
         }
 
         if (diff && diff.trim().length > 0) {
-          const rawLocalContent = await fs.promises.readFile(
-            c.outputPath,
-            'utf8'
-          );
+          const rawLocalContent = localBytes.toString('utf8');
 
           // For JSON files with jsonSchema config, extract to composite format
           let localContent = rawLocalContent;

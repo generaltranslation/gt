@@ -26,6 +26,7 @@ import type { FileStatusTracker } from '../workflows/steps/PollJobsStep.js';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import { hasNonIdentityFileFormatTransformForType } from '../formats/files/transformFormat.js';
 import { getRelative } from '../fs/findFilepath.js';
+import { encodeFileContent } from '../fs/fileContent.js';
 import {
   getInlineElementsLabel,
   type InlineLibrary,
@@ -302,6 +303,7 @@ export async function downloadFileBatch(
             fileId,
             versionId,
             locale,
+            fileFormat: file.fileFormat,
             inputPath,
           });
           result.successful.push(requestedFile);
@@ -428,13 +430,17 @@ export async function downloadFileBatch(
         }
 
         // Write the file to disk
-        await fs.promises.writeFile(outputPath, data);
+        await fs.promises.writeFile(
+          outputPath,
+          encodeFileContent(data, file.fileFormat, inputPath, outputPath)
+        );
         // Track as downloaded with metadata for downstream postprocessing
         recordDownloaded(outputPath, {
           branchId,
           fileId,
           versionId,
           locale,
+          fileFormat: file.fileFormat,
           inputPath,
         });
 

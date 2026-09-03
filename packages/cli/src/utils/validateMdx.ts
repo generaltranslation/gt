@@ -1,10 +1,12 @@
-import { unified } from 'unified';
-import remarkParse from 'remark-parse';
-import remarkMdx from 'remark-mdx';
-import remarkFrontmatter from 'remark-frontmatter';
+import { parseMdxTolerantly } from './mdxAnchorSyntax.js';
 
 /**
  * Validates if an MDX file content can be parsed as a valid AST
+ *
+ * Mintlify-style custom heading IDs (`## Heading {#id}`) are tolerated: they are
+ * not valid MDX expressions, but the CLI supports them end-to-end, so a document
+ * whose only parse error comes from them is considered valid.
+ *
  * @param content - The MDX file content to validate
  * @param filePath - The file path for error reporting
  * @returns object with isValid boolean and optional error message
@@ -17,13 +19,7 @@ export function isValidMdx(
   error?: string;
 } {
   try {
-    const parseProcessor = unified()
-      .use(remarkParse)
-      .use(remarkFrontmatter, ['yaml', 'toml'])
-      .use(remarkMdx);
-
-    const ast = parseProcessor.parse(content);
-    parseProcessor.runSync(ast);
+    parseMdxTolerantly(content);
     return { isValid: true };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);

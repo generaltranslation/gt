@@ -1,8 +1,12 @@
-type DownloadMeta = {
+import type { FileFormat } from 'generaltranslation/types';
+
+export type DownloadMeta = {
   branchId: string;
   fileId: string;
   versionId: string;
   locale: string;
+  // The format the file was written as, so it can be read back the same way.
+  fileFormat: FileFormat;
   inputPath?: string;
 };
 

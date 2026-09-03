@@ -1,5 +1,51 @@
 # gt-sanity
 
+## 4.0.11
+
+### Patch Changes
+
+- [#2237](https://github.com/generaltranslation/gt/pull/2237) [`c778ee5`](https://github.com/generaltranslation/gt/commit/c778ee5de6323afc31cc6ce75bde59072281e5e3) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Recreate a translation when `translation.metadata` points at a deleted document.
+
+  References in `translation.metadata` are weak, so deleting a translated
+  document leaves its entry behind. Importing a translation for that locale then
+  resolved the stale reference to nothing and threw `Cannot read properties of
+undefined (reading '_id')`, surfacing as "could not be imported. This document
+  was not changed." on every retry, with nothing to repair the metadata. The
+  import now falls through to creating a fresh translated document, which
+  replaces the stale entry.
+
+  `findLatestDraft` is also typed `SanityDocument | undefined` to match what it
+  actually returns, and a missing source document now throws a readable
+  diagnostic instead of a `TypeError`.
+
+## 4.0.10
+
+### Patch Changes
+
+- Updated dependencies [[`de66e5f`](https://github.com/generaltranslation/gt/commit/de66e5f41e05f22d51661faacae78b4fb3d86035)]:
+  - generaltranslation@9.1.13
+
+## 4.0.9
+
+### Patch Changes
+
+- Updated dependencies [[`44aabc7`](https://github.com/generaltranslation/gt/commit/44aabc734d99fab4fcab7faedc84d20b5772bde3)]:
+  - generaltranslation@9.1.12
+
+## 4.0.8
+
+### Patch Changes
+
+- Updated dependencies [[`091c964`](https://github.com/generaltranslation/gt/commit/091c964b45eba191d6e35bc1cdb93cc3683a3f71), [`b8a9679`](https://github.com/generaltranslation/gt/commit/b8a96797860f2bb7b12f3c307d47c9b1fead2096)]:
+  - generaltranslation@9.1.11
+
+## 4.0.7
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.1.10
+
 ## 4.0.6
 
 ### Patch Changes

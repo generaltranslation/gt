@@ -121,19 +121,23 @@ export async function postProcessTranslations(
     }
   }
 
+  // Localize static imports (import Snippet from /snippets/file.mdx -> import Snippet from /snippets/[locale]/file.mdx)
+  if (settings.options?.experimentalLocalizeStaticImports) {
+    await localizeStaticImports(settings, postProcessIncludes);
+  }
+
   const shouldProcessAnchorIds =
     settings.options?.experimentalLocalizeStaticUrls ||
     settings.options?.experimentalAddHeaderAnchorIds;
 
-  // Add explicit anchor IDs to translated MDX/MD files to preserve navigation
-  // Uses inline {#id} format by default, or div wrapping if experimentalAddHeaderAnchorIds is 'mintlify'
+  // Add explicit anchor IDs to translated MDX/MD files to preserve navigation.
+  // Uses inline {#id} format by default, or div wrapping if experimentalAddHeaderAnchorIds is 'mintlify'.
+  //
+  // Runs last of the md/mdx passes: the others re-stringify the document, which
+  // re-indents headings nested in JSX and would otherwise move them out from
+  // under the anchors placed here.
   if (shouldProcessAnchorIds) {
     await processAnchorIds(settings, postProcessIncludes);
-  }
-
-  // Localize static imports (import Snippet from /snippets/file.mdx -> import Snippet from /snippets/[locale]/file.mdx)
-  if (settings.options?.experimentalLocalizeStaticImports) {
-    await localizeStaticImports(settings, postProcessIncludes);
   }
 
   // Flatten json files into a single file
