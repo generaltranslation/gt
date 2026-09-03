@@ -256,12 +256,47 @@ describe('readFileContent / encodeFileContent', () => {
     expect(encodeFileContent('{"a":"c"}', 'JSON', source)).toBe('{"a":"c"}');
   });
 
-  it('writes UTF-8 when the source file is gone', () => {
+  it('falls back to the existing translation when the source file is gone', () => {
+    // A source moved or deleted after upload still downloads, because the
+    // server tracks it by the name it was uploaded under. The file being
+    // overwritten is then the only remaining record of the encoding.
+    const existing = write(
+      'fallback.strings',
+      encodeFileText(STRINGS_BODY, 'utf16be')
+    );
+    const written = encodeFileContent(
+      STRINGS_BODY,
+      'DOT_STRINGS',
+      path.join(dir, 'nope.strings'),
+      existing
+    );
+    expect(Buffer.isBuffer(written)).toBe(true);
+    expect(
+      (written as Buffer).equals(encodeFileText(STRINGS_BODY, 'utf16be'))
+    ).toBe(true);
+  });
+
+  it('prefers the source encoding over the file being overwritten', () => {
+    const source = write(
+      'pref-src.strings',
+      encodeFileText(STRINGS_BODY, 'utf8')
+    );
+    const existing = write(
+      'pref-out.strings',
+      encodeFileText(STRINGS_BODY, 'utf16le')
+    );
+    expect(
+      encodeFileContent(STRINGS_BODY, 'DOT_STRINGS', source, existing)
+    ).toBe(STRINGS_BODY);
+  });
+
+  it('writes UTF-8 when neither the source nor a previous translation is there', () => {
     expect(
       encodeFileContent(
         STRINGS_BODY,
         'DOT_STRINGS',
-        path.join(dir, 'nope.strings')
+        path.join(dir, 'nope.strings'),
+        path.join(dir, 'also-nope.strings')
       )
     ).toBe(STRINGS_BODY);
   });

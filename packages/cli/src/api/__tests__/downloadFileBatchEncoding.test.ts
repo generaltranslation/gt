@@ -82,17 +82,28 @@ describe('downloadFileBatch - source file encodings', () => {
     translatedBody,
     fileFormat,
     extension,
+    deleteSource,
+    existingOutput,
   }: {
     encoding: keyof typeof ENCODERS;
     sourceBody: string;
     translatedBody: string;
     fileFormat: string;
     extension: string;
+    /** Deletes the source after it has been written, leaving only the output. */
+    deleteSource?: boolean;
+    /** Seeds a previously downloaded translation at the output path. */
+    existingOutput?: keyof typeof ENCODERS;
   }): Promise<Buffer> {
     const inputPath = path.join(tempDir, `en.lproj/Localizable.${extension}`);
     const outputPath = path.join(tempDir, `fr.lproj/Localizable.${extension}`);
     fs.mkdirSync(path.dirname(inputPath), { recursive: true });
     fs.writeFileSync(inputPath, ENCODERS[encoding](sourceBody));
+    if (existingOutput) {
+      fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+      fs.writeFileSync(outputPath, ENCODERS[existingOutput](translatedBody));
+    }
+    if (deleteSource) fs.rmSync(inputPath);
 
     const key = 'branch1:file1:version1:fr';
     const fileTracker = {
@@ -182,6 +193,38 @@ describe('downloadFileBatch - source file encodings', () => {
       );
     }
   );
+
+  it('keeps the previous encoding when the source file has gone missing', async () => {
+    // Downloads are driven by the names the server tracks, so a source moved
+    // or deleted since upload still arrives. Re-encoding to UTF-8 would leave
+    // this .stringsdict declaring UTF-16 over unmarked UTF-8 bytes, which
+    // Foundation rejects, and would rewrite every UTF-16 file in the process.
+    const written = await downloadOne({
+      encoding: 'utf16le',
+      sourceBody: STRINGSDICT_TRANSLATED,
+      translatedBody: STRINGSDICT_TRANSLATED,
+      fileFormat: 'DOT_STRINGSDICT',
+      extension: 'stringsdict',
+      deleteSource: true,
+      existingOutput: 'utf16le',
+    });
+
+    expect(written.equals(ENCODERS.utf16le(STRINGSDICT_TRANSLATED))).toBe(true);
+  });
+
+  it('writes UTF-8 when neither the source nor a previous translation exists', async () => {
+    const written = await downloadOne({
+      encoding: 'utf16le',
+      sourceBody: SOURCE_BODY,
+      translatedBody: TRANSLATED_BODY,
+      fileFormat: 'DOT_STRINGS',
+      extension: 'strings',
+      deleteSource: true,
+    });
+
+    // Nothing on disk records an encoding, so UTF-8 is all that is left.
+    expect(written.equals(Buffer.from(TRANSLATED_BODY, 'utf8'))).toBe(true);
+  });
 
   it('leaves a byte-order-mark-less UTF-8 source byte-order-mark-less', async () => {
     const written = await downloadOne({

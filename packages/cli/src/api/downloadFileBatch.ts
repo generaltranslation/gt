@@ -429,7 +429,7 @@ export async function downloadFileBatch(
         // Write the file to disk
         await fs.promises.writeFile(
           outputPath,
-          encodeFileContent(data, file.fileFormat, inputPath)
+          encodeFileContent(data, file.fileFormat, inputPath, outputPath)
         );
         // Track as downloaded with metadata for downstream postprocessing
         recordDownloaded(outputPath, {

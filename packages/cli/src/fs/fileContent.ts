@@ -67,25 +67,39 @@ export function readFileContent(
  * here rather than carried from ingress: the download that writes this file is
  * usually a different process run from the upload that read it, so there is no
  * value to carry. Nothing has to be persisted in the lockfile or on the server.
+ *
+ * A source moved or deleted since it was uploaded leaves the translation
+ * already on disk as the only remaining record, so `outputPath` is read next.
+ * Defaulting straight to UTF-8 would rewrite every UTF-16 file and, for
+ * `.stringsdict`, strand a UTF-16 XML declaration over unmarked UTF-8 bytes —
+ * the one combination Foundation rejects.
  * @param {string} content - The translated content, as UTF-8 text.
  * @param {FileFormat} fileFormat - The format being written.
  * @param {string} sourcePath - The source file this translation came from.
+ * @param {string} [outputPath] - Where the translation is about to be written.
  * @returns The value to hand to `writeFile`.
  */
 export function encodeFileContent(
   content: string,
   fileFormat: FileFormat | undefined,
-  sourcePath: string
+  sourcePath: string,
+  outputPath?: string
 ): string | Buffer {
   if (!fileFormat || !BYTE_ORDER_MARK_FORMATS.has(fileFormat)) return content;
-  const encoding = readFileEncoding(sourcePath);
+  const encoding =
+    readFileEncoding(sourcePath) ??
+    (outputPath ? readFileEncoding(outputPath) : undefined) ??
+    'utf8';
   return encoding === 'utf8' ? content : encodeFileText(content, encoding);
 }
 
-/** Reads a file's byte order mark without reading the rest of it. */
-function readFileEncoding(filePath: string): FileEncoding {
+/**
+ * Reads a file's byte order mark without reading the rest of it. Undefined
+ * separates "no such file" from a file that is genuinely unmarked UTF-8.
+ */
+function readFileEncoding(filePath: string): FileEncoding | undefined {
   if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
-    return 'utf8';
+    return undefined;
   }
   const handle = fs.openSync(filePath, 'r');
   try {
