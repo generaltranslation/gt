@@ -4,6 +4,7 @@ import { resolveFiles } from '../../fs/config/parseFilesConfig';
 import { determineLibrary } from '../../fs/determineFramework/index.js';
 import { logger } from '../../console/logger.js';
 import { resolveConfig } from '../resolveConfig.js';
+import { getValidAccessToken, refreshOAuthTokens } from '../../auth/oauth.js';
 
 // Mock resolveFiles
 vi.mock('../../fs/config/parseFilesConfig', () => ({
@@ -66,6 +67,11 @@ vi.mock('../../utils/gt.js', () => ({
   },
 }));
 
+vi.mock('../../auth/oauth.js', () => ({
+  getValidAccessToken: vi.fn().mockResolvedValue(undefined),
+  refreshOAuthTokens: vi.fn(),
+}));
+
 vi.mock('../optionPresets.js', () => ({
   generatePreset: vi.fn(),
 }));
@@ -98,6 +104,7 @@ describe('generateSettings - composite patterns', () => {
       library: 'base',
       additionalModules: [],
     });
+    vi.mocked(getValidAccessToken).mockResolvedValue(undefined);
   });
 
   it('should extract composite patterns from jsonSchema options and pass to resolveFiles', async () => {
@@ -321,6 +328,34 @@ describe('generateSettings - composite patterns', () => {
       ['json-composite-1'],
       false
     );
+  });
+
+  it('configures a refreshable user token only when no explicit API key exists', async () => {
+    vi.mocked(getValidAccessToken).mockResolvedValue('user-access-token');
+    vi.mocked(refreshOAuthTokens).mockResolvedValue({
+      accessToken: 'refreshed-token',
+      expiresAt: Date.now() + 3_600_000,
+      refreshToken: 'refresh-token',
+      scope: 'api:read api:write',
+      tokenType: 'Bearer',
+    });
+
+    const userSettings = await generateSettings({}, '/test/cwd');
+    const keySettings = await generateSettings(
+      { apiKey: 'explicit-api-key' },
+      '/test/cwd'
+    );
+
+    expect(userSettings.apiKey).toBeUndefined();
+    expect(await userSettings.userTokenProvider?.getAccessToken()).toBe(
+      'user-access-token'
+    );
+    expect(await userSettings.userTokenProvider?.refreshAccessToken()).toBe(
+      'refreshed-token'
+    );
+    expect(keySettings.apiKey).toBe('explicit-api-key');
+    expect(keySettings.userTokenProvider).toBeUndefined();
+    expect(getValidAccessToken).toHaveBeenCalledTimes(2);
   });
 
   it('should not call resolveFiles when files are not provided', async () => {

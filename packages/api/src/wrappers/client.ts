@@ -10,6 +10,11 @@ export type ApiVersion = NonNullable<
 
 export const API_VERSION: ApiVersion = '2026-03-06.v1';
 
+export type UserTokenProvider = {
+  getAccessToken: () => Promise<string | undefined> | string | undefined;
+  refreshAccessToken: () => Promise<string | undefined>;
+};
+
 export type ApiClientConfig = {
   apiKey?: string;
   apiVersion?: ApiVersion;
@@ -18,7 +23,30 @@ export type ApiClientConfig = {
   projectId?: string;
   retryPolicy?: RetryPolicy;
   timeoutMs?: number;
+  userTokenProvider?: UserTokenProvider;
 };
+
+function createUserTokenFetch(
+  fetchImplementation: typeof fetch,
+  provider: UserTokenProvider
+): typeof fetch {
+  return async (input, init) => {
+    const request = new Request(input, init);
+    const accessToken = await provider.getAccessToken();
+    if (accessToken && !request.headers.has('Authorization')) {
+      request.headers.set('Authorization', `Bearer ${accessToken}`);
+    }
+
+    const response = await fetchImplementation(request.clone());
+    if (response.status !== 401) return response;
+
+    const refreshedAccessToken = await provider.refreshAccessToken();
+    if (!refreshedAccessToken) return response;
+    await response.body?.cancel();
+    request.headers.set('Authorization', `Bearer ${refreshedAccessToken}`);
+    return fetchImplementation(request);
+  };
+}
 
 export function createApiClient(config: ApiClientConfig): Client {
   const headers = new Headers({
@@ -27,16 +55,21 @@ export function createApiClient(config: ApiClientConfig): Client {
   if (config.apiKey) headers.set('Authorization', `Bearer ${config.apiKey}`);
   if (config.projectId) headers.set('gt-project-id', config.projectId);
 
+  const transportFetch = createRetryingFetch({
+    // Timeout applies per attempt, inside the retry loop.
+    fetch: createTimeoutFetch({
+      fetch: config.fetch,
+      timeoutMs: config.timeoutMs,
+    }),
+    retryPolicy: config.retryPolicy,
+  });
+
   return createGeneratedClient({
     baseUrl: config.baseUrl,
-    fetch: createRetryingFetch({
-      // Timeout applies per attempt, inside the retry loop.
-      fetch: createTimeoutFetch({
-        fetch: config.fetch,
-        timeoutMs: config.timeoutMs,
-      }),
-      retryPolicy: config.retryPolicy,
-    }),
+    fetch:
+      config.apiKey || !config.userTokenProvider
+        ? transportFetch
+        : createUserTokenFetch(transportFetch, config.userTokenProvider),
     headers,
   });
 }

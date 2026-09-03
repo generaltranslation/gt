@@ -18,6 +18,7 @@ import {
   GT_DASHBOARD_URL,
 } from '../utils/constants.js';
 import { resolveProjectId } from '../fs/utils.js';
+import { getValidAccessToken, refreshOAuthTokens } from '../auth/oauth.js';
 import crypto from 'node:crypto';
 import { execSync } from 'node:child_process';
 import path from 'node:path';
@@ -204,8 +205,14 @@ export async function generateSettings(
     (locale) => locale !== mergedOptions.defaultLocale
   );
 
-  // Add apiKey if not provided
+  // Explicit keys remain the highest-precedence credential for automation.
   mergedOptions.apiKey = mergedOptions.apiKey || process.env.GT_API_KEY;
+  if (!mergedOptions.apiKey && (await getValidAccessToken())) {
+    mergedOptions.userTokenProvider = {
+      getAccessToken: getValidAccessToken,
+      refreshAccessToken: async () => (await refreshOAuthTokens()).accessToken,
+    };
+  }
 
   // Add projectId if not provided
   mergedOptions.projectId = mergedOptions.projectId || resolveProjectId();
@@ -423,6 +430,7 @@ export async function generateSettings(
   gt.setConfig({
     projectId: mergedOptions.projectId,
     apiKey: mergedOptions.apiKey,
+    userTokenProvider: mergedOptions.userTokenProvider,
     baseUrl: mergedOptions.baseUrl,
     sourceLocale: mergedOptions.defaultLocale,
     customMapping: mergedOptions.customMapping,
