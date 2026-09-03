@@ -17,7 +17,7 @@ import {
   TranslationLocale,
   TranslationFunctionContext,
 } from '../types';
-import { gt, overrideConfig, pluginConfig } from '../adapter/core';
+import { api, overrideConfig, pluginConfig } from '../adapter/core';
 import { getTranslationStrategy } from '../translation/strategy';
 import { uploadFiles } from '../translation/uploadFiles';
 import { initProject } from '../translation/initProject';
@@ -896,7 +896,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
   const handleGetBranchId = useCallback(
     async (secrets: Secrets) => {
       overrideConfig(secrets);
-      const defaultBranch = await gt.createBranch({
+      const defaultBranch = await api.createBranch({
         branchName: 'main',
         defaultBranch: true,
       });

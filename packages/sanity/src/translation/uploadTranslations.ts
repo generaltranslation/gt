@@ -1,5 +1,5 @@
 import type { GTFile, Secrets } from '../types';
-import { gt, overrideConfig } from '../adapter/core';
+import { api, gt, overrideConfig } from '../adapter/core';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import type { SerializedDocument } from '../serialization/types';
 import type { ExistingTranslation } from './collectExistingTranslations';
@@ -20,7 +20,7 @@ export async function uploadTranslations(
     translations: ExistingTranslation[];
   }[],
   secrets: Secrets | null
-): Promise<Awaited<ReturnType<typeof gt.uploadTranslations>> | null> {
+): Promise<Awaited<ReturnType<typeof api.uploadTranslations>> | null> {
   const withTranslations = documents.filter(
     (document) => document.translations.length > 0
   );
@@ -30,7 +30,7 @@ export async function uploadTranslations(
 
   overrideConfig(secrets);
   const sourceLocale = gt.sourceLocale || libraryDefaultLocale;
-  return await gt.uploadTranslations(
+  return await api.uploadTranslations(
     withTranslations.map(({ info, serializedDocument, translations }) => ({
       source: {
         content: serializedDocument.content,

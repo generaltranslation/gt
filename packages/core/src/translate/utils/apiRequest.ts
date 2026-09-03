@@ -103,9 +103,10 @@ export async function apiRequest<T>(
   }
 ): Promise<T> {
   const timeout = options?.timeout ?? defaultTimeout;
+  const retryPolicy = options?.retryPolicy ?? 'exponential';
+
   const url = `${config.baseUrl || defaultBaseUrl}${endpoint}`;
   const method = options?.method ?? 'POST';
-  const retryPolicy = options?.retryPolicy ?? 'exponential';
   const maxRetries = retryPolicy === 'none' ? 0 : MAX_RETRIES;
 
   const requestInit: RequestInit = {
