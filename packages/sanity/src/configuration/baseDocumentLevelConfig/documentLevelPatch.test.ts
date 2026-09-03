@@ -165,4 +165,105 @@ describe('documentLevelPatch', () => {
       expect.any(Function)
     );
   });
+  test('recreates the translation when metadata points at a deleted document', async () => {
+    vi.spyOn(pluginConfig, 'getSourceLocale').mockReturnValue('en');
+    vi.spyOn(pluginConfig, 'getIgnoreFields').mockReturnValue([]);
+    vi.spyOn(pluginConfig, 'getSkipFields').mockReturnValue([]);
+    vi.spyOn(pluginConfig, 'getDedupeFields').mockReturnValue([]);
+    vi.spyOn(pluginConfig, 'getSingletons').mockReturnValue([]);
+
+    const sourceDoc = {
+      _id: 'article-1',
+      _type: 'article',
+      _rev: 'source-rev',
+      title: 'Hello',
+    };
+    /*
+     * References in `translation.metadata` are weak, so deleting a translated
+     * document leaves its entry behind. The de-DE entry below points at a
+     * document that no longer resolves.
+     */
+    const metadata = {
+      _id: 'translation.metadata.article-1',
+      _type: 'translation.metadata',
+      translations: [
+        { language: 'en', value: { _type: 'reference', _ref: 'article-1' } },
+        {
+          language: 'de-DE',
+          value: { _type: 'reference', _ref: 'article-1-de' },
+        },
+      ],
+    };
+
+    const fetch = vi.fn(async (query: string, params?: { id?: string }) => {
+      if (query.includes('translation.metadata')) return metadata;
+      if (params?.id === 'article-1') return [sourceDoc];
+      return [];
+    });
+
+    const commit = vi.fn().mockResolvedValue({});
+    const patch = vi.fn().mockReturnValue({ commit });
+    const transactionPatch = vi.fn().mockReturnValue({ commit });
+    const create = vi
+      .fn()
+      .mockResolvedValue({ _id: 'drafts.article-1-de-new', _type: 'article' });
+
+    const client = {
+      fetch,
+      patch,
+      create,
+      transaction: () => ({ patch: transactionPatch, commit }),
+    } as unknown as SanityClient;
+
+    await documentLevelPatch(
+      { documentId: 'article-1' },
+      {
+        _id: 'article-1',
+        _type: 'article',
+        _rev: 'translated-rev',
+        _createdAt: '2024-01-01T00:00:00Z',
+        _updatedAt: '2024-01-01T00:00:00Z',
+        title: 'Hallo',
+      } as SanityDocument,
+      'de-DE',
+      client
+    );
+
+    // A fresh translated document replaces the dangling reference rather than
+    // the import throwing on the missing document.
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(create.mock.calls[0][0]).toMatchObject({
+      _id: 'drafts.',
+      _type: 'article',
+      language: 'de-DE',
+    });
+    expect(transactionPatch).toHaveBeenCalledWith(
+      'translation.metadata.article-1',
+      expect.any(Function)
+    );
+  });
+
+  test('throws a readable error when the source document is gone', async () => {
+    vi.spyOn(pluginConfig, 'getSourceLocale').mockReturnValue('en');
+
+    const client = {
+      fetch: vi.fn().mockResolvedValue([]),
+    } as unknown as SanityClient;
+
+    await expect(
+      documentLevelPatch(
+        { documentId: 'article-gone' },
+        {
+          _id: 'article-gone',
+          _type: 'article',
+          _rev: 'rev',
+          _createdAt: '2024-01-01T00:00:00Z',
+          _updatedAt: '2024-01-01T00:00:00Z',
+          title: 'Gone',
+        } as SanityDocument,
+        'de-DE',
+        client
+      )
+    ).rejects.toThrow(/Could not find the document to translate/);
+  });
 });
