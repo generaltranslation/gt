@@ -1,5 +1,98 @@
 # gtx-cli
 
+## 2.19.0
+
+### Minor Changes
+
+- [#2228](https://github.com/generaltranslation/gt/pull/2228) [`de66e5f`](https://github.com/generaltranslation/gt/commit/de66e5f41e05f22d51661faacae78b4fb3d86035) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add Android `strings.xml` support to the CLI. Configure an `androidStrings` entry under `files` in `gt.config.json` to upload Android string resources and download the translated per-locale files.
+
+  Translations are written to the resource directory the platform expects, so `fr-CA` becomes `values-fr-rCA` and `zh-Hans` becomes `values-b+zh+Hans`. Android reads the locale out of the directory name and fails the build on one it cannot parse.
+
+### Patch Changes
+
+- Updated dependencies [[`de66e5f`](https://github.com/generaltranslation/gt/commit/de66e5f41e05f22d51661faacae78b4fb3d86035)]:
+  - generaltranslation@9.1.13
+  - @generaltranslation/python-extractor@0.2.46
+  - @generaltranslation/supported-locales@2.1.26
+  - @generaltranslation/vue-extractor@0.1.6
+
+## 2.18.1
+
+### Patch Changes
+
+- [#2226](https://github.com/generaltranslation/gt/pull/2226) [`44aabc7`](https://github.com/generaltranslation/gt/commit/44aabc734d99fab4fcab7faedc84d20b5772bde3) Thanks [@eoinest](https://github.com/eoinest)! - Rename the `.strings` and `.stringsdict` file formats. The API format names become `DOT_STRINGS` and `DOT_STRINGSDICT`, and the `gt.config.json` keys under `files` become `dotStrings` and `dotStringsdict`.
+
+  **This is a breaking configuration change.** A `gt.config.json` that still uses `files.strings` or `files.stringsdict` will silently stop matching those files, because the old keys are no longer recognised file types. Rename them to `files.dotStrings` and `files.dotStringsdict`. The file extensions on disk are unchanged, and translated output is still written as `.strings` and `.stringsdict`.
+
+  The old names identified a vendor rather than a file. Apple ships four string formats — `.strings`, `.stringsdict`, `.xcstrings` and `.plist` — so `APPLE_STRINGS` never said which one it meant. The new names identify the extension itself, the way developers say it out loud.
+
+- Updated dependencies [[`44aabc7`](https://github.com/generaltranslation/gt/commit/44aabc734d99fab4fcab7faedc84d20b5772bde3)]:
+  - generaltranslation@9.1.12
+  - @generaltranslation/python-extractor@0.2.45
+  - @generaltranslation/supported-locales@2.1.25
+  - @generaltranslation/vue-extractor@0.1.5
+
+## 2.18.0
+
+### Minor Changes
+
+- [#2222](https://github.com/generaltranslation/gt/pull/2222) [`091c964`](https://github.com/generaltranslation/gt/commit/091c964b45eba191d6e35bc1cdb93cc3683a3f71) Thanks [@eoinest](https://github.com/eoinest)! - Add Apple `.strings` support to the CLI. Configure a `strings` entry under `files` in `gt.config.json` to upload `.strings` sources and download the translated per-locale files. `.strings` files written as UTF-16 by older versions of Xcode upload correctly: their bytes are sent unmodified so the API can read the byte order mark.
+
+  Fix `save-local` for formats whose content travels base64. It compared the local file against the still-encoded server copy, so a Lottie translation reported an edit on every run. Unchanged files are now recognised, and an edited file whose bytes are not valid UTF-8 is reported by name rather than submitted as unreadable text.
+
+- [#2222](https://github.com/generaltranslation/gt/pull/2222) [`b8a9679`](https://github.com/generaltranslation/gt/commit/b8a96797860f2bb7b12f3c307d47c9b1fead2096) Thanks [@eoinest](https://github.com/eoinest)! - Add Apple `.stringsdict` support to the CLI. Configure a `stringsdict` entry under `files` in `gt.config.json` to upload `.stringsdict` plural rule sources and download the translated per-locale files.
+
+### Patch Changes
+
+- Updated dependencies [[`091c964`](https://github.com/generaltranslation/gt/commit/091c964b45eba191d6e35bc1cdb93cc3683a3f71), [`b8a9679`](https://github.com/generaltranslation/gt/commit/b8a96797860f2bb7b12f3c307d47c9b1fead2096)]:
+  - generaltranslation@9.1.11
+  - @generaltranslation/python-extractor@0.2.44
+  - @generaltranslation/supported-locales@2.1.24
+  - @generaltranslation/vue-extractor@0.1.4
+
+## 2.17.3
+
+### Patch Changes
+
+- [#2221](https://github.com/generaltranslation/gt/pull/2221) [`cadd04a`](https://github.com/generaltranslation/gt/commit/cadd04a07d73fd6090c3f72a199f03e443b5db10) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Fix custom heading IDs (`## Heading {#id}`) being dropped or misapplied in translated MD/MDX.
+
+  `{#id}` is not valid MDX — remark-mdx hands it to acorn as an expression — so files
+  using Mintlify's custom heading ID syntax failed validation and were skipped
+  entirely. Parsing now tolerates the syntax, so `skipFileValidation` is no longer
+  needed to translate those files.
+
+  Anchor IDs are also applied far more reliably:
+  - Headings are located by parser line positions instead of by matching heading
+    text, so indentation (headings nested in `<Tabs>`, `<Steps>`, `<Accordion>`),
+    inline JSX, escaped characters and repeated heading text no longer cause a
+    heading to be skipped or an ID to land on the wrong heading.
+  - Repeated headings now get unique IDs (`slug`, `slug-2`, `slug-3`) matching how
+    Mintlify disambiguates them, instead of emitting the same ID several times.
+  - Source and translated files are now read with the same extractor. Previously a
+    source using `{#id}` fell back to line scanning while its translation used the
+    AST, so the two heading lists could disagree and shift every ID after the first
+    nested heading.
+  - In `experimentalAddHeaderAnchorIds: 'mintlify'` mode, an author-written `{#id}`
+    is carried into the translation in Mintlify's native inline syntax rather than
+    being replaced by a `<div id>` wrapper. Wrappers are still used for IDs the CLI
+    derives from heading text.
+  - Applying an anchor no longer re-stringifies the whole document, so it no longer
+    HTML-escapes unrelated heading text or reformats the file.
+  - An existing wrapper is recognized from the parsed tree rather than by matching
+    the tag's text, so extra attributes, single quotes, a multi-line tag or a
+    non-`div` element no longer cause a second wrapper to be nested inside the first.
+  - An inline anchor is inserted before a heading's closing `##` sequence instead of
+    after it, which previously turned the closing hashes into visible heading text.
+
+  Anchor processing now runs after the other MD/MDX post-processing passes, which
+  re-indent headings nested in JSX when they stringify.
+
+- Updated dependencies []:
+  - generaltranslation@9.1.10
+  - @generaltranslation/python-extractor@0.2.43
+  - @generaltranslation/supported-locales@2.1.23
+  - @generaltranslation/vue-extractor@0.1.3
+
 ## 2.17.2
 
 ### Patch Changes

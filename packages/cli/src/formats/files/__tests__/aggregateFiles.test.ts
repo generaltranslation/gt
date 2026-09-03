@@ -1,12 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { aggregateFiles } from '../aggregateFiles.js';
 import { logger } from '../../../console/logger.js';
-import { readFile, getRelative } from '../../../fs/findFilepath.js';
+import {
+  readFile,
+  readBinaryFileBase64,
+  getRelative,
+} from '../../../fs/findFilepath.js';
 import { parseJson } from '../../json/parseJson.js';
 import parseYaml from '../../yaml/parseYaml.js';
 import sanitizeFileContent from '../../../utils/sanitizeFileContent.js';
 import { determineLibrary } from '../../../fs/determineFramework/index.js';
 import { isValidMdx } from '../../../utils/validateMdx.js';
+import { hashStringSync, hashVersionId } from '../../../utils/hash.js';
 import type { Settings } from '../../../types/index.js';
 
 const aggregateTestFiles = (settings: Partial<Settings>) =>
@@ -27,6 +32,7 @@ vi.mock('../../../utils/validateMdx.js');
 
 const mockLogWarning = vi.mocked(logger.warn);
 const mockReadFile = vi.mocked(readFile);
+const mockReadBinaryFileBase64 = vi.mocked(readBinaryFileBase64);
 const mockGetRelative = vi.mocked(getRelative);
 const mockParseJson = vi.mocked(parseJson);
 const mockParseYaml = vi.mocked(parseYaml);
@@ -579,6 +585,233 @@ describe('aggregateFiles - Empty File Handling', () => {
       expect(mockLogWarning).not.toHaveBeenCalled();
       expect(result).toHaveLength(1);
       expect(result[0].fileName).toBe('invalid.json');
+    });
+  });
+
+  describe('.strings files', () => {
+    // The escapes below are load-bearing: they must reach the API verbatim.
+    const stringsContent =
+      '/* Greeting */\n"hello" = "Line1\\nLine2 \\"quoted\\" 100%%";\n';
+    const stringsBase64 = Buffer.from(stringsContent, 'utf8').toString(
+      'base64'
+    );
+
+    beforeEach(() => {
+      // Make any trip through the markdown-oriented sanitizer detectable: it
+      // would strip the backslash escapes the assertions below depend on.
+      mockSanitizeFileContent.mockImplementation((content) =>
+        content.replace(/\\/g, '')
+      );
+    });
+
+    it('should upload .strings files verbatim with the DOT_STRINGS format', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            dotStrings: ['/full/path/en.lproj/Localizable.strings'],
+          },
+          placeholderPaths: {},
+        },
+        options: {},
+        defaultLocale: 'en',
+      };
+
+      mockReadBinaryFileBase64.mockReturnValueOnce(stringsBase64);
+
+      const { files: result } = await aggregateTestFiles(settings);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        fileName: 'en.lproj/Localizable.strings',
+        fileFormat: 'DOT_STRINGS',
+        locale: 'en',
+      });
+      expect(result[0].content).toBe(stringsBase64);
+      expect(Buffer.from(result[0].content, 'base64').toString('utf8')).toBe(
+        stringsContent
+      );
+      expect(result[0].fileId).toBe(
+        hashStringSync('en.lproj/Localizable.strings')
+      );
+      expect(result[0].versionId).toBe(hashVersionId(stringsBase64, false));
+    });
+
+    it('should skip empty .strings files and log a warning', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            dotStrings: [
+              '/full/path/empty.strings',
+              '/full/path/valid.strings',
+            ],
+          },
+          placeholderPaths: {},
+        },
+        options: {},
+        defaultLocale: 'en',
+      };
+
+      mockReadBinaryFileBase64
+        .mockReturnValueOnce(
+          Buffer.from('   \n\t  ', 'utf8').toString('base64')
+        ) // whitespace only
+        .mockReturnValueOnce(stringsBase64); // valid file
+
+      const { files: result } = await aggregateTestFiles(settings);
+
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        'Skipping empty.strings: File is empty'
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0].fileName).toBe('valid.strings');
+    });
+  });
+
+  describe('.stringsdict files', () => {
+    // The escapes below are load-bearing: they must reach the API verbatim.
+    const stringsdictContent =
+      '<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0">\n<dict>\n  <key>%d file(s) \\"quoted\\"</key>\n</dict>\n</plist>\n';
+
+    beforeEach(() => {
+      // Make any trip through the markdown-oriented sanitizer detectable: it
+      // would strip the backslash escapes the assertions below depend on.
+      mockSanitizeFileContent.mockImplementation((content) =>
+        content.replace(/\\/g, '')
+      );
+    });
+
+    it('should upload .stringsdict files verbatim with the DOT_STRINGSDICT format', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            dotStringsdict: ['/full/path/en.lproj/Localizable.stringsdict'],
+          },
+          placeholderPaths: {},
+        },
+        options: {},
+        defaultLocale: 'en',
+      };
+
+      mockReadFile.mockReturnValueOnce(stringsdictContent);
+
+      const { files: result } = await aggregateTestFiles(settings);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        fileName: 'en.lproj/Localizable.stringsdict',
+        fileFormat: 'DOT_STRINGSDICT',
+        locale: 'en',
+      });
+      expect(result[0].content).toBe(stringsdictContent);
+      expect(result[0].fileId).toBe(
+        hashStringSync('en.lproj/Localizable.stringsdict')
+      );
+      expect(result[0].versionId).toBe(
+        hashVersionId(stringsdictContent, false)
+      );
+    });
+
+    it('should skip empty .stringsdict files and log a warning', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            dotStringsdict: [
+              '/full/path/empty.stringsdict',
+              '/full/path/valid.stringsdict',
+            ],
+          },
+          placeholderPaths: {},
+        },
+        options: {},
+        defaultLocale: 'en',
+      };
+
+      mockReadFile
+        .mockReturnValueOnce('   \n\t  ') // whitespace only
+        .mockReturnValueOnce(stringsdictContent); // valid file
+
+      const { files: result } = await aggregateTestFiles(settings);
+
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        'Skipping empty.stringsdict: File is empty'
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0].fileName).toBe('valid.stringsdict');
+    });
+  });
+
+  describe('Android strings.xml files', () => {
+    // The escapes below are load-bearing: AAPT requires \' and \", and the
+    // API relies on receiving them exactly as authored.
+    const androidStringsContent =
+      '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n  <string name="greeting">You can\\\'t say \\\"no\\\"</string>\n</resources>\n';
+
+    beforeEach(() => {
+      // Make any trip through the markdown-oriented sanitizer detectable: it
+      // would strip the backslash escapes the assertions below depend on.
+      mockSanitizeFileContent.mockImplementation((content) =>
+        content.replace(/\\/g, '')
+      );
+    });
+
+    it('should upload strings.xml files verbatim with the ANDROID_STRINGS format', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            androidStrings: ['/full/path/res/values/strings.xml'],
+          },
+          placeholderPaths: {},
+        },
+        options: {},
+        defaultLocale: 'en',
+      };
+
+      mockReadFile.mockReturnValueOnce(androidStringsContent);
+
+      const { files: result } = await aggregateTestFiles(settings);
+
+      // Exactly one entry: the generic preprocessing loop must skip this file
+      // type, or it uploads a second copy under the bogus format
+      // `fileType.toUpperCase()`.
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        fileName: 'res/values/strings.xml',
+        fileFormat: 'ANDROID_STRINGS',
+        locale: 'en',
+      });
+      expect(result[0].content).toBe(androidStringsContent);
+      expect(result[0].fileId).toBe(hashStringSync('res/values/strings.xml'));
+      expect(result[0].versionId).toBe(
+        hashVersionId(androidStringsContent, false)
+      );
+    });
+
+    it('should skip empty strings.xml files and log a warning', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            androidStrings: [
+              '/full/path/empty.xml',
+              '/full/path/res/values/strings.xml',
+            ],
+          },
+          placeholderPaths: {},
+        },
+        options: {},
+        defaultLocale: 'en',
+      };
+
+      mockReadFile
+        .mockReturnValueOnce('   \n\t  ') // whitespace only
+        .mockReturnValueOnce(androidStringsContent); // valid file
+
+      const { files: result } = await aggregateTestFiles(settings);
+
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        'Skipping empty.xml: File is empty'
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0].fileName).toBe('res/values/strings.xml');
     });
   });
 
