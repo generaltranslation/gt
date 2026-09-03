@@ -445,8 +445,8 @@ export const lottieExpressionsError = (files: string[]): string =>
       '\n'
     )}\nRe-export the animation with expressions baked into keyframes (or removed), then try again.`;
 
-export const appleEncodingError = (file: string, error: unknown): string =>
-  `${file} could not be read because ${error instanceof Error ? error.message : String(error)}.\nRe-save it as UTF-8, or as UTF-16 with a complete byte order mark, then try again.`;
+export const fileEncodingError = (file: string, error: unknown): string =>
+  `${file} could not be read because ${error instanceof Error ? error.message : String(error)}, then try again.`;
 
 export const withOriginalError = (message: string, error: unknown): string =>
   error != null ? `${message} Original error: ${String(error)}` : message;

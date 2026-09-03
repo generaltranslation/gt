@@ -4,8 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { isBinaryFileFormat } from 'generaltranslation/types';
 import { aggregateFiles } from '../aggregateFiles.js';
-import { encodeAppleText } from '../../../fs/appleEncoding.js';
-import { readAppleTextEncoding } from '../../../fs/findFilepath.js';
+import { encodeFileContent } from '../../../fs/fileContent.js';
 import type { Settings } from '../../../types/index.js';
 
 // Exercises the real filesystem helpers rather than mocks: the bug this covers
@@ -160,10 +159,16 @@ describe.each(CASES)(
       'writes a translation of %s back in the source encoding',
       async (name) => {
         const wire = await wireBytesFor(name);
-        // The same two calls downloadFileBatch makes before writing to disk.
-        const encoding = readAppleTextEncoding(pathFor(name));
-        const written = encodeAppleText(wire.toString('utf8'), encoding);
-        expect(written.equals(FIXTURES[name])).toBe(true);
+        // The same call downloadFileBatch makes before writing to disk.
+        const written = encodeFileContent(
+          wire.toString('utf8'),
+          fileFormat,
+          pathFor(name)
+        );
+        const bytes = Buffer.isBuffer(written)
+          ? written
+          : Buffer.from(written, 'utf8');
+        expect(bytes.equals(FIXTURES[name])).toBe(true);
       }
     );
   }

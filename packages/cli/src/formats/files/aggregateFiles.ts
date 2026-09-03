@@ -1,7 +1,7 @@
 import { logger } from '../../console/logger.js';
 import { logErrorAndExit } from '../../console/logging.js';
 import {
-  appleEncodingError,
+  fileEncodingError,
   lottieExpressionsError,
 } from '../../console/index.js';
 import { recordWarning } from '../../state/translateWarnings.js';
@@ -10,8 +10,8 @@ import {
   getRelative,
   readFile,
   readBinaryFileBase64,
-  readAppleTextFile,
 } from '../../fs/findFilepath.js';
+import { readFileContent } from '../../fs/fileContent.js';
 import { Settings } from '../../types/index.js';
 import type { FileFormat, DataFormat, FileToUpload } from '../../types/data.js';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
@@ -410,15 +410,13 @@ export async function aggregateFiles(
     const verbatimFiles = filePaths[fileType]
       .map((filePath) => {
         const relativePath = getRelative(filePath);
-        // Xcode has written both formats as UTF-16 and as UTF-8 with a byte
-        // order mark. Decoding here is what keeps encoding a client concern:
-        // the API only ever sees UTF-8, and the writer restores the source
-        // file's layout on the way back out.
+        // Reading is the one place an encoding is resolved; from here on the
+        // content is a UTF-8 string like every other format's.
         let content: string;
         try {
-          content = readAppleTextFile(filePath).text;
+          content = readFileContent(filePath, fileFormat);
         } catch (error) {
-          logErrorAndExit(appleEncodingError(relativePath, error));
+          logErrorAndExit(fileEncodingError(relativePath, error));
         }
         return {
           content,

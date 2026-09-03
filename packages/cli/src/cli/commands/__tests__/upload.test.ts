@@ -47,15 +47,17 @@ vi.mock('./utils/validation.js', () => ({
   hasValidCredentials: vi.fn(() => true),
 }));
 
-// Mock node:fs for existsSync/readFileSync (translation file reads)
+// Mock node:fs for the translation file reads readFileContent performs
 const mockFs = vi.hoisted(() => ({
   existsSync: vi.fn(() => false),
+  statSync: vi.fn(() => ({ isFile: () => true })),
   readFileSync: vi.fn(() => ''),
 }));
 
 vi.mock('node:fs', () => ({
   default: mockFs,
   existsSync: mockFs.existsSync,
+  statSync: mockFs.statSync,
   readFileSync: mockFs.readFileSync,
 }));
 vi.mock('../../../fs/determineFramework/index.js', () => ({
@@ -81,6 +83,12 @@ function setMockBinaryFiles(files: Record<string, string>) {
   (vi as unknown).__mockBinaryFiles = files;
   vi.mocked(readBinaryFileBase64).mockImplementation((filePath: string) => {
     return files[filePath] ?? '';
+  });
+  // Translations go through readFileContent, which reads binary formats as
+  // raw bytes off the filesystem rather than through findFilepath.
+  vi.mocked(readFileSync).mockImplementation((filePath) => {
+    const base64 = files[String(filePath)];
+    return base64 === undefined ? '' : Buffer.from(base64, 'base64');
   });
 }
 
@@ -267,7 +275,9 @@ describe('upload - binary (LOTTIE) files', () => {
       Buffer.from(translations[0].content, 'base64').equals(translatedBytes)
     ).toBe(true);
     // The translated bundle must never be read as UTF-8 text.
-    expect(readFileSync).not.toHaveBeenCalled();
+    for (const call of vi.mocked(readFileSync).mock.calls) {
+      expect(call[1]).toBeUndefined();
+    }
   });
 });
 

@@ -1,12 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { aggregateFiles } from '../aggregateFiles.js';
 import { logger } from '../../../console/logger.js';
-import {
-  readFile,
-  readBinaryFileBase64,
-  readAppleTextFile,
-  getRelative,
-} from '../../../fs/findFilepath.js';
+import { readFile, getRelative } from '../../../fs/findFilepath.js';
+import { readFileContent } from '../../../fs/fileContent.js';
 import { parseJson } from '../../json/parseJson.js';
 import parseYaml from '../../yaml/parseYaml.js';
 import sanitizeFileContent from '../../../utils/sanitizeFileContent.js';
@@ -25,6 +21,7 @@ vi.mock('../../../console/logger.js', () => ({
   },
 }));
 vi.mock('../../../fs/findFilepath.js');
+vi.mock('../../../fs/fileContent.js');
 vi.mock('../../json/parseJson.js');
 vi.mock('../../yaml/parseYaml.js');
 vi.mock('../../../utils/sanitizeFileContent.js');
@@ -33,8 +30,7 @@ vi.mock('../../../utils/validateMdx.js');
 
 const mockLogWarning = vi.mocked(logger.warn);
 const mockReadFile = vi.mocked(readFile);
-const mockReadBinaryFileBase64 = vi.mocked(readBinaryFileBase64);
-const mockReadAppleTextFile = vi.mocked(readAppleTextFile);
+const mockReadFileContent = vi.mocked(readFileContent);
 const mockGetRelative = vi.mocked(getRelative);
 const mockParseJson = vi.mocked(parseJson);
 const mockParseYaml = vi.mocked(parseYaml);
@@ -50,7 +46,7 @@ describe('aggregateFiles - Empty File Handling', () => {
     mockGetRelative.mockImplementation((path) =>
       path.replace('/full/path/', '')
     );
-    mockReadAppleTextFile.mockReturnValue({ text: '', encoding: 'utf8' });
+    mockReadFileContent.mockReturnValue('');
     mockDetermineLibrary.mockReturnValue({
       library: 'next-intl',
       additionalModules: [],
@@ -632,10 +628,7 @@ describe('aggregateFiles - Empty File Handling', () => {
         defaultLocale: 'en',
       };
 
-      mockReadAppleTextFile.mockReturnValueOnce({
-        text: content,
-        encoding: 'utf8',
-      });
+      mockReadFileContent.mockReturnValueOnce(content);
 
       const { files: result } = await aggregateTestFiles(settings);
 
@@ -664,10 +657,7 @@ describe('aggregateFiles - Empty File Handling', () => {
         defaultLocale: 'en',
       };
 
-      mockReadAppleTextFile.mockReturnValueOnce({
-        text: content,
-        encoding: 'utf16le',
-      });
+      mockReadFileContent.mockReturnValueOnce(content);
 
       const { files: result } = await aggregateTestFiles(settings);
 
@@ -692,9 +682,9 @@ describe('aggregateFiles - Empty File Handling', () => {
         defaultLocale: 'en',
       };
 
-      mockReadAppleTextFile
-        .mockReturnValueOnce({ text: '   \n\t  ', encoding: 'utf8' }) // whitespace only
-        .mockReturnValueOnce({ text: content, encoding: 'utf8' }); // valid file
+      mockReadFileContent
+        .mockReturnValueOnce('   \n\t  ') // whitespace only
+        .mockReturnValueOnce(content); // valid file
 
       const { files: result } = await aggregateTestFiles(settings);
 

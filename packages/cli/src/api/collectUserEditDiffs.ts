@@ -15,7 +15,7 @@ import {
   SubmitUserEditDiff,
   type FileFormat,
 } from 'generaltranslation/types';
-import { decodeAppleText, isAppleTextFileFormat } from '../fs/appleEncoding.js';
+import { readFileContent } from '../fs/fileContent.js';
 import os from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { hashStringSync } from '../utils/hash.js';
@@ -29,6 +29,16 @@ type LatestDownloadedVersion = {
   versionId: string;
   entry: DownloadedTranslation;
 };
+
+/**
+ * The bytes a file's pipeline content stands for: binary formats carry base64,
+ * everything else carries UTF-8 text. Applied to both sides of the comparison
+ * so they are measured the same way.
+ */
+const contentBytes = (content: string, fileFormat: FileFormat): Buffer =>
+  isBinaryFileFormat(fileFormat)
+    ? Buffer.from(content, 'base64')
+    : Buffer.from(content, 'utf8');
 
 const utf8Decoder = new TextDecoder('utf-8', { fatal: true });
 
@@ -167,11 +177,7 @@ export async function collectAndSendUserEditDiffs(
       for (const f of files) {
         serverContentByKey.set(
           `${f.branchId}:${f.fileId}:${f.versionId}:${f.locale}`,
-          // Formats in BINARY_FILE_FORMATS are still base64 at this point;
-          // everything else has already been decoded to a UTF-8 string.
-          isBinaryFileFormat(f.fileFormat)
-            ? Buffer.from(f.data, 'base64')
-            : Buffer.from(f.data, 'utf8')
+          contentBytes(f.data, f.fileFormat)
         );
       }
     } catch {
@@ -188,24 +194,22 @@ export async function collectAndSendUserEditDiffs(
       if (!serverBytes) continue;
 
       try {
-        const rawLocalBytes = await fs.promises.readFile(c.outputPath);
-        // A `.strings` or `.stringsdict` on disk carries whatever encoding its
-        // source file uses, while the server's copy is always UTF-8. Compare
-        // the decoded text so an untouched UTF-16 file does not read as edited
-        // on every run.
-        const decodesByByteOrderMark = isAppleTextFileFormat(c.fileFormat);
-        const localBytes = decodesByByteOrderMark
-          ? Buffer.from(decodeAppleText(rawLocalBytes).text, 'utf8')
-          : rawLocalBytes;
+        // Read the local file the same way the pipeline read it originally, so
+        // a file stored differently on disk than the server's copy is compared
+        // as content rather than as bytes. Otherwise every such file would read
+        // as edited on every run.
+        const localBytes = contentBytes(
+          readFileContent(c.outputPath, c.fileFormat),
+          c.fileFormat
+        );
 
         // Nothing was edited, so there is no diff to compute or report.
         if (localBytes.equals(serverBytes)) continue;
 
-        // A unified diff and localContent are both UTF-8 text. Content that is
-        // not valid UTF-8 — a Lottie zip, a UTF-16 .strings file — has no
-        // faithful text form here, and sending mojibake upstream is worse than
-        // sending nothing. Say so: the edit is real and will be lost on the
-        // next download.
+        // A unified diff and localContent are both UTF-8 text. Content with no
+        // text form at all — a Lottie zip — cannot be sent, and sending
+        // mojibake upstream is worse than sending nothing. Say so: the edit is
+        // real and will be lost on the next download.
         if (!isUtf8Text(serverBytes) || !isUtf8Text(localBytes)) {
           const relativePath = getRelative(c.outputPath);
           const reason =
@@ -223,21 +227,13 @@ export async function collectAndSendUserEditDiffs(
         const tempServerFile = path.join(tempDir, `${safeName}.server`);
         await fs.promises.writeFile(tempServerFile, serverBytes);
 
-        // git diff reads bytes, so a re-encoded file has to be diffed from its
-        // decoded form too, or every line reads as changed.
-        const tempLocalFile = decodesByByteOrderMark
-          ? path.join(tempDir, `${safeName}.local`)
-          : null;
-        if (tempLocalFile) {
-          await fs.promises.writeFile(tempLocalFile, localBytes);
-        }
+        // git diff reads bytes, so both sides are written from the content
+        // they represent rather than diffing the file as it sits on disk.
+        const tempLocalFile = path.join(tempDir, `${safeName}.local`);
+        await fs.promises.writeFile(tempLocalFile, localBytes);
 
-        const diff = await getGitUnifiedDiff(
-          tempServerFile,
-          tempLocalFile ?? c.outputPath
-        );
+        const diff = await getGitUnifiedDiff(tempServerFile, tempLocalFile);
         for (const tempFile of [tempServerFile, tempLocalFile]) {
-          if (!tempFile) continue;
           try {
             await fs.promises.unlink(tempFile);
           } catch {

@@ -54,7 +54,7 @@ const ENCODERS: Record<string, (text: string) => Buffer> = {
     ]),
 };
 
-describe('downloadFileBatch - Apple file encodings', () => {
+describe('downloadFileBatch - source file encodings', () => {
   const originalCwd = process.cwd();
   let tempDir: string;
 
