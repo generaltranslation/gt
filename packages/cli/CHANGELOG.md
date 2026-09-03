@@ -1,5 +1,21 @@
 # gtx-cli
 
+## 2.18.1
+
+### Patch Changes
+
+- [#2226](https://github.com/generaltranslation/gt/pull/2226) [`44aabc7`](https://github.com/generaltranslation/gt/commit/44aabc734d99fab4fcab7faedc84d20b5772bde3) Thanks [@eoinest](https://github.com/eoinest)! - Rename the `.strings` and `.stringsdict` file formats. The API format names become `DOT_STRINGS` and `DOT_STRINGSDICT`, and the `gt.config.json` keys under `files` become `dotStrings` and `dotStringsdict`.
+
+  **This is a breaking configuration change.** A `gt.config.json` that still uses `files.strings` or `files.stringsdict` will silently stop matching those files, because the old keys are no longer recognised file types. Rename them to `files.dotStrings` and `files.dotStringsdict`. The file extensions on disk are unchanged, and translated output is still written as `.strings` and `.stringsdict`.
+
+  The old names identified a vendor rather than a file. Apple ships four string formats — `.strings`, `.stringsdict`, `.xcstrings` and `.plist` — so `APPLE_STRINGS` never said which one it meant. The new names identify the extension itself, the way developers say it out loud.
+
+- Updated dependencies [[`44aabc7`](https://github.com/generaltranslation/gt/commit/44aabc734d99fab4fcab7faedc84d20b5772bde3)]:
+  - generaltranslation@9.1.12
+  - @generaltranslation/python-extractor@0.2.45
+  - @generaltranslation/supported-locales@2.1.25
+  - @generaltranslation/vue-extractor@0.1.5
+
 ## 2.18.0
 
 ### Minor Changes
