@@ -17,7 +17,8 @@ export type ApiClientConfig = {
   fetch?: typeof fetch;
   projectId?: string;
   retryPolicy?: RetryPolicy;
-  timeoutMs?: number;
+  /** Set to false when a custom fetch implementation owns request timeouts. */
+  timeoutMs?: number | false;
 };
 
 export function createApiClient(config: ApiClientConfig): Client {

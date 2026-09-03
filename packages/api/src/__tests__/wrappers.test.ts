@@ -50,6 +50,28 @@ describe('createTimeoutFetch', () => {
 
     await expect(response).rejects.toThrow('caller gave up');
   });
+
+  it('allows a custom fetch implementation to own request timeouts', async () => {
+    vi.useFakeTimers();
+    let resolveFetch: (response: Response) => void = () => undefined;
+    const fetchMock = vi.fn<typeof fetch>().mockImplementation(
+      async () =>
+        new Promise<Response>((resolve) => {
+          resolveFetch = resolve;
+        })
+    );
+    const response = createTimeoutFetch({
+      fetch: fetchMock,
+      timeoutMs: false,
+    })('https://example.com/test');
+
+    expect(vi.getTimerCount()).toBe(0);
+    resolveFetch(new Response('ok'));
+
+    await expect(response).resolves.toEqual(
+      expect.objectContaining({ ok: true })
+    );
+  });
 });
 
 describe('createRetryingFetch', () => {
