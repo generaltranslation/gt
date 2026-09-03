@@ -13,7 +13,9 @@ import {
   FileReference,
   isBinaryFileFormat,
   SubmitUserEditDiff,
+  type FileFormat,
 } from 'generaltranslation/types';
+import { readFileContent } from '../fs/fileContent.js';
 import os from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { hashStringSync } from '../utils/hash.js';
@@ -28,17 +30,15 @@ type LatestDownloadedVersion = {
   entry: DownloadedTranslation;
 };
 
-const utf8Decoder = new TextDecoder('utf-8', { fatal: true });
-
-/** Whether these bytes round trip as UTF-8 text. */
-const isUtf8Text = (bytes: Buffer): boolean => {
-  try {
-    utf8Decoder.decode(bytes);
-    return true;
-  } catch {
-    return false;
-  }
-};
+/**
+ * The bytes a file's pipeline content stands for: binary formats carry base64,
+ * everything else carries UTF-8 text. Applied to both sides of the comparison
+ * so they are measured the same way.
+ */
+const contentBytes = (content: string, fileFormat: FileFormat): Buffer =>
+  isBinaryFileFormat(fileFormat)
+    ? Buffer.from(content, 'base64')
+    : Buffer.from(content, 'utf8');
 
 const findLatestDownloadedVersion = (
   entryMap: EntryMap,
@@ -90,6 +90,7 @@ export async function collectAndSendUserEditDiffs(
     versionId: string;
     locale: string; // resolved
     outputPath: string;
+    fileFormat: FileFormat;
   };
   const candidates: DiffCandidate[] = [];
 
@@ -111,7 +112,12 @@ export async function collectAndSendUserEditDiffs(
       // Skip if local file matches the last postprocessed content hash
       if (downloadedVersion.postProcessHash) {
         try {
-          const localContent = await fs.promises.readFile(outputPath, 'utf8');
+          // Hashed from the same pipeline content the hash was recorded from,
+          // so a file stored in UTF-16 still matches when it is untouched.
+          const localContent = readFileContent(
+            outputPath,
+            uploadedFile.fileFormat
+          );
           const localHash = hashStringSync(localContent);
           if (localHash === downloadedVersion.postProcessHash) {
             continue;
@@ -128,6 +134,7 @@ export async function collectAndSendUserEditDiffs(
         versionId: latestDownloaded.versionId,
         locale: locale,
         outputPath,
+        fileFormat: uploadedFile.fileFormat,
       });
     }
   }
@@ -163,11 +170,7 @@ export async function collectAndSendUserEditDiffs(
       for (const f of files) {
         serverContentByKey.set(
           `${f.branchId}:${f.fileId}:${f.versionId}:${f.locale}`,
-          // Formats in BINARY_FILE_FORMATS are still base64 at this point;
-          // everything else has already been decoded to a UTF-8 string.
-          isBinaryFileFormat(f.fileFormat)
-            ? Buffer.from(f.data, 'base64')
-            : Buffer.from(f.data, 'utf8')
+          contentBytes(f.data, f.fileFormat)
         );
       }
     } catch {
@@ -184,20 +187,26 @@ export async function collectAndSendUserEditDiffs(
       if (!serverBytes) continue;
 
       try {
-        const localBytes = await fs.promises.readFile(c.outputPath);
+        // Read the local file the same way the pipeline read it originally, so
+        // a file stored differently on disk than the server's copy is compared
+        // as content rather than as bytes. Otherwise every such file would read
+        // as edited on every run.
+        const localBytes = contentBytes(
+          readFileContent(c.outputPath, c.fileFormat),
+          c.fileFormat
+        );
 
         // Nothing was edited, so there is no diff to compute or report.
         if (localBytes.equals(serverBytes)) continue;
 
-        // A unified diff and localContent are both UTF-8 text. Content that is
-        // not valid UTF-8 — a Lottie zip, a UTF-16 .strings file — has no
-        // faithful text form here, and sending mojibake upstream is worse than
-        // sending nothing. Say so: the edit is real and will be lost on the
-        // next download.
-        if (!isUtf8Text(serverBytes) || !isUtf8Text(localBytes)) {
+        // A unified diff and localContent are both UTF-8 text, and every text
+        // format's content is UTF-8 by the time it reaches here. Only a binary
+        // format's bytes — a Lottie zip — have no text form at all. Say so:
+        // the edit is real and will be lost on the next download.
+        if (isBinaryFileFormat(c.fileFormat)) {
           const relativePath = getRelative(c.outputPath);
           const reason =
-            'Edited file is not valid UTF-8, so its changes cannot be submitted';
+            'Edited file is a binary format, so its changes cannot be submitted';
           logger.warn(`Skipping local edits to ${relativePath}: ${reason}`);
           recordWarning('skipped_file', relativePath, reason);
           continue;
@@ -211,11 +220,18 @@ export async function collectAndSendUserEditDiffs(
         const tempServerFile = path.join(tempDir, `${safeName}.server`);
         await fs.promises.writeFile(tempServerFile, serverBytes);
 
-        const diff = await getGitUnifiedDiff(tempServerFile, c.outputPath);
-        try {
-          await fs.promises.unlink(tempServerFile);
-        } catch {
-          // Ignore cleanup errors for temporary comparison files.
+        // git diff reads bytes, so both sides are written from the content
+        // they represent rather than diffing the file as it sits on disk.
+        const tempLocalFile = path.join(tempDir, `${safeName}.local`);
+        await fs.promises.writeFile(tempLocalFile, localBytes);
+
+        const diff = await getGitUnifiedDiff(tempServerFile, tempLocalFile);
+        for (const tempFile of [tempServerFile, tempLocalFile]) {
+          try {
+            await fs.promises.unlink(tempFile);
+          } catch {
+            // Ignore cleanup errors for temporary comparison files.
+          }
         }
 
         if (diff && diff.trim().length > 0) {

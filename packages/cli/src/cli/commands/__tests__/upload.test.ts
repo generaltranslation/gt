@@ -47,15 +47,17 @@ vi.mock('./utils/validation.js', () => ({
   hasValidCredentials: vi.fn(() => true),
 }));
 
-// Mock node:fs for existsSync/readFileSync (translation file reads)
+// Mock node:fs for the translation file reads readFileContent performs
 const mockFs = vi.hoisted(() => ({
   existsSync: vi.fn(() => false),
+  statSync: vi.fn(() => ({ isFile: () => true })),
   readFileSync: vi.fn(() => ''),
 }));
 
 vi.mock('node:fs', () => ({
   default: mockFs,
   existsSync: mockFs.existsSync,
+  statSync: mockFs.statSync,
   readFileSync: mockFs.readFileSync,
 }));
 vi.mock('../../../fs/determineFramework/index.js', () => ({
@@ -68,6 +70,7 @@ import { runPublishWorkflow } from '../../../workflows/publish.js';
 import { createFileMapping } from '../../../formats/files/fileMapping.js';
 import { logger } from '../../../console/logger.js';
 import { existsSync, readFileSync } from 'node:fs';
+import { logErrorAndExit } from '../../../console/logging.js';
 
 function setMockFiles(files: Record<string, string>) {
   (vi as unknown).__mockFiles = files;
@@ -81,6 +84,12 @@ function setMockBinaryFiles(files: Record<string, string>) {
   (vi as unknown).__mockBinaryFiles = files;
   vi.mocked(readBinaryFileBase64).mockImplementation((filePath: string) => {
     return files[filePath] ?? '';
+  });
+  // Translations go through readFileContent, which reads binary formats as
+  // raw bytes off the filesystem rather than through findFilepath.
+  vi.mocked(readFileSync).mockImplementation((filePath) => {
+    const base64 = files[String(filePath)];
+    return base64 === undefined ? '' : Buffer.from(base64, 'base64');
   });
 }
 
@@ -267,7 +276,9 @@ describe('upload - binary (LOTTIE) files', () => {
       Buffer.from(translations[0].content, 'base64').equals(translatedBytes)
     ).toBe(true);
     // The translated bundle must never be read as UTF-8 text.
-    expect(readFileSync).not.toHaveBeenCalled();
+    for (const call of vi.mocked(readFileSync).mock.calls) {
+      expect(call[1]).toBeUndefined();
+    }
   });
 });
 
@@ -597,5 +608,58 @@ describe('upload - composite JSON', () => {
     );
     expect(plainFile?.translations).toHaveLength(1);
     expect(plainFile?.translations[0].content).toBe(translatedPlain);
+  });
+});
+
+describe('upload - Apple .strings translations that cannot be decoded', () => {
+  const SOURCE = 'Guardian/en.lproj/Localizable.strings';
+  const TRANSLATION = 'Guardian/es.lproj/Localizable.strings';
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(existsSync).mockReturnValue(false);
+    vi.mocked(readFileSync).mockReturnValue('');
+    vi.mocked(createFileMapping).mockReturnValue({});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('names the file that could not be read and uploads the rest', async () => {
+    const source = Buffer.from('"welcome" = "Welcome!";\n', 'utf8');
+    // A UTF-16 byte order mark over an odd number of bytes: the file claims an
+    // encoding its contents cannot be read as.
+    const truncated = Buffer.from([0xff, 0xfe, 0x22, 0x61, 0x22]);
+
+    setMockFiles({});
+    vi.mocked(readFileSync).mockImplementation((filePath) =>
+      String(filePath) === TRANSLATION ? truncated : source
+    );
+    vi.mocked(existsSync).mockReturnValue(true);
+    vi.mocked(createFileMapping).mockReturnValue({
+      es: { [SOURCE]: TRANSLATION },
+    });
+
+    await uploadWithFiles(
+      { dotStrings: [SOURCE] },
+      makeSettings({ locales: ['es'], options: {} })
+    );
+
+    // The run continues rather than aborting on the one unreadable file.
+    expect(logErrorAndExit).not.toHaveBeenCalled();
+
+    const warning = vi
+      .mocked(logger.warn)
+      .mock.calls.map((call) => String(call[0]))
+      .find((message) => message.includes(TRANSLATION));
+    expect(warning).toBeDefined();
+
+    // The source still uploads; only the locale that could not be decoded is
+    // left out, so the rest of the run is unaffected.
+    const call = vi.mocked(runUploadFilesWorkflow).mock.calls[0][0];
+    const uploaded = call.files.find((f) => f.source.fileName === SOURCE);
+    expect(uploaded).toBeDefined();
+    expect(uploaded?.translations).toHaveLength(0);
   });
 });
