@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/api",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Generated TypeScript SDK for the General Translation API",
   "type": "module",
   "sideEffects": false,
