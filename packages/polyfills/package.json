@@ -1,0 +1,99 @@
+{
+  "name": "gt-polyfills",
+  "version": "0.1.0",
+  "description": "Intl polyfill injection as an unplugin for General Translation",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.cts",
+  "files": [
+    "dist",
+    "CHANGELOG.md"
+  ],
+  "sideEffects": [
+    "./dist/index.cjs",
+    "./dist/index.mjs",
+    "./src/index.ts"
+  ],
+  "scripts": {
+    "build:release": "pnpm run build:clean",
+    "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
+    "build": "tsdown",
+    "lint": "eslint \"src/**/*.{js,ts}\"",
+    "lint:fix": "eslint \"src/**/*.{js,ts}\" --fix",
+    "release": "pnpm run build:clean && pnpm publish",
+    "release:alpha": "pnpm run build:clean && pnpm publish --tag alpha",
+    "release:beta": "pnpm run build:clean && pnpm publish --tag beta",
+    "release:latest": "pnpm run build:clean && pnpm publish --tag latest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/generaltranslation/gt.git"
+  },
+  "keywords": [
+    "polyfill",
+    "intl",
+    "internationalization",
+    "localization",
+    "i18n",
+    "formatjs",
+    "unplugin",
+    "vite",
+    "webpack",
+    "rollup",
+    "esbuild",
+    "metro"
+  ],
+  "author": "General Translation, Inc.",
+  "license": "FSL-1.1-ALv2",
+  "bugs": {
+    "url": "https://github.com/generaltranslation/gt/issues"
+  },
+  "homepage": "https://generaltranslation.com/",
+  "dependencies": {
+    "@formatjs/intl-datetimeformat": "^6.18.2",
+    "@formatjs/intl-displaynames": "^6.8.13",
+    "@formatjs/intl-getcanonicallocales": "^2.5.6",
+    "@formatjs/intl-listformat": "^7.7.13",
+    "@formatjs/intl-locale": "^4.2.13",
+    "@formatjs/intl-numberformat": "^8.15.6",
+    "@formatjs/intl-pluralrules": "^5.4.6",
+    "@formatjs/intl-relativetimeformat": "^11.4.13",
+    "@generaltranslation/supported-locales": "workspace:*",
+    "generaltranslation": "workspace:*",
+    "unplugin": "^2.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.9",
+    "tsdown": "catalog:",
+    "typescript": "catalog:"
+  },
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      },
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      }
+    },
+    "./plugin": {
+      "require": {
+        "types": "./dist/plugin.d.cts",
+        "default": "./dist/plugin.cjs"
+      },
+      "import": {
+        "types": "./dist/plugin.d.mts",
+        "default": "./dist/plugin.mjs"
+      }
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "plugin": [
+        "./dist/plugin.d.cts"
+      ]
+    }
+  }
+}
