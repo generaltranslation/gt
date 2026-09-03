@@ -9,13 +9,13 @@ export type FileFormat = import('@generaltranslation/api').FileFormat;
  * base64-encoded, so the usual UTF-8 encode/decode steps are skipped and the
  * bytes reach the API unaltered.
  *
- * LOTTIE qualifies because it is a zip bundle. DOT_STRINGS qualifies because
- * older Xcode wrote `.strings` as UTF-16: the API chooses a decoder from the
- * byte order mark, and a UTF-8 round trip anywhere in between replaces those
- * bytes with U+FFFD.
+ * LOTTIE qualifies because it is a zip bundle. Apple's `.strings` and
+ * `.stringsdict` do not: they are text in whichever encoding Xcode wrote, and
+ * the client decodes that to UTF-8 before upload and restores it on write, so
+ * only the client ever handles their bytes.
  */
 export const BINARY_FILE_FORMATS: ReadonlySet<FileFormat> = new Set<FileFormat>(
-  ['LOTTIE', 'DOT_STRINGS']
+  ['LOTTIE']
 );
 
 /**
