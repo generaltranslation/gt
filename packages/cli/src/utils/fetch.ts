@@ -12,6 +12,7 @@ export default async function apiRequest(
   endpoint: string,
   options?: {
     body?: unknown;
+    headers?: Record<string, string>;
     method?: 'GET' | 'POST' | 'DELETE';
   }
 ): Promise<Response> {
@@ -22,6 +23,7 @@ export default async function apiRequest(
     headers: {
       'Content-Type': 'application/json',
       'gt-api-version': API_VERSION,
+      ...options?.headers,
     },
   };
 
