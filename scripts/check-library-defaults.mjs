@@ -126,12 +126,27 @@ export const defaultGroups = [
   {
     name: 'defaultBaseUrl',
     declarations: ['packages/core/src/settings/settingsUrls.ts'],
-    exceptions: [],
+    exceptions: [
+      {
+        path: 'packages/core/src/settings/settingsUrls.ts',
+        reason:
+          'The runtime API intentionally uses the same unified API origin.',
+        matches: isWithinVariableDeclaration('defaultRuntimeApiUrl'),
+        expectedMatches: 1,
+      },
+    ],
   },
   {
     name: 'defaultRuntimeApiUrl',
     declarations: ['packages/core/src/settings/settingsUrls.ts'],
-    exceptions: [],
+    exceptions: [
+      {
+        path: 'packages/core/src/settings/settingsUrls.ts',
+        reason: 'The primary API intentionally uses the same unified origin.',
+        matches: isWithinVariableDeclaration('defaultBaseUrl'),
+        expectedMatches: 1,
+      },
+    ],
   },
   {
     name: 'defaultLocaleCookieName',
