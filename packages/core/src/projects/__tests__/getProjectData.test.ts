@@ -107,7 +107,7 @@ describe.sequential('_getProjectData', () => {
 
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       expect.stringContaining(
-        'https://api2.gtx.dev/v2/project/info/test-project-123'
+        'https://api.gtx.dev/v2/project/info/test-project-123'
       ),
       expect.any(Object),
       expect.any(Number)
