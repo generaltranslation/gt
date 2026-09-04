@@ -14,6 +14,7 @@ import {
 import {
   PathConfig,
   getSharedPath,
+  normalizePathname,
   replaceDynamicSegments,
   getLocalizedPath,
   createPathToSharedPathMap,
@@ -228,7 +229,7 @@ export function createNextMiddleware({
       // ---------- GET PATHS ---------- //
 
       // get pathname
-      const { pathname } = req.nextUrl;
+      const pathname = normalizePathname(req.nextUrl.pathname);
 
       // standardize pathname (ie, /tg/welcome -> /fil/welcome), (/blog -> /blog)
       const standardizedPathname =

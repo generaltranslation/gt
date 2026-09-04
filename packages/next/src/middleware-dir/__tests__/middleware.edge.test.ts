@@ -253,6 +253,25 @@ describe('Middleware Integration Tests', () => {
       expect(getResponsePath(plusResponse)).toBe('/fr/language/c++/templates');
     });
 
+    it('matches encoded requests against Unicode pathConfig entries', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+        pathConfig: {
+          '/café/[slug]': {
+            fr: '/café-français/[slug]',
+          },
+        },
+      });
+
+      const res = middleware(
+        createRequest('/fr/caf%C3%A9-fran%C3%A7ais/article')
+      );
+
+      expect(getResponseType(res)).toBe('rewrite');
+      expect(getResponsePath(res)).toBe('/fr/caf%C3%A9/article');
+    });
+
     it('2.6: localeRouting=false → next()', () => {
       setEnvConfig();
       const middleware = createNextMiddleware({

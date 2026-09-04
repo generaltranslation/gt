@@ -54,11 +54,23 @@ function getDynamicSegmentType(
   return undefined;
 }
 
+export function normalizePathname(pathname: string): string {
+  let normalizedPathname = pathname;
+  try {
+    normalizedPathname = decodeURI(pathname);
+  } catch {
+    // Leave malformed escape sequences untouched so they simply do not match.
+  }
+  return normalizedPathname.normalize('NFC');
+}
+
 function getPathSegments(pathname: string): string[] {
   if (pathname === '') return [];
-  const pathnameWithoutLeadingSlash = pathname.startsWith('/')
-    ? pathname.slice(1)
-    : pathname;
+  const normalizedPathname = normalizePathname(pathname);
+
+  const pathnameWithoutLeadingSlash = normalizedPathname.startsWith('/')
+    ? normalizedPathname.slice(1)
+    : normalizedPathname;
   return pathnameWithoutLeadingSlash.split('/');
 }
 

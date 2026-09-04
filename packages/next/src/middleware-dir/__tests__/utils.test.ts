@@ -453,6 +453,27 @@ describe('getSharedPath', () => {
     );
   });
 
+  it('normalizes encoded and Unicode path segments', () => {
+    const pathMatcher = createPathMatcher([
+      ['/café/[slug]', '/café/[slug]'],
+      ['/articles/e\u0301lite/[slug]', '/articles/élite/[slug]'],
+      ['/files/%2F/[slug]', '/files/%2F/[slug]'],
+    ]);
+
+    expect(getSharedPath('/caf%C3%A9/guide', pathMatcher, undefined)).toBe(
+      '/café/[slug]'
+    );
+    expect(getSharedPath('/café/guide', pathMatcher, undefined)).toBe(
+      '/café/[slug]'
+    );
+    expect(
+      getSharedPath('/articles/%C3%A9lite/guide', pathMatcher, undefined)
+    ).toBe('/articles/élite/[slug]');
+    expect(getSharedPath('/files/%2F/guide', pathMatcher, undefined)).toBe(
+      '/files/%2F/[slug]'
+    );
+  });
+
   it('matches catch-all and optional catch-all paths', () => {
     const pathMatcher = createPathMatcher([
       ['/docs/[...slug]', '/docs/[...slug]'],
