@@ -338,7 +338,7 @@ jobs:
           cd tests/apps/cli-test-app
           pnpm gt --help
 
-      - name: Exercise Vue extraction through the native CLI binary
+      - name: Exercise the native CLI binary
         if: steps.gt_cli_changed.outputs.changed == 'true'
         shell: bash
         run: |
@@ -349,6 +349,7 @@ jobs:
           cd tests/apps/cli-vue-binary-test
           ../../../packages/cli/binaries/${{ matrix.binary }} generate --config gt.config.json
           node --input-type=module -e "import fs from 'node:fs'; const catalog = JSON.parse(fs.readFileSync('dist/_gt/en.json', 'utf8')); for (const message of ['Hello from the native Vue extractor', 'Hello from module-level t in the native Vue extractor']) if (!Object.values(catalog).includes(message)) throw new Error('Native CLI did not extract: ' + message);"
+          ../../../packages/cli/binaries/${{ matrix.binary }} api --spec | node --input-type=module -e "let output = ''; for await (const chunk of process.stdin) output += chunk; const spec = JSON.parse(output); if (spec.openapi !== '3.1.0') throw new Error('Native CLI did not print the OpenAPI specification');"
 
   size:
     runs-on: ubuntu-latest

@@ -1,10 +1,10 @@
 import fs from 'node:fs';
-import { createRequire } from 'node:module';
 import {
   createApiClient,
   type ApiClientConfig,
   type Client,
 } from 'generaltranslation/api';
+import openApiSpec from 'generaltranslation/api/openapi.json' with { type: 'json' };
 import {
   createDiagnosticMessage,
   defaultBaseUrl,
@@ -138,6 +138,54 @@ function writeResponseMetadata(
   writeStdout('\n');
 }
 
+function resolveApiProjectId(
+  config: Record<string, unknown>,
+  flagProjectId: string | undefined,
+  dependencies: ApiCommandDependencies
+): string | undefined {
+  const configProjectId =
+    typeof config.projectId === 'string' ? config.projectId : undefined;
+  const environmentProjectId = resolveProjectId();
+
+  if (configProjectId && flagProjectId && configProjectId !== flagProjectId) {
+    fail(
+      createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Error',
+        whatHappened: 'The project IDs do not match',
+        details: [
+          `Configuration: ${configProjectId}`,
+          `--project-id: ${flagProjectId}`,
+        ],
+        fix: 'Use the same project ID in all configurations',
+      }),
+      dependencies
+    );
+  }
+
+  if (
+    configProjectId &&
+    environmentProjectId &&
+    configProjectId !== environmentProjectId
+  ) {
+    fail(
+      createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Error',
+        whatHappened: 'The project IDs do not match',
+        details: [
+          `Configuration: ${configProjectId}`,
+          `Environment: ${environmentProjectId}`,
+        ],
+        fix: 'Use the same project ID in all configurations',
+      }),
+      dependencies
+    );
+  }
+
+  return flagProjectId ?? configProjectId ?? environmentProjectId;
+}
+
 export async function handleApiCommand(
   endpoint: string | undefined,
   options: ApiCommandOptions,
@@ -155,10 +203,7 @@ export async function handleApiCommand(
     dependencies.writeStderr ?? ((output) => process.stderr.write(output));
 
   if (options.spec) {
-    const require = createRequire(import.meta.url);
-    const specPath = require.resolve('generaltranslation/api/openapi.json');
-    const spec: unknown = JSON.parse(fs.readFileSync(specPath, 'utf8'));
-    writeStdout(`${JSON.stringify(spec, null, 2)}\n`);
+    writeStdout(`${JSON.stringify(openApiSpec, null, 2)}\n`);
     return;
   }
 
@@ -188,11 +233,7 @@ export async function handleApiCommand(
     baseUrl:
       typeof config.baseUrl === 'string' ? config.baseUrl : defaultBaseUrl,
     fetch: dependencies.fetch,
-    projectId:
-      options.projectId ??
-      (typeof config.projectId === 'string'
-        ? config.projectId
-        : resolveProjectId()),
+    projectId: resolveApiProjectId(config, options.projectId, dependencies),
     retryPolicy: 'none',
   });
   const normalizedEndpoint = endpoint.startsWith('/')

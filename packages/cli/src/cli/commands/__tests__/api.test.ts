@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { handleApiCommand } from '../api.js';
 
 const temporaryDirectories: string[] = [];
+const originalProjectId = process.env.GT_PROJECT_ID;
 
 type OutputChunk = string | Uint8Array;
 
@@ -23,6 +24,11 @@ function writeInput(content: string): string {
 afterEach(() => {
   for (const directory of temporaryDirectories.splice(0)) {
     fs.rmSync(directory, { force: true, recursive: true });
+  }
+  if (originalProjectId === undefined) {
+    delete process.env.GT_PROJECT_ID;
+  } else {
+    process.env.GT_PROJECT_ID = originalProjectId;
   }
 });
 
@@ -92,6 +98,78 @@ describe('gt api', () => {
     );
 
     expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it('rejects a project ID that conflicts with the configuration', async () => {
+    const configPath = writeInput(
+      JSON.stringify({
+        baseUrl: 'https://api.example',
+        projectId: 'config-project',
+      })
+    );
+    const fetchMock = vi.fn<typeof fetch>();
+    const stderr: string[] = [];
+    const exit = vi.fn((code: number): never => {
+      throw new Error(`exit ${code}`);
+    });
+
+    await expect(
+      handleApiCommand(
+        '/v2/project',
+        {
+          apiKey: 'api-key',
+          config: configPath,
+          method: 'DELETE',
+          projectId: 'flag-project',
+        },
+        {
+          exit,
+          fetch: fetchMock,
+          writeStderr: (output) => stderr.push(output),
+        }
+      )
+    ).rejects.toThrow('exit 1');
+
+    expect(stderr.join('')).toContain('The project IDs do not match');
+    expect(stderr.join('')).toContain('Configuration: config-project');
+    expect(stderr.join('')).toContain('--project-id: flag-project');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects an environment project ID that conflicts with the configuration', async () => {
+    process.env.GT_PROJECT_ID = 'environment-project';
+    const configPath = writeInput(
+      JSON.stringify({
+        baseUrl: 'https://api.example',
+        projectId: 'config-project',
+      })
+    );
+    const fetchMock = vi.fn<typeof fetch>();
+    const stderr: string[] = [];
+    const exit = vi.fn((code: number): never => {
+      throw new Error(`exit ${code}`);
+    });
+
+    await expect(
+      handleApiCommand(
+        '/v2/project',
+        {
+          apiKey: 'api-key',
+          config: configPath,
+          method: 'DELETE',
+        },
+        {
+          exit,
+          fetch: fetchMock,
+          writeStderr: (output) => stderr.push(output),
+        }
+      )
+    ).rejects.toThrow('exit 1');
+
+    expect(stderr.join('')).toContain('The project IDs do not match');
+    expect(stderr.join('')).toContain('Configuration: config-project');
+    expect(stderr.join('')).toContain('Environment: environment-project');
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('rejects unsupported HTTP methods before making a request', async () => {
