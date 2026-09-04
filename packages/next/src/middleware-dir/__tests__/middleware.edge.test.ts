@@ -205,21 +205,32 @@ describe('Middleware Integration Tests', () => {
       const middleware = createNextMiddleware({
         prefixDefaultLocale: true,
         pathConfig: {
-          '/docs/[...slug]': { fr: '/documentation/[...slug]' },
-          '/news/[[...slug]]': { fr: '/actualites/[[...slug]]' },
+          '/docs/[...slug]': { fr: '/knowledge/base/[...slug]' },
+          '/news/[[...slug]]': {
+            fr: '/international/actualites/[[...slug]]',
+          },
         },
       });
 
       const catchAllResponse = middleware(
-        createRequest('/fr/documentation/guides/start')
+        createRequest('/fr/knowledge/base/guides/start')
       );
-      const optionalRootResponse = middleware(createRequest('/fr/actualites'));
+      const catchAllRedirect = middleware(
+        createRequest('/fr/docs/guides/start')
+      );
+      const optionalRootResponse = middleware(
+        createRequest('/fr/international/actualites')
+      );
       const optionalNestedResponse = middleware(
-        createRequest('/fr/actualites/world/latest')
+        createRequest('/fr/international/actualites/world/latest')
       );
 
       expect(getResponseType(catchAllResponse)).toBe('rewrite');
       expect(getResponsePath(catchAllResponse)).toBe('/fr/docs/guides/start');
+      expect(getResponseType(catchAllRedirect)).toBe('redirect');
+      expect(getResponsePath(catchAllRedirect)).toBe(
+        '/fr/knowledge/base/guides/start'
+      );
       expect(getResponseType(optionalRootResponse)).toBe('rewrite');
       expect(getResponsePath(optionalRootResponse)).toBe('/fr/news');
       expect(getResponseType(optionalNestedResponse)).toBe('rewrite');
