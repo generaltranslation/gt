@@ -172,6 +172,13 @@ describe('replaceDynamicSegments', () => {
     expect(replaceDynamicSegments('/posts', '/posts/[[...slug]]')).toBe(
       '/posts'
     );
+    expect(
+      replaceDynamicSegments(
+        '/fr/knowledge/base/api/auth',
+        '/fr/docs/[...slug]',
+        '/fr/knowledge/base/[...slug]'
+      )
+    ).toBe('/fr/docs/api/auth');
   });
 });
 
