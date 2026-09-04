@@ -1,0 +1,96 @@
+name: Release Authorization
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  pull_request_review:
+    types: [submitted, edited, dismissed]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: release-authorization-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  release-authorization:
+    name: release-authorization
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check for current admin approval
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const pullRequest = context.payload.pull_request;
+            if (!pullRequest) {
+              core.setFailed('This workflow requires a pull request event.');
+              return;
+            }
+
+            const repository = `${context.repo.owner}/${context.repo.repo}`;
+            const isReleasePullRequest =
+              pullRequest.head.repo?.full_name === repository &&
+              pullRequest.head.ref.startsWith('changeset-release/');
+
+            if (!isReleasePullRequest) {
+              core.info('This pull request does not require release authorization.');
+              return;
+            }
+
+            const reviews = await github.paginate(github.rest.pulls.listReviews, {
+              ...context.repo,
+              pull_number: pullRequest.number,
+              per_page: 100,
+            });
+            const latestDecisiveReviewByUser = new Map();
+
+            for (const review of reviews) {
+              const login = review.user?.login;
+              if (
+                login &&
+                ['APPROVED', 'CHANGES_REQUESTED', 'DISMISSED'].includes(review.state)
+              ) {
+                latestDecisiveReviewByUser.set(login, review);
+              }
+            }
+
+            const currentApprovals = [...latestDecisiveReviewByUser.values()].filter(
+              (review) =>
+                review.state === 'APPROVED' &&
+                review.commit_id === pullRequest.head.sha
+            );
+            const adminApprovers = [];
+
+            for (const review of currentApprovals) {
+              let permission;
+              try {
+                const response =
+                  await github.rest.repos.getCollaboratorPermissionLevel({
+                    ...context.repo,
+                    username: review.user.login,
+                  });
+                permission = response.data.permission;
+              } catch (error) {
+                if (error.status === 404) {
+                  core.info(`${review.user.login} is not a repository collaborator.`);
+                  continue;
+                }
+                throw error;
+              }
+
+              if (permission === 'admin') {
+                adminApprovers.push(review.user.login);
+              }
+            }
+
+            if (adminApprovers.length === 0) {
+              core.setFailed(
+                'A repository admin must approve the current release commit.'
+              );
+              return;
+            }
+
+            core.info(`Release authorized by: ${adminApprovers.join(', ')}`);
