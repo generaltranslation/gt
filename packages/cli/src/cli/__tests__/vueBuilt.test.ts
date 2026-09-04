@@ -1262,6 +1262,7 @@ import { LocalT } from '@gt';
         'upload',
         'auth',
         'save-local',
+        'api',
         'project',
         'git',
       ];

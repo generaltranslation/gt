@@ -87,6 +87,7 @@
         "default": "./dist/api.mjs"
       }
     },
+    "./api/openapi.json": "./dist/openapi.json",
     "./id": {
       "require": {
         "types": "./dist/id.d.cts",

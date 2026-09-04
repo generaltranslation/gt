@@ -22,7 +22,8 @@
         "types": "./dist/index.d.mts",
         "default": "./dist/index.mjs"
       }
-    }
+    },
+    "./spec/openapi.json": "./spec/openapi.json"
   },
   "scripts": {
     "build": "tsdown",

@@ -228,7 +228,9 @@ export async function generateSettings(
   }
 
   // Display projectId if present
-  if (mergedOptions.projectId) displayProjectId(mergedOptions.projectId);
+  if (mergedOptions.projectId) {
+    displayProjectId(mergedOptions.projectId);
+  }
 
   // Add stageTranslations if not provided
   // For human review, always stage the project
