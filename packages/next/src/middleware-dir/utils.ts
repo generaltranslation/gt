@@ -21,6 +21,19 @@ export type ResponseConfig = {
   localeHeaderName: string;
 };
 
+function applyBasePath(responseUrl: URL, originalUrl: NextURL) {
+  const { basePath } = originalUrl;
+  if (
+    !basePath ||
+    responseUrl.origin !== originalUrl.origin ||
+    responseUrl.pathname === basePath ||
+    responseUrl.pathname.startsWith(`${basePath}/`)
+  ) {
+    return;
+  }
+  responseUrl.pathname = `${basePath}${responseUrl.pathname}`;
+}
+
 type PathMatcherNode = {
   staticSegments: Map<string, PathMatcherNode>;
   dynamicSegment?: PathMatcherNode;
@@ -229,6 +242,7 @@ export function getResponse({
     });
   } else {
     const responseUrl = new URL(responsePath, originalUrl);
+    applyBasePath(responseUrl, originalUrl);
     responseUrl.search = originalUrl.search;
     response =
       type === 'rewrite'
