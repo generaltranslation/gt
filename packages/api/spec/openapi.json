@@ -72,6 +72,7 @@
           "TWILIO_CONTENT_JSON",
           "LOTTIE",
           "SVG",
+          "XCSTRINGS",
           "DOT_STRINGS",
           "DOT_STRINGSDICT",
           "ANDROID_STRINGS"
@@ -541,6 +542,212 @@
         "tags": ["Project"]
       }
     },
+    "/v2/projects/{projectId}/api-keys": {
+      "post": {
+        "operationId": "createProjectApiKey",
+        "summary": "Create a Project API Key",
+        "description": "Create an API key for a Project with an Organization API key. The Organization key must have the `project:api_keys:write` permission and can only delegate Project permissions it already holds. Project keys cannot use this endpoint.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "projectId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": ["production", "development"],
+                    "default": "production"
+                  }
+                },
+                "required": ["name"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Project API key created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "apiKey": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "key": {
+                          "type": "string"
+                        },
+                        "projectId": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": ["production", "development"]
+                        }
+                      },
+                      "required": ["id", "name", "key", "projectId", "type"]
+                    }
+                  },
+                  "required": ["apiKey"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Project"]
+      }
+    },
     "/v2/project/files/upload-files": {
       "post": {
         "operationId": "uploadSourceFiles",
@@ -618,6 +825,7 @@
                                 "TWILIO_CONTENT_JSON",
                                 "LOTTIE",
                                 "SVG",
+                                "XCSTRINGS",
                                 "DOT_STRINGS",
                                 "DOT_STRINGSDICT",
                                 "ANDROID_STRINGS"
@@ -933,6 +1141,7 @@
                                 "TWILIO_CONTENT_JSON",
                                 "LOTTIE",
                                 "SVG",
+                                "XCSTRINGS",
                                 "DOT_STRINGS",
                                 "DOT_STRINGSDICT",
                                 "ANDROID_STRINGS"
@@ -1006,6 +1215,7 @@
                                   "TWILIO_CONTENT_JSON",
                                   "LOTTIE",
                                   "SVG",
+                                  "XCSTRINGS",
                                   "DOT_STRINGS",
                                   "DOT_STRINGSDICT",
                                   "ANDROID_STRINGS"
@@ -1035,6 +1245,7 @@
                                   "TWILIO_CONTENT_JSON",
                                   "LOTTIE",
                                   "SVG",
+                                  "XCSTRINGS",
                                   "DOT_STRINGS",
                                   "DOT_STRINGSDICT",
                                   "ANDROID_STRINGS"
@@ -2322,6 +2533,7 @@
                             "TWILIO_CONTENT_JSON",
                             "LOTTIE",
                             "SVG",
+                            "XCSTRINGS",
                             "DOT_STRINGS",
                             "DOT_STRINGSDICT",
                             "ANDROID_STRINGS"
@@ -2395,6 +2607,9 @@
                               "projectId": {
                                 "type": "string"
                               },
+                              "orgId": {
+                                "type": "string"
+                              },
                               "force": {
                                 "type": "boolean"
                               },
@@ -2434,6 +2649,7 @@
                               "branchId",
                               "targetLocale",
                               "projectId",
+                              "orgId",
                               "force"
                             ]
                           }
@@ -3959,187 +4175,6 @@
       }
     },
     "/v2/project/info/{projectId}": {
-      "get": {
-        "operationId": "getProjectInfo",
-        "summary": "Get Project information",
-        "description": "Read the authenticated Project's name, Organization ID, locale settings, and auto-approval setting.",
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            },
-            "required": true,
-            "name": "projectId",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "enum": [
-                "2025-01-01.v0",
-                "2025-11-03.v1",
-                "2026-02-18.v1",
-                "2026-03-06.v1"
-              ],
-              "description": "API contract version. Defaults to the oldest supported version."
-            },
-            "required": false,
-            "description": "API contract version. Defaults to the oldest supported version.",
-            "name": "gt-api-version",
-            "in": "header"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
-            },
-            "required": false,
-            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
-            "name": "gt-project-id",
-            "in": "header"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Project information",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string"
-                    },
-                    "name": {
-                      "type": "string"
-                    },
-                    "orgId": {
-                      "type": "string"
-                    },
-                    "defaultLocale": {
-                      "type": ["string", "null"]
-                    },
-                    "currentLocales": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    },
-                    "autoApprove": {
-                      "type": "boolean"
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "name",
-                    "orgId",
-                    "defaultLocale",
-                    "currentLocales",
-                    "autoApprove"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        },
-        "tags": ["Project"]
-      },
       "post": {
         "operationId": "updateProjectInfo",
         "summary": "Update Project information",
@@ -4283,6 +4318,187 @@
             }
           },
           "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Project"]
+      },
+      "get": {
+        "operationId": "getProjectInfo",
+        "summary": "Get Project information",
+        "description": "Read the authenticated Project's name, Organization ID, locale settings, and auto-approval setting.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "projectId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key)."
+            },
+            "required": false,
+            "description": "Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).",
+            "name": "gt-project-id",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Project information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "orgId": {
+                      "type": "string"
+                    },
+                    "defaultLocale": {
+                      "type": ["string", "null"]
+                    },
+                    "currentLocales": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "autoApprove": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "orgId",
+                    "defaultLocale",
+                    "currentLocales",
+                    "autoApprove"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
             "description": "Request error",
             "content": {
               "application/json": {
