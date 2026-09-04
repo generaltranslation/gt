@@ -272,6 +272,27 @@ describe('Middleware Integration Tests', () => {
       expect(getResponsePath(res)).toBe('/fr/caf%C3%A9/article');
     });
 
+    it('preserves trailing slashes while rewriting pathConfig routes', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+        pathConfig: {
+          '/about': { fr: '/a-propos' },
+          '/docs/[...slug]': { fr: '/documentation/[...slug]' },
+        },
+      });
+
+      const staticResponse = middleware(createRequest('/fr/a-propos/'));
+      const catchAllResponse = middleware(
+        createRequest('/fr/documentation/guides/start/')
+      );
+
+      expect(getResponseType(staticResponse)).toBe('rewrite');
+      expect(getResponsePath(staticResponse)).toBe('/fr/about/');
+      expect(getResponseType(catchAllResponse)).toBe('rewrite');
+      expect(getResponsePath(catchAllResponse)).toBe('/fr/docs/guides/start/');
+    });
+
     it('2.6: localeRouting=false → next()', () => {
       setEnvConfig();
       const middleware = createNextMiddleware({

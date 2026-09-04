@@ -66,12 +66,27 @@ export function normalizePathname(pathname: string): string {
 
 function getPathSegments(pathname: string): string[] {
   if (pathname === '') return [];
-  const normalizedPathname = normalizePathname(pathname);
+  let normalizedPathname = normalizePathname(pathname);
+  if (normalizedPathname.length > 1) {
+    normalizedPathname = normalizedPathname.replace(/\/+$/, '') || '/';
+  }
 
   const pathnameWithoutLeadingSlash = normalizedPathname.startsWith('/')
     ? normalizedPathname.slice(1)
     : normalizedPathname;
   return pathnameWithoutLeadingSlash.split('/');
+}
+
+function applyTrailingSlash(pathname: string, targetPathname: string): string {
+  const sourceHasTrailingSlash = pathname.length > 1 && pathname.endsWith('/');
+  if (sourceHasTrailingSlash) {
+    return targetPathname === '/' || targetPathname.endsWith('/')
+      ? targetPathname
+      : `${targetPathname}/`;
+  }
+  return targetPathname.length > 1
+    ? targetPathname.replace(/\/+$/, '') || '/'
+    : targetPathname;
 }
 
 function insertPath(
@@ -281,7 +296,9 @@ export function replaceDynamicSegments(
   path: string,
   templatePath: string
 ): string {
-  if (!templatePath.includes('[')) return templatePath;
+  if (!templatePath.includes('[')) {
+    return applyTrailingSlash(path, templatePath);
+  }
 
   const params = extractDynamicParams(templatePath, path);
   let paramIndex = 0;
@@ -307,7 +324,7 @@ export function replaceDynamicSegments(
     }
   }
 
-  return resultSegments.join('/') || '/';
+  return applyTrailingSlash(path, resultSegments.join('/') || '/');
 }
 
 /**
