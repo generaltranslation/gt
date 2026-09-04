@@ -15,6 +15,7 @@ import {
 import {
   PathConfig,
   normalizePathname,
+  getSharedPath,
   getSharedPathMatch,
   replaceDynamicSegments,
   getLocalizedPath,
