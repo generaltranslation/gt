@@ -98,4 +98,32 @@ describe('createOrUpdateBrowserConditionStore', () => {
       value: 'true',
     });
   });
+
+  it('does not throw when navigator is unbound (e.g. during SSR)', () => {
+    // `vi.stubGlobal('navigator', undefined)` only assigns `undefined` to an
+    // already-declared global — it doesn't reproduce the real failure, where
+    // `navigator` is an unbound identifier and a bare reference throws a
+    // ReferenceError. Delete the property outright instead.
+    const originalNavigatorDescriptor = Object.getOwnPropertyDescriptor(
+      globalThis,
+      'navigator'
+    );
+    delete (globalThis as { navigator?: unknown }).navigator;
+
+    try {
+      expect(() =>
+        createOrUpdateBrowserConditionStore({
+          locale: 'fr',
+        })
+      ).not.toThrow();
+    } finally {
+      if (originalNavigatorDescriptor) {
+        Object.defineProperty(
+          globalThis,
+          'navigator',
+          originalNavigatorDescriptor
+        );
+      }
+    }
+  });
 });
