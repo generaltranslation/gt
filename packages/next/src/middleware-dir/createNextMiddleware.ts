@@ -22,6 +22,7 @@ import {
   getLocaleFromRequest,
   getResponse,
   ResponseConfig,
+  type PathMatcher,
 } from './utils';
 import { defaultLocaleHeaderName } from '../utils/headers';
 import type { CustomMapping } from '@generaltranslation/format/types';
@@ -166,7 +167,7 @@ export function createNextMiddleware({
 
   // Create the route override path mapping
   const routeOverridePathMaps = Object.entries(routeOverrides).reduce<
-    Record<string, Record<string, string>>
+    Record<string, PathMatcher>
   >((acc, [locale, paths]) => {
     const overridePathConfig = Object.fromEntries(
       paths.map((path) => [path, path])
@@ -311,13 +312,14 @@ export function createNextMiddleware({
           ? standardizedPathname.replace(new RegExp(`^/${userLocale}`), '')
           : standardizedPathname) ||
         '/';
-      const routeOverridePath = getSharedPath(
-        pagePath,
-        routeOverridePathMaps[userLocale] || {},
-        undefined
-      )
-        ? `/${userLocale}/${userLocale}${pagePath === '/' ? '' : pagePath}`
+      const routeOverridePathMap = routeOverridePathMaps[userLocale];
+      const routeOverrideSharedPath = routeOverridePathMap
+        ? getSharedPath(pagePath, routeOverridePathMap, undefined)
         : undefined;
+      const routeOverridePath =
+        routeOverrideSharedPath !== undefined
+          ? `/${userLocale}/${userLocale}${pagePath === '/' ? '' : pagePath}`
+          : undefined;
 
       // ---------- ROUTING LOGIC ---------- //
 
