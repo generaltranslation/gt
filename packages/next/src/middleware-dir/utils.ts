@@ -21,11 +21,163 @@ export type ResponseConfig = {
   localeHeaderName: string;
 };
 
-const DYNAMIC_PATH_SEGMENT_PATTERN = '/[^/]+';
-const PATH_REGEX_SLASHES = /[\\/]/g;
+type PathMatcherNode = {
+  staticSegments: Map<string, PathMatcherNode>;
+  dynamicSegment?: PathMatcherNode;
+  catchAllSegment?: PathMatcherNode;
+  optionalCatchAllSegment?: PathMatcherNode;
+  sharedPath?: string;
+};
 
-function escapePathRegexSlashes(pathPattern: string): string {
-  return pathPattern.replace(PATH_REGEX_SLASHES, '\\$&');
+export type PathMatcher = {
+  root: PathMatcherNode;
+};
+
+type DynamicSegmentType = 'dynamic' | 'catch-all' | 'optional-catch-all';
+
+const DYNAMIC_SEGMENT_PATTERN = /^\[[^.[\]/]+\]$/;
+const CATCH_ALL_SEGMENT_PATTERN = /^\[\.\.\.[^\][\]/]+\]$/;
+const OPTIONAL_CATCH_ALL_SEGMENT_PATTERN = /^\[\[\.\.\.[^\][\]/]+\]\]$/;
+
+function createPathMatcherNode(): PathMatcherNode {
+  return { staticSegments: new Map() };
+}
+
+function getDynamicSegmentType(
+  segment: string
+): DynamicSegmentType | undefined {
+  if (OPTIONAL_CATCH_ALL_SEGMENT_PATTERN.test(segment)) {
+    return 'optional-catch-all';
+  }
+  if (CATCH_ALL_SEGMENT_PATTERN.test(segment)) return 'catch-all';
+  if (DYNAMIC_SEGMENT_PATTERN.test(segment)) return 'dynamic';
+  return undefined;
+}
+
+function getPathSegments(pathname: string): string[] {
+  if (pathname === '') return [];
+  const pathnameWithoutLeadingSlash = pathname.startsWith('/')
+    ? pathname.slice(1)
+    : pathname;
+  return pathnameWithoutLeadingSlash.split('/');
+}
+
+function insertPath(
+  matcher: PathMatcher,
+  pathname: string,
+  sharedPath: string
+) {
+  let node = matcher.root;
+
+  for (const segment of getPathSegments(pathname)) {
+    const segmentType = getDynamicSegmentType(segment);
+    if (segmentType === 'dynamic') {
+      node.dynamicSegment ||= createPathMatcherNode();
+      node = node.dynamicSegment;
+    } else if (segmentType === 'catch-all') {
+      node.catchAllSegment ||= createPathMatcherNode();
+      node = node.catchAllSegment;
+    } else if (segmentType === 'optional-catch-all') {
+      node.optionalCatchAllSegment ||= createPathMatcherNode();
+      node = node.optionalCatchAllSegment;
+    } else {
+      const staticNode =
+        node.staticSegments.get(segment) || createPathMatcherNode();
+      node.staticSegments.set(segment, staticNode);
+      node = staticNode;
+    }
+  }
+
+  // Match the previous map behavior when two parameter names describe the
+  // same path shape: the later entry wins.
+  node.sharedPath = sharedPath;
+}
+
+export function createPathMatcher(
+  pathEntries: ReadonlyArray<readonly [string, string]>
+): PathMatcher {
+  const matcher: PathMatcher = { root: createPathMatcherNode() };
+  for (const [pathname, sharedPath] of pathEntries) {
+    insertPath(matcher, pathname, sharedPath);
+  }
+  return matcher;
+}
+
+function matchPathSegments(
+  node: PathMatcherNode,
+  pathSegments: string[],
+  segmentIndex: number
+): string | undefined {
+  if (segmentIndex === pathSegments.length) {
+    if (node.sharedPath !== undefined) return node.sharedPath;
+    if (node.optionalCatchAllSegment) {
+      return matchPathSegments(
+        node.optionalCatchAllSegment,
+        pathSegments,
+        segmentIndex
+      );
+    }
+    return undefined;
+  }
+
+  const segment = pathSegments[segmentIndex];
+  const staticNode = node.staticSegments.get(segment);
+  if (staticNode) {
+    const match = matchPathSegments(staticNode, pathSegments, segmentIndex + 1);
+    if (match !== undefined) return match;
+  }
+
+  if (segment && node.dynamicSegment) {
+    const match = matchPathSegments(
+      node.dynamicSegment,
+      pathSegments,
+      segmentIndex + 1
+    );
+    if (match !== undefined) return match;
+  }
+
+  if (node.catchAllSegment) {
+    for (
+      let nextSegmentIndex = pathSegments.length;
+      nextSegmentIndex > segmentIndex;
+      nextSegmentIndex--
+    ) {
+      if (
+        !pathSegments
+          .slice(segmentIndex, nextSegmentIndex)
+          .some((segment) => segment.length > 0)
+      ) {
+        continue;
+      }
+      const match = matchPathSegments(
+        node.catchAllSegment,
+        pathSegments,
+        nextSegmentIndex
+      );
+      if (match !== undefined) return match;
+    }
+  }
+
+  if (node.optionalCatchAllSegment) {
+    for (
+      let nextSegmentIndex = pathSegments.length;
+      nextSegmentIndex >= segmentIndex;
+      nextSegmentIndex--
+    ) {
+      const match = matchPathSegments(
+        node.optionalCatchAllSegment,
+        pathSegments,
+        nextSegmentIndex
+      );
+      if (match !== undefined) return match;
+    }
+  }
+
+  return undefined;
+}
+
+function matchPath(pathname: string, matcher: PathMatcher) {
+  return matchPathSegments(matcher.root, getPathSegments(pathname), 0);
 }
 
 export function getResponse({
@@ -99,7 +251,10 @@ export function extractDynamicParams(
   const sharedSegments = templatePath.split('/');
 
   sharedSegments.forEach((segment, index) => {
-    if (segment.startsWith('[') && segment.endsWith(']')) {
+    const segmentType = getDynamicSegmentType(segment);
+    if (segmentType === 'catch-all' || segmentType === 'optional-catch-all') {
+      params.push(pathSegments.slice(index).join('/'));
+    } else if (segmentType === 'dynamic') {
       params.push(pathSegments[index]);
     }
   });
@@ -118,10 +273,29 @@ export function replaceDynamicSegments(
 
   const params = extractDynamicParams(templatePath, path);
   let paramIndex = 0;
-  const result = templatePath.replace(/\[([^\]]+)\]/g, (match: string) => {
-    return params[paramIndex++] || match;
-  });
-  return result;
+  const resultSegments: string[] = [];
+
+  for (const segment of templatePath.split('/')) {
+    const segmentType = getDynamicSegmentType(segment);
+    if (!segmentType) {
+      resultSegments.push(segment);
+      continue;
+    }
+
+    const param = params[paramIndex++];
+    if (segmentType === 'optional-catch-all' && !param) continue;
+    if (!param) {
+      resultSegments.push(segment);
+      continue;
+    }
+    if (segmentType === 'catch-all' || segmentType === 'optional-catch-all') {
+      resultSegments.push(...param.split('/'));
+    } else {
+      resultSegments.push(param);
+    }
+  }
+
+  return resultSegments.join('/') || '/';
 }
 
 /**
@@ -147,46 +321,38 @@ export function getLocalizedPath(
 }
 
 /**
- * Creates a map of localized paths to shared paths using regex patterns
+ * Creates indexed matchers for localized paths and unprefixed default-locale
+ * paths.
  */
 export function createPathToSharedPathMap(
   pathConfig: PathConfig,
   prefixDefaultLocale: boolean,
   defaultLocale: string
 ): {
-  pathToSharedPath: { [key: string]: string };
-  defaultLocalePaths: string[];
+  pathToSharedPath: PathMatcher;
+  defaultLocalePaths: PathMatcher;
 } {
-  return Object.entries(pathConfig).reduce<{
-    pathToSharedPath: { [key: string]: string };
-    defaultLocalePaths: string[];
-  }>(
-    (acc, [sharedPath, localizedPaths]) => {
-      const { pathToSharedPath, defaultLocalePaths } = acc;
-      // Add the shared path itself, converting to regex pattern if it has dynamic segments
-      if (sharedPath.includes('[')) {
-        const pattern = sharedPath.replace(/\[([^\]]+)\]/g, '[^/]+');
-        pathToSharedPath[pattern] = sharedPath;
-      } else {
-        pathToSharedPath[sharedPath] = sharedPath;
-      }
+  const pathEntries: Array<readonly [string, string]> = [];
+  const defaultLocaleEntries: Array<readonly [string, string]> = [];
 
-      if (typeof localizedPaths === 'object') {
-        Object.entries(localizedPaths).forEach(([locale, localizedPath]) => {
-          // Convert the localized path to a regex pattern
-          // Replace [param] with [^/]+ to match any non-slash characters
-          const pattern = localizedPath.replace(/\[([^\]]+)\]/g, '[^/]+');
-          pathToSharedPath[`/${locale}${pattern}`] = sharedPath;
-          if (!prefixDefaultLocale && locale === defaultLocale) {
-            pathToSharedPath[pattern] = sharedPath;
-            defaultLocalePaths.push(pattern);
-          }
-        });
+  for (const [sharedPath, localizedPaths] of Object.entries(pathConfig)) {
+    pathEntries.push([sharedPath, sharedPath]);
+
+    if (typeof localizedPaths === 'object') {
+      for (const [locale, localizedPath] of Object.entries(localizedPaths)) {
+        pathEntries.push([`/${locale}${localizedPath}`, sharedPath]);
+        if (!prefixDefaultLocale && locale === defaultLocale) {
+          pathEntries.push([localizedPath, sharedPath]);
+          defaultLocaleEntries.push([localizedPath, sharedPath]);
+        }
       }
-      return acc;
-    },
-    { pathToSharedPath: {}, defaultLocalePaths: [] }
-  );
+    }
+  }
+
+  return {
+    pathToSharedPath: createPathMatcher(pathEntries),
+    defaultLocalePaths: createPathMatcher(defaultLocaleEntries),
+  };
 }
 
 /**
@@ -194,45 +360,17 @@ export function createPathToSharedPathMap(
  */
 export function getSharedPath(
   standardizedPathname: string,
-  pathToSharedPath: { [key: string]: string },
+  pathToSharedPath: PathMatcher,
   pathnameLocale: string | undefined
 ): string | undefined {
-  // Try exact match first
-  if (pathToSharedPath[standardizedPathname]) {
-    return pathToSharedPath[standardizedPathname];
-  }
+  const sharedPath = matchPath(standardizedPathname, pathToSharedPath);
+  if (sharedPath !== undefined) return sharedPath;
 
-  // Without locale prefix
-  let pathnameWithoutLocale = undefined;
-  // Only remove locale prefix if the locale prefix is valid
   if (pathnameLocale) {
-    pathnameWithoutLocale = standardizedPathname.replace(/^\/[^/]+/, '');
-    if (pathToSharedPath[pathnameWithoutLocale]) {
-      return pathToSharedPath[pathnameWithoutLocale];
-    }
+    const pathnameWithoutLocale = standardizedPathname.replace(/^\/[^/]+/, '');
+    return matchPath(pathnameWithoutLocale, pathToSharedPath);
   }
-
-  // Try regex pattern match
-  let candidateSharedPath = undefined;
-  for (const [pattern, sharedPath] of Object.entries(pathToSharedPath)) {
-    if (pattern.includes(DYNAMIC_PATH_SEGMENT_PATTERN)) {
-      // Convert the pattern to a strict regex that matches the exact path structure
-      const regex = new RegExp(`^${escapePathRegexSlashes(pattern)}$`);
-      // Exact match
-      if (regex.test(standardizedPathname)) {
-        return sharedPath;
-      }
-      // Without locale prefix
-      if (
-        !candidateSharedPath &&
-        pathnameLocale &&
-        regex.test(pathnameWithoutLocale as string)
-      ) {
-        candidateSharedPath = sharedPath;
-      }
-    }
-  }
-  return candidateSharedPath;
+  return undefined;
 }
 
 /**
@@ -244,23 +382,9 @@ export function getSharedPath(
 
 function inDefaultLocalePaths(
   pathname: string,
-  defaultLocalePaths: string[]
+  defaultLocalePaths: PathMatcher
 ): boolean {
-  // Try exact match first
-  if (defaultLocalePaths.includes(pathname)) {
-    return true;
-  }
-
-  // Try regex pattern match
-  for (const path of defaultLocalePaths) {
-    if (path.includes(DYNAMIC_PATH_SEGMENT_PATTERN)) {
-      const regex = new RegExp(`^${escapePathRegexSlashes(path)}$`);
-      if (regex.test(pathname)) {
-        return true;
-      }
-    }
-  }
-  return false;
+  return matchPath(pathname, defaultLocalePaths) !== undefined;
 }
 
 /**
@@ -273,7 +397,7 @@ export function getLocaleFromRequest(
   localeRouting: boolean,
   gtServicesEnabled: boolean,
   prefixDefaultLocale: boolean,
-  defaultLocalePaths: string[],
+  defaultLocalePaths: PathMatcher,
   referrerLocaleCookieName: string,
   localeCookieName: string,
   resetLocaleCookieName: string,
