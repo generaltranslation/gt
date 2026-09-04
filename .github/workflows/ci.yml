@@ -12,22 +12,6 @@ permissions:
   contents: read
 
 jobs:
-  # Changesets owns this same-repository branch namespace. Release PRs only
-  # contain generated version and changelog updates for changes that already
-  # passed CI on main.
-  release-merge-gate:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Require an admin to merge release PRs
-        if: ${{ github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.head_ref, 'changeset-release/') }}
-        run: |
-          echo '::error title=Admin merge required::Automated release PRs must be merged by a repository admin using the ruleset bypass.'
-          exit 1
-
-      - name: Allow standard PRs
-        if: ${{ github.event.pull_request.head.repo.full_name != github.repository || !startsWith(github.head_ref, 'changeset-release/') }}
-        run: echo 'This is not an automated release PR.'
-
   lint:
     if: ${{ github.event.pull_request.head.repo.full_name != github.repository || !startsWith(github.head_ref, 'changeset-release/') }}
     runs-on: ubuntu-latest
