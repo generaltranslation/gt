@@ -23,6 +23,7 @@ export type FileFormat =
   | 'TWILIO_CONTENT_JSON'
   | 'LOTTIE'
   | 'SVG'
+  | 'XCSTRINGS'
   | 'DOT_STRINGS'
   | 'DOT_STRINGSDICT'
   | 'ANDROID_STRINGS';
@@ -191,6 +192,80 @@ export type CreateProjectResponses = {
 export type CreateProjectResponse =
   CreateProjectResponses[keyof CreateProjectResponses];
 
+export type CreateProjectApiKeyData = {
+  body: {
+    name: string;
+    type?: 'production' | 'development';
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?:
+      | '2025-01-01.v0'
+      | '2025-11-03.v1'
+      | '2026-02-18.v1'
+      | '2026-03-06.v1';
+  };
+  path: {
+    projectId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/api-keys';
+};
+
+export type CreateProjectApiKeyErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type CreateProjectApiKeyError =
+  CreateProjectApiKeyErrors[keyof CreateProjectApiKeyErrors];
+
+export type CreateProjectApiKeyResponses = {
+  /**
+   * Project API key created
+   */
+  201: {
+    apiKey: {
+      id: string;
+      name: string;
+      key: string;
+      projectId: string;
+      type: 'production' | 'development';
+    };
+  };
+};
+
+export type CreateProjectApiKeyResponse =
+  CreateProjectApiKeyResponses[keyof CreateProjectApiKeyResponses];
+
 export type UploadSourceFilesData = {
   body: {
     data: Array<{
@@ -212,6 +287,7 @@ export type UploadSourceFilesData = {
           | 'TWILIO_CONTENT_JSON'
           | 'LOTTIE'
           | 'SVG'
+          | 'XCSTRINGS'
           | 'DOT_STRINGS'
           | 'DOT_STRINGSDICT'
           | 'ANDROID_STRINGS';
@@ -329,6 +405,7 @@ export type UploadTranslationsData = {
           | 'TWILIO_CONTENT_JSON'
           | 'LOTTIE'
           | 'SVG'
+          | 'XCSTRINGS'
           | 'DOT_STRINGS'
           | 'DOT_STRINGSDICT'
           | 'ANDROID_STRINGS';
@@ -361,6 +438,7 @@ export type UploadTranslationsData = {
           | 'TWILIO_CONTENT_JSON'
           | 'LOTTIE'
           | 'SVG'
+          | 'XCSTRINGS'
           | 'DOT_STRINGS'
           | 'DOT_STRINGSDICT'
           | 'ANDROID_STRINGS';
@@ -381,6 +459,7 @@ export type UploadTranslationsData = {
           | 'TWILIO_CONTENT_JSON'
           | 'LOTTIE'
           | 'SVG'
+          | 'XCSTRINGS'
           | 'DOT_STRINGS'
           | 'DOT_STRINGSDICT'
           | 'ANDROID_STRINGS';
@@ -856,6 +935,7 @@ export type EnqueueFileTranslationsData = {
         | 'TWILIO_CONTENT_JSON'
         | 'LOTTIE'
         | 'SVG'
+        | 'XCSTRINGS'
         | 'DOT_STRINGS'
         | 'DOT_STRINGSDICT'
         | 'ANDROID_STRINGS';
@@ -947,6 +1027,7 @@ export type EnqueueFileTranslationsResponses = {
             branchId: string;
             targetLocale: string;
             projectId: string;
+            orgId: string;
             force: boolean;
             outputFileFormat?: FileFormat;
             modelProvider?: ModelProvider;

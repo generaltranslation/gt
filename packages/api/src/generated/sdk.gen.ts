@@ -8,6 +8,9 @@ import type {
   CreateCliWizardSessionData,
   CreateCliWizardSessionErrors,
   CreateCliWizardSessionResponses,
+  CreateProjectApiKeyData,
+  CreateProjectApiKeyErrors,
+  CreateProjectApiKeyResponses,
   CreateProjectData,
   CreateProjectErrors,
   CreateProjectResponses,
@@ -114,6 +117,28 @@ export const createProject = <ThrowOnError extends boolean = false>(
   >({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/v2/projects',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Create a Project API Key
+ *
+ * Create an API key for a Project with an Organization API key. The Organization key must have the `project:api_keys:write` permission and can only delegate Project permissions it already holds. Project keys cannot use this endpoint.
+ */
+export const createProjectApiKey = <ThrowOnError extends boolean = false>(
+  options: Options<CreateProjectApiKeyData, ThrowOnError>
+) =>
+  options.client.post<
+    CreateProjectApiKeyResponses,
+    CreateProjectApiKeyErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v2/projects/{projectId}/api-keys',
     ...options,
     headers: {
       'Content-Type': 'application/json',
