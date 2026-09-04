@@ -246,6 +246,139 @@ describe('Middleware Integration Tests', () => {
     });
   });
 
+  describe('Route overrides', () => {
+    it('rewrites a locale-specific page to its custom route', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+        routeOverrides: { fr: ['/custom-page'] },
+      });
+
+      const res = middleware(createRequest('/fr/custom-page'));
+
+      expect(getResponseType(res)).toBe('rewrite');
+      expect(getResponsePath(res)).toBe('/fr/fr/custom-page');
+      expect(res.headers.get(LOCALE_HEADER)).toBe('fr');
+    });
+
+    it('leaves shared pages on their normal route', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+        routeOverrides: { fr: ['/custom-page'] },
+      });
+
+      const res = middleware(createRequest('/fr/shared-page'));
+
+      expect(getResponseType(res)).toBe('next');
+    });
+
+    it('works for a non-default locale when the default locale is unprefixed', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: false,
+        routeOverrides: { fr: ['/custom-page'] },
+      });
+
+      const res = middleware(createRequest('/fr/custom-page'));
+
+      expect(getResponseType(res)).toBe('rewrite');
+      expect(getResponsePath(res)).toBe('/fr/fr/custom-page');
+    });
+
+    it('works for an unprefixed default-locale page', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: false,
+        routeOverrides: { en: ['/custom-page'] },
+      });
+
+      const res = middleware(createRequest('/custom-page'));
+
+      expect(getResponseType(res)).toBe('rewrite');
+      expect(getResponsePath(res)).toBe('/en/en/custom-page');
+    });
+
+    it('preserves query parameters', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+        routeOverrides: { fr: ['/custom-page'] },
+      });
+
+      const res = middleware(
+        createRequest('/fr/custom-page', { search: 'preview=true' })
+      );
+
+      expect(getResponseType(res)).toBe('rewrite');
+      expect(getResponsePath(res)).toBe('/fr/fr/custom-page');
+      expect(getResponseSearch(res)).toBe('?preview=true');
+    });
+
+    it('supports dynamic page segments', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+        routeOverrides: { fr: ['/products/[id]'] },
+      });
+
+      const res = middleware(createRequest('/fr/products/ramp-card'));
+
+      expect(getResponseType(res)).toBe('rewrite');
+      expect(getResponsePath(res)).toBe('/fr/fr/products/ramp-card');
+    });
+
+    it('standardizes configured locales when GT services are enabled', () => {
+      setEnvConfig({ locales: ['en', 'fr-FR'] });
+      process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED = 'true';
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+        routeOverrides: { 'fr-fr': ['/custom-page'] },
+      });
+
+      const res = middleware(createRequest('/fr-FR/custom-page'));
+
+      expect(getResponseType(res)).toBe('rewrite');
+      expect(getResponsePath(res)).toBe('/fr-FR/fr-FR/custom-page');
+    });
+
+    it('uses the shared path when combined with pathConfig', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+        pathConfig: {
+          '/custom-page': { fr: '/page-personnalisee' },
+        },
+        routeOverrides: { fr: ['/custom-page'] },
+      });
+
+      const res = middleware(createRequest('/fr/page-personnalisee'));
+
+      expect(getResponseType(res)).toBe('rewrite');
+      expect(getResponsePath(res)).toBe('/fr/fr/custom-page');
+    });
+
+    it('keeps locale-switch redirects ahead of custom rewrites', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: false,
+        routeOverrides: { fr: ['/custom-page'] },
+      });
+
+      const res = middleware(
+        createRequest('/fr/custom-page', {
+          cookies: {
+            [LOCALE_COOKIE]: 'en',
+            [RESET_COOKIE]: 'true',
+          },
+        })
+      );
+
+      expect(getResponseType(res)).toBe('redirect');
+      expect(getResponsePath(res)).toBe('/custom-page');
+    });
+  });
+
   // ================================================================
   // Category 3: 2-Pass Routing (Redirect Scenarios)
   // ================================================================
