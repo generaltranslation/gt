@@ -39,10 +39,12 @@ const DYNAMIC_SEGMENT_PATTERN = /^\[[^.[\]/]+\]$/;
 const CATCH_ALL_SEGMENT_PATTERN = /^\[\.\.\.[^\][\]/]+\]$/;
 const OPTIONAL_CATCH_ALL_SEGMENT_PATTERN = /^\[\[\.\.\.[^\][\]/]+\]\]$/;
 
+/** Creates an empty node in the pathname matcher trie. */
 function createPathMatcherNode(): PathMatcherNode {
   return { staticSegments: new Map() };
 }
 
+/** Identifies the supported Next.js dynamic segment syntax. */
 function getDynamicSegmentType(
   segment: string
 ): DynamicSegmentType | undefined {
@@ -54,6 +56,7 @@ function getDynamicSegmentType(
   return undefined;
 }
 
+/** Splits a pathname into the segments consumed by the matcher. */
 function getPathSegments(pathname: string): string[] {
   if (pathname === '') return [];
   const pathnameWithoutLeadingSlash = pathname.startsWith('/')
@@ -62,6 +65,7 @@ function getPathSegments(pathname: string): string[] {
   return pathnameWithoutLeadingSlash.split('/');
 }
 
+/** Inserts a pathname template and its shared path into the matcher trie. */
 function insertPath(
   matcher: PathMatcher,
   pathname: string,
@@ -93,6 +97,7 @@ function insertPath(
   node.sharedPath = sharedPath;
 }
 
+/** Builds a segment trie from pathname-to-shared-path entries. */
 export function createPathMatcher(
   pathEntries: ReadonlyArray<readonly [string, string]>
 ): PathMatcher {
@@ -103,6 +108,7 @@ export function createPathMatcher(
   return matcher;
 }
 
+/** Recursively matches segments in static, dynamic, then catch-all order. */
 function matchPathSegments(
   node: PathMatcherNode,
   pathSegments: string[],
@@ -176,10 +182,12 @@ function matchPathSegments(
   return undefined;
 }
 
+/** Looks up the shared path associated with a concrete pathname. */
 function matchPath(pathname: string, matcher: PathMatcher) {
   return matchPathSegments(matcher.root, getPathSegments(pathname), 0);
 }
 
+/** Creates a middleware response and attaches GT routing state. */
 export function getResponse({
   type,
   originalUrl,
@@ -238,7 +246,7 @@ export function extractLocale(pathname: string): string | null {
 }
 
 /**
- * Extracts dynamic parameters from a path based on a shared path pattern
+ * Extracts dynamic parameters from a path based on a shared path pattern.
  */
 export function extractDynamicParams(
   templatePath: string,
@@ -263,7 +271,7 @@ export function extractDynamicParams(
 }
 
 /**
- * Replaces dynamic segments in a path with their actual values
+ * Replaces dynamic segments in a path with their actual values.
  */
 export function replaceDynamicSegments(
   path: string,
@@ -299,7 +307,7 @@ export function replaceDynamicSegments(
 }
 
 /**
- * Gets the full localized path given a shared path and locale
+ * Gets the full localized path given a shared path and locale.
  */
 export function getLocalizedPath(
   sharedPath: string,
@@ -321,8 +329,7 @@ export function getLocalizedPath(
 }
 
 /**
- * Creates indexed matchers for localized paths and unprefixed default-locale
- * paths.
+ * Creates matchers for localized paths and unprefixed default-locale paths.
  */
 export function createPathToSharedPathMap(
   pathConfig: PathConfig,
@@ -356,7 +363,7 @@ export function createPathToSharedPathMap(
 }
 
 /**
- * Gets the shared path from a given pathname, handling both static and dynamic paths
+ * Gets the shared path matching a localized or unprefixed pathname.
  */
 export function getSharedPath(
   standardizedPathname: string,
@@ -374,12 +381,8 @@ export function getSharedPath(
 }
 
 /**
- * Checks if the pathname is in the default locale paths
- * @param pathname - The pathname to check
- * @param defaultLocalePaths - The default locale paths
- * @returns true if the pathname is in the default locale paths, false otherwise
+ * Checks whether a pathname matches an unprefixed default-locale path.
  */
-
 function inDefaultLocalePaths(
   pathname: string,
   defaultLocalePaths: PathMatcher
@@ -388,7 +391,7 @@ function inDefaultLocalePaths(
 }
 
 /**
- * Gets the locale from the request using various sources
+ * Resolves the request locale from its pathname, cookies, and headers.
  */
 export function getLocaleFromRequest(
   req: NextRequest,
