@@ -1,5 +1,36 @@
 # generaltranslation
 
+## 9.2.0
+
+### Minor Changes
+
+- [#2179](https://github.com/generaltranslation/gt/pull/2179) [`4496e16`](https://github.com/generaltranslation/gt/commit/4496e161d7885f329bdfd7f4d04a7a58ed12d9d1) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Expose the generated API SDK from the `generaltranslation/api` subpath.
+
+### Patch Changes
+
+- [#2233](https://github.com/generaltranslation/gt/pull/2233) [`8725a5c`](https://github.com/generaltranslation/gt/commit/8725a5c9235926cf1653a9306cca44045874c0dc) Thanks [@eoinest](https://github.com/eoinest)! - Fix UTF-16 `.strings` and `.stringsdict` files being corrupted or rejected on upload.
+
+  Older Xcode wrote both formats as UTF-16, and legacy repositories still contain them. The CLI read every file as UTF-8 text, so a UTF-16 `.stringsdict` reached the API as mojibake and its XML parser rejected it outright — the file could not be uploaded at all. A UTF-16 `.strings` file did upload, but came back as byte-order-mark-less UTF-8, so every one of them showed as rewritten in `git diff`.
+
+  Encoding is now handled entirely by the CLI, which is the only part of the pipeline that touches the filesystem, and within the CLI by a single module at the disk boundary. Reads decode by byte order mark, so the API only ever receives UTF-8 text. Writes re-encode to the source file's own encoding, which the CLI already knows because it just read that file, so a UTF-16 repository stays UTF-16 and a UTF-8 one gains no byte order mark. This also fixes re-downloading a UTF-16 `.stringsdict` source, which previously produced a file `plutil` rejected with `Unexpected character ã at line 1`.
+
+  If the source file has been moved or deleted since it was uploaded, the translation already on disk is used as the record of the encoding instead, so those files keep their encoding rather than being rewritten as UTF-8.
+
+  The content hash recorded for a downloaded translation is now taken from its decoded text as well, so a file stored in UTF-16 stops reading as edited on every run because its hash had been computed from bytes read as UTF-8.
+
+  A file with no byte order mark is treated as UTF-8 even when its bytes are plainly UTF-16, matching Foundation: `plutil` rejects those files too, so guessing would translate content the platform itself cannot read.
+
+  `DOT_STRINGS` leaves `BINARY_FILE_FORMATS`, which now contains only `LOTTIE`. Every `.strings` file's version id changes once, because it is now hashed from the decoded text rather than the base64 payload, so each one re-translates a single time.
+
+- [#2240](https://github.com/generaltranslation/gt/pull/2240) [`0e5d7e0`](https://github.com/generaltranslation/gt/commit/0e5d7e0efd48f98659a8229f7e48273070981f5b) Thanks [@eoinest](https://github.com/eoinest)! - Send default API and runtime translation requests to `https://api.gtx.dev` while preserving their existing paths and custom URL overrides.
+
+- [#2180](https://github.com/generaltranslation/gt/pull/2180) [`3c33a75`](https://github.com/generaltranslation/gt/commit/3c33a75c738c2f433cfdf4e19d75b189c0100f38) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Route runtime and Sanity API requests through the generated General Translation API SDK while preserving the existing public interfaces and caller-configured runtime timeouts.
+
+- [#2202](https://github.com/generaltranslation/gt/pull/2202) [`6ac4ba3`](https://github.com/generaltranslation/gt/commit/6ac4ba33a0230fb8aecae7c7677cfd38c361bd9c) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Expose `spec/openapi.json` through the API and core package exports.
+
+- Updated dependencies [[`3c33a75`](https://github.com/generaltranslation/gt/commit/3c33a75c738c2f433cfdf4e19d75b189c0100f38), [`6ac4ba3`](https://github.com/generaltranslation/gt/commit/6ac4ba33a0230fb8aecae7c7677cfd38c361bd9c), [`33ea383`](https://github.com/generaltranslation/gt/commit/33ea383b5d1593793b0a704b35b8a750ea8c3274)]:
+  - @generaltranslation/api@0.1.0
+
 ## 9.1.13
 
 ### Patch Changes

@@ -1,5 +1,17 @@
 # @generaltranslation/api
 
+## 0.1.0
+
+### Minor Changes
+
+- [#2179](https://github.com/generaltranslation/gt/pull/2179) [`33ea383`](https://github.com/generaltranslation/gt/commit/33ea383b5d1593793b0a704b35b8a750ea8c3274) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Add `gt project create` and `gt project status` commands, and migrate CLI API requests to the generated SDK through `generaltranslation/api`.
+
+### Patch Changes
+
+- [#2180](https://github.com/generaltranslation/gt/pull/2180) [`3c33a75`](https://github.com/generaltranslation/gt/commit/3c33a75c738c2f433cfdf4e19d75b189c0100f38) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Route runtime and Sanity API requests through the generated General Translation API SDK while preserving the existing public interfaces and caller-configured runtime timeouts.
+
+- [#2202](https://github.com/generaltranslation/gt/pull/2202) [`6ac4ba3`](https://github.com/generaltranslation/gt/commit/6ac4ba33a0230fb8aecae7c7677cfd38c361bd9c) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Expose `spec/openapi.json` through the API and core package exports.
+
 ## 0.0.6
 
 ### Patch Changes
