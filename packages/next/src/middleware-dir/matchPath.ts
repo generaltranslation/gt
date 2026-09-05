@@ -89,7 +89,7 @@ function matchPath(pathname: string, matcher: PathMatcher) {
 }
 
 /** Gets the shared route and source template matching a concrete pathname. */
-export function getSharedPathMatch(
+export function getSharedPath(
   standardizedPathname: string,
   pathToSharedPath: PathMatcher,
   pathnameLocale: string | undefined
@@ -107,17 +107,4 @@ export function getSharedPathMatch(
     }
   }
   return undefined;
-}
-
-/** Gets the shared path matching a localized or unprefixed pathname. */
-export function getSharedPath(
-  standardizedPathname: string,
-  pathToSharedPath: PathMatcher,
-  pathnameLocale: string | undefined
-): string | undefined {
-  return getSharedPathMatch(
-    standardizedPathname,
-    pathToSharedPath,
-    pathnameLocale
-  )?.sharedPath;
 }

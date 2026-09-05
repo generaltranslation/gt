@@ -14,7 +14,7 @@ import {
 import {
   PathConfig,
   normalizePathname,
-  getSharedPathMatch,
+  getSharedPath,
   replaceDynamicSegments,
   getLocalizedPath,
   createPathToSharedPathMap,
@@ -241,7 +241,7 @@ export function createNextMiddleware({
           : pathname;
 
       // Get the shared path for the unprefixed pathname
-      const sharedPathMatch = getSharedPathMatch(
+      const sharedPathMatch = getSharedPath(
         standardizedPathname,
         pathToSharedPath,
         pathnameLocale
