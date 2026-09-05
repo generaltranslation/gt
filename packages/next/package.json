@@ -85,6 +85,7 @@
     "@types/react": ">=18.0.0 <20.0.0",
     "@types/react-dom": ">=18.0.0 <20.0.0",
     "next": "15.2.3",
+    "parse5": "7.3.0",
     "tsdown": "catalog:",
     "tsx": "^4.23.12",
     "typescript": "catalog:"

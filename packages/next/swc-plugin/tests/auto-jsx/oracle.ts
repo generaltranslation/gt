@@ -2,7 +2,7 @@ import { transformSync } from '@babel/core';
 import jsx from '@babel/plugin-transform-react-jsx';
 import jsxDevelopment from '@babel/plugin-transform-react-jsx-development';
 import { parse } from '@babel/parser';
-import traverse from '@babel/traverse';
+import traverse, { type NodePath } from '@babel/traverse';
 import generate from '@babel/generator';
 import * as t from '@babel/types';
 import { transformSync as stripTypes } from '@swc/core';
@@ -81,6 +81,45 @@ const isVoidZero = (node: t.Node | null | undefined): boolean =>
   t.isUnaryExpression(node, { operator: 'void' }) &&
   t.isNumericLiteral(node.argument, { value: 0 });
 
+/** Recognize only the inert source record emitted for this harness's filename. */
+function generatedDevSource(
+  path: NodePath<t.CallExpression>,
+  node: t.Node | undefined
+): { fileBinding?: string } | undefined {
+  if (!t.isObjectExpression(node) || node.properties.length !== 3) return;
+  const names = ['fileName', 'lineNumber', 'columnNumber'];
+  if (
+    !node.properties.every(
+      (prop, index) =>
+        t.isObjectProperty(prop) &&
+        !prop.computed &&
+        !prop.shorthand &&
+        t.isIdentifier(prop.key, { name: names[index] }) &&
+        (index === 0 ||
+          (t.isNumericLiteral(prop.value) &&
+            Number.isInteger(prop.value.value) &&
+            prop.value.value > 0))
+    )
+  )
+    return;
+  const file = (node.properties[0] as t.ObjectProperty).value;
+  const isFixtureFilename = (value: string): boolean =>
+    value === 'input.tsx' || value.replaceAll('\\', '/').endsWith('/input.tsx');
+  // SWC embeds the filename directly; Babel uses a generated program binding.
+  if (t.isStringLiteral(file) && isFixtureFilename(file.value)) return {};
+  if (!t.isIdentifier(file) || !/^_jsxFileName\d*$/.test(file.name)) return;
+  const binding = path.scope.getBinding(file.name);
+  if (
+    binding?.constant &&
+    binding.scope.path.isProgram() &&
+    binding.path.isVariableDeclarator() &&
+    binding.path.parentPath.isVariableDeclaration({ kind: 'var' }) &&
+    t.isStringLiteral(binding.path.node.init) &&
+    isFixtureFilename(binding.path.node.init.value)
+  )
+    return { fileBinding: file.name };
+}
+
 /**
  * Canonicalize only runtime helper aliases and compiler-generated wrapper aliases.
  * Preserve all user expressions, child array nesting/order, props, keys and imports.
@@ -89,6 +128,7 @@ const isVoidZero = (node: t.Node | null | undefined): boolean =>
 export function canonical(ast: t.File): string {
   ast = t.cloneNode(ast, true);
   const devFileNames = new Set<string>();
+  const devCalls = new WeakSet<t.CallExpression>();
   const createElementNames = new Set<string>();
   const identifiers = new Set<string>();
   traverse(ast, {
@@ -119,6 +159,17 @@ export function canonical(ast: t.File): string {
             const name = t.isIdentifier(imported)
               ? imported.name
               : imported.value;
+            // Record the original imported kind before jsx/jsxs/jsxDEV aliases
+            // converge. Scope references exclude user functions shadowing it.
+            if (runtime && name === 'jsxDEV') {
+              const binding = path.scope.getBinding(specifier.node.local.name);
+              for (const reference of binding?.referencePaths ?? [])
+                if (
+                  reference.parentPath?.isCallExpression() &&
+                  reference.key === 'callee'
+                )
+                  devCalls.add(reference.parentPath.node);
+            }
             if (
               statement.node.source.value === 'react' &&
               name === 'createElement'
@@ -142,7 +193,9 @@ export function canonical(ast: t.File): string {
           if (
             binding &&
             !binding.referenced &&
-            binding.path.isVariableDeclarator()
+            binding.constant &&
+            binding.path.isVariableDeclarator() &&
+            t.isStringLiteral(binding.path.node.init)
           )
             binding.path.remove();
         }
@@ -163,37 +216,24 @@ export function canonical(ast: t.File): string {
         const source = props.properties.find(
           (prop) =>
             t.isObjectProperty(prop) &&
+            !prop.computed &&
             t.isIdentifier(prop.key, { name: '__source' })
         );
-        if (t.isObjectProperty(source) && t.isObjectExpression(source.value)) {
-          const file = source.value.properties.find(
+        const metadata = t.isObjectProperty(source)
+          ? generatedDevSource(path, source.value)
+          : undefined;
+        if (metadata) {
+          if (metadata.fileBinding) devFileNames.add(metadata.fileBinding);
+          props.properties = props.properties.filter(
             (prop) =>
-              t.isObjectProperty(prop) &&
-              t.isIdentifier(prop.key, { name: 'fileName' })
-          );
-          if (t.isObjectProperty(file) && t.isIdentifier(file.value)) {
-            const binding = path.scope.getBinding(file.value.name);
-            if (
-              binding?.path.isVariableDeclarator() &&
-              t.isStringLiteral(binding.path.node.init) &&
-              source.value.properties.every(
-                (prop) =>
-                  t.isObjectProperty(prop) &&
-                  (prop === file || t.isNumericLiteral(prop.value))
+              prop !== source &&
+              !(
+                t.isObjectProperty(prop) &&
+                !prop.computed &&
+                t.isIdentifier(prop.key, { name: '__self' }) &&
+                t.isThisExpression(prop.value)
               )
-            ) {
-              devFileNames.add(file.value.name);
-              props.properties = props.properties.filter(
-                (prop) =>
-                  prop !== source &&
-                  !(
-                    t.isObjectProperty(prop) &&
-                    t.isIdentifier(prop.key, { name: '__self' }) &&
-                    t.isThisExpression(prop.value)
-                  )
-              );
-            }
-          }
+          );
         }
       }
       // The reference pass falls back to an unbound `jsx` for an injected T
@@ -206,19 +246,40 @@ export function canonical(ast: t.File): string {
       )
         path.node.callee = t.identifier(jsxName);
       if (t.isIdentifier(path.node.callee, { name: jsxName })) {
-        const source = path.node.arguments[4];
-        if (t.isObjectExpression(source)) {
-          for (const prop of source.properties)
-            if (
-              t.isObjectProperty(prop) &&
-              t.isIdentifier(prop.key, { name: 'fileName' }) &&
-              t.isIdentifier(prop.value)
-            )
-              devFileNames.add(prop.value.name);
+        const args = path.node.arguments;
+        if (devCalls.has(path.node) && t.isBooleanLiteral(args[3])) {
+          const metadata = generatedDevSource(path, args[4]);
+          const generatedWrapper =
+            t.isIdentifier(args[0]) &&
+            [translateName, `${prefix}GtInternalVar`].includes(args[0].name) &&
+            isVoidZero(args[2]) &&
+            // Babel's compiler wrappers omit source/self; SWC's DUMMY_SP
+            // wrappers retain an inert missing source and self argument.
+            (args.length === 4 ||
+              (args.length === 6 &&
+                isVoidZero(args[4]) &&
+                (t.isThisExpression(args[5]) || isVoidZero(args[5]))));
+          // Fragment syntax has no source/self record in Babel's JSX runtime.
+          // The fresh canonical name exists only for a bound runtime Fragment.
+          const generatedFragment =
+            args.length === 4 &&
+            t.isIdentifier(args[0], { name: `${prefix}Fragment` }) &&
+            isVoidZero(args[2]);
+          if (
+            generatedWrapper ||
+            generatedFragment ||
+            (metadata &&
+              (args.length === 5 ||
+                (args.length === 6 &&
+                  (t.isThisExpression(args[5]) || isVoidZero(args[5])))))
+          ) {
+            if (metadata?.fileBinding) devFileNames.add(metadata.fileBinding);
+            path.node.arguments = args.slice(0, 3);
+          }
         }
-        path.node.arguments = path.node.arguments.slice(0, 3);
         const key = path.node.arguments[2];
-        if (isVoidZero(key)) path.node.arguments.pop();
+        if (path.node.arguments.length === 3 && isVoidZero(key))
+          path.node.arguments.pop();
       }
     },
     ImportDeclaration(path) {

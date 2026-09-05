@@ -85,7 +85,19 @@ jobs:
         run: pnpm exec turbo build --filter='...[origin/${{ github.base_ref }}]' --filter='!gt-next-middleware-e2e' --filter='!./examples/*'
 
       - name: Run tests
-        run: pnpm exec turbo test --filter='...[origin/${{ github.base_ref }}]' --filter='!gt-next-middleware-e2e' --filter='!./examples/*'
+        shell: bash
+        env:
+          PR_BASE_REF: ${{ github.base_ref }}
+        run: |
+          filters=("--filter=...[origin/${PR_BASE_REF}]" '--filter=!gt-next-middleware-e2e' '--filter=!./examples/*')
+          # The SWC parity suite imports CLI source as an independent oracle.
+          # Include it when that source changes, without a package dependency
+          # that would make every gt-next build compile the entire CLI.
+          if ! git diff --quiet "origin/${PR_BASE_REF}...HEAD" -- \
+            packages/cli/src/react/ packages/cli/src/types/libraries.ts packages/cli/package.json; then
+            filters+=(--filter=gt-next)
+          fi
+          pnpm exec turbo test "${filters[@]}"
 
   test-builds:
     strategy:

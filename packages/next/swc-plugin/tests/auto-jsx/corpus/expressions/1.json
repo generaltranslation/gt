@@ -1,0 +1,923 @@
+{
+  "expressions/array-dynamic-prefix": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>Result: {[first, second]}</div>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <div><GtInternalTranslateJsx>{[\"Result: \", <GtInternalVar>{[first, second]}</GtInternalVar>]}</GtInternalTranslateJsx></div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div><GtInternalTranslateJsx>Result: {<GtInternalVar>{[first, second]}</GtInternalVar>}</GtInternalTranslateJsx></div>;\n",
+    "cliDivergences": []
+  },
+  "expressions/array-holes-deep-independent": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<main><section><article><p>{[, \"Visible\", , value, ,]}</p></article></section></main>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <main><section><article><p><GtInternalTranslateJsx>{[, \"Visible\",, <GtInternalVar>{value}</GtInternalVar>,,]}</GtInternalTranslateJsx></p></article></section></main>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <main><section><article><p>{[, \"Visible\",, value,,]}</p></article></section></main>;\n",
+    "cliDivergences": [
+      "child-array"
+    ]
+  },
+  "expressions/array-holes-whitespace-boundary": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<p>{first}{' '}{[, \"Visible\", , value, ,]}{'\\n'}{last}</p>);\n",
+    "output": "export const Page = () => <p>{[first, ' ', [, \"Visible\",, value,,], '\\n', last]}</p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <p>{first}{' '}{[, \"Visible\",, value,,]}{'\\n'}{last}</p>;\n",
+    "cliDivergences": []
+  },
+  "expressions/array-mixed-deep-claimed": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<main>Report <section><article><p>{[\"First\", value, <b key=\"b\">Bold {other}</b>]}</p></article></section> complete</main>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <main><GtInternalTranslateJsx>{[\"Report \", <section><article><p>{[\"First\", <GtInternalVar>{value}</GtInternalVar>, <b key={\"b\"}>{[\"Bold \", <GtInternalVar>{other}</GtInternalVar>]}</b>]}</p></article></section>, \" complete\"]}</GtInternalTranslateJsx></main>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <main><GtInternalTranslateJsx>Report <section><article><p>{<GtInternalVar>{[\"First\", value, <b key=\"b\"><GtInternalTranslateJsx>Bold {<GtInternalVar>{other}</GtInternalVar>}</GtInternalTranslateJsx></b>]}</GtInternalVar>}</p></article></section> complete</GtInternalTranslateJsx></main>;\n",
+    "cliDivergences": [
+      "child-array"
+    ]
+  },
+  "expressions/array-mixed-only": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>{[\"First\", value, <b key=\"b\">Bold {other}</b>]}</div>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <div><GtInternalTranslateJsx>{[\"First\", <GtInternalVar>{value}</GtInternalVar>, <b key={\"b\"}>{[\"Bold \", <GtInternalVar>{other}</GtInternalVar>]}</b>]}</GtInternalTranslateJsx></div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div>{[\"First\", value, <b key=\"b\"><GtInternalTranslateJsx>Bold {<GtInternalVar>{other}</GtInternalVar>}</GtInternalTranslateJsx></b>]}</div>;\n",
+    "cliDivergences": [
+      "child-array"
+    ]
+  },
+  "expressions/array-mixed-user-var": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<p>Value <ManualVar>{[\"First\", value, <b key=\"b\">Bold {other}</b>]}</ManualVar> after {other}</p>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { Var as ManualVar } from 'gt-next';\nexport const Page = () => <p><GtInternalTranslateJsx>{[\"Value \", <ManualVar>{[\"First\", value, <b key={\"b\"}>{[\"Bold \", other]}</b>]}</ManualVar>, \" after \", <GtInternalVar>{other}</GtInternalVar>]}</GtInternalTranslateJsx></p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <p><GtInternalTranslateJsx>Value <ManualVar>{[\"First\", value, <b key=\"b\">Bold {other}</b>]}</ManualVar> after {<GtInternalVar>{other}</GtInternalVar>}</GtInternalTranslateJsx></p>;\n",
+    "cliDivergences": []
+  },
+  "expressions/array-nested-plain-deep-independent": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<main><section><article><p>{[[\"First\", value], [\"Second\", other]]}</p></article></section></main>);\n",
+    "output": "export const Page = () => <main><section><article><p>{[[\"First\", value], [\"Second\", other]]}</p></article></section></main>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <main><section><article><p>{[[\"First\", value], [\"Second\", other]]}</p></article></section></main>;\n",
+    "cliDivergences": []
+  },
+  "expressions/array-nested-spread-user-t": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<ManualT>Manual {[...[\"First\", value], ...nested.map(x => [<i key={x.id}>Item {x.name}</i>])]}</ManualT>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { T as ManualT } from 'gt-next';\nexport const Page = () => <ManualT>{[\"Manual \", [...[\"First\", value], ...nested.map(x => [<i key={x.id}><GtInternalTranslateJsx>{[\"Item \", <GtInternalVar>{x.name}</GtInternalVar>]}</GtInternalTranslateJsx></i>])]]}</ManualT>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <ManualT>Manual {[...[\"First\", value], ...nested.map(x => [<i key={x.id}>Item {x.name}</i>])]}</ManualT>;\n",
+    "cliDivergences": [
+      "manual-t-descendants"
+    ]
+  },
+  "expressions/array-spread-multiline": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<p>\n    A line before\n    {[...values, \"Tail\", <b key=\"b\">Bold</b>]}\n    <span>next line {other}</span>\n    and after\n  </p>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <p><GtInternalTranslateJsx>{[\"A line before\", <GtInternalVar>{[...values, \"Tail\", <b key={\"b\"}><GtInternalTranslateJsx>{\"Bold\"}</GtInternalTranslateJsx></b>]}</GtInternalVar>, <span>{[\"next line \", <GtInternalVar>{other}</GtInternalVar>]}</span>, \"and after\"]}</GtInternalTranslateJsx></p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <p><GtInternalTranslateJsx>\n    A line before\n    {<GtInternalVar>{[...values, \"Tail\", <b key=\"b\"><GtInternalTranslateJsx>Bold</GtInternalTranslateJsx></b>]}</GtInternalVar>}\n    <span>next line {<GtInternalVar>{other}</GtInternalVar>}</span>\n    and after\n  </GtInternalTranslateJsx></p>;\n",
+    "cliDivergences": []
+  },
+  "expressions/array-static-jsx-entities": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<p>&quot;A&amp;B&quot;&nbsp;{[\"First\", \"Second\"]}&#x1f30d;</p>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <p><GtInternalTranslateJsx>{[\"\\\"A&B\\\"\\xA0\", <GtInternalVar>{[\"First\", \"Second\"]}</GtInternalVar>, \"\\uD83C\\uDF0D\"]}</GtInternalTranslateJsx></p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <p><GtInternalTranslateJsx>&quot;A&amp;B&quot;&nbsp;{<GtInternalVar>{[\"First\", \"Second\"]}</GtInternalVar>}&#x1f30d;</GtInternalTranslateJsx></p>;\n",
+    "cliDivergences": []
+  },
+  "expressions/array-static-keyed-fragment": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Fragment key={id}><b>Heading</b>{[\"First\", \"Second\"]}</Fragment>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { Fragment } from 'react';\nexport const Page = () => <Fragment key={id}>{[<b><GtInternalTranslateJsx>{\"Heading\"}</GtInternalTranslateJsx></b>, [\"First\", \"Second\"]]}</Fragment>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Fragment key={id}><b><GtInternalTranslateJsx>Heading</GtInternalTranslateJsx></b>{[\"First\", \"Second\"]}</Fragment>;\n",
+    "cliDivergences": []
+  },
+  "expressions/array-static-render-prop": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card render={() => <section>Rendered {[\"First\", \"Second\"]}</section>}>Body</Card>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card render={() => <section><GtInternalTranslateJsx>{[\"Rendered \", <GtInternalVar>{[\"First\", \"Second\"]}</GtInternalVar>]}</GtInternalTranslateJsx></section>}><GtInternalTranslateJsx>{\"Body\"}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card render={() => <section><GtInternalTranslateJsx>Rendered {<GtInternalVar>{[\"First\", \"Second\"]}</GtInternalVar>}</GtInternalTranslateJsx></section>}><GtInternalTranslateJsx>Body</GtInternalTranslateJsx></Card>;\n",
+    "cliDivergences": []
+  },
+  "expressions/assignment-prop-expression": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card header={(value = nextValue)}>Body {body}</Card>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card header={value = nextValue}><GtInternalTranslateJsx>{[\"Body \", <GtInternalVar>{body}</GtInternalVar>]}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card header={value = nextValue}><GtInternalTranslateJsx>Body {<GtInternalVar>{body}</GtInternalVar>}</GtInternalTranslateJsx></Card>;\n",
+    "cliDivergences": []
+  },
+  "expressions/assignment-user-var": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<p>Value <ManualVar>{(value = nextValue)}</ManualVar> after {other}</p>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { Var as ManualVar } from 'gt-next';\nexport const Page = () => <p><GtInternalTranslateJsx>{[\"Value \", <ManualVar>{value = nextValue}</ManualVar>, \" after \", <GtInternalVar>{other}</GtInternalVar>]}</GtInternalTranslateJsx></p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <p><GtInternalTranslateJsx>Value <ManualVar>{value = nextValue}</ManualVar> after {<GtInternalVar>{other}</GtInternalVar>}</GtInternalTranslateJsx></p>;\n",
+    "cliDivergences": []
+  },
+  "expressions/async-iife-fragment": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<>Status {(async () => <span>Async {await getValue()}</span>)()}<span>{other}</span></>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { Fragment as _Fragment } from \"react/jsx-runtime\";\nexport const Page = () => <><GtInternalTranslateJsx>{[\"Status \", <GtInternalVar>{(async () => <span><GtInternalTranslateJsx>{[\"Async \", <GtInternalVar>{await getValue()}</GtInternalVar>]}</GtInternalTranslateJsx></span>)()}</GtInternalVar>, <span><GtInternalVar>{other}</GtInternalVar></span>]}</GtInternalTranslateJsx></>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <><GtInternalTranslateJsx>Status {<GtInternalVar>{(async () => <span><GtInternalTranslateJsx>Async {<GtInternalVar>{await getValue()}</GtInternalVar>}</GtInternalTranslateJsx></span>)()}</GtInternalVar>}<span>{<GtInternalVar>{other}</GtInternalVar>}</span></GtInternalTranslateJsx></>;\n",
+    "cliDivergences": []
+  },
+  "expressions/bigint-children-after-spread": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card {...props} children={123n} />);\n",
+    "output": "export const Page = () => <Card {...props}>{123n}</Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card {...props} children={123n} />;\n",
+    "cliDivergences": []
+  },
+  "expressions/bigint-deep-claimed": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<main>Report <section><article><p>{123n}</p></article></section> complete</main>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <main><GtInternalTranslateJsx>{[\"Report \", <section><article><p><GtInternalVar>{123n}</GtInternalVar></p></article></section>, \" complete\"]}</GtInternalTranslateJsx></main>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <main><GtInternalTranslateJsx>Report <section><article><p>{<GtInternalVar>{123n}</GtInternalVar>}</p></article></section> complete</GtInternalTranslateJsx></main>;\n",
+    "cliDivergences": []
+  },
+  "expressions/binary-sum-deep-independent": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<main><section><article><p>{count + offset}</p></article></section></main>);\n",
+    "output": "export const Page = () => <main><section><article><p>{count + offset}</p></article></section></main>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <main><section><article><p>{count + offset}</p></article></section></main>;\n",
+    "cliDivergences": []
+  },
+  "expressions/binary-sum-only": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>{count + offset}</div>);\n",
+    "output": "export const Page = () => <div>{count + offset}</div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div>{count + offset}</div>;\n",
+    "cliDivergences": []
+  },
+  "expressions/boolean-false-children-after-spread": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card {...props} children={false} />);\n",
+    "output": "export const Page = () => <Card {...props}>{false}</Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card {...props} children={false} />;\n",
+    "cliDivergences": []
+  },
+  "expressions/call-children-after-spread": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card {...props} children={formatValue(value, locale)} />);\n",
+    "output": "export const Page = () => <Card {...props}>{formatValue(value, locale)}</Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card {...props} children={formatValue(value, locale)} />;\n",
+    "cliDivergences": []
+  },
+  "expressions/call-explicit-children": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card children={formatValue(value, locale)} />);\n",
+    "output": "export const Page = () => <Card>{formatValue(value, locale)}</Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card children={formatValue(value, locale)} />;\n",
+    "cliDivergences": []
+  },
+  "expressions/comparison-children-overridden": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card children={count > 0}>Replacement {replacement}</Card>);\n",
+    "output": "export const Page = () => <Card children={count > 0}>{[\"Replacement \", replacement]}</Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card children={count > 0}><GtInternalTranslateJsx>Replacement {<GtInternalVar>{replacement}</GtInternalVar>}</GtInternalTranslateJsx></Card>;\n",
+    "cliDivergences": [
+      "children-attribute"
+    ]
+  },
+  "expressions/comparison-fragment": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<>Status {count > 0}<span>{other}</span></>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { Fragment as _Fragment } from \"react/jsx-runtime\";\nexport const Page = () => <><GtInternalTranslateJsx>{[\"Status \", <GtInternalVar>{count > 0}</GtInternalVar>, <span><GtInternalVar>{other}</GtInternalVar></span>]}</GtInternalTranslateJsx></>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <><GtInternalTranslateJsx>Status {<GtInternalVar>{count > 0}</GtInternalVar>}<span>{<GtInternalVar>{other}</GtInternalVar>}</span></GtInternalTranslateJsx></>;\n",
+    "cliDivergences": []
+  },
+  "expressions/comparison-user-var": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<p>Value <ManualVar>{count > 0}</ManualVar> after {other}</p>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { Var as ManualVar } from 'gt-next';\nexport const Page = () => <p><GtInternalTranslateJsx>{[\"Value \", <ManualVar>{count > 0}</ManualVar>, \" after \", <GtInternalVar>{other}</GtInternalVar>]}</GtInternalTranslateJsx></p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <p><GtInternalTranslateJsx>Value <ManualVar>{count > 0}</ManualVar> after {<GtInternalVar>{other}</GtInternalVar>}</GtInternalTranslateJsx></p>;\n",
+    "cliDivergences": []
+  },
+  "expressions/computed-member-explicit-children-array": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card children={['Result: ', user[columns[index]], suffix]} />);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card><GtInternalTranslateJsx>{['Result: ', <GtInternalVar>{user[columns[index]]}</GtInternalVar>, <GtInternalVar>{suffix}</GtInternalVar>]}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card children={['Result: ', user[columns[index]], suffix]} />;\n",
+    "cliDivergences": [
+      "children-attribute"
+    ]
+  },
+  "expressions/decimal-prop-jsx": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card header={<h1>Heading {12.75}</h1>} footer={<small>End {date}</small>}>Body {body}</Card>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card header={<h1><GtInternalTranslateJsx>{[\"Heading \", 12.75]}</GtInternalTranslateJsx></h1>} footer={<small><GtInternalTranslateJsx>{[\"End \", <GtInternalVar>{date}</GtInternalVar>]}</GtInternalTranslateJsx></small>}><GtInternalTranslateJsx>{[\"Body \", <GtInternalVar>{body}</GtInternalVar>]}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card header={<h1><GtInternalTranslateJsx>Heading {12.75}</GtInternalTranslateJsx></h1>} footer={<small><GtInternalTranslateJsx>End {<GtInternalVar>{date}</GtInternalVar>}</GtInternalTranslateJsx></small>}><GtInternalTranslateJsx>Body {<GtInternalVar>{body}</GtInternalVar>}</GtInternalTranslateJsx></Card>;\n",
+    "cliDivergences": []
+  },
+  "expressions/decimal-suffix": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>{12.75} remaining</div>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <div><GtInternalTranslateJsx>{[12.75, \" remaining\"]}</GtInternalTranslateJsx></div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div><GtInternalTranslateJsx>{12.75} remaining</GtInternalTranslateJsx></div>;\n",
+    "cliDivergences": []
+  },
+  "expressions/empty-array-children-overridden": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card children={[]}>Replacement {replacement}</Card>);\n",
+    "output": "export const Page = () => <Card children={[]}>{[\"Replacement \", replacement]}</Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card children={[]}><GtInternalTranslateJsx>Replacement {<GtInternalVar>{replacement}</GtInternalVar>}</GtInternalTranslateJsx></Card>;\n",
+    "cliDivergences": [
+      "children-attribute"
+    ]
+  },
+  "expressions/empty-array-jsx-entities": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<p>&quot;A&amp;B&quot;&nbsp;{[]}&#x1f30d;</p>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <p><GtInternalTranslateJsx>{[\"\\\"A&B\\\"\\xA0\", <GtInternalVar>{[]}</GtInternalVar>, \"\\uD83C\\uDF0D\"]}</GtInternalTranslateJsx></p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <p><GtInternalTranslateJsx>&quot;A&amp;B&quot;&nbsp;{<GtInternalVar>{[]}</GtInternalVar>}&#x1f30d;</GtInternalTranslateJsx></p>;\n",
+    "cliDivergences": []
+  },
+  "expressions/empty-string-separate-expressions": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<p>{first} says {\"\"} to {last}.</p>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <p><GtInternalTranslateJsx>{[<GtInternalVar>{first}</GtInternalVar>, \" says \", \"\", \" to \", <GtInternalVar>{last}</GtInternalVar>, \".\"]}</GtInternalTranslateJsx></p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <p><GtInternalTranslateJsx>{<GtInternalVar>{first}</GtInternalVar>} says {\"\"} to {<GtInternalVar>{last}</GtInternalVar>}.</GtInternalTranslateJsx></p>;\n",
+    "cliDivergences": []
+  },
+  "expressions/empty-template-children-after-spread": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card {...props} children={``} />);\n",
+    "output": "export const Page = () => <Card {...props}>{``}</Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card {...props} children={``} />;\n",
+    "cliDivergences": []
+  },
+  "expressions/empty-template-whitespace-boundary": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<p>{first}{' '}{``}{'\\n'}{last}</p>);\n",
+    "output": "export const Page = () => <p>{[first, ' ', ``, '\\n', last]}</p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <p>{first}{' '}{``}{'\\n'}{last}</p>;\n",
+    "cliDivergences": []
+  },
+  "expressions/escaped-string-keyed-fragment": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Fragment key={id}><b>Heading</b>{\"Quote: \\\" and slash: \\\\\"}</Fragment>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { Fragment } from 'react';\nexport const Page = () => <Fragment key={id}><GtInternalTranslateJsx>{[<b>{\"Heading\"}</b>, \"Quote: \\\" and slash: \\\\\"]}</GtInternalTranslateJsx></Fragment>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Fragment key={id}><b><GtInternalTranslateJsx>Heading</GtInternalTranslateJsx></b>{\"Quote: \\\" and slash: \\\\\"}</Fragment>;\n",
+    "cliDivergences": [
+      "expression-text"
+    ]
+  },
+  "expressions/escaped-string-multiline": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<p>\n    A line before\n    {\"Quote: \\\" and slash: \\\\\"}\n    <span>next line {other}</span>\n    and after\n  </p>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <p><GtInternalTranslateJsx>{[\"A line before\", \"Quote: \\\" and slash: \\\\\", <span>{[\"next line \", <GtInternalVar>{other}</GtInternalVar>]}</span>, \"and after\"]}</GtInternalTranslateJsx></p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <p><GtInternalTranslateJsx>\n    A line before\n    {\"Quote: \\\" and slash: \\\\\"}\n    <span>next line {<GtInternalVar>{other}</GtInternalVar>}</span>\n    and after\n  </GtInternalTranslateJsx></p>;\n",
+    "cliDivergences": []
+  },
+  "expressions/filter-map-children-before-spread": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card children={items.filter(item => item.active).map(({ id, name }) => <li key={id}>Selected {name}</li>)} {...props} />);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card children={items.filter(item => item.active).map(({\n  id,\n  name\n}) => <li key={id}><GtInternalTranslateJsx>{[\"Selected \", <GtInternalVar>{name}</GtInternalVar>]}</GtInternalTranslateJsx></li>)} {...props} />;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card children={items.filter(item => item.active).map(({\n  id,\n  name\n}) => <li key={id}><GtInternalTranslateJsx>Selected {<GtInternalVar>{name}</GtInternalVar>}</GtInternalTranslateJsx></li>)} {...props} />;\n",
+    "cliDivergences": []
+  },
+  "expressions/filter-map-prop-jsx": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card header={<h1>Heading {items.filter(item => item.active).map(({ id, name }) => <li key={id}>Selected {name}</li>)}</h1>} footer={<small>End {date}</small>}>Body {body}</Card>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card header={<h1><GtInternalTranslateJsx>{[\"Heading \", <GtInternalVar>{items.filter(item => item.active).map(({\n        id,\n        name\n      }) => <li key={id}><GtInternalTranslateJsx>{[\"Selected \", <GtInternalVar>{name}</GtInternalVar>]}</GtInternalTranslateJsx></li>)}</GtInternalVar>]}</GtInternalTranslateJsx></h1>} footer={<small><GtInternalTranslateJsx>{[\"End \", <GtInternalVar>{date}</GtInternalVar>]}</GtInternalTranslateJsx></small>}><GtInternalTranslateJsx>{[\"Body \", <GtInternalVar>{body}</GtInternalVar>]}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card header={<h1><GtInternalTranslateJsx>Heading {<GtInternalVar>{items.filter(item => item.active).map(({\n        id,\n        name\n      }) => <li key={id}><GtInternalTranslateJsx>Selected {<GtInternalVar>{name}</GtInternalVar>}</GtInternalTranslateJsx></li>)}</GtInternalVar>}</GtInternalTranslateJsx></h1>} footer={<small><GtInternalTranslateJsx>End {<GtInternalVar>{date}</GtInternalVar>}</GtInternalTranslateJsx></small>}><GtInternalTranslateJsx>Body {<GtInternalVar>{body}</GtInternalVar>}</GtInternalTranslateJsx></Card>;\n",
+    "cliDivergences": []
+  },
+  "expressions/function-iife-sibling-boundaries": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<main><h1>Report</h1><section>{(function render() { return <span>Function {value}</span>; })()}</section><footer>Updated {date}</footer></main>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <main>{[<h1><GtInternalTranslateJsx>{\"Report\"}</GtInternalTranslateJsx></h1>, <section>{function render() {\n      return <span><GtInternalTranslateJsx>{[\"Function \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></span>;\n    }()}</section>, <footer><GtInternalTranslateJsx>{[\"Updated \", <GtInternalVar>{date}</GtInternalVar>]}</GtInternalTranslateJsx></footer>]}</main>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <main><h1><GtInternalTranslateJsx>Report</GtInternalTranslateJsx></h1><section>{function render() {\n      return <span><GtInternalTranslateJsx>Function {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></span>;\n    }()}</section><footer><GtInternalTranslateJsx>Updated {<GtInternalVar>{date}</GtInternalVar>}</GtInternalTranslateJsx></footer></main>;\n",
+    "cliDivergences": []
+  },
+  "expressions/generator-explicit-children-array": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card children={['Result: ', [...(function* () { yield <span>Yielded {value}</span>; yield \"Tail\"; })()], suffix]} />);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card><GtInternalTranslateJsx>{['Result: ', <GtInternalVar>{[...function* () {\n        yield <span><GtInternalTranslateJsx>{[\"Yielded \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></span>;\n        yield \"Tail\";\n      }()]}</GtInternalVar>, <GtInternalVar>{suffix}</GtInternalVar>]}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card children={['Result: ', [...function* () {\n  yield <span><GtInternalTranslateJsx>Yielded {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></span>;\n  yield \"Tail\";\n}()], suffix]} />;\n",
+    "cliDivergences": [
+      "children-attribute"
+    ]
+  },
+  "expressions/generator-nested-array": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>{['Result', [[...(function* () { yield <span>Yielded {value}</span>; yield \"Tail\"; })()]], ...values]}</div>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <div><GtInternalTranslateJsx>{['Result', <GtInternalVar>{[[...function* () {\n        yield <span><GtInternalTranslateJsx>{[\"Yielded \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></span>;\n        yield \"Tail\";\n      }()]]}</GtInternalVar>, ...values]}</GtInternalTranslateJsx></div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div>{['Result', [[...function* () {\n    yield <span><GtInternalTranslateJsx>Yielded {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></span>;\n    yield \"Tail\";\n  }()]], ...values]}</div>;\n",
+    "cliDivergences": [
+      "child-array"
+    ]
+  },
+  "expressions/identifier-explicit-children-array": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card children={['Result: ', value, suffix]} />);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card><GtInternalTranslateJsx>{['Result: ', <GtInternalVar>{value}</GtInternalVar>, <GtInternalVar>{suffix}</GtInternalVar>]}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card children={['Result: ', value, suffix]} />;\n",
+    "cliDivergences": [
+      "children-attribute"
+    ]
+  },
+  "expressions/identifier-nested-array": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>{['Result', [value], ...values]}</div>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <div><GtInternalTranslateJsx>{['Result', <GtInternalVar>{[value]}</GtInternalVar>, ...values]}</GtInternalTranslateJsx></div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div>{['Result', [value], ...values]}</div>;\n",
+    "cliDivergences": [
+      "child-array"
+    ]
+  },
+  "expressions/infinity-prop-expression": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card header={Infinity}>Body {body}</Card>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card header={Infinity}><GtInternalTranslateJsx>{[\"Body \", <GtInternalVar>{body}</GtInternalVar>]}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card header={Infinity}><GtInternalTranslateJsx>Body {<GtInternalVar>{body}</GtInternalVar>}</GtInternalTranslateJsx></Card>;\n",
+    "cliDivergences": []
+  },
+  "expressions/infinity-sibling-boundaries": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<main><h1>Report</h1><section>{Infinity}</section><footer>Updated {date}</footer></main>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <main>{[<h1><GtInternalTranslateJsx>{\"Report\"}</GtInternalTranslateJsx></h1>, <section>{Infinity}</section>, <footer><GtInternalTranslateJsx>{[\"Updated \", <GtInternalVar>{date}</GtInternalVar>]}</GtInternalTranslateJsx></footer>]}</main>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <main><h1><GtInternalTranslateJsx>Report</GtInternalTranslateJsx></h1><section>{Infinity}</section><footer><GtInternalTranslateJsx>Updated {<GtInternalVar>{date}</GtInternalVar>}</GtInternalTranslateJsx></footer></main>;\n",
+    "cliDivergences": []
+  },
+  "expressions/interpolated-template-children-overridden": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card children={`Welcome ${user.name}, ${count} items`}>Replacement {replacement}</Card>);\n",
+    "output": "export const Page = () => <Card children={`Welcome ${user.name}, ${count} items`}>{[\"Replacement \", replacement]}</Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card children={`Welcome ${user.name}, ${count} items`}><GtInternalTranslateJsx>Replacement {<GtInternalVar>{replacement}</GtInternalVar>}</GtInternalTranslateJsx></Card>;\n",
+    "cliDivergences": [
+      "children-attribute"
+    ]
+  },
+  "expressions/jsx-text-explicit-children-array": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card children={['Result: ', <span>Inner {value}</span>, suffix]} />);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card><GtInternalTranslateJsx>{['Result: ', <span>{[\"Inner \", <GtInternalVar>{value}</GtInternalVar>]}</span>, <GtInternalVar>{suffix}</GtInternalVar>]}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card children={['Result: ', <span><GtInternalTranslateJsx>Inner {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></span>, suffix]} />;\n",
+    "cliDivergences": [
+      "children-attribute"
+    ]
+  },
+  "expressions/jsx-text-keyed-fragment": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Fragment key={id}><b>Heading</b>{<span>Inner {value}</span>}</Fragment>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { Fragment } from 'react';\nexport const Page = () => <Fragment key={id}>{[<b><GtInternalTranslateJsx>{\"Heading\"}</GtInternalTranslateJsx></b>, <span><GtInternalTranslateJsx>{[\"Inner \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></span>]}</Fragment>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Fragment key={id}><b><GtInternalTranslateJsx>Heading</GtInternalTranslateJsx></b>{<span><GtInternalTranslateJsx>Inner {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></span>}</Fragment>;\n",
+    "cliDivergences": []
+  },
+  "expressions/jsx-text-sibling-boundaries": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<main><h1>Report</h1><section>{<span>Inner {value}</span>}</section><footer>Updated {date}</footer></main>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <main>{[<h1><GtInternalTranslateJsx>{\"Report\"}</GtInternalTranslateJsx></h1>, <section><span><GtInternalTranslateJsx>{[\"Inner \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></span></section>, <footer><GtInternalTranslateJsx>{[\"Updated \", <GtInternalVar>{date}</GtInternalVar>]}</GtInternalTranslateJsx></footer>]}</main>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <main><h1><GtInternalTranslateJsx>Report</GtInternalTranslateJsx></h1><section>{<span><GtInternalTranslateJsx>Inner {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></span>}</section><footer><GtInternalTranslateJsx>Updated {<GtInternalVar>{date}</GtInternalVar>}</GtInternalTranslateJsx></footer></main>;\n",
+    "cliDivergences": []
+  },
+  "expressions/jsx-text-suffix": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>{<span>Inner {value}</span>} remaining</div>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <div><GtInternalTranslateJsx>{[<span>{[\"Inner \", <GtInternalVar>{value}</GtInternalVar>]}</span>, \" remaining\"]}</GtInternalTranslateJsx></div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div><GtInternalTranslateJsx>{<span><GtInternalTranslateJsx>Inner {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></span>} remaining</GtInternalTranslateJsx></div>;\n",
+    "cliDivergences": [
+      "expression-jsx-region"
+    ]
+  },
+  "expressions/line-whitespace-deep-claimed": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<main>Report <section><article><p>{\"\\n\\t\\r\"}</p></article></section> complete</main>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <main><GtInternalTranslateJsx>{[\"Report \", <section><article><p>{\"\\n\\t\\r\"}</p></article></section>, \" complete\"]}</GtInternalTranslateJsx></main>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <main><GtInternalTranslateJsx>Report <section><article><p>{\"\\n\\t\\r\"}</p></article></section> complete</GtInternalTranslateJsx></main>;\n",
+    "cliDivergences": []
+  },
+  "expressions/line-whitespace-deep-independent": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<main><section><article><p>{\"\\n\\t\\r\"}</p></article></section></main>);\n",
+    "output": "export const Page = () => <main><section><article><p>{\"\\n\\t\\r\"}</p></article></section></main>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <main><section><article><p>{\"\\n\\t\\r\"}</p></article></section></main>;\n",
+    "cliDivergences": []
+  },
+  "expressions/line-whitespace-sandwich": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>Before {\"\\n\\t\\r\"} after</div>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <div><GtInternalTranslateJsx>{[\"Before \", \"\\n\\t\\r\", \" after\"]}</GtInternalTranslateJsx></div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div><GtInternalTranslateJsx>Before {\"\\n\\t\\r\"} after</GtInternalTranslateJsx></div>;\n",
+    "cliDivergences": []
+  },
+  "expressions/logical-and-user-var": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<p>Value <ManualVar>{enabled && <span>Visible {value}</span>}</ManualVar> after {other}</p>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { Var as ManualVar } from 'gt-next';\nexport const Page = () => <p><GtInternalTranslateJsx>{[\"Value \", <ManualVar>{enabled && <span>{[\"Visible \", value]}</span>}</ManualVar>, \" after \", <GtInternalVar>{other}</GtInternalVar>]}</GtInternalTranslateJsx></p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <p><GtInternalTranslateJsx>Value <ManualVar>{enabled && <span>Visible {value}</span>}</ManualVar> after {<GtInternalVar>{other}</GtInternalVar>}</GtInternalTranslateJsx></p>;\n",
+    "cliDivergences": []
+  },
+  "expressions/logical-chain-sandwich": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>Before {enabled && ready && <strong>Ready {value}</strong>} after</div>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <div><GtInternalTranslateJsx>{[\"Before \", <GtInternalVar>{enabled && ready && <strong><GtInternalTranslateJsx>{[\"Ready \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></strong>}</GtInternalVar>, \" after\"]}</GtInternalTranslateJsx></div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div><GtInternalTranslateJsx>Before {<GtInternalVar>{enabled && ready && <strong><GtInternalTranslateJsx>Ready {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></strong>}</GtInternalVar>} after</GtInternalTranslateJsx></div>;\n",
+    "cliDivergences": []
+  },
+  "expressions/logical-chain-whitespace-boundary": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<p>{first}{' '}{enabled && ready && <strong>Ready {value}</strong>}{'\\n'}{last}</p>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <p>{[first, ' ', enabled && ready && <strong><GtInternalTranslateJsx>{[\"Ready \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></strong>, '\\n', last]}</p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <p>{first}{' '}{enabled && ready && <strong><GtInternalTranslateJsx>Ready {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></strong>}{'\\n'}{last}</p>;\n",
+    "cliDivergences": []
+  },
+  "expressions/logical-or-deep-independent": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<main><section><article><p>{value || <span>Default {fallback}</span>}</p></article></section></main>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <main><section><article><p>{value || <span><GtInternalTranslateJsx>{[\"Default \", <GtInternalVar>{fallback}</GtInternalVar>]}</GtInternalTranslateJsx></span>}</p></article></section></main>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <main><section><article><p>{value || <span><GtInternalTranslateJsx>Default {<GtInternalVar>{fallback}</GtInternalVar>}</GtInternalTranslateJsx></span>}</p></article></section></main>;\n",
+    "cliDivergences": []
+  },
+  "expressions/logical-or-explicit-children-array": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card children={['Result: ', value || <span>Default {fallback}</span>, suffix]} />);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card><GtInternalTranslateJsx>{['Result: ', <GtInternalVar>{value || <span><GtInternalTranslateJsx>{[\"Default \", <GtInternalVar>{fallback}</GtInternalVar>]}</GtInternalTranslateJsx></span>}</GtInternalVar>, <GtInternalVar>{suffix}</GtInternalVar>]}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card children={['Result: ', value || <span><GtInternalTranslateJsx>Default {<GtInternalVar>{fallback}</GtInternalVar>}</GtInternalTranslateJsx></span>, suffix]} />;\n",
+    "cliDivergences": [
+      "children-attribute"
+    ]
+  },
+  "expressions/logical-or-render-prop": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card render={() => <section>Rendered {value || <span>Default {fallback}</span>}</section>}>Body</Card>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card render={() => <section><GtInternalTranslateJsx>{[\"Rendered \", <GtInternalVar>{value || <span><GtInternalTranslateJsx>{[\"Default \", <GtInternalVar>{fallback}</GtInternalVar>]}</GtInternalTranslateJsx></span>}</GtInternalVar>]}</GtInternalTranslateJsx></section>}><GtInternalTranslateJsx>{\"Body\"}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card render={() => <section><GtInternalTranslateJsx>Rendered {<GtInternalVar>{value || <span><GtInternalTranslateJsx>Default {<GtInternalVar>{fallback}</GtInternalVar>}</GtInternalTranslateJsx></span>}</GtInternalVar>}</GtInternalTranslateJsx></section>}><GtInternalTranslateJsx>Body</GtInternalTranslateJsx></Card>;\n",
+    "cliDivergences": []
+  },
+  "expressions/map-block-children-overridden": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card children={items.map(item => { if (!item.active) return null; return <li key={item.id}>Active {item.name}</li>; })}>Replacement {replacement}</Card>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card children={items.map(item => {\n  if (!item.active) return null;\n  return <li key={item.id}><GtInternalTranslateJsx>{[\"Active \", <GtInternalVar>{item.name}</GtInternalVar>]}</GtInternalTranslateJsx></li>;\n})}>{[\"Replacement \", replacement]}</Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card children={items.map(item => {\n  if (!item.active) return null;\n  return <li key={item.id}><GtInternalTranslateJsx>Active {<GtInternalVar>{item.name}</GtInternalVar>}</GtInternalTranslateJsx></li>;\n})}><GtInternalTranslateJsx>Replacement {<GtInternalVar>{replacement}</GtInternalVar>}</GtInternalTranslateJsx></Card>;\n",
+    "cliDivergences": [
+      "children-attribute"
+    ]
+  },
+  "expressions/map-block-deep-claimed": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<main>Report <section><article><p>{items.map(item => { if (!item.active) return null; return <li key={item.id}>Active {item.name}</li>; })}</p></article></section> complete</main>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <main><GtInternalTranslateJsx>{[\"Report \", <section><article><p><GtInternalVar>{items.map(item => {\n              if (!item.active) return null;\n              return <li key={item.id}><GtInternalTranslateJsx>{[\"Active \", <GtInternalVar>{item.name}</GtInternalVar>]}</GtInternalTranslateJsx></li>;\n            })}</GtInternalVar></p></article></section>, \" complete\"]}</GtInternalTranslateJsx></main>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <main><GtInternalTranslateJsx>Report <section><article><p>{<GtInternalVar>{items.map(item => {\n              if (!item.active) return null;\n              return <li key={item.id}><GtInternalTranslateJsx>Active {<GtInternalVar>{item.name}</GtInternalVar>}</GtInternalTranslateJsx></li>;\n            })}</GtInternalVar>}</p></article></section> complete</GtInternalTranslateJsx></main>;\n",
+    "cliDivergences": []
+  },
+  "expressions/map-block-deep-independent": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<main><section><article><p>{items.map(item => { if (!item.active) return null; return <li key={item.id}>Active {item.name}</li>; })}</p></article></section></main>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <main><section><article><p>{items.map(item => {\n          if (!item.active) return null;\n          return <li key={item.id}><GtInternalTranslateJsx>{[\"Active \", <GtInternalVar>{item.name}</GtInternalVar>]}</GtInternalTranslateJsx></li>;\n        })}</p></article></section></main>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <main><section><article><p>{items.map(item => {\n          if (!item.active) return null;\n          return <li key={item.id}><GtInternalTranslateJsx>Active {<GtInternalVar>{item.name}</GtInternalVar>}</GtInternalTranslateJsx></li>;\n        })}</p></article></section></main>;\n",
+    "cliDivergences": []
+  },
+  "expressions/map-block-fragment": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<>Status {items.map(item => { if (!item.active) return null; return <li key={item.id}>Active {item.name}</li>; })}<span>{other}</span></>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { Fragment as _Fragment } from \"react/jsx-runtime\";\nexport const Page = () => <><GtInternalTranslateJsx>{[\"Status \", <GtInternalVar>{items.map(item => {\n        if (!item.active) return null;\n        return <li key={item.id}><GtInternalTranslateJsx>{[\"Active \", <GtInternalVar>{item.name}</GtInternalVar>]}</GtInternalTranslateJsx></li>;\n      })}</GtInternalVar>, <span><GtInternalVar>{other}</GtInternalVar></span>]}</GtInternalTranslateJsx></>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <><GtInternalTranslateJsx>Status {<GtInternalVar>{items.map(item => {\n        if (!item.active) return null;\n        return <li key={item.id}><GtInternalTranslateJsx>Active {<GtInternalVar>{item.name}</GtInternalVar>}</GtInternalTranslateJsx></li>;\n      })}</GtInternalVar>}<span>{<GtInternalVar>{other}</GtInternalVar>}</span></GtInternalTranslateJsx></>;\n",
+    "cliDivergences": []
+  },
+  "expressions/map-block-keyed-fragment": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Fragment key={id}><b>Heading</b>{items.map(item => { if (!item.active) return null; return <li key={item.id}>Active {item.name}</li>; })}</Fragment>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { Fragment } from 'react';\nexport const Page = () => <Fragment key={id}>{[<b><GtInternalTranslateJsx>{\"Heading\"}</GtInternalTranslateJsx></b>, items.map(item => {\n    if (!item.active) return null;\n    return <li key={item.id}><GtInternalTranslateJsx>{[\"Active \", <GtInternalVar>{item.name}</GtInternalVar>]}</GtInternalTranslateJsx></li>;\n  })]}</Fragment>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Fragment key={id}><b><GtInternalTranslateJsx>Heading</GtInternalTranslateJsx></b>{items.map(item => {\n    if (!item.active) return null;\n    return <li key={item.id}><GtInternalTranslateJsx>Active {<GtInternalVar>{item.name}</GtInternalVar>}</GtInternalTranslateJsx></li>;\n  })}</Fragment>;\n",
+    "cliDivergences": []
+  },
+  "expressions/map-block-only": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>{items.map(item => { if (!item.active) return null; return <li key={item.id}>Active {item.name}</li>; })}</div>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <div>{items.map(item => {\n    if (!item.active) return null;\n    return <li key={item.id}><GtInternalTranslateJsx>{[\"Active \", <GtInternalVar>{item.name}</GtInternalVar>]}</GtInternalTranslateJsx></li>;\n  })}</div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div>{items.map(item => {\n    if (!item.active) return null;\n    return <li key={item.id}><GtInternalTranslateJsx>Active {<GtInternalVar>{item.name}</GtInternalVar>}</GtInternalTranslateJsx></li>;\n  })}</div>;\n",
+    "cliDivergences": []
+  },
+  "expressions/map-block-suffix": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>{items.map(item => { if (!item.active) return null; return <li key={item.id}>Active {item.name}</li>; })} remaining</div>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <div><GtInternalTranslateJsx>{[<GtInternalVar>{items.map(item => {\n        if (!item.active) return null;\n        return <li key={item.id}><GtInternalTranslateJsx>{[\"Active \", <GtInternalVar>{item.name}</GtInternalVar>]}</GtInternalTranslateJsx></li>;\n      })}</GtInternalVar>, \" remaining\"]}</GtInternalTranslateJsx></div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div><GtInternalTranslateJsx>{<GtInternalVar>{items.map(item => {\n        if (!item.active) return null;\n        return <li key={item.id}><GtInternalTranslateJsx>Active {<GtInternalVar>{item.name}</GtInternalVar>}</GtInternalTranslateJsx></li>;\n      })}</GtInternalVar>} remaining</GtInternalTranslateJsx></div>;\n",
+    "cliDivergences": []
+  },
+  "expressions/map-expression-render-prop": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card render={() => <section>Rendered {items.map(item => <li key={item.id}>Item {item.name}</li>)}</section>}>Body</Card>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card render={() => <section><GtInternalTranslateJsx>{[\"Rendered \", <GtInternalVar>{items.map(item => <li key={item.id}><GtInternalTranslateJsx>{[\"Item \", <GtInternalVar>{item.name}</GtInternalVar>]}</GtInternalTranslateJsx></li>)}</GtInternalVar>]}</GtInternalTranslateJsx></section>}><GtInternalTranslateJsx>{\"Body\"}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card render={() => <section><GtInternalTranslateJsx>Rendered {<GtInternalVar>{items.map(item => <li key={item.id}><GtInternalTranslateJsx>Item {<GtInternalVar>{item.name}</GtInternalVar>}</GtInternalTranslateJsx></li>)}</GtInternalVar>}</GtInternalTranslateJsx></section>}><GtInternalTranslateJsx>Body</GtInternalTranslateJsx></Card>;\n",
+    "cliDivergences": []
+  },
+  "expressions/member-suffix": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>{user.profile.name} remaining</div>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <div><GtInternalTranslateJsx>{[<GtInternalVar>{user.profile.name}</GtInternalVar>, \" remaining\"]}</GtInternalTranslateJsx></div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div><GtInternalTranslateJsx>{<GtInternalVar>{user.profile.name}</GtInternalVar>} remaining</GtInternalTranslateJsx></div>;\n",
+    "cliDivergences": []
+  },
+  "expressions/nan-prop-jsx": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card header={<h1>Heading {NaN}</h1>} footer={<small>End {date}</small>}>Body {body}</Card>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card header={<h1><GtInternalTranslateJsx>{[\"Heading \", NaN]}</GtInternalTranslateJsx></h1>} footer={<small><GtInternalTranslateJsx>{[\"End \", <GtInternalVar>{date}</GtInternalVar>]}</GtInternalTranslateJsx></small>}><GtInternalTranslateJsx>{[\"Body \", <GtInternalVar>{body}</GtInternalVar>]}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card header={<h1><GtInternalTranslateJsx>Heading {<GtInternalVar>{NaN}</GtInternalVar>}</GtInternalTranslateJsx></h1>} footer={<small><GtInternalTranslateJsx>End {<GtInternalVar>{date}</GtInternalVar>}</GtInternalTranslateJsx></small>}><GtInternalTranslateJsx>Body {<GtInternalVar>{body}</GtInternalVar>}</GtInternalTranslateJsx></Card>;\n",
+    "cliDivergences": [
+      "static-expression"
+    ]
+  },
+  "expressions/nbsp-jsx-entities": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<p>&quot;A&amp;B&quot;&nbsp;{\"\\u00a0\"}&#x1f30d;</p>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <p><GtInternalTranslateJsx>{[\"\\\"A&B\\\"\\xA0\", \"\\u00a0\", \"\\uD83C\\uDF0D\"]}</GtInternalTranslateJsx></p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <p><GtInternalTranslateJsx>&quot;A&amp;B&quot;&nbsp;{\"\\u00a0\"}&#x1f30d;</GtInternalTranslateJsx></p>;\n",
+    "cliDivergences": []
+  },
+  "expressions/nbsp-keyed-fragment": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Fragment key={id}><b>Heading</b>{\"\\u00a0\"}</Fragment>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { Fragment } from 'react';\nexport const Page = () => <Fragment key={id}>{[<b><GtInternalTranslateJsx>{\"Heading\"}</GtInternalTranslateJsx></b>, \"\\u00a0\"]}</Fragment>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Fragment key={id}><b><GtInternalTranslateJsx>Heading</GtInternalTranslateJsx></b>{\"\\u00a0\"}</Fragment>;\n",
+    "cliDivergences": []
+  },
+  "expressions/negative-bigint-children-after-spread": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card {...props} children={-123n} />);\n",
+    "output": "export const Page = () => <Card {...props}>{-123n}</Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card {...props} children={-123n} />;\n",
+    "cliDivergences": []
+  },
+  "expressions/negative-infinity-children-before-spread": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card children={-Infinity} {...props} />);\n",
+    "output": "export const Page = () => <Card children={-Infinity} {...props} />;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card children={-Infinity} {...props} />;\n",
+    "cliDivergences": []
+  },
+  "expressions/negative-infinity-prop-jsx": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card header={<h1>Heading {-Infinity}</h1>} footer={<small>End {date}</small>}>Body {body}</Card>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card header={<h1><GtInternalTranslateJsx>{[\"Heading \", <GtInternalVar>{-Infinity}</GtInternalVar>]}</GtInternalTranslateJsx></h1>} footer={<small><GtInternalTranslateJsx>{[\"End \", <GtInternalVar>{date}</GtInternalVar>]}</GtInternalTranslateJsx></small>}><GtInternalTranslateJsx>{[\"Body \", <GtInternalVar>{body}</GtInternalVar>]}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card header={<h1><GtInternalTranslateJsx>Heading {<GtInternalVar>{-Infinity}</GtInternalVar>}</GtInternalTranslateJsx></h1>} footer={<small><GtInternalTranslateJsx>End {<GtInternalVar>{date}</GtInternalVar>}</GtInternalTranslateJsx></small>}><GtInternalTranslateJsx>Body {<GtInternalVar>{body}</GtInternalVar>}</GtInternalTranslateJsx></Card>;\n",
+    "cliDivergences": []
+  },
+  "expressions/negative-infinity-suffix": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>{-Infinity} remaining</div>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <div><GtInternalTranslateJsx>{[<GtInternalVar>{-Infinity}</GtInternalVar>, \" remaining\"]}</GtInternalTranslateJsx></div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div><GtInternalTranslateJsx>{<GtInternalVar>{-Infinity}</GtInternalVar>} remaining</GtInternalTranslateJsx></div>;\n",
+    "cliDivergences": []
+  },
+  "expressions/negative-number-keyed-fragment": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Fragment key={id}><b>Heading</b>{-3}</Fragment>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { Fragment } from 'react';\nexport const Page = () => <Fragment key={id}>{[<b><GtInternalTranslateJsx>{\"Heading\"}</GtInternalTranslateJsx></b>, -3]}</Fragment>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Fragment key={id}><b><GtInternalTranslateJsx>Heading</GtInternalTranslateJsx></b>{-3}</Fragment>;\n",
+    "cliDivergences": []
+  },
+  "expressions/negative-number-multiline": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<p>\n    A line before\n    {-3}\n    <span>next line {other}</span>\n    and after\n  </p>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <p><GtInternalTranslateJsx>{[\"A line before\", -3, <span>{[\"next line \", <GtInternalVar>{other}</GtInternalVar>]}</span>, \"and after\"]}</GtInternalTranslateJsx></p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <p><GtInternalTranslateJsx>\n    A line before\n    {-3}\n    <span>next line {<GtInternalVar>{other}</GtInternalVar>}</span>\n    and after\n  </GtInternalTranslateJsx></p>;\n",
+    "cliDivergences": []
+  },
+  "expressions/negative-number-sandwich": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>Before {-3} after</div>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <div><GtInternalTranslateJsx>{[\"Before \", -3, \" after\"]}</GtInternalTranslateJsx></div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div><GtInternalTranslateJsx>Before {-3} after</GtInternalTranslateJsx></div>;\n",
+    "cliDivergences": []
+  },
+  "expressions/negative-zero-children-overridden": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card children={-0}>Replacement {replacement}</Card>);\n",
+    "output": "export const Page = () => <Card children={-0}>{[\"Replacement \", replacement]}</Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card children={-0}><GtInternalTranslateJsx>Replacement {<GtInternalVar>{replacement}</GtInternalVar>}</GtInternalTranslateJsx></Card>;\n",
+    "cliDivergences": [
+      "children-attribute"
+    ]
+  },
+  "expressions/negative-zero-nested-array": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>{['Result', [-0], ...values]}</div>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <div><GtInternalTranslateJsx>{['Result', <GtInternalVar>{[-0]}</GtInternalVar>, ...values]}</GtInternalTranslateJsx></div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div>{['Result', [-0], ...values]}</div>;\n",
+    "cliDivergences": [
+      "child-array"
+    ]
+  },
+  "expressions/negative-zero-render-prop": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card render={() => <section>Rendered {-0}</section>}>Body</Card>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card render={() => <section><GtInternalTranslateJsx>{[\"Rendered \", -0]}</GtInternalTranslateJsx></section>}><GtInternalTranslateJsx>{\"Body\"}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card render={() => <section><GtInternalTranslateJsx>Rendered {-0}</GtInternalTranslateJsx></section>}><GtInternalTranslateJsx>Body</GtInternalTranslateJsx></Card>;\n",
+    "cliDivergences": []
+  },
+  "expressions/new-expression-deep-independent": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<main><section><article><p>{new Date(timestamp).toISOString()}</p></article></section></main>);\n",
+    "output": "export const Page = () => <main><section><article><p>{new Date(timestamp).toISOString()}</p></article></section></main>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <main><section><article><p>{new Date(timestamp).toISOString()}</p></article></section></main>;\n",
+    "cliDivergences": []
+  },
+  "expressions/new-expression-prefix": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>Result: {new Date(timestamp).toISOString()}</div>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <div><GtInternalTranslateJsx>{[\"Result: \", <GtInternalVar>{new Date(timestamp).toISOString()}</GtInternalVar>]}</GtInternalTranslateJsx></div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div><GtInternalTranslateJsx>Result: {<GtInternalVar>{new Date(timestamp).toISOString()}</GtInternalVar>}</GtInternalTranslateJsx></div>;\n",
+    "cliDivergences": []
+  },
+  "expressions/not-children-after-spread": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card {...props} children={!enabled} />);\n",
+    "output": "export const Page = () => <Card {...props}>{!enabled}</Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card {...props} children={!enabled} />;\n",
+    "cliDivergences": []
+  },
+  "expressions/not-fragment": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<>Status {!enabled}<span>{other}</span></>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { Fragment as _Fragment } from \"react/jsx-runtime\";\nexport const Page = () => <><GtInternalTranslateJsx>{[\"Status \", <GtInternalVar>{!enabled}</GtInternalVar>, <span><GtInternalVar>{other}</GtInternalVar></span>]}</GtInternalTranslateJsx></>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <><GtInternalTranslateJsx>Status {<GtInternalVar>{!enabled}</GtInternalVar>}<span>{<GtInternalVar>{other}</GtInternalVar>}</span></GtInternalTranslateJsx></>;\n",
+    "cliDivergences": []
+  },
+  "expressions/not-only": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>{!enabled}</div>);\n",
+    "output": "export const Page = () => <div>{!enabled}</div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div>{!enabled}</div>;\n",
+    "cliDivergences": []
+  },
+  "expressions/null-jsx-entities": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<p>&quot;A&amp;B&quot;&nbsp;{null}&#x1f30d;</p>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <p><GtInternalTranslateJsx>{[\"\\\"A&B\\\"\\xA0\", null, \"\\uD83C\\uDF0D\"]}</GtInternalTranslateJsx></p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <p><GtInternalTranslateJsx>&quot;A&amp;B&quot;&nbsp;{null}&#x1f30d;</GtInternalTranslateJsx></p>;\n",
+    "cliDivergences": []
+  },
+  "expressions/null-render-prop": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card render={() => <section>Rendered {null}</section>}>Body</Card>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card render={() => <section><GtInternalTranslateJsx>{[\"Rendered \", null]}</GtInternalTranslateJsx></section>}><GtInternalTranslateJsx>{\"Body\"}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card render={() => <section><GtInternalTranslateJsx>Rendered {null}</GtInternalTranslateJsx></section>}><GtInternalTranslateJsx>Body</GtInternalTranslateJsx></Card>;\n",
+    "cliDivergences": []
+  },
+  "expressions/nullish-mixed-explicit-children-array": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card children={['Result: ', (enabled && value) ?? <span>Fallback</span>, suffix]} />);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card><GtInternalTranslateJsx>{['Result: ', <GtInternalVar>{(enabled && value) ?? <span><GtInternalTranslateJsx>{\"Fallback\"}</GtInternalTranslateJsx></span>}</GtInternalVar>, <GtInternalVar>{suffix}</GtInternalVar>]}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card children={['Result: ', (enabled && value) ?? <span><GtInternalTranslateJsx>Fallback</GtInternalTranslateJsx></span>, suffix]} />;\n",
+    "cliDivergences": [
+      "children-attribute"
+    ]
+  },
+  "expressions/nullish-mixed-user-var": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<p>Value <ManualVar>{(enabled && value) ?? <span>Fallback</span>}</ManualVar> after {other}</p>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { Var as ManualVar } from 'gt-next';\nexport const Page = () => <p><GtInternalTranslateJsx>{[\"Value \", <ManualVar>{(enabled && value) ?? <span>{\"Fallback\"}</span>}</ManualVar>, \" after \", <GtInternalVar>{other}</GtInternalVar>]}</GtInternalTranslateJsx></p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <p><GtInternalTranslateJsx>Value <ManualVar>{(enabled && value) ?? <span>Fallback</span>}</ManualVar> after {<GtInternalVar>{other}</GtInternalVar>}</GtInternalTranslateJsx></p>;\n",
+    "cliDivergences": []
+  },
+  "expressions/nullish-prop-jsx": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card header={<h1>Heading {value ?? <span>Missing {fallback}</span>}</h1>} footer={<small>End {date}</small>}>Body {body}</Card>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card header={<h1><GtInternalTranslateJsx>{[\"Heading \", <GtInternalVar>{value ?? <span><GtInternalTranslateJsx>{[\"Missing \", <GtInternalVar>{fallback}</GtInternalVar>]}</GtInternalTranslateJsx></span>}</GtInternalVar>]}</GtInternalTranslateJsx></h1>} footer={<small><GtInternalTranslateJsx>{[\"End \", <GtInternalVar>{date}</GtInternalVar>]}</GtInternalTranslateJsx></small>}><GtInternalTranslateJsx>{[\"Body \", <GtInternalVar>{body}</GtInternalVar>]}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card header={<h1><GtInternalTranslateJsx>Heading {<GtInternalVar>{value ?? <span><GtInternalTranslateJsx>Missing {<GtInternalVar>{fallback}</GtInternalVar>}</GtInternalTranslateJsx></span>}</GtInternalVar>}</GtInternalTranslateJsx></h1>} footer={<small><GtInternalTranslateJsx>End {<GtInternalVar>{date}</GtInternalVar>}</GtInternalTranslateJsx></small>}><GtInternalTranslateJsx>Body {<GtInternalVar>{body}</GtInternalVar>}</GtInternalTranslateJsx></Card>;\n",
+    "cliDivergences": []
+  },
+  "expressions/nullish-sandwich": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>Before {value ?? <span>Missing {fallback}</span>} after</div>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <div><GtInternalTranslateJsx>{[\"Before \", <GtInternalVar>{value ?? <span><GtInternalTranslateJsx>{[\"Missing \", <GtInternalVar>{fallback}</GtInternalVar>]}</GtInternalTranslateJsx></span>}</GtInternalVar>, \" after\"]}</GtInternalTranslateJsx></div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div><GtInternalTranslateJsx>Before {<GtInternalVar>{value ?? <span><GtInternalTranslateJsx>Missing {<GtInternalVar>{fallback}</GtInternalVar>}</GtInternalTranslateJsx></span>}</GtInternalVar>} after</GtInternalTranslateJsx></div>;\n",
+    "cliDivergences": []
+  },
+  "expressions/object-computed-children-after-spread": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card {...props} children={({ [key]: <span>Computed {value}</span> })[key]} />);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card {...props}>{{\n    [key]: <span><GtInternalTranslateJsx>{[\"Computed \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></span>\n  }[key]}</Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card {...props} children={{\n  [key]: <span><GtInternalTranslateJsx>Computed {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></span>\n}[key]} />;\n",
+    "cliDivergences": []
+  },
+  "expressions/object-computed-explicit-children": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card children={({ [key]: <span>Computed {value}</span> })[key]} />);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card>{{\n    [key]: <span><GtInternalTranslateJsx>{[\"Computed \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></span>\n  }[key]}</Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card children={{\n  [key]: <span><GtInternalTranslateJsx>Computed {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></span>\n}[key]} />;\n",
+    "cliDivergences": []
+  },
+  "expressions/object-computed-sandwich": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>Before {({ [key]: <span>Computed {value}</span> })[key]} after</div>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <div><GtInternalTranslateJsx>{[\"Before \", <GtInternalVar>{{\n        [key]: <span><GtInternalTranslateJsx>{[\"Computed \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></span>\n      }[key]}</GtInternalVar>, \" after\"]}</GtInternalTranslateJsx></div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div><GtInternalTranslateJsx>Before {<GtInternalVar>{{\n        [key]: <span><GtInternalTranslateJsx>Computed {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></span>\n      }[key]}</GtInternalVar>} after</GtInternalTranslateJsx></div>;\n",
+    "cliDivergences": []
+  },
+  "expressions/object-computed-separate-expressions": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<p>{first} says {({ [key]: <span>Computed {value}</span> })[key]} to {last}.</p>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <p><GtInternalTranslateJsx>{[<GtInternalVar>{first}</GtInternalVar>, \" says \", <GtInternalVar>{{\n        [key]: <span><GtInternalTranslateJsx>{[\"Computed \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></span>\n      }[key]}</GtInternalVar>, \" to \", <GtInternalVar>{last}</GtInternalVar>, \".\"]}</GtInternalTranslateJsx></p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <p><GtInternalTranslateJsx>{<GtInternalVar>{first}</GtInternalVar>} says {<GtInternalVar>{{\n        [key]: <span><GtInternalTranslateJsx>Computed {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></span>\n      }[key]}</GtInternalVar>} to {<GtInternalVar>{last}</GtInternalVar>}.</GtInternalTranslateJsx></p>;\n",
+    "cliDivergences": []
+  },
+  "expressions/optional-call-multiline": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<p>\n    A line before\n    {user?.format?.(locale)}\n    <span>next line {other}</span>\n    and after\n  </p>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <p><GtInternalTranslateJsx>{[\"A line before\", <GtInternalVar>{user?.format?.(locale)}</GtInternalVar>, <span>{[\"next line \", <GtInternalVar>{other}</GtInternalVar>]}</span>, \"and after\"]}</GtInternalTranslateJsx></p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <p><GtInternalTranslateJsx>\n    A line before\n    {<GtInternalVar>{user?.format?.(locale)}</GtInternalVar>}\n    <span>next line {<GtInternalVar>{other}</GtInternalVar>}</span>\n    and after\n  </GtInternalTranslateJsx></p>;\n",
+    "cliDivergences": []
+  },
+  "expressions/optional-call-only": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>{user?.format?.(locale)}</div>);\n",
+    "output": "export const Page = () => <div>{user?.format?.(locale)}</div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div>{user?.format?.(locale)}</div>;\n",
+    "cliDivergences": []
+  },
+  "expressions/optional-member-user-t": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<ManualT>Manual {user?.profile?.name}</ManualT>);\n",
+    "output": "import { T as ManualT } from 'gt-next';\nexport const Page = () => <ManualT>{[\"Manual \", user?.profile?.name]}</ManualT>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <ManualT>Manual {user?.profile?.name}</ManualT>;\n",
+    "cliDivergences": []
+  },
+  "expressions/parenthesized-jsx-deep-claimed": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<main>Report <section><article><p>{((<span>Parenthesized {value}</span>))}</p></article></section> complete</main>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <main><GtInternalTranslateJsx>{[\"Report \", <section><article><p><span>{[\"Parenthesized \", <GtInternalVar>{value}</GtInternalVar>]}</span></p></article></section>, \" complete\"]}</GtInternalTranslateJsx></main>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <main><GtInternalTranslateJsx>Report <section><article><p>{<span><GtInternalTranslateJsx>Parenthesized {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></span>}</p></article></section> complete</GtInternalTranslateJsx></main>;\n",
+    "cliDivergences": [
+      "expression-jsx-region"
+    ]
+  },
+  "expressions/parenthesized-jsx-explicit-children-array": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card children={['Result: ', ((<span>Parenthesized {value}</span>)), suffix]} />);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card><GtInternalTranslateJsx>{['Result: ', <span>{[\"Parenthesized \", <GtInternalVar>{value}</GtInternalVar>]}</span>, <GtInternalVar>{suffix}</GtInternalVar>]}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card children={['Result: ', <span><GtInternalTranslateJsx>Parenthesized {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></span>, suffix]} />;\n",
+    "cliDivergences": [
+      "children-attribute"
+    ]
+  },
+  "expressions/regexp-call-prop-jsx": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card header={<h1>Heading {/^[a-z]+$/i.test(value)}</h1>} footer={<small>End {date}</small>}>Body {body}</Card>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card header={<h1><GtInternalTranslateJsx>{[\"Heading \", <GtInternalVar>{/^[a-z]+$/i.test(value)}</GtInternalVar>]}</GtInternalTranslateJsx></h1>} footer={<small><GtInternalTranslateJsx>{[\"End \", <GtInternalVar>{date}</GtInternalVar>]}</GtInternalTranslateJsx></small>}><GtInternalTranslateJsx>{[\"Body \", <GtInternalVar>{body}</GtInternalVar>]}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card header={<h1><GtInternalTranslateJsx>Heading {<GtInternalVar>{/^[a-z]+$/i.test(value)}</GtInternalVar>}</GtInternalTranslateJsx></h1>} footer={<small><GtInternalTranslateJsx>End {<GtInternalVar>{date}</GtInternalVar>}</GtInternalTranslateJsx></small>}><GtInternalTranslateJsx>Body {<GtInternalVar>{body}</GtInternalVar>}</GtInternalTranslateJsx></Card>;\n",
+    "cliDivergences": []
+  },
+  "expressions/sequence-explicit-children-array": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card children={['Result: ', (track(value), value), suffix]} />);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card><GtInternalTranslateJsx>{['Result: ', <GtInternalVar>{(track(value), value)}</GtInternalVar>, <GtInternalVar>{suffix}</GtInternalVar>]}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card children={['Result: ', (track(value), value), suffix]} />;\n",
+    "cliDivergences": [
+      "children-attribute"
+    ]
+  },
+  "expressions/sequence-prop-jsx": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card header={<h1>Heading {(track(value), value)}</h1>} footer={<small>End {date}</small>}>Body {body}</Card>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card header={<h1><GtInternalTranslateJsx>{[\"Heading \", <GtInternalVar>{(track(value), value)}</GtInternalVar>]}</GtInternalTranslateJsx></h1>} footer={<small><GtInternalTranslateJsx>{[\"End \", <GtInternalVar>{date}</GtInternalVar>]}</GtInternalTranslateJsx></small>}><GtInternalTranslateJsx>{[\"Body \", <GtInternalVar>{body}</GtInternalVar>]}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card header={<h1><GtInternalTranslateJsx>Heading {<GtInternalVar>{(track(value), value)}</GtInternalVar>}</GtInternalTranslateJsx></h1>} footer={<small><GtInternalTranslateJsx>End {<GtInternalVar>{date}</GtInternalVar>}</GtInternalTranslateJsx></small>}><GtInternalTranslateJsx>Body {<GtInternalVar>{body}</GtInternalVar>}</GtInternalTranslateJsx></Card>;\n",
+    "cliDivergences": []
+  },
+  "expressions/spaces-sandwich": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>Before {\"   \"} after</div>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <div><GtInternalTranslateJsx>{[\"Before \", \"   \", \" after\"]}</GtInternalTranslateJsx></div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div><GtInternalTranslateJsx>Before {\"   \"} after</GtInternalTranslateJsx></div>;\n",
+    "cliDivergences": []
+  },
+  "expressions/static-template-explicit-children": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card children={`Visible template`} />);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card><GtInternalTranslateJsx>{`Visible template`}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card children={`Visible template`} />;\n",
+    "cliDivergences": [
+      "children-attribute"
+    ]
+  },
+  "expressions/static-template-whitespace-boundary": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<p>{first}{' '}{`Visible template`}{'\\n'}{last}</p>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <p><GtInternalTranslateJsx>{[<GtInternalVar>{first}</GtInternalVar>, ' ', `Visible template`, '\\n', <GtInternalVar>{last}</GtInternalVar>]}</GtInternalTranslateJsx></p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <p>{first}{' '}{`Visible template`}{'\\n'}{last}</p>;\n",
+    "cliDivergences": [
+      "expression-text"
+    ]
+  },
+  "expressions/string-concatenation-sandwich": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>Before {\"$\" + amount} after</div>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <div><GtInternalTranslateJsx>{[\"Before \", <GtInternalVar>{\"$\" + amount}</GtInternalVar>, \" after\"]}</GtInternalTranslateJsx></div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div><GtInternalTranslateJsx>Before {<GtInternalVar>{\"$\" + amount}</GtInternalVar>} after</GtInternalTranslateJsx></div>;\n",
+    "cliDivergences": []
+  },
+  "expressions/string-deep-independent": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<main><section><article><p>{\"Visible message\"}</p></article></section></main>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <main><section><article><p><GtInternalTranslateJsx>{\"Visible message\"}</GtInternalTranslateJsx></p></article></section></main>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <main><section><article><p>{\"Visible message\"}</p></article></section></main>;\n",
+    "cliDivergences": [
+      "expression-text"
+    ]
+  },
+  "expressions/string-prop-jsx": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card header={<h1>Heading {\"Visible message\"}</h1>} footer={<small>End {date}</small>}>Body {body}</Card>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card header={<h1><GtInternalTranslateJsx>{[\"Heading \", \"Visible message\"]}</GtInternalTranslateJsx></h1>} footer={<small><GtInternalTranslateJsx>{[\"End \", <GtInternalVar>{date}</GtInternalVar>]}</GtInternalTranslateJsx></small>}><GtInternalTranslateJsx>{[\"Body \", <GtInternalVar>{body}</GtInternalVar>]}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card header={<h1><GtInternalTranslateJsx>Heading {\"Visible message\"}</GtInternalTranslateJsx></h1>} footer={<small><GtInternalTranslateJsx>End {<GtInternalVar>{date}</GtInternalVar>}</GtInternalTranslateJsx></small>}><GtInternalTranslateJsx>Body {<GtInternalVar>{body}</GtInternalVar>}</GtInternalTranslateJsx></Card>;\n",
+    "cliDivergences": []
+  },
+  "expressions/string-render-prop": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card render={() => <section>Rendered {\"Visible message\"}</section>}>Body</Card>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card render={() => <section><GtInternalTranslateJsx>{[\"Rendered \", \"Visible message\"]}</GtInternalTranslateJsx></section>}><GtInternalTranslateJsx>{\"Body\"}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card render={() => <section><GtInternalTranslateJsx>Rendered {\"Visible message\"}</GtInternalTranslateJsx></section>}><GtInternalTranslateJsx>Body</GtInternalTranslateJsx></Card>;\n",
+    "cliDivergences": []
+  },
+  "expressions/tagged-template-explicit-children-array": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card children={['Result: ', format`Value: ${value}`, suffix]} />);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card><GtInternalTranslateJsx>{['Result: ', <GtInternalVar>{format`Value: ${value}`}</GtInternalVar>, <GtInternalVar>{suffix}</GtInternalVar>]}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card children={['Result: ', format`Value: ${value}`, suffix]} />;\n",
+    "cliDivergences": [
+      "children-attribute"
+    ]
+  },
+  "expressions/ternary-jsx-keyed-fragment": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Fragment key={id}><b>Heading</b>{enabled ? <b>Enabled {value}</b> : <i>Disabled {reason}</i>}</Fragment>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { Fragment } from 'react';\nexport const Page = () => <Fragment key={id}>{[<b><GtInternalTranslateJsx>{\"Heading\"}</GtInternalTranslateJsx></b>, enabled ? <b><GtInternalTranslateJsx>{[\"Enabled \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></b> : <i><GtInternalTranslateJsx>{[\"Disabled \", <GtInternalVar>{reason}</GtInternalVar>]}</GtInternalTranslateJsx></i>]}</Fragment>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Fragment key={id}><b><GtInternalTranslateJsx>Heading</GtInternalTranslateJsx></b>{enabled ? <b><GtInternalTranslateJsx>Enabled {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></b> : <i><GtInternalTranslateJsx>Disabled {<GtInternalVar>{reason}</GtInternalVar>}</GtInternalTranslateJsx></i>}</Fragment>;\n",
+    "cliDivergences": []
+  },
+  "expressions/ternary-jsx-separate-expressions": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<p>{first} says {enabled ? <b>Enabled {value}</b> : <i>Disabled {reason}</i>} to {last}.</p>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <p><GtInternalTranslateJsx>{[<GtInternalVar>{first}</GtInternalVar>, \" says \", <GtInternalVar>{enabled ? <b><GtInternalTranslateJsx>{[\"Enabled \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></b> : <i><GtInternalTranslateJsx>{[\"Disabled \", <GtInternalVar>{reason}</GtInternalVar>]}</GtInternalTranslateJsx></i>}</GtInternalVar>, \" to \", <GtInternalVar>{last}</GtInternalVar>, \".\"]}</GtInternalTranslateJsx></p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <p><GtInternalTranslateJsx>{<GtInternalVar>{first}</GtInternalVar>} says {<GtInternalVar>{enabled ? <b><GtInternalTranslateJsx>Enabled {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></b> : <i><GtInternalTranslateJsx>Disabled {<GtInternalVar>{reason}</GtInternalVar>}</GtInternalTranslateJsx></i>}</GtInternalVar>} to {<GtInternalVar>{last}</GtInternalVar>}.</GtInternalTranslateJsx></p>;\n",
+    "cliDivergences": []
+  },
+  "expressions/ternary-jsx-suffix": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>{enabled ? <b>Enabled {value}</b> : <i>Disabled {reason}</i>} remaining</div>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <div><GtInternalTranslateJsx>{[<GtInternalVar>{enabled ? <b><GtInternalTranslateJsx>{[\"Enabled \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></b> : <i><GtInternalTranslateJsx>{[\"Disabled \", <GtInternalVar>{reason}</GtInternalVar>]}</GtInternalTranslateJsx></i>}</GtInternalVar>, \" remaining\"]}</GtInternalTranslateJsx></div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div><GtInternalTranslateJsx>{<GtInternalVar>{enabled ? <b><GtInternalTranslateJsx>Enabled {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></b> : <i><GtInternalTranslateJsx>Disabled {<GtInternalVar>{reason}</GtInternalVar>}</GtInternalTranslateJsx></i>}</GtInternalVar>} remaining</GtInternalTranslateJsx></div>;\n",
+    "cliDivergences": []
+  },
+  "expressions/ternary-mixed-explicit-children": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card children={enabled ? <span>Ready</span> : value} />);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card>{enabled ? <span><GtInternalTranslateJsx>{\"Ready\"}</GtInternalTranslateJsx></span> : value}</Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card children={enabled ? <span><GtInternalTranslateJsx>Ready</GtInternalTranslateJsx></span> : value} />;\n",
+    "cliDivergences": []
+  },
+  "expressions/ternary-mixed-prefix": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>Result: {enabled ? <span>Ready</span> : value}</div>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <div><GtInternalTranslateJsx>{[\"Result: \", <GtInternalVar>{enabled ? <span><GtInternalTranslateJsx>{\"Ready\"}</GtInternalTranslateJsx></span> : value}</GtInternalVar>]}</GtInternalTranslateJsx></div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div><GtInternalTranslateJsx>Result: {<GtInternalVar>{enabled ? <span><GtInternalTranslateJsx>Ready</GtInternalTranslateJsx></span> : value}</GtInternalVar>}</GtInternalTranslateJsx></div>;\n",
+    "cliDivergences": []
+  },
+  "expressions/ternary-mixed-sandwich": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>Before {enabled ? <span>Ready</span> : value} after</div>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <div><GtInternalTranslateJsx>{[\"Before \", <GtInternalVar>{enabled ? <span><GtInternalTranslateJsx>{\"Ready\"}</GtInternalTranslateJsx></span> : value}</GtInternalVar>, \" after\"]}</GtInternalTranslateJsx></div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div><GtInternalTranslateJsx>Before {<GtInternalVar>{enabled ? <span><GtInternalTranslateJsx>Ready</GtInternalTranslateJsx></span> : value}</GtInternalVar>} after</GtInternalTranslateJsx></div>;\n",
+    "cliDivergences": []
+  },
+  "expressions/ternary-nested-fragment": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<>Status {a ? (b ? <b>Both {value}</b> : <i>First</i>) : <em>Neither</em>}<span>{other}</span></>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { Fragment as _Fragment } from \"react/jsx-runtime\";\nexport const Page = () => <><GtInternalTranslateJsx>{[\"Status \", <GtInternalVar>{a ? b ? <b><GtInternalTranslateJsx>{[\"Both \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></b> : <i><GtInternalTranslateJsx>{\"First\"}</GtInternalTranslateJsx></i> : <em><GtInternalTranslateJsx>{\"Neither\"}</GtInternalTranslateJsx></em>}</GtInternalVar>, <span><GtInternalVar>{other}</GtInternalVar></span>]}</GtInternalTranslateJsx></>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <><GtInternalTranslateJsx>Status {<GtInternalVar>{a ? b ? <b><GtInternalTranslateJsx>Both {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></b> : <i><GtInternalTranslateJsx>First</GtInternalTranslateJsx></i> : <em><GtInternalTranslateJsx>Neither</GtInternalTranslateJsx></em>}</GtInternalVar>}<span>{<GtInternalVar>{other}</GtInternalVar>}</span></GtInternalTranslateJsx></>;\n",
+    "cliDivergences": []
+  },
+  "expressions/ternary-nested-nested-array": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>{['Result', [a ? (b ? <b>Both {value}</b> : <i>First</i>) : <em>Neither</em>], ...values]}</div>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <div><GtInternalTranslateJsx>{['Result', <GtInternalVar>{[a ? b ? <b><GtInternalTranslateJsx>{[\"Both \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></b> : <i><GtInternalTranslateJsx>{\"First\"}</GtInternalTranslateJsx></i> : <em><GtInternalTranslateJsx>{\"Neither\"}</GtInternalTranslateJsx></em>]}</GtInternalVar>, ...values]}</GtInternalTranslateJsx></div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div>{['Result', [a ? b ? <b><GtInternalTranslateJsx>Both {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></b> : <i><GtInternalTranslateJsx>First</GtInternalTranslateJsx></i> : <em><GtInternalTranslateJsx>Neither</GtInternalTranslateJsx></em>], ...values]}</div>;\n",
+    "cliDivergences": [
+      "child-array"
+    ]
+  },
+  "expressions/ternary-nested-prefix": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>Result: {a ? (b ? <b>Both {value}</b> : <i>First</i>) : <em>Neither</em>}</div>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <div><GtInternalTranslateJsx>{[\"Result: \", <GtInternalVar>{a ? b ? <b><GtInternalTranslateJsx>{[\"Both \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></b> : <i><GtInternalTranslateJsx>{\"First\"}</GtInternalTranslateJsx></i> : <em><GtInternalTranslateJsx>{\"Neither\"}</GtInternalTranslateJsx></em>}</GtInternalVar>]}</GtInternalTranslateJsx></div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div><GtInternalTranslateJsx>Result: {<GtInternalVar>{a ? b ? <b><GtInternalTranslateJsx>Both {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></b> : <i><GtInternalTranslateJsx>First</GtInternalTranslateJsx></i> : <em><GtInternalTranslateJsx>Neither</GtInternalTranslateJsx></em>}</GtInternalVar>}</GtInternalTranslateJsx></div>;\n",
+    "cliDivergences": []
+  },
+  "expressions/ternary-nested-prop-jsx": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card header={<h1>Heading {a ? (b ? <b>Both {value}</b> : <i>First</i>) : <em>Neither</em>}</h1>} footer={<small>End {date}</small>}>Body {body}</Card>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card header={<h1><GtInternalTranslateJsx>{[\"Heading \", <GtInternalVar>{a ? b ? <b><GtInternalTranslateJsx>{[\"Both \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></b> : <i><GtInternalTranslateJsx>{\"First\"}</GtInternalTranslateJsx></i> : <em><GtInternalTranslateJsx>{\"Neither\"}</GtInternalTranslateJsx></em>}</GtInternalVar>]}</GtInternalTranslateJsx></h1>} footer={<small><GtInternalTranslateJsx>{[\"End \", <GtInternalVar>{date}</GtInternalVar>]}</GtInternalTranslateJsx></small>}><GtInternalTranslateJsx>{[\"Body \", <GtInternalVar>{body}</GtInternalVar>]}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card header={<h1><GtInternalTranslateJsx>Heading {<GtInternalVar>{a ? b ? <b><GtInternalTranslateJsx>Both {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></b> : <i><GtInternalTranslateJsx>First</GtInternalTranslateJsx></i> : <em><GtInternalTranslateJsx>Neither</GtInternalTranslateJsx></em>}</GtInternalVar>}</GtInternalTranslateJsx></h1>} footer={<small><GtInternalTranslateJsx>End {<GtInternalVar>{date}</GtInternalVar>}</GtInternalTranslateJsx></small>}><GtInternalTranslateJsx>Body {<GtInternalVar>{body}</GtInternalVar>}</GtInternalTranslateJsx></Card>;\n",
+    "cliDivergences": []
+  },
+  "expressions/ts-const-array-children-before-spread": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card children={([\"Fixed\", <b key=\"b\">Bold {value}</b>] as const)} {...props} />);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card children={<GtInternalTranslateJsx>{[\"Fixed\", <b key={\"b\"}>{[\"Bold \", <GtInternalVar>{value}</GtInternalVar>]}</b>]}</GtInternalTranslateJsx>} {...props} />;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card children={[\"Fixed\", <b key=\"b\"><GtInternalTranslateJsx>Bold {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></b>] as const} {...props} />;\n",
+    "cliDivergences": [
+      "children-attribute"
+    ]
+  },
+  "expressions/ts-const-array-children-overridden": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card children={([\"Fixed\", <b key=\"b\">Bold {value}</b>] as const)}>Replacement {replacement}</Card>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card children={<GtInternalTranslateJsx>{[\"Fixed\", <b key={\"b\"}>{[\"Bold \", <GtInternalVar>{value}</GtInternalVar>]}</b>]}</GtInternalTranslateJsx>}>{[\"Replacement \", replacement]}</Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card children={[\"Fixed\", <b key=\"b\"><GtInternalTranslateJsx>Bold {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></b>] as const}><GtInternalTranslateJsx>Replacement {<GtInternalVar>{replacement}</GtInternalVar>}</GtInternalTranslateJsx></Card>;\n",
+    "cliDivergences": [
+      "children-attribute"
+    ]
+  },
+  "expressions/ts-const-array-explicit-children-array": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card children={['Result: ', ([\"Fixed\", <b key=\"b\">Bold {value}</b>] as const), suffix]} />);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card><GtInternalTranslateJsx>{['Result: ', <GtInternalVar>{[\"Fixed\", <b key={\"b\"}><GtInternalTranslateJsx>{[\"Bold \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></b>]}</GtInternalVar>, <GtInternalVar>{suffix}</GtInternalVar>]}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card children={['Result: ', [\"Fixed\", <b key=\"b\"><GtInternalTranslateJsx>Bold {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></b>] as const, suffix]} />;\n",
+    "cliDivergences": [
+      "children-attribute"
+    ]
+  },
+  "expressions/ts-jsx-assertion-children-overridden": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card children={(<span>Asserted {value}</span> as React.ReactNode)}>Replacement {replacement}</Card>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card children={<span><GtInternalTranslateJsx>{[\"Asserted \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></span>}>{[\"Replacement \", replacement]}</Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card children={<span><GtInternalTranslateJsx>Asserted {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></span> as React.ReactNode}><GtInternalTranslateJsx>Replacement {<GtInternalVar>{replacement}</GtInternalVar>}</GtInternalTranslateJsx></Card>;\n",
+    "cliDivergences": [
+      "children-attribute"
+    ]
+  },
+  "expressions/ts-jsx-assertion-separate-expressions": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<p>{first} says {(<span>Asserted {value}</span> as React.ReactNode)} to {last}.</p>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <p><GtInternalTranslateJsx>{[<GtInternalVar>{first}</GtInternalVar>, \" says \", <span>{[\"Asserted \", <GtInternalVar>{value}</GtInternalVar>]}</span>, \" to \", <GtInternalVar>{last}</GtInternalVar>, \".\"]}</GtInternalTranslateJsx></p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <p><GtInternalTranslateJsx>{<GtInternalVar>{first}</GtInternalVar>} says {<GtInternalVar>{<span><GtInternalTranslateJsx>Asserted {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></span> as React.ReactNode}</GtInternalVar>} to {<GtInternalVar>{last}</GtInternalVar>}.</GtInternalTranslateJsx></p>;\n",
+    "cliDivergences": [
+      "expression-jsx-region",
+      "typescript-expression"
+    ]
+  },
+  "expressions/ts-non-null-jsx-entities": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<p>&quot;A&amp;B&quot;&nbsp;{value!}&#x1f30d;</p>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <p><GtInternalTranslateJsx>{[\"\\\"A&B\\\"\\xA0\", <GtInternalVar>{value}</GtInternalVar>, \"\\uD83C\\uDF0D\"]}</GtInternalTranslateJsx></p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <p><GtInternalTranslateJsx>&quot;A&amp;B&quot;&nbsp;{<GtInternalVar>{value!}</GtInternalVar>}&#x1f30d;</GtInternalTranslateJsx></p>;\n",
+    "cliDivergences": []
+  },
+  "expressions/ts-non-null-keyed-fragment": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Fragment key={id}><b>Heading</b>{value!}</Fragment>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { Fragment } from 'react';\nexport const Page = () => <Fragment key={id}>{[<b><GtInternalTranslateJsx>{\"Heading\"}</GtInternalTranslateJsx></b>, value]}</Fragment>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Fragment key={id}><b><GtInternalTranslateJsx>Heading</GtInternalTranslateJsx></b>{value!}</Fragment>;\n",
+    "cliDivergences": []
+  },
+  "expressions/ts-satisfies-prop-expression": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card header={(value satisfies string)}>Body {body}</Card>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card header={value}><GtInternalTranslateJsx>{[\"Body \", <GtInternalVar>{body}</GtInternalVar>]}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card header={value satisfies string}><GtInternalTranslateJsx>Body {<GtInternalVar>{body}</GtInternalVar>}</GtInternalTranslateJsx></Card>;\n",
+    "cliDivergences": []
+  },
+  "expressions/typed-arrow-children-overridden": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card children={(item: { name: string }) => <span>Typed {item.name}</span>}>Replacement {replacement}</Card>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card children={item => <span><GtInternalTranslateJsx>{[\"Typed \", <GtInternalVar>{item.name}</GtInternalVar>]}</GtInternalTranslateJsx></span>}>{[\"Replacement \", replacement]}</Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card children={(item: {\n  name: string;\n}) => <span><GtInternalTranslateJsx>Typed {<GtInternalVar>{item.name}</GtInternalVar>}</GtInternalTranslateJsx></span>}><GtInternalTranslateJsx>Replacement {<GtInternalVar>{replacement}</GtInternalVar>}</GtInternalTranslateJsx></Card>;\n",
+    "cliDivergences": [
+      "children-attribute"
+    ]
+  },
+  "expressions/typeof-explicit-children-array": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card children={['Result: ', typeof value, suffix]} />);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card><GtInternalTranslateJsx>{['Result: ', <GtInternalVar>{typeof value}</GtInternalVar>, <GtInternalVar>{suffix}</GtInternalVar>]}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card children={['Result: ', typeof value, suffix]} />;\n",
+    "cliDivergences": [
+      "children-attribute"
+    ]
+  },
+  "expressions/typeof-separate-expressions": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<p>{first} says {typeof value} to {last}.</p>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <p><GtInternalTranslateJsx>{[<GtInternalVar>{first}</GtInternalVar>, \" says \", <GtInternalVar>{typeof value}</GtInternalVar>, \" to \", <GtInternalVar>{last}</GtInternalVar>, \".\"]}</GtInternalTranslateJsx></p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <p><GtInternalTranslateJsx>{<GtInternalVar>{first}</GtInternalVar>} says {<GtInternalVar>{typeof value}</GtInternalVar>} to {<GtInternalVar>{last}</GtInternalVar>}.</GtInternalTranslateJsx></p>;\n",
+    "cliDivergences": []
+  },
+  "expressions/undefined-nested-array": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>{['Result', [undefined], ...values]}</div>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <div><GtInternalTranslateJsx>{['Result', <GtInternalVar>{[undefined]}</GtInternalVar>, ...values]}</GtInternalTranslateJsx></div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div>{['Result', [undefined], ...values]}</div>;\n",
+    "cliDivergences": [
+      "child-array"
+    ]
+  },
+  "expressions/undefined-only": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>{undefined}</div>);\n",
+    "output": "export const Page = () => <div>{undefined}</div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div>{undefined}</div>;\n",
+    "cliDivergences": []
+  },
+  "expressions/unicode-message-children-before-spread": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card children={\"日本語 مرحباً 👩🏽‍💻\"} {...props} />);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card children={<GtInternalTranslateJsx>{\"日本語 مرحباً 👩🏽‍💻\"}</GtInternalTranslateJsx>} {...props} />;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card children={\"日本語 مرحباً 👩🏽‍💻\"} {...props} />;\n",
+    "cliDivergences": [
+      "children-attribute"
+    ]
+  },
+  "expressions/unicode-message-only": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>{\"日本語 مرحباً 👩🏽‍💻\"}</div>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <div><GtInternalTranslateJsx>{\"日本語 مرحباً 👩🏽‍💻\"}</GtInternalTranslateJsx></div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div>{\"日本語 مرحباً 👩🏽‍💻\"}</div>;\n",
+    "cliDivergences": [
+      "expression-text"
+    ]
+  },
+  "expressions/zero-only": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>{0}</div>);\n",
+    "output": "export const Page = () => <div>{0}</div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div>{0}</div>;\n",
+    "cliDivergences": []
+  },
+  "expressions/zero-prop-expression": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Card header={0}>Body {body}</Card>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card header={0}><GtInternalTranslateJsx>{[\"Body \", <GtInternalVar>{body}</GtInternalVar>]}</GtInternalTranslateJsx></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Card header={0}><GtInternalTranslateJsx>Body {<GtInternalVar>{body}</GtInternalVar>}</GtInternalTranslateJsx></Card>;\n",
+    "cliDivergences": []
+  },
+  "expressions/zero-width-space-keyed-fragment": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<Fragment key={id}><b>Heading</b>{\"\\u200b\"}</Fragment>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { Fragment } from 'react';\nexport const Page = () => <Fragment key={id}><GtInternalTranslateJsx>{[<b>{\"Heading\"}</b>, \"\\u200b\"]}</GtInternalTranslateJsx></Fragment>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <Fragment key={id}><b><GtInternalTranslateJsx>Heading</GtInternalTranslateJsx></b>{\"\\u200b\"}</Fragment>;\n",
+    "cliDivergences": [
+      "expression-text"
+    ]
+  },
+  "expressions/zero-width-space-prefix": {
+    "input": "import * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => (<div>Result: {\"\\u200b\"}</div>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <div><GtInternalTranslateJsx>{[\"Result: \", \"\\u200b\"]}</GtInternalTranslateJsx></div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as React from 'react';\nimport { Fragment } from 'react';\nimport { T as ManualT, Var as ManualVar } from 'gt-next';\nexport const Page = () => <div><GtInternalTranslateJsx>Result: {\"\\u200b\"}</GtInternalTranslateJsx></div>;\n",
+    "cliDivergences": []
+  }
+}

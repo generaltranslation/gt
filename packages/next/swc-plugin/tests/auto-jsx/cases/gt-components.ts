@@ -376,6 +376,9 @@ export function Page(props) {
 for (const source of ['gt-next', 'gt-react/browser']) {
   for (const component of componentNames) {
     for (const binding of bindingCases(component, source)) {
+      // A default import has no imported component name; all nine variants
+      // produced the same source. Keep one real default-import case per source.
+      if (binding.name === 'default' && component !== 'T') continue;
       examples.push({
         name: `gt-bindings/${source.replace('/', '-')}-${component.toLowerCase()}-${binding.name}`,
         input: binding.input,

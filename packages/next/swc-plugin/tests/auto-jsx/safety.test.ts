@@ -6,9 +6,9 @@ import { lower } from './oracle';
 import { buildNativeDriver, runNative } from './workflow';
 
 let outputs: string[];
-beforeAll(() => {
-  buildNativeDriver();
-  outputs = runNative(safetyExamples.map(({ input }) => input));
+beforeAll(async () => {
+  await buildNativeDriver();
+  outputs = await runNative(safetyExamples.map(({ input }) => input));
 }, 300_000);
 
 describe('valid bindings where the reference compiler emits invalid imports', () => {

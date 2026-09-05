@@ -1,11 +1,14 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { canonical, lower, oracle } from './oracle';
+import { cliResult } from './cli-oracle';
+import { classifyCliDivergences } from './cli-divergences';
 import {
   buildNativeDriver,
   loadExamples,
   readExample,
   readCorpus,
   runNative,
+  yieldToRunner,
 } from './workflow';
 
 const examples = await loadExamples();
@@ -15,17 +18,38 @@ it('keeps the golden corpus in sync with the complete generator set', async () =
     examples.map(({ name }) => name).sort()
   );
 });
-beforeAll(() => {
-  buildNativeDriver();
-  outputs = runNative(examples.map(({ input }) => input));
+beforeAll(async () => {
+  await buildNativeDriver();
+  outputs = await runNative(examples.map(({ input }) => input));
 }, 300_000);
 
 describe('SWC auto JSX matches the isolated compiler insertion pass', () => {
   for (const [index, example] of examples.entries()) {
     it(example.name, async () => {
+      await yieldToRunner(index);
       const checked = await readExample(example);
       expect(checked.input.trim()).toBe(example.input.trim());
       const expected = canonical(oracle(example.input));
+      const cli = cliResult(example.input);
+      expect(
+        cli.output,
+        'checked-in CLI output matches the live CLI insertion pass'
+      ).toBe(checked.cliOutput);
+      if (checked.cliDivergences.length === 0) {
+        expect(
+          cli.canonical,
+          'the independent CLI oracle agrees with the compiler'
+        ).toBe(expected);
+      } else {
+        expect(
+          cli.canonical,
+          'a recorded CLI divergence still exists'
+        ).not.toBe(expected);
+        expect(
+          classifyCliDivergences(example.input),
+          'the CLI divergence has reviewed source-specific reasons'
+        ).toEqual(checked.cliDivergences);
+      }
       expect(
         canonical(lower(checked.output)),
         'checked-in output matches the live compiler'
@@ -42,12 +66,13 @@ describe('SWC auto JSX matches the isolated compiler insertion pass', () => {
   }
 });
 
-it('keeps the entire corpus unchanged with auto JSX disabled and hashing disabled', () => {
-  const disabled = runNative(
+it('keeps the entire corpus unchanged with auto JSX disabled and hashing disabled', async () => {
+  const disabled = await runNative(
     examples.map(({ input }) => input),
     { enableAutoJsxInjection: false, compileTimeHash: false }
   );
   for (const [index, example] of examples.entries()) {
+    await yieldToRunner(index);
     expect(canonical(lower(disabled[index])), example.name).toBe(
       canonical(lower(example.input))
     );

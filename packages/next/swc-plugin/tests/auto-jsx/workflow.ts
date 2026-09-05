@@ -1,23 +1,20 @@
-import { readdir, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
+import { readdir, mkdir, writeFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { execFileSync } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
+import { setImmediate } from 'node:timers/promises';
 import type { Example } from './types';
-import { oracle, readableOutput } from './oracle';
+import { canonical, oracle, readableOutput } from './oracle';
 import { createFixtureError } from './diagnostics.mjs';
+import { cliResult } from './cli-oracle';
+import { classifyCliDivergences } from './cli-divergences';
+import { readCorpus, writeCorpus, type Corpus, type Snapshot } from './corpus';
+
+export { readCorpus } from './corpus';
 
 export const directory = path.dirname(fileURLToPath(import.meta.url));
 export const pluginDirectory = path.resolve(directory, '../..');
 export const fixtureDirectory = path.join(directory, 'fixtures');
-const corpusPath = path.join(directory, 'corpus.json');
-type Corpus = Record<string, { input: string; output: string }>;
-let corpus: Promise<Corpus> | undefined;
-
-export function readCorpus(): Promise<Corpus> {
-  return (corpus ??= readFile(corpusPath, 'utf8').then((value) =>
-    JSON.parse(value)
-  ));
-}
 
 export async function loadExamples(): Promise<Example[]> {
   const modules = (await readdir(path.join(directory, 'cases')))
@@ -31,6 +28,7 @@ export async function loadExamples(): Promise<Example[]> {
     examples.push(...imported.examples);
   }
   const names = new Set<string>();
+  const sources = new Map<string, string>();
   for (const example of examples) {
     if (
       !/^[a-z0-9-]+\/[a-z0-9-]+$/.test(example.name) ||
@@ -42,61 +40,121 @@ export async function loadExamples(): Promise<Example[]> {
         fix: 'Use a unique group/name containing lowercase letters, numbers and hyphens',
       });
     names.add(example.name);
+    const source = example.input.trim();
+    const duplicate = sources.get(source);
+    if (duplicate)
+      throw createFixtureError({
+        whatHappened: 'Two examples contain the same source',
+        details: [duplicate, example.name],
+        fix: 'Keep one example or change the syntax to cover a distinct behavior',
+      });
+    sources.set(source, example.name);
   }
   return examples;
 }
 
-export function buildNativeDriver(): void {
-  execFileSync(
-    'cargo',
-    [
-      'build',
-      '--quiet',
-      '--manifest-path',
-      path.join(pluginDirectory, 'Cargo.toml'),
-      '--example',
-      'auto_jsx_fixture',
-    ],
-    { stdio: 'inherit', cwd: pluginDirectory }
-  );
+/** Cargo can take minutes on a cold CI runner; keep Vitest's IPC responsive. */
+export async function runCargo(args: string[]): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const child = spawn('cargo', args, {
+      stdio: 'inherit',
+      cwd: pluginDirectory,
+    });
+    child.once('error', reject);
+    child.once('exit', (code, signal) => {
+      if (code === 0) resolve();
+      else
+        reject(
+          createFixtureError({
+            whatHappened: 'The Rust fixture build failed',
+            details: signal ? `Signal: ${signal}` : `Exit code: ${code}`,
+            fix: 'Check the Cargo output above',
+          })
+        );
+    });
+  });
 }
 
-export function runNative(
+/** Let worker RPC messages drain during thousands of CPU-bound comparisons. */
+export async function yieldToRunner(index: number): Promise<void> {
+  if (index % 32 === 0) await setImmediate();
+}
+
+export async function buildNativeDriver(): Promise<void> {
+  await runCargo([
+    'build',
+    '--quiet',
+    '--manifest-path',
+    path.join(pluginDirectory, 'Cargo.toml'),
+    '--example',
+    'auto_jsx_fixture',
+  ]);
+}
+
+export async function runNative(
   inputs: string[],
   config?: Record<string, unknown>
-): string[] {
+): Promise<string[]> {
   const executable = path.join(
     pluginDirectory,
     'target/debug/examples',
     process.platform === 'win32' ? 'auto_jsx_fixture.exe' : 'auto_jsx_fixture'
   );
-  return JSON.parse(
-    execFileSync(executable, [], {
-      input: JSON.stringify(inputs.map((input) => ({ input, config }))),
-      maxBuffer: 128 * 1024 * 1024,
-      encoding: 'utf8',
-    })
-  );
+  // A complete corpus can also take longer than Vitest's RPC timeout on a
+  // loaded runner. Stream input asynchronously, just like the Cargo build.
+  const output = await new Promise<string>((resolve, reject) => {
+    const child = execFile(
+      executable,
+      [],
+      { maxBuffer: 128 * 1024 * 1024, encoding: 'utf8' },
+      (error, stdout) => {
+        if (error) reject(error);
+        else resolve(stdout);
+      }
+    );
+    child.stdin?.once('error', reject);
+    child.stdin?.end(
+      JSON.stringify(inputs.map((input) => ({ input, config })))
+    );
+  });
+  return JSON.parse(output);
 }
 
 export async function updateExamples(
   examples: Example[],
-  replace = false
+  replace = false,
+  onProgress?: (completed: number) => void
 ): Promise<void> {
-  const snapshots: Corpus = replace ? {} : await readCorpus().catch(() => ({}));
-  for (const example of examples) {
+  const snapshots: Corpus = replace ? {} : { ...(await readCorpus()) };
+  const unclassified: string[] = [];
+  for (const [index, example] of examples.entries()) {
     const folder = path.join(fixtureDirectory, example.name);
-    const output = readableOutput(oracle(example.input));
+    const compiler = oracle(example.input);
+    const output = readableOutput(compiler);
+    const cli = cliResult(example.input);
+    const agrees = canonical(compiler) === cli.canonical;
+    const cliDivergences = agrees ? [] : classifyCliDivergences(example.input);
+    if (!agrees && cliDivergences.length === 0) unclassified.push(example.name);
     const input = `${example.input.trim()}\n`;
-    snapshots[example.name] = { input, output };
+    snapshots[example.name] = {
+      input,
+      output,
+      cliOutput: cli.output,
+      cliDivergences,
+    };
     await mkdir(folder, { recursive: true });
     await writeFile(path.join(folder, 'input.tsx'), input);
     await writeFile(path.join(folder, 'output.tsx'), output);
+    await writeFile(path.join(folder, 'cli-output.tsx'), cli.output);
+    onProgress?.(index + 1);
   }
-  await writeFile(
-    corpusPath,
-    `${JSON.stringify(Object.fromEntries(Object.entries(snapshots).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))), null, 2)}\n`
-  );
+  if (unclassified.length)
+    throw createFixtureError({
+      whatHappened: 'The compiler and CLI disagree on unreviewed examples',
+      details: unclassified,
+      fix: 'Investigate the generated compiler and CLI outputs before recording a divergence reason',
+    });
+  await writeCorpus(snapshots);
   if (replace) {
     for (const group of await readdir(fixtureDirectory, {
       withFileTypes: true,
@@ -116,12 +174,9 @@ export async function updateExamples(
       }
     }
   }
-  corpus = Promise.resolve(snapshots);
 }
 
-export async function readExample(
-  example: Example
-): Promise<{ input: string; output: string }> {
+export async function readExample(example: Example): Promise<Snapshot> {
   const snapshot = (await readCorpus())[example.name];
   if (!snapshot)
     throw createFixtureError({

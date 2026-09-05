@@ -1,0 +1,8 @@
+{
+  "basics/no-text": {
+    "input": "export const Page = () => <div>{name}</div>;\n",
+    "output": "export const Page = () => <div>{name}</div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <div>{name}</div>;\n",
+    "cliDivergences": []
+  }
+}

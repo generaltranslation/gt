@@ -1,10 +1,20 @@
-import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { transformSync } from '@swc/core';
 import generate from '@babel/generator';
-import { canonical, lower, oracle, oracleCompiled } from './oracle';
-import { loadExamples, pluginDirectory } from './workflow';
+import {
+  canonical,
+  lower,
+  oracle,
+  oracleCompiled,
+  readableOutput,
+} from './oracle';
+import {
+  loadExamples,
+  pluginDirectory,
+  runCargo,
+  yieldToRunner,
+} from './workflow';
 
 const examples = await loadExamples();
 const wasm = path.join(
@@ -12,20 +22,16 @@ const wasm = path.join(
   'target/wasm32-wasip1/release/gt_swc_plugin.wasm'
 );
 
-beforeAll(() => {
-  execFileSync(
-    'cargo',
-    [
-      'build',
-      '--quiet',
-      '--release',
-      '--target',
-      'wasm32-wasip1',
-      '--manifest-path',
-      path.join(pluginDirectory, 'Cargo.toml'),
-    ],
-    { stdio: 'inherit', cwd: pluginDirectory }
-  );
+beforeAll(async () => {
+  await runCargo([
+    'build',
+    '--quiet',
+    '--release',
+    '--target',
+    'wasm32-wasip1',
+    '--manifest-path',
+    path.join(pluginDirectory, 'Cargo.toml'),
+  ]);
 }, 300_000);
 
 function transform(
@@ -53,8 +59,9 @@ function transform(
 }
 
 describe('distributed WASM plugin matches the compiler', () => {
-  for (const example of examples) {
-    it(example.name, () => {
+  for (const [index, example] of examples.entries()) {
+    it(example.name, async () => {
+      await yieldToRunner(index);
       expect(canonical(lower(transform(example.input)))).toBe(
         canonical(oracle(example.input))
       );
@@ -62,52 +69,73 @@ describe('distributed WASM plugin matches the compiler', () => {
   }
 });
 
-// These three sources expose upstream SWC lowering defects before the compiler
-// reference would run: quoted VT/FF become literal backslash escapes, and an
-// object spread containing a prototype setter is incorrectly flattened. Keep
-// them in source-level parity above and assert preservation below; reproducing
-// their changed input interpretation would violate the compiler's JSX rules.
-const hostDefects = new Set([
+// SWC turns quoted VT/FF into literal backslash escapes before the compiler
+// reference would run. Keep source-level parity above and data preservation
+// below; reproducing that changed input would violate the compiler's JSX rules.
+const quotedControlHostDefects = new Set([
   'adversarial/unicode-vertical-tab-attribute',
   'adversarial/unicode-form-feed-attribute',
+]);
+
+// SWC incorrectly flattens an object spread containing a prototype setter,
+// changing which duplicate children property the compiler sees first. For these
+// sources, inject the compiler reference before the same host lowering. Compare
+// the entire output in both modes so wrapper ownership and host behavior remain
+// checked without teaching the insertion pass that upstream interpretation.
+const prototypeSpreadHostDefects = new Set([
   'adversarial/spread-object-opaque-proto',
+  ...examples
+    .filter(
+      ({ name }) =>
+        name.startsWith(
+          'interaction-pages/nested-spreads-prototype-boundary-'
+        ) && name.endsWith('-parameter-shadow-server')
+    )
+    .map(({ name }) => name),
 ]);
 
 describe.each([false, true])(
   'SWC host JSX lowering, development=%s',
   (development) => {
-    for (const example of examples.filter(
-      ({ name }) => !hostDefects.has(name)
-    )) {
-      it(example.name, () => {
-        const base = transform(example.input, false, development, 'automatic');
-        const expected = oracleCompiled(base);
+    for (const [index, example] of examples
+      .filter(({ name }) => !quotedControlHostDefects.has(name))
+      .entries()) {
+      it(example.name, async () => {
+        await yieldToRunner(index);
+        const expected = prototypeSpreadHostDefects.has(example.name)
+          ? transform(
+              readableOutput(oracle(example.input)),
+              false,
+              development,
+              'automatic'
+            )
+          : generate(
+              oracleCompiled(
+                transform(example.input, false, development, 'automatic')
+              )
+            ).code;
         const actual = transform(example.input, true, development, 'automatic');
-        expect(canonical(lower(actual))).toBe(
-          canonical(lower(generate(expected).code))
-        );
+        expect(canonical(lower(actual))).toBe(canonical(lower(expected)));
       });
     }
   }
 );
 
-it.each([...hostDefects])(
-  'preserves host data for the upstream lowering defect %s',
-  (name) => {
-    const input = examples.find((example) => example.name === name)!.input;
-    const before = canonical(
-      lower(transform(input, false, false, 'automatic'))
-    );
-    const after = canonical(lower(transform(input, true, false, 'automatic')));
-    const preserved = name.endsWith('proto')
-      ? '__proto__:prototype'
-      : name.includes('vertical-tab')
-        ? 'children:"\\\\v"'
-        : 'children:"\\\\f"';
-    expect(before).toContain(preserved);
-    expect(after).toContain(preserved);
-  }
-);
+it.each([
+  ...quotedControlHostDefects,
+  'adversarial/spread-object-opaque-proto',
+])('preserves host data for the upstream lowering defect %s', (name) => {
+  const input = examples.find((example) => example.name === name)!.input;
+  const before = canonical(lower(transform(input, false, false, 'automatic')));
+  const after = canonical(lower(transform(input, true, false, 'automatic')));
+  const preserved = name.endsWith('proto')
+    ? '__proto__:prototype'
+    : name.includes('vertical-tab')
+      ? 'children:"\\\\v"'
+      : 'children:"\\\\f"';
+  expect(before).toContain(preserved);
+  expect(after).toContain(preserved);
+});
 
 it.each([false, true])(
   'lets the host lower inserted wrappers in development=%s',

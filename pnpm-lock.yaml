@@ -1284,6 +1284,9 @@ importers:
       next:
         specifier: 15.2.3
         version: 15.2.3(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.57.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      parse5:
+        specifier: 7.3.0
+        version: 7.3.0
       tsdown:
         specifier: 'catalog:'
         version: 0.21.10(synckit@0.11.11)(typescript@5.9.3)

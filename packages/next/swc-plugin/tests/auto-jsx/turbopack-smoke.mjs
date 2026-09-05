@@ -26,6 +26,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 import { createFixtureError } from './diagnostics.mjs';
+import { readHtmlEvidence } from './html-evidence.mjs';
 
 const pluginDirectory = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -306,20 +307,12 @@ for (const enabled of process.argv.includes('--serve')
           200,
           `${mode}/${enabled}${route}: HTTP ${response.status}`
         );
-        const visible = html
-          .replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '')
-          .replace(/<style\b[^>]*>[\s\S]*?<\/style>/g, '')
-          .replace(/<!--[^]*?-->/g, '')
-          .replace(/<[^>]+>/g, '')
-          .replace(/\s+/g, ' ');
+        const { text: visible, hashes } = readHtmlEvidence(html);
         for (const text of expected)
           assert.ok(
             visible.includes(text),
             `${mode}/${enabled}${route}: missing ${text}; saw ${visible}`
           );
-        const hashes = [...html.matchAll(/data-_gt-hash="([^"]+)"/g)].map(
-          (match) => match[1]
-        );
         if (enabled || route === '/manual')
           assert.ok(
             hashes.length > 0,
