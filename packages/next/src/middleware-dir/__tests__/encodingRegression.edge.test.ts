@@ -98,3 +98,34 @@ it('does not decode a double-encoded static segment twice', () => {
   expect(response.headers.get('location')).toBeNull();
   expect(response.headers.get('x-middleware-rewrite')).toBeNull();
 });
+
+it.each(['%5Bid%5D', '%5B...slug%5D', '%5B%5B...slug%5D%5D'])(
+  'does not promote encoded literal %s into a dynamic route',
+  (literal) => {
+    const middleware = createNextMiddleware({
+      prefixDefaultLocale: true,
+      pathConfig: { '/docs': { fr: '/' + literal } },
+    });
+    const unrelated = middleware(request('/fr/unrelated'));
+    expect(unrelated.headers.get('location')).toBeNull();
+    expect(unrelated.headers.get('x-middleware-rewrite')).toBeNull();
+    const matched = middleware(request('/fr/' + literal));
+    expect(matched.headers.get('location')).toBeNull();
+    expect(matched.headers.get('x-middleware-rewrite')).toBe(
+      origin + '/fr/docs'
+    );
+  }
+);
+
+it('keeps encoded shared literals ahead of localized dynamic aliases', () => {
+  const middleware = createNextMiddleware({
+    prefixDefaultLocale: true,
+    pathConfig: {
+      '/%5Bid%5D': { en: '/%5Bid%5D' },
+      '/docs/[slug]': { fr: '/[slug]' },
+    },
+  });
+  const response = middleware(request('/fr/%5Bid%5D'));
+  expect(response.headers.get('location')).toBeNull();
+  expect(response.headers.get('x-middleware-rewrite')).toBeNull();
+});
