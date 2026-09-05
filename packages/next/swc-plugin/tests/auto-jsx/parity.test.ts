@@ -13,6 +13,7 @@ import {
 
 const examples = await loadExamples();
 let outputs: string[];
+let disabledOutputs: string[];
 it('keeps the golden corpus in sync with the complete generator set', async () => {
   expect(Object.keys(await readCorpus()).sort()).toEqual(
     examples.map(({ name }) => name).sort()
@@ -20,7 +21,14 @@ it('keeps the golden corpus in sync with the complete generator set', async () =
 });
 beforeAll(async () => {
   await buildNativeDriver();
-  outputs = await runNative(examples.map(({ input }) => input));
+  const inputs = examples.map(({ input }) => input);
+  [outputs, disabledOutputs] = await Promise.all([
+    runNative(inputs),
+    runNative(inputs, {
+      enableAutoJsxInjection: false,
+      compileTimeHash: false,
+    }),
+  ]);
 }, 300_000);
 
 describe('SWC auto JSX matches the isolated compiler insertion pass', () => {
@@ -29,6 +37,10 @@ describe('SWC auto JSX matches the isolated compiler insertion pass', () => {
       await yieldToRunner(index);
       const checked = await readExample(example);
       expect(checked.input.trim()).toBe(example.input.trim());
+      expect(
+        canonical(lower(disabledOutputs[index])),
+        'native SWC preserves input with injection and hashing disabled'
+      ).toBe(canonical(lower(example.input)));
       const expected = canonical(oracle(example.input));
       const cli = cliResult(example.input);
       expect(
@@ -65,19 +77,6 @@ describe('SWC auto JSX matches the isolated compiler insertion pass', () => {
     });
   }
 });
-
-it('keeps the entire corpus unchanged with auto JSX disabled and hashing disabled', async () => {
-  const disabled = await runNative(
-    examples.map(({ input }) => input),
-    { enableAutoJsxInjection: false, compileTimeHash: false }
-  );
-  for (const [index, example] of examples.entries()) {
-    await yieldToRunner(index);
-    expect(canonical(lower(disabled[index])), example.name).toBe(
-      canonical(lower(example.input))
-    );
-  }
-}, 120_000);
 
 it('detects a missing translation or variable wrapper instead of normalizing it away', () => {
   expect(canonical(lower('<div>Hello {name}</div>'))).not.toBe(
