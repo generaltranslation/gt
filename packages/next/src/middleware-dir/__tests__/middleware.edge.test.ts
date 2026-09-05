@@ -35,6 +35,7 @@ function createRequest(
     cookies?: Record<string, string>;
     acceptLanguage?: string;
     search?: string;
+    basePath?: string;
   } = {}
 ): NextRequest {
   const url = new URL(pathname, 'http://localhost:3000');
@@ -45,7 +46,10 @@ function createRequest(
     headers.set('accept-language', opts.acceptLanguage);
   }
 
-  const req = new NextRequest(url, { headers });
+  const req = new NextRequest(url, {
+    headers,
+    nextConfig: opts.basePath ? { basePath: opts.basePath } : undefined,
+  });
   if (opts.cookies) {
     for (const [name, value] of Object.entries(opts.cookies)) {
       req.cookies.set(name, value);
@@ -513,6 +517,32 @@ describe('Middleware Integration Tests', () => {
 
       expect(getResponseType(res)).toBe('redirect');
       expect(getResponseSearch(res)).toBe('?page=2');
+    });
+
+    it('preserves basePath on rewrites and redirects', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+        pathConfig: {
+          '/about': { fr: '/a-propos' },
+        },
+      });
+
+      const rewriteResponse = middleware(
+        createRequest('/corp/fr/a-propos', {
+          basePath: '/corp',
+          search: 'preview=true',
+        })
+      );
+      const redirectResponse = middleware(
+        createRequest('/corp/fr/about', { basePath: '/corp' })
+      );
+
+      expect(getResponseType(rewriteResponse)).toBe('rewrite');
+      expect(getResponsePath(rewriteResponse)).toBe('/corp/fr/about');
+      expect(getResponseSearch(rewriteResponse)).toBe('?preview=true');
+      expect(getResponseType(redirectResponse)).toBe('redirect');
+      expect(getResponsePath(redirectResponse)).toBe('/corp/fr/a-propos');
     });
 
     it('sets locale header on rewrite responses', () => {
