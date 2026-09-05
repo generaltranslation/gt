@@ -235,25 +235,25 @@ export function createNextMiddleware({
         pathnameLocale && pathnameLocale !== unstandardizedPathnameLocale
           ? pathname.replace(
               new RegExp(`^/${unstandardizedPathnameLocale}`),
-              `/${userLocale}`
+              `/${pathnameLocale}`
             )
           : pathname;
 
       // Get the shared path for the unprefixed pathname
-      const sharedPath = getSharedPath(
+      const sharedPathMatch = getSharedPath(
         standardizedPathname,
         pathToSharedPath,
         pathnameLocale
       );
+      const sharedPath = sharedPathMatch?.sharedPath;
 
       // Get shared path with parameters (/en/dashboard/1/custom), for rewriting localized paths
       const sharedPathWithParameters =
-        sharedPath !== undefined
+        sharedPathMatch !== undefined
           ? replaceDynamicSegments(
-              pathnameLocale
-                ? standardizedPathname
-                : `/${userLocale}${standardizedPathname}`,
-              `/${userLocale}${sharedPath}`
+              sharedPathMatch.matchedPathname,
+              `/${userLocale}${sharedPath}`,
+              sharedPathMatch.pathTemplate
             )
           : undefined;
 
@@ -265,12 +265,11 @@ export function createNextMiddleware({
 
       // Combine localized path with dynamic parameters (/en/blog, /fr/fr-about, /fr/dashboard/1/fr-custom)
       const localizedPathWithParameters =
-        localizedPath !== undefined
+        localizedPath !== undefined && sharedPathMatch !== undefined
           ? replaceDynamicSegments(
-              pathnameLocale
-                ? standardizedPathname
-                : `/${userLocale}${standardizedPathname}`,
-              localizedPath
+              sharedPathMatch.matchedPathname,
+              localizedPath,
+              sharedPathMatch.pathTemplate
             )
           : undefined;
 
@@ -328,7 +327,7 @@ export function createNextMiddleware({
           if (clearResetCookie) {
             return getRedirectResponse(
               localizedPathWithParameters.replace(
-                new RegExp(`^/${unstandardizedPathnameLocale}`),
+                new RegExp(`^/${userLocale}`),
                 ``
               ) || '/'
             );

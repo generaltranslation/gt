@@ -3,10 +3,17 @@ import { standardizeLocale } from '@generaltranslation/format';
 import { GTRuntime } from 'generaltranslation/runtime';
 import { NextURL } from 'next/dist/server/web/next-url';
 import { parseAcceptLanguage } from 'gt-i18n/internal';
+import {
+  createPathMatcher,
+  createPathToSharedPathMap,
+  getDynamicSegmentType,
+  type PathConfig,
+  type PathMatcher,
+} from './createPathMatcher';
+import { getSharedPath } from './matchPath';
 
-export type PathConfig = {
-  [key: string]: string | { [key: string]: string };
-};
+export { createPathMatcher, createPathToSharedPathMap, getSharedPath };
+export type { PathConfig, PathMatcher };
 
 export type ResponseConfig = {
   type: 'next' | 'rewrite' | 'redirect';
@@ -21,13 +28,7 @@ export type ResponseConfig = {
   localeHeaderName: string;
 };
 
-const DYNAMIC_PATH_SEGMENT_PATTERN = '/[^/]+';
-const PATH_REGEX_SLASHES = /[\\/]/g;
-
-function escapePathRegexSlashes(pathPattern: string): string {
-  return pathPattern.replace(PATH_REGEX_SLASHES, '\\$&');
-}
-
+/** Creates a middleware response and attaches GT routing state. */
 export function getResponse({
   type,
   originalUrl,
@@ -86,7 +87,7 @@ export function extractLocale(pathname: string): string | null {
 }
 
 /**
- * Extracts dynamic parameters from a path based on a shared path pattern
+ * Extracts dynamic parameters from a path based on a shared path pattern.
  */
 export function extractDynamicParams(
   templatePath: string,
@@ -99,7 +100,10 @@ export function extractDynamicParams(
   const sharedSegments = templatePath.split('/');
 
   sharedSegments.forEach((segment, index) => {
-    if (segment.startsWith('[') && segment.endsWith(']')) {
+    const segmentType = getDynamicSegmentType(segment);
+    if (segmentType === 'catch-all' || segmentType === 'optional-catch-all') {
+      params.push(pathSegments.slice(index).join('/'));
+    } else if (segmentType === 'dynamic') {
       params.push(pathSegments[index]);
     }
   });
@@ -108,24 +112,44 @@ export function extractDynamicParams(
 }
 
 /**
- * Replaces dynamic segments in a path with their actual values
+ * Replaces dynamic segments in a path with their actual values.
  */
 export function replaceDynamicSegments(
   path: string,
-  templatePath: string
+  templatePath: string,
+  sourceTemplatePath = templatePath
 ): string {
   if (!templatePath.includes('[')) return templatePath;
 
-  const params = extractDynamicParams(templatePath, path);
+  const params = extractDynamicParams(sourceTemplatePath, path);
   let paramIndex = 0;
-  const result = templatePath.replace(/\[([^\]]+)\]/g, (match: string) => {
-    return params[paramIndex++] || match;
-  });
-  return result;
+  const resultSegments: string[] = [];
+
+  for (const segment of templatePath.split('/')) {
+    const segmentType = getDynamicSegmentType(segment);
+    if (!segmentType) {
+      resultSegments.push(segment);
+      continue;
+    }
+
+    const param = params[paramIndex++];
+    if (segmentType === 'optional-catch-all' && !param) continue;
+    if (!param) {
+      resultSegments.push(segment);
+      continue;
+    }
+    if (segmentType === 'catch-all' || segmentType === 'optional-catch-all') {
+      resultSegments.push(...param.split('/'));
+    } else {
+      resultSegments.push(param);
+    }
+  }
+
+  return resultSegments.join('/') || '/';
 }
 
 /**
- * Gets the full localized path given a shared path and locale
+ * Gets the full localized path given a shared path and locale.
  */
 export function getLocalizedPath(
   sharedPath: string,
@@ -147,124 +171,20 @@ export function getLocalizedPath(
 }
 
 /**
- * Creates a map of localized paths to shared paths using regex patterns
+ * Checks whether a pathname matches an unprefixed default-locale path.
  */
-export function createPathToSharedPathMap(
-  pathConfig: PathConfig,
-  prefixDefaultLocale: boolean,
-  defaultLocale: string
-): {
-  pathToSharedPath: { [key: string]: string };
-  defaultLocalePaths: string[];
-} {
-  return Object.entries(pathConfig).reduce<{
-    pathToSharedPath: { [key: string]: string };
-    defaultLocalePaths: string[];
-  }>(
-    (acc, [sharedPath, localizedPaths]) => {
-      const { pathToSharedPath, defaultLocalePaths } = acc;
-      // Add the shared path itself, converting to regex pattern if it has dynamic segments
-      if (sharedPath.includes('[')) {
-        const pattern = sharedPath.replace(/\[([^\]]+)\]/g, '[^/]+');
-        pathToSharedPath[pattern] = sharedPath;
-      } else {
-        pathToSharedPath[sharedPath] = sharedPath;
-      }
-
-      if (typeof localizedPaths === 'object') {
-        Object.entries(localizedPaths).forEach(([locale, localizedPath]) => {
-          // Convert the localized path to a regex pattern
-          // Replace [param] with [^/]+ to match any non-slash characters
-          const pattern = localizedPath.replace(/\[([^\]]+)\]/g, '[^/]+');
-          pathToSharedPath[`/${locale}${pattern}`] = sharedPath;
-          if (!prefixDefaultLocale && locale === defaultLocale) {
-            pathToSharedPath[pattern] = sharedPath;
-            defaultLocalePaths.push(pattern);
-          }
-        });
-      }
-      return acc;
-    },
-    { pathToSharedPath: {}, defaultLocalePaths: [] }
+function inDefaultLocalePaths(
+  pathname: string,
+  defaultLocalePaths: PathMatcher
+): boolean {
+  return (
+    getSharedPath(pathname, defaultLocalePaths, undefined)?.sharedPath !==
+    undefined
   );
 }
 
 /**
- * Gets the shared path from a given pathname, handling both static and dynamic paths
- */
-export function getSharedPath(
-  standardizedPathname: string,
-  pathToSharedPath: { [key: string]: string },
-  pathnameLocale: string | undefined
-): string | undefined {
-  // Try exact match first
-  if (pathToSharedPath[standardizedPathname]) {
-    return pathToSharedPath[standardizedPathname];
-  }
-
-  // Without locale prefix
-  let pathnameWithoutLocale = undefined;
-  // Only remove locale prefix if the locale prefix is valid
-  if (pathnameLocale) {
-    pathnameWithoutLocale = standardizedPathname.replace(/^\/[^/]+/, '');
-    if (pathToSharedPath[pathnameWithoutLocale]) {
-      return pathToSharedPath[pathnameWithoutLocale];
-    }
-  }
-
-  // Try regex pattern match
-  let candidateSharedPath = undefined;
-  for (const [pattern, sharedPath] of Object.entries(pathToSharedPath)) {
-    if (pattern.includes(DYNAMIC_PATH_SEGMENT_PATTERN)) {
-      // Convert the pattern to a strict regex that matches the exact path structure
-      const regex = new RegExp(`^${escapePathRegexSlashes(pattern)}$`);
-      // Exact match
-      if (regex.test(standardizedPathname)) {
-        return sharedPath;
-      }
-      // Without locale prefix
-      if (
-        !candidateSharedPath &&
-        pathnameLocale &&
-        regex.test(pathnameWithoutLocale as string)
-      ) {
-        candidateSharedPath = sharedPath;
-      }
-    }
-  }
-  return candidateSharedPath;
-}
-
-/**
- * Checks if the pathname is in the default locale paths
- * @param pathname - The pathname to check
- * @param defaultLocalePaths - The default locale paths
- * @returns true if the pathname is in the default locale paths, false otherwise
- */
-
-function inDefaultLocalePaths(
-  pathname: string,
-  defaultLocalePaths: string[]
-): boolean {
-  // Try exact match first
-  if (defaultLocalePaths.includes(pathname)) {
-    return true;
-  }
-
-  // Try regex pattern match
-  for (const path of defaultLocalePaths) {
-    if (path.includes(DYNAMIC_PATH_SEGMENT_PATTERN)) {
-      const regex = new RegExp(`^${escapePathRegexSlashes(path)}$`);
-      if (regex.test(pathname)) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-/**
- * Gets the locale from the request using various sources
+ * Resolves the request locale from its pathname, cookies, and headers.
  */
 export function getLocaleFromRequest(
   req: NextRequest,
@@ -273,7 +193,7 @@ export function getLocaleFromRequest(
   localeRouting: boolean,
   gtServicesEnabled: boolean,
   prefixDefaultLocale: boolean,
-  defaultLocalePaths: string[],
+  defaultLocalePaths: PathMatcher,
   referrerLocaleCookieName: string,
   localeCookieName: string,
   resetLocaleCookieName: string,

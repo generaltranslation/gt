@@ -2,7 +2,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { GT } from 'generaltranslation';
-import { getLocaleFromRequest } from '../utils';
+import {
+  createPathMatcher,
+  getLocaleFromRequest,
+  type PathMatcher,
+} from '../utils';
 
 // ---- Cookie Constants ----
 const LOCALE_COOKIE = 'generaltranslation.locale';
@@ -45,7 +49,7 @@ function callGetLocaleFromRequest(
     localeRouting?: boolean;
     gtServicesEnabled?: boolean;
     prefixDefaultLocale?: boolean;
-    defaultLocalePaths?: string[];
+    defaultLocalePaths?: PathMatcher;
   } = {}
 ) {
   const gt = new GT();
@@ -56,7 +60,7 @@ function callGetLocaleFromRequest(
     overrides.localeRouting ?? true,
     overrides.gtServicesEnabled ?? false,
     overrides.prefixDefaultLocale ?? false,
-    overrides.defaultLocalePaths ?? [],
+    overrides.defaultLocalePaths ?? createPathMatcher([]),
     REFERRER_COOKIE,
     LOCALE_COOKIE,
     RESET_COOKIE,
@@ -202,7 +206,7 @@ describe('Locale Resolution (Category 1)', () => {
     const req = createRequest('/about-us');
     const result = callGetLocaleFromRequest(req, {
       prefixDefaultLocale: false,
-      defaultLocalePaths: ['/about-us'],
+      defaultLocalePaths: createPathMatcher([['/about-us', '/about']]),
     });
 
     expect(result.userLocale).toBe('en');
