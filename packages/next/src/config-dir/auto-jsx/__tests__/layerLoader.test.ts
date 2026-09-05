@@ -141,7 +141,7 @@ describe('Emotion JSX layer bridge', () => {
     expect(Object.keys(result)).toEqual([
       pattern,
       '*.jsx',
-      pattern.replace('}', ',jsx}'),
+      '*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,mdx,jsx}',
     ]);
     expect(result[pattern]).toBe(first);
     expect(Object.values(result).at(-1)).toEqual({
