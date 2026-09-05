@@ -17,11 +17,13 @@ export type PathMatcherNode = {
 
 export type PathMatcher = {
   root: PathMatcherNode;
+  localizedRoot?: PathMatcherNode;
+  defaultLocaleRoot?: PathMatcherNode;
 };
 
 export type DynamicSegmentType = 'dynamic' | 'catch-all' | 'optional-catch-all';
 
-const DYNAMIC_SEGMENT_PATTERN = /^\[[^.[\]/]+\]$/;
+const DYNAMIC_SEGMENT_PATTERN = /^\[[^.[\]/][^[\]/]*\]$/;
 const CATCH_ALL_SEGMENT_PATTERN = /^\[\.\.\.[^\][\]/]+\]$/;
 const OPTIONAL_CATCH_ALL_SEGMENT_PATTERN = /^\[\[\.\.\.[^\][\]/]+\]\]$/;
 
@@ -104,6 +106,7 @@ export function createPathToSharedPathMap(
   defaultLocalePaths: PathMatcher;
 } {
   const pathEntries: Array<readonly [string, string]> = [];
+  const localizedEntries: Array<readonly [string, string]> = [];
   const defaultLocaleEntries: Array<readonly [string, string]> = [];
 
   for (const [sharedPath, localizedPaths] of Object.entries(pathConfig)) {
@@ -111,17 +114,21 @@ export function createPathToSharedPathMap(
 
     if (typeof localizedPaths === 'object') {
       for (const [locale, localizedPath] of Object.entries(localizedPaths)) {
-        pathEntries.push([`/${locale}${localizedPath}`, sharedPath]);
+        localizedEntries.push([`/${locale}${localizedPath}`, sharedPath]);
         if (!prefixDefaultLocale && locale === defaultLocale) {
-          pathEntries.push([localizedPath, sharedPath]);
           defaultLocaleEntries.push([localizedPath, sharedPath]);
         }
       }
     }
   }
 
+  const defaultLocalePaths = createPathMatcher(defaultLocaleEntries);
   return {
-    pathToSharedPath: createPathMatcher(pathEntries),
-    defaultLocalePaths: createPathMatcher(defaultLocaleEntries),
+    pathToSharedPath: {
+      ...createPathMatcher(pathEntries),
+      localizedRoot: createPathMatcher(localizedEntries).root,
+      defaultLocaleRoot: defaultLocalePaths.root,
+    },
+    defaultLocalePaths,
   };
 }

@@ -1,4 +1,5 @@
 import {
+  getDynamicSegmentType,
   getPathSegments,
   type PathMatch,
   type PathMatcher,
@@ -88,12 +89,73 @@ function matchPath(pathname: string, matcher: PathMatcher) {
   return matchPathSegments(matcher.root, getPathSegments(pathname), 0);
 }
 
+/** Ranks route segments in the same order as trie traversal. */
+function segmentPriority(segment: string | undefined): number {
+  if (segment === undefined) return -1;
+  switch (getDynamicSegmentType(segment)) {
+    case 'dynamic':
+      return 1;
+    case 'catch-all':
+      return 2;
+    case 'optional-catch-all':
+      return 3;
+    default:
+      return 0;
+  }
+}
+
+/** Compares shared and localized candidates without counting the locale prefix. */
+function isSharedMoreSpecific(
+  shared: PathMatch,
+  localized: PathMatch,
+  pathnameLocale: string | undefined
+): boolean {
+  const sharedSegments = getPathSegments(shared.pathTemplate);
+  const localizedSegments = getPathSegments(localized.pathTemplate);
+  if (pathnameLocale) localizedSegments.shift();
+  for (
+    let index = 0;
+    index < Math.max(sharedSegments.length, localizedSegments.length);
+    index++
+  ) {
+    const difference =
+      segmentPriority(sharedSegments[index]) -
+      segmentPriority(localizedSegments[index]);
+    if (difference !== 0) return difference < 0;
+  }
+  return false;
+}
+
 /** Gets the shared route and source template matching a concrete pathname. */
 export function getSharedPath(
   standardizedPathname: string,
   pathToSharedPath: PathMatcher,
   pathnameLocale: string | undefined
 ): SharedPathMatch | undefined {
+  if (pathToSharedPath.localizedRoot) {
+    const pathnameWithoutLocale = pathnameLocale
+      ? standardizedPathname.replace(/^\/[^/]+/, '') || '/'
+      : standardizedPathname;
+    const sharedMatch = matchPath(pathnameWithoutLocale, pathToSharedPath);
+    const localizedRoot = pathnameLocale
+      ? pathToSharedPath.localizedRoot
+      : pathToSharedPath.defaultLocaleRoot;
+    const localizedMatch = localizedRoot
+      ? matchPath(standardizedPathname, { root: localizedRoot })
+      : undefined;
+    if (
+      sharedMatch &&
+      (!localizedMatch ||
+        isSharedMoreSpecific(sharedMatch, localizedMatch, pathnameLocale))
+    ) {
+      return { ...sharedMatch, matchedPathname: pathnameWithoutLocale };
+    }
+    if (localizedMatch) {
+      return { ...localizedMatch, matchedPathname: standardizedPathname };
+    }
+    return undefined;
+  }
+
   const directMatch = matchPath(standardizedPathname, pathToSharedPath);
   if (directMatch !== undefined) {
     return { ...directMatch, matchedPathname: standardizedPathname };
