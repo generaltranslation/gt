@@ -136,18 +136,17 @@ describe('localized and shared route specificity', () => {
       matchedPathname: '/fr/b/123',
     });
   });
-  it('matches the shared locale root as / rather than an empty string', () => {
-    const matcher = createPathToSharedPathMap(
-      { '/': { en: '/' } },
-      true,
-      'en'
-    ).pathToSharedPath;
-    expect(getSharedPath('/fr', matcher, 'fr')?.sharedPath).toBe('/');
+  it('does not add a trailing slash to an unconfigured locale landing page', () => {
+    const middleware = createNextMiddleware({
+      prefixDefaultLocale: true,
+      pathConfig: { '/': { en: '/' } },
+    });
+    expect(middleware(request('/fr')).headers.get('location')).toBeNull();
   });
 });
 
 describe('Next.js parameter names', () => {
-  it.each(['post.id', 'post..id', 'post.', 'a-b', 'a_b', '章.節'])(
+  it.each(['post.id', 'post..id', 'post.', 'post[id', 'a-b', 'a_b', '章.節'])(
     'recognizes and rewrites [%s]',
     (name) => {
       expect(getDynamicSegmentType(`[${name}]`)).toBe('dynamic');

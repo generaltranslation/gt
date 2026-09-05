@@ -134,7 +134,7 @@ export function getSharedPath(
 ): SharedPathMatch | undefined {
   if (pathToSharedPath.localizedRoot) {
     const pathnameWithoutLocale = pathnameLocale
-      ? standardizedPathname.replace(/^\/[^/]+/, '') || '/'
+      ? standardizedPathname.replace(/^\/[^/]+/, '')
       : standardizedPathname;
     const sharedMatch = matchPath(pathnameWithoutLocale, pathToSharedPath);
     const localizedRoot = pathnameLocale
