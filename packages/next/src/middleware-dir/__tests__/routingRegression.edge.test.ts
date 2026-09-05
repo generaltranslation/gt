@@ -146,6 +146,28 @@ describe('localized and shared route specificity', () => {
 });
 
 describe('Next.js parameter names', () => {
+  it.each(['post.id', 'post[id', 'post..id', '章.節'])(
+    'supports catch-all parameter name %s',
+    (name) => {
+      for (const optional of [false, true]) {
+        const segment = optional ? `[[...${name}]]` : `[...${name}]`;
+        expect(getDynamicSegmentType(segment)).toBe(
+          optional ? 'optional-catch-all' : 'catch-all'
+        );
+        const middleware = createNextMiddleware({
+          prefixDefaultLocale: true,
+          pathConfig: { [`/posts/${segment}`]: { fr: `/articles/${segment}` } },
+        });
+        for (const tail of ['one', 'one/two/three']) {
+          const response = middleware(request('/fr/articles/' + tail));
+          expect(response.headers.get('location')).toBeNull();
+          expect(response.headers.get('x-middleware-rewrite')).toBe(
+            'http://localhost:3000/fr/posts/' + tail
+          );
+        }
+      }
+    }
+  );
   it.each(['post.id', 'post..id', 'post.', 'post[id', 'a-b', 'a_b', '章.節'])(
     'recognizes and rewrites [%s]',
     (name) => {
