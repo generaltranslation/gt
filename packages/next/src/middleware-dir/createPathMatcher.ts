@@ -58,7 +58,10 @@ export function normalizePathname(pathname: string): string {
 /** Splits a pathname without interpreting encoded literals as route syntax. */
 export function getPathSegments(pathname: string): string[] {
   if (pathname === '') return [];
-  const normalizedPathname = pathname;
+  let normalizedPathname = pathname;
+  if (normalizedPathname.length > 1) {
+    normalizedPathname = normalizedPathname.replace(/\/+$/, '') || '/';
+  }
   const pathnameWithoutLeadingSlash = normalizedPathname.startsWith('/')
     ? normalizedPathname.slice(1)
     : normalizedPathname;

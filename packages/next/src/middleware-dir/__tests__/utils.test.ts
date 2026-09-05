@@ -141,6 +141,14 @@ describe('replaceDynamicSegments', () => {
     ).toBe('/api/users/123/settings');
   });
 
+  it('should preserve the request trailing-slash style', () => {
+    expect(replaceDynamicSegments('/blog/123/', '/articles/[id]')).toBe(
+      '/articles/123/'
+    );
+    expect(replaceDynamicSegments('/about/', '/company')).toBe('/company/');
+    expect(replaceDynamicSegments('/about', '/company/')).toBe('/company');
+  });
+
   it('should return template path when no dynamic segments', () => {
     expect(replaceDynamicSegments('/blog/123', '/about')).toBe('/about');
     expect(replaceDynamicSegments('/any/path', '/static/path')).toBe(
@@ -490,6 +498,18 @@ describe('getSharedPath', () => {
     ).toBe('/articles/élite/[slug]');
     expect(getSharedPath('/files/%2F/guide', pathMatcher, undefined)).toBe(
       '/files/%2F/[slug]'
+    );
+  });
+
+  it('matches paths with or without a trailing slash', () => {
+    const pathMatcher = createPathMatcher([
+      ['/about', '/about'],
+      ['/docs/[slug]', '/docs/[slug]'],
+    ]);
+
+    expect(getSharedPath('/about/', pathMatcher, undefined)).toBe('/about');
+    expect(getSharedPath('/docs/guide/', pathMatcher, undefined)).toBe(
+      '/docs/[slug]'
     );
   });
 

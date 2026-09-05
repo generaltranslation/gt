@@ -34,6 +34,18 @@ export type ResponseConfig = {
   localeHeaderName: string;
 };
 
+/** Applies the request pathname's trailing-slash style to a target path. */
+function applyTrailingSlash(pathname: string, targetPathname: string): string {
+  const sourceHasTrailingSlash = pathname.length > 1 && pathname.endsWith('/');
+  if (sourceHasTrailingSlash) {
+    return targetPathname === '/' || targetPathname.endsWith('/')
+      ? targetPathname
+      : `${targetPathname}/`;
+  }
+  return targetPathname.length > 1
+    ? targetPathname.replace(/\/+$/, '') || '/'
+    : targetPathname;
+}
 /** Creates a middleware response and attaches GT routing state. */
 export function getResponse({
   type,
@@ -125,7 +137,9 @@ export function replaceDynamicSegments(
   templatePath: string,
   sourceTemplatePath = templatePath
 ): string {
-  if (!templatePath.includes('[')) return templatePath;
+  if (!templatePath.includes('[')) {
+    return applyTrailingSlash(path, templatePath);
+  }
 
   const params = extractDynamicParams(sourceTemplatePath, path);
   let paramIndex = 0;
@@ -151,7 +165,7 @@ export function replaceDynamicSegments(
     }
   }
 
-  return resultSegments.join('/') || '/';
+  return applyTrailingSlash(path, resultSegments.join('/') || '/');
 }
 
 /**
