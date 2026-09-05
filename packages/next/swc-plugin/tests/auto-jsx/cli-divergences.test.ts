@@ -7,6 +7,30 @@ import { cliResult } from './cli-oracle';
 import { canonical, oracle } from './oracle';
 
 describe('reviewed CLI/reference insertion disagreements', () => {
+  it.each([
+    '/** @jsxRuntime classic */ import React from "react";',
+    '/**\n * @jsxRuntime classic\n * @jsx make\n */ import { createElement as make } from "react";',
+    '/** @jsxImportSource preact */',
+    '/** @jsxImportSource ./view-runtime */',
+  ])('classifies the actual lowered runtime selected by %s', (header) => {
+    const input =
+      header +
+      ' export const Page = () => <p title="Account">Hello {name}</p>;';
+    expect(classifyCliDivergences(input)).toContain('jsx-runtime');
+    expect(cliResult(input).canonical).not.toBe(canonical(oracle(input)));
+  });
+
+  it.each([
+    '/** @jsxImportSource preact */ export const Page = () => <p>{name}</p>;',
+    '/** @jsxRuntime classic */ import React from "react"; export const Page = () => <p>{name}</p>;',
+    '/** @jsxImportSource preact */\n/** @jsxImportSource react */ export const Page = () => <p>Hello {name}</p>;',
+    '/** @jsxRuntime classic */\n/** @jsxRuntime automatic */ export const Page = () => <p>Hello {name}</p>;',
+    'export const note = "@jsxRuntime classic"; export const Page = () => <p>Hello {name}</p>;',
+  ])('does not classify an inactive or overridden JSX runtime: %s', (input) => {
+    expect(classifyCliDivergences(input)).not.toContain('jsx-runtime');
+    expect(cliResult(input).canonical).toBe(canonical(oracle(input)));
+  });
+
   it('identifies callback JSX below Derive inside an opaque content prop', () => {
     const input =
       'import { Branch, Derive } from "gt-next"; export const Page = () => <p><Branch yes={<section><Derive>{() => <b>Hello {name}</b>}</Derive></section>} /></p>;';

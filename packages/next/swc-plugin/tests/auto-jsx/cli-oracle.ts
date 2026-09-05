@@ -10,7 +10,7 @@ import {
   GT_LIBRARIES_UPSTREAM,
   Libraries,
 } from '../../../../cli/src/types/libraries';
-import { canonical, lower } from './oracle';
+import { canonical, isJsxPragmaComment, lower } from './oracle';
 
 function runCli(input: string): {
   ast: t.File;
@@ -54,6 +54,7 @@ function print(ast: t.File): string {
   return `${
     generate(ast, {
       comments: false,
+      shouldPrintComment: isJsxPragmaComment,
       jsescOption: { minimal: true },
     }).code
   }\n`;

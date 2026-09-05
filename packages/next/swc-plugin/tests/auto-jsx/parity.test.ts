@@ -1,5 +1,10 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { canonical, lower, oracle } from './oracle';
+import {
+  canonical,
+  hasUnnormalizedJsxDevelopmentMetadata,
+  lower,
+  oracle,
+} from './oracle';
 import { cliResult } from './cli-oracle';
 import { classifyCliDivergences } from './cli-divergences';
 import {
@@ -36,7 +41,9 @@ describe('SWC auto JSX matches the isolated compiler insertion pass', () => {
     it(example.name, async () => {
       await yieldToRunner(index);
       const checked = await readExample(example);
-      expect(checked.input.trim()).toBe(example.input.trim());
+      expect(checked.input).toBe(
+        example.input.endsWith('\n') ? example.input : `${example.input}\n`
+      );
       expect(
         canonical(lower(disabledOutputs[index])),
         'native SWC preserves input with injection and hashing disabled'
@@ -70,10 +77,15 @@ describe('SWC auto JSX matches the isolated compiler insertion pass', () => {
         canonical(lower(outputs[index])),
         'native SWC matches the live compiler'
       ).toBe(expected);
-      expect(
-        canonical(oracle(example.input, true)),
-        'development and production compiler semantics agree'
-      ).toBe(expected);
+      const development = oracle(example.input, true);
+      // Custom runtimes and classic factories retain their exact development
+      // calls/metadata. Their production and development host outputs are each
+      // compared against the compiler in wasm.test.ts, without equating them.
+      if (!hasUnnormalizedJsxDevelopmentMetadata(development))
+        expect(
+          canonical(development),
+          'development and production compiler semantics agree'
+        ).toBe(expected);
     });
   }
 });

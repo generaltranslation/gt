@@ -1,6 +1,6 @@
 {
   "adversarial/duplicate-text-children": {
-    "input": "export const Page = () => (<Card children=\"First\" children=\"Second\" />);\n",
+    "input": "\nexport const Page = () => (<Card children=\"First\" children=\"Second\" />);\n",
     "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card children={<GtInternalTranslateJsx>{\"First\"}</GtInternalTranslateJsx>}>{\"Second\"}</Card>;\n",
     "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <Card children=\"First\" children=\"Second\" />;\n",
     "cliDivergences": [
@@ -8,13 +8,13 @@
     ]
   },
   "adversarial/entity-ellipsis": {
-    "input": "export const Page = () => (<p>&hellip;{value}</p>);\n",
+    "input": "\nexport const Page = () => (<p>&hellip;{value}</p>);\n",
     "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <p><GtInternalTranslateJsx>{[\"\\u2026\", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></p>;\n",
     "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <p><GtInternalTranslateJsx>&hellip;{<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></p>;\n",
     "cliDivergences": []
   },
   "adversarial/entity-numeric-ideographic-space": {
-    "input": "export const Page = () => (<p>&#12288;{value}</p>);\n",
+    "input": "\nexport const Page = () => (<p>&#12288;{value}</p>);\n",
     "output": "export const Page = () => <p>{[\"\\u3000\", value]}</p>;\n",
     "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <p>&#12288;{value}</p>;\n",
     "cliDivergences": []
@@ -36,7 +36,7 @@
     ]
   },
   "adversarial/newline-nbsp-quoted-children": {
-    "input": "export const Page = () => (<Card children=\"First\n second\" />);\n",
+    "input": "\nexport const Page = () => (<Card children=\"First\n second\" />);\n",
     "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card><GtInternalTranslateJsx>{\"First second\"}</GtInternalTranslateJsx></Card>;\n",
     "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <Card children=\"First\n second\" />;\n",
     "cliDivergences": [
@@ -44,13 +44,13 @@
     ]
   },
   "adversarial/spread-object-child-async-method": {
-    "input": "export const Page = () => (<Card {...{ async children() { return <p>Method {await loadValue()}</p>; } }} />);\n",
+    "input": "\nexport const Page = () => (<Card {...{ async children() { return <p>Method {await loadValue()}</p>; } }} />);\n",
     "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card {...{\n  async children() {\n    return <p><GtInternalTranslateJsx>{[\"Method \", <GtInternalVar>{await loadValue()}</GtInternalVar>]}</GtInternalTranslateJsx></p>;\n  }\n}} />;\n",
     "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <Card {...{\n  async children() {\n    return <p><GtInternalTranslateJsx>Method {<GtInternalVar>{await loadValue()}</GtInternalVar>}</GtInternalTranslateJsx></p>;\n  }\n}} />;\n",
     "cliDivergences": []
   },
   "adversarial/unicode-bom-attribute": {
-    "input": "export const Page = () => (<Card children=\"﻿\" footer={<span>Footer {value}</span>} />);\n",
+    "input": "\nexport const Page = () => (<Card children=\"﻿\" footer={<span>Footer {value}</span>} />);\n",
     "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card children={\"\\uFEFF\"} footer={<span><GtInternalTranslateJsx>{[\"Footer \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></span>} />;\n",
     "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <Card children=\"﻿\" footer={<span><GtInternalTranslateJsx>Footer {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></span>} />;\n",
     "cliDivergences": []
@@ -64,7 +64,7 @@
     ]
   },
   "adversarial/unicode-word-joiner-attribute": {
-    "input": "export const Page = () => (<Card children=\"⁠\" footer={<span>Footer {value}</span>} />);\n",
+    "input": "\nexport const Page = () => (<Card children=\"⁠\" footer={<span>Footer {value}</span>} />);\n",
     "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card children={<GtInternalTranslateJsx>{\"\\u2060\"}</GtInternalTranslateJsx>} footer={<span><GtInternalTranslateJsx>{[\"Footer \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></span>} />;\n",
     "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <Card children=\"⁠\" footer={<span><GtInternalTranslateJsx>Footer {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></span>} />;\n",
     "cliDivergences": [
@@ -72,7 +72,7 @@
     ]
   },
   "adversarial/void-key-side-effect-and-spread": {
-    "input": "export const Page = () => (<main>Before <Card key={void recordKey()} {...loadProps()}>Body {value}</Card> after</main>);\n",
+    "input": "\nexport const Page = () => (<main>Before <Card key={void recordKey()} {...loadProps()}>Body {value}</Card> after</main>);\n",
     "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <main><GtInternalTranslateJsx>{[\"Before \", <Card key={void recordKey()} {...loadProps()}>{[\"Body \", <GtInternalVar>{value}</GtInternalVar>]}</Card>, \" after\"]}</GtInternalTranslateJsx></main>;\n",
     "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <main><GtInternalTranslateJsx>Before <Card key={void recordKey()} {...loadProps()}>Body {<GtInternalVar>{value}</GtInternalVar>}</Card> after</GtInternalTranslateJsx></main>;\n",
     "cliDivergences": []

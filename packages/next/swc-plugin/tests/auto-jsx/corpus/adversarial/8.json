@@ -8,13 +8,13 @@
     ]
   },
   "adversarial/crlf-text-boundaries": {
-    "input": "export const Page = () => <div>\r\n  First\r\n  <b>{value}</b>\r\n  Last\r\n</div>;\n",
+    "input": "export const Page = () => <div>\r\n  First\r\n  <b>{value}</b>\r\n  Last\r\n</div>;\r\n",
     "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <div><GtInternalTranslateJsx>{[\"First\", <b><GtInternalVar>{value}</GtInternalVar></b>, \"Last\"]}</GtInternalTranslateJsx></div>;\n",
     "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <div><GtInternalTranslateJsx>\r\n  First\r\n  <b>{<GtInternalVar>{value}</GtInternalVar>}</b>\r\n  Last\r\n</GtInternalTranslateJsx></div>;\n",
     "cliDivergences": []
   },
   "adversarial/duplicate-explicit-children": {
-    "input": "export const Page = () => (<Card children={<p>First {first()}</p>} children={<p>Second {second()}</p>} />);\n",
+    "input": "\nexport const Page = () => (<Card children={<p>First {first()}</p>} children={<p>Second {second()}</p>} />);\n",
     "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card children={<p><GtInternalTranslateJsx>{[\"First \", <GtInternalVar>{first()}</GtInternalVar>]}</GtInternalTranslateJsx></p>}><p><GtInternalTranslateJsx>{[\"Second \", <GtInternalVar>{second()}</GtInternalVar>]}</GtInternalTranslateJsx></p></Card>;\n",
     "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <Card children={<p><GtInternalTranslateJsx>First {<GtInternalVar>{first()}</GtInternalVar>}</GtInternalTranslateJsx></p>} children={<p><GtInternalTranslateJsx>Second {<GtInternalVar>{second()}</GtInternalVar>}</GtInternalTranslateJsx></p>} />;\n",
     "cliDivergences": []
@@ -43,7 +43,7 @@
     ]
   },
   "adversarial/spread-object-proto-shorthand": {
-    "input": "export const Page = () => (<Card {...{ __proto__, children: <p>Child {value}</p> }} />);\n",
+    "input": "\nexport const Page = () => (<Card {...{ __proto__, children: <p>Child {value}</p> }} />);\n",
     "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card {...{\n  __proto__\n}}><p><GtInternalTranslateJsx>{[\"Child \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></p></Card>;\n",
     "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <Card {...{\n  __proto__,\n  children: <p><GtInternalTranslateJsx>Child {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></p>\n}} />;\n",
     "cliDivergences": []
@@ -57,7 +57,7 @@
     ]
   },
   "adversarial/unicode-ideographic-space-attribute": {
-    "input": "export const Page = () => (<Card children=\"　\" footer={<span>Footer {value}</span>} />);\n",
+    "input": "\nexport const Page = () => (<Card children=\"　\" footer={<span>Footer {value}</span>} />);\n",
     "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card children={\"\\u3000\"} footer={<span><GtInternalTranslateJsx>{[\"Footer \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></span>} />;\n",
     "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <Card children=\"　\" footer={<span><GtInternalTranslateJsx>Footer {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></span>} />;\n",
     "cliDivergences": []

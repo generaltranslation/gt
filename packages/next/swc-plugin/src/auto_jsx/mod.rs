@@ -8,7 +8,13 @@
 
 mod bindings;
 mod identity;
+mod runtime;
+mod source_comments;
 mod syntax;
+
+pub use runtime::JsxRuntime;
+pub(crate) use runtime::{allows_injection, take_loader_import_source};
+pub(crate) use source_comments::recover_runtime_comments;
 
 #[cfg(test)]
 mod tests;

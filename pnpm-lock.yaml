@@ -1226,6 +1226,9 @@ importers:
       gt-react:
         specifier: workspace:*
         version: link:../react
+      json5:
+        specifier: ^2.2.3
+        version: 2.2.3
       react:
         specifier: '>=16.8.0 <20.0.0'
         version: 19.2.3

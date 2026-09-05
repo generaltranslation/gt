@@ -1,12 +1,12 @@
 {
   "adversarial/comment-between-text-chunks": {
-    "input": "export const Page = () => (<p>Before{/* boundary between literal children */}after</p>);\n",
+    "input": "\nexport const Page = () => (<p>Before{/* boundary between literal children */}after</p>);\n",
     "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <p><GtInternalTranslateJsx>{[\"Before\", \"after\"]}</GtInternalTranslateJsx></p>;\n",
     "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <p><GtInternalTranslateJsx>Before{}after</GtInternalTranslateJsx></p>;\n",
     "cliDivergences": []
   },
   "adversarial/entity-nbsp": {
-    "input": "export const Page = () => (<p>&nbsp;{value}</p>);\n",
+    "input": "\nexport const Page = () => (<p>&nbsp;{value}</p>);\n",
     "output": "export const Page = () => <p>{[\"\\xA0\", value]}</p>;\n",
     "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <p>&nbsp;{value}</p>;\n",
     "cliDivergences": []
@@ -24,7 +24,7 @@
     "cliDivergences": []
   },
   "adversarial/spread-object-method-and-body": {
-    "input": "export const Page = () => (<Card {...{ label() { return <p>Method {value}</p>; }, title: <b>Heading {other}</b> }}>Body {third}</Card>);\n",
+    "input": "\nexport const Page = () => (<Card {...{ label() { return <p>Method {value}</p>; }, title: <b>Heading {other}</b> }}>Body {third}</Card>);\n",
     "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card {...{\n  label() {\n    return <p><GtInternalTranslateJsx>{[\"Method \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></p>;\n  }\n}} title={<b><GtInternalTranslateJsx>{[\"Heading \", <GtInternalVar>{other}</GtInternalVar>]}</GtInternalTranslateJsx></b>}><GtInternalTranslateJsx>{[\"Body \", <GtInternalVar>{third}</GtInternalVar>]}</GtInternalTranslateJsx></Card>;\n",
     "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <Card {...{\n  label() {\n    return <p><GtInternalTranslateJsx>Method {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></p>;\n  },\n  title: <b><GtInternalTranslateJsx>Heading {<GtInternalVar>{other}</GtInternalVar>}</GtInternalTranslateJsx></b>\n}}><GtInternalTranslateJsx>Body {<GtInternalVar>{third}</GtInternalVar>}</GtInternalTranslateJsx></Card>;\n",
     "cliDivergences": []

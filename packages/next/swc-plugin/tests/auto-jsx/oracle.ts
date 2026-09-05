@@ -15,11 +15,15 @@ const missingAstError = createFixtureError({
   fix: 'Check the Babel transform configuration in the fixture oracle',
 });
 
-/** Lower both implementations with the same JSX transform, before comparing. */
-export function lower(input: string, development = false): t.File {
-  // Both real hosts remove TypeScript-only wrappers before the compiler sees
-  // React calls. Preserve JSX here, then share Babel's runtime lowering below.
-  const source = stripTypes(input, {
+/** Keep comments that select JSX lowering while omitting ordinary printer noise. */
+export function isJsxPragmaComment(comment: string): boolean {
+  return /^\s*(?:\*\s*)?@jsx(?:ImportSource|Runtime|Frag)?\s+\S+/m.test(
+    comment
+  );
+}
+
+function removeTypes(input: string): string {
+  return stripTypes(input, {
     filename: 'input.tsx',
     swcrc: false,
     configFile: false,
@@ -29,6 +33,22 @@ export function lower(input: string, development = false): t.File {
       transform: { react: { runtime: 'preserve' } },
     },
   }).code;
+}
+
+/** Lower both implementations with the same JSX transform, before comparing. */
+export function lower(input: string, development = false): t.File {
+  // Both real hosts remove TypeScript-only wrappers before the compiler sees
+  // React calls. Preserve JSX here, then share Babel's runtime lowering below.
+  const hasJsxPragma =
+    input.includes('@jsx') &&
+    parse(input, {
+      sourceType: 'module',
+      plugins: ['typescript', 'jsx', 'decorators-legacy'],
+    }).comments?.some((comment) => isJsxPragmaComment(comment.value));
+  // With a classic factory pragma, React/h/Fragment imports may be referenced
+  // only by the calls JSX will produce. Lower JSX before removing types for
+  // pragma-bearing files so SWC cannot erase those live value imports early.
+  const source = hasJsxPragma ? input : removeTypes(input);
   const result = transformSync(source, {
     filename: 'input.tsx',
     configFile: false,
@@ -41,7 +61,8 @@ export function lower(input: string, development = false): t.File {
   if (!result?.ast || !t.isFile(result.ast)) throw missingAstError;
   // The real compiler reparses emitted code. Start with fresh bindings rather
   // than Babel's transform-time scope cache (which predates injected imports).
-  return parse(generate(result.ast).code, {
+  const emitted = generate(result.ast).code;
+  return parse(hasJsxPragma ? removeTypes(emitted) : emitted, {
     sourceType: 'module',
     plugins: ['typescript', 'decorators-legacy'],
   });
@@ -118,6 +139,84 @@ function generatedDevSource(
     isFixtureFilename(binding.path.node.init.value)
   )
     return { fileBinding: file.name };
+}
+
+/**
+ * Custom automatic runtimes and classic factories keep their own development
+ * metadata in canonical output. Their development output must be compared with
+ * the same host/mode, rather than asserting equality with production output.
+ */
+function inspectJsxDevelopmentCalls(ast: t.File): {
+  unnormalized: boolean;
+  unsupported: boolean;
+} {
+  let found = false;
+  let unsupported = false;
+  traverse(ast, {
+    CallExpression(path) {
+      const callee = path.node.callee;
+      const binding = t.isIdentifier(callee)
+        ? path.scope.getBinding(callee.name)?.path
+        : undefined;
+      const imported = binding?.isImportSpecifier()
+        ? binding.node.imported
+        : undefined;
+      const source = binding?.parentPath?.isImportDeclaration()
+        ? binding.parentPath.node.source.value
+        : undefined;
+      const name = t.isIdentifier(imported)
+        ? imported.name
+        : t.isStringLiteral(imported)
+          ? imported.value
+          : undefined;
+      if (
+        name === 'jsxDEV' &&
+        source?.endsWith('/jsx-dev-runtime') &&
+        source !== 'react/jsx-dev-runtime'
+      ) {
+        found = true;
+        unsupported = true;
+        return;
+      }
+      const props = path.node.arguments[1];
+      if (!t.isObjectExpression(props)) return;
+      const metadata = props.properties.find(
+        (prop) =>
+          t.isObjectProperty(prop) &&
+          !prop.computed &&
+          t.isIdentifier(prop.key, { name: '__source' })
+      );
+      if (
+        !t.isObjectProperty(metadata) ||
+        !generatedDevSource(path, metadata.value)
+      )
+        return;
+      if (!source || !/^react\/jsx(-dev)?-runtime$/.test(source))
+        unsupported = true;
+      if (
+        !(source === 'react' && name === 'createElement') ||
+        props.properties.every(
+          (prop) =>
+            prop === metadata ||
+            (t.isObjectProperty(prop) &&
+              !prop.computed &&
+              t.isIdentifier(prop.key, { name: '__self' }) &&
+              t.isThisExpression(prop.value))
+        )
+      )
+        found = true;
+    },
+  });
+  return { unnormalized: found, unsupported };
+}
+
+export function hasUnnormalizedJsxDevelopmentMetadata(ast: t.File): boolean {
+  return inspectJsxDevelopmentCalls(ast).unnormalized;
+}
+
+/** Actual lowered custom runtime/classic calls outside the compiler recognizer. */
+export function hasUnsupportedJsxCalls(ast: t.File): boolean {
+  return inspectJsxDevelopmentCalls(ast).unsupported;
 }
 
 /**
@@ -314,7 +413,29 @@ export function canonical(ast: t.File): string {
 }
 
 /** Invert only React runtime calls for human-readable, compiler-authored fixtures. */
-export function readableOutput(ast: t.File): string {
+export function readableOutput(ast: t.File, originalInput?: string): string {
+  if (originalInput?.includes('@jsx')) {
+    const original = parse(originalInput, {
+      sourceType: 'module',
+      plugins: ['typescript', 'jsx', 'decorators-legacy'],
+    });
+    if (
+      original.comments?.some((comment) => isJsxPragmaComment(comment.value)) &&
+      hasUnsupportedJsxCalls(lower(originalInput, true)) &&
+      canonical(lower(originalInput)) === canonical(ast)
+    ) {
+      // The actual compiler proved this source is unchanged. Keep its original
+      // JSX for no-insertion runtimes rather than inventing an inverse for an
+      // arbitrary factory; comparison still checks the complete lowered output.
+      return `${
+        generate(original, {
+          comments: false,
+          shouldPrintComment: isJsxPragmaComment,
+          jsescOption: { minimal: true },
+        }).code
+      }\n`;
+    }
+  }
   ast = t.cloneNode(ast, true);
   const callees = new Set<string>();
   const fragments = new Set<string>();
@@ -445,18 +566,60 @@ export function readableOutput(ast: t.File): string {
       },
     },
   });
+  let pendingPragmas: t.Comment[] = [];
   ast.program.body = ast.program.body.filter((statement) => {
+    const preservePragmas = (): true => {
+      if (pendingPragmas.length) {
+        const comments = [
+          ...pendingPragmas,
+          ...(statement.leadingComments ?? []),
+        ];
+        statement.leadingComments = comments.filter(
+          (comment, index) =>
+            comments.findIndex(
+              (other) =>
+                other.start === comment.start &&
+                other.end === comment.end &&
+                other.type === comment.type &&
+                other.value === comment.value
+            ) === index
+        );
+        pendingPragmas = [];
+      }
+      return true;
+    };
     if (
       !t.isImportDeclaration(statement) ||
       !/^react\/jsx(-dev)?-runtime$/.test(statement.source.value)
     )
-      return true;
-    if (!statement.specifiers.length) return true;
+      return preservePragmas();
+    if (!statement.specifiers.length) return preservePragmas();
     statement.specifiers = statement.specifiers.filter(
       (specifier) =>
         t.isImportSpecifier(specifier) && fragments.has(specifier.local.name)
     );
-    return statement.specifiers.length > 0;
+    if (statement.specifiers.length) return preservePragmas();
+    // Type stripping can move a pragma from an unused React import onto the
+    // generated runtime import. Carry it to the next retained statement when
+    // reversing that import, retaining its position relative to other pragmas.
+    pendingPragmas.push(
+      ...[
+        ...(statement.leadingComments ?? []),
+        ...(statement.trailingComments ?? []),
+      ].filter((comment) => isJsxPragmaComment(comment.value))
+    );
+    return false;
   });
-  return `${generate(ast, { comments: false, jsescOption: { minimal: true } }).code}\n`;
+  if (pendingPragmas.length)
+    ast.program.trailingComments = [
+      ...pendingPragmas,
+      ...(ast.program.trailingComments ?? []),
+    ];
+  return `${
+    generate(ast, {
+      comments: false,
+      shouldPrintComment: isJsxPragmaComment,
+      jsescOption: { minimal: true },
+    }).code
+  }\n`;
 }

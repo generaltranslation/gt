@@ -1,10 +1,12 @@
 //! Native differential-test driver. Production and tests call the same pipeline.
 use std::io::{self, Read};
 
-use gt_swc_plugin::{config::PluginConfig, transform_program};
+use gt_swc_plugin::{config::PluginConfig, transform_program_with_comments};
 use serde::Deserialize;
 use swc_core::{
-  common::{sync::Lrc, FileName, Globals, Mark, SourceMap, GLOBALS},
+  common::{
+    comments::SingleThreadedComments, sync::Lrc, FileName, Globals, Mark, SourceMap, GLOBALS,
+  },
   ecma::{
     ast::Pass,
     codegen::to_code_default,
@@ -30,6 +32,7 @@ fn main() {
       GLOBALS.set(&Globals::new(), || {
         let cm: Lrc<SourceMap> = Default::default();
         let file = cm.new_source_file(FileName::Custom("input.tsx".into()).into(), request.input);
+        let comments = SingleThreadedComments::default();
         let mut errors = Vec::new();
         let mut program = parse_file_as_program(
           &file,
@@ -39,7 +42,7 @@ fn main() {
             ..Default::default()
           }),
           Default::default(),
-          None,
+          Some(&comments),
           &mut errors,
         )
         .unwrap();
@@ -49,10 +52,15 @@ fn main() {
           serde_json::from_str(r#"{"enableAutoJsxInjection":true,"compileTimeHash":false}"#)
             .unwrap()
         });
-        let mut program = transform_program(program, config, Some("input.tsx".into()));
+        let mut program = transform_program_with_comments(
+          program,
+          config,
+          Some("input.tsx".into()),
+          Some(&comments),
+        );
         hygiene().process(&mut program);
-        fixer(None).process(&mut program);
-        to_code_default(cm, None, &program)
+        fixer(Some(&comments)).process(&mut program);
+        to_code_default(cm, Some(&comments), &program)
       })
     })
     .collect();

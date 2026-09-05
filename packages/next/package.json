@@ -32,7 +32,8 @@
     "@generaltranslation/react-core": "workspace:*",
     "generaltranslation": "workspace:*",
     "gt-react": "workspace:*",
-    "gt-i18n": "workspace:*"
+    "gt-i18n": "workspace:*",
+    "json5": "^2.2.3"
   },
   "scripts": {
     "patch": "pnpm version patch",

@@ -1,12 +1,12 @@
 {
   "adversarial/comment-only": {
-    "input": "export const Page = () => (<main>{/* one */}{/* two */}</main>);\n",
+    "input": "\nexport const Page = () => (<main>{/* one */}{/* two */}</main>);\n",
     "output": "export const Page = () => <main />;\n",
     "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <main>{}{}</main>;\n",
     "cliDivergences": []
   },
   "adversarial/entity-registered": {
-    "input": "export const Page = () => (<p>&reg;{value}</p>);\n",
+    "input": "\nexport const Page = () => (<p>&reg;{value}</p>);\n",
     "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <p><GtInternalTranslateJsx>{[\"\\xAE\", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></p>;\n",
     "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <p><GtInternalTranslateJsx>&reg;{<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></p>;\n",
     "cliDivergences": []
@@ -34,7 +34,7 @@
     ]
   },
   "adversarial/shorthand-children-with-nested-markup": {
-    "input": "export const Page = () => (<Card children><p>Nested markup {value}</p></Card>);\n",
+    "input": "\nexport const Page = () => (<Card children><p>Nested markup {value}</p></Card>);\n",
     "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card children={true}><p><GtInternalTranslateJsx>{[\"Nested markup \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></p></Card>;\n",
     "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <Card children><p><GtInternalTranslateJsx>Nested markup {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></p></Card>;\n",
     "cliDivergences": []

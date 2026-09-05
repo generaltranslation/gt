@@ -1,8 +1,11 @@
 #![allow(clippy::unwrap_used)] // Invalid fixtures should fail the test immediately.
 
-use crate::{config::PluginConfig, transform_program};
+use crate::{config::PluginConfig, transform_program_with_comments};
 use swc_core::{
-  common::{sync::Lrc, BytePos, FileName, Globals, Mark, SourceMap, Span, DUMMY_SP, GLOBALS},
+  common::{
+    comments::SingleThreadedComments, sync::Lrc, BytePos, FileName, Globals, Mark, SourceMap, Span,
+    DUMMY_SP, GLOBALS,
+  },
   ecma::{
     ast::Pass,
     codegen::to_code_default,
@@ -24,6 +27,7 @@ fn transform_with_duplicate_spans(source: &str, config: &str, span: Option<Span>
       source.to_owned(),
     );
     let mut errors = vec![];
+    let comments = SingleThreadedComments::default();
     let mut program = parse_file_as_program(
       &source_file,
       Syntax::Typescript(TsSyntax {
@@ -31,7 +35,7 @@ fn transform_with_duplicate_spans(source: &str, config: &str, span: Option<Span>
         ..Default::default()
       }),
       Default::default(),
-      None,
+      Some(&comments),
       &mut errors,
     )
     .unwrap();
@@ -52,7 +56,7 @@ fn transform_with_duplicate_spans(source: &str, config: &str, span: Option<Span>
       program.visit_mut_with(&mut SyntheticSpans(span));
     }
     let config: PluginConfig = serde_json::from_str(config).unwrap();
-    let mut program = transform_program(program, config, None);
+    let mut program = transform_program_with_comments(program, config, None, Some(&comments));
     if let Some(span) = span {
       struct CheckRestoredSpans(Span);
       impl VisitMut for CheckRestoredSpans {
@@ -68,12 +72,221 @@ fn transform_with_duplicate_spans(source: &str, config: &str, span: Option<Span>
       program.visit_mut_with(&mut CheckRestoredSpans(span));
     }
     hygiene().process(&mut program);
-    fixer(None).process(&mut program);
-    to_code_default(source_map, None, &program)
+    fixer(Some(&comments)).process(&mut program);
+    to_code_default(source_map, Some(&comments), &program)
   })
 }
 
 const AUTO_ONLY: &str = r#"{"enableAutoJsxInjection":true}"#;
+
+#[test]
+fn jsx_runtime_pragmas_follow_swc_block_comment_tokenization() {
+  for (comment, expected) in [
+    ("/** @jsxImportSource @emotion/react */", false),
+    ("/* @jsxImportSource preact */", false),
+    ("/** @jsxImportSource react */", true),
+    ("/** @jsxRuntime classic */", false),
+    ("/** @jsxRuntime automatic */", true),
+    ("/** @jsxRuntime classic @jsxImportSource react */", true),
+    ("/** @jsxImportSource react @jsxRuntime classic */", false),
+    (
+      "/** @jsxImportSource preact @jsxImportSource react */",
+      true,
+    ),
+    (
+      "/** @jsxImportSource react @jsxImportSource preact */",
+      false,
+    ),
+    (
+      "/**\n * @jsxRuntime classic\n * @jsxImportSource react\n */",
+      true,
+    ),
+    (
+      "/** @jsxRuntime classic */\n/** @jsxRuntime automatic */",
+      true,
+    ),
+    (
+      "/** @jsxRuntime automatic */\n/** @jsxRuntime classic */",
+      false,
+    ),
+    ("// @jsxImportSource preact", true),
+    ("/** Text before @jsxRuntime classic */", true),
+    (
+      "/** @jsxRuntime classic */\n// @jsxRuntime automatic",
+      false,
+    ),
+    (
+      "/** @jsxRuntime classic\u{0085}@jsxImportSource react */",
+      true,
+    ),
+    (
+      "/** @jsxRuntime classic\u{feff}@jsxImportSource react */",
+      true,
+    ),
+  ] {
+    let source = format!("{comment}\nexport const Page = () => <p>Hello {{name}}</p>;");
+    let output = transform(&source, AUTO_ONLY);
+    assert_eq!(
+      output.contains("<GtInternalTranslateJsx>"),
+      expected,
+      "{source}\n{output}"
+    );
+    assert!(
+      output.contains("@jsx"),
+      "The driver must preserve source pragmas"
+    );
+  }
+}
+
+#[test]
+fn only_the_first_recognized_top_level_comment_group_selects_the_runtime() {
+  for (source, expected) in [
+    ("const before = 1;\n/** @jsxRuntime classic */\nexport const Page = () => <p>Hello</p>;", false),
+    ("/** @jsxRuntime automatic */ const before = 1;\n/** @jsxRuntime classic */\nexport const Page = () => <p>Hello</p>;", true),
+    ("const before = 1;\n/** @jsxImportSource react */ const middle = 2;\n/** @jsxImportSource preact */ export const Page = () => <p>Hello</p>;", true),
+    ("const before = 1; // @jsxRuntime classic\nexport const Page = () => <p>Hello</p>;", true),
+    ("export function Page() { /** @jsxRuntime classic */ return <p>Hello</p>; }", true),
+    ("/** @jsxRuntime classic */\n'use client'; const page = <p>Hello</p>;", false),
+    ("/** @jsxRuntime automatic */\n'use client'; const page = <p>Hello</p>;", true),
+  ] {
+    let output = transform(source, AUTO_ONLY);
+    assert_eq!(output.contains("<GtInternalTranslateJsx>"), expected, "{source}\n{output}");
+  }
+}
+
+#[test]
+fn configured_runtime_source_is_overridden_by_file_pragmas() {
+  let source = "export const Page = () => <p>Hello {name}</p>;";
+  for config in [
+    r#"{"enableAutoJsxInjection":true,"jsxImportSource":"preact"}"#,
+    r#"{"enableAutoJsxInjection":true,"jsxImportSource":"@emotion/react"}"#,
+    r#"{"enableAutoJsxInjection":true,"jsxRuntime":"classic"}"#,
+  ] {
+    assert!(!transform(source, config).contains("GtInternal"));
+    let overridden = format!("/** @jsxImportSource react */\n{source}");
+    assert!(transform(&overridden, config).contains("<GtInternalTranslateJsx>"));
+  }
+  assert!(transform(
+    source,
+    r#"{"enableAutoJsxInjection":true,"jsxRuntime":"automatic","jsxImportSource":"react"}"#
+  )
+  .contains("<GtInternalTranslateJsx>"));
+}
+
+#[test]
+fn loader_context_is_consumed_before_injection_and_real_pragmas_override_it() {
+  let source = "'use client'; export const Page = () => <p>Hello {name}</p>;";
+  for import_source in ["react", "@emotion/react"] {
+    let marked = format!("{source}\n;\n\"__GT_AUTO_JSX_IMPORT_SOURCE__:{import_source}\";\n");
+    let config = r#"{"enableAutoJsxInjection":true,"jsxImportSourceFromLoader":true,"jsxImportSource":"preact"}"#;
+    let output = transform(&marked, config);
+    assert!(!output.contains("__GT_AUTO_JSX_IMPORT_SOURCE__"));
+    assert_eq!(
+      output.contains("<GtInternalTranslateJsx>"),
+      import_source == "react"
+    );
+    let overridden = format!("/** @jsxImportSource react */\n{marked}");
+    assert!(transform(&overridden, config).contains("<GtInternalTranslateJsx>"));
+    let classic = format!("/** @jsxRuntime classic */\n{marked}");
+    assert!(!transform(&classic, config).contains("GtInternal"));
+  }
+}
+
+#[test]
+fn removing_loader_context_preserves_original_statements_and_comments() {
+  for source in [
+    "'use client'; export const Page = () => <p>Hello</p>;",
+    "'use client'; export const Page = () => <p>Hello</p>",
+    "export const Page = () => <p>Hello</p>; ; ;",
+    "export const Page = () => <p>Hello</p>; // Keep EOF comment",
+    "export const Page = () => <p>Hello</p>;\n/* Keep license */",
+    "#!/usr/bin/env node\n'use strict'; const page = <p>Hello</p>",
+    "const expression = /value/",
+    "/* Keep comment-only source */",
+  ] {
+    let marked = format!("{source}\n;\n\"__GT_AUTO_JSX_IMPORT_SOURCE__:react\";\n");
+    assert_eq!(
+      transform(&marked, r#"{"jsxImportSourceFromLoader":true}"#),
+      transform(source, "{}"),
+      "{source}"
+    );
+  }
+}
+
+#[test]
+fn loader_context_is_removed_even_with_auto_insertion_off_before_manual_hashing() {
+  let source = "import { T, t } from 'gt-next'; export const label = t('Label'); export const Page = () => <T>Manual</T>;";
+  let marked = format!("{source}\n;\n\"__GT_AUTO_JSX_IMPORT_SOURCE__:@emotion/react\";\n");
+  assert_eq!(
+    transform(
+      &marked,
+      r#"{"compileTimeHash":true,"jsxImportSourceFromLoader":true}"#
+    ),
+    transform(source, r#"{"compileTimeHash":true}"#),
+  );
+}
+
+#[test]
+fn ordinary_source_never_consumes_the_private_marker_without_bridge_mode() {
+  let source =
+    "export const Page = () => <p>Hello</p>;\n;\n\"__GT_AUTO_JSX_IMPORT_SOURCE__:react\";\n";
+  assert!(transform(source, AUTO_ONLY).contains("__GT_AUTO_JSX_IMPORT_SOURCE__:react"));
+  assert!(transform(source, "{}").contains("__GT_AUTO_JSX_IMPORT_SOURCE__:react"));
+  // A no-JSX dependency does not require context from the loader.
+  assert_eq!(
+    transform(
+      "export const value = 1;",
+      r#"{"jsxImportSourceFromLoader":true}"#
+    ),
+    transform("export const value = 1;", "{}")
+  );
+}
+
+#[test]
+fn jsx_requires_a_valid_final_marker_when_loader_context_is_enabled() {
+  for tail in [
+    "",
+    "\n;\n\"__GT_AUTO_JSX_IMPORT_SOURCE__:preact\";",
+    "\n;\n\"__GT_AUTO_JSX_IMPORT_SOURCE__:react\"; const after = 1;",
+    "\n;\n'__GT_AUTO_JSX_IMPORT_SOURCE__:react ';",
+  ] {
+    let source = format!("export const Page = () => <p>Hello</p>;{tail}");
+    assert!(std::panic::catch_unwind(|| transform(
+      &source,
+      r#"{"jsxImportSourceFromLoader":true}"#
+    ))
+    .is_err());
+  }
+}
+
+#[test]
+#[should_panic(expected = "The adapter's formatted runtime-context diagnostic")]
+fn missing_loader_context_uses_the_adapters_formatted_diagnostic() {
+  transform(
+    "export const Page = () => <p>Hello</p>;",
+    r#"{"jsxImportSourceFromLoader":true,"missingJsxRuntimeContextDiagnostic":"The adapter's formatted runtime-context diagnostic"}"#,
+  );
+}
+
+#[test]
+fn classic_factories_and_non_react_runtimes_do_not_disable_manual_hashing() {
+  for pragma in [
+    "/** @jsxImportSource @emotion/react */",
+    "/** @jsxRuntime classic */",
+    "/** @jsxRuntime classic @jsx React.createElement @jsxFrag React.Fragment */",
+  ] {
+    let source = format!("{pragma}\nimport React from 'react'; import {{ T, t }} from 'gt-next'; export const label = t('Label'); export const Page = () => <><T>Manual</T><p>Automatic {{name}}</p></>;");
+    let baseline = transform(&source, r#"{"compileTimeHash":true}"#);
+    let enabled = transform(
+      &source,
+      r#"{"compileTimeHash":true,"enableAutoJsxInjection":true}"#,
+    );
+    assert_eq!(enabled, baseline);
+    assert!(enabled.contains("_hash"));
+    assert!(!enabled.contains("GtInternal"));
+    assert!(enabled.contains(pragma));
+  }
+}
 
 #[test]
 fn synthetic_or_cloned_spans_keep_independent_node_identity() {

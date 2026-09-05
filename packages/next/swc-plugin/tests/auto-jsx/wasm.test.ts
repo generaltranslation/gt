@@ -1,7 +1,8 @@
 import path from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { transformSync } from '@swc/core';
+import { transformSync, type ReactConfig } from '@swc/core';
 import generate from '@babel/generator';
+import { parse } from '@babel/parser';
 import {
   canonical,
   lower,
@@ -40,6 +41,15 @@ function transform(
   development = false,
   runtime: 'preserve' | 'automatic' = 'preserve'
 ): string {
+  return transformWithHost(input, enabled, { runtime, development });
+}
+
+function transformWithHost(
+  input: string,
+  enabled: boolean,
+  react: ReactConfig,
+  pluginConfig: Record<string, unknown> = {}
+): string {
   return transformSync(input, {
     filename: 'input.tsx',
     swcrc: false,
@@ -47,11 +57,26 @@ function transform(
     jsc: {
       parser: { syntax: 'typescript', tsx: true, decorators: true },
       target: 'esnext',
-      transform: { react: { runtime, development } },
+      transform: {
+        react,
+        // This path deliberately preserves JSX for the shared Babel lowering.
+        // Retain value imports used by classic factory pragmas until that step;
+        // automatic/classic host comparisons use the host's normal TS stripping.
+        ...(react.runtime === 'preserve' && { verbatimModuleSyntax: true }),
+      },
       experimental: {
         cacheRoot: path.join(pluginDirectory, 'target/auto-jsx-swc-cache'),
         plugins: [
-          [wasm, { enableAutoJsxInjection: enabled, compileTimeHash: false }],
+          [
+            wasm,
+            {
+              enableAutoJsxInjection: enabled,
+              compileTimeHash: false,
+              jsxImportSource: react.importSource,
+              jsxRuntime: react.runtime === 'classic' ? 'classic' : 'automatic',
+              ...pluginConfig,
+            },
+          ],
         ],
       },
     },
@@ -149,3 +174,154 @@ it.each([false, true])(
     expect(canonical(lower(unchanged))).toBe(canonical(lower(input)));
   }
 );
+
+// Compare with the compiler after this exact host has interpreted its JSX
+// options and comments. Babel and SWC differ on which comments are directives;
+// those host choices must not be hidden by the source-level oracle.
+const runtimePages = [
+  'export const Page = () => <p>Hello {name}<strong>Nested copy</strong></p>;',
+  'export const Page = () => <><h1>Account {name}</h1>{ready ? <p>Ready now</p> : <aside>Waiting</aside>}</>;',
+  'export const Page = ({ items }: { items: string[] }) => <main>{items.map((item) => <article key={item}>Item {item}</article>)}</main>;',
+];
+const runtimeDirectives = [
+  ['default', ''],
+  ['react', '/** @jsxImportSource react */'],
+  ['emotion', '/** @jsxImportSource @emotion/react */'],
+  ['preact', '/** @jsxImportSource preact */'],
+  ['automatic', '/** @jsxRuntime automatic */'],
+  ['classic', '/** @jsxRuntime classic */'],
+  [
+    'classic-factory',
+    '/** @jsxRuntime classic @jsx h @jsxFrag React.Fragment */',
+  ],
+  ['line-comment', '// @jsxImportSource preact'],
+  ['inline-prose', '/* Example: @jsxImportSource preact */'],
+  ['multiline', '/**\n * @jsxImportSource preact\n */'],
+  [
+    'last-source-in-comment',
+    '/** @jsxImportSource preact @jsxImportSource react */',
+  ],
+  [
+    'last-runtime-in-comment',
+    '/** @jsxRuntime classic @jsxRuntime automatic */',
+  ],
+  [
+    'multiple-comments',
+    '/** @jsxImportSource preact */\n/** @jsxImportSource react */',
+  ],
+  [
+    'import-source-after-classic',
+    '/** @jsxRuntime classic @jsxImportSource react */',
+  ],
+] as const;
+
+describe.each([false, true])(
+  'effective host runtime, development=%s',
+  (development) => {
+    for (const importSource of ['react', '@emotion/react', 'preact']) {
+      for (const [directive, comment] of runtimeDirectives) {
+        for (const [page, source] of runtimePages.entries()) {
+          it(`${importSource}/${directive}/page-${page}`, () => {
+            const input = `${comment}\nimport * as React from 'react'; import { h } from 'preact';\n${source}`;
+            const react: ReactConfig = {
+              runtime: 'automatic',
+              importSource,
+              development,
+            };
+            const baseline = transformWithHost(input, false, react);
+            const expected = canonical(oracleCompiled(baseline));
+            const actual = transformWithHost(input, true, react);
+            expect(canonical(parse(actual, { sourceType: 'module' }))).toBe(
+              expected
+            );
+          });
+        }
+      }
+    }
+
+    it('respects a configured classic runtime', () => {
+      const input = `import * as React from 'react'; ${runtimePages[0]}`;
+      const react: ReactConfig = { runtime: 'classic', development };
+      const baseline = transformWithHost(input, false, react);
+      const actual = transformWithHost(input, true, react);
+      expect(actual).not.toContain('GtInternalTranslateJsx');
+      expect(canonical(parse(actual, { sourceType: 'module' }))).toBe(
+        canonical(oracleCompiled(baseline))
+      );
+    });
+
+    it('preserves manual hashing with a custom automatic runtime', () => {
+      const input = `import { T } from 'gt-next'; export const Page = () => <main>Automatic text<T>Manual translation</T></main>;`;
+      const react: ReactConfig = {
+        runtime: 'automatic',
+        importSource: '@emotion/react',
+        development,
+      };
+      const config = { compileTimeHash: true };
+      const baseline = transformWithHost(input, false, react, config);
+      const actual = transformWithHost(input, true, react, config);
+      expect(actual).toContain('_hash:');
+      expect(actual).not.toContain('GtInternalTranslateJsx');
+      expect(canonical(lower(actual))).toBe(canonical(lower(baseline)));
+    });
+  }
+);
+
+describe.each([false, true])(
+  'Emotion loader runtime context, development=%s',
+  (development) => {
+    for (const importSource of ['react', '@emotion/react']) {
+      for (const [name, comment] of runtimeDirectives.slice(0, 7)) {
+        it(`${importSource}/${name}`, () => {
+          const source = `${comment}\n'use client'; import * as React from 'react'; import { h } from 'preact'; ${runtimePages[0]}`;
+          const input = `${source}\n;\n"__GT_AUTO_JSX_IMPORT_SOURCE__:${importSource}";\n`;
+          const react: ReactConfig = {
+            runtime: 'automatic',
+            importSource,
+            development,
+          };
+          const config = {
+            jsxImportSource: undefined,
+            jsxImportSourceFromLoader: true,
+          };
+          const baseline = transformWithHost(source, false, react);
+          const actual = transformWithHost(input, true, react, config);
+          expect(actual).not.toContain('__GT_AUTO_JSX_IMPORT_SOURCE__');
+          expect(canonical(parse(actual, { sourceType: 'module' }))).toBe(
+            canonical(oracleCompiled(baseline))
+          );
+          expect(
+            canonical(
+              parse(transformWithHost(input, false, react, config), {
+                sourceType: 'module',
+              })
+            )
+          ).toBe(canonical(parse(baseline, { sourceType: 'module' })));
+        });
+      }
+    }
+  }
+);
+
+it('does not consume ordinary user marker strings without loader context', () => {
+  const input = `export const answer = 42;\n;\n"__GT_AUTO_JSX_IMPORT_SOURCE__:react";\n`;
+  const actual = transformWithHost(input, true, { runtime: 'automatic' });
+  expect(canonical(lower(actual))).toBe(canonical(lower(input)));
+});
+
+it.each([
+  '',
+  '\n;\n"__GT_AUTO_JSX_IMPORT_SOURCE__:unexpected-runtime";\n',
+  '\n;\n"__GT_AUTO_JSX_IMPORT_SOURCE__:react";\nexport const after = 1;',
+])('rejects missing or invalid required loader context: %s', (suffix) => {
+  expect(() =>
+    transformWithHost(
+      `${runtimePages[0]}${suffix}`,
+      true,
+      {
+        runtime: 'automatic',
+      },
+      { jsxImportSourceFromLoader: true }
+    )
+  ).toThrow();
+});

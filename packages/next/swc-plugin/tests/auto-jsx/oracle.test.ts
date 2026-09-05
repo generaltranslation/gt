@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { transformSync } from '@swc/core';
-import { canonical, lower, oracle, readableOutput } from './oracle';
+import generate from '@babel/generator';
+import * as t from '@babel/types';
+import {
+  canonical,
+  hasUnnormalizedJsxDevelopmentMetadata,
+  lower,
+  oracle,
+  readableOutput,
+} from './oracle';
+import { cliOutput, cliResult } from './cli-oracle';
 
 describe('parity comparison preserves user semantics', () => {
   it.each([
@@ -211,4 +220,179 @@ describe('parity comparison preserves user semantics', () => {
       ).not.toBe(canonical(lower(`${prefix}make(Group, {children:value});`)));
     }
   );
+});
+
+describe('JSX runtime oracle semantics', () => {
+  it.each([
+    '/** @jsxRuntime classic */ import React from "react";',
+    '/** @jsxImportSource @emotion/react */',
+    '/** @jsxImportSource preact */',
+  ])(
+    'prints original JSX only after the compiler proves a runtime no-op: %s',
+    (header) => {
+      const input =
+        header +
+        ' export const Page = ({ name }: { name: string }) => <p>Hello {name}</p>;';
+      const expected = oracle(input);
+      const output = readableOutput(expected, input);
+      expect(output).toContain('<p>Hello {name}</p>');
+      expect(output).not.toContain('GtInternalTranslateJsx');
+      expect(canonical(lower(output))).toBe(canonical(expected));
+    }
+  );
+
+  it('keeps the compiler-authored inserted output when the original JSX changed', () => {
+    const input =
+      '/** @jsxImportSource react */ export const Page = () => <p>Hello {name}</p>;';
+    const expected = oracle(input);
+    const output = readableOutput(expected, input);
+    expect(output).toContain('<GtInternalTranslateJsx>');
+    expect(canonical(lower(output))).toBe(canonical(expected));
+  });
+
+  it.each([
+    {
+      pragma: '/** @jsxRuntime classic */',
+      imports: 'import React, { unused } from "react";',
+      retained: ['React'],
+      call: 'React.createElement',
+    },
+    {
+      pragma:
+        '/**\n * @jsxRuntime classic\n * @jsx h\n * @jsxFrag Fragment\n */',
+      imports: 'import { h, Fragment, unused } from "preact";',
+      retained: ['h', 'Fragment'],
+      call: 'h(Fragment',
+    },
+    {
+      pragma:
+        '/**\n * @jsxRuntime classic\n * @jsx R.createElement\n * @jsxFrag R.Fragment\n */',
+      imports: 'import * as R from "react";',
+      retained: ['R'],
+      call: 'R.createElement(R.Fragment',
+    },
+    {
+      pragma:
+        '/**\n * @jsxRuntime classic\n * @jsx make\n * @jsxFrag Group\n */',
+      imports:
+        'import { createElement as make, Fragment as Group, unused } from "react";',
+      retained: ['make', 'Group'],
+      call: 'make(Group',
+    },
+  ])(
+    'retains factory imports used only by $call',
+    ({ pragma, imports, retained, call }) => {
+      const input = [
+        pragma,
+        'import "./initialize";',
+        imports,
+        'type Props = { name: string };',
+        'export const Page = ({ name }: Props) => <><p>Hello {name}</p></>;',
+      ].join('\n');
+      const ast = lower(input);
+      const actualImports = ast.program.body.filter((statement) =>
+        t.isImportDeclaration(statement)
+      );
+      expect(actualImports[0].source.value).toBe('./initialize');
+      expect(
+        actualImports.flatMap((statement) =>
+          statement.specifiers.map((specifier) => specifier.local.name)
+        )
+      ).toEqual(retained);
+      expect(generate(ast).code).toContain(call);
+      expect(canonical(oracle(input))).toBe(canonical(ast));
+      expect(canonical(lower(readableOutput(oracle(input))))).toBe(
+        canonical(ast)
+      );
+    }
+  );
+
+  it.each([
+    '/** @jsxRuntime classic */',
+    '/** @jsxImportSource preact */',
+    '/** @jsxImportSource @emotion/react */',
+    '/** @jsxImportSource react */',
+    '// @jsxImportSource preact',
+    '/**\n * @jsxRuntime classic\n * @jsx React.createElement\n * @jsxFrag React.Fragment\n */',
+  ])(
+    'preserves compile-significant comments through both printers: %s',
+    (pragma) => {
+      const input =
+        pragma +
+        '\n/* Ordinary page note. */\nimport React from "react"; export const Page = () => <p>Hello {name}</p>;';
+      for (const output of [readableOutput(oracle(input)), cliOutput(input)]) {
+        for (const directive of pragma.match(
+          /@jsx(?:ImportSource|Runtime|Frag)?\s+[^\s*]+/g
+        ) ?? [])
+          expect(output).toContain(directive);
+        expect(output).not.toContain('Ordinary page note');
+      }
+      expect(canonical(lower(readableOutput(oracle(input))))).toBe(
+        canonical(oracle(input))
+      );
+    }
+  );
+
+  it.each([
+    '/** @jsxRuntime classic */',
+    '/** @jsxImportSource preact */',
+    '/** @jsxImportSource @emotion/react */',
+  ])('exposes actual compiler/CLI runtime differences for %s', (pragma) => {
+    const input =
+      pragma +
+      '\nimport React from "react"; export const Page = () => <p>Hello {name}</p>;';
+    expect(canonical(oracle(input))).toBe(canonical(lower(input)));
+    expect(canonical(oracle(input))).not.toContain(
+      '$gtParityGtInternalTranslateJsx'
+    );
+    const cli = cliResult(input);
+    expect(cli.output).toContain('GtInternalTranslateJsx');
+    expect(cli.canonical).not.toBe(canonical(oracle(input)));
+  });
+
+  it.each([
+    '/** @jsxRuntime automatic */',
+    '/** @jsxImportSource react */',
+    '/** @jsxImportSource preact */\n/** @jsxImportSource react */',
+    '/** @jsxRuntime classic */\n/** @jsxRuntime automatic */',
+  ])('keeps React automatic insertion enabled for %s', (pragma) => {
+    const input = pragma + '\nexport const Page = () => <p>Hello {name}</p>;';
+    expect(canonical(oracle(input))).toContain(
+      '$gtParityGtInternalTranslateJsx'
+    );
+    expect(cliResult(input).canonical).toBe(canonical(oracle(input)));
+  });
+
+  it.each([
+    '/** @jsxRuntime classic */\nimport React from "react";',
+    '/**\n * @jsxRuntime classic\n * @jsx make\n */ import { createElement as make } from "react";',
+    '/** @jsxImportSource preact */',
+    '/** @jsxImportSource @emotion/react */',
+  ])('keeps non-normalized development metadata visible for %s', (header) => {
+    const input =
+      header + '\nexport const Page = () => <><p>Hello {name}</p></>;';
+    const development = oracle(input, true);
+    expect(hasUnnormalizedJsxDevelopmentMetadata(development)).toBe(true);
+    expect(canonical(development)).not.toBe(canonical(oracle(input)));
+  });
+
+  it.each([
+    'export const Page = () => <><p>Hello {name}</p></>;',
+    '/** @jsxImportSource react */ export const Page = () => <p>Hello {name}</p>;',
+  ])(
+    'recognizes already-normalized React development metadata for %s',
+    (input) => {
+      const development = oracle(input, true);
+      expect(hasUnnormalizedJsxDevelopmentMetadata(development)).toBe(false);
+      expect(canonical(development)).toBe(canonical(oracle(input)));
+    }
+  );
+
+  it('does not treat pragma-like string contents as compiler directives', () => {
+    const input =
+      'export const notice = "@jsxRuntime classic"; export const Page = () => <p>Hello {name}</p>;';
+    expect(canonical(oracle(input))).toContain(
+      '$gtParityGtInternalTranslateJsx'
+    );
+  });
 });

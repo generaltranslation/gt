@@ -8,6 +8,14 @@ import {
   Libraries,
 } from '../../../../cli/src/types/libraries';
 import { isGTImportSource } from '../../../../compiler/src/utils/constants/gt/helpers';
+import {
+  canonical,
+  hasUnsupportedJsxCalls,
+  isJsxPragmaComment,
+  lower,
+  oracle,
+} from './oracle';
+import { cliResult } from './cli-oracle';
 
 /** Reviewed differences between the raw-JSX CLI and compiled-JSX compiler. */
 export const cliDivergences = {
@@ -49,6 +57,8 @@ export const cliDivergences = {
     'The CLI accepts arbitrary gt-next/gt-react source prefixes; the compiler recognizes only its explicit set of import sources.',
   'existing-internal-helper':
     'The compiler skips existing internal wrapper nodes; the CLI treats an existing internal T as ordinary JSX and an internal Var as a suppressing user variable.',
+  'jsx-runtime':
+    'JSX pragmas lower content to custom automatic runtime or classic factory calls that the compiler insertion pass does not recognize; the CLI still transforms the original JSX.',
 } as const;
 
 export type CliDivergence = keyof typeof cliDivergences;
@@ -158,6 +168,12 @@ export const cliDivergenceExamples: Record<
       'import { GtInternalTranslateJsx } from "gt-next"; export const Page = () => <GtInternalTranslateJsx>Hello {name}</GtInternalTranslateJsx>;',
     control:
       'import { T } from "gt-next"; export const Page = () => <T>Hello {name}</T>;',
+  },
+  'jsx-runtime': {
+    input:
+      '/** @jsxImportSource @emotion/react */ export const Page = () => <p>Hello {name}</p>;',
+    control:
+      '/** @jsxImportSource react */ export const Page = () => <p>Hello {name}</p>;',
   },
 };
 
@@ -279,6 +295,13 @@ export function classifyCliDivergences(input: string): CliDivergence[] {
     }
   }
   const reasons = new Set<CliDivergence>();
+  if (
+    ast.comments?.some((comment) => isJsxPragmaComment(comment.value)) &&
+    hasJsx(ast) &&
+    hasUnsupportedJsxCalls(lower(input, true)) &&
+    cliResult(input).canonical !== canonical(oracle(input))
+  )
+    reasons.add('jsx-runtime');
   const tagName = (path: JsxPath): string | undefined =>
     path.isJSXElement() && t.isJSXIdentifier(path.node.openingElement.name)
       ? path.node.openingElement.name.name

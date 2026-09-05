@@ -130,12 +130,16 @@ export async function updateExamples(
   for (const [index, example] of examples.entries()) {
     const folder = path.join(fixtureDirectory, example.name);
     const compiler = oracle(example.input);
-    const output = readableOutput(compiler);
+    const output = readableOutput(compiler, example.input);
     const cli = cliResult(example.input);
     const agrees = canonical(compiler) === cli.canonical;
     const cliDivergences = agrees ? [] : classifyCliDivergences(example.input);
     if (!agrees && cliDivergences.length === 0) unclassified.push(example.name);
-    const input = `${example.input.trim()}\n`;
+    // Preserve BOMs and intentional whitespace so materialized examples replay
+    // the same source that the live oracles and native/WASM drivers receive.
+    const input = example.input.endsWith('\n')
+      ? example.input
+      : `${example.input}\n`;
     snapshots[example.name] = {
       input,
       output,

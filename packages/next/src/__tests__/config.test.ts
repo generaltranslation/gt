@@ -1550,6 +1550,101 @@ describe('withGTConfig', () => {
   // 13. Compiler configuration
   // ==============================
   describe('13. Compiler configuration', () => {
+    it.each([
+      { turbo: true, emotion: true, source: undefined, bridge: true },
+      { turbo: true, emotion: false, source: undefined, bridge: true },
+      { turbo: true, emotion: {}, source: undefined, bridge: true },
+      { turbo: true, emotion: undefined, source: undefined, bridge: false },
+      { turbo: true, emotion: true, source: 'react', bridge: false },
+      { turbo: true, emotion: true, source: '@emotion/react', bridge: false },
+      { turbo: true, emotion: true, source: 'custom-runtime', bridge: false },
+      { turbo: true, emotion: true, source: '', bridge: false },
+      { turbo: false, emotion: true, source: undefined, bridge: true },
+      { turbo: false, emotion: false, source: undefined, bridge: false },
+      { turbo: false, emotion: undefined, source: undefined, bridge: false },
+      { turbo: false, emotion: true, source: 'react', bridge: false },
+      { turbo: false, emotion: true, source: 'custom-runtime', bridge: false },
+      { turbo: false, emotion: true, source: '', bridge: false },
+    ])(
+      'forwards the effective host source and only adds the required layer bridge: %j',
+      async ({ turbo, emotion, source, bridge }) => {
+        const withGTConfig = await getWithGTConfig();
+        if (turbo) process.env.TURBOPACK = '1';
+        vi.mocked(fs.existsSync).mockImplementation(
+          (filename) =>
+            source !== undefined && String(filename).endsWith('jsconfig.json')
+        );
+        vi.mocked(fs.readFileSync).mockReturnValue(
+          JSON.stringify({ compilerOptions: { jsxImportSource: source } })
+        );
+        const userRules = { '*.svg': { loaders: ['svg-loader'], as: '*.js' } };
+        const result = withGTConfig(
+          { compiler: { emotion }, turbopack: { rules: userRules } },
+          {
+            experimentalCompilerOptions: {
+              type: 'swc',
+              enableAutoJsxInjection: true,
+            },
+          }
+        );
+        const plugin = result.experimental!.swcPlugins![0][1];
+        expect(plugin.compileTimeHash).toBe(true);
+        expect(plugin.enableAutoJsxInjection).toBe(true);
+        if (source !== undefined) expect(plugin.jsxImportSource).toBe(source);
+        else expect(plugin).not.toHaveProperty('jsxImportSource');
+        if (bridge) {
+          expect(plugin.jsxImportSourceFromLoader).toBe(true);
+          expect(plugin.missingJsxRuntimeContextDiagnostic).toMatch(
+            /gt-next \(plugin\).*JSX runtime context is missing/
+          );
+          if (turbo) {
+            expect(result.turbopack!.rules!['*.svg']).toBe(userRules['*.svg']);
+            expect(Object.values(result.turbopack!.rules!)).toContainEqual({
+              condition: { not: 'foreign' },
+              loaders: [
+                expect.stringMatching(
+                  /config-dir[/\\]auto-jsx[/\\]loader\.js$/
+                ),
+              ],
+            });
+          } else {
+            const webpack = runWebpack(result, makeWebpackConfig());
+            expect(webpack.plugins).toContainEqual(
+              expect.objectContaining({ apply: expect.any(Function) })
+            );
+          }
+        } else {
+          expect(plugin).not.toHaveProperty('jsxImportSourceFromLoader');
+          expect(plugin).not.toHaveProperty(
+            'missingJsxRuntimeContextDiagnostic'
+          );
+          expect(result.turbopack!.rules).toBe(userRules);
+        }
+        expect(userRules).toEqual({
+          '*.svg': { loaders: ['svg-loader'], as: '*.js' },
+        });
+      }
+    );
+
+    it('does not read host JSX config or add a bridge when auto injection is disabled', async () => {
+      process.env.TURBOPACK = '1';
+      const withGTConfig = await getWithGTConfig();
+      const result = withGTConfig(
+        { compiler: { emotion: true } },
+        {
+          experimentalCompilerOptions: {
+            type: 'swc',
+            enableAutoJsxInjection: false,
+          },
+        }
+      );
+      expect(fs.readFileSync).not.toHaveBeenCalled();
+      expect(result.turbopack).not.toHaveProperty('rules');
+      expect(result.experimental!.swcPlugins![0][1]).not.toHaveProperty(
+        'jsxImportSourceFromLoader'
+      );
+    });
+
     it('warns when automatic JSX injection has no enabled compiler', async () => {
       const withGTConfig = await getWithGTConfig();
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});

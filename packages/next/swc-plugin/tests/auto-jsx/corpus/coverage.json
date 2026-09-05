@@ -1,6 +1,6 @@
 {
-  "examples": 17049,
-  "uniqueInputs": 17049,
+  "examples": 17313,
+  "uniqueInputs": 17313,
   "families": {
     "adversarial": 158,
     "basics": 3,
@@ -10,14 +10,15 @@
     "gt-manual": 1176,
     "gt-opaque": 648,
     "interaction-pages": 6000,
+    "jsx-runtime": 264,
     "pages": 40
   },
-  "cliAgrees": 7198,
-  "cliDisagrees": 9851,
+  "cliAgrees": 7240,
+  "cliDisagrees": 10073,
   "divergenceCounts": {
     "child-array": 2303,
-    "children-attribute": 2501,
-    "create-element-fallback": 240,
+    "children-attribute": 2513,
+    "create-element-fallback": 252,
     "derive-children": 724,
     "derive-prop-descendants": 192,
     "existing-internal-helper": 4,
@@ -26,6 +27,7 @@
     "import-shadowing": 1500,
     "import-source-prefix": 18,
     "intrinsic-import-alias": 3,
+    "jsx-runtime": 222,
     "manual-t-descendants": 344,
     "opaque-key": 36,
     "opaque-prop-descendants": 2362,

@@ -84,6 +84,19 @@ jobs:
       - name: Build packages
         run: pnpm exec turbo build --filter='...[origin/${{ github.base_ref }}]' --filter='!gt-next-middleware-e2e' --filter='!./examples/*'
 
+      - name: Verify Next automatic JSX integration
+        shell: bash
+        env:
+          PR_BASE_REF: ${{ github.base_ref }}
+        run: |
+          if ! git diff --quiet "origin/${PR_BASE_REF}...HEAD" -- \
+            packages/next/ packages/compiler/src/processing/jsx-insertion/ \
+            packages/compiler/src/passes/jsxInsertionPass.ts .github/workflows/ci.yml; then
+            pnpm exec turbo build --filter=gt-next
+            node packages/next/swc-plugin/tests/auto-jsx/turbopack-smoke.mjs
+            node packages/next/swc-plugin/tests/auto-jsx/emotion-smoke.mjs
+          fi
+
       - name: Run tests
         shell: bash
         env:
