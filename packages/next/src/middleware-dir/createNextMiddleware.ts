@@ -16,7 +16,6 @@ import {
   PathConfig,
   normalizePathname,
   getSharedPath,
-  getSharedPathMatch,
   replaceDynamicSegments,
   getLocalizedPath,
   createPathToSharedPathMap,
@@ -273,7 +272,7 @@ export function createNextMiddleware({
           : pathname;
 
       // Get the shared path for the unprefixed pathname
-      const sharedPathMatch = getSharedPathMatch(
+      const sharedPathMatch = getSharedPath(
         standardizedPathname,
         pathToSharedPath,
         pathnameLocale
@@ -313,11 +312,11 @@ export function createNextMiddleware({
           : standardizedPathname) ||
         '/';
       const routeOverridePathMap = routeOverridePathMaps[userLocale];
-      const routeOverrideSharedPath = routeOverridePathMap
+      const routeOverrideMatch = routeOverridePathMap
         ? getSharedPath(pagePath, routeOverridePathMap, undefined)
         : undefined;
       const routeOverridePath =
-        routeOverrideSharedPath !== undefined
+        routeOverrideMatch !== undefined
           ? `/${userLocale}/${userLocale}${pagePath === '/' ? '' : pagePath}`
           : undefined;
 
