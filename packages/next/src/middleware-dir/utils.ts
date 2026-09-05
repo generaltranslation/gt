@@ -36,14 +36,10 @@ export type ResponseConfig = {
 
 function applyBasePath(responseUrl: URL, originalUrl: NextURL) {
   const { basePath } = originalUrl;
-  if (
-    !basePath ||
-    responseUrl.origin !== originalUrl.origin ||
-    responseUrl.pathname === basePath ||
-    responseUrl.pathname.startsWith(`${basePath}/`)
-  ) {
+  if (!basePath || responseUrl.origin !== originalUrl.origin) {
     return;
   }
+  // Middleware targets are app-relative, even when a route repeats the base path.
   responseUrl.pathname = `${basePath}${responseUrl.pathname}`;
 }
 
