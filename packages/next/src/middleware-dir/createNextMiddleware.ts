@@ -13,6 +13,7 @@ import {
 } from '@generaltranslation/react-core/pure';
 import {
   PathConfig,
+  normalizePathname,
   getSharedPath,
   replaceDynamicSegments,
   getLocalizedPath,
@@ -336,7 +337,8 @@ export function createNextMiddleware({
           // REDIRECT CASE: unprefixed pathname is wrong (/about -> /en-about)
           if (
             !pathnameLocale &&
-            localizedPathWithParameters !== `/${userLocale}${pathname}`
+            normalizePathname(localizedPathWithParameters) !==
+              normalizePathname(`/${userLocale}${pathname}`)
           ) {
             return getRedirectResponse(
               localizedPathWithParameters.replace(
@@ -354,13 +356,17 @@ export function createNextMiddleware({
       // --- CASE: add defaultLocale prefix --- //
 
       // REDIRECT CASE: incorrect pathnameLocale
-      if (pathname !== localizedPathWithParameters) {
+      if (
+        normalizePathname(pathname) !==
+        normalizePathname(localizedPathWithParameters)
+      ) {
         return getRedirectResponse(localizedPathWithParameters);
       }
 
       // REWRITE CASE: displaying correct localized path, which is the same as the shared path (/fil/blog => /fil/blog) (/fr/fr-dashboard/1/fr-custom => /fr/dashboard/1/custom)
       if (
-        standardizedPathname !== sharedPathWithParameters // no rewrite needed if it's already the shared path
+        normalizePathname(standardizedPathname) !==
+        normalizePathname(sharedPathWithParameters as string) // no rewrite needed if it's already the shared path
       ) {
         // convert to shared path with dynamic parameters
         return getRewriteResponse(sharedPathWithParameters as string);

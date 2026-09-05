@@ -1,6 +1,7 @@
 import {
   getDynamicSegmentType,
   getPathSegments,
+  normalizePathname,
   type PathMatch,
   type PathMatcher,
   type PathMatcherNode,
@@ -86,7 +87,11 @@ function matchPathSegments(
 
 /** Looks up the route entry associated with a concrete pathname. */
 function matchPath(pathname: string, matcher: PathMatcher) {
-  return matchPathSegments(matcher.root, getPathSegments(pathname), 0);
+  return matchPathSegments(
+    matcher.root,
+    getPathSegments(pathname).map(normalizePathname),
+    0
+  );
 }
 
 /** Ranks route segments in the same order as trie traversal. */

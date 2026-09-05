@@ -44,12 +44,24 @@ export function getDynamicSegmentType(
   return undefined;
 }
 
-/** Splits a pathname into the segments consumed by the matcher. */
+/** Decodes and NFC-normalizes a pathname before matching it. */
+export function normalizePathname(pathname: string): string {
+  let normalizedPathname = pathname;
+  try {
+    normalizedPathname = decodeURI(pathname);
+  } catch {
+    // Leave malformed escape sequences untouched so they simply do not match.
+  }
+  return normalizedPathname.normalize('NFC');
+}
+
+/** Splits a pathname without interpreting encoded literals as route syntax. */
 export function getPathSegments(pathname: string): string[] {
   if (pathname === '') return [];
-  const pathnameWithoutLeadingSlash = pathname.startsWith('/')
-    ? pathname.slice(1)
-    : pathname;
+  const normalizedPathname = pathname;
+  const pathnameWithoutLeadingSlash = normalizedPathname.startsWith('/')
+    ? normalizedPathname.slice(1)
+    : normalizedPathname;
   return pathnameWithoutLeadingSlash.split('/');
 }
 
@@ -73,9 +85,10 @@ function insertPath(
       node.optionalCatchAllSegment ||= createPathMatcherNode();
       node = node.optionalCatchAllSegment;
     } else {
+      const staticSegment = normalizePathname(segment);
       const staticNode =
-        node.staticSegments.get(segment) || createPathMatcherNode();
-      node.staticSegments.set(segment, staticNode);
+        node.staticSegments.get(staticSegment) || createPathMatcherNode();
+      node.staticSegments.set(staticSegment, staticNode);
       node = staticNode;
     }
   }
