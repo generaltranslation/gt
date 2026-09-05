@@ -55,10 +55,10 @@ export function normalizePathname(pathname: string): string {
   return normalizedPathname.normalize('NFC');
 }
 
-/** Splits a pathname into the segments consumed by the matcher. */
+/** Splits a pathname without interpreting encoded literals as route syntax. */
 export function getPathSegments(pathname: string): string[] {
   if (pathname === '') return [];
-  let normalizedPathname = normalizePathname(pathname);
+  let normalizedPathname = pathname;
   if (normalizedPathname.length > 1) {
     normalizedPathname = normalizedPathname.replace(/\/+$/, '') || '/';
   }
@@ -88,9 +88,10 @@ function insertPath(
       node.optionalCatchAllSegment ||= createPathMatcherNode();
       node = node.optionalCatchAllSegment;
     } else {
+      const staticSegment = normalizePathname(segment);
       const staticNode =
-        node.staticSegments.get(segment) || createPathMatcherNode();
-      node.staticSegments.set(segment, staticNode);
+        node.staticSegments.get(staticSegment) || createPathMatcherNode();
+      node.staticSegments.set(staticSegment, staticNode);
       node = staticNode;
     }
   }
