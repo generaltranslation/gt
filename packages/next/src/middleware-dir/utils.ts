@@ -10,14 +10,9 @@ import {
   type PathConfig,
   type PathMatcher,
 } from './createPathMatcher';
-import { getSharedPath, getSharedPathMatch } from './matchPath';
+import { getSharedPath } from './matchPath';
 
-export {
-  createPathMatcher,
-  createPathToSharedPathMap,
-  getSharedPath,
-  getSharedPathMatch,
-};
+export { createPathMatcher, createPathToSharedPathMap, getSharedPath };
 export type { PathConfig, PathMatcher };
 
 export type ResponseConfig = {
@@ -182,7 +177,10 @@ function inDefaultLocalePaths(
   pathname: string,
   defaultLocalePaths: PathMatcher
 ): boolean {
-  return getSharedPath(pathname, defaultLocalePaths, undefined) !== undefined;
+  return (
+    getSharedPath(pathname, defaultLocalePaths, undefined)?.sharedPath !==
+    undefined
+  );
 }
 
 /**
