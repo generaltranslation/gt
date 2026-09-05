@@ -63,16 +63,28 @@ jobs:
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
+      - name: Generate release pull request token
+        id: release-app-token
+        # App-authored PR events run immediately instead of waiting for a
+        # maintainer to approve workflows created with GITHUB_TOKEN.
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.GT_SYNC_APP_CLIENT_ID }}
+          private-key: ${{ secrets.GT_SYNC_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
       - name: Create Release Pull Request or Publish to npm
         id: changesets
         uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1
         with:
+          github-token: ${{ steps.release-app-token.outputs.token }}
           version: pnpm run version-packages
           publish: pnpm run release
           commit: '[ci] release'
           title: '[ci] release'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.release-app-token.outputs.token }}
 
       - name: Trigger benchmark baseline update
         if: steps.changesets.outputs.published == 'true'
@@ -342,13 +354,25 @@ jobs:
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
+      - name: Generate release pull request token
+        id: release-app-token
+        # App-authored PR events run immediately instead of waiting for a
+        # maintainer to approve workflows created with GITHUB_TOKEN.
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.GT_SYNC_APP_CLIENT_ID }}
+          private-key: ${{ secrets.GT_SYNC_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
       - name: Create Odysseus Release Pull Request or Publish to npm
         id: changesets
         uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1
         with:
+          github-token: ${{ steps.release-app-token.outputs.token }}
           version: bash scripts/version-packages-odysseus.sh
           publish: pnpm run release
           commit: '[ci] odysseus release'
           title: '[ci] odysseus release'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.release-app-token.outputs.token }}
