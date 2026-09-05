@@ -13,7 +13,6 @@ permissions:
 
 jobs:
   lint:
-    if: ${{ github.event.pull_request.head.repo.full_name != github.repository || !startsWith(github.head_ref, 'changeset-release/') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -50,7 +49,6 @@ jobs:
         run: pnpm lint
 
   tests:
-    if: ${{ github.event.pull_request.head.repo.full_name != github.repository || !startsWith(github.head_ref, 'changeset-release/') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -90,7 +88,6 @@ jobs:
         run: pnpm exec turbo test --filter='...[origin/${{ github.base_ref }}]' --filter='!gt-next-middleware-e2e' --filter='!./examples/*'
 
   test-builds:
-    if: ${{ github.event.pull_request.head.repo.full_name != github.repository || !startsWith(github.head_ref, 'changeset-release/') }}
     strategy:
       matrix:
         include:
@@ -189,7 +186,6 @@ jobs:
           pnpm exec turbo build:turbopack --filter=general-cases... --force
 
   test-vue-versions:
-    if: ${{ github.event.pull_request.head.repo.full_name != github.repository || !startsWith(github.head_ref, 'changeset-release/') }}
     strategy:
       matrix:
         vue: ['3.3.13', '3.5.40']
@@ -255,7 +251,6 @@ jobs:
           pnpm --filter @generaltranslation/vue-extractor test
 
   test-cli-binaries:
-    if: ${{ github.event.pull_request.head.repo.full_name != github.repository || !startsWith(github.head_ref, 'changeset-release/') }}
     strategy:
       matrix:
         include:
@@ -356,7 +351,6 @@ jobs:
           node --input-type=module -e "import fs from 'node:fs'; const catalog = JSON.parse(fs.readFileSync('dist/_gt/en.json', 'utf8')); for (const message of ['Hello from the native Vue extractor', 'Hello from module-level t in the native Vue extractor']) if (!Object.values(catalog).includes(message)) throw new Error('Native CLI did not extract: ' + message);"
 
   size:
-    if: ${{ github.event.pull_request.head.repo.full_name != github.repository || !startsWith(github.head_ref, 'changeset-release/') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -409,7 +403,7 @@ jobs:
           windows_verbatim_arguments: false
 
   run-tests:
-    if: ${{ always() && (github.event.pull_request.head.repo.full_name != github.repository || !startsWith(github.head_ref, 'changeset-release/')) }}
+    if: ${{ always() }}
     needs:
       [lint, tests, test-builds, test-vue-versions, test-cli-binaries, size]
     runs-on: ubuntu-latest
