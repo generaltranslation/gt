@@ -236,7 +236,7 @@ export function createNextMiddleware({
         pathnameLocale && pathnameLocale !== unstandardizedPathnameLocale
           ? pathname.replace(
               new RegExp(`^/${unstandardizedPathnameLocale}`),
-              `/${userLocale}`
+              `/${pathnameLocale}`
             )
           : pathname;
 
@@ -328,7 +328,7 @@ export function createNextMiddleware({
           if (clearResetCookie) {
             return getRedirectResponse(
               localizedPathWithParameters.replace(
-                new RegExp(`^/${unstandardizedPathnameLocale}`),
+                new RegExp(`^/${userLocale}`),
                 ``
               ) || '/'
             );
