@@ -24,8 +24,8 @@ export type PathMatcher = {
 export type DynamicSegmentType = 'dynamic' | 'catch-all' | 'optional-catch-all';
 
 const DYNAMIC_SEGMENT_PATTERN = /^\[[^.[\]/][^\]/]*\]$/;
-const CATCH_ALL_SEGMENT_PATTERN = /^\[\.\.\.[^\][\]/]+\]$/;
-const OPTIONAL_CATCH_ALL_SEGMENT_PATTERN = /^\[\[\.\.\.[^\][\]/]+\]\]$/;
+const CATCH_ALL_SEGMENT_PATTERN = /^\[\.\.\.[^\]/]+\]$/;
+const OPTIONAL_CATCH_ALL_SEGMENT_PATTERN = /^\[\[\.\.\.[^\]/]+\]\]$/;
 
 /** Creates an empty node in the pathname matcher trie. */
 function createPathMatcherNode(): PathMatcherNode {
