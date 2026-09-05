@@ -6,9 +6,13 @@ import {
   getLocalizedPath,
   createPathMatcher,
   createPathToSharedPathMap,
-  getSharedPath,
+  getSharedPath as matchSharedPath,
   type PathConfig,
 } from '../utils';
+
+function getSharedPath(...args: Parameters<typeof matchSharedPath>) {
+  return matchSharedPath(...args)?.sharedPath;
+}
 
 describe('extractLocale', () => {
   it('should extract locale from various pathname formats', () => {
@@ -416,6 +420,14 @@ describe('getSharedPath', () => {
     ['/fr/article/[id]', '/blog/[id]'],
     ['/user/[id]/settings', '/user/[id]/settings'],
   ]);
+
+  it('returns the shared path and matched source route', () => {
+    expect(matchSharedPath('/fr/article/789', pathToSharedPath, 'fr')).toEqual({
+      matchedPathname: '/fr/article/789',
+      pathTemplate: '/fr/article/[id]',
+      sharedPath: '/blog/[id]',
+    });
+  });
 
   it('should find exact matches first', () => {
     expect(getSharedPath('/about', pathToSharedPath, undefined)).toBe('/about');
