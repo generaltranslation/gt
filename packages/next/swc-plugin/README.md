@@ -42,7 +42,7 @@ make fix
 
 ## Configuration
 
-To enable the plug in, configure in your `next.config.js`:
+To enable the plugin with Turbopack, configure your `next.config.js`:
 
 ```javascript
 import { withGTConfig } from 'gt-next/config';
@@ -50,17 +50,51 @@ import { withGTConfig } from 'gt-next/config';
 const nextConfig = {};
 
 export default withGTConfig(nextConfig, {
-  swcPluginOptions: {
-    logLevel: 'silent', // 'silent' | 'error' | 'warn' | 'info' | 'debug'
-    compileTimeHash: false, // Enable compile-time hash generation
+  experimentalCompilerOptions: {
+    type: 'swc',
+    enableAutoJsxInjection: true,
+    logLevel: 'warn', // 'silent' | 'error' | 'warn' | 'info' | 'debug'
   },
 });
 ```
 
+You can also enable automatic JSX injection in `gt.config.json`, so the CLI and
+compiler use the same setting:
+
+```json
+{
+  "files": {
+    "gt": {
+      "parsingFlags": {
+        "enableAutoJsxInjection": true
+      }
+    }
+  }
+}
+```
+
+Select `experimentalCompilerOptions.type: 'swc'` in `withGTConfig()` when using
+this configuration. An explicit `experimentalCompilerOptions.enableAutoJsxInjection`
+value overrides the config-file flag, including `false`.
+
+Automatic JSX injection runs before translation collection and hash injection.
+The inserted components use their existing runtime hashing; compile-time hashing
+of automatically inserted components is a separate follow-up. Existing manual
+`<T>` and string compile-time hashing is unchanged.
+It inserts `GtInternalTranslateJsx` and `GtInternalVar` from `gt-next` and follows
+the same wrapping rules as `@generaltranslation/compiler`. Existing manual GT
+components retain their behavior. See the [Auto JSX guide](https://generaltranslation.com/en-US/docs/cli/guides/using-auto-jsx)
+for the shared CLI configuration.
+
 ## Options
 
 - `logLevel`: Control warning output level (default: `'warn'`)
-- `compileTimeHash`: Generate hash attributes at compile time (default: `false`)
+- `compileTimeHash`: Generate hash attributes at compile time (default: `true`).
+  `withGTConfig()` disables the compiler when this option is `false` for backward
+  compatibility.
+- `disableBuildChecks`: Disable dynamic-content validation (default: `false`).
+- `enableAutoJsxInjection`: Automatically wrap translatable JSX (default: `false`,
+  or the `files.gt.parsingFlags.enableAutoJsxInjection` setting in `gt.config.json`).
 
 ## Example
 

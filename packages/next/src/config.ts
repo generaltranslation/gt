@@ -57,6 +57,7 @@ type ConfigFileShape = {
     gt?: {
       parsingFlags?: {
         autoderive?: AutoderiveConfig;
+        enableAutoJsxInjection?: boolean;
       };
     };
   };
@@ -332,6 +333,11 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   const mergedExperimentalCompilerOptions = {
     ...defaultWithGTConfigProps.experimentalCompilerOptions,
     ...props.experimentalCompilerOptions,
+    enableAutoJsxInjection:
+      props.experimentalCompilerOptions?.enableAutoJsxInjection ??
+      loadedConfig.files?.gt?.parsingFlags?.enableAutoJsxInjection ??
+      defaultWithGTConfigProps.experimentalCompilerOptions
+        .enableAutoJsxInjection,
   };
 
   // precedence: input > env > config file > defaults

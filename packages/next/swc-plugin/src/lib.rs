@@ -366,14 +366,27 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     .get_context(&TransformPluginMetadataContextKind::Filename)
     .map(|f| f.to_string());
 
-  // Create StringCollector for the two-pass system
-  let string_collector = crate::ast::StringCollector::new();
+  transform_program(program, config, filename)
+}
 
+/// Shared entry point for the plugin and native differential fixture runner.
+/// The insertion pass is independently enabled and always precedes collection.
+pub fn transform_program(
+  program: Program,
+  config: PluginConfig,
+  filename: Option<String>,
+) -> Program {
   let mut program = program;
+
+  if config.enable_auto_jsx_injection {
+    auto_jsx::inject_auto_jsx(&mut program);
+  }
 
   if !config.compile_time_hash {
     return program;
   }
+
+  let string_collector = crate::ast::StringCollector::new();
 
   let mut visitor = TransformVisitor::new(
     config.log_level.clone(),
@@ -407,6 +420,7 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
 }
 
 pub mod ast;
+pub mod auto_jsx;
 pub mod config;
 pub mod hash;
 pub mod logging;

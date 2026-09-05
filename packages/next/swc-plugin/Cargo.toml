@@ -12,7 +12,7 @@ expect_used = "warn"
 todo = "warn"
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
 
 [profile.release]
 # Optimize for SWC plugin distribution
@@ -29,6 +29,13 @@ sha2 = "0.10"
 
 # Force exact swc_common version to match Next.js
 swc_common = "=18.0.0"
+
+[dev-dependencies]
+swc_core = { version = "49.0.0", features = [
+  "ecma_parser",
+  "ecma_codegen",
+  "ecma_transforms",
+] }
 
 # .cargo/config.toml defines few alias to build plugin.
 # cargo build-wasip1 generates wasm32-wasip1 binary

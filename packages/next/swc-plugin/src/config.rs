@@ -39,6 +39,9 @@ pub struct PluginConfig {
   pub log_level: LogLevel,
   #[serde(default)]
   pub compile_time_hash: bool,
+  /// Insert automatic JSX translation components before hash collection.
+  #[serde(default)]
+  pub enable_auto_jsx_injection: bool,
   #[serde(default)]
   pub filename: Option<String>,
   #[serde(default)]
@@ -54,6 +57,7 @@ impl Default for PluginConfig {
     Self {
       log_level: LogLevel::Warn,
       compile_time_hash: false,
+      enable_auto_jsx_injection: false,
       filename: None,
       disable_build_checks: false,
       autoderive_jsx: false,
