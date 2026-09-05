@@ -1550,13 +1550,133 @@ describe('withGTConfig', () => {
   // 13. Compiler configuration
   // ==============================
   describe('13. Compiler configuration', () => {
-    it.each(['none', 'swc'] as const)(
-      'warns when automatic JSX injection is used with the %s compiler',
+    it.each([
+      { turbo: true, emotion: true, source: undefined, bridge: true },
+      { turbo: true, emotion: false, source: undefined, bridge: true },
+      { turbo: true, emotion: {}, source: undefined, bridge: true },
+      { turbo: true, emotion: undefined, source: undefined, bridge: false },
+      { turbo: true, emotion: true, source: 'react', bridge: false },
+      { turbo: true, emotion: true, source: '@emotion/react', bridge: false },
+      { turbo: true, emotion: true, source: 'custom-runtime', bridge: false },
+      { turbo: true, emotion: true, source: '', bridge: false },
+      { turbo: false, emotion: true, source: undefined, bridge: true },
+      { turbo: false, emotion: false, source: undefined, bridge: false },
+      { turbo: false, emotion: undefined, source: undefined, bridge: false },
+      { turbo: false, emotion: true, source: 'react', bridge: false },
+      { turbo: false, emotion: true, source: 'custom-runtime', bridge: false },
+      { turbo: false, emotion: true, source: '', bridge: false },
+    ])(
+      'forwards the effective host source and only adds the required layer bridge: %j',
+      async ({ turbo, emotion, source, bridge }) => {
+        const withGTConfig = await getWithGTConfig();
+        if (turbo) process.env.TURBOPACK = '1';
+        vi.mocked(fs.existsSync).mockImplementation(
+          (filename) =>
+            source !== undefined && String(filename).endsWith('jsconfig.json')
+        );
+        vi.mocked(fs.readFileSync).mockReturnValue(
+          JSON.stringify({ compilerOptions: { jsxImportSource: source } })
+        );
+        const userRules = { '*.svg': { loaders: ['svg-loader'], as: '*.js' } };
+        const result = withGTConfig(
+          { compiler: { emotion }, turbopack: { rules: userRules } },
+          {
+            experimentalCompilerOptions: {
+              type: 'swc',
+              enableAutoJsxInjection: true,
+            },
+          }
+        );
+        const plugin = result.experimental!.swcPlugins![0][1];
+        expect(plugin.compileTimeHash).toBe(true);
+        expect(plugin.enableAutoJsxInjection).toBe(true);
+        if (source !== undefined) expect(plugin.jsxImportSource).toBe(source);
+        else expect(plugin).not.toHaveProperty('jsxImportSource');
+        if (bridge) {
+          expect(plugin.jsxImportSourceFromLoader).toBe(true);
+          expect(plugin.missingJsxRuntimeContextDiagnostic).toMatch(
+            /gt-next \(plugin\).*JSX runtime context is missing/
+          );
+          if (turbo) {
+            expect(result.turbopack!.rules!['*.svg']).toBe(userRules['*.svg']);
+            expect(Object.values(result.turbopack!.rules!)).toContainEqual({
+              condition: { not: 'foreign' },
+              loaders: [
+                expect.stringMatching(
+                  /config-dir[/\\]auto-jsx[/\\]loader\.js$/
+                ),
+              ],
+            });
+          } else {
+            const webpack = runWebpack(result, makeWebpackConfig());
+            expect(webpack.plugins).toContainEqual(
+              expect.objectContaining({ apply: expect.any(Function) })
+            );
+          }
+        } else {
+          expect(plugin).not.toHaveProperty('jsxImportSourceFromLoader');
+          expect(plugin).not.toHaveProperty(
+            'missingJsxRuntimeContextDiagnostic'
+          );
+          expect(result.turbopack!.rules).toBe(userRules);
+        }
+        expect(userRules).toEqual({
+          '*.svg': { loaders: ['svg-loader'], as: '*.js' },
+        });
+      }
+    );
+
+    it('does not read host JSX config or add a bridge when auto injection is disabled', async () => {
+      process.env.TURBOPACK = '1';
+      const withGTConfig = await getWithGTConfig();
+      const result = withGTConfig(
+        { compiler: { emotion: true } },
+        {
+          experimentalCompilerOptions: {
+            type: 'swc',
+            enableAutoJsxInjection: false,
+          },
+        }
+      );
+      expect(fs.readFileSync).not.toHaveBeenCalled();
+      expect(result.turbopack).not.toHaveProperty('rules');
+      expect(result.experimental!.swcPlugins![0][1]).not.toHaveProperty(
+        'jsxImportSourceFromLoader'
+      );
+    });
+
+    it('warns when automatic JSX injection has no enabled compiler', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      withGTConfig(
+        {},
+        {
+          experimentalCompilerOptions: {
+            type: 'none',
+            enableAutoJsxInjection: true,
+          },
+        }
+      );
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'Automatic JSX injection requires an enabled GT compiler'
+        )
+      );
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Set experimentalCompilerOptions.type to 'swc'")
+      );
+      warnSpy.mockRestore();
+    });
+
+    it.each(['babel', 'swc'] as const)(
+      'supports automatic JSX injection with the %s compiler',
       async (type) => {
         const withGTConfig = await getWithGTConfig();
         const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-        withGTConfig(
+        const result = withGTConfig(
           {},
           {
             experimentalCompilerOptions: {
@@ -1566,18 +1686,167 @@ describe('withGTConfig', () => {
           }
         );
 
-        expect(warnSpy).toHaveBeenCalledWith(
-          expect.stringContaining(
-            'Automatic JSX injection requires the GT webpack compiler'
-          )
+        expect(
+          parseConfigParams(result).experimentalCompilerOptions
+        ).toMatchObject({
+          type,
+          enableAutoJsxInjection: true,
+        });
+        expect(warnSpy).not.toHaveBeenCalledWith(
+          expect.stringContaining('Automatic JSX injection')
         );
-        expect(warnSpy).toHaveBeenCalledWith(
-          expect.stringContaining(
-            "Set experimentalCompilerOptions.type to 'babel'"
-          )
-        );
+        warnSpy.mockRestore();
       }
     );
+
+    it.each([
+      { configFlag: undefined, optionFlag: undefined, expected: false },
+      { configFlag: false, optionFlag: undefined, expected: false },
+      { configFlag: true, optionFlag: undefined, expected: true },
+      { configFlag: undefined, optionFlag: false, expected: false },
+      { configFlag: undefined, optionFlag: true, expected: true },
+      { configFlag: false, optionFlag: false, expected: false },
+      { configFlag: false, optionFlag: true, expected: true },
+      { configFlag: true, optionFlag: false, expected: false },
+      { configFlag: true, optionFlag: true, expected: true },
+    ])(
+      'resolves automatic JSX injection for Turbopack: config=$configFlag, option=$optionFlag → $expected',
+      async ({ configFlag, optionFlag, expected }) => {
+        const withGTConfig = await getWithGTConfig();
+        process.env.TURBOPACK = '1';
+        vi.mocked(fs.existsSync).mockImplementation(
+          (file) => file === './gt.config.json'
+        );
+        vi.mocked(fs.readFileSync).mockReturnValue(
+          JSON.stringify({
+            files: {
+              gt: {
+                parsingFlags: {
+                  enableAutoJsxInjection: configFlag,
+                },
+              },
+            },
+          })
+        );
+
+        const result = withGTConfig(
+          {},
+          {
+            experimentalCompilerOptions: {
+              type: 'swc',
+              enableAutoJsxInjection: optionFlag,
+            },
+          }
+        );
+
+        expect(result.experimental!.swcPlugins).toEqual([
+          [
+            expect.stringMatching(/^\.\/.+gt_swc_plugin\.wasm$/),
+            {
+              logLevel: 'warn',
+              compileTimeHash: true,
+              disableBuildChecks: false,
+              enableAutoJsxInjection: expected,
+              autoderiveJsx: false,
+              autoderiveStrings: false,
+            },
+          ],
+        ]);
+      }
+    );
+
+    it.each([
+      './.gt/gt.config.json',
+      './.locadex/gt.config.json',
+      './custom.json',
+    ])(
+      'reads automatic JSX injection from the selected configuration at %s',
+      async (configPath) => {
+        const withGTConfig = await getWithGTConfig();
+        vi.mocked(fs.existsSync).mockImplementation(
+          (file) => file === configPath
+        );
+        vi.mocked(fs.readFileSync).mockReturnValue(
+          JSON.stringify({
+            files: {
+              gt: { parsingFlags: { enableAutoJsxInjection: true } },
+            },
+          })
+        );
+
+        const result = withGTConfig(
+          {},
+          {
+            ...(configPath === './custom.json' && { config: configPath }),
+            experimentalCompilerOptions: { type: 'swc' },
+          }
+        );
+
+        expect(result.experimental!.swcPlugins![0][1]).toMatchObject({
+          enableAutoJsxInjection: true,
+        });
+      }
+    );
+
+    it('preserves existing SWC plugins and other GT compiler options with automatic JSX injection', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const existingPlugin: [string, Record<string, unknown>] = [
+        './existing.wasm',
+        { existing: true },
+      ];
+
+      const result = withGTConfig(
+        { experimental: { swcPlugins: [existingPlugin] } },
+        {
+          experimentalCompilerOptions: {
+            type: 'swc',
+            logLevel: 'debug',
+            disableBuildChecks: true,
+            enableAutoJsxInjection: true,
+          },
+        }
+      );
+
+      expect(result.experimental!.swcPlugins).toEqual([
+        existingPlugin,
+        [
+          expect.stringContaining('gt_swc_plugin.wasm'),
+          {
+            logLevel: 'debug',
+            compileTimeHash: true,
+            disableBuildChecks: true,
+            enableAutoJsxInjection: true,
+            autoderiveJsx: false,
+            autoderiveStrings: false,
+          },
+        ],
+      ]);
+    });
+
+    it('keeps automatic JSX injection disabled when the SWC compiler is incompatible', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mockVersionInfo.swcPluginCompatible = false;
+
+      const result = withGTConfig(
+        {},
+        {
+          experimentalCompilerOptions: {
+            type: 'swc',
+            enableAutoJsxInjection: true,
+          },
+        }
+      );
+
+      expect(result.experimental!.swcPlugins).toEqual([]);
+      expect(parseConfigParams(result).experimentalCompilerOptions.type).toBe(
+        'none'
+      );
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Automatic JSX injection will be skipped')
+      );
+      warnSpy.mockRestore();
+    });
 
     it('uses a Turbopack-specific babel compiler warning', async () => {
       const withGTConfig = await getWithGTConfig();
@@ -1606,11 +1875,11 @@ describe('withGTConfig', () => {
       );
       expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining(
-          'Automatic JSX injection requires the GT webpack compiler'
+          'Automatic JSX injection requires an enabled GT compiler'
         )
       );
       expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('build with webpack')
+        expect.stringContaining("to 'babel' when building with webpack")
       );
       expect(warnSpy).not.toHaveBeenCalledWith(
         expect.stringContaining('compatible with turbopack or < react')
@@ -1675,6 +1944,49 @@ describe('withGTConfig', () => {
   // 14. Webpack function
   // ==============================
   describe('14. Webpack function', () => {
+    it.each([
+      { optionFlag: undefined, expected: true },
+      { optionFlag: false, expected: false },
+    ])(
+      'passes the resolved automatic JSX flag to the webpack compiler: option=$optionFlag → $expected',
+      async ({ optionFlag, expected }) => {
+        const compiler = require('@generaltranslation/compiler');
+        const compilerWebpackSpy = vi
+          .spyOn(compiler, 'webpack')
+          .mockReturnValue({});
+        const withGTConfig = await getWithGTConfig();
+        vi.mocked(fs.existsSync).mockImplementation(
+          (file) => file === './gt.config.json'
+        );
+        vi.mocked(fs.readFileSync).mockReturnValue(
+          JSON.stringify({
+            files: {
+              gt: { parsingFlags: { enableAutoJsxInjection: true } },
+            },
+          })
+        );
+
+        const result = withGTConfig(
+          {},
+          {
+            experimentalCompilerOptions: {
+              type: 'babel',
+              enableAutoJsxInjection: optionFlag,
+            },
+          }
+        );
+        runWebpack(result, makeWebpackConfig());
+
+        expect(compilerWebpackSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            enableAutoJsxInjection: expected,
+            autoJsxImportSource: 'gt-next',
+          })
+        );
+        compilerWebpackSpy.mockRestore();
+      }
+    );
+
     it('passes automatic JSX injection to the webpack compiler', async () => {
       const compiler = require('@generaltranslation/compiler');
       const compilerWebpackSpy = vi

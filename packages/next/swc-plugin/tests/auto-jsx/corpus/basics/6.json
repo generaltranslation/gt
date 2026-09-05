@@ -1,0 +1,14 @@
+{
+  "basics/branch": {
+    "input": "import { Branch } from \"gt-next\"; export const Page = () => <main><Branch branch={view} summary={<p>Summary {name}</p>} other={value} /></main>;\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { Branch } from \"gt-next\";\nexport const Page = () => <main><GtInternalTranslateJsx><Branch branch={view} summary={<p>{[\"Summary \", <GtInternalVar>{name}</GtInternalVar>]}</p>} other={<GtInternalVar>{value}</GtInternalVar>} /></GtInternalTranslateJsx></main>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport { Branch } from \"gt-next\";\nexport const Page = () => <main><GtInternalTranslateJsx><Branch branch={view} summary={<p>Summary {<GtInternalVar>{name}</GtInternalVar>}</p>} other={<GtInternalVar>{value}</GtInternalVar>} /></GtInternalTranslateJsx></main>;\n",
+    "cliDivergences": []
+  },
+  "basics/greeting": {
+    "input": "export const Page = () => <div>Hello {name}!</div>;\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <div><GtInternalTranslateJsx>{[\"Hello \", <GtInternalVar>{name}</GtInternalVar>, \"!\"]}</GtInternalTranslateJsx></div>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <div><GtInternalTranslateJsx>Hello {<GtInternalVar>{name}</GtInternalVar>}!</GtInternalTranslateJsx></div>;\n",
+    "cliDivergences": []
+  }
+}

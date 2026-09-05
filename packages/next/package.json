@@ -32,13 +32,14 @@
     "@generaltranslation/react-core": "workspace:*",
     "generaltranslation": "workspace:*",
     "gt-react": "workspace:*",
-    "gt-i18n": "workspace:*"
+    "gt-i18n": "workspace:*",
+    "json5": "^2.2.3"
   },
   "scripts": {
     "patch": "pnpm version patch",
     "emit-types": "sh ../../scripts/emit-types.sh",
     "transpile": "tsdown && pnpm run emit-types",
-    "build": "pnpm run build:swc-plugin && pnpm run transpile",
+    "build": "pnpm run transpile && pnpm run build:swc-plugin",
     "build:clean": "rm -rf ./swc-plugin/target && sh ../../scripts/clean.sh && pnpm run build",
     "build:release": "pnpm run build:clean",
     "build:swc-plugin": "cd swc-plugin && cargo build --release --target wasm32-wasip1 && cd .. && node scripts/copy-wasm.js",
@@ -53,7 +54,9 @@
     "test:watch": "vitest",
     "bench": "vitest bench --run --config vitest.config.bench.ts",
     "bench:unit:json": "vitest bench --run --config vitest.config.bench.ts --outputJson benchmarks/results/unit-latest.json",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:auto-jsx": "vitest run swc-plugin/tests/auto-jsx",
+    "examples:auto-jsx": "tsx swc-plugin/tests/auto-jsx/generate.ts"
   },
   "repository": {
     "type": "git",
@@ -66,13 +69,26 @@
   },
   "homepage": "https://generaltranslation.com/",
   "devDependencies": {
-    "@generaltranslation/compiler": "workspace:*",
+    "@babel/core": "catalog:",
+    "@babel/generator": "^7.29.8",
+    "@babel/parser": "^7.29.8",
+    "@babel/plugin-transform-react-jsx": "^7.29.7",
+    "@babel/plugin-transform-react-jsx-development": "^7.29.7",
+    "@babel/traverse": "^7.29.8",
+    "@babel/types": "^7.29.8",
     "@edge-runtime/vm": "^4.0.0",
+    "@generaltranslation/compiler": "workspace:*",
+    "@swc/core": "1.15.3",
+    "@types/babel__core": "^7.20.5",
+    "@types/babel__generator": "^7.27.0",
+    "@types/babel__traverse": "^7.28.0",
     "@types/node": "catalog:",
     "@types/react": ">=18.0.0 <20.0.0",
     "@types/react-dom": ">=18.0.0 <20.0.0",
     "next": "15.2.3",
+    "parse5": "7.3.0",
     "tsdown": "catalog:",
+    "tsx": "^4.23.12",
     "typescript": "catalog:"
   },
   "exports": {

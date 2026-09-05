@@ -40,7 +40,7 @@ export function validateCompiler(mergedConfig: BaseWithGTConfigProps) {
   }
   if (
     mergedConfig.experimentalCompilerOptions.enableAutoJsxInjection &&
-    mergedConfig.experimentalCompilerOptions.type !== 'babel'
+    mergedConfig.experimentalCompilerOptions.type === 'none'
   ) {
     console.warn(autoJsxInjectionCompilerWarning);
   }

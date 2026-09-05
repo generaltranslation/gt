@@ -1,0 +1,64 @@
+{
+  "adversarial/entity-copyright": {
+    "input": "\nexport const Page = () => (<p>&copy;{value}</p>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <p><GtInternalTranslateJsx>{[\"\\xA9\", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <p><GtInternalTranslateJsx>&copy;{<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></p>;\n",
+    "cliDivergences": []
+  },
+  "adversarial/entity-numeric-next-line": {
+    "input": "\nexport const Page = () => (<p>&#133;{value}</p>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <p><GtInternalTranslateJsx>{[\"\\x85\", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <p><GtInternalTranslateJsx>&#133;{<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></p>;\n",
+    "cliDivergences": []
+  },
+  "adversarial/for-destructured-binding-shadow": {
+    "input": "import { Var } from \"gt-next\";\nexport function Page() { const rows = []; for (const { renderer: Var } of components) { rows.push(<Var>Local row {value}<span>Nested {other}</span></Var>); } return <main><Var>{value}</Var>{rows}</main>; }\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { Var } from \"gt-next\";\nexport function Page() {\n  const rows = [];\n  for (const {\n    renderer: Var\n  } of components) {\n    rows.push(<Var><GtInternalTranslateJsx>{[\"Local row \", <GtInternalVar>{value}</GtInternalVar>, <span>{[\"Nested \", <GtInternalVar>{other}</GtInternalVar>]}</span>]}</GtInternalTranslateJsx></Var>);\n  }\n  return <main>{[<Var>{value}</Var>, rows]}</main>;\n}\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport { Var } from \"gt-next\";\nexport function Page() {\n  const rows = [];\n  for (const {\n    renderer: Var\n  } of components) {\n    rows.push(<Var>Local row {value}<span>Nested {other}</span></Var>);\n  }\n  return <main><Var>{value}</Var>{rows}</main>;\n}\n",
+    "cliDivergences": [
+      "import-shadowing"
+    ]
+  },
+  "adversarial/spread-object-child-function": {
+    "input": "\nexport const Page = () => (<Card {...{ children: () => <p>Callback {value}</p> }} />);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card>{() => <p><GtInternalTranslateJsx>{[\"Callback \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></p>}</Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <Card {...{\n  children: () => <p><GtInternalTranslateJsx>Callback {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></p>\n}} />;\n",
+    "cliDivergences": []
+  },
+  "adversarial/spread-object-children-and-outer-children": {
+    "input": "\nexport const Page = () => (<Card {...{ children: <p>First {first()}</p> }} children={<p>Second {second()}</p>}>Third {third()}</Card>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card children={<p><GtInternalTranslateJsx>{[\"First \", <GtInternalVar>{first()}</GtInternalVar>]}</GtInternalTranslateJsx></p>} children={<p><GtInternalTranslateJsx>{[\"Second \", <GtInternalVar>{second()}</GtInternalVar>]}</GtInternalTranslateJsx></p>}>{[\"Third \", third()]}</Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <Card {...{\n  children: <p><GtInternalTranslateJsx>First {<GtInternalVar>{first()}</GtInternalVar>}</GtInternalTranslateJsx></p>\n}} children={<p><GtInternalTranslateJsx>Second {<GtInternalVar>{second()}</GtInternalVar>}</GtInternalTranslateJsx></p>}><GtInternalTranslateJsx>Third {<GtInternalVar>{third()}</GtInternalVar>}</GtInternalTranslateJsx></Card>;\n",
+    "cliDivergences": [
+      "children-attribute"
+    ]
+  },
+  "adversarial/spread-object-key-before-spread": {
+    "input": "\nexport const Page = () => (<Card {...{ key: recordKey(), children: <p>Object {value}</p> }} {...loadProps()}>Markup {other}</Card>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card {...{\n  key: recordKey()\n}} children={<p><GtInternalTranslateJsx>{[\"Object \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></p>} {...loadProps()}>{[\"Markup \", other]}</Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <Card {...{\n  key: recordKey(),\n  children: <p><GtInternalTranslateJsx>Object {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></p>\n}} {...loadProps()}><GtInternalTranslateJsx>Markup {<GtInternalVar>{other}</GtInternalVar>}</GtInternalTranslateJsx></Card>;\n",
+    "cliDivergences": [
+      "children-attribute"
+    ]
+  },
+  "adversarial/spread-object-opaque-string-keys": {
+    "input": "import { Branch } from \"gt-next\";\nexport const Page = () => (<Branch {...{ \"branch\": mode, \"a\": <b>Alpha {value}</b>, \"data-value\": other, \"children\": fallback }} />);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { Branch } from \"gt-next\";\nexport const Page = () => <GtInternalTranslateJsx><Branch {...{\n    \"branch\": mode\n  }} {...{\n    \"a\": <b>{[\"Alpha \", <GtInternalVar>{value}</GtInternalVar>]}</b>\n  }} {...{\n    \"data-value\": other\n  }} {...{\n    \"children\": <GtInternalVar>{fallback}</GtInternalVar>\n  }} /></GtInternalTranslateJsx>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport { Branch } from \"gt-next\";\nexport const Page = () => <GtInternalTranslateJsx><Branch {...{\n    \"branch\": mode,\n    \"a\": <b>Alpha {value}</b>,\n    \"data-value\": other,\n    \"children\": fallback\n  }} /></GtInternalTranslateJsx>;\n",
+    "cliDivergences": [
+      "opaque-prop-descendants"
+    ]
+  },
+  "adversarial/unicode-form-feed-text": {
+    "input": "\nexport const Page = () => (<p>\f{value}</p>);\n",
+    "output": "export const Page = () => <p>{[\"\\f\", value]}</p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <p>\f{value}</p>;\n",
+    "cliDivergences": []
+  },
+  "adversarial/unicode-paragraph-separator-attribute": {
+    "input": "\nexport const Page = () => (<Card children=\" \" footer={<span>Footer {value}</span>} />);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card children={\"\\u2029\"} footer={<span><GtInternalTranslateJsx>{[\"Footer \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></span>} />;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <Card children=\" \" footer={<span><GtInternalTranslateJsx>Footer {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></span>} />;\n",
+    "cliDivergences": []
+  }
+}

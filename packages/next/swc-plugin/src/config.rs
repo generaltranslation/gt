@@ -1,3 +1,4 @@
+use crate::auto_jsx::JsxRuntime;
 use crate::logging::LogLevel;
 use serde::Deserialize;
 
@@ -39,6 +40,20 @@ pub struct PluginConfig {
   pub log_level: LogLevel,
   #[serde(default)]
   pub compile_time_hash: bool,
+  /// Insert automatic JSX translation components before hash collection.
+  #[serde(default)]
+  pub enable_auto_jsx_injection: bool,
+  /// Internal host context; per-file JSX pragmas take precedence.
+  #[serde(default)]
+  pub jsx_import_source: Option<String>,
+  #[serde(default)]
+  pub jsx_runtime: Option<JsxRuntime>,
+  /// The owned loader supplies per-graph JSX context in a trailing statement.
+  #[serde(default)]
+  pub jsx_import_source_from_loader: bool,
+  /// Preformatted by the Next.js configuration adapter's diagnostic helper.
+  #[serde(default)]
+  pub missing_jsx_runtime_context_diagnostic: Option<String>,
   #[serde(default)]
   pub filename: Option<String>,
   #[serde(default)]
@@ -54,6 +69,11 @@ impl Default for PluginConfig {
     Self {
       log_level: LogLevel::Warn,
       compile_time_hash: false,
+      enable_auto_jsx_injection: false,
+      jsx_import_source: None,
+      jsx_runtime: None,
+      jsx_import_source_from_loader: false,
+      missing_jsx_runtime_context_diagnostic: None,
       filename: None,
       disable_build_checks: false,
       autoderive_jsx: false,
