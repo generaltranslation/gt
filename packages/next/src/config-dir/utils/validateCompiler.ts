@@ -34,13 +34,16 @@ export function validateCompiler(mergedConfig: BaseWithGTConfigProps) {
     }
   }
   // Backwards compatibility, remove this condition in the future
-  if (mergedConfig.experimentalCompilerOptions.compileTimeHash === false) {
+  if (
+    mergedConfig.experimentalCompilerOptions.compileTimeHash === false &&
+    mergedConfig.experimentalCompilerOptions.enableAutoJsxInjection !== true
+  ) {
     console.warn(disablingCompileTimeHashWarning);
     mergedConfig.experimentalCompilerOptions.type = 'none';
   }
   if (
-    mergedConfig.experimentalCompilerOptions.enableAutoJsxInjection &&
-    mergedConfig.experimentalCompilerOptions.type !== 'babel'
+    mergedConfig.experimentalCompilerOptions.enableAutoJsxInjection === true &&
+    mergedConfig.experimentalCompilerOptions.type === 'none'
   ) {
     console.warn(autoJsxInjectionCompilerWarning);
   }

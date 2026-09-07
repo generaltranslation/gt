@@ -1,0 +1,37 @@
+{
+  "adversarial/comment-between-text-and-expression": {
+    "input": "\nexport const Page = () => (<p>Before{/* keep boundary */}{value}{/* keep boundary */}after</p>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { jsxs as _jsxs } from \"react/jsx-runtime\";\nexport const Page = () => <p>{_jsxs(GtInternalTranslateJsx, {\n    children: [\"Before\", <GtInternalVar>{value}</GtInternalVar>, \"after\"]\n  })}</p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <p><GtInternalTranslateJsx>Before{}{<GtInternalVar>{value}</GtInternalVar>}{}after</GtInternalTranslateJsx></p>;\n"
+  },
+  "adversarial/duplicate-children-with-spread": {
+    "input": "\nexport const Page = () => (<Card children={first()} {...loadProps()} children={<p>Last {last()}</p>} />);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { jsxs as _jsxs, jsx as _jsx } from \"react/jsx-runtime\";\nexport const Page = () => _jsx(Card, {\n  children: first(),\n  ...loadProps(),\n  children: <p>{_jsxs(GtInternalTranslateJsx, {\n      children: [\"Last \", <GtInternalVar>{last()}</GtInternalVar>]\n    })}</p>\n});\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <Card children={first()} {...loadProps()} children={<p><GtInternalTranslateJsx>Last {<GtInternalVar>{last()}</GtInternalVar>}</GtInternalTranslateJsx></p>} />;\n"
+  },
+  "adversarial/entity-ensp": {
+    "input": "\nexport const Page = () => (<p>&ensp;{value}</p>);\n",
+    "output": "import { jsxs as _jsxs } from \"react/jsx-runtime\";\nexport const Page = () => _jsxs(\"p\", {\n  children: [\"\\u2002\", value]\n});\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <p>&ensp;{value}</p>;\n"
+  },
+  "adversarial/entity-math": {
+    "input": "\nexport const Page = () => (<p>&sum;&ne;&infin;{value}</p>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { jsxs as _jsxs } from \"react/jsx-runtime\";\nexport const Page = () => <p>{_jsxs(GtInternalTranslateJsx, {\n    children: [\"\\u2211\\u2260\\u221E\", <GtInternalVar>{value}</GtInternalVar>]\n  })}</p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <p><GtInternalTranslateJsx>&sum;&ne;&infin;{<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></p>;\n"
+  },
+  "adversarial/hyphenated-intrinsic-component-spelling": {
+    "input": "import { T as gt_t, Var as gt_var } from \"gt-next\";\nexport const Page = () => (<gt-t>Hello {value}<gt-var>{show && <span>Nested {other}</span>}</gt-var></gt-t>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { jsxs as _jsxs } from \"react/jsx-runtime\";\nexport const Page = () => <gt-t>{_jsxs(GtInternalTranslateJsx, {\n    children: [\"Hello \", <GtInternalVar>{value}</GtInternalVar>, <gt-var><GtInternalVar>{show && <span>{_jsxs(GtInternalTranslateJsx, {\n            children: [\"Nested \", <GtInternalVar>{other}</GtInternalVar>]\n          })}</span>}</GtInternalVar></gt-var>]\n  })}</gt-t>;\n",
+    "cliOutput": "import { T as gt_t, Var as gt_var } from \"gt-next\";\nimport { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <gt-t><GtInternalTranslateJsx>Hello {<GtInternalVar>{value}</GtInternalVar>}<gt-var>{<GtInternalVar>{show && <span><GtInternalTranslateJsx>Nested {<GtInternalVar>{other}</GtInternalVar>}</GtInternalTranslateJsx></span>}</GtInternalVar>}</gt-var></GtInternalTranslateJsx></gt-t>;\n"
+  },
+  "adversarial/key-before-spread-call-order": {
+    "input": "\nexport const Page = () => (<Card key={recordKey()} {...loadProps()} title={<h2>Heading {value}</h2>}>Body {value}</Card>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { jsx as _jsx } from \"react/jsx-runtime\";\nimport { jsxs as _jsxs } from \"react/jsx-runtime\";\nexport const Page = () => _jsx(Card, {\n  ...loadProps(),\n  title: <h2>{_jsxs(GtInternalTranslateJsx, {\n      children: [\"Heading \", <GtInternalVar>{value}</GtInternalVar>]\n    })}</h2>,\n  children: _jsxs(GtInternalTranslateJsx, {\n    children: [\"Body \", <GtInternalVar>{value}</GtInternalVar>]\n  })\n}, recordKey());\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <Card key={recordKey()} {...loadProps()} title={<h2><GtInternalTranslateJsx>Heading {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></h2>}><GtInternalTranslateJsx>Body {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></Card>;\n"
+  },
+  "adversarial/spread-object-manual-var-boundary": {
+    "input": "import { Var } from \"gt-next\";\nexport const Page = () => (<Var {...{ children: <Card title={<b>Opaque heading {value}</b>}>Opaque body {other}</Card> }} />);\n",
+    "output": "import { Var } from \"gt-next\";\nimport { jsxs as _jsxs } from \"react/jsx-runtime\";\nexport const Page = () => <Var>{_jsxs(Card, {\n    title: _jsxs(\"b\", {\n      children: [\"Opaque heading \", value]\n    }),\n    children: [\"Opaque body \", other]\n  })}</Var>;\n",
+    "cliOutput": "import { Var } from \"gt-next\";\nimport { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <Var {...{\n  children: <Card title={<b>Opaque heading {value}</b>}>Opaque body {other}</Card>\n}} />;\n"
+  }
+}

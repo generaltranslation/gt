@@ -1,0 +1,32 @@
+{
+  "adversarial/comment-only": {
+    "input": "\nexport const Page = () => (<main>{/* one */}{/* two */}</main>);\n",
+    "output": "export const Page = () => <main />;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <main>{}{}</main>;\n"
+  },
+  "adversarial/entity-registered": {
+    "input": "\nexport const Page = () => (<p>&reg;{value}</p>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { jsxs as _jsxs } from \"react/jsx-runtime\";\nexport const Page = () => <p>{_jsxs(GtInternalTranslateJsx, {\n    children: [\"\\xAE\", <GtInternalVar>{value}</GtInternalVar>]\n  })}</p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <p><GtInternalTranslateJsx>&reg;{<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></p>;\n"
+  },
+  "adversarial/existing-variable-alias-with-new-translation": {
+    "input": "import { GtInternalVar as AutoVar } from \"gt-next\";\nexport const Page = () => (<p>New {value}<AutoVar>{other}</AutoVar></p>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { GtInternalVar as AutoVar } from \"gt-next\";\nimport { jsxs as _jsxs } from \"react/jsx-runtime\";\nexport const Page = () => <p>{_jsxs(GtInternalTranslateJsx, {\n    children: [\"New \", <GtInternalVar>{value}</GtInternalVar>, <AutoVar>{other}</AutoVar>]\n  })}</p>;\n",
+    "cliOutput": "import { GtInternalVar as AutoVar } from \"gt-next\";\nimport { GtInternalTranslateJsx } from \"gt-react\";\nexport const Page = () => <p><GtInternalTranslateJsx>New {<AutoVar>{value}</AutoVar>}<AutoVar>{other}</AutoVar></GtInternalTranslateJsx></p>;\n"
+  },
+  "adversarial/for-of-binding-shadow": {
+    "input": "import { T } from \"gt-next\";\nexport function Page() { const rows = []; for (const T of components) { rows.push(<T>Local row {value}</T>); } return <main><T>Imported footer {value}</T>{rows}</main>; }\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { T } from \"gt-next\";\nimport { jsxs as _jsxs } from \"react/jsx-runtime\";\nexport function Page() {\n  const rows = [];\n  for (const T of components) {\n    rows.push(<T>{_jsxs(GtInternalTranslateJsx, {\n        children: [\"Local row \", <GtInternalVar>{value}</GtInternalVar>]\n      })}</T>);\n  }\n  return _jsxs(\"main\", {\n    children: [_jsxs(T, {\n      children: [\"Imported footer \", value]\n    }), rows]\n  });\n}\n",
+    "cliOutput": "import { T } from \"gt-next\";\nimport { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport function Page() {\n  const rows = [];\n  for (const T of components) {\n    rows.push(<T><GtInternalTranslateJsx>Local row {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></T>);\n  }\n  return <main><T>Imported footer {value}</T>{rows}</main>;\n}\n"
+  },
+  "adversarial/parameter-default-import-reference": {
+    "input": "import { T } from \"gt-next\";\nexport function Page(T = <T>Initializer {value}</T>) { return <main><T>Parameter {value}</T></main>; }\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { jsxs as _jsxs } from \"react/jsx-runtime\";\nexport function Page(T = <T>{_jsxs(GtInternalTranslateJsx, {\n    children: [\"Initializer \", <GtInternalVar>{value}</GtInternalVar>]\n  })}</T>) {\n  return <main><T>{_jsxs(GtInternalTranslateJsx, {\n        children: [\"Parameter \", <GtInternalVar>{value}</GtInternalVar>]\n      })}</T></main>;\n}\n",
+    "cliOutput": "import { T } from \"gt-next\";\nimport { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport function Page(T = <T><GtInternalTranslateJsx>Initializer {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></T>) {\n  return <main><T><GtInternalTranslateJsx>Parameter {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></T></main>;\n}\n"
+  },
+  "adversarial/shorthand-children-with-nested-markup": {
+    "input": "\nexport const Page = () => (<Card children><p>Nested markup {value}</p></Card>);\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { jsxs as _jsxs } from \"react/jsx-runtime\";\nexport const Page = () => <Card children={true}><p>{_jsxs(GtInternalTranslateJsx, {\n      children: [\"Nested markup \", <GtInternalVar>{value}</GtInternalVar>]\n    })}</p></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <Card children><p><GtInternalTranslateJsx>Nested markup {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></p></Card>;\n"
+  }
+}

@@ -21,7 +21,8 @@
     "coverage/",
     "**/*.d.ts",
     "**/rollup.config.*",
-    "tests/seeds/**/*"
+    "tests/seeds/**/*",
+    "packages/next/swc-plugin/tests/auto-jsx/fixtures/**"
   ],
   "rules": {
     "no-console": [

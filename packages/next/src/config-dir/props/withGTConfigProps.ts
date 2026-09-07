@@ -29,7 +29,8 @@ export type CompilerOptions = {
    */
   disableBuildChecks?: boolean;
   /**
-   * Whether to automatically wrap translatable JSX.
+   * Whether to automatically wrap translatable JSX with the Babel or SWC plugin.
+   * Overrides files.gt.parsingFlags.enableAutoJsxInjection in gt.config.json.
    * @default false
    */
   enableAutoJsxInjection?: boolean;

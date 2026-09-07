@@ -1,0 +1,17 @@
+{
+  "styles/intrinsic-dynamic-only-segment": {
+    "input": "\nexport function Page({ count, shown, label }: { count: number; shown: boolean; label: string }) {\n  return <main>Before<style jsx id=\"fixture-css\">{`main { color: red; padding-left: ${count}px; }`}</style>{label}</main>;\n}\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { jsxs as _jsxs } from \"react/jsx-runtime\";\nexport function Page({\n  count,\n  shown,\n  label\n}) {\n  return _jsxs(\"main\", {\n    children: [<GtInternalTranslateJsx>{\"Before\"}</GtInternalTranslateJsx>, <style jsx={true} id={\"fixture-css\"}>{`main { color: red; padding-left: ${count}px; }`}</style>, label]\n  });\n}\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport function Page({\n  count,\n  shown,\n  label\n}: {\n  count: number;\n  shown: boolean;\n  label: string;\n}) {\n  return <main><GtInternalTranslateJsx>Before</GtInternalTranslateJsx><style jsx id=\"fixture-css\">{`main { color: red; padding-left: ${count}px; }`}</style>{label}</main>;\n}\n"
+  },
+  "styles/namespace-conditional-boundary": {
+    "input": "import * as styles from 'styled-jsx/style';\nexport function Page({ count, shown, label }: { count: number; shown: boolean; label: string }) {\n  return <main>Before{shown ? <styles.default jsx id=\"fixture-css\">{`main { color: red; padding-left: ${count}px; }`}</styles.default> : null}After {label}</main>;\n}\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport * as styles from 'styled-jsx/style';\nimport { jsxs as _jsxs } from \"react/jsx-runtime\";\nexport function Page({\n  count,\n  shown,\n  label\n}) {\n  return _jsxs(\"main\", {\n    children: [<GtInternalTranslateJsx>{\"Before\"}</GtInternalTranslateJsx>, shown ? <styles.default jsx={true} id={\"fixture-css\"}>{`main { color: red; padding-left: ${count}px; }`}</styles.default> : null, _jsxs(GtInternalTranslateJsx, {\n      children: [\"After \", <GtInternalVar>{label}</GtInternalVar>]\n    })]\n  });\n}\n",
+    "cliOutput": "import * as styles from 'styled-jsx/style';\nimport { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport function Page({\n  count,\n  shown,\n  label\n}: {\n  count: number;\n  shown: boolean;\n  label: string;\n}) {\n  return <main><GtInternalTranslateJsx>Before</GtInternalTranslateJsx>{shown ? <styles.default jsx id=\"fixture-css\">{`main { color: red; padding-left: ${count}px; }`}</styles.default> : null}<GtInternalTranslateJsx>After {<GtInternalVar>{label}</GtInternalVar>}</GtInternalTranslateJsx></main>;\n}\n"
+  },
+  "styles/unrelated-style-component": {
+    "input": "import Style from './user-style';\nexport function Page({ label }) { return <Style>Ordinary component {label}</Style>; }\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport Style from './user-style';\nimport { jsxs as _jsxs } from \"react/jsx-runtime\";\nexport function Page({\n  label\n}) {\n  return <Style>{_jsxs(GtInternalTranslateJsx, {\n      children: [\"Ordinary component \", <GtInternalVar>{label}</GtInternalVar>]\n    })}</Style>;\n}\n",
+    "cliOutput": "import Style from './user-style';\nimport { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport function Page({\n  label\n}) {\n  return <Style><GtInternalTranslateJsx>Ordinary component {<GtInternalVar>{label}</GtInternalVar>}</GtInternalTranslateJsx></Style>;\n}\n"
+  }
+}

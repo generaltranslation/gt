@@ -1,0 +1,12 @@
+{
+  "protected-content/title-dynamic-only-segment": {
+    "input": "export function Page({ count, shown, label }) {\n        return <main>Before<title id=\"fixture-payload\">Original text payload</title>{label}</main>;\n      }\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { jsxs as _jsxs } from \"react/jsx-runtime\";\nexport function Page({\n  count,\n  shown,\n  label\n}) {\n  return _jsxs(\"main\", {\n    children: [<GtInternalTranslateJsx>{\"Before\"}</GtInternalTranslateJsx>, <title id={\"fixture-payload\"}>{\"Original text payload\"}</title>, label]\n  });\n}\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport function Page({\n  count,\n  shown,\n  label\n}) {\n  return <main><GtInternalTranslateJsx>Before</GtInternalTranslateJsx><title id=\"fixture-payload\">Original text payload</title>{label}</main>;\n}\n"
+  },
+  "protected-content/title-nested-region": {
+    "input": "export function Page({ count, shown, label }) {\n        return <main>Intro<section>Inside <title id=\"fixture-payload\">Original text payload</title>Tail {count}</section>Outro {label}</main>;\n      }\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { jsxs as _jsxs } from \"react/jsx-runtime\";\nexport function Page({\n  count,\n  shown,\n  label\n}) {\n  return _jsxs(\"main\", {\n    children: [<GtInternalTranslateJsx>{\"Intro\"}</GtInternalTranslateJsx>, _jsxs(\"section\", {\n      children: [<GtInternalTranslateJsx>{\"Inside \"}</GtInternalTranslateJsx>, <title id={\"fixture-payload\"}>{\"Original text payload\"}</title>, _jsxs(GtInternalTranslateJsx, {\n        children: [\"Tail \", <GtInternalVar>{count}</GtInternalVar>]\n      })]\n    }), _jsxs(GtInternalTranslateJsx, {\n      children: [\"Outro \", <GtInternalVar>{label}</GtInternalVar>]\n    })]\n  });\n}\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport function Page({\n  count,\n  shown,\n  label\n}) {\n  return <main><GtInternalTranslateJsx>Intro</GtInternalTranslateJsx><section><GtInternalTranslateJsx>Inside </GtInternalTranslateJsx><title id=\"fixture-payload\">Original text payload</title><GtInternalTranslateJsx>Tail {<GtInternalVar>{count}</GtInternalVar>}</GtInternalTranslateJsx></section><GtInternalTranslateJsx>Outro {<GtInternalVar>{label}</GtInternalVar>}</GtInternalTranslateJsx></main>;\n}\n"
+  }
+}

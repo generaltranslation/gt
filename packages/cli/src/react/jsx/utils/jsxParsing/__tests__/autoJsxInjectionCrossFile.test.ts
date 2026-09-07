@@ -53,6 +53,8 @@ describe('auto JSX injection — cross-file and CLI-specific', () => {
     warnings = new Set();
     parsingOptions = { conditionNames: ['import', 'require'] };
     vi.clearAllMocks();
+    // These virtual source fixtures have no project-level JSX configuration.
+    mockFs.readdirSync.mockReturnValue([]);
   });
 
   afterEach(() => {

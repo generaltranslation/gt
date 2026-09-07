@@ -10,6 +10,7 @@ import { ScopeTracker } from '../ScopeTracker';
 import { Logger } from '../Logger';
 import { ErrorTracker } from '../ErrorTracker';
 import { GT_OTHER_FUNCTIONS } from '../../utils/constants/gt/constants';
+import { isAutoJsxRuntimeResource } from '../../processing/jsx-insertion/runtimePackageScope';
 
 const DEFAULT_SETTINGS: PluginSettings = {
   logLevel: 'warn',
@@ -76,6 +77,14 @@ export function initializeState(
     ...restOptions,
     filename,
   };
+  if (
+    settings.enableAutoJsxInjection &&
+    isAutoJsxRuntimeResource(
+      filename,
+      settings.autoJsxRuntimePackageRoots ?? []
+    )
+  )
+    settings.enableAutoJsxInjection = false;
 
   return {
     settings,

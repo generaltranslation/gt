@@ -253,6 +253,7 @@ function handleReactInvocation(
     requiresReview,
     hasDeriveContext,
     hasDeriveChildren,
+    hasRuntimeChildren,
   } = validateTranslationComponentArgs(callExprPath, canonicalName, state);
 
   if (errors.length > 0) {
@@ -264,7 +265,7 @@ function handleReactInvocation(
   // <Derive> element — one hash per resolved variant, so the runtime computes
   // it; the CLI handles variant resolution)
   const hash =
-    hasDeriveContext || hasDeriveChildren
+    hasDeriveContext || hasDeriveChildren || hasRuntimeChildren
       ? ''
       : _hash ||
         hashSource({

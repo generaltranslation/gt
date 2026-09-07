@@ -7,7 +7,10 @@ import {
 
 const neverBundle = [
   /^server-only$/,
+  // These specifiers are framework aliases or guarded runtime lookups. Resolving
+  // them against an existing dist would eagerly import their placeholder errors.
   /^gt-next\/internal\/_get(Locale|Region)$/,
+  /^gt-next\/internal\/_(dictionary|load-dictionary|load-translations)$/,
 ];
 
 export default defineConfig([
