@@ -25,7 +25,8 @@ export type FileFormat =
   | 'SVG'
   | 'DOT_STRINGS'
   | 'DOT_STRINGSDICT'
-  | 'ANDROID_STRINGS';
+  | 'ANDROID_STRINGS'
+  | 'XCSTRINGS';
 
 export type ModelProvider = 'ANTHROPIC' | 'OPENAI' | 'XAI' | 'GOOGLE';
 
@@ -214,7 +215,8 @@ export type UploadSourceFilesData = {
           | 'SVG'
           | 'DOT_STRINGS'
           | 'DOT_STRINGSDICT'
-          | 'ANDROID_STRINGS';
+          | 'ANDROID_STRINGS'
+          | 'XCSTRINGS';
         dataFormat?: string;
         locale: string;
         fileId?: string;
@@ -331,7 +333,8 @@ export type UploadTranslationsData = {
           | 'SVG'
           | 'DOT_STRINGS'
           | 'DOT_STRINGSDICT'
-          | 'ANDROID_STRINGS';
+          | 'ANDROID_STRINGS'
+          | 'XCSTRINGS';
         dataFormat?: string;
         locale: string;
         fileId?: string;
@@ -363,7 +366,8 @@ export type UploadTranslationsData = {
           | 'SVG'
           | 'DOT_STRINGS'
           | 'DOT_STRINGSDICT'
-          | 'ANDROID_STRINGS';
+          | 'ANDROID_STRINGS'
+          | 'XCSTRINGS';
         dataFormat?: string;
         locale: string;
         transformFormat?:
@@ -383,7 +387,8 @@ export type UploadTranslationsData = {
           | 'SVG'
           | 'DOT_STRINGS'
           | 'DOT_STRINGSDICT'
-          | 'ANDROID_STRINGS';
+          | 'ANDROID_STRINGS'
+          | 'XCSTRINGS';
       }>;
     }>;
     sourceLocale?: string;
@@ -858,7 +863,8 @@ export type EnqueueFileTranslationsData = {
         | 'SVG'
         | 'DOT_STRINGS'
         | 'DOT_STRINGSDICT'
-        | 'ANDROID_STRINGS';
+        | 'ANDROID_STRINGS'
+        | 'XCSTRINGS';
     }>;
     targetLocales?: Array<string>;
     sourceLocale?: string;

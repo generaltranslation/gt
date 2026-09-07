@@ -13,6 +13,7 @@ export const SUPPORTED_FILE_EXTENSIONS = [
   'dotStrings',
   'dotStringsdict',
   'androidStrings',
+  'xcstrings',
 ] as const;
 
 export const FILE_EXT_TO_EXT_LABEL = {
@@ -30,4 +31,5 @@ export const FILE_EXT_TO_EXT_LABEL = {
   dotStrings: '.strings',
   dotStringsdict: '.stringsdict',
   androidStrings: 'Android strings.xml',
+  xcstrings: '.xcstrings',
 };
