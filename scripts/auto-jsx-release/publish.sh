@@ -43,7 +43,47 @@ for index in "${!directories[@]}"; do
   publish_needed=false
   if metadata=$(npm view "$name@$version" dist --json --prefer-online --registry=https://registry.npmjs.org); then
     # An immutable version may already exist after a partially completed run.
-    test "$(jq -r '.integrity' <<< "$metadata")" = "$integrity"
+    if [ "$(jq -r '.integrity' <<< "$metadata")" != "$integrity" ]; then
+      existing="$artifacts/registry-$directory"
+      mkdir "$existing"
+      npm pack "$name@$version" --ignore-scripts --json --prefer-online --registry=https://registry.npmjs.org --pack-destination "$existing" > "$existing/pack.json"
+      published_tarball="$existing/$(jq -r '.[0].filename' "$existing/pack.json")"
+      integrity="$(jq -r '.integrity' <<< "$metadata")"
+      test "sha512-$(openssl dgst -sha512 -binary "$published_tarball" | openssl base64 -A)" = "$integrity"
+      # Compare parsed manifests, sorting dependency keys and preserving exports
+      # order. Require identical archive entries, modes and all other file bytes.
+      python3 -I - "$tarball" "$published_tarball" <<'PY'
+import json, sys, tarfile
+
+def unique_object(pairs):
+    result = {}
+    for key, value in pairs:
+        assert key not in result
+        result[key] = value
+    return result
+
+def contents(filename):
+    result = {}
+    with tarfile.open(filename) as archive:
+        for member in archive.getmembers():
+            assert member.name not in result
+            if member.isdir():
+                result[member.name] = (member.type, member.mode, b'')
+                continue
+            assert member.isfile()
+            value = archive.extractfile(member).read()
+            if member.name == 'package/package.json':
+                manifest = json.loads(value, object_pairs_hook=unique_object)
+                for field in ('dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies'):
+                    if field in manifest:
+                        manifest[field] = dict(sorted(manifest[field].items()))
+                value = json.dumps(manifest, ensure_ascii=True)
+            result[member.name] = (member.type, member.mode, value)
+    return result
+
+assert contents(sys.argv[1]) == contents(sys.argv[2])
+PY
+    fi
   else
     test "$(jq -r '.error.code' <<< "$metadata")" = E404
     publish_needed=true
