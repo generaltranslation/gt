@@ -104,6 +104,11 @@ tests reject any disabled-path JSX configuration reads and prove that its new
 parser dependency is not loaded. Omitted flags retain the existing serialized
 compiler options; explicit false still overrides a configured true value.
 
+Compiler construction and resource selection leave legacy option getters
+untouched until the file transform, preserving their existing evaluation time.
+Per-file runtime exclusions also retain manual transformations and diagnostics
+for resources selected by a loader.
+
 The CLI's `autoJsxDisabled.test.ts` compares 137 source-hash-pinned inputs with
 expectations generated from pre-feature commit
 `36d34236db34458b6301e06be1eed62f3e3e608b`. Both disabled states retain exact

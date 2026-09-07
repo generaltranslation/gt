@@ -15,4 +15,4 @@ Keep automatically wrapped dynamic arrays available for runtime hashing under de
 
 Respect verified GT runtime package boundaries supplied by framework integrations during automatic insertion, while keeping other compiler transformations enabled.
 
-Preserve the compiler's existing raw-loader transformations and parse diagnostics when automatic insertion is disabled. Keep CLI parsing options intact in this mode, and preserve lazy or inherited package-resolution settings in both modes.
+Preserve the compiler's existing raw-loader transformations and parse diagnostics when automatic insertion is disabled, including files in excluded runtime packages. Keep legacy compiler settings lazy until each file is transformed. Keep CLI parsing options intact when insertion is disabled, and preserve lazy or inherited package-resolution settings in both modes.

@@ -216,26 +216,41 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       ? new Map<string, unknown>()
       : undefined;
 
-    const autoJsxEnabled = Boolean(
-      initializeState(resolvedOptions, '').settings.enableAutoJsxInjection
-    );
+    // Select additional resources lazily without initializing per-file options. Match
+    // initializeState's spread precedence: an own undefined/null also overrides
+    // the gt.config flag, while an absent option falls back to that flag.
+    const autoJsxEnabled = () =>
+      Boolean(
+        Object.prototype.hasOwnProperty.call(
+          resolvedOptions,
+          'enableAutoJsxInjection'
+        )
+          ? resolvedOptions.enableAutoJsxInjection
+          : resolvedOptions.gtConfig?.files?.gt?.parsingFlags
+              ?.enableAutoJsxInjection
+      );
 
     return {
       name: '@generaltranslation/GT_PLUGIN',
       transformInclude(id: string) {
         // Additional resources are considered only for post-loader automatic
         // JSX insertion; their actual generated code is checked in transform.
-        return isScriptResource(id) || autoJsxEnabled;
+        if (typeof id !== 'string' && autoJsxEnabled()) return true;
+        return isScriptResource(id) || autoJsxEnabled();
       },
       transform(code: string, id: string) {
-        // Broad auto-insertion resource selection can include virtual loaders
-        // with no source. Preserve the existing transform contract when off.
-        if (autoJsxEnabled && typeof code !== 'string') return null;
         // Initialize processing state
         const state = initializeState(resolvedOptions, id);
         if (debugManifest) state.debugManifest = debugManifest;
+        // Broad auto-insertion selection can include sourceless virtual loaders.
+        // Per-file runtime exclusions must retain all existing transform behavior.
+        if (state.settings.enableAutoJsxInjection && typeof code !== 'string')
+          return null;
         try {
-          if (autoJsxEnabled && !isScriptResource(id))
+          if (
+            state.settings.enableAutoJsxInjection &&
+            (typeof id !== 'string' || !isScriptResource(id))
+          )
             return insertPostLoaderJsx(code, state);
 
           // Skip transformation if not needed

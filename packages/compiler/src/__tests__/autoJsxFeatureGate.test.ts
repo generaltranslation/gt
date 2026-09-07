@@ -25,6 +25,25 @@ const disabledOptions: { name: string; options: GTUnpluginOptions }[] = [
       },
     },
   },
+  {
+    name: 'own undefined overriding gt.config',
+    options: {
+      enableAutoJsxInjection: undefined,
+      gtConfig: {
+        files: { gt: { parsingFlags: { enableAutoJsxInjection: true } } },
+      },
+    },
+  },
+  {
+    name: 'own null overriding gt.config',
+    options: {
+      // JavaScript consumers can explicitly override the configuration with null.
+      enableAutoJsxInjection: null as unknown as boolean,
+      gtConfig: {
+        files: { gt: { parsingFlags: { enableAutoJsxInjection: true } } },
+      },
+    },
+  },
 ];
 
 const context = {
@@ -40,17 +59,18 @@ const context = {
   },
 } as UnpluginBuildContext & UnpluginContext;
 
-async function transform(
-  driver: Driver,
+function createPlugin(driver: Driver, options: GTUnpluginOptions) {
+  const resolved = { gtConfig: {}, logLevel: 'silent' as const, ...options };
+  return driver === 'raw'
+    ? gtUnplugin.raw(resolved, { framework: 'webpack' })
+    : gtUnplugin[driver](resolved);
+}
+
+async function transformPlugin(
+  plugin: ReturnType<typeof createPlugin>,
   input: string,
-  options: GTUnpluginOptions,
   filename = '/workspace/src/Page.tsx'
 ) {
-  const resolved = { gtConfig: {}, logLevel: 'silent' as const, ...options };
-  const plugin =
-    driver === 'raw'
-      ? gtUnplugin.raw(resolved, { framework: 'webpack' })
-      : gtUnplugin[driver](resolved);
   const hook =
     typeof plugin.transform === 'function'
       ? plugin.transform
@@ -58,6 +78,15 @@ async function transform(
   if (!hook) throw new Error('Missing public compiler transform');
   const result = await hook.call(context, input, filename);
   return typeof result === 'string' ? result : (result?.code ?? null);
+}
+
+async function transform(
+  driver: Driver,
+  input: string,
+  options: GTUnpluginOptions,
+  filename = '/workspace/src/Page.tsx'
+) {
+  return transformPlugin(createPlugin(driver, options), input, filename);
 }
 
 const manual = `import {jsx} from 'react/jsx-runtime'; import {T} from 'gt-react';
@@ -73,6 +102,65 @@ describe.each(disabledOptions)('automatic JSX flag $name', ({ options }) => {
   describe.each<Driver>(['raw', 'vite', 'rollup'])(
     '%s integration',
     (driver) => {
+      it('retains literal script suffix filtering including trailing line breaks', async () => {
+        const plugin = createPlugin(driver, options);
+        for (const extension of ['.js', '.jsx', '.ts', '.tsx']) {
+          const filename = '/workspace/src/Page' + extension;
+          if (driver === 'raw') {
+            const include = plugin.transformInclude;
+            if (!include) throw new Error('Missing raw resource filter');
+            expect(await include(filename)).toBe(true);
+            for (const suffix of ['\n', '\r', '\r\n', '\u2028', '\u2029'])
+              expect(await include(filename + suffix)).toBe(false);
+          } else {
+            expect(await transformPlugin(plugin, manual, filename)).toContain(
+              hashSource({ source: 'Manual text', dataFormat: 'JSX' })
+            );
+            for (const suffix of ['\n', '\r', '\r\n', '\u2028', '\u2029'])
+              expect(
+                await transformPlugin(plugin, manual, filename + suffix)
+              ).toBeNull();
+          }
+        }
+      });
+
+      it.each(['autoderive', 'devHotReload'] as const)(
+        'does not resolve nested %s getters during creation or resource filtering',
+        async (setting) => {
+          const read = vi.fn(() => {
+            throw new Error(
+              'Legacy option is resolved only for a transformed file'
+            );
+          });
+          const plugin = createPlugin(driver, {
+            ...options,
+            [setting]: {
+              get jsx(): boolean {
+                return read();
+              },
+              get strings(): boolean {
+                return read();
+              },
+            },
+          });
+          expect(read).not.toHaveBeenCalled();
+          if (driver === 'raw') {
+            const include = plugin.transformInclude;
+            if (!include) throw new Error('Missing raw resource filter');
+            expect(await include('/workspace/src/Page.raw')).toBe(false);
+          } else {
+            expect(
+              await transformPlugin(plugin, manual, '/workspace/src/Page.raw')
+            ).toBeNull();
+          }
+          expect(read).not.toHaveBeenCalled();
+          await expect(transformPlugin(plugin, manual)).rejects.toThrow(
+            'Legacy option is resolved only for a transformed file'
+          );
+          expect(read).toHaveBeenCalledTimes(1);
+        }
+      );
+
       it('retains manual JSX hashing without inserting automatic components', async () => {
         const output = await transform(driver, manual, {
           ...options,
@@ -191,6 +279,19 @@ export const Page=()=>jsxs('main',{children:[jsx('p',{children}),jsx('style',{ch
     }
   );
 
+  it('retains the raw resource filter error for non-string disabled IDs', () => {
+    const plugin = gtUnplugin.raw(
+      { gtConfig: {}, logLevel: 'silent', ...options },
+      { framework: 'webpack' }
+    );
+    if (!plugin.transformInclude)
+      throw new Error('Missing raw resource filter');
+    for (const filename of [undefined, null, 42])
+      expect(() =>
+        plugin.transformInclude!(filename as unknown as string)
+      ).toThrow(TypeError);
+  });
+
   it('preserves raw-hook macro expansion and validation for generated IDs', async () => {
     expect(
       await transform(
@@ -210,6 +311,205 @@ export const Page=()=>jsxs('main',{children:[jsx('p',{children}),jsx('style',{ch
     ).rejects.toThrow('invalid library usage');
   });
 });
+
+describe.each<Driver>(['raw', 'vite', 'rollup'])(
+  '%s factory option precedence and per-file state',
+  (driver) => {
+    it.each([false, true])(
+      'filters non-script resources when gt.config changes from %s in both directions',
+      async (initial) => {
+        const flags = { enableAutoJsxInjection: initial };
+        const plugin = createPlugin(driver, {
+          gtConfig: { files: { gt: { parsingFlags: flags } } },
+        });
+        const source = `${manual}\nexport const Automatic=()=>jsx('p',{children:'Automatic text'});`;
+        for (const enabled of [initial, !initial, initial]) {
+          flags.enableAutoJsxInjection = enabled;
+          for (const extension of ['.raw', '.mdx']) {
+            const filename = '/workspace/src/Page' + extension;
+            if (driver === 'raw') {
+              const include = plugin.transformInclude;
+              if (!include) throw new Error('Missing raw resource filter');
+              expect(await include(filename)).toBe(enabled);
+              expect(await include('/workspace/src/Page.tsx')).toBe(true);
+            } else {
+              const output = await transformPlugin(plugin, source, filename);
+              if (enabled) expect(output).toContain('GtInternalTranslateJsx');
+              else expect(output).toBeNull();
+            }
+          }
+        }
+      }
+    );
+
+    it('reads the configuration auto flag only when filtering needs it', async () => {
+      const read = vi.fn(() => false);
+      const plugin = createPlugin(driver, {
+        gtConfig: {
+          files: {
+            gt: {
+              parsingFlags: {
+                get enableAutoJsxInjection() {
+                  return read();
+                },
+              },
+            },
+          },
+        },
+      });
+      expect(read).not.toHaveBeenCalled();
+      if (driver === 'raw') {
+        const include = plugin.transformInclude;
+        if (!include) throw new Error('Missing raw resource filter');
+        expect(await include('/workspace/src/Page.tsx')).toBe(true);
+        expect(read).not.toHaveBeenCalled();
+        expect(await include('/workspace/src/Page.raw')).toBe(false);
+      } else {
+        expect(
+          await transformPlugin(plugin, manual, '/workspace/src/Page.raw')
+        ).toBeNull();
+      }
+      expect(read).toHaveBeenCalledTimes(1);
+    });
+
+    for (const configFlag of [undefined, false, true]) {
+      for (const direct of ['absent', undefined, null, false, true] as const) {
+        it(`keeps direct ${String(direct)} over gt.config ${String(configFlag)}`, async () => {
+          const options: GTUnpluginOptions = {
+            gtConfig: {
+              files: {
+                gt: { parsingFlags: { enableAutoJsxInjection: configFlag } },
+              },
+            },
+            compileTimeHash: false,
+            disableBuildChecks: true,
+            ...(direct !== 'absent' && {
+              enableAutoJsxInjection: direct as boolean | undefined,
+            }),
+          };
+          const expected =
+            direct === 'absent' ? Boolean(configFlag) : Boolean(direct);
+          const source = `import {jsx} from 'react/jsx-runtime'; export const Page=()=>jsx('p',{children:'Automatic text'});`;
+          const output = await transform(
+            driver,
+            source,
+            options,
+            '/workspace/src/Page.raw'
+          );
+          if (expected) expect(output).toContain('GtInternalTranslateJsx');
+          else expect(output).toBeNull();
+        });
+      }
+    }
+
+    it.each(['autoderive', 'devHotReload'] as const)(
+      'resolves nested gt.config %s only once for each transformed file',
+      async (setting) => {
+        const read = vi.fn(() => false);
+        const plugin = createPlugin(driver, {
+          gtConfig: {
+            files: {
+              gt: {
+                parsingFlags: {
+                  enableAutoJsxInjection: false,
+                  [setting]: {
+                    get jsx() {
+                      return read();
+                    },
+                    get strings() {
+                      return read();
+                    },
+                  },
+                },
+              },
+            },
+          },
+        });
+        expect(read).not.toHaveBeenCalled();
+        for (const count of [2, 4]) {
+          expect(await transformPlugin(plugin, manual)).toContain(
+            hashSource({ source: 'Manual text', dataFormat: 'JSX' })
+          );
+          expect(read).toHaveBeenCalledTimes(count);
+        }
+      }
+    );
+  }
+);
+
+describe.each(['.mjs', '.cjs', '.raw', '.tsx?loader', '.jsx#generated'])(
+  'per-file auto JSX exclusion on %s resources',
+  (extension) => {
+    const filename = '/workspace/runtime/entry' + extension;
+
+    it('retains the complete raw transform when a runtime package only disables insertion', async () => {
+      const options = {
+        enableAutoJsxInjection: true,
+        autoJsxRuntimePackageRoots: ['/workspace/runtime'],
+      };
+      for (const source of [manual, strings, macro]) {
+        const expected = await transform(
+          'raw',
+          source,
+          {
+            enableAutoJsxInjection: false,
+          },
+          filename
+        );
+        expect(expected).not.toBeNull();
+        expect(await transform('raw', source, options, filename)).toBe(
+          expected
+        );
+      }
+      await expect(
+        transform(
+          'raw',
+          manual.replace("'Manual text'", 'name'),
+          options,
+          filename
+        )
+      ).rejects.toThrow('invalid library usage');
+    });
+
+    it('uses the current per-file flag after gt.config disables insertion', async () => {
+      const flags = { enableAutoJsxInjection: true };
+      const plugin = createPlugin('raw', {
+        gtConfig: { files: { gt: { parsingFlags: flags } } },
+      });
+      flags.enableAutoJsxInjection = false;
+      expect(await transformPlugin(plugin, manual, filename)).toBe(
+        await transform(
+          'raw',
+          manual,
+          { enableAutoJsxInjection: false },
+          filename
+        )
+      );
+    });
+
+    it.each([null, undefined])(
+      'retains existing parse diagnostics for excluded source %s',
+      async (source) => {
+        const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+        expect(
+          await transform(
+            'raw',
+            source as unknown as string,
+            {
+              enableAutoJsxInjection: true,
+              autoJsxRuntimePackageRoots: ['/workspace/runtime'],
+              logLevel: 'error',
+            },
+            filename
+          )
+        ).toBeNull();
+        expect(error).toHaveBeenCalledExactlyOnceWith(
+          expect.stringContaining(`Error processing ${filename}:`)
+        );
+      }
+    );
+  }
+);
 
 it('keeps automatic post-loader insertion and virtual-resource handling opt-in', async () => {
   const options = {
@@ -234,3 +534,35 @@ it('keeps automatic post-loader insertion and virtual-resource handling opt-in',
     error.mockRestore();
   }
 });
+
+it.each([undefined, null])(
+  'keeps enabled virtual resources with a %s ID eligible',
+  async (filename) => {
+    const plugin = gtUnplugin.raw(
+      { gtConfig: {}, logLevel: 'error', enableAutoJsxInjection: true },
+      { framework: 'webpack' }
+    );
+    if (!plugin.transformInclude || typeof plugin.transform !== 'function')
+      throw new Error('Missing raw compiler hooks');
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect(plugin.transformInclude(filename as unknown as string)).toBe(true);
+    for (const source of [null, undefined])
+      expect(
+        await plugin.transform.call(
+          context,
+          source as unknown as string,
+          filename as unknown as string
+        )
+      ).toBeNull();
+    const source = `import {jsx} from 'react/jsx-runtime'; export const Page=()=>jsx('p',{children:'Virtual automatic text'});`;
+    const output = await plugin.transform.call(
+      context,
+      source,
+      filename as unknown as string
+    );
+    expect(typeof output === 'string' ? output : output?.code).toContain(
+      'GtInternalTranslateJsx'
+    );
+    expect(error).not.toHaveBeenCalled();
+  }
+);

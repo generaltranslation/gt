@@ -7,7 +7,12 @@ import { isReactJsxFunction } from '../../utils/constants/resolveIdentifier/isRe
 
 /** Preserve the compiler's existing complete-pipeline resource selection. */
 export function isScriptResource(id: string): boolean {
-  return /\.(?:tsx|jsx|ts|js)$/.test(id);
+  return (
+    id.endsWith('.tsx') ||
+    id.endsWith('.jsx') ||
+    id.endsWith('.ts') ||
+    id.endsWith('.js')
+  );
 }
 
 /**
