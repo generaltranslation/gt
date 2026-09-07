@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.20.2-auto-jsx.0
+
+### Patch Changes
+
+- 2155725: Verify the isolated experimental release pipeline using the current stable implementation, before automatic JSX insertion changes are introduced.
+
 ## 2.20.1
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # locadex
 
+## 1.0.221-auto-jsx.0
+
+### Patch Changes
+
+- 2155725: Verify the isolated experimental release pipeline using the current stable implementation, before automatic JSX insertion changes are introduced.
+- Updated dependencies [2155725]
+  - gt@2.20.2-auto-jsx.0
+
 ## 1.0.220
 
 ### Patch Changes
