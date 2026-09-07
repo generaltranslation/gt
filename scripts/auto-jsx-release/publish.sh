@@ -97,14 +97,14 @@ test -z "$(git status --porcelain --untracked-files=no)"
 while IFS=$'\t' read -r directory name version integrity publish_needed; do
   if [ "$publish_needed" = true ]; then
     npm publish "$artifacts/$directory.tgz" --tag auto-jsx --access public --registry=https://registry.npmjs.org --ignore-scripts --provenance
-    # The registry can briefly return its pre-publication package metadata.
+    # npm processing can delay registry visibility for several minutes.
     for attempt in 1 2 3 4 5 6 7 8 9 10; do
       if metadata=$(npm view "$name@$version" dist --json --prefer-online --registry=https://registry.npmjs.org); then
         test "$(jq -r '.integrity' <<< "$metadata")" = "$integrity"
         break
       fi
       test "$attempt" != 10
-      sleep 3
+      sleep 30
     done
     printf '%s@%s\n' "$name" "$version" >> "$artifacts/published.txt"
   fi
