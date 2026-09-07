@@ -41,7 +41,7 @@ for index in "${!directories[@]}"; do
   ' > /dev/null
   integrity="sha512-$(openssl dgst -sha512 -binary "$tarball" | openssl base64 -A)"
   publish_needed=false
-  if metadata=$(npm view "$name@$version" dist --json --registry=https://registry.npmjs.org); then
+  if metadata=$(npm view "$name@$version" dist --json --prefer-online --registry=https://registry.npmjs.org); then
     # An immutable version may already exist after a partially completed run.
     test "$(jq -r '.integrity' <<< "$metadata")" = "$integrity"
   else
@@ -57,8 +57,15 @@ test -z "$(git status --porcelain --untracked-files=no)"
 while IFS=$'\t' read -r directory name version integrity publish_needed; do
   if [ "$publish_needed" = true ]; then
     npm publish "$artifacts/$directory.tgz" --tag auto-jsx --access public --registry=https://registry.npmjs.org --ignore-scripts --provenance
-    metadata=$(npm view "$name@$version" dist --json --registry=https://registry.npmjs.org)
-    test "$(jq -r '.integrity' <<< "$metadata")" = "$integrity"
+    # The registry can briefly return its pre-publication package metadata.
+    for attempt in 1 2 3 4 5 6 7 8 9 10; do
+      if metadata=$(npm view "$name@$version" dist --json --prefer-online --registry=https://registry.npmjs.org); then
+        test "$(jq -r '.integrity' <<< "$metadata")" = "$integrity"
+        break
+      fi
+      test "$attempt" != 10
+      sleep 3
+    done
     printf '%s@%s\n' "$name" "$version" >> "$artifacts/published.txt"
   fi
   # Recover missing tags after partial or interrupted runs.
