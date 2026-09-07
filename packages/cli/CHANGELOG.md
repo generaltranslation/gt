@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.20.1
+
+### Patch Changes
+
+- [#2249](https://github.com/generaltranslation/gt/pull/2249) [`7799ee9`](https://github.com/generaltranslation/gt/commit/7799ee9f427fa300f83081099c2948b6152d8a61) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add `saveLocal` to `gt.config.json`
+
 ## 2.20.0
 
 ### Minor Changes
