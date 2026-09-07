@@ -62,6 +62,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: ^3.2.4
         version: 3.2.4(vitest@3.2.4(@edge-runtime/vm@4.0.4)(@types/debug@4.1.12)(@types/node@24.13.3)(jiti@2.7.0)(jsdom@29.1.1(@noble/hashes@2.2.0))(lightningcss@1.33.0)(terser@5.44.0)(tsx@4.23.12)(yaml@2.9.0))
+      generaltranslation:
+        specifier: workspace:*
+        version: link:packages/core
       oxfmt:
         specifier: 'catalog:'
         version: 0.47.0
@@ -86,6 +89,9 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 3.2.4(@edge-runtime/vm@4.0.4)(@types/debug@4.1.12)(@types/node@24.13.3)(jiti@2.7.0)(jsdom@29.1.1(@noble/hashes@2.2.0))(lightningcss@1.33.0)(terser@5.44.0)(tsx@4.23.12)(yaml@2.9.0)
+      yaml:
+        specifier: ^2.9.0
+        version: 2.9.0
 
   examples/create-react-app:
     dependencies:

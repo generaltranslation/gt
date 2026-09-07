@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - e/release/auto-jsx-experimental
 
 permissions:
   id-token: write # Required for OIDC
@@ -294,6 +295,162 @@ jobs:
           done
           pnpm --filter gtx-cli run bin:restore
           pnpm --filter gtx-cli run build:clean
+
+  auto-jsx-version:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/e/release/auto-jsx-experimental'
+    name: Prepare Auto JSX Release
+    outputs:
+      publish: ${{ steps.release_authorization.outputs.publish }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout experimental branch
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: e/release/auto-jsx-experimental
+          fetch-depth: 0
+
+      - name: Verify pushed revision before preparing a version pull request
+        run: test "$EXPECTED_SHA" = "$(git rev-parse HEAD)" && test "$EXPECTED_SHA" = "$GITHUB_SHA"
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
+        with:
+          targets: wasm32-wasip1
+
+      - name: Setup development tools
+        uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3
+        with:
+          cache: true
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build release tooling dependency
+        run: pnpm --filter 'generaltranslation...' -r exec tsdown --no-clean
+
+      - name: Test experimental release isolation
+        run: pnpm run test:release:auto-jsx
+
+      - name: Identify a merged auto JSX version pull request
+        id: release_authorization
+        run: node scripts/auto-jsx-release/authorize.mjs --expected-sha "$EXPECTED_SHA"
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # This action may prepare a version PR, but receives no publish command.
+      - name: Prepare experimental version pull request
+        id: versions
+        uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1
+        with:
+          branch: e/release/auto-jsx-experimental
+          version: pnpm run version-packages:auto-jsx
+          commit: '[ci] auto-jsx release'
+          title: '[ci] auto-jsx release'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build versioned experimental packages
+        if: steps.versions.outputs.hasChangesets == 'false'
+        run: >-
+          pnpm exec turbo run build:release
+          --filter=gt-next --filter=gt-react --filter=gt-react-native
+          --filter=gt-tanstack-start --filter=@generaltranslation/react-core
+          --filter=@generaltranslation/compiler --filter=gt --filter=gtx-cli
+          --filter=locadex
+
+      - name: Restore the packaged SWC plugin after transpilation
+        if: steps.versions.outputs.hasChangesets == 'false'
+        run: pnpm --filter gt-next run build:swc-plugin
+
+      - name: Validate packed experimental packages without publishing
+        if: steps.versions.outputs.hasChangesets == 'false'
+        run: pnpm run release:auto-jsx --expected-sha "$EXPECTED_SHA"
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+
+      - name: Retain experimental release validation artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: auto-jsx-validation-${{ github.sha }}
+          retention-days: 14
+          path: |
+            /tmp/gt-auto-jsx-release-*/*.tgz
+            /tmp/gt-auto-jsx-release-*/release-plan.json
+            /tmp/gt-auto-jsx-release-*/version-plan.json
+
+  auto-jsx-publish:
+    needs: auto-jsx-version
+    if: github.event_name == 'push' && github.ref == 'refs/heads/e/release/auto-jsx-experimental' && needs.auto-jsx-version.outputs.publish == 'true'
+    name: Publish Auto JSX Prerelease
+    runs-on: ubuntu-latest
+    environment:
+      name: release
+    permissions:
+      contents: read
+      pull-requests: read
+      id-token: write
+    steps:
+      - name: Checkout experimental branch
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: e/release/auto-jsx-experimental
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify reviewed revision before building
+        run: test "$EXPECTED_SHA" = "$(git rev-parse HEAD)" && test "$EXPECTED_SHA" = "$GITHUB_SHA"
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
+        with:
+          targets: wasm32-wasip1
+
+      - name: Setup development tools
+        uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3
+        with:
+          cache: true
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build experimental packages
+        run: >-
+          pnpm exec turbo run build:release
+          --filter=gt-next --filter=gt-react --filter=gt-react-native
+          --filter=gt-tanstack-start --filter=@generaltranslation/react-core
+          --filter=@generaltranslation/compiler --filter=gt --filter=gtx-cli
+          --filter=locadex
+
+      - name: Test experimental release isolation
+        run: pnpm run test:release:auto-jsx
+
+      - name: Restore the packaged SWC plugin after transpilation
+        run: pnpm --filter gt-next run build:swc-plugin
+
+      - name: Publish packages from the merged auto JSX version pull request
+        run: pnpm run release:auto-jsx --expected-sha "$EXPECTED_SHA" --execute
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Retain experimental publication artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: auto-jsx-publication-${{ github.sha }}
+          retention-days: 14
+          path: |
+            /tmp/gt-auto-jsx-release-*/*.tgz
+            /tmp/gt-auto-jsx-release-*/release-plan.json
 
   odysseus-release:
     if: github.ref_name == 'odysseus'

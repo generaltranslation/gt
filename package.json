@@ -27,7 +27,10 @@
     "format": "oxfmt --check .",
     "format:fix": "oxfmt .",
     "changeset": "changeset",
-    "version-packages": "changeset version && oxfmt packages/*/CHANGELOG.md"
+    "version-packages": "changeset version && oxfmt packages/*/CHANGELOG.md",
+    "release:auto-jsx": "node scripts/auto-jsx-release/publish.mjs",
+    "test:release:auto-jsx": "vitest run --config scripts/auto-jsx-release/vitest.config.mjs",
+    "version-packages:auto-jsx": "node scripts/auto-jsx-release/version.mjs"
   },
   "repository": {
     "type": "git",
@@ -61,7 +64,9 @@
     "turbo": "^2.5.3",
     "tslib": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "generaltranslation": "workspace:*",
+    "yaml": "^2.9.0"
   },
   "packageManager": "pnpm@10.20.0",
   "dependencies": {
