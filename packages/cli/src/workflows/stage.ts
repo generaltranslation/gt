@@ -65,7 +65,7 @@ export async function runStageFilesWorkflow({
     const uploadedFiles = await uploadStep.run({ files, branchData });
 
     // optionally run the user edit diffs step
-    if (options?.saveLocal) {
+    if (settings.options?.saveLocal !== false) {
       await userEditDiffsStep.run(uploadedFiles);
     }
 
