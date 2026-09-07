@@ -17,6 +17,26 @@ const isCustomLanguage = (language: string) => {
 };
 
 /**
+ * Checks whether Intl.DisplayNames has CLDR data available by testing a
+ * known-good code. Some browsers (embedded WebViews, privacy-focused
+ * browsers, stripped ICU builds) support the DisplayNames API but lack
+ * the underlying locale data, causing .of() to return the raw code
+ * instead of a human-readable name (due to the default fallback: "code").
+ */
+const _hasDisplayNamesData = (): boolean => {
+  try {
+    const dn = intlCache.get('DisplayNames', [libraryDefaultLocale], {
+      type: 'language',
+    });
+    // "en" should always resolve to "English" (or a localized equivalent)
+    // when CLDR data is present. If it returns "en", data is missing.
+    return dn.of('en') !== 'en';
+  } catch {
+    return false;
+  }
+};
+
+/**
  * Checks if a given BCP 47 language code is valid.
  * @param {string} code - The BCP 47 language code to validate.
  * @param {CustomMapping} [customMapping] - The custom mapping to use for validation.
@@ -34,6 +54,13 @@ export const _isValidLocale = (
     const { language, region, script } = intlCache.get('Locale', locale);
     const partCount = 1 + Number(Boolean(region)) + Number(Boolean(script));
     if (locale.split('-').length !== partCount) return false;
+
+    // If the runtime lacks CLDR data for Intl.DisplayNames, skip the
+    // display-name validation and rely solely on Intl.Locale parsing +
+    // the part-count check above. This prevents false negatives on
+    // browsers/WebViews with incomplete ICU data.
+    if (!_hasDisplayNamesData()) return true;
+
     const displayLanguageNames = intlCache.get(
       'DisplayNames',
       [libraryDefaultLocale],
