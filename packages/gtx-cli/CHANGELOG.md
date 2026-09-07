@@ -1,5 +1,13 @@
 # gtx-cli
 
+## 2.20.1-auto-jsx.0
+
+### Patch Changes
+
+- Updated dependencies [4cc8cd6]
+- Updated dependencies [4cc8cd6]
+  - gt@2.20.1-auto-jsx.0
+
 ## 2.20.0
 
 ### Patch Changes

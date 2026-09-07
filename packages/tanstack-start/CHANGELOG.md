@@ -1,5 +1,12 @@
 # gt-tanstack-start
 
+## 11.2.0-auto-jsx.0
+
+### Patch Changes
+
+- @generaltranslation/react-core@11.2.0-auto-jsx.0
+- gt-react@11.2.0-auto-jsx.0
+
 ## 11.1.23
 
 ### Patch Changes

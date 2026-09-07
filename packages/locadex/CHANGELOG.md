@@ -1,5 +1,13 @@
 # locadex
 
+## 1.0.220-auto-jsx.0
+
+### Patch Changes
+
+- Updated dependencies [4cc8cd6]
+- Updated dependencies [4cc8cd6]
+  - gt@2.20.1-auto-jsx.0
+
 ## 1.0.219
 
 ### Patch Changes

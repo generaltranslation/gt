@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/react-core",
-  "version": "11.1.23",
+  "version": "11.2.0-auto-jsx.0",
   "description": "A pure React library for internationalization",
   "files": [
     "dist",

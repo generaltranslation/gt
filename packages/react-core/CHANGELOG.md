@@ -1,5 +1,7 @@
 # @generaltranslation/react-core
 
+## 11.2.0-auto-jsx.0
+
 ## 11.1.23
 
 ### Patch Changes
