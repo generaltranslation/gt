@@ -15,7 +15,7 @@
     "lint:fix": "oxlint packages --fix && pnpm --filter './examples/*' --filter './tests/apps/**/*' --if-present lint --fix && oxfmt .",
     "transpile": "turbo run transpile --filter='./packages/*'",
     "typecheck": "turbo run typecheck --filter='./packages/*' --filter='./examples/*' --filter='./tests/apps/**/*'",
-    "release": "changeset publish",
+    "release": "node scripts/auto-jsx-release/publish.mjs",
     "release:gt-bin": "pnpm --filter gt run release:bin",
     "release:gtx-cli-bin": "pnpm --filter gtx-cli run release:bin",
     "build:clean": "turbo run build:clean --filter='./packages/*'",
