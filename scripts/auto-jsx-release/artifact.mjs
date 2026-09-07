@@ -21,6 +21,13 @@ function exportTargets(value, keys) {
   );
 }
 
+// The published gt@2.20.0 manifest already uses these flat type paths while
+// shipping a types directory. Preserve that baseline and require its real files.
+const cliTypeEntrypoints = {
+  import: ['./dist/types.js', './dist/types/index.js'],
+  types: ['./dist/types.d.ts', './dist/types/index.d.ts'],
+};
+
 export function validatePackedManifest(source, packed, workspace, entries) {
   requireCondition(
     packed.name === source.name &&
@@ -29,6 +36,13 @@ export function validatePackedManifest(source, packed, workspace, entries) {
     'Packed package identity differs from the reviewed manifest',
     source.name
   );
+  for (const field of ['main', 'module', 'types', 'bin', 'exports']) {
+    requireCondition(
+      JSON.stringify(packed[field]) === JSON.stringify(source[field]),
+      'Packed package entrypoints differ from the reviewed manifest',
+      `${source.name}: ${field}`
+    );
+  }
   const publishConfig = packed.publishConfig ?? {};
   requireCondition(
     typeof publishConfig === 'object' &&
@@ -97,11 +111,20 @@ export function validatePackedManifest(source, packed, workspace, entries) {
     ) {
       continue;
     }
+    const baselineCliType =
+      source.name === 'gt' &&
+      keys.length === 3 &&
+      keys[0] === 'exports' &&
+      keys[1] === './types'
+        ? cliTypeEntrypoints[keys[2]]
+        : undefined;
+    const requiredTarget =
+      baselineCliType?.[0] === target ? baselineCliType[1] : target;
     requireCondition(
-      !target.split('/').includes('..') &&
-        entries.has(`package/${target.replace(/^\.\//, '')}`),
+      !requiredTarget.split('/').includes('..') &&
+        entries.has(`package/${requiredTarget.replace(/^\.\//, '')}`),
       'A published package entrypoint is missing from its tarball',
-      `${source.name}: ${target}`
+      `${source.name}: ${requiredTarget}`
     );
   }
   requireCondition(

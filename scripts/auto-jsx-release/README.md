@@ -68,10 +68,13 @@ certain registry states. Existing versions are accepted only when their
 artifact digest matches; they are not retagged. Artifacts are retained for
 inspection.
 
-The packed-entrypoint check has one documented exception for the pre-existing
-`gt-next` ESM `./config` mapping to `dist/config.mjs`. This release keeps the
-feature branch's existing export behavior; other missing entrypoints fail
-validation.
+The packed-entrypoint check preserves two pre-existing export layouts: the
+`gt-next` ESM `./config` mapping to absent `dist/config.mjs`, and the `gt` `./types`
+mapping to flat files while the published package ships `dist/types/index.js`
+and `dist/types/index.d.ts`. The CLI check requires both actual directory
+entrypoints. These allowances apply only to the exact package, export key,
+condition, and target; other missing entrypoints fail validation. They preserve
+the feature branch's existing export behavior.
 
 Running the publisher without `--execute` performs validation without npm
 writes, after building the packages. On this branch, `pnpm release` uses the same

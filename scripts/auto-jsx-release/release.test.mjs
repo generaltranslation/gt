@@ -285,6 +285,116 @@ describe('all-package artifact preflight', () => {
     );
   });
 
+  function cliTypesFixture(name = 'gt') {
+    const fixture = releaseFixture();
+    fixture.context.setManifest(name, (manifest) => {
+      manifest.exports['./types'] = {
+        import: './dist/types.js',
+        types: './dist/types.d.ts',
+      };
+    });
+    fixture.context.onPack = (archive) => {
+      if (archive.manifest.name === name) {
+        archive.entries.push(
+          'package/dist/types/index.js',
+          'package/dist/types/index.d.ts'
+        );
+      }
+    };
+    return fixture;
+  }
+
+  it('requires the published CLI type directory for its existing flat mapping', async () => {
+    await expect(publishRelease(cliTypesFixture())).resolves.toHaveProperty(
+      'execute',
+      false
+    );
+  });
+
+  it('rejects a shipped CLI type mapping that differs from the reviewed mapping', async () => {
+    const fixture = cliTypesFixture();
+    const addTypes = fixture.context.onPack;
+    fixture.context.onPack = (archive) => {
+      addTypes(archive);
+      if (archive.manifest.name === 'gt') {
+        archive.manifest.exports['./types'].import = './dist/unexpected.js';
+      }
+    };
+    await expect(publishRelease({ ...fixture, execute: true })).rejects.toThrow(
+      'entrypoints differ from the reviewed manifest'
+    );
+    expect(publications(fixture)).toHaveLength(0);
+  });
+
+  it.each(['main', 'module', 'types', 'bin', 'exports'])(
+    'rejects altered packed %s metadata before publishing',
+    async (field) => {
+      const fixture = releaseFixture();
+      fixture.context.onPack = (archive) => {
+        if (archive.manifest.name === 'locadex') {
+          archive.manifest[field] =
+            field === 'exports'
+              ? { '.': './dist/unexpected.js' }
+              : './dist/unexpected.js';
+          archive.entries.push('package/dist/unexpected.js');
+        }
+      };
+      await expect(
+        publishRelease({ ...fixture, execute: true })
+      ).rejects.toThrow('entrypoints differ from the reviewed manifest');
+      expect(publications(fixture)).toHaveLength(0);
+    }
+  );
+
+  it.each(['gtx-cli', 'gt-react'])(
+    'does not apply the CLI type-directory mapping to %s',
+    async (name) => {
+      const fixture = cliTypesFixture(name);
+      await expect(publishRelease(fixture)).rejects.toThrow(
+        'entrypoint is missing'
+      );
+      expect(publications(fixture)).toHaveLength(0);
+    }
+  );
+
+  it.each(['index.js', 'index.d.ts'])(
+    'rejects a CLI baseline with missing types/%s',
+    async (file) => {
+      const fixture = cliTypesFixture();
+      const addTypes = fixture.context.onPack;
+      fixture.context.onPack = (archive) => {
+        addTypes(archive);
+        archive.entries = archive.entries.filter(
+          (entry) => entry !== `package/dist/types/${file}`
+        );
+      };
+      await expect(publishRelease(fixture)).rejects.toThrow(
+        'entrypoint is missing'
+      );
+      expect(publications(fixture)).toHaveLength(0);
+    }
+  );
+
+  it.each(['main', 'other export', 'other condition'])(
+    'does not extend the CLI type-directory mapping to %s',
+    async (field) => {
+      const fixture = cliTypesFixture();
+      fixture.context.setManifest('gt', (manifest) => {
+        if (field === 'other export') {
+          manifest.exports['./other'] = { import: './dist/types.js' };
+        } else if (field === 'other condition') {
+          manifest.exports['./types'].default = './dist/types.js';
+        } else {
+          manifest.main = './dist/types.js';
+        }
+      });
+      await expect(publishRelease(fixture)).rejects.toThrow(
+        'entrypoint is missing'
+      );
+      expect(publications(fixture)).toHaveLength(0);
+    }
+  );
+
   it('rejects an old compiler peer range despite correct runtime dependencies', async () => {
     const fixture = releaseFixture();
     fixture.context.onPack = (archive) => {
