@@ -17,6 +17,11 @@ import type { FileFormat, DataFormat, FileToUpload } from '../../types/data.js';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
 import { parseJson } from '../json/parseJson.js';
 import {
+  parseXcstringsCatalog,
+  serializeXcstringsSlice,
+  sliceSourceCatalog,
+} from '../xcstrings/parseXcstrings.js';
+import {
   resolveMintlifyRefs,
   shouldResolveRefs,
 } from '../../utils/resolveMintlifyRefs.js';
@@ -446,6 +451,55 @@ export async function aggregateFiles(
     files.push(...verbatimFiles.filter((file) => file !== null));
   }
 
+  // Process Apple .xcstrings catalogs. One catalog holds every locale; only the
+  // source-language slice is uploaded as the source document. The slice is
+  // hashed into versionId, so an unchanged catalog re-slices byte-identically
+  // and does not re-upload.
+  if (filePaths.xcstrings) {
+    const xcstringsFiles = filePaths.xcstrings
+      .map((filePath) => {
+        const content = readFile(filePath);
+        const relativePath = getRelative(filePath);
+
+        let sourceSlice: string;
+        try {
+          const catalog = parseXcstringsCatalog(content);
+          // Slicing follows the catalog's own sourceLanguage while the upload
+          // is labeled settings.defaultLocale; a mismatch would upload
+          // mislabeled source content, so treat it as a config error.
+          if (catalog.sourceLanguage !== settings.defaultLocale) {
+            throw new Error(
+              `catalog sourceLanguage "${catalog.sourceLanguage}" does not match the configured defaultLocale "${settings.defaultLocale}"`
+            );
+          }
+          sourceSlice = serializeXcstringsSlice(sliceSourceCatalog(catalog));
+        } catch (error) {
+          const reason =
+            error instanceof Error
+              ? error.message
+              : 'xcstrings file is not parsable';
+          logger.warn(`Skipping ${relativePath}: ${reason}`);
+          recordWarning('skipped_file', relativePath, reason);
+          return null;
+        }
+
+        return {
+          content: sourceSlice,
+          fileName: relativePath,
+          fileFormat: 'XCSTRINGS' as const,
+          ...getTransformFormatProperty(settings, 'xcstrings'),
+          fileId: hashStringSync(relativePath),
+          versionId: hashVersionId(
+            sourceSlice,
+            requiresReviewPaths.has(filePath)
+          ),
+          locale: settings.defaultLocale,
+        } satisfies FileToUpload;
+      })
+      .filter((file) => file !== null);
+    files.push(...xcstringsFiles);
+  }
+
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
     if (
       fileType === 'json' ||
@@ -454,7 +508,8 @@ export async function aggregateFiles(
       fileType === 'lottie' ||
       fileType === 'dotStrings' ||
       fileType === 'dotStringsdict' ||
-      fileType === 'androidStrings'
+      fileType === 'androidStrings' ||
+      fileType === 'xcstrings'
     )
       continue;
     if (filePaths[fileType]) {
