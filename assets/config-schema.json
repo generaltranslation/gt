@@ -782,6 +782,11 @@
           "description": "Flattens JSON files into a single file",
           "default": false
         },
+        "saveLocal": {
+          "type": "boolean",
+          "description": "Detect and save local edits to translated output before enqueuing translations. Can be overridden per run with --save-local / --no-save-local.",
+          "default": true
+        },
         "baseDomain": {
           "type": "string",
           "format": "uri",

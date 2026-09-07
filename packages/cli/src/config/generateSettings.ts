@@ -57,6 +57,7 @@ type GenerateSettingsInput = Partial<Omit<Settings, 'tag'>> & {
   files?: unknown;
   publish?: boolean;
   omitConfigIds?: boolean;
+  saveLocal?: boolean;
   tag?: string | boolean;
   message?: string;
   branch?: string;
@@ -322,6 +323,7 @@ export async function generateSettings(
       flags.experimentalClearLocaleDirs,
     clearLocaleDirsExclude:
       gtConfig.options?.clearLocaleDirsExclude || flags.clearLocaleDirsExclude,
+    saveLocal: flags.saveLocal ?? gtConfig.options?.saveLocal ?? true,
   };
 
   if (

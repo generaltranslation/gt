@@ -13,8 +13,8 @@ function parseTranslateFlags(args: string[] = []) {
 }
 
 describe('attachTranslateFlags', () => {
-  it('saves local edits by default', () => {
-    expect(parseTranslateFlags().saveLocal).toBe(true);
+  it('leaves save-local unset by default so config can decide', () => {
+    expect(parseTranslateFlags().saveLocal).toBeUndefined();
   });
 
   it('keeps the explicit save-local flag enabled', () => {
