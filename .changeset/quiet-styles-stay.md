@@ -14,3 +14,5 @@ Fix compiler-generated React helper bindings for child arrays and mixed runtime 
 Keep automatically wrapped dynamic arrays available for runtime hashing under default build checks while preserving validation and compile-time hashes for manual translation components.
 
 Respect verified GT runtime package boundaries supplied by framework integrations during automatic insertion, while keeping other compiler transformations enabled.
+
+Preserve the compiler's existing raw-loader transformations and parse diagnostics when automatic insertion is disabled. Keep CLI parsing options intact in this mode, and preserve lazy or inherited package-resolution settings in both modes.

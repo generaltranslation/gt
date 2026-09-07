@@ -1,0 +1,1150 @@
+{
+  "revision": "36d34236db34458b6301e06be1eed62f3e3e608b",
+  "cases": [
+    {
+      "name": "manual-text",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>Hello, <strong>world</strong></T>;",
+      "sourceSha256": "815f8102ece605e68faef9cfaec48acaa82be1979f8ac52462f719b57b25c783",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": [
+              "Hello, ",
+              {
+                "t": "strong",
+                "i": 1,
+                "c": "world"
+              }
+            ],
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "b37c8c80bc0766fd"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-entities",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>A &amp; B &#160; C &lt; D</T>;",
+      "sourceSha256": "2f903a54e57af5e47eb3403384f040c4777120d0ac9f05e1f01f665f881d6da5",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": "A & B   C < D",
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "ca88f9d392b607dc"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-whitespace",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T> First\n  second <b> nested\n text </b> tail </T>;",
+      "sourceSha256": "c3cb4cea41916858bd5db45d0a6801c28c6058edf1f98c73c4f300a9f538c350",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": [
+              " First second ",
+              {
+                "t": "b",
+                "i": 1,
+                "c": " nested text "
+              },
+              " tail "
+            ],
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "8cae441cc5db7efc"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-expression-whitespace",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>{' first  '}{'  second '}</T>;",
+      "sourceSha256": "37e196cae0574a5ac1e6bf2c721ef6fe1811c43b3423502bd09565ba0be658bd",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": [" first  ", "  second "],
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "8dc60e826e66fcef"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-template",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>{` first  second `}</T>;",
+      "sourceSha256": "b8c3443d215494a0ed67fbe351f108beb794e3205170ff240c559a8229d2ca93",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": " first  second ",
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "30090a8c867b50bf"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-dynamic-template",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>{`Hello ${name}`}</T>;",
+      "sourceSha256": "17f1c00d781574b180652024ee443ecddf4ab4c993052db8bf50563a8040b667",
+      "expected": {
+        "updates": [],
+        "errors": [
+          "<fixture> (3:170): <T> component has children that could change at runtime. Use a variable component like <Var> to ensure this content is translated.\n{`Hello ${name}`}"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-number-null",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>{0}{1}{true}{false}{null}{undefined}</T>;",
+      "sourceSha256": "eeb476cc6694e4b4b93230235a241788f745f2542752cdfd79ad82547f78b581",
+      "expected": {
+        "updates": [],
+        "errors": [
+          "<fixture> (3:170): <T> component has children that could change at runtime. Use a variable component like <Var> to ensure this content is translated.\n{undefined}"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-array",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>{['one', <em key=\"two\">two</em>, null, false, 3]}</T>;",
+      "sourceSha256": "cc12ed88ce55c42dcb2aabf3bb137a0f6d9f8475bb0a3fb7a732533c2119cd6b",
+      "expected": {
+        "updates": [],
+        "errors": [
+          "<fixture> (3:170): <T> component has children that could change at runtime. Use a variable component like <Var> to ensure this content is translated.\n{['one', <em key=\"two\">two</em>, null, false, 3]}"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-singleton-array",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>{['one']}</T>;",
+      "sourceSha256": "0b4d19406532ff8411c3f81a399972bedf9262fc4a46be1690b60889e25944d5",
+      "expected": {
+        "updates": [],
+        "errors": [
+          "<fixture> (3:170): <T> component has children that could change at runtime. Use a variable component like <Var> to ensure this content is translated.\n{['one']}"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-sparse-array",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>{['one', , 'three']}</T>;",
+      "sourceSha256": "b0da6ee1f1139792baef2d153440f6398977c6b22b5ad9c82abea31a77a2a1ee",
+      "expected": {
+        "updates": [],
+        "errors": [
+          "<fixture> (3:170): <T> component has children that could change at runtime. Use a variable component like <Var> to ensure this content is translated.\n{['one',, 'three']}"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-spread-array",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>{['one', ...rest]}</T>;",
+      "sourceSha256": "49b7cc46d6b09eebe3e3afc375769937d97420344728bb5d480cd75f7411ac85",
+      "expected": {
+        "updates": [],
+        "errors": [
+          "<fixture> (3:170): <T> component has children that could change at runtime. Use a variable component like <Var> to ensure this content is translated.\n{['one', ...rest]}"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-variables",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>Name <Var name=\"person\">{name}</Var> number <Num>{count}</Num> <Currency currency=\"USD\">{amount}</Currency></T>;",
+      "sourceSha256": "2d3a4f5f46b03607bf7811590bfea421ff32773a76a1a0632902bfd702effcd7",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": [
+              "Name ",
+              {
+                "i": 1,
+                "k": "person",
+                "v": "v"
+              },
+              " number ",
+              {
+                "i": 2,
+                "k": "_gt_n_2",
+                "v": "n"
+              },
+              " ",
+              {
+                "i": 3,
+                "k": "_gt_cost_3",
+                "v": "c"
+              }
+            ],
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "b28db0ac08f47c25"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-date-variables",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>At <DateTime>{date}</DateTime>, <RelativeTime>{elapsed}</RelativeTime></T>;",
+      "sourceSha256": "2c5d5543ac974b520599d99dc0db36f0df159bdf64a4e2c466a015ad067e2b83",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": [
+              "At ",
+              {
+                "i": 1,
+                "k": "_gt_date_1",
+                "v": "d"
+              },
+              ", ",
+              {
+                "i": 2,
+                "k": "_gt_time_2",
+                "v": "rt"
+              }
+            ],
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "14fb38b37a20568c"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-nested-t",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>Before <T>nested</T> after</T>;",
+      "sourceSha256": "79430c9415004a1f0fb4b791cf9b0dddbb3db0d190dbbff31a17ea1af7ff0d7d",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": [
+              "Before ",
+              {
+                "t": "T",
+                "i": 1,
+                "c": "nested"
+              },
+              " after"
+            ],
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "fe62091e1002070d"
+            }
+          },
+          {
+            "dataFormat": "JSX",
+            "source": "nested",
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "ab1c3d1bde4b4775"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-nested-auto-t",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>Before <GtInternalTranslateJsx>nested</GtInternalTranslateJsx> after</T>;",
+      "sourceSha256": "e9e96ab309126f2faa20b26b7ce2d16d536c6a1ed255ad8b2bf1268243c0a374",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": [
+              "Before ",
+              {
+                "t": "GtInternalTranslateJsx",
+                "i": 1,
+                "c": "nested"
+              },
+              " after"
+            ],
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "fe62091e1002070d"
+            }
+          },
+          {
+            "dataFormat": "JSX",
+            "source": "nested",
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "ab1c3d1bde4b4775"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-style",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>Before <style jsx>{`p { color: red; }`}</style> after</T>;",
+      "sourceSha256": "2b042972f31be1d08a7a72eecfa9e2a85874c97902ed1689825c954e9d785a84",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": [
+              "Before ",
+              {
+                "t": "style",
+                "i": 1,
+                "c": "p { color: red; }"
+              },
+              " after"
+            ],
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "193b9fbd7f37e17c"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-script",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>Before <script>{`console.log(\"value\")`}</script> after</T>;",
+      "sourceSha256": "6cd10c1372c2d0bc5430152fe099a753e1aca8a5dec55b9f87f0a6d174d452a9",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": [
+              "Before ",
+              {
+                "t": "script",
+                "i": 1,
+                "c": "console.log(\"value\")"
+              },
+              " after"
+            ],
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "cb6428ba8a2fb5f8"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-title",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>Before <title>Title {name}</title> after</T>;",
+      "sourceSha256": "8c0c300db1980a79ded9e3b9ed8ad53f99c6df2c96ca479e8f13e8b12f706487",
+      "expected": {
+        "updates": [],
+        "errors": [
+          "<fixture> (3:170): <T> component has children that could change at runtime. Use a variable component like <Var> to ensure this content is translated.\n{name}"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-textarea",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>Before <textarea>Text {name}</textarea> after</T>;",
+      "sourceSha256": "5f7ca3570d1d8025946b22b8e929708120318f92f722e7e163078bd9380fc8c5",
+      "expected": {
+        "updates": [],
+        "errors": [
+          "<fixture> (3:170): <T> component has children that could change at runtime. Use a variable component like <Var> to ensure this content is translated.\n{name}"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-namespaced-tag",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>Before <svg:path>Path</svg:path> after</T>;",
+      "sourceSha256": "058e9acc2454673cd670368dd49f61bf36569d2a41ec311d402978f48d225a0b",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": [
+              "Before ",
+              {
+                "t": "C1",
+                "i": 1,
+                "c": "Path"
+              },
+              " after"
+            ],
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "74146d644c04ab94"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-member-tag",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>Before <UI.Part>Part</UI.Part> after</T>;",
+      "sourceSha256": "39197f92d6bf94183fd7b7b0537ffd9dc4fd4b0ebad1cdc59d15e3e7c5770b32",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": [
+              "Before ",
+              {
+                "t": "UI.Part",
+                "i": 1,
+                "c": "Part"
+              },
+              " after"
+            ],
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "066cf2244ab6c82b"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-fragment",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>Before <> fragment <b>bold</b></> after</T>;",
+      "sourceSha256": "415789d94db98fa5549909edd4df87b630808dbb884df991f0ca57fd9d9a2ae3",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": [
+              "Before ",
+              {
+                "t": "C1",
+                "i": 1,
+                "c": [
+                  " fragment ",
+                  {
+                    "t": "b",
+                    "i": 2,
+                    "c": "bold"
+                  }
+                ]
+              },
+              " after"
+            ],
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "9a6b80c547f944b5"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-children-attribute",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T><p children=\"Quoted   text\"/></T>;",
+      "sourceSha256": "0f3b0cecafe7da57c3499f2e5c993dd1db9adadcb96f8963d7d45ce94a55104a",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": {
+              "t": "p",
+              "i": 1,
+              "c": "Quoted   text"
+            },
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "601c271e6eeffd53"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-duplicate-children",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T><p children=\"First\" children=\"Second\"/></T>;",
+      "sourceSha256": "f2442ae8c186e3e3b9a64fc1a904bcec1e29b97d71d6ec1924425dae5fcbbf1b",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": {
+              "t": "p",
+              "i": 1,
+              "c": "Second"
+            },
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "8b8c75b081a172d1"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-body-over-children",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T><p children=\"Ignored\">Body</p></T>;",
+      "sourceSha256": "b603a057feee0b43e6c03f19f89019af8e2da71a533163e7563462ac3321dd27",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": {
+              "t": "p",
+              "i": 1,
+              "c": "Body"
+            },
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "debbbbf6e2b3cbe7"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-inline-spread",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T><p {...{children:\"Spread\", title:\"Title\"}}/></T>;",
+      "sourceSha256": "fc37b484f352ec6b7e9b25aee1ffa113ed5c1db3a07d97e586742b23d25bb16c",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": {
+              "t": "p",
+              "i": 1
+            },
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "a013c005483cdd19"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-duplicate-spread",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T><p {...{children:\"Spread\"}} children=\"Explicit\"/></T>;",
+      "sourceSha256": "8ffe4967a9f69fd210b046d2de740d018252144f712a81693a34014f41e953fa",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": {
+              "t": "p",
+              "i": 1,
+              "c": "Explicit"
+            },
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "d9df62fe4b6302d6"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-proto-spread",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T><p {...{__proto__: {title:\"Inherited\"}, children:\"Spread\"}}/></T>;",
+      "sourceSha256": "66601d95f32f4c8c76b9d586bc3051df4185d28de6c21a1cc985b0dbc71b2af2",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": {
+              "t": "p",
+              "i": 1
+            },
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "a013c005483cdd19"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-branch",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T><Branch branch={choice} one={<b>One</b>} two={<i>Two</i>}>Fallback</Branch><span>Tail</span></T>;",
+      "sourceSha256": "734af699cf7c457ee0cbd2cbc3aa21d229a568fc02ed8634c4d869803437d580",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": [
+              {
+                "t": "Branch",
+                "i": 1,
+                "d": {
+                  "b": {
+                    "one": {
+                      "t": "b",
+                      "i": 2,
+                      "c": "One"
+                    },
+                    "two": {
+                      "t": "i",
+                      "i": 2,
+                      "c": "Two"
+                    }
+                  },
+                  "t": "b"
+                },
+                "c": "Fallback"
+              },
+              {
+                "t": "span",
+                "i": 2,
+                "c": "Tail"
+              }
+            ],
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "7b73084852012b38"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-plural",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T><Plural n={count} one=\"One\" other={<b>Many</b>}>Fallback</Plural><span>Tail</span></T>;",
+      "sourceSha256": "9814872d85bdc03744e91408fc521d7affbcc5bae956395865c9557820a1a7d5",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": [
+              {
+                "t": "Plural",
+                "i": 1,
+                "d": {
+                  "b": {
+                    "one": "One",
+                    "other": {
+                      "t": "b",
+                      "i": 2,
+                      "c": "Many"
+                    }
+                  },
+                  "t": "p"
+                },
+                "c": "Fallback"
+              },
+              {
+                "t": "span",
+                "i": 2,
+                "c": "Tail"
+              }
+            ],
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "cf0924860e966733"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-branch-data-attribute",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T><Branch branch={choice} one=\"One\" data-extra=\"Kept\">Fallback</Branch></T>;",
+      "sourceSha256": "810d0c5d01b912264a7ed114051661b3e8cc4292e1c4308402e1c982796ff79c",
+      "expected": {
+        "updates": [],
+        "errors": [
+          "<fixture> (3:207): <Branch> component ignores attributes prefixed with \"data-\". Found data-extra. Remove it or use a different attribute name."
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-derived-constant",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>Value <Derive>{answer}</Derive></T>;",
+      "sourceSha256": "c858812c09abdb174a82d9057a68c8868d309b9993f71b11dac1258d6f2f999a",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": [
+              "Value ",
+              {
+                "t": "Derive",
+                "i": 1,
+                "c": "forty two"
+              }
+            ],
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "staticId": "886bec3981c4675f",
+              "hash": "2f7bf384cfda8324"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-derived-function",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>Value <Derive>{message()}</Derive></T>;",
+      "sourceSha256": "5ce035dd5bf0a7b744e0dededa136cf7a30b353a2cdcfe79fe1986b91f5ff85b",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": [
+              "Value ",
+              {
+                "t": "Derive",
+                "i": 1,
+                "c": "message"
+              }
+            ],
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "staticId": "36acd19eca1edcb8",
+              "hash": "34e22aad82b62d8d"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-derived-conditional",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>Value <Derive>{choice ? \"one\" : \"two\"}</Derive></T>;",
+      "sourceSha256": "d777c9cdd073fae4d6a64aaaaacf16a2d84b942f91db3503492dc46588f7ad25",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": [
+              "Value ",
+              {
+                "t": "Derive",
+                "i": 1,
+                "c": "one"
+              }
+            ],
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "staticId": "62e02e8f78cf676f",
+              "hash": "cdea319c0014fa52"
+            }
+          },
+          {
+            "dataFormat": "JSX",
+            "source": [
+              "Value ",
+              {
+                "t": "Derive",
+                "i": 1,
+                "c": "two"
+              }
+            ],
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "staticId": "62e02e8f78cf676f",
+              "hash": "cedf279b47179a6a"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-derived-jsx-function",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>Value <Derive>{markup()}</Derive></T>;",
+      "sourceSha256": "9c1fadf410f0a9b83b903b101ef4c9a658f302fbffefb7c66dee1983b010a658",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": [
+              "Value ",
+              {
+                "t": "Derive",
+                "i": 1,
+                "c": {
+                  "t": "span",
+                  "i": 2,
+                  "c": ["Hello ", "forty two"]
+                }
+              }
+            ],
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "staticId": "e145ce095943b3d2",
+              "hash": "96cd0416953a35f5"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-typed-string",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>{('typed' as const)}</T>;",
+      "sourceSha256": "02bee64cee9c4969cc183c0db37b63fcbc8d2908619ee01c7be0dca46e36a8af",
+      "expected": {
+        "updates": [],
+        "errors": [
+          "<fixture> (3:170): <T> component has children that could change at runtime. Use a variable component like <Var> to ensure this content is translated.\n{'typed' as const}"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-typed-array",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>{(['one'] as const)}</T>;",
+      "sourceSha256": "e71542830db850c3c7c6230731c58e5f6c07a669b44a95e0d6c00bc3141c862d",
+      "expected": {
+        "updates": [],
+        "errors": [
+          "<fixture> (3:170): <T> component has children that could change at runtime. Use a variable component like <Var> to ensure this content is translated.\n{['one'] as const}"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-satisfies",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>{('typed' satisfies string)}</T>;",
+      "sourceSha256": "4d1bf9d432d475ed1063ee567f18788d13df554bdc9d363485b759db942ab209",
+      "expected": {
+        "updates": [],
+        "errors": [
+          "<fixture> (3:170): <T> component has children that could change at runtime. Use a variable component like <Var> to ensure this content is translated.\n{'typed' satisfies string}"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-enum",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>State <Derive>{Status.Ready}</Derive></T>;",
+      "sourceSha256": "14751bce10b03afa7a4ab72c137340855b0cdea806b0a1a809a3e9e6cc97866e",
+      "expected": {
+        "updates": [],
+        "errors": [
+          "<fixture> (3:170): <T> component has children that could change at runtime. Use a variable component like <Var> to ensure this content is translated.\nStatus.Ready"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-optional-call",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>Call {service?.render?.()}</T>;",
+      "sourceSha256": "2ce13b9d0933008bde1577ab4f3ef324b7843fedb37e90de48a11ab64610c258",
+      "expected": {
+        "updates": [],
+        "errors": [
+          "<fixture> (3:170): <T> component has children that could change at runtime. Use a variable component like <Var> to ensure this content is translated.\n{service?.render?.()}"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-runtime-child",
+      "input": "import {T,Var,Num,Currency,DateTime,RelativeTime,Branch,Plural,Derive,GtInternalTranslateJsx} from 'gt-next';\nimport {jsx} from 'react/jsx-runtime';\nconst answer='forty two'; enum Status{Ready='ready'}; function message(){return 'message';} function markup(){return <span>Hello {answer}</span>;} export const Page=()=> <T>{jsx('b',{children:'Runtime child'})}</T>;",
+      "sourceSha256": "df57b0449c945502ba87ec7e30f36ab354c9fbf841745eebf4fcd902e101a4d6",
+      "expected": {
+        "updates": [],
+        "errors": [
+          "<fixture> (3:170): <T> component has children that could change at runtime. Use a variable component like <Var> to ensure this content is translated.\n{jsx('b', {\n  children: 'Runtime child'\n})}"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-aliases",
+      "input": "import {T as Translate,Var as Value,Derive as Read} from 'gt-next'; const fixed='value'; export const Page=()=> <Translate>Alias <Value name=\"who\">{name}</Value> <Read>{fixed}</Read></Translate>;",
+      "sourceSha256": "c3624572e008c5761650a4c25fe530d727809dfb5c8b2f6d732a51e29d2bea5d",
+      "expected": {
+        "updates": [],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-type-only-import",
+      "input": "import type {T} from 'gt-next'; export const Page=()=> <T>Type-only</T>;",
+      "sourceSha256": "91106bcaf80d5fed7cd685a2c8e2c27f69a9a3199dec8b2caa5da1fe46359541",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": "Type-only",
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "f8e775e3b3f383bc"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-namespace-import",
+      "input": "import * as GT from 'gt-next'; export const Page=()=> <GT.T>Namespace</GT.T>;",
+      "sourceSha256": "657f55c67b06dbf261261317436ee55263947835a8ea8cdf3087e2eea6629454",
+      "expected": {
+        "updates": [],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-shadowed-t",
+      "input": "import {T} from 'gt-next'; export function Page(T){return <T>Shadowed</T>}",
+      "sourceSha256": "aacb3539773ee3f200478f318945b575fdd87737b15aa8173b7043202c336f9d",
+      "expected": {
+        "updates": [],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-local-variable-names",
+      "input": "import {T} from 'gt-next'; function Var(p){return p.children} function Branch(p){return p.children} export const Page=()=> <T><Var>Local Var</Var><Branch one=\"One\">Local Branch</Branch></T>;",
+      "sourceSha256": "4b653c54c1282e377fdfeeda69a20520044a8b2e8c0f4a08912b790ece18c94c",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": [
+              {
+                "i": 1,
+                "k": "_gt_value_1",
+                "v": "v"
+              },
+              {
+                "t": "Branch",
+                "i": 2,
+                "d": {
+                  "b": {
+                    "one": "One"
+                  },
+                  "t": "b"
+                },
+                "c": "Local Branch"
+              }
+            ],
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "ccc9a502c7c740aa"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-imported-local-variable",
+      "input": "import {T} from 'gt-next'; import {Var} from './ordinary'; export const Page=()=> <T><Var>Ordinary</Var></T>;",
+      "sourceSha256": "1062372618fbb41c7d10092b8bacec9e735e01e74df53282616cafe62c92570f",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": {
+              "i": 1,
+              "k": "_gt_value_1",
+              "v": "v"
+            },
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "933fa7740fe8c681"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-gt-runtime-call",
+      "input": "import {T} from 'gt-next'; import {jsx} from 'react/jsx-runtime'; export const Page=()=>jsx(T,{children:'Manual runtime call'});",
+      "sourceSha256": "36ae555bcaf6a4a955e2c7b8b47ce892d996f14602e360b4c3bbbbc9f92e0946",
+      "expected": {
+        "updates": [],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-custom-runtime-pragma",
+      "input": "/** @jsxImportSource custom-runtime */\nimport {T} from 'gt-next'; export const Page=()=> <T>Manual source</T>;",
+      "sourceSha256": "707ee2a1bdd10be9ce3e392e52cad830769dada4980e21221b87fb9e864b55fe",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": "Manual source",
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "5d0f745cb9f1e253"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-classic-runtime-pragma",
+      "input": "/** @jsxRuntime classic */\nimport {T} from 'gt-next'; export const Page=()=> <T>Manual classic</T>;",
+      "sourceSha256": "3d90eed8652154a33793350b605e634e1eae7f14dffc7937bf9fc3c41dd974b3",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": "Manual classic",
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "2b191664133cdd3e"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-styled-jsx-binding",
+      "input": "import {T} from 'gt-next'; import Style from 'styled-jsx/style'; export const Page=()=> <T>Before <Style id=\"style\">{'.color {color:red}'}</Style> after</T>;",
+      "sourceSha256": "00d190ef1daeee7c406b0c81c200b885f549eaa7b7dbb4d9d9a277e793991164",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": [
+              "Before ",
+              {
+                "t": "Style",
+                "i": 1,
+                "c": ".color {color:red}"
+              },
+              " after"
+            ],
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "hash": "81815459bed8b55d"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-context-metadata",
+      "input": "import {T,Var} from 'gt-next'; export const Page=()=> <T id=\"authored\" context=\"Page heading\" maxChars={80} requiresReview={true}>Hello <Var name=\"who\">{name}</Var></T>;",
+      "sourceSha256": "53e68374c0b683d7243479839fe48d6be5f8830bc325e2bc30a8aa4301abf495",
+      "expected": {
+        "updates": [
+          {
+            "dataFormat": "JSX",
+            "source": [
+              "Hello ",
+              {
+                "i": 1,
+                "k": "who",
+                "v": "v"
+              }
+            ],
+            "metadata": {
+              "filePaths": ["<fixture>"],
+              "id": "authored",
+              "context": "Page heading",
+              "maxChars": 80,
+              "requiresReview": true,
+              "hash": "ac80d6c39a6f29e2"
+            }
+          }
+        ],
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "name": "manual-no-translation",
+      "input": "export const Page=()=> <section>Unwrapped text <span>{name}</span></section>;",
+      "sourceSha256": "3d3faffda19e3f37f0e4022cd9b041a2c6be37f0c879af60c599b09ba16b2d54",
+      "expected": {
+        "updates": [],
+        "errors": [],
+        "warnings": []
+      }
+    }
+  ]
+}

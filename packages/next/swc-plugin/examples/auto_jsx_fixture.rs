@@ -19,7 +19,7 @@ use swc_core::{
 struct Request {
   input: String,
   #[serde(default)]
-  config: Option<PluginConfig>,
+  config: Option<serde_json::Value>,
 }
 
 fn main() {
@@ -48,10 +48,10 @@ fn main() {
         .unwrap();
         assert!(errors.is_empty(), "{errors:?}");
         resolver(Mark::new(), Mark::new(), true).process(&mut program);
-        let config = request.config.unwrap_or_else(|| {
-          serde_json::from_str(r#"{"enableAutoJsxInjection":true,"compileTimeHash":false}"#)
-            .unwrap()
-        });
+        let config = request.config.map_or_else(
+          || PluginConfig::parse(r#"{"enableAutoJsxInjection":true,"compileTimeHash":false}"#),
+          |config| PluginConfig::parse(&config.to_string()),
+        );
         let mut program = transform_program_with_comments(
           program,
           config,

@@ -21,6 +21,8 @@ pub(crate) use runtime::{allows_injection, take_loader_import_source};
 pub(crate) use source_comments::recover_runtime_comments;
 
 #[cfg(test)]
+mod disabled_tests;
+#[cfg(test)]
 mod tests;
 
 use std::{collections::HashSet, mem};

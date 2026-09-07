@@ -70,7 +70,6 @@ export const defaultWithGTConfigProps: DefaultGTConfigProps = {
     logLevel: 'warn',
     compileTimeHash: true,
     disableBuildChecks: false,
-    enableAutoJsxInjection: false,
   },
   disableInvalidLocaleWarning: false,
 } as const;

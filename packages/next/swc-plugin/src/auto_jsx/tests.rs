@@ -64,7 +64,7 @@ fn transform_with_metadata(
       }
       program.visit_mut_with(&mut SyntheticSpans(span));
     }
-    let config: PluginConfig = serde_json::from_str(config).unwrap();
+    let config = PluginConfig::parse(config);
     let mut program = transform_program_with_comments(
       program,
       config,
@@ -218,9 +218,9 @@ fn removing_loader_context_preserves_original_statements_and_comments() {
     "const expression = /value/",
     "/* Keep comment-only source */",
   ] {
-    let marked = format!("{source}\n;\n\"__GT_AUTO_JSX_IMPORT_SOURCE__:react\";\n");
+    let marked = format!("{source}\n;\n\"__GT_AUTO_JSX_IMPORT_SOURCE__:@emotion/react\";\n");
     assert_eq!(
-      transform(&marked, r#"{"jsxImportSourceFromLoader":true}"#),
+      transform(&marked, r#"{"enableAutoJsxInjection":true,"jsxImportSourceFromLoader":true}"#),
       transform(source, "{}"),
       "{source}"
     );
@@ -228,7 +228,7 @@ fn removing_loader_context_preserves_original_statements_and_comments() {
 }
 
 #[test]
-fn loader_context_is_removed_even_with_auto_insertion_off_before_manual_hashing() {
+fn disabled_auto_insertion_preserves_loader_markers_before_manual_hashing() {
   let source = "import { T, t } from 'gt-next'; export const label = t('Label'); export const Page = () => <T>Manual</T>;";
   let marked = format!("{source}\n;\n\"__GT_AUTO_JSX_IMPORT_SOURCE__:@emotion/react\";\n");
   assert_eq!(
@@ -236,7 +236,7 @@ fn loader_context_is_removed_even_with_auto_insertion_off_before_manual_hashing(
       &marked,
       r#"{"compileTimeHash":true,"jsxImportSourceFromLoader":true}"#
     ),
-    transform(source, r#"{"compileTimeHash":true}"#),
+    transform(&marked, r#"{"compileTimeHash":true}"#),
   );
 }
 
@@ -250,7 +250,7 @@ fn ordinary_source_never_consumes_the_private_marker_without_bridge_mode() {
   assert_eq!(
     transform(
       "export const value = 1;",
-      r#"{"jsxImportSourceFromLoader":true}"#
+      r#"{"enableAutoJsxInjection":true,"jsxImportSourceFromLoader":true}"#
     ),
     transform("export const value = 1;", "{}")
   );
@@ -267,7 +267,7 @@ fn jsx_requires_a_valid_final_marker_when_loader_context_is_enabled() {
     let source = format!("export const Page = () => <p>Hello</p>;{tail}");
     assert!(std::panic::catch_unwind(|| transform(
       &source,
-      r#"{"jsxImportSourceFromLoader":true}"#
+      r#"{"enableAutoJsxInjection":true,"jsxImportSourceFromLoader":true}"#
     ))
     .is_err());
   }
@@ -278,7 +278,7 @@ fn jsx_requires_a_valid_final_marker_when_loader_context_is_enabled() {
 fn missing_loader_context_uses_the_adapters_formatted_diagnostic() {
   transform(
     "export const Page = () => <p>Hello</p>;",
-    r#"{"jsxImportSourceFromLoader":true,"missingJsxRuntimeContextDiagnostic":"The adapter's formatted runtime-context diagnostic"}"#,
+    r#"{"enableAutoJsxInjection":true,"jsxImportSourceFromLoader":true,"missingJsxRuntimeContextDiagnostic":"The adapter's formatted runtime-context diagnostic"}"#,
   );
 }
 

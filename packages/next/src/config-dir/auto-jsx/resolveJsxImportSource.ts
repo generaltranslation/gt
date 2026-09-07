@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import JSON5 from 'json5';
 import type { NextConfig } from 'next';
 import {
   createGtNextPluginDiagnostic,
@@ -29,6 +28,8 @@ function readImportSource(
 ): string | undefined {
   const text = fs.readFileSync(filename, 'utf8');
   if (text.length === 0) return emptyFileSource;
+  // Keep the auto-insertion parser dependency outside disabled configuration.
+  const JSON5 = require('json5') as typeof import('json5');
   const config: unknown = text.trim() ? JSON5.parse(text) : {};
   if (!config || typeof config !== 'object' || !('compilerOptions' in config))
     return undefined;

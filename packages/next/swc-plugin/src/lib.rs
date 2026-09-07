@@ -358,7 +358,7 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
     .get_transform_plugin_config()
     .unwrap_or("{}".to_string());
 
-  let config: PluginConfig = serde_json::from_str(&config_str).unwrap_or_default();
+  let config = PluginConfig::parse(&config_str);
 
   // Try to get the filename from metadata
   // First check what context kinds are available
@@ -402,15 +402,16 @@ pub fn transform_program_with_comments(
   comments: Option<&dyn Comments>,
 ) -> Program {
   let mut program = program;
-  let loader_import_source = if config.jsx_import_source_from_loader {
-    auto_jsx::take_loader_import_source(
-      &mut program,
-      comments,
-      config.missing_jsx_runtime_context_diagnostic.as_deref(),
-    )
-  } else {
-    None
-  };
+  let loader_import_source =
+    if config.enable_auto_jsx_injection && config.jsx_import_source_from_loader {
+      auto_jsx::take_loader_import_source(
+        &mut program,
+        comments,
+        config.missing_jsx_runtime_context_diagnostic.as_deref(),
+      )
+    } else {
+      None
+    };
 
   if config.enable_auto_jsx_injection
     && !auto_jsx::package_scope::is_runtime_package(

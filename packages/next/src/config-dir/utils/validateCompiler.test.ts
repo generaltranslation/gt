@@ -63,4 +63,22 @@ describe('auto JSX compiler validation', () => {
     validateCompiler({ experimentalCompilerOptions: options });
     expect(options.type).toBe('none');
   });
+
+  it.each(['false', 1, {}])(
+    'requires boolean true before changing legacy compiler validation: %j',
+    (flag) => {
+      vi.stubEnv('TURBOPACK', '');
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const options: CompilerOptions = {
+        type: 'swc',
+        compileTimeHash: false,
+        enableAutoJsxInjection: flag as unknown as boolean,
+      };
+      validateCompiler({ experimentalCompilerOptions: options });
+      expect(options.type).toBe('none');
+      expect(warn).not.toHaveBeenCalledWith(
+        expect.stringContaining('Automatic JSX injection')
+      );
+    }
+  );
 });

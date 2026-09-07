@@ -117,7 +117,7 @@
     },
     "./config": {
       "types": "./dist/config.d.ts",
-      "import": "./dist/config.js",
+      "import": "./dist/config.mjs",
       "default": "./dist/config.js"
     },
     "./server": {

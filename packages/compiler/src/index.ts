@@ -228,13 +228,15 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         return isScriptResource(id) || autoJsxEnabled;
       },
       transform(code: string, id: string) {
-        // Webpack virtual entry loaders can have no resource or source yet.
-        if (typeof code !== 'string') return null;
+        // Broad auto-insertion resource selection can include virtual loaders
+        // with no source. Preserve the existing transform contract when off.
+        if (autoJsxEnabled && typeof code !== 'string') return null;
         // Initialize processing state
         const state = initializeState(resolvedOptions, id);
         if (debugManifest) state.debugManifest = debugManifest;
         try {
-          if (!isScriptResource(id)) return insertPostLoaderJsx(code, state);
+          if (autoJsxEnabled && !isScriptResource(id))
+            return insertPostLoaderJsx(code, state);
 
           // Skip transformation if not needed
           if (

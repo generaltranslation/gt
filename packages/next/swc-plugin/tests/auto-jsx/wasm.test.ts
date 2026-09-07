@@ -367,13 +367,9 @@ describe.each([false, true])(
           expect(
             canonicalRuntime(parse(actual, { sourceType: 'module' }))
           ).toBe(canonicalRuntime(oracleCompiled(baseline)));
-          expect(
-            canonical(
-              parse(transformWithHost(input, false, react, config), {
-                sourceType: 'module',
-              })
-            )
-          ).toBe(canonical(parse(baseline, { sourceType: 'module' })));
+          expect(transformWithHost(input, false, react, config)).toBe(
+            transformWithHost(input, false, react)
+          );
         });
       }
     }

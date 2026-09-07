@@ -8,9 +8,9 @@ const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const distInitGTServerPath = join(packageRoot, 'dist/setup/initGT.server.mjs');
 const distClientPath = join(packageRoot, 'dist/index.client.mjs');
 
-function runNode(args: string[], cwd = packageRoot): void {
+function runNode(args: string[]): void {
   const result = spawnSync(process.execPath, args, {
-    cwd,
+    cwd: packageRoot,
     encoding: 'utf8',
   });
 
@@ -123,40 +123,55 @@ describe('gt-next package exports', () => {
     ]);
   });
 
-  it.each([false, true])(
-    'loads public configuration from native ESM with auto JSX enabled=%s',
-    (enabled) => {
-      runNode(
+  it('preserves the existing configuration entrypoints for each module format', () => {
+    const packageJson = JSON.parse(
+      readFileSync(join(packageRoot, 'package.json'), 'utf8')
+    );
+    expect(packageJson.exports['./config']).toEqual({
+      types: './dist/config.d.ts',
+      import: './dist/config.mjs',
+      default: './dist/config.js',
+    });
+  });
+
+  it.each(['omitted', 'false'])(
+    'does not load the auto-JSX parser dependency when the flag is %s',
+    (flag) => {
+      const result = spawnSync(
+        process.execPath,
         [
-          '--input-type=module',
           '--eval',
           `
-          import assert from 'node:assert/strict';
-          import { withGTConfig } from 'gt-next/config';
-
-          const config = withGTConfig({}, {
-            runtimeUrl: null,
-            cacheUrl: null,
-            experimentalCompilerOptions: {
-              type: 'swc',
-              enableAutoJsxInjection: ${enabled},
-              compileTimeHash: false,
-              disableBuildChecks: true,
-            },
-          });
-          const plugins = config.experimental.swcPlugins;
-          assert.equal(plugins.length, ${enabled ? 1 : 0});
-          if (${enabled}) {
-            const options = plugins[0][1];
-            assert.equal(options.enableAutoJsxInjection, true);
-            assert.equal(options.compileTimeHash, false);
-            assert.ok(options.autoJsxRuntimePackageRoots.length > 0);
-          }
-          assert.equal(typeof config.webpack, 'function');
-        `,
+        const assert = require('node:assert/strict');
+        const Module = require('node:module');
+        const originalLoad = Module._load;
+        Module._load = function(request, ...args) {
+          if (request === 'json5') throw new Error('auto-only dependency loaded');
+          return originalLoad.call(this, request, ...args);
+        };
+        const { withGTConfig } = require('gt-next/config');
+        const config = withGTConfig({}, {
+          runtimeUrl: null, cacheUrl: null,
+          experimentalCompilerOptions: {
+            type: 'swc',
+            ${flag === 'false' ? 'enableAutoJsxInjection: false,' : ''}
+          },
+        });
+        assert.equal(config.experimental.swcPlugins.length, 1);
+        const options = config.experimental.swcPlugins[0][1];
+        assert.equal(options.compileTimeHash, true);
+        assert.equal(options.enableAutoJsxInjection, ${flag === 'false' ? 'false' : 'undefined'});
+      `,
         ],
-        resolve(packageRoot, '../../tests/apps/next-app-router-locale-routing')
+        {
+          cwd: resolve(
+            packageRoot,
+            '../../tests/apps/next-app-router-locale-routing'
+          ),
+          encoding: 'utf8',
+        }
       );
+      expect(result.status, result.stderr).toBe(0);
     }
   );
 

@@ -338,14 +338,17 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   };
 
   // Merge compiler options
+  const configuredAutoJsxInjection =
+    props.experimentalCompilerOptions?.enableAutoJsxInjection ??
+    (loadedConfig.files?.gt?.parsingFlags?.enableAutoJsxInjection === true
+      ? true
+      : undefined);
   const mergedExperimentalCompilerOptions = {
     ...defaultWithGTConfigProps.experimentalCompilerOptions,
     ...props.experimentalCompilerOptions,
-    enableAutoJsxInjection:
-      props.experimentalCompilerOptions?.enableAutoJsxInjection ??
-      loadedConfig.files?.gt?.parsingFlags?.enableAutoJsxInjection ??
-      defaultWithGTConfigProps.experimentalCompilerOptions
-        .enableAutoJsxInjection,
+    ...(configuredAutoJsxInjection !== undefined && {
+      enableAutoJsxInjection: configuredAutoJsxInjection,
+    }),
   };
 
   // precedence: input > env > config file > defaults
@@ -713,11 +716,14 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
       ? rawAutoderive
       : (rawAutoderive.strings ?? false);
 
+  const autoJsxCompilerEnabled =
+    mergedConfig.experimentalCompilerOptions?.enableAutoJsxInjection === true &&
+    (mergedConfig.experimentalCompilerOptions.type === 'swc' ||
+      mergedConfig.experimentalCompilerOptions.type === 'babel');
   const autoJsxEnabled =
-    mergedConfig.experimentalCompilerOptions?.type === 'swc' &&
-    mergedConfig.experimentalCompilerOptions.enableAutoJsxInjection;
-  const autoJsxRuntimePackageRoots = mergedConfig.experimentalCompilerOptions
-    ?.enableAutoJsxInjection
+    autoJsxCompilerEnabled &&
+    mergedConfig.experimentalCompilerOptions?.type === 'swc';
+  const autoJsxRuntimePackageRoots = autoJsxCompilerEnabled
     ? resolveAutoJsxRuntimePackageRoots(
         __dirname,
         process.cwd(),
@@ -730,15 +736,15 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     ? resolveJsxImportSource(internalNextConfig, turboPackEnabled)
     : undefined;
   // Turbopack tests presence, including `emotion: false`; Webpack tests truthiness.
-  const emotionEnabled = turboPackEnabled
-    ? internalNextConfig.compiler?.emotion != null
-    : !!internalNextConfig.compiler?.emotion;
   const jsxImportSourceFromLoader =
-    autoJsxEnabled && jsxImportSource === undefined && emotionEnabled;
-  const autoJsxLayerLoader = path.resolve(
-    __dirname,
-    './config-dir/auto-jsx/loader.js'
-  );
+    autoJsxEnabled &&
+    jsxImportSource === undefined &&
+    (turboPackEnabled
+      ? internalNextConfig.compiler?.emotion != null
+      : !!internalNextConfig.compiler?.emotion);
+  const autoJsxLayerLoader = jsxImportSourceFromLoader
+    ? path.resolve(__dirname, './config-dir/auto-jsx/loader.js')
+    : '';
 
   const swcPluginOptions: Record<string, unknown> = {
     ...compilerOptions,

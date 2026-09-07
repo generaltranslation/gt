@@ -87,6 +87,41 @@ Unsupported pragma-selected runtimes preserve original JSX only after its
 lowered AST is proven equal to the compiler result. Fixtures do not define every
 application symbol; use the executable apps below for rendering checks.
 
+## Disabled-feature boundary
+
+`disabled-gate.test.ts` compares every corpus input with insertion omitted and
+explicitly false against the same SWC host without a plugin. It compares complete
+emitted code and source-map strings without normalization. Targeted cases cover
+five JSX host modes, malformed auto-only options, loader-looking user strings,
+missing metadata, and all sixteen combinations of existing hash, validation, and
+autoderive settings. Rust tests additionally compare the disabled entry with the
+pre-feature parsing and transformation pipeline.
+
+The compiler's `autoJsxFeatureGate.test.ts` retains the public raw, Vite, and
+Rollup contracts for manual JSX/string hashes, macros, runtime translation,
+virtual-source diagnostics, and adapter-selected filenames. Next configuration
+tests reject any disabled-path JSX configuration reads and prove that its new
+parser dependency is not loaded. Omitted flags retain the existing serialized
+compiler options; explicit false still overrides a configured true value.
+
+The CLI's `autoJsxDisabled.test.ts` compares 137 source-hash-pinned inputs with
+expectations generated from pre-feature commit
+`36d34236db34458b6301e06be1eed62f3e3e608b`. Both disabled states retain exact
+translation trees, hashes, static IDs, warnings, and errors; only fixture paths
+are made portable. Additional checks cover lazy parsing options, inherited and
+private getters, conditional package exports, and enabled/disabled cache reuse.
+
+The package keeps its existing ESM/CommonJS export mapping. Copying WASM after
+transpilation and preserving the five existing framework aliases are build
+artifact safeguards shared by the existing hash plugin. They are independent of
+the runtime insertion flag; they do not activate automatic insertion.
+
+```sh
+pnpm --filter gt-next exec vitest run swc-plugin/tests/auto-jsx/disabled-gate.test.ts
+pnpm --filter @generaltranslation/compiler exec vitest run src/__tests__/autoJsxFeatureGate.test.ts
+pnpm --filter gt exec vitest run src/react/parse/__tests__/autoJsxDisabled.test.ts
+```
+
 ## Independent CLI reference
 
 `cli-oracle.ts` calls the CLI's `getPathsAndAliases`, `ensureTAndVarImported`, and

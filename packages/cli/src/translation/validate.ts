@@ -6,6 +6,7 @@ import { logger } from '../console/logger.js';
 
 import { createUpdates } from './parse.js';
 import { createInlineUpdates } from '../react/parse/createInlineUpdates.js';
+import { withAutoJsxProjectConfig } from '../react/jsx/utils/jsxParsing/autoInsertion/parsingOptions.js';
 import { InlineLibrary, Libraries } from '../types/libraries.js';
 import {
   extractInlineFromProject,
@@ -40,12 +41,12 @@ async function runValidation(
               true,
               primaryFiles,
               settings.files.gtJson.parsingFlags,
-              {
-                ...settings.parsingOptions,
-                jsxProjectConfigPath:
-                  settings.jsconfig ||
-                  settings.parsingOptions.jsxProjectConfigPath,
-              }
+              settings.files.gtJson.parsingFlags.enableAutoJsxInjection
+                ? withAutoJsxProjectConfig(
+                    settings.parsingOptions,
+                    settings.jsconfig
+                  )
+                : settings.parsingOptions
             );
     return extractInlineFromProject(
       pkg,

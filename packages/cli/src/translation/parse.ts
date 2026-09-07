@@ -4,6 +4,7 @@ import { logger } from '../console/logger.js';
 import loadJSON from '../fs/loadJSON.js';
 import { createDictionaryUpdates } from '../react/parse/createDictionaryUpdates.js';
 import { createInlineUpdates } from '../react/parse/createInlineUpdates.js';
+import { withAutoJsxProjectConfig } from '../react/jsx/utils/jsxParsing/autoInsertion/parsingOptions.js';
 import { createPythonInlineUpdates } from '../python/parse/createPythonInlineUpdates.js';
 import createESBuildConfig from '../react/config/createESBuildConfig.js';
 import chalk from 'chalk';
@@ -89,11 +90,9 @@ export async function createUpdates(
                 validate,
                 primaryPatterns,
                 parsingFlags,
-                {
-                  ...parsingOptions,
-                  jsxProjectConfigPath:
-                    options.jsconfig || parsingOptions.jsxProjectConfigPath,
-                }
+                parsingFlags.enableAutoJsxInjection
+                  ? withAutoJsxProjectConfig(parsingOptions, options.jsconfig)
+                  : parsingOptions
               );
   const {
     updates: newUpdates,

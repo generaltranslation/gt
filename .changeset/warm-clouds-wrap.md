@@ -14,4 +14,4 @@ Preserve the SWC plugin binary in the published package by copying it after Java
 
 Keep verified GT runtime packages outside automatic JSX insertion, including linked and nested installations, while preserving manual translation hashing. Preserve internal loader module names across rebuilds so configured aliases and lazy loading remain intact.
 
-Support the public configuration import from native ESM and `next.config.mjs`, including automatic JSX insertion, by preserving the configuration module's Node.js resolution context.
+Keep automatic JSX runtime discovery, loader markers, parser dependencies, and configuration validation behind the feature flag. With insertion disabled or omitted, ignore auto-only SWC metadata and retain existing manual hashes, validation, source maps, compiler options, and package entrypoints.
