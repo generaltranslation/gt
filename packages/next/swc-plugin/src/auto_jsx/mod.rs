@@ -8,8 +8,12 @@
 
 mod bindings;
 mod identity;
+pub(crate) mod package_scope;
+mod react_helpers;
 mod runtime;
+mod runtime_calls;
 mod source_comments;
+mod style;
 mod syntax;
 
 pub use runtime::JsxRuntime;
@@ -31,20 +35,28 @@ use swc_core::{
 };
 use syntax::{
   attr_expr, children_location, expr_child, expression, expression_has_text, expression_mut,
-  has_text, inline_object, is_runtime_jsx, meaningful_child, needs_variable,
-  object_property_expression, property_name, set_object_property_expression, wrap,
+  force_dynamic_children, has_text, inline_object, is_runtime_jsx, meaningful_child,
+  needs_variable, object_property_expression, property_name, set_object_property_expression, wrap,
   ChildrenLocation,
 };
 
 /// Insert automatic translation and variable components in a resolved program.
 /// Import and reference IDs must already carry resolver syntax contexts, as in
 /// the SWC plugin pipeline, so shadowed names are distinguished from imports.
-pub fn inject_auto_jsx(program: &mut Program) {
+pub fn inject_auto_jsx(program: &mut Program, raw_jsx: bool) {
   let identity = identity::NodeIdentity::assign(program);
+  let bindings = Bindings::new(program);
+  let styles = style::StyleBindings::new(program);
+  let has_raw_text_boundaries = styles.contains(program, &bindings.runtime);
   let mut visitor = AutoJsx {
-    bindings: Bindings::new(program),
+    bindings,
+    styles,
+    has_raw_text_boundaries,
     processed: HashSet::new(),
     insertions: 0,
+    raw_jsx,
+    runtime_depth: 0,
+    runtime_owner: None,
   };
   program.visit_mut_with(&mut visitor);
   identity.restore(program);
@@ -52,6 +64,7 @@ pub fn inject_auto_jsx(program: &mut Program) {
     return;
   }
   let import = visitor.bindings.import();
+  let runtime_imports = visitor.bindings.runtime.imports();
   match program {
     Program::Module(module) => {
       // Preserve directive prologues such as "use client".
@@ -59,6 +72,7 @@ pub fn inject_auto_jsx(program: &mut Program) {
         ModuleItem::Stmt(Stmt::Expr(ExprStmt { expr, .. })) if matches!(expr.as_ref(), Expr::Lit(Lit::Str(_)))
       )).count();
       module.body.insert(position, import);
+      module.body.splice(position..position, runtime_imports);
     }
     Program::Script(script) => {
       let position = script
@@ -75,6 +89,7 @@ pub fn inject_auto_jsx(program: &mut Program) {
         .map(ModuleItem::Stmt)
         .collect();
       body.insert(position, import);
+      body.splice(position..position, runtime_imports);
       *program = Program::Module(Module {
         span: script.span,
         body,
@@ -86,11 +101,18 @@ pub fn inject_auto_jsx(program: &mut Program) {
 
 struct AutoJsx {
   bindings: Bindings,
+  styles: style::StyleBindings,
+  has_raw_text_boundaries: bool,
   /// Original JSX spans (or temporary keys from NodeIdentity) stay stable when
   /// children move into a wrapper. Generated wrappers have DUMMY_SP and are
   /// recognized by their dedicated import IDs instead of this set.
   processed: HashSet<Span>,
   insertions: usize,
+  /// Raw JSX follows the host-selected runtime. Explicit imported React calls
+  /// remain eligible even when the same file lowers JSX to a custom factory.
+  raw_jsx: bool,
+  runtime_depth: usize,
+  runtime_owner: Option<Id>,
 }
 
 impl AutoJsx {
@@ -101,6 +123,9 @@ impl AutoJsx {
   }
 
   fn process_element(&mut self, element: &mut JSXElement, inside: bool) {
+    if self.styles.element(element) {
+      return;
+    }
     if !is_runtime_jsx(element) {
       if inside {
         let original = mem::replace(element, wrap(&self.bindings.variable, vec![]));
@@ -121,7 +146,7 @@ impl AutoJsx {
     }
     if is_opaque(component.as_deref()) {
       self.process_opaque_props(element, component.as_deref().unwrap_or_default());
-      if !inside {
+      if !inside && !self.has_style(element) {
         let original = mem::replace(element, wrap(&self.bindings.translate, vec![]));
         element
           .children
@@ -139,11 +164,12 @@ impl AutoJsx {
   }
 
   fn process_element_children(&mut self, element: &mut JSXElement, inside: bool) {
+    let mut claimed_attribute = false;
     match children_location(element) {
       Some(ChildrenLocation::Attribute(index)) => {
         if let JSXAttrOrSpread::JSXAttr(attr) = &mut element.opening.attrs[index] {
           if let Some(value) = &mut attr.value {
-            self.process_children_attribute(value, inside);
+            claimed_attribute = self.process_children_attribute(value, inside);
           }
         }
       }
@@ -152,7 +178,7 @@ impl AutoJsx {
           if let Expr::Object(object) = expression_mut(&mut spread.expr) {
             if let PropOrSpread::Prop(prop) = &mut object.props[prop_index] {
               if let Some(mut value) = object_property_expression(prop) {
-                self.process_children_expression(&mut value, inside);
+                claimed_attribute = self.process_children_expression(&mut value, inside);
                 set_object_property_expression(prop, value);
               }
             }
@@ -161,9 +187,15 @@ impl AutoJsx {
       }
       None => self.process_child_list(&mut element.children, inside),
     }
+    if claimed_attribute {
+      // The compiler switches the parent to jsx even if later duplicate raw
+      // children override this property. Retain that array as one expression
+      // so the host preserves the same dynamic-child/freeze semantics.
+      force_dynamic_children(&mut element.children);
+    }
   }
 
-  fn process_children_attribute(&mut self, value: &mut JSXAttrValue, inside: bool) {
+  fn process_children_attribute(&mut self, value: &mut JSXAttrValue, inside: bool) -> bool {
     if let JSXAttrValue::Str(text) = value {
       if !inside && has_text(&text.value.to_string_lossy()) {
         // Keep quoted JSX in quoted form. Converting this to a JavaScript
@@ -186,16 +218,19 @@ impl AutoJsx {
             }));
         }
         self.insertions += 1;
+        return true;
       }
-      return;
+      return false;
     }
     if let Some(mut expr) = attr_expr(value.clone()) {
-      self.process_children_expression(&mut expr, inside);
+      let claim = self.process_children_expression(&mut expr, inside);
       *value = JSXAttrValue::JSXExprContainer(JSXExprContainer {
         span: DUMMY_SP,
         expr: JSXExpr::Expr(expr),
       });
+      return claim;
     }
+    false
   }
 
   fn expression_claims_translation(&self, expr: &Expr) -> bool {
@@ -210,25 +245,49 @@ impl AutoJsx {
   }
 
   fn single_expression_claims_translation(&self, expr: &Expr) -> bool {
+    if self.has_style(expr) {
+      return false;
+    }
     expression_has_text(expr)
-      || matches!(expression(expr), Expr::JSXElement(element) if is_runtime_jsx(element) && is_opaque(self.bindings.component_name(element)))
+      || matches!(expression(expr), Expr::JSXElement(element) if self.raw_jsx && is_runtime_jsx(element) && is_opaque(self.bindings.component_name(element)))
+      || matches!(expression(expr), Expr::Call(call) if self.bindings.is_runtime_call(call) && is_opaque(self.bindings.call_component_name(call)))
   }
 
-  fn process_children_expression(&mut self, expr: &mut Box<Expr>, inside: bool) {
-    let claim = !inside && self.expression_claims_translation(expr);
+  fn process_children_expression(&mut self, expr: &mut Box<Expr>, inside: bool) -> bool {
+    let claim = !inside && !self.has_style(expr) && self.expression_claims_translation(expr);
     self.process_expression_children(expr, inside || claim);
     if claim {
       let original = mem::replace(expr, Box::new(Expr::Invalid(Invalid { span: DUMMY_SP })));
-      **expr = Expr::JSXElement(Box::new(wrap(
-        &self.bindings.translate,
-        vec![expr_child(original)],
-      )));
+      if matches!(expression(&original), Expr::Array(_)) {
+        // A single raw array expression still owns a static React child array.
+        // `jsxs` retains its spread/hole shape and freezes the array in React's
+        // development runtime, unlike a one-expression JSX wrapper.
+        let previous_owner = if self.runtime_depth == 0 {
+          self.runtime_owner.take()
+        } else {
+          self.runtime_owner.clone()
+        };
+        **expr = Expr::Call(self.wrap_runtime(&self.bindings.translate, original, true));
+        self.runtime_owner = previous_owner;
+      } else if self.runtime_depth > 0 {
+        **expr = Expr::Call(self.wrap_runtime(&self.bindings.translate, original, false));
+      } else {
+        **expr = Expr::JSXElement(Box::new(wrap(
+          &self.bindings.translate,
+          vec![expr_child(original)],
+        )));
+      }
       self.insertions += 1;
     }
+    claim
   }
 
   fn process_expression_children(&mut self, expr: &mut Box<Expr>, inside: bool) {
     if let Expr::Array(array) = expression_mut(expr) {
+      if self.has_style(array) {
+        self.process_style_array_boundaries(array);
+        return;
+      }
       for item in array.elems.iter_mut().flatten() {
         if item.spread.is_none() {
           self.process_single_expression(&mut item.expr, inside);
@@ -240,10 +299,14 @@ impl AutoJsx {
   }
 
   fn process_single_expression(&mut self, expr: &mut Box<Expr>, inside: bool) {
-    let wrap = inside && needs_variable(expr);
+    let inside = inside && !self.has_style(expr);
+    let wrap = inside && self.needs_variable(expr);
     match expression_mut(expr) {
-      Expr::JSXElement(element) => self.process_element(element, inside),
-      Expr::JSXFragment(fragment) => self.process_fragment(fragment, inside),
+      Expr::JSXElement(element) if self.raw_jsx => self.process_element(element, inside),
+      Expr::JSXFragment(fragment) if self.raw_jsx => self.process_fragment(fragment, inside),
+      Expr::Call(call) if self.bindings.is_runtime_call(call) => {
+        self.process_runtime_call(call, inside)
+      }
       _ if wrap => self.wrap_variable(expr),
       _ => {}
     }
@@ -251,13 +314,29 @@ impl AutoJsx {
 
   fn wrap_variable(&self, expr: &mut Box<Expr>) {
     let original = mem::replace(expr, Box::new(Expr::Invalid(Invalid { span: DUMMY_SP })));
-    **expr = Expr::JSXElement(Box::new(wrap(
-      &self.bindings.variable,
-      vec![expr_child(original)],
-    )));
+    **expr = if self.runtime_depth > 0 {
+      Expr::Call(self.wrap_runtime(&self.bindings.variable, original, false))
+    } else {
+      Expr::JSXElement(Box::new(wrap(
+        &self.bindings.variable,
+        vec![expr_child(original)],
+      )))
+    };
+  }
+
+  fn needs_variable(&self, expr: &Expr) -> bool {
+    match expression(expr) {
+      Expr::Call(call) if self.bindings.is_runtime_call(call) => false,
+      Expr::JSXElement(_) | Expr::JSXFragment(_) if !self.raw_jsx => true,
+      _ => needs_variable(expr),
+    }
   }
 
   fn process_child_list(&mut self, children: &mut Vec<JSXElementChild>, inside: bool) {
+    if children.iter().any(|child| self.has_style(child)) {
+      self.process_style_child_boundaries(children);
+      return;
+    }
     let meaningful: Vec<_> = children
       .iter()
       .enumerate()
@@ -391,6 +470,10 @@ impl AutoJsx {
   }
 
   fn process_opaque_expression(&mut self, expr: &mut Box<Expr>, component: &str, prop: &str) {
+    if self.has_style(expr) {
+      self.process_expression_children(expr, false);
+      return;
+    }
     if is_control_prop(component, prop) {
       return;
     }
@@ -400,16 +483,20 @@ impl AutoJsx {
       }
       return;
     }
-    let wrap = needs_variable(expr);
+    let wrap = self.needs_variable(expr);
     match expression_mut(expr) {
-      Expr::JSXElement(child) if is_runtime_jsx(child) => {
+      Expr::JSXElement(child) if self.raw_jsx && is_runtime_jsx(child) => {
         // The compiler treats a JSX content prop as an opaque shell and
         // processes only its children, even if the shell itself is GT.
         self.process_element_children(child, true);
         self.walk_and_mark(expr);
       }
-      Expr::JSXFragment(child) => {
+      Expr::JSXFragment(child) if self.raw_jsx => {
         self.process_child_list(&mut child.children, true);
+        self.walk_and_mark(expr);
+      }
+      Expr::Call(call) if self.bindings.is_runtime_call(call) => {
+        self.process_runtime_children(call, true);
         self.walk_and_mark(expr);
       }
       _ if wrap => self.wrap_variable(expr),
@@ -466,13 +553,17 @@ impl AutoJsx {
 
   fn walk_and_mark(&mut self, expr: &Expr) {
     match expression(expr) {
-      Expr::JSXElement(element) if is_runtime_jsx(element) => {
+      Expr::JSXElement(element) if self.raw_jsx && is_runtime_jsx(element) => {
         self.mark(element.span);
         self.mark_element_children(element);
       }
-      Expr::JSXFragment(fragment) => {
+      Expr::JSXFragment(fragment) if self.raw_jsx => {
         self.mark(fragment.span);
         self.mark_child_list(&fragment.children);
+      }
+      Expr::Call(call) if self.bindings.is_runtime_call(call) => {
+        self.mark(call.span);
+        self.mark_runtime_children(call);
       }
       Expr::Array(array) => {
         for item in array.elems.iter().flatten() {
@@ -487,7 +578,29 @@ impl AutoJsx {
 }
 
 impl VisitMut for AutoJsx {
+  fn visit_mut_call_expr(&mut self, call: &mut CallExpr) {
+    if self.styles.call(call, &self.bindings.runtime) {
+      return;
+    }
+    if self.bindings.is_runtime_call(call) {
+      if is_user_variable(self.bindings.call_component_name(call)) {
+        return;
+      }
+      if !self.processed.contains(&call.span) {
+        self.process_runtime_call(call, false);
+      }
+    }
+    call.visit_mut_children_with(self);
+  }
+
   fn visit_mut_jsx_element(&mut self, element: &mut JSXElement) {
+    if self.styles.element(element) {
+      return;
+    }
+    if !self.raw_jsx {
+      element.visit_mut_children_with(self);
+      return;
+    }
     // User Var-like components suppress the entire ordinary traversal,
     // including JSX hidden inside dynamic expressions and attribute values.
     if is_runtime_jsx(element) && is_user_variable(self.bindings.component_name(element)) {
@@ -500,6 +613,10 @@ impl VisitMut for AutoJsx {
   }
 
   fn visit_mut_jsx_fragment(&mut self, fragment: &mut JSXFragment) {
+    if !self.raw_jsx {
+      fragment.visit_mut_children_with(self);
+      return;
+    }
     if !self.processed.contains(&fragment.span) {
       self.process_fragment(fragment, false);
     }

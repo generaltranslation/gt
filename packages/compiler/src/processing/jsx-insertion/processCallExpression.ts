@@ -7,7 +7,6 @@ import {
   PLURAL_CONTROL_PROPS,
 } from '../../utils/constants/gt/constants';
 import { OTHER_IDENTIFIERS_ENUM } from '../../utils/constants/other/constants';
-import { REACT_FUNTIONS } from '../../utils/constants/react/constants';
 import { isReactJsxFunction } from '../../utils/constants/resolveIdentifier/isReactJsxFunction';
 import {
   resolveFirstArgGTName,
@@ -15,8 +14,14 @@ import {
   isUserVariableComponent,
   isGTBranchComponent,
   isGTDeriveComponent,
-} from '../../utils/constants/resolveIdentifier/isGTComponent';
-import { JsxCalleeInfo } from './processImportDeclaration';
+} from './resolveAutoJsxComponent';
+import { runtimeCallee } from './runtimeHelpers';
+import {
+  containsStyleBoundary,
+  isProtectedRuntimeCall,
+  isStyleComponent,
+  styleChildSegments,
+} from './styleBoundary';
 
 /**
  * Extended state for the JSX insertion pass.
@@ -24,7 +29,6 @@ import { JsxCalleeInfo } from './processImportDeclaration';
  */
 interface JsxInsertionState extends TransformState {
   processedNodes: WeakSet<t.Node>;
-  calleeInfo: JsxCalleeInfo;
   /** Depth counter: when > 0, we are inside a user Var/Num/Currency/DateTime — skip all transforms */
   insideUserVarDepth: number;
 }
@@ -37,18 +41,21 @@ interface JsxInsertionState extends TransformState {
  * This handles aliased imports like `import { jsxDEV as _jsxDEV }`.
  */
 export function processCallExpression(
-  state: TransformState,
-  calleeInfo: JsxCalleeInfo
+  state: TransformState
 ): VisitNode<t.Node, t.CallExpression> {
   const jsxState: JsxInsertionState = {
     ...state,
     processedNodes: new WeakSet<t.Node>(),
-    calleeInfo,
     insideUserVarDepth: 0,
   };
 
   return {
     enter: (path) => {
+      // Raw-text fallback calls must also suppress nested JSX in their payload.
+      if (isProtectedRuntimeCall(path)) {
+        path.skip();
+        return;
+      }
       // Check jsx callee first — needed for both user Var detection and processing
       const calleePath = path.get('callee');
       if (
@@ -107,6 +114,7 @@ function processJsxNode({
 
   const firstArgPath = path.get('arguments')[0];
   if (!firstArgPath?.isExpression()) return;
+  if (isStyleComponent(firstArgPath)) return;
 
   // User T → mark all descendant jsx calls as processed, hands off
   if (isUserTranslationComponent(firstArgPath)) {
@@ -139,15 +147,7 @@ function processJsxNode({
     });
     if (!insideAutoT) {
       // Root-level opaque component — wrap in _T (single child → use singleCallee)
-      const callee =
-        state.calleeInfo.singleCallee ??
-        state.calleeInfo.multiCallee ??
-        REACT_FUNTIONS.jsx;
-      const tWrapped = wrapInT(
-        path.node,
-        t.identifier(callee),
-        state.calleeInfo
-      );
+      const tWrapped = wrapInT(path.node, path);
       state.processedNodes.add(tWrapped);
       path.replaceWith(tWrapped);
       state.statistics.jsxInsertionsCount++;
@@ -162,6 +162,13 @@ function processJsxNode({
   const childrenPath = childrenPropPath.get('value');
   if (!childrenPath.isExpression()) return;
 
+  // CSS must stay at its original parent for styled-jsx scoping and outside
+  // translation content. Partition only regions that actually contain styles.
+  if (containsStyleBoundary(childrenPath)) {
+    processStyleChildren({ childrenPath, owner: path, state });
+    return;
+  }
+
   // --- Determine if this level should claim T ---
   const shouldClaimT =
     !insideAutoT &&
@@ -170,17 +177,10 @@ function processJsxNode({
   if (shouldClaimT) {
     processChildren({ childrenPath, insideAutoT: true, state });
     const currentChildren = childrenPropPath.get('value').node;
-    const tCallee = t.isArrayExpression(currentChildren)
-      ? state.calleeInfo.multiCallee
-      : state.calleeInfo.singleCallee;
-    const tWrapped = wrapInT(
-      currentChildren as t.Expression,
-      t.identifier(tCallee ?? 'jsx'),
-      state.calleeInfo
-    );
+    const tWrapped = wrapInT(currentChildren as t.Expression, path);
     state.processedNodes.add(tWrapped);
     childrenPropPath.get('value').replaceWith(tWrapped);
-    updateCalleeToSingle({ jsxCallPath: path, state });
+    updateCalleeToSingle(path);
     state.statistics.jsxInsertionsCount++;
   } else if (insideAutoT) {
     processChildren({ childrenPath, insideAutoT: true, state });
@@ -190,6 +190,50 @@ function processJsxNode({
 }
 
 // ===== Children processing ===== //
+
+function processStyleChildren({
+  childrenPath,
+  owner,
+  state,
+}: {
+  childrenPath: NodePath<t.Expression>;
+  owner: NodePath<t.CallExpression>;
+  state: JsxInsertionState;
+}): void {
+  if (!childrenPath.isArrayExpression()) {
+    recurseChildJsxCalls({ childrenPath, insideAutoT: false, state });
+    return;
+  }
+  const segments = styleChildSegments(childrenPath.get('elements'));
+  for (const segment of segments.reverse()) {
+    const paths = childrenPath
+      .get('elements')
+      .slice(segment.start, segment.end);
+    const claim =
+      !segment.boundary &&
+      paths.some(
+        (child) =>
+          child.isExpression() &&
+          !child.isArrayExpression() &&
+          (hasNonWhitespaceText(child) || hasOpaqueGTChild(child))
+      );
+    for (const child of paths) {
+      if (child.isExpression()) {
+        processSingleChild({ childPath: child, insideAutoT: claim, state });
+      }
+    }
+    if (!claim) continue;
+    const nodes = childrenPath.node.elements.slice(segment.start, segment.end);
+    const content =
+      nodes.length === 1 && t.isExpression(nodes[0])
+        ? nodes[0]
+        : t.arrayExpression(nodes);
+    const wrapped = wrapInT(content, owner);
+    state.processedNodes.add(wrapped);
+    childrenPath.node.elements.splice(segment.start, nodes.length, wrapped);
+    state.statistics.jsxInsertionsCount++;
+  }
+}
 
 function processChildren({
   childrenPath,
@@ -227,12 +271,7 @@ function processSingleChild({
 
   // _Var always has a single child → use singleCallee
   if (insideAutoT && needsVarWrapping(childPath)) {
-    const callee = state.calleeInfo.singleCallee ?? REACT_FUNTIONS.jsx;
-    const wrapped = wrapInVar(
-      childPath.node,
-      t.identifier(callee),
-      state.calleeInfo
-    );
+    const wrapped = wrapInVar(childPath.node, childPath);
     state.processedNodes.add(wrapped);
     childPath.replaceWith(wrapped);
   }
@@ -352,74 +391,50 @@ function needsVarWrapping(exprPath: NodePath<t.Expression>): boolean {
  * After wrapping children in _T, the parent now has a single child.
  * Update its callee from jsxs → jsx if needed.
  */
-function updateCalleeToSingle({
-  jsxCallPath,
-  state,
-}: {
-  jsxCallPath: NodePath<t.CallExpression>;
-  state: JsxInsertionState;
-}): void {
-  const { singleCallee, multiCallee } = state.calleeInfo;
-
-  // Production (jsx/jsxs): update callee name jsxs → jsx
-  if (singleCallee && multiCallee && singleCallee !== multiCallee) {
-    const callee = jsxCallPath.get('callee');
-    if (callee.isIdentifier() && callee.node.name === multiCallee) {
-      callee.node.name = singleCallee;
-    }
-  }
-
-  // Dev (jsxDEV): update isStaticChildren (4th arg, index 3) to false
-  const args = jsxCallPath.get('arguments');
-  const isStaticArg = args[3];
-  if (isStaticArg?.isBooleanLiteral({ value: true })) {
-    isStaticArg.replaceWith(t.booleanLiteral(false));
+function updateCalleeToSingle(jsxCallPath: NodePath<t.CallExpression>): void {
+  const runtime = runtimeCallee(jsxCallPath, false);
+  if (runtime.development) {
+    const isStaticArg = jsxCallPath.get('arguments')[3];
+    if (isStaticArg?.isBooleanLiteral({ value: true }))
+      isStaticArg.replaceWith(t.booleanLiteral(false));
+  } else {
+    jsxCallPath.node.callee = runtime.callee;
   }
 }
 
 // ===== AST construction =====
 
-function wrapInVar(
-  expr: t.Expression,
-  callee: t.Expression,
-  calleeInfo: JsxCalleeInfo
-): t.CallExpression {
+function wrapInVar(expr: t.Expression, context: NodePath): t.CallExpression {
+  const runtime = runtimeCallee(context, false);
   const args: t.Expression[] = [
     t.identifier(GT_COMPONENT_TYPES.GtInternalVar),
     t.objectExpression([t.objectProperty(t.identifier('children'), expr)]),
   ];
-  if (isDevMode(calleeInfo)) {
+  if (runtime.development) {
     args.push(
       t.unaryExpression('void', t.numericLiteral(0)),
       t.booleanLiteral(false)
     );
   }
-  return t.callExpression(t.cloneNode(callee), args);
+  return t.callExpression(runtime.callee, args);
 }
 
 function wrapInT(
   children: t.Expression,
-  callee: t.Expression,
-  calleeInfo: JsxCalleeInfo
+  owner: NodePath<t.CallExpression>
 ): t.CallExpression {
+  const runtime = runtimeCallee(owner, t.isArrayExpression(children));
   const args: t.Expression[] = [
     t.identifier(GT_COMPONENT_TYPES.GtInternalTranslateJsx),
     t.objectExpression([t.objectProperty(t.identifier('children'), children)]),
   ];
-  if (isDevMode(calleeInfo)) {
+  if (runtime.development) {
     args.push(
       t.unaryExpression('void', t.numericLiteral(0)),
       t.booleanLiteral(t.isArrayExpression(children))
     );
   }
-  return t.callExpression(t.cloneNode(callee), args);
-}
-
-function isDevMode(calleeInfo: JsxCalleeInfo): boolean {
-  return (
-    calleeInfo.singleCallee != null &&
-    calleeInfo.singleCallee === calleeInfo.multiCallee
-  );
+  return t.callExpression(runtime.callee, args);
 }
 
 // ===== Marking descendants as processed =====
@@ -500,12 +515,7 @@ function processOpaqueComponentProps({
       state.processedNodes.add(valuePath.node);
       walkAndMark({ exprPath: valuePath, state });
     } else if (insideAutoT && needsVarWrapping(valuePath)) {
-      const callee = state.calleeInfo.singleCallee ?? REACT_FUNTIONS.jsx;
-      const wrapped = wrapInVar(
-        valuePath.node,
-        t.identifier(callee),
-        state.calleeInfo
-      );
+      const wrapped = wrapInVar(valuePath.node, jsxCallPath);
       state.processedNodes.add(wrapped);
       valuePath.replaceWith(wrapped);
     }

@@ -34,7 +34,10 @@ export function validateCompiler(mergedConfig: BaseWithGTConfigProps) {
     }
   }
   // Backwards compatibility, remove this condition in the future
-  if (mergedConfig.experimentalCompilerOptions.compileTimeHash === false) {
+  if (
+    mergedConfig.experimentalCompilerOptions.compileTimeHash === false &&
+    !mergedConfig.experimentalCompilerOptions.enableAutoJsxInjection
+  ) {
     console.warn(disablingCompileTimeHashWarning);
     mergedConfig.experimentalCompilerOptions.type = 'none';
   }

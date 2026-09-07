@@ -1,15 +1,127 @@
 import { describe, expect, it } from 'vitest';
+import { createRequire } from 'node:module';
 import { transformSync } from '@swc/core';
 import generate from '@babel/generator';
 import * as t from '@babel/types';
 import {
   canonical,
+  canonicalRuntime,
   hasUnnormalizedJsxDevelopmentMetadata,
   lower,
   oracle,
   readableOutput,
 } from './oracle';
 import { cliOutput, cliResult } from './cli-oracle';
+
+describe('same-mode comparison preserves runtime semantics', () => {
+  const calls = (kind: string, body: string) =>
+    `import {${kind} as make} from '${kind === 'jsxDEV' ? 'react/jsx-dev-runtime' : 'react/jsx-runtime'}'; ${body}`;
+
+  it.each([
+    [
+      calls('jsx', 'export const helper = make;'),
+      calls('jsxs', 'export const helper = make;'),
+    ],
+    [
+      calls('jsx', 'export const helper = make;'),
+      calls('jsxDEV', 'export const helper = make;'),
+    ],
+    [
+      calls('jsx', 'export const page = make("p", {children: ["Hello"]});'),
+      calls('jsxs', 'export const page = make("p", {children: ["Hello"]});'),
+    ],
+    [
+      calls(
+        'jsxDEV',
+        'export const page = make("p", {children: ["Hello"]}, void 0, false);'
+      ),
+      calls(
+        'jsxDEV',
+        'export const page = make("p", {children: ["Hello"]}, void 0, true);'
+      ),
+    ],
+    [
+      calls(
+        'jsxDEV',
+        'export const page = make("p", {children: ["Hello"]}, void 0, false, {fileName:"input.tsx",lineNumber:1,columnNumber:1}, this);'
+      ),
+      calls(
+        'jsxDEV',
+        'export const page = make("p", {children: ["Hello"]}, void 0, true, {fileName:"input.tsx",lineNumber:1,columnNumber:1}, this);'
+      ),
+    ],
+    [
+      calls(
+        'jsxs',
+        'export const page = make("p", {children: ["Hello"]}, void track());'
+      ),
+      calls('jsxs', 'export const page = make("p", {children: ["Hello"]});'),
+    ],
+    [
+      'import {jsx as make} from "react/jsx-runtime"; import {GtInternalTranslateJsx as T} from "gt-next"; export const page=make(T,{children:"Hello"});',
+      'import {GtInternalTranslateJsx as T} from "gt-next"; export const page=jsx(T,{children:"Hello"});',
+    ],
+  ])('distinguishes observable helper differences: %s', (first, second) => {
+    expect(canonicalRuntime(lower(first))).not.toBe(
+      canonicalRuntime(lower(second))
+    );
+  });
+
+  it.each([false, true])(
+    'equates call-site static behavior across runtime helpers: %s',
+    (staticChildren) => {
+      const first = calls(
+        staticChildren ? 'jsxs' : 'jsx',
+        'export const page = make("p", {children: ["Hello"]});'
+      );
+      const second = calls(
+        'jsxDEV',
+        `export const page = make("p", {children: ["Hello"]}, void 0, ${staticChildren}, {fileName:"input.tsx",lineNumber:1,columnNumber:1}, this);`
+      );
+      expect(canonicalRuntime(lower(first))).toBe(
+        canonicalRuntime(lower(second))
+      );
+    }
+  );
+
+  it('observes the React development freezing controlled by the static flag', () => {
+    const runtime = createRequire(import.meta.url)('react/jsx-dev-runtime') as {
+      jsxDEV: (
+        type: string,
+        props: { children: string[] },
+        key: undefined,
+        staticChildren: boolean
+      ) => { props: { children: string[] } };
+    };
+    const dynamic = runtime.jsxDEV(
+      'p',
+      { children: ['Hello'] },
+      undefined,
+      false
+    );
+    const fixed = runtime.jsxDEV('p', { children: ['Hello'] }, undefined, true);
+    expect(Object.isFrozen(dynamic.props.children)).toBe(false);
+    expect(Object.isFrozen(fixed.props.children)).toBe(true);
+  });
+
+  it.each([
+    '<div>{["Hello"]}</div>',
+    '<div>{["Hello ", value]}</div>',
+    '<div>{["Hello ", , value]}</div>',
+    '<div>{["Hello ", ...values]}</div>',
+    '<div>Hello <b>Nested {value}</b></div>',
+    '<><span>Hello {value}</span><i>World</i></>',
+    'import {Branch} from "gt-next"; <Branch {...{__proto__: prototype, branch: mode, a: <b>Alpha {value}</b>}} />',
+  ])(
+    'can retain compiler runtime calls when feeding readable output into a host: %s',
+    (input) => {
+      const expected = oracle(input);
+      expect(
+        canonicalRuntime(lower(readableOutput(expected, undefined, true)))
+      ).toBe(canonicalRuntime(expected));
+    }
+  );
+});
 
 describe('parity comparison preserves user semantics', () => {
   it.each([
@@ -337,18 +449,21 @@ describe('JSX runtime oracle semantics', () => {
     '/** @jsxRuntime classic */',
     '/** @jsxImportSource preact */',
     '/** @jsxImportSource @emotion/react */',
-  ])('exposes actual compiler/CLI runtime differences for %s', (pragma) => {
-    const input =
-      pragma +
-      '\nimport React from "react"; export const Page = () => <p>Hello {name}</p>;';
-    expect(canonical(oracle(input))).toBe(canonical(lower(input)));
-    expect(canonical(oracle(input))).not.toContain(
-      '$gtParityGtInternalTranslateJsx'
-    );
-    const cli = cliResult(input);
-    expect(cli.output).toContain('GtInternalTranslateJsx');
-    expect(cli.canonical).not.toBe(canonical(oracle(input)));
-  });
+  ])(
+    'preserves compiler no-insertion behavior for custom and classic runtimes: %s',
+    (pragma) => {
+      const input =
+        pragma +
+        '\nimport React from "react"; export const Page = () => <p>Hello {name}</p>;';
+      expect(canonical(oracle(input))).toBe(canonical(lower(input)));
+      expect(canonical(oracle(input))).not.toContain(
+        '$gtParityGtInternalTranslateJsx'
+      );
+      const cli = cliResult(input);
+      expect(cli.output).toContain('GtInternalTranslateJsx');
+      expect(cli.canonical).toBe(canonical(oracle(input)));
+    }
+  );
 
   it.each([
     '/** @jsxRuntime automatic */',
@@ -395,4 +510,96 @@ describe('JSX runtime oracle semantics', () => {
       '$gtParityGtInternalTranslateJsx'
     );
   });
+});
+
+describe('custom runtime bindings retain their identity and call contract', () => {
+  for (const compare of [canonical, canonicalRuntime]) {
+    it(`alpha-renames bound custom helper aliases with ${compare.name}`, () => {
+      const first = `import {jsx as _jsx} from '@emotion/react/jsx-runtime'; export const helper = _jsx; export const page = _jsx('style', {children: css});`;
+      const second = `import {jsx as _jsx2} from '@emotion/react/jsx-runtime'; export const helper = _jsx2; export const page = _jsx2('style', {children: css});`;
+      expect(compare(lower(first))).toBe(compare(lower(second)));
+    });
+    it.each([
+      [
+        'jsx',
+        'jsxs',
+        '@emotion/react/jsx-runtime',
+        '@emotion/react/jsx-runtime',
+        'false',
+        'false',
+      ],
+      [
+        'jsx',
+        'jsx',
+        '@emotion/react/jsx-runtime',
+        'custom/jsx-runtime',
+        'false',
+        'false',
+      ],
+      [
+        'jsxDEV',
+        'jsxDEV',
+        '@emotion/react/jsx-dev-runtime',
+        '@emotion/react/jsx-dev-runtime',
+        'false',
+        'true',
+      ],
+    ])(
+      `keeps module, helper and flags with ${compare.name}: %s/%s`,
+      (
+        firstKind,
+        secondKind,
+        firstSource,
+        secondSource,
+        firstFlag,
+        secondFlag
+      ) => {
+        const call = (kind: string, source: string, flag: string) =>
+          `import {${kind} as make} from '${source}'; export const helper = make; export const page = make('style', {children: css}, undefined, ${flag}, metadata(), self());`;
+        expect(
+          compare(lower(call(firstKind, firstSource, firstFlag)))
+        ).not.toBe(compare(lower(call(secondKind, secondSource, secondFlag))));
+      }
+    );
+    it(`preserves shadowing and unrelated helper values with ${compare.name}`, () => {
+      const source = `import {jsx as make} from '@emotion/react/jsx-runtime'; export const helper = make; export function page(make) {return make('style', {children: css});}`;
+      const different = source.replace('return make(', 'return other(');
+      expect(compare(lower(source))).not.toBe(compare(lower(different)));
+    });
+  }
+});
+
+describe('fixture printing preserves runtime bindings', () => {
+  it.each([
+    '/** @jsxImportSource @emotion/react */ import {jsxs as hs} from "react/jsx-runtime"; export const Page = () => hs("main", {children:["Before", <style>{css}</style>, "After ", value]});',
+    'import {jsx as make} from "react/jsx-runtime"; export const Page = () => make("p", {...{children:"Retained"}, title:<b>Independent {value}</b>});',
+    'import * as runtime from "react/jsx-runtime"; export const Page = () => runtime.jsx("p", {children: "Hello"});',
+    'import {other} from "react/jsx-runtime"; export const Page = () => other("p", {children: "Hello"});',
+    'import {jsx as make} from "react/jsx-runtime"; export const Page = () => make("custom.element", {children: "Hello"});',
+    'import {jsx as make, jsxs as multiple} from "react/jsx-runtime"; export const helper = multiple; export const Page = () => make("p", {children: ["Hello", name]});',
+    'import {jsx as make} from "react/jsx-runtime"; export const helper = make; export function Page(make) { return make("p", {children: "Hello"}); }',
+    'import {jsx as make} from "react/jsx-runtime"; export const Page = () => make(getComponent().Title, {children: "Hello"});',
+    'import {jsx as make} from "react/jsx-runtime"; export const Page = () => make(type, {children: "Hello"});',
+    'import {jsx as make} from "react/jsx-runtime"; export const Page = () => make("UppercaseIntrinsic", {children: "Hello"});',
+    'import {jsx as make} from "react/jsx-runtime"; export const Page = () => make(view.Card, {children: "Hello"});',
+    'import {jsxDEV as make} from "react/jsx-dev-runtime"; export const Page = () => make("p", {children: "Hello"}, key, false, metadata(), self());',
+    'import {jsx as make} from "react/jsx-runtime"; export const Page = () => make("p", {children: "Hello"}, key, extra());',
+  ])('round-trips observable calls and helper values: %s', (input) => {
+    const expected = oracle(input);
+    const output = readableOutput(expected, input, true);
+    expect(canonicalRuntime(lower(output))).toBe(canonicalRuntime(expected));
+  });
+
+  it.each([canonical, canonicalRuntime])(
+    'rejects an unbound injected helper with %s',
+    (compare) => {
+      const bound =
+        'import {jsx} from "react/jsx-runtime"; import {GtInternalTranslateJsx as T} from "gt-next"; export const Page = () => jsx(T, {children: "Hello"});';
+      const unbound = bound.replace(
+        'import {jsx} from "react/jsx-runtime"; ',
+        ''
+      );
+      expect(compare(lower(bound))).not.toBe(compare(lower(unbound)));
+    }
+  );
 });

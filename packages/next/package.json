@@ -56,7 +56,8 @@
     "bench:unit:json": "vitest bench --run --config vitest.config.bench.ts --outputJson benchmarks/results/unit-latest.json",
     "typecheck": "tsc --noEmit",
     "test:auto-jsx": "vitest run swc-plugin/tests/auto-jsx",
-    "examples:auto-jsx": "tsx swc-plugin/tests/auto-jsx/generate.ts"
+    "examples:auto-jsx": "tsx swc-plugin/tests/auto-jsx/generate.ts",
+    "test:auto-jsx:apps": "tsx swc-plugin/tests/auto-jsx/apps/run.mts"
   },
   "repository": {
     "type": "git",
@@ -116,7 +117,7 @@
     },
     "./config": {
       "types": "./dist/config.d.ts",
-      "import": "./dist/config.mjs",
+      "import": "./dist/config.js",
       "default": "./dist/config.js"
     },
     "./server": {

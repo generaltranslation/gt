@@ -121,6 +121,7 @@ export default function addGTIdentifierToSyntaxTree(
     if (child && typeof child === 'object') {
       let { type } = child;
       const { props } = child;
+      const ordinaryComponent = child.autoJsxComponent === false;
       indexObject.index += 1;
 
       // Handle fragments
@@ -129,9 +130,11 @@ export default function addGTIdentifierToSyntaxTree(
       }
 
       // Variables — only treat as GT variable if confirmed as GT import
-      const isGTVariable = gtVariableNames
-        ? gtVariableNames.has(type)
-        : Object.keys(defaultVariableNames).includes(type);
+      const isGTVariable =
+        !ordinaryComponent &&
+        (gtVariableNames
+          ? gtVariableNames.has(type)
+          : Object.keys(defaultVariableNames).includes(type));
       if (isGTVariable) {
         const variableType = minifyVariableType(
           type as keyof typeof defaultVariableNames
@@ -150,7 +153,7 @@ export default function addGTIdentifierToSyntaxTree(
 
       // Construct the data-_gt prop
       const generaltranslation = constructGTProp(
-        type as string,
+        ordinaryComponent ? '' : (type as string),
         (props || {}) as Record<string, unknown>,
         indexObject.index
       );
@@ -161,7 +164,8 @@ export default function addGTIdentifierToSyntaxTree(
       // This matches the compiler's id.copy() behavior.
       const currentIndex = indexObject.index;
       const isBranching =
-        type === BRANCH_COMPONENT || type === PLURAL_COMPONENT;
+        !ordinaryComponent &&
+        (type === BRANCH_COMPONENT || type === PLURAL_COMPONENT);
       let children: JsxChildren;
       if (isBranching) {
         const savedIndex = indexObject.index;

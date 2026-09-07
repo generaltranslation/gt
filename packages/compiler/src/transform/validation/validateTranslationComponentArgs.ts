@@ -28,6 +28,7 @@ export function validateTranslationComponentArgs(
   children?: JsxChildren;
   hasDeriveContext?: boolean;
   hasDeriveChildren?: boolean;
+  hasRuntimeChildren?: boolean;
 } {
   const callExpr = callExprPath.node;
   // Check that there are at least 2 arguments (identifier, args)
@@ -60,7 +61,9 @@ export function validateTranslationComponentArgs(
     case GT_COMPONENT_TYPES.GtInternalTranslateJsx:
       return validateTComponentArgs(
         argsPath as NodePath<t.ObjectExpression>,
-        state
+        state,
+        canonicalName === GT_COMPONENT_TYPES.GtInternalTranslateJsx &&
+          state.settings.enableAutoJsxInjection
       );
     default:
       const errors = [
@@ -76,7 +79,8 @@ export function validateTranslationComponentArgs(
 
 function validateTComponentArgs(
   argsPath: NodePath<t.ObjectExpression>,
-  state: TransformState
+  state: TransformState,
+  allowRuntimeChildren: boolean
 ): {
   errors: string[];
   _hash?: string;
@@ -87,6 +91,7 @@ function validateTComponentArgs(
   children?: JsxChildren;
   hasDeriveContext?: boolean;
   hasDeriveChildren?: boolean;
+  hasRuntimeChildren?: boolean;
 } {
   const errors: string[] = [];
   const args = argsPath.node;
@@ -119,7 +124,11 @@ function validateTComponentArgs(
   const _hash = hashValidation.value;
 
   // Validate children
-  const childrenValidation = validateChildrenProperty(argsPath, state);
+  const childrenValidation = validateChildrenProperty(
+    argsPath,
+    state,
+    allowRuntimeChildren
+  );
   errors.push(...childrenValidation.errors);
   const children = childrenValidation.value;
 
@@ -136,6 +145,7 @@ function validateTComponentArgs(
     children,
     hasDeriveContext,
     hasDeriveChildren: childrenValidation.containsDerive,
+    hasRuntimeChildren: childrenValidation.hasRuntimeChildren,
   };
 }
 
@@ -144,12 +154,14 @@ function validateTComponentArgs(
  */
 export function validateChildrenProperty(
   argsPath: NodePath<t.ObjectExpression>,
-  state: TransformState
+  state: TransformState,
+  allowRuntimeChildren = false
 ): {
   errors: string[];
   value?: JsxChildren;
   hasAutoderive?: boolean;
   containsDerive?: boolean;
+  hasRuntimeChildren?: boolean;
 } {
   const errors: string[] = [];
 
@@ -172,11 +184,13 @@ export function validateChildrenProperty(
   // Autoderive: filter out dynamic-content errors
   let hasAutoderive = false;
   let filteredErrors: JsxValidationError[] = validation.errors;
-  if (state.settings.autoderive.jsx) {
+  if (state.settings.autoderive.jsx || allowRuntimeChildren) {
     filteredErrors = validation.errors.filter(
       (e) => e.type !== 'dynamic-content'
     );
-    hasAutoderive = filteredErrors.length < validation.errors.length;
+    hasAutoderive =
+      state.settings.autoderive.jsx &&
+      filteredErrors.length < validation.errors.length;
   }
 
   // Convert structured errors back to strings
@@ -188,6 +202,11 @@ export function validateChildrenProperty(
     value,
     hasAutoderive,
     containsDerive: validation.containsDerive,
+    // Sparse/spread children are valid React content introduced into this
+    // private wrapper by insertion. Preserve it and let runtime hashing handle
+    // the value instead of rejecting the user's otherwise valid component.
+    hasRuntimeChildren:
+      allowRuntimeChildren && filteredErrors.length < validation.errors.length,
   };
 }
 

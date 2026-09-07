@@ -1,8 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { cliOracle, cliOutput, cliResult } from './cli-oracle';
-import { canonical, lower, oracle } from './oracle';
+import { cliNextOutput, cliOracle, cliOutput, cliResult } from './cli-oracle';
+import { canonical, canonicalRuntime, lower, oracle } from './oracle';
 
 describe('CLI auto JSX oracle', () => {
+  it.each([
+    '/** @jsxImportSource preact */',
+    '/** @jsxImportSource ./custom-runtime */',
+    '/** @jsxRuntime classic */\nimport React from "react";',
+  ])('retains original source locations for %s', (header) => {
+    const input = `${header}\nexport function Page() {\n  return <section>\n    <p>Hello {name}</p>\n  </section>;\n}`;
+    expect(cliResult(input, true).runtimeCanonical).toBe(
+      canonicalRuntime(oracle(input, true))
+    );
+  });
+
   it.each([
     'export const Page = () => <p>Hello {name}</p>;',
     'export const Page = () => <main>Before <b>Nested {name}</b> after</main>;',
@@ -26,6 +37,8 @@ describe('CLI auto JSX oracle', () => {
     expect(result.canonical).toContain('$gtParityGtInternalTranslateJsx');
     expect(result.canonical).toContain('$gtParityGtInternalVar');
     expect(cliOracle(input).program.body[0].type).toBe('ImportDeclaration');
+    expect(cliNextOutput(input)).toContain('from "gt-next"');
+    expect(canonical(lower(cliNextOutput(input)))).toBe(result.canonical);
   });
 
   it.each([
@@ -36,6 +49,7 @@ describe('CLI auto JSX oracle', () => {
     'import "gt-react"; export const Page = () => <p>New {name}</p>;',
   ])('preserves original gt-react imports: %s', (input) => {
     expect(cliResult(input).canonical).toContain('"gt-react"');
+    expect(cliNextOutput(input)).toContain('"gt-react"');
   });
 
   it('does not expand macros, derive values, or inject hashes', () => {

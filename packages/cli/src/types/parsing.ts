@@ -16,6 +16,8 @@ import type { SupportedFileExtension } from './index.js';
  */
 export type ParsingConfigOptions = {
   conditionNames: string[];
+  /** The existing --jsconfig/--tsconfig selection, used only for auto JSX eligibility. */
+  jsxProjectConfigPath?: string;
 };
 
 /**

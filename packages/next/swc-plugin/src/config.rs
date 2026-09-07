@@ -43,6 +43,10 @@ pub struct PluginConfig {
   /// Insert automatic JSX translation components before hash collection.
   #[serde(default)]
   pub enable_auto_jsx_injection: bool,
+  /// Internal package identities supplied by withGTConfig to avoid translating
+  /// the implementation of the GT runtime itself.
+  #[serde(default)]
+  pub auto_jsx_runtime_package_roots: Vec<String>,
   /// Internal host context; per-file JSX pragmas take precedence.
   #[serde(default)]
   pub jsx_import_source: Option<String>,
@@ -70,6 +74,7 @@ impl Default for PluginConfig {
       log_level: LogLevel::Warn,
       compile_time_hash: false,
       enable_auto_jsx_injection: false,
+      auto_jsx_runtime_package_roots: Vec::new(),
       jsx_import_source: None,
       jsx_runtime: None,
       jsx_import_source_from_loader: false,

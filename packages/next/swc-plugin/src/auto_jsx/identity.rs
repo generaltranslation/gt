@@ -17,6 +17,10 @@ use swc_core::{
 struct OriginalSpans(HashSet<Span>);
 
 impl Visit for OriginalSpans {
+  fn visit_call_expr(&mut self, call: &CallExpr) {
+    self.0.insert(call.span);
+    call.visit_children_with(self);
+  }
   fn visit_jsx_element(&mut self, element: &JSXElement) {
     self.0.insert(element.span);
     element.visit_children_with(self);
@@ -69,6 +73,12 @@ impl NodeIdentity {
   pub fn restore(self, program: &mut Program) {
     struct Restore(HashMap<Span, Span>);
     impl VisitMut for Restore {
+      fn visit_mut_call_expr(&mut self, call: &mut CallExpr) {
+        if let Some(original) = self.0.get(&call.span) {
+          call.span = *original;
+        }
+        call.visit_mut_children_with(self);
+      }
       fn visit_mut_jsx_element(&mut self, element: &mut JSXElement) {
         if let Some(original) = self.0.get(&element.span) {
           element.span = *original;
@@ -89,6 +99,10 @@ impl NodeIdentity {
 }
 
 impl VisitMut for NodeIdentity {
+  fn visit_mut_call_expr(&mut self, call: &mut CallExpr) {
+    self.assign_span(&mut call.span);
+    call.visit_mut_children_with(self);
+  }
   fn visit_mut_jsx_element(&mut self, element: &mut JSXElement) {
     self.assign_span(&mut element.span);
     element.visit_mut_children_with(self);

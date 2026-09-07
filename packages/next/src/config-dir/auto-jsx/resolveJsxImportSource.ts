@@ -53,13 +53,33 @@ function ancestorDirectories(directory: string): string[] {
   return directories;
 }
 
-function turbopackRoot(config: NextConfig, directory: string): string {
+export function resolveTurbopackRoot(
+  config: NextConfig,
+  directory: string
+): string {
   // Next gives outputFileTracingRoot precedence when both roots are present.
   const explicitRoot =
     config.outputFileTracingRoot ||
     config.turbopack?.root ||
     config.experimental?.turbo?.root;
   if (explicitRoot) return path.resolve(explicitRoot);
+  // Root inference changed between Next releases. Use this application's host
+  // so SWC's project-relative filenames share its exact filesystem boundary.
+  try {
+    const finderPath = require.resolve('next/dist/lib/find-root', {
+      paths: [directory],
+    });
+    const finder = require(finderPath) as {
+      findRootDirAndLockFiles?: (directory: string) => { rootDir: string };
+      findRootDir?: (directory: string) => string | undefined;
+    };
+    if (typeof finder.findRootDirAndLockFiles === 'function')
+      return finder.findRootDirAndLockFiles(directory).rootDir;
+    if (typeof finder.findRootDir === 'function')
+      return finder.findRootDir(directory) ?? directory;
+  } catch {
+    // Keep configuration usable when an older host lacks the internal helper.
+  }
   // Next's automatic root is the outermost workspace/lockfile directory.
   const markers = [
     'pnpm-workspace.yaml',
@@ -87,7 +107,7 @@ function turbopackConfig(config: NextConfig, directory: string) {
     const filename = path.join(directory, name);
     if (fs.existsSync(filename)) return filename;
   }
-  const root = turbopackRoot(config, directory);
+  const root = resolveTurbopackRoot(config, directory);
   if (directory === root) return undefined;
   for (const candidate of ancestorDirectories(directory).slice(1)) {
     for (const name of ['tsconfig.json', 'jsconfig.json']) {

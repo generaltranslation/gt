@@ -16,6 +16,10 @@ import { handleErrors, InvalidLibraryUsageError } from './passes/handleErrors';
 import { initializeState } from './state/utils/initializeState';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
+import {
+  insertPostLoaderJsx,
+  isScriptResource,
+} from './processing/jsx-insertion/postLoader';
 
 /**
  * Architecture:
@@ -212,26 +216,31 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       ? new Map<string, unknown>()
       : undefined;
 
+    const autoJsxEnabled = Boolean(
+      initializeState(resolvedOptions, '').settings.enableAutoJsxInjection
+    );
+
     return {
       name: '@generaltranslation/GT_PLUGIN',
       transformInclude(id: string) {
-        // Only transform TSX and JSX files
-        return (
-          id.endsWith('.tsx') ||
-          id.endsWith('.jsx') ||
-          id.endsWith('.ts') ||
-          id.endsWith('.js')
-        );
+        // Additional resources are considered only for post-loader automatic
+        // JSX insertion; their actual generated code is checked in transform.
+        return isScriptResource(id) || autoJsxEnabled;
       },
       transform(code: string, id: string) {
+        // Webpack virtual entry loaders can have no resource or source yet.
+        if (typeof code !== 'string') return null;
         // Initialize processing state
         const state = initializeState(resolvedOptions, id);
         if (debugManifest) state.debugManifest = debugManifest;
         try {
+          if (!isScriptResource(id)) return insertPostLoaderJsx(code, state);
+
           // Skip transformation if not needed
           if (
             state.settings.disableBuildChecks &&
-            !state.settings.compileTimeHash
+            !state.settings.compileTimeHash &&
+            !state.settings.enableAutoJsxInjection
           ) {
             return null;
           }
@@ -254,12 +263,20 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             traverse(ast, macroExpansionPass(state));
           }
 
-          // Pass 3: Collection
-          traverse(ast, collectionPass(state));
+          const devHotReloadActive =
+            state.settings.devHotReload.strings ||
+            state.settings.devHotReload.jsx;
+          const needsCollection =
+            !state.settings.disableBuildChecks ||
+            state.settings.compileTimeHash ||
+            devHotReloadActive;
 
-          // Handle errors
-          if (handleErrors(state)) {
-            return null;
+          // Insertion can run independently of static extraction. In particular,
+          // validation must not discard an insertion-only result when checks and
+          // hash generation were explicitly disabled.
+          if (needsCollection) {
+            traverse(ast, collectionPass(state));
+            if (handleErrors(state)) return null;
           }
 
           // Pass 4: Injection (hashes + useGT prefetch parameters), gated on
@@ -273,9 +290,6 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           }
 
           // Pass 5: Runtime translate (dev hot reload)
-          const devHotReloadActive =
-            state.settings.devHotReload.strings ||
-            state.settings.devHotReload.jsx;
           if (devHotReloadActive && hasCollectionContent) {
             traverse(ast, runtimeTranslatePass(state));
           }

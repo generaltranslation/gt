@@ -52,7 +52,16 @@ import {
   autoInsertJsxComponents,
 } from './autoInsertion.js';
 import { GTLibrary } from '../../../../types/libraries.js';
+import {
+  autoJsxExtractionProgram,
+  autoJsxExtractionChildren,
+  autoJsxExtractionChildrenAreArray,
+  autoJsxExtractionComponentName,
+  autoJsxExtractionLiteral,
+} from './autoInsertion/extractionView.js';
 import path from 'node:path';
+import { autoJsxExtractionTree } from './autoInsertion/extractionTree.js';
+import { resolveAutoJsxRuntime } from './autoInsertion/projectRuntime.js';
 import { extractSourceCode } from '../extractSourceCode.js';
 import { SURROUNDING_LINE_COUNT } from '../../../../utils/constants.js';
 import { handleDerivation } from '../stringParsing/derivation/handleDerivation.js';
@@ -65,16 +74,6 @@ const traverse = traverseModule.default || traverseModule;
 type DerivableTracker = {
   isDerivable: boolean;
 };
-
-/**
- * Union type representing all possible JSX child node types from Babel.
- */
-type JSXChildNode =
-  | t.JSXText
-  | t.JSXExpressionContainer
-  | t.JSXSpreadChild
-  | t.JSXElement
-  | t.JSXFragment;
 
 /**
  * Props object for JSX elements and fragments.
@@ -137,7 +136,7 @@ const resolveImportPathCache = new Map<string, string | null>();
 
 /**
  * Cache for processed functions to avoid re-parsing the same files.
- * Key: `${filePath}::${functionName}::${argIndex}`
+ * Key includes extraction mode because automatic JSX uses a normalized view.
  * Value: boolean indicating whether the function was found and processed
  */
 const processFunctionCache = new Map<string, MultiplicationNode | null>();
@@ -160,6 +159,14 @@ export function parseTranslationComponent({
   config: ConfigOptions;
   output: OutputCollector;
 }) {
+  if (config.enableAutoJsxInjection) {
+    const program = path.scope.getProgramParent().path;
+    const projected = autoJsxExtractionProgram(program as NodePath<t.Program>);
+    const binding = projected.scope.getBinding(localName);
+    if (binding) path = binding.path;
+    originalName = config.importAliases[originalName] ?? originalName;
+  }
+
   // First, collect all imports in this file to track cross-file function calls
   const importedFunctionsMap: Map<string, string> = buildImportMap(
     path.scope.getProgramParent().path
@@ -227,6 +234,16 @@ function buildJSXTree({
   state: StateTracker;
   output: OutputCollector;
 }): JsxTree | MultiplicationNode | (JsxTree | MultiplicationNode)[] {
+  if (config.enableAutoJsxInjection) {
+    const literalPath = helperPath.isJSXExpressionContainer()
+      ? helperPath.get('expression')
+      : helperPath;
+    const literal = autoJsxExtractionLiteral(literalPath);
+    if (literal)
+      return literal.value === null
+        ? null
+        : { nodeType: 'expression', result: literal.value };
+  }
   if (t.isJSXExpressionContainer(node)) {
     // Skip JSX comments
     if (t.isJSXEmptyExpression(node.expression)) {
@@ -280,6 +297,9 @@ function buildJSXTree({
   } else if (t.isJSXElement(node)) {
     const element = node;
     const elementName = element.openingElement.name;
+    const childPaths = config.enableAutoJsxInjection
+      ? autoJsxExtractionChildren(helperPath as NodePath<t.JSXElement>)
+      : helperPath.get('children');
 
     let typeName;
     if (t.isJSXIdentifier(elementName)) {
@@ -291,7 +311,9 @@ function buildJSXTree({
     }
 
     // Convert from alias to original name
-    const componentType = config.importAliases[typeName ?? ''];
+    const componentType = config.enableAutoJsxInjection
+      ? autoJsxExtractionComponentName(helperPath as NodePath<t.JSXElement>)
+      : config.importAliases[typeName ?? ''];
 
     // When enableAutoJsxInjection is on and we're inside a Derive context,
     // any auto-inserted T component will be stripped at runtime by
@@ -304,13 +326,11 @@ function buildJSXTree({
       config.enableAutoJsxInjection
     ) {
       const childResults: (JsxTree | MultiplicationNode)[] = [];
-      const helperChildren = helperPath.get('children');
-      for (let i = 0; i < element.children.length; i++) {
-        const child = element.children[i];
-        const helperChild = helperChildren[i];
+      for (const helperChild of childPaths) {
+        const child = helperChild.node;
         const result = buildJSXTree({
           node: child,
-          helperPath: helperChild,
+          helperPath: helperChild as NodePath,
           scopeNode,
           insideT: true,
           inDerive: true,
@@ -355,7 +375,7 @@ function buildJSXTree({
     }
 
     // If this JSXElement is one of the recognized variable components,
-    const elementIsVariable = VARIABLE_COMPONENTS.includes(componentType);
+    const elementIsVariable = VARIABLE_COMPONENTS.includes(componentType ?? '');
 
     const props: JSXProps = {};
 
@@ -371,6 +391,7 @@ function buildJSXTree({
           typeof attr.name.name === 'string'
             ? attr.name.name
             : attr.name.name.name;
+        if (config.enableAutoJsxInjection && attrName === 'children') return;
         let attrValue = null;
         if (elementIsBranch && attrName.startsWith(DATA_ATTR_PREFIX)) {
           const location = `${attr.loc?.start?.line}:${attr.loc?.start?.column}`;
@@ -443,7 +464,6 @@ function buildJSXTree({
 
     if (elementIsVariable) {
       if (componentType === DERIVE_COMPONENT) {
-        const helperElement = helperPath.get('children');
         const results = {
           nodeType: 'element' as const,
           type: componentType,
@@ -454,14 +474,13 @@ function buildJSXTree({
         if (state.visited === null) {
           state.visited = new Set();
         }
-        for (let index = 0; index < element.children.length; index++) {
-          const helperChild = helperElement[index];
+        for (const helperChild of childPaths) {
           const result = buildJSXTree({
             node: helperChild.node,
             insideT: true,
             inDerive: true,
             scopeNode,
-            helperPath: helperChild,
+            helperPath: helperChild as NodePath,
             config,
             state,
             output,
@@ -474,7 +493,14 @@ function buildJSXTree({
           }
         }
         if (childrenArray.length) {
-          results.props.children = childrenArray;
+          results.props.children =
+            config.enableAutoJsxInjection &&
+            childrenArray.length === 1 &&
+            !autoJsxExtractionChildrenAreArray(
+              helperPath as NodePath<t.JSXElement>
+            )
+              ? childrenArray[0]
+              : childrenArray;
         }
         return results;
       }
@@ -488,14 +514,14 @@ function buildJSXTree({
       };
     }
 
-    const children: (JsxTree | MultiplicationNode)[] = element.children
-      .flatMap((child, index) => {
+    const children: (JsxTree | MultiplicationNode)[] = childPaths
+      .flatMap((childPath) => {
         const result = buildJSXTree({
-          node: child,
+          node: childPath.node,
           insideT: true,
           inDerive: inDerive,
           scopeNode,
-          helperPath: helperPath.get('children')[index],
+          helperPath: childPath as NodePath,
           config,
           state,
           output,
@@ -509,7 +535,12 @@ function buildJSXTree({
           child !== null && child !== ''
       );
 
-    if (children.length === 1) {
+    if (
+      config.enableAutoJsxInjection &&
+      autoJsxExtractionChildrenAreArray(helperPath as NodePath<t.JSXElement>)
+    ) {
+      props.children = children;
+    } else if (children.length === 1) {
       props.children = children[0];
     } else if (children.length > 1) {
       props.children = children;
@@ -519,20 +550,26 @@ function buildJSXTree({
       nodeType: 'element',
       // if componentType is undefined, use typeName
       // Basically, if componentType is not a GT component, use typeName such as <div>
-      type: componentType ?? typeName,
+      type: componentType ?? typeName ?? '',
+      ...(config.enableAutoJsxInjection && {
+        autoJsxComponent: !!componentType,
+      }),
       props,
     };
   }
   // If it's a JSX fragment
   else if (t.isJSXFragment(node)) {
-    const children = node.children
-      .flatMap((child: JSXChildNode, index: number) => {
+    const fragmentChildren = config.enableAutoJsxInjection
+      ? autoJsxExtractionChildren(helperPath as NodePath<t.JSXFragment>)
+      : helperPath.get('children');
+    const children = fragmentChildren
+      .flatMap((childPath) => {
         const result = buildJSXTree({
-          node: child,
+          node: childPath.node,
           insideT: true,
           inDerive: inDerive,
           scopeNode,
-          helperPath: helperPath.get('children')[index],
+          helperPath: childPath as NodePath,
           config,
           state,
           output,
@@ -548,7 +585,12 @@ function buildJSXTree({
 
     const props: JSXProps = {};
 
-    if (children.length === 1) {
+    if (
+      config.enableAutoJsxInjection &&
+      autoJsxExtractionChildrenAreArray(helperPath as NodePath<t.JSXFragment>)
+    ) {
+      props.children = children;
+    } else if (children.length === 1) {
       props.children = children[0];
     } else if (children.length > 1) {
       props.children = children;
@@ -562,7 +604,9 @@ function buildJSXTree({
   }
   // If it's a string literal (standalone)
   else if (t.isStringLiteral(node)) {
-    return node.value;
+    return config.enableAutoJsxInjection
+      ? { nodeType: 'expression', result: node.value }
+      : node.value;
   }
   // If it's a template literal
   else if (t.isTemplateLiteral(node)) {
@@ -573,7 +617,9 @@ function buildJSXTree({
     ) {
       return generate(node).code;
     }
-    return node.quasis[0].value.cooked;
+    return config.enableAutoJsxInjection
+      ? { nodeType: 'expression', result: node.quasis[0].value.cooked }
+      : node.quasis[0].value.cooked;
   } else if (t.isNullLiteral(node)) {
     // If it's null, return null
     return null;
@@ -769,10 +815,14 @@ function parseJSXElement({
   }
 
   // Handle whitespace in children
-  const whitespaceHandledTree = handleChildrenWhitespace(jsxTree);
+  const whitespaceHandledTree = config.enableAutoJsxInjection
+    ? autoJsxExtractionTree(jsxTree)
+    : handleChildrenWhitespace(jsxTree);
 
   // Multiply the tree
-  const multipliedTrees = multiplyJsxTree(whitespaceHandledTree);
+  const multipliedTrees = multiplyJsxTree(
+    whitespaceHandledTree as Parameters<typeof multiplyJsxTree>[0]
+  );
 
   // Add GT identifiers to the tree
   // TODO: do this in parallel
@@ -795,7 +845,9 @@ function parseJSXElement({
       gtVariableNames
     );
     minifiedTress.push(
-      Array.isArray(minifiedTree) && minifiedTree.length === 1
+      !config.enableAutoJsxInjection &&
+        Array.isArray(minifiedTree) &&
+        minifiedTree.length === 1
         ? minifiedTree[0]
         : minifiedTree
     );
@@ -1017,7 +1069,13 @@ function processFunctionInFile({
   functionName: string;
 }): MultiplicationNode | null {
   // Create a custom key for the function call
-  const cacheKey = `${filePath}::${functionName}`;
+  const autoJsxRuntime = config.enableAutoJsxInjection
+    ? resolveAutoJsxRuntime({
+        file: filePath,
+        configFile: config.parsingOptions.jsxProjectConfigPath,
+      })
+    : undefined;
+  const cacheKey = `${filePath}::${functionName}::autoJsx=${!!config.enableAutoJsxInjection}::jsxImportSource=${JSON.stringify(autoJsxRuntime?.jsxImportSource)}`;
   // Check cache first to avoid redundant parsing
   if (processFunctionCache.has(cacheKey)) {
     return processFunctionCache.get(cacheKey) ?? null;
@@ -1034,7 +1092,7 @@ function processFunctionInFile({
   let result: MultiplicationNode | null | undefined = undefined;
   try {
     const code = fs.readFileSync(filePath, 'utf8');
-    const ast = parse(code, {
+    let ast: t.File = parse(code, {
       sourceType: 'module',
       plugins: ['jsx', 'typescript'],
     });
@@ -1054,7 +1112,13 @@ function processFunctionInFile({
     // so that Derive extraction sees the same structure as same-file
     if (config.enableAutoJsxInjection) {
       ensureTAndVarImported(ast, importAliases);
-      autoInsertJsxComponents(ast, importAliases);
+      autoInsertJsxComponents(ast, importAliases, autoJsxRuntime);
+      traverse(ast, {
+        Program(program) {
+          ast = t.file(autoJsxExtractionProgram(program).node);
+          program.stop();
+        },
+      });
     }
 
     // Collect all imports in this file to track cross-file function calls

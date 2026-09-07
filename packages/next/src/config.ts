@@ -48,9 +48,13 @@ import {
 } from './errors/cacheComponents';
 import { getRuntimeCredentials } from './setup/runtimeCredentials';
 import { nextLocaleCookieName } from './utils/cookies';
-import { resolveJsxImportSource } from './config-dir/auto-jsx/resolveJsxImportSource';
+import {
+  resolveJsxImportSource,
+  resolveTurbopackRoot,
+} from './config-dir/auto-jsx/resolveJsxImportSource';
 import { addAutoJsxLayerLoader } from './config-dir/auto-jsx/addLayerLoader';
 import { AutoJsxWebpackPlugin } from './config-dir/auto-jsx/webpackPlugin';
+import { resolveAutoJsxRuntimePackageRoots } from './config-dir/auto-jsx/runtimePackageRoots';
 import { createGtNextPluginDiagnostic } from './errors/diagnostics';
 
 type AutoderiveConfig = boolean | { jsx?: boolean; strings?: boolean };
@@ -712,6 +716,16 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   const autoJsxEnabled =
     mergedConfig.experimentalCompilerOptions?.type === 'swc' &&
     mergedConfig.experimentalCompilerOptions.enableAutoJsxInjection;
+  const autoJsxRuntimePackageRoots = mergedConfig.experimentalCompilerOptions
+    ?.enableAutoJsxInjection
+    ? resolveAutoJsxRuntimePackageRoots(
+        __dirname,
+        process.cwd(),
+        turboPackEnabled
+          ? resolveTurbopackRoot(internalNextConfig, process.cwd())
+          : undefined
+      )
+    : undefined;
   const jsxImportSource = autoJsxEnabled
     ? resolveJsxImportSource(internalNextConfig, turboPackEnabled)
     : undefined;
@@ -728,6 +742,7 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
 
   const swcPluginOptions: Record<string, unknown> = {
     ...compilerOptions,
+    ...(autoJsxRuntimePackageRoots?.length && { autoJsxRuntimePackageRoots }),
     autoderiveJsx,
     autoderiveStrings,
     ...(jsxImportSource !== undefined && { jsxImportSource }),
@@ -877,6 +892,9 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
             webpackConfig.plugins.unshift(
               gtUnplugin({
                 ...mergedConfig.experimentalCompilerOptions,
+                ...(autoJsxRuntimePackageRoots?.length && {
+                  autoJsxRuntimePackageRoots,
+                }),
                 autoJsxImportSource: 'gt-next',
               })
             );

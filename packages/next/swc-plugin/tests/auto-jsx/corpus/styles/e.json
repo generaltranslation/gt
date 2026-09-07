@@ -1,0 +1,12 @@
+{
+  "styles/default-trailing-style": {
+    "input": "import Style from 'styled-jsx/style';\nexport function Page({ count, shown, label }: { count: number; shown: boolean; label: string }) {\n  return <section>Trailing content {label}<strong>Emphasis {count}</strong><Style jsx id=\"fixture-css\">{`main { color: red; padding-left: ${count}px; }`}</Style></section>;\n}\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport Style from 'styled-jsx/style';\nimport { jsxs as _jsxs } from \"react/jsx-runtime\";\nexport function Page({\n  count,\n  shown,\n  label\n}) {\n  return _jsxs(\"section\", {\n    children: [_jsxs(GtInternalTranslateJsx, {\n      children: [\"Trailing content \", <GtInternalVar>{label}</GtInternalVar>, _jsxs(\"strong\", {\n        children: [\"Emphasis \", <GtInternalVar>{count}</GtInternalVar>]\n      })]\n    }), <Style jsx={true} id={\"fixture-css\"}>{`main { color: red; padding-left: ${count}px; }`}</Style>]\n  });\n}\n",
+    "cliOutput": "import Style from 'styled-jsx/style';\nimport { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport function Page({\n  count,\n  shown,\n  label\n}: {\n  count: number;\n  shown: boolean;\n  label: string;\n}) {\n  return <section><GtInternalTranslateJsx>Trailing content {<GtInternalVar>{label}</GtInternalVar>}<strong>Emphasis {<GtInternalVar>{count}</GtInternalVar>}</strong></GtInternalTranslateJsx><Style jsx id=\"fixture-css\">{`main { color: red; padding-left: ${count}px; }`}</Style></section>;\n}\n"
+  },
+  "styles/named-default-css-only": {
+    "input": "import { default as Css } from 'styled-jsx/style';\nexport function Page({ count, shown, label }: { count: number; shown: boolean; label: string }) {\n  return <Css jsx id=\"fixture-css\">{`main { color: red; padding-left: ${count}px; }`}</Css>;\n}\n",
+    "output": "import { default as Css } from 'styled-jsx/style';\nexport function Page({\n  count,\n  shown,\n  label\n}) {\n  return <Css jsx={true} id={\"fixture-css\"}>{`main { color: red; padding-left: ${count}px; }`}</Css>;\n}\n",
+    "cliOutput": "import { default as Css } from 'styled-jsx/style';\nimport { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport function Page({\n  count,\n  shown,\n  label\n}: {\n  count: number;\n  shown: boolean;\n  label: string;\n}) {\n  return <Css jsx id=\"fixture-css\">{`main { color: red; padding-left: ${count}px; }`}</Css>;\n}\n"
+  }
+}

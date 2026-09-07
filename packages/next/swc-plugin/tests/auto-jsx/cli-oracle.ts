@@ -10,9 +10,18 @@ import {
   GT_LIBRARIES_UPSTREAM,
   Libraries,
 } from '../../../../cli/src/types/libraries';
-import { canonical, isJsxPragmaComment, lower } from './oracle';
+import {
+  canonical,
+  canonicalRuntime,
+  isJsxPragmaComment,
+  lower,
+} from './oracle';
+import type { AutoJsxRuntimeContext } from '../../../../cli/src/react/jsx/utils/jsxParsing/autoInsertion/projectRuntime';
 
-function runCli(input: string): {
+function runCli(
+  input: string,
+  context?: AutoJsxRuntimeContext
+): {
   ast: t.File;
   generatedImports: t.ImportDeclaration[];
 } {
@@ -36,18 +45,24 @@ function runCli(input: string): {
     (statement): statement is t.ImportDeclaration =>
       t.isImportDeclaration(statement) && !originalStatements.has(statement)
   );
-  autoInsertJsxComponents(ast, aliases);
+  autoInsertJsxComponents(ast, aliases, context);
   return { ast, generatedImports };
 }
 
 /** Run the CLI's actual insertion pass on the original, unlowered JSX input. */
-export function cliOracle(input: string): t.File {
-  return runCli(input).ast;
+export function cliOracle(
+  input: string,
+  context?: AutoJsxRuntimeContext
+): t.File {
+  return runCli(input, context).ast;
 }
 
 /** Preserve the CLI-authored JSX and import source in its own golden output. */
-export function cliOutput(input: string): string {
-  return print(cliOracle(input));
+export function cliOutput(
+  input: string,
+  context?: AutoJsxRuntimeContext
+): string {
+  return print(cliOracle(input, context));
 }
 
 function print(ast: t.File): string {
@@ -69,9 +84,29 @@ function print(ast: t.File): string {
 export function cliResult(
   input: string,
   development = false
-): { output: string; canonical: string } {
+): { output: string; canonical: string; runtimeCanonical: string } {
   const { ast, generatedImports } = runCli(input);
   const output = print(ast);
+  adaptGeneratedImports(generatedImports);
+  const lowered = lower(ast, development);
+  return {
+    output,
+    canonical: canonical(lowered),
+    runtimeCanonical: canonicalRuntime(lowered),
+  };
+}
+
+/** Execute the CLI's insertion tree in Next, retaining its raw output separately. */
+export function cliNextOutput(
+  input: string,
+  context?: AutoJsxRuntimeContext
+): string {
+  const { ast, generatedImports } = runCli(input, context);
+  adaptGeneratedImports(generatedImports);
+  return print(ast);
+}
+
+function adaptGeneratedImports(generatedImports: t.ImportDeclaration[]) {
   for (const statement of generatedImports) {
     if (
       statement.source.value === 'gt-react' &&
@@ -86,5 +121,4 @@ export function cliResult(
     )
       statement.source.value = 'gt-next';
   }
-  return { output, canonical: canonical(lower(print(ast), development)) };
 }

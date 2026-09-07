@@ -124,6 +124,55 @@ pub(super) fn meaningful_child(child: &JSXElementChild) -> bool {
   }
 }
 
+/// Preserve a multi-child array while asking the host to emit the single-child
+/// React helper. This only applies after claiming an earlier children prop.
+pub(super) fn force_dynamic_children(children: &mut Vec<JSXElementChild>) {
+  if children
+    .iter()
+    .filter(|child| meaningful_child(child))
+    .count()
+    < 2
+  {
+    return;
+  }
+  let elems = std::mem::take(children)
+    .into_iter()
+    .filter_map(|child| {
+      let expr = match child {
+        JSXElementChild::JSXText(text) => {
+          let value = clean_jsx_text(text.value.as_ref());
+          if value.is_empty() {
+            return None;
+          }
+          Box::new(Expr::Lit(Lit::Str(Str {
+            span: text.span,
+            value: value.into(),
+            raw: None,
+          })))
+        }
+        JSXElementChild::JSXElement(element) => Box::new(Expr::JSXElement(element)),
+        JSXElementChild::JSXFragment(fragment) => Box::new(Expr::JSXFragment(fragment)),
+        JSXElementChild::JSXExprContainer(JSXExprContainer {
+          expr: JSXExpr::Expr(expr),
+          ..
+        }) => expr,
+        JSXElementChild::JSXSpreadChild(spread) => {
+          return Some(Some(ExprOrSpread {
+            spread: Some(spread.span),
+            expr: spread.expr,
+          }))
+        }
+        _ => return None,
+      };
+      Some(Some(ExprOrSpread { spread: None, expr }))
+    })
+    .collect();
+  children.push(expr_child(Box::new(Expr::Array(ArrayLit {
+    span: DUMMY_SP,
+    elems,
+  }))));
+}
+
 pub(super) enum ChildrenLocation {
   Attribute(usize),
   SpreadProperty(usize, usize),

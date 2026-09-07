@@ -13,6 +13,8 @@ type ExpressionNode = {
 type ElementNode = {
   nodeType: 'element';
   type: string;
+  /** Set only by binding-aware automatic JSX extraction. */
+  autoJsxComponent?: boolean;
   props?: {
     children?: JsxTree | MultiplicationNode | (JsxTree | MultiplicationNode)[];
     [key: string]: unknown;
@@ -119,6 +121,7 @@ export { isWhitespaceJsxTree, isWhitespaceMultiplicationNode };
 type MultipliedTree = {
   nodeType?: 'element';
   type: string;
+  autoJsxComponent?: boolean;
   props?: {
     children?: MultipliedTreeNode;
   };

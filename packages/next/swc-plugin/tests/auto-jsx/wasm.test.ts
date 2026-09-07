@@ -1,14 +1,17 @@
 import path from 'node:path';
+import { createRequire } from 'node:module';
+import { runInNewContext } from 'node:vm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { transformSync, type ReactConfig } from '@swc/core';
 import generate from '@babel/generator';
 import { parse } from '@babel/parser';
+import { cliNextOutput } from './cli-oracle';
 import {
   canonical,
+  canonicalRuntime,
   lower,
   oracle,
   oracleCompiled,
-  readableOutput,
 } from './oracle';
 import {
   loadExamples,
@@ -83,6 +86,64 @@ function transformWithHost(
   }).code;
 }
 
+/** Run emitted calls against real React, without invoking the GT component body. */
+function observeTranslationChildren(source: string): {
+  frozen: boolean;
+  length: number;
+  holes: number[];
+} {
+  const require = createRequire(import.meta.url);
+  const emitted = transformSync(source, {
+    filename: 'input.js',
+    swcrc: false,
+    configFile: false,
+    jsc: { target: 'esnext', parser: { syntax: 'ecmascript' } },
+    module: { type: 'commonjs' },
+  }).code;
+  const exports = {};
+  const Page = runInNewContext(`${emitted}\nexports.Page;`, {
+    exports,
+    require(name: string) {
+      return name === 'gt-next'
+        ? {
+            GtInternalTranslateJsx: 'gt-translation',
+            GtInternalVar: 'gt-variable',
+          }
+        : require(name);
+    },
+  }) as () => { props: { children: { props: { children: unknown[] } } } };
+  const children = Page().props.children.props.children;
+  return {
+    frozen: Object.isFrozen(children),
+    length: children.length,
+    holes: Array.from({ length: children.length }, (_, index) => index).filter(
+      (index) => !(index in children)
+    ),
+  };
+}
+
+describe.each([false, true])(
+  'development React array behavior with host development=%s',
+  (development) => {
+    it.each([
+      '["Hello"]',
+      '["Hello ", label]',
+      '["Hello ", , label]',
+      '["Hello ", ...[label]]',
+      '["Hello ", [label]]',
+    ])('preserves injected static children for %s', (children) => {
+      const input = `const label = 'Ada'; export const Page = () => <div>{${children}}</div>;`;
+      const actual = transform(input, true, development, 'automatic');
+      const expected = generate(
+        oracleCompiled(transform(input, false, development, 'automatic'))
+      ).code;
+      const observed = observeTranslationChildren(actual);
+      expect(observed).toEqual(observeTranslationChildren(expected));
+      expect(observed.frozen).toBe(true);
+    });
+  }
+);
+
 describe('distributed WASM plugin matches the compiler', () => {
   for (const [index, example] of examples.entries()) {
     it(example.name, async () => {
@@ -119,6 +180,19 @@ const prototypeSpreadHostDefects = new Set([
     .map(({ name }) => name),
 ]);
 
+/** Preserve JSX syntax so this host applies its own object-spread lowering. */
+function verifiedCliSource(input: string, development: boolean): string {
+  const source = cliNextOutput(input);
+  const lowered = lower(source, development);
+  const compiler = oracle(input, development);
+  // The inspection printer deliberately keeps spread-object calls intact.
+  // The CLI can supply the original JSX form, but only after proving its
+  // complete emitted result agrees with the independent compiler reference.
+  expect(canonical(lowered)).toBe(canonical(compiler));
+  expect(canonicalRuntime(lowered)).toBe(canonicalRuntime(compiler));
+  return source;
+}
+
 describe.each([false, true])(
   'SWC host JSX lowering, development=%s',
   (development) => {
@@ -129,7 +203,7 @@ describe.each([false, true])(
         await yieldToRunner(index);
         const expected = prototypeSpreadHostDefects.has(example.name)
           ? transform(
-              readableOutput(oracle(example.input)),
+              verifiedCliSource(example.input, development),
               false,
               development,
               'automatic'
@@ -141,6 +215,9 @@ describe.each([false, true])(
             ).code;
         const actual = transform(example.input, true, development, 'automatic');
         expect(canonical(lower(actual))).toBe(canonical(lower(expected)));
+        expect(canonicalRuntime(parse(actual, { sourceType: 'module' }))).toBe(
+          canonicalRuntime(parse(expected, { sourceType: 'module' }))
+        );
       });
     }
   }
@@ -229,11 +306,11 @@ describe.each([false, true])(
               development,
             };
             const baseline = transformWithHost(input, false, react);
-            const expected = canonical(oracleCompiled(baseline));
+            const expected = canonicalRuntime(oracleCompiled(baseline));
             const actual = transformWithHost(input, true, react);
-            expect(canonical(parse(actual, { sourceType: 'module' }))).toBe(
-              expected
-            );
+            expect(
+              canonicalRuntime(parse(actual, { sourceType: 'module' }))
+            ).toBe(expected);
           });
         }
       }
@@ -245,8 +322,8 @@ describe.each([false, true])(
       const baseline = transformWithHost(input, false, react);
       const actual = transformWithHost(input, true, react);
       expect(actual).not.toContain('GtInternalTranslateJsx');
-      expect(canonical(parse(actual, { sourceType: 'module' }))).toBe(
-        canonical(oracleCompiled(baseline))
+      expect(canonicalRuntime(parse(actual, { sourceType: 'module' }))).toBe(
+        canonicalRuntime(oracleCompiled(baseline))
       );
     });
 
@@ -287,9 +364,9 @@ describe.each([false, true])(
           const baseline = transformWithHost(source, false, react);
           const actual = transformWithHost(input, true, react, config);
           expect(actual).not.toContain('__GT_AUTO_JSX_IMPORT_SOURCE__');
-          expect(canonical(parse(actual, { sourceType: 'module' }))).toBe(
-            canonical(oracleCompiled(baseline))
-          );
+          expect(
+            canonicalRuntime(parse(actual, { sourceType: 'module' }))
+          ).toBe(canonicalRuntime(oracleCompiled(baseline)));
           expect(
             canonical(
               parse(transformWithHost(input, false, react, config), {

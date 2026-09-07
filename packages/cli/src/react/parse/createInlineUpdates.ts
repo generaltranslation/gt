@@ -139,7 +139,10 @@ export async function createInlineUpdates(
         );
 
         // Insert T/Var into the AST
-        autoInsertJsxComponents(ast, importAliases);
+        autoInsertJsxComponents(ast, importAliases, {
+          file,
+          configFile: parsingOptions.jsxProjectConfigPath,
+        });
 
         // Refresh scope to pick up new T references
         traverse(ast, {

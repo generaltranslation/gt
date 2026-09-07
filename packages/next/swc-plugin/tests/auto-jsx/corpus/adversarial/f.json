@@ -1,66 +1,52 @@
 {
   "adversarial/canonical-helper-user-binding": {
     "input": "const $GtInternalTranslateJsx = localValue;\nexport const Page = () => <p>Value {$GtInternalTranslateJsx}</p>;\n",
-    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nconst $GtInternalTranslateJsx = localValue;\nexport const Page = () => <p><GtInternalTranslateJsx>{[\"Value \", <GtInternalVar>{$GtInternalTranslateJsx}</GtInternalVar>]}</GtInternalTranslateJsx></p>;\n",
-    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nconst $GtInternalTranslateJsx = localValue;\nexport const Page = () => <p><GtInternalTranslateJsx>Value {<GtInternalVar>{$GtInternalTranslateJsx}</GtInternalVar>}</GtInternalTranslateJsx></p>;\n",
-    "cliDivergences": []
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { jsxs as _jsxs } from \"react/jsx-runtime\";\nconst $GtInternalTranslateJsx = localValue;\nexport const Page = () => <p>{_jsxs(GtInternalTranslateJsx, {\n    children: [\"Value \", <GtInternalVar>{$GtInternalTranslateJsx}</GtInternalVar>]\n  })}</p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nconst $GtInternalTranslateJsx = localValue;\nexport const Page = () => <p><GtInternalTranslateJsx>Value {<GtInternalVar>{$GtInternalTranslateJsx}</GtInternalVar>}</GtInternalTranslateJsx></p>;\n"
   },
   "adversarial/catch-array-destructure-shadow": {
     "input": "import { Var } from \"gt-next\";\nexport function Page() { try { return <p>Before <Var>{value}</Var></p>; } catch ([Var]) { return <Var>Shadowed {value}<b>Nested {other}</b></Var>; } }\n",
-    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { Var } from \"gt-next\";\nexport function Page() {\n  try {\n    return <p><GtInternalTranslateJsx>{[\"Before \", <Var>{value}</Var>]}</GtInternalTranslateJsx></p>;\n  } catch ([Var]) {\n    return <Var><GtInternalTranslateJsx>{[\"Shadowed \", <GtInternalVar>{value}</GtInternalVar>, <b>{[\"Nested \", <GtInternalVar>{other}</GtInternalVar>]}</b>]}</GtInternalTranslateJsx></Var>;\n  }\n}\n",
-    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport { Var } from \"gt-next\";\nexport function Page() {\n  try {\n    return <p><GtInternalTranslateJsx>Before <Var>{value}</Var></GtInternalTranslateJsx></p>;\n  } catch ([Var]) {\n    return <Var>Shadowed {value}<b>Nested {other}</b></Var>;\n  }\n}\n",
-    "cliDivergences": [
-      "import-shadowing"
-    ]
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { Var } from \"gt-next\";\nimport { jsxs as _jsxs } from \"react/jsx-runtime\";\nexport function Page() {\n  try {\n    return <p>{_jsxs(GtInternalTranslateJsx, {\n        children: [\"Before \", <Var>{value}</Var>]\n      })}</p>;\n  } catch ([Var]) {\n    return <Var>{_jsxs(GtInternalTranslateJsx, {\n        children: [\"Shadowed \", <GtInternalVar>{value}</GtInternalVar>, _jsxs(\"b\", {\n          children: [\"Nested \", <GtInternalVar>{other}</GtInternalVar>]\n        })]\n      })}</Var>;\n  }\n}\n",
+    "cliOutput": "import { Var } from \"gt-next\";\nimport { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport function Page() {\n  try {\n    return <p><GtInternalTranslateJsx>Before <Var>{value}</Var></GtInternalTranslateJsx></p>;\n  } catch ([Var]) {\n    return <Var><GtInternalTranslateJsx>Shadowed {<GtInternalVar>{value}</GtInternalVar>}<b>Nested {<GtInternalVar>{other}</GtInternalVar>}</b></GtInternalTranslateJsx></Var>;\n  }\n}\n"
   },
   "adversarial/entity-trade-mark": {
     "input": "\nexport const Page = () => (<p>&trade;{value}</p>);\n",
-    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <p><GtInternalTranslateJsx>{[\"\\u2122\", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></p>;\n",
-    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <p><GtInternalTranslateJsx>&trade;{<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></p>;\n",
-    "cliDivergences": []
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { jsxs as _jsxs } from \"react/jsx-runtime\";\nexport const Page = () => <p>{_jsxs(GtInternalTranslateJsx, {\n    children: [\"\\u2122\", <GtInternalVar>{value}</GtInternalVar>]\n  })}</p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <p><GtInternalTranslateJsx>&trade;{<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></p>;\n"
   },
   "adversarial/jsx-filename-user-binding": {
     "input": "const _jsxFileName = computeFilename();\nexport const Page = () => <p>File {_jsxFileName}</p>;\n",
-    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nconst _jsxFileName = computeFilename();\nexport const Page = () => <p><GtInternalTranslateJsx>{[\"File \", <GtInternalVar>{_jsxFileName}</GtInternalVar>]}</GtInternalTranslateJsx></p>;\n",
-    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nconst _jsxFileName = computeFilename();\nexport const Page = () => <p><GtInternalTranslateJsx>File {<GtInternalVar>{_jsxFileName}</GtInternalVar>}</GtInternalTranslateJsx></p>;\n",
-    "cliDivergences": []
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { jsxs as _jsxs } from \"react/jsx-runtime\";\nconst _jsxFileName = computeFilename();\nexport const Page = () => <p>{_jsxs(GtInternalTranslateJsx, {\n    children: [\"File \", <GtInternalVar>{_jsxFileName}</GtInternalVar>]\n  })}</p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nconst _jsxFileName = computeFilename();\nexport const Page = () => <p><GtInternalTranslateJsx>File {<GtInternalVar>{_jsxFileName}</GtInternalVar>}</GtInternalTranslateJsx></p>;\n"
   },
   "adversarial/namespace-member-lexical-block": {
     "input": "import * as GT from \"gt-next\";\nexport function Page() { const outer = <GT.T>Outer {value}</GT.T>; { const GT = local; return <main>{outer}<GT.T>Inner {value}</GT.T></main>; } }\n",
-    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport * as GT from \"gt-next\";\nexport function Page() {\n  const outer = <GT.T><GtInternalTranslateJsx>{[\"Outer \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></GT.T>;\n  {\n    const GT = local;\n    return <main>{[outer, <GT.T><GtInternalTranslateJsx>{[\"Inner \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></GT.T>]}</main>;\n  }\n}\n",
-    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nimport * as GT from \"gt-next\";\nexport function Page() {\n  const outer = <GT.T><GtInternalTranslateJsx>Outer {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></GT.T>;\n  {\n    const GT = local;\n    return <main>{outer}<GT.T><GtInternalTranslateJsx>Inner {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></GT.T></main>;\n  }\n}\n",
-    "cliDivergences": []
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport * as GT from \"gt-next\";\nimport { jsxs as _jsxs } from \"react/jsx-runtime\";\nexport function Page() {\n  const outer = <GT.T>{_jsxs(GtInternalTranslateJsx, {\n      children: [\"Outer \", <GtInternalVar>{value}</GtInternalVar>]\n    })}</GT.T>;\n  {\n    const GT = local;\n    return _jsxs(\"main\", {\n      children: [outer, <GT.T>{_jsxs(GtInternalTranslateJsx, {\n          children: [\"Inner \", <GtInternalVar>{value}</GtInternalVar>]\n        })}</GT.T>]\n    });\n  }\n}\n",
+    "cliOutput": "import * as GT from \"gt-next\";\nimport { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport function Page() {\n  const outer = <GT.T><GtInternalTranslateJsx>Outer {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></GT.T>;\n  {\n    const GT = local;\n    return <main>{outer}<GT.T><GtInternalTranslateJsx>Inner {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></GT.T></main>;\n  }\n}\n"
   },
   "adversarial/spread-object-first-children-property": {
     "input": "\nexport const Page = () => (<Card {...{ children: <p>First {first()}</p>, children: <p>Second {second()}</p> }} />);\n",
-    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card children={<p><GtInternalTranslateJsx>{[\"First \", <GtInternalVar>{first()}</GtInternalVar>]}</GtInternalTranslateJsx></p>}><p><GtInternalTranslateJsx>{[\"Second \", <GtInternalVar>{second()}</GtInternalVar>]}</GtInternalTranslateJsx></p></Card>;\n",
-    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <Card {...{\n  children: <p><GtInternalTranslateJsx>First {<GtInternalVar>{first()}</GtInternalVar>}</GtInternalTranslateJsx></p>,\n  children: <p><GtInternalTranslateJsx>Second {<GtInternalVar>{second()}</GtInternalVar>}</GtInternalTranslateJsx></p>\n}} />;\n",
-    "cliDivergences": []
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { jsxs as _jsxs } from \"react/jsx-runtime\";\nexport const Page = () => <Card children={<p>{_jsxs(GtInternalTranslateJsx, {\n    children: [\"First \", <GtInternalVar>{first()}</GtInternalVar>]\n  })}</p>}><p>{_jsxs(GtInternalTranslateJsx, {\n      children: [\"Second \", <GtInternalVar>{second()}</GtInternalVar>]\n    })}</p></Card>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <Card {...{\n  children: <p><GtInternalTranslateJsx>First {<GtInternalVar>{first()}</GtInternalVar>}</GtInternalTranslateJsx></p>,\n  children: <p><GtInternalTranslateJsx>Second {<GtInternalVar>{second()}</GtInternalVar>}</GtInternalTranslateJsx></p>\n}} />;\n"
   },
   "adversarial/spread-object-nested-spread": {
     "input": "\nexport const Page = () => (<Card {...{ ...firstProps(), children: <p>Middle {value}</p>, ...lastProps() }} />);\n",
-    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card {...firstProps()} children={<p><GtInternalTranslateJsx>{[\"Middle \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></p>} {...lastProps()} />;\n",
-    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <Card {...{\n  ...firstProps(),\n  children: <p><GtInternalTranslateJsx>Middle {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></p>,\n  ...lastProps()\n}} />;\n",
-    "cliDivergences": []
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { jsxs as _jsxs, jsx as _jsx } from \"react/jsx-runtime\";\nexport const Page = () => _jsx(Card, {\n  ...firstProps(),\n  children: <p>{_jsxs(GtInternalTranslateJsx, {\n      children: [\"Middle \", <GtInternalVar>{value}</GtInternalVar>]\n    })}</p>,\n  ...lastProps()\n});\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <Card {...{\n  ...firstProps(),\n  children: <p><GtInternalTranslateJsx>Middle {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></p>,\n  ...lastProps()\n}} />;\n"
   },
   "adversarial/spread-object-proto-quoted": {
     "input": "\nexport const Page = () => (<Card {...{ \"__proto__\": prototype, children: <p>Child {value}</p> }} />);\n",
-    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card {...{\n  \"__proto__\": prototype,\n  children: <p><GtInternalTranslateJsx>{[\"Child \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></p>\n}} />;\n",
-    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <Card {...{\n  \"__proto__\": prototype,\n  children: <p><GtInternalTranslateJsx>Child {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></p>\n}} />;\n",
-    "cliDivergences": []
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { jsxs as _jsxs, jsx as _jsx } from \"react/jsx-runtime\";\nexport const Page = () => _jsx(Card, {\n  ...{\n    \"__proto__\": prototype,\n    children: <p>{_jsxs(GtInternalTranslateJsx, {\n        children: [\"Child \", <GtInternalVar>{value}</GtInternalVar>]\n      })}</p>\n  }\n});\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <Card {...{\n  \"__proto__\": prototype,\n  children: <p><GtInternalTranslateJsx>Child {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></p>\n}} />;\n"
   },
   "adversarial/unicode-next-line-attribute": {
     "input": "\nexport const Page = () => (<Card children=\"\" footer={<span>Footer {value}</span>} />);\n",
-    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <Card children={<GtInternalTranslateJsx>{\"\\x85\"}</GtInternalTranslateJsx>} footer={<span><GtInternalTranslateJsx>{[\"Footer \", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></span>} />;\n",
-    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <Card children=\"\" footer={<span><GtInternalTranslateJsx>Footer {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></span>} />;\n",
-    "cliDivergences": [
-      "children-attribute"
-    ]
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { jsxs as _jsxs } from \"react/jsx-runtime\";\nexport const Page = () => <Card children={<GtInternalTranslateJsx>{\"\\x85\"}</GtInternalTranslateJsx>} footer={<span>{_jsxs(GtInternalTranslateJsx, {\n    children: [\"Footer \", <GtInternalVar>{value}</GtInternalVar>]\n  })}</span>} />;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <Card children={<GtInternalTranslateJsx children=\"\" />} footer={<span><GtInternalTranslateJsx>Footer {<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></span>} />;\n"
   },
   "adversarial/unicode-zero-width-joiner-text": {
     "input": "\nexport const Page = () => (<p>‍{value}</p>);\n",
-    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nexport const Page = () => <p><GtInternalTranslateJsx>{[\"\\u200D\", <GtInternalVar>{value}</GtInternalVar>]}</GtInternalTranslateJsx></p>;\n",
-    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <p><GtInternalTranslateJsx>‍{<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></p>;\n",
-    "cliDivergences": []
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { jsxs as _jsxs } from \"react/jsx-runtime\";\nexport const Page = () => <p>{_jsxs(GtInternalTranslateJsx, {\n    children: [\"\\u200D\", <GtInternalVar>{value}</GtInternalVar>]\n  })}</p>;\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport const Page = () => <p><GtInternalTranslateJsx>‍{<GtInternalVar>{value}</GtInternalVar>}</GtInternalTranslateJsx></p>;\n"
   }
 }

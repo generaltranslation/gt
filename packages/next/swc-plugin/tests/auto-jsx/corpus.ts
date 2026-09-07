@@ -1,15 +1,13 @@
 import { createHash } from 'node:crypto';
-import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { CliDivergence } from './cli-divergences';
 import { createFixtureError } from './diagnostics.mjs';
 
 export interface Snapshot {
   input: string;
   output: string;
   cliOutput: string;
-  cliDivergences: CliDivergence[];
 }
 
 export type Corpus = Record<string, Snapshot>;
@@ -62,8 +60,6 @@ export function readCorpus(): Promise<Corpus> {
 export async function writeCorpus(snapshots: Corpus): Promise<void> {
   const shards = new Map<string, Corpus>();
   const families: Record<string, number> = {};
-  const divergenceCounts: Record<string, number> = {};
-  let cliAgrees = 0;
   for (const [name, snapshot] of Object.entries(snapshots).sort(([a], [b]) =>
     a < b ? -1 : a > b ? 1 : 0
   )) {
@@ -72,21 +68,11 @@ export async function writeCorpus(snapshots: Corpus): Promise<void> {
     shards.get(shard)![name] = snapshot;
     const family = name.split('/')[0];
     families[family] = (families[family] ?? 0) + 1;
-    if (snapshot.cliDivergences.length === 0) cliAgrees++;
-    for (const reason of snapshot.cliDivergences)
-      divergenceCounts[reason] = (divergenceCounts[reason] ?? 0) + 1;
   }
   for (const [shard, entries] of shards) {
     const filename = path.join(corpusDirectory, shard);
     await mkdir(path.dirname(filename), { recursive: true });
     await writeFile(filename, `${JSON.stringify(entries, null, 2)}\n`);
-  }
-  for (const group of await readdir(corpusDirectory, { withFileTypes: true })) {
-    if (!group.isDirectory()) continue;
-    for (const file of await readdir(path.join(corpusDirectory, group.name))) {
-      if (file.endsWith('.json') && !shards.has(`${group.name}/${file}`))
-        await rm(path.join(corpusDirectory, group.name, file));
-    }
   }
   await writeFile(
     path.join(corpusDirectory, 'coverage.json'),
@@ -97,11 +83,6 @@ export async function writeCorpus(snapshots: Corpus): Promise<void> {
           Object.values(snapshots).map(({ input }) => input)
         ).size,
         families,
-        cliAgrees,
-        cliDisagrees: Object.keys(snapshots).length - cliAgrees,
-        divergenceCounts: Object.fromEntries(
-          Object.entries(divergenceCounts).sort()
-        ),
       },
       null,
       2

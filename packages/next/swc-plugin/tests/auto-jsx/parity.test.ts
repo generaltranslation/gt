@@ -1,12 +1,12 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
   canonical,
+  canonicalRuntime,
   hasUnnormalizedJsxDevelopmentMetadata,
   lower,
   oracle,
 } from './oracle';
 import { cliResult } from './cli-oracle';
-import { classifyCliDivergences } from './cli-divergences';
 import {
   buildNativeDriver,
   loadExamples,
@@ -48,36 +48,38 @@ describe('SWC auto JSX matches the isolated compiler insertion pass', () => {
         canonical(lower(disabledOutputs[index])),
         'native SWC preserves input with injection and hashing disabled'
       ).toBe(canonical(lower(example.input)));
-      const expected = canonical(oracle(example.input));
+      const compiler = oracle(example.input);
+      const expected = canonical(compiler);
       const cli = cliResult(example.input);
       expect(
         cli.output,
         'checked-in CLI output matches the live CLI insertion pass'
       ).toBe(checked.cliOutput);
-      if (checked.cliDivergences.length === 0) {
-        expect(
-          cli.canonical,
-          'the independent CLI oracle agrees with the compiler'
-        ).toBe(expected);
-      } else {
-        expect(
-          cli.canonical,
-          'a recorded CLI divergence still exists'
-        ).not.toBe(expected);
-        expect(
-          classifyCliDivergences(example.input),
-          'the CLI divergence has reviewed source-specific reasons'
-        ).toEqual(checked.cliDivergences);
-      }
+      expect(
+        cli.canonical,
+        'the independent CLI oracle agrees with the compiler'
+      ).toBe(expected);
+      expect(
+        cli.runtimeCanonical,
+        'CLI helper identities and static children match the compiler'
+      ).toBe(canonicalRuntime(compiler));
       expect(
         canonical(lower(checked.output)),
         'checked-in output matches the live compiler'
       ).toBe(expected);
       expect(
+        canonicalRuntime(lower(checked.output)),
+        'checked-in output preserves compiler runtime semantics'
+      ).toBe(canonicalRuntime(compiler));
+      expect(
         canonical(lower(outputs[index])),
         'native SWC matches the live compiler'
       ).toBe(expected);
       const development = oracle(example.input, true);
+      expect(
+        cliResult(example.input, true).runtimeCanonical,
+        'development CLI helper identities and static children match the compiler'
+      ).toBe(canonicalRuntime(development));
       // Custom runtimes and classic factories retain their exact development
       // calls/metadata. Their production and development host outputs are each
       // compared against the compiler in wasm.test.ts, without equating them.

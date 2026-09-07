@@ -1,0 +1,7 @@
+{
+  "styles/intrinsic-fragment-region": {
+    "input": "\nexport function Page({ count, shown, label }: { count: number; shown: boolean; label: string }) {\n  return <>Before<style jsx id=\"fixture-css\">{`main { color: red; padding-left: ${count}px; }`}</style>After {label}</>;\n}\n",
+    "output": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-next\";\nimport { Fragment as _Fragment, jsxs as _jsxs } from \"react/jsx-runtime\";\nexport function Page({\n  count,\n  shown,\n  label\n}) {\n  return _jsxs(_Fragment, {\n    children: [<GtInternalTranslateJsx>{\"Before\"}</GtInternalTranslateJsx>, <style jsx={true} id={\"fixture-css\"}>{`main { color: red; padding-left: ${count}px; }`}</style>, _jsxs(GtInternalTranslateJsx, {\n      children: [\"After \", <GtInternalVar>{label}</GtInternalVar>]\n    })]\n  });\n}\n",
+    "cliOutput": "import { GtInternalTranslateJsx, GtInternalVar } from \"gt-react\";\nexport function Page({\n  count,\n  shown,\n  label\n}: {\n  count: number;\n  shown: boolean;\n  label: string;\n}) {\n  return <><GtInternalTranslateJsx>Before</GtInternalTranslateJsx><style jsx id=\"fixture-css\">{`main { color: red; padding-left: ${count}px; }`}</style><GtInternalTranslateJsx>After {<GtInternalVar>{label}</GtInternalVar>}</GtInternalTranslateJsx></>;\n}\n"
+  }
+}

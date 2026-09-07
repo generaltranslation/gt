@@ -1,12 +1,12 @@
 # Auto JSX parity fixtures
 
-These 17,313 unique JSX inputs compare **only** automatic JSX insertion with the
-live `@generaltranslation/compiler` source and independently record the CLI's
-JSX insertion output. The primary reference calls `jsxInsertionPass` directly;
-macro expansion, autoderive, collection and hash injection do not run.
-The Rust pass lives in `src/auto_jsx` and runs before the existing hash pipeline.
-Automatic components use their existing runtime hashing. Compile-time hashing
-of manual `<T>` and string calls is unchanged.
+More than 17,000 unique JSX inputs require automatic insertion to agree across
+SWC, the live `@generaltranslation/compiler` source, and the CLI's actual
+insertion pass. The source reference calls `jsxInsertionPass` directly: macro
+expansion, autoderive, collection, and hash injection do not run. The Rust pass
+lives in `src/auto_jsx` and runs before the existing hash pipeline. Automatic
+components retain their runtime hashing; manual `<T>` and string hashing remain
+separate transformations.
 
 ## Generate and inspect examples
 
@@ -19,161 +19,153 @@ pnpm --filter gt-next examples:auto-jsx
 pnpm --filter gt-next test:auto-jsx
 ```
 
-The WASM tests require the Rust `wasm32-wasip1` target. The tests build both the
-native fixture driver and the distributed WASM plugin, then exercise the same
-production pipeline through both entry points. `gt-next`'s regular `test:js` and
-`test` commands discover these tests, so the existing CI job runs them.
-CI explicitly includes `gt-next` tests when the CLI reference sources change,
-even when the ordinary changed-package filter would select only the CLI.
+The WASM tests require Rust's `wasm32-wasip1` target. Tests build the native
+fixture driver and distributed WASM plugin and exercise the production pipeline
+through both entry points. `gt-next`'s regular test commands discover this suite.
+CI also includes it when the CLI reference changes.
 
-`corpus/<group>/<bucket>.json` stores the golden inputs and both outputs in
-stable, name-hashed shards. Adding a case does not move other cases between
-shards. `corpus/coverage.json` records the family sizes, unique source count and
-CLI agreement/divergence totals. Tests read this committed corpus and compare it
-with both live implementations; they never regenerate golden output during a
-test. The example command also writes each case into
-`fixtures/<group>/<name>/` for convenient side-by-side inspection:
+`corpus/<group>/<bucket>.json` stores golden inputs and both outputs in stable,
+name-hashed shards. `corpus/coverage.json` records family sizes and unique source
+counts. Tests read the committed corpus and compare it with live implementations;
+they never regenerate expectations during a test. Generation rejects every
+CLI/compiler mismatch, including differences in runtime helper identity or static
+children. There are no accepted divergence categories.
 
-- `input.tsx`: a JSX page or module, copied from the case generator.
-- `output.tsx`: the compiler-authored injected component tree, printed as JSX.
-- `cli-output.tsx`: the actual CLI-authored JSX, including its import sources.
+Generation also writes each case into `fixtures/<group>/<name>/`:
 
-Inputs retain their original bytes, including BOMs and intentional whitespace;
-generation only adds a final newline when one is absent.
+- `input.tsx`: original JSX page or module.
+- `output.tsx`: compiler-authored injected component tree, printed as JSX.
+- `cli-output.tsx`: actual CLI-authored output, including original import sources.
 
-Add a named `{ name, input }` entry to a module in `cases/`, exporting an
-`examples` array. New modules are discovered automatically. Use names such as
-`props/conditional-header`. Names and source strings should describe distinct
-syntax or ownership boundaries, rather than just changing text or identifiers.
-Matrices combine independent dimensions; full pages exercise realistic mixtures.
-Generation rejects duplicate source strings, including duplicates across groups.
+Inputs retain BOMs and intentional whitespace; generation adds only a missing
+final newline. Materialized directories are ignored by Git, and retained across
+runs. The generators and golden corpus are committed. Tests reject missing or
+extra corpus entries.
 
-| Case family         | Unique inputs | Focus                                                                 |
-| ------------------- | ------------: | --------------------------------------------------------------------- |
-| `basics`            |             3 | Minimal insertion and disabled text regions                           |
-| `adversarial`       |           158 | Unicode, binding collisions, syntax and ownership boundaries          |
-| `expressions`       |         2,064 | Static/dynamic values, arrays, children props and spread ordering     |
-| `gt-manual`         |         1,176 | Manual translation and variable components                            |
-| `gt-opaque`         |           648 | Branch, Plural and Derive prop/child ownership                        |
-| `gt-bindings`       |           200 | Imports, aliases, scopes and shadowing                                |
-| `pages`             |            40 | Complete mixed JSX pages                                              |
-| `composition`       |         6,760 | Ten leaves, thirteen inner/outer regions, depths two through five     |
-| `interaction-pages` |         6,000 | Thirty layouts, twenty expressions and ten function/class contexts    |
-| `jsx-runtime`       |           264 | Automatic/classic runtimes, custom factories, pragmas and typed pages |
-
-Regenerate a particular example or group while investigating:
+Add a named `{ name, input }` entry to an `examples` array exported from a module
+in `cases/`; discovery is automatic. Names such as `props/conditional-header`
+should describe distinct syntax or ownership behavior. Duplicate sources are
+rejected across all groups. Existing families cover expressions, arrays,
+children props, spread order, manual and opaque GT components, lexical bindings,
+complete pages, nested compositions, control flow, TypeScript, runtime pragmas,
+authored React runtime calls, and protected style/raw-text payloads.
 
 ```sh
 pnpm --filter gt-next examples:auto-jsx expressions/array-mixed
 pnpm --filter gt-next exec vitest run swc-plugin/tests/auto-jsx/parity.test.ts -t array-mixed
 ```
 
-Never hand-edit generated output to make SWC pass. Fix the insertion pass, or
-update the source case and regenerate. Intentional awkward whitespace and
-duplicate props are fixtures, so repository formatting and linting exclude the
-generated files. The materialized directories are ignored by Git; the golden
-corpus, generators and test harness are committed. Full generation also removes
-stale materialized cases, and tests reject missing or extra corpus entries.
+Never edit generated output to make SWC pass. Fix the implementation or source
+case and regenerate. Awkward whitespace and duplicate props are intentional, so
+repository formatting and linting exclude generated files.
 
 ## What is compared
 
-The reference erases TypeScript syntax, lowers JSX into runtime calls, then
-runs the compiler's insertion pass. For pragma-bearing sources, JSX lowering
-precedes type removal so imports used only by a classic factory remain live.
-SWC receives the original JSX source. Both
-outputs are compared after identical lowering, preserving expression boundaries,
-child-array nesting, prop/spread ordering, keys, directives and user imports.
-The comparison normalizes generated helper aliases and development-only React
-source metadata. Custom runtime calls and classic development metadata remain
-strict; each host mode is independently compared against the compiler rather
-than requiring those runtimes' development/production output to be identical.
-Dedicated mutation tests ensure it cannot hide missing wrappers,
-merged variables, side-effectful keys, reordered props or user name collisions.
+The reference erases TypeScript, lowers JSX into React calls, then runs compiler
+insertion. For pragma-bearing inputs, JSX lowering precedes type removal to keep
+classic-factory imports live. SWC and CLI receive original source. The CLI keeps
+its TypeScript and comments, with extraction performed through a separate view.
 
-Every generated input is compared against its committed golden output and the live
-compiler, through both native Rust and WASM. The native suite also checks the
-entire corpus with injection disabled. Development-mode reference behavior and
-the host's development/production JSX lowering are covered separately. Host
-comparisons run in both modes with the narrow upstream exceptions below.
+Tree comparisons preserve expression boundaries, child-array nesting, prop and
+spread order, keys, directives, and user imports. Same-mode runtime comparisons
+also preserve helper value references, import provenance, and static-children
+flags. Executable React tests check whether arrays are frozen. Mutation tests
+prove that normalization cannot hide missing wrappers, merged variables,
+side-effectful keys, reordered props, or user binding collisions.
 
-The fixture printer reconstructs JSX from the compiler output; explicit arrays
-remain arrays, and `children` attributes remain attributes when moving them would
-change spread or duplicate-prop ordering. JSX fixtures are meant for inspection
-and transformation tests, not for executing all referenced application symbols.
-For unsupported pragma-selected runtimes, it preserves the original JSX only
-after proving that its lowered AST exactly equals the compiler's output.
+Every input is checked against its golden output and the live compiler through
+native Rust and WASM. The complete native corpus also runs with insertion
+disabled. Development and production host output are compared independently.
+Generated aliases and React development source metadata are normalized narrowly;
+custom runtime behavior and user helper identity remain significant.
+
+The fixture printer reconstructs JSX for inspection, retaining React calls when
+JSX would change the factory, static-child behavior, or spread semantics. The
+generator verifies that printed output replays with the same runtime semantics.
+Explicit arrays remain arrays; `children` attributes stay attributes when moving them changes ordering.
+Unsupported pragma-selected runtimes preserve original JSX only after its
+lowered AST is proven equal to the compiler result. Fixtures do not define every
+application symbol; use the executable apps below for rendering checks.
 
 ## Independent CLI reference
 
-`cli-oracle.ts` parses the original TSX and calls the CLI's actual
-`getPathsAndAliases`, `ensureTAndVarImported` and `autoInsertJsxComponents`
-functions. It uses the production Next.js upstream-library filter. The CLI is
-not reimplemented and neither reference is modified to force agreement.
+`cli-oracle.ts` calls the CLI's `getPathsAndAliases`, `ensureTAndVarImported`, and
+`autoInsertJsxComponents` functions using the production Next upstream-library
+filter. Raw CLI output has its own exact golden. Only newly generated helper
+imports are adapted from `gt-react` to `gt-next` for comparisons and executable
+Next apps; existing user imports are untouched.
 
-The CLI and compiler currently agree on 7,240 inputs and differ on 10,073. The
-CLI processes raw JSX, while the compiler sees lowered React calls, and their
-current insertion rules differ at several ownership and expression boundaries.
-`cli-divergences.ts` documents 20 existing difference families, each with a
-minimal counterexample and a nearby agreeing control. Its classifier examines
-source syntax and bindings, never example names. Cases with a difference must
-have reviewed reasons before generation can update the committed corpus.
+`cli-regressions.test.ts` preserves the twenty historical CLI/compiler
+counterexamples and nearby controls as positive parity requirements. Dedicated
+extraction tests compare translation hashes, array shape, whitespace, lexical
+component identity, inline spreads, and cross-file Derive processing while
+checking that extraction leaves the source AST unchanged.
 
-Every parity test still requires SWC to equal the compiler, including all CLI
-divergence cases. It also requires the raw CLI output to match its separate
-golden exactly, validates the recorded divergence reasons, and asserts agreement
-or disagreement as recorded. Unexplained differences and changed CLI outputs
-fail. The comparison maps only newly injected CLI helper imports from `gt-react`
-to the compiler's `gt-next` source; the raw CLI golden and existing user imports
-are preserved. Oracle mutation tests check these normalization boundaries.
+## Host compatibility
 
-## Reference defects and compatibility
+Quoted vertical tabs and form feeds expose two existing SWC JSX-lowering
+value changes before the compiler would run. Both remain in source-level parity
+and explicit value-preservation tests; comparisons from already-altered host
+calls exclude these two inputs.
 
-The compiler can emit an unbound `jsx` helper around a single array-valued child
-when only an aliased `jsx` import exists. The comparison recognizes this narrowly
-for an injected `GtInternalTranslateJsx` call and compares its component tree.
-The printed JSX and SWC output have valid helper bindings instead of reproducing
-the defect. Other reference binding defects are tested separately as safety
-cases, rather than weakening ordinary parity comparisons.
+Twenty-one sources expose a host object-spread flattening issue involving a
+`__proto__` setter and duplicate children. Their host tests compare the complete
+output against compiler insertion performed before the same host lowering in
+both modes. `wasm.test.ts` identifies the exact inputs; none bypasses whole-tree
+comparison.
 
-Two sources expose an existing SWC JSX-lowering difference before the reference
-compiler would run: quoted vertical tabs and form feeds become literal backslash
-escapes. They remain in the complete source-level parity corpus. Separate host
-tests assert preservation of their values; only the comparison starting from
-the host's already-altered React calls excludes them.
+For those twenty-one inputs, the CLI supplies source-preserving JSX to replay the
+host lowering. The exact emitted source must first match the compiler's complete
+tree and runtime semantics in that mode. The inspection printer cannot serve
+this role because it retains object-spread calls to preserve their semantics.
 
-Twenty-one sources expose another host defect: flattening an object spread
-containing a `__proto__` setter changes which duplicate children property the
-compiler sees. These retain full source-level comparisons. Their host tests
-compare the complete output against compiler insertion performed before that
-same host lowering, in both development and production. The affected inputs are
-explicitly identified in `wasm.test.ts`; none bypasses whole-tree comparison.
+Typed enum member accesses expose a frontend distinction: the pinned standalone
+SWC folds a few asserted/non-null members that Next leaves dynamic. Focused enum
+tests assert both pre-insertion baselines and compare insertion within the same
+host. One typed-enum initializer crashes the installed native Next compiler even
+without GT; only its Next checks are explicitly skipped, with shared-host coverage
+retained. These cases do not relax the generated corpus's parity requirements.
 
-## Next.js integration smoke test
+Project runtime selection also belongs to the host. CLI auto insertion resolves
+`jsxImportSource` from the nearest file's tsconfig/jsconfig, including relative,
+package, and multiple `extends`; the existing `--jsconfig`/`--tsconfig` selection
+takes precedence. Next 16 Webpack uses its selected app config, resolves TypeScript
+inheritance, and ignores jsconfig inheritance. Turbopack ignores inherited JSX
+sources. `cli-project-runtime.test.ts` records the finite Webpack baselines and
+compares insertion against the same resolved host settings. Set the JSX source
+directly in the selected project config when comparing all three build paths.
+Source pragmas still override the project source. Custom-runtime development
+helper arguments remain intact; CLI comparisons account for its printed source
+positions by compiling a separately printed, uninjected baseline.
 
-After building `gt-next`, run the credential-free dev and production matrix:
+## Executable Next applications
+
+The [twenty-app workflow](./apps/README.md) runs 334 persistent edge cases through
+real Turbopack/SWC, Webpack/compiler, and CLI-preprocessed builds in development
+and production. It compares server rendering, hydration, state changes, DOM,
+computed styles, and runtime translation hashes, and retains diagnostics and
+browser traces. CI runs all twenty apps in four groups.
 
 ```sh
+pnpm --filter @generaltranslation/compiler build
 pnpm --filter gt-next build
-node packages/next/swc-plugin/tests/auto-jsx/turbopack-smoke.mjs
+pnpm --filter gt-next test:auto-jsx:apps
 ```
 
-This uses the installed Next.js app dependencies, creates an isolated temporary
-app, and checks server/client pages, Branch/Plural, disabled injection and manual
-`<T>` hashing through HTTP. React/custom import-source configurations and explicit
-React, custom and classic file pragmas run across both modes. It writes the exact Next version, WASM digest and
-rendered-hash evidence to its report. An HTML parser extracts rendered text and
-hash attributes while excluding scripts, templates and serialized Flight data.
-`--serve` retains a dev server for browser inspection. Stopped build caches are
-removed unless `--keep-builds` is passed; reports, HTML and logs are retained.
-The separate `emotion-smoke.mjs` checks Next's server/client runtime selection
-and composition with existing loaders. CI runs both integration scripts when
-the Next integration or compiler insertion source changes.
+The smaller integration scripts additionally cover disabled insertion, manual
+hashing, runtime configuration, and existing loader composition. Keep build
+artifacts when investigating locally:
 
-Observed compiler behavior takes precedence over its prose rules. For example,
-JSX inside a conditional beneath user `<T>` is still visited, whereas user
-`<Var>` suppresses its entire subtree. Namespace GT component references are
-ordinary components to the current compiler. Fixtures preserve these distinctions.
+```sh
+node packages/next/swc-plugin/tests/auto-jsx/turbopack-smoke.mjs --keep-builds
+node packages/next/swc-plugin/tests/auto-jsx/emotion-smoke.mjs --keep-builds
+```
+
+Observed compiler behavior defines ownership rules. JSX in a conditional beneath
+manual `<T>` is still discovered; manual `<Var>` suppresses its subtree. Namespace
+GT references remain ordinary components. Intrinsic style/raw-text payloads and
+bound styled-jsx styles remain outside translation regions.
 
 See the [auto JSX guide](https://generaltranslation.com/en-US/docs/cli/guides/using-auto-jsx)
-and `packages/compiler/src/processing/jsx-insertion/JSX_INSERTION_RULES.md` for the
-feature's intended usage and rule explanations.
+and `packages/compiler/src/processing/jsx-insertion/JSX_INSERTION_RULES.md` for
+usage and rule explanations.

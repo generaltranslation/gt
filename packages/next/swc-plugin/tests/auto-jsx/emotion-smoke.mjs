@@ -166,6 +166,9 @@ for (const [filename, source] of Object.entries(files)) {
   await writeFile(destination, `${source}\n`);
 }
 
+const profileFilter = process.argv
+  .slice(2)
+  .find((arg) => !arg.startsWith('--'));
 const profiles = ['turbopack', 'webpack']
   .flatMap((bundler) => [
     { name: `${bundler}-dev-enabled`, bundler, mode: 'dev', enabled: true },
@@ -177,9 +180,7 @@ const profiles = ['turbopack', 'webpack']
       enabled: true,
     },
   ])
-  .filter(
-    (profile) => !process.argv[2] || profile.name.includes(process.argv[2])
-  );
+  .filter((profile) => !profileFilter || profile.name.includes(profileFilter));
 assert.ok(profiles.length, 'No smoke profiles matched');
 const baseEnv = { ...process.env, NEXT_TELEMETRY_DISABLED: '1' };
 for (const key of Object.keys(baseEnv)) {

@@ -1,5 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
+use super::react_helpers::RuntimeBindings;
+
 use swc_core::{
   common::{SyntaxContext, DUMMY_SP},
   ecma::{
@@ -23,24 +25,29 @@ fn is_gt_source(source: &str) -> bool {
 
 pub(super) struct Bindings {
   imported: HashMap<Id, String>,
+  pub runtime: RuntimeBindings,
   pub translate: Ident,
   pub variable: Ident,
 }
 
 #[derive(Default)]
-struct IdentifierNames(HashSet<String>);
+pub(super) struct IdentifierNames(HashMap<String, HashSet<SyntaxContext>>);
 
 impl Visit for IdentifierNames {
   fn visit_ident(&mut self, name: &Ident) {
-    self.0.insert(name.sym.to_string());
+    self
+      .0
+      .entry(name.sym.to_string())
+      .or_default()
+      .insert(name.ctxt);
   }
 }
 
 impl IdentifierNames {
-  fn fresh(&self, base: &str) -> Ident {
+  pub fn fresh(&self, base: &str) -> Ident {
     let mut name = base.to_owned();
     let mut suffix = 1;
-    while self.0.contains(&name) {
+    while self.0.contains_key(&name) {
       name = format!("{base}{suffix}");
       suffix += 1;
     }
@@ -49,6 +56,13 @@ impl IdentifierNames {
       DUMMY_SP,
       SyntaxContext::empty().apply_mark(swc_core::common::Mark::new()),
     )
+  }
+
+  pub fn is_unshadowed(&self, name: &Ident) -> bool {
+    self
+      .0
+      .get(name.sym.as_ref())
+      .is_some_and(|contexts| contexts.iter().all(|context| *context == name.ctxt))
   }
 }
 
@@ -60,7 +74,11 @@ impl Bindings {
         let ModuleItem::ModuleDecl(ModuleDecl::Import(import)) = item else {
           continue;
         };
-        if import.type_only || !is_gt_source(&import.src.value.to_string_lossy()) {
+        if import.type_only {
+          continue;
+        }
+        let source = import.src.value.to_string_lossy();
+        if !is_gt_source(&source) {
           continue;
         }
         for specifier in &import.specifiers {
@@ -86,13 +104,27 @@ impl Bindings {
     program.visit_with(&mut names);
     let translate = names.fresh(TRANSLATE);
     let variable = names.fresh(VARIABLE);
+    let runtime = RuntimeBindings::new(program, &names);
     imported.insert(translate.to_id(), TRANSLATE.into());
     imported.insert(variable.to_id(), VARIABLE.into());
     Self {
       imported,
+      runtime,
       translate,
       variable,
     }
+  }
+
+  pub fn is_runtime_call(&self, call: &CallExpr) -> bool {
+    self.runtime.owner(call).is_some()
+  }
+
+  pub fn call_component_name<'a>(&'a self, call: &CallExpr) -> Option<&'a str> {
+    let first = call.args.first().filter(|arg| arg.spread.is_none())?;
+    let Expr::Ident(name) = super::syntax::expression(&first.expr) else {
+      return None;
+    };
+    self.imported.get(&name.to_id()).map(String::as_str)
   }
 
   pub fn component_name<'a>(&'a self, element: &JSXElement) -> Option<&'a str> {

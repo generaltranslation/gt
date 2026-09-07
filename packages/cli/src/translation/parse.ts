@@ -89,7 +89,11 @@ export async function createUpdates(
                 validate,
                 primaryPatterns,
                 parsingFlags,
-                parsingOptions
+                {
+                  ...parsingOptions,
+                  jsxProjectConfigPath:
+                    options.jsconfig || parsingOptions.jsxProjectConfigPath,
+                }
               );
   const {
     updates: newUpdates,

@@ -425,6 +425,57 @@ The pass only operates on JSX children, not on string-valued props/attributes. P
 
 ---
 
+## Rule 16: CSS and raw-text payloads stay outside automatic translation regions
+
+Intrinsic `<style>` elements and the bound default export of `styled-jsx/style`
+are CSS payloads. Intrinsic `<script>`, `<title>`, and `<textarea>` elements also
+require raw text, which cannot contain inserted React elements. Automatic
+insertion leaves these complete subtrees unchanged.
+Default imports, named `default` imports, and namespace `.default` references are
+recognized through their lexical bindings; an unrelated or shadowed `Style`
+component remains ordinary JSX.
+
+A subtree containing any of these protected elements stays under its original parent. Text siblings on
+either side form independent automatic regions. This also applies when the style
+is nested in another element, a conditional, or a callback. Moving a styled-jsx
+style beneath an injected component would change its CSS scope before Next.js
+processes it.
+
+```jsx
+// Before:
+<div>Before<style jsx>{`div { color: red; }`}</style>After {name}</div>
+
+// After:
+<div>
+  <_T>Before</_T>
+  <style jsx>{`div { color: red; }`}</style>
+  <_T>After <_Var>{name}</_Var></_T>
+</div>
+```
+
+The compiler applies the same boundary to the `styled-jsx/style` calls emitted by
+Next.js. Bound React `createElement` fallbacks (including a key following a JSX
+spread) and named JSX helpers emitted by custom runtimes preserve these same
+protected payloads. These extra calls identify boundaries only; ordinary
+automatic insertion still requires the React JSX runtime.
+
+Array children keep their outer array, holes, spreads, and style
+positions; each text segment contains one value or an array as appropriate. A
+segment containing only a dynamic value does not independently claim `_T`.
+
+This exception to Rule 2 preserves CSS scopes and raw-text host content. Ordinary
+components named `Style`, `Script`, `Title`, or `Textarea` remain eligible for
+insertion unless their binding identifies the styled-jsx default export.
+User-authored translation boundaries retain their existing behavior.
+
+Custom resource loaders may also produce bound React JSX runtime calls from
+non-script file extensions. When auto-insertion is enabled, the compiler accepts
+their generated JavaScript for this pass only. Original JSX, TypeScript, or other
+resource text must first be lowered by its configured loader. This does not
+enable hashing, validation, macro, or runtime-translation passes for those files.
+
+---
+
 ## Import injection
 
 When the pass inserts at least one \_T, it automatically adds:

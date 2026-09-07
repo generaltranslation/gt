@@ -40,7 +40,12 @@ async function runValidation(
               true,
               primaryFiles,
               settings.files.gtJson.parsingFlags,
-              settings.parsingOptions
+              {
+                ...settings.parsingOptions,
+                jsxProjectConfigPath:
+                  settings.jsconfig ||
+                  settings.parsingOptions.jsxProjectConfigPath,
+              }
             );
     return extractInlineFromProject(
       pkg,

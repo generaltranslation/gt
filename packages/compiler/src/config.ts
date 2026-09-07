@@ -29,6 +29,8 @@ export interface PluginConfig {
   enableAutoJsxInjection?: boolean;
   /** Package source for components inserted by Auto JSX Injection */
   autoJsxImportSource?: string;
+  /** Internal adapter scope: verified runtime package directories excluded from auto insertion. */
+  autoJsxRuntimePackageRoots?: string[];
   /** Automatically treat interpolated/concatenated values as derive() calls */
   autoderive?: boolean | { jsx?: boolean; strings?: boolean };
   /** Emit compiler-injected gt-react imports from gt-react/browser */
@@ -57,6 +59,8 @@ export interface PluginSettings {
   enableAutoJsxInjection: boolean;
   /** Package source for components inserted by Auto JSX Injection */
   autoJsxImportSource?: string;
+  /** Verified runtime package directories excluded only from auto insertion. */
+  autoJsxRuntimePackageRoots?: string[];
   /** Automatically treat interpolated/concatenated values as derive() calls */
   autoderive: { jsx: boolean; strings: boolean };
   /** Emit compiler-injected gt-react imports from gt-react/browser */

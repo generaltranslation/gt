@@ -1,13 +1,18 @@
-import { readdir, mkdir, writeFile, rm } from 'node:fs/promises';
+import { readdir, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { execFile, spawn } from 'node:child_process';
 import { setImmediate } from 'node:timers/promises';
 import type { Example } from './types';
-import { canonical, oracle, readableOutput } from './oracle';
+import {
+  canonical,
+  canonicalRuntime,
+  lower,
+  oracle,
+  readableOutput,
+} from './oracle';
 import { createFixtureError } from './diagnostics.mjs';
 import { cliResult } from './cli-oracle';
-import { classifyCliDivergences } from './cli-divergences';
 import { readCorpus, writeCorpus, type Corpus, type Snapshot } from './corpus';
 
 export { readCorpus } from './corpus';
@@ -126,15 +131,19 @@ export async function updateExamples(
   onProgress?: (completed: number) => void
 ): Promise<void> {
   const snapshots: Corpus = replace ? {} : { ...(await readCorpus()) };
-  const unclassified: string[] = [];
+  const disagreements: string[] = [];
   for (const [index, example] of examples.entries()) {
     const folder = path.join(fixtureDirectory, example.name);
     const compiler = oracle(example.input);
-    const output = readableOutput(compiler, example.input);
+    const output = readableOutput(compiler, example.input, true);
     const cli = cliResult(example.input);
-    const agrees = canonical(compiler) === cli.canonical;
-    const cliDivergences = agrees ? [] : classifyCliDivergences(example.input);
-    if (!agrees && cliDivergences.length === 0) unclassified.push(example.name);
+    const expectedRuntime = canonicalRuntime(compiler);
+    const agrees =
+      canonical(compiler) === cli.canonical &&
+      expectedRuntime === cli.runtimeCanonical;
+    if (!agrees) disagreements.push(`${example.name}: CLI insertion`);
+    if (canonicalRuntime(lower(output)) !== expectedRuntime)
+      disagreements.push(`${example.name}: printed compiler output`);
     // Preserve BOMs and intentional whitespace so materialized examples replay
     // the same source that the live oracles and native/WASM drivers receive.
     const input = example.input.endsWith('\n')
@@ -144,7 +153,6 @@ export async function updateExamples(
       input,
       output,
       cliOutput: cli.output,
-      cliDivergences,
     };
     await mkdir(folder, { recursive: true });
     await writeFile(path.join(folder, 'input.tsx'), input);
@@ -152,32 +160,13 @@ export async function updateExamples(
     await writeFile(path.join(folder, 'cli-output.tsx'), cli.output);
     onProgress?.(index + 1);
   }
-  if (unclassified.length)
+  if (disagreements.length)
     throw createFixtureError({
-      whatHappened: 'The compiler and CLI disagree on unreviewed examples',
-      details: unclassified,
-      fix: 'Investigate the generated compiler and CLI outputs before recording a divergence reason',
+      whatHappened: 'Automatic JSX reference outputs fail parity checks',
+      details: disagreements,
+      fix: 'Fix the insertion mismatch before updating the golden corpus',
     });
   await writeCorpus(snapshots);
-  if (replace) {
-    for (const group of await readdir(fixtureDirectory, {
-      withFileTypes: true,
-    })) {
-      if (!group.isDirectory()) continue;
-      for (const entry of await readdir(
-        path.join(fixtureDirectory, group.name),
-        { withFileTypes: true }
-      )) {
-        if (
-          entry.isDirectory() &&
-          !Object.hasOwn(snapshots, `${group.name}/${entry.name}`)
-        )
-          await rm(path.join(fixtureDirectory, group.name, entry.name), {
-            recursive: true,
-          });
-      }
-    }
-  }
 }
 
 export async function readExample(example: Example): Promise<Snapshot> {

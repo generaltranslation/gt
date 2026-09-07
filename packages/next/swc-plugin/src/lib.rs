@@ -413,14 +413,18 @@ pub fn transform_program_with_comments(
   };
 
   if config.enable_auto_jsx_injection
-    && auto_jsx::allows_injection(
+    && !auto_jsx::package_scope::is_runtime_package(
+      filename.as_deref(),
+      &config.auto_jsx_runtime_package_roots,
+    )
+  {
+    let raw_jsx = auto_jsx::allows_injection(
       &program,
       comments,
       config.jsx_runtime,
       loader_import_source.or(config.jsx_import_source.as_deref()),
-    )
-  {
-    auto_jsx::inject_auto_jsx(&mut program);
+    );
+    auto_jsx::inject_auto_jsx(&mut program, raw_jsx);
   }
 
   if !config.compile_time_hash {

@@ -1,4 +1,8 @@
-import { transformSync } from '@babel/core';
+import {
+  transformFromAstSync,
+  transformSync,
+  type TransformOptions,
+} from '@babel/core';
 import jsx from '@babel/plugin-transform-react-jsx';
 import jsxDevelopment from '@babel/plugin-transform-react-jsx-development';
 import { parse } from '@babel/parser';
@@ -36,20 +40,24 @@ function removeTypes(input: string): string {
 }
 
 /** Lower both implementations with the same JSX transform, before comparing. */
-export function lower(input: string, development = false): t.File {
+export function lower(input: string | t.File, development = false): t.File {
+  const printed = typeof input === 'string' ? input : generate(input).code;
   // Both real hosts remove TypeScript-only wrappers before the compiler sees
   // React calls. Preserve JSX here, then share Babel's runtime lowering below.
   const hasJsxPragma =
-    input.includes('@jsx') &&
-    parse(input, {
-      sourceType: 'module',
-      plugins: ['typescript', 'jsx', 'decorators-legacy'],
-    }).comments?.some((comment) => isJsxPragmaComment(comment.value));
+    printed.includes('@jsx') &&
+    (typeof input === 'string'
+      ? parse(input, {
+          sourceType: 'module',
+          plugins: ['typescript', 'jsx', 'decorators-legacy'],
+        })
+      : input
+    ).comments?.some((comment) => isJsxPragmaComment(comment.value));
   // With a classic factory pragma, React/h/Fragment imports may be referenced
   // only by the calls JSX will produce. Lower JSX before removing types for
   // pragma-bearing files so SWC cannot erase those live value imports early.
-  const source = hasJsxPragma ? input : removeTypes(input);
-  const result = transformSync(source, {
+  const source = hasJsxPragma ? printed : removeTypes(printed);
+  const options: TransformOptions = {
     filename: 'input.tsx',
     configFile: false,
     babelrc: false,
@@ -57,7 +65,13 @@ export function lower(input: string, development = false): t.File {
     code: false,
     parserOpts: { plugins: ['typescript', 'jsx', 'decorators-legacy'] },
     plugins: [[development ? jsxDevelopment : jsx, { runtime: 'automatic' }]],
-  });
+  };
+  // CLI insertion mutates the original AST. Retain its source locations when
+  // lowering pragma-selected factories, whose development metadata is observable.
+  const result =
+    hasJsxPragma && typeof input !== 'string'
+      ? transformFromAstSync(input, undefined, options)
+      : transformSync(source, options);
   if (!result?.ast || !t.isFile(result.ast)) throw missingAstError;
   // The real compiler reparses emitted code. Start with fresh bindings rather
   // than Babel's transform-time scope cache (which predates injected imports).
@@ -225,10 +239,35 @@ export function hasUnsupportedJsxCalls(ast: t.File): boolean {
  * jsx/jsxs/jsxDEV share element semantics; dev source locations are not content.
  */
 export function canonical(ast: t.File): string {
+  return canonicalize(ast, false);
+}
+
+/**
+ * Compare the same runtime mode without erasing static-child behavior. Runtime
+ * helper values retain their module/kind identity; recognized call sites compare
+ * jsx/jsxs with the equivalent jsxDEV static flag, which also controls freezing.
+ */
+export function canonicalRuntime(ast: t.File): string {
+  return canonicalize(ast, true);
+}
+
+function canonicalize(ast: t.File, runtimeSemantics: boolean): string {
   ast = t.cloneNode(ast, true);
   const devFileNames = new Set<string>();
   const devCalls = new WeakSet<t.CallExpression>();
+  const runtimeCalls = new WeakMap<t.CallExpression, string>();
   const createElementNames = new Set<string>();
+  const customRuntimeSources = ast.program.body
+    .filter(
+      (statement): statement is t.ImportDeclaration =>
+        t.isImportDeclaration(statement) &&
+        /\/jsx(-dev)?-runtime$/.test(statement.source.value) &&
+        !/^react\/jsx(-dev)?-runtime$/.test(statement.source.value)
+    )
+    .map((statement) => statement.source.value)
+    .filter((source, index, sources) => sources.indexOf(source) === index)
+    .sort();
+  const customBindingCounts = new Map<string, number>();
   const identifiers = new Set<string>();
   traverse(ast, {
     Identifier(path) {
@@ -258,6 +297,20 @@ export function canonical(ast: t.File): string {
             const name = t.isIdentifier(imported)
               ? imported.name
               : imported.value;
+            if (
+              (statement.node.source.value === 'react/jsx-runtime' &&
+                ['jsx', 'jsxs'].includes(name)) ||
+              (statement.node.source.value === 'react/jsx-dev-runtime' &&
+                name === 'jsxDEV')
+            ) {
+              const binding = path.scope.getBinding(specifier.node.local.name);
+              for (const reference of binding?.referencePaths ?? [])
+                if (
+                  reference.parentPath?.isCallExpression() &&
+                  reference.key === 'callee'
+                )
+                  runtimeCalls.set(reference.parentPath.node, name);
+            }
             // Record the original imported kind before jsx/jsxs/jsxDEV aliases
             // converge. Scope references exclude user functions shadowing it.
             if (runtime && name === 'jsxDEV') {
@@ -279,8 +332,29 @@ export function canonical(ast: t.File): string {
               (statement.node.source.value === 'gt-next' && wrappers.has(name))
             ) {
               const canonicalName =
-                runtime && name !== 'Fragment' ? jsxName : `${prefix}${name}`;
+                runtime && name !== 'Fragment'
+                  ? runtimeSemantics
+                    ? `${prefix}${statement.node.source.value === 'react/jsx-runtime' ? 'Runtime' : 'DevRuntime'}${name}`
+                    : jsxName
+                  : `${prefix}${name}`;
               path.scope.rename(specifier.node.local.name, canonicalName);
+            } else if (
+              customRuntimeSources.includes(statement.node.source.value) &&
+              ['jsx', 'jsxs', 'jsxDEV'].includes(name)
+            ) {
+              // Inserting a React helper before host lowering can change a
+              // custom factory's generated local alias. Rename only its bound
+              // references; retain the source, imported kind, flags and args.
+              const key = `${statement.node.source.value}\0${name}`;
+              const ordinal = customBindingCounts.get(key) ?? 0;
+              customBindingCounts.set(key, ordinal + 1);
+              const sourceIndex = customRuntimeSources.indexOf(
+                statement.node.source.value
+              );
+              path.scope.rename(
+                specifier.node.local.name,
+                `${prefix}CustomRuntime${sourceIndex}${name}${ordinal}`
+              );
             }
           }
         }
@@ -335,16 +409,11 @@ export function canonical(ast: t.File): string {
           );
         }
       }
-      // The reference pass falls back to an unbound `jsx` for an injected T
-      // around a single array child when only aliased `jsx` was imported.
-      // Compare its component tree, without reproducing that helper-binding bug.
+      const runtimeKind = runtimeCalls.get(path.node);
       if (
-        t.isIdentifier(path.node.callee, { name: 'jsx' }) &&
-        !path.scope.getBinding('jsx') &&
-        t.isIdentifier(path.node.arguments[0], { name: translateName })
-      )
-        path.node.callee = t.identifier(jsxName);
-      if (t.isIdentifier(path.node.callee, { name: jsxName })) {
+        t.isIdentifier(path.node.callee, { name: jsxName }) ||
+        (runtimeSemantics && runtimeKind)
+      ) {
         const args = path.node.arguments;
         if (devCalls.has(path.node) && t.isBooleanLiteral(args[3])) {
           const metadata = generatedDevSource(path, args[4]);
@@ -367,13 +436,32 @@ export function canonical(ast: t.File): string {
           if (
             generatedWrapper ||
             generatedFragment ||
+            (runtimeSemantics && args.length === 4) ||
             (metadata &&
               (args.length === 5 ||
                 (args.length === 6 &&
                   (t.isThisExpression(args[5]) || isVoidZero(args[5])))))
           ) {
             if (metadata?.fileBinding) devFileNames.add(metadata.fileBinding);
-            path.node.arguments = args.slice(0, 3);
+            path.node.arguments = args.slice(0, runtimeSemantics ? 4 : 3);
+          }
+        }
+        if (runtimeSemantics && runtimeKind) {
+          const args = path.node.arguments;
+          const staticChildren =
+            runtimeKind === 'jsxDEV'
+              ? args.length === 4 && t.isBooleanLiteral(args[3])
+                ? args[3].value
+                : undefined
+              : args.length >= 2 && args.length <= 3
+                ? runtimeKind === 'jsxs'
+                : undefined;
+          if (staticChildren !== undefined) {
+            path.node.callee = t.identifier(
+              `${prefix}${staticChildren ? 'Static' : 'Dynamic'}Jsx`
+            );
+            if (runtimeKind === 'jsxDEV')
+              path.node.arguments = args.slice(0, 3);
           }
         }
         const key = path.node.arguments[2];
@@ -413,7 +501,22 @@ export function canonical(ast: t.File): string {
 }
 
 /** Invert only React runtime calls for human-readable, compiler-authored fixtures. */
-export function readableOutput(ast: t.File, originalInput?: string): string {
+export function readableOutput(
+  ast: t.File,
+  originalInput?: string,
+  preserveRuntimeSemantics = false
+): string {
+  if (preserveRuntimeSemantics && originalInput?.includes('@jsx')) {
+    // Reconstructed JSX would follow the file pragma instead of the React
+    // helper that owns an inserted wrapper. Keep those calls executable.
+    return `${
+      generate(ast, {
+        comments: false,
+        shouldPrintComment: isJsxPragmaComment,
+        jsescOption: { minimal: true },
+      }).code
+    }\n`;
+  }
   if (originalInput?.includes('@jsx')) {
     const original = parse(originalInput, {
       sourceType: 'module',
@@ -438,6 +541,8 @@ export function readableOutput(ast: t.File, originalInput?: string): string {
   }
   ast = t.cloneNode(ast, true);
   const callees = new Set<string>();
+  const staticCallees = new Set<string>();
+  const retainedCallees = new Set<string>();
   const fragments = new Set<string>();
   for (const statement of ast.program.body) {
     if (
@@ -450,43 +555,73 @@ export function readableOutput(ast: t.File, originalInput?: string): string {
       const name = t.isIdentifier(specifier.imported)
         ? specifier.imported.name
         : specifier.imported.value;
-      (name === 'Fragment' ? fragments : callees).add(specifier.local.name);
+      if (name === 'Fragment') fragments.add(specifier.local.name);
+      else if (['jsx', 'jsxs', 'jsxDEV'].includes(name))
+        callees.add(specifier.local.name);
+      if (name === 'jsxs') staticCallees.add(specifier.local.name);
     }
   }
   const jsxName = (
     node: t.Expression
-  ): t.JSXIdentifier | t.JSXMemberExpression => {
-    if (t.isStringLiteral(node)) return t.jsxIdentifier(node.value);
-    if (t.isIdentifier(node)) return t.jsxIdentifier(node.name);
+  ): t.JSXIdentifier | t.JSXMemberExpression | undefined => {
+    // Preserve runtime calls whose tag cannot be expressed as equivalent JSX.
+    if (t.isStringLiteral(node))
+      return /^[a-z][a-zA-Z0-9_:-]*$/.test(node.value)
+        ? t.jsxIdentifier(node.value)
+        : undefined;
+    if (t.isIdentifier(node))
+      return /^[a-z]/.test(node.name) ? undefined : t.jsxIdentifier(node.name);
     if (
       t.isMemberExpression(node) &&
       !node.computed &&
       t.isIdentifier(node.property)
     ) {
-      return t.jsxMemberExpression(
-        jsxName(node.object),
-        t.jsxIdentifier(node.property.name)
-      );
+      // A member object's first identifier may be lowercase: <view.Card />.
+      const object = t.isIdentifier(node.object)
+        ? t.jsxIdentifier(node.object.name)
+        : jsxName(node.object);
+      return object
+        ? t.jsxMemberExpression(object, t.jsxIdentifier(node.property.name))
+        : undefined;
     }
-    throw createFixtureError({
-      whatHappened: 'The fixture printer cannot represent this JSX tag',
-      details: node.type,
-      fix: 'Add support for this tag shape to the fixture printer',
-    });
+    return undefined;
   };
   traverse(ast, {
     CallExpression: {
       exit(path) {
         if (!t.isIdentifier(path.node.callee)) return;
-        const referenceFallback =
-          path.node.callee.name === 'jsx' &&
-          !path.scope.getBinding('jsx') &&
-          t.isIdentifier(path.node.arguments[0], {
-            name: 'GtInternalTranslateJsx',
-          });
-        if (!callees.has(path.node.callee.name) && !referenceFallback) return;
+        if (
+          preserveRuntimeSemantics &&
+          staticCallees.has(path.node.callee.name)
+        ) {
+          // An array expression in raw JSX selects jsx, even when the compiler
+          // selected jsxs. Keep this call and its real import when the fixture
+          // is fed into another host transform for an upstream-defect check.
+          retainedCallees.add(path.node.callee.name);
+          return;
+        }
+        if (!callees.has(path.node.callee.name)) return;
+        const binding = path.scope.getBinding(path.node.callee.name);
+        if (
+          !binding?.path.isImportSpecifier() ||
+          !binding.path.parentPath.isImportDeclaration() ||
+          !/^react\/jsx(-dev)?-runtime$/.test(
+            binding.path.parentPath.node.source.value
+          ) ||
+          path.node.arguments.length > 3
+        )
+          return;
         const [tag, props, key] = path.node.arguments;
         if (!t.isExpression(tag) || !t.isObjectExpression(props)) return;
+        // JSX lowering may flatten literal spreads that an authored runtime
+        // call retains; do not change its props object during reconstruction.
+        if (
+          preserveRuntimeSemantics &&
+          props.properties.some((property) => t.isSpreadElement(property))
+        )
+          return;
+        const name = jsxName(tag);
+        if (!name) return;
         const attrs: (t.JSXAttribute | t.JSXSpreadAttribute)[] = [];
         const children: t.JSXElement['children'] = [];
         // Runtime keys have already been lifted out of props. Put them first:
@@ -554,7 +689,6 @@ export function readableOutput(ast: t.File, originalInput?: string): string {
             )
           );
         } else {
-          const name = jsxName(tag);
           path.replaceWith(
             t.jsxElement(
               t.jsxOpeningElement(name, attrs, !children.length),
@@ -564,6 +698,14 @@ export function readableOutput(ast: t.File, originalInput?: string): string {
           );
         }
       },
+    },
+  });
+  traverse(ast, {
+    Program(path) {
+      path.scope.crawl();
+      for (const name of callees)
+        if (path.scope.getBinding(name)?.referenced) retainedCallees.add(name);
+      path.stop();
     },
   });
   let pendingPragmas: t.Comment[] = [];
@@ -596,7 +738,9 @@ export function readableOutput(ast: t.File, originalInput?: string): string {
     if (!statement.specifiers.length) return preservePragmas();
     statement.specifiers = statement.specifiers.filter(
       (specifier) =>
-        t.isImportSpecifier(specifier) && fragments.has(specifier.local.name)
+        !t.isImportSpecifier(specifier) ||
+        !callees.has(specifier.local.name) ||
+        retainedCallees.has(specifier.local.name)
     );
     if (statement.specifiers.length) return preservePragmas();
     // Type stripping can move a pragma from an unused React import onto the
