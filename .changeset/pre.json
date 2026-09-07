@@ -62,5 +62,7 @@
     "gt-test-vite-vue": "0.0.0",
     "gt-test-webpack-react": "0.1.1"
   },
-  "changesets": []
+  "changesets": [
+    "auto-jsx-baseline-release"
+  ]
 }

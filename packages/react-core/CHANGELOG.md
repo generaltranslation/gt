@@ -1,5 +1,11 @@
 # @generaltranslation/react-core
 
+## 11.1.24-auto-jsx.0
+
+### Patch Changes
+
+- 2155725: Verify the isolated experimental release pipeline using the current stable implementation, before automatic JSX insertion changes are introduced.
+
 ## 11.1.23
 
 ### Patch Changes

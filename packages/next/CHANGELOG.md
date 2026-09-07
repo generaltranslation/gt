@@ -1,5 +1,15 @@
 # gt-next
 
+## 11.1.24-auto-jsx.0
+
+### Patch Changes
+
+- 2155725: Verify the isolated experimental release pipeline using the current stable implementation, before automatic JSX insertion changes are introduced.
+- Updated dependencies [2155725]
+  - @generaltranslation/compiler@1.3.50-auto-jsx.0
+  - @generaltranslation/react-core@11.1.24-auto-jsx.0
+  - gt-react@11.1.24-auto-jsx.0
+
 ## 11.1.23
 
 ### Patch Changes
