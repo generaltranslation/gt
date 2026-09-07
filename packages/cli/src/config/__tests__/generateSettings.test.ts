@@ -262,6 +262,55 @@ describe('generateSettings - composite patterns', () => {
     );
   });
 
+  describe('options.saveLocal', () => {
+    it('defaults to true when neither flag nor config sets it', async () => {
+      const settings = await generateSettings({}, '/test/cwd');
+      expect(settings.options?.saveLocal).toBe(true);
+    });
+
+    it('reads options.saveLocal from gt.config.json', async () => {
+      mockResolveConfig.mockReturnValueOnce({
+        config: {
+          defaultLocale: 'en',
+          locales: ['fr', 'es'],
+          options: { saveLocal: false },
+        },
+        path: '/test/gt.config.json',
+      });
+      const settings = await generateSettings({}, '/test/cwd');
+      expect(settings.options?.saveLocal).toBe(false);
+    });
+
+    it('lets --no-save-local override a config value of true', async () => {
+      mockResolveConfig.mockReturnValueOnce({
+        config: {
+          defaultLocale: 'en',
+          locales: ['fr', 'es'],
+          options: { saveLocal: true },
+        },
+        path: '/test/gt.config.json',
+      });
+      const settings = await generateSettings(
+        { saveLocal: false },
+        '/test/cwd'
+      );
+      expect(settings.options?.saveLocal).toBe(false);
+    });
+
+    it('lets --save-local override a config value of false', async () => {
+      mockResolveConfig.mockReturnValueOnce({
+        config: {
+          defaultLocale: 'en',
+          locales: ['fr', 'es'],
+          options: { saveLocal: false },
+        },
+        path: '/test/gt.config.json',
+      });
+      const settings = await generateSettings({ saveLocal: true }, '/test/cwd');
+      expect(settings.options?.saveLocal).toBe(true);
+    });
+  });
+
   it('should handle mixed composite and non-composite patterns', async () => {
     const options = {
       files: {

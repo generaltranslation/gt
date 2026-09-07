@@ -32,7 +32,7 @@ vi.mock('../steps/BranchStep.js', () => ({
 }));
 vi.mock('../steps/UploadSourcesStep.js', () => ({
   UploadSourcesStep: vi.fn(() => ({
-    run: vi.fn(async () => []),
+    run: vi.fn(async ({ files }: { files: unknown[] }) => files),
     wait: vi.fn(),
   })),
 }));
@@ -48,8 +48,11 @@ vi.mock('../steps/EnqueueStep.js', () => ({
 vi.mock('../steps/TagStep.js', () => ({
   TagStep: vi.fn(() => ({ run: vi.fn(), wait: vi.fn() })),
 }));
+const { userEditDiffsRun } = vi.hoisted(() => ({
+  userEditDiffsRun: vi.fn(),
+}));
 vi.mock('../steps/UserEditDiffsStep.js', () => ({
-  UserEditDiffsStep: vi.fn(() => ({ run: vi.fn(), wait: vi.fn() })),
+  UserEditDiffsStep: vi.fn(() => ({ run: userEditDiffsRun, wait: vi.fn() })),
 }));
 vi.mock('../utils/filterFilesForEnqueue.js', () => ({
   filterFilesForEnqueue: vi.fn(async ({ files }: { files: unknown[] }) => ({
@@ -117,5 +120,53 @@ describe('runStageFilesWorkflow font sync', () => {
       expect.stringContaining('Font sync failed')
     );
     expect(result.enqueueResult).toEqual({ message: 'enqueued', jobData: {} });
+  });
+});
+
+describe('runStageFilesWorkflow save-local gate', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(collectFonts).mockResolvedValue([]);
+  });
+
+  it('saves local edits when options.saveLocal is true', async () => {
+    await runStageFilesWorkflow({
+      files,
+      options,
+      settings: { ...settings, options: { saveLocal: true } } as Settings,
+    });
+
+    expect(userEditDiffsRun).toHaveBeenCalledTimes(1);
+    expect(userEditDiffsRun).toHaveBeenCalledWith(files);
+  });
+
+  it('skips saving local edits when options.saveLocal is false', async () => {
+    const result = await runStageFilesWorkflow({
+      files,
+      options,
+      settings: { ...settings, options: { saveLocal: false } } as Settings,
+    });
+
+    expect(userEditDiffsRun).not.toHaveBeenCalled();
+    // The rest of the workflow still runs
+    expect(result.enqueueResult).toEqual({ message: 'enqueued', jobData: {} });
+  });
+
+  it('saves local edits when options.saveLocal is not set', async () => {
+    await runStageFilesWorkflow({ files, options, settings });
+
+    expect(userEditDiffsRun).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores the raw flag and uses the resolved setting', async () => {
+    // generateSettings folds the flag into settings.options.saveLocal; the
+    // workflow must not read the unresolved flag directly.
+    await runStageFilesWorkflow({
+      files,
+      options: { ...options, saveLocal: true } as TranslateFlags,
+      settings: { ...settings, options: { saveLocal: false } } as Settings,
+    });
+
+    expect(userEditDiffsRun).not.toHaveBeenCalled();
   });
 });

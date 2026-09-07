@@ -49,8 +49,7 @@ export function attachTranslateFlags(command: Command) {
     )
     .option(
       '--save-local',
-      'Detect and save local edits before enqueuing translations',
-      true
+      'Detect and save local edits before enqueuing translations (default: true; configurable via options.saveLocal in gt.config.json)'
     )
     .option(
       '--no-save-local',
