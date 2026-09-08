@@ -10,6 +10,7 @@ import {
 } from '../../fs/config/downloadedVersions.js';
 import { hashStringSync } from '../../utils/hash.js';
 import type { FileReference, FileToUpload } from 'generaltranslation/types';
+import { resolveCanonicalLocale } from '@generaltranslation/format';
 
 type UploadTranslationsInput = {
   files: {
@@ -177,17 +178,28 @@ export class UploadTranslationsStep {
     uploaded: UploadTranslationsInput['files'],
     confirmed: ConfirmedTranslationReference[]
   ): void {
+    // Compare in canonical locale space: the server confirms uploads under
+    // GT's code (e.g. `he`), while local translations carry the configured
+    // key (e.g. a customMapping alias like `he-IL`). Several aliases may
+    // collapse onto one canonical code, so a confirmation for that code
+    // covers every local translation that resolves to it.
+    const confirmedKey = (fileId: string, locale: string) =>
+      `${fileId}:${resolveCanonicalLocale(locale, this.settings.customMapping)}`;
     const confirmedKeys = new Set(
       confirmed
         .filter((file) => file.locale)
-        .map((file) => `${file.fileId}:${file.locale}`)
+        .map((file) => confirmedKey(file.fileId, file.locale!))
     );
     if (confirmedKeys.size === 0) return;
 
     const updatedAt = new Date().toISOString();
     for (const file of uploaded) {
       for (const translation of file.translations) {
-        if (!confirmedKeys.has(`${translation.fileId}:${translation.locale}`)) {
+        if (
+          !confirmedKeys.has(
+            confirmedKey(translation.fileId, translation.locale)
+          )
+        ) {
           continue;
         }
         const entry = findOrCreateEntry(

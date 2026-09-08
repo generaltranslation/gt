@@ -427,7 +427,14 @@ export const api = {
           client: getClient(),
         })
       );
-      return response.uploadedFiles;
+      // The server echoes canonical codes; hand callers the configured alias
+      // so results line up with the locale they uploaded under.
+      return response.uploadedFiles.map((uploadedFile) => ({
+        ...uploadedFile,
+        ...(uploadedFile.locale && {
+          locale: resolveAliasLocale(uploadedFile.locale, customMapping),
+        }),
+      }));
     });
 
     return { uploadedFiles: result };

@@ -314,13 +314,13 @@ describe('CLI API client', () => {
       };
       expect(body.data[0].translations[0].locale).toBe('en-US');
       return Response.json({
-        uploadedFiles: [uploadedFile],
+        uploadedFiles: [{ ...uploadedFile, locale: 'en-US' }],
         count: 1,
         message: 'uploaded',
       });
     });
 
-    await api.uploadTranslations(
+    const result = await api.uploadTranslations(
       [
         {
           source: {
@@ -341,6 +341,10 @@ describe('CLI API client', () => {
       ],
       { sourceLocale: 'en' }
     );
+
+    // The server confirms under its canonical code; callers get the alias
+    // back so confirmations line up with what they uploaded.
+    expect(result.uploadedFiles[0].locale).toBe('brand-english');
   });
 
   it('decodes text downloads and preserves binary downloads', async () => {

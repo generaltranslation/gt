@@ -1,5 +1,6 @@
 import {
   fileEncodingSkipReason,
+  filesToUploadMessage,
   noDefaultLocaleError,
 } from '../../console/index.js';
 import { exitSync, logErrorAndExit } from '../../console/logging.js';
@@ -18,6 +19,8 @@ import { hasValidCredentials } from './utils/validation.js';
 import { runPublishWorkflow } from '../../workflows/publish.js';
 import { aggregateFiles } from '../../formats/files/aggregateFiles.js';
 import { recordWarning } from '../../state/translateWarnings.js';
+import { readLockfile } from '../../fs/config/downloadedVersions.js';
+import { partitionTranslationsByLockfile } from '../../workflows/steps/UploadTranslationsStep.js';
 
 /**
  * Sends multiple files to the API for translation
@@ -73,7 +76,8 @@ export async function upload(
   if (!settings.defaultLocale) {
     return logErrorAndExit(noDefaultLocaleError);
   }
-  if (!hasValidCredentials(settings)) return exitSync(1);
+  // A dry run never reaches the API, so it should not demand credentials
+  if (!settings.dryRun && !hasValidCredentials(settings)) return exitSync(1);
 
   const locales = settings.locales || [];
   // Create file mapping for all file types
@@ -151,6 +155,33 @@ export async function upload(
       translations,
     };
   });
+
+  if (settings.dryRun) {
+    // Mirror the real run's lockfile check so the listing shows what would
+    // actually be sent, then stop before any network or filesystem writes.
+    const { filesToUpload, skippedCount } = partitionTranslationsByLockfile(
+      uploadData,
+      readLockfile(settings).entryMap
+    );
+    const pendingTranslations = new Map(
+      filesToUpload.map((file) => [file.source.fileId, file.translations])
+    );
+    logger.message(
+      filesToUploadMessage(
+        uploadData.map((file) => ({
+          source: file.source,
+          translations: pendingTranslations.get(file.source.fileId) ?? [],
+        }))
+      )
+    );
+    if (skippedCount > 0) {
+      logger.info(
+        `${skippedCount} translation file${skippedCount !== 1 ? 's are' : ' is'} unchanged since the last sync and would be skipped`
+      );
+    }
+    logger.success('Dry run: No files were sent to General Translation.');
+    return;
+  }
 
   try {
     // Send all files in a single API call

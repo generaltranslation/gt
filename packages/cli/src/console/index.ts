@@ -1,3 +1,4 @@
+import chalk from 'chalk';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { BRANCH_COMPONENT } from '../react/jsx/utils/constants.js';
 import {
@@ -450,3 +451,22 @@ export const fileEncodingSkipReason = (error: unknown): string =>
 
 export const withOriginalError = (message: string, error: unknown): string =>
   error != null ? `${message} Original error: ${String(error)}` : message;
+
+/**
+ * Lists every source file queued for upload and the locales of the
+ * translation files that accompany it.
+ */
+export const filesToUploadMessage = (
+  files: {
+    source: { fileName: string };
+    translations: { locale: string }[];
+  }[]
+): string =>
+  chalk.cyan('Files to upload:') +
+  '\n' +
+  files
+    .map(
+      (file) =>
+        `  - ${chalk.bold(file.source.fileName)}${file.translations.length > 0 ? ` -> ${file.translations.map((t) => t.locale).join(', ')}` : ''}`
+    )
+    .join('\n');

@@ -1,5 +1,8 @@
-import chalk from 'chalk';
-import { branchResolutionError, withOriginalError } from '../console/index.js';
+import {
+  branchResolutionError,
+  filesToUploadMessage,
+  withOriginalError,
+} from '../console/index.js';
 import { logger } from '../console/logger.js';
 import { logErrorAndExit } from '../console/logging.js';
 import { Settings } from '../types/index.js';
@@ -28,16 +31,7 @@ export async function runUploadFilesWorkflow({
   options: Settings;
 }): Promise<{ branchData: BranchData }> {
   try {
-    logger.message(
-      chalk.cyan('Files to upload:') +
-        '\n' +
-        files
-          .map(
-            (file) =>
-              `  - ${chalk.bold(file.source.fileName)}${file.translations.length > 0 ? ` -> ${file.translations.map((t) => t.locale).join(', ')}` : ''}`
-          )
-          .join('\n')
-    );
+    logger.message(filesToUploadMessage(files));
 
     // Sync fonts first (locale-invariant) so they're available when
     // translating formats that need them.

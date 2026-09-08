@@ -325,6 +325,45 @@ describe('UploadTranslationsStep', () => {
     expect(entry?.translations.fr).toBeUndefined();
   });
 
+  it('records hashes for customMapping aliases confirmed under their canonical code', async () => {
+    // Android-style config: `he` and `he-IL` both resolve to GT's `he`, and
+    // `in` is an alias for `id`. The server confirms uploads by canonical
+    // code, so without alias-aware matching these would never be recorded
+    // and would re-upload on every run.
+    const settings = {
+      ...mockSettings,
+      customMapping: { 'he-IL': { code: 'he' }, in: { code: 'id' } },
+    } as unknown as Settings;
+    const he = makeTranslation('file-1', 'he');
+    const heIL = makeTranslation('file-1', 'he-IL');
+    const indonesian = makeTranslation('file-1', 'in');
+    mockGt.uploadTranslations.mockResolvedValue({
+      uploadedFiles: [
+        confirmedUpload('file-1', 'he'),
+        confirmedUpload('file-1', 'id'),
+      ],
+    });
+
+    const step = new UploadTranslationsStep(mockGt as unknown as GT, settings);
+    await step.run({
+      files: [
+        { source: makeSource('file-1'), translations: [he, heIL, indonesian] },
+      ],
+    });
+
+    const [written] = vi.mocked(writeLockfile).mock.calls[0]!;
+    const entry = written.entries.find((e) => e.fileId === 'file-1');
+    expect(entry?.translations.he?.postProcessHash).toBe(
+      hashStringSync(he.content)
+    );
+    expect(entry?.translations['he-IL']?.postProcessHash).toBe(
+      hashStringSync(heIL.content)
+    );
+    expect(entry?.translations.in?.postProcessHash).toBe(
+      hashStringSync(indonesian.content)
+    );
+  });
+
   it('reports the server-confirmed number of uploaded translation files', async () => {
     const files = [
       {

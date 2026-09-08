@@ -43,7 +43,7 @@ vi.mock('../../../utils/hash.js', () => ({
       `hash_${requiresReview ? 'rr_' : ''}${s.slice(0, 16)}`
   ),
 }));
-vi.mock('./utils/validation.js', () => ({
+vi.mock('../utils/validation.js', () => ({
   hasValidCredentials: vi.fn(() => true),
 }));
 
@@ -70,7 +70,8 @@ import { runPublishWorkflow } from '../../../workflows/publish.js';
 import { createFileMapping } from '../../../formats/files/fileMapping.js';
 import { logger } from '../../../console/logger.js';
 import { existsSync, readFileSync } from 'node:fs';
-import { logErrorAndExit } from '../../../console/logging.js';
+import { exitSync, logErrorAndExit } from '../../../console/logging.js';
+import { hasValidCredentials } from '../utils/validation.js';
 
 function setMockFiles(files: Record<string, string>) {
   (vi as unknown).__mockFiles = files;
@@ -164,6 +165,33 @@ describe('upload - Twilio Content JSON', () => {
     expect(call.files[0].source.fileFormat).toBe('TWILIO_CONTENT_JSON');
     expect(runPublishWorkflow).toHaveBeenCalledTimes(1);
     expect(vi.mocked(runPublishWorkflow).mock.calls[0][2]).toBe('branch-id');
+  });
+
+  it('does not upload, publish, or require credentials on a dry run', async () => {
+    const translatedContent = JSON.stringify({ body: 'Hola' });
+    setMockFiles({ 'twilio/content.json': JSON.stringify({ body: 'Hi' }) });
+    vi.mocked(createFileMapping).mockReturnValue({
+      es: { 'twilio/content.json': 'twilio/es/content.json' },
+    });
+    vi.mocked(existsSync).mockReturnValue(true);
+    vi.mocked(readFileSync).mockReturnValue(translatedContent);
+    vi.mocked(hasValidCredentials).mockReturnValueOnce(false);
+
+    await uploadWithFiles(
+      { twilioContentJson: ['twilio/content.json'] },
+      makeSettings({ locales: ['es'], options: {}, dryRun: true })
+    );
+
+    expect(runUploadFilesWorkflow).not.toHaveBeenCalled();
+    expect(runPublishWorkflow).not.toHaveBeenCalled();
+    expect(exitSync).not.toHaveBeenCalled();
+    expect(logger.message).toHaveBeenCalledWith(
+      expect.stringContaining('twilio/content.json')
+    );
+    expect(logger.message).toHaveBeenCalledWith(expect.stringContaining('es'));
+    expect(logger.success).toHaveBeenCalledWith(
+      expect.stringContaining('Dry run')
+    );
   });
 
   it('should use fileMapping for Twilio Content JSON files (no composite)', async () => {
