@@ -371,9 +371,14 @@ export function createNextMiddleware({
       }
 
       // REWRITE CASE: displaying correct localized path, which is the same as the shared path (/fil/blog => /fil/blog) (/fr/fr-dashboard/1/fr-custom => /fr/dashboard/1/custom)
+      // Next.js route identity preserves Unicode spelling, even when lookup
+      // considers the public alias and shared path canonically equivalent.
+      const rewriteUrl = new URL(
+        sharedPathWithParameters as string,
+        req.nextUrl
+      );
       if (
-        normalizePathname(standardizedPathname) !==
-        normalizePathname(sharedPathWithParameters as string) // no rewrite needed if it's already the shared path
+        req.nextUrl.pathname !== rewriteUrl.pathname // no rewrite needed if it's already the shared path
       ) {
         // convert to shared path with dynamic parameters
         return getRewriteResponse(sharedPathWithParameters as string);
