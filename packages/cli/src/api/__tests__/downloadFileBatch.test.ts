@@ -17,6 +17,10 @@ import {
 import type { DownloadedVersionEntry } from '../../fs/config/downloadedVersions.js';
 import type { FileStatusTracker } from '../../workflows/steps/PollJobsStep.js';
 import { clearWarnings, getWarnings } from '../../state/translateWarnings.js';
+import {
+  clearDownloaded,
+  getDownloadedMeta,
+} from '../../state/recentDownloads.js';
 
 // Mock dependencies
 vi.mock('../../utils/api.js', () => ({
@@ -172,6 +176,7 @@ describe('downloadFileBatch', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     clearWarnings();
+    clearDownloaded();
   });
 
   afterEach(() => {
@@ -997,6 +1002,192 @@ describe('downloadFileBatch', () => {
         es: unit('Hola'),
         fr: unit('Bonjour'),
       });
+    });
+
+    it('merges every locale even when the lockfile already records all of them', async () => {
+      const files: BatchedFiles = [batched('de'), batched('es')];
+      const fileTracker = createMockFileTracker(files);
+      vi.mocked(readLockfile).mockReturnValue({
+        data: { version: 2, branchId: 'branch-1', entries: [] },
+        entryMap: new Map<string, DownloadedVersionEntry>([
+          [
+            'file-1',
+            {
+              fileId: 'file-1',
+              versionId: 'version-1',
+              fileName: CATALOG,
+              translations: {
+                de: {
+                  updatedAt: '2026-01-01T00:00:00.000Z',
+                  fileName: CATALOG,
+                  postProcessHash: 'hash-of-catalog',
+                },
+                es: {
+                  updatedAt: '2026-01-01T00:00:00.000Z',
+                  fileName: CATALOG,
+                  postProcessHash: 'hash-of-catalog',
+                },
+              },
+            },
+          ],
+        ]),
+        originalV1: false,
+      });
+      vi.mocked(api.downloadFileBatch).mockResolvedValue({
+        files: [
+          served('de', downloadFor('de', { greeting: unit('Hallo') })),
+          served('es', downloadFor('es', { greeting: unit('Hola') })),
+        ],
+        count: 2,
+      });
+      setupFileSystemMocks({ dirExists: true });
+      vi.mocked(path.relative).mockReturnValue(CATALOG);
+      const disk = mockDisk(catalogContent);
+
+      const result = await downloadFileBatch(
+        fileTracker,
+        files,
+        createMockSettings({ locales: ['de', 'es'] })
+      );
+
+      // The catalog always reflects what the server stores: the lockfile only
+      // exists to detect local edits, never to skip a download
+      expect(result.skipped).toHaveLength(0);
+      expect(result.successful).toHaveLength(2);
+      expect(fs.promises.writeFile).toHaveBeenCalledTimes(2);
+      expect(JSON.parse(disk.content).strings.greeting.localizations).toEqual({
+        de: unit('Hallo'),
+        en: unit('Hello'),
+        es: unit('Hola'),
+        fr: unit('Bonjour'),
+      });
+    });
+
+    it('records download metadata for every locale merged into the shared catalog', async () => {
+      const files: BatchedFiles = [batched('de'), batched('es')];
+      const fileTracker = createMockFileTracker(files);
+      vi.mocked(api.downloadFileBatch).mockResolvedValue({
+        files: [
+          served('de', downloadFor('de', { greeting: unit('Hallo') })),
+          served('es', downloadFor('es', { greeting: unit('Hola') })),
+        ],
+        count: 2,
+      });
+      setupFileSystemMocks({ dirExists: true });
+      vi.mocked(path.relative).mockReturnValue(CATALOG);
+      mockDisk(catalogContent);
+
+      await downloadFileBatch(
+        fileTracker,
+        files,
+        createMockSettings({ locales: ['de', 'es'] })
+      );
+
+      // One catalog path, one entry per locale: the post-process hash step
+      // must be able to record a hash for de as well as es.
+      const metas = getDownloadedMeta().get(CATALOG);
+      expect(metas?.map((meta) => meta.locale)).toEqual(['de', 'es']);
+      expect(metas?.every((meta) => meta.fileFormat === 'XCSTRINGS')).toBe(
+        true
+      );
+    });
+
+    it('keeps the hash upload recorded when it writes the lock entry', async () => {
+      const files: BatchedFiles = [batched('de')];
+      const fileTracker = createMockFileTracker(files);
+      const lockEntry: DownloadedVersionEntry = {
+        fileId: 'file-1',
+        versionId: 'version-1',
+        translations: {
+          de: {
+            updatedAt: '2026-01-01T00:00:00.000Z',
+            postProcessHash: 'upload-hash',
+          },
+        },
+      };
+      vi.mocked(findOrCreateEntry).mockReturnValue(lockEntry);
+      vi.mocked(api.downloadFileBatch).mockResolvedValue({
+        files: [served('de', downloadFor('de', { greeting: unit('Hallo') }))],
+        count: 1,
+      });
+      setupFileSystemMocks({ dirExists: true });
+      vi.mocked(path.relative).mockReturnValue(CATALOG);
+      mockDisk(catalogContent);
+
+      await downloadFileBatch(
+        fileTracker,
+        files,
+        createMockSettings({ locales: ['de'] })
+      );
+
+      expect(lockEntry.translations.de.postProcessHash).toBe('upload-hash');
+      expect(lockEntry.translations.de.fileName).toBe(CATALOG);
+      expect(lockEntry.translations.de.updatedAt).not.toBe(
+        '2026-01-01T00:00:00.000Z'
+      );
+    });
+
+    it('fails the locale, records nothing for it, and leaves the catalog untouched when the payload carries nothing for it', async () => {
+      const files: BatchedFiles = [batched('de'), batched('es')];
+      const fileTracker = createMockFileTracker(files);
+      const lockEntry: DownloadedVersionEntry = {
+        fileId: 'file-1',
+        versionId: 'version-1',
+        translations: {},
+      };
+      vi.mocked(findOrCreateEntry).mockReturnValue(lockEntry);
+      vi.mocked(api.downloadFileBatch).mockResolvedValue({
+        files: [
+          // The source slice handed back untranslated: no de anywhere in it
+          served(
+            'de',
+            JSON.stringify({
+              sourceLanguage: 'en',
+              version: '1.0',
+              strings: {
+                Save: {},
+                greeting: {
+                  comment: 'Home screen',
+                  localizations: { en: unit('Hello') },
+                },
+              },
+            })
+          ),
+          served('es', downloadFor('es', { greeting: unit('Hola') })),
+        ],
+        count: 2,
+      });
+      setupFileSystemMocks({ dirExists: true });
+      vi.mocked(path.relative).mockReturnValue(CATALOG);
+      const disk = mockDisk(catalogContent);
+
+      const result = await downloadFileBatch(
+        fileTracker,
+        files,
+        createMockSettings({ locales: ['de', 'es'] })
+      );
+
+      expect(result.failed).toEqual([files[0]]);
+      expect(result.successful).toEqual([files[1]]);
+      expect(result.skipped).toHaveLength(0);
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.stringContaining('no de content')
+      );
+      // Only es was written; de is nowhere in the catalog, the lockfile, or
+      // the download metadata
+      expect(fs.promises.writeFile).toHaveBeenCalledTimes(1);
+      expect(JSON.parse(disk.content).strings.greeting.localizations).toEqual({
+        en: unit('Hello'),
+        es: unit('Hola'),
+        fr: unit('Bonjour'),
+      });
+      expect(lockEntry.translations.de).toBeUndefined();
+      expect(lockEntry.translations.es).toBeDefined();
+      expect(
+        getDownloadedMeta()
+          .get(CATALOG)
+          ?.map((meta) => meta.locale)
+      ).toEqual(['es']);
     });
   });
 });
