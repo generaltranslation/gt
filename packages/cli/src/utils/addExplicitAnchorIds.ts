@@ -349,23 +349,27 @@ function applyAnchorIds(
 
     const index = heading.startLine - 1;
 
-    // Author-written IDs stay inline; derived ones go in a wrapper.
-    const inline = !useDivWrapping || mapping.explicit;
-
-    if (inline) {
+    if (!useDivWrapping) {
       // Setext headings have no column to append to.
       if (heading.textEndColumn < 1) continue;
 
       const escape = escapeAnchors && !mapping.explicit;
       const anchor = escape ? `\\{#${mapping.id}\\}` : `{#${mapping.id}}`;
-      const line = lines[index];
-      const text = line
-        .slice(0, heading.textEndColumn - 1)
-        .replace(TRAILING_ANCHOR, '');
-      const trailer = line.slice(heading.textEndColumn - 1);
+      const { text, trailer } = splitHeadingLine(lines[index], heading);
 
       lines[index] = `${text} ${anchor}${trailer}`;
       continue;
+    }
+
+    // In wrapper mode every heading gets a wrapper, including ones whose ID
+    // the author wrote inline. Mintlify's `{#id}` pre-pass does not recognize
+    // headings indented four or more spaces, which the MDX serializer produces
+    // for headings nested in JSX, so a re-attached inline ID fails to compile.
+    // A wrapper anchors the heading at any indentation. Drop any inline ID the
+    // translation carried over so the two forms never appear together.
+    if (heading.textEndColumn >= 1) {
+      const { text, trailer } = splitHeadingLine(lines[index], heading);
+      lines[index] = `${text}${trailer}`;
     }
 
     if (heading.wrapperId) {
@@ -392,6 +396,20 @@ function applyAnchorIds(
   }
 
   return lines.join('\n');
+}
+
+/**
+ * Splits a heading line into its text, minus any trailing inline anchor, and
+ * whatever follows the text (a closing `##` sequence, for instance).
+ */
+function splitHeadingLine(
+  line: string,
+  heading: HeadingInfo
+): { text: string; trailer: string } {
+  return {
+    text: line.slice(0, heading.textEndColumn - 1).replace(TRAILING_ANCHOR, ''),
+    trailer: line.slice(heading.textEndColumn - 1),
+  };
 }
 
 /**

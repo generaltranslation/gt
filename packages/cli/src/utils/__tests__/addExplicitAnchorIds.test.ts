@@ -849,7 +849,7 @@ Más contenido.`;
       });
     });
 
-    it('restores an author-written ID in native syntax rather than a wrapper', () => {
+    it('wraps an author-written ID like any other heading', () => {
       const source = '## CSS variables reference {#css-variables}\n';
       const translated = '## Référence des variables CSS\n';
 
@@ -863,15 +863,12 @@ Más contenido.`;
       );
 
       expect(result.content).toBe(
-        '## Référence des variables CSS {#css-variables}\n'
+        '<div id="css-variables">\n  ## Référence des variables CSS\n</div>\n'
       );
-      // The author chose this ID; it needs no wrapper element, and the escaped
-      // form would render as literal text in Mintlify.
-      expect(result.content).not.toContain('<div id=');
-      expect(result.content).not.toContain('\\{#');
+      expect(result.content).not.toContain('{#');
     });
 
-    it('still wraps headings whose ID had to be derived', () => {
+    it('uses one wrapper form for explicit and derived IDs alike', () => {
       const source = '## Setup {#custom}\n\n## Other heading\n';
       const translated = '## Configuration\n\n## Autre titre\n';
 
@@ -884,13 +881,13 @@ Más contenido.`;
         'mdx'
       );
 
-      expect(result.content).toContain('## Configuration {#custom}');
-      expect(result.content).toContain(
-        '<div id="other-heading">\n  ## Autre titre\n</div>'
+      expect(result.content).toBe(
+        '<div id="custom">\n  ## Configuration\n</div>\n\n' +
+          '<div id="other-heading">\n  ## Autre titre\n</div>\n'
       );
     });
 
-    it('does not double-apply an ID the translation already carried over', () => {
+    it('drops an inline ID the translation carried over when wrapping', () => {
       const source = '## Setup {#custom}\n';
       const translated = '## Configuration {#custom}\n';
 
@@ -903,8 +900,48 @@ Más contenido.`;
         'mdx'
       );
 
-      expect(result.content).toBe('## Configuration {#custom}\n');
-      expect(result.hasChanges).toBe(false);
+      expect(result.content).toBe(
+        '<div id="custom">\n  ## Configuration\n</div>\n'
+      );
+      expect(result.hasChanges).toBe(true);
+    });
+
+    it('wraps an explicit-ID heading the serializer indented inside nested JSX', () => {
+      // Mintlify only recognizes `{#id}` on headings indented at most three
+      // spaces. The MDX serializer indents JSX children two spaces per level,
+      // so re-attaching the inline ID here produced an acorn parse error.
+      const source = `<Tabs>
+  <Tab title="Plain CSS">
+
+## CSS variables reference {#css-variables}
+
+Body text.
+
+  </Tab>
+</Tabs>
+`;
+      const translated = `<Tabs>
+  <Tab title="CSS simple">
+    ## Référence des variables CSS
+
+    Corps du texte.
+  </Tab>
+</Tabs>
+`;
+
+      const result = addExplicitAnchorIds(
+        translated,
+        extractHeadingInfo(source),
+        mintlify,
+        'a.mdx',
+        'fr/a.mdx',
+        'mdx'
+      );
+
+      expect(result.content).toContain(
+        '    <div id="css-variables">\n      ## Référence des variables CSS\n    </div>'
+      );
+      expect(result.content).not.toContain('{#');
     });
   });
 
@@ -987,8 +1024,8 @@ Más contenido.`;
       ]);
 
       const out = wrap(doc, doc);
-      expect(out).toContain('<div id="setup-2">');
-      expect(out).toContain('## Configuration {#setup}');
+      expect(out).toContain('<div id="setup-2">\n  ## Setup\n</div>');
+      expect(out).toContain('<div id="setup">\n  ## Configuration\n</div>');
     });
 
     it('does not renumber author-written IDs', () => {
@@ -1042,9 +1079,13 @@ Más contenido.`;
         'mdx'
       );
 
-      expect(result.content).toContain('## Alpha-fr {#alpha}');
-      expect(result.content).toContain('## Imbriqué-fr {#nested}');
-      expect(result.content).toContain('## Beta-fr {#beta}');
+      expect(result.content).toContain(
+        '<div id="alpha">\n  ## Alpha-fr\n</div>'
+      );
+      expect(result.content).toContain(
+        '  <div id="nested">\n    ## Imbriqué-fr\n  </div>'
+      );
+      expect(result.content).toContain('<div id="beta">\n  ## Beta-fr\n</div>');
     });
   });
   describe('Heading location is taken from the parser, not matched by shape', () => {
