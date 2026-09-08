@@ -2,7 +2,8 @@ import { isSameDialect, standardizeLocale } from '@generaltranslation/format';
 import { GTRuntime } from 'generaltranslation/runtime';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { createUnsupportedLocalesWarning } from '../errors/middleware';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import {
   defaultLocaleRoutingEnabledCookieName,
   defaultReferrerLocaleCookieName,
@@ -22,6 +23,7 @@ import {
   getLocaleFromRequest,
   getResponse,
   ResponseConfig,
+  type PathMatcher,
 } from './utils';
 import { defaultLocaleHeaderName } from '../utils/headers';
 import type { CustomMapping } from '@generaltranslation/format/types';
@@ -37,6 +39,8 @@ type MiddlewareEnvConfig = {
   headersAndCookies?: HeadersAndCookies;
 };
 
+export type RouteOverrides = Record<string, readonly string[]>;
+
 /**
  * Middleware factory to create a Next.js middleware for i18n routing and locale detection.
  *
@@ -49,6 +53,7 @@ type MiddlewareEnvConfig = {
  * @param {boolean} [config.prefixDefaultLocale=false] - Flag to enable or disable prefixing the default locale to the pathname, i.e., /en/about -> /about
  * @param {boolean} [config.ignoreSourceMaps=true] - Flag to enable or disable ignoring source maps
  * @param {PathConfig} [config.pathConfig] - Path configuration for locale routing
+ * @param {RouteOverrides} [config.routeOverrides] - Locale-relative paths to rewrite from /{locale}/{path} to /{locale}/{locale}/{path}
  * @returns {function} - A middleware function that processes the request and response.
  */
 export function createNextMiddleware({
@@ -56,11 +61,13 @@ export function createNextMiddleware({
   prefixDefaultLocale = false,
   ignoreSourceMaps = true,
   pathConfig = {},
+  routeOverrides = {},
 }: {
   localeRouting?: boolean;
   prefixDefaultLocale?: boolean;
   ignoreSourceMaps?: boolean;
   pathConfig?: PathConfig;
+  routeOverrides?: RouteOverrides;
 } = {}) {
   const pathRegex = compilePathRegex(
     process.env._GENERALTRANSLATION_PATH_REGEX
@@ -149,6 +156,30 @@ export function createNextMiddleware({
     },
     {}
   );
+
+  // Standardize routeOverrides locales
+  routeOverrides = Object.entries(routeOverrides).reduce<RouteOverrides>(
+    (acc, [locale, paths]) => {
+      acc[gtServicesEnabled ? standardizeLocale(locale) : locale] = paths;
+      return acc;
+    },
+    {}
+  );
+
+  // Create the route override path mapping
+  const routeOverridePathMaps = Object.entries(routeOverrides).reduce<
+    Record<string, PathMatcher>
+  >((acc, [locale, paths]) => {
+    const overridePathConfig = Object.fromEntries(
+      paths.map((path) => [path, path])
+    );
+    acc[locale] = createPathToSharedPathMap(
+      overridePathConfig,
+      true,
+      defaultLocale
+    ).pathToSharedPath;
+    return acc;
+  }, {});
 
   // Create the path mapping
   const { pathToSharedPath, defaultLocalePaths } = createPathToSharedPathMap(
@@ -281,6 +312,21 @@ export function createNextMiddleware({
             )
           : undefined;
 
+      const pagePath =
+        sharedPathWithParameters?.replace(new RegExp(`^/${userLocale}`), '') ||
+        (pathnameLocale
+          ? standardizedPathname.replace(new RegExp(`^/${userLocale}`), '')
+          : standardizedPathname) ||
+        '/';
+      const routeOverridePathMap = routeOverridePathMaps[userLocale];
+      const routeOverrideMatch = routeOverridePathMap
+        ? getSharedPath(pagePath, routeOverridePathMap, undefined)
+        : undefined;
+      const routeOverridePath =
+        routeOverrideMatch !== undefined
+          ? `/${userLocale}/${userLocale}${pagePath === '/' ? '' : pagePath}`
+          : undefined;
+
       // ---------- ROUTING LOGIC ---------- //
 
       // ----- CASE: no localized path exists ----- //
@@ -301,7 +347,9 @@ export function createNextMiddleware({
             }
           } else {
             // REWRITE CASE: no pathnameLocale (/customers -> /en/customers)
-            return getRewriteResponse(`/${userLocale}${pathname}`);
+            return getRewriteResponse(
+              routeOverridePath || `/${userLocale}${pathname}`
+            );
           }
         }
 
@@ -322,6 +370,9 @@ export function createNextMiddleware({
         }
 
         // BASE CASE: has pathnameLocale and it's correct
+        if (routeOverridePath) {
+          return getRewriteResponse(routeOverridePath);
+        }
         return getNextResponse();
       }
 
@@ -356,7 +407,9 @@ export function createNextMiddleware({
           }
 
           // REWRITE CASE: displaying correct path (/blog -> /en/blog)
-          return getRewriteResponse(sharedPathWithParameters as string);
+          return getRewriteResponse(
+            routeOverridePath || (sharedPathWithParameters as string)
+          );
         }
       }
 
@@ -368,6 +421,10 @@ export function createNextMiddleware({
         normalizePathname(localizedPathWithParameters)
       ) {
         return getRedirectResponse(localizedPathWithParameters);
+      }
+
+      if (routeOverridePath) {
+        return getRewriteResponse(routeOverridePath);
       }
 
       // REWRITE CASE: displaying correct localized path, which is the same as the shared path (/fil/blog => /fil/blog) (/fr/fr-dashboard/1/fr-custom => /fr/dashboard/1/custom)
