@@ -35,16 +35,24 @@ export function createPathToSharedPathMap(
   defaultLocale: string
 ): {
   pathToSharedPath: { [key: string]: string };
+  unprefixedPathToSharedPath: { [key: string]: string };
   defaultLocalePaths: string[];
 } {
   return Object.entries(pathConfig).reduce<{
     pathToSharedPath: { [key: string]: string };
+    unprefixedPathToSharedPath: { [key: string]: string };
     defaultLocalePaths: string[];
   }>(
     (acc, [sharedPath, localizedPaths]) => {
-      const { pathToSharedPath, defaultLocalePaths } = acc;
+      const {
+        pathToSharedPath,
+        unprefixedPathToSharedPath,
+        defaultLocalePaths,
+      } = acc;
       // Preserve raw templates for parameter substitution and output URLs.
-      pathToSharedPath[createPathPattern(sharedPath)] = sharedPath;
+      const sharedPattern = createPathPattern(sharedPath);
+      pathToSharedPath[sharedPattern] = sharedPath;
+      unprefixedPathToSharedPath[sharedPattern] = sharedPath;
 
       if (typeof localizedPaths === 'object') {
         Object.entries(localizedPaths).forEach(([locale, localizedPath]) => {
@@ -54,12 +62,17 @@ export function createPathToSharedPathMap(
           pathToSharedPath[`/${locale}${pattern}`] = sharedPath;
           if (!prefixDefaultLocale && locale === defaultLocale) {
             pathToSharedPath[pattern] = sharedPath;
+            unprefixedPathToSharedPath[pattern] = sharedPath;
             defaultLocalePaths.push(pattern);
           }
         });
       }
       return acc;
     },
-    { pathToSharedPath: {}, defaultLocalePaths: [] }
+    {
+      pathToSharedPath: {},
+      unprefixedPathToSharedPath: {},
+      defaultLocalePaths: [],
+    }
   );
 }
