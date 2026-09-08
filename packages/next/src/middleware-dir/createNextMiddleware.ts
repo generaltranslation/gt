@@ -1,3 +1,4 @@
+import { applyTrailingSlash } from './pathname';
 import { isSameDialect, standardizeLocale } from '@generaltranslation/format';
 import { GTRuntime } from 'generaltranslation/runtime';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
@@ -13,7 +14,6 @@ import {
 } from '@generaltranslation/react-core/pure';
 import {
   PathConfig,
-  applyTrailingSlash,
   normalizePathname,
   getSharedPath,
   replaceDynamicSegments,
