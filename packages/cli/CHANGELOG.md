@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.20.3
+
+### Patch Changes
+
+- [#2260](https://github.com/generaltranslation/gt/pull/2260) [`8a3c49c`](https://github.com/generaltranslation/gt/commit/8a3c49cbf48b09d1687eb3e5202bd12c4221d3ad) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - `gt translate` no longer saves local edits to translated output by default. Saving local edits is now opt-in via `--save-local` or `options.saveLocal: true` in `gt.config.json`, so running the CLI locally does not overwrite production translations.
+
 ## 2.20.2
 
 ### Patch Changes
