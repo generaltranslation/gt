@@ -131,7 +131,8 @@ export async function postProcessTranslations(
     settings.options?.experimentalAddHeaderAnchorIds;
 
   // Add explicit anchor IDs to translated MDX/MD files to preserve navigation.
-  // Uses inline {#id} format by default, or div wrapping if experimentalAddHeaderAnchorIds is 'mintlify'.
+  // Uses escaped inline \{#id\} by default, or Mintlify's native {#id} if
+  // experimentalAddHeaderAnchorIds is 'mintlify'.
   //
   // Runs last of the md/mdx passes: the others re-stringify the document, which
   // re-indents headings nested in JSX and would otherwise move them out from
