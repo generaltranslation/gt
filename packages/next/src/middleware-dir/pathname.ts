@@ -13,3 +13,8 @@ export function normalizePathname(pathname: string): string {
     })
     .join('/');
 }
+
+/** Removes trailing slashes while keeping the root pathname distinct. */
+export function stripTrailingSlashes(pathname: string): string {
+  return pathname.length > 1 ? pathname.replace(/\/+$/, '') || '/' : pathname;
+}

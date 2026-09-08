@@ -3,7 +3,7 @@ import { standardizeLocale } from '@generaltranslation/format';
 import { GTRuntime } from 'generaltranslation/runtime';
 import { NextURL } from 'next/dist/server/web/next-url';
 import { parseAcceptLanguage } from 'gt-i18n/internal';
-import { normalizePathname } from './pathname';
+import { normalizePathname, stripTrailingSlashes } from './pathname';
 
 export { normalizePathname };
 
@@ -32,6 +32,7 @@ function normalizePathForMatching(pathname: string): string {
 
 /** Classifies placeholders before decoding static path content. */
 function createPathPattern(pathname: string): string {
+  pathname = stripTrailingSlashes(pathname);
   if (!/\[([^\]]+)\]/.test(pathname)) {
     return normalizePathForMatching(pathname);
   }
@@ -43,6 +44,17 @@ function createPathPattern(pathname: string): string {
         : normalizePathForMatching(part).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     )
     .join('');
+}
+
+/** Applies the request pathname's trailing-slash style to a target path. */
+function applyTrailingSlash(pathname: string, targetPathname: string): string {
+  const sourceHasTrailingSlash = pathname.length > 1 && pathname.endsWith('/');
+  if (sourceHasTrailingSlash) {
+    return targetPathname === '/' || targetPathname.endsWith('/')
+      ? targetPathname
+      : `${targetPathname}/`;
+  }
+  return stripTrailingSlashes(targetPathname);
 }
 
 export function getResponse({
@@ -131,14 +143,16 @@ export function replaceDynamicSegments(
   path: string,
   templatePath: string
 ): string {
-  if (!templatePath.includes('[')) return templatePath;
+  if (!templatePath.includes('[')) {
+    return applyTrailingSlash(path, templatePath);
+  }
 
   const params = extractDynamicParams(templatePath, path);
   let paramIndex = 0;
   const result = templatePath.replace(/\[([^\]]+)\]/g, (match: string) => {
     return params[paramIndex++] || match;
   });
-  return result;
+  return applyTrailingSlash(path, result);
 }
 
 /**
@@ -210,16 +224,20 @@ export function getSharedPath(
   pathnameLocale: string | undefined
 ): string | undefined {
   standardizedPathname = normalizePathForMatching(standardizedPathname);
+  const pathnameWithoutTrailingSlash =
+    stripTrailingSlashes(standardizedPathname);
   // Try exact match first
-  if (pathToSharedPath[standardizedPathname]) {
-    return pathToSharedPath[standardizedPathname];
+  if (pathToSharedPath[pathnameWithoutTrailingSlash]) {
+    return pathToSharedPath[pathnameWithoutTrailingSlash];
   }
 
   // Without locale prefix
   let pathnameWithoutLocale = undefined;
   // Only remove locale prefix if the locale prefix is valid
   if (pathnameLocale) {
-    pathnameWithoutLocale = standardizedPathname.replace(/^\/[^/]+/, '');
+    pathnameWithoutLocale = stripTrailingSlashes(
+      standardizedPathname.replace(/^\/[^/]+/, '')
+    );
     if (pathToSharedPath[pathnameWithoutLocale]) {
       return pathToSharedPath[pathnameWithoutLocale];
     }
@@ -232,7 +250,7 @@ export function getSharedPath(
       // Convert the pattern to a strict regex that matches the exact path structure
       const regex = new RegExp(`^${pattern}$`);
       // Exact match
-      if (regex.test(standardizedPathname)) {
+      if (regex.test(pathnameWithoutTrailingSlash)) {
         return sharedPath;
       }
       // Without locale prefix
@@ -259,7 +277,7 @@ function inDefaultLocalePaths(
   pathname: string,
   defaultLocalePaths: string[]
 ): boolean {
-  pathname = normalizePathForMatching(pathname);
+  pathname = stripTrailingSlashes(normalizePathForMatching(pathname));
   // Try exact match first
   if (defaultLocalePaths.includes(pathname)) {
     return true;
