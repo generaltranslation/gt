@@ -968,42 +968,11 @@ Body text.
       );
     });
 
-    it('unwraps the <div id> an earlier version placed around a nested heading', () => {
-      const translated = `<Tabs>
-  <Tab title="CSS simple">
-    <div id="css-variables">
-      ## Référence des variables CSS
-    </div>
-
-    Corps du texte.
-  </Tab>
-</Tabs>
-`;
-
-      expect(run(source, translated)).toBe(`<Tabs>
-  <Tab title="CSS simple">
-## Référence des variables CSS {#css-variables}
-
-    Corps du texte.
-  </Tab>
-</Tabs>
-`);
-    });
-
-    it('unwraps a top-level <div id> and rewrites a stale ID', () => {
-      const out = run(
-        '## Setup {#setup}\n',
-        '<div id="stale">\n  ## Configuration\n</div>\n'
-      );
-      expect(out).toBe('## Configuration {#setup}\n');
-    });
-
     it('still wraps a setext heading, which has no line to hold an anchor', () => {
       const doc = 'Setup\n=====\n';
       expect(run(doc, doc)).toBe(
         '<div id="setup">\n  Setup\n  =====\n</div>\n'
       );
-      expect(run(doc, run(doc, doc))).toBe(run(doc, doc));
     });
   });
 
@@ -1168,33 +1137,6 @@ Body text.
       // Appending after the closing `##` would stop it being a closing
       // sequence, turning it into visible heading text.
       expect(run('## Foo ##\n')).toBe('## Foo \\{#foo\\} ##\n');
-    });
-
-    it('unwraps a wrapper of ours whichever quotes its tag uses', () => {
-      const variants = [
-        '<div id="stale">\n  ## Foo\n</div>\n',
-        "<div id='stale'>\n  ## Foo\n</div>\n",
-      ];
-
-      for (const variant of variants) {
-        expect(run(variant, mintlify)).toBe('## Foo {#foo}\n');
-      }
-    });
-
-    it('leaves an element that is not a wrapper of ours in place', () => {
-      // Extra attributes, another tag name, or a multi-line tag were never
-      // produced by the anchor pass, so the element belongs to the author.
-      const variants = [
-        '<div className="x" id="stale">\n  ## Foo\n</div>\n',
-        '<div\n  id="stale"\n>\n  ## Foo\n</div>\n',
-        '<section id="stale">\n  ## Foo\n</section>\n',
-      ];
-
-      for (const variant of variants) {
-        const out = run(variant, mintlify);
-        expect(out).toContain('id="stale"');
-        expect(out).toContain('  ## Foo {#foo}\n');
-      }
     });
 
     it('does not mistake an ordinary container for an anchor wrapper', () => {

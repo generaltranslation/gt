@@ -1,6 +1,5 @@
 import { visit } from 'unist-util-visit';
 import type { Heading, Node } from 'mdast';
-import type { MdxJsxFlowElement } from 'mdast-util-mdx-jsx';
 import { logger } from '../console/logger.js';
 import type { AdditionalOptions } from '../types/index.js';
 import {
@@ -79,7 +78,6 @@ function extractHeadingsWithFallback(mdxContent: string): HeadingInfo[] {
       startColumn: indent.length + 1,
       // Without a parser there is nothing finer to go on than end of line.
       textEndColumn: line.length + 1,
-      wrapper: null,
       explicit: explicitId !== undefined,
     });
   });
@@ -135,14 +133,6 @@ function assignUniqueSlugs(headings: HeadingInfo[]): void {
   }
 }
 
-/** Lines of a `<div id>` an earlier anchor pass wrapped around a heading. */
-interface WrapperLines {
-  /** 1-based line of the opening tag. */
-  startLine: number;
-  /** 1-based line of the closing tag. */
-  endLine: number;
-}
-
 /**
  * Represents a heading with its position and metadata
  */
@@ -159,49 +149,8 @@ export interface HeadingInfo {
   startColumn: number;
   /** 1-based column just past the text, before any closing `##`; -1 if unknown. */
   textEndColumn: number;
-  /** Wrapper an earlier anchor pass placed around this heading. */
-  wrapper: WrapperLines | null;
   /** Whether the author wrote an explicit `{#id}`. */
   explicit: boolean;
-}
-
-/**
- * Recognizes a `<div id="...">` an earlier anchor pass wrapped around this
- * heading: a div whose only attribute is `id`, whose only child is the
- * heading, with its tags on the lines directly around it. Requiring the
- * heading to be the only child rules out containers like `<Tab>`.
- */
-function findWrapper(
-  heading: Heading,
-  parent: Node | undefined
-): WrapperLines | null {
-  if (!parent || parent.type !== 'mdxJsxFlowElement') return null;
-
-  const element = parent as MdxJsxFlowElement;
-  if (element.name !== 'div') return null;
-  if (element.children.length !== 1 || element.children[0] !== heading) {
-    return null;
-  }
-  const [attribute] = element.attributes;
-  if (
-    element.attributes.length !== 1 ||
-    attribute.type !== 'mdxJsxAttribute' ||
-    attribute.name !== 'id'
-  ) {
-    return null;
-  }
-
-  const outer = element.position;
-  const inner = heading.position;
-  if (!outer || !inner) return null;
-  if (
-    outer.start.line !== inner.start.line - 1 ||
-    outer.end.line !== inner.end.line + 1
-  ) {
-    return null;
-  }
-
-  return { startLine: outer.start.line, endLine: outer.end.line };
 }
 
 /**
@@ -221,7 +170,7 @@ export function extractHeadingInfo(mdxContent: string): HeadingInfo[] {
   const headings: HeadingInfo[] = [];
   let position = 0;
 
-  visit(ast, 'heading', (heading: Heading, _index, parent) => {
+  visit(ast, 'heading', (heading: Heading) => {
     const headingText = extractHeadingText(heading);
     const { cleanedText, explicitId } = parseHeadingContent(headingText);
     if (!cleanedText && !explicitId) return;
@@ -238,7 +187,6 @@ export function extractHeadingInfo(mdxContent: string): HeadingInfo[] {
       startColumn: heading.position?.start.column ?? 1,
       textEndColumn:
         lastChild?.position?.end.column ?? heading.position?.end.column ?? -1,
-      wrapper: findWrapper(heading, parent ?? undefined),
       explicit: explicitId !== undefined,
     });
   });
@@ -372,7 +320,7 @@ function applyAnchorIds(
     if (heading.textEndColumn < 1 || heading.endLine > heading.startLine) {
       // Setext headings have no heading line to append an anchor to. Mintlify
       // can still anchor one through a wrapper.
-      if (mintlifyMode && !heading.wrapper) {
+      if (mintlifyMode) {
         const indent = lines[index].slice(
           0,
           Math.max(0, heading.startColumn - 1)
@@ -394,37 +342,19 @@ function applyAnchorIds(
     const escape = escapeAnchors && !mapping.explicit;
     const anchor = escape ? `\\{#${mapping.id}\\}` : `{#${mapping.id}}`;
     const { text, trailer } = splitHeadingLine(lines[index], heading);
-    let line = `${text} ${anchor}${trailer}`;
-
-    if (!mintlifyMode) {
-      lines[index] = line;
-      continue;
-    }
-
-    if (heading.wrapper) {
-      // Unwrap the `<div id>` an earlier version placed here; the heading goes
-      // back to the wrapper's own indentation.
-      const { startLine, endLine } = heading.wrapper;
-      line = leadingWhitespace(lines[startLine - 1]) + line.trimStart();
-      lines.splice(startLine - 1, endLine - startLine + 1, line);
-    } else {
-      lines[index] = line;
-    }
+    const line = `${text} ${anchor}${trailer}`;
 
     // The MDX serializer indents JSX children two spaces per level, so a
     // heading nested in JSX can sit deeper than Mintlify reads `{#id}`. Move it
     // to the margin; mixed indentation inside a JSX element is valid MDX.
-    const target = heading.wrapper ? heading.wrapper.startLine - 1 : index;
-    if (leadingWhitespace(lines[target]).length > MAX_MINTLIFY_HEADING_INDENT) {
-      lines[target] = lines[target].trimStart();
-    }
+    const indent = line.match(/^[ \t]*/)?.[0].length ?? 0;
+    lines[index] =
+      mintlifyMode && indent > MAX_MINTLIFY_HEADING_INDENT
+        ? line.trimStart()
+        : line;
   }
 
   return lines.join('\n');
-}
-
-function leadingWhitespace(line: string): string {
-  return line.match(/^[ \t]*/)?.[0] ?? '';
 }
 
 /**
