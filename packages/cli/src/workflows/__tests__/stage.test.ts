@@ -152,10 +152,11 @@ describe('runStageFilesWorkflow save-local gate', () => {
     expect(result.enqueueResult).toEqual({ message: 'enqueued', jobData: {} });
   });
 
-  it('saves local edits when options.saveLocal is not set', async () => {
-    await runStageFilesWorkflow({ files, options, settings });
+  it('skips saving local edits when options.saveLocal is not set', async () => {
+    const result = await runStageFilesWorkflow({ files, options, settings });
 
-    expect(userEditDiffsRun).toHaveBeenCalledTimes(1);
+    expect(userEditDiffsRun).not.toHaveBeenCalled();
+    expect(result.enqueueResult).toEqual({ message: 'enqueued', jobData: {} });
   });
 
   it('ignores the raw flag and uses the resolved setting', async () => {
