@@ -461,7 +461,9 @@ export async function downloadFileBatch(
             versionId
           );
           entry.fileName = inputPath;
+          // Keep the hash upload recorded until postprocessing re-hashes the file
           entry.translations[locale] = {
+            ...entry.translations[locale],
             updatedAt: new Date().toISOString(),
             fileName: getRelative(outputPath),
           };
