@@ -169,3 +169,108 @@ it('keeps encoded shared literals ahead of localized dynamic aliases', () => {
   expect(response.headers.get('location')).toBeNull();
   expect(response.headers.get('x-middleware-rewrite')).toBeNull();
 });
+
+describe.each([true, false])(
+  'route identity, prefixDefaultLocale=%s',
+  (prefixDefaultLocale) => {
+    const reservedEscapes = [
+      '2F',
+      '3F',
+      '23',
+      '26',
+      '3A',
+      '3B',
+      '2B',
+      '3D',
+      '24',
+      '2C',
+      '40',
+    ];
+
+    it.each(reservedEscapes)(
+      'keeps aliases containing %s distinct from double-encoded aliases',
+      (escape) => {
+        for (const suffix of ['', '/[id]']) {
+          const firstAlias = '/a%' + escape + 'b';
+          const secondAlias = '/a%25' + escape + 'b';
+          const middleware = createNextMiddleware({
+            prefixDefaultLocale,
+            pathConfig: {
+              ['/one' + suffix]: {
+                en: firstAlias + suffix,
+                fr: firstAlias + suffix,
+              },
+              ['/two' + suffix]: {
+                en: secondAlias + suffix,
+                fr: secondAlias + suffix,
+              },
+            },
+          });
+          const parameter = suffix ? '/value%252Fpart' : '';
+          for (const locale of ['en', 'fr']) {
+            const prefix =
+              locale === 'en' && !prefixDefaultLocale ? '' : '/' + locale;
+            for (const [alias, shared] of [
+              [firstAlias, '/one'],
+              [secondAlias, '/two'],
+            ]) {
+              const response = middleware(
+                request(prefix + alias + parameter + '?tag=a&tag=b')
+              );
+              expect(response.headers.get('location')).toBeNull();
+              expect(response.headers.get('x-middleware-rewrite')).toBe(
+                origin + '/' + locale + shared + parameter + '?tag=a&tag=b'
+              );
+            }
+          }
+        }
+      }
+    );
+
+    it.each(reservedEscapes)(
+      'does not match a double-encoded request against a static %s alias',
+      (escape) => {
+        const middleware = createNextMiddleware({
+          prefixDefaultLocale,
+          pathConfig: { '/docs': { fr: '/a%' + escape + 'b' } },
+        });
+        const response = middleware(request('/fr/a%25' + escape + 'b'));
+        expect(response.headers.get('location')).toBeNull();
+        expect(response.headers.get('x-middleware-rewrite')).toBeNull();
+      }
+    );
+
+    it('rewrites a decomposed alias to the shared route spelling', () => {
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale,
+        pathConfig: { '/café': { en: '/cafe%CC%81', fr: '/cafe%CC%81' } },
+      });
+      for (const locale of ['en', 'fr']) {
+        const prefix =
+          locale === 'en' && !prefixDefaultLocale ? '' : '/' + locale;
+        const response = middleware(request(prefix + '/cafe%CC%81'));
+        expect(response.headers.get('location')).toBeNull();
+        expect(response.headers.get('x-middleware-rewrite')).toBe(
+          origin + '/' + locale + '/caf%C3%A9'
+        );
+      }
+    });
+
+    it('keeps encoded regex-looking static segments literal', () => {
+      const alias = '/literal/%5B%5E/%5D+';
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale,
+        pathConfig: { '/docs': { fr: alias } },
+      });
+      const unrelated = middleware(request('/fr/literal/unrelated'));
+      expect(unrelated.headers.get('location')).toBeNull();
+      expect(unrelated.headers.get('x-middleware-rewrite')).toBeNull();
+
+      const matched = middleware(request('/fr' + alias));
+      expect(matched.headers.get('location')).toBeNull();
+      expect(matched.headers.get('x-middleware-rewrite')).toBe(
+        origin + '/fr/docs'
+      );
+    });
+  }
+);

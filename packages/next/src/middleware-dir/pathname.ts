@@ -1,15 +1,14 @@
-/** Normalizes segments independently so malformed params cannot block static normalization. */
+/** Normalizes each segment without conflating escaped separators or encoding levels. */
 export function normalizePathname(pathname: string): string {
   return pathname
     .split('/')
     .map((segment) => {
-      let normalizedSegment = segment;
       try {
-        normalizedSegment = decodeURI(segment);
+        return encodeURIComponent(decodeURIComponent(segment).normalize('NFC'));
       } catch {
         // Preserve malformed escape sequences without rejecting the request.
+        return segment.normalize('NFC');
       }
-      return normalizedSegment.normalize('NFC');
     })
     .join('/');
 }
