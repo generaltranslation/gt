@@ -3,6 +3,9 @@ import { standardizeLocale } from '@generaltranslation/format';
 import { GTRuntime } from 'generaltranslation/runtime';
 import { NextURL } from 'next/dist/server/web/next-url';
 import { parseAcceptLanguage } from 'gt-i18n/internal';
+import { normalizePathname } from './pathname';
+
+export { normalizePathname };
 
 export type PathConfig = {
   [key: string]: string | { [key: string]: string };
@@ -22,10 +25,24 @@ export type ResponseConfig = {
 };
 
 const DYNAMIC_PATH_SEGMENT_PATTERN = '/[^/]+';
-const PATH_REGEX_SLASHES = /[\\/]/g;
+/** Normalizes each segment once without decoding encoded separators. */
+function normalizePathForMatching(pathname: string): string {
+  return pathname.split('/').map(normalizePathname).join('/');
+}
 
-function escapePathRegexSlashes(pathPattern: string): string {
-  return pathPattern.replace(PATH_REGEX_SLASHES, '\\$&');
+/** Classifies placeholders before decoding static path content. */
+function createPathPattern(pathname: string): string {
+  if (!/\[([^\]]+)\]/.test(pathname)) {
+    return normalizePathForMatching(pathname);
+  }
+  return pathname
+    .split(/(\[[^\]]+\])/)
+    .map((part, index) =>
+      index % 2
+        ? '[^/]+'
+        : normalizePathForMatching(part).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    )
+    .join('');
 }
 
 export function getResponse({
@@ -163,19 +180,14 @@ export function createPathToSharedPathMap(
   }>(
     (acc, [sharedPath, localizedPaths]) => {
       const { pathToSharedPath, defaultLocalePaths } = acc;
-      // Add the shared path itself, converting to regex pattern if it has dynamic segments
-      if (sharedPath.includes('[')) {
-        const pattern = sharedPath.replace(/\[([^\]]+)\]/g, '[^/]+');
-        pathToSharedPath[pattern] = sharedPath;
-      } else {
-        pathToSharedPath[sharedPath] = sharedPath;
-      }
+      // Preserve raw templates for parameter substitution and output URLs.
+      pathToSharedPath[createPathPattern(sharedPath)] = sharedPath;
 
       if (typeof localizedPaths === 'object') {
         Object.entries(localizedPaths).forEach(([locale, localizedPath]) => {
           // Convert the localized path to a regex pattern
           // Replace [param] with [^/]+ to match any non-slash characters
-          const pattern = localizedPath.replace(/\[([^\]]+)\]/g, '[^/]+');
+          const pattern = createPathPattern(localizedPath);
           pathToSharedPath[`/${locale}${pattern}`] = sharedPath;
           if (!prefixDefaultLocale && locale === defaultLocale) {
             pathToSharedPath[pattern] = sharedPath;
@@ -197,6 +209,7 @@ export function getSharedPath(
   pathToSharedPath: { [key: string]: string },
   pathnameLocale: string | undefined
 ): string | undefined {
+  standardizedPathname = normalizePathForMatching(standardizedPathname);
   // Try exact match first
   if (pathToSharedPath[standardizedPathname]) {
     return pathToSharedPath[standardizedPathname];
@@ -217,7 +230,7 @@ export function getSharedPath(
   for (const [pattern, sharedPath] of Object.entries(pathToSharedPath)) {
     if (pattern.includes(DYNAMIC_PATH_SEGMENT_PATTERN)) {
       // Convert the pattern to a strict regex that matches the exact path structure
-      const regex = new RegExp(`^${escapePathRegexSlashes(pattern)}$`);
+      const regex = new RegExp(`^${pattern}$`);
       // Exact match
       if (regex.test(standardizedPathname)) {
         return sharedPath;
@@ -246,6 +259,7 @@ function inDefaultLocalePaths(
   pathname: string,
   defaultLocalePaths: string[]
 ): boolean {
+  pathname = normalizePathForMatching(pathname);
   // Try exact match first
   if (defaultLocalePaths.includes(pathname)) {
     return true;
@@ -254,7 +268,7 @@ function inDefaultLocalePaths(
   // Try regex pattern match
   for (const path of defaultLocalePaths) {
     if (path.includes(DYNAMIC_PATH_SEGMENT_PATTERN)) {
-      const regex = new RegExp(`^${escapePathRegexSlashes(path)}$`);
+      const regex = new RegExp(`^${path}$`);
       if (regex.test(pathname)) {
         return true;
       }
