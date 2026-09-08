@@ -22,10 +22,17 @@ export type ResponseConfig = {
 };
 
 const DYNAMIC_PATH_SEGMENT_PATTERN = '/[^/]+';
-const PATH_REGEX_SLASHES = /[\\/]/g;
-
-function escapePathRegexSlashes(pathPattern: string): string {
-  return pathPattern.replace(PATH_REGEX_SLASHES, '\\$&');
+/** Compiles placeholders while treating the surrounding static text literally. */
+function createPathPattern(pathname: string): string {
+  if (!/\[([^\]]+)\]/.test(pathname)) {
+    return pathname;
+  }
+  return pathname
+    .split(/(\[[^\]]+\])/)
+    .map((part, index) =>
+      index % 2 ? '[^/]+' : part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    )
+    .join('');
 }
 
 export function getResponse({
@@ -164,18 +171,13 @@ export function createPathToSharedPathMap(
     (acc, [sharedPath, localizedPaths]) => {
       const { pathToSharedPath, defaultLocalePaths } = acc;
       // Add the shared path itself, converting to regex pattern if it has dynamic segments
-      if (sharedPath.includes('[')) {
-        const pattern = sharedPath.replace(/\[([^\]]+)\]/g, '[^/]+');
-        pathToSharedPath[pattern] = sharedPath;
-      } else {
-        pathToSharedPath[sharedPath] = sharedPath;
-      }
+      pathToSharedPath[createPathPattern(sharedPath)] = sharedPath;
 
       if (typeof localizedPaths === 'object') {
         Object.entries(localizedPaths).forEach(([locale, localizedPath]) => {
           // Convert the localized path to a regex pattern
           // Replace [param] with [^/]+ to match any non-slash characters
-          const pattern = localizedPath.replace(/\[([^\]]+)\]/g, '[^/]+');
+          const pattern = createPathPattern(localizedPath);
           pathToSharedPath[`/${locale}${pattern}`] = sharedPath;
           if (!prefixDefaultLocale && locale === defaultLocale) {
             pathToSharedPath[pattern] = sharedPath;
@@ -217,7 +219,7 @@ export function getSharedPath(
   for (const [pattern, sharedPath] of Object.entries(pathToSharedPath)) {
     if (pattern.includes(DYNAMIC_PATH_SEGMENT_PATTERN)) {
       // Convert the pattern to a strict regex that matches the exact path structure
-      const regex = new RegExp(`^${escapePathRegexSlashes(pattern)}$`);
+      const regex = new RegExp(`^${pattern}$`);
       // Exact match
       if (regex.test(standardizedPathname)) {
         return sharedPath;
@@ -254,7 +256,7 @@ function inDefaultLocalePaths(
   // Try regex pattern match
   for (const path of defaultLocalePaths) {
     if (path.includes(DYNAMIC_PATH_SEGMENT_PATTERN)) {
-      const regex = new RegExp(`^${escapePathRegexSlashes(path)}$`);
+      const regex = new RegExp(`^${path}$`);
       if (regex.test(pathname)) {
         return true;
       }
