@@ -1,6 +1,6 @@
 // Slicing for Apple .xcstrings catalogs. One on-disk catalog holds every
 // locale; the upload carries only the source-language slice as the source
-// document. Slices clone nodes and remove foreign locale keys, so unknown
+// document. Slices clone nodes and keep only the source locale key, so unknown
 // fields survive verbatim at every level and a later download-merge can fold
 // per-locale translations back into the same on-disk catalog.
 
@@ -23,13 +23,15 @@ function invalid(path: string, expected: string): Error {
   return new Error(`Invalid .xcstrings content: ${path} must be ${expected}`);
 }
 
-// Catalogs are untrusted input; these names resolve to inherited properties on
-// plain objects, so writing them back could escape into the prototype. No real
-// catalog uses them, so reject them loudly rather than silently mangling data.
-const RESERVED_KEY_NAMES = new Set(['__proto__', 'constructor', 'prototype']);
+// Catalogs are untrusted input. Every container keyed by catalog-chosen names
+// (string keys, locales) is built without a prototype, so `constructor` and
+// `prototype` are ordinary properties and stay uploadable, matching the
+// server's validator. `__proto__` is still rejected: assigning it on a plain
+// object reassigns the prototype instead of creating a property.
+const RESERVED_KEY_NAME = '__proto__';
 
 function assertSafeKey(name: string, path: string): void {
-  if (RESERVED_KEY_NAMES.has(name)) {
+  if (name === RESERVED_KEY_NAME) {
     throw new Error(
       `Invalid .xcstrings content: ${path} uses the reserved name "${name}"`
     );
@@ -38,7 +40,9 @@ function assertSafeKey(name: string, path: string): void {
 
 /**
  * Parses a raw .xcstrings document and validates the structure the slicer
- * traverses. Throws on invalid content.
+ * traverses. The `strings` and `localizations` containers are re-keyed onto
+ * prototype-less records so lookups by catalog-chosen names cannot resolve to
+ * inherited properties. Throws on invalid content.
  */
 export function parseXcstringsCatalog(content: string): XcstringsCatalog {
   let parsed: unknown;
@@ -53,27 +57,35 @@ export function parseXcstringsCatalog(content: string): XcstringsCatalog {
   }
   assertSafeKey(parsed.sourceLanguage, 'sourceLanguage');
   if (!isPlainObject(parsed.strings)) throw invalid('strings', 'an object');
+  const strings: Record<string, XcstringsEntry> = Object.create(null);
   for (const [key, entry] of Object.entries(parsed.strings)) {
     const path = `strings[${JSON.stringify(key)}]`;
     assertSafeKey(key, path);
     if (!isPlainObject(entry)) throw invalid(path, 'an object');
-    if (entry.localizations === undefined) continue;
+    if (entry.localizations === undefined) {
+      strings[key] = entry;
+      continue;
+    }
     if (!isPlainObject(entry.localizations)) {
       throw invalid(`${path}.localizations`, 'an object');
     }
-    for (const locale of Object.keys(entry.localizations)) {
+    const localizations: Record<string, unknown> = Object.create(null);
+    for (const [locale, localization] of Object.entries(entry.localizations)) {
       assertSafeKey(locale, `${path}.localizations[${JSON.stringify(locale)}]`);
+      localizations[locale] = localization;
     }
+    strings[key] = { ...entry, localizations };
   }
-  return parsed as XcstringsCatalog;
+  return { ...parsed, strings } as XcstringsCatalog;
 }
 
 /**
  * PINNED SERIALIZATION — DO NOT CHANGE.
  *
- * The slice is hashed into versionId (see aggregateFiles), so any change to
- * these bytes re-versions every customer .xcstrings file and re-triggers
- * translation fleet-wide. The byte-exact tests on this format are the contract.
+ * The source slice is hashed into versionId (see aggregateFiles), so any
+ * change to these bytes re-versions every customer .xcstrings file and
+ * re-triggers translation fleet-wide. The byte-exact tests on this format are
+ * the contract.
  */
 export function serializeXcstringsSlice(catalog: XcstringsCatalog): string {
   return JSON.stringify(catalog, null, 2) + '\n';
@@ -83,19 +95,23 @@ export function serializeXcstringsSlice(catalog: XcstringsCatalog): string {
  * Produces the source-language slice of a validated catalog: a single-locale
  * catalog holding, per entry, only the source-language localization.
  *
- * Nodes are cloned and foreign locale keys removed (never rebuilt), so unknown
+ * Nodes are cloned and foreign locale keys dropped (never rebuilt), so unknown
  * fields and key order survive at every level. Entries without localizations
  * (the key itself is the source) are kept verbatim.
  */
 export function sliceSourceCatalog(
   catalog: XcstringsCatalog
 ): XcstringsCatalog {
-  const strings: Record<string, XcstringsEntry> = { ...catalog.strings };
-  for (const [key, entry] of Object.entries(strings)) {
-    if (entry.localizations === undefined) continue;
-    const localizations = { ...entry.localizations };
-    for (const locale of Object.keys(localizations)) {
-      if (locale !== catalog.sourceLanguage) delete localizations[locale];
+  const strings: Record<string, XcstringsEntry> = Object.create(null);
+  for (const [key, entry] of Object.entries(catalog.strings)) {
+    if (entry.localizations === undefined) {
+      strings[key] = entry;
+      continue;
+    }
+    const localizations: Record<string, unknown> = Object.create(null);
+    if (Object.hasOwn(entry.localizations, catalog.sourceLanguage)) {
+      localizations[catalog.sourceLanguage] =
+        entry.localizations[catalog.sourceLanguage];
     }
     strings[key] = { ...entry, localizations };
   }

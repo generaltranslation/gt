@@ -225,8 +225,8 @@ describe('parseXcstrings - source slice', () => {
       ],
       [
         'a reserved locale key',
-        '{"sourceLanguage":"en","strings":{"key":{"localizations":{"constructor":{}}}}}',
-        /reserved name "constructor"/,
+        '{"sourceLanguage":"en","strings":{"key":{"localizations":{"__proto__":{}}}}}',
+        /reserved name "__proto__"/,
       ],
       [
         'a reserved sourceLanguage',
@@ -242,6 +242,48 @@ describe('parseXcstrings - source slice', () => {
         parseXcstrings('{"sourceLanguage":"en","strings":{"__proto__":{}}}')
       ).toThrow();
       expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+    });
+
+    // Only __proto__ is reserved, matching the server's validator: a catalog
+    // whose UI literally shows "constructor" or "prototype" stays uploadable.
+    it('slices and round-trips catalogs keyed by constructor and prototype', () => {
+      const content = JSON.stringify({
+        sourceLanguage: 'en',
+        strings: {
+          constructor: {
+            localizations: {
+              en: { stringUnit: { state: 'translated', value: 'Constructor' } },
+              es: { stringUnit: { state: 'translated', value: 'Constructor' } },
+            },
+          },
+          prototype: {
+            comment: 'Lab feature name',
+            localizations: {
+              en: { stringUnit: { state: 'translated', value: 'Prototype' } },
+              prototype: { stringUnit: { state: 'translated', value: 'x' } },
+            },
+          },
+        },
+      });
+
+      const slice = parseCatalog(parseXcstrings(content));
+
+      expect(Object.keys(slice.strings)).toEqual(['constructor', 'prototype']);
+      expect(slice.strings.constructor).toEqual({
+        localizations: {
+          en: { stringUnit: { state: 'translated', value: 'Constructor' } },
+        },
+      });
+      expect(slice.strings.prototype).toEqual({
+        comment: 'Lab feature name',
+        localizations: {
+          en: { stringUnit: { state: 'translated', value: 'Prototype' } },
+        },
+      });
+      // Re-slicing the slice is a fixed point
+      expect(parseXcstrings(parseXcstrings(content))).toBe(
+        parseXcstrings(content)
+      );
     });
   });
 });
