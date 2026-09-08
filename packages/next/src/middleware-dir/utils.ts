@@ -12,7 +12,7 @@ import {
   type PathMatcher,
 } from './createPathMatcher';
 import { getSharedPath } from './matchPath';
-import { stripTrailingSlashes } from './pathname';
+import { applyTrailingSlash } from './pathname';
 
 export {
   createPathMatcher,
@@ -44,19 +44,6 @@ function applyBasePath(responseUrl: URL, originalUrl: NextURL) {
   responseUrl.pathname = `${basePath}${responseUrl.pathname}`;
 }
 
-/** Applies the request pathname's trailing-slash style to a target path. */
-export function applyTrailingSlash(
-  pathname: string,
-  targetPathname: string
-): string {
-  const sourceHasTrailingSlash = pathname.length > 1 && pathname.endsWith('/');
-  if (sourceHasTrailingSlash) {
-    return targetPathname === '/' || targetPathname.endsWith('/')
-      ? targetPathname
-      : `${targetPathname}/`;
-  }
-  return stripTrailingSlashes(targetPathname);
-}
 /** Creates a middleware response and attaches GT routing state. */
 export function getResponse({
   type,
