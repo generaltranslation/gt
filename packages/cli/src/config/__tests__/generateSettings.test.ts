@@ -263,9 +263,9 @@ describe('generateSettings - composite patterns', () => {
   });
 
   describe('options.saveLocal', () => {
-    it('defaults to true when neither flag nor config sets it', async () => {
+    it('defaults to false when neither flag nor config sets it', async () => {
       const settings = await generateSettings({}, '/test/cwd');
-      expect(settings.options?.saveLocal).toBe(true);
+      expect(settings.options?.saveLocal).toBe(false);
     });
 
     it('reads options.saveLocal from gt.config.json', async () => {

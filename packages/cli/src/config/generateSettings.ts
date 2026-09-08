@@ -323,7 +323,7 @@ export async function generateSettings(
       flags.experimentalClearLocaleDirs,
     clearLocaleDirsExclude:
       gtConfig.options?.clearLocaleDirsExclude || flags.clearLocaleDirsExclude,
-    saveLocal: flags.saveLocal ?? gtConfig.options?.saveLocal ?? true,
+    saveLocal: flags.saveLocal ?? gtConfig.options?.saveLocal ?? false,
   };
 
   if (

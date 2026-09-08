@@ -784,8 +784,8 @@
         },
         "saveLocal": {
           "type": "boolean",
-          "description": "Detect and save local edits to translated output before enqueuing translations. Can be overridden per run with --save-local / --no-save-local.",
-          "default": true
+          "description": "Detect and save local edits to translated output before enqueuing translations. Off by default so local runs do not overwrite remote translations. Can be overridden per run with --save-local / --no-save-local.",
+          "default": false
         },
         "baseDomain": {
           "type": "string",
