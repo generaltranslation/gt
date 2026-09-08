@@ -546,6 +546,50 @@ describe('downloadFileBatch', () => {
     expect(lockEntry.translations.es.fileName).toBe('public/gt/es.json');
   });
 
+  it('keeps a previously recorded postProcessHash when it re-downloads a locale', async () => {
+    const files = createBatchedFiles(1, { locale: 'es' });
+    const fileTracker = createMockFileTracker(files);
+    const lockEntry: DownloadedVersionEntry = {
+      fileId: 'file-1',
+      versionId: 'version-1',
+      translations: {
+        es: {
+          updatedAt: '2026-01-01T00:00:00.000Z',
+          fileName: 'file1.json',
+          postProcessHash: 'upload-hash',
+        },
+      },
+    };
+
+    vi.mocked(findOrCreateEntry).mockReturnValue(lockEntry);
+    vi.mocked(api.downloadFileBatch).mockResolvedValue({
+      files: [
+        {
+          id: 'translation-1',
+          branchId: 'branch-1',
+          fileId: 'file-1',
+          versionId: 'version-1',
+          locale: 'es',
+          fileFormat: 'GTJSON' as FileFormat,
+          data: '{"hello":"Hola"}',
+          fileName: 'es.json',
+          metadata: {},
+        },
+      ],
+      count: 1,
+    });
+    setupFileSystemMocks();
+
+    await downloadFileBatch(fileTracker, files, createMockSettings());
+
+    // The hash is what user-edit detection compares against; dropping it here
+    // would make an unchanged file look edited until postprocessing re-hashes it
+    expect(lockEntry.translations.es.postProcessHash).toBe('upload-hash');
+    expect(lockEntry.translations.es.updatedAt).not.toBe(
+      '2026-01-01T00:00:00.000Z'
+    );
+  });
+
   it.each([
     ['gt-vue', '<Vue Elements>'],
     ['gt-react', '<React Elements>'],
