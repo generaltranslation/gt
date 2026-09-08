@@ -416,7 +416,7 @@ Another section here.
       expect(result.content).not.toContain('<div id="getting-started">');
     });
 
-    it('should add div wrapping in Mintlify mode', () => {
+    it('should add native {#id} anchors in Mintlify mode', () => {
       const sourceHeadingMap = extractHeadingInfo(basicInput);
       const result = addExplicitAnchorIds(
         basicInput,
@@ -427,18 +427,17 @@ Another section here.
       expect(result.hasChanges).toBe(true);
       expect(result.addedIds).toHaveLength(3);
 
+      expect(result.content).toContain('# Getting Started {#getting-started}');
       expect(result.content).toContain(
-        '<div id="getting-started">\n  # Getting Started\n</div>'
+        '## Code-based workflow {#code-based-workflow}'
       );
       expect(result.content).toContain(
-        '<div id="code-based-workflow">\n  ## Code-based workflow\n</div>'
-      );
-      expect(result.content).toContain(
-        '<div id="web-editor-workflow">\n  ## Web editor workflow\n</div>'
+        '## Web editor workflow {#web-editor-workflow}'
       );
 
-      // Should NOT contain \\{#id} format
+      // Native anchors, never the escaped form or a wrapper
       expect(result.content).not.toContain('\\{#getting-started\\}');
+      expect(result.content).not.toContain('<div id=');
     });
   });
 
@@ -484,13 +483,13 @@ Another section here.
       expect(result.addedIds).toHaveLength(3);
 
       expect(result.content).toContain(
-        '<div id="bold-heading-with-formatting">\n  ## **Bold Heading** with formatting\n</div>'
+        '## **Bold Heading** with formatting {#bold-heading-with-formatting}'
       );
       expect(result.content).toContain(
-        '<div id="code-heading-example">\n  ## `Code Heading` example\n</div>'
+        '## `Code Heading` example {#code-heading-example}'
       );
       expect(result.content).toContain(
-        '<div id="italic-and-mixed-formatting">\n  ## *Italic* and **mixed** formatting\n</div>'
+        '## *Italic* and **mixed** formatting {#italic-and-mixed-formatting}'
       );
     });
   });
@@ -548,15 +547,11 @@ More content.
       expect(result.hasChanges).toBe(true);
       expect(result.addedIds).toHaveLength(2);
 
+      expect(result.content).toContain('## Real Heading {#real-heading}');
       expect(result.content).toContain(
-        '<div id="real-heading">\n  ## Real Heading\n</div>'
+        '## Another Real Heading {#another-real-heading}'
       );
-      expect(result.content).toContain(
-        '<div id="another-real-heading">\n  ## Another Real Heading\n</div>'
-      );
-      expect(result.content).not.toContain(
-        '<div id="fake-heading-in-code-block">'
-      );
+      expect(result.content).not.toContain('{#fake-heading-in-code-block}');
 
       // Code block should remain unchanged
       expect(result.content).toContain(
@@ -657,17 +652,15 @@ This is just an example
       expect(result.addedIds).toHaveLength(4);
 
       expect(result.content).toContain(
-        '<div id="code-design-workflow">\n  ## Code & Design Workflow!\n</div>'
+        '## Code & Design Workflow! {#code-design-workflow}'
       );
       expect(result.content).toContain(
-        '<div id="api-reference-v20">\n  ## API Reference (v2.0)\n</div>'
+        '## API Reference (v2.0) {#api-reference-v20}'
       );
       expect(result.content).toContain(
-        '<div id="getting-started-step-1">\n  ## Getting Started: Step 1\n</div>'
+        '## Getting Started: Step 1 {#getting-started-step-1}'
       );
-      expect(result.content).toContain(
-        '<div id="whats-new">\n  ## What\'s New?\n</div>'
-      );
+      expect(result.content).toContain("## What's New? {#whats-new}");
     });
   });
 
@@ -715,24 +708,12 @@ This is just an example
       expect(result.hasChanges).toBe(true);
       expect(result.addedIds).toHaveLength(6);
 
-      expect(result.content).toContain(
-        '<div id="h1-heading">\n  # H1 Heading\n</div>'
-      );
-      expect(result.content).toContain(
-        '<div id="h2-heading">\n  ## H2 Heading\n</div>'
-      );
-      expect(result.content).toContain(
-        '<div id="h3-heading">\n  ### H3 Heading\n</div>'
-      );
-      expect(result.content).toContain(
-        '<div id="h4-heading">\n  #### H4 Heading\n</div>'
-      );
-      expect(result.content).toContain(
-        '<div id="h5-heading">\n  ##### H5 Heading\n</div>'
-      );
-      expect(result.content).toContain(
-        '<div id="h6-heading">\n  ###### H6 Heading\n</div>'
-      );
+      expect(result.content).toContain('# H1 Heading {#h1-heading}');
+      expect(result.content).toContain('## H2 Heading {#h2-heading}');
+      expect(result.content).toContain('### H3 Heading {#h3-heading}');
+      expect(result.content).toContain('#### H4 Heading {#h4-heading}');
+      expect(result.content).toContain('##### H5 Heading {#h5-heading}');
+      expect(result.content).toContain('###### H6 Heading {#h6-heading}');
     });
   });
 
@@ -745,7 +726,7 @@ This is just an example
       expect(result.content).toContain('## Sub Heading \\{#sub-heading\\}');
     });
 
-    it('Mintlify wrapping remains stable on repeated runs', () => {
+    it('Mintlify anchors remain stable on repeated runs', () => {
       const input = `## Real Heading`;
       const sourceHeadingMap = extractHeadingInfo(input);
       const settings = {
@@ -763,7 +744,7 @@ This is just an example
       expect(second.content).toBe(first.content);
     });
 
-    it('wraps headings containing HTML entities in Mintlify mode', () => {
+    it('anchors headings containing HTML entities in Mintlify mode', () => {
       const sourceContent = `## Register the app`;
       const translatedContent = `## Configurer l&#39;application`;
       const sourceHeadingMap = extractHeadingInfo(sourceContent);
@@ -779,7 +760,7 @@ This is just an example
 
       expect(result.hasChanges).toBe(true);
       expect(result.content).toContain(
-        '<div id="register-the-app">\n  ## Configurer l&#39;application\n</div>'
+        '## Configurer l&#39;application {#register-the-app}'
       );
     });
   });
@@ -849,7 +830,7 @@ Más contenido.`;
       });
     });
 
-    it('wraps an author-written ID like any other heading', () => {
+    it('restores an author-written ID in native syntax', () => {
       const source = '## CSS variables reference {#css-variables}\n';
       const translated = '## Référence des variables CSS\n';
 
@@ -863,12 +844,15 @@ Más contenido.`;
       );
 
       expect(result.content).toBe(
-        '<div id="css-variables">\n  ## Référence des variables CSS\n</div>\n'
+        '## Référence des variables CSS {#css-variables}\n'
       );
-      expect(result.content).not.toContain('{#');
+      expect(result.content).not.toContain('<div id=');
+      expect(result.content).not.toContain('\\{#');
     });
 
-    it('uses one wrapper form for explicit and derived IDs alike', () => {
+    it('writes native anchors for explicit and derived IDs alike', () => {
+      // A wrapper keeps old links working, but Mintlify's hover link on the
+      // heading would then point at a slug of the translated text instead.
       const source = '## Setup {#custom}\n\n## Other heading\n';
       const translated = '## Configuration\n\n## Autre titre\n';
 
@@ -882,12 +866,11 @@ Más contenido.`;
       );
 
       expect(result.content).toBe(
-        '<div id="custom">\n  ## Configuration\n</div>\n\n' +
-          '<div id="other-heading">\n  ## Autre titre\n</div>\n'
+        '## Configuration {#custom}\n\n## Autre titre {#other-heading}\n'
       );
     });
 
-    it('drops an inline ID the translation carried over when wrapping', () => {
+    it('does not double-apply an ID the translation already carried over', () => {
       const source = '## Setup {#custom}\n';
       const translated = '## Configuration {#custom}\n';
 
@@ -900,34 +883,13 @@ Más contenido.`;
         'mdx'
       );
 
-      expect(result.content).toBe(
-        '<div id="custom">\n  ## Configuration\n</div>\n'
-      );
-      expect(result.hasChanges).toBe(true);
+      expect(result.content).toBe('## Configuration {#custom}\n');
+      expect(result.hasChanges).toBe(false);
     });
 
-    it('wraps an explicit-ID heading the serializer indented inside nested JSX', () => {
-      // Mintlify only recognizes `{#id}` on headings indented at most three
-      // spaces. The MDX serializer indents JSX children two spaces per level,
-      // so re-attaching the inline ID here produced an acorn parse error.
-      const source = `<Tabs>
-  <Tab title="Plain CSS">
-
-## CSS variables reference {#css-variables}
-
-Body text.
-
-  </Tab>
-</Tabs>
-`;
-      const translated = `<Tabs>
-  <Tab title="CSS simple">
-    ## Référence des variables CSS
-
-    Corps du texte.
-  </Tab>
-</Tabs>
-`;
+    it('unescapes an anchor the translation carried over in escaped form', () => {
+      const source = '## Setup {#custom}\n';
+      const translated = '## Configuration \\{#custom\\}\n';
 
       const result = addExplicitAnchorIds(
         translated,
@@ -938,10 +900,110 @@ Body text.
         'mdx'
       );
 
-      expect(result.content).toContain(
-        '    <div id="css-variables">\n      ## Référence des variables CSS\n    </div>'
+      expect(result.content).toBe('## Configuration {#custom}\n');
+    });
+  });
+
+  describe('Mintlify only reads {#id} on headings indented up to three spaces', () => {
+    // Verified with `mint validate`: `{#id}` on a heading at four or more
+    // spaces fails with "Could not parse expression with acorn". The MDX
+    // serializer indents JSX children two spaces per level, so a heading
+    // inside <Tabs><Tab> lands at four.
+    const mintlify = {
+      options: { experimentalAddHeaderAnchorIds: 'mintlify' as const },
+    };
+    const run = (source: string, translated: string) =>
+      addExplicitAnchorIds(
+        translated,
+        extractHeadingInfo(source),
+        mintlify,
+        'a.mdx',
+        'fr/a.mdx',
+        'mdx'
+      ).content;
+
+    const source = `<Tabs>
+  <Tab title="Plain CSS">
+
+## CSS variables reference {#css-variables}
+
+Body text.
+
+  </Tab>
+</Tabs>
+`;
+
+    it('moves a heading the serializer indented too deep back to the margin', () => {
+      const translated = `<Tabs>
+  <Tab title="CSS simple">
+    ## Référence des variables CSS
+
+    Corps du texte.
+  </Tab>
+</Tabs>
+`;
+
+      expect(run(source, translated)).toBe(`<Tabs>
+  <Tab title="CSS simple">
+## Référence des variables CSS {#css-variables}
+
+    Corps du texte.
+  </Tab>
+</Tabs>
+`);
+    });
+
+    it('leaves a heading within reach where it is', () => {
+      const translated = `<Tabs>
+  <Tab title="CSS simple">
+   ## Référence des variables CSS
+
+    Corps du texte.
+  </Tab>
+</Tabs>
+`;
+
+      expect(run(source, translated)).toContain(
+        '\n   ## Référence des variables CSS {#css-variables}\n'
       );
-      expect(result.content).not.toContain('{#');
+    });
+
+    it('unwraps the <div id> an earlier version placed around a nested heading', () => {
+      const translated = `<Tabs>
+  <Tab title="CSS simple">
+    <div id="css-variables">
+      ## Référence des variables CSS
+    </div>
+
+    Corps du texte.
+  </Tab>
+</Tabs>
+`;
+
+      expect(run(source, translated)).toBe(`<Tabs>
+  <Tab title="CSS simple">
+## Référence des variables CSS {#css-variables}
+
+    Corps du texte.
+  </Tab>
+</Tabs>
+`);
+    });
+
+    it('unwraps a top-level <div id> and rewrites a stale ID', () => {
+      const out = run(
+        '## Setup {#setup}\n',
+        '<div id="stale">\n  ## Configuration\n</div>\n'
+      );
+      expect(out).toBe('## Configuration {#setup}\n');
+    });
+
+    it('still wraps a setext heading, which has no line to hold an anchor', () => {
+      const doc = 'Setup\n=====\n';
+      expect(run(doc, doc)).toBe(
+        '<div id="setup">\n  Setup\n  =====\n</div>\n'
+      );
+      expect(run(doc, run(doc, doc))).toBe(run(doc, doc));
     });
   });
 
@@ -973,7 +1035,7 @@ Body text.
 `;
       const out = wrap(doc, doc);
 
-      expect(out).toContain('    <div id="setup">\n      ## Setup\n    </div>');
+      expect(out).toContain('\n## Setup {#setup}\n');
     });
 
     it('anchors headings containing JSX elements', () => {
@@ -981,16 +1043,14 @@ Body text.
         '### <Badge color="yellow">Early Access</Badge> Use your own database\n';
       const out = wrap(doc, doc);
 
-      expect(out).toContain('<div id="early-access-use-your-own-database">');
+      expect(out).toContain('{#early-access-use-your-own-database}');
     });
 
     it('anchors headings containing escaped characters', () => {
       const doc = '### country\\_code\n';
       const out = wrap(doc, doc);
 
-      expect(out).toContain(
-        '<div id="country_code">\n  ### country\\_code\n</div>'
-      );
+      expect(out).toContain('### country\\_code {#country_code}');
     });
 
     it('gives every repeated heading its own Mintlify-compatible ID', () => {
@@ -1008,9 +1068,15 @@ Body text.
       ]);
 
       const out = wrap(doc, doc);
-      expect(out).toContain('<div id="response-status-codes">');
-      expect(out).toContain('<div id="response-status-codes-2">');
-      expect(out).toContain('<div id="response-status-codes-3">');
+      expect(out).toContain(
+        '### Response status codes {#response-status-codes}\n'
+      );
+      expect(out).toContain(
+        '### Response status codes {#response-status-codes-2}\n'
+      );
+      expect(out).toContain(
+        '### Response status codes {#response-status-codes-3}\n'
+      );
     });
 
     it('does not let a generated slug claim a later explicit ID', () => {
@@ -1024,8 +1090,8 @@ Body text.
       ]);
 
       const out = wrap(doc, doc);
-      expect(out).toContain('<div id="setup-2">\n  ## Setup\n</div>');
-      expect(out).toContain('<div id="setup">\n  ## Configuration\n</div>');
+      expect(out).toContain('## Setup {#setup-2}');
+      expect(out).toContain('## Configuration {#setup}');
     });
 
     it('does not renumber author-written IDs', () => {
@@ -1079,13 +1145,9 @@ Body text.
         'mdx'
       );
 
-      expect(result.content).toContain(
-        '<div id="alpha">\n  ## Alpha-fr\n</div>'
-      );
-      expect(result.content).toContain(
-        '  <div id="nested">\n    ## Imbriqué-fr\n  </div>'
-      );
-      expect(result.content).toContain('<div id="beta">\n  ## Beta-fr\n</div>');
+      expect(result.content).toContain('## Alpha-fr {#alpha}');
+      expect(result.content).toContain('  ## Imbriqué-fr {#nested}');
+      expect(result.content).toContain('## Beta-fr {#beta}');
     });
   });
   describe('Heading location is taken from the parser, not matched by shape', () => {
@@ -1108,32 +1170,42 @@ Body text.
       expect(run('## Foo ##\n')).toBe('## Foo \\{#foo\\} ##\n');
     });
 
-    it('recognizes an existing wrapper whatever shape its tag takes', () => {
+    it('unwraps a wrapper of ours whichever quotes its tag uses', () => {
       const variants = [
         '<div id="stale">\n  ## Foo\n</div>\n',
-        '<div className="x" id="stale">\n  ## Foo\n</div>\n',
         "<div id='stale'>\n  ## Foo\n</div>\n",
+      ];
+
+      for (const variant of variants) {
+        expect(run(variant, mintlify)).toBe('## Foo {#foo}\n');
+      }
+    });
+
+    it('leaves an element that is not a wrapper of ours in place', () => {
+      // Extra attributes, another tag name, or a multi-line tag were never
+      // produced by the anchor pass, so the element belongs to the author.
+      const variants = [
+        '<div className="x" id="stale">\n  ## Foo\n</div>\n',
         '<div\n  id="stale"\n>\n  ## Foo\n</div>\n',
         '<section id="stale">\n  ## Foo\n</section>\n',
       ];
 
       for (const variant of variants) {
         const out = run(variant, mintlify);
-        // The stale ID is corrected in place; no second wrapper is nested.
-        expect(out).not.toContain('stale');
-        expect(out.match(/id=/g)).toHaveLength(1);
-        expect(out).toContain('id="foo"');
+        expect(out).toContain('id="stale"');
+        expect(out).toContain('  ## Foo {#foo}\n');
       }
     });
 
     it('does not mistake an ordinary container for an anchor wrapper', () => {
       // <Tab> carries an id-less title and holds the heading among other
-      // content, so the heading still needs its own wrapper.
+      // content, so the heading gets its own anchor, within Mintlify's reach.
       const out = run(
         '<Tabs>\n  <Tab title="x">\n\n    ## Foo\n\n    Body.\n\n  </Tab>\n</Tabs>\n',
         mintlify
       );
-      expect(out).toContain('    <div id="foo">\n      ## Foo\n    </div>');
+      expect(out).toContain('\n## Foo {#foo}\n');
+      expect(out).toContain('  <Tab title="x">');
     });
 
     it('does not treat a container holding more than the heading as a wrapper', () => {
@@ -1141,8 +1213,7 @@ Body text.
         '<div id="card">\n  ## Foo\n\n  Body.\n</div>\n',
         mintlify
       );
-      expect(out).toContain('<div id="foo">');
-      expect(out).toContain('id="card"');
+      expect(out).toBe('<div id="card">\n  ## Foo {#foo}\n\n  Body.\n</div>\n');
     });
   });
 });
