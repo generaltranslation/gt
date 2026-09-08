@@ -71,3 +71,73 @@ it('keeps the locale landing slash when matching the shared root', () => {
   const response = middleware(new NextRequest(origin + '/fr/'));
   expect(response.headers.get('location')).toBe(origin + '/fr/home/');
 });
+
+describe.each([true, false])(
+  'locale root routing, prefixDefaultLocale=%s',
+  (prefixDefaultLocale) => {
+    it('resolves a localized root alias and preserves repeated query values', () => {
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale,
+        pathConfig: { '/landing/': { en: '/home/', fr: '/' } },
+      });
+      const response = middleware(new NextRequest(origin + '/fr/?tag=a&tag=b'));
+      expect(response.headers.get('location')).toBeNull();
+      expect(response.headers.get('x-middleware-rewrite')).toBe(
+        origin + '/fr/landing/?tag=a&tag=b'
+      );
+    });
+
+    it('prefers the localized root alias over an unrelated shared root', () => {
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale,
+        pathConfig: {
+          '/': { fr: '/accueil/' },
+          '/landing/': { fr: '/' },
+        },
+      });
+      const response = middleware(new NextRequest(origin + '/fr/'));
+      expect(response.headers.get('location')).toBeNull();
+      expect(response.headers.get('x-middleware-rewrite')).toBe(
+        origin + '/fr/landing/'
+      );
+    });
+
+    it('does not use the locale as a missing root slug', () => {
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale,
+        pathConfig: { '/[slug]': { en: '/[slug]', fr: '/[slug]' } },
+      });
+      const response = middleware(new NextRequest(origin + '/fr/?tag=a&tag=b'));
+      expect(response.headers.get('location')).toBeNull();
+      expect(response.headers.get('x-middleware-rewrite')).toBeNull();
+      expect(response.headers.get('x-middleware-next')).toBe('1');
+    });
+
+    it.each(['', '/'])(
+      'still resolves a real root slug, slash="%s"',
+      (slash) => {
+        const middleware = createNextMiddleware({
+          prefixDefaultLocale,
+          pathConfig: { '/[slug]/edit': { fr: '/[slug]/modifier' } },
+        });
+        const response = middleware(
+          new NextRequest(
+            origin + '/fr/hello%2Fworld/edit' + slash + '?tag=a&tag=b'
+          )
+        );
+        expect(response.headers.get('location')).toBe(
+          origin + '/fr/hello%2Fworld/modifier' + slash + '?tag=a&tag=b'
+        );
+        const localizedResponse = middleware(
+          new NextRequest(
+            origin + '/fr/hello%2Fworld/modifier' + slash + '?tag=a&tag=b'
+          )
+        );
+        expect(localizedResponse.headers.get('location')).toBeNull();
+        expect(localizedResponse.headers.get('x-middleware-rewrite')).toBe(
+          origin + '/fr/hello%2Fworld/edit' + slash + '?tag=a&tag=b'
+        );
+      }
+    );
+  }
+);

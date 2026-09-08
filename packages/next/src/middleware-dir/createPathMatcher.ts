@@ -59,7 +59,8 @@ export function createPathToSharedPathMap(
           // Convert the localized path to a regex pattern
           // Replace [param] with [^/]+ to match any non-slash characters
           const pattern = createPathPattern(localizedPath);
-          pathToSharedPath[`/${locale}${pattern}`] = sharedPath;
+          pathToSharedPath[stripTrailingSlashes(`/${locale}${pattern}`)] =
+            sharedPath;
           if (!prefixDefaultLocale && locale === defaultLocale) {
             pathToSharedPath[pattern] = sharedPath;
             unprefixedPathToSharedPath[pattern] = sharedPath;

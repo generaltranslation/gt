@@ -39,7 +39,11 @@ export function getSharedPath(
       // Convert the pattern to a strict regex that matches the exact path structure
       const regex = new RegExp(`^${pattern}$`);
       // Exact match
-      if (regex.test(pathnameWithoutTrailingSlash)) {
+      // Shared patterns must not consume a recognized locale as a parameter.
+      if (
+        (!pathnameLocale || pattern.startsWith(`/${pathnameLocale}/`)) &&
+        regex.test(pathnameWithoutTrailingSlash)
+      ) {
         return sharedPath;
       }
       // Without locale prefix
