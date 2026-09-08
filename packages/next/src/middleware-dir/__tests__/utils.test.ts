@@ -421,3 +421,90 @@ describe('getSharedPath', () => {
     expect(getSharedPath('/en/', pathToSharedPath, 'en')).toBe(undefined);
   });
 });
+
+describe('configured dynamic route literals', () => {
+  const literals = [
+    ['v1.0', 'v1X0'],
+    ['a+b', 'aaab'],
+    ['docs(v2)', 'docsv2'],
+    ['left|right', 'left'],
+    ['cost$', 'cost'],
+  ];
+
+  it.each(literals)(
+    'matches shared and localized %s literally and rejects %s',
+    (literal, lookalike) => {
+      const sharedPath = `/shared/${literal}/[id]`;
+      const { pathToSharedPath } = createPathToSharedPathMap(
+        {
+          [sharedPath]: {
+            en: `/english/${literal}/[id]`,
+            fr: `/french/${literal}/[id]`,
+          },
+        },
+        false,
+        'en'
+      );
+
+      for (const [prefix, locale] of [
+        ['/shared', undefined],
+        ['/english', undefined],
+        ['/fr/french', 'fr'],
+      ] as const) {
+        expect(
+          getSharedPath(`${prefix}/${literal}/one`, pathToSharedPath, locale)
+        ).toBe(sharedPath);
+        expect(
+          getSharedPath(`${prefix}/${lookalike}/one`, pathToSharedPath, locale)
+        ).toBeUndefined();
+        expect(
+          getSharedPath(
+            `${prefix}/${literal}/one/two`,
+            pathToSharedPath,
+            locale
+          )
+        ).toBeUndefined();
+      }
+    }
+  );
+
+  it('prefers exact static routes over earlier dynamic routes', () => {
+    const { pathToSharedPath } = createPathToSharedPathMap(
+      {
+        '/v1.0/[id]': { fr: '/version.1/[id]' },
+        '/v1.0/new': { fr: '/version.1/new' },
+      },
+      false,
+      'en'
+    );
+
+    expect(getSharedPath('/v1.0/new', pathToSharedPath, undefined)).toBe(
+      '/v1.0/new'
+    );
+    expect(getSharedPath('/fr/version.1/new', pathToSharedPath, 'fr')).toBe(
+      '/v1.0/new'
+    );
+  });
+
+  it('keeps encoded brackets literal beside a real placeholder', () => {
+    const sharedPath = '/%5Bid%5D/[slug]';
+    const { pathToSharedPath } = createPathToSharedPathMap(
+      { [sharedPath]: { fr: '/%5Barticle%5D/[slug]' } },
+      false,
+      'en'
+    );
+
+    expect(getSharedPath('/%5Bid%5D/one', pathToSharedPath, undefined)).toBe(
+      sharedPath
+    );
+    expect(getSharedPath('/fr/%5Barticle%5D/one', pathToSharedPath, 'fr')).toBe(
+      sharedPath
+    );
+    expect(
+      getSharedPath('/anything/one', pathToSharedPath, undefined)
+    ).toBeUndefined();
+    expect(
+      getSharedPath('/fr/anything/one', pathToSharedPath, 'fr')
+    ).toBeUndefined();
+  });
+});
