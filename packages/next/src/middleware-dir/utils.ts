@@ -220,7 +220,8 @@ export function createPathToSharedPathMap(
           // Convert the localized path to a regex pattern
           // Replace [param] with [^/]+ to match any non-slash characters
           const pattern = createPathPattern(localizedPath);
-          pathToSharedPath[`/${locale}${pattern}`] = sharedPath;
+          pathToSharedPath[stripTrailingSlashes(`/${locale}${pattern}`)] =
+            sharedPath;
           if (!prefixDefaultLocale && locale === defaultLocale) {
             pathToSharedPath[pattern] = sharedPath;
             unprefixedPathToSharedPath[pattern] = sharedPath;
@@ -273,7 +274,11 @@ export function getSharedPath(
       // Convert the pattern to a strict regex that matches the exact path structure
       const regex = new RegExp(`^${pattern}$`);
       // Exact match
-      if (regex.test(pathnameWithoutTrailingSlash)) {
+      // Shared patterns must not consume a recognized locale as a parameter.
+      if (
+        (!pathnameLocale || pattern.startsWith(`/${pathnameLocale}/`)) &&
+        regex.test(pathnameWithoutTrailingSlash)
+      ) {
         return sharedPath;
       }
       // Without locale prefix
