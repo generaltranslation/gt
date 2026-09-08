@@ -968,11 +968,20 @@ Body text.
       );
     });
 
-    it('still wraps a setext heading, which has no line to hold an anchor', () => {
+    it('leaves a setext heading alone, as it has no line to hold an anchor', () => {
       const doc = 'Setup\n=====\n';
-      expect(run(doc, doc)).toBe(
-        '<div id="setup">\n  Setup\n  =====\n</div>\n'
+      expect(run(doc, doc)).toBe(doc);
+    });
+
+    it('anchors a heading inside an existing element without touching the element', () => {
+      const out = run(
+        '## Setup {#setup}\n',
+        '<div id="setup">\n  ## Configuration\n</div>\n'
       );
+      expect(out).toBe(
+        '<div id="setup">\n  ## Configuration {#setup}\n</div>\n'
+      );
+      expect(run('## Setup {#setup}\n', out)).toBe(out);
     });
   });
 

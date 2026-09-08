@@ -317,25 +317,8 @@ function applyAnchorIds(
 
     const index = heading.startLine - 1;
 
+    // Setext headings have no heading line to append an anchor to.
     if (heading.textEndColumn < 1 || heading.endLine > heading.startLine) {
-      // Setext headings have no heading line to append an anchor to. Mintlify
-      // can still anchor one through a wrapper.
-      if (mintlifyMode) {
-        const indent = lines[index].slice(
-          0,
-          Math.max(0, heading.startColumn - 1)
-        );
-        const body = lines
-          .slice(index, heading.endLine)
-          .map((line) => `  ${line}`);
-        lines.splice(
-          index,
-          heading.endLine - heading.startLine + 1,
-          `${indent}<div id="${mapping.id}">`,
-          ...body,
-          `${indent}</div>`
-        );
-      }
       continue;
     }
 
