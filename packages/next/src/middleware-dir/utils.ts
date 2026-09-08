@@ -46,6 +46,15 @@ function createPathPattern(pathname: string): string {
     .join('');
 }
 
+function applyBasePath(responseUrl: URL, originalUrl: NextURL) {
+  const { basePath } = originalUrl;
+  if (!basePath || responseUrl.origin !== originalUrl.origin) {
+    return;
+  }
+  // Middleware targets are app-relative, even when a route repeats the base path.
+  responseUrl.pathname = `${basePath}${responseUrl.pathname}`;
+}
+
 /** Applies the request pathname's trailing-slash style to a target path. */
 function applyTrailingSlash(pathname: string, targetPathname: string): string {
   const sourceHasTrailingSlash = pathname.length > 1 && pathname.endsWith('/');
@@ -79,6 +88,7 @@ export function getResponse({
     });
   } else {
     const responseUrl = new URL(responsePath, originalUrl);
+    applyBasePath(responseUrl, originalUrl);
     responseUrl.search = originalUrl.search;
     response =
       type === 'rewrite'
