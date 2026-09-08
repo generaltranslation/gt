@@ -50,13 +50,15 @@ describe('persistPostProcessHashes', () => {
       new Map([
         [
           'out/es/messages.json',
-          {
-            branchId: 'branch-1',
-            fileId: 'file-1',
-            versionId: 'version-1',
-            locale: 'es',
-            fileFormat: 'JSON' as const,
-          },
+          [
+            {
+              branchId: 'branch-1',
+              fileId: 'file-1',
+              versionId: 'version-1',
+              locale: 'es',
+              fileFormat: 'JSON' as const,
+            },
+          ],
         ],
       ])
     );
@@ -80,13 +82,15 @@ describe('persistPostProcessHashes', () => {
       new Map([
         [
           filePath,
-          {
-            branchId: 'branch-1',
-            fileId: 'file-1',
-            versionId: 'version-1',
-            locale: 'es',
-            fileFormat: 'DOT_STRINGS' as const,
-          },
+          [
+            {
+              branchId: 'branch-1',
+              fileId: 'file-1',
+              versionId: 'version-1',
+              locale: 'es',
+              fileFormat: 'DOT_STRINGS' as const,
+            },
+          ],
         ],
       ])
     );
@@ -94,5 +98,42 @@ describe('persistPostProcessHashes', () => {
     // The recorded hash has to stand for the same content every other producer
     // and consumer of it uses, not for the file's UTF-16 bytes read as UTF-8.
     expect(hashStringSync).toHaveBeenCalledWith(text);
+  });
+
+  it('records the shared file hash under every locale written into a file that holds every locale', () => {
+    const filePath = 'docs.json';
+    const content = '{"navigation":{"languages":[]}}\n';
+    vi.mocked(fs.readFileSync).mockReturnValue(content);
+    const entry = {
+      fileId: 'file-1',
+      versionId: 'version-1',
+      translations: { de: { updatedAt: '2026-01-01T00:00:00.000Z' } },
+    };
+    vi.mocked(findOrCreateEntry).mockReturnValue(entry);
+    const meta = (locale: string) => ({
+      branchId: 'branch-1',
+      fileId: 'file-1',
+      versionId: 'version-1',
+      locale,
+      fileFormat: 'JSON' as const,
+    });
+
+    persistPostProcessHashes(
+      {} as Settings,
+      new Set([filePath]),
+      new Map([[filePath, [meta('de'), meta('fr')]]])
+    );
+
+    // One file holds every locale, so its hash is recorded for each locale
+    // merged into it this run, not only the last one written.
+    expect(hashStringSync).toHaveBeenCalledWith(content);
+    expect(entry.translations).toEqual({
+      de: {
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        postProcessHash: 'translated-hash',
+      },
+      fr: { postProcessHash: 'translated-hash' },
+    });
+    expect(writeLockfile).toHaveBeenCalledTimes(1);
   });
 });
