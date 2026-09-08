@@ -71,6 +71,7 @@ import { createFileMapping } from '../../../formats/files/fileMapping.js';
 import { logger } from '../../../console/logger.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { logErrorAndExit } from '../../../console/logging.js';
+import { gt } from '../../../utils/gt.js';
 
 function setMockFiles(files: Record<string, string>) {
   (vi as unknown).__mockFiles = files;
@@ -719,6 +720,29 @@ describe('upload - Apple .xcstrings catalogs', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it('slices an aliased locale by its canonical tag and uploads it under the alias', async () => {
+    setMockFiles({ [CATALOG]: catalogContent });
+    vi.mocked(createFileMapping).mockReturnValue({
+      french: { [CATALOG]: CATALOG },
+    });
+    gt.setConfig({ customMapping: { french: { code: 'fr' } } });
+    try {
+      await uploadWithFiles(
+        { xcstrings: [CATALOG] },
+        makeSettings({ locales: ['french'], options: {} })
+      );
+    } finally {
+      gt.setConfig({ customMapping: {} });
+    }
+
+    expect(logErrorAndExit).not.toHaveBeenCalled();
+    const { translations } = vi.mocked(runUploadFilesWorkflow).mock.calls[0][0]
+      .files[0];
+    expect(translations.map((t) => t.locale)).toEqual(['french']);
+    const slice = JSON.parse(translations[0].content) as Catalog;
+    expect(Object.keys(slice.strings.greeting.localizations!)).toEqual(['fr']);
   });
 
   it('uploads one single-locale slice per locale the catalog carries', async () => {

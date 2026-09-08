@@ -24,6 +24,7 @@ import {
   sliceTranslationCatalog,
   type XcstringsCatalog,
 } from '../../formats/xcstrings/parseXcstrings.js';
+import { gt } from '../../utils/gt.js';
 
 /**
  * Sends multiple files to the API for translation
@@ -117,7 +118,11 @@ export async function upload(
 
     for (const locale of locales) {
       if (xcstringsCatalog) {
-        const slice = sliceTranslationCatalog(xcstringsCatalog, locale);
+        // Catalog keys are canonical tags; the configured locale may be an alias.
+        const slice = sliceTranslationCatalog(
+          xcstringsCatalog,
+          gt.resolveCanonicalLocale(locale)
+        );
         // A locale the catalog does not carry has nothing to upload
         if (!slice) continue;
         translations.push({
