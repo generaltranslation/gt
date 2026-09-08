@@ -317,10 +317,11 @@ function applyAnchorIds(
 
     const index = heading.startLine - 1;
 
-    // Setext headings have no heading line to append an anchor to.
-    if (heading.textEndColumn < 1 || heading.endLine > heading.startLine) {
-      continue;
-    }
+    if (heading.textEndColumn < 1) continue;
+
+    // Mintlify reads `{#id}` on ATX headings only, so a setext heading is left
+    // alone. Other modes keep the anchor on its text line as before.
+    if (mintlifyMode && heading.endLine > heading.startLine) continue;
 
     const escape = escapeAnchors && !mapping.explicit;
     const anchor = escape ? `\\{#${mapping.id}\\}` : `{#${mapping.id}}`;

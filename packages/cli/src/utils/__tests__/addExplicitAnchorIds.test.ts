@@ -968,9 +968,22 @@ Body text.
       );
     });
 
-    it('leaves a setext heading alone, as it has no line to hold an anchor', () => {
+    it('leaves a setext heading alone, since Mintlify reads {#id} on ATX headings only', () => {
       const doc = 'Setup\n=====\n';
       expect(run(doc, doc)).toBe(doc);
+    });
+
+    it('still anchors a setext heading in default mode, as before', () => {
+      const doc = 'Setup\n=====\n';
+      const out = addExplicitAnchorIds(
+        doc,
+        extractHeadingInfo(doc),
+        undefined,
+        'a.mdx',
+        'fr/a.mdx',
+        'mdx'
+      ).content;
+      expect(out).toBe('Setup \\{#setup\\}\n=====\n');
     });
 
     it('anchors a heading inside an existing element without touching the element', () => {
