@@ -9,7 +9,6 @@ import { validateYamlSchema } from '../formats/yaml/utils.js';
 import { mergeJson } from '../formats/json/mergeJson.js';
 import { extractJson } from '../formats/json/extractJson.js';
 import { mergeXcstringsLocale } from '../formats/xcstrings/mergeXcstrings.js';
-import { localeContent } from '../formats/files/localeContent.js';
 import mergeYaml from '../formats/yaml/mergeYaml.js';
 import { extractYaml } from '../formats/yaml/extractYaml.js';
 import {
@@ -427,13 +426,6 @@ export async function downloadFileBatch(
         }
         let data: string;
         if (isXcstringsCatalog) {
-          // A payload with nothing for this locale would merge as a no-op yet
-          // be recorded as downloaded; it is a failed download instead.
-          if (localeContent(file.data, 'XCSTRINGS', locale) === undefined) {
-            throw new Error(
-              `The server returned no ${locale} content for this catalog`
-            );
-          }
           // The pinned serializer owns the bytes and the JSON key sorter below
           // must never see them. JSON.parse hoists integer-like keys ("404")
           // first; versionId is unaffected (slices come from the parsed object)

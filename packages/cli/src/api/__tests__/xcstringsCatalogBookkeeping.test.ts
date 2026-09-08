@@ -388,24 +388,33 @@ describe('.xcstrings catalog bookkeeping across translate runs', () => {
     ).toEqual([expect.stringContaining('"Hallo!"')]);
   });
 
-  it('fails a locale whose payload carries nothing for it and records nothing for that locale', async () => {
+  it('records a locale whose payload carries nothing for it, leaves the catalog alone, and submits nothing for it later', async () => {
     writeCatalog(serializeXcstringsSlice(sourceCatalog));
     serveTranslations(['de', 'ja']);
-    // fr comes back as the untouched source slice
+    // fr comes back as the untouched source slice: nothing to translate
     server.set('fr', served('fr', {}));
 
     const result = await translateRun();
 
-    expect(result.failed.map((file) => file.locale)).toEqual(['fr']);
-    expect(result.successful.map((file) => file.locale)).toEqual(['de', 'ja']);
-    expect(logger.error).toHaveBeenCalledWith(
-      expect.stringContaining('no fr content')
-    );
+    expect(result.failed).toEqual([]);
+    expect(result.successful.map((file) => file.locale)).toEqual(LOCALES);
+    expect(logger.error).not.toHaveBeenCalled();
     const disk = readCatalog();
     expect(localeContent(disk, 'XCSTRINGS', 'fr')).toBeUndefined();
     expect(localeContent(disk, 'XCSTRINGS', 'de')).toBe(
       localeContent(server.get('de')!, 'XCSTRINGS', 'de')
     );
-    expect(Object.keys(lockTranslations()).sort()).toEqual(['de', 'ja']);
+    // fr carries the file hash like every other locale, so the next run does
+    // not read the catalog as edited
+    const translations = lockTranslations();
+    expect(Object.keys(translations).sort()).toEqual(LOCALES);
+    expect(translations.fr.postProcessHash).toBe(hashStringSync(disk));
+    vi.clearAllMocks();
+
+    await translateRun();
+
+    expect(api.queryFileData).not.toHaveBeenCalled();
+    expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
+    expect(readCatalog()).toBe(disk);
   });
 });

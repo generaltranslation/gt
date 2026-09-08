@@ -1127,7 +1127,7 @@ describe('downloadFileBatch', () => {
       );
     });
 
-    it('fails the locale, records nothing for it, and leaves the catalog untouched when the payload carries nothing for it', async () => {
+    it('records the locale and leaves the catalog as it was when the payload carries nothing for it', async () => {
       const files: BatchedFiles = [batched('de'), batched('es')];
       const fileTracker = createMockFileTracker(files);
       const lockEntry: DownloadedVersionEntry = {
@@ -1138,16 +1138,18 @@ describe('downloadFileBatch', () => {
       vi.mocked(findOrCreateEntry).mockReturnValue(lockEntry);
       vi.mocked(api.downloadFileBatch).mockResolvedValue({
         files: [
-          // The source slice handed back untranslated: no de anywhere in it
+          // A catalog with nothing to translate comes back as its source
+          // slice: no de anywhere in it
           served(
             'de',
             JSON.stringify({
               sourceLanguage: 'en',
               version: '1.0',
               strings: {
-                Save: {},
+                Save: { shouldTranslate: false },
                 greeting: {
                   comment: 'Home screen',
+                  shouldTranslate: false,
                   localizations: { en: unit('Hello') },
                 },
               },
@@ -1167,27 +1169,26 @@ describe('downloadFileBatch', () => {
         createMockSettings({ locales: ['de', 'es'] })
       );
 
-      expect(result.failed).toEqual([files[0]]);
-      expect(result.successful).toEqual([files[1]]);
-      expect(result.skipped).toHaveLength(0);
-      expect(logger.error).toHaveBeenCalledWith(
-        expect.stringContaining('no de content')
-      );
-      // Only es was written; de is nowhere in the catalog, the lockfile, or
-      // the download metadata
-      expect(fs.promises.writeFile).toHaveBeenCalledTimes(1);
+      // Not a failure: the catalog is re-downloaded every run, so the record
+      // only says the locale was handled
+      expect(result.failed).toEqual([]);
+      expect(result.successful).toEqual(files);
+      expect(logger.error).not.toHaveBeenCalled();
+      // The de merge rewrote the catalog with the same content
+      const deWrite = vi.mocked(fs.promises.writeFile).mock.calls[0][1];
+      expect(JSON.parse(String(deWrite))).toEqual(JSON.parse(catalogContent));
       expect(JSON.parse(disk.content).strings.greeting.localizations).toEqual({
         en: unit('Hello'),
         es: unit('Hola'),
         fr: unit('Bonjour'),
       });
-      expect(lockEntry.translations.de).toBeUndefined();
-      expect(lockEntry.translations.es).toBeDefined();
+      expect(lockEntry.translations.de).toMatchObject({ fileName: CATALOG });
+      expect(lockEntry.translations.es).toMatchObject({ fileName: CATALOG });
       expect(
         getDownloadedMeta()
           .get(CATALOG)
           ?.map((meta) => meta.locale)
-      ).toEqual(['es']);
+      ).toEqual(['de', 'es']);
     });
   });
 });
