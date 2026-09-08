@@ -3,7 +3,11 @@ import { standardizeLocale } from '@generaltranslation/format';
 import { GTRuntime } from 'generaltranslation/runtime';
 import { NextURL } from 'next/dist/server/web/next-url';
 import { parseAcceptLanguage } from 'gt-i18n/internal';
-import { normalizePathname, stripTrailingSlashes } from './pathname';
+import {
+  applyTrailingSlash,
+  normalizePathname,
+  stripTrailingSlashes,
+} from './pathname';
 
 export { normalizePathname };
 
@@ -44,17 +48,6 @@ function createPathPattern(pathname: string): string {
         : normalizePathForMatching(part).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     )
     .join('');
-}
-
-/** Applies the request pathname's trailing-slash style to a target path. */
-function applyTrailingSlash(pathname: string, targetPathname: string): string {
-  const sourceHasTrailingSlash = pathname.length > 1 && pathname.endsWith('/');
-  if (sourceHasTrailingSlash) {
-    return targetPathname === '/' || targetPathname.endsWith('/')
-      ? targetPathname
-      : `${targetPathname}/`;
-  }
-  return stripTrailingSlashes(targetPathname);
 }
 
 export function getResponse({
