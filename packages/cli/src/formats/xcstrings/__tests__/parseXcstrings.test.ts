@@ -2,7 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { parseXcstrings, type XcstringsCatalog } from '../parseXcstrings.js';
+import {
+  parseXcstrings,
+  parseXcstringsCatalog,
+  serializeXcstringsSlice,
+  sliceTranslationCatalog,
+  type XcstringsCatalog,
+} from '../parseXcstrings.js';
 
 const multiLocaleContent = readFileSync(
   path.join(__dirname, '../__mocks__', 'multi_locale.xcstrings'),
@@ -129,6 +135,92 @@ describe('parseXcstrings - source slice', () => {
     const slice = parseCatalog(parseXcstrings(content));
 
     expect(Object.keys(slice.strings.greeting.localizations!)).toEqual(['fr']);
+  });
+
+  describe('translation slices', () => {
+    const sliceLocale = (content: string, locale: string) => {
+      const slice = sliceTranslationCatalog(
+        parseXcstringsCatalog(content),
+        locale
+      );
+      return slice && serializeXcstringsSlice(slice);
+    };
+
+    it('keeps only the entries carrying the locale, each with only that localization', () => {
+      const es = parseCatalog(sliceLocale(multiLocaleContent, 'es')!);
+      const fr = parseCatalog(sliceLocale(multiLocaleContent, 'fr')!);
+
+      expect(es.sourceLanguage).toBe('en');
+      // items.count has no es localization; account.plan.pro has no fr one
+      expect(Object.keys(es.strings)).toEqual(['greeting', 'account.plan.pro']);
+      expect(Object.keys(fr.strings)).toEqual(['greeting', 'items.count']);
+      for (const entry of Object.values(es.strings)) {
+        expect(Object.keys(entry.localizations!)).toEqual(['es']);
+      }
+      for (const entry of Object.values(fr.strings)) {
+        expect(Object.keys(entry.localizations!)).toEqual(['fr']);
+      }
+      expect(es.strings.greeting.localizations).toEqual({
+        es: { stringUnit: { state: 'translated', value: 'Hola' } },
+      });
+      // Entry-level fields travel with the slice
+      expect(es.strings['account.plan.pro'].shouldTranslate).toBe(false);
+      expect(es.strings['account.plan.pro'].comment).toBe(
+        'Product name. Do not translate.'
+      );
+    });
+
+    it('returns undefined for a locale the catalog does not carry', () => {
+      expect(sliceLocale(multiLocaleContent, 'ja')).toBeUndefined();
+      expect(sliceLocale(implicitEntriesContent, 'es')).toBeUndefined();
+    });
+
+    it('preserves unknown fields at every level', () => {
+      const content = JSON.stringify({
+        sourceLanguage: 'en',
+        unknownRoot: { nested: true },
+        strings: {
+          items: {
+            unknownEntryField: [1, 2, 3],
+            localizations: {
+              en: { stringUnit: { state: 'translated', value: 'Items' } },
+              es: {
+                stringUnit: { state: 'translated', value: 'Elementos' },
+                unknownLocalizationField: { deep: 'value' },
+              },
+            },
+          },
+        },
+        version: '1.0',
+      });
+
+      const slice = parseCatalog(sliceLocale(content, 'es')!);
+
+      expect(Object.keys(slice)).toEqual([
+        'sourceLanguage',
+        'unknownRoot',
+        'strings',
+        'version',
+      ]);
+      expect(slice.unknownRoot).toEqual({ nested: true });
+      expect(slice.strings.items).toEqual({
+        unknownEntryField: [1, 2, 3],
+        localizations: {
+          es: {
+            stringUnit: { state: 'translated', value: 'Elementos' },
+            unknownLocalizationField: { deep: 'value' },
+          },
+        },
+      });
+    });
+
+    it('serializes byte-stably and slicing a slice is a fixed point', () => {
+      const first = sliceLocale(multiLocaleContent, 'fr')!;
+      expect(sliceLocale(multiLocaleContent, 'fr')).toBe(first);
+      expect(sliceLocale(first, 'fr')).toBe(first);
+      // Same pinned layout as the source slice
+      expect(first).toBe(JSON.stringify(JSON.parse(first), null, 2) + '\n');
+    });
   });
 
   describe('serialization contract (versionId hashes this output)', () => {

@@ -1,8 +1,9 @@
 // Slicing for Apple .xcstrings catalogs. One on-disk catalog holds every
-// locale; the upload carries only the source-language slice as the source
-// document. Slices clone nodes and keep only the source locale key, so unknown
-// fields survive verbatim at every level and a later download-merge can fold
-// per-locale translations back into the same on-disk catalog.
+// locale; the upload carries the source-language slice as the source document
+// and one single-locale slice per translated locale. Slices clone nodes and
+// keep only the wanted locale key, so unknown fields survive verbatim at every
+// level and a later download-merge can fold per-locale translations back into
+// the same on-disk catalog.
 
 export type XcstringsEntry = {
   localizations?: Record<string, unknown>;
@@ -92,30 +93,55 @@ export function serializeXcstringsSlice(catalog: XcstringsCatalog): string {
 }
 
 /**
- * Produces the source-language slice of a validated catalog: a single-locale
- * catalog holding, per entry, only the source-language localization.
- *
- * Nodes are cloned and foreign locale keys dropped (never rebuilt), so unknown
- * fields and key order survive at every level. Entries without localizations
- * (the key itself is the source) are kept verbatim.
+ * Clones a validated catalog keeping, per entry, only `localizations[locale]`.
+ * An entry without that localization is kept with its other fields when
+ * `keepEntriesWithoutLocale` is set and dropped otherwise. Nodes are cloned,
+ * never rebuilt, so unknown fields and key order survive at every level.
  */
-export function sliceSourceCatalog(
-  catalog: XcstringsCatalog
+function sliceCatalog(
+  catalog: XcstringsCatalog,
+  locale: string,
+  keepEntriesWithoutLocale: boolean
 ): XcstringsCatalog {
   const strings: Record<string, XcstringsEntry> = Object.create(null);
   for (const [key, entry] of Object.entries(catalog.strings)) {
     if (entry.localizations === undefined) {
-      strings[key] = entry;
+      if (keepEntriesWithoutLocale) strings[key] = entry;
       continue;
     }
     const localizations: Record<string, unknown> = Object.create(null);
-    if (Object.hasOwn(entry.localizations, catalog.sourceLanguage)) {
-      localizations[catalog.sourceLanguage] =
-        entry.localizations[catalog.sourceLanguage];
+    if (Object.hasOwn(entry.localizations, locale)) {
+      localizations[locale] = entry.localizations[locale];
+    } else if (!keepEntriesWithoutLocale) {
+      continue;
     }
     strings[key] = { ...entry, localizations };
   }
   return { ...catalog, strings };
+}
+
+/**
+ * Produces the source-language slice of a validated catalog: a single-locale
+ * catalog holding, per entry, only the source-language localization. Entries
+ * without localizations (the key itself is the source) are kept verbatim.
+ */
+export function sliceSourceCatalog(
+  catalog: XcstringsCatalog
+): XcstringsCatalog {
+  return sliceCatalog(catalog, catalog.sourceLanguage, true);
+}
+
+/**
+ * Produces one locale's translation slice: the entries that carry
+ * `localizations[locale]`, each holding only that localization. Returns
+ * undefined when the catalog carries no translation for the locale.
+ */
+export function sliceTranslationCatalog(
+  catalog: XcstringsCatalog,
+  locale: string
+): XcstringsCatalog | undefined {
+  const slice = sliceCatalog(catalog, locale, false);
+  return Object.keys(slice.strings).length > 0 ? slice : undefined;
 }
 
 /**

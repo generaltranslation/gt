@@ -663,3 +663,152 @@ describe('upload - Apple .strings translations that cannot be decoded', () => {
     expect(uploaded?.translations).toHaveLength(0);
   });
 });
+
+describe('upload - Apple .xcstrings catalogs', () => {
+  const CATALOG = 'App/Localizable.xcstrings';
+  const catalogContent = JSON.stringify({
+    sourceLanguage: 'en',
+    unknownRoot: { keep: true },
+    strings: {
+      Save: {},
+      greeting: {
+        comment: 'Home screen',
+        unknownEntryField: 7,
+        localizations: {
+          en: { stringUnit: { state: 'translated', value: 'Hello' } },
+          de: { stringUnit: { state: 'translated', value: 'Hallo' } },
+          fr: { stringUnit: { state: 'translated', value: 'Bonjour' } },
+          ar: {
+            stringUnit: { state: 'translated', value: 'مرحبا' },
+            unknownLocalizationField: { deep: 'value' },
+          },
+        },
+      },
+      'items.count': {
+        localizations: {
+          en: { stringUnit: { state: 'translated', value: '%d items' } },
+          de: { stringUnit: { state: 'translated', value: '%d Elemente' } },
+        },
+      },
+    },
+    version: '1.0',
+  });
+
+  type Catalog = {
+    sourceLanguage: string;
+    strings: Record<
+      string,
+      { localizations?: Record<string, unknown>; [key: string]: unknown }
+    >;
+    [key: string]: unknown;
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(existsSync).mockReturnValue(true);
+    vi.mocked(readFileSync).mockReturnValue('');
+    // Every locale maps to the shared catalog path; the file always exists,
+    // which is exactly what used to make the whole catalog upload per locale.
+    vi.mocked(createFileMapping).mockReturnValue({
+      de: { [CATALOG]: CATALOG },
+      fr: { [CATALOG]: CATALOG },
+      ar: { [CATALOG]: CATALOG },
+      ja: { [CATALOG]: CATALOG },
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('uploads one single-locale slice per locale the catalog carries', async () => {
+    setMockFiles({ [CATALOG]: catalogContent });
+
+    await uploadWithFiles(
+      { xcstrings: [CATALOG] },
+      makeSettings({ locales: ['de', 'fr', 'ar', 'ja'], options: {} })
+    );
+
+    expect(logErrorAndExit).not.toHaveBeenCalled();
+    const call = vi.mocked(runUploadFilesWorkflow).mock.calls[0][0];
+    expect(call.files).toHaveLength(1);
+    const { source, translations } = call.files[0];
+
+    expect(source.fileFormat).toBe('XCSTRINGS');
+    const sourceSlice = JSON.parse(source.content) as Catalog;
+    expect(Object.keys(sourceSlice.strings)).toEqual([
+      'Save',
+      'greeting',
+      'items.count',
+    ]);
+    expect(Object.keys(sourceSlice.strings.greeting.localizations!)).toEqual([
+      'en',
+    ]);
+
+    // ja is configured but absent from the catalog, so it is skipped
+    expect(translations.map((t) => t.locale)).toEqual(['de', 'fr', 'ar']);
+    for (const translation of translations) {
+      expect(translation.fileName).toBe(CATALOG);
+      expect(translation.fileFormat).toBe('XCSTRINGS');
+      expect(translation.fileId).toBe(source.fileId);
+      expect(translation.versionId).toBe(source.versionId);
+      const slice = JSON.parse(translation.content) as Catalog;
+      expect(slice.sourceLanguage).toBe('en');
+      for (const entry of Object.values(slice.strings)) {
+        expect(Object.keys(entry.localizations!)).toEqual([translation.locale]);
+      }
+    }
+
+    const de = JSON.parse(translations[0].content) as Catalog;
+    const ar = JSON.parse(translations[2].content) as Catalog;
+    // Entries without the locale are absent; the implicit "Save" never appears
+    expect(Object.keys(de.strings)).toEqual(['greeting', 'items.count']);
+    expect(Object.keys(ar.strings)).toEqual(['greeting']);
+    expect(de.strings.greeting.localizations!.de).toEqual({
+      stringUnit: { state: 'translated', value: 'Hallo' },
+    });
+
+    // Unknown fields survive at every level; entry-level fields travel along
+    expect(ar.unknownRoot).toEqual({ keep: true });
+    expect(ar.version).toBe('1.0');
+    expect(ar.strings.greeting.comment).toBe('Home screen');
+    expect(ar.strings.greeting.unknownEntryField).toBe(7);
+    expect(ar.strings.greeting.localizations!.ar).toEqual({
+      stringUnit: { state: 'translated', value: 'مرحبا' },
+      unknownLocalizationField: { deep: 'value' },
+    });
+
+    // The whole catalog is never uploaded as a translation
+    for (const translation of translations) {
+      expect(translation.content).not.toBe(catalogContent);
+      expect(translation.content).toBe(
+        JSON.stringify(JSON.parse(translation.content), null, 2) + '\n'
+      );
+    }
+  });
+
+  it('uploads the source alone when the catalog carries no target locale', async () => {
+    setMockFiles({
+      [CATALOG]: JSON.stringify({
+        sourceLanguage: 'en',
+        strings: {
+          Save: {},
+          greeting: {
+            localizations: {
+              en: { stringUnit: { state: 'translated', value: 'Hello' } },
+            },
+          },
+        },
+      }),
+    });
+
+    await uploadWithFiles(
+      { xcstrings: [CATALOG] },
+      makeSettings({ locales: ['de', 'fr'], options: {} })
+    );
+
+    const call = vi.mocked(runUploadFilesWorkflow).mock.calls[0][0];
+    expect(call.files).toHaveLength(1);
+    expect(call.files[0].translations).toHaveLength(0);
+  });
+});
