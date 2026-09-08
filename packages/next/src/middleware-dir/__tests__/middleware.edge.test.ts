@@ -200,6 +200,114 @@ describe('Middleware Integration Tests', () => {
       expect(res.headers.get(LOCALE_HEADER)).toBe('en');
     });
 
+    it('supports catch-all and optional catch-all pathConfig routes', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+        pathConfig: {
+          '/docs/[...slug]': { fr: '/knowledge/base/[...slug]' },
+          '/news/[[...slug]]': {
+            fr: '/international/actualites/[[...slug]]',
+          },
+        },
+      });
+
+      const catchAllResponse = middleware(
+        createRequest('/fr/knowledge/base/guides/start')
+      );
+      const catchAllRedirect = middleware(
+        createRequest('/fr/docs/guides/start')
+      );
+      const optionalRootResponse = middleware(
+        createRequest('/fr/international/actualites')
+      );
+      const optionalNestedResponse = middleware(
+        createRequest('/fr/international/actualites/world/latest')
+      );
+
+      expect(getResponseType(catchAllResponse)).toBe('rewrite');
+      expect(getResponsePath(catchAllResponse)).toBe('/fr/docs/guides/start');
+      expect(getResponseType(catchAllRedirect)).toBe('redirect');
+      expect(getResponsePath(catchAllRedirect)).toBe(
+        '/fr/knowledge/base/guides/start'
+      );
+      expect(getResponseType(optionalRootResponse)).toBe('rewrite');
+      expect(getResponsePath(optionalRootResponse)).toBe('/fr/news');
+      expect(getResponseType(optionalNestedResponse)).toBe('rewrite');
+      expect(getResponsePath(optionalNestedResponse)).toBe(
+        '/fr/news/world/latest'
+      );
+    });
+
+    it('treats regex metacharacters in dynamic paths literally', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+        pathConfig: {
+          '/releases/v1.0/[slug]': {
+            fr: '/versions/v1.0/[slug]',
+          },
+          '/language/c++/[slug]': {
+            fr: '/langage/c++/[slug]',
+          },
+        },
+      });
+
+      const dotResponse = middleware(createRequest('/fr/versions/v1.0/notes'));
+      const falsePositiveResponse = middleware(
+        createRequest('/fr/versions/v1x0/notes')
+      );
+      const plusResponse = middleware(
+        createRequest('/fr/langage/c++/templates')
+      );
+
+      expect(getResponseType(dotResponse)).toBe('rewrite');
+      expect(getResponsePath(dotResponse)).toBe('/fr/releases/v1.0/notes');
+      expect(getResponseType(falsePositiveResponse)).toBe('next');
+      expect(getResponseType(plusResponse)).toBe('rewrite');
+      expect(getResponsePath(plusResponse)).toBe('/fr/language/c++/templates');
+    });
+
+    it('matches encoded requests against Unicode pathConfig entries', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+        pathConfig: {
+          '/café/[slug]': {
+            fr: '/café-français/[slug]',
+          },
+        },
+      });
+
+      const res = middleware(
+        createRequest('/fr/caf%C3%A9-fran%C3%A7ais/article')
+      );
+
+      expect(getResponseType(res)).toBe('rewrite');
+      expect(getResponsePath(res)).toBe('/fr/caf%C3%A9/article');
+    });
+
+    it('preserves trailing slashes while rewriting pathConfig routes', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+        pathConfig: {
+          '/about': { fr: '/a-propos' },
+          '/docs/[...slug]': { fr: '/documentation/[...slug]' },
+        },
+      });
+
+      const staticResponse = middleware(createRequest('/fr/a-propos/'));
+      const catchAllResponse = middleware(
+        createRequest('/fr/documentation/guides/start/')
+      );
+
+      expect(getResponseType(staticResponse)).toBe('rewrite');
+      expect(getResponsePath(staticResponse)).toBe('/fr/about/');
+      expect(getResponseType(catchAllResponse)).toBe('rewrite');
+      expect(getResponsePath(catchAllResponse)).toBe('/fr/docs/guides/start/');
+    });
+
     it('2.6: localeRouting=false → next()', () => {
       setEnvConfig();
       const middleware = createNextMiddleware({
