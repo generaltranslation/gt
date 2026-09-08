@@ -20,6 +20,7 @@ import os from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { hashStringSync } from '../utils/hash.js';
 import { extractJson } from '../formats/json/extractJson.js';
+import { localeContent } from '../formats/files/localeContent.js';
 import { extractYaml } from '../formats/yaml/extractYaml.js';
 import { logger } from '../console/logger.js';
 import { recordWarning } from '../state/translateWarnings.js';
@@ -57,6 +58,8 @@ const findLatestDownloadedVersion = (
 /**
  * Collects local user edits by diffing the latest downloaded server translation version
  * against the current local translation file, and submits the diffs upstream.
+ * A file that holds every locale is compared one locale slice at a time, so an
+ * edit to one locale is submitted under that locale alone.
  *
  * Must run before enqueueing new translations so rules are available to the generator.
  */
@@ -168,9 +171,14 @@ export async function collectAndSendUserEditDiffs(
       );
       const files = resp?.files || [];
       for (const f of files) {
+        if (!f.locale) continue;
+        // The locale's share of the payload; a catalog payload that carries
+        // nothing for the locale is no baseline at all.
+        const content = localeContent(f.data, f.fileFormat, f.locale);
+        if (content === undefined) continue;
         serverContentByKey.set(
           `${f.branchId}:${f.fileId}:${f.versionId}:${f.locale}`,
-          contentBytes(f.data, f.fileFormat)
+          contentBytes(content, f.fileFormat)
         );
       }
     } catch {
@@ -190,11 +198,16 @@ export async function collectAndSendUserEditDiffs(
         // Read the local file the same way the pipeline read it originally, so
         // a file stored differently on disk than the server's copy is compared
         // as content rather than as bytes. Otherwise every such file would read
-        // as edited on every run.
-        const localBytes = contentBytes(
+        // as edited on every run. Then cut to this locale's share, so a file
+        // that holds every locale is compared slice to slice.
+        const local = localeContent(
           readFileContent(c.outputPath, c.fileFormat),
-          c.fileFormat
+          c.fileFormat,
+          c.locale
         );
+        // A catalog that no longer carries the locale has nothing to submit
+        if (local === undefined) continue;
+        const localBytes = contentBytes(local, c.fileFormat);
 
         // Nothing was edited, so there is no diff to compute or report.
         if (localBytes.equals(serverBytes)) continue;

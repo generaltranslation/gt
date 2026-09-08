@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
+import { gt } from '../../../utils/gt.js';
 import { localeContent } from '../localeContent.js';
 
 const unit = (value: string) => ({
@@ -41,6 +42,10 @@ const deSlice =
   ) + '\n';
 
 describe('localeContent', () => {
+  afterEach(() => {
+    gt.setConfig({ customMapping: {} });
+  });
+
   it('is the content itself for a file that holds one locale', () => {
     expect(localeContent('# heading\n', 'MD', 'de')).toBe('# heading\n');
     expect(localeContent('{"a":1}', 'JSON', 'de')).toBe('{"a":1}');
@@ -67,6 +72,19 @@ describe('localeContent', () => {
     });
 
     expect(localeContent(download, 'XCSTRINGS', 'de')).toBe(deSlice);
+  });
+
+  it('slices by the canonical tag a custom mapping gives an alias locale', () => {
+    gt.setConfig({ customMapping: { french: { code: 'fr' } } });
+    const slice = localeContent(catalog, 'XCSTRINGS', 'french');
+    expect(slice).toBeDefined();
+    const strings = (
+      JSON.parse(slice!) as {
+        strings: Record<string, { localizations?: Record<string, unknown> }>;
+      }
+    ).strings;
+    expect(Object.keys(strings.greeting.localizations!)).toEqual(['fr']);
+    expect(Object.keys(strings.farewell.localizations!)).toEqual(['fr']);
   });
 
   it('is undefined when the catalog carries nothing for the locale', () => {
