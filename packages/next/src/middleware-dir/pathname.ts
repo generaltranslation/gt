@@ -18,3 +18,17 @@ export function normalizePathname(pathname: string): string {
 export function stripTrailingSlashes(pathname: string): string {
   return pathname.length > 1 ? pathname.replace(/\/+$/, '') || '/' : pathname;
 }
+
+/** Applies the request pathname's trailing-slash style to a target path. */
+export function applyTrailingSlash(
+  pathname: string,
+  targetPathname: string
+): string {
+  const sourceHasTrailingSlash = pathname.length > 1 && pathname.endsWith('/');
+  if (sourceHasTrailingSlash) {
+    return targetPathname === '/' || targetPathname.endsWith('/')
+      ? targetPathname
+      : `${targetPathname}/`;
+  }
+  return stripTrailingSlashes(targetPathname);
+}
