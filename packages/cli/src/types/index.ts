@@ -328,7 +328,7 @@ export type AdditionalOptions = {
   experimentalLocalizeStaticImports?: boolean; // Inserts locale in static import paths in md/mdx files
   experimentalLocalizeStaticUrls?: boolean; // Inserts locale in static url paths in md/mdx files and adds anchor IDs to preserve navigation
   experimentalLocalizeRelativeAssets?: boolean; // Rewrites relative asset URLs in translated md/mdx files to valid paths
-  experimentalAddHeaderAnchorIds?: 'mintlify' | 'default'; // Format for anchor IDs: 'mintlify' for div wrapping, 'default' or undefined for inline {#id}. Can run independently of static url localization
+  experimentalAddHeaderAnchorIds?: 'mintlify' | 'default'; // Format for anchor IDs: 'mintlify' for Mintlify's native {#id} on every heading, 'default' or undefined for escaped inline \{#id\}. Can run independently of static url localization
   experimentalHideDefaultLocale?: boolean; // Hides the default locale in the import path
   experimentalFlattenJsonFiles?: boolean; // Flattens JSON files into a single file
   baseDomain?: string; // The base http:// url where the project is hosted

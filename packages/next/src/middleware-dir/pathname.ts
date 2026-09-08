@@ -3,13 +3,13 @@ export function normalizePathname(pathname: string): string {
   return pathname
     .split('/')
     .map((segment) => {
-      let normalizedSegment = segment;
       try {
-        normalizedSegment = decodeURI(segment);
+        // Re-encode each segment so escaped separators and encoding levels stay distinct.
+        return encodeURIComponent(decodeURIComponent(segment).normalize('NFC'));
       } catch {
         // Preserve malformed escape sequences without rejecting the request.
+        return segment.normalize('NFC');
       }
-      return normalizedSegment.normalize('NFC');
     })
     .join('/');
 }
