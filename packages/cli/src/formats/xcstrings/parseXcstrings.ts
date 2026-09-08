@@ -94,9 +94,12 @@ export function serializeXcstringsSlice(catalog: XcstringsCatalog): string {
 
 /**
  * Clones a validated catalog keeping, per entry, only `localizations[locale]`.
- * An entry without that localization is kept with its other fields when
- * `keepEntriesWithoutLocale` is set and dropped otherwise. Nodes are cloned,
- * never rebuilt, so unknown fields and key order survive at every level.
+ * An entry without that localization is dropped, or kept without a
+ * `localizations` key when `keepEntriesWithoutLocale` is set: an entry whose
+ * localizations hold only other locales then slices to the same shape as one
+ * with none, so translations added to the catalog leave the source slice,
+ * and with it versionId, unchanged. Nodes are cloned, never rebuilt, so
+ * unknown fields and key order survive at every level.
  */
 function sliceCatalog(
   catalog: XcstringsCatalog,
@@ -105,16 +108,17 @@ function sliceCatalog(
 ): XcstringsCatalog {
   const strings: Record<string, XcstringsEntry> = Object.create(null);
   for (const [key, entry] of Object.entries(catalog.strings)) {
-    if (entry.localizations === undefined) {
-      if (keepEntriesWithoutLocale) strings[key] = entry;
+    if (
+      entry.localizations === undefined ||
+      !Object.hasOwn(entry.localizations, locale)
+    ) {
+      if (!keepEntriesWithoutLocale) continue;
+      const { localizations: _otherLocales, ...withoutLocalizations } = entry;
+      strings[key] = withoutLocalizations;
       continue;
     }
     const localizations: Record<string, unknown> = Object.create(null);
-    if (Object.hasOwn(entry.localizations, locale)) {
-      localizations[locale] = entry.localizations[locale];
-    } else if (!keepEntriesWithoutLocale) {
-      continue;
-    }
+    localizations[locale] = entry.localizations[locale];
     strings[key] = { ...entry, localizations };
   }
   return { ...catalog, strings };
@@ -123,7 +127,8 @@ function sliceCatalog(
 /**
  * Produces the source-language slice of a validated catalog: a single-locale
  * catalog holding, per entry, only the source-language localization. Entries
- * without localizations (the key itself is the source) are kept verbatim.
+ * without a source localization (the key itself is the source) keep their
+ * other fields and carry no `localizations`.
  */
 export function sliceSourceCatalog(
   catalog: XcstringsCatalog

@@ -67,6 +67,74 @@ describe('parseXcstrings - source slice', () => {
     });
   });
 
+  it('slices an entry holding only target locales like one with no localizations', () => {
+    // A key-is-source entry has no source unit even once it carries
+    // translations, so it must slice like an implicit entry.
+    const withTargets = JSON.stringify({
+      sourceLanguage: 'en',
+      strings: {
+        Save: {
+          comment: 'Toolbar button',
+          localizations: {
+            de: { stringUnit: { state: 'translated', value: 'Sichern' } },
+          },
+        },
+      },
+    });
+    const withoutLocalizations = JSON.stringify({
+      sourceLanguage: 'en',
+      strings: { Save: { comment: 'Toolbar button' } },
+    });
+
+    expect(parseCatalog(parseXcstrings(withTargets)).strings.Save).toEqual({
+      comment: 'Toolbar button',
+    });
+    expect(parseXcstrings(withTargets)).toBe(
+      parseXcstrings(withoutLocalizations)
+    );
+  });
+
+  it('slices a catalog with target locales identically to one without them', () => {
+    const withTargets = JSON.stringify({
+      sourceLanguage: 'en',
+      version: '1.0',
+      strings: {
+        greeting: {
+          comment: 'Home screen',
+          localizations: {
+            en: { stringUnit: { state: 'translated', value: 'Hello' } },
+            de: { stringUnit: { state: 'translated', value: 'Hallo' } },
+          },
+        },
+        Save: {
+          localizations: {
+            de: { stringUnit: { state: 'translated', value: 'Sichern' } },
+            fr: { stringUnit: { state: 'translated', value: 'Enregistrer' } },
+          },
+        },
+        Cancel: { comment: 'Toolbar button', localizations: {} },
+        Done: {},
+      },
+    });
+    const withoutTargets = JSON.stringify({
+      sourceLanguage: 'en',
+      version: '1.0',
+      strings: {
+        greeting: {
+          comment: 'Home screen',
+          localizations: {
+            en: { stringUnit: { state: 'translated', value: 'Hello' } },
+          },
+        },
+        Save: {},
+        Cancel: { comment: 'Toolbar button' },
+        Done: {},
+      },
+    });
+
+    expect(parseXcstrings(withTargets)).toBe(parseXcstrings(withoutTargets));
+  });
+
   it('preserves unknown and nested fields at every level', () => {
     const content = JSON.stringify({
       sourceLanguage: 'en',
