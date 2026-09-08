@@ -1,5 +1,11 @@
 # gtx-cli
 
+## 2.20.2
+
+### Patch Changes
+
+- [#2256](https://github.com/generaltranslation/gt/pull/2256) [`210e98e`](https://github.com/generaltranslation/gt/commit/210e98eaf746e4340b29f8e6751bf4959d5c1840) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - fix(cli): wrap headings with author-written `{#id}` anchors in a `<div id>` like every other heading when `experimentalAddHeaderAnchorIds` is `mintlify`. Re-attaching the inline `{#id}` broke Mintlify builds when the heading sat inside nested JSX, because the MDX serializer indents it four spaces and Mintlify no longer recognizes the anchor there.
+
 ## 2.20.1
 
 ### Patch Changes
