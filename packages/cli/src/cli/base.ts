@@ -365,6 +365,7 @@ export class BaseCLI {
         .description(
           'Create a General Translation project using an organization API key'
         )
+        .requiredOption('--org-id <orgId>', 'Organization ID')
         .requiredOption('--name <name>', 'Project name')
         .requiredOption('--default-locale <locale>', 'Project default locale')
         .option('--cdn-enabled', 'Enable CDN delivery', false)
@@ -373,7 +374,7 @@ export class BaseCLI {
         const settings = await generateSettings(options);
         // Project creation uses an organization key before a project ID exists.
         if (!hasValidApiKey(settings)) return exitSync(1);
-        const { project } = await api.createProject({
+        const { project } = await api.createProject(options.orgId, {
           name: options.name,
           defaultLocale: options.defaultLocale,
           cdnEnabled: options.cdnEnabled,
