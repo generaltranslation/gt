@@ -20,6 +20,10 @@ import os from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { hashStringSync } from '../utils/hash.js';
 import { extractJson } from '../formats/json/extractJson.js';
+import {
+  emptyLocaleContent,
+  localeContent,
+} from '../formats/files/localeContent.js';
 import { extractYaml } from '../formats/yaml/extractYaml.js';
 import { logger } from '../console/logger.js';
 import { recordWarning } from '../state/translateWarnings.js';
@@ -57,6 +61,8 @@ const findLatestDownloadedVersion = (
 /**
  * Collects local user edits by diffing the latest downloaded server translation version
  * against the current local translation file, and submits the diffs upstream.
+ * A file that holds every locale is compared one locale slice at a time, so an
+ * edit to one locale is submitted under that locale alone.
  *
  * Must run before enqueueing new translations so rules are available to the generator.
  */
@@ -109,16 +115,20 @@ export async function collectAndSendUserEditDiffs(
       if (!latestDownloaded) continue;
       const downloadedVersion = latestDownloaded.entry;
 
-      // Skip if local file matches the last postprocessed content hash
+      // Skip if the locale's local content matches the last recorded hash
       if (downloadedVersion.postProcessHash) {
         try {
-          // Hashed from the same pipeline content the hash was recorded from,
-          // so a file stored in UTF-16 still matches when it is untouched.
-          const localContent = readFileContent(
+          // Hashed from the locale's share of the pipeline content, which is
+          // what was recorded, so an untouched locale matches regardless of
+          // the file's encoding or of edits to its other locales.
+          const localFile = readFileContent(
             outputPath,
             uploadedFile.fileFormat
           );
-          const localHash = hashStringSync(localContent);
+          const localHash = hashStringSync(
+            localeContent(localFile, uploadedFile.fileFormat, locale) ??
+              emptyLocaleContent(localFile, uploadedFile.fileFormat)
+          );
           if (localHash === downloadedVersion.postProcessHash) {
             continue;
           }
@@ -156,7 +166,9 @@ export async function collectAndSendUserEditDiffs(
     const translatedFiles =
       checkResponse.translatedFiles?.filter((t) => t.completedAt) ?? [];
 
-    const serverContentByKey = new Map<string, Buffer>();
+    // The server's copy of each candidate, keyed like the candidates
+    type ServerPayload = { data: string; fileFormat: FileFormat };
+    const serverPayloadByKey = new Map<string, ServerPayload>();
     try {
       const resp = await api.downloadFileBatch(
         translatedFiles.map((file) => ({
@@ -166,11 +178,11 @@ export async function collectAndSendUserEditDiffs(
           versionId: file.versionId,
         }))
       );
-      const files = resp?.files || [];
-      for (const f of files) {
-        serverContentByKey.set(
+      for (const f of resp?.files || []) {
+        if (!f.locale) continue;
+        serverPayloadByKey.set(
           `${f.branchId}:${f.fileId}:${f.versionId}:${f.locale}`,
-          contentBytes(f.data, f.fileFormat)
+          { data: f.data, fileFormat: f.fileFormat }
         );
       }
     } catch {
@@ -180,21 +192,46 @@ export async function collectAndSendUserEditDiffs(
     // Compute diffs using fetched server contents
     for (const c of candidates) {
       const key = `${c.branchId}:${c.fileId}:${c.versionId}:${c.locale}`;
-      const serverBytes = serverContentByKey.get(key);
+      const payload = serverPayloadByKey.get(key);
       // Absent means the batch did not return this file, so there is no
       // baseline. An empty payload is a baseline of nothing, which the user
       // may well have written against.
-      if (!serverBytes) continue;
+      if (!payload) continue;
+
+      // The locale's share of the payload, read on its own so a payload the
+      // server sent malformed costs only its own locale. A catalog payload
+      // that carries nothing for the locale is that file's empty payload, and
+      // a baseline of nothing like any other.
+      let serverContent: string;
+      try {
+        serverContent =
+          localeContent(payload.data, payload.fileFormat, c.locale) ??
+          emptyLocaleContent(payload.data, payload.fileFormat);
+      } catch (error) {
+        const relativePath = getRelative(c.outputPath);
+        const reason = `The downloaded ${c.locale} translation could not be read (${
+          error instanceof Error ? error.message : String(error)
+        })`;
+        logger.warn(`Skipping local edits to ${relativePath}: ${reason}`);
+        recordWarning('skipped_file', relativePath, reason);
+        continue;
+      }
+      const serverBytes = contentBytes(serverContent, payload.fileFormat);
 
       try {
         // Read the local file the same way the pipeline read it originally, so
         // a file stored differently on disk than the server's copy is compared
         // as content rather than as bytes. Otherwise every such file would read
-        // as edited on every run.
-        const localBytes = contentBytes(
+        // as edited on every run. Then cut to this locale's share, so a file
+        // that holds every locale is compared slice to slice.
+        const local = localeContent(
           readFileContent(c.outputPath, c.fileFormat),
-          c.fileFormat
+          c.fileFormat,
+          c.locale
         );
+        // A catalog that no longer carries the locale has nothing to submit
+        if (local === undefined) continue;
+        const localBytes = contentBytes(local, c.fileFormat);
 
         // Nothing was edited, so there is no diff to compute or report.
         if (localBytes.equals(serverBytes)) continue;

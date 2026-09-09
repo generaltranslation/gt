@@ -550,6 +550,30 @@ describe('parseFilesConfig', () => {
       expect(vi.mocked(logger.warn)).not.toHaveBeenCalled();
     });
 
+    it('should not warn when an xcstrings pattern does not include [locale]', () => {
+      // xcstrings catalogs hold every locale in one shared file, so a pattern
+      // without [locale] is the expected layout there
+      const includePatterns = ['Cascade/Localizable.xcstrings'];
+      const excludePatterns = [];
+
+      vi.mocked(fg.sync).mockReturnValue([
+        '/project/Cascade/Localizable.xcstrings',
+      ]);
+
+      expandGlobPatterns(
+        '/project',
+        includePatterns,
+        excludePatterns,
+        'en',
+        defaultLocales,
+        undefined,
+        undefined,
+        'xcstrings'
+      );
+
+      expect(vi.mocked(logger.warn)).not.toHaveBeenCalled();
+    });
+
     it('should not warn when pattern does not include [locale] but has TransformOption patterns', () => {
       const includePatterns = ['src/static/*.json'];
       const excludePatterns = [];
@@ -1279,6 +1303,62 @@ describe('parseFilesConfig', () => {
       expect(() =>
         resolveFiles(files, 'en', defaultLocales, '/project')
       ).toThrow(/files\.json\.requiresReview must be a boolean/);
+    });
+  });
+
+  describe('resolveFiles - xcstrings catalogs', () => {
+    const defaultLocales = ['en', 'fr', 'es'];
+
+    beforeEach(() => {
+      vi.mocked(fg.sync).mockReturnValue([
+        '/project/App/Localizable.xcstrings',
+      ]);
+    });
+
+    it('resolves a catalog that is updated in place', () => {
+      const result = resolveFiles(
+        { xcstrings: { include: ['App/Localizable.xcstrings'] } },
+        'en',
+        defaultLocales,
+        '/project'
+      );
+
+      expect(result.resolvedPaths.xcstrings).toEqual([
+        '/project/App/Localizable.xcstrings',
+      ]);
+      expect(result.placeholderPaths.xcstrings).toEqual([
+        '/project/App/Localizable.xcstrings',
+      ]);
+      expect(result.transformPaths.xcstrings).toBeUndefined();
+    });
+
+    it('rejects a path transform, which would write each locale to a separate catalog', () => {
+      expect(() =>
+        resolveFiles(
+          {
+            xcstrings: {
+              include: ['App/Localizable.xcstrings'],
+              transform: 'Localized/[locale]/*.xcstrings',
+            },
+          },
+          'en',
+          defaultLocales,
+          '/project'
+        )
+      ).toThrow(/files\.xcstrings\.transform is not supported/);
+    });
+
+    it('rejects [locale] in an include pattern, which would map each locale to a separate catalog', () => {
+      expect(() =>
+        resolveFiles(
+          { xcstrings: { include: [{ pattern: 'App/[locale].xcstrings' }] } },
+          'en',
+          defaultLocales,
+          '/project'
+        )
+      ).toThrow(
+        /files\.xcstrings\.include must not contain \[locale\]: "App\/\[locale\]\.xcstrings"/
+      );
     });
   });
 });

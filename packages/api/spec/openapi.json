@@ -74,7 +74,8 @@
           "SVG",
           "DOT_STRINGS",
           "DOT_STRINGSDICT",
-          "ANDROID_STRINGS"
+          "ANDROID_STRINGS",
+          "XCSTRINGS"
         ]
       },
       "ModelProvider": {
@@ -620,7 +621,8 @@
                                 "SVG",
                                 "DOT_STRINGS",
                                 "DOT_STRINGSDICT",
-                                "ANDROID_STRINGS"
+                                "ANDROID_STRINGS",
+                                "XCSTRINGS"
                               ]
                             },
                             "dataFormat": {
@@ -935,7 +937,8 @@
                                 "SVG",
                                 "DOT_STRINGS",
                                 "DOT_STRINGSDICT",
-                                "ANDROID_STRINGS"
+                                "ANDROID_STRINGS",
+                                "XCSTRINGS"
                               ]
                             },
                             "dataFormat": {
@@ -1008,7 +1011,8 @@
                                   "SVG",
                                   "DOT_STRINGS",
                                   "DOT_STRINGSDICT",
-                                  "ANDROID_STRINGS"
+                                  "ANDROID_STRINGS",
+                                  "XCSTRINGS"
                                 ]
                               },
                               "dataFormat": {
@@ -1037,7 +1041,8 @@
                                   "SVG",
                                   "DOT_STRINGS",
                                   "DOT_STRINGSDICT",
-                                  "ANDROID_STRINGS"
+                                  "ANDROID_STRINGS",
+                                  "XCSTRINGS"
                                 ]
                               }
                             },
@@ -2324,7 +2329,8 @@
                             "SVG",
                             "DOT_STRINGS",
                             "DOT_STRINGSDICT",
-                            "ANDROID_STRINGS"
+                            "ANDROID_STRINGS",
+                            "XCSTRINGS"
                           ]
                         }
                       },

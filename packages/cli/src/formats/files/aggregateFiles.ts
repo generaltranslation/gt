@@ -3,6 +3,7 @@ import { logErrorAndExit } from '../../console/logging.js';
 import {
   fileEncodingSkipReason,
   lottieExpressionsError,
+  xcstringsSourceLanguageMismatchError,
 } from '../../console/index.js';
 import { recordWarning } from '../../state/translateWarnings.js';
 import { lottieHasExpressions } from './detectLottieExpressions.js';
@@ -17,6 +18,12 @@ import type { FileFormat, DataFormat, FileToUpload } from '../../types/data.js';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
 import { parseJson } from '../json/parseJson.js';
 import {
+  parseXcstringsCatalog,
+  serializeXcstringsSlice,
+  sliceSourceCatalog,
+  type XcstringsCatalog,
+} from '../xcstrings/parseXcstrings.js';
+import {
   resolveMintlifyRefs,
   shouldResolveRefs,
 } from '../../utils/resolveMintlifyRefs.js';
@@ -28,6 +35,7 @@ import type { JSONObject } from '../../types/data/json.js';
 import YAML from 'yaml';
 import { determineLibrary } from '../../fs/determineFramework/index.js';
 import { hashStringSync, hashVersionId } from '../../utils/hash.js';
+import { gt } from '../../utils/gt.js';
 import { preprocessContent } from './preprocessContent.js';
 import {
   parseKeyedMetadata,
@@ -446,6 +454,74 @@ export async function aggregateFiles(
     files.push(...verbatimFiles.filter((file) => file !== null));
   }
 
+  // Process Apple .xcstrings catalogs. One catalog holds every locale; only the
+  // source-language slice is uploaded as the source document. The slice is
+  // hashed into versionId, so an unchanged catalog re-slices byte-identically
+  // and does not re-upload.
+  if (filePaths.xcstrings) {
+    const sourceLanguageMismatches: { file: string; sourceLanguage: string }[] =
+      [];
+    const xcstringsFiles = filePaths.xcstrings
+      .map((filePath) => {
+        const content = readFile(filePath);
+        const relativePath = getRelative(filePath);
+
+        let catalog: XcstringsCatalog;
+        try {
+          catalog = parseXcstringsCatalog(content);
+        } catch (error) {
+          const reason =
+            error instanceof Error
+              ? error.message
+              : 'xcstrings file is not parsable';
+          logger.warn(`Skipping ${relativePath}: ${reason}`);
+          recordWarning('skipped_file', relativePath, reason);
+          return null;
+        }
+        // Slicing follows the catalog's own sourceLanguage while the upload is
+        // labeled settings.defaultLocale; a mismatch would upload mislabeled
+        // source content, so it is a configuration error that stops the run
+        // rather than a skipped file. The configured locale may be a custom
+        // alias, so canonical forms are compared.
+        if (
+          gt.resolveCanonicalLocale(catalog.sourceLanguage) !==
+          gt.resolveCanonicalLocale(settings.defaultLocale)
+        ) {
+          sourceLanguageMismatches.push({
+            file: relativePath,
+            sourceLanguage: catalog.sourceLanguage,
+          });
+          return null;
+        }
+        const sourceSlice = serializeXcstringsSlice(
+          sliceSourceCatalog(catalog)
+        );
+
+        return {
+          content: sourceSlice,
+          fileName: relativePath,
+          fileFormat: 'XCSTRINGS' as const,
+          ...getTransformFormatProperty(settings, 'xcstrings'),
+          fileId: hashStringSync(relativePath),
+          versionId: hashVersionId(
+            sourceSlice,
+            requiresReviewPaths.has(filePath)
+          ),
+          locale: settings.defaultLocale,
+        } satisfies FileToUpload;
+      })
+      .filter((file) => file !== null);
+    if (sourceLanguageMismatches.length > 0) {
+      logErrorAndExit(
+        xcstringsSourceLanguageMismatchError(
+          sourceLanguageMismatches,
+          settings.defaultLocale
+        )
+      );
+    }
+    files.push(...xcstringsFiles);
+  }
+
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
     if (
       fileType === 'json' ||
@@ -454,7 +530,8 @@ export async function aggregateFiles(
       fileType === 'lottie' ||
       fileType === 'dotStrings' ||
       fileType === 'dotStringsdict' ||
-      fileType === 'androidStrings'
+      fileType === 'androidStrings' ||
+      fileType === 'xcstrings'
     )
       continue;
     if (filePaths[fileType]) {

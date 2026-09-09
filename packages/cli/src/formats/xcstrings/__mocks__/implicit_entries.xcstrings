@@ -1,0 +1,29 @@
+{
+  "sourceLanguage" : "en",
+  "version" : "1.0",
+  "strings" : {
+    "Save" : {
+
+    },
+    "Cancel" : {
+      "comment" : "Toolbar button",
+      "extractionState" : "manual"
+    },
+    "Welcome to %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Welcome to %@"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Willkommen bei %@"
+          }
+        }
+      }
+    }
+  }
+}
