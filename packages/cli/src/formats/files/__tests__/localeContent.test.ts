@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { gt } from '../../../utils/gt.js';
-import { localeContent } from '../localeContent.js';
+import { emptyLocaleContent, localeContent } from '../localeContent.js';
 
 const unit = (value: string) => ({
   stringUnit: { state: 'translated', value },
@@ -93,6 +93,29 @@ describe('localeContent', () => {
 
   it('throws on content that is not a catalog', () => {
     expect(() => localeContent('not json', 'XCSTRINGS', 'de')).toThrow(
+      'Invalid .xcstrings content'
+    );
+  });
+});
+
+describe('emptyLocaleContent', () => {
+  it('is empty content for a file that holds one locale', () => {
+    expect(emptyLocaleContent('# heading\n', 'MD')).toBe('');
+    expect(emptyLocaleContent('{"a":1}', 'JSON')).toBe('');
+  });
+
+  it('is the catalog with no entries and its other fields intact', () => {
+    expect(emptyLocaleContent(catalog, 'XCSTRINGS')).toBe(
+      JSON.stringify(
+        { sourceLanguage: 'en', version: '1.0', strings: {} },
+        null,
+        2
+      ) + '\n'
+    );
+  });
+
+  it('throws on content that is not a catalog', () => {
+    expect(() => emptyLocaleContent('not json', 'XCSTRINGS')).toThrow(
       'Invalid .xcstrings content'
     );
   });

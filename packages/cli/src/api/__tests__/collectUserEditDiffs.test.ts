@@ -471,9 +471,11 @@ describe('collectAndSendUserEditDiffs', () => {
       ).toEqual([expect.stringContaining('"Hallo!"')]);
     });
 
-    it('treats a server payload with nothing for the locale as no baseline', async () => {
+    it('submits the locale slice against a baseline of nothing when the server payload carries nothing for the locale', async () => {
       const settings = buildCatalogSettings();
-      writeCatalog(pinned(catalog('Hallo')));
+      // de written by hand into a catalog the server holds no de for
+      const local = pinned(catalog('Hallo'));
+      writeCatalog(local);
       writeLockHashes({ de: hashStringSync('stale') });
 
       vi.mocked(api.queryFileData).mockResolvedValue({
@@ -503,11 +505,25 @@ describe('collectAndSendUserEditDiffs', () => {
         ],
         count: 1,
       });
+      const { getGitUnifiedDiff: realGitUnifiedDiff } = await vi.importActual<
+        typeof import('../../utils/gitDiff.js')
+      >('../../utils/gitDiff.js');
+      vi.mocked(getGitUnifiedDiff).mockImplementation(realGitUnifiedDiff);
 
       await collectAndSendUserEditDiffs([reference], settings);
 
-      expect(getGitUnifiedDiff).not.toHaveBeenCalled();
-      expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
+      expect(api.submitUserEditDiffs).toHaveBeenCalledTimes(1);
+      const { diffs } = vi.mocked(api.submitUserEditDiffs).mock.calls[0][0];
+      expect(diffs.map((diff) => diff.locale)).toEqual(['de']);
+      expect(diffs[0].localContent).toBe(slice(local, 'de'));
+      // The diff adds the hand-written slice to a catalog with no entries
+      const lines = diffs[0].diff.split('\n');
+      expect(
+        lines.filter((line) => line.startsWith('-') && !line.startsWith('---'))
+      ).toEqual(['-  "strings": {}']);
+      expect(
+        lines.filter((line) => line.startsWith('+') && !line.startsWith('+++'))
+      ).toContainEqual(expect.stringContaining('"Hallo"'));
     });
 
     it('reports a payload that is not a catalog and still checks the other locales', async () => {

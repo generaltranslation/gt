@@ -20,7 +20,10 @@ import os from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { hashStringSync } from '../utils/hash.js';
 import { extractJson } from '../formats/json/extractJson.js';
-import { localeContent } from '../formats/files/localeContent.js';
+import {
+  emptyLocaleContent,
+  localeContent,
+} from '../formats/files/localeContent.js';
 import { extractYaml } from '../formats/yaml/extractYaml.js';
 import { logger } from '../console/logger.js';
 import { recordWarning } from '../state/translateWarnings.js';
@@ -192,14 +195,14 @@ export async function collectAndSendUserEditDiffs(
       if (!payload) continue;
 
       // The locale's share of the payload, read on its own so a payload the
-      // server sent malformed costs only its own locale.
-      let serverContent: string | undefined;
+      // server sent malformed costs only its own locale. A catalog payload
+      // that carries nothing for the locale is that file's empty payload, and
+      // a baseline of nothing like any other.
+      let serverContent: string;
       try {
-        serverContent = localeContent(
-          payload.data,
-          payload.fileFormat,
-          c.locale
-        );
+        serverContent =
+          localeContent(payload.data, payload.fileFormat, c.locale) ??
+          emptyLocaleContent(payload.data, payload.fileFormat);
       } catch (error) {
         const relativePath = getRelative(c.outputPath);
         const reason = `The downloaded ${c.locale} translation could not be read (${
@@ -209,9 +212,6 @@ export async function collectAndSendUserEditDiffs(
         recordWarning('skipped_file', relativePath, reason);
         continue;
       }
-      // A catalog payload that carries nothing for the locale is no baseline
-      // at all.
-      if (serverContent === undefined) continue;
       const serverBytes = contentBytes(serverContent, payload.fileFormat);
 
       try {

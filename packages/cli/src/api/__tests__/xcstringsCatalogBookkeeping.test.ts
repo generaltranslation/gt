@@ -417,4 +417,35 @@ describe('.xcstrings catalog bookkeeping across translate runs', () => {
     expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
     expect(readCatalog()).toBe(disk);
   });
+
+  it('submits a slice written by hand for a locale whose download carried nothing for it', async () => {
+    writeCatalog(serializeXcstringsSlice(sourceCatalog));
+    serveTranslations(['de', 'ja']);
+    server.set('fr', served('fr', {}));
+    await translateRun();
+    vi.clearAllMocks();
+
+    // The user writes the fr greeting by hand
+    const edited = parseXcstringsCatalog(readCatalog());
+    edited.strings.greeting.localizations!.fr = unit('Salut');
+    writeCatalog(serializeXcstringsSlice(edited));
+    const editedContent = readCatalog();
+
+    const result = await translateRun();
+
+    // Every locale is checked; de and ja match the server, fr is compared
+    // against a baseline of nothing and submitted
+    expect(api.submitUserEditDiffs).toHaveBeenCalledTimes(1);
+    const { diffs } = vi.mocked(api.submitUserEditDiffs).mock.calls[0][0];
+    expect(diffs.map((diff) => diff.locale)).toEqual(['fr']);
+    expect(diffs[0].localContent).toBe(
+      localeContent(editedContent, 'XCSTRINGS', 'fr')
+    );
+    // The download still carries nothing for fr, so the hand-written slice
+    // stays in the catalog
+    expect(result.failed).toEqual([]);
+    expect(localeContent(readCatalog(), 'XCSTRINGS', 'fr')).toBe(
+      localeContent(editedContent, 'XCSTRINGS', 'fr')
+    );
+  });
 });

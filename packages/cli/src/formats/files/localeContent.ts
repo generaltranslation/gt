@@ -27,3 +27,20 @@ export function localeContent(
   );
   return slice === undefined ? undefined : serializeXcstringsSlice(slice);
 }
+
+/**
+ * The content a file stands for when it carries nothing for a locale: for a
+ * file that holds every locale, the catalog with no entries and its other
+ * fields intact; for every other format, empty content. Throws on invalid
+ * content.
+ */
+export function emptyLocaleContent(
+  content: string,
+  fileFormat: FileFormat
+): string {
+  if (fileFormat !== 'XCSTRINGS') return '';
+  return serializeXcstringsSlice({
+    ...parseXcstringsCatalog(content),
+    strings: {},
+  });
+}
