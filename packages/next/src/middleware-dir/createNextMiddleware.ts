@@ -150,8 +150,12 @@ export function createNextMiddleware({
   );
 
   // Create the path mapping
-  const { pathToSharedPath, unprefixedPathToSharedPath, defaultLocalePaths } =
-    createPathToSharedPathMap(pathConfig, prefixDefaultLocale, defaultLocale);
+  const {
+    pathToSharedPath,
+    unprefixedPathToSharedPath,
+    sharedOnlyPathToSharedPath,
+    defaultLocalePaths,
+  } = createPathToSharedPathMap(pathConfig, prefixDefaultLocale, defaultLocale);
 
   /**
    * Processes the incoming request to determine the user's locale and sets a locale cookie.
@@ -240,11 +244,13 @@ export function createNextMiddleware({
       // Get the shared path for the unprefixed pathname
       // Normalization must not turn an unrecognized prefix (such as %66r)
       // into a locale: it may be a static route segment or a dynamic value.
-      const sharedPath = getSharedPath(
+      const sharedMatch = getSharedPath(
         standardizedPathname,
         pathnameLocale ? pathToSharedPath : unprefixedPathToSharedPath,
-        pathnameLocale
+        pathnameLocale,
+        sharedOnlyPathToSharedPath
       );
+      const sharedPath = sharedMatch?.sharedPath;
 
       // Get shared path with parameters (/en/dashboard/1/custom), for rewriting localized paths
       const sharedPathWithParameters =
@@ -253,7 +259,8 @@ export function createNextMiddleware({
               pathnameLocale
                 ? standardizedPathname
                 : `/${userLocale}${standardizedPathname}`,
-              `/${userLocale}${sharedPath}`
+              `/${userLocale}${sharedPath}`,
+              sharedMatch?.params
             )
           : undefined;
 
@@ -270,7 +277,8 @@ export function createNextMiddleware({
               pathnameLocale
                 ? standardizedPathname
                 : `/${userLocale}${standardizedPathname}`,
-              localizedPath
+              localizedPath,
+              sharedMatch?.params
             )
           : undefined;
 
