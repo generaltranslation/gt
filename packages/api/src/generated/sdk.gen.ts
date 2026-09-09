@@ -8,6 +8,9 @@ import type {
   CreateCliWizardSessionData,
   CreateCliWizardSessionErrors,
   CreateCliWizardSessionResponses,
+  CreateProjectApiKeyData,
+  CreateProjectApiKeyErrors,
+  CreateProjectApiKeyResponses,
   CreateProjectData,
   CreateProjectErrors,
   CreateProjectResponses,
@@ -102,7 +105,7 @@ export type Options<
 /**
  * Create a Project
  *
- * Create a Project in the Organization associated with an Organization API key. The key must have the `org:projects:create` permission. Project keys cannot use this endpoint. Enabling CDN delivery also requires `project:write`.
+ * Create a Project in the Organization selected by the orgId path parameter. Requires org:projects:create. Enabling CDN delivery also requires project:write.
  */
 export const createProject = <ThrowOnError extends boolean = false>(
   options: Options<CreateProjectData, ThrowOnError>
@@ -112,8 +115,36 @@ export const createProject = <ThrowOnError extends boolean = false>(
     CreateProjectErrors,
     ThrowOnError
   >({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/v2/projects',
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/orgs/{orgId}/projects',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Create a Project API Key
+ *
+ * Create an API key for the selected Project. Requires project:api_keys:write and delegates only Project permissions held by the request identity.
+ */
+export const createProjectApiKey = <ThrowOnError extends boolean = false>(
+  options: Options<CreateProjectApiKeyData, ThrowOnError>
+) =>
+  options.client.post<
+    CreateProjectApiKeyResponses,
+    CreateProjectApiKeyErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects/{projectId}/api-keys',
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -134,7 +165,10 @@ export const uploadSourceFiles = <ThrowOnError extends boolean = false>(
     UploadSourceFilesErrors,
     ThrowOnError
   >({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
     url: '/v2/project/files/upload-files',
     ...options,
     headers: {
@@ -156,7 +190,10 @@ export const uploadTranslations = <ThrowOnError extends boolean = false>(
     UploadTranslationsErrors,
     ThrowOnError
   >({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
     url: '/v2/project/files/upload-translations',
     ...options,
     headers: {
@@ -174,7 +211,10 @@ export const uploadAssets = <ThrowOnError extends boolean = false>(
   options: Options<UploadAssetsData, ThrowOnError>
 ) =>
   options.client.post<UploadAssetsResponses, UploadAssetsErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
     url: '/v2/project/assets',
     ...options,
     headers: {
@@ -196,7 +236,10 @@ export const submitUserEditDiffs = <ThrowOnError extends boolean = false>(
     SubmitUserEditDiffsErrors,
     ThrowOnError
   >({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
     url: '/v2/project/files/diffs',
     ...options,
     headers: {
@@ -222,7 +265,10 @@ export const shouldGenerateProjectContext = <
     ShouldGenerateProjectContextErrors,
     ThrowOnError
   >({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
     url: '/v2/project/setup/should-generate',
     ...options,
   });
@@ -240,7 +286,10 @@ export const generateProjectContext = <ThrowOnError extends boolean = false>(
     GenerateProjectContextErrors,
     ThrowOnError
   >({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
     url: '/v2/project/setup/generate',
     ...options,
     headers: {
@@ -266,7 +315,10 @@ export const getProjectContextGenerationStatus = <
     GetProjectContextGenerationStatusErrors,
     ThrowOnError
   >({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
     url: '/v2/project/setup/status/{jobId}',
     ...options,
   });
@@ -284,7 +336,10 @@ export const enqueueFileTranslations = <ThrowOnError extends boolean = false>(
     EnqueueFileTranslationsErrors,
     ThrowOnError
   >({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
     url: '/v2/project/translations/enqueue',
     ...options,
     headers: {
@@ -302,7 +357,10 @@ export const publishFiles = <ThrowOnError extends boolean = false>(
   options: Options<PublishFilesData, ThrowOnError>
 ) =>
   options.client.post<PublishFilesResponses, PublishFilesErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
     url: '/v2/project/files/publish',
     ...options,
     headers: {
@@ -322,7 +380,10 @@ export const downloadFile = <ThrowOnError extends boolean = false>(
   options: Options<DownloadFileData, ThrowOnError>
 ) =>
   options.client.get<DownloadFileResponses, DownloadFileErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
     url: '/v2/project/files/download/{fileId}',
     ...options,
   });
@@ -340,7 +401,10 @@ export const downloadFiles = <ThrowOnError extends boolean = false>(
     DownloadFilesErrors,
     ThrowOnError
   >({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
     url: '/v2/project/files/download',
     ...options,
     headers: {
@@ -362,7 +426,10 @@ export const getBranchInfo = <ThrowOnError extends boolean = false>(
     GetBranchInfoErrors,
     ThrowOnError
   >({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
     url: '/v2/project/branches/info',
     ...options,
     headers: {
@@ -380,7 +447,10 @@ export const createBranch = <ThrowOnError extends boolean = false>(
   options: Options<CreateBranchData, ThrowOnError>
 ) =>
   options.client.post<CreateBranchResponses, CreateBranchErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
     url: '/v2/project/branches/create',
     ...options,
     headers: {
@@ -398,7 +468,10 @@ export const createTag = <ThrowOnError extends boolean = false>(
   options: Options<CreateTagData, ThrowOnError>
 ) =>
   options.client.post<CreateTagResponses, CreateTagErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
     url: '/v2/project/tags/create',
     ...options,
     headers: {
@@ -420,7 +493,10 @@ export const getProjectInfo = <ThrowOnError extends boolean = false>(
     GetProjectInfoErrors,
     ThrowOnError
   >({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
     url: '/v2/project/info/{projectId}',
     ...options,
   });
@@ -438,7 +514,10 @@ export const updateProjectInfo = <ThrowOnError extends boolean = false>(
     UpdateProjectInfoErrors,
     ThrowOnError
   >({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
     url: '/v2/project/info/{projectId}',
     ...options,
     headers: {
@@ -460,7 +539,10 @@ export const getTranslationJobInfo = <ThrowOnError extends boolean = false>(
     GetTranslationJobInfoErrors,
     ThrowOnError
   >({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
     url: '/v2/project/jobs/info',
     ...options,
     headers: {
@@ -478,7 +560,10 @@ export const translate = <ThrowOnError extends boolean = false>(
   options: Options<TranslateData, ThrowOnError>
 ) =>
   options.client.post<TranslateResponses, TranslateErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
     url: '/v2/translate',
     ...options,
     headers: {
@@ -496,7 +581,10 @@ export const getFileInfo = <ThrowOnError extends boolean = false>(
   options: Options<GetFileInfoData, ThrowOnError>
 ) =>
   options.client.post<GetFileInfoResponses, GetFileInfoErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
     url: '/v2/project/files/info',
     ...options,
     headers: {
@@ -518,7 +606,10 @@ export const getTranslationStatus = <ThrowOnError extends boolean = false>(
     GetTranslationStatusErrors,
     ThrowOnError
   >({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
     url: '/v2/project/translations/files/status/{fileId}',
     ...options,
   });
@@ -536,7 +627,10 @@ export const processFileMoves = <ThrowOnError extends boolean = false>(
     ProcessFileMovesErrors,
     ThrowOnError
   >({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
     url: '/v2/project/files/moves',
     ...options,
     headers: {
@@ -558,7 +652,10 @@ export const getOrphanedFiles = <ThrowOnError extends boolean = false>(
     GetOrphanedFilesErrors,
     ThrowOnError
   >({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
     url: '/v2/project/files/orphaned',
     ...options,
     headers: {
