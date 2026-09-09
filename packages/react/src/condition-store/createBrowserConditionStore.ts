@@ -78,7 +78,7 @@ function determineRegion({
   const cookieRegion = getCookieValue({
     cookieName: getI18nConfig().getRegionCookieName(),
   });
-  return cookieRegion || getRegion?.() || region;
+  return region || cookieRegion || getRegion?.();
 }
 
 function determineEnableI18n({

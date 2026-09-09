@@ -63,6 +63,45 @@ describe('createOrUpdateBrowserConditionStore', () => {
     });
   });
 
+  it('uses the region prop before the persisted cookie', () => {
+    mockCookieValues.set('generaltranslation.region', 'CA');
+
+    createOrUpdateBrowserConditionStore({
+      locale: 'fr',
+      region: 'US',
+    });
+
+    expect(mockSetCookieValue).toHaveBeenCalledWith({
+      cookieName: 'generaltranslation.region',
+      value: 'US',
+    });
+  });
+
+  it('uses the persisted region cookie when the prop is omitted', () => {
+    mockCookieValues.set('generaltranslation.region', 'CA');
+
+    createOrUpdateBrowserConditionStore({
+      locale: 'fr',
+    });
+
+    expect(mockSetCookieValue).toHaveBeenCalledWith({
+      cookieName: 'generaltranslation.region',
+      value: 'CA',
+    });
+  });
+
+  it('uses _getRegion when the prop and cookie are omitted', () => {
+    createOrUpdateBrowserConditionStore({
+      locale: 'fr',
+      _getRegion: () => 'GB',
+    });
+
+    expect(mockSetCookieValue).toHaveBeenCalledWith({
+      cookieName: 'generaltranslation.region',
+      value: 'GB',
+    });
+  });
+
   it('uses the persisted enableI18n cookie when the prop is omitted', () => {
     mockCookieValues.set('generaltranslation.enable-i18n', 'false');
 
