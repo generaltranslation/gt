@@ -1,12 +1,28 @@
-import { setCookie } from '@tanstack/react-start/server';
+import { getRequest, setCookie } from '@tanstack/react-start/server';
 import { getI18nConfig } from '@generaltranslation/react-core/pure';
 import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { getCookieValue, parseAcceptLanguage } from 'gt-i18n/internal';
-import type { RequestConditions } from '../condition-store/AsyncLocalConditionStore';
-import type { InitializeGTParams } from '../types/InitializeGTParams';
 import { getLocaleFromPath } from './localeRouting';
 
-export const localeCookieOptions = {
+type RequestConditions = {
+  locale: string;
+  enableI18n: boolean;
+};
+
+type RequestConditionState = {
+  localeRouting: boolean;
+  conditionsByRequest: WeakMap<Request, RequestConditions>;
+};
+
+type GlobalWithRequestConditions = {
+  __generaltranslation?: {
+    tanstackStart?: {
+      requestConditions?: RequestConditionState;
+    };
+  };
+};
+
+const localeCookieOptions = {
   path: '/',
   sameSite: 'lax' as const,
   maxAge: 60 * 60 * 24 * 365,
@@ -20,16 +36,46 @@ const noLocaleCandidatesWarning = createDiagnosticMessage({
   why: 'neither the locale cookie nor the Accept-Language header supplied a supported locale candidate',
 });
 
-export function resolveRequestConditions(
+/** Configure request condition resolution during server initialization. */
+export function initializeRequestConditions(localeRouting = false): void {
+  const state = getRequestConditionState();
+  state.localeRouting = localeRouting;
+  state.conditionsByRequest = new WeakMap();
+}
+
+/** Return the memoized conditions for the current TanStack request. */
+export function getRequestConditions(
+  request = getRequest()
+): RequestConditions {
+  const state = getRequestConditionState();
+  const existingConditions = state.conditionsByRequest.get(request);
+  if (existingConditions) return existingConditions;
+
+  const conditions = resolveRequestConditions(request, state.localeRouting);
+  state.conditionsByRequest.set(request, conditions);
+  return conditions;
+}
+
+function getRequestConditionState(): RequestConditionState {
+  const globalObject = globalThis as GlobalWithRequestConditions;
+  globalObject.__generaltranslation ??= {};
+  globalObject.__generaltranslation.tanstackStart ??= {};
+  return (globalObject.__generaltranslation.tanstackStart.requestConditions ??=
+    {
+      localeRouting: false,
+      conditionsByRequest: new WeakMap(),
+    });
+}
+
+function resolveRequestConditions(
   request: Request,
-  localeConfig?: InitializeGTParams,
-  pathname = new URL(request.url).pathname
+  localeRouting: boolean
 ): RequestConditions {
   const i18nConfig = getI18nConfig();
   const cookieHeader = request.headers.get('cookie');
   const localeCandidates: string[] = [];
-  if (localeConfig?.localeRouting) {
-    const pathLocale = getLocaleFromPath(pathname);
+  if (localeRouting) {
+    const pathLocale = getLocaleFromPath(new URL(request.url).pathname);
     if (pathLocale) localeCandidates.push(pathLocale);
   }
   const cookieLocale = getCookieValue(
@@ -45,14 +91,7 @@ export function resolveRequestConditions(
     console.warn(noLocaleCandidatesWarning);
   }
 
-  const locale = i18nConfig.resolveSupportedLocale(
-    localeCandidates,
-    localeConfig ?? {
-      defaultLocale: i18nConfig.getDefaultLocale(),
-      locales: i18nConfig.getLocales(),
-      customMapping: i18nConfig.getCustomMapping(),
-    }
-  );
+  const locale = i18nConfig.resolveSupportedLocale(localeCandidates);
 
   setCookie(i18nConfig.getLocaleCookieName(), locale, localeCookieOptions);
 
@@ -63,9 +102,6 @@ export function resolveRequestConditions(
 
   return {
     locale,
-    region:
-      getCookieValue(cookieHeader, i18nConfig.getRegionCookieName()) ||
-      undefined,
     enableI18n:
       enableI18nCookie === undefined ? true : enableI18nCookie === 'true',
   };

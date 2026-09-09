@@ -2,16 +2,19 @@ import {
   createMiddleware,
   type RequestMiddlewareAfterServer,
 } from '@tanstack/react-start';
-import { getConditionStore } from '../condition-store/singleton';
+import { getRequestConditions } from '../functions/requestConditions';
 
 /**
- * Establish request-scoped GT conditions for SSR, server routes, and server
- * functions.
+ * Resolve GT conditions before downstream request handlers run.
+ *
+ * @deprecated Runtime helpers now resolve conditions from TanStack's request
+ * context directly. This middleware is retained for backwards compatibility.
  */
 export const gtMiddleware: RequestMiddlewareAfterServer<
   {},
   undefined,
   undefined
-> = createMiddleware().server(({ request, pathname, next }) => {
-  return getConditionStore().run(request, () => next(), pathname);
+> = createMiddleware().server(({ request, next }) => {
+  getRequestConditions(request);
+  return next();
 });
