@@ -1,5 +1,16 @@
 # generaltranslation
 
+## 9.3.0
+
+### Minor Changes
+
+- [#2254](https://github.com/generaltranslation/gt/pull/2254) [`8e59be2`](https://github.com/generaltranslation/gt/commit/8e59be28c129b4b9509ce8897156de3282b2a295) Thanks [@eoinest](https://github.com/eoinest)! - Add Apple `.xcstrings` catalog upload support to the CLI. An `.xcstrings` catalog holds every locale in one file; on upload the CLI extracts a source-only slice (only the catalog's `sourceLanguage` localization per entry) and uploads that as the source document. The slice is serialized with a pinned byte layout and hashed into its `versionId`, so an unchanged catalog re-slices byte-identically and does not re-upload. Configure it under `files.xcstrings` in `gt.config.json`; patterns without `[locale]` are expected because the catalog is shared across locales.
+
+### Patch Changes
+
+- Updated dependencies [[`8e59be2`](https://github.com/generaltranslation/gt/commit/8e59be28c129b4b9509ce8897156de3282b2a295)]:
+  - @generaltranslation/api@0.2.0
+
 ## 9.2.0
 
 ### Minor Changes
