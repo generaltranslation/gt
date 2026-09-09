@@ -36,6 +36,21 @@ vi.mock('../steps/UploadSourcesStep.js', () => ({
     wait: vi.fn(),
   })),
 }));
+const { uploadTranslationsRun, collectXcstringsTranslations } = vi.hoisted(
+  () => ({
+    uploadTranslationsRun: vi.fn(async () => []),
+    collectXcstringsTranslations: vi.fn(() => new Map()),
+  })
+);
+vi.mock('../steps/UploadTranslationsStep.js', () => ({
+  UploadTranslationsStep: vi.fn(() => ({
+    run: uploadTranslationsRun,
+    wait: vi.fn(),
+  })),
+}));
+vi.mock('../../formats/xcstrings/sliceTranslations.js', () => ({
+  collectXcstringsTranslations,
+}));
 vi.mock('../steps/SetupStep.js', () => ({
   SetupStep: vi.fn(() => ({ run: vi.fn(), wait: vi.fn() })),
 }));
@@ -169,5 +184,65 @@ describe('runStageFilesWorkflow save-local gate', () => {
     });
 
     expect(userEditDiffsRun).not.toHaveBeenCalled();
+  });
+});
+
+describe('runStageFilesWorkflow catalog translations', () => {
+  const catalog: FileToUpload = {
+    content: '{}',
+    fileName: 'App/Localizable.xcstrings',
+    fileFormat: 'XCSTRINGS',
+    fileId: 'file-2',
+    versionId: 'version-2',
+    locale: 'en',
+  };
+  const catalogSettings = {
+    locales: ['es', 'de'],
+    files: {
+      resolvedPaths: { xcstrings: ['/repo/App/Localizable.xcstrings'] },
+    },
+  } as unknown as Settings;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(collectFonts).mockResolvedValue([]);
+    collectXcstringsTranslations.mockReturnValue(new Map());
+  });
+
+  it('uploads the locales a catalog already carries before enqueueing', async () => {
+    const slice = { ...catalog, content: '{"es":1}', locale: 'es' };
+    collectXcstringsTranslations.mockReturnValue(
+      new Map([[catalog.fileName, [slice]]])
+    );
+
+    await runStageFilesWorkflow({
+      files: [...files, catalog],
+      options,
+      settings: catalogSettings,
+    });
+
+    expect(collectXcstringsTranslations).toHaveBeenCalledWith({
+      sourceFiles: [...files, catalog],
+      catalogPaths: ['/repo/App/Localizable.xcstrings'],
+      locales: ['es', 'de'],
+    });
+    expect(uploadTranslationsRun).toHaveBeenCalledWith({
+      files: [
+        {
+          source: catalog,
+          translations: [{ ...slice, branchId: 'branch-1' }],
+        },
+      ],
+    });
+  });
+
+  it('skips the translations step when no catalog carries a configured locale', async () => {
+    await runStageFilesWorkflow({
+      files: [...files, catalog],
+      options,
+      settings: catalogSettings,
+    });
+
+    expect(uploadTranslationsRun).not.toHaveBeenCalled();
   });
 });

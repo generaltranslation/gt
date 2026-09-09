@@ -18,13 +18,7 @@ import { hasValidCredentials } from './utils/validation.js';
 import { runPublishWorkflow } from '../../workflows/publish.js';
 import { aggregateFiles } from '../../formats/files/aggregateFiles.js';
 import { recordWarning } from '../../state/translateWarnings.js';
-import {
-  parseXcstringsCatalog,
-  serializeXcstringsSlice,
-  sliceTranslationCatalog,
-  type XcstringsCatalog,
-} from '../../formats/xcstrings/parseXcstrings.js';
-import { gt } from '../../utils/gt.js';
+import { collectXcstringsTranslations } from '../../formats/xcstrings/sliceTranslations.js';
 
 /**
  * Sends multiple files to the API for translation
@@ -73,17 +67,11 @@ export async function upload(
   // An .xcstrings catalog carries its own translations, so each locale's
   // upload is a slice of the same file rather than a separate translation
   // file. Catalogs aggregateFiles could not parse are already reported.
-  const xcstringsCatalogs = new Map<string, XcstringsCatalog>();
-  if (filePaths.xcstrings) {
-    for (const filePath of filePaths.xcstrings) {
-      const relativePath = getRelative(filePath);
-      if (!sourceFileNames.has(relativePath)) continue;
-      xcstringsCatalogs.set(
-        relativePath,
-        parseXcstringsCatalog(readFile(filePath))
-      );
-    }
-  }
+  const xcstringsTranslations = collectXcstringsTranslations({
+    sourceFiles: allFiles,
+    catalogPaths: filePaths.xcstrings ?? [],
+    locales: settings.locales || [],
+  });
 
   if (allFiles.length === 0) {
     logger.error(
@@ -112,28 +100,15 @@ export async function upload(
   const uploadData = allFiles.map((file) => {
     const sourceFile: FileToUpload = { ...file };
 
-    const translations: FileToUpload[] = [];
+    const translations: FileToUpload[] = [
+      ...(xcstringsTranslations.get(file.fileName) ?? []),
+    ];
     const compositeInfo = compositeJsonFiles.get(file.fileName);
-    const xcstringsCatalog = xcstringsCatalogs.get(file.fileName);
 
     for (const locale of locales) {
-      if (xcstringsCatalog) {
-        // Catalog keys are canonical tags; the configured locale may be an alias.
-        const slice = sliceTranslationCatalog(
-          xcstringsCatalog,
-          gt.resolveCanonicalLocale(locale)
-        );
-        // A locale the catalog does not carry has nothing to upload
-        if (!slice) continue;
-        translations.push({
-          content: serializeXcstringsSlice(slice),
-          fileName: file.fileName,
-          fileFormat: file.transformFormat ?? file.fileFormat,
-          dataFormat: file.dataFormat,
-          locale,
-          fileId: file.fileId,
-          versionId: file.versionId,
-        });
+      if (xcstringsTranslations.has(file.fileName)) {
+        // Already sliced above, one document per locale the catalog carries
+        continue;
       } else if (compositeInfo) {
         // Composite JSON: extract translations from the same source file
         const extracted = extractJson(

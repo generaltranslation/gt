@@ -5,6 +5,8 @@ import { Settings, TranslateFlags } from '../types/index.js';
 import { api } from '../utils/api.js';
 import { EnqueueFilesResult, FileToUpload } from 'generaltranslation/types';
 import { UploadSourcesStep } from './steps/UploadSourcesStep.js';
+import { UploadTranslationsStep } from './steps/UploadTranslationsStep.js';
+import { collectXcstringsTranslations } from '../formats/xcstrings/sliceTranslations.js';
 import { SetupStep } from './steps/SetupStep.js';
 import { EnqueueStep } from './steps/EnqueueStep.js';
 import { BranchStep } from './steps/BranchStep.js';
@@ -64,6 +66,17 @@ export async function runStageFilesWorkflow({
     // then run the upload step
     const uploadedFiles = await uploadStep.run({ files, branchData });
 
+    // An .xcstrings catalog carries its own translations. Upload the locales
+    // it already holds so the run reuses them and fills in the rest; the
+    // server marks a partial locale incomplete so it is still enqueued.
+    // Without this, translate saw only the source slice and translated over
+    // the customer's own work.
+    await uploadCatalogTranslations({
+      files,
+      settings,
+      branchId: branchData.currentBranch.id,
+    });
+
     // optionally run the user edit diffs step (opt-in via --save-local or options.saveLocal)
     if (settings.options?.saveLocal === true) {
       await userEditDiffsStep.run(uploadedFiles);
@@ -107,4 +120,38 @@ export async function runStageFilesWorkflow({
       )
     );
   }
+}
+
+/**
+ * Uploads the per-locale slices of every in-place catalog among `files`, so
+ * enqueue and the translation job see the translations the customer already
+ * has. Runs the upload translations step only when there is something to send.
+ */
+async function uploadCatalogTranslations({
+  files,
+  settings,
+  branchId,
+}: {
+  files: FileToUpload[];
+  settings: Settings;
+  branchId: string;
+}): Promise<void> {
+  const catalogTranslations = collectXcstringsTranslations({
+    sourceFiles: files,
+    catalogPaths: settings.files?.resolvedPaths.xcstrings ?? [],
+    locales: settings.locales,
+  });
+  const withTranslations = files.filter(
+    (source) => (catalogTranslations.get(source.fileName)?.length ?? 0) > 0
+  );
+  if (withTranslations.length === 0) return;
+  const uploadTranslationsStep = new UploadTranslationsStep(api, settings);
+  await uploadTranslationsStep.run({
+    files: withTranslations.map((source) => ({
+      source,
+      translations: catalogTranslations
+        .get(source.fileName)!
+        .map((translation) => ({ ...translation, branchId })),
+    })),
+  });
 }
