@@ -112,6 +112,36 @@ describe('extractDynamicParams', () => {
   });
 });
 
+describe.each(['[...slug]', '[[...slug]]'])(
+  'trailing delimiters with %s',
+  (segment) => {
+    it.each(['', 'one', 'one/two', 'a%2Fb/a%252Fb'])(
+      'extracts raw parameters without a terminal delimiter: %s',
+      (tail) => {
+        expect(
+          extractDynamicParams(
+            `/catalog/[category]/${segment}/`,
+            `/catalog/science/${tail}${tail ? '/' : ''}`
+          )
+        ).toEqual(['science', tail]);
+      }
+    );
+
+    it.each(['one', 'one/two', 'a%2Fb/a%252Fb'])(
+      'reconstructs one trailing delimiter after %s',
+      (tail) => {
+        expect(
+          replaceDynamicSegments(
+            `/catalogue/science/${tail}/`,
+            `/catalog/[category]/${segment}/`,
+            `/catalogue/[category]/${segment}/`
+          )
+        ).toBe(`/catalog/science/${tail}/`);
+      }
+    );
+  }
+);
+
 describe('replaceDynamicSegments', () => {
   it('should replace single dynamic segment', () => {
     expect(replaceDynamicSegments('/blog/123', '/blog/[id]')).toBe('/blog/123');
