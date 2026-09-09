@@ -12,6 +12,7 @@ import {
   DownloadedVersionsV1,
 } from '../../fs/config/downloadedVersions.js';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
+import { clearWarnings, getWarnings } from '../../state/translateWarnings.js';
 import {
   parseXcstringsCatalog,
   serializeXcstringsSlice,
@@ -41,6 +42,7 @@ describe('collectAndSendUserEditDiffs', () => {
     );
     process.chdir(tempDir);
     vi.clearAllMocks();
+    clearWarnings();
   });
 
   afterEach(() => {
@@ -506,6 +508,55 @@ describe('collectAndSendUserEditDiffs', () => {
 
       expect(getGitUnifiedDiff).not.toHaveBeenCalled();
       expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
+    });
+
+    it('reports a payload that is not a catalog and still checks the other locales', async () => {
+      const settings = buildCatalogSettings();
+      writeLockHashes({
+        de: hashStringSync('stale'),
+        fr: hashStringSync('stale'),
+      });
+      // One fr string edited by hand
+      const edited = catalog('Hallo');
+      edited.strings.farewell.localizations.fr = unit('Adieu');
+      writeCatalog(JSON.stringify(edited));
+      serveTranslations();
+      // de, checked first, comes back as something other than a catalog
+      vi.mocked(api.downloadFileBatch).mockImplementation(async (files) => ({
+        files: files.map((file) => ({
+          id: `translation-${file.locale}`,
+          branchId: 'branch1',
+          fileId: 'file1',
+          versionId: 'version1',
+          locale: file.locale,
+          fileFormat: 'XCSTRINGS' as const,
+          data:
+            file.locale === 'de'
+              ? 'not a catalog'
+              : served('fr', { greeting: 'Bonjour', farewell: 'Au revoir' }),
+          metadata: {},
+        })),
+        count: files.length,
+      }));
+      const { getGitUnifiedDiff: realGitUnifiedDiff } = await vi.importActual<
+        typeof import('../../utils/gitDiff.js')
+      >('../../utils/gitDiff.js');
+      vi.mocked(getGitUnifiedDiff).mockImplementation(realGitUnifiedDiff);
+
+      await collectAndSendUserEditDiffs([reference], settings);
+
+      expect(queriedLocales()).toEqual(['de', 'fr']);
+      expect(getWarnings()).toEqual([
+        {
+          category: 'skipped_file',
+          fileName: CATALOG,
+          reason: expect.stringContaining('Invalid .xcstrings content'),
+        },
+      ]);
+      expect(api.submitUserEditDiffs).toHaveBeenCalledTimes(1);
+      const { diffs } = vi.mocked(api.submitUserEditDiffs).mock.calls[0][0];
+      expect(diffs.map((diff) => diff.locale)).toEqual(['fr']);
+      expect(diffs[0].localContent).toBe(slice(JSON.stringify(edited), 'fr'));
     });
   });
 });

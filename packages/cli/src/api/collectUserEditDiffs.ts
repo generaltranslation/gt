@@ -159,7 +159,9 @@ export async function collectAndSendUserEditDiffs(
     const translatedFiles =
       checkResponse.translatedFiles?.filter((t) => t.completedAt) ?? [];
 
-    const serverContentByKey = new Map<string, Buffer>();
+    // The server's copy of each candidate, keyed like the candidates
+    type ServerPayload = { data: string; fileFormat: FileFormat };
+    const serverPayloadByKey = new Map<string, ServerPayload>();
     try {
       const resp = await api.downloadFileBatch(
         translatedFiles.map((file) => ({
@@ -169,16 +171,11 @@ export async function collectAndSendUserEditDiffs(
           versionId: file.versionId,
         }))
       );
-      const files = resp?.files || [];
-      for (const f of files) {
+      for (const f of resp?.files || []) {
         if (!f.locale) continue;
-        // The locale's share of the payload; a catalog payload that carries
-        // nothing for the locale is no baseline at all.
-        const content = localeContent(f.data, f.fileFormat, f.locale);
-        if (content === undefined) continue;
-        serverContentByKey.set(
+        serverPayloadByKey.set(
           `${f.branchId}:${f.fileId}:${f.versionId}:${f.locale}`,
-          contentBytes(content, f.fileFormat)
+          { data: f.data, fileFormat: f.fileFormat }
         );
       }
     } catch {
@@ -188,11 +185,34 @@ export async function collectAndSendUserEditDiffs(
     // Compute diffs using fetched server contents
     for (const c of candidates) {
       const key = `${c.branchId}:${c.fileId}:${c.versionId}:${c.locale}`;
-      const serverBytes = serverContentByKey.get(key);
+      const payload = serverPayloadByKey.get(key);
       // Absent means the batch did not return this file, so there is no
       // baseline. An empty payload is a baseline of nothing, which the user
       // may well have written against.
-      if (!serverBytes) continue;
+      if (!payload) continue;
+
+      // The locale's share of the payload, read on its own so a payload the
+      // server sent malformed costs only its own locale.
+      let serverContent: string | undefined;
+      try {
+        serverContent = localeContent(
+          payload.data,
+          payload.fileFormat,
+          c.locale
+        );
+      } catch (error) {
+        const relativePath = getRelative(c.outputPath);
+        const reason = `The downloaded ${c.locale} translation could not be read (${
+          error instanceof Error ? error.message : String(error)
+        })`;
+        logger.warn(`Skipping local edits to ${relativePath}: ${reason}`);
+        recordWarning('skipped_file', relativePath, reason);
+        continue;
+      }
+      // A catalog payload that carries nothing for the locale is no baseline
+      // at all.
+      if (serverContent === undefined) continue;
+      const serverBytes = contentBytes(serverContent, payload.fileFormat);
 
       try {
         // Read the local file the same way the pipeline read it originally, so
