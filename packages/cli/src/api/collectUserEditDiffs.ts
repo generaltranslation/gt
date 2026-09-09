@@ -115,16 +115,20 @@ export async function collectAndSendUserEditDiffs(
       if (!latestDownloaded) continue;
       const downloadedVersion = latestDownloaded.entry;
 
-      // Skip if local file matches the last postprocessed content hash
+      // Skip if the locale's local content matches the last recorded hash
       if (downloadedVersion.postProcessHash) {
         try {
-          // Hashed from the same pipeline content the hash was recorded from,
-          // so a file stored in UTF-16 still matches when it is untouched.
-          const localContent = readFileContent(
+          // Hashed from the locale's share of the pipeline content, which is
+          // what was recorded, so an untouched locale matches regardless of
+          // the file's encoding or of edits to its other locales.
+          const localFile = readFileContent(
             outputPath,
             uploadedFile.fileFormat
           );
-          const localHash = hashStringSync(localContent);
+          const localHash = hashStringSync(
+            localeContent(localFile, uploadedFile.fileFormat, locale) ??
+              emptyLocaleContent(localFile, uploadedFile.fileFormat)
+          );
           if (localHash === downloadedVersion.postProcessHash) {
             continue;
           }

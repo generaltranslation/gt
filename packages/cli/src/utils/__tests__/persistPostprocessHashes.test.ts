@@ -4,7 +4,12 @@ import {
   findOrCreateEntry,
   readLockfile,
   writeLockfile,
+  type DownloadedVersionEntry,
 } from '../../fs/config/downloadedVersions.js';
+import {
+  emptyLocaleContent,
+  localeContent,
+} from '../../formats/files/localeContent.js';
 import type { Settings } from '../../types/index.js';
 import { hashStringSync } from '../hash.js';
 import { persistPostProcessHashes } from '../persistPostprocessHashes.js';
@@ -29,6 +34,7 @@ vi.mock('../hash.js', () => ({
 describe('persistPostProcessHashes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(hashStringSync).mockImplementation(() => 'translated-hash');
     vi.mocked(fs.existsSync).mockReturnValue(true);
     vi.mocked(fs.readFileSync).mockReturnValue('translated content');
     vi.mocked(readLockfile).mockReturnValue({
@@ -134,6 +140,67 @@ describe('persistPostProcessHashes', () => {
       },
       fr: { postProcessHash: 'translated-hash' },
     });
+    expect(writeLockfile).toHaveBeenCalledTimes(1);
+  });
+
+  it('records the hash of each locale slice under its own locale for a file that holds every locale', () => {
+    const filePath = 'App/Localizable.xcstrings';
+    const unit = (value: string) => ({
+      stringUnit: { state: 'translated', value },
+    });
+    const content = JSON.stringify({
+      sourceLanguage: 'en',
+      version: '1.0',
+      strings: {
+        greeting: {
+          localizations: {
+            de: unit('Hallo'),
+            en: unit('Hello'),
+            fr: unit('Bonjour'),
+          },
+        },
+      },
+    });
+    vi.mocked(fs.readFileSync).mockReturnValue(content);
+    vi.mocked(hashStringSync).mockImplementation((value) => `hash:${value}`);
+    const entry: DownloadedVersionEntry = {
+      fileId: 'file-1',
+      versionId: 'version-1',
+      translations: {},
+    };
+    vi.mocked(findOrCreateEntry).mockReturnValue(entry);
+    const meta = (locale: string) => ({
+      branchId: 'branch-1',
+      fileId: 'file-1',
+      versionId: 'version-1',
+      locale,
+      fileFormat: 'XCSTRINGS' as const,
+    });
+
+    persistPostProcessHashes(
+      {} as Settings,
+      new Set([filePath]),
+      new Map([[filePath, [meta('de'), meta('fr'), meta('ja')]]])
+    );
+
+    // Each locale stands for its own slice, so an edit to one locale leaves
+    // the others matching; a locale the catalog carries nothing for stands
+    // for the catalog with no entries
+    expect(entry.translations).toEqual({
+      de: {
+        postProcessHash: `hash:${localeContent(content, 'XCSTRINGS', 'de')}`,
+      },
+      fr: {
+        postProcessHash: `hash:${localeContent(content, 'XCSTRINGS', 'fr')}`,
+      },
+      ja: {
+        postProcessHash: `hash:${emptyLocaleContent(content, 'XCSTRINGS')}`,
+      },
+    });
+    expect(entry.translations.de.postProcessHash).not.toBe(
+      entry.translations.fr.postProcessHash
+    );
+    expect(hashStringSync).not.toHaveBeenCalledWith(content);
     expect(writeLockfile).toHaveBeenCalledTimes(1);
   });
 });

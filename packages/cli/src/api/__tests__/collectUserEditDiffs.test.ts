@@ -344,7 +344,7 @@ describe('collectAndSendUserEditDiffs', () => {
       fs.mkdirSync(path.join(tempDir, 'App'), { recursive: true });
       fs.writeFileSync(path.join(tempDir, CATALOG), content);
     };
-    /** The lockfile as translate leaves it: one file hash under each locale. */
+    /** The lockfile as translate leaves it: each locale's slice hash under it. */
     const writeLockHashes = (hashes: Record<string, string>) => {
       writeLockFile({
         version: 1,
@@ -392,13 +392,13 @@ describe('collectAndSendUserEditDiffs', () => {
         .mocked(api.queryFileData)
         .mock.calls[0][0].translatedFiles?.map((file) => file.locale);
 
-    it('skips every locale while the catalog still hashes to the recorded post-process hash', async () => {
+    it('skips every locale while each slice still hashes to its recorded post-process hash', async () => {
       const settings = buildCatalogSettings();
       const content = pinned(catalog('Hallo'));
       writeCatalog(content);
       writeLockHashes({
-        de: hashStringSync(content),
-        fr: hashStringSync(content),
+        de: hashStringSync(slice(content, 'de')),
+        fr: hashStringSync(slice(content, 'fr')),
       });
 
       await collectAndSendUserEditDiffs([reference], settings);
@@ -412,18 +412,16 @@ describe('collectAndSendUserEditDiffs', () => {
       const settings = buildCatalogSettings();
       const pristine = pinned(catalog('Hallo'));
       writeLockHashes({
-        de: hashStringSync(pristine),
-        fr: hashStringSync(pristine),
+        de: hashStringSync(slice(pristine, 'de')),
+        fr: hashStringSync(slice(pristine, 'fr')),
       });
       // The same content as Xcode lays it out
       writeCatalog(JSON.stringify(catalog('Hallo'), null, 4));
-      serveTranslations();
 
       await collectAndSendUserEditDiffs([reference], settings);
 
-      // The file hash no longer matches, so every locale is checked against
-      // the server — slice against slice, where nothing differs
-      expect(queriedLocales()).toEqual(['de', 'fr']);
+      // Each slice still hashes to its recorded hash, so no locale is checked
+      expect(api.queryFileData).not.toHaveBeenCalled();
       expect(getGitUnifiedDiff).not.toHaveBeenCalled();
       expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
     });
@@ -432,8 +430,8 @@ describe('collectAndSendUserEditDiffs', () => {
       const settings = buildCatalogSettings();
       const pristine = pinned(catalog('Hallo'));
       writeLockHashes({
-        de: hashStringSync(pristine),
-        fr: hashStringSync(pristine),
+        de: hashStringSync(slice(pristine, 'de')),
+        fr: hashStringSync(slice(pristine, 'fr')),
       });
       // One de string edited by hand
       const edited = JSON.stringify(catalog('Hallo!'));
@@ -446,9 +444,8 @@ describe('collectAndSendUserEditDiffs', () => {
 
       await collectAndSendUserEditDiffs([reference], settings);
 
-      // Both locales share the changed file, so both are checked; only de
-      // differs from the server
-      expect(queriedLocales()).toEqual(['de', 'fr']);
+      // Only the de slice changed, so only de is checked against the server
+      expect(queriedLocales()).toEqual(['de']);
       expect(getGitUnifiedDiff).toHaveBeenCalledTimes(1);
       expect(api.submitUserEditDiffs).toHaveBeenCalledTimes(1);
       const { diffs } = vi.mocked(api.submitUserEditDiffs).mock.calls[0][0];

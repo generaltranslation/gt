@@ -10,6 +10,10 @@ import { logger } from '../console/logger.js';
 import { getRelative } from '../fs/findFilepath.js';
 import { recordWarning } from '../state/translateWarnings.js';
 import { readFileContent } from '../fs/fileContent.js';
+import {
+  emptyLocaleContent,
+  localeContent,
+} from '../formats/files/localeContent.js';
 import type { DownloadMeta } from '../state/recentDownloads.js';
 import type { Settings } from '../types/index.js';
 
@@ -39,11 +43,20 @@ export function persistPostProcessHashes(
     if (!metas) continue;
     if (!fs.existsSync(filePath)) continue;
 
-    // The hash stands for the file's pipeline content, which is what every
-    // other producer and consumer of it compares against.
-    let hash: string;
+    // Each hash stands for the locale's share of the file's pipeline content,
+    // which is what upload records and user-edit detection compares against.
+    const hashes: [DownloadMeta, string][] = [];
     try {
-      hash = hashStringSync(readFileContent(filePath, metas[0].fileFormat));
+      const content = readFileContent(filePath, metas[0].fileFormat);
+      for (const meta of metas) {
+        hashes.push([
+          meta,
+          hashStringSync(
+            localeContent(content, meta.fileFormat, meta.locale) ??
+              emptyLocaleContent(content, meta.fileFormat)
+          ),
+        ]);
+      }
     } catch (error) {
       // The translation is already written; failing here would lose the whole
       // run's lockfile update over one unreadable file. Skip it and report it
@@ -54,9 +67,7 @@ export function persistPostProcessHashes(
       continue;
     }
 
-    // A file that holds every locale carries the same hash under each locale
-    // merged into it this run, so a local edit invalidates all of them.
-    for (const meta of metas) {
+    for (const [meta, hash] of hashes) {
       const entry = findOrCreateEntry(
         entryMap,
         data.entries,

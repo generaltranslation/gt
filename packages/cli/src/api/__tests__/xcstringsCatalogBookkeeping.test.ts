@@ -16,7 +16,10 @@ import {
 import { clearWarnings } from '../../state/translateWarnings.js';
 import { readLockfile } from '../../fs/config/downloadedVersions.js';
 import { hashStringSync } from '../../utils/hash.js';
-import { localeContent } from '../../formats/files/localeContent.js';
+import {
+  emptyLocaleContent,
+  localeContent,
+} from '../../formats/files/localeContent.js';
 import {
   parseXcstrings,
   parseXcstringsCatalog,
@@ -219,6 +222,11 @@ describe('.xcstrings catalog bookkeeping across translate runs', () => {
   });
   const lockTranslations = () =>
     readLockfile(settings).entryMap.get(ids().fileId)?.translations ?? {};
+  /** The locales save-local asked the server about, in order. */
+  const queriedLocales = () =>
+    vi
+      .mocked(api.queryFileData)
+      .mock.calls[0][0].translatedFiles?.map((file) => file.locale);
 
   /**
    * A download as the server returns it: the source slice of the current
@@ -287,7 +295,7 @@ describe('.xcstrings catalog bookkeeping across translate runs', () => {
     return result;
   };
 
-  it('gives every locale of a fresh translate the merged file hash, with each slice equal to what the server sent', async () => {
+  it('gives every locale of a fresh translate the hash of its own slice, each equal to what the server sent', async () => {
     writeCatalog(serializeXcstringsSlice(sourceCatalog));
     serveTranslations();
 
@@ -298,14 +306,14 @@ describe('.xcstrings catalog bookkeeping across translate runs', () => {
     expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
     expect(readCatalog()).toBe(serializeXcstringsSlice(translatedCatalog));
 
-    // One file holds every locale, so every locale carries the same hash of
-    // that file — not only the last locale merged
+    // One file holds every locale, and each locale is fingerprinted by its
+    // own slice of it, so an edit to one locale leaves the others matching
     const translations = lockTranslations();
     expect(Object.keys(translations).sort()).toEqual(LOCALES);
     const disk = readCatalog();
     for (const locale of LOCALES) {
       expect(translations[locale].postProcessHash, locale).toBe(
-        hashStringSync(disk)
+        hashStringSync(localeContent(disk, 'XCSTRINGS', locale)!)
       );
       // The slice of the merged catalog is byte-identical to the locale's
       // share of what the server sent: that is what save-local compares
@@ -364,14 +372,9 @@ describe('.xcstrings catalog bookkeeping across translate runs', () => {
 
     await translateRun();
 
-    // The shared file changed, so every locale is checked against the server;
-    // slice against slice, only de differs
+    // Only the de slice changed, so only de is checked against the server
     expect(api.queryFileData).toHaveBeenCalledTimes(1);
-    expect(
-      vi
-        .mocked(api.queryFileData)
-        .mock.calls[0][0].translatedFiles?.map((file) => file.locale)
-    ).toEqual(LOCALES);
+    expect(queriedLocales()).toEqual(['de']);
     expect(api.submitUserEditDiffs).toHaveBeenCalledTimes(1);
     const { diffs } = vi.mocked(api.submitUserEditDiffs).mock.calls[0][0];
     expect(diffs).toHaveLength(1);
@@ -386,6 +389,51 @@ describe('.xcstrings catalog bookkeeping across translate runs', () => {
     expect(
       lines.filter((line) => line.startsWith('+') && !line.startsWith('+++'))
     ).toEqual([expect.stringContaining('"Hallo!"')]);
+  });
+
+  it('submits only the locale edited on disk when another locale changed on the server since the download', async () => {
+    writeCatalog(serializeXcstringsSlice(sourceCatalog));
+    serveTranslations();
+    await translateRun();
+    vi.clearAllMocks();
+
+    // de edited in the dashboard: the server now holds a newer de slice
+    server.set('de', served('de', { ...TRANSLATIONS.de, Save: 'Speichern' }));
+    // The server applies a submitted edit before it is downloaded again
+    vi.mocked(api.submitUserEditDiffs).mockImplementation(async ({ diffs }) => {
+      for (const diff of diffs) server.set(diff.locale, diff.localContent);
+      return { success: true };
+    });
+    // fr edited by hand
+    const edited = parseXcstringsCatalog(readCatalog());
+    edited.strings.Save.localizations!.fr = unit('Sauvegarder');
+    writeCatalog(serializeXcstringsSlice(edited));
+    const editedContent = readCatalog();
+
+    const result = await translateRun();
+
+    // The local de slice is stale, not edited: only fr is submitted
+    expect(api.submitUserEditDiffs).toHaveBeenCalledTimes(1);
+    const { diffs } = vi.mocked(api.submitUserEditDiffs).mock.calls[0][0];
+    expect(diffs.map((diff) => diff.locale)).toEqual(['fr']);
+    expect(diffs[0].localContent).toBe(
+      localeContent(editedContent, 'XCSTRINGS', 'fr')
+    );
+    // Only the fr slice changed on disk, so only fr is checked at all
+    expect(queriedLocales()).toEqual(['fr']);
+    // The download brings the dashboard edit down, keeps the fr edit, and
+    // leaves ja as it was
+    expect(result.failed).toEqual([]);
+    const disk = readCatalog();
+    expect(localeContent(disk, 'XCSTRINGS', 'de')).toBe(
+      localeContent(server.get('de')!, 'XCSTRINGS', 'de')
+    );
+    expect(localeContent(disk, 'XCSTRINGS', 'fr')).toBe(
+      localeContent(editedContent, 'XCSTRINGS', 'fr')
+    );
+    expect(localeContent(disk, 'XCSTRINGS', 'ja')).toBe(
+      localeContent(server.get('ja')!, 'XCSTRINGS', 'ja')
+    );
   });
 
   it('records a locale whose payload carries nothing for it, leaves the catalog alone, and submits nothing for it later', async () => {
@@ -404,11 +452,13 @@ describe('.xcstrings catalog bookkeeping across translate runs', () => {
     expect(localeContent(disk, 'XCSTRINGS', 'de')).toBe(
       localeContent(server.get('de')!, 'XCSTRINGS', 'de')
     );
-    // fr carries the file hash like every other locale, so the next run does
-    // not read the catalog as edited
+    // fr is fingerprinted by the empty slice it stands for, so the next run
+    // does not read it as edited
     const translations = lockTranslations();
     expect(Object.keys(translations).sort()).toEqual(LOCALES);
-    expect(translations.fr.postProcessHash).toBe(hashStringSync(disk));
+    expect(translations.fr.postProcessHash).toBe(
+      hashStringSync(emptyLocaleContent(disk, 'XCSTRINGS'))
+    );
     vi.clearAllMocks();
 
     await translateRun();
@@ -433,8 +483,9 @@ describe('.xcstrings catalog bookkeeping across translate runs', () => {
 
     const result = await translateRun();
 
-    // Every locale is checked; de and ja match the server, fr is compared
-    // against a baseline of nothing and submitted
+    // Only fr changed on disk; it is compared against a baseline of nothing
+    // and submitted
+    expect(queriedLocales()).toEqual(['fr']);
     expect(api.submitUserEditDiffs).toHaveBeenCalledTimes(1);
     const { diffs } = vi.mocked(api.submitUserEditDiffs).mock.calls[0][0];
     expect(diffs.map((diff) => diff.locale)).toEqual(['fr']);
