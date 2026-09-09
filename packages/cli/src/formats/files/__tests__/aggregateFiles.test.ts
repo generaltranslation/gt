@@ -10,6 +10,7 @@ import sanitizeFileContent from '../../../utils/sanitizeFileContent.js';
 import { determineLibrary } from '../../../fs/determineFramework/index.js';
 import { isValidMdx } from '../../../utils/validateMdx.js';
 import { hashStringSync, hashVersionId } from '../../../utils/hash.js';
+import { gt } from '../../../utils/gt.js';
 import type { Settings } from '../../../types/index.js';
 
 const aggregateTestFiles = (settings: Partial<Settings>) =>
@@ -906,7 +907,10 @@ describe('aggregateFiles - Apple .xcstrings catalogs', () => {
       },
     });
 
-  const settingsFor = (contents: Record<string, string>) => {
+  const settingsFor = (
+    contents: Record<string, string>,
+    defaultLocale = 'en'
+  ) => {
     mockReadFile.mockImplementation((filePath) => contents[filePath] ?? '');
     return {
       files: {
@@ -914,7 +918,7 @@ describe('aggregateFiles - Apple .xcstrings catalogs', () => {
         placeholderPaths: {},
       },
       options: {},
-      defaultLocale: 'en',
+      defaultLocale,
     };
   };
 
@@ -923,6 +927,10 @@ describe('aggregateFiles - Apple .xcstrings catalogs', () => {
     mockGetRelative.mockImplementation((path) =>
       path.replace('/full/path/', '')
     );
+  });
+
+  afterEach(() => {
+    gt.setConfig({ customMapping: {} });
   });
 
   it('stops the run before anything is uploaded when a catalog sourceLanguage does not match defaultLocale', async () => {
@@ -942,6 +950,24 @@ describe('aggregateFiles - Apple .xcstrings catalogs', () => {
     expect(message).not.toContain('App/Localizable.xcstrings');
     // A configuration error is not reported as a skipped file
     expect(mockLogWarning).not.toHaveBeenCalled();
+  });
+
+  it('accepts a defaultLocale alias whose canonical tag is the catalog sourceLanguage', async () => {
+    gt.setConfig({ customMapping: { french: { code: 'fr' } } });
+    const settings = settingsFor(
+      { '/full/path/App/Localizable.xcstrings': catalog('fr') },
+      'french'
+    );
+
+    const { files } = await aggregateTestFiles(settings);
+
+    expect(mockLogErrorAndExit).not.toHaveBeenCalled();
+    expect(mockLogWarning).not.toHaveBeenCalled();
+    expect(files.map((file) => file.fileName)).toEqual([
+      'App/Localizable.xcstrings',
+    ]);
+    // The upload keeps the configured locale, as translation slices do
+    expect(files[0].locale).toBe('french');
   });
 
   it('skips a catalog that cannot be parsed and uploads the rest', async () => {

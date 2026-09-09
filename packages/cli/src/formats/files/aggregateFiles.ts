@@ -35,6 +35,7 @@ import type { JSONObject } from '../../types/data/json.js';
 import YAML from 'yaml';
 import { determineLibrary } from '../../fs/determineFramework/index.js';
 import { hashStringSync, hashVersionId } from '../../utils/hash.js';
+import { gt } from '../../utils/gt.js';
 import { preprocessContent } from './preprocessContent.js';
 import {
   parseKeyedMetadata,
@@ -480,8 +481,12 @@ export async function aggregateFiles(
         // Slicing follows the catalog's own sourceLanguage while the upload is
         // labeled settings.defaultLocale; a mismatch would upload mislabeled
         // source content, so it is a configuration error that stops the run
-        // rather than a skipped file.
-        if (catalog.sourceLanguage !== settings.defaultLocale) {
+        // rather than a skipped file. The configured locale may be a custom
+        // alias, so canonical forms are compared.
+        if (
+          gt.resolveCanonicalLocale(catalog.sourceLanguage) !==
+          gt.resolveCanonicalLocale(settings.defaultLocale)
+        ) {
           sourceLanguageMismatches.push({
             file: relativePath,
             sourceLanguage: catalog.sourceLanguage,
