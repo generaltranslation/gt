@@ -51,6 +51,47 @@ describe.each([false, true])(
       }
     });
 
+    it.each(['%66r', 'f%72', 'fr'])(
+      'preserves category %s after an actual locale prefix',
+      (category) => {
+        const middleware = createNextMiddleware({
+          prefixDefaultLocale,
+          pathConfig: {
+            '/posts/[id]': { en: '/entries/[id]', fr: '/articles/[id]' },
+            '/[category]/articles/[id]': { en: '/[category]/articles/[id]' },
+          },
+        });
+        const response = middleware(
+          new NextRequest(`${origin}/fr/${category}/articles/a${query}`)
+        );
+
+        expect(response.headers.get('location')).toBeNull();
+        expect(response.headers.get('x-middleware-rewrite')).toBeNull();
+        expect(response.headers.get('x-generaltranslation-locale')).toBe('fr');
+        expect(
+          response.cookies.get('generaltranslation.locale-routing-enabled')
+            ?.value
+        ).toBe('true');
+      }
+    );
+
+    it('does not match an exact localized alias after removing the locale prefix', () => {
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale,
+        pathConfig: {
+          '/posts': { en: '/entries', fr: '/articles' },
+          '/[category]/articles': { en: '/[category]/articles' },
+        },
+      });
+      const response = middleware(
+        new NextRequest(`${origin}/fr/%66r/articles${query}`)
+      );
+
+      expect(response.headers.get('location')).toBeNull();
+      expect(response.headers.get('x-middleware-rewrite')).toBeNull();
+      expect(response.headers.get('x-generaltranslation-locale')).toBe('fr');
+    });
+
     it.each(['en', 'fr'])(
       'still recognizes the literal %s prefix',
       (locale) => {

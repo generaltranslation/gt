@@ -12,7 +12,7 @@ import {
   type PathMatcher,
 } from './createPathMatcher';
 import { getSharedPath } from './matchPath';
-import { applyTrailingSlash } from './pathname';
+import { applyTrailingSlash, stripTrailingSlashes } from './pathname';
 
 export {
   createPathMatcher,
@@ -113,7 +113,7 @@ export function extractDynamicParams(
   if (!templatePath.includes('[')) return [];
 
   const params: string[] = [];
-  const pathSegments = path.split('/');
+  const pathSegments = stripTrailingSlashes(path).split('/');
   const sharedSegments = templatePath.split('/');
 
   sharedSegments.forEach((segment, index) => {
