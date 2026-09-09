@@ -204,9 +204,13 @@ export const api = {
     return unwrapApiResult(await createTag({ body, client: getClient() }));
   },
 
-  async createProject(body: CreateProjectData['body']) {
+  async createProject(
+    orgId: CreateProjectData['path']['orgId'],
+    body: CreateProjectData['body']
+  ) {
     return unwrapApiResult(
       await createProject({
+        path: { orgId },
         body: {
           ...body,
           defaultLocale: resolveCanonicalLocale(

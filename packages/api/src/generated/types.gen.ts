@@ -23,10 +23,10 @@ export type FileFormat =
   | 'TWILIO_CONTENT_JSON'
   | 'LOTTIE'
   | 'SVG'
+  | 'XCSTRINGS'
   | 'DOT_STRINGS'
   | 'DOT_STRINGSDICT'
-  | 'ANDROID_STRINGS'
-  | 'XCSTRINGS';
+  | 'ANDROID_STRINGS';
 
 export type ModelProvider = 'ANTHROPIC' | 'OPENAI' | 'XAI' | 'GOOGLE';
 
@@ -137,9 +137,11 @@ export type CreateProjectData = {
       | '2026-02-18.v1'
       | '2026-03-06.v1';
   };
-  path?: never;
+  path: {
+    orgId: string;
+  };
   query?: never;
-  url: '/v2/projects';
+  url: '/v2/orgs/{orgId}/projects';
 };
 
 export type CreateProjectErrors = {
@@ -192,6 +194,80 @@ export type CreateProjectResponses = {
 export type CreateProjectResponse =
   CreateProjectResponses[keyof CreateProjectResponses];
 
+export type CreateProjectApiKeyData = {
+  body: {
+    name: string;
+    type?: 'production' | 'development';
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?:
+      | '2025-01-01.v0'
+      | '2025-11-03.v1'
+      | '2026-02-18.v1'
+      | '2026-03-06.v1';
+  };
+  path: {
+    projectId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/api-keys';
+};
+
+export type CreateProjectApiKeyErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type CreateProjectApiKeyError =
+  CreateProjectApiKeyErrors[keyof CreateProjectApiKeyErrors];
+
+export type CreateProjectApiKeyResponses = {
+  /**
+   * Project API key created
+   */
+  201: {
+    apiKey: {
+      id: string;
+      name: string;
+      key: string;
+      projectId: string;
+      type: 'production' | 'development';
+    };
+  };
+};
+
+export type CreateProjectApiKeyResponse =
+  CreateProjectApiKeyResponses[keyof CreateProjectApiKeyResponses];
+
 export type UploadSourceFilesData = {
   body: {
     data: Array<{
@@ -213,10 +289,10 @@ export type UploadSourceFilesData = {
           | 'TWILIO_CONTENT_JSON'
           | 'LOTTIE'
           | 'SVG'
+          | 'XCSTRINGS'
           | 'DOT_STRINGS'
           | 'DOT_STRINGSDICT'
-          | 'ANDROID_STRINGS'
-          | 'XCSTRINGS';
+          | 'ANDROID_STRINGS';
         dataFormat?: string;
         locale: string;
         fileId?: string;
@@ -241,7 +317,7 @@ export type UploadSourceFilesData = {
       | '2026-02-18.v1'
       | '2026-03-06.v1';
     /**
-     * Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
      */
     'gt-project-id'?: string;
   };
@@ -331,10 +407,10 @@ export type UploadTranslationsData = {
           | 'TWILIO_CONTENT_JSON'
           | 'LOTTIE'
           | 'SVG'
+          | 'XCSTRINGS'
           | 'DOT_STRINGS'
           | 'DOT_STRINGSDICT'
-          | 'ANDROID_STRINGS'
-          | 'XCSTRINGS';
+          | 'ANDROID_STRINGS';
         dataFormat?: string;
         locale: string;
         fileId?: string;
@@ -364,10 +440,10 @@ export type UploadTranslationsData = {
           | 'TWILIO_CONTENT_JSON'
           | 'LOTTIE'
           | 'SVG'
+          | 'XCSTRINGS'
           | 'DOT_STRINGS'
           | 'DOT_STRINGSDICT'
-          | 'ANDROID_STRINGS'
-          | 'XCSTRINGS';
+          | 'ANDROID_STRINGS';
         dataFormat?: string;
         locale: string;
         transformFormat?:
@@ -385,10 +461,10 @@ export type UploadTranslationsData = {
           | 'TWILIO_CONTENT_JSON'
           | 'LOTTIE'
           | 'SVG'
+          | 'XCSTRINGS'
           | 'DOT_STRINGS'
           | 'DOT_STRINGSDICT'
-          | 'ANDROID_STRINGS'
-          | 'XCSTRINGS';
+          | 'ANDROID_STRINGS';
       }>;
     }>;
     sourceLocale?: string;
@@ -403,7 +479,7 @@ export type UploadTranslationsData = {
       | '2026-02-18.v1'
       | '2026-03-06.v1';
     /**
-     * Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
      */
     'gt-project-id'?: string;
   };
@@ -492,7 +568,7 @@ export type UploadAssetsData = {
       | '2026-02-18.v1'
       | '2026-03-06.v1';
     /**
-     * Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
      */
     'gt-project-id'?: string;
   };
@@ -573,7 +649,7 @@ export type SubmitUserEditDiffsData = {
       | '2026-02-18.v1'
       | '2026-03-06.v1';
     /**
-     * Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
      */
     'gt-project-id'?: string;
   };
@@ -638,7 +714,7 @@ export type ShouldGenerateProjectContextData = {
       | '2026-02-18.v1'
       | '2026-03-06.v1';
     /**
-     * Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
      */
     'gt-project-id'?: string;
   };
@@ -709,7 +785,7 @@ export type GenerateProjectContextData = {
       | '2026-02-18.v1'
       | '2026-03-06.v1';
     /**
-     * Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
      */
     'gt-project-id'?: string;
   };
@@ -781,7 +857,7 @@ export type GetProjectContextGenerationStatusData = {
       | '2026-02-18.v1'
       | '2026-03-06.v1';
     /**
-     * Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
      */
     'gt-project-id'?: string;
   };
@@ -861,10 +937,10 @@ export type EnqueueFileTranslationsData = {
         | 'TWILIO_CONTENT_JSON'
         | 'LOTTIE'
         | 'SVG'
+        | 'XCSTRINGS'
         | 'DOT_STRINGS'
         | 'DOT_STRINGSDICT'
-        | 'ANDROID_STRINGS'
-        | 'XCSTRINGS';
+        | 'ANDROID_STRINGS';
     }>;
     targetLocales?: Array<string>;
     sourceLocale?: string;
@@ -882,7 +958,7 @@ export type EnqueueFileTranslationsData = {
       | '2026-02-18.v1'
       | '2026-03-06.v1';
     /**
-     * Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
      */
     'gt-project-id'?: string;
   };
@@ -953,6 +1029,7 @@ export type EnqueueFileTranslationsResponses = {
             branchId: string;
             targetLocale: string;
             projectId: string;
+            orgId: string;
             force: boolean;
             outputFileFormat?: FileFormat;
             modelProvider?: ModelProvider;
@@ -1012,7 +1089,7 @@ export type PublishFilesData = {
       | '2026-02-18.v1'
       | '2026-03-06.v1';
     /**
-     * Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
      */
     'gt-project-id'?: string;
   };
@@ -1085,7 +1162,7 @@ export type DownloadFileData = {
       | '2026-02-18.v1'
       | '2026-03-06.v1';
     /**
-     * Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
      */
     'gt-project-id'?: string;
   };
@@ -1166,7 +1243,7 @@ export type DownloadFilesData = {
       | '2026-02-18.v1'
       | '2026-03-06.v1';
     /**
-     * Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
      */
     'gt-project-id'?: string;
   };
@@ -1247,7 +1324,7 @@ export type GetBranchInfoData = {
       | '2026-02-18.v1'
       | '2026-03-06.v1';
     /**
-     * Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
      */
     'gt-project-id'?: string;
   };
@@ -1316,7 +1393,7 @@ export type CreateBranchData = {
       | '2026-02-18.v1'
       | '2026-03-06.v1';
     /**
-     * Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
      */
     'gt-project-id'?: string;
   };
@@ -1390,7 +1467,7 @@ export type CreateTagData = {
       | '2026-02-18.v1'
       | '2026-03-06.v1';
     /**
-     * Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
      */
     'gt-project-id'?: string;
   };
@@ -1457,7 +1534,7 @@ export type GetProjectInfoData = {
       | '2026-02-18.v1'
       | '2026-03-06.v1';
     /**
-     * Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
      */
     'gt-project-id'?: string;
   };
@@ -1530,7 +1607,7 @@ export type UpdateProjectInfoData = {
       | '2026-02-18.v1'
       | '2026-03-06.v1';
     /**
-     * Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
      */
     'gt-project-id'?: string;
   };
@@ -1601,7 +1678,7 @@ export type GetTranslationJobInfoData = {
       | '2026-02-18.v1'
       | '2026-03-06.v1';
     /**
-     * Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
      */
     'gt-project-id'?: string;
   };
@@ -1690,7 +1767,7 @@ export type TranslateData = {
       | '2026-02-18.v1'
       | '2026-03-06.v1';
     /**
-     * Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
      */
     'gt-project-id'?: string;
   };
@@ -1773,7 +1850,7 @@ export type GetFileInfoData = {
       | '2026-02-18.v1'
       | '2026-03-06.v1';
     /**
-     * Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
      */
     'gt-project-id'?: string;
   };
@@ -1860,7 +1937,7 @@ export type GetTranslationStatusData = {
       | '2026-02-18.v1'
       | '2026-03-06.v1';
     /**
-     * Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
      */
     'gt-project-id'?: string;
   };
@@ -1955,7 +2032,7 @@ export type ProcessFileMovesData = {
       | '2026-02-18.v1'
       | '2026-03-06.v1';
     /**
-     * Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
      */
     'gt-project-id'?: string;
   };
@@ -2037,7 +2114,7 @@ export type GetOrphanedFilesData = {
       | '2026-02-18.v1'
       | '2026-03-06.v1';
     /**
-     * Target project ID. Required when authenticating with an organization API key; ignored with project-scoped API keys (the project is resolved from the key).
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
      */
     'gt-project-id'?: string;
   };

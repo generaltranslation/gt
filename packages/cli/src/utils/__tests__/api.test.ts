@@ -129,11 +129,14 @@ describe('CLI API client', () => {
     );
   });
 
-  it('canonicalizes the default locale when creating a project', async () => {
+  it('creates a project in the selected organization with a canonical default locale', async () => {
     configure({
+      projectId: undefined,
       customMapping: { 'brand-english': { code: 'en-US' } },
     });
     fetchMock.mockImplementation(async (request) => {
+      expect(new URL(request.url).pathname).toBe('/v2/orgs/org-id/projects');
+      expect(request.method).toBe('POST');
       const body = JSON.parse(await request.text()) as {
         defaultLocale: string;
       };
@@ -151,7 +154,7 @@ describe('CLI API client', () => {
       );
     });
 
-    await api.createProject({
+    await api.createProject('org-id', {
       name: 'Project',
       defaultLocale: 'brand-english',
     });

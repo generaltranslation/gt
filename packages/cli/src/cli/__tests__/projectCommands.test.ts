@@ -40,6 +40,7 @@ vi.mock('../../console/logger.js', () => ({
 import { BaseCLI } from '../base.js';
 import { generateSettings } from '../../config/generateSettings.js';
 import { api } from '../../utils/api.js';
+import { logger } from '../../console/logger.js';
 
 const settings = {
   apiKey: 'gtx-api-key',
@@ -47,9 +48,8 @@ const settings = {
 } as Settings;
 
 function createProgram(): Command {
-  const program = new Command();
+  const program = new Command().exitOverride();
   new BaseCLI(program, 'base');
-  program.exitOverride();
   return program;
 }
 
@@ -57,6 +57,58 @@ describe('project commands', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(generateSettings).mockResolvedValue(settings);
+  });
+
+  it('creates a project in the requested organization without a project ID', async () => {
+    vi.mocked(generateSettings).mockResolvedValue({
+      apiKey: 'gtx-organization-key',
+    } as Settings);
+    vi.mocked(api.createProject).mockResolvedValue({
+      project: {
+        id: 'new-project-id',
+        name: 'Project',
+        orgId: 'org-id',
+        defaultLocale: 'en',
+      },
+    });
+
+    await createProgram().parseAsync(
+      [
+        'project',
+        'create',
+        '--org-id',
+        'org-id',
+        '--name',
+        'Project',
+        '--default-locale',
+        'en',
+        '--cdn-enabled',
+      ],
+      { from: 'user' }
+    );
+
+    expect(api.createProject).toHaveBeenCalledWith('org-id', {
+      name: 'Project',
+      defaultLocale: 'en',
+      cdnEnabled: true,
+    });
+    expect(logger.info).toHaveBeenCalledWith(
+      'Created Project (new-project-id)'
+    );
+  });
+
+  it('requires an organization ID before creating a project', async () => {
+    const program = createProgram();
+    program.configureOutput({ writeErr: vi.fn() });
+
+    await expect(
+      program.parseAsync(
+        ['project', 'create', '--name', 'Project', '--default-locale', 'en'],
+        { from: 'user' }
+      )
+    ).rejects.toThrow("required option '--org-id <orgId>' not specified");
+    expect(generateSettings).not.toHaveBeenCalled();
+    expect(api.createProject).not.toHaveBeenCalled();
   });
 
   it('formats project creation failures instead of leaking a rejection', async () => {
@@ -70,7 +122,16 @@ describe('project commands', () => {
 
     await expect(
       createProgram().parseAsync(
-        ['project', 'create', '--name', 'Project', '--default-locale', 'en'],
+        [
+          'project',
+          'create',
+          '--org-id',
+          'org-id',
+          '--name',
+          'Project',
+          '--default-locale',
+          'en',
+        ],
         { from: 'user' }
       )
     ).rejects.toThrow(/Failed to create the project[\s\S]*upstream denied/);
