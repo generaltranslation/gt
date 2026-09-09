@@ -313,10 +313,10 @@ export function createNextMiddleware({
           : undefined;
 
       const pagePath =
-        sharedPathWithParameters?.replace(new RegExp(`^/${userLocale}`), '') ||
-        (pathnameLocale
-          ? standardizedPathname.replace(new RegExp(`^/${userLocale}`), '')
-          : standardizedPathname) ||
+        (sharedPathWithParameters?.replace(new RegExp(`^/${userLocale}`), '') ??
+          (pathnameLocale
+            ? standardizedPathname.replace(new RegExp(`^/${userLocale}`), '')
+            : standardizedPathname)) ||
         '/';
       const routeOverridePathMap = routeOverridePathMaps[userLocale];
       const routeOverrideMatch = routeOverridePathMap
