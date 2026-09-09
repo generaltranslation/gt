@@ -26,6 +26,8 @@ function createPathPattern(pathname: string): string {
     .join('');
 }
 
+export type PathMapping = { sharedPath: string; sourceTemplate: string };
+
 /**
  * Creates a map of localized paths to shared paths using regex patterns
  */
@@ -34,36 +36,44 @@ export function createPathToSharedPathMap(
   prefixDefaultLocale: boolean,
   defaultLocale: string
 ): {
-  pathToSharedPath: { [key: string]: string };
-  unprefixedPathToSharedPath: { [key: string]: string };
+  pathToSharedPath: Record<string, PathMapping>;
+  unprefixedPathToSharedPath: Record<string, PathMapping>;
+  sharedOnlyPathToSharedPath: Record<string, PathMapping>;
   defaultLocalePaths: string[];
 } {
   return Object.entries(pathConfig).reduce<{
-    pathToSharedPath: { [key: string]: string };
-    unprefixedPathToSharedPath: { [key: string]: string };
+    pathToSharedPath: Record<string, PathMapping>;
+    unprefixedPathToSharedPath: Record<string, PathMapping>;
+    sharedOnlyPathToSharedPath: Record<string, PathMapping>;
     defaultLocalePaths: string[];
   }>(
     (acc, [sharedPath, localizedPaths]) => {
       const {
         pathToSharedPath,
         unprefixedPathToSharedPath,
+        sharedOnlyPathToSharedPath,
         defaultLocalePaths,
       } = acc;
       // Preserve raw templates for parameter substitution and output URLs.
       const sharedPattern = createPathPattern(sharedPath);
-      pathToSharedPath[sharedPattern] = sharedPath;
-      unprefixedPathToSharedPath[sharedPattern] = sharedPath;
+      const sharedMapping = { sharedPath, sourceTemplate: sharedPath };
+      unprefixedPathToSharedPath[sharedPattern] = sharedMapping;
+      sharedOnlyPathToSharedPath[sharedPattern] = sharedMapping;
 
       if (typeof localizedPaths === 'object') {
         Object.entries(localizedPaths).forEach(([locale, localizedPath]) => {
           // Convert the localized path to a regex pattern
           // Replace [param] with [^/]+ to match any non-slash characters
           const pattern = createPathPattern(localizedPath);
-          pathToSharedPath[stripTrailingSlashes(`/${locale}${pattern}`)] =
-            sharedPath;
+          pathToSharedPath[stripTrailingSlashes(`/${locale}${pattern}`)] = {
+            sharedPath,
+            sourceTemplate: `/${locale}${localizedPath}`,
+          };
           if (!prefixDefaultLocale && locale === defaultLocale) {
-            pathToSharedPath[pattern] = sharedPath;
-            unprefixedPathToSharedPath[pattern] = sharedPath;
+            unprefixedPathToSharedPath[pattern] = {
+              sharedPath,
+              sourceTemplate: localizedPath,
+            };
             defaultLocalePaths.push(pattern);
           }
         });
@@ -73,6 +83,7 @@ export function createPathToSharedPathMap(
     {
       pathToSharedPath: {},
       unprefixedPathToSharedPath: {},
+      sharedOnlyPathToSharedPath: {},
       defaultLocalePaths: [],
     }
   );

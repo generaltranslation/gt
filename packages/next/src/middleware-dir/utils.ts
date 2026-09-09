@@ -8,9 +8,18 @@ import {
   createPathToSharedPathMap,
   type PathConfig,
 } from './createPathMatcher';
-import { getSharedPath, inDefaultLocalePaths } from './matchPath';
+import {
+  extractDynamicParams,
+  getSharedPath,
+  inDefaultLocalePaths,
+} from './matchPath';
 
-export { createPathToSharedPathMap, getSharedPath, normalizePathname };
+export {
+  createPathToSharedPathMap,
+  extractDynamicParams,
+  getSharedPath,
+  normalizePathname,
+};
 export type { PathConfig };
 
 export type ResponseConfig = {
@@ -94,42 +103,21 @@ export function extractLocale(pathname: string): string | null {
 }
 
 /**
- * Extracts dynamic parameters from a path based on a shared path pattern
- */
-export function extractDynamicParams(
-  templatePath: string,
-  path: string
-): string[] {
-  if (!templatePath.includes('[')) return [];
-
-  const params: string[] = [];
-  const pathSegments = path.split('/');
-  const sharedSegments = templatePath.split('/');
-
-  sharedSegments.forEach((segment, index) => {
-    if (segment.startsWith('[') && segment.endsWith(']')) {
-      params.push(pathSegments[index]);
-    }
-  });
-
-  return params;
-}
-
-/**
  * Replaces dynamic segments in a path with their actual values
  */
 export function replaceDynamicSegments(
   path: string,
-  templatePath: string
+  templatePath: string,
+  params?: string[]
 ): string {
   if (!templatePath.includes('[')) {
     return applyTrailingSlash(path, templatePath);
   }
 
-  const params = extractDynamicParams(templatePath, path);
+  const pathParams = params ?? extractDynamicParams(templatePath, path);
   let paramIndex = 0;
   const result = templatePath.replace(/\[([^\]]+)\]/g, (match: string) => {
-    return params[paramIndex++] || match;
+    return pathParams[paramIndex++] || match;
   });
   return applyTrailingSlash(path, result);
 }
