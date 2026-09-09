@@ -5,9 +5,30 @@ import {
   replaceDynamicSegments,
   getLocalizedPath,
   createPathToSharedPathMap,
-  getSharedPath,
+  getSharedPath as getSharedPathWithMaps,
   type PathConfig,
 } from '../utils';
+
+function getSharedPath(
+  pathname: string,
+  paths: Record<string, string>,
+  pathnameLocale: string | undefined
+): string | undefined {
+  const sharedPaths = Object.fromEntries(
+    Object.values(paths).map((sharedPath) => [sharedPath, sharedPath])
+  );
+  const { sharedOnlyPathToSharedPath } = createPathToSharedPathMap(
+    sharedPaths,
+    true,
+    'en'
+  );
+  return getSharedPathWithMaps(
+    pathname,
+    paths,
+    pathnameLocale,
+    sharedOnlyPathToSharedPath
+  );
+}
 
 describe('extractLocale', () => {
   it('should extract locale from various pathname formats', () => {

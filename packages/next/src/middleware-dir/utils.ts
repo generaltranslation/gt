@@ -180,23 +180,27 @@ export function createPathToSharedPathMap(
 ): {
   pathToSharedPath: { [key: string]: string };
   unprefixedPathToSharedPath: { [key: string]: string };
+  sharedOnlyPathToSharedPath: { [key: string]: string };
   defaultLocalePaths: string[];
 } {
   return Object.entries(pathConfig).reduce<{
     pathToSharedPath: { [key: string]: string };
     unprefixedPathToSharedPath: { [key: string]: string };
+    sharedOnlyPathToSharedPath: { [key: string]: string };
     defaultLocalePaths: string[];
   }>(
     (acc, [sharedPath, localizedPaths]) => {
       const {
         pathToSharedPath,
         unprefixedPathToSharedPath,
+        sharedOnlyPathToSharedPath,
         defaultLocalePaths,
       } = acc;
       // Preserve raw templates for parameter substitution and output URLs.
       const sharedPattern = createPathPattern(sharedPath);
       pathToSharedPath[sharedPattern] = sharedPath;
       unprefixedPathToSharedPath[sharedPattern] = sharedPath;
+      sharedOnlyPathToSharedPath[sharedPattern] = sharedPath;
 
       if (typeof localizedPaths === 'object') {
         Object.entries(localizedPaths).forEach(([locale, localizedPath]) => {
@@ -217,6 +221,7 @@ export function createPathToSharedPathMap(
     {
       pathToSharedPath: {},
       unprefixedPathToSharedPath: {},
+      sharedOnlyPathToSharedPath: {},
       defaultLocalePaths: [],
     }
   );
@@ -228,7 +233,8 @@ export function createPathToSharedPathMap(
 export function getSharedPath(
   standardizedPathname: string,
   pathToSharedPath: { [key: string]: string },
-  pathnameLocale: string | undefined
+  pathnameLocale: string | undefined,
+  sharedOnlyPathToSharedPath: { [key: string]: string }
 ): string | undefined {
   standardizedPathname = normalizePathForMatching(standardizedPathname);
   const pathnameWithoutTrailingSlash =
@@ -245,13 +251,12 @@ export function getSharedPath(
     pathnameWithoutLocale = stripTrailingSlashes(
       standardizedPathname.replace(/^\/[^/]+/, '')
     );
-    if (pathToSharedPath[pathnameWithoutLocale]) {
-      return pathToSharedPath[pathnameWithoutLocale];
+    if (sharedOnlyPathToSharedPath[pathnameWithoutLocale]) {
+      return sharedOnlyPathToSharedPath[pathnameWithoutLocale];
     }
   }
 
   // Try regex pattern match
-  let candidateSharedPath = undefined;
   for (const [pattern, sharedPath] of Object.entries(pathToSharedPath)) {
     if (pattern.includes(DYNAMIC_PATH_SEGMENT_PATTERN)) {
       // Convert the pattern to a strict regex that matches the exact path structure
@@ -264,17 +269,24 @@ export function getSharedPath(
       ) {
         return sharedPath;
       }
-      // Without locale prefix
+    }
+  }
+
+  // Without locale prefix
+  // Once the locale is removed, the remaining segments are shared route data.
+  if (pathnameWithoutLocale !== undefined) {
+    for (const [pattern, sharedPath] of Object.entries(
+      sharedOnlyPathToSharedPath
+    )) {
       if (
-        !candidateSharedPath &&
-        pathnameLocale &&
-        regex.test(pathnameWithoutLocale as string)
+        pattern.includes(DYNAMIC_PATH_SEGMENT_PATTERN) &&
+        new RegExp(`^${pattern}$`).test(pathnameWithoutLocale)
       ) {
-        candidateSharedPath = sharedPath;
+        return sharedPath;
       }
     }
   }
-  return candidateSharedPath;
+  return undefined;
 }
 
 /**

@@ -150,8 +150,12 @@ export function createNextMiddleware({
   );
 
   // Create the path mapping
-  const { pathToSharedPath, unprefixedPathToSharedPath, defaultLocalePaths } =
-    createPathToSharedPathMap(pathConfig, prefixDefaultLocale, defaultLocale);
+  const {
+    pathToSharedPath,
+    unprefixedPathToSharedPath,
+    sharedOnlyPathToSharedPath,
+    defaultLocalePaths,
+  } = createPathToSharedPathMap(pathConfig, prefixDefaultLocale, defaultLocale);
 
   /**
    * Processes the incoming request to determine the user's locale and sets a locale cookie.
@@ -243,7 +247,8 @@ export function createNextMiddleware({
       const sharedPath = getSharedPath(
         standardizedPathname,
         pathnameLocale ? pathToSharedPath : unprefixedPathToSharedPath,
-        pathnameLocale
+        pathnameLocale,
+        sharedOnlyPathToSharedPath
       );
 
       // Get shared path with parameters (/en/dashboard/1/custom), for rewriting localized paths
