@@ -1,5 +1,5 @@
 import { applyTrailingSlash } from './pathname';
-import { isSameDialect, standardizeLocale } from '@generaltranslation/format';
+import { isSameDialect } from '@generaltranslation/format';
 import { GTRuntime } from 'generaltranslation/runtime';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { createUnsupportedLocalesWarning } from '../errors/middleware';
@@ -14,7 +14,6 @@ import {
   defaultResetLocaleCookieName,
 } from '@generaltranslation/react-core/pure';
 import {
-  PathConfig,
   normalizePathname,
   getSharedPath,
   replaceDynamicSegments,
@@ -29,6 +28,7 @@ import { defaultLocaleHeaderName } from '../utils/headers';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import type { HeadersAndCookies } from '../config-dir/props/withGTConfigProps';
 import { compilePathRegex, pathnameMatchesRegex } from '../utils/pathRegex';
+import { normalizePathConfig, type PathConfig } from './normalizePathConfig';
 
 const NEXT_JS_SOURCE_MAP_PATH = '/__nextjs_source-map';
 
@@ -38,8 +38,6 @@ type MiddlewareEnvConfig = {
   locales?: string[];
   headersAndCookies?: HeadersAndCookies;
 };
-
-export type RouteOverrides = Record<string, readonly string[]>;
 
 /**
  * Middleware factory to create a Next.js middleware for i18n routing and locale detection.
@@ -52,22 +50,19 @@ export type RouteOverrides = Record<string, readonly string[]>;
  * @param {boolean} [config.localeRouting=true] - Flag to enable or disable automatic locale-based routing.
  * @param {boolean} [config.prefixDefaultLocale=false] - Flag to enable or disable prefixing the default locale to the pathname, i.e., /en/about -> /about
  * @param {boolean} [config.ignoreSourceMaps=true] - Flag to enable or disable ignoring source maps
- * @param {PathConfig} [config.pathConfig] - Path configuration for locale routing
- * @param {RouteOverrides} [config.routeOverrides] - Locale-relative paths to rewrite from /{locale}/{path} to /{locale}/{locale}/{path}
+ * @param {PathConfig} [config.pathConfig] - Localized paths and locale-specific page overrides
  * @returns {function} - A middleware function that processes the request and response.
  */
 export function createNextMiddleware({
   localeRouting = true,
   prefixDefaultLocale = false,
   ignoreSourceMaps = true,
-  pathConfig = {},
-  routeOverrides = {},
+  pathConfig: inputPathConfig = {},
 }: {
   localeRouting?: boolean;
   prefixDefaultLocale?: boolean;
   ignoreSourceMaps?: boolean;
   pathConfig?: PathConfig;
-  routeOverrides?: RouteOverrides;
 } = {}) {
   const pathRegex = compilePathRegex(
     process.env._GENERALTRANSLATION_PATH_REGEX
@@ -138,32 +133,9 @@ export function createNextMiddleware({
 
   // ---------- PRE-PROCESSING PATHS ---------- //
 
-  // Standardize pathConfig paths
-  pathConfig = Object.entries(pathConfig).reduce<PathConfig>(
-    (acc, [sharedPath, localizedPath]) => {
-      if (typeof localizedPath === 'string') {
-        acc[sharedPath] = localizedPath;
-      } else {
-        acc[sharedPath] = Object.entries(localizedPath).reduce<{
-          [key: string]: string;
-        }>((acc, [locale, localizedPath]) => {
-          acc[gtServicesEnabled ? standardizeLocale(locale) : locale] =
-            localizedPath;
-          return acc;
-        }, {});
-      }
-      return acc;
-    },
-    {}
-  );
-
-  // Standardize routeOverrides locales
-  routeOverrides = Object.entries(routeOverrides).reduce<RouteOverrides>(
-    (acc, [locale, paths]) => {
-      acc[gtServicesEnabled ? standardizeLocale(locale) : locale] = paths;
-      return acc;
-    },
-    {}
+  const { pathConfig, routeOverrides } = normalizePathConfig(
+    inputPathConfig,
+    gtServicesEnabled
   );
 
   // Create the route override path mapping
