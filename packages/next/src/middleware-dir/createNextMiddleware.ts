@@ -341,18 +341,19 @@ export function createNextMiddleware({
             );
           }
         } else {
+          const localizedPublicPath =
+            localizedPathWithParameters.replace(
+              new RegExp(`^/${userLocale}`),
+              ''
+            ) || '/';
+
           // REDIRECT CASE: unprefixed pathname is wrong (/about -> /en-about)
           if (
             !pathnameLocale &&
-            normalizePathname(localizedPathWithParameters) !==
-              normalizePathname(`/${userLocale}${pathname}`)
+            normalizePathname(localizedPublicPath) !==
+              normalizePathname(pathname)
           ) {
-            return getRedirectResponse(
-              localizedPathWithParameters.replace(
-                new RegExp(`^/${userLocale}`),
-                ''
-              ) || '/'
-            );
+            return getRedirectResponse(localizedPublicPath);
           }
 
           // REWRITE CASE: displaying correct path (/blog -> /en/blog)
