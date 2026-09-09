@@ -52,8 +52,11 @@ import {
 } from './commands/translate.js';
 import {
   getNeedsPostprocessing,
+  getDownloaded,
+  getDownloadedMeta,
   clearDownloaded,
 } from '../state/recentDownloads.js';
+import { persistPostProcessHashes } from '../utils/persistPostprocessHashes.js';
 import { clearWarnings } from '../state/translateWarnings.js';
 import { displayTranslateSummary } from '../console/displayTranslateSummary.js';
 import updateConfig from '../fs/config/updateConfig.js';
@@ -579,6 +582,9 @@ export class BaseCLI {
       requireConfig: true,
     });
     await handleDownload(initOptions, settings, this.library);
+    // Nothing postprocesses a standalone download, so the files are final as written
+    persistPostProcessHashes(settings, getDownloaded(), getDownloadedMeta());
+    clearDownloaded();
   }
 
   protected async handleTranslate(initOptions: TranslateFlags): Promise<void> {
