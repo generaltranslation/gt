@@ -2,7 +2,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { NextRequest } from 'next/server';
 import { createNextMiddleware } from '../createNextMiddleware';
-import type { PathConfig } from '../utils';
+import type { PathConfig } from '../normalizePathConfig';
 
 const DEFAULT_LOCALE = 'en';
 const LOCALE_HEADER = 'x-generaltranslation-locale';
@@ -145,13 +145,13 @@ function createRouteOverrideCases(): RouteOverrideCase[] {
                 search ? 'query' : 'no query',
               ].join(' | '),
               locale,
-              pathConfig: localizedPath
-                ? {
-                    [routeTemplate]: {
-                      [locale]: localizedTemplate,
-                    },
-                  }
-                : {},
+              pathConfig: {
+                [routeTemplate]: {
+                  [locale]: localizedPath
+                    ? { path: localizedTemplate, override: true }
+                    : { override: true },
+                },
+              },
               prefixDefaultLocale,
               requestPath,
               routeTemplate,
@@ -225,9 +225,6 @@ describe('routeOverrides routing matrix', () => {
     const middleware = createNextMiddleware({
       pathConfig: testCase.pathConfig,
       prefixDefaultLocale: testCase.prefixDefaultLocale,
-      routeOverrides: {
-        [testCase.locale]: [testCase.routeTemplate],
-      },
     });
 
     const response = middleware(createRequest(testCase));

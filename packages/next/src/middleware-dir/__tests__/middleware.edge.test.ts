@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { createNextMiddleware } from '../createNextMiddleware';
-import type { PathConfig } from '../utils';
+import type { PathConfig } from '../normalizePathConfig';
 import type { CustomMapping } from '@generaltranslation/format/types';
 
 // ---- Cookie Constants (must match the real defaults) ----
@@ -363,7 +363,7 @@ describe('Middleware Integration Tests', () => {
       setEnvConfig();
       const middleware = createNextMiddleware({
         prefixDefaultLocale: true,
-        routeOverrides: { fr: ['/custom-page'] },
+        pathConfig: { '/custom-page': { fr: { override: true } } },
       });
 
       const res = middleware(createRequest('/fr/custom-page'));
@@ -377,7 +377,7 @@ describe('Middleware Integration Tests', () => {
       setEnvConfig();
       const middleware = createNextMiddleware({
         prefixDefaultLocale: true,
-        routeOverrides: { fr: ['/custom-page'] },
+        pathConfig: { '/custom-page': { fr: { override: true } } },
       });
 
       const res = middleware(createRequest('/fr/shared-page'));
@@ -389,7 +389,7 @@ describe('Middleware Integration Tests', () => {
       setEnvConfig();
       const middleware = createNextMiddleware({
         prefixDefaultLocale: false,
-        routeOverrides: { fr: ['/custom-page'] },
+        pathConfig: { '/custom-page': { fr: { override: true } } },
       });
 
       const res = middleware(createRequest('/fr/custom-page'));
@@ -402,7 +402,7 @@ describe('Middleware Integration Tests', () => {
       setEnvConfig();
       const middleware = createNextMiddleware({
         prefixDefaultLocale: false,
-        routeOverrides: { en: ['/custom-page'] },
+        pathConfig: { '/custom-page': { en: { override: true } } },
       });
 
       const res = middleware(createRequest('/custom-page'));
@@ -415,7 +415,7 @@ describe('Middleware Integration Tests', () => {
       setEnvConfig();
       const middleware = createNextMiddleware({
         prefixDefaultLocale: true,
-        routeOverrides: { fr: ['/custom-page'] },
+        pathConfig: { '/custom-page': { fr: { override: true } } },
       });
 
       const res = middleware(
@@ -431,7 +431,7 @@ describe('Middleware Integration Tests', () => {
       setEnvConfig();
       const middleware = createNextMiddleware({
         prefixDefaultLocale: true,
-        routeOverrides: { fr: ['/products/[id]'] },
+        pathConfig: { '/products/[id]': { fr: { override: true } } },
       });
 
       const res = middleware(createRequest('/fr/products/ramp-card'));
@@ -444,7 +444,7 @@ describe('Middleware Integration Tests', () => {
       setEnvConfig();
       const middleware = createNextMiddleware({
         prefixDefaultLocale: true,
-        routeOverrides: { fr: ['/blog/[...slug]'] },
+        pathConfig: { '/blog/[...slug]': { fr: { override: true } } },
       });
 
       const res = middleware(createRequest('/fr/blog/guides/getting-started'));
@@ -457,7 +457,7 @@ describe('Middleware Integration Tests', () => {
       setEnvConfig();
       const middleware = createNextMiddleware({
         prefixDefaultLocale: true,
-        routeOverrides: { fr: ['/news/[[...slug]]'] },
+        pathConfig: { '/news/[[...slug]]': { fr: { override: true } } },
       });
 
       const rootRes = middleware(createRequest('/fr/news'));
@@ -474,9 +474,10 @@ describe('Middleware Integration Tests', () => {
       const middleware = createNextMiddleware({
         prefixDefaultLocale: true,
         pathConfig: {
-          '/blog/[...slug]': { fr: '/articles/[...slug]' },
+          '/blog/[...slug]': {
+            fr: { path: '/articles/[...slug]', override: true },
+          },
         },
-        routeOverrides: { fr: ['/blog/[...slug]'] },
       });
 
       const res = middleware(
@@ -492,10 +493,8 @@ describe('Middleware Integration Tests', () => {
       const middleware = createNextMiddleware({
         prefixDefaultLocale: true,
         pathConfig: {
-          '/cafe/[slug]': { fr: '/café/[slug]' },
-        },
-        routeOverrides: {
-          fr: ['/docs/v1.0/[...slug]', '/cafe/[slug]'],
+          '/cafe/[slug]': { fr: { path: '/café/[slug]', override: true } },
+          '/docs/v1.0/[...slug]': { fr: { override: true } },
         },
       });
 
@@ -512,7 +511,7 @@ describe('Middleware Integration Tests', () => {
       setEnvConfig();
       const middleware = createNextMiddleware({
         prefixDefaultLocale: true,
-        routeOverrides: { fr: ['/custom-page'] },
+        pathConfig: { '/custom-page': { fr: { override: true } } },
       });
 
       const res = middleware(
@@ -528,7 +527,7 @@ describe('Middleware Integration Tests', () => {
       process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED = 'true';
       const middleware = createNextMiddleware({
         prefixDefaultLocale: true,
-        routeOverrides: { 'fr-fr': ['/custom-page'] },
+        pathConfig: { '/custom-page': { 'fr-fr': { override: true } } },
       });
 
       const res = middleware(createRequest('/fr-FR/custom-page'));
@@ -542,9 +541,10 @@ describe('Middleware Integration Tests', () => {
       const middleware = createNextMiddleware({
         prefixDefaultLocale: true,
         pathConfig: {
-          '/custom-page': { fr: '/page-personnalisee' },
+          '/custom-page': {
+            fr: { path: '/page-personnalisee', override: true },
+          },
         },
-        routeOverrides: { fr: ['/custom-page'] },
       });
 
       const res = middleware(createRequest('/fr/page-personnalisee'));
@@ -557,7 +557,7 @@ describe('Middleware Integration Tests', () => {
       setEnvConfig();
       const middleware = createNextMiddleware({
         prefixDefaultLocale: false,
-        routeOverrides: { fr: ['/custom-page'] },
+        pathConfig: { '/custom-page': { fr: { override: true } } },
       });
 
       const res = middleware(

@@ -55,8 +55,7 @@ describe.each([false, true])(
       ({ shared, localized, pathname, destination }) => {
         const middleware = createNextMiddleware({
           prefixDefaultLocale,
-          pathConfig: { [shared]: { fr: localized } },
-          routeOverrides: { fr: [shared] },
+          pathConfig: { [shared]: { fr: { path: localized, override: true } } },
         });
         const response = middleware(new NextRequest(origin + pathname + query));
 

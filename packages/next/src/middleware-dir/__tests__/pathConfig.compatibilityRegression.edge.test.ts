@@ -8,7 +8,7 @@ import {
 import { defaultLocaleRoutingEnabledCookieName } from '../../utils/cookies';
 import { defaultLocaleHeaderName } from '../../utils/headers';
 import { createNextMiddleware } from '../createNextMiddleware';
-import type { PathConfig } from '../utils';
+import type { PathConfig } from '../normalizePathConfig';
 
 const origin = 'http://localhost:3000';
 const search = '?tag=one&tag=two&literal=%252F%2B';
@@ -205,7 +205,9 @@ describe('explicit default aliases and locale preference', () => {
 
   it('does not infer an English alias from override-only configuration', () => {
     const middleware = createNextMiddleware({
-      routeOverrides: { en: ['/about'], fr: ['/about'] },
+      pathConfig: {
+        '/about': { en: { override: true }, fr: { override: true } },
+      },
     });
     expectRoute(
       middleware(request('/about', 'fr')),
@@ -325,8 +327,9 @@ describe('locale-key compatibility', () => {
 
 describe('localized paths combined with route overrides', () => {
   const options: Options = {
-    pathConfig: { '/products/[id]': { fr: '/produits/[id]' } },
-    routeOverrides: { fr: ['/products/[id]'] },
+    pathConfig: {
+      '/products/[id]': { fr: { path: '/produits/[id]', override: true } },
+    },
   };
 
   it('canonicalizes the public path before using the French implementation', () => {
