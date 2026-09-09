@@ -11,11 +11,22 @@ import {
 
 function getSharedPath(
   pathname: string,
-  paths: Record<string, string>,
+  paths: Record<
+    string,
+    string | { sharedPath: string; sourceTemplate: string }
+  >,
   pathnameLocale: string | undefined
 ): string | undefined {
+  const mappings = Object.fromEntries(
+    Object.entries(paths).map(([pattern, value]) => [
+      pattern,
+      typeof value === 'string'
+        ? { sharedPath: value, sourceTemplate: value }
+        : value,
+    ])
+  );
   const sharedPaths = Object.fromEntries(
-    Object.values(paths).map((sharedPath) => [sharedPath, sharedPath])
+    Object.values(mappings).map(({ sharedPath }) => [sharedPath, sharedPath])
   );
   const { sharedOnlyPathToSharedPath } = createPathToSharedPathMap(
     sharedPaths,
@@ -24,10 +35,10 @@ function getSharedPath(
   );
   return getSharedPathWithMaps(
     pathname,
-    paths,
+    mappings,
     pathnameLocale,
     sharedOnlyPathToSharedPath
-  );
+  )?.sharedPath;
 }
 
 describe('extractLocale', () => {
@@ -270,9 +281,15 @@ describe('createPathToSharedPathMap', () => {
 
     const result = createPathToSharedPathMap(pathConfig, true, 'en');
 
-    expect(result.pathToSharedPath['/about']).toBe('/about');
-    expect(result.pathToSharedPath['/contact']).toBe('/contact');
-    expect(result.pathToSharedPath['/services']).toBe('/services');
+    expect(result.unprefixedPathToSharedPath['/about']?.sharedPath).toBe(
+      '/about'
+    );
+    expect(result.unprefixedPathToSharedPath['/contact']?.sharedPath).toBe(
+      '/contact'
+    );
+    expect(result.unprefixedPathToSharedPath['/services']?.sharedPath).toBe(
+      '/services'
+    );
     expect(result.defaultLocalePaths).toEqual([]);
   });
 
@@ -287,10 +304,12 @@ describe('createPathToSharedPathMap', () => {
 
     const result = createPathToSharedPathMap(pathConfig, true, 'en');
 
-    expect(result.pathToSharedPath['/about']).toBe('/about');
-    expect(result.pathToSharedPath['/en/about-us']).toBe('/about');
-    expect(result.pathToSharedPath['/fr/a-propos']).toBe('/about');
-    expect(result.pathToSharedPath['/es/acerca-de']).toBe('/about');
+    expect(result.unprefixedPathToSharedPath['/about']?.sharedPath).toBe(
+      '/about'
+    );
+    expect(result.pathToSharedPath['/en/about-us']?.sharedPath).toBe('/about');
+    expect(result.pathToSharedPath['/fr/a-propos']?.sharedPath).toBe('/about');
+    expect(result.pathToSharedPath['/es/acerca-de']?.sharedPath).toBe('/about');
   });
 
   it('should handle default locale without prefix', () => {
@@ -307,10 +326,16 @@ describe('createPathToSharedPathMap', () => {
 
     const result = createPathToSharedPathMap(pathConfig, false, 'en');
 
-    expect(result.pathToSharedPath['/about-us']).toBe('/about');
-    expect(result.pathToSharedPath['/contact-us']).toBe('/contact');
-    expect(result.pathToSharedPath['/fr/a-propos']).toBe('/about');
-    expect(result.pathToSharedPath['/fr/contactez-nous']).toBe('/contact');
+    expect(result.unprefixedPathToSharedPath['/about-us']?.sharedPath).toBe(
+      '/about'
+    );
+    expect(result.unprefixedPathToSharedPath['/contact-us']?.sharedPath).toBe(
+      '/contact'
+    );
+    expect(result.pathToSharedPath['/fr/a-propos']?.sharedPath).toBe('/about');
+    expect(result.pathToSharedPath['/fr/contactez-nous']?.sharedPath).toBe(
+      '/contact'
+    );
     expect(result.defaultLocalePaths).toContain('/about-us');
     expect(result.defaultLocalePaths).toContain('/contact-us');
   });
@@ -329,12 +354,18 @@ describe('createPathToSharedPathMap', () => {
 
     const result = createPathToSharedPathMap(pathConfig, true, 'en');
 
-    expect(result.pathToSharedPath['/blog/[^/]+']).toBe('/blog/[id]');
-    expect(result.pathToSharedPath['/en/blog/[^/]+']).toBe('/blog/[id]');
-    expect(result.pathToSharedPath['/fr/article/[^/]+']).toBe('/blog/[id]');
-    expect(result.pathToSharedPath['/user/[^/]+/post/[^/]+']).toBe(
-      '/user/[userId]/post/[postId]'
+    expect(result.unprefixedPathToSharedPath['/blog/[^/]+']?.sharedPath).toBe(
+      '/blog/[id]'
     );
+    expect(result.pathToSharedPath['/en/blog/[^/]+']?.sharedPath).toBe(
+      '/blog/[id]'
+    );
+    expect(result.pathToSharedPath['/fr/article/[^/]+']?.sharedPath).toBe(
+      '/blog/[id]'
+    );
+    expect(
+      result.unprefixedPathToSharedPath['/user/[^/]+/post/[^/]+']?.sharedPath
+    ).toBe('/user/[userId]/post/[postId]');
   });
 
   it('should handle mixed static and dynamic configurations', () => {
@@ -348,10 +379,16 @@ describe('createPathToSharedPathMap', () => {
 
     const result = createPathToSharedPathMap(pathConfig, true, 'en');
 
-    expect(result.pathToSharedPath['/static-page']).toBe('/static-page');
-    expect(result.pathToSharedPath['/dynamic/[^/]+']).toBe('/dynamic/[id]');
-    expect(result.pathToSharedPath['/en/dynamic/[^/]+']).toBe('/dynamic/[id]');
-    expect(result.pathToSharedPath['/fr/dynamique/[^/]+']).toBe(
+    expect(result.unprefixedPathToSharedPath['/static-page']?.sharedPath).toBe(
+      '/static-page'
+    );
+    expect(
+      result.unprefixedPathToSharedPath['/dynamic/[^/]+']?.sharedPath
+    ).toBe('/dynamic/[id]');
+    expect(result.pathToSharedPath['/en/dynamic/[^/]+']?.sharedPath).toBe(
+      '/dynamic/[id]'
+    );
+    expect(result.pathToSharedPath['/fr/dynamique/[^/]+']?.sharedPath).toBe(
       '/dynamic/[id]'
     );
   });
@@ -456,16 +493,17 @@ describe('configured dynamic route literals', () => {
     'matches shared and localized %s literally and rejects %s',
     (literal, lookalike) => {
       const sharedPath = `/shared/${literal}/[id]`;
-      const { pathToSharedPath } = createPathToSharedPathMap(
-        {
-          [sharedPath]: {
-            en: `/english/${literal}/[id]`,
-            fr: `/french/${literal}/[id]`,
+      const { pathToSharedPath, unprefixedPathToSharedPath } =
+        createPathToSharedPathMap(
+          {
+            [sharedPath]: {
+              en: `/english/${literal}/[id]`,
+              fr: `/french/${literal}/[id]`,
+            },
           },
-        },
-        false,
-        'en'
-      );
+          false,
+          'en'
+        );
 
       for (const [prefix, locale] of [
         ['/shared', undefined],
@@ -473,15 +511,23 @@ describe('configured dynamic route literals', () => {
         ['/fr/french', 'fr'],
       ] as const) {
         expect(
-          getSharedPath(`${prefix}/${literal}/one`, pathToSharedPath, locale)
+          getSharedPath(
+            `${prefix}/${literal}/one`,
+            locale ? pathToSharedPath : unprefixedPathToSharedPath,
+            locale
+          )
         ).toBe(sharedPath);
         expect(
-          getSharedPath(`${prefix}/${lookalike}/one`, pathToSharedPath, locale)
+          getSharedPath(
+            `${prefix}/${lookalike}/one`,
+            locale ? pathToSharedPath : unprefixedPathToSharedPath,
+            locale
+          )
         ).toBeUndefined();
         expect(
           getSharedPath(
             `${prefix}/${literal}/one/two`,
-            pathToSharedPath,
+            locale ? pathToSharedPath : unprefixedPathToSharedPath,
             locale
           )
         ).toBeUndefined();
@@ -490,18 +536,19 @@ describe('configured dynamic route literals', () => {
   );
 
   it('prefers exact static routes over earlier dynamic routes', () => {
-    const { pathToSharedPath } = createPathToSharedPathMap(
-      {
-        '/v1.0/[id]': { fr: '/version.1/[id]' },
-        '/v1.0/new': { fr: '/version.1/new' },
-      },
-      false,
-      'en'
-    );
+    const { pathToSharedPath, unprefixedPathToSharedPath } =
+      createPathToSharedPathMap(
+        {
+          '/v1.0/[id]': { fr: '/version.1/[id]' },
+          '/v1.0/new': { fr: '/version.1/new' },
+        },
+        false,
+        'en'
+      );
 
-    expect(getSharedPath('/v1.0/new', pathToSharedPath, undefined)).toBe(
-      '/v1.0/new'
-    );
+    expect(
+      getSharedPath('/v1.0/new', unprefixedPathToSharedPath, undefined)
+    ).toBe('/v1.0/new');
     expect(getSharedPath('/fr/version.1/new', pathToSharedPath, 'fr')).toBe(
       '/v1.0/new'
     );
@@ -509,20 +556,21 @@ describe('configured dynamic route literals', () => {
 
   it('keeps encoded brackets literal beside a real placeholder', () => {
     const sharedPath = '/%5Bid%5D/[slug]';
-    const { pathToSharedPath } = createPathToSharedPathMap(
-      { [sharedPath]: { fr: '/%5Barticle%5D/[slug]' } },
-      false,
-      'en'
-    );
+    const { pathToSharedPath, unprefixedPathToSharedPath } =
+      createPathToSharedPathMap(
+        { [sharedPath]: { fr: '/%5Barticle%5D/[slug]' } },
+        false,
+        'en'
+      );
 
-    expect(getSharedPath('/%5Bid%5D/one', pathToSharedPath, undefined)).toBe(
-      sharedPath
-    );
+    expect(
+      getSharedPath('/%5Bid%5D/one', unprefixedPathToSharedPath, undefined)
+    ).toBe(sharedPath);
     expect(getSharedPath('/fr/%5Barticle%5D/one', pathToSharedPath, 'fr')).toBe(
       sharedPath
     );
     expect(
-      getSharedPath('/anything/one', pathToSharedPath, undefined)
+      getSharedPath('/anything/one', unprefixedPathToSharedPath, undefined)
     ).toBeUndefined();
     expect(
       getSharedPath('/fr/anything/one', pathToSharedPath, 'fr')

@@ -134,16 +134,17 @@ export function extractDynamicParams(
  */
 export function replaceDynamicSegments(
   path: string,
-  templatePath: string
+  templatePath: string,
+  params?: string[]
 ): string {
   if (!templatePath.includes('[')) {
     return applyTrailingSlash(path, templatePath);
   }
 
-  const params = extractDynamicParams(templatePath, path);
+  const pathParams = params ?? extractDynamicParams(templatePath, path);
   let paramIndex = 0;
   const result = templatePath.replace(/\[([^\]]+)\]/g, (match: string) => {
-    return params[paramIndex++] || match;
+    return pathParams[paramIndex++] || match;
   });
   return applyTrailingSlash(path, result);
 }
@@ -170,6 +171,8 @@ export function getLocalizedPath(
   return path;
 }
 
+type PathMapping = { sharedPath: string; sourceTemplate: string };
+
 /**
  * Creates a map of localized paths to shared paths using regex patterns
  */
@@ -178,15 +181,15 @@ export function createPathToSharedPathMap(
   prefixDefaultLocale: boolean,
   defaultLocale: string
 ): {
-  pathToSharedPath: { [key: string]: string };
-  unprefixedPathToSharedPath: { [key: string]: string };
-  sharedOnlyPathToSharedPath: { [key: string]: string };
+  pathToSharedPath: Record<string, PathMapping>;
+  unprefixedPathToSharedPath: Record<string, PathMapping>;
+  sharedOnlyPathToSharedPath: Record<string, PathMapping>;
   defaultLocalePaths: string[];
 } {
   return Object.entries(pathConfig).reduce<{
-    pathToSharedPath: { [key: string]: string };
-    unprefixedPathToSharedPath: { [key: string]: string };
-    sharedOnlyPathToSharedPath: { [key: string]: string };
+    pathToSharedPath: Record<string, PathMapping>;
+    unprefixedPathToSharedPath: Record<string, PathMapping>;
+    sharedOnlyPathToSharedPath: Record<string, PathMapping>;
     defaultLocalePaths: string[];
   }>(
     (acc, [sharedPath, localizedPaths]) => {
@@ -198,20 +201,24 @@ export function createPathToSharedPathMap(
       } = acc;
       // Preserve raw templates for parameter substitution and output URLs.
       const sharedPattern = createPathPattern(sharedPath);
-      pathToSharedPath[sharedPattern] = sharedPath;
-      unprefixedPathToSharedPath[sharedPattern] = sharedPath;
-      sharedOnlyPathToSharedPath[sharedPattern] = sharedPath;
+      const sharedMapping = { sharedPath, sourceTemplate: sharedPath };
+      unprefixedPathToSharedPath[sharedPattern] = sharedMapping;
+      sharedOnlyPathToSharedPath[sharedPattern] = sharedMapping;
 
       if (typeof localizedPaths === 'object') {
         Object.entries(localizedPaths).forEach(([locale, localizedPath]) => {
           // Convert the localized path to a regex pattern
           // Replace [param] with [^/]+ to match any non-slash characters
           const pattern = createPathPattern(localizedPath);
-          pathToSharedPath[stripTrailingSlashes(`/${locale}${pattern}`)] =
-            sharedPath;
+          pathToSharedPath[stripTrailingSlashes(`/${locale}${pattern}`)] = {
+            sharedPath,
+            sourceTemplate: `/${locale}${localizedPath}`,
+          };
           if (!prefixDefaultLocale && locale === defaultLocale) {
-            pathToSharedPath[pattern] = sharedPath;
-            unprefixedPathToSharedPath[pattern] = sharedPath;
+            unprefixedPathToSharedPath[pattern] = {
+              sharedPath,
+              sourceTemplate: localizedPath,
+            };
             defaultLocalePaths.push(pattern);
           }
         });
@@ -232,16 +239,21 @@ export function createPathToSharedPathMap(
  */
 export function getSharedPath(
   standardizedPathname: string,
-  pathToSharedPath: { [key: string]: string },
+  pathToSharedPath: Record<string, PathMapping>,
   pathnameLocale: string | undefined,
-  sharedOnlyPathToSharedPath: { [key: string]: string }
-): string | undefined {
+  sharedOnlyPathToSharedPath: Record<string, PathMapping>
+): { sharedPath: string; params: string[] } | undefined {
+  const rawPathname = standardizedPathname;
+  const match = (mapping: PathMapping, pathname: string) => ({
+    sharedPath: mapping.sharedPath,
+    params: extractDynamicParams(mapping.sourceTemplate, pathname),
+  });
   standardizedPathname = normalizePathForMatching(standardizedPathname);
   const pathnameWithoutTrailingSlash =
     stripTrailingSlashes(standardizedPathname);
   // Try exact match first
   if (pathToSharedPath[pathnameWithoutTrailingSlash]) {
-    return pathToSharedPath[pathnameWithoutTrailingSlash];
+    return match(pathToSharedPath[pathnameWithoutTrailingSlash], rawPathname);
   }
 
   // Without locale prefix
@@ -252,22 +264,23 @@ export function getSharedPath(
       standardizedPathname.replace(/^\/[^/]+/, '')
     );
     if (sharedOnlyPathToSharedPath[pathnameWithoutLocale]) {
-      return sharedOnlyPathToSharedPath[pathnameWithoutLocale];
+      return match(
+        sharedOnlyPathToSharedPath[pathnameWithoutLocale],
+        rawPathname.replace(/^\/[^/]+/, '') || '/'
+      );
     }
   }
 
   // Try regex pattern match
-  for (const [pattern, sharedPath] of Object.entries(pathToSharedPath)) {
+  for (const [pattern, mapping] of Object.entries(pathToSharedPath)) {
     if (pattern.includes(DYNAMIC_PATH_SEGMENT_PATTERN)) {
       // Convert the pattern to a strict regex that matches the exact path structure
       const regex = new RegExp(`^${pattern}$`);
       // Exact match
       // Shared patterns must not consume a recognized locale as a parameter.
-      if (
-        (!pathnameLocale || pattern.startsWith(`/${pathnameLocale}/`)) &&
-        regex.test(pathnameWithoutTrailingSlash)
-      ) {
-        return sharedPath;
+      // The full-path map contains only aliases when a locale is recognized.
+      if (regex.test(pathnameWithoutTrailingSlash)) {
+        return match(mapping, rawPathname);
       }
     }
   }
@@ -275,14 +288,14 @@ export function getSharedPath(
   // Without locale prefix
   // Once the locale is removed, the remaining segments are shared route data.
   if (pathnameWithoutLocale !== undefined) {
-    for (const [pattern, sharedPath] of Object.entries(
+    for (const [pattern, mapping] of Object.entries(
       sharedOnlyPathToSharedPath
     )) {
       if (
         pattern.includes(DYNAMIC_PATH_SEGMENT_PATTERN) &&
         new RegExp(`^${pattern}$`).test(pathnameWithoutLocale)
       ) {
-        return sharedPath;
+        return match(mapping, rawPathname.replace(/^\/[^/]+/, '') || '/');
       }
     }
   }
