@@ -1,5 +1,6 @@
 import { isAcceptedPluralForm } from 'generaltranslation/internal';
 import { InjectionType, TransformationPrefix } from 'generaltranslation/types';
+import { parseTransformation } from './parseTransformation';
 import {
   ReactNode,
   ReactElement,
@@ -187,16 +188,10 @@ function getTransformation(elementType: ReactElement['type']):
   if (transformation == null || typeof transformation !== 'string')
     return undefined;
 
-  // Extract metadata from transformation string
-  const parts = transformation.split('-');
-  const componentType = parts[0] as TransformationPrefix;
-  const injectionType =
-    parts[1] === 'automatic' || parts[2] === 'automatic'
-      ? 'automatic'
-      : 'manual';
+  const { prefix, injectionType } = parseTransformation(transformation);
 
   return {
-    componentType,
+    componentType: prefix,
     injectionType,
   };
 }
