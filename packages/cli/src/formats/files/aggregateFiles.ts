@@ -3,6 +3,7 @@ import { logErrorAndExit } from '../../console/logging.js';
 import {
   fileEncodingSkipReason,
   lottieExpressionsError,
+  xcstringsSourceLanguageMismatchError,
 } from '../../console/index.js';
 import { recordWarning } from '../../state/translateWarnings.js';
 import { lottieHasExpressions } from './detectLottieExpressions.js';
@@ -20,6 +21,7 @@ import {
   parseXcstringsCatalog,
   serializeXcstringsSlice,
   sliceSourceCatalog,
+  type XcstringsCatalog,
 } from '../xcstrings/parseXcstrings.js';
 import {
   resolveMintlifyRefs,
@@ -456,23 +458,16 @@ export async function aggregateFiles(
   // hashed into versionId, so an unchanged catalog re-slices byte-identically
   // and does not re-upload.
   if (filePaths.xcstrings) {
+    const sourceLanguageMismatches: { file: string; sourceLanguage: string }[] =
+      [];
     const xcstringsFiles = filePaths.xcstrings
       .map((filePath) => {
         const content = readFile(filePath);
         const relativePath = getRelative(filePath);
 
-        let sourceSlice: string;
+        let catalog: XcstringsCatalog;
         try {
-          const catalog = parseXcstringsCatalog(content);
-          // Slicing follows the catalog's own sourceLanguage while the upload
-          // is labeled settings.defaultLocale; a mismatch would upload
-          // mislabeled source content, so treat it as a config error.
-          if (catalog.sourceLanguage !== settings.defaultLocale) {
-            throw new Error(
-              `catalog sourceLanguage "${catalog.sourceLanguage}" does not match the configured defaultLocale "${settings.defaultLocale}"`
-            );
-          }
-          sourceSlice = serializeXcstringsSlice(sliceSourceCatalog(catalog));
+          catalog = parseXcstringsCatalog(content);
         } catch (error) {
           const reason =
             error instanceof Error
@@ -482,6 +477,20 @@ export async function aggregateFiles(
           recordWarning('skipped_file', relativePath, reason);
           return null;
         }
+        // Slicing follows the catalog's own sourceLanguage while the upload is
+        // labeled settings.defaultLocale; a mismatch would upload mislabeled
+        // source content, so it is a configuration error that stops the run
+        // rather than a skipped file.
+        if (catalog.sourceLanguage !== settings.defaultLocale) {
+          sourceLanguageMismatches.push({
+            file: relativePath,
+            sourceLanguage: catalog.sourceLanguage,
+          });
+          return null;
+        }
+        const sourceSlice = serializeXcstringsSlice(
+          sliceSourceCatalog(catalog)
+        );
 
         return {
           content: sourceSlice,
@@ -497,6 +506,14 @@ export async function aggregateFiles(
         } satisfies FileToUpload;
       })
       .filter((file) => file !== null);
+    if (sourceLanguageMismatches.length > 0) {
+      logErrorAndExit(
+        xcstringsSourceLanguageMismatchError(
+          sourceLanguageMismatches,
+          settings.defaultLocale
+        )
+      );
+    }
     files.push(...xcstringsFiles);
   }
 

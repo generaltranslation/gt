@@ -445,6 +445,19 @@ export const lottieExpressionsError = (files: string[]): string =>
       '\n'
     )}\nRe-export the animation with expressions baked into keyframes (or removed), then try again.`;
 
+export const xcstringsSourceLanguageMismatchError = (
+  catalogs: { file: string; sourceLanguage: string }[],
+  defaultLocale: string
+): string =>
+  `The following .xcstrings catalog(s) declare a sourceLanguage that does not match the configured defaultLocale "${defaultLocale}":\n${catalogs
+    .map(
+      ({ file, sourceLanguage }) =>
+        `  - ${file} (sourceLanguage "${sourceLanguage}")`
+    )
+    .join(
+      '\n'
+    )}\nSet defaultLocale in gt.config.json to the catalog's sourceLanguage, or change the catalog's source language in Xcode, then try again.`;
+
 export const fileEncodingSkipReason = (error: unknown): string =>
   `File could not be decoded: ${error instanceof Error ? error.message : String(error)}`;
 
