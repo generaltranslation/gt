@@ -11,14 +11,19 @@ export type DownloadMeta = {
 };
 
 const recent = new Set<string>();
-const recentMeta = new Map<string, DownloadMeta>();
+// A file that holds every locale (a Mintlify composite docs.json) is written once per
+// locale, so a path keeps one entry per locale rather than the last one.
+const recentMeta = new Map<string, DownloadMeta[]>();
 const remerged = new Set<string>();
 
 export function recordDownloaded(filePath: string, meta?: DownloadMeta) {
   recent.add(filePath);
-  if (meta) {
-    recentMeta.set(filePath, meta);
-  }
+  if (!meta) return;
+  const metas = recentMeta.get(filePath) ?? [];
+  recentMeta.set(filePath, [
+    ...metas.filter((existing) => existing.locale !== meta.locale),
+    meta,
+  ]);
 }
 
 /**
@@ -38,7 +43,7 @@ export function getNeedsPostprocessing(): Set<string> {
   return new Set([...recent, ...remerged]);
 }
 
-export function getDownloadedMeta(): Map<string, DownloadMeta> {
+export function getDownloadedMeta(): Map<string, DownloadMeta[]> {
   return recentMeta;
 }
 

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { aggregateFiles } from '../aggregateFiles.js';
 import { logger } from '../../../console/logger.js';
+import { logErrorAndExit } from '../../../console/logging.js';
 import { readFile, getRelative } from '../../../fs/findFilepath.js';
 import { readFileContent } from '../../../fs/fileContent.js';
 import { parseJson } from '../../json/parseJson.js';
@@ -9,6 +10,7 @@ import sanitizeFileContent from '../../../utils/sanitizeFileContent.js';
 import { determineLibrary } from '../../../fs/determineFramework/index.js';
 import { isValidMdx } from '../../../utils/validateMdx.js';
 import { hashStringSync, hashVersionId } from '../../../utils/hash.js';
+import { gt } from '../../../utils/gt.js';
 import type { Settings } from '../../../types/index.js';
 
 const aggregateTestFiles = (settings: Partial<Settings>) =>
@@ -27,8 +29,15 @@ vi.mock('../../yaml/parseYaml.js');
 vi.mock('../../../utils/sanitizeFileContent.js');
 vi.mock('../../../fs/determineFramework/index.js');
 vi.mock('../../../utils/validateMdx.js');
+// Surface logErrorAndExit as a throw so tests can assert on it
+vi.mock('../../../console/logging.js', () => ({
+  logErrorAndExit: vi.fn((message: string) => {
+    throw new Error(message);
+  }),
+}));
 
 const mockLogWarning = vi.mocked(logger.warn);
+const mockLogErrorAndExit = vi.mocked(logErrorAndExit);
 const mockReadFile = vi.mocked(readFile);
 const mockReadFileContent = vi.mocked(readFileContent);
 const mockGetRelative = vi.mocked(getRelative);
@@ -879,5 +888,104 @@ describe('aggregateFiles - Empty File Handling', () => {
       expect(result[0].fileName).toBe('valid.json');
       expect(result[0].content).toBe('parsed content');
     });
+  });
+});
+
+describe('aggregateFiles - Apple .xcstrings catalogs', () => {
+  const catalog = (sourceLanguage: string) =>
+    JSON.stringify({
+      sourceLanguage,
+      version: '1.0',
+      strings: {
+        greeting: {
+          localizations: {
+            [sourceLanguage]: {
+              stringUnit: { state: 'translated', value: 'Hello' },
+            },
+          },
+        },
+      },
+    });
+
+  const settingsFor = (
+    contents: Record<string, string>,
+    defaultLocale = 'en'
+  ) => {
+    mockReadFile.mockImplementation((filePath) => contents[filePath] ?? '');
+    return {
+      files: {
+        resolvedPaths: { xcstrings: Object.keys(contents) },
+        placeholderPaths: {},
+      },
+      options: {},
+      defaultLocale,
+    };
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetRelative.mockImplementation((path) =>
+      path.replace('/full/path/', '')
+    );
+  });
+
+  afterEach(() => {
+    gt.setConfig({ customMapping: {} });
+  });
+
+  it('stops the run before anything is uploaded when a catalog sourceLanguage does not match defaultLocale', async () => {
+    const settings = settingsFor({
+      '/full/path/App/Localizable.xcstrings': catalog('en'),
+      '/full/path/Legacy/Localizable.xcstrings': catalog('de'),
+    });
+
+    await expect(aggregateTestFiles(settings)).rejects.toThrow();
+
+    expect(mockLogErrorAndExit).toHaveBeenCalledTimes(1);
+    const message = mockLogErrorAndExit.mock.calls[0][0];
+    expect(message).toContain('Legacy/Localizable.xcstrings');
+    expect(message).toContain('sourceLanguage "de"');
+    expect(message).toContain('defaultLocale "en"');
+    expect(message).toContain('gt.config.json');
+    expect(message).not.toContain('App/Localizable.xcstrings');
+    // A configuration error is not reported as a skipped file
+    expect(mockLogWarning).not.toHaveBeenCalled();
+  });
+
+  it('accepts a defaultLocale alias whose canonical tag is the catalog sourceLanguage', async () => {
+    gt.setConfig({ customMapping: { french: { code: 'fr' } } });
+    const settings = settingsFor(
+      { '/full/path/App/Localizable.xcstrings': catalog('fr') },
+      'french'
+    );
+
+    const { files } = await aggregateTestFiles(settings);
+
+    expect(mockLogErrorAndExit).not.toHaveBeenCalled();
+    expect(mockLogWarning).not.toHaveBeenCalled();
+    expect(files.map((file) => file.fileName)).toEqual([
+      'App/Localizable.xcstrings',
+    ]);
+    // The upload keeps the configured locale, as translation slices do
+    expect(files[0].locale).toBe('french');
+  });
+
+  it('skips a catalog that cannot be parsed and uploads the rest', async () => {
+    const settings = settingsFor({
+      '/full/path/Broken/Localizable.xcstrings': '{"strings": {}}',
+      '/full/path/App/Localizable.xcstrings': catalog('en'),
+    });
+
+    const { files } = await aggregateTestFiles(settings);
+
+    expect(mockLogErrorAndExit).not.toHaveBeenCalled();
+    expect(mockLogWarning).toHaveBeenCalledTimes(1);
+    expect(mockLogWarning).toHaveBeenCalledWith(
+      expect.stringMatching(/^Skipping Broken\/Localizable\.xcstrings: /)
+    );
+    expect(files.map((file) => file.fileName)).toEqual([
+      'App/Localizable.xcstrings',
+    ]);
+    expect(files[0].fileFormat).toBe('XCSTRINGS');
   });
 });

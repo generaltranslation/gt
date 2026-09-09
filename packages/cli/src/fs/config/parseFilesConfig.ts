@@ -5,6 +5,7 @@ import {
   RequiresReviewConfig,
   ResolvedFiles,
   Settings,
+  SupportedFileExtension,
   TransformFormats,
   TransformFiles,
   TransformOption,
@@ -111,6 +112,7 @@ export function resolveFiles(
   }
 
   for (const fileType of SUPPORTED_FILE_EXTENSIONS) {
+    if (fileType === 'xcstrings') validateXcstringsInPlace(files.xcstrings);
     // ==== TRANSFORMS ==== //
     const transform = files[fileType]?.transform;
     if (
@@ -141,7 +143,8 @@ export function resolveFiles(
         locale,
         locales,
         transformPaths[fileType] || undefined,
-        compositePatterns
+        compositePatterns,
+        fileType
       );
       resolvedPaths[fileType] = filePaths.resolvedPaths;
       placeholderResult[fileType] = filePaths.placeholderPaths;
@@ -209,7 +212,8 @@ export function expandGlobPatterns(
   locale: string,
   locales: string[],
   transformPatterns?: TransformOption | string | TransformOption[],
-  compositePatterns?: string[]
+  compositePatterns?: string[],
+  fileType?: SupportedFileExtension
 ): {
   resolvedPaths: string[];
   placeholderPaths: string[];
@@ -224,10 +228,13 @@ export function expandGlobPatterns(
     // It must be included in the pattern, otherwise the CLI tool will not be able to find the correct output path
     // Warn if it's not included
     // Ignore if is composite pattern
+    // xcstrings catalogs hold every locale in one shared file, so a pattern
+    // without [locale] is the expected layout there, not a misconfiguration
     if (
       !pattern.includes('[locale]') &&
       !transformPatterns &&
-      !compositePatterns?.includes(pattern)
+      !compositePatterns?.includes(pattern) &&
+      fileType !== 'xcstrings'
     ) {
       logger.warn(
         chalk.yellow(
@@ -385,6 +392,34 @@ function classifyPublishPaths(
         unpublishPaths.add(resolvedPaths[i]);
       }
     }
+  }
+}
+
+/**
+ * An .xcstrings catalog holds every locale in one file and is updated in
+ * place: each locale's download is merged into the source catalog. A path
+ * transform or a `[locale]` placeholder would map each locale to a separate
+ * output, and every write would start from the source catalog and discard the
+ * locales written before it.
+ */
+function validateXcstringsInPlace(config: FilesOptions['xcstrings']): void {
+  if (!config) return;
+  if (config.transform) {
+    logErrorAndExit(
+      'files.xcstrings.transform is not supported. An .xcstrings catalog holds every locale in one file and is updated in place, so remove the transform.'
+    );
+  }
+  const localePatterns = normalizeIncludePatterns(
+    config.include ?? []
+  ).paths.filter((pattern) => pattern.includes('[locale]'));
+  if (localePatterns.length > 0) {
+    logErrorAndExit(
+      `files.xcstrings.include must not contain [locale]: ${localePatterns
+        .map((pattern) => `"${pattern}"`)
+        .join(
+          ', '
+        )}. An .xcstrings catalog holds every locale in one file and is updated in place, so point the pattern at the catalog itself.`
+    );
   }
 }
 

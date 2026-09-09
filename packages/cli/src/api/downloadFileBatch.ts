@@ -8,6 +8,7 @@ import { validateJsonSchema } from '../formats/json/utils.js';
 import { validateYamlSchema } from '../formats/yaml/utils.js';
 import { mergeJson } from '../formats/json/mergeJson.js';
 import { extractJson } from '../formats/json/extractJson.js';
+import { mergeXcstringsLocale } from '../formats/xcstrings/mergeXcstrings.js';
 import mergeYaml from '../formats/yaml/mergeYaml.js';
 import { extractYaml } from '../formats/yaml/extractYaml.js';
 import {
@@ -334,20 +335,25 @@ export async function downloadFileBatch(
           continue;
         }
 
-        // Composite schema files merge translations into the source file itself,
-        // so outputPath always exists and the lock can't tell whether derived
-        // split outputs (e.g. {locale}/docs.json) are still on disk. Always
-        // merge fresh API data so derived files are regenerated every run;
-        // local edits to translated output are preserved via `gt save-local`.
+        // In-place translation files (composite schema JSON, .xcstrings
+        // catalogs) merge translations into the source file itself, so
+        // outputPath always exists and the lock can't tell whether this
+        // locale's content or derived split outputs (e.g. {locale}/docs.json)
+        // are still on disk. Always merge fresh API data so they are
+        // regenerated every run; local edits to translated output are
+        // preserved via `gt save-local`.
+        const isXcstringsCatalog = file.fileFormat === 'XCSTRINGS';
         const isInPlaceComposite = options.options?.jsonSchema
           ? !!validateJsonSchema(options.options, inputPath)?.composite
           : false;
+        const isInPlaceTranslationFile =
+          isXcstringsCatalog || isInPlaceComposite;
 
         if (
           !forceDownload &&
           fileExists &&
           downloadedTranslation &&
-          !isInPlaceComposite
+          !isInPlaceTranslationFile
         ) {
           // For schema-based files, re-merge with current source in case
           // non-translatable fields changed (skip the API download, not the merge)
@@ -418,14 +424,24 @@ export async function downloadFileBatch(
           result.skipped.push(requestedFile);
           continue;
         }
-        let data = mergeWithSource(file.data, locale, inputPath, options);
+        let data: string;
+        if (isXcstringsCatalog) {
+          // The pinned serializer owns the bytes and the JSON key sorter below
+          // must never see them. JSON.parse hoists integer-like keys ("404")
+          // first; versionId is unaffected (slices come from the parsed object)
+          // and Xcode re-sorts on its next save, so the only effect is a
+          // one-time reorder.
+          data = mergeXcstringsLocale(file.data, locale, inputPath);
+        } else {
+          data = mergeWithSource(file.data, locale, inputPath, options);
 
-        // Stable sort JSON keys for deterministic output
-        if (file.fileFormat === 'GTJSON' || outputPath.endsWith('.json')) {
-          try {
-            data = sortJsonString(data);
-          } catch (error) {
-            logger.warn(`Failed to sort JSON file: ${file.id}: ` + error);
+          // Stable sort JSON keys for deterministic output
+          if (file.fileFormat === 'GTJSON' || outputPath.endsWith('.json')) {
+            try {
+              data = sortJsonString(data);
+            } catch (error) {
+              logger.warn(`Failed to sort JSON file: ${file.id}: ` + error);
+            }
           }
         }
 
@@ -461,7 +477,9 @@ export async function downloadFileBatch(
             versionId
           );
           entry.fileName = inputPath;
+          // Keep the hash upload recorded until postprocessing re-hashes the file
           entry.translations[locale] = {
+            ...entry.translations[locale],
             updatedAt: new Date().toISOString(),
             fileName: getRelative(outputPath),
           };

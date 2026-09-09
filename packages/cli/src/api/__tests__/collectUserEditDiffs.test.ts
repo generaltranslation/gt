@@ -12,6 +12,12 @@ import {
   DownloadedVersionsV1,
 } from '../../fs/config/downloadedVersions.js';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
+import { clearWarnings, getWarnings } from '../../state/translateWarnings.js';
+import {
+  parseXcstringsCatalog,
+  serializeXcstringsSlice,
+  sliceTranslationCatalog,
+} from '../../formats/xcstrings/parseXcstrings.js';
 import type { FileReference } from 'generaltranslation/types';
 
 vi.mock('../../utils/api.js', () => ({
@@ -36,6 +42,7 @@ describe('collectAndSendUserEditDiffs', () => {
     );
     process.chdir(tempDir);
     vi.clearAllMocks();
+    clearWarnings();
   });
 
   afterEach(() => {
@@ -258,5 +265,311 @@ describe('collectAndSendUserEditDiffs', () => {
     ).toBe('version1');
     expect(api.downloadFileBatch).toHaveBeenCalledTimes(1);
     expect(api.submitUserEditDiffs).toHaveBeenCalledTimes(1);
+  });
+
+  describe('Apple .xcstrings catalogs', () => {
+    const CATALOG = 'App/Localizable.xcstrings';
+    const unit = (value: string) => ({
+      stringUnit: { state: 'translated', value },
+    });
+    const catalog = (deGreeting: string) => ({
+      sourceLanguage: 'en',
+      version: '1.0',
+      strings: {
+        Save: {},
+        greeting: {
+          comment: 'Home screen',
+          localizations: {
+            de: unit(deGreeting),
+            en: unit('Hello'),
+            fr: unit('Bonjour'),
+          },
+        },
+        farewell: {
+          localizations: { en: unit('Bye'), fr: unit('Au revoir') },
+        },
+      },
+    });
+    const pinned = (content: object) => JSON.stringify(content, null, 2) + '\n';
+    const slice = (content: string, locale: string) =>
+      serializeXcstringsSlice(
+        sliceTranslationCatalog(parseXcstringsCatalog(content), locale)!
+      );
+    /** A download as the server returns it: the source slice plus the locale. */
+    const served = (locale: string, values: Record<string, string>) =>
+      JSON.stringify({
+        sourceLanguage: 'en',
+        version: '1.0',
+        strings: {
+          Save: {},
+          greeting: {
+            comment: 'Home screen',
+            localizations: {
+              en: unit('Hello'),
+              ...(values.greeting && { [locale]: unit(values.greeting) }),
+            },
+          },
+          farewell: {
+            localizations: {
+              en: unit('Bye'),
+              ...(values.farewell && { [locale]: unit(values.farewell) }),
+            },
+          },
+        },
+      });
+    const reference: FileReference = {
+      fileName: CATALOG,
+      fileFormat: 'XCSTRINGS',
+      branchId: 'branch1',
+      fileId: 'file1',
+      versionId: 'version1',
+    };
+
+    const buildCatalogSettings = () => {
+      const catalogPath = path.join(tempDir, CATALOG);
+      return createMockSettings({
+        configDirectory: tempDir,
+        config: path.join(tempDir, 'gt.config.json'),
+        defaultLocale: 'en',
+        locales: ['de', 'fr'],
+        _branchId: 'branch1',
+        files: {
+          resolvedPaths: { xcstrings: [catalogPath] },
+          placeholderPaths: { xcstrings: [catalogPath] },
+          transformPaths: {},
+        },
+      });
+    };
+    const writeCatalog = (content: string) => {
+      fs.mkdirSync(path.join(tempDir, 'App'), { recursive: true });
+      fs.writeFileSync(path.join(tempDir, CATALOG), content);
+    };
+    /** The lockfile as translate leaves it: each locale's slice hash under it. */
+    const writeLockHashes = (hashes: Record<string, string>) => {
+      writeLockFile({
+        version: 1,
+        entries: {
+          branch1: {
+            file1: {
+              version1: Object.fromEntries(
+                Object.entries(hashes).map(([locale, postProcessHash]) => [
+                  locale,
+                  { updatedAt: new Date().toISOString(), postProcessHash },
+                ])
+              ),
+            },
+          },
+        },
+      });
+    };
+    /** The server holds the catalog's translations as they were downloaded. */
+    const serveTranslations = () => {
+      vi.mocked(api.queryFileData).mockImplementation(async (body) => ({
+        translatedFiles: (body.translatedFiles ?? []).map((file) => ({
+          ...file,
+          completedAt: new Date().toISOString(),
+        })),
+      }));
+      vi.mocked(api.downloadFileBatch).mockImplementation(async (files) => ({
+        files: files.map((file) => ({
+          id: `translation-${file.locale}`,
+          branchId: 'branch1',
+          fileId: 'file1',
+          versionId: 'version1',
+          locale: file.locale,
+          fileFormat: 'XCSTRINGS' as const,
+          data:
+            file.locale === 'de'
+              ? served('de', { greeting: 'Hallo' })
+              : served('fr', { greeting: 'Bonjour', farewell: 'Au revoir' }),
+          metadata: {},
+        })),
+        count: files.length,
+      }));
+    };
+    const queriedLocales = () =>
+      vi
+        .mocked(api.queryFileData)
+        .mock.calls[0][0].translatedFiles?.map((file) => file.locale);
+
+    it('skips every locale while each slice still hashes to its recorded post-process hash', async () => {
+      const settings = buildCatalogSettings();
+      const content = pinned(catalog('Hallo'));
+      writeCatalog(content);
+      writeLockHashes({
+        de: hashStringSync(slice(content, 'de')),
+        fr: hashStringSync(slice(content, 'fr')),
+      });
+
+      await collectAndSendUserEditDiffs([reference], settings);
+
+      expect(api.queryFileData).not.toHaveBeenCalled();
+      expect(api.downloadFileBatch).not.toHaveBeenCalled();
+      expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
+    });
+
+    it('submits nothing when the catalog was only re-saved in another layout', async () => {
+      const settings = buildCatalogSettings();
+      const pristine = pinned(catalog('Hallo'));
+      writeLockHashes({
+        de: hashStringSync(slice(pristine, 'de')),
+        fr: hashStringSync(slice(pristine, 'fr')),
+      });
+      // The same content as Xcode lays it out
+      writeCatalog(JSON.stringify(catalog('Hallo'), null, 4));
+
+      await collectAndSendUserEditDiffs([reference], settings);
+
+      // Each slice still hashes to its recorded hash, so no locale is checked
+      expect(api.queryFileData).not.toHaveBeenCalled();
+      expect(getGitUnifiedDiff).not.toHaveBeenCalled();
+      expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
+    });
+
+    it('submits one slice diff for the edited locale and nothing for the others', async () => {
+      const settings = buildCatalogSettings();
+      const pristine = pinned(catalog('Hallo'));
+      writeLockHashes({
+        de: hashStringSync(slice(pristine, 'de')),
+        fr: hashStringSync(slice(pristine, 'fr')),
+      });
+      // One de string edited by hand
+      const edited = JSON.stringify(catalog('Hallo!'));
+      writeCatalog(edited);
+      serveTranslations();
+      const { getGitUnifiedDiff: realGitUnifiedDiff } = await vi.importActual<
+        typeof import('../../utils/gitDiff.js')
+      >('../../utils/gitDiff.js');
+      vi.mocked(getGitUnifiedDiff).mockImplementation(realGitUnifiedDiff);
+
+      await collectAndSendUserEditDiffs([reference], settings);
+
+      // Only the de slice changed, so only de is checked against the server
+      expect(queriedLocales()).toEqual(['de']);
+      expect(getGitUnifiedDiff).toHaveBeenCalledTimes(1);
+      expect(api.submitUserEditDiffs).toHaveBeenCalledTimes(1);
+      const { diffs } = vi.mocked(api.submitUserEditDiffs).mock.calls[0][0];
+      expect(diffs).toHaveLength(1);
+      expect(diffs[0]).toMatchObject({
+        fileName: CATALOG,
+        locale: 'de',
+        fileId: 'file1',
+        versionId: 'version1',
+      });
+      // The submitted content is the de slice, not the whole catalog
+      expect(diffs[0].localContent).toBe(slice(edited, 'de'));
+      // The diff is slice against slice: the one edited value and nothing else
+      const lines = diffs[0].diff.split('\n');
+      expect(
+        lines.filter((line) => line.startsWith('-') && !line.startsWith('---'))
+      ).toEqual([expect.stringContaining('"Hallo"')]);
+      expect(
+        lines.filter((line) => line.startsWith('+') && !line.startsWith('+++'))
+      ).toEqual([expect.stringContaining('"Hallo!"')]);
+    });
+
+    it('submits the locale slice against a baseline of nothing when the server payload carries nothing for the locale', async () => {
+      const settings = buildCatalogSettings();
+      // de written by hand into a catalog the server holds no de for
+      const local = pinned(catalog('Hallo'));
+      writeCatalog(local);
+      writeLockHashes({ de: hashStringSync('stale') });
+
+      vi.mocked(api.queryFileData).mockResolvedValue({
+        translatedFiles: [
+          {
+            branchId: 'branch1',
+            fileId: 'file1',
+            versionId: 'version1',
+            locale: 'de',
+            completedAt: new Date().toISOString(),
+          },
+        ],
+      });
+      vi.mocked(api.downloadFileBatch).mockResolvedValue({
+        files: [
+          {
+            id: 'translation-de',
+            branchId: 'branch1',
+            fileId: 'file1',
+            versionId: 'version1',
+            locale: 'de',
+            fileFormat: 'XCSTRINGS',
+            // The source slice with no de in it
+            data: served('de', {}),
+            metadata: {},
+          },
+        ],
+        count: 1,
+      });
+      const { getGitUnifiedDiff: realGitUnifiedDiff } = await vi.importActual<
+        typeof import('../../utils/gitDiff.js')
+      >('../../utils/gitDiff.js');
+      vi.mocked(getGitUnifiedDiff).mockImplementation(realGitUnifiedDiff);
+
+      await collectAndSendUserEditDiffs([reference], settings);
+
+      expect(api.submitUserEditDiffs).toHaveBeenCalledTimes(1);
+      const { diffs } = vi.mocked(api.submitUserEditDiffs).mock.calls[0][0];
+      expect(diffs.map((diff) => diff.locale)).toEqual(['de']);
+      expect(diffs[0].localContent).toBe(slice(local, 'de'));
+      // The diff adds the hand-written slice to a catalog with no entries
+      const lines = diffs[0].diff.split('\n');
+      expect(
+        lines.filter((line) => line.startsWith('-') && !line.startsWith('---'))
+      ).toEqual(['-  "strings": {}']);
+      expect(
+        lines.filter((line) => line.startsWith('+') && !line.startsWith('+++'))
+      ).toContainEqual(expect.stringContaining('"Hallo"'));
+    });
+
+    it('reports a payload that is not a catalog and still checks the other locales', async () => {
+      const settings = buildCatalogSettings();
+      writeLockHashes({
+        de: hashStringSync('stale'),
+        fr: hashStringSync('stale'),
+      });
+      // One fr string edited by hand
+      const edited = catalog('Hallo');
+      edited.strings.farewell.localizations.fr = unit('Adieu');
+      writeCatalog(JSON.stringify(edited));
+      serveTranslations();
+      // de, checked first, comes back as something other than a catalog
+      vi.mocked(api.downloadFileBatch).mockImplementation(async (files) => ({
+        files: files.map((file) => ({
+          id: `translation-${file.locale}`,
+          branchId: 'branch1',
+          fileId: 'file1',
+          versionId: 'version1',
+          locale: file.locale,
+          fileFormat: 'XCSTRINGS' as const,
+          data:
+            file.locale === 'de'
+              ? 'not a catalog'
+              : served('fr', { greeting: 'Bonjour', farewell: 'Au revoir' }),
+          metadata: {},
+        })),
+        count: files.length,
+      }));
+      const { getGitUnifiedDiff: realGitUnifiedDiff } = await vi.importActual<
+        typeof import('../../utils/gitDiff.js')
+      >('../../utils/gitDiff.js');
+      vi.mocked(getGitUnifiedDiff).mockImplementation(realGitUnifiedDiff);
+
+      await collectAndSendUserEditDiffs([reference], settings);
+
+      expect(queriedLocales()).toEqual(['de', 'fr']);
+      expect(getWarnings()).toEqual([
+        {
+          category: 'skipped_file',
+          fileName: CATALOG,
+          reason: expect.stringContaining('Invalid .xcstrings content'),
+        },
+      ]);
+      expect(api.submitUserEditDiffs).toHaveBeenCalledTimes(1);
+      const { diffs } = vi.mocked(api.submitUserEditDiffs).mock.calls[0][0];
+      expect(diffs.map((diff) => diff.locale)).toEqual(['fr']);
+      expect(diffs[0].localContent).toBe(slice(JSON.stringify(edited), 'fr'));
+    });
   });
 });

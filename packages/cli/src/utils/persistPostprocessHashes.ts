@@ -10,6 +10,10 @@ import { logger } from '../console/logger.js';
 import { getRelative } from '../fs/findFilepath.js';
 import { recordWarning } from '../state/translateWarnings.js';
 import { readFileContent } from '../fs/fileContent.js';
+import {
+  emptyLocaleContent,
+  localeContent,
+} from '../formats/files/localeContent.js';
 import type { DownloadMeta } from '../state/recentDownloads.js';
 import type { Settings } from '../types/index.js';
 
@@ -19,7 +23,7 @@ import type { Settings } from '../types/index.js';
 export function persistPostProcessHashes(
   settings: Settings,
   includeFiles: Set<string> | undefined,
-  downloadedMeta: Map<string, DownloadMeta>
+  downloadedMeta: Map<string, DownloadMeta[]>
 ): void {
   if (!includeFiles || includeFiles.size === 0 || downloadedMeta.size === 0) {
     return;
@@ -35,15 +39,24 @@ export function persistPostProcessHashes(
   let lockUpdated = false;
 
   for (const filePath of includeFiles) {
-    const meta = downloadedMeta.get(filePath);
-    if (!meta) continue;
+    const metas = downloadedMeta.get(filePath);
+    if (!metas) continue;
     if (!fs.existsSync(filePath)) continue;
 
-    // The hash stands for the file's pipeline content, which is what every
-    // other producer and consumer of it compares against.
-    let hash: string;
+    // Each hash stands for the locale's share of the file's pipeline content,
+    // which is what upload records and user-edit detection compares against.
+    const hashes: [DownloadMeta, string][] = [];
     try {
-      hash = hashStringSync(readFileContent(filePath, meta.fileFormat));
+      const content = readFileContent(filePath, metas[0].fileFormat);
+      for (const meta of metas) {
+        hashes.push([
+          meta,
+          hashStringSync(
+            localeContent(content, meta.fileFormat, meta.locale) ??
+              emptyLocaleContent(content, meta.fileFormat)
+          ),
+        ]);
+      }
     } catch (error) {
       // The translation is already written; failing here would lose the whole
       // run's lockfile update over one unreadable file. Skip it and report it
@@ -54,21 +67,23 @@ export function persistPostProcessHashes(
       continue;
     }
 
-    const entry = findOrCreateEntry(
-      entryMap,
-      data.entries,
-      meta.fileId,
-      meta.versionId
-    );
+    for (const [meta, hash] of hashes) {
+      const entry = findOrCreateEntry(
+        entryMap,
+        data.entries,
+        meta.fileId,
+        meta.versionId
+      );
 
-    const existing = entry.translations[meta.locale] || {};
+      const existing = entry.translations[meta.locale] || {};
 
-    if (existing.postProcessHash !== hash) {
-      entry.translations[meta.locale] = {
-        ...existing,
-        postProcessHash: hash,
-      };
-      lockUpdated = true;
+      if (existing.postProcessHash !== hash) {
+        entry.translations[meta.locale] = {
+          ...existing,
+          postProcessHash: hash,
+        };
+        lockUpdated = true;
+      }
     }
   }
 
@@ -79,11 +94,11 @@ export function persistPostProcessHashes(
 
 function findDownloadedBranchId(
   includeFiles: Set<string>,
-  downloadedMeta: Map<string, DownloadMeta>
+  downloadedMeta: Map<string, DownloadMeta[]>
 ): string | undefined {
   for (const filePath of includeFiles) {
-    const meta = downloadedMeta.get(filePath);
-    if (meta) return meta.branchId;
+    const branchId = downloadedMeta.get(filePath)?.[0]?.branchId;
+    if (branchId) return branchId;
   }
   return undefined;
 }
