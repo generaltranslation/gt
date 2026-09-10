@@ -19,6 +19,7 @@ import {
   replaceDynamicSegments,
   getLocalizedPath,
   createPathToSharedPathMap,
+  createPathMatcher,
   getLocaleFromRequest,
   getResponse,
   ResponseConfig,
@@ -41,6 +42,8 @@ type MiddlewareEnvConfig = {
 
 export type RouteOverrides = Record<string, readonly string[]>;
 
+export type LocaleRoutes = Record<string, readonly string[]>;
+
 /**
  * Middleware factory to create a Next.js middleware for i18n routing and locale detection.
  *
@@ -54,6 +57,7 @@ export type RouteOverrides = Record<string, readonly string[]>;
  * @param {boolean} [config.ignoreSourceMaps=true] - Flag to enable or disable ignoring source maps
  * @param {PathConfig} [config.pathConfig] - Path configuration for locale routing
  * @param {RouteOverrides} [config.routeOverrides] - Locale-relative paths to rewrite from /{locale}/{path} to /{locale}/{locale}/{path}
+ * @param {LocaleRoutes} [config.localeRoutes] - Shared paths available per locale; other paths fall back to the default locale
  * @returns {function} - A middleware function that processes the request and response.
  */
 export function createNextMiddleware({
@@ -62,12 +66,14 @@ export function createNextMiddleware({
   ignoreSourceMaps = true,
   pathConfig = {},
   routeOverrides = {},
+  localeRoutes = {},
 }: {
   localeRouting?: boolean;
   prefixDefaultLocale?: boolean;
   ignoreSourceMaps?: boolean;
   pathConfig?: PathConfig;
   routeOverrides?: RouteOverrides;
+  localeRoutes?: LocaleRoutes;
 } = {}) {
   const pathRegex = compilePathRegex(
     process.env._GENERALTRANSLATION_PATH_REGEX
@@ -138,6 +144,7 @@ export function createNextMiddleware({
 
   // ---------- PRE-PROCESSING PATHS ---------- //
 
+  // --- localized routes --- //
   // Standardize pathConfig paths
   pathConfig = Object.entries(pathConfig).reduce<PathConfig>(
     (acc, [sharedPath, localizedPath]) => {
@@ -157,6 +164,30 @@ export function createNextMiddleware({
     {}
   );
 
+  // String aliases apply to every locale, including the default locale.
+  // Expand a copy for lookup while retaining string target semantics in routing.
+  const matcherPathConfig = Object.fromEntries(
+    Object.entries(pathConfig).map(([sharedPath, localizedPath]) => [
+      sharedPath,
+      typeof localizedPath === 'string'
+        ? Object.fromEntries(
+            locales.map((locale) => [
+              gtServicesEnabled ? standardizeLocale(locale) : locale,
+              localizedPath,
+            ])
+          )
+        : localizedPath,
+    ])
+  );
+
+  // Create the path mapping
+  const { pathToSharedPath, defaultLocalePaths } = createPathToSharedPathMap(
+    matcherPathConfig,
+    prefixDefaultLocale,
+    defaultLocale
+  );
+
+  // --- route overrides --- //
   // Standardize routeOverrides locales
   routeOverrides = Object.entries(routeOverrides).reduce<RouteOverrides>(
     (acc, [locale, paths]) => {
@@ -181,27 +212,14 @@ export function createNextMiddleware({
     return acc;
   }, {});
 
-  // String aliases apply to every locale, including the default locale.
-  // Expand a copy for lookup while retaining string target semantics in routing.
-  const matcherPathConfig = Object.fromEntries(
-    Object.entries(pathConfig).map(([sharedPath, localizedPath]) => [
-      sharedPath,
-      typeof localizedPath === 'string'
-        ? Object.fromEntries(
-            locales.map((locale) => [
-              gtServicesEnabled ? standardizeLocale(locale) : locale,
-              localizedPath,
-            ])
-          )
-        : localizedPath,
+  // --- locale routes --- //
+  // Compile availability separately from aliases and overrides so it cannot
+  // change route precedence. An empty list deliberately matches nothing.
+  const localeRoutePathMaps = new Map(
+    Object.entries(localeRoutes).map(([locale, paths]) => [
+      gtServicesEnabled ? standardizeLocale(locale) : locale,
+      createPathMatcher(paths.map((path) => [path, path])),
     ])
-  );
-
-  // Create the path mapping
-  const { pathToSharedPath, defaultLocalePaths } = createPathToSharedPathMap(
-    matcherPathConfig,
-    prefixDefaultLocale,
-    defaultLocale
   );
 
   /**
@@ -233,7 +251,7 @@ export function createNextMiddleware({
     // ---------- LOCALE DETECTION ---------- //
 
     const {
-      userLocale,
+      userLocale: requestedLocale,
       pathnameLocale,
       unstandardizedPathnameLocale,
       clearResetCookie,
@@ -251,6 +269,7 @@ export function createNextMiddleware({
       gt
     );
 
+    let userLocale = requestedLocale;
     const headerList = new Headers(req.headers);
 
     const responseConfig: Omit<ResponseConfig, 'type'> = {
@@ -295,6 +314,60 @@ export function createNextMiddleware({
         pathnameLocale
       );
       const sharedPath = sharedPathMatch?.sharedPath;
+
+      // Return early for a locale route that does not exist
+      const localeRoutePathMap = localeRoutePathMaps.get(userLocale);
+      if (userLocale !== defaultLocale && localeRoutePathMap) {
+        // Resolve the shared page path without a locale prefix (e.g. /blog/hello).
+        // Strip the URL's locale, which may differ from the newly selected locale.
+        const sharedPagePath = sharedPathMatch
+          ? replaceDynamicSegments(
+              sharedPathMatch.matchedPathname,
+              sharedPath || '/',
+              sharedPathMatch.pathTemplate
+            )
+          : (pathnameLocale
+              ? standardizedPathname.slice(pathnameLocale.length + 1)
+              : standardizedPathname) || '/';
+
+        // If the path does not exist, redirect to the default locale path
+        if (
+          getSharedPath(sharedPagePath, localeRoutePathMap, undefined) ===
+          undefined
+        ) {
+          // Get the path to redirect to
+          const defaultPath =
+            sharedPath !== undefined
+              ? getLocalizedPath(sharedPath, defaultLocale, pathConfig)
+              : undefined;
+          const fallbackPath =
+            defaultPath !== undefined && sharedPathMatch
+              ? replaceDynamicSegments(
+                  sharedPathMatch.matchedPathname,
+                  defaultPath,
+                  sharedPathMatch.pathTemplate
+                )
+              : `/${defaultLocale}${sharedPagePath === '/' ? '' : sharedPagePath}`;
+          const publicFallbackPath = applyTrailingSlash(
+            standardizedPathname,
+            prefixDefaultLocale
+              ? fallbackPath
+              : fallbackPath.slice(defaultLocale.length + 1) || '/'
+          );
+
+          // The default locale is terminal, even if the preference/reset cookie
+          // still requests an unavailable locale on the redirected request.
+          userLocale = defaultLocale;
+          responseConfig.userLocale = defaultLocale;
+          const fallbackUrl = new URL(req.nextUrl);
+          fallbackUrl.pathname = publicFallbackPath;
+          if (fallbackUrl.pathname !== pathname) {
+            return getRedirectResponse(publicFallbackPath);
+          }
+          // Already at the fallback URL: use normal default-locale routing below,
+          // including its alias/override rewrite, instead of redirecting to itself.
+        }
+      }
 
       // Get shared path with parameters (/en/dashboard/1/custom), for rewriting localized paths
       const sharedPathWithParameters =
