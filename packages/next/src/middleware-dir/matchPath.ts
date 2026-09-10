@@ -159,7 +159,7 @@ export function getSharedPath(
   if (pathToSharedPath.localizedRoot) {
     // Is this a "shared path" (e.g. `/home`)?
     const pathnameWithoutLocale = pathnameLocale
-      ? standardizedPathname.replace(/^\/[^/]+/, '')
+      ? standardizedPathname.replace(/^\/[^/]+/, '') || '/'
       : standardizedPathname;
     const sharedMatch = matchPath(pathnameWithoutLocale, pathToSharedPath);
 
@@ -190,7 +190,8 @@ export function getSharedPath(
   }
 
   if (pathnameLocale) {
-    const pathnameWithoutLocale = standardizedPathname.replace(/^\/[^/]+/, '');
+    const pathnameWithoutLocale =
+      standardizedPathname.replace(/^\/[^/]+/, '') || '/';
     const unprefixedMatch = matchPath(pathnameWithoutLocale, pathToSharedPath);
     if (unprefixedMatch !== undefined) {
       return { ...unprefixedMatch, matchedPathname: pathnameWithoutLocale };
