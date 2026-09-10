@@ -181,9 +181,25 @@ export function createNextMiddleware({
     return acc;
   }, {});
 
+  // String aliases apply to every locale, including the default locale.
+  // Expand a copy for lookup while retaining string target semantics in routing.
+  const matcherPathConfig = Object.fromEntries(
+    Object.entries(pathConfig).map(([sharedPath, localizedPath]) => [
+      sharedPath,
+      typeof localizedPath === 'string'
+        ? Object.fromEntries(
+            locales.map((locale) => [
+              gtServicesEnabled ? standardizeLocale(locale) : locale,
+              localizedPath,
+            ])
+          )
+        : localizedPath,
+    ])
+  );
+
   // Create the path mapping
   const { pathToSharedPath, defaultLocalePaths } = createPathToSharedPathMap(
-    pathConfig,
+    matcherPathConfig,
     prefixDefaultLocale,
     defaultLocale
   );
