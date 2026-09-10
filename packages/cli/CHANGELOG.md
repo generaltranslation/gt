@@ -1,5 +1,17 @@
 # gtx-cli
 
+## 2.21.1
+
+### Patch Changes
+
+- [#2217](https://github.com/generaltranslation/gt/pull/2217) [`bf3ce1e`](https://github.com/generaltranslation/gt/commit/bf3ce1eb967e1798c95b78c04313de2c8362932c) Thanks [@internal-gt-public-api-sync](https://github.com/apps/internal-gt-public-api-sync)! - Require `--org-id` for `gt project create` and pass the organization ID to the updated project creation API.
+
+- Updated dependencies []:
+  - generaltranslation@9.3.1
+  - @generaltranslation/python-extractor@0.2.49
+  - @generaltranslation/supported-locales@2.1.29
+  - @generaltranslation/vue-extractor@0.1.9
+
 ## 2.21.0
 
 ### Minor Changes

@@ -1,5 +1,12 @@
 # @generaltranslation/python-extractor
 
+## 0.2.49
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.3.1
+
 ## 0.2.48
 
 ### Patch Changes
