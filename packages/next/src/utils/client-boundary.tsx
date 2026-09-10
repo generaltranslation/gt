@@ -22,9 +22,17 @@ import {
   defaultReferrerLocaleCookieName,
 } from './cookies';
 import { compilePathRegex, pathnameMatchesRegex } from './pathRegex';
+import type { HeadersAndCookies } from '../config-dir/props/withGTConfigProps';
 
 // withGTConfig exposes this build-time value to both middleware and client code.
 const pathRegex = compilePathRegex(process.env._GENERALTRANSLATION_PATH_REGEX);
+const {
+  referrerLocaleCookieName = defaultReferrerLocaleCookieName,
+  localeRoutingEnabledCookieName = defaultLocaleRoutingEnabledCookieName,
+}: HeadersAndCookies =
+  JSON.parse(
+    process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS || '{}'
+  ).headersAndCookies || {};
 
 /**
  * Only need to initalize client. We know server was already
@@ -52,10 +60,8 @@ export function Client_GTProvider(props: SharedGTProviderProps) {
     ({ locale }) => {
       const i18nConfig = getI18nConfig();
       const localeRoutingEnabled =
-        getCookieValue(
-          document.cookie,
-          defaultLocaleRoutingEnabledCookieName
-        ) === 'true';
+        getCookieValue(document.cookie, localeRoutingEnabledCookieName) ===
+        'true';
       const defaultLocale = i18nConfig.getDefaultLocale();
       const locales = i18nConfig.getLocales();
       const currentPathname = globalThis.location.pathname;
@@ -96,14 +102,10 @@ function usePathCheck({
   reloadBrowserPage,
   refreshServerComponents,
   locale,
-  referrerLocaleCookieName = defaultReferrerLocaleCookieName,
-  localeRoutingEnabledCookieName = defaultLocaleRoutingEnabledCookieName,
 }: {
   reloadBrowserPage: () => void;
   refreshServerComponents: () => void;
   locale: string;
-  referrerLocaleCookieName?: string;
-  localeRoutingEnabledCookieName?: string;
 }) {
   const pathname = usePathname();
 
@@ -144,14 +146,7 @@ function usePathCheck({
         }
       }
     }
-  }, [
-    pathname,
-    locale,
-    referrerLocaleCookieName,
-    localeRoutingEnabledCookieName,
-    reloadBrowserPage,
-    refreshServerComponents,
-  ]);
+  }, [pathname, locale, reloadBrowserPage, refreshServerComponents]);
 }
 
 function resolvePathLocale(

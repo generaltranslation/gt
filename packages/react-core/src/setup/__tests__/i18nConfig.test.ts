@@ -46,6 +46,9 @@ describe('react i18n config', () => {
 
     const config = initializeI18nConfig({ defaultLocale: 'en' });
 
+    expect(config.getResetLocaleCookieName()).toBe(
+      'generaltranslation.locale-reset'
+    );
     expect(config.getLocaleCookieName()).toBe('generaltranslation.locale');
     expect(config.getRegionCookieName()).toBe('generaltranslation.region');
     expect(config.getEnableI18nCookieName()).toBe(
@@ -61,8 +64,10 @@ describe('react i18n config', () => {
       localeCookieName: 'custom-locale',
       regionCookieName: 'custom-region',
       enableI18nCookieName: 'custom-enable-i18n',
+      resetLocaleCookieName: 'custom-reset',
     });
 
+    expect(config.getResetLocaleCookieName()).toBe('custom-reset');
     expect(config.getLocaleCookieName()).toBe('custom-locale');
     expect(config.getRegionCookieName()).toBe('custom-region');
     expect(config.getEnableI18nCookieName()).toBe('custom-enable-i18n');

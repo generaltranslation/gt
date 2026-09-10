@@ -13,6 +13,7 @@ function setConfigEnv() {
       renderSettings: { timeout: 123 },
       headersAndCookies: {
         localeCookieName: 'custom-locale',
+        resetLocaleCookieName: 'custom-reset',
         enableI18nCookieName: 'custom-enable-i18n',
       },
       maxConcurrentRequests: 1,
@@ -57,6 +58,7 @@ describe('getParams', () => {
       devApiKey: 'dev-key',
       cacheUrl: 'https://cache.example.com',
       localeCookieName: 'custom-locale',
+      resetLocaleCookieName: 'custom-reset',
       enableI18nCookieName: 'custom-enable-i18n',
     });
     expect(nextI18nCacheParams).toMatchObject({

@@ -9,6 +9,7 @@ import {
   defaultEnableI18nCookieName,
   defaultLocaleCookieName,
   defaultRegionCookieName,
+  defaultResetLocaleCookieName,
 } from './cookieNames';
 
 /**
@@ -22,6 +23,7 @@ type CookieNameConfig = {
   localeCookieName?: string;
   regionCookieName?: string;
   enableI18nCookieName?: string;
+  resetLocaleCookieName?: string;
 };
 
 export type ReactI18nConfigParams = BaseI18nConfigParams & CookieNameConfig;
@@ -36,6 +38,7 @@ export class ReactI18nConfig extends I18nConfig {
   private localeCookieName: string;
   private regionCookieName: string;
   private enableI18nCookieName: string;
+  private resetLocaleCookieName: string;
 
   constructor(
     params: ReactI18nConfigParams = {},
@@ -45,6 +48,8 @@ export class ReactI18nConfig extends I18nConfig {
     validateRenderStrategy(renderStrategy);
     Object.defineProperty(this, reactI18nConfigBrand, { value: true });
     this.renderStrategy = renderStrategy;
+    this.resetLocaleCookieName =
+      params.resetLocaleCookieName ?? defaultResetLocaleCookieName;
     this.localeCookieName = params.localeCookieName ?? defaultLocaleCookieName;
     this.regionCookieName = params.regionCookieName ?? defaultRegionCookieName;
     this.enableI18nCookieName =
@@ -53,6 +58,10 @@ export class ReactI18nConfig extends I18nConfig {
 
   getRenderStrategy(): RenderStrategy {
     return this.renderStrategy;
+  }
+
+  getResetLocaleCookieName(): string {
+    return this.resetLocaleCookieName;
   }
 
   getLocaleCookieName(): string {
