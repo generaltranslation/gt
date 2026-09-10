@@ -146,47 +146,66 @@ describe('Client_GTProvider', () => {
     await act(async () => root.unmount());
   });
 
-  it('reloads the browser page when switching to the default locale', async () => {
+  it.each([
+    ['pt-BR', '/pt-BR', 'en'],
+    ['fr', '/fr/help', 'de'],
+    ['fr', '/portal/fr/help', 'de'],
+    ['en', '/help', 'de'],
+  ])(
+    'reloads when switching from %s at %s to %s',
+    async (currentLocale, pathname, selectedLocale) => {
+      process.env._GENERALTRANSLATION_PATH_REGEX = '.*';
+      mockPathname.mockReturnValue(pathname.replace(/^\/portal(?=\/)/, ''));
+      vi.stubGlobal('location', {
+        pathname,
+        reload: mockReloadBrowserPage,
+      });
+      mockGetI18nConfig.mockReturnValue({
+        determineLocale: vi.fn(([locale]: string[]) => locale),
+        getDefaultLocale: () => 'en',
+        getLocales: () => ['en', 'pt-BR', 'fr', 'de'],
+        isGTServicesEnabled: () => false,
+        resolveAliasLocale: (locale: string) => locale,
+        standardizeLocale: (locale: string) => locale,
+      });
+      const { Client_GTProvider } = await import('../client-boundary');
+      const container = document.createElement('div');
+      const root = createRoot(container);
+
+      await act(async () => {
+        root.render(
+          <Client_GTProvider
+            dictionaries={{}}
+            locale={currentLocale}
+            translations={{}}
+          >
+            content
+          </Client_GTProvider>
+        );
+      });
+
+      const syncServerContent = mockGTProvider.mock.calls.at(-1)?.[0]._reload;
+      syncServerContent({
+        enableI18n: true,
+        locale: selectedLocale,
+        region: undefined,
+      });
+
+      expect(mockReloadBrowserPage).toHaveBeenCalledOnce();
+      expect(mockRefreshServerComponents).not.toHaveBeenCalled();
+
+      await act(async () => root.unmount());
+    }
+  );
+
+  it.each([
+    ['en', '/dashboard'],
+    ['fr', '/portal/fr/dashboard'],
+  ])('refreshes same-locale updates for %s at %s', async (locale, pathname) => {
     process.env._GENERALTRANSLATION_PATH_REGEX = '.*';
-    mockPathname.mockReturnValue('/pt-BR');
+    mockPathname.mockReturnValue(pathname.replace(/^\/portal(?=\/)/, ''));
     vi.stubGlobal('location', {
-      pathname: '/pt-BR',
-      reload: mockReloadBrowserPage,
-    });
-    mockGetI18nConfig.mockReturnValue({
-      determineLocale: vi.fn(([locale]: string[]) => locale),
-      getDefaultLocale: () => 'en',
-      getLocales: () => ['en', 'pt-BR'],
-      isGTServicesEnabled: () => false,
-      resolveAliasLocale: (locale: string) => locale,
-      standardizeLocale: (locale: string) => locale,
-    });
-    const { Client_GTProvider } = await import('../client-boundary');
-    const container = document.createElement('div');
-    const root = createRoot(container);
-
-    await act(async () => {
-      root.render(
-        <Client_GTProvider dictionaries={{}} locale='pt-BR' translations={{}}>
-          content
-        </Client_GTProvider>
-      );
-    });
-
-    const syncServerContent = mockGTProvider.mock.calls.at(-1)?.[0]._reload;
-    syncServerContent({ enableI18n: true, locale: 'en', region: undefined });
-
-    expect(mockReloadBrowserPage).toHaveBeenCalledOnce();
-    expect(mockRefreshServerComponents).not.toHaveBeenCalled();
-
-    await act(async () => root.unmount());
-  });
-
-  it('refreshes server components when reselecting the default locale on an unprefixed path', async () => {
-    process.env._GENERALTRANSLATION_PATH_REGEX = '.*';
-    mockPathname.mockReturnValue('/dashboard');
-    vi.stubGlobal('location', {
-      pathname: '/dashboard',
+      pathname,
       reload: mockReloadBrowserPage,
     });
     mockGetI18nConfig.mockReturnValue({
@@ -205,14 +224,14 @@ describe('Client_GTProvider', () => {
 
     await act(async () => {
       root.render(
-        <Client_GTProvider dictionaries={{}} locale='en' translations={{}}>
+        <Client_GTProvider dictionaries={{}} locale={locale} translations={{}}>
           content
         </Client_GTProvider>
       );
     });
 
     const syncServerContent = mockGTProvider.mock.calls.at(-1)?.[0]._reload;
-    syncServerContent({ enableI18n: true, locale: 'en', region: undefined });
+    syncServerContent({ enableI18n: true, locale, region: 'CA' });
 
     expect(mockRefreshServerComponents).toHaveBeenCalledOnce();
     expect(mockReloadBrowserPage).not.toHaveBeenCalled();
