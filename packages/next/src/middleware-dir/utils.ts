@@ -66,7 +66,10 @@ export function getResponse({
       },
     });
   } else {
-    const responseUrl = new URL(responsePath, originalUrl);
+    // Assign the pathname to preserve the request origin: resolving a path
+    // starting with // or /\ as a URL can turn it into an external destination.
+    const responseUrl = new URL(originalUrl);
+    responseUrl.pathname = responsePath;
     applyBasePath(responseUrl, originalUrl);
     responseUrl.search = originalUrl.search;
     response =
