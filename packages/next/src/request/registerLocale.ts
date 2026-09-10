@@ -1,5 +1,20 @@
-import { getAsyncConditionStore } from '../condition-store/AsyncConditionStore';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { resolveLocaleOrDefault } from './localeValidation';
+
+type GlobalWithNextRequestState = {
+  __generaltranslation?: {
+    next?: {
+      registeredLocale?: AsyncLocalStorage<string>;
+    };
+  };
+};
+
+const globalObject = globalThis as GlobalWithNextRequestState;
+globalObject.__generaltranslation ??= {};
+globalObject.__generaltranslation.next ??= {};
+const registeredLocaleStore =
+  (globalObject.__generaltranslation.next.registeredLocale ??=
+    new AsyncLocalStorage());
 
 /**
  * Set the locale for the current request context.
@@ -9,5 +24,10 @@ import { resolveLocaleOrDefault } from './localeValidation';
  * @param locale - A locale candidate to use for this request.
  */
 export function registerLocale(locale: string): void {
-  getAsyncConditionStore().enterWith(resolveLocaleOrDefault(locale));
+  registeredLocaleStore.enterWith(resolveLocaleOrDefault(locale));
+}
+
+/** @internal */
+export function getRegisteredLocale(): string | undefined {
+  return registeredLocaleStore.getStore();
 }
