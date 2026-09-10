@@ -44,6 +44,37 @@ test(`${appName} renders local translations and switches locales`, async ({
   }
 });
 
+test('Pages locale switches preserve fallback SSG query state', async ({
+  page,
+}) => {
+  test.skip(app.kind !== 'next-pages');
+  const suffix = '/catalog/fresh.item?tag=one&tag=two&literal=%252F%2B#details';
+  const expectedQuery = {
+    slug: 'fresh.item',
+    tag: ['one', 'two'],
+    literal: '%2F+',
+  };
+
+  await page.goto(suffix);
+  await expect
+    .poll(async () =>
+      JSON.parse(await page.getByTestId('router-query').innerText())
+    )
+    .toEqual(expectedQuery);
+  for (const locale of ['fr', 'zh', 'en']) {
+    await selectLocale(page, locale);
+    await expect(page).toHaveURL(
+      `${app.baseURL}${locale === 'en' ? '' : `/${locale}`}${suffix}`
+    );
+    await expect(page.getByText(`Client locale: ${locale}`)).toBeVisible();
+    await expect
+      .poll(async () =>
+        JSON.parse(await page.getByTestId('router-query').innerText())
+      )
+      .toEqual(expectedQuery);
+  }
+});
+
 async function testReactApp(page: Page) {
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();

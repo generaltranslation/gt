@@ -12,7 +12,11 @@ export default function App({
       locale={pageProps.locale}
       translations={pageProps.translations}
       _reload={({ locale }) => {
-        void Router.push(Router.pathname, Router.asPath, { locale });
+        void Router.push(
+          { pathname: Router.pathname, query: Router.query },
+          Router.asPath,
+          { locale }
+        );
       }}
     >
       <Component {...pageProps} />
