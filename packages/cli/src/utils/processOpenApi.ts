@@ -7,6 +7,7 @@ import YAML, { isMap, isScalar } from 'yaml';
 import type { Root, Content, Yaml } from 'mdast';
 import { logger } from '../console/logger.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
+import { localizePathSegment } from './localizePathSegment.js';
 import { Settings } from '../types/index.js';
 
 type SpecAnalysis = {
@@ -347,30 +348,7 @@ function localizeDocsJsonDirectory(
   knownLocales: Set<string>
 ): string | null {
   if (locale === defaultLocale) return null;
-
-  const trimmed = directory.trim();
-  if (!trimmed || /^(?:[a-z][a-z0-9+.-]*:|\/\/|#|\.\/|\.\.\/)/i.test(trimmed)) {
-    return null;
-  }
-
-  const leadingWhitespace = directory.match(/^\s*/)?.[0] ?? '';
-  const trailingWhitespace = directory.match(/\s*$/)?.[0] ?? '';
-  const leadingSlash = trimmed.startsWith('/') ? '/' : '';
-  const pathBody = trimmed.replace(/^\/+/, '');
-  const [firstSegment, ...restSegments] = pathBody.split('/');
-
-  if (firstSegment === locale) {
-    const normalized = `${leadingWhitespace}${leadingSlash}${pathBody}${trailingWhitespace}`;
-    return normalized === directory ? null : normalized;
-  }
-
-  const unprefixedPath = knownLocales.has(firstSegment)
-    ? restSegments.join('/')
-    : pathBody;
-  const localizedPath = unprefixedPath ? `${locale}/${unprefixedPath}` : locale;
-  const normalized = `${leadingWhitespace}${leadingSlash}${localizedPath}${trailingWhitespace}`;
-
-  return normalized === directory ? null : normalized;
+  return localizePathSegment(directory, locale, knownLocales);
 }
 
 function localizeDocsJsonSpecPath(
