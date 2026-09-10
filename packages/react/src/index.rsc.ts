@@ -11,7 +11,21 @@ import {
   getTranslations,
 } from 'gt-i18n/internal';
 import { getLocale, getRegion } from 'gt-i18n';
-import { use } from 'react';
+import { use, type ReactNode } from 'react';
+import {
+  T as RscT,
+  Tx as RscTx,
+} from '@generaltranslation/react-core/components-rsc';
+import type { TxProps } from './utils/TxProps';
+
+type TProps = Omit<Parameters<typeof RscT>[0], '_locale' | '_enableI18n'>;
+
+function getRscTranslationConditions(locale: string = getLocale()) {
+  return {
+    _locale: getI18nConfig().resolveSupportedLocale(locale),
+    _enableI18n: true,
+  };
+}
 
 // ===== Error for client components ===== //
 function failClientComponent(componentName: string) {
@@ -44,10 +58,28 @@ export {
   Num,
   Plural,
   RelativeTime,
-  T,
   Var,
-  Tx,
 } from '@generaltranslation/react-core/components-rsc';
+
+export async function T(props: TProps): Promise<ReactNode> {
+  return RscT({
+    ...props,
+    ...getRscTranslationConditions(),
+  });
+}
+
+/** @internal _gtt - The GT transformation for the component. */
+T._gtt = 'translate-server';
+
+export async function Tx({ locale, ...props }: TxProps): Promise<ReactNode> {
+  return RscTx({
+    ...props,
+    ...getRscTranslationConditions(locale || getLocale()),
+  });
+}
+
+/** @internal _gtt - The GT transformation for the component. */
+Tx._gtt = 'translate-runtime';
 
 // ===== Hooks (cannot reference context) ===== //
 
