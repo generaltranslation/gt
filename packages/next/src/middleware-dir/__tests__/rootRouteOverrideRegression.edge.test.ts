@@ -21,6 +21,28 @@ const query = '?tag=a&tag=b&raw=%2F%252F';
 describe.each([false, true])(
   'root routeOverrides with prefixDefaultLocale=%s',
   (prefixDefaultLocale) => {
+    it.each(['', '/'])(
+      'redirects the locale root with slash "%s" before applying its override',
+      (slash) => {
+        const middleware = createNextMiddleware({
+          prefixDefaultLocale,
+          pathConfig: { '/': { fr: { path: '/accueil', override: true } } },
+        });
+        const response = middleware(
+          new NextRequest(origin + '/fr' + slash + query)
+        );
+        const destination = origin + '/fr/accueil' + slash + query;
+
+        expect(response.status).toBe(307);
+        expect(response.headers.get('location')).toBe(destination);
+        const followed = middleware(new NextRequest(destination));
+        expect(followed.headers.get('location')).toBeNull();
+        expect(followed.headers.get('x-middleware-rewrite')).toBe(
+          origin + '/fr/fr' + slash + query
+        );
+      }
+    );
+
     it.each([
       {
         name: 'localized homepage alias',
