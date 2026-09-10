@@ -676,6 +676,12 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     },
     headersAndCookies: {
       localeCookieName: mergedConfig.headersAndCookies?.localeCookieName,
+      referrerLocaleCookieName:
+        mergedConfig.headersAndCookies?.referrerLocaleCookieName,
+      localeRoutingEnabledCookieName:
+        mergedConfig.headersAndCookies?.localeRoutingEnabledCookieName,
+      resetLocaleCookieName:
+        mergedConfig.headersAndCookies?.resetLocaleCookieName,
       enableI18nCookieName:
         mergedConfig.headersAndCookies?.enableI18nCookieName,
     },

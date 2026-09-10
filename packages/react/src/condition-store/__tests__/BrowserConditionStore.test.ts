@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockSetCookieValue = vi.hoisted(() => vi.fn());
 const mockCookieNames = vi.hoisted(() => ({
+  reset: 'generaltranslation.locale-reset',
   locale: 'generaltranslation.locale',
   region: 'generaltranslation.region',
   enableI18n: 'generaltranslation.enable-i18n',
@@ -26,6 +27,7 @@ vi.mock('@generaltranslation/react-core/pure', () => ({
       const resolved = Array.isArray(locale) ? locale[0] : locale;
       return resolved || 'en';
     },
+    getResetLocaleCookieName: () => mockCookieNames.reset,
     getLocaleCookieName: () => mockCookieNames.locale,
     getRegionCookieName: () => mockCookieNames.region,
     getEnableI18nCookieName: () => mockCookieNames.enableI18n,
@@ -37,6 +39,7 @@ import { BrowserConditionStore } from '../BrowserConditionStore';
 describe('BrowserConditionStore', () => {
   beforeEach(() => {
     mockSetCookieValue.mockReset();
+    mockCookieNames.reset = 'generaltranslation.locale-reset';
     mockCookieNames.locale = 'generaltranslation.locale';
     mockCookieNames.region = 'generaltranslation.region';
     mockCookieNames.enableI18n = 'generaltranslation.enable-i18n';
@@ -64,6 +67,7 @@ describe('BrowserConditionStore', () => {
   });
 
   it('uses I18nConfig cookie names', () => {
+    mockCookieNames.reset = 'custom-reset';
     mockCookieNames.locale = 'custom-locale';
     mockCookieNames.region = 'custom-region';
     mockCookieNames.enableI18n = 'custom-enable-i18n';
@@ -90,6 +94,14 @@ describe('BrowserConditionStore', () => {
 
     mockSetCookieValue.mockClear();
     conditionStore.setLocale('es');
+    expect(mockSetCookieValue).toHaveBeenCalledWith({
+      cookieName: 'custom-reset',
+      value: 'true',
+    });
+    expect(mockSetCookieValue).not.toHaveBeenCalledWith({
+      cookieName: 'generaltranslation.locale-reset',
+      value: 'true',
+    });
 
     expect(mockSetCookieValue).toHaveBeenCalledWith({
       cookieName: 'custom-locale',

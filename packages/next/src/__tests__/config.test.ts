@@ -180,6 +180,20 @@ describe('withGTConfig', () => {
       );
     });
 
+    it('exposes middleware cookie names to the client', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const headersAndCookies = {
+        referrerLocaleCookieName: 'custom-referrer',
+        localeRoutingEnabledCookieName: 'custom-routing',
+        resetLocaleCookieName: 'custom-reset',
+      };
+      const result = withGTConfig({}, { headersAndCookies });
+      const clientParams = JSON.parse(
+        result.env!.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS as string
+      );
+      expect(clientParams.headersAndCookies).toMatchObject(headersAndCookies);
+    });
+
     it('sets _usingPlugin to true in config params', async () => {
       const withGTConfig = await getWithGTConfig();
       const result = withGTConfig();
@@ -1510,6 +1524,9 @@ describe('withGTConfig', () => {
         headersAndCookies: {
           localeCookieName: expect.any(String),
           enableI18nCookieName: expect.any(String),
+          referrerLocaleCookieName: expect.any(String),
+          localeRoutingEnabledCookieName: expect.any(String),
+          resetLocaleCookieName: expect.any(String),
         },
         _versionId: 'version-id',
         _disableDevHotReload: true,

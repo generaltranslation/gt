@@ -64,12 +64,68 @@ describe('Client_GTProvider', () => {
   });
 
   afterEach(() => {
+    delete process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS;
     delete process.env._GENERALTRANSLATION_PATH_REGEX;
+    for (const name of [
+      'custom-routing',
+      'custom-referrer',
+      'generaltranslation.referrer-locale',
+    ]) {
+      document.cookie = `${name}=;max-age=0;path=/`;
+    }
     document.cookie =
       'generaltranslation.locale-routing-enabled=;max-age=0;path=/';
     vi.unstubAllGlobals();
     globalThis.IS_REACT_ACT_ENVIRONMENT = false;
   });
+
+  it.each([true, false])(
+    'uses configured routing=%s and referrer cookies',
+    async (routing) => {
+      process.env.NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS =
+        JSON.stringify({
+          headersAndCookies: {
+            referrerLocaleCookieName: 'custom-referrer',
+            localeRoutingEnabledCookieName: 'custom-routing',
+          },
+        });
+      process.env._GENERALTRANSLATION_PATH_REGEX = '.*';
+      document.cookie = `generaltranslation.locale-routing-enabled=${!routing};path=/`;
+      document.cookie = `custom-routing=${routing};path=/`;
+      mockPathname.mockReturnValue('/fr/about');
+      vi.stubGlobal('location', {
+        pathname: '/fr/about',
+        reload: mockReloadBrowserPage,
+      });
+      mockGetI18nConfig.mockReturnValue({
+        determineLocale: ([locale]: string[]) => locale,
+        getDefaultLocale: () => 'en',
+        getLocales: () => ['en', 'fr'],
+        isGTServicesEnabled: () => false,
+        resolveAliasLocale: (locale: string) => locale,
+      });
+      const { Client_GTProvider } = await import('../client-boundary');
+      const root = createRoot(document.createElement('div'));
+      await act(async () => {
+        root.render(
+          <Client_GTProvider locale='fr' translations={{}} dictionaries={{}} />
+        );
+      });
+      expect(document.cookie).toContain('custom-referrer=fr');
+      expect(document.cookie).not.toContain(
+        'generaltranslation.referrer-locale='
+      );
+      const props = mockGTProvider.mock.calls.at(-1)![0] as unknown as {
+        _reload: (state: { locale: string }) => void;
+      };
+      await act(async () => props._reload({ locale: 'en' }));
+      expect(mockReloadBrowserPage).toHaveBeenCalledTimes(routing ? 1 : 0);
+      expect(mockRefreshServerComponents).toHaveBeenCalledTimes(
+        routing ? 0 : 1
+      );
+      await act(async () => root.unmount());
+    }
+  );
 
   it('does not refresh excluded paths when the routing cookie is stale', async () => {
     const { Client_GTProvider } = await import('../client-boundary');

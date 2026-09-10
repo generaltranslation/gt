@@ -1,7 +1,4 @@
-import {
-  defaultResetLocaleCookieName,
-  getI18nConfig,
-} from '@generaltranslation/react-core/pure';
+import { getI18nConfig } from '@generaltranslation/react-core/pure';
 import type { WritableConditionStoreParams } from 'gt-i18n/internal';
 import { getCookieValue, setCookieValue } from './cookies';
 import { readBrowserLocale } from './readBrowserLocale';
@@ -67,7 +64,7 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
   setLocale = (locale: LocaleCandidates): void => {
     this.updateLocale(locale);
     setCookieValue({
-      cookieName: defaultResetLocaleCookieName,
+      cookieName: getI18nConfig().getResetLocaleCookieName(),
       value: 'true',
     });
     this.reload();
