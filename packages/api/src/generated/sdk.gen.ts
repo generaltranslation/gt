@@ -44,9 +44,6 @@ import type {
   GetOrphanedFilesData,
   GetOrphanedFilesErrors,
   GetOrphanedFilesResponses,
-  GetProjectContextGenerationStatusData,
-  GetProjectContextGenerationStatusErrors,
-  GetProjectContextGenerationStatusResponses,
   GetProjectInfoData,
   GetProjectInfoErrors,
   GetProjectInfoResponses,
@@ -62,9 +59,6 @@ import type {
   PublishFilesData,
   PublishFilesErrors,
   PublishFilesResponses,
-  ShouldGenerateProjectContextData,
-  ShouldGenerateProjectContextErrors,
-  ShouldGenerateProjectContextResponses,
   SubmitUserEditDiffsData,
   SubmitUserEditDiffsErrors,
   SubmitUserEditDiffsResponses,
@@ -153,31 +147,6 @@ export const createProjectApiKey = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Upload source files
- *
- * Upload one or more source files to the project. Max 100 files per request.
- */
-export const uploadSourceFiles = <ThrowOnError extends boolean = false>(
-  options: Options<UploadSourceFilesData, ThrowOnError>
-) =>
-  options.client.post<
-    UploadSourceFilesResponses,
-    UploadSourceFilesErrors,
-    ThrowOnError
-  >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/project/files/upload-files',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-/**
  * Upload translated files
  *
  * Upload translated files linked to their source files. Max 100 files per request.
@@ -203,94 +172,44 @@ export const uploadTranslations = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Upload Project assets
+ * Get Project information
  *
- * Upload OpenType or TrueType fonts through a Project and make them available to Lottie translation workflows across its Organization. Each font is keyed by a normalized identity derived from its family, weight, and italic style (from the supplied `family` and `style`, or from the font metadata and file name). Re-uploading the same identity overwrites the existing asset, so complete retries after a `500` response are safe.
+ * Read the authenticated Project's name, Organization ID, locale settings, and auto-approval setting.
  */
-export const uploadAssets = <ThrowOnError extends boolean = false>(
-  options: Options<UploadAssetsData, ThrowOnError>
-) =>
-  options.client.post<UploadAssetsResponses, UploadAssetsErrors, ThrowOnError>({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/project/assets',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-/**
- * Submit translation diffs
- *
- * Overwrite translations with user-provided localized content.
- */
-export const submitUserEditDiffs = <ThrowOnError extends boolean = false>(
-  options: Options<SubmitUserEditDiffsData, ThrowOnError>
-) =>
-  options.client.post<
-    SubmitUserEditDiffsResponses,
-    SubmitUserEditDiffsErrors,
-    ThrowOnError
-  >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/project/files/diffs',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-/**
- * Check if context generation is needed
- *
- * Check whether the Project needs translation context generated. This deprecated endpoint is retained for backward compatibility and is no longer called by current clients.
- *
- * @deprecated
- */
-export const shouldGenerateProjectContext = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<ShouldGenerateProjectContextData, ThrowOnError>
+export const getProjectInfo = <ThrowOnError extends boolean = false>(
+  options: Options<GetProjectInfoData, ThrowOnError>
 ) =>
   options.client.get<
-    ShouldGenerateProjectContextResponses,
-    ShouldGenerateProjectContextErrors,
+    GetProjectInfoResponses,
+    GetProjectInfoErrors,
     ThrowOnError
   >({
     security: [
       { scheme: 'bearer', type: 'http' },
       { scheme: 'bearer', type: 'http' },
     ],
-    url: '/v2/project/setup/should-generate',
+    url: '/v2/project/info/{projectId}',
     ...options,
   });
 
 /**
- * Generate translation context
+ * Update Project information
  *
- * Generate glossaries and translation instructions for the project.
+ * Update the Project's default locale or CDN delivery setting.
  */
-export const generateProjectContext = <ThrowOnError extends boolean = false>(
-  options: Options<GenerateProjectContextData, ThrowOnError>
+export const updateProjectInfo = <ThrowOnError extends boolean = false>(
+  options: Options<UpdateProjectInfoData, ThrowOnError>
 ) =>
   options.client.post<
-    GenerateProjectContextResponses,
-    GenerateProjectContextErrors,
+    UpdateProjectInfoResponses,
+    UpdateProjectInfoErrors,
     ThrowOnError
   >({
     security: [
       { scheme: 'bearer', type: 'http' },
       { scheme: 'bearer', type: 'http' },
     ],
-    url: '/v2/project/setup/generate',
+    url: '/v2/project/info/{projectId}',
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -299,118 +218,45 @@ export const generateProjectContext = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Get context generation job status
+ * Translate content at runtime
  *
- * Track a context generation job. This deprecated endpoint is retained for backward compatibility; new integrations should use `POST /v2/project/jobs/info`.
- *
- * @deprecated
+ * Translate one or more strings or structured content entries with caching and memoization. Development API keys are accepted for this endpoint.
  */
-export const getProjectContextGenerationStatus = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<GetProjectContextGenerationStatusData, ThrowOnError>
+export const translate = <ThrowOnError extends boolean = false>(
+  options: Options<TranslateData, ThrowOnError>
+) =>
+  options.client.post<TranslateResponses, TranslateErrors, ThrowOnError>({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/translate',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Get translation status for a file
+ *
+ * Return translation progress and availability by locale for one source file, along with its source metadata.
+ */
+export const getTranslationStatus = <ThrowOnError extends boolean = false>(
+  options: Options<GetTranslationStatusData, ThrowOnError>
 ) =>
   options.client.get<
-    GetProjectContextGenerationStatusResponses,
-    GetProjectContextGenerationStatusErrors,
+    GetTranslationStatusResponses,
+    GetTranslationStatusErrors,
     ThrowOnError
   >({
     security: [
       { scheme: 'bearer', type: 'http' },
       { scheme: 'bearer', type: 'http' },
     ],
-    url: '/v2/project/setup/status/{jobId}',
+    url: '/v2/project/translations/files/status/{fileId}',
     ...options,
-  });
-
-/**
- * Queue files for translation
- *
- * Enqueue uploaded source files for background translation. Max 100 files per request. The response shape depends on the requested `gt-api-version`.
- */
-export const enqueueFileTranslations = <ThrowOnError extends boolean = false>(
-  options: Options<EnqueueFileTranslationsData, ThrowOnError>
-) =>
-  options.client.post<
-    EnqueueFileTranslationsResponses,
-    EnqueueFileTranslationsErrors,
-    ThrowOnError
-  >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/project/translations/enqueue',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-/**
- * Publish or unpublish files
- *
- * Publish or unpublish translated files to the CDN. Requires CDN to be enabled.
- */
-export const publishFiles = <ThrowOnError extends boolean = false>(
-  options: Options<PublishFilesData, ThrowOnError>
-) =>
-  options.client.post<PublishFilesResponses, PublishFilesErrors, ThrowOnError>({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/project/files/publish',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-/**
- * Download a single file
- *
- * Download a single source or translated file. This deprecated endpoint is retained for backward compatibility; new integrations should use `POST /v2/project/files/download`.
- *
- * @deprecated
- */
-export const downloadFile = <ThrowOnError extends boolean = false>(
-  options: Options<DownloadFileData, ThrowOnError>
-) =>
-  options.client.get<DownloadFileResponses, DownloadFileErrors, ThrowOnError>({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/project/files/download/{fileId}',
-    ...options,
-  });
-
-/**
- * Download multiple files
- *
- * Download up to 100 source or translated files in one request.
- */
-export const downloadFiles = <ThrowOnError extends boolean = false>(
-  options: Options<DownloadFilesData, ThrowOnError>
-) =>
-  options.client.post<
-    DownloadFilesResponses,
-    DownloadFilesErrors,
-    ThrowOnError
-  >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/project/files/download',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
   });
 
 /**
@@ -481,137 +327,49 @@ export const createTag = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Get Project information
+ * Upload Project assets
  *
- * Read the authenticated Project's name, Organization ID, locale settings, and auto-approval setting.
+ * Upload OpenType or TrueType fonts through a Project and make them available to Lottie translation workflows across its Organization. Each font is keyed by a normalized identity derived from its family, weight, and italic style (from the supplied `family` and `style`, or from the font metadata and file name). Re-uploading the same identity overwrites the existing asset, so complete retries after a `500` response are safe.
  */
-export const getProjectInfo = <ThrowOnError extends boolean = false>(
-  options: Options<GetProjectInfoData, ThrowOnError>
+export const uploadAssets = <ThrowOnError extends boolean = false>(
+  options: Options<UploadAssetsData, ThrowOnError>
 ) =>
-  options.client.get<
-    GetProjectInfoResponses,
-    GetProjectInfoErrors,
-    ThrowOnError
-  >({
+  options.client.post<UploadAssetsResponses, UploadAssetsErrors, ThrowOnError>({
     security: [
       { scheme: 'bearer', type: 'http' },
       { scheme: 'bearer', type: 'http' },
     ],
-    url: '/v2/project/info/{projectId}',
+    url: '/v2/project/assets',
     ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
   });
 
 /**
- * Update Project information
+ * Submit translation diffs
  *
- * Update the Project's default locale or CDN delivery setting.
+ * Overwrite translations with user-provided localized content.
  */
-export const updateProjectInfo = <ThrowOnError extends boolean = false>(
-  options: Options<UpdateProjectInfoData, ThrowOnError>
+export const submitUserEditDiffs = <ThrowOnError extends boolean = false>(
+  options: Options<SubmitUserEditDiffsData, ThrowOnError>
 ) =>
   options.client.post<
-    UpdateProjectInfoResponses,
-    UpdateProjectInfoErrors,
+    SubmitUserEditDiffsResponses,
+    SubmitUserEditDiffsErrors,
     ThrowOnError
   >({
     security: [
       { scheme: 'bearer', type: 'http' },
       { scheme: 'bearer', type: 'http' },
     ],
-    url: '/v2/project/info/{projectId}',
+    url: '/v2/project/files/diffs',
     ...options,
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,
     },
-  });
-
-/**
- * Get translation job status
- *
- * Return normalized status information for one or more queued translation or context generation jobs.
- */
-export const getTranslationJobInfo = <ThrowOnError extends boolean = false>(
-  options: Options<GetTranslationJobInfoData, ThrowOnError>
-) =>
-  options.client.post<
-    GetTranslationJobInfoResponses,
-    GetTranslationJobInfoErrors,
-    ThrowOnError
-  >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/project/jobs/info',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-/**
- * Translate content at runtime
- *
- * Translate one or more strings or structured content entries with caching and memoization. Development API keys are accepted for this endpoint.
- */
-export const translate = <ThrowOnError extends boolean = false>(
-  options: Options<TranslateData, ThrowOnError>
-) =>
-  options.client.post<TranslateResponses, TranslateErrors, ThrowOnError>({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/translate',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-/**
- * Get file metadata
- *
- * Get detailed metadata for specific source and translated files.
- */
-export const getFileInfo = <ThrowOnError extends boolean = false>(
-  options: Options<GetFileInfoData, ThrowOnError>
-) =>
-  options.client.post<GetFileInfoResponses, GetFileInfoErrors, ThrowOnError>({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/project/files/info',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-/**
- * Get translation status for a file
- *
- * Return translation progress and availability by locale for one source file, along with its source metadata.
- */
-export const getTranslationStatus = <ThrowOnError extends boolean = false>(
-  options: Options<GetTranslationStatusData, ThrowOnError>
-) =>
-  options.client.get<
-    GetTranslationStatusResponses,
-    GetTranslationStatusErrors,
-    ThrowOnError
-  >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/project/translations/files/status/{fileId}',
-    ...options,
   });
 
 /**
@@ -657,6 +415,192 @@ export const getOrphanedFiles = <ThrowOnError extends boolean = false>(
       { scheme: 'bearer', type: 'http' },
     ],
     url: '/v2/project/files/orphaned',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Get file metadata
+ *
+ * Get detailed metadata for specific source and translated files.
+ */
+export const getFileInfo = <ThrowOnError extends boolean = false>(
+  options: Options<GetFileInfoData, ThrowOnError>
+) =>
+  options.client.post<GetFileInfoResponses, GetFileInfoErrors, ThrowOnError>({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/project/files/info',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Download multiple files
+ *
+ * Download up to 100 source or translated files in one request.
+ */
+export const downloadFiles = <ThrowOnError extends boolean = false>(
+  options: Options<DownloadFilesData, ThrowOnError>
+) =>
+  options.client.post<
+    DownloadFilesResponses,
+    DownloadFilesErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/project/files/download',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Download a single file
+ *
+ * Download a single source or translated file. This deprecated endpoint is retained for backward compatibility; new integrations should use `POST /v2/project/files/download`.
+ *
+ * @deprecated
+ */
+export const downloadFile = <ThrowOnError extends boolean = false>(
+  options: Options<DownloadFileData, ThrowOnError>
+) =>
+  options.client.get<DownloadFileResponses, DownloadFileErrors, ThrowOnError>({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/project/files/download/{fileId}',
+    ...options,
+  });
+
+/**
+ * Get translation job status
+ *
+ * Return normalized status information for one or more queued translation or context generation jobs.
+ */
+export const getTranslationJobInfo = <ThrowOnError extends boolean = false>(
+  options: Options<GetTranslationJobInfoData, ThrowOnError>
+) =>
+  options.client.post<
+    GetTranslationJobInfoResponses,
+    GetTranslationJobInfoErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/project/jobs/info',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Generate translation context
+ *
+ * Generate glossaries and translation instructions for the project.
+ */
+export const generateProjectContext = <ThrowOnError extends boolean = false>(
+  options: Options<GenerateProjectContextData, ThrowOnError>
+) =>
+  options.client.post<
+    GenerateProjectContextResponses,
+    GenerateProjectContextErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/project/setup/generate',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Publish or unpublish files
+ *
+ * Publish or unpublish translated files to the CDN. Requires CDN to be enabled.
+ */
+export const publishFiles = <ThrowOnError extends boolean = false>(
+  options: Options<PublishFilesData, ThrowOnError>
+) =>
+  options.client.post<PublishFilesResponses, PublishFilesErrors, ThrowOnError>({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/project/files/publish',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Upload source files
+ *
+ * Upload one or more source files to the project. Max 100 files per request.
+ */
+export const uploadSourceFiles = <ThrowOnError extends boolean = false>(
+  options: Options<UploadSourceFilesData, ThrowOnError>
+) =>
+  options.client.post<
+    UploadSourceFilesResponses,
+    UploadSourceFilesErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/project/files/upload-files',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Queue files for translation
+ *
+ * Enqueue uploaded source files for background translation. Max 100 files per request. The response shape depends on the requested `gt-api-version`.
+ */
+export const enqueueFileTranslations = <ThrowOnError extends boolean = false>(
+  options: Options<EnqueueFileTranslationsData, ThrowOnError>
+) =>
+  options.client.post<
+    EnqueueFileTranslationsResponses,
+    EnqueueFileTranslationsErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/project/translations/enqueue',
     ...options,
     headers: {
       'Content-Type': 'application/json',
