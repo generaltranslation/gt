@@ -44,7 +44,12 @@ import { buildImportMap } from '../buildImportMap.js';
 import { getPathsAndAliases } from '../getPathsAndAliases.js';
 import { parseTProps } from './parseTProps.js';
 import { handleChildrenWhitespace } from './handleChildrenWhitespace.js';
-import { MultiplicationNode, JsxTree, isElementNode } from './types.js';
+import {
+  MultiplicationNode,
+  JsxTree,
+  isElementNode,
+  isMultiplicationNode,
+} from './types.js';
 import { multiplyJsxTree } from './multiplication/multiplyJsxTree.js';
 import { removeNullChildrenFields } from './removeNullChildrenFields.js';
 import {
@@ -1432,6 +1437,34 @@ function processDeriveExpression({
       state,
       output,
     });
+  } else if (
+    t.isLogicalExpression(expressionNodePath.node) &&
+    expressionNodePath.node.operator === '&&'
+  ) {
+    // ex: return condition && <div>Jsx content</div>
+    // React renders nothing when the condition is falsy, so this derives to
+    // the right-hand content plus an empty branch
+    const rightResult = processDeriveExpression({
+      config,
+      state,
+      output,
+      scopeNode,
+      expressionNodePath: expressionNodePath.get(
+        'right'
+      ) as NodePath<t.Expression>,
+    });
+    // Skip the extra empty branch when the right side already derived one
+    // (e.g. cond && (b && <li/>) or cond && (b ? <li/> : null)) so identical
+    // empty variants aren't produced
+    const branches = Array.isArray(rightResult) ? rightResult : [rightResult];
+    const result: MultiplicationNode = {
+      nodeType: 'multiplication' as const,
+      branches:
+        !Array.isArray(rightResult) && containsEmptyBranch(rightResult)
+          ? branches
+          : [...branches, null],
+    };
+    return result;
   } else if (t.isConditionalExpression(expressionNodePath.node)) {
     // ex: return condition ? <div>Jsx content</div> : <div>Jsx content</div>
     // since two options here we must construct a new multiplication node
@@ -1548,4 +1581,17 @@ function processDeriveExpression({
       output,
     });
   }
+}
+
+/**
+ * Whether a derive result already yields an empty (null) variant, looking
+ * through nested multiplication branches. Elements and strings are content,
+ * not empty variants.
+ */
+function containsEmptyBranch(node: JsxTree | MultiplicationNode): boolean {
+  if (node === null) return true;
+  if (isMultiplicationNode(node)) {
+    return node.branches.some(containsEmptyBranch);
+  }
+  return false;
 }
