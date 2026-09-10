@@ -62,7 +62,7 @@ function expectRedirect(response: Response, path: string, locale: string) {
   expect(response.headers.get(defaultLocaleHeaderName)).toBe(locale);
 }
 
-describe('pathConfig overrides: public URLs and preference changes', () => {
+describe('routeOverrides: public URLs and preference changes', () => {
   it.each([
     {
       name: 'saved French cookie',
@@ -76,7 +76,7 @@ describe('pathConfig overrides: public URLs and preference changes', () => {
     'redirects then rewrites an override-only blog for $name',
     ({ preference }) => {
       const middleware = createNextMiddleware({
-        pathConfig: { '/blog': { fr: { override: true } } },
+        routeOverrides: { fr: ['/blog'] },
       });
 
       // The public route has one locale; only the internal implementation has two.
@@ -95,7 +95,7 @@ describe('pathConfig overrides: public URLs and preference changes', () => {
 
   it('keeps an English cookie ahead of French browser language', () => {
     const middleware = createNextMiddleware({
-      pathConfig: { '/blog': { fr: { override: true } } },
+      routeOverrides: { fr: ['/blog'] },
     });
     expectRewrite(
       middleware(request('/blog', { locale: 'en', language: 'fr' })),
@@ -107,7 +107,7 @@ describe('pathConfig overrides: public URLs and preference changes', () => {
   it('does not use French browser language when browser detection is disabled', () => {
     vi.stubEnv('_GENERALTRANSLATION_IGNORE_BROWSER_LOCALES', 'true');
     const middleware = createNextMiddleware({
-      pathConfig: { '/blog': { fr: { override: true } } },
+      routeOverrides: { fr: ['/blog'] },
     });
     expectRewrite(
       middleware(request('/blog', { language: 'fr' })),
@@ -118,7 +118,7 @@ describe('pathConfig overrides: public URLs and preference changes', () => {
 
   it('gives an explicit French URL priority over an English cookie', () => {
     const middleware = createNextMiddleware({
-      pathConfig: { '/blog': { fr: { override: true } } },
+      routeOverrides: { fr: ['/blog'] },
     });
     expectRewrite(
       middleware(request('/fr/blog', { locale: 'en' })),
@@ -129,7 +129,7 @@ describe('pathConfig overrides: public URLs and preference changes', () => {
 
   it('switches away from a French override through the public English URL', () => {
     const middleware = createNextMiddleware({
-      pathConfig: { '/blog': { fr: { override: true } } },
+      routeOverrides: { fr: ['/blog'] },
     });
     expectRedirect(
       middleware(request('/fr/blog', { locale: 'en', reset: true })),
@@ -151,7 +151,7 @@ describe('pathConfig overrides: public URLs and preference changes', () => {
     ({ prefixDefaultLocale, publicPath }) => {
       const middleware = createNextMiddleware({
         prefixDefaultLocale,
-        pathConfig: { '/blog': { en: { override: true } } },
+        routeOverrides: { en: ['/blog'] },
       });
       if (prefixDefaultLocale)
         expectRedirect(middleware(request('/blog')), publicPath, 'en');
@@ -161,7 +161,7 @@ describe('pathConfig overrides: public URLs and preference changes', () => {
 
   it('keeps the override internal when adding a French prefix to a nested path', () => {
     const middleware = createNextMiddleware({
-      pathConfig: { '/docs/[...slug]': { fr: { override: true } } },
+      routeOverrides: { fr: ['/docs/[...slug]'] },
     });
     expectRedirect(
       middleware(request('/docs/start/install', { locale: 'fr' })),
@@ -176,13 +176,9 @@ describe('pathConfig overrides: public URLs and preference changes', () => {
   });
 });
 
-describe('pathConfig overrides: locale and route isolation', () => {
+describe('routeOverrides: locale and route isolation', () => {
   const config: Config = {
-    pathConfig: {
-      '/account': { en: { override: true } },
-      '/blog': { fr: { override: true } },
-      '/support': { de: { override: true } },
-    },
+    routeOverrides: { de: ['/support'], fr: ['/blog'], en: ['/account'] },
   };
 
   it.each([
@@ -227,7 +223,7 @@ describe('pathConfig overrides: locale and route isolation', () => {
   });
 });
 
-describe('pathConfig overrides: route boundaries', () => {
+describe('routeOverrides: route boundaries', () => {
   it.each([
     { name: 'bare root', template: '/', path: '/fr', destination: '/fr/fr' },
     {
@@ -310,7 +306,7 @@ describe('pathConfig overrides: route boundaries', () => {
     },
   ])('rewrites $name', ({ template, path, destination }) => {
     const middleware = createNextMiddleware({
-      pathConfig: { [template]: { fr: { override: true } } },
+      routeOverrides: { fr: [template] },
     });
     expectRewrite(middleware(request(path)), destination, 'fr');
   });
@@ -340,14 +336,14 @@ describe('pathConfig overrides: route boundaries', () => {
     // Middleware has no route-file inventory: a nonmatch continues to Next, not a fabricated 404.
     expectNext(
       createNextMiddleware({
-        pathConfig: { [template]: { fr: { override: true } } },
+        routeOverrides: { fr: [template] },
       })(request(path)),
       'fr'
     );
   });
 });
 
-describe('pathConfig overrides: composition with localized paths', () => {
+describe('routeOverrides: composition with localized paths', () => {
   it.each([
     {
       name: 'static French alias',
@@ -395,7 +391,8 @@ describe('pathConfig overrides: composition with localized paths', () => {
     'matches the shared override behind $name',
     ({ shared, alias, path, destination }) => {
       const middleware = createNextMiddleware({
-        pathConfig: { [shared]: { fr: { path: alias, override: true } } },
+        pathConfig: { [shared]: { fr: alias } },
+        routeOverrides: { fr: [shared] },
       });
       expectRewrite(middleware(request(path)), destination, 'fr');
     }
@@ -404,10 +401,9 @@ describe('pathConfig overrides: composition with localized paths', () => {
   it('redirects the shared spelling to its alias before applying the override', () => {
     const middleware = createNextMiddleware({
       pathConfig: {
-        '/docs/[...slug]': {
-          fr: { path: '/guides/[...tail]', override: true },
-        },
+        '/docs/[...slug]': { fr: '/guides/[...tail]' },
       },
+      routeOverrides: { fr: ['/docs/[...slug]'] },
     });
     expectRedirect(
       middleware(request('/fr/docs/start/install')),
@@ -424,11 +420,9 @@ describe('pathConfig overrides: composition with localized paths', () => {
   it('uses a German shared implementation when only French has an override', () => {
     const middleware = createNextMiddleware({
       pathConfig: {
-        '/about': {
-          fr: { path: '/a-propos', override: true },
-          de: '/uber-uns',
-        },
+        '/about': { fr: '/a-propos', de: '/uber-uns' },
       },
+      routeOverrides: { fr: ['/about'] },
     });
     expectRewrite(middleware(request('/de/uber-uns')), '/de/about', 'de');
     expectRewrite(middleware(request('/fr/a-propos')), '/fr/fr/about', 'fr');
@@ -436,21 +430,23 @@ describe('pathConfig overrides: composition with localized paths', () => {
 
   it('composes an identity path with a French override', () => {
     const middleware = createNextMiddleware({
-      pathConfig: { '/about': { fr: { path: '/about', override: true } } },
+      pathConfig: { '/about': { fr: '/about' } },
+      routeOverrides: { fr: ['/about'] },
     });
     expectRewrite(middleware(request('/fr/about')), '/fr/fr/about', 'fr');
   });
 
   it('allows an omitted localized path without disabling an override', () => {
     const middleware = createNextMiddleware({
-      pathConfig: { '/blog': { fr: { override: true } } },
+      routeOverrides: { fr: ['/blog'] },
     });
     expectRewrite(middleware(request('/fr/blog')), '/fr/fr/blog', 'fr');
   });
 
-  it('keeps an explicitly disabled override as ordinary localized routing', () => {
+  it('keeps a locale without overrides on ordinary localized routing', () => {
     const middleware = createNextMiddleware({
-      pathConfig: { '/about': { fr: { path: '/a-propos', override: false } } },
+      pathConfig: { '/about': { fr: '/a-propos' } },
+      routeOverrides: {},
     });
     expectRewrite(middleware(request('/fr/a-propos')), '/fr/about', 'fr');
   });
@@ -458,10 +454,9 @@ describe('pathConfig overrides: composition with localized paths', () => {
   it('preserves a repeated base path, encoded id, slash and query in the implementation', () => {
     const middleware = createNextMiddleware({
       pathConfig: {
-        '/corp/products/[id]': {
-          fr: { path: '/boutique/[product]', override: true },
-        },
+        '/corp/products/[id]': { fr: '/boutique/[product]' },
       },
+      routeOverrides: { fr: ['/corp/products/[id]'] },
     });
     expectRewrite(
       middleware(request('/corp/fr/boutique/a%2Fb/', {}, '/corp')),
@@ -472,7 +467,7 @@ describe('pathConfig overrides: composition with localized paths', () => {
 
   it('preserves the base path on both the public redirect and override rewrite', () => {
     const middleware = createNextMiddleware({
-      pathConfig: { '/blog': { fr: { override: true } } },
+      routeOverrides: { fr: ['/blog'] },
     });
     expectRedirect(
       middleware(request('/corp/blog', { locale: 'fr' }, '/corp')),

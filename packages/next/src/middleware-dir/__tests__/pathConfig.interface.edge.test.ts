@@ -2,7 +2,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 import { defaultLocaleCookieName } from '@generaltranslation/react-core/pure';
-import { createNextMiddleware, type PathConfig } from '../../middleware';
+import { createNextMiddleware, type RouteOverrides } from '../../middleware';
+import type { PathConfig } from '../utils';
 import { defaultLocaleHeaderName } from '../../utils/headers';
 
 const origin = 'http://localhost:3000';
@@ -52,73 +53,53 @@ function regionalLocales() {
 }
 
 describe('public pathConfig locale entries', () => {
-  it.each([
-    { name: 'legacy string', entry: '/a-propos', destination: '/fr/about' },
-    {
-      name: 'path object',
-      entry: { path: '/a-propos' },
-      destination: '/fr/about',
-    },
-    {
-      name: 'path with override',
-      entry: { path: '/a-propos', override: true },
-      destination: '/fr/fr/about',
-    },
-  ])('accepts the $name form', ({ entry, destination }) => {
-    const pathConfig: PathConfig = { '/about': { fr: entry } };
-    const middleware = createNextMiddleware({ pathConfig });
-    expectRoute(
-      middleware(request('/fr/a-propos')),
-      'rewrite',
-      'fr',
-      destination
-    );
-  });
+  it.each([false, true])(
+    'composes a localized string with override=%s',
+    (override) => {
+      const pathConfig: PathConfig = { '/about': { fr: '/a-propos' } };
+      const routeOverrides: RouteOverrides = override ? { fr: ['/about'] } : {};
+      const middleware = createNextMiddleware({ pathConfig, routeOverrides });
+      expectRoute(
+        middleware(request('/fr/a-propos')),
+        'rewrite',
+        'fr',
+        override ? '/fr/fr/about' : '/fr/about'
+      );
+    }
+  );
 
-  it('keeps an override:false identity alias ahead of a saved foreign locale', () => {
+  it('keeps an explicit identity alias ahead of a saved foreign locale', () => {
     const middleware = createNextMiddleware({
-      pathConfig: { '/about': { en: { path: '/about', override: false } } },
+      pathConfig: { '/about': { en: '/about' } },
+      routeOverrides: { en: ['/about'] },
     });
     expectRoute(
       middleware(request('/about', 'fr')),
       'rewrite',
       'en',
-      '/en/about'
+      '/en/en/about'
     );
   });
 
-  it.each([{ override: true }, { path: '/about', override: true }])(
-    'does not give an override-only identity entry default-alias priority: %j',
-    (entry) => {
-      const middleware = createNextMiddleware({
-        pathConfig: { '/about': { en: entry } },
-      });
-      expectRoute(
-        middleware(request('/about', 'fr')),
-        'redirect',
-        'fr',
-        '/fr/about'
-      );
-      // An English implementation override must not create French alias ownership.
-      expectRoute(middleware(request('/fr/about')), 'next', 'fr');
-      expectRoute(
-        middleware(request('/about', 'en')),
-        'rewrite',
-        'en',
-        '/en/en/about'
-      );
-    }
-  );
-
-  it.each([{}, { override: false }])(
-    'does not turn pathless inactive metadata into an alias owner: %j',
-    (entry) => {
-      const middleware = createNextMiddleware({
-        pathConfig: { '/about': { en: entry } },
-      });
-      expectRoute(middleware(request('/fr/about')), 'next', 'fr');
-    }
-  );
+  it('does not give an override-only route default-alias priority', () => {
+    const middleware = createNextMiddleware({
+      routeOverrides: { en: ['/about'] },
+    });
+    expectRoute(
+      middleware(request('/about', 'fr')),
+      'redirect',
+      'fr',
+      '/fr/about'
+    );
+    // An English implementation override must not create French alias ownership.
+    expectRoute(middleware(request('/fr/about')), 'next', 'fr');
+    expectRoute(
+      middleware(request('/about', 'en')),
+      'rewrite',
+      'en',
+      '/en/en/about'
+    );
+  });
 
   it.each([
     {
@@ -134,13 +115,14 @@ describe('public pathConfig locale entries', () => {
       destination: '/en/en/about',
     },
   ])(
-    'compares identity literally for $path',
+    'preserves explicit default-alias ownership for $path',
     ({ shared, path, requestPath, destination }) => {
       const middleware = createNextMiddleware({
-        pathConfig: { [shared]: { en: { path, override: true } } },
+        pathConfig: { [shared]: { en: path } },
+        routeOverrides: { en: [shared] },
       });
-      // These aliases match after pathname normalization, but were not literally equal
-      // to the configured shared key; their default-locale priority must survive.
+      // These explicit aliases match after pathname normalization; their
+      // default-locale priority must survive alongside implementation overrides.
       expectRoute(
         middleware(request(requestPath, 'fr')),
         'rewrite',
@@ -167,14 +149,15 @@ describe('public pathConfig locale entries', () => {
     );
   });
 
-  it('retains explicitly empty legacy locale maps as shared owners', () => {
+  it('retains explicitly empty locale maps as shared owners', () => {
     const middleware = createNextMiddleware({ pathConfig: { '/about': {} } });
     expectRoute(middleware(request('/fr/about')), 'next', 'fr');
   });
 
   it('keeps alias ownership for one locale when another is override-only', () => {
     const middleware = createNextMiddleware({
-      pathConfig: { '/about': { en: { override: true }, fr: '/a-propos' } },
+      pathConfig: { '/about': { fr: '/a-propos' } },
+      routeOverrides: { en: ['/about'] },
     });
     expectRoute(
       middleware(request('/about', 'fr')),
@@ -200,11 +183,12 @@ describe('public pathConfig locale entries', () => {
     const middleware = createNextMiddleware({
       pathConfig: {
         '/[[...slug]]': {
-          en: { path: '/pages/[[...tail]]', override: false },
-          fr: { path: '/accueil/[[...tail]]', override: true },
+          en: '/pages/[[...tail]]',
+          fr: '/accueil/[[...tail]]',
           de: '/seiten/[[...tail]]',
         },
       },
+      routeOverrides: { fr: ['/[[...slug]]'] },
     });
     expectRoute(middleware(request('/fr/accueil')), 'rewrite', 'fr', '/fr/fr');
     expectRoute(
@@ -231,8 +215,8 @@ describe('public pathConfig locale entries', () => {
     const middleware = createNextMiddleware({
       pathConfig: {
         '/cms/[[...slug]]': { fr: '/pages/[[...tail]]' },
-        '/pages': { en: { override: true } },
       },
+      routeOverrides: { en: ['/pages'] },
     });
     expectRoute(middleware(request('/fr/pages')), 'rewrite', 'fr', '/fr/cms');
     expectRoute(
@@ -244,58 +228,56 @@ describe('public pathConfig locale entries', () => {
   });
 });
 
-describe('unified entries after locale standardization', () => {
+describe('independent config locale standardization', () => {
   it.each([
-    { name: 'string', later: '/nouveau' },
-    { name: 'explicit false', later: { path: '/nouveau', override: false } },
+    { earlier: 'fr-fr', later: 'fr-FR' },
+    { earlier: 'fr-FR', later: 'fr-fr' },
   ])(
-    'lets a later $name replace both the old alias and override',
-    ({ later }) => {
+    'keeps the last alias and override list for $earlier then $later',
+    ({ earlier, later }) => {
       regionalLocales();
       const middleware = createNextMiddleware({
         pathConfig: {
-          '/about': {
-            'fr-fr': { path: '/ancien', override: true },
-            'fr-FR': later,
-          },
+          '/about': { [earlier]: '/ancien', [later]: '/nouveau' },
         },
+        routeOverrides: { [earlier]: ['/obsolete'], [later]: ['/about'] },
       });
       expectRoute(
         middleware(request('/fr-FR/nouveau')),
         'rewrite',
         'fr-FR',
-        '/fr-FR/about'
-      );
-      expectRoute(middleware(request('/fr-FR/ancien')), 'next', 'fr-FR');
-    }
-  );
-
-  it.each([{ override: true }, { path: '/about', override: true }])(
-    'removes a stale alias when the last canonical entry is override-only: %j',
-    (later) => {
-      regionalLocales();
-      const middleware = createNextMiddleware({
-        pathConfig: { '/about': { 'fr-fr': '/ancien', 'fr-FR': later } },
-      });
-      expectRoute(middleware(request('/fr-FR/ancien')), 'next', 'fr-FR');
-      expectRoute(
-        middleware(request('/fr-FR/about')),
-        'rewrite',
-        'fr-FR',
         '/fr-FR/fr-FR/about'
       );
+      expectRoute(middleware(request('/fr-FR/ancien')), 'next', 'fr-FR');
+      expectRoute(middleware(request('/fr-FR/obsolete')), 'next', 'fr-FR');
     }
   );
 
-  it('lets the reverse insertion order restore an alias and override together', () => {
+  it('keeps an alias when the last standardized override list is empty', () => {
     regionalLocales();
     const middleware = createNextMiddleware({
-      pathConfig: {
-        '/about': {
-          'fr-FR': { path: '/ancien', override: false },
-          'fr-fr': { path: '/nouveau', override: true },
-        },
-      },
+      pathConfig: { '/about': { 'fr-fr': '/a-propos' } },
+      routeOverrides: { 'fr-fr': ['/about'], 'fr-FR': [] },
+    });
+    expectRoute(
+      middleware(request('/fr-FR/a-propos')),
+      'rewrite',
+      'fr-FR',
+      '/fr-FR/about'
+    );
+    expectRoute(
+      middleware(request('/fr-FR/about')),
+      'redirect',
+      'fr-FR',
+      '/fr-FR/a-propos'
+    );
+  });
+
+  it('preserves overrides when a later standardized alias replaces an earlier alias', () => {
+    regionalLocales();
+    const middleware = createNextMiddleware({
+      pathConfig: { '/about': { 'fr-fr': '/ancien', 'fr-FR': '/nouveau' } },
+      routeOverrides: { 'fr-fr': ['/about'] },
     });
     expectRoute(
       middleware(request('/fr-FR/nouveau')),
@@ -306,29 +288,14 @@ describe('unified entries after locale standardization', () => {
     expectRoute(middleware(request('/fr-FR/ancien')), 'next', 'fr-FR');
   });
 
-  it('lets a later inactive entry remove an earlier alias and override', () => {
+  it('matches multiple shared paths in a standardized override list', () => {
     regionalLocales();
     const middleware = createNextMiddleware({
       pathConfig: {
-        '/about': {
-          'fr-fr': { path: '/ancien', override: true },
-          'fr-FR': { override: false },
-        },
+        '/about': { 'fr-fr': '/a-propos' },
+        '/products/[id]': { 'fr-FR': '/produits/[item]' },
       },
-    });
-    expectRoute(middleware(request('/fr-FR/ancien')), 'next', 'fr-FR');
-    expectRoute(middleware(request('/fr-FR/about')), 'next', 'fr-FR');
-  });
-
-  it('aggregates different shared paths under the same standardized locale', () => {
-    regionalLocales();
-    const middleware = createNextMiddleware({
-      pathConfig: {
-        '/about': { 'fr-fr': { path: '/a-propos', override: true } },
-        '/products/[id]': {
-          'fr-FR': { path: '/produits/[item]', override: true },
-        },
-      },
+      routeOverrides: { 'fr-fr': ['/about', '/products/[id]'] },
     });
     expectRoute(
       middleware(request('/fr-FR/a-propos')),
@@ -346,22 +313,22 @@ describe('unified entries after locale standardization', () => {
 
   it('keeps configured locale spelling when services are disabled', () => {
     const middleware = createNextMiddleware({
-      pathConfig: {
-        '/about': { FR: { path: '/upper', override: true }, fr: '/lower' },
-      },
+      pathConfig: { '/about': { FR: '/upper', fr: '/lower' } },
+      routeOverrides: { FR: ['/about'] },
     });
     expectRoute(middleware(request('/fr/lower')), 'rewrite', 'fr', '/fr/about');
     expectRoute(middleware(request('/fr/upper')), 'next', 'fr');
   });
 
-  it('does not mutate frozen caller objects across repeated factory calls', () => {
+  it('does not mutate frozen caller objects and lists across repeated factory calls', () => {
     regionalLocales();
-    const entry = Object.freeze({ path: '/a-propos', override: true });
-    const locales = Object.freeze({ 'fr-fr': entry, de: '/uber-uns' });
+    const locales = Object.freeze({ 'fr-fr': '/a-propos', de: '/uber-uns' });
     const pathConfig: PathConfig = Object.freeze({ '/about': locales });
-    const before = JSON.stringify(pathConfig);
+    const paths = Object.freeze(['/about']);
+    const routeOverrides: RouteOverrides = Object.freeze({ 'fr-fr': paths });
+    const before = JSON.stringify({ pathConfig, routeOverrides });
     for (let i = 0; i < 2; i++) {
-      const middleware = createNextMiddleware({ pathConfig });
+      const middleware = createNextMiddleware({ pathConfig, routeOverrides });
       expectRoute(
         middleware(request('/fr-FR/a-propos')),
         'rewrite',
@@ -375,7 +342,9 @@ describe('unified entries after locale standardization', () => {
         '/de/about'
       );
     }
-    expect(JSON.stringify(pathConfig)).toBe(before);
+    expect(JSON.stringify({ pathConfig, routeOverrides })).toBe(before);
     expect(Object.keys(locales)).toEqual(['fr-fr', 'de']);
+    expect(Object.keys(routeOverrides)).toEqual(['fr-fr']);
+    expect(paths).toEqual(['/about']);
   });
 });

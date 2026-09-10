@@ -26,7 +26,8 @@ describe.each([false, true])(
       (slash) => {
         const middleware = createNextMiddleware({
           prefixDefaultLocale,
-          pathConfig: { '/': { fr: { path: '/accueil', override: true } } },
+          pathConfig: { '/': { fr: '/accueil' } },
+          routeOverrides: { fr: ['/'] },
         });
         const response = middleware(
           new NextRequest(origin + '/fr' + slash + query)
@@ -98,7 +99,8 @@ describe.each([false, true])(
       ({ shared, localized, pathname, destination }) => {
         const middleware = createNextMiddleware({
           prefixDefaultLocale,
-          pathConfig: { [shared]: { fr: { path: localized, override: true } } },
+          pathConfig: { [shared]: { fr: localized } },
+          routeOverrides: { fr: [shared] },
         });
         const response = middleware(new NextRequest(origin + pathname + query));
 

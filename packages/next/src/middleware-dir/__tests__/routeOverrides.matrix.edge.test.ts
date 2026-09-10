@@ -1,8 +1,11 @@
 // @vitest-environment edge-runtime
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { NextRequest } from 'next/server';
-import { createNextMiddleware } from '../createNextMiddleware';
-import type { PathConfig } from '../normalizePathConfig';
+import {
+  createNextMiddleware,
+  type RouteOverrides,
+} from '../createNextMiddleware';
+import type { PathConfig } from '../utils';
 
 const DEFAULT_LOCALE = 'en';
 const LOCALE_HEADER = 'x-generaltranslation-locale';
@@ -85,6 +88,7 @@ type RouteOverrideCase = {
   label: string;
   locale: string;
   pathConfig: PathConfig;
+  routeOverrides: RouteOverrides;
   prefixDefaultLocale: boolean;
   requestPath: string;
   routeTemplate: string;
@@ -145,13 +149,10 @@ function createRouteOverrideCases(): RouteOverrideCase[] {
                 search ? 'query' : 'no query',
               ].join(' | '),
               locale,
-              pathConfig: {
-                [routeTemplate]: {
-                  [locale]: localizedPath
-                    ? { path: localizedTemplate, override: true }
-                    : { override: true },
-                },
-              },
+              pathConfig: localizedPath
+                ? { [routeTemplate]: { [locale]: localizedTemplate } }
+                : {},
+              routeOverrides: { [locale]: [routeTemplate] },
               prefixDefaultLocale,
               requestPath,
               routeTemplate,
@@ -224,6 +225,7 @@ describe('routeOverrides routing matrix', () => {
   it.each(routeOverrideCases)('$label', (testCase) => {
     const middleware = createNextMiddleware({
       pathConfig: testCase.pathConfig,
+      routeOverrides: testCase.routeOverrides,
       prefixDefaultLocale: testCase.prefixDefaultLocale,
     });
 
