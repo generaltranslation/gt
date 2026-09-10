@@ -42,7 +42,7 @@ function expectTarget(
   expect(response.headers.get(header)).toBe(origin + path + query);
 }
 
-describe('localeRoutes.include', () => {
+describe('localeRoutes', () => {
   it.each([
     '/pricing',
     '/blog',
@@ -52,14 +52,12 @@ describe('localeRoutes.include', () => {
   ])('allows shared path %s', (path) => {
     const middleware = createNextMiddleware({
       localeRoutes: {
-        'en-GB': {
-          include: [
-            '/pricing',
-            '/blog/[[...slug]]',
-            '/product/[id]',
-            '/legal/[...slug]',
-          ],
-        },
+        'en-GB': [
+          '/pricing',
+          '/blog/[[...slug]]',
+          '/product/[id]',
+          '/legal/[...slug]',
+        ],
       },
     });
     const response = middleware(request('/en-GB' + path));
@@ -77,14 +75,12 @@ describe('localeRoutes.include', () => {
   ])('falls back for unavailable path %s', (path) => {
     const middleware = createNextMiddleware({
       localeRoutes: {
-        'en-GB': {
-          include: [
-            '/pricing',
-            '/blog/[[...slug]]',
-            '/product/[id]',
-            '/legal/[...slug]',
-          ],
-        },
+        'en-GB': [
+          '/pricing',
+          '/blog/[[...slug]]',
+          '/product/[id]',
+          '/legal/[...slug]',
+        ],
       },
     });
     const response = middleware(request('/en-GB' + path));
@@ -99,7 +95,7 @@ describe('localeRoutes.include', () => {
 
   it('does not restrict an omitted locale', () => {
     const middleware = createNextMiddleware({
-      localeRoutes: { 'en-GB': { include: [] } },
+      localeRoutes: { 'en-GB': [] },
     });
     const response = middleware(request('/fr/careers'));
     expect(response.headers.get('location')).toBeNull();
@@ -112,8 +108,8 @@ describe('localeRoutes.include', () => {
       const middleware = createNextMiddleware({
         prefixDefaultLocale,
         localeRoutes: {
-          'en-GB': { include: [] },
-          en: { include: [] },
+          'en-GB': [],
+          en: [],
         },
       });
       const path = prefixDefaultLocale ? '/en/careers' : '/careers';
@@ -136,7 +132,7 @@ describe('localeRoutes.include', () => {
     (prefixDefaultLocale) => {
       const middleware = createNextMiddleware({
         prefixDefaultLocale,
-        localeRoutes: { 'en-GB': { include: [] } },
+        localeRoutes: { 'en-GB': [] },
       });
       const path = prefixDefaultLocale ? '/en/careers/' : '/careers/';
       expectTarget(
@@ -154,7 +150,7 @@ describe('localeRoutes.include', () => {
     'falls back from the root without a self redirect (slash=%s)',
     (slash) => {
       const middleware = createNextMiddleware({
-        localeRoutes: { 'en-GB': { include: [] } },
+        localeRoutes: { 'en-GB': [] },
         routeOverrides: { en: ['/'] },
       });
       expectTarget(middleware(request('/en-GB' + slash)), 'location', '/');
@@ -166,14 +162,14 @@ describe('localeRoutes.include', () => {
 
   it('allows an explicitly listed root', () => {
     const middleware = createNextMiddleware({
-      localeRoutes: { 'en-GB': { include: ['/'] } },
+      localeRoutes: { 'en-GB': ['/'] },
     });
     expect(middleware(request('/en-GB')).headers.get('location')).toBeNull();
   });
 
   it('matches a translated alias against its concrete shared path', () => {
     const middleware = createNextMiddleware({
-      localeRoutes: { 'en-GB': { include: ['/blog/first'] } },
+      localeRoutes: { 'en-GB': ['/blog/first'] },
       pathConfig: {
         '/blog/[slug]': { 'en-GB': '/stories/[slug]', en: '/articles/[slug]' },
       },
@@ -196,7 +192,7 @@ describe('localeRoutes.include', () => {
 
   it('handles empty and populated optional catchall aliases', () => {
     const middleware = createNextMiddleware({
-      localeRoutes: { 'en-GB': { include: [] } },
+      localeRoutes: { 'en-GB': [] },
       pathConfig: {
         '/blog/[[...slug]]': {
           'en-GB': '/stories/[[...slug]]',
@@ -219,7 +215,7 @@ describe('localeRoutes.include', () => {
   it('uses the URL locale to strip the prefix during an allowed locale reset', () => {
     const middleware = createNextMiddleware({
       prefixDefaultLocale: true,
-      localeRoutes: { 'en-GB': { include: ['/pricing'] } },
+      localeRoutes: { 'en-GB': ['/pricing'] },
     });
     expectTarget(
       middleware(request('/fr/pricing', true)),
@@ -230,7 +226,7 @@ describe('localeRoutes.include', () => {
 
   it('falls back during a denied locale reset from another locale', () => {
     const middleware = createNextMiddleware({
-      localeRoutes: { 'en-GB': { include: ['/pricing'] } },
+      localeRoutes: { 'en-GB': ['/pricing'] },
     });
     expectTarget(
       middleware(request('/fr/careers', true)),
@@ -245,7 +241,7 @@ describe('localeRoutes.include', () => {
   it('falls back for browser language detection without needing a cookie', () => {
     vi.stubEnv('_GENERALTRANSLATION_IGNORE_BROWSER_LOCALES', 'false');
     const middleware = createNextMiddleware({
-      localeRoutes: { 'en-GB': { include: [] } },
+      localeRoutes: { 'en-GB': [] },
     });
     const req = new NextRequest(origin + '/careers', {
       headers: { 'accept-language': 'en-GB' },
@@ -262,7 +258,7 @@ describe('localeRoutes.include', () => {
     'preserves encoded path %s',
     (path) => {
       const middleware = createNextMiddleware({
-        localeRoutes: { 'en-GB': { include: [] } },
+        localeRoutes: { 'en-GB': [] },
       });
       expectTarget(middleware(request('/en-GB' + path)), 'location', path);
       expectTarget(
@@ -278,7 +274,7 @@ describe('localeRoutes.include', () => {
     (slash) => {
       const middleware = createNextMiddleware({
         prefixDefaultLocale: true,
-        localeRoutes: { 'en-GB': { include: [] }, en: { include: [] } },
+        localeRoutes: { 'en-GB': [], en: [] },
         routeOverrides: { en: ['/'] },
       });
       expectTarget(
@@ -297,7 +293,7 @@ describe('localeRoutes.include', () => {
 
   it('terminates on the default alias with a pending reset', () => {
     const middleware = createNextMiddleware({
-      localeRoutes: { 'en-GB': { include: [] } },
+      localeRoutes: { 'en-GB': [] },
       pathConfig: { '/careers': { 'en-GB': '/jobs', en: '/opportunities' } },
     });
     expectTarget(
@@ -314,14 +310,14 @@ describe('localeRoutes.include', () => {
   it('standardizes configured locale keys when GT services are enabled', () => {
     vi.stubEnv('_GENERALTRANSLATION_GT_SERVICES_ENABLED', 'true');
     const middleware = createNextMiddleware({
-      localeRoutes: { 'EN-gb': { include: [] } },
+      localeRoutes: { 'EN-gb': [] },
     });
     expectTarget(middleware(request('/en-GB/careers')), 'location', '/careers');
   });
 
   it('does not treat an encoded slash as an allowed path boundary', () => {
     const middleware = createNextMiddleware({
-      localeRoutes: { 'en-GB': { include: ['/pricing'] } },
+      localeRoutes: { 'en-GB': ['/pricing'] },
     });
     expectTarget(
       middleware(request('/en-GB/pricing%2Fextra')),
@@ -334,7 +330,7 @@ describe('localeRoutes.include', () => {
     const middleware = createNextMiddleware({
       prefixDefaultLocale: true,
       pathConfig: { '/about': '/company' },
-      localeRoutes: { fr: { include: ['/about'] } },
+      localeRoutes: { fr: ['/about'] },
     });
     const initial = middleware(request('/fr/about'));
     expectTarget(initial, 'location', '/fr/company');
@@ -346,18 +342,18 @@ describe('localeRoutes.include', () => {
   it('falls back from a universal string alias to its default URL', () => {
     const middleware = createNextMiddleware({
       pathConfig: { '/about': '/company' },
-      localeRoutes: { fr: { include: [] }, 'en-GB': { include: [] } },
+      localeRoutes: { fr: [], 'en-GB': [] },
     });
     expectTarget(middleware(request('/fr/company')), 'location', '/company');
     const terminal = middleware(request('/company'));
     expect(terminal.headers.get('location')).toBeNull();
-    expectTarget(terminal, 'x-middleware-rewrite', '/en/company');
+    expectTarget(terminal, 'x-middleware-rewrite', '/en/about');
   });
 
   it('bypasses availability when locale routing is disabled', () => {
     const middleware = createNextMiddleware({
       localeRouting: false,
-      localeRoutes: { 'en-GB': { include: [] } },
+      localeRoutes: { 'en-GB': [] },
     });
     const response = middleware(request('/en-GB/careers'));
     expect(response.headers.get('location')).toBeNull();
@@ -368,7 +364,7 @@ describe('localeRoutes.include', () => {
   it('preserves the configured middleware path filter', () => {
     vi.stubEnv('_GENERALTRANSLATION_PATH_REGEX', '^/public');
     const middleware = createNextMiddleware({
-      localeRoutes: { 'en-GB': { include: [] } },
+      localeRoutes: { 'en-GB': [] },
     });
     const response = middleware(request('/en-GB/private'));
     expect(response.headers.get('location')).toBeNull();
