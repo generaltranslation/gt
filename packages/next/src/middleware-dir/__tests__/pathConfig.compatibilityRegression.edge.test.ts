@@ -86,15 +86,15 @@ describe('legacy pathConfig value forms', () => {
     expectRoute(middleware(request('/fr/about')), 'next', 'fr');
   });
 
-  it('does not treat a universal string as an explicit default-locale alias', () => {
+  it('treats a universal string as an alias for the default locale too', () => {
     const middleware = createNextMiddleware({
       pathConfig: { '/about': '/about' },
     });
     expectRoute(
       middleware(request('/about', 'fr')),
-      'redirect',
-      'fr',
-      '/fr/about'
+      'rewrite',
+      'en',
+      '/en/about'
     );
   });
 
