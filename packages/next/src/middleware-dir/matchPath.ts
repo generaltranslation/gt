@@ -17,8 +17,10 @@ function matchPathSegments(
   pathSegments: string[],
   segmentIndex: number
 ): PathMatch | undefined {
+  // Base case: we're at the end of the segments
   if (segmentIndex === pathSegments.length) {
     if (node.match !== undefined) return node.match;
+    // Recursive case 4: edge case - see below
     if (node.optionalCatchAllSegment) {
       return matchPathSegments(
         node.optionalCatchAllSegment,
@@ -29,13 +31,17 @@ function matchPathSegments(
     return undefined;
   }
 
+  // Get the segment at the current index
   const segment = pathSegments[segmentIndex];
+
+  // Recursive case 1: match a static segment
   const staticNode = node.staticSegments.get(segment);
   if (staticNode) {
     const match = matchPathSegments(staticNode, pathSegments, segmentIndex + 1);
     if (match !== undefined) return match;
   }
 
+  // Recursive case 2: match a dynamic segement
   if (segment && node.dynamicSegment) {
     const match = matchPathSegments(
       node.dynamicSegment,
@@ -45,7 +51,16 @@ function matchPathSegments(
     if (match !== undefined) return match;
   }
 
+  // Recursive case 3: match a catch-all segment
   if (node.catchAllSegment) {
+    /**
+     * Technically, this loop isn't necessary. This would handle cases
+     * where we have static segments after the catch-all segment. Which
+     * does not occur in Next.js routing. (`/docs/[...slug]/authors`)
+     *
+     * That means this loop only iterates once for a catch-all segment,
+     * so costs only scale linearlly which is acceptable.
+     */
     for (
       let nextSegmentIndex = pathSegments.length;
       nextSegmentIndex > segmentIndex;
@@ -67,7 +82,11 @@ function matchPathSegments(
     }
   }
 
+  // Recursive case 4: match an optional catch-all segment
   if (node.optionalCatchAllSegment) {
+    /**
+     * See note in recursive case 3.
+     */
     for (
       let nextSegmentIndex = pathSegments.length;
       nextSegmentIndex >= segmentIndex;
@@ -138,16 +157,20 @@ export function getSharedPath(
   pathnameLocale: string | undefined
 ): SharedPathMatch | undefined {
   if (pathToSharedPath.localizedRoot) {
+    // Is this a "shared path" (e.g. `/home`)?
     const pathnameWithoutLocale = pathnameLocale
       ? standardizedPathname.replace(/^\/[^/]+/, '')
       : standardizedPathname;
     const sharedMatch = matchPath(pathnameWithoutLocale, pathToSharedPath);
+
+    // Is this a "localized path" (e.g. `/inicio`)?
     const localizedRoot = pathnameLocale
       ? pathToSharedPath.localizedRoot
       : pathToSharedPath.defaultLocaleRoot;
     const localizedMatch = localizedRoot
       ? matchPath(standardizedPathname, { root: localizedRoot })
       : undefined;
+
     if (
       sharedMatch &&
       (!localizedMatch ||
