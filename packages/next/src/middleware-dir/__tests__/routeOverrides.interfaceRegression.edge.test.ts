@@ -234,13 +234,19 @@ describe('pathConfig overrides: route boundaries', () => {
       name: 'root with public trailing delimiter',
       template: '/',
       path: '/fr/',
-      destination: '/fr/fr',
+      destination: '/fr/fr/',
     },
     {
       name: 'optional root with zero segments',
       template: '/[[...slug]]',
       path: '/fr',
       destination: '/fr/fr',
+    },
+    {
+      name: 'optional root with zero segments and a trailing slash',
+      template: '/[[...slug]]',
+      path: '/fr/',
+      destination: '/fr/fr/',
     },
     {
       name: 'optional root with multiple segments',

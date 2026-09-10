@@ -296,7 +296,10 @@ export function createNextMiddleware({
         : undefined;
       const routeOverridePath =
         routeOverrideMatch !== undefined
-          ? `/${userLocale}/${userLocale}${pagePath === '/' ? '' : pagePath}`
+          ? applyTrailingSlash(
+              standardizedPathname,
+              `/${userLocale}/${userLocale}${pagePath === '/' ? '' : pagePath}`
+            )
           : undefined;
 
       // ---------- ROUTING LOGIC ---------- //
