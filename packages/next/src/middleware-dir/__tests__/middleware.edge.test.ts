@@ -35,6 +35,7 @@ function createRequest(
     cookies?: Record<string, string>;
     acceptLanguage?: string;
     search?: string;
+    basePath?: string;
   } = {}
 ): NextRequest {
   const url = new URL(pathname, 'http://localhost:3000');
@@ -45,7 +46,10 @@ function createRequest(
     headers.set('accept-language', opts.acceptLanguage);
   }
 
-  const req = new NextRequest(url, { headers });
+  const req = new NextRequest(url, {
+    headers,
+    nextConfig: opts.basePath ? { basePath: opts.basePath } : undefined,
+  });
   if (opts.cookies) {
     for (const [name, value] of Object.entries(opts.cookies)) {
       req.cookies.set(name, value);
@@ -196,6 +200,114 @@ describe('Middleware Integration Tests', () => {
       expect(res.headers.get(LOCALE_HEADER)).toBe('en');
     });
 
+    it('supports catch-all and optional catch-all pathConfig routes', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+        pathConfig: {
+          '/docs/[...slug]': { fr: '/knowledge/base/[...slug]' },
+          '/news/[[...slug]]': {
+            fr: '/international/actualites/[[...slug]]',
+          },
+        },
+      });
+
+      const catchAllResponse = middleware(
+        createRequest('/fr/knowledge/base/guides/start')
+      );
+      const catchAllRedirect = middleware(
+        createRequest('/fr/docs/guides/start')
+      );
+      const optionalRootResponse = middleware(
+        createRequest('/fr/international/actualites')
+      );
+      const optionalNestedResponse = middleware(
+        createRequest('/fr/international/actualites/world/latest')
+      );
+
+      expect(getResponseType(catchAllResponse)).toBe('rewrite');
+      expect(getResponsePath(catchAllResponse)).toBe('/fr/docs/guides/start');
+      expect(getResponseType(catchAllRedirect)).toBe('redirect');
+      expect(getResponsePath(catchAllRedirect)).toBe(
+        '/fr/knowledge/base/guides/start'
+      );
+      expect(getResponseType(optionalRootResponse)).toBe('rewrite');
+      expect(getResponsePath(optionalRootResponse)).toBe('/fr/news');
+      expect(getResponseType(optionalNestedResponse)).toBe('rewrite');
+      expect(getResponsePath(optionalNestedResponse)).toBe(
+        '/fr/news/world/latest'
+      );
+    });
+
+    it('treats regex metacharacters in dynamic paths literally', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+        pathConfig: {
+          '/releases/v1.0/[slug]': {
+            fr: '/versions/v1.0/[slug]',
+          },
+          '/language/c++/[slug]': {
+            fr: '/langage/c++/[slug]',
+          },
+        },
+      });
+
+      const dotResponse = middleware(createRequest('/fr/versions/v1.0/notes'));
+      const falsePositiveResponse = middleware(
+        createRequest('/fr/versions/v1x0/notes')
+      );
+      const plusResponse = middleware(
+        createRequest('/fr/langage/c++/templates')
+      );
+
+      expect(getResponseType(dotResponse)).toBe('rewrite');
+      expect(getResponsePath(dotResponse)).toBe('/fr/releases/v1.0/notes');
+      expect(getResponseType(falsePositiveResponse)).toBe('next');
+      expect(getResponseType(plusResponse)).toBe('rewrite');
+      expect(getResponsePath(plusResponse)).toBe('/fr/language/c++/templates');
+    });
+
+    it('matches encoded requests against Unicode pathConfig entries', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+        pathConfig: {
+          '/café/[slug]': {
+            fr: '/café-français/[slug]',
+          },
+        },
+      });
+
+      const res = middleware(
+        createRequest('/fr/caf%C3%A9-fran%C3%A7ais/article')
+      );
+
+      expect(getResponseType(res)).toBe('rewrite');
+      expect(getResponsePath(res)).toBe('/fr/caf%C3%A9/article');
+    });
+
+    it('preserves trailing slashes while rewriting pathConfig routes', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+        pathConfig: {
+          '/about': { fr: '/a-propos' },
+          '/docs/[...slug]': { fr: '/documentation/[...slug]' },
+        },
+      });
+
+      const staticResponse = middleware(createRequest('/fr/a-propos/'));
+      const catchAllResponse = middleware(
+        createRequest('/fr/documentation/guides/start/')
+      );
+
+      expect(getResponseType(staticResponse)).toBe('rewrite');
+      expect(getResponsePath(staticResponse)).toBe('/fr/about/');
+      expect(getResponseType(catchAllResponse)).toBe('rewrite');
+      expect(getResponsePath(catchAllResponse)).toBe('/fr/docs/guides/start/');
+    });
+
     it('2.6: localeRouting=false → next()', () => {
       setEnvConfig();
       const middleware = createNextMiddleware({
@@ -243,6 +355,220 @@ describe('Middleware Integration Tests', () => {
       expect(() => createNextMiddleware()).toThrowError(
         'gt-next Error: pathRegex "[unclosed" is not a valid regular expression.'
       );
+    });
+  });
+
+  describe('Route overrides', () => {
+    it('rewrites a locale-specific page to its custom route', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+        routeOverrides: { fr: ['/custom-page'] },
+      });
+
+      const res = middleware(createRequest('/fr/custom-page'));
+
+      expect(getResponseType(res)).toBe('rewrite');
+      expect(getResponsePath(res)).toBe('/fr/fr/custom-page');
+      expect(res.headers.get(LOCALE_HEADER)).toBe('fr');
+    });
+
+    it('leaves shared pages on their normal route', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+        routeOverrides: { fr: ['/custom-page'] },
+      });
+
+      const res = middleware(createRequest('/fr/shared-page'));
+
+      expect(getResponseType(res)).toBe('next');
+    });
+
+    it('works for a non-default locale when the default locale is unprefixed', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: false,
+        routeOverrides: { fr: ['/custom-page'] },
+      });
+
+      const res = middleware(createRequest('/fr/custom-page'));
+
+      expect(getResponseType(res)).toBe('rewrite');
+      expect(getResponsePath(res)).toBe('/fr/fr/custom-page');
+    });
+
+    it('works for an unprefixed default-locale page', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: false,
+        routeOverrides: { en: ['/custom-page'] },
+      });
+
+      const res = middleware(createRequest('/custom-page'));
+
+      expect(getResponseType(res)).toBe('rewrite');
+      expect(getResponsePath(res)).toBe('/en/en/custom-page');
+    });
+
+    it('preserves query parameters', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+        routeOverrides: { fr: ['/custom-page'] },
+      });
+
+      const res = middleware(
+        createRequest('/fr/custom-page', { search: 'preview=true' })
+      );
+
+      expect(getResponseType(res)).toBe('rewrite');
+      expect(getResponsePath(res)).toBe('/fr/fr/custom-page');
+      expect(getResponseSearch(res)).toBe('?preview=true');
+    });
+
+    it('supports dynamic page segments', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+        routeOverrides: { fr: ['/products/[id]'] },
+      });
+
+      const res = middleware(createRequest('/fr/products/ramp-card'));
+
+      expect(getResponseType(res)).toBe('rewrite');
+      expect(getResponsePath(res)).toBe('/fr/fr/products/ramp-card');
+    });
+
+    it('supports catch-all page segments', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+        routeOverrides: { fr: ['/blog/[...slug]'] },
+      });
+
+      const res = middleware(createRequest('/fr/blog/guides/getting-started'));
+
+      expect(getResponseType(res)).toBe('rewrite');
+      expect(getResponsePath(res)).toBe('/fr/fr/blog/guides/getting-started');
+    });
+
+    it('supports empty and populated optional catch-all page segments', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+        routeOverrides: { fr: ['/news/[[...slug]]'] },
+      });
+
+      const rootRes = middleware(createRequest('/fr/news'));
+      const nestedRes = middleware(createRequest('/fr/news/world/latest'));
+
+      expect(getResponseType(rootRes)).toBe('rewrite');
+      expect(getResponsePath(rootRes)).toBe('/fr/fr/news');
+      expect(getResponseType(nestedRes)).toBe('rewrite');
+      expect(getResponsePath(nestedRes)).toBe('/fr/fr/news/world/latest');
+    });
+
+    it('preserves catch-all parameters when combined with pathConfig', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+        pathConfig: {
+          '/blog/[...slug]': { fr: '/articles/[...slug]' },
+        },
+        routeOverrides: { fr: ['/blog/[...slug]'] },
+      });
+
+      const res = middleware(
+        createRequest('/fr/articles/guides/getting-started')
+      );
+
+      expect(getResponseType(res)).toBe('rewrite');
+      expect(getResponsePath(res)).toBe('/fr/fr/blog/guides/getting-started');
+    });
+
+    it('matches literal regex characters and encoded localized Unicode paths', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+        pathConfig: {
+          '/cafe/[slug]': { fr: '/café/[slug]' },
+        },
+        routeOverrides: { fr: ['/cafe/[slug]', '/docs/v1.0/[...slug]'] },
+      });
+
+      const literalRes = middleware(createRequest('/fr/docs/v1.0/setup'));
+      const unicodeRes = middleware(createRequest('/fr/caf%C3%A9/guides'));
+
+      expect(getResponseType(literalRes)).toBe('rewrite');
+      expect(getResponsePath(literalRes)).toBe('/fr/fr/docs/v1.0/setup');
+      expect(getResponseType(unicodeRes)).toBe('rewrite');
+      expect(getResponsePath(unicodeRes)).toBe('/fr/fr/cafe/guides');
+    });
+
+    it('preserves trailing slashes and basePath', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+        routeOverrides: { fr: ['/custom-page'] },
+      });
+
+      const res = middleware(
+        createRequest('/corp/fr/custom-page/', { basePath: '/corp' })
+      );
+
+      expect(getResponseType(res)).toBe('rewrite');
+      expect(getResponsePath(res)).toBe('/corp/fr/fr/custom-page/');
+    });
+
+    it('standardizes configured locales when GT services are enabled', () => {
+      setEnvConfig({ locales: ['en', 'fr-FR'] });
+      process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED = 'true';
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+        routeOverrides: { 'fr-fr': ['/custom-page'] },
+      });
+
+      const res = middleware(createRequest('/fr-FR/custom-page'));
+
+      expect(getResponseType(res)).toBe('rewrite');
+      expect(getResponsePath(res)).toBe('/fr-FR/fr-FR/custom-page');
+    });
+
+    it('uses the shared path when combined with pathConfig', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+        pathConfig: {
+          '/custom-page': { fr: '/page-personnalisee' },
+        },
+        routeOverrides: { fr: ['/custom-page'] },
+      });
+
+      const res = middleware(createRequest('/fr/page-personnalisee'));
+
+      expect(getResponseType(res)).toBe('rewrite');
+      expect(getResponsePath(res)).toBe('/fr/fr/custom-page');
+    });
+
+    it('keeps locale-switch redirects ahead of custom rewrites', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: false,
+        routeOverrides: { fr: ['/custom-page'] },
+      });
+
+      const res = middleware(
+        createRequest('/fr/custom-page', {
+          cookies: {
+            [LOCALE_COOKIE]: 'en',
+            [RESET_COOKIE]: 'true',
+          },
+        })
+      );
+
+      expect(getResponseType(res)).toBe('redirect');
+      expect(getResponsePath(res)).toBe('/custom-page');
     });
   });
 
@@ -405,6 +731,32 @@ describe('Middleware Integration Tests', () => {
 
       expect(getResponseType(res)).toBe('redirect');
       expect(getResponseSearch(res)).toBe('?page=2');
+    });
+
+    it('preserves basePath on rewrites and redirects', () => {
+      setEnvConfig();
+      const middleware = createNextMiddleware({
+        prefixDefaultLocale: true,
+        pathConfig: {
+          '/about': { fr: '/a-propos' },
+        },
+      });
+
+      const rewriteResponse = middleware(
+        createRequest('/corp/fr/a-propos', {
+          basePath: '/corp',
+          search: 'preview=true',
+        })
+      );
+      const redirectResponse = middleware(
+        createRequest('/corp/fr/about', { basePath: '/corp' })
+      );
+
+      expect(getResponseType(rewriteResponse)).toBe('rewrite');
+      expect(getResponsePath(rewriteResponse)).toBe('/corp/fr/about');
+      expect(getResponseSearch(rewriteResponse)).toBe('?preview=true');
+      expect(getResponseType(redirectResponse)).toBe('redirect');
+      expect(getResponsePath(redirectResponse)).toBe('/corp/fr/a-propos');
     });
 
     it('sets locale header on rewrite responses', () => {
