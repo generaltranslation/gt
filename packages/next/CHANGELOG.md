@@ -1,5 +1,48 @@
 # gt-next
 
+## 11.2.0
+
+### Minor Changes
+
+- [#2274](https://github.com/generaltranslation/gt/pull/2274) [`68dee63`](https://github.com/generaltranslation/gt/commit/68dee639226162c690ace5ae7ae3b61e399d8984) Thanks [@eoinest](https://github.com/eoinest)! - Add locale-specific page overrides through `routeOverrides`, independently of localized paths in `pathConfig`.
+  - `routeOverrides` maps each locale to shared path patterns, so `fr: ['/proj/[id]']` renders `app/[locale]/fr/proj/[id]/page.tsx`, even when its public path is localized through `pathConfig`.
+  - When using `revalidatePath`, pass the internal rewrite destination rather than the public URL.
+  - `useSelectedLayoutSegments` reflects the internal route structure, including the override's locale directory when called from the `[locale]` layout.
+  - On Next.js 16.3.x, prefetching links whose URLs redirect can cause repeated requests; [upstream reports a fix in 16.4.0-canary.6](https://github.com/vercel/next.js/issues/97329#issuecomment-5515713671), which has not yet been verified against the gt-next reproduction.
+
+### Patch Changes
+
+- [#2274](https://github.com/generaltranslation/gt/pull/2274) [`804eb64`](https://github.com/generaltranslation/gt/commit/804eb640edb8237fcd617bc7a03b014e393529e2) Thanks [@eoinest](https://github.com/eoinest)! - Treat static text in configured dynamic routes literally when matching shared paths and localized aliases. Escape regex metacharacters such as `.`, `+`, parentheses, `|`, and `$` so valid routes match and lookalike paths do not, including unprefixed default-locale aliases used for locale selection.
+
+- [#2274](https://github.com/generaltranslation/gt/pull/2274) [`c68e776`](https://github.com/generaltranslation/gt/commit/c68e776d055e47780c80faa01c00c445314706bd) Thanks [@eoinest](https://github.com/eoinest)! - Support catch-all middleware paths and index dynamic route matching by segment.
+
+  Keep locale prefixes out of shared route parameters, preserve static route precedence across localized and shared paths, and support dotted parameter names.
+
+  Preserve the source route when switching from a locale alias and remove the target default-locale prefix correctly.
+
+  Resolve bare locale roots such as `/fr` to configured homepage aliases while preserving the request's trailing-slash style.
+
+- [#2244](https://github.com/generaltranslation/gt/pull/2244) [`f360400`](https://github.com/generaltranslation/gt/commit/f3604003ef17388e56d72877438dc7cc988598b8) Thanks [@eoinest](https://github.com/eoinest)! - Match encoded request paths against normalized Unicode middleware paths.
+
+  Preserve encoded dynamic parameter values during redirects and rewrites, decode static lookup keys only once, and avoid redirect loops for encoded or decomposed Unicode path templates.
+
+  Keep percent-encoded bracket literals distinct from dynamic route syntax.
+
+- [#2246](https://github.com/generaltranslation/gt/pull/2246) [`a38e6d0`](https://github.com/generaltranslation/gt/commit/a38e6d06c319233c2a1a4b560b476188e15208f3) Thanks [@eoinest](https://github.com/eoinest)! - Preserve the configured Next.js base path in middleware rewrites and redirects.
+
+  Handle app routes and locale prefixes that repeat the base path without dropping a segment or redirecting to themselves.
+
+  Preserve the request's trailing-slash style when redirecting to the base-path root, avoiding an extra slash-normalization redirect.
+
+- [#2245](https://github.com/generaltranslation/gt/pull/2245) [`f310cdd`](https://github.com/generaltranslation/gt/commit/f310cdda19fe5a2196e0f1d0ed3d0b528354c1ef) Thanks [@eoinest](https://github.com/eoinest)! - Match middleware paths with trailing slashes and preserve them in rewrites.
+
+- Updated dependencies []:
+  - generaltranslation@9.3.1
+  - @generaltranslation/compiler@1.3.51
+  - gt-i18n@1.0.26
+  - gt-react@11.2.0
+  - @generaltranslation/react-core@11.2.0
+
 ## 11.1.24
 
 ### Patch Changes

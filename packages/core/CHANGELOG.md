@@ -1,5 +1,12 @@
 # generaltranslation
 
+## 9.3.1
+
+### Patch Changes
+
+- Updated dependencies [[`bf3ce1e`](https://github.com/generaltranslation/gt/commit/bf3ce1eb967e1798c95b78c04313de2c8362932c)]:
+  - @generaltranslation/api@0.2.1
+
 ## 9.3.0
 
 ### Minor Changes
