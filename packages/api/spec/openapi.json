@@ -85,14 +85,47 @@
           "ANDROID_STRINGS"
         ]
       },
-      "ModelProvider": {
-        "type": "string",
-        "enum": ["ANTHROPIC", "OPENAI", "XAI", "GOOGLE"]
-      },
-      "JsonObject": {
+      "RuntimeTranslationResponse": {
         "type": "object",
         "additionalProperties": {
-          "$ref": "#/components/schemas/JsonValue"
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "enum": [true]
+                },
+                "translation": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "dataFormat": {
+                  "type": "string",
+                  "enum": ["JSX", "ICU", "I18NEXT", "STRING"]
+                },
+                "locale": {
+                  "type": "string"
+                }
+              },
+              "required": ["success", "dataFormat", "locale"]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "enum": [false]
+                },
+                "error": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "number"
+                }
+              },
+              "required": ["success", "error", "code"]
+            }
+          ]
         }
       },
       "JsonValue": {
@@ -136,61 +169,6 @@
             }
           }
         ]
-      },
-      "Branch": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          }
-        },
-        "required": ["id", "name"]
-      },
-      "RuntimeTranslationResponse": {
-        "type": "object",
-        "additionalProperties": {
-          "oneOf": [
-            {
-              "type": "object",
-              "properties": {
-                "success": {
-                  "type": "boolean",
-                  "enum": [true]
-                },
-                "translation": {
-                  "$ref": "#/components/schemas/JsonValue"
-                },
-                "dataFormat": {
-                  "type": "string",
-                  "enum": ["JSX", "ICU", "I18NEXT", "STRING"]
-                },
-                "locale": {
-                  "type": "string"
-                }
-              },
-              "required": ["success", "dataFormat", "locale"]
-            },
-            {
-              "type": "object",
-              "properties": {
-                "success": {
-                  "type": "boolean",
-                  "enum": [false]
-                },
-                "error": {
-                  "type": "string"
-                },
-                "code": {
-                  "type": "number"
-                }
-              },
-              "required": ["success", "error", "code"]
-            }
-          ]
-        }
       },
       "RuntimeTranslationRequest": {
         "type": "object",
@@ -274,6 +252,28 @@
           }
         },
         "required": ["requests", "targetLocale", "sourceLocale", "metadata"]
+      },
+      "ModelProvider": {
+        "type": "string",
+        "enum": ["ANTHROPIC", "OPENAI", "XAI", "GOOGLE"]
+      },
+      "Branch": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "name"]
+      },
+      "JsonObject": {
+        "type": "object",
+        "additionalProperties": {
+          "$ref": "#/components/schemas/JsonValue"
+        }
       },
       "CreateCliWizardSessionResponse": {
         "type": "object",
@@ -770,325 +770,6 @@
         "tags": ["Project"]
       }
     },
-    "/v2/project/files/upload-files": {
-      "post": {
-        "operationId": "uploadSourceFiles",
-        "summary": "Upload source files",
-        "description": "Upload one or more source files to the project. Max 100 files per request.",
-        "security": [
-          {
-            "BearerAuth": []
-          },
-          {
-            "UserBearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "enum": [
-                "2025-01-01.v0",
-                "2025-11-03.v1",
-                "2026-02-18.v1",
-                "2026-03-06.v1"
-              ],
-              "description": "API contract version. Defaults to the oldest supported version."
-            },
-            "required": false,
-            "description": "API contract version. Defaults to the oldest supported version.",
-            "name": "gt-api-version",
-            "in": "header"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project."
-            },
-            "required": false,
-            "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.",
-            "name": "gt-project-id",
-            "in": "header"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "data": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "source": {
-                          "type": "object",
-                          "properties": {
-                            "content": {
-                              "type": "string"
-                            },
-                            "fileName": {
-                              "type": "string",
-                              "minLength": 1
-                            },
-                            "fileFormat": {
-                              "type": "string",
-                              "enum": [
-                                "GTJSON",
-                                "MDX",
-                                "JSON",
-                                "YAML",
-                                "MD",
-                                "TS",
-                                "JS",
-                                "HTML",
-                                "TXT",
-                                "PO",
-                                "POT",
-                                "TWILIO_CONTENT_JSON",
-                                "LOTTIE",
-                                "SVG",
-                                "XCSTRINGS",
-                                "DOT_STRINGS",
-                                "DOT_STRINGSDICT",
-                                "ANDROID_STRINGS"
-                              ]
-                            },
-                            "dataFormat": {
-                              "type": "string"
-                            },
-                            "locale": {
-                              "type": "string",
-                              "minLength": 1
-                            },
-                            "fileId": {
-                              "type": "string",
-                              "minLength": 1
-                            },
-                            "versionId": {
-                              "type": "string",
-                              "minLength": 1
-                            },
-                            "branchId": {
-                              "type": "string",
-                              "minLength": 1
-                            },
-                            "checkedOutBranchId": {
-                              "type": "string",
-                              "minLength": 1
-                            },
-                            "incomingBranchId": {
-                              "type": "string",
-                              "minLength": 1
-                            },
-                            "formatMetadata": {
-                              "type": "object",
-                              "additionalProperties": {}
-                            }
-                          },
-                          "required": [
-                            "content",
-                            "fileName",
-                            "fileFormat",
-                            "locale"
-                          ]
-                        }
-                      },
-                      "required": ["source"]
-                    },
-                    "minItems": 1,
-                    "maxItems": 100
-                  },
-                  "sourceLocale": {
-                    "type": "string"
-                  }
-                },
-                "required": ["data"]
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Uploaded source files",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "uploadedFiles": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "branchId": {
-                            "type": "string"
-                          },
-                          "fileId": {
-                            "type": "string"
-                          },
-                          "versionId": {
-                            "type": "string"
-                          },
-                          "fileName": {
-                            "type": "string"
-                          },
-                          "fileFormat": {
-                            "$ref": "#/components/schemas/FileFormat"
-                          },
-                          "dataFormat": {
-                            "type": "string"
-                          },
-                          "locale": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "fileId",
-                          "versionId",
-                          "fileName",
-                          "fileFormat"
-                        ]
-                      }
-                    },
-                    "count": {
-                      "type": "number"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["uploadedFiles", "count", "message"]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "413": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        },
-        "tags": ["Files"]
-      }
-    },
     "/v2/project/files/upload-translations": {
       "post": {
         "operationId": "uploadTranslations",
@@ -1483,11 +1164,11 @@
         "tags": ["Files"]
       }
     },
-    "/v2/project/assets": {
+    "/v2/project/info/{projectId}": {
       "post": {
-        "operationId": "uploadAssets",
-        "summary": "Upload Project assets",
-        "description": "Upload OpenType or TrueType fonts through a Project and make them available to Lottie translation workflows across its Organization. Each font is keyed by a normalized identity derived from its family, weight, and italic style (from the supplied `family` and `style`, or from the font metadata and file name). Re-uploading the same identity overwrites the existing asset, so complete retries after a `500` response are safe.",
+        "operationId": "updateProjectInfo",
+        "summary": "Update Project information",
+        "description": "Update the Project's default locale or CDN delivery setting.",
         "security": [
           {
             "BearerAuth": []
@@ -1497,6 +1178,15 @@
           }
         ],
         "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "projectId",
+            "in": "path"
+          },
           {
             "schema": {
               "type": "string",
@@ -1531,79 +1221,31 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "assets": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "assetType": {
-                          "type": "string",
-                          "enum": ["FONT"]
-                        },
-                        "content": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "fileName": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 255,
-                          "pattern": "\\.([tT][tT][fF]|[oO][tT][fF])$"
-                        },
-                        "family": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 255
-                        },
-                        "style": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 100
-                        }
-                      },
-                      "required": ["assetType", "content", "fileName"]
-                    },
-                    "minItems": 1,
-                    "maxItems": 50
+                  "defaultLocale": {
+                    "type": "string"
+                  },
+                  "cdnEnabled": {
+                    "type": "boolean"
                   }
-                },
-                "required": ["assets"]
+                }
               }
             }
           }
         },
         "responses": {
-          "201": {
-            "description": "Uploaded assets",
+          "200": {
+            "description": "Project settings updated",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "assets": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "assetKey": {
-                            "type": "string"
-                          },
-                          "fileName": {
-                            "type": "string"
-                          }
-                        },
-                        "required": ["id", "assetKey", "fileName"]
-                      }
-                    },
-                    "count": {
-                      "type": "integer",
-                      "minimum": 0
+                    "success": {
+                      "type": "boolean",
+                      "enum": [true]
                     }
                   },
-                  "required": ["assets", "count"]
+                  "required": ["success"]
                 }
               }
             }
@@ -1715,611 +1357,11 @@
           }
         },
         "tags": ["Project"]
-      }
-    },
-    "/v2/project/files/diffs": {
-      "post": {
-        "operationId": "submitUserEditDiffs",
-        "summary": "Submit translation diffs",
-        "description": "Overwrite translations with user-provided localized content.",
-        "security": [
-          {
-            "BearerAuth": []
-          },
-          {
-            "UserBearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "enum": [
-                "2025-01-01.v0",
-                "2025-11-03.v1",
-                "2026-02-18.v1",
-                "2026-03-06.v1"
-              ],
-              "description": "API contract version. Defaults to the oldest supported version."
-            },
-            "required": false,
-            "description": "API contract version. Defaults to the oldest supported version.",
-            "name": "gt-api-version",
-            "in": "header"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project."
-            },
-            "required": false,
-            "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.",
-            "name": "gt-project-id",
-            "in": "header"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "projectId": {
-                    "type": "string"
-                  },
-                  "diffs": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "locale": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "diff": {
-                          "type": "string"
-                        },
-                        "branchId": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "versionId": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "fileId": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "localContent": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "locale",
-                        "diff",
-                        "versionId",
-                        "fileId",
-                        "localContent"
-                      ]
-                    },
-                    "minItems": 1
-                  }
-                },
-                "required": ["diffs"]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Processed user translation edits",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "filesProcessed": {
-                      "type": "integer",
-                      "minimum": 0
-                    },
-                    "entriesReceived": {
-                      "type": "integer",
-                      "minimum": 0
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["filesProcessed", "entriesReceived", "message"]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "413": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        },
-        "tags": ["Files"]
-      }
-    },
-    "/v2/project/setup/should-generate": {
+      },
       "get": {
-        "operationId": "shouldGenerateProjectContext",
-        "summary": "Check if context generation is needed",
-        "deprecated": true,
-        "description": "Check whether the Project needs translation context generated. This deprecated endpoint is retained for backward compatibility and is no longer called by current clients.",
-        "security": [
-          {
-            "BearerAuth": []
-          },
-          {
-            "UserBearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "enum": [
-                "2025-01-01.v0",
-                "2025-11-03.v1",
-                "2026-02-18.v1",
-                "2026-03-06.v1"
-              ],
-              "description": "API contract version. Defaults to the oldest supported version."
-            },
-            "required": false,
-            "description": "API contract version. Defaults to the oldest supported version.",
-            "name": "gt-api-version",
-            "in": "header"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project."
-            },
-            "required": false,
-            "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.",
-            "name": "gt-project-id",
-            "in": "header"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Whether project context should be generated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "shouldSetupProject": {
-                      "type": "boolean"
-                    }
-                  },
-                  "required": ["shouldSetupProject"]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        },
-        "tags": ["Context"]
-      }
-    },
-    "/v2/project/setup/generate": {
-      "post": {
-        "operationId": "generateProjectContext",
-        "summary": "Generate translation context",
-        "description": "Generate glossaries and translation instructions for the project.",
-        "security": [
-          {
-            "BearerAuth": []
-          },
-          {
-            "UserBearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "enum": [
-                "2025-01-01.v0",
-                "2025-11-03.v1",
-                "2026-02-18.v1",
-                "2026-03-06.v1"
-              ],
-              "description": "API contract version. Defaults to the oldest supported version."
-            },
-            "required": false,
-            "description": "API contract version. Defaults to the oldest supported version.",
-            "name": "gt-api-version",
-            "in": "header"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project."
-            },
-            "required": false,
-            "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.",
-            "name": "gt-project-id",
-            "in": "header"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "files": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "branchId": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "fileId": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "versionId": {
-                          "type": "string",
-                          "minLength": 1
-                        }
-                      },
-                      "required": ["fileId", "versionId"]
-                    },
-                    "minItems": 1
-                  },
-                  "locales": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  "force": {
-                    "type": "boolean",
-                    "default": false
-                  }
-                },
-                "required": ["files"]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Context generation status",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "anyOf": [
-                    {
-                      "type": "object",
-                      "properties": {
-                        "status": {
-                          "type": "string",
-                          "enum": ["completed"]
-                        }
-                      },
-                      "required": ["status"]
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "setupJobId": {
-                          "type": "string"
-                        },
-                        "status": {
-                          "type": "string",
-                          "enum": ["queued"]
-                        }
-                      },
-                      "required": ["setupJobId", "status"]
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "413": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        },
-        "tags": ["Context"]
-      }
-    },
-    "/v2/project/setup/status/{jobId}": {
-      "get": {
-        "operationId": "getProjectContextGenerationStatus",
-        "summary": "Get context generation job status",
-        "deprecated": true,
-        "description": "Track a context generation job. This deprecated endpoint is retained for backward compatibility; new integrations should use `POST /v2/project/jobs/info`.",
+        "operationId": "getProjectInfo",
+        "summary": "Get Project information",
+        "description": "Read the authenticated Project's name, Organization ID, locale settings, and auto-approval setting.",
         "security": [
           {
             "BearerAuth": []
@@ -2335,7 +1377,7 @@
               "minLength": 1
             },
             "required": true,
-            "name": "jobId",
+            "name": "projectId",
             "in": "path"
           },
           {
@@ -2367,34 +1409,41 @@
         ],
         "responses": {
           "200": {
-            "description": "Context generation job status",
+            "description": "Project information",
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
-                    {
-                      "type": "object",
-                      "properties": {
-                        "status": {
-                          "type": "string",
-                          "enum": ["completed"]
-                        }
-                      },
-                      "required": ["status"]
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
                     },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "jobId": {
-                          "type": "string"
-                        },
-                        "status": {
-                          "type": "string",
-                          "enum": ["queued", "processing", "failed", "unknown"]
-                        }
-                      },
-                      "required": ["jobId", "status"]
+                    "name": {
+                      "type": "string"
+                    },
+                    "orgId": {
+                      "type": "string"
+                    },
+                    "defaultLocale": {
+                      "type": ["string", "null"]
+                    },
+                    "currentLocales": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "autoApprove": {
+                      "type": "boolean"
                     }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "orgId",
+                    "defaultLocale",
+                    "currentLocales",
+                    "autoApprove"
                   ]
                 }
               }
@@ -2491,14 +1540,14 @@
             }
           }
         },
-        "tags": ["Context"]
+        "tags": ["Project"]
       }
     },
-    "/v2/project/translations/enqueue": {
+    "/v2/translate": {
       "post": {
-        "operationId": "enqueueFileTranslations",
-        "summary": "Queue files for translation",
-        "description": "Enqueue uploaded source files for background translation. Max 100 files per request. The response shape depends on the requested `gt-api-version`.",
+        "operationId": "translate",
+        "summary": "Translate content at runtime",
+        "description": "Translate one or more strings or structured content entries with caching and memoization. Development API keys are accepted for this endpoint.",
         "security": [
           {
             "BearerAuth": []
@@ -2540,293 +1589,38 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "files": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "branchId": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "fileId": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "versionId": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "fileName": {
-                          "type": "string"
-                        },
-                        "transformFormat": {
-                          "type": "string",
-                          "enum": [
-                            "GTJSON",
-                            "MDX",
-                            "JSON",
-                            "YAML",
-                            "MD",
-                            "TS",
-                            "JS",
-                            "HTML",
-                            "TXT",
-                            "PO",
-                            "POT",
-                            "TWILIO_CONTENT_JSON",
-                            "LOTTIE",
-                            "SVG",
-                            "XCSTRINGS",
-                            "DOT_STRINGS",
-                            "DOT_STRINGSDICT",
-                            "ANDROID_STRINGS"
-                          ]
-                        }
-                      },
-                      "required": ["fileId", "versionId"]
-                    },
-                    "minItems": 1,
-                    "maxItems": 100
-                  },
-                  "targetLocales": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  },
-                  "sourceLocale": {
-                    "type": "string"
-                  },
-                  "force": {
-                    "type": "boolean",
-                    "default": false
-                  },
-                  "modelProvider": {
-                    "$ref": "#/components/schemas/ModelProvider"
-                  },
-                  "publish": {
-                    "type": "boolean"
-                  }
-                },
-                "required": ["files"]
+                "$ref": "#/components/schemas/RuntimeTranslationRequest"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Enqueued translations. Shape depends on gt-api-version (legacy before 2025-11-03.v1).",
+            "description": "All translations were served from cache",
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
-                    {
-                      "type": "object",
-                      "properties": {
-                        "jobData": {
-                          "type": "object",
-                          "additionalProperties": {
-                            "type": "object",
-                            "properties": {
-                              "kind": {
-                                "type": "string",
-                                "enum": ["file_translation"]
-                              },
-                              "sourceFileId": {
-                                "type": "string"
-                              },
-                              "fileId": {
-                                "type": "string"
-                              },
-                              "versionId": {
-                                "type": "string"
-                              },
-                              "branchId": {
-                                "type": "string"
-                              },
-                              "targetLocale": {
-                                "type": "string"
-                              },
-                              "projectId": {
-                                "type": "string"
-                              },
-                              "orgId": {
-                                "type": "string"
-                              },
-                              "force": {
-                                "type": "boolean"
-                              },
-                              "outputFileFormat": {
-                                "$ref": "#/components/schemas/FileFormat"
-                              },
-                              "modelProvider": {
-                                "$ref": "#/components/schemas/ModelProvider"
-                              },
-                              "glossaryRetranslate": {
-                                "type": "boolean"
-                              },
-                              "changedGlossaryTerms": {
-                                "type": "array",
-                                "items": {
-                                  "type": "string"
-                                }
-                              },
-                              "onComplete": {
-                                "type": "object",
-                                "properties": {
-                                  "kind": {
-                                    "type": "string",
-                                    "enum": ["google_drive_apply"]
-                                  },
-                                  "userId": {
-                                    "type": "string"
-                                  }
-                                },
-                                "required": ["kind"]
-                              }
-                            },
-                            "required": [
-                              "sourceFileId",
-                              "fileId",
-                              "versionId",
-                              "branchId",
-                              "targetLocale",
-                              "projectId",
-                              "orgId",
-                              "force"
-                            ]
-                          }
-                        },
-                        "locales": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        },
-                        "message": {
-                          "type": "string"
-                        }
-                      },
-                      "required": ["jobData", "locales", "message"]
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "translations": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "locale": {
-                                "type": "string"
-                              },
-                              "metadata": {},
-                              "fileId": {
-                                "type": "string"
-                              },
-                              "fileName": {
-                                "type": "string"
-                              },
-                              "versionId": {
-                                "type": "string"
-                              },
-                              "branchId": {
-                                "type": "string"
-                              },
-                              "id": {
-                                "type": "string"
-                              },
-                              "isReady": {
-                                "type": "boolean"
-                              },
-                              "downloadUrl": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "locale",
-                              "fileId",
-                              "fileName",
-                              "versionId",
-                              "branchId",
-                              "id",
-                              "isReady",
-                              "downloadUrl"
-                            ]
-                          }
-                        },
-                        "data": {
-                          "type": "object",
-                          "additionalProperties": {
-                            "type": "object",
-                            "properties": {
-                              "fileName": {
-                                "type": "string"
-                              },
-                              "versionId": {
-                                "type": "string"
-                              }
-                            },
-                            "required": ["fileName", "versionId"]
-                          }
-                        },
-                        "locales": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        },
-                        "message": {
-                          "type": "string"
-                        }
-                      },
-                      "required": ["translations", "data", "locales", "message"]
-                    }
-                  ]
+                  "$ref": "#/components/schemas/RuntimeTranslationResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Translations completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuntimeTranslationResponse"
                 }
               }
             }
           },
           "400": {
-            "description": "Invalid request or missing source files",
+            "description": "Request error",
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/ErrorResponse"
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "error": {
-                          "type": "string"
-                        },
-                        "missing": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "fileId": {
-                                "type": "string"
-                              },
-                              "versionId": {
-                                "type": "string"
-                              }
-                            },
-                            "required": ["fileId", "versionId"]
-                          }
-                        },
-                        "count": {
-                          "type": "number"
-                        }
-                      },
-                      "required": ["error", "missing", "count"]
-                    }
-                  ]
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               },
               "text/html": {
@@ -2945,246 +1739,11 @@
         "tags": ["Translation"]
       }
     },
-    "/v2/project/files/publish": {
-      "post": {
-        "operationId": "publishFiles",
-        "summary": "Publish or unpublish files",
-        "description": "Publish or unpublish translated files to the CDN. Requires CDN to be enabled.",
-        "security": [
-          {
-            "BearerAuth": []
-          },
-          {
-            "UserBearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "enum": [
-                "2025-01-01.v0",
-                "2025-11-03.v1",
-                "2026-02-18.v1",
-                "2026-03-06.v1"
-              ],
-              "description": "API contract version. Defaults to the oldest supported version."
-            },
-            "required": false,
-            "description": "API contract version. Defaults to the oldest supported version.",
-            "name": "gt-api-version",
-            "in": "header"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project."
-            },
-            "required": false,
-            "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.",
-            "name": "gt-project-id",
-            "in": "header"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "files": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "fileId": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "versionId": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "branchId": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "publish": {
-                          "type": "boolean"
-                        }
-                      },
-                      "required": ["fileId", "versionId", "publish"]
-                    },
-                    "minItems": 1
-                  }
-                },
-                "required": ["files"]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "File publish results",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "results": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "fileId": {
-                            "type": "string"
-                          },
-                          "versionId": {
-                            "type": "string"
-                          },
-                          "locale": {
-                            "type": "string"
-                          },
-                          "branchId": {
-                            "type": "string"
-                          },
-                          "success": {
-                            "type": "boolean"
-                          },
-                          "error": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "fileId",
-                          "versionId",
-                          "branchId",
-                          "success"
-                        ]
-                      }
-                    }
-                  },
-                  "required": ["results"]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "413": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        },
-        "tags": ["Files"]
-      }
-    },
-    "/v2/project/files/download/{fileId}": {
+    "/v2/project/translations/files/status/{fileId}": {
       "get": {
-        "operationId": "downloadFile",
-        "summary": "Download a single file",
-        "deprecated": true,
-        "description": "Download a single source or translated file. This deprecated endpoint is retained for backward compatibility; new integrations should use `POST /v2/project/files/download`.",
+        "operationId": "getTranslationStatus",
+        "summary": "Get translation status for a file",
+        "description": "Return translation progress and availability by locale for one source file, along with its source metadata.",
         "security": [
           {
             "BearerAuth": []
@@ -3208,14 +1767,6 @@
               "type": "string"
             },
             "required": false,
-            "name": "branchId",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": false,
             "name": "versionId",
             "in": "query"
           },
@@ -3224,7 +1775,7 @@
               "type": "string"
             },
             "required": false,
-            "name": "locale",
+            "name": "branchId",
             "in": "query"
           },
           {
@@ -3256,17 +1807,109 @@
         ],
         "responses": {
           "200": {
-            "description": "Downloaded file",
+            "description": "Translation status",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": {
-                      "type": "string"
+                    "translations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "locale": {
+                            "type": "string"
+                          },
+                          "completedAt": {
+                            "type": ["string", "null"],
+                            "format": "date-time"
+                          },
+                          "approvedAt": {
+                            "type": ["string", "null"],
+                            "format": "date-time"
+                          },
+                          "publishedAt": {
+                            "type": ["string", "null"],
+                            "format": "date-time"
+                          },
+                          "createdAt": {
+                            "type": ["string", "null"],
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": ["string", "null"],
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "locale",
+                          "completedAt",
+                          "approvedAt",
+                          "publishedAt",
+                          "createdAt",
+                          "updatedAt"
+                        ]
+                      }
+                    },
+                    "sourceFile": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "branchId": {
+                          "type": "string"
+                        },
+                        "fileId": {
+                          "type": "string"
+                        },
+                        "versionId": {
+                          "type": "string"
+                        },
+                        "fileName": {
+                          "type": "string"
+                        },
+                        "sourceLocale": {
+                          "type": "string"
+                        },
+                        "fileFormat": {
+                          "$ref": "#/components/schemas/FileFormat"
+                        },
+                        "dataFormat": {
+                          "type": ["string", "null"]
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "locales": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "branchId",
+                        "fileId",
+                        "versionId",
+                        "fileName",
+                        "sourceLocale",
+                        "fileFormat",
+                        "dataFormat",
+                        "createdAt",
+                        "updatedAt",
+                        "locales"
+                      ]
                     }
                   },
-                  "required": ["data"]
+                  "required": ["translations", "sourceFile"]
                 }
               }
             }
@@ -3317,285 +1960,6 @@
             }
           },
           "404": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "425": {
-            "description": "Translation is still processing",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "string",
-                      "enum": ["processing"]
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["status", "message"]
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        },
-        "tags": ["Files"]
-      }
-    },
-    "/v2/project/files/download": {
-      "post": {
-        "operationId": "downloadFiles",
-        "summary": "Download multiple files",
-        "description": "Download up to 100 source or translated files in one request.",
-        "security": [
-          {
-            "BearerAuth": []
-          },
-          {
-            "UserBearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "enum": [
-                "2025-01-01.v0",
-                "2025-11-03.v1",
-                "2026-02-18.v1",
-                "2026-03-06.v1"
-              ],
-              "description": "API contract version. Defaults to the oldest supported version."
-            },
-            "required": false,
-            "description": "API contract version. Defaults to the oldest supported version.",
-            "name": "gt-api-version",
-            "in": "header"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project."
-            },
-            "required": false,
-            "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.",
-            "name": "gt-project-id",
-            "in": "header"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "fileId": {
-                      "type": "string",
-                      "minLength": 1
-                    },
-                    "branchId": {
-                      "type": "string",
-                      "minLength": 1
-                    },
-                    "versionId": {
-                      "type": "string",
-                      "minLength": 1
-                    },
-                    "locale": {
-                      "type": "string",
-                      "minLength": 1
-                    },
-                    "useLatestAvailableVersion": {
-                      "type": "boolean"
-                    }
-                  },
-                  "required": ["fileId"]
-                },
-                "minItems": 1,
-                "maxItems": 100
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Downloaded files",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "files": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "branchId": {
-                            "type": "string"
-                          },
-                          "fileId": {
-                            "type": "string"
-                          },
-                          "versionId": {
-                            "type": "string"
-                          },
-                          "locale": {
-                            "type": "string"
-                          },
-                          "fileName": {
-                            "type": "string"
-                          },
-                          "data": {
-                            "type": "string"
-                          },
-                          "metadata": {
-                            "$ref": "#/components/schemas/JsonObject"
-                          },
-                          "fileFormat": {
-                            "$ref": "#/components/schemas/FileFormat"
-                          }
-                        },
-                        "required": [
-                          "id",
-                          "branchId",
-                          "fileId",
-                          "versionId",
-                          "data",
-                          "metadata",
-                          "fileFormat"
-                        ]
-                      }
-                    },
-                    "count": {
-                      "type": "number"
-                    },
-                    "pending": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "branchId": {
-                            "type": "string"
-                          },
-                          "fileId": {
-                            "type": "string"
-                          },
-                          "locale": {
-                            "type": "string"
-                          },
-                          "versionId": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "branchId",
-                          "fileId",
-                          "locale",
-                          "versionId"
-                        ]
-                      }
-                    }
-                  },
-                  "required": ["files", "count"]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "413": {
             "description": "Request error",
             "content": {
               "application/json": {
@@ -4238,390 +2602,11 @@
         "tags": ["Project"]
       }
     },
-    "/v2/project/info/{projectId}": {
+    "/v2/project/assets": {
       "post": {
-        "operationId": "updateProjectInfo",
-        "summary": "Update Project information",
-        "description": "Update the Project's default locale or CDN delivery setting.",
-        "security": [
-          {
-            "BearerAuth": []
-          },
-          {
-            "UserBearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            },
-            "required": true,
-            "name": "projectId",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "enum": [
-                "2025-01-01.v0",
-                "2025-11-03.v1",
-                "2026-02-18.v1",
-                "2026-03-06.v1"
-              ],
-              "description": "API contract version. Defaults to the oldest supported version."
-            },
-            "required": false,
-            "description": "API contract version. Defaults to the oldest supported version.",
-            "name": "gt-api-version",
-            "in": "header"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project."
-            },
-            "required": false,
-            "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.",
-            "name": "gt-project-id",
-            "in": "header"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "defaultLocale": {
-                    "type": "string"
-                  },
-                  "cdnEnabled": {
-                    "type": "boolean"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Project settings updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [true]
-                    }
-                  },
-                  "required": ["success"]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "413": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        },
-        "tags": ["Project"]
-      },
-      "get": {
-        "operationId": "getProjectInfo",
-        "summary": "Get Project information",
-        "description": "Read the authenticated Project's name, Organization ID, locale settings, and auto-approval setting.",
-        "security": [
-          {
-            "BearerAuth": []
-          },
-          {
-            "UserBearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            },
-            "required": true,
-            "name": "projectId",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "enum": [
-                "2025-01-01.v0",
-                "2025-11-03.v1",
-                "2026-02-18.v1",
-                "2026-03-06.v1"
-              ],
-              "description": "API contract version. Defaults to the oldest supported version."
-            },
-            "required": false,
-            "description": "API contract version. Defaults to the oldest supported version.",
-            "name": "gt-api-version",
-            "in": "header"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project."
-            },
-            "required": false,
-            "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.",
-            "name": "gt-project-id",
-            "in": "header"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Project information",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string"
-                    },
-                    "name": {
-                      "type": "string"
-                    },
-                    "orgId": {
-                      "type": "string"
-                    },
-                    "defaultLocale": {
-                      "type": ["string", "null"]
-                    },
-                    "currentLocales": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    },
-                    "autoApprove": {
-                      "type": "boolean"
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "name",
-                    "orgId",
-                    "defaultLocale",
-                    "currentLocales",
-                    "autoApprove"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        },
-        "tags": ["Project"]
-      }
-    },
-    "/v2/project/jobs/info": {
-      "post": {
-        "operationId": "getTranslationJobInfo",
-        "summary": "Get translation job status",
-        "description": "Return normalized status information for one or more queued translation or context generation jobs.",
+        "operationId": "uploadAssets",
+        "summary": "Upload Project assets",
+        "description": "Upload OpenType or TrueType fonts through a Project and make them available to Lottie translation workflows across its Organization. Each font is keyed by a normalized identity derived from its family, weight, and italic style (from the supplied `family` and `style`, or from the font metadata and file name). Re-uploading the same identity overwrites the existing asset, so complete retries after a `500` response are safe.",
         "security": [
           {
             "BearerAuth": []
@@ -4665,642 +2650,79 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "jobIds": {
+                  "assets": {
                     "type": "array",
                     "items": {
-                      "type": "string",
-                      "minLength": 1
+                      "type": "object",
+                      "properties": {
+                        "assetType": {
+                          "type": "string",
+                          "enum": ["FONT"]
+                        },
+                        "content": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "fileName": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 255,
+                          "pattern": "\\.([tT][tT][fF]|[oO][tT][fF])$"
+                        },
+                        "family": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 255
+                        },
+                        "style": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 100
+                        }
+                      },
+                      "required": ["assetType", "content", "fileName"]
                     },
-                    "minItems": 1
+                    "minItems": 1,
+                    "maxItems": 50
                   }
                 },
-                "required": ["jobIds"]
+                "required": ["assets"]
               }
             }
           }
         },
         "responses": {
-          "200": {
-            "description": "Translation job statuses",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "oneOf": [
-                      {
-                        "type": "object",
-                        "properties": {
-                          "status": {
-                            "type": "string",
-                            "enum": ["queued"]
-                          },
-                          "jobId": {
-                            "type": "string"
-                          }
-                        },
-                        "required": ["status", "jobId"]
-                      },
-                      {
-                        "type": "object",
-                        "properties": {
-                          "status": {
-                            "type": "string",
-                            "enum": ["processing"]
-                          },
-                          "jobId": {
-                            "type": "string"
-                          }
-                        },
-                        "required": ["status", "jobId"]
-                      },
-                      {
-                        "type": "object",
-                        "properties": {
-                          "status": {
-                            "type": "string",
-                            "enum": ["failed"]
-                          },
-                          "jobId": {
-                            "type": "string"
-                          },
-                          "error": {
-                            "type": "object",
-                            "properties": {
-                              "message": {
-                                "type": ["string", "null"]
-                              }
-                            },
-                            "required": ["message"]
-                          }
-                        },
-                        "required": ["status", "jobId", "error"]
-                      },
-                      {
-                        "type": "object",
-                        "properties": {
-                          "status": {
-                            "type": "string",
-                            "enum": ["completed"]
-                          },
-                          "jobId": {
-                            "type": "string"
-                          }
-                        },
-                        "required": ["status", "jobId"]
-                      },
-                      {
-                        "type": "object",
-                        "properties": {
-                          "status": {
-                            "type": "string",
-                            "enum": ["unknown"]
-                          },
-                          "jobId": {
-                            "type": "string"
-                          }
-                        },
-                        "required": ["status", "jobId"]
-                      }
-                    ]
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "413": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        },
-        "tags": ["Translation"]
-      }
-    },
-    "/v2/translate": {
-      "post": {
-        "operationId": "translate",
-        "summary": "Translate content at runtime",
-        "description": "Translate one or more strings or structured content entries with caching and memoization. Development API keys are accepted for this endpoint.",
-        "security": [
-          {
-            "BearerAuth": []
-          },
-          {
-            "UserBearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "enum": [
-                "2025-01-01.v0",
-                "2025-11-03.v1",
-                "2026-02-18.v1",
-                "2026-03-06.v1"
-              ],
-              "description": "API contract version. Defaults to the oldest supported version."
-            },
-            "required": false,
-            "description": "API contract version. Defaults to the oldest supported version.",
-            "name": "gt-api-version",
-            "in": "header"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project."
-            },
-            "required": false,
-            "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.",
-            "name": "gt-project-id",
-            "in": "header"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RuntimeTranslationRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "All translations were served from cache",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RuntimeTranslationResponse"
-                }
-              }
-            }
-          },
           "201": {
-            "description": "Translations completed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RuntimeTranslationResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "402": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "413": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        },
-        "tags": ["Translation"]
-      }
-    },
-    "/v2/project/files/info": {
-      "post": {
-        "operationId": "getFileInfo",
-        "summary": "Get file metadata",
-        "description": "Get detailed metadata for specific source and translated files.",
-        "security": [
-          {
-            "BearerAuth": []
-          },
-          {
-            "UserBearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "enum": [
-                "2025-01-01.v0",
-                "2025-11-03.v1",
-                "2026-02-18.v1",
-                "2026-03-06.v1"
-              ],
-              "description": "API contract version. Defaults to the oldest supported version."
-            },
-            "required": false,
-            "description": "API contract version. Defaults to the oldest supported version.",
-            "name": "gt-api-version",
-            "in": "header"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project."
-            },
-            "required": false,
-            "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.",
-            "name": "gt-project-id",
-            "in": "header"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "sourceFiles": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "fileId": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "versionId": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "branchId": {
-                          "type": "string",
-                          "minLength": 1
-                        }
-                      },
-                      "required": ["fileId", "versionId", "branchId"]
-                    }
-                  },
-                  "translatedFiles": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "fileId": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "versionId": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "branchId": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "locale": {
-                          "type": "string",
-                          "minLength": 1
-                        }
-                      },
-                      "required": ["fileId", "versionId", "branchId", "locale"]
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "File information",
+            "description": "Uploaded assets",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "sourceFiles": {
+                    "assets": {
                       "type": "array",
                       "items": {
                         "type": "object",
                         "properties": {
-                          "branchId": {
+                          "id": {
                             "type": "string"
                           },
-                          "fileId": {
-                            "type": "string"
-                          },
-                          "versionId": {
+                          "assetKey": {
                             "type": "string"
                           },
                           "fileName": {
                             "type": "string"
-                          },
-                          "fileFormat": {
-                            "$ref": "#/components/schemas/FileFormat"
-                          },
-                          "dataFormat": {
-                            "type": ["string", "null"]
-                          },
-                          "createdAt": {
-                            "type": "string",
-                            "format": "date-time"
-                          },
-                          "updatedAt": {
-                            "type": "string",
-                            "format": "date-time"
-                          },
-                          "publishedAt": {
-                            "type": ["string", "null"],
-                            "format": "date-time"
-                          },
-                          "locales": {
-                            "type": "array",
-                            "items": {
-                              "type": "string"
-                            }
-                          },
-                          "sourceLocale": {
-                            "type": "string"
                           }
                         },
-                        "required": [
-                          "branchId",
-                          "fileId",
-                          "versionId",
-                          "fileName",
-                          "fileFormat",
-                          "dataFormat",
-                          "createdAt",
-                          "updatedAt",
-                          "publishedAt",
-                          "locales",
-                          "sourceLocale"
-                        ]
+                        "required": ["id", "assetKey", "fileName"]
                       }
                     },
-                    "translatedFiles": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "branchId": {
-                            "type": "string"
-                          },
-                          "fileId": {
-                            "type": "string"
-                          },
-                          "versionId": {
-                            "type": "string"
-                          },
-                          "fileFormat": {
-                            "$ref": "#/components/schemas/FileFormat"
-                          },
-                          "dataFormat": {
-                            "type": ["string", "null"]
-                          },
-                          "createdAt": {
-                            "type": "string",
-                            "format": "date-time"
-                          },
-                          "updatedAt": {
-                            "type": "string",
-                            "format": "date-time"
-                          },
-                          "approvedAt": {
-                            "type": ["string", "null"],
-                            "format": "date-time"
-                          },
-                          "publishedAt": {
-                            "type": ["string", "null"],
-                            "format": "date-time"
-                          },
-                          "completedAt": {
-                            "type": ["string", "null"],
-                            "format": "date-time"
-                          },
-                          "locale": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "branchId",
-                          "fileId",
-                          "versionId",
-                          "fileFormat",
-                          "dataFormat",
-                          "createdAt",
-                          "updatedAt",
-                          "approvedAt",
-                          "publishedAt",
-                          "completedAt",
-                          "locale"
-                        ]
-                      }
+                    "count": {
+                      "type": "integer",
+                      "minimum": 0
                     }
                   },
-                  "required": ["sourceFiles", "translatedFiles"]
+                  "required": ["assets", "count"]
                 }
               }
             }
@@ -5336,6 +2758,21 @@
             }
           },
           "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
             "description": "Request error",
             "content": {
               "application/json": {
@@ -5396,14 +2833,14 @@
             }
           }
         },
-        "tags": ["Files"]
+        "tags": ["Project"]
       }
     },
-    "/v2/project/translations/files/status/{fileId}": {
-      "get": {
-        "operationId": "getTranslationStatus",
-        "summary": "Get translation status for a file",
-        "description": "Return translation progress and availability by locale for one source file, along with its source metadata.",
+    "/v2/project/files/diffs": {
+      "post": {
+        "operationId": "submitUserEditDiffs",
+        "summary": "Submit translation diffs",
+        "description": "Overwrite translations with user-provided localized content.",
         "security": [
           {
             "BearerAuth": []
@@ -5413,31 +2850,6 @@
           }
         ],
         "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            },
-            "required": true,
-            "name": "fileId",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": false,
-            "name": "versionId",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": false,
-            "name": "branchId",
-            "in": "query"
-          },
           {
             "schema": {
               "type": "string",
@@ -5465,111 +2877,81 @@
             "in": "header"
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "projectId": {
+                    "type": "string"
+                  },
+                  "diffs": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "locale": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "diff": {
+                          "type": "string"
+                        },
+                        "branchId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "versionId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "fileId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "localContent": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "locale",
+                        "diff",
+                        "versionId",
+                        "fileId",
+                        "localContent"
+                      ]
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": ["diffs"]
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "Translation status",
+            "description": "Processed user translation edits",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "translations": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "locale": {
-                            "type": "string"
-                          },
-                          "completedAt": {
-                            "type": ["string", "null"],
-                            "format": "date-time"
-                          },
-                          "approvedAt": {
-                            "type": ["string", "null"],
-                            "format": "date-time"
-                          },
-                          "publishedAt": {
-                            "type": ["string", "null"],
-                            "format": "date-time"
-                          },
-                          "createdAt": {
-                            "type": ["string", "null"],
-                            "format": "date-time"
-                          },
-                          "updatedAt": {
-                            "type": ["string", "null"],
-                            "format": "date-time"
-                          }
-                        },
-                        "required": [
-                          "locale",
-                          "completedAt",
-                          "approvedAt",
-                          "publishedAt",
-                          "createdAt",
-                          "updatedAt"
-                        ]
-                      }
+                    "filesProcessed": {
+                      "type": "integer",
+                      "minimum": 0
                     },
-                    "sourceFile": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        },
-                        "branchId": {
-                          "type": "string"
-                        },
-                        "fileId": {
-                          "type": "string"
-                        },
-                        "versionId": {
-                          "type": "string"
-                        },
-                        "fileName": {
-                          "type": "string"
-                        },
-                        "sourceLocale": {
-                          "type": "string"
-                        },
-                        "fileFormat": {
-                          "$ref": "#/components/schemas/FileFormat"
-                        },
-                        "dataFormat": {
-                          "type": ["string", "null"]
-                        },
-                        "createdAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        },
-                        "updatedAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        },
-                        "locales": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        }
-                      },
-                      "required": [
-                        "id",
-                        "branchId",
-                        "fileId",
-                        "versionId",
-                        "fileName",
-                        "sourceLocale",
-                        "fileFormat",
-                        "dataFormat",
-                        "createdAt",
-                        "updatedAt",
-                        "locales"
-                      ]
+                    "entriesReceived": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "message": {
+                      "type": "string"
                     }
                   },
-                  "required": ["translations", "sourceFile"]
+                  "required": ["filesProcessed", "entriesReceived", "message"]
                 }
               }
             }
@@ -5619,7 +3001,7 @@
               }
             }
           },
-          "404": {
+          "413": {
             "description": "Request error",
             "content": {
               "application/json": {
@@ -6118,6 +3500,2291 @@
           }
         },
         "tags": ["Files"]
+      }
+    },
+    "/v2/project/files/info": {
+      "post": {
+        "operationId": "getFileInfo",
+        "summary": "Get file metadata",
+        "description": "Get detailed metadata for specific source and translated files.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "UserBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project."
+            },
+            "required": false,
+            "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.",
+            "name": "gt-project-id",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sourceFiles": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fileId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "versionId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "branchId": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["fileId", "versionId", "branchId"]
+                    }
+                  },
+                  "translatedFiles": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fileId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "versionId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "branchId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "locale": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["fileId", "versionId", "branchId", "locale"]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "File information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sourceFiles": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "branchId": {
+                            "type": "string"
+                          },
+                          "fileId": {
+                            "type": "string"
+                          },
+                          "versionId": {
+                            "type": "string"
+                          },
+                          "fileName": {
+                            "type": "string"
+                          },
+                          "fileFormat": {
+                            "$ref": "#/components/schemas/FileFormat"
+                          },
+                          "dataFormat": {
+                            "type": ["string", "null"]
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "publishedAt": {
+                            "type": ["string", "null"],
+                            "format": "date-time"
+                          },
+                          "locales": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "sourceLocale": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "branchId",
+                          "fileId",
+                          "versionId",
+                          "fileName",
+                          "fileFormat",
+                          "dataFormat",
+                          "createdAt",
+                          "updatedAt",
+                          "publishedAt",
+                          "locales",
+                          "sourceLocale"
+                        ]
+                      }
+                    },
+                    "translatedFiles": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "branchId": {
+                            "type": "string"
+                          },
+                          "fileId": {
+                            "type": "string"
+                          },
+                          "versionId": {
+                            "type": "string"
+                          },
+                          "fileFormat": {
+                            "$ref": "#/components/schemas/FileFormat"
+                          },
+                          "dataFormat": {
+                            "type": ["string", "null"]
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "approvedAt": {
+                            "type": ["string", "null"],
+                            "format": "date-time"
+                          },
+                          "publishedAt": {
+                            "type": ["string", "null"],
+                            "format": "date-time"
+                          },
+                          "completedAt": {
+                            "type": ["string", "null"],
+                            "format": "date-time"
+                          },
+                          "locale": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "branchId",
+                          "fileId",
+                          "versionId",
+                          "fileFormat",
+                          "dataFormat",
+                          "createdAt",
+                          "updatedAt",
+                          "approvedAt",
+                          "publishedAt",
+                          "completedAt",
+                          "locale"
+                        ]
+                      }
+                    }
+                  },
+                  "required": ["sourceFiles", "translatedFiles"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Files"]
+      }
+    },
+    "/v2/project/files/download": {
+      "post": {
+        "operationId": "downloadFiles",
+        "summary": "Download multiple files",
+        "description": "Download up to 100 source or translated files in one request.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "UserBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project."
+            },
+            "required": false,
+            "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.",
+            "name": "gt-project-id",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "fileId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "branchId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "versionId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "locale": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "useLatestAvailableVersion": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["fileId"]
+                },
+                "minItems": 1,
+                "maxItems": 100
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Downloaded files",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "files": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "branchId": {
+                            "type": "string"
+                          },
+                          "fileId": {
+                            "type": "string"
+                          },
+                          "versionId": {
+                            "type": "string"
+                          },
+                          "locale": {
+                            "type": "string"
+                          },
+                          "fileName": {
+                            "type": "string"
+                          },
+                          "data": {
+                            "type": "string"
+                          },
+                          "metadata": {
+                            "$ref": "#/components/schemas/JsonObject"
+                          },
+                          "fileFormat": {
+                            "$ref": "#/components/schemas/FileFormat"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "branchId",
+                          "fileId",
+                          "versionId",
+                          "data",
+                          "metadata",
+                          "fileFormat"
+                        ]
+                      }
+                    },
+                    "count": {
+                      "type": "number"
+                    },
+                    "pending": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "branchId": {
+                            "type": "string"
+                          },
+                          "fileId": {
+                            "type": "string"
+                          },
+                          "locale": {
+                            "type": "string"
+                          },
+                          "versionId": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "branchId",
+                          "fileId",
+                          "locale",
+                          "versionId"
+                        ]
+                      }
+                    }
+                  },
+                  "required": ["files", "count"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Files"]
+      }
+    },
+    "/v2/project/files/download/{fileId}": {
+      "get": {
+        "operationId": "downloadFile",
+        "summary": "Download a single file",
+        "deprecated": true,
+        "description": "Download a single source or translated file. This deprecated endpoint is retained for backward compatibility; new integrations should use `POST /v2/project/files/download`.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "UserBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "fileId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "branchId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "versionId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "locale",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project."
+            },
+            "required": false,
+            "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.",
+            "name": "gt-project-id",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Downloaded file",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["data"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "425": {
+            "description": "Translation is still processing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["processing"]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["status", "message"]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Files"]
+      }
+    },
+    "/v2/project/jobs/info": {
+      "post": {
+        "operationId": "getTranslationJobInfo",
+        "summary": "Get translation job status",
+        "description": "Return normalized status information for one or more queued translation or context generation jobs.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "UserBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project."
+            },
+            "required": false,
+            "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.",
+            "name": "gt-project-id",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "jobIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": ["jobIds"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Translation job statuses",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "status": {
+                            "type": "string",
+                            "enum": ["queued"]
+                          },
+                          "jobId": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["status", "jobId"]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "status": {
+                            "type": "string",
+                            "enum": ["processing"]
+                          },
+                          "jobId": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["status", "jobId"]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "status": {
+                            "type": "string",
+                            "enum": ["failed"]
+                          },
+                          "jobId": {
+                            "type": "string"
+                          },
+                          "error": {
+                            "type": "object",
+                            "properties": {
+                              "message": {
+                                "type": ["string", "null"]
+                              }
+                            },
+                            "required": ["message"]
+                          }
+                        },
+                        "required": ["status", "jobId", "error"]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "status": {
+                            "type": "string",
+                            "enum": ["completed"]
+                          },
+                          "jobId": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["status", "jobId"]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "status": {
+                            "type": "string",
+                            "enum": ["unknown"]
+                          },
+                          "jobId": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["status", "jobId"]
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Translation"]
+      }
+    },
+    "/v2/project/setup/generate": {
+      "post": {
+        "operationId": "generateProjectContext",
+        "summary": "Generate translation context",
+        "description": "Generate glossaries and translation instructions for the project.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "UserBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project."
+            },
+            "required": false,
+            "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.",
+            "name": "gt-project-id",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "branchId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "fileId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "versionId": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["fileId", "versionId"]
+                    },
+                    "minItems": 1
+                  },
+                  "locales": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "force": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                },
+                "required": ["files"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Context generation status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": ["completed"]
+                        }
+                      },
+                      "required": ["status"]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "setupJobId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["queued"]
+                        }
+                      },
+                      "required": ["setupJobId", "status"]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Context"]
+      }
+    },
+    "/v2/project/files/publish": {
+      "post": {
+        "operationId": "publishFiles",
+        "summary": "Publish or unpublish files",
+        "description": "Publish or unpublish translated files to the CDN. Requires CDN to be enabled.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "UserBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project."
+            },
+            "required": false,
+            "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.",
+            "name": "gt-project-id",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fileId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "versionId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "branchId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "publish": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": ["fileId", "versionId", "publish"]
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": ["files"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "File publish results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "fileId": {
+                            "type": "string"
+                          },
+                          "versionId": {
+                            "type": "string"
+                          },
+                          "locale": {
+                            "type": "string"
+                          },
+                          "branchId": {
+                            "type": "string"
+                          },
+                          "success": {
+                            "type": "boolean"
+                          },
+                          "error": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "fileId",
+                          "versionId",
+                          "branchId",
+                          "success"
+                        ]
+                      }
+                    }
+                  },
+                  "required": ["results"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Files"]
+      }
+    },
+    "/v2/project/files/upload-files": {
+      "post": {
+        "operationId": "uploadSourceFiles",
+        "summary": "Upload source files",
+        "description": "Upload one or more source files to the project. Max 100 files per request.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "UserBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project."
+            },
+            "required": false,
+            "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.",
+            "name": "gt-project-id",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "data": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "source": {
+                          "type": "object",
+                          "properties": {
+                            "content": {
+                              "type": "string"
+                            },
+                            "fileName": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "fileFormat": {
+                              "type": "string",
+                              "enum": [
+                                "GTJSON",
+                                "MDX",
+                                "JSON",
+                                "YAML",
+                                "MD",
+                                "TS",
+                                "JS",
+                                "HTML",
+                                "TXT",
+                                "PO",
+                                "POT",
+                                "TWILIO_CONTENT_JSON",
+                                "LOTTIE",
+                                "SVG",
+                                "XCSTRINGS",
+                                "DOT_STRINGS",
+                                "DOT_STRINGSDICT",
+                                "ANDROID_STRINGS"
+                              ]
+                            },
+                            "dataFormat": {
+                              "type": "string"
+                            },
+                            "locale": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "fileId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "versionId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "branchId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "checkedOutBranchId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "incomingBranchId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "formatMetadata": {
+                              "type": "object",
+                              "additionalProperties": {}
+                            }
+                          },
+                          "required": [
+                            "content",
+                            "fileName",
+                            "fileFormat",
+                            "locale"
+                          ]
+                        }
+                      },
+                      "required": ["source"]
+                    },
+                    "minItems": 1,
+                    "maxItems": 100
+                  },
+                  "sourceLocale": {
+                    "type": "string"
+                  }
+                },
+                "required": ["data"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Uploaded source files",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "uploadedFiles": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "branchId": {
+                            "type": "string"
+                          },
+                          "fileId": {
+                            "type": "string"
+                          },
+                          "versionId": {
+                            "type": "string"
+                          },
+                          "fileName": {
+                            "type": "string"
+                          },
+                          "fileFormat": {
+                            "$ref": "#/components/schemas/FileFormat"
+                          },
+                          "dataFormat": {
+                            "type": "string"
+                          },
+                          "locale": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "fileId",
+                          "versionId",
+                          "fileName",
+                          "fileFormat"
+                        ]
+                      }
+                    },
+                    "count": {
+                      "type": "number"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["uploadedFiles", "count", "message"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Files"]
+      }
+    },
+    "/v2/project/translations/enqueue": {
+      "post": {
+        "operationId": "enqueueFileTranslations",
+        "summary": "Queue files for translation",
+        "description": "Enqueue uploaded source files for background translation. Max 100 files per request. The response shape depends on the requested `gt-api-version`.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "UserBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project."
+            },
+            "required": false,
+            "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.",
+            "name": "gt-project-id",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "branchId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "fileId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "versionId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "fileName": {
+                          "type": "string"
+                        },
+                        "transformFormat": {
+                          "type": "string",
+                          "enum": [
+                            "GTJSON",
+                            "MDX",
+                            "JSON",
+                            "YAML",
+                            "MD",
+                            "TS",
+                            "JS",
+                            "HTML",
+                            "TXT",
+                            "PO",
+                            "POT",
+                            "TWILIO_CONTENT_JSON",
+                            "LOTTIE",
+                            "SVG",
+                            "XCSTRINGS",
+                            "DOT_STRINGS",
+                            "DOT_STRINGSDICT",
+                            "ANDROID_STRINGS"
+                          ]
+                        }
+                      },
+                      "required": ["fileId", "versionId"]
+                    },
+                    "minItems": 1,
+                    "maxItems": 100
+                  },
+                  "targetLocales": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "sourceLocale": {
+                    "type": "string"
+                  },
+                  "force": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "modelProvider": {
+                    "$ref": "#/components/schemas/ModelProvider"
+                  },
+                  "publish": {
+                    "type": "boolean"
+                  }
+                },
+                "required": ["files"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Enqueued translations. Shape depends on gt-api-version (legacy before 2025-11-03.v1).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "jobData": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": ["file_translation"]
+                              },
+                              "sourceFileId": {
+                                "type": "string"
+                              },
+                              "fileId": {
+                                "type": "string"
+                              },
+                              "versionId": {
+                                "type": "string"
+                              },
+                              "branchId": {
+                                "type": "string"
+                              },
+                              "targetLocale": {
+                                "type": "string"
+                              },
+                              "projectId": {
+                                "type": "string"
+                              },
+                              "orgId": {
+                                "type": "string"
+                              },
+                              "force": {
+                                "type": "boolean"
+                              },
+                              "outputFileFormat": {
+                                "$ref": "#/components/schemas/FileFormat"
+                              },
+                              "modelProvider": {
+                                "$ref": "#/components/schemas/ModelProvider"
+                              },
+                              "glossaryRetranslate": {
+                                "type": "boolean"
+                              },
+                              "changedGlossaryTerms": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "onComplete": {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": ["google_drive_apply"]
+                                  },
+                                  "userId": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["kind"]
+                              }
+                            },
+                            "required": [
+                              "sourceFileId",
+                              "fileId",
+                              "versionId",
+                              "branchId",
+                              "targetLocale",
+                              "projectId",
+                              "orgId",
+                              "force"
+                            ]
+                          }
+                        },
+                        "locales": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["jobData", "locales", "message"]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "translations": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "locale": {
+                                "type": "string"
+                              },
+                              "metadata": {},
+                              "fileId": {
+                                "type": "string"
+                              },
+                              "fileName": {
+                                "type": "string"
+                              },
+                              "versionId": {
+                                "type": "string"
+                              },
+                              "branchId": {
+                                "type": "string"
+                              },
+                              "id": {
+                                "type": "string"
+                              },
+                              "isReady": {
+                                "type": "boolean"
+                              },
+                              "downloadUrl": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "locale",
+                              "fileId",
+                              "fileName",
+                              "versionId",
+                              "branchId",
+                              "id",
+                              "isReady",
+                              "downloadUrl"
+                            ]
+                          }
+                        },
+                        "data": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "object",
+                            "properties": {
+                              "fileName": {
+                                "type": "string"
+                              },
+                              "versionId": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["fileName", "versionId"]
+                          }
+                        },
+                        "locales": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["translations", "data", "locales", "message"]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or missing source files",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "string"
+                        },
+                        "missing": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "fileId": {
+                                "type": "string"
+                              },
+                              "versionId": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["fileId", "versionId"]
+                          }
+                        },
+                        "count": {
+                          "type": "number"
+                        }
+                      },
+                      "required": ["error", "missing", "count"]
+                    }
+                  ]
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Translation"]
       }
     },
     "/cli/wizard/session": {

@@ -28,27 +28,6 @@ export type FileFormat =
   | 'DOT_STRINGSDICT'
   | 'ANDROID_STRINGS';
 
-export type ModelProvider = 'ANTHROPIC' | 'OPENAI' | 'XAI' | 'GOOGLE';
-
-export type JsonObject = {
-  [key: string]: JsonValue;
-};
-
-export type JsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | Array<JsonValue | null>
-  | {
-      [key: string]: JsonValue | null;
-    };
-
-export type Branch = {
-  id: string;
-  name: string;
-};
-
 export type RuntimeTranslationResponse = {
   [key: string]:
     | {
@@ -63,6 +42,16 @@ export type RuntimeTranslationResponse = {
         code: number;
       };
 };
+
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | Array<JsonValue | null>
+  | {
+      [key: string]: JsonValue | null;
+    };
 
 export type RuntimeTranslationRequest = {
   requests: {
@@ -90,6 +79,17 @@ export type RuntimeTranslationRequest = {
   metadata: {
     modelProvider?: ModelProvider;
   };
+};
+
+export type ModelProvider = 'ANTHROPIC' | 'OPENAI' | 'XAI' | 'GOOGLE';
+
+export type Branch = {
+  id: string;
+  name: string;
+};
+
+export type JsonObject = {
+  [key: string]: JsonValue;
 };
 
 export type CreateCliWizardSessionResponse = {
@@ -268,124 +268,6 @@ export type CreateProjectApiKeyResponses = {
 export type CreateProjectApiKeyResponse =
   CreateProjectApiKeyResponses[keyof CreateProjectApiKeyResponses];
 
-export type UploadSourceFilesData = {
-  body: {
-    data: Array<{
-      source: {
-        content: string;
-        fileName: string;
-        fileFormat:
-          | 'GTJSON'
-          | 'MDX'
-          | 'JSON'
-          | 'YAML'
-          | 'MD'
-          | 'TS'
-          | 'JS'
-          | 'HTML'
-          | 'TXT'
-          | 'PO'
-          | 'POT'
-          | 'TWILIO_CONTENT_JSON'
-          | 'LOTTIE'
-          | 'SVG'
-          | 'XCSTRINGS'
-          | 'DOT_STRINGS'
-          | 'DOT_STRINGSDICT'
-          | 'ANDROID_STRINGS';
-        dataFormat?: string;
-        locale: string;
-        fileId?: string;
-        versionId?: string;
-        branchId?: string;
-        checkedOutBranchId?: string;
-        incomingBranchId?: string;
-        formatMetadata?: {
-          [key: string]: unknown;
-        };
-      };
-    }>;
-    sourceLocale?: string;
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?:
-      | '2025-01-01.v0'
-      | '2025-11-03.v1'
-      | '2026-02-18.v1'
-      | '2026-03-06.v1';
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/files/upload-files';
-};
-
-export type UploadSourceFilesErrors = {
-  /**
-   * Request error
-   */
-  400: ErrorResponse;
-  /**
-   * Request error
-   */
-  401: ErrorResponse;
-  /**
-   * Request error
-   */
-  403: ErrorResponse;
-  /**
-   * Request error
-   */
-  404: ErrorResponse;
-  /**
-   * Request error
-   */
-  413: ErrorResponse;
-  /**
-   * Request error
-   */
-  429: ErrorResponse;
-  /**
-   * Request error
-   */
-  500: ErrorResponse;
-  /**
-   * Request error
-   */
-  503: ErrorResponse;
-};
-
-export type UploadSourceFilesError =
-  UploadSourceFilesErrors[keyof UploadSourceFilesErrors];
-
-export type UploadSourceFilesResponses = {
-  /**
-   * Uploaded source files
-   */
-  201: {
-    uploadedFiles: Array<{
-      branchId?: string;
-      fileId: string;
-      versionId: string;
-      fileName: string;
-      fileFormat: FileFormat;
-      dataFormat?: string;
-      locale?: string;
-    }>;
-    count: number;
-    message: string;
-  };
-};
-
-export type UploadSourceFilesResponse =
-  UploadSourceFilesResponses[keyof UploadSourceFilesResponses];
-
 export type UploadTranslationsData = {
   body: {
     data: Array<{
@@ -548,304 +430,7 @@ export type UploadTranslationsResponses = {
 export type UploadTranslationsResponse =
   UploadTranslationsResponses[keyof UploadTranslationsResponses];
 
-export type UploadAssetsData = {
-  body: {
-    assets: Array<{
-      assetType: 'FONT';
-      content: string;
-      fileName: string;
-      family?: string;
-      style?: string;
-    }>;
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?:
-      | '2025-01-01.v0'
-      | '2025-11-03.v1'
-      | '2026-02-18.v1'
-      | '2026-03-06.v1';
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/assets';
-};
-
-export type UploadAssetsErrors = {
-  /**
-   * Request error
-   */
-  400: ErrorResponse;
-  /**
-   * Request error
-   */
-  401: ErrorResponse;
-  /**
-   * Request error
-   */
-  403: ErrorResponse;
-  /**
-   * Request error
-   */
-  404: ErrorResponse;
-  /**
-   * Request error
-   */
-  413: ErrorResponse;
-  /**
-   * Request error
-   */
-  429: ErrorResponse;
-  /**
-   * Request error
-   */
-  500: ErrorResponse;
-};
-
-export type UploadAssetsError = UploadAssetsErrors[keyof UploadAssetsErrors];
-
-export type UploadAssetsResponses = {
-  /**
-   * Uploaded assets
-   */
-  201: {
-    assets: Array<{
-      id: string;
-      assetKey: string;
-      fileName: string;
-    }>;
-    count: number;
-  };
-};
-
-export type UploadAssetsResponse =
-  UploadAssetsResponses[keyof UploadAssetsResponses];
-
-export type SubmitUserEditDiffsData = {
-  body: {
-    projectId?: string;
-    diffs: Array<{
-      locale: string;
-      diff: string;
-      branchId?: string;
-      versionId: string;
-      fileId: string;
-      localContent: string;
-    }>;
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?:
-      | '2025-01-01.v0'
-      | '2025-11-03.v1'
-      | '2026-02-18.v1'
-      | '2026-03-06.v1';
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/files/diffs';
-};
-
-export type SubmitUserEditDiffsErrors = {
-  /**
-   * Request error
-   */
-  400: ErrorResponse;
-  /**
-   * Request error
-   */
-  401: ErrorResponse;
-  /**
-   * Request error
-   */
-  403: ErrorResponse;
-  /**
-   * Request error
-   */
-  413: ErrorResponse;
-  /**
-   * Request error
-   */
-  429: ErrorResponse;
-  /**
-   * Request error
-   */
-  500: ErrorResponse;
-};
-
-export type SubmitUserEditDiffsError =
-  SubmitUserEditDiffsErrors[keyof SubmitUserEditDiffsErrors];
-
-export type SubmitUserEditDiffsResponses = {
-  /**
-   * Processed user translation edits
-   */
-  200: {
-    filesProcessed: number;
-    entriesReceived: number;
-    message: string;
-  };
-};
-
-export type SubmitUserEditDiffsResponse =
-  SubmitUserEditDiffsResponses[keyof SubmitUserEditDiffsResponses];
-
-export type ShouldGenerateProjectContextData = {
-  body?: never;
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?:
-      | '2025-01-01.v0'
-      | '2025-11-03.v1'
-      | '2026-02-18.v1'
-      | '2026-03-06.v1';
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/setup/should-generate';
-};
-
-export type ShouldGenerateProjectContextErrors = {
-  /**
-   * Request error
-   */
-  400: ErrorResponse;
-  /**
-   * Request error
-   */
-  401: ErrorResponse;
-  /**
-   * Request error
-   */
-  403: ErrorResponse;
-  /**
-   * Request error
-   */
-  404: ErrorResponse;
-  /**
-   * Request error
-   */
-  429: ErrorResponse;
-  /**
-   * Request error
-   */
-  500: ErrorResponse;
-};
-
-export type ShouldGenerateProjectContextError =
-  ShouldGenerateProjectContextErrors[keyof ShouldGenerateProjectContextErrors];
-
-export type ShouldGenerateProjectContextResponses = {
-  /**
-   * Whether project context should be generated
-   */
-  200: {
-    shouldSetupProject: boolean;
-  };
-};
-
-export type ShouldGenerateProjectContextResponse =
-  ShouldGenerateProjectContextResponses[keyof ShouldGenerateProjectContextResponses];
-
-export type GenerateProjectContextData = {
-  body: {
-    files: Array<{
-      branchId?: string;
-      fileId: string;
-      versionId: string;
-    }>;
-    locales?: Array<string>;
-    force?: boolean;
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?:
-      | '2025-01-01.v0'
-      | '2025-11-03.v1'
-      | '2026-02-18.v1'
-      | '2026-03-06.v1';
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/setup/generate';
-};
-
-export type GenerateProjectContextErrors = {
-  /**
-   * Request error
-   */
-  400: ErrorResponse;
-  /**
-   * Request error
-   */
-  401: ErrorResponse;
-  /**
-   * Request error
-   */
-  403: ErrorResponse;
-  /**
-   * Request error
-   */
-  404: ErrorResponse;
-  /**
-   * Request error
-   */
-  413: ErrorResponse;
-  /**
-   * Request error
-   */
-  429: ErrorResponse;
-  /**
-   * Request error
-   */
-  500: ErrorResponse;
-};
-
-export type GenerateProjectContextError =
-  GenerateProjectContextErrors[keyof GenerateProjectContextErrors];
-
-export type GenerateProjectContextResponses = {
-  /**
-   * Context generation status
-   */
-  200:
-    | {
-        status: 'completed';
-      }
-    | {
-        setupJobId: string;
-        status: 'queued';
-      };
-};
-
-export type GenerateProjectContextResponse =
-  GenerateProjectContextResponses[keyof GenerateProjectContextResponses];
-
-export type GetProjectContextGenerationStatusData = {
+export type GetProjectInfoData = {
   body?: never;
   headers?: {
     /**
@@ -862,13 +447,13 @@ export type GetProjectContextGenerationStatusData = {
     'gt-project-id'?: string;
   };
   path: {
-    jobId: string;
+    projectId: string;
   };
   query?: never;
-  url: '/v2/project/setup/status/{jobId}';
+  url: '/v2/project/info/{projectId}';
 };
 
-export type GetProjectContextGenerationStatusErrors = {
+export type GetProjectInfoErrors = {
   /**
    * Request error
    */
@@ -895,59 +480,100 @@ export type GetProjectContextGenerationStatusErrors = {
   500: ErrorResponse;
 };
 
-export type GetProjectContextGenerationStatusError =
-  GetProjectContextGenerationStatusErrors[keyof GetProjectContextGenerationStatusErrors];
+export type GetProjectInfoError =
+  GetProjectInfoErrors[keyof GetProjectInfoErrors];
 
-export type GetProjectContextGenerationStatusResponses = {
+export type GetProjectInfoResponses = {
   /**
-   * Context generation job status
+   * Project information
    */
-  200:
-    | {
-        status: 'completed';
-      }
-    | {
-        jobId: string;
-        status: 'queued' | 'processing' | 'failed' | 'unknown';
-      };
+  200: {
+    id: string;
+    name: string;
+    orgId: string;
+    defaultLocale: string | null;
+    currentLocales: Array<string>;
+    autoApprove: boolean;
+  };
 };
 
-export type GetProjectContextGenerationStatusResponse =
-  GetProjectContextGenerationStatusResponses[keyof GetProjectContextGenerationStatusResponses];
+export type GetProjectInfoResponse =
+  GetProjectInfoResponses[keyof GetProjectInfoResponses];
 
-export type EnqueueFileTranslationsData = {
+export type UpdateProjectInfoData = {
   body: {
-    files: Array<{
-      branchId?: string;
-      fileId: string;
-      versionId: string;
-      fileName?: string;
-      transformFormat?:
-        | 'GTJSON'
-        | 'MDX'
-        | 'JSON'
-        | 'YAML'
-        | 'MD'
-        | 'TS'
-        | 'JS'
-        | 'HTML'
-        | 'TXT'
-        | 'PO'
-        | 'POT'
-        | 'TWILIO_CONTENT_JSON'
-        | 'LOTTIE'
-        | 'SVG'
-        | 'XCSTRINGS'
-        | 'DOT_STRINGS'
-        | 'DOT_STRINGSDICT'
-        | 'ANDROID_STRINGS';
-    }>;
-    targetLocales?: Array<string>;
-    sourceLocale?: string;
-    force?: boolean;
-    modelProvider?: ModelProvider;
-    publish?: boolean;
+    defaultLocale?: string;
+    cdnEnabled?: boolean;
   };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?:
+      | '2025-01-01.v0'
+      | '2025-11-03.v1'
+      | '2026-02-18.v1'
+      | '2026-03-06.v1';
+    /**
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     */
+    'gt-project-id'?: string;
+  };
+  path: {
+    projectId: string;
+  };
+  query?: never;
+  url: '/v2/project/info/{projectId}';
+};
+
+export type UpdateProjectInfoErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type UpdateProjectInfoError =
+  UpdateProjectInfoErrors[keyof UpdateProjectInfoErrors];
+
+export type UpdateProjectInfoResponses = {
+  /**
+   * Project settings updated
+   */
+  200: {
+    success: true;
+  };
+};
+
+export type UpdateProjectInfoResponse =
+  UpdateProjectInfoResponses[keyof UpdateProjectInfoResponses];
+
+export type TranslateData = {
+  body: RuntimeTranslationRequest;
   headers?: {
     /**
      * API contract version. Defaults to the oldest supported version.
@@ -964,23 +590,14 @@ export type EnqueueFileTranslationsData = {
   };
   path?: never;
   query?: never;
-  url: '/v2/project/translations/enqueue';
+  url: '/v2/translate';
 };
 
-export type EnqueueFileTranslationsErrors = {
+export type TranslateErrors = {
   /**
-   * Invalid request or missing source files
+   * Request error
    */
-  400:
-    | ErrorResponse
-    | {
-        error: string;
-        missing: Array<{
-          fileId: string;
-          versionId: string;
-        }>;
-        count: number;
-      };
+  400: ErrorResponse;
   /**
    * Request error
    */
@@ -1011,146 +628,22 @@ export type EnqueueFileTranslationsErrors = {
   500: ErrorResponse;
 };
 
-export type EnqueueFileTranslationsError =
-  EnqueueFileTranslationsErrors[keyof EnqueueFileTranslationsErrors];
+export type TranslateError = TranslateErrors[keyof TranslateErrors];
 
-export type EnqueueFileTranslationsResponses = {
+export type TranslateResponses = {
   /**
-   * Enqueued translations. Shape depends on gt-api-version (legacy before 2025-11-03.v1).
+   * All translations were served from cache
    */
-  200:
-    | {
-        jobData: {
-          [key: string]: {
-            kind?: 'file_translation';
-            sourceFileId: string;
-            fileId: string;
-            versionId: string;
-            branchId: string;
-            targetLocale: string;
-            projectId: string;
-            orgId: string;
-            force: boolean;
-            outputFileFormat?: FileFormat;
-            modelProvider?: ModelProvider;
-            glossaryRetranslate?: boolean;
-            changedGlossaryTerms?: Array<string>;
-            onComplete?: {
-              kind: 'google_drive_apply';
-              userId?: string;
-            };
-          };
-        };
-        locales: Array<string>;
-        message: string;
-      }
-    | {
-        translations: Array<{
-          locale: string;
-          metadata?: unknown;
-          fileId: string;
-          fileName: string;
-          versionId: string;
-          branchId: string;
-          id: string;
-          isReady: boolean;
-          downloadUrl: string;
-        }>;
-        data: {
-          [key: string]: {
-            fileName: string;
-            versionId: string;
-          };
-        };
-        locales: Array<string>;
-        message: string;
-      };
+  200: RuntimeTranslationResponse;
+  /**
+   * Translations completed
+   */
+  201: RuntimeTranslationResponse;
 };
 
-export type EnqueueFileTranslationsResponse =
-  EnqueueFileTranslationsResponses[keyof EnqueueFileTranslationsResponses];
+export type TranslateResponse = TranslateResponses[keyof TranslateResponses];
 
-export type PublishFilesData = {
-  body: {
-    files: Array<{
-      fileId: string;
-      versionId: string;
-      branchId?: string;
-      publish: boolean;
-    }>;
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?:
-      | '2025-01-01.v0'
-      | '2025-11-03.v1'
-      | '2026-02-18.v1'
-      | '2026-03-06.v1';
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/files/publish';
-};
-
-export type PublishFilesErrors = {
-  /**
-   * Request error
-   */
-  400: ErrorResponse;
-  /**
-   * Request error
-   */
-  401: ErrorResponse;
-  /**
-   * Request error
-   */
-  403: ErrorResponse;
-  /**
-   * Request error
-   */
-  404: ErrorResponse;
-  /**
-   * Request error
-   */
-  413: ErrorResponse;
-  /**
-   * Request error
-   */
-  429: ErrorResponse;
-  /**
-   * Request error
-   */
-  500: ErrorResponse;
-};
-
-export type PublishFilesError = PublishFilesErrors[keyof PublishFilesErrors];
-
-export type PublishFilesResponses = {
-  /**
-   * File publish results
-   */
-  200: {
-    results: Array<{
-      fileId: string;
-      versionId: string;
-      locale?: string;
-      branchId: string;
-      success: boolean;
-      error?: string;
-    }>;
-  };
-};
-
-export type PublishFilesResponse =
-  PublishFilesResponses[keyof PublishFilesResponses];
-
-export type DownloadFileData = {
+export type GetTranslationStatusData = {
   body?: never;
   headers?: {
     /**
@@ -1170,14 +663,13 @@ export type DownloadFileData = {
     fileId: string;
   };
   query?: {
-    branchId?: string;
     versionId?: string;
-    locale?: string;
+    branchId?: string;
   };
-  url: '/v2/project/files/download/{fileId}';
+  url: '/v2/project/translations/files/status/{fileId}';
 };
 
-export type DownloadFileErrors = {
+export type GetTranslationStatusErrors = {
   /**
    * Request error
    */
@@ -1195,13 +687,6 @@ export type DownloadFileErrors = {
    */
   404: ErrorResponse;
   /**
-   * Translation is still processing
-   */
-  425: {
-    status: 'processing';
-    message: string;
-  };
-  /**
    * Request error
    */
   429: ErrorResponse;
@@ -1211,104 +696,40 @@ export type DownloadFileErrors = {
   500: ErrorResponse;
 };
 
-export type DownloadFileError = DownloadFileErrors[keyof DownloadFileErrors];
+export type GetTranslationStatusError =
+  GetTranslationStatusErrors[keyof GetTranslationStatusErrors];
 
-export type DownloadFileResponses = {
+export type GetTranslationStatusResponses = {
   /**
-   * Downloaded file
+   * Translation status
    */
   200: {
-    data: string;
-  };
-};
-
-export type DownloadFileResponse =
-  DownloadFileResponses[keyof DownloadFileResponses];
-
-export type DownloadFilesData = {
-  body: Array<{
-    fileId: string;
-    branchId?: string;
-    versionId?: string;
-    locale?: string;
-    useLatestAvailableVersion?: boolean;
-  }>;
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?:
-      | '2025-01-01.v0'
-      | '2025-11-03.v1'
-      | '2026-02-18.v1'
-      | '2026-03-06.v1';
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/files/download';
-};
-
-export type DownloadFilesErrors = {
-  /**
-   * Request error
-   */
-  400: ErrorResponse;
-  /**
-   * Request error
-   */
-  401: ErrorResponse;
-  /**
-   * Request error
-   */
-  403: ErrorResponse;
-  /**
-   * Request error
-   */
-  413: ErrorResponse;
-  /**
-   * Request error
-   */
-  429: ErrorResponse;
-  /**
-   * Request error
-   */
-  500: ErrorResponse;
-};
-
-export type DownloadFilesError = DownloadFilesErrors[keyof DownloadFilesErrors];
-
-export type DownloadFilesResponses = {
-  /**
-   * Downloaded files
-   */
-  200: {
-    files: Array<{
+    translations: Array<{
+      locale: string;
+      completedAt: string | null;
+      approvedAt: string | null;
+      publishedAt: string | null;
+      createdAt: string | null;
+      updatedAt: string | null;
+    }>;
+    sourceFile: {
       id: string;
       branchId: string;
       fileId: string;
       versionId: string;
-      locale?: string;
-      fileName?: string;
-      data: string;
-      metadata: JsonObject;
+      fileName: string;
+      sourceLocale: string;
       fileFormat: FileFormat;
-    }>;
-    count: number;
-    pending?: Array<{
-      branchId: string;
-      fileId: string;
-      locale: string;
-      versionId: string;
-    }>;
+      dataFormat: string | null;
+      createdAt: string;
+      updatedAt: string;
+      locales: Array<string>;
+    };
   };
 };
 
-export type DownloadFilesResponse =
-  DownloadFilesResponses[keyof DownloadFilesResponses];
+export type GetTranslationStatusResponse =
+  GetTranslationStatusResponses[keyof GetTranslationStatusResponses];
 
 export type GetBranchInfoData = {
   body: {
@@ -1522,411 +943,16 @@ export type CreateTagResponses = {
 
 export type CreateTagResponse = CreateTagResponses[keyof CreateTagResponses];
 
-export type GetProjectInfoData = {
-  body?: never;
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?:
-      | '2025-01-01.v0'
-      | '2025-11-03.v1'
-      | '2026-02-18.v1'
-      | '2026-03-06.v1';
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path: {
-    projectId: string;
-  };
-  query?: never;
-  url: '/v2/project/info/{projectId}';
-};
-
-export type GetProjectInfoErrors = {
-  /**
-   * Request error
-   */
-  400: ErrorResponse;
-  /**
-   * Request error
-   */
-  401: ErrorResponse;
-  /**
-   * Request error
-   */
-  403: ErrorResponse;
-  /**
-   * Request error
-   */
-  404: ErrorResponse;
-  /**
-   * Request error
-   */
-  429: ErrorResponse;
-  /**
-   * Request error
-   */
-  500: ErrorResponse;
-};
-
-export type GetProjectInfoError =
-  GetProjectInfoErrors[keyof GetProjectInfoErrors];
-
-export type GetProjectInfoResponses = {
-  /**
-   * Project information
-   */
-  200: {
-    id: string;
-    name: string;
-    orgId: string;
-    defaultLocale: string | null;
-    currentLocales: Array<string>;
-    autoApprove: boolean;
-  };
-};
-
-export type GetProjectInfoResponse =
-  GetProjectInfoResponses[keyof GetProjectInfoResponses];
-
-export type UpdateProjectInfoData = {
+export type UploadAssetsData = {
   body: {
-    defaultLocale?: string;
-    cdnEnabled?: boolean;
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?:
-      | '2025-01-01.v0'
-      | '2025-11-03.v1'
-      | '2026-02-18.v1'
-      | '2026-03-06.v1';
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path: {
-    projectId: string;
-  };
-  query?: never;
-  url: '/v2/project/info/{projectId}';
-};
-
-export type UpdateProjectInfoErrors = {
-  /**
-   * Request error
-   */
-  400: ErrorResponse;
-  /**
-   * Request error
-   */
-  401: ErrorResponse;
-  /**
-   * Request error
-   */
-  403: ErrorResponse;
-  /**
-   * Request error
-   */
-  404: ErrorResponse;
-  /**
-   * Request error
-   */
-  413: ErrorResponse;
-  /**
-   * Request error
-   */
-  429: ErrorResponse;
-  /**
-   * Request error
-   */
-  500: ErrorResponse;
-};
-
-export type UpdateProjectInfoError =
-  UpdateProjectInfoErrors[keyof UpdateProjectInfoErrors];
-
-export type UpdateProjectInfoResponses = {
-  /**
-   * Project settings updated
-   */
-  200: {
-    success: true;
-  };
-};
-
-export type UpdateProjectInfoResponse =
-  UpdateProjectInfoResponses[keyof UpdateProjectInfoResponses];
-
-export type GetTranslationJobInfoData = {
-  body: {
-    jobIds: Array<string>;
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?:
-      | '2025-01-01.v0'
-      | '2025-11-03.v1'
-      | '2026-02-18.v1'
-      | '2026-03-06.v1';
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/jobs/info';
-};
-
-export type GetTranslationJobInfoErrors = {
-  /**
-   * Request error
-   */
-  400: ErrorResponse;
-  /**
-   * Request error
-   */
-  401: ErrorResponse;
-  /**
-   * Request error
-   */
-  403: ErrorResponse;
-  /**
-   * Request error
-   */
-  404: ErrorResponse;
-  /**
-   * Request error
-   */
-  413: ErrorResponse;
-  /**
-   * Request error
-   */
-  429: ErrorResponse;
-  /**
-   * Request error
-   */
-  500: ErrorResponse;
-};
-
-export type GetTranslationJobInfoError =
-  GetTranslationJobInfoErrors[keyof GetTranslationJobInfoErrors];
-
-export type GetTranslationJobInfoResponses = {
-  /**
-   * Translation job statuses
-   */
-  200: Array<
-    | {
-        status: 'queued';
-        jobId: string;
-      }
-    | {
-        status: 'processing';
-        jobId: string;
-      }
-    | {
-        status: 'failed';
-        jobId: string;
-        error: {
-          message: string | null;
-        };
-      }
-    | {
-        status: 'completed';
-        jobId: string;
-      }
-    | {
-        status: 'unknown';
-        jobId: string;
-      }
-  >;
-};
-
-export type GetTranslationJobInfoResponse =
-  GetTranslationJobInfoResponses[keyof GetTranslationJobInfoResponses];
-
-export type TranslateData = {
-  body: RuntimeTranslationRequest;
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?:
-      | '2025-01-01.v0'
-      | '2025-11-03.v1'
-      | '2026-02-18.v1'
-      | '2026-03-06.v1';
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/translate';
-};
-
-export type TranslateErrors = {
-  /**
-   * Request error
-   */
-  400: ErrorResponse;
-  /**
-   * Request error
-   */
-  401: ErrorResponse;
-  /**
-   * Request error
-   */
-  402: ErrorResponse;
-  /**
-   * Request error
-   */
-  403: ErrorResponse;
-  /**
-   * Request error
-   */
-  404: ErrorResponse;
-  /**
-   * Request error
-   */
-  413: ErrorResponse;
-  /**
-   * Request error
-   */
-  429: ErrorResponse;
-  /**
-   * Request error
-   */
-  500: ErrorResponse;
-};
-
-export type TranslateError = TranslateErrors[keyof TranslateErrors];
-
-export type TranslateResponses = {
-  /**
-   * All translations were served from cache
-   */
-  200: RuntimeTranslationResponse;
-  /**
-   * Translations completed
-   */
-  201: RuntimeTranslationResponse;
-};
-
-export type TranslateResponse = TranslateResponses[keyof TranslateResponses];
-
-export type GetFileInfoData = {
-  body: {
-    sourceFiles?: Array<{
-      fileId: string;
-      versionId: string;
-      branchId: string;
-    }>;
-    translatedFiles?: Array<{
-      fileId: string;
-      versionId: string;
-      branchId: string;
-      locale: string;
-    }>;
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?:
-      | '2025-01-01.v0'
-      | '2025-11-03.v1'
-      | '2026-02-18.v1'
-      | '2026-03-06.v1';
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/project/files/info';
-};
-
-export type GetFileInfoErrors = {
-  /**
-   * Request error
-   */
-  400: ErrorResponse;
-  /**
-   * Request error
-   */
-  401: ErrorResponse;
-  /**
-   * Request error
-   */
-  403: ErrorResponse;
-  /**
-   * Request error
-   */
-  413: ErrorResponse;
-  /**
-   * Request error
-   */
-  429: ErrorResponse;
-  /**
-   * Request error
-   */
-  500: ErrorResponse;
-};
-
-export type GetFileInfoError = GetFileInfoErrors[keyof GetFileInfoErrors];
-
-export type GetFileInfoResponses = {
-  /**
-   * File information
-   */
-  200: {
-    sourceFiles: Array<{
-      branchId: string;
-      fileId: string;
-      versionId: string;
+    assets: Array<{
+      assetType: 'FONT';
+      content: string;
       fileName: string;
-      fileFormat: FileFormat;
-      dataFormat: string | null;
-      createdAt: string;
-      updatedAt: string;
-      publishedAt: string | null;
-      locales: Array<string>;
-      sourceLocale: string;
-    }>;
-    translatedFiles: Array<{
-      branchId: string;
-      fileId: string;
-      versionId: string;
-      fileFormat: FileFormat;
-      dataFormat: string | null;
-      createdAt: string;
-      updatedAt: string;
-      approvedAt: string | null;
-      publishedAt: string | null;
-      completedAt: string | null;
-      locale: string;
+      family?: string;
+      style?: string;
     }>;
   };
-};
-
-export type GetFileInfoResponse =
-  GetFileInfoResponses[keyof GetFileInfoResponses];
-
-export type GetTranslationStatusData = {
-  body?: never;
   headers?: {
     /**
      * API contract version. Defaults to the oldest supported version.
@@ -1941,17 +967,12 @@ export type GetTranslationStatusData = {
      */
     'gt-project-id'?: string;
   };
-  path: {
-    fileId: string;
-  };
-  query?: {
-    versionId?: string;
-    branchId?: string;
-  };
-  url: '/v2/project/translations/files/status/{fileId}';
+  path?: never;
+  query?: never;
+  url: '/v2/project/assets';
 };
 
-export type GetTranslationStatusErrors = {
+export type UploadAssetsErrors = {
   /**
    * Request error
    */
@@ -1971,6 +992,10 @@ export type GetTranslationStatusErrors = {
   /**
    * Request error
    */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
   429: ErrorResponse;
   /**
    * Request error
@@ -1978,40 +1003,99 @@ export type GetTranslationStatusErrors = {
   500: ErrorResponse;
 };
 
-export type GetTranslationStatusError =
-  GetTranslationStatusErrors[keyof GetTranslationStatusErrors];
+export type UploadAssetsError = UploadAssetsErrors[keyof UploadAssetsErrors];
 
-export type GetTranslationStatusResponses = {
+export type UploadAssetsResponses = {
   /**
-   * Translation status
+   * Uploaded assets
    */
-  200: {
-    translations: Array<{
-      locale: string;
-      completedAt: string | null;
-      approvedAt: string | null;
-      publishedAt: string | null;
-      createdAt: string | null;
-      updatedAt: string | null;
-    }>;
-    sourceFile: {
+  201: {
+    assets: Array<{
       id: string;
-      branchId: string;
-      fileId: string;
-      versionId: string;
+      assetKey: string;
       fileName: string;
-      sourceLocale: string;
-      fileFormat: FileFormat;
-      dataFormat: string | null;
-      createdAt: string;
-      updatedAt: string;
-      locales: Array<string>;
-    };
+    }>;
+    count: number;
   };
 };
 
-export type GetTranslationStatusResponse =
-  GetTranslationStatusResponses[keyof GetTranslationStatusResponses];
+export type UploadAssetsResponse =
+  UploadAssetsResponses[keyof UploadAssetsResponses];
+
+export type SubmitUserEditDiffsData = {
+  body: {
+    projectId?: string;
+    diffs: Array<{
+      locale: string;
+      diff: string;
+      branchId?: string;
+      versionId: string;
+      fileId: string;
+      localContent: string;
+    }>;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?:
+      | '2025-01-01.v0'
+      | '2025-11-03.v1'
+      | '2026-02-18.v1'
+      | '2026-03-06.v1';
+    /**
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     */
+    'gt-project-id'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v2/project/files/diffs';
+};
+
+export type SubmitUserEditDiffsErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type SubmitUserEditDiffsError =
+  SubmitUserEditDiffsErrors[keyof SubmitUserEditDiffsErrors];
+
+export type SubmitUserEditDiffsResponses = {
+  /**
+   * Processed user translation edits
+   */
+  200: {
+    filesProcessed: number;
+    entriesReceived: number;
+    message: string;
+  };
+};
+
+export type SubmitUserEditDiffsResponse =
+  SubmitUserEditDiffsResponses[keyof SubmitUserEditDiffsResponses];
 
 export type ProcessFileMovesData = {
   body: {
@@ -2172,6 +1256,789 @@ export type GetOrphanedFilesResponses = {
 
 export type GetOrphanedFilesResponse =
   GetOrphanedFilesResponses[keyof GetOrphanedFilesResponses];
+
+export type GetFileInfoData = {
+  body: {
+    sourceFiles?: Array<{
+      fileId: string;
+      versionId: string;
+      branchId: string;
+    }>;
+    translatedFiles?: Array<{
+      fileId: string;
+      versionId: string;
+      branchId: string;
+      locale: string;
+    }>;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?:
+      | '2025-01-01.v0'
+      | '2025-11-03.v1'
+      | '2026-02-18.v1'
+      | '2026-03-06.v1';
+    /**
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     */
+    'gt-project-id'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v2/project/files/info';
+};
+
+export type GetFileInfoErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type GetFileInfoError = GetFileInfoErrors[keyof GetFileInfoErrors];
+
+export type GetFileInfoResponses = {
+  /**
+   * File information
+   */
+  200: {
+    sourceFiles: Array<{
+      branchId: string;
+      fileId: string;
+      versionId: string;
+      fileName: string;
+      fileFormat: FileFormat;
+      dataFormat: string | null;
+      createdAt: string;
+      updatedAt: string;
+      publishedAt: string | null;
+      locales: Array<string>;
+      sourceLocale: string;
+    }>;
+    translatedFiles: Array<{
+      branchId: string;
+      fileId: string;
+      versionId: string;
+      fileFormat: FileFormat;
+      dataFormat: string | null;
+      createdAt: string;
+      updatedAt: string;
+      approvedAt: string | null;
+      publishedAt: string | null;
+      completedAt: string | null;
+      locale: string;
+    }>;
+  };
+};
+
+export type GetFileInfoResponse =
+  GetFileInfoResponses[keyof GetFileInfoResponses];
+
+export type DownloadFilesData = {
+  body: Array<{
+    fileId: string;
+    branchId?: string;
+    versionId?: string;
+    locale?: string;
+    useLatestAvailableVersion?: boolean;
+  }>;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?:
+      | '2025-01-01.v0'
+      | '2025-11-03.v1'
+      | '2026-02-18.v1'
+      | '2026-03-06.v1';
+    /**
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     */
+    'gt-project-id'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v2/project/files/download';
+};
+
+export type DownloadFilesErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type DownloadFilesError = DownloadFilesErrors[keyof DownloadFilesErrors];
+
+export type DownloadFilesResponses = {
+  /**
+   * Downloaded files
+   */
+  200: {
+    files: Array<{
+      id: string;
+      branchId: string;
+      fileId: string;
+      versionId: string;
+      locale?: string;
+      fileName?: string;
+      data: string;
+      metadata: JsonObject;
+      fileFormat: FileFormat;
+    }>;
+    count: number;
+    pending?: Array<{
+      branchId: string;
+      fileId: string;
+      locale: string;
+      versionId: string;
+    }>;
+  };
+};
+
+export type DownloadFilesResponse =
+  DownloadFilesResponses[keyof DownloadFilesResponses];
+
+export type DownloadFileData = {
+  body?: never;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?:
+      | '2025-01-01.v0'
+      | '2025-11-03.v1'
+      | '2026-02-18.v1'
+      | '2026-03-06.v1';
+    /**
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     */
+    'gt-project-id'?: string;
+  };
+  path: {
+    fileId: string;
+  };
+  query?: {
+    branchId?: string;
+    versionId?: string;
+    locale?: string;
+  };
+  url: '/v2/project/files/download/{fileId}';
+};
+
+export type DownloadFileErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Translation is still processing
+   */
+  425: {
+    status: 'processing';
+    message: string;
+  };
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type DownloadFileError = DownloadFileErrors[keyof DownloadFileErrors];
+
+export type DownloadFileResponses = {
+  /**
+   * Downloaded file
+   */
+  200: {
+    data: string;
+  };
+};
+
+export type DownloadFileResponse =
+  DownloadFileResponses[keyof DownloadFileResponses];
+
+export type GetTranslationJobInfoData = {
+  body: {
+    jobIds: Array<string>;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?:
+      | '2025-01-01.v0'
+      | '2025-11-03.v1'
+      | '2026-02-18.v1'
+      | '2026-03-06.v1';
+    /**
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     */
+    'gt-project-id'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v2/project/jobs/info';
+};
+
+export type GetTranslationJobInfoErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type GetTranslationJobInfoError =
+  GetTranslationJobInfoErrors[keyof GetTranslationJobInfoErrors];
+
+export type GetTranslationJobInfoResponses = {
+  /**
+   * Translation job statuses
+   */
+  200: Array<
+    | {
+        status: 'queued';
+        jobId: string;
+      }
+    | {
+        status: 'processing';
+        jobId: string;
+      }
+    | {
+        status: 'failed';
+        jobId: string;
+        error: {
+          message: string | null;
+        };
+      }
+    | {
+        status: 'completed';
+        jobId: string;
+      }
+    | {
+        status: 'unknown';
+        jobId: string;
+      }
+  >;
+};
+
+export type GetTranslationJobInfoResponse =
+  GetTranslationJobInfoResponses[keyof GetTranslationJobInfoResponses];
+
+export type GenerateProjectContextData = {
+  body: {
+    files: Array<{
+      branchId?: string;
+      fileId: string;
+      versionId: string;
+    }>;
+    locales?: Array<string>;
+    force?: boolean;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?:
+      | '2025-01-01.v0'
+      | '2025-11-03.v1'
+      | '2026-02-18.v1'
+      | '2026-03-06.v1';
+    /**
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     */
+    'gt-project-id'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v2/project/setup/generate';
+};
+
+export type GenerateProjectContextErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type GenerateProjectContextError =
+  GenerateProjectContextErrors[keyof GenerateProjectContextErrors];
+
+export type GenerateProjectContextResponses = {
+  /**
+   * Context generation status
+   */
+  200:
+    | {
+        status: 'completed';
+      }
+    | {
+        setupJobId: string;
+        status: 'queued';
+      };
+};
+
+export type GenerateProjectContextResponse =
+  GenerateProjectContextResponses[keyof GenerateProjectContextResponses];
+
+export type PublishFilesData = {
+  body: {
+    files: Array<{
+      fileId: string;
+      versionId: string;
+      branchId?: string;
+      publish: boolean;
+    }>;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?:
+      | '2025-01-01.v0'
+      | '2025-11-03.v1'
+      | '2026-02-18.v1'
+      | '2026-03-06.v1';
+    /**
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     */
+    'gt-project-id'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v2/project/files/publish';
+};
+
+export type PublishFilesErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type PublishFilesError = PublishFilesErrors[keyof PublishFilesErrors];
+
+export type PublishFilesResponses = {
+  /**
+   * File publish results
+   */
+  200: {
+    results: Array<{
+      fileId: string;
+      versionId: string;
+      locale?: string;
+      branchId: string;
+      success: boolean;
+      error?: string;
+    }>;
+  };
+};
+
+export type PublishFilesResponse =
+  PublishFilesResponses[keyof PublishFilesResponses];
+
+export type UploadSourceFilesData = {
+  body: {
+    data: Array<{
+      source: {
+        content: string;
+        fileName: string;
+        fileFormat:
+          | 'GTJSON'
+          | 'MDX'
+          | 'JSON'
+          | 'YAML'
+          | 'MD'
+          | 'TS'
+          | 'JS'
+          | 'HTML'
+          | 'TXT'
+          | 'PO'
+          | 'POT'
+          | 'TWILIO_CONTENT_JSON'
+          | 'LOTTIE'
+          | 'SVG'
+          | 'XCSTRINGS'
+          | 'DOT_STRINGS'
+          | 'DOT_STRINGSDICT'
+          | 'ANDROID_STRINGS';
+        dataFormat?: string;
+        locale: string;
+        fileId?: string;
+        versionId?: string;
+        branchId?: string;
+        checkedOutBranchId?: string;
+        incomingBranchId?: string;
+        formatMetadata?: {
+          [key: string]: unknown;
+        };
+      };
+    }>;
+    sourceLocale?: string;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?:
+      | '2025-01-01.v0'
+      | '2025-11-03.v1'
+      | '2026-02-18.v1'
+      | '2026-03-06.v1';
+    /**
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     */
+    'gt-project-id'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v2/project/files/upload-files';
+};
+
+export type UploadSourceFilesErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+  /**
+   * Request error
+   */
+  503: ErrorResponse;
+};
+
+export type UploadSourceFilesError =
+  UploadSourceFilesErrors[keyof UploadSourceFilesErrors];
+
+export type UploadSourceFilesResponses = {
+  /**
+   * Uploaded source files
+   */
+  201: {
+    uploadedFiles: Array<{
+      branchId?: string;
+      fileId: string;
+      versionId: string;
+      fileName: string;
+      fileFormat: FileFormat;
+      dataFormat?: string;
+      locale?: string;
+    }>;
+    count: number;
+    message: string;
+  };
+};
+
+export type UploadSourceFilesResponse =
+  UploadSourceFilesResponses[keyof UploadSourceFilesResponses];
+
+export type EnqueueFileTranslationsData = {
+  body: {
+    files: Array<{
+      branchId?: string;
+      fileId: string;
+      versionId: string;
+      fileName?: string;
+      transformFormat?:
+        | 'GTJSON'
+        | 'MDX'
+        | 'JSON'
+        | 'YAML'
+        | 'MD'
+        | 'TS'
+        | 'JS'
+        | 'HTML'
+        | 'TXT'
+        | 'PO'
+        | 'POT'
+        | 'TWILIO_CONTENT_JSON'
+        | 'LOTTIE'
+        | 'SVG'
+        | 'XCSTRINGS'
+        | 'DOT_STRINGS'
+        | 'DOT_STRINGSDICT'
+        | 'ANDROID_STRINGS';
+    }>;
+    targetLocales?: Array<string>;
+    sourceLocale?: string;
+    force?: boolean;
+    modelProvider?: ModelProvider;
+    publish?: boolean;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?:
+      | '2025-01-01.v0'
+      | '2025-11-03.v1'
+      | '2026-02-18.v1'
+      | '2026-03-06.v1';
+    /**
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     */
+    'gt-project-id'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v2/project/translations/enqueue';
+};
+
+export type EnqueueFileTranslationsErrors = {
+  /**
+   * Invalid request or missing source files
+   */
+  400:
+    | ErrorResponse
+    | {
+        error: string;
+        missing: Array<{
+          fileId: string;
+          versionId: string;
+        }>;
+        count: number;
+      };
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  402: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type EnqueueFileTranslationsError =
+  EnqueueFileTranslationsErrors[keyof EnqueueFileTranslationsErrors];
+
+export type EnqueueFileTranslationsResponses = {
+  /**
+   * Enqueued translations. Shape depends on gt-api-version (legacy before 2025-11-03.v1).
+   */
+  200:
+    | {
+        jobData: {
+          [key: string]: {
+            kind?: 'file_translation';
+            sourceFileId: string;
+            fileId: string;
+            versionId: string;
+            branchId: string;
+            targetLocale: string;
+            projectId: string;
+            orgId: string;
+            force: boolean;
+            outputFileFormat?: FileFormat;
+            modelProvider?: ModelProvider;
+            glossaryRetranslate?: boolean;
+            changedGlossaryTerms?: Array<string>;
+            onComplete?: {
+              kind: 'google_drive_apply';
+              userId?: string;
+            };
+          };
+        };
+        locales: Array<string>;
+        message: string;
+      }
+    | {
+        translations: Array<{
+          locale: string;
+          metadata?: unknown;
+          fileId: string;
+          fileName: string;
+          versionId: string;
+          branchId: string;
+          id: string;
+          isReady: boolean;
+          downloadUrl: string;
+        }>;
+        data: {
+          [key: string]: {
+            fileName: string;
+            versionId: string;
+          };
+        };
+        locales: Array<string>;
+        message: string;
+      };
+};
+
+export type EnqueueFileTranslationsResponse =
+  EnqueueFileTranslationsResponses[keyof EnqueueFileTranslationsResponses];
 
 export type CreateCliWizardSessionData = {
   body: CreateCliWizardSessionRequest;
