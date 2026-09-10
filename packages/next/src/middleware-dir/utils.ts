@@ -41,7 +41,11 @@ function applyBasePath(responseUrl: URL, originalUrl: NextURL) {
     return;
   }
   // Middleware targets are app-relative, even when a route repeats the base path.
-  responseUrl.pathname = `${basePath}${responseUrl.pathname}`;
+  // Preserve the request's slash style when targeting the app root.
+  responseUrl.pathname =
+    responseUrl.pathname === '/'
+      ? applyTrailingSlash(new URL(originalUrl).pathname, basePath)
+      : `${basePath}${responseUrl.pathname}`;
 }
 
 export function getResponse({
