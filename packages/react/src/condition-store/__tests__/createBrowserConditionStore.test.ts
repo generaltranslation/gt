@@ -49,6 +49,26 @@ describe('createOrUpdateBrowserConditionStore', () => {
     mockCookieNames.enableI18n = 'generaltranslation.enable-i18n';
   });
 
+  it('uses the latest reload callback after a server update', () => {
+    const firstReload = vi.fn();
+    const nextReload = vi.fn();
+    const conditionStore = createOrUpdateBrowserConditionStore({
+      locale: 'fr',
+      _reload: firstReload,
+    });
+    expect(
+      createOrUpdateBrowserConditionStore({ locale: 'de', _reload: nextReload })
+    ).toBe(conditionStore);
+    conditionStore.reload();
+    expect(nextReload).toHaveBeenCalledOnce();
+    expect(firstReload).not.toHaveBeenCalled();
+
+    // Omitting a callback keeps the existing custom reload behavior.
+    createOrUpdateBrowserConditionStore({ locale: 'de' });
+    conditionStore.reload();
+    expect(nextReload).toHaveBeenCalledTimes(2);
+  });
+
   it('uses the enableI18n prop before the persisted cookie', () => {
     mockCookieValues.set('generaltranslation.enable-i18n', 'true');
 

@@ -62,28 +62,22 @@ export function Client_GTProvider(props: SharedGTProviderProps) {
       const localeRoutingEnabled =
         getCookieValue(document.cookie, localeRoutingEnabledCookieName) ===
         'true';
-      const defaultLocale = i18nConfig.getDefaultLocale();
-      const locales = i18nConfig.getLocales();
       const currentPathname = globalThis.location.pathname;
       const localeRoutingApplies =
         localeRoutingEnabled &&
         pathnameMatchesRegex(currentPathname, pathRegex);
-      if (localeRoutingApplies && locale === defaultLocale) {
-        const currentPathLocale = resolvePathLocale(
-          currentPathname,
-          i18nConfig,
-          defaultLocale,
-          locales
-        );
-        if (currentPathLocale !== defaultLocale) {
-          reloadBrowserPage();
-          return;
-        }
+      if (
+        localeRoutingApplies &&
+        i18nConfig.resolveAliasLocale(locale) !==
+          i18nConfig.resolveAliasLocale(props.locale)
+      ) {
+        reloadBrowserPage();
+        return;
       }
 
       refreshServerComponents();
     },
-    [refreshServerComponents, reloadBrowserPage]
+    [props.locale, refreshServerComponents, reloadBrowserPage]
   );
   usePathCheck({
     reloadBrowserPage,

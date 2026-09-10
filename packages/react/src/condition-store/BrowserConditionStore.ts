@@ -129,6 +129,10 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
     });
   };
 
+  updateReload = (reload: ReloadType): void => {
+    this.customReload = reload;
+  };
+
   /**
    * Condition store updates come from either the server or the client.
    * Trigger this reload when we update a value in the condition store from

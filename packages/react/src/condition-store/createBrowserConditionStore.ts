@@ -41,6 +41,7 @@ export function createOrUpdateBrowserConditionStore(
   if (isBrowserConditionStoreInitialized()) {
     // This represents an update from server
     const conditionStore = getBrowserConditionStore();
+    if (config._reload) conditionStore.updateReload(config._reload);
     conditionStore.updateLocale(locale);
     if (region !== undefined) conditionStore.updateRegion(region);
     conditionStore.updateEnableI18n(enableI18n);
