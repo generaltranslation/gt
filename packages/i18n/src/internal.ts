@@ -1,3 +1,6 @@
+import type { StringFormat } from '@generaltranslation/format/types';
+import type { NormalizedLookupOptions } from './translation-functions/types/options';
+
 export { getGT, getGTInternal } from './translation-functions/internal/getGT';
 export {
   getMessages,
@@ -25,6 +28,7 @@ export type { LocaleCandidates } from './i18n-config/I18nConfig';
 export { getI18nCache, setI18nCache } from './i18n-cache/singleton-operations';
 export { getVersionId } from './helpers/versionId';
 export { interpolateMessage } from './translation-functions/utils/interpolation/interpolateMessage';
+export type InterpolationOptions = NormalizedLookupOptions<StringFormat>;
 export { isEncodedTranslationOptions } from './translation-functions/utils/isEncodedTranslationOptions';
 export { extractVariables } from './utils/extractVariables';
 export {
