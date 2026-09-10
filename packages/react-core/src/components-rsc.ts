@@ -37,24 +37,8 @@ export { t } from './functions/translation/t';
 // ===== Helpers ===== //
 export { getFormatLocales } from './pure';
 export { getPluralBranch } from './utils/plurals/getPluralBranch';
-export { getShouldTranslate } from './hooks/utils/getShouldTranslate';
-export { prepareT } from './utils/translation/prepareT.shared';
-export { createRenderVariable } from './utils/rendering/createRenderVariable';
 export { createRenderPipeline } from './utils/rendering/createRenderPipeline';
-export type {
-  RenderDefaultChildrenArgs,
-  RenderPipeline,
-  RenderPreparedTParams,
-  RenderTranslatedChildrenArgs,
-} from './utils/rendering/createRenderPipeline';
-// Pre-instantiated RSC render pipeline: bound to the RSC renderVariable, so
-// consumers never thread a variable renderer through rendering calls.
-export {
-  renderDefaultChildren,
-  renderPreparedT,
-  renderTranslatedChildren,
-  renderVariable,
-} from './utils/rendering/renderPipeline.rsc';
+export type { RenderPipeline } from './utils/rendering/createRenderPipeline';
 
 // ===== Internal ===== //
 export { internalInitializeGTSRA } from './setup/initializeGTSRA';
