@@ -27,6 +27,13 @@ vi.mock('gt-i18n/internal', async (importOriginal) => ({
   getI18nConfig: mockGetI18nConfig,
 }));
 
+vi.mock('@generaltranslation/react-core/pure', async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import('@generaltranslation/react-core/pure')
+  >()),
+  getI18nConfig: mockGetI18nConfig,
+}));
+
 vi.mock('gt-react', () => ({
   GTProvider: mockGTProvider,
   LocaleSelector: () => null,

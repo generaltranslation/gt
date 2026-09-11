@@ -13,6 +13,7 @@ export { LocaleSelector as Client_LocaleSelector } from 'gt-react';
 export { RegionSelector as Client_RegionSelector } from 'gt-react';
 
 import { getCookieValue, getI18nConfig, I18nConfig } from 'gt-i18n/internal';
+import { getI18nConfig as getReactI18nConfig } from '@generaltranslation/react-core/pure';
 import { defaultResetLocaleCookieName } from 'gt-i18n/internal/cookies';
 import { GTProvider, type SharedGTProviderProps } from 'gt-react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -21,7 +22,7 @@ import { initializeGTClient } from '../setup/initGT.client';
 import {
   defaultLocaleRoutingEnabledCookieName,
   defaultReferrerLocaleCookieName,
-  defaultRoutingFetchLocaleCookieName,
+  getRoutingFetchLocaleCookieName,
 } from './cookies';
 import { compilePathRegex, pathnameMatchesRegex } from './pathRegex';
 
@@ -54,7 +55,11 @@ function isLocaleRoutingEnabled(): boolean {
 }
 
 const localeRouting = {
-  cookieName: defaultRoutingFetchLocaleCookieName,
+  get cookieName() {
+    return getRoutingFetchLocaleCookieName(
+      getReactI18nConfig().getLocaleCookieName()
+    );
+  },
   isEnabled: isLocaleRoutingEnabled,
 };
 
