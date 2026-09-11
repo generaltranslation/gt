@@ -775,6 +775,8 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
       ...(mergedConfig.pathRegex !== undefined && {
         _GENERALTRANSLATION_PATH_REGEX: mergedConfig.pathRegex,
       }),
+      _GENERALTRANSLATION_LOCALE_ROUTING_ENABLED_COOKIE_NAME:
+        mergedConfig.headersAndCookies?.localeRoutingEnabledCookieName,
     },
     ...(turboPackEnabled &&
       !experimentalTurbopack && {

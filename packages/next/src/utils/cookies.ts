@@ -4,6 +4,10 @@
 export const defaultLocaleRoutingEnabledCookieName =
   'generaltranslation.locale-routing-enabled';
 
+/** Locale requested for the next routed navigation, before it is rendered. */
+export const defaultRoutingFetchLocaleCookieName =
+  'generaltranslation.routing-fetch-locale';
+
 /**
  * Cookie name for tracking the referrer locale
  */

@@ -13,6 +13,7 @@ import {
 } from './createPathMatcher';
 import { getSharedPath } from './matchPath';
 import { applyTrailingSlash, stripTrailingSlashes } from './pathname';
+import { defaultRoutingFetchLocaleCookieName } from '../utils/cookies';
 
 export {
   createPathMatcher,
@@ -270,7 +271,13 @@ export function getLocaleFromRequest(
   }
 
   // Check cookie locale
-  const cookieLocale = req.cookies.get(localeCookieName);
+  const routingCookieLocale = localeRouting
+    ? req.cookies.get(defaultRoutingFetchLocaleCookieName)
+    : undefined;
+  const cookieLocale =
+    routingCookieLocale?.value && gt.isValidLocale(routingCookieLocale.value)
+      ? routingCookieLocale
+      : req.cookies.get(localeCookieName);
   if (cookieLocale?.value && gt.isValidLocale(cookieLocale?.value)) {
     const resetCookie = req.cookies.get(resetLocaleCookieName);
     if (resetCookie?.value) {
