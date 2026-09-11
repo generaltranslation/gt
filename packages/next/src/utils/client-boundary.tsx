@@ -127,10 +127,12 @@ function usePathCheck({
         locales
       );
 
+      // Equivalent spellings (en-us/en-US) must not reload on every mount.
       if (
         currentPathLocale &&
         locales.includes(currentPathLocale) &&
-        currentPathLocale !== locale
+        i18nConfig.standardizeLocale(currentPathLocale) !==
+          i18nConfig.standardizeLocale(locale)
       ) {
         // clear cookie (avoids infinite loop when there is no middleware)
         document.cookie = `${localeRoutingEnabledCookieName}=;path=/`;

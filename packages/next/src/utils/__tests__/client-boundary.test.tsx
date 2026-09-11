@@ -71,6 +71,82 @@ describe('Client_GTProvider', () => {
     globalThis.IS_REACT_ACT_ENVIRONMENT = false;
   });
 
+  it.each([false, true])(
+    'does not reload equivalent default spellings after remounts (GT services: %s)',
+    async (gtServicesEnabled) => {
+      process.env._GENERALTRANSLATION_PATH_REGEX = '.*';
+      mockPathname.mockReturnValue('/pricing');
+      const { I18nConfig } = await import('gt-i18n/internal');
+      const config = new I18nConfig({
+        defaultLocale: 'en-us',
+        locales: gtServicesEnabled ? ['en-US', 'fr'] : ['en-us', 'fr'],
+        projectId: gtServicesEnabled ? 'locale-comparison-test' : undefined,
+        runtimeUrl: gtServicesEnabled ? undefined : null,
+        cacheUrl: gtServicesEnabled ? undefined : null,
+      });
+      expect(config.isGTServicesEnabled()).toBe(gtServicesEnabled);
+      mockGetI18nConfig.mockReturnValue(config);
+      const { Client_GTProvider } = await import('../client-boundary');
+
+      for (let mount = 0; mount < 3; mount++) {
+        // Middleware restores this cookie on every document request.
+        document.cookie =
+          'generaltranslation.locale-routing-enabled=true;path=/';
+        const root = createRoot(document.createElement('div'));
+        try {
+          await act(async () => {
+            root.render(
+              <Client_GTProvider
+                dictionaries={{}}
+                locale='en-US'
+                translations={{}}
+              >
+                content
+              </Client_GTProvider>
+            );
+          });
+        } finally {
+          await act(async () => root.unmount());
+        }
+      }
+
+      expect(mockReloadBrowserPage).not.toHaveBeenCalled();
+      expect(mockRefreshServerComponents).not.toHaveBeenCalled();
+      expect(document.cookie).toContain(
+        'generaltranslation.locale-routing-enabled=true'
+      );
+    }
+  );
+
+  it('still reloads when the path and provider have different supported regional locales', async () => {
+    process.env._GENERALTRANSLATION_PATH_REGEX = '.*';
+    mockPathname.mockReturnValue('/pricing');
+    const { I18nConfig } = await import('gt-i18n/internal');
+    mockGetI18nConfig.mockReturnValue(
+      new I18nConfig({
+        defaultLocale: 'en',
+        locales: ['en', 'en-GB'],
+        runtimeUrl: null,
+        cacheUrl: null,
+      })
+    );
+    const { Client_GTProvider } = await import('../client-boundary');
+    const root = createRoot(document.createElement('div'));
+    try {
+      await act(async () => {
+        root.render(
+          <Client_GTProvider dictionaries={{}} locale='en-GB' translations={{}}>
+            content
+          </Client_GTProvider>
+        );
+      });
+      expect(mockReloadBrowserPage).toHaveBeenCalledOnce();
+      expect(mockRefreshServerComponents).not.toHaveBeenCalled();
+    } finally {
+      await act(async () => root.unmount());
+    }
+  });
+
   it('does not refresh excluded paths when the routing cookie is stale', async () => {
     const { Client_GTProvider } = await import('../client-boundary');
     const container = document.createElement('div');

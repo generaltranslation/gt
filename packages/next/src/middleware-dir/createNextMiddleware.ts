@@ -1,5 +1,5 @@
 import { applyTrailingSlash } from './pathname';
-import { isSameDialect, standardizeLocale } from '@generaltranslation/format';
+import { standardizeLocale } from '@generaltranslation/format';
 import { GTRuntime } from 'generaltranslation/runtime';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { createUnsupportedLocalesWarning } from '../errors/middleware';
@@ -101,8 +101,12 @@ export function createNextMiddleware({
     process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED === 'true';
 
   // i18n config
-  const defaultLocale: string =
+  const configuredDefaultLocale: string =
     envParams?.defaultLocale || libraryDefaultLocale;
+  // Match the normalization used by localized-path configuration keys.
+  const defaultLocale = gtServicesEnabled
+    ? standardizeLocale(configuredDefaultLocale)
+    : configuredDefaultLocale;
   const locales: string[] = envParams?.locales || [defaultLocale];
 
   // add canonical locales
@@ -117,6 +121,15 @@ export function createNextMiddleware({
     )
     .map((locale) => locale.code);
   locales.push(...canonicalLocales);
+
+  // Resolve default identity just as request locales are resolved. A supported
+  // regional locale remains distinct, while equivalent spellings and aliases
+  // still identify the configured default, including without GT services.
+  const determinedDefaultLocale =
+    gt.determineLocale([configuredDefaultLocale], locales) || defaultLocale;
+  const resolvedDefaultLocale = gtServicesEnabled
+    ? standardizeLocale(determinedDefaultLocale)
+    : determinedDefaultLocale;
 
   // cookies and header names
   const headersAndCookies = envParams?.headersAndCookies || {};
@@ -257,7 +270,7 @@ export function createNextMiddleware({
       clearResetCookie,
     } = getLocaleFromRequest(
       req,
-      defaultLocale,
+      resolvedDefaultLocale,
       locales,
       localeRouting,
       gtServicesEnabled,
@@ -317,7 +330,7 @@ export function createNextMiddleware({
 
       // Return early for a locale route that does not exist
       const localeRoutePathMap = localeRoutePathMaps.get(userLocale);
-      if (userLocale !== defaultLocale && localeRoutePathMap) {
+      if (userLocale !== resolvedDefaultLocale && localeRoutePathMap) {
         // Resolve the shared page path without a locale prefix (e.g. /blog/hello).
         // Strip the URL's locale, which may differ from the newly selected locale.
         const sharedPagePath = sharedPathMatch
@@ -357,8 +370,8 @@ export function createNextMiddleware({
 
           // The default locale is terminal, even if the preference/reset cookie
           // still requests an unavailable locale on the redirected request.
-          userLocale = defaultLocale;
-          responseConfig.userLocale = defaultLocale;
+          userLocale = resolvedDefaultLocale;
+          responseConfig.userLocale = resolvedDefaultLocale;
           const fallbackUrl = new URL(req.nextUrl);
           fallbackUrl.pathname = publicFallbackPath;
           if (fallbackUrl.pathname !== pathname) {
@@ -426,7 +439,7 @@ export function createNextMiddleware({
       if (localizedPathWithParameters === undefined) {
         // --- CASE: remove defaultLocale prefix --- //
 
-        if (!prefixDefaultLocale && isSameDialect(userLocale, defaultLocale)) {
+        if (!prefixDefaultLocale && userLocale === resolvedDefaultLocale) {
           if (pathnameLocale) {
             // REDIRECT CASE: used setLocale (/fr/customers -> /customers) (/en/customers -> /customers)
             if (clearResetCookie) {
@@ -470,7 +483,7 @@ export function createNextMiddleware({
 
       // ----- CASE: localized path exists ----- //
 
-      if (!prefixDefaultLocale && isSameDialect(userLocale, defaultLocale)) {
+      if (!prefixDefaultLocale && userLocale === resolvedDefaultLocale) {
         // --- CASE: remove defaultLocale prefix --- //
 
         if (pathnameLocale) {
