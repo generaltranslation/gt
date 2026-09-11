@@ -53,6 +53,8 @@ export {
   useSetEnableI18n,
 } from '@generaltranslation/react-core/hooks';
 
+// TODO: Move ReactI18nCache and its get/set helpers to a gt-react internal
+// subpath, then remove their root exports from every runtime entrypoint.
 // ===== Functions ===== //
 export {
   msg,

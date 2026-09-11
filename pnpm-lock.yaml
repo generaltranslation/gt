@@ -1304,6 +1304,9 @@ importers:
 
   packages/react:
     dependencies:
+      '@generaltranslation/format':
+        specifier: workspace:*
+        version: link:../format
       '@generaltranslation/react-core':
         specifier: workspace:*
         version: link:../react-core

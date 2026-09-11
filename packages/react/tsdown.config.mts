@@ -25,6 +25,16 @@ const contextDeps = {
   alwaysBundle: [/^@generaltranslation\/format\//, /^generaltranslation\//],
 };
 
+const productionClientDeps = {
+  neverBundle: [
+    ...deps.neverBundle,
+    /^@generaltranslation\/format(?:$|\/)/,
+    /^generaltranslation(?:$|\/)/,
+    /^gt-i18n(?:$|\/)/,
+  ],
+  alwaysBundle: [/^@generaltranslation\/react-core\//],
+};
+
 const entries = [
   'src/index.rsc.ts',
   'src/index.client.ts',
@@ -38,8 +48,28 @@ const entries = [
 // so they are deleted after each build.
 const typesOnlyEntry = 'src/index.types.ts';
 
-export default defineConfig(
-  entries.flatMap((entry, index) => {
+const productionConfigs = createTsdownConfig(
+  ['src/index.client.ts'],
+  productionClientDeps
+).map((config, index) => ({
+  ...config,
+  entry: { 'index.client.prod': 'src/index.client.ts' },
+  clean: false,
+  deps: { onlyBundle: false, ...productionClientDeps },
+  define: { 'process.env.NODE_ENV': JSON.stringify('production') },
+  dts: false,
+  treeshake: { moduleSideEffects: false },
+  plugins: [
+    createUseClientBoundaryPlugin({
+      emittedSourceFiles: entries,
+      name: 'gt-react:use-client-boundaries',
+      outputExtension: index === 0 ? '.cjs' : '.mjs',
+    }),
+  ],
+}));
+
+export default defineConfig([
+  ...entries.flatMap((entry, index) => {
     const entryDeps = entry.startsWith('src/index.') ? contextDeps : deps;
     const [cjsConfig, esmConfig] = createTsdownConfig([entry], entryDeps);
 
@@ -85,5 +115,6 @@ export default defineConfig(
         }),
       },
     ];
-  })
-);
+  }),
+  ...productionConfigs,
+]);

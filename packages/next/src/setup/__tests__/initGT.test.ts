@@ -86,7 +86,7 @@ describe('initializeGTClient', () => {
     vi.restoreAllMocks();
   });
 
-  it('uses the client-safe ReactI18nCache', () => {
+  it('uses the client-safe ReactI18nCache in development', () => {
     initializeGTClient({
       i18nConfigParams: {
         defaultLocale: 'en',

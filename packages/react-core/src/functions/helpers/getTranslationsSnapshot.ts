@@ -1,22 +1,32 @@
-import { Hash, Locale } from 'gt-i18n/internal/types';
-import { Translation } from 'gt-i18n/types';
+import type { Hash, Locale } from 'gt-i18n/internal/types';
+import type { Translation } from 'gt-i18n/types';
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/internal';
-import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
+import { getI18nRuntime } from 'gt-i18n/internal';
+
+type TranslationsSnapshot = Record<Locale, Record<Hash, Translation>>;
+type LoadTranslations = (locale: Locale) => Promise<Record<Hash, Translation>>;
 
 /**
- * Serializable cached translations for provider hydration; a failed load
- * yields a snapshot with no entry for the locale, so hydration caches nothing
- * and a later lookup retries. TODO: perhaps move to /i18n for type generics
+ * Serializable translations for a provider; a failed load yields a snapshot
+ * with no entry for the locale, so a later lookup retries.
  */
 export async function getTranslationsSnapshot(
   locale: Locale
-): Promise<Record<Locale, Record<Hash, Translation>>> {
-  const i18nCache = getReactI18nCache();
+): Promise<TranslationsSnapshot> {
+  return loadTranslationsSnapshot(locale, (locale) =>
+    getI18nRuntime().loadTranslations(locale)
+  );
+}
+
+export async function loadTranslationsSnapshot(
+  locale: Locale,
+  loadTranslations: LoadTranslations
+): Promise<TranslationsSnapshot> {
   try {
-    return { [locale]: await i18nCache.loadTranslations(locale) };
+    return { [locale]: await loadTranslations(locale) };
   } catch (error) {
     console.warn(
       createDiagnosticMessage({

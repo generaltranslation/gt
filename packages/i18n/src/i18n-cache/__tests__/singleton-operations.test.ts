@@ -16,6 +16,7 @@ function resetI18nCacheGlobal() {
   const globalObj = globalThis as TestGlobal;
   if (globalObj.__generaltranslation?.i18n) {
     Reflect.deleteProperty(globalObj.__generaltranslation.i18n, 'i18nCache');
+    Reflect.deleteProperty(globalObj.__generaltranslation.i18n, 'i18nRuntime');
   }
 }
 
@@ -41,6 +42,7 @@ describe('i18n cache singleton operations', () => {
 
   it('shares the cache across module reloads', async () => {
     const { setI18nCache } = await import('../singleton-operations');
+    const { getI18nRuntime } = await import('../runtime-operations');
     const cache = createCacheStub();
 
     setI18nCache(cache);
@@ -49,6 +51,7 @@ describe('i18n cache singleton operations', () => {
     const { getI18nCache } = await import('../singleton-operations');
 
     expect(getI18nCache()).toBe(cache);
+    expect(getI18nRuntime()).toBe(cache);
   });
 
   it('preserves an existing global cache', async () => {

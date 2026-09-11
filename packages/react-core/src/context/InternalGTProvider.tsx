@@ -1,5 +1,5 @@
-import { useEffect, useMemo, type ReactNode } from 'react';
-import { I18nStore } from '../i18n-store/I18nStore';
+import { useMemo, type ReactNode } from 'react';
+import type { I18nStore } from '../i18n-store/I18nStore';
 import type { Dictionary, Translation } from 'gt-i18n/types';
 import type {
   Locale,
@@ -20,7 +20,7 @@ export type InternalGTProviderProps = {
   dictionaries?: Record<Locale, Dictionary>;
   // Declared upstream dependent on environment
   conditionStore: WritableConditionStoreInterface;
-  i18nStore: I18nStore;
+  i18nStore?: I18nStore;
   // Custom override missing translation behavior for dev hot reload
   onMissingTranslation?: OnMissingTranslation;
   onMissingDictionaryEntry?: OnMissingDictionaryEntry;
@@ -67,12 +67,6 @@ export function InternalGTProvider({
       onMissingDictionaryObj,
     ]
   );
-
-  // Update cache with data from server, do not emit events
-  useEffect(() => {
-    i18nStore.updateTranslations(translations);
-    i18nStore.updateDictionaries(dictionaries ?? {});
-  }, [translations, dictionaries, i18nStore]);
 
   return <GTContext.Provider value={value}>{children}</GTContext.Provider>;
 }

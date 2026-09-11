@@ -7,9 +7,15 @@ import type {
   DictionaryEntrySnapshot,
   DictionaryLookup,
 } from '../../i18n-store/storeTypes';
-import { getDictionaryListenerKey, getI18nConfig } from 'gt-i18n/internal';
+import {
+  getDictionaryListenerKey,
+  getI18nConfig,
+  getI18nRuntime,
+} from 'gt-i18n/internal';
 import { useHandleMissingDictionaryEntry } from '../utils/missing-translation';
 import { useSubscribeToTrackedLookups } from './useSubscribeToTrackedLookups';
+import { lookupDictionaryEntry } from '../../i18n-store/utils/dictionaries';
+import { useGTContext } from '../../context/context';
 
 export type TrackedDictionaryEntryResolver = (
   lookup: DictionaryLookup
@@ -66,3 +72,19 @@ export function useTrackedDictionaryResolver(): TrackedDictionaryEntryResolver {
     ]
   );
 }
+
+function useSnapshotDictionaryResolver(): TrackedDictionaryEntryResolver {
+  const context = useGTContext();
+  return useCallback(
+    (lookup) =>
+      context
+        ? lookupDictionaryEntry(context.dictionariesSnapshot, lookup)
+        : getI18nRuntime().lookupDictionary(lookup.locale, lookup.id),
+    [context]
+  );
+}
+
+export const useDictionaryEntryResolver =
+  process.env.NODE_ENV === 'production'
+    ? useSnapshotDictionaryResolver
+    : useTrackedDictionaryResolver;

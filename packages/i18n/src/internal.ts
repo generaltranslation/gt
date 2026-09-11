@@ -16,13 +16,23 @@ export { createLookupOptions } from './translation-functions/internal/helpers';
 export { renderDictionaryEntry } from './translation-functions/internal/renderDictionaryEntry';
 export { renderDictionaryObject } from './translation-functions/internal/renderDictionaryObject';
 export { I18nCache } from './i18n-cache/I18nCache';
+export { createClientI18nRuntime } from './i18n-cache/ClientI18nRuntime';
 export type { TranslationsCacheMissEvent } from './i18n-cache/I18nCache';
 export { ReadonlyConditionStore } from './condition-store/ReadonlyConditionStore';
 export type { ReadonlyConditionStoreParams } from './condition-store/ReadonlyConditionStore';
 export { WritableConditionStore } from './condition-store/WritableConditionStore';
 export type { WritableConditionStoreParams } from './condition-store/WritableConditionStore';
 export type { LocaleCandidates } from './i18n-config/I18nConfig';
-export { getI18nCache, setI18nCache } from './i18n-cache/singleton-operations';
+export {
+  getI18nCache,
+  isI18nCacheInitialized,
+  setI18nCache,
+} from './i18n-cache/singleton-operations';
+export {
+  getI18nRuntime,
+  setI18nRuntime,
+} from './i18n-cache/runtime-operations';
+export { validateDictionaryConfig } from './i18n-cache/validateDictionaryConfig';
 export { getVersionId } from './helpers/versionId';
 export { interpolateMessage } from './translation-functions/utils/interpolation/interpolateMessage';
 export { isEncodedTranslationOptions } from './translation-functions/utils/isEncodedTranslationOptions';
@@ -39,6 +49,7 @@ export {
   getDictionaryEntry,
   isDictionaryValue,
   getDictionaryValue,
+  mergeDictionary,
   resolveDictionaryLookupOptions,
 } from './i18n-cache/translations-manager/utils/dictionary-helpers';
 
@@ -55,3 +66,6 @@ export type { GlobalSingleton } from './globals/createGlobalSingleton';
 export { getRuntimeEnvironment } from './utils/getRuntimeEnvironment';
 export { hashMessage } from './utils/hashMessage';
 export { getCookieValue, parseAcceptLanguage } from './utils/request';
+export { createTranslationLoader } from './i18n-cache/translations-manager/translations-loaders/routeCreateTranslationLoader';
+export { DEFAULT_CACHE_EXPIRY_TIME } from './i18n-cache/translations-manager/utils/constants';
+export { dedupePending } from './i18n-cache/translations-manager/utils/dedupePending';

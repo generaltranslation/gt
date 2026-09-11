@@ -97,6 +97,8 @@ export {
   t,
 } from '@generaltranslation/react-core/components-rsc';
 
+// TODO: Move ReactI18nCache and its get/set helpers to a gt-react internal
+// subpath, then remove their root exports from every runtime entrypoint.
 // ===== Internal ===== //
 export {
   getReactI18nCache,

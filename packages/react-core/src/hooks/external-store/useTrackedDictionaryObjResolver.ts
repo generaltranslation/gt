@@ -1,4 +1,8 @@
-import { getDictionaryListenerKey, getI18nConfig } from 'gt-i18n/internal';
+import {
+  getDictionaryListenerKey,
+  getI18nConfig,
+  getI18nRuntime,
+} from 'gt-i18n/internal';
 import type {
   DictionaryLookup,
   DictionaryObjectSnapshot,
@@ -10,6 +14,8 @@ import {
 import { useCallback, useRef } from 'react';
 import { useHandleMissingDictionaryObject } from '../utils/missing-translation';
 import { useSubscribeToTrackedLookups } from './useSubscribeToTrackedLookups';
+import { lookupDictionaryObject } from '../../i18n-store/utils/dictionaries';
+import { useGTContext } from '../../context/context';
 
 export type TrackedDictionaryObjResolver = (
   lookup: DictionaryLookup
@@ -66,3 +72,19 @@ export function useTrackedDictionaryObjResolver(): TrackedDictionaryObjResolver 
     ]
   );
 }
+
+function useSnapshotDictionaryResolver(): TrackedDictionaryObjResolver {
+  const context = useGTContext();
+  return useCallback(
+    (lookup) =>
+      context
+        ? lookupDictionaryObject(context.dictionariesSnapshot, lookup)
+        : getI18nRuntime().lookupDictionaryObj(lookup.locale, lookup.id),
+    [context]
+  );
+}
+
+export const useDictionaryObjectResolver =
+  process.env.NODE_ENV === 'production'
+    ? useSnapshotDictionaryResolver
+    : useTrackedDictionaryObjResolver;

@@ -2,6 +2,7 @@ import { type RefObject, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   createLookupOptions,
   getI18nConfig,
+  getI18nRuntime,
   getTranslateListenerKey,
 } from 'gt-i18n/internal';
 import type { Translation } from 'gt-i18n/types';
@@ -17,6 +18,8 @@ import {
 } from '../../i18n-store/useI18nStore';
 import { useHandleMissingTranslationWithConditions } from '../utils/missing-translation';
 import { useSubscribeToTrackedLookups } from './useSubscribeToTrackedLookups';
+import { lookupTranslation } from '../../i18n-store/utils/translations';
+import { useGTContext } from '../../context/context';
 
 /**
  * Returns the translation, but also triggers a translation if it is not found
@@ -103,6 +106,26 @@ export function useTrackedTranslationResolver(
     [i18nStore, translationsSnapshot, onMissingTranslation, devHotReloadEnabled]
   );
 }
+
+function useSnapshotTranslationResolver(): TrackedTranslationResolver {
+  const context = useGTContext();
+  return useCallback(
+    (lookup) =>
+      context
+        ? lookupTranslation(context.translationsSnapshot, lookup)
+        : getI18nRuntime().lookupTranslation(
+            lookup.locale,
+            lookup.message,
+            lookup.options
+          ),
+    [context]
+  );
+}
+
+export const useTranslationResolver: typeof useTrackedTranslationResolver =
+  process.env.NODE_ENV === 'production'
+    ? useSnapshotTranslationResolver
+    : useTrackedTranslationResolver;
 
 /**
  * Pre-subscribe to compiler-injected lookups

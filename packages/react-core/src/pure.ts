@@ -16,6 +16,7 @@ export {
 export { getFormatLocales } from './hooks/utils/getFormatLocales';
 export { getTranslationsSnapshot } from './functions/helpers/getTranslationsSnapshot';
 export { t } from './functions/translation/t';
+export type { StringOrTemplateSyncResolutionFunction } from './functions/translation/t';
 export { createRenderPipeline } from './utils/rendering/createRenderPipeline';
 export type { RenderPipeline } from './utils/rendering/createRenderPipeline';
 export type { RenderPreparedT } from './utils/translation/prepareT.shared';
@@ -44,6 +45,7 @@ export type {
 
 export {
   internalInitializeGTSRA,
+  internalInitializeGTSRAClient,
   type ReactInitializeGTParams,
 } from './setup/initializeGTSRA';
 

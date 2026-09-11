@@ -8,13 +8,15 @@ import {
   useI18nStore,
   useTranslationsSnapshot,
 } from '../i18n-store/useI18nStore';
-import { getI18nConfig } from 'gt-i18n/internal';
+import { lookupTranslation } from '../i18n-store/utils/translations';
+import { getI18nConfig, getI18nRuntime } from 'gt-i18n/internal';
 import { useHandleMissingTranslation } from './utils/missing-translation';
+import { useGTContext } from '../context/context';
 
 /**
  * @internal
  */
-export function useTranslate<T extends Translation>(
+function useTranslateDev<T extends Translation>(
   lookup: TranslateLookup<T>
 ): TranslateSnapshot<T> {
   const i18nStore = useI18nStore();
@@ -43,3 +45,19 @@ export function useTranslate<T extends Translation>(
 
   return storeTranslation;
 }
+
+function useTranslateProd<T extends Translation>(
+  lookup: TranslateLookup<T>
+): TranslateSnapshot<T> {
+  const context = useGTContext();
+  return context
+    ? lookupTranslation(context.translationsSnapshot, lookup)
+    : getI18nRuntime().lookupTranslation(
+        lookup.locale,
+        lookup.message,
+        lookup.options
+      );
+}
+
+export const useTranslate =
+  process.env.NODE_ENV === 'production' ? useTranslateProd : useTranslateDev;

@@ -1,4 +1,4 @@
-import { getI18nCache } from '../../i18n-cache/singleton-operations';
+import { getI18nRuntime } from '../../i18n-cache/runtime-operations';
 import { getI18nConfig } from '../../i18n-config/singleton-operations';
 import { TranslationVariables } from '../types/options';
 import { TFunctionType } from '../types/functions';
@@ -36,14 +36,14 @@ export async function getTranslationsInternal({
   enableI18n: boolean;
   rootId?: string;
 }): Promise<TFunctionType> {
-  const i18nCache = getI18nCache();
+  const i18nRuntime = getI18nRuntime();
   const sourceLocale = getI18nConfig().getDefaultLocale();
   const targetLocale = enableI18n ? locale : sourceLocale;
   const [sourceDictionary, targetDictionary, lookupTranslation] =
     await Promise.all([
-      i18nCache.getLookupDictionary(sourceLocale),
-      i18nCache.getLookupDictionary(targetLocale),
-      i18nCache.getLookupTranslation(targetLocale),
+      i18nRuntime.getLookupDictionary(sourceLocale),
+      i18nRuntime.getLookupDictionary(targetLocale),
+      i18nRuntime.getLookupTranslation(targetLocale),
     ]);
   const {
     lookupDictionary: lookupSourceDictionary,
@@ -53,7 +53,6 @@ export async function getTranslationsInternal({
     lookupDictionary: lookupTargetDictionary,
     lookupDictionaryObj: lookupTargetDictionaryObj,
   } = targetDictionary;
-
   /**
    * Dictionary resolution
    * @param {string} id - The id of the translation to translate.

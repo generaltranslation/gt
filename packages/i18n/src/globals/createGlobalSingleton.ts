@@ -73,7 +73,7 @@ export function createGlobalSingleton<T>({
   function set(next: T): void {
     const ns = getNamespace(namespace);
     if (ns[key] !== undefined && ns[key] !== next) {
-      if (shouldLogDebugWarnings()) {
+      if (process.env.NODE_ENV !== 'production' && shouldLogDebugWarnings()) {
         console.warn(
           createDiagnosticMessage({
             source,

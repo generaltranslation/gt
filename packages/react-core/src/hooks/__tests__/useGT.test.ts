@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useTrackedTranslationResolver } from '../external-store/useTrackedTranslationResolver';
+import { useTranslationResolver } from '../external-store/useTrackedTranslationResolver';
 import { useDefaultLocale } from '../i18n-config';
 import { useTranslationConditions } from '../utils';
 import { useGT } from '../useGT';
@@ -10,7 +10,7 @@ vi.mock('react', () => ({
 }));
 
 vi.mock('../external-store/useTrackedTranslationResolver', () => ({
-  useTrackedTranslationResolver: vi.fn(),
+  useTranslationResolver: vi.fn(),
 }));
 
 vi.mock('../i18n-config', () => ({
@@ -28,7 +28,7 @@ describe('useGT', () => {
       locale: 'en',
       shouldTranslate: false,
     });
-    vi.mocked(useTrackedTranslationResolver).mockReturnValue(vi.fn());
+    vi.mocked(useTranslationResolver).mockReturnValue(vi.fn());
   });
 
   it('interpolates source strings when translation is not required', () => {
@@ -46,10 +46,6 @@ describe('useGT', () => {
 
     useGT(messages);
 
-    expect(useTrackedTranslationResolver).toHaveBeenCalledWith(
-      messages,
-      'fr',
-      true
-    );
+    expect(useTranslationResolver).toHaveBeenCalledWith(messages, 'fr', true);
   });
 });
