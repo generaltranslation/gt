@@ -80,7 +80,7 @@ describe('requested routing locale', () => {
     expect(terminal.headers.get(defaultLocaleHeaderName)).toBe('fr');
     expect(terminal.cookies.get('site-reset')?.value).toBe('');
   });
-  it.each([undefined, 'true'])(
+  it.each(['true', 'legacy'])(
     'does not let a stale request cookie override a later legacy choice (reset=%s)',
     (reset) => {
       const middleware = createNextMiddleware();
@@ -98,7 +98,7 @@ describe('requested routing locale', () => {
     }
   );
 
-  it('uses the current locale after a denied routed reset has been consumed', () => {
+  it('retains the requested preference until the provider applies a locale', () => {
     const middleware = createNextMiddleware({
       localeRoutes: { fr: ['/blog'] },
     });
@@ -106,8 +106,47 @@ describe('requested routing locale', () => {
     expect(response.headers.get(defaultLocaleHeaderName)).toBe('en');
     expect(response.cookies.get(defaultResetLocaleCookieName)?.value).toBe('');
     const nextResponse = middleware(request('/blog', { reset: false }));
-    expect(nextResponse.headers.get(defaultLocaleHeaderName)).toBe('en');
-    expect(nextResponse.headers.get('location')).toBeNull();
+    expect(nextResponse.headers.get('location')).toBe(
+      origin + '/fr/blog' + query
+    );
+    const applied = middleware(
+      request('/blog', { reset: false, requested: '' })
+    );
+    expect(applied.headers.get(defaultLocaleHeaderName)).toBe('en');
+    expect(applied.headers.get('location')).toBeNull();
+  });
+
+  it('honors a later pending choice after an earlier response consumes reset', () => {
+    const middleware = createNextMiddleware({
+      localeRoutes: { fr: ['/blog'], es: ['/careers'] },
+    });
+    const earlier = middleware(request('/careers'));
+    expect(earlier.cookies.get(defaultResetLocaleCookieName)?.value).toBe('');
+    const later = middleware(
+      request('/careers', { requested: 'es', reset: false })
+    );
+    expect(later.headers.get(defaultLocaleHeaderName)).toBe('es');
+    expect(later.headers.get('location')).toBe(origin + '/es/careers' + query);
+  });
+
+  it.each(['de-DE', 'it'])(
+    'uses the current locale when the requested locale is no longer supported: %s',
+    (requested) => {
+      const response = createNextMiddleware()(
+        request('/en/blog', { current: 'es', requested })
+      );
+      expect(response.headers.get('location')).toBe(
+        origin + '/es/blog' + query
+      );
+      expect(response.headers.get(defaultLocaleHeaderName)).toBe('es');
+    }
+  );
+
+  it('accepts a requested regional locale that resolves to a supported locale', () => {
+    const response = createNextMiddleware()(
+      request('/blog', { requested: 'fr-CA' })
+    );
+    expect(response.headers.get('location')).toBe(origin + '/fr/blog' + query);
   });
 
   it.each(['/blog', '/en/blog', '/es/blog'])(

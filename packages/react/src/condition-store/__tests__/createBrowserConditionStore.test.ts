@@ -103,21 +103,26 @@ describe('createOrUpdateBrowserConditionStore', () => {
     });
   });
 
-  it('synchronizes current and routing locale cookies on server updates', () => {
+  it('applies the server locale and retires a pending routing request', () => {
     const routingLocaleCookieName = 'generaltranslation.routing-fetch-locale';
+    mockCookieValues.set(routingLocaleCookieName, 'es');
 
     const initialStore = createOrUpdateBrowserConditionStore({
       locale: 'fr',
-      _getRoutingLocaleCookieName: () => routingLocaleCookieName,
+      _localeRouting: {
+        cookieName: routingLocaleCookieName,
+        isEnabled: () => true,
+      },
     });
 
     expect(mockCookieValues.get('generaltranslation.locale')).toBe('fr');
-    expect(mockCookieValues.get(routingLocaleCookieName)).toBe('fr');
+    expect(mockCookieValues.get(routingLocaleCookieName)).toBe('');
+    mockCookieValues.set(routingLocaleCookieName, 'es');
 
     const updatedStore = createOrUpdateBrowserConditionStore({ locale: 'es' });
 
     expect(updatedStore).toBe(initialStore);
     expect(mockCookieValues.get('generaltranslation.locale')).toBe('es');
-    expect(mockCookieValues.get(routingLocaleCookieName)).toBe('es');
+    expect(mockCookieValues.get(routingLocaleCookieName)).toBe('');
   });
 });

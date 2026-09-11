@@ -94,23 +94,22 @@ describe('Client_GTProvider', () => {
       );
     });
 
-    const getRoutingLocaleCookieName =
-      mockGTProvider.mock.calls.at(-1)?.[0]._getRoutingLocaleCookieName;
-    expect(getRoutingLocaleCookieName()).toBe(
-      'generaltranslation.routing-fetch-locale'
-    );
+    expect(
+      mockGTProvider.mock.calls.at(-1)?.[0]._localeRouting.cookieName
+    ).toBe('generaltranslation.routing-fetch-locale');
+    const isLocaleRoutingEnabled =
+      mockGTProvider.mock.calls.at(-1)?.[0]._localeRouting.isEnabled;
+    expect(isLocaleRoutingEnabled()).toBe(true);
 
     document.cookie = 'generaltranslation.locale-routing-enabled=false;path=/';
-    expect(getRoutingLocaleCookieName()).toBeUndefined();
+    expect(isLocaleRoutingEnabled()).toBe(false);
 
     document.cookie =
       'generaltranslation.locale-routing-enabled=;max-age=0;path=/';
-    expect(getRoutingLocaleCookieName()).toBeUndefined();
+    expect(isLocaleRoutingEnabled()).toBe(false);
 
     document.cookie = 'generaltranslation.locale-routing-enabled=true;path=/';
-    expect(getRoutingLocaleCookieName()).toBe(
-      'generaltranslation.routing-fetch-locale'
-    );
+    expect(isLocaleRoutingEnabled()).toBe(true);
 
     await act(async () => root.unmount());
   });
@@ -137,20 +136,18 @@ describe('Client_GTProvider', () => {
       );
     });
 
-    const getRoutingLocaleCookieName =
-      mockGTProvider.mock.calls.at(-1)?.[0]._getRoutingLocaleCookieName;
-    expect(getRoutingLocaleCookieName()).toBeUndefined();
+    const isLocaleRoutingEnabled =
+      mockGTProvider.mock.calls.at(-1)?.[0]._localeRouting.isEnabled;
+    expect(isLocaleRoutingEnabled()).toBe(false);
 
     expect(mockGTProvider.mock.calls.at(-1)?.[0]._resetLocaleCookieName).toBe(
       'custom-reset'
     );
     document.cookie = 'custom-routing-enabled=false;path=/';
-    expect(getRoutingLocaleCookieName()).toBeUndefined();
+    expect(isLocaleRoutingEnabled()).toBe(false);
 
     document.cookie = 'custom-routing-enabled=true;path=/';
-    expect(getRoutingLocaleCookieName()).toBe(
-      'generaltranslation.routing-fetch-locale'
-    );
+    expect(isLocaleRoutingEnabled()).toBe(true);
 
     await act(async () => root.unmount());
   });
@@ -175,23 +172,21 @@ describe('Client_GTProvider', () => {
       );
     });
 
-    const getRoutingLocaleCookieName =
-      mockGTProvider.mock.calls.at(-1)?.[0]._getRoutingLocaleCookieName;
-    expect(getRoutingLocaleCookieName()).toBe(
-      'generaltranslation.routing-fetch-locale'
-    );
+    const isLocaleRoutingEnabled =
+      mockGTProvider.mock.calls.at(-1)?.[0]._localeRouting.isEnabled;
+    expect(isLocaleRoutingEnabled()).toBe(true);
 
     vi.stubGlobal('location', {
       pathname: '/api/health',
       reload: mockReloadBrowserPage,
     });
-    expect(getRoutingLocaleCookieName()).toBeUndefined();
+    expect(isLocaleRoutingEnabled()).toBe(false);
 
     vi.stubGlobal('location', {
       pathname: '/_next/static/chunk.js',
       reload: mockReloadBrowserPage,
     });
-    expect(getRoutingLocaleCookieName()).toBeUndefined();
+    expect(isLocaleRoutingEnabled()).toBe(false);
 
     await act(async () => root.unmount());
   });
@@ -215,7 +210,7 @@ describe('Client_GTProvider', () => {
       );
     });
     const firstCallback =
-      mockGTProvider.mock.calls.at(-1)?.[0]._getRoutingLocaleCookieName;
+      mockGTProvider.mock.calls.at(-1)?.[0]._localeRouting.isEnabled;
 
     await act(async () => {
       root.render(
@@ -225,7 +220,7 @@ describe('Client_GTProvider', () => {
       );
     });
     const secondCallback =
-      mockGTProvider.mock.calls.at(-1)?.[0]._getRoutingLocaleCookieName;
+      mockGTProvider.mock.calls.at(-1)?.[0]._localeRouting.isEnabled;
 
     expect(secondCallback).toBe(firstCallback);
 
@@ -261,8 +256,8 @@ describe('Client_GTProvider', () => {
       });
 
       expect(
-        mockGTProvider.mock.calls.at(-1)?.[0]._getRoutingLocaleCookieName()
-      ).toBe(routed ? 'generaltranslation.routing-fetch-locale' : undefined);
+        mockGTProvider.mock.calls.at(-1)?.[0]._localeRouting.isEnabled()
+      ).toBe(routed);
 
       await act(async () => root.unmount());
     }
@@ -318,8 +313,8 @@ describe('Client_GTProvider', () => {
     expect(mockGetI18nConfig).toHaveBeenCalled();
     expect(mockRefreshServerComponents).not.toHaveBeenCalled();
     expect(
-      mockGTProvider.mock.calls.at(-1)?.[0]._getRoutingLocaleCookieName()
-    ).toBeUndefined();
+      mockGTProvider.mock.calls.at(-1)?.[0]._localeRouting.isEnabled()
+    ).toBe(false);
 
     await act(async () => root.unmount());
   });
@@ -362,8 +357,8 @@ describe('Client_GTProvider', () => {
     expect(mockReloadBrowserPage).toHaveBeenCalledOnce();
     expect(mockRefreshServerComponents).not.toHaveBeenCalled();
     expect(
-      mockGTProvider.mock.calls.at(-1)?.[0]._getRoutingLocaleCookieName()
-    ).toBe('generaltranslation.routing-fetch-locale');
+      mockGTProvider.mock.calls.at(-1)?.[0]._localeRouting.isEnabled()
+    ).toBe(true);
 
     await act(async () => root.unmount());
   });
