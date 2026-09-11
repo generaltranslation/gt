@@ -129,7 +129,29 @@ it('recognizes a regional locale alias', () => {
   expect(response.headers.get(defaultLocaleHeaderName)).toBe('en-GB');
 });
 
-it('preserves empty-string root alias behavior', () => {
+it('round trips an empty-string alias through the default root', () => {
+  const middleware = createNextMiddleware({ pathConfig: { '/about': '' } });
+  const defaultResponse = middleware(new NextRequest(origin + '/about'));
+  expect(defaultResponse.headers.get('location')).toBe(origin + '/');
+  const defaultTerminal = middleware(
+    new NextRequest(defaultResponse.headers.get('location')!)
+  );
+  expect(defaultTerminal.headers.get('location')).toBeNull();
+  expect(defaultTerminal.headers.get('x-middleware-rewrite')).toBe(
+    origin + '/en/about'
+  );
+});
+
+it('resolves a direct default-root request through an empty-string alias', () => {
+  const middleware = createNextMiddleware({ pathConfig: { '/about': '' } });
+  const directRoot = middleware(new NextRequest(origin + '/'));
+  expect(directRoot.headers.get('location')).toBeNull();
+  expect(directRoot.headers.get('x-middleware-rewrite')).toBe(
+    origin + '/en/about'
+  );
+});
+
+it('preserves empty-string aliases for prefixed locales', () => {
   const middleware = createNextMiddleware({ pathConfig: { '/about': '' } });
   const response = middleware(new NextRequest(origin + '/fr/about'));
   expect(response.headers.get('location')).toBe(origin + '/fr');
