@@ -13,8 +13,6 @@ export { LocaleSelector as Client_LocaleSelector } from 'gt-react';
 export { RegionSelector as Client_RegionSelector } from 'gt-react';
 
 import { getCookieValue, getI18nConfig, I18nConfig } from 'gt-i18n/internal';
-import { getI18nConfig as getReactI18nConfig } from '@generaltranslation/react-core/pure';
-import { defaultResetLocaleCookieName } from 'gt-i18n/internal/cookies';
 import { GTProvider, type SharedGTProviderProps } from 'gt-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect } from 'react';
@@ -22,46 +20,11 @@ import { initializeGTClient } from '../setup/initGT.client';
 import {
   defaultLocaleRoutingEnabledCookieName,
   defaultReferrerLocaleCookieName,
-  getRoutingFetchLocaleCookieName,
 } from './cookies';
 import { compilePathRegex, pathnameMatchesRegex } from './pathRegex';
 
 // withGTConfig exposes this build-time value to both middleware and client code.
 const pathRegex = compilePathRegex(process.env._GENERALTRANSLATION_PATH_REGEX);
-const localeRoutingEnabledCookieName =
-  process.env._GENERALTRANSLATION_LOCALE_ROUTING_ENABLED_COOKIE_NAME ||
-  defaultLocaleRoutingEnabledCookieName;
-const resetLocaleCookieName =
-  process.env._GENERALTRANSLATION_RESET_LOCALE_COOKIE_NAME ||
-  defaultResetLocaleCookieName;
-const basePath = process.env._GENERALTRANSLATION_BASE_PATH || '';
-
-function getAppPathname(): string {
-  const pathname = globalThis.location.pathname;
-  // NextURL and usePathname exclude basePath; location.pathname includes it.
-  return basePath &&
-    (pathname === basePath || pathname.startsWith(`${basePath}/`))
-    ? pathname.slice(basePath.length) || '/'
-    : pathname;
-}
-
-function isLocaleRoutingEnabled(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    getCookieValue(document.cookie, localeRoutingEnabledCookieName) ===
-      'true' &&
-    pathnameMatchesRegex(getAppPathname(), pathRegex)
-  );
-}
-
-const localeRouting = {
-  get cookieName() {
-    return getRoutingFetchLocaleCookieName(
-      getReactI18nConfig().getLocaleCookieName()
-    );
-  },
-  isEnabled: isLocaleRoutingEnabled,
-};
 
 /**
  * Only need to initalize client. We know server was already
@@ -85,44 +48,31 @@ export function Client_GTProvider(props: SharedGTProviderProps) {
   }, []);
   const syncServerContent = useCallback<
     NonNullable<SharedGTProviderProps['_reload']>
-  >(
-    ({ locale }) => {
-      const i18nConfig = getI18nConfig();
-      const defaultLocale = i18nConfig.getDefaultLocale();
-      const locales = i18nConfig.getLocales();
-      const currentPathname = getAppPathname();
-      const localeRoutingApplies = isLocaleRoutingEnabled();
-      if (localeRoutingApplies && locale === defaultLocale) {
-        const currentPathLocale = resolvePathLocale(
-          currentPathname,
-          i18nConfig,
-          defaultLocale,
-          locales
-        );
-        if (currentPathLocale !== defaultLocale) {
-          reloadBrowserPage();
-          return;
-        }
-      }
+  >(() => {
+    const localeRoutingEnabled =
+      getCookieValue(document.cookie, defaultLocaleRoutingEnabledCookieName) ===
+      'true';
+    const currentPathname = globalThis.location.pathname;
+    const localeRoutingApplies =
+      localeRoutingEnabled && pathnameMatchesRegex(currentPathname, pathRegex);
+    if (localeRoutingApplies) {
+      // TODO: restore soft refreshes once the provider can reconcile rejected
+      // locale switches. setLocale() has already changed the client cookie.
+      // If middleware falls back to the current page, locale props stay the
+      // same and BrowserGTProvider's memo skips updating that cookie. Reload
+      // the document to initialize the client with the server's chosen locale.
+      reloadBrowserPage();
+      return;
+    }
 
-      refreshServerComponents();
-    },
-    [refreshServerComponents, reloadBrowserPage]
-  );
+    refreshServerComponents();
+  }, [refreshServerComponents, reloadBrowserPage]);
   usePathCheck({
     reloadBrowserPage,
     refreshServerComponents,
     locale: props.locale,
-    localeRoutingEnabledCookieName,
   });
-  return (
-    <GTProvider
-      {...props}
-      _reload={syncServerContent}
-      _localeRouting={localeRouting}
-      _resetLocaleCookieName={resetLocaleCookieName}
-    />
-  );
+  return <GTProvider {...props} _reload={syncServerContent} />;
 }
 
 /**

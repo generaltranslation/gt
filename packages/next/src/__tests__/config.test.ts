@@ -278,38 +278,6 @@ describe('withGTConfig', () => {
       );
     });
 
-    it('exposes the custom routing flag cookie to the client without a pathRegex', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig(
-        {},
-        {
-          headersAndCookies: {
-            localeRoutingEnabledCookieName: 'site-routing',
-            resetLocaleCookieName: 'site-reset',
-          },
-        }
-      );
-
-      expect(
-        result.env!._GENERALTRANSLATION_LOCALE_ROUTING_ENABLED_COOKIE_NAME
-      ).toBe('site-routing');
-      expect(result.env!._GENERALTRANSLATION_RESET_LOCALE_COOKIE_NAME).toBe(
-        'site-reset'
-      );
-      expect(
-        parseConfigParams(result).headersAndCookies
-          .localeRoutingEnabledCookieName
-      ).toBe('site-routing');
-    });
-
-    it('exposes Next basePath for app-relative client routing checks', async () => {
-      const withGTConfig = await getWithGTConfig();
-      const result = withGTConfig({ basePath: '/docs' });
-
-      expect(result.env!._GENERALTRANSLATION_BASE_PATH).toBe('/docs');
-      expect(result.basePath).toBe('/docs');
-    });
-
     it('sets all expected _GENERALTRANSLATION_* env vars as strings', async () => {
       const withGTConfig = await getWithGTConfig();
       const result = withGTConfig();

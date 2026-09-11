@@ -13,7 +13,6 @@ import {
 } from './createPathMatcher';
 import { getSharedPath } from './matchPath';
 import { applyTrailingSlash, stripTrailingSlashes } from './pathname';
-import { getRoutingFetchLocaleCookieName } from '../utils/cookies';
 
 export {
   createPathMatcher,
@@ -271,23 +270,9 @@ export function getLocaleFromRequest(
   }
 
   // Check cookie locale
-  // Pending requests survive reset consumption until the client applies a
-  // locale. Legacy reset markers still refer to the current locale cookie.
-  const resetCookie = req.cookies.get(resetLocaleCookieName);
-  const routingFetchLocaleCookieName =
-    getRoutingFetchLocaleCookieName(localeCookieName);
-  const routingCookieLocale =
-    localeRouting &&
-    (!resetCookie?.value || resetCookie.value === routingFetchLocaleCookieName)
-      ? req.cookies.get(routingFetchLocaleCookieName)
-      : undefined;
-  const cookieLocale =
-    routingCookieLocale?.value &&
-    gt.isValidLocale(routingCookieLocale.value) &&
-    gt.determineLocale([routingCookieLocale.value], approvedLocales)
-      ? routingCookieLocale
-      : req.cookies.get(localeCookieName);
+  const cookieLocale = req.cookies.get(localeCookieName);
   if (cookieLocale?.value && gt.isValidLocale(cookieLocale?.value)) {
+    const resetCookie = req.cookies.get(resetLocaleCookieName);
     if (resetCookie?.value) {
       // Add this back in when we support custom getLocale
       // addedCustomLocale
