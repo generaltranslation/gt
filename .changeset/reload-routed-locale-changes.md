@@ -2,4 +2,4 @@
 'gt-next': patch
 ---
 
-Reload the browser document when changing locales with locale routing enabled so a fallback to the current page resets the client locale to the server's chosen locale. This temporarily replaces server-component refreshes for routed provider updates; a full reload resets transient client state.
+Use a full browser reload instead of refreshing only server components so the client reinitializes with the server-selected locale, including when a requested locale falls back to the current page.

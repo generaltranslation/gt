@@ -41,32 +41,44 @@ if (typeof window !== 'undefined') {
 export function Client_GTProvider(props: SharedGTProviderProps) {
   const router = useRouter();
   const refreshServerComponents = useCallback(() => {
-    router.refresh();
+    window.location.reload();
   }, [router]);
   const reloadBrowserPage = useCallback(() => {
     globalThis.location.reload();
   }, []);
   const syncServerContent = useCallback<
     NonNullable<SharedGTProviderProps['_reload']>
-  >(() => {
-    const localeRoutingEnabled =
-      getCookieValue(document.cookie, defaultLocaleRoutingEnabledCookieName) ===
-      'true';
-    const currentPathname = globalThis.location.pathname;
-    const localeRoutingApplies =
-      localeRoutingEnabled && pathnameMatchesRegex(currentPathname, pathRegex);
-    if (localeRoutingApplies) {
-      // TODO: restore soft refreshes once the provider can reconcile rejected
-      // locale switches. setLocale() has already changed the client cookie.
-      // If middleware falls back to the current page, locale props stay the
-      // same and BrowserGTProvider's memo skips updating that cookie. Reload
-      // the document to initialize the client with the server's chosen locale.
-      reloadBrowserPage();
-      return;
-    }
+  >(
+    ({ locale }) => {
+      const i18nConfig = getI18nConfig();
+      const localeRoutingEnabled =
+        getCookieValue(
+          document.cookie,
+          defaultLocaleRoutingEnabledCookieName
+        ) === 'true';
+      const defaultLocale = i18nConfig.getDefaultLocale();
+      const locales = i18nConfig.getLocales();
+      const currentPathname = globalThis.location.pathname;
+      const localeRoutingApplies =
+        localeRoutingEnabled &&
+        pathnameMatchesRegex(currentPathname, pathRegex);
+      if (localeRoutingApplies && locale === defaultLocale) {
+        const currentPathLocale = resolvePathLocale(
+          currentPathname,
+          i18nConfig,
+          defaultLocale,
+          locales
+        );
+        if (currentPathLocale !== defaultLocale) {
+          reloadBrowserPage();
+          return;
+        }
+      }
 
-    refreshServerComponents();
-  }, [refreshServerComponents, reloadBrowserPage]);
+      refreshServerComponents();
+    },
+    [refreshServerComponents, reloadBrowserPage]
+  );
   usePathCheck({
     reloadBrowserPage,
     refreshServerComponents,
