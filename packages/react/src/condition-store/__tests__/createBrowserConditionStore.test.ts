@@ -1,8 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mockSetCookieValue = vi.hoisted(() => vi.fn());
 const mockCookieValues = vi.hoisted(
   () => new Map<string, string | undefined>()
+);
+const mockSetCookieValue = vi.hoisted(() =>
+  vi.fn(({ cookieName, value }: { cookieName: string; value: string }) => {
+    mockCookieValues.set(cookieName, value);
+  })
 );
 const mockCookieNames = vi.hoisted(() => ({
   locale: 'generaltranslation.locale',
@@ -97,5 +101,23 @@ describe('createOrUpdateBrowserConditionStore', () => {
       cookieName: 'generaltranslation.enable-i18n',
       value: 'true',
     });
+  });
+
+  it('synchronizes current and routing locale cookies on server updates', () => {
+    const routingLocaleCookieName = 'generaltranslation.routing-fetch-locale';
+
+    const initialStore = createOrUpdateBrowserConditionStore({
+      locale: 'fr',
+      _getRoutingLocaleCookieName: () => routingLocaleCookieName,
+    });
+
+    expect(mockCookieValues.get('generaltranslation.locale')).toBe('fr');
+    expect(mockCookieValues.get(routingLocaleCookieName)).toBe('fr');
+
+    const updatedStore = createOrUpdateBrowserConditionStore({ locale: 'es' });
+
+    expect(updatedStore).toBe(initialStore);
+    expect(mockCookieValues.get('generaltranslation.locale')).toBe('es');
+    expect(mockCookieValues.get(routingLocaleCookieName)).toBe('es');
   });
 });
