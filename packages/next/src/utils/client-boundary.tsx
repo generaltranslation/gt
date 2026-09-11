@@ -13,6 +13,7 @@ export { LocaleSelector as Client_LocaleSelector } from 'gt-react';
 export { RegionSelector as Client_RegionSelector } from 'gt-react';
 
 import { getCookieValue, getI18nConfig, I18nConfig } from 'gt-i18n/internal';
+import { defaultResetLocaleCookieName } from 'gt-i18n/internal/cookies';
 import { GTProvider, type SharedGTProviderProps } from 'gt-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect } from 'react';
@@ -29,6 +30,9 @@ const pathRegex = compilePathRegex(process.env._GENERALTRANSLATION_PATH_REGEX);
 const localeRoutingEnabledCookieName =
   process.env._GENERALTRANSLATION_LOCALE_ROUTING_ENABLED_COOKIE_NAME ||
   defaultLocaleRoutingEnabledCookieName;
+const resetLocaleCookieName =
+  process.env._GENERALTRANSLATION_RESET_LOCALE_COOKIE_NAME ||
+  defaultResetLocaleCookieName;
 
 function getRoutingLocaleCookieName(): string | undefined {
   return typeof window !== 'undefined' &&
@@ -96,6 +100,7 @@ export function Client_GTProvider(props: SharedGTProviderProps) {
       {...props}
       _reload={syncServerContent}
       _getRoutingLocaleCookieName={getRoutingLocaleCookieName}
+      _resetLocaleCookieName={resetLocaleCookieName}
     />
   );
 }

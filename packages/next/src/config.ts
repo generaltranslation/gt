@@ -777,6 +777,8 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
       }),
       _GENERALTRANSLATION_LOCALE_ROUTING_ENABLED_COOKIE_NAME:
         mergedConfig.headersAndCookies?.localeRoutingEnabledCookieName,
+      _GENERALTRANSLATION_RESET_LOCALE_COOKIE_NAME:
+        mergedConfig.headersAndCookies?.resetLocaleCookieName,
     },
     ...(turboPackEnabled &&
       !experimentalTurbopack && {

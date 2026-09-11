@@ -66,6 +66,7 @@ describe('Client_GTProvider', () => {
   afterEach(() => {
     delete process.env._GENERALTRANSLATION_PATH_REGEX;
     delete process.env._GENERALTRANSLATION_LOCALE_ROUTING_ENABLED_COOKIE_NAME;
+    delete process.env._GENERALTRANSLATION_RESET_LOCALE_COOKIE_NAME;
     document.cookie =
       'generaltranslation.locale-routing-enabled=;max-age=0;path=/';
     document.cookie = 'custom-routing-enabled=;max-age=0;path=/';
@@ -117,6 +118,7 @@ describe('Client_GTProvider', () => {
     process.env._GENERALTRANSLATION_PATH_REGEX = '.*';
     process.env._GENERALTRANSLATION_LOCALE_ROUTING_ENABLED_COOKIE_NAME =
       'custom-routing-enabled';
+    process.env._GENERALTRANSLATION_RESET_LOCALE_COOKIE_NAME = 'custom-reset';
     mockPathname.mockReturnValue('/dashboard');
     vi.stubGlobal('location', {
       pathname: '/dashboard',
@@ -138,6 +140,9 @@ describe('Client_GTProvider', () => {
       mockGTProvider.mock.calls.at(-1)?.[0]._getRoutingLocaleCookieName;
     expect(getRoutingLocaleCookieName()).toBeUndefined();
 
+    expect(mockGTProvider.mock.calls.at(-1)?.[0]._resetLocaleCookieName).toBe(
+      'custom-reset'
+    );
     document.cookie = 'custom-routing-enabled=false;path=/';
     expect(getRoutingLocaleCookieName()).toBeUndefined();
 

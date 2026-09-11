@@ -271,9 +271,14 @@ export function getLocaleFromRequest(
   }
 
   // Check cookie locale
-  const routingCookieLocale = localeRouting
-    ? req.cookies.get(defaultRoutingFetchLocaleCookieName)
-    : undefined;
+  // Only a routed reset owns the request cookie; older values must not shadow
+  // subsequent locale choices made by non-routed or older clients.
+  const routingCookieLocale =
+    localeRouting &&
+    req.cookies.get(resetLocaleCookieName)?.value ===
+      defaultRoutingFetchLocaleCookieName
+      ? req.cookies.get(defaultRoutingFetchLocaleCookieName)
+      : undefined;
   const cookieLocale =
     routingCookieLocale?.value && gt.isValidLocale(routingCookieLocale.value)
       ? routingCookieLocale

@@ -28,6 +28,7 @@ export type BrowserConditionStoreParams = WritableConditionStoreParams & {
   _getEnableI18n?: GetEnableI18n;
   _reload?: ReloadType;
   _getRoutingLocaleCookieName?: () => string | undefined;
+  _resetLocaleCookieName?: string;
 };
 
 /**
@@ -39,6 +40,7 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
   private customGetRegion?: GetRegion;
   private customGetEnableI18n?: GetEnableI18n;
   private customGetRoutingLocaleCookieName?: () => string | undefined;
+  private resetLocaleCookieName: string;
 
   constructor(config: BrowserConditionStoreParams) {
     const i18nConfig = getI18nConfig();
@@ -50,6 +52,8 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
     this.customGetRegion = config._getRegion;
     this.customGetEnableI18n = config._getEnableI18n;
     this.customGetRoutingLocaleCookieName = config._getRoutingLocaleCookieName;
+    this.resetLocaleCookieName =
+      config._resetLocaleCookieName ?? defaultResetLocaleCookieName;
     this.updateLocale(config.locale);
     if (config.region !== undefined) {
       setCookieValue({
@@ -77,8 +81,8 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
       this.updateLocale(resolvedLocale);
     }
     setCookieValue({
-      cookieName: defaultResetLocaleCookieName,
-      value: 'true',
+      cookieName: this.resetLocaleCookieName,
+      value: routingLocaleCookieName ?? 'true',
     });
     this.reload(resolvedLocale);
   };

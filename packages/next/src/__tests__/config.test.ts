@@ -283,13 +283,19 @@ describe('withGTConfig', () => {
       const result = withGTConfig(
         {},
         {
-          headersAndCookies: { localeRoutingEnabledCookieName: 'site-routing' },
+          headersAndCookies: {
+            localeRoutingEnabledCookieName: 'site-routing',
+            resetLocaleCookieName: 'site-reset',
+          },
         }
       );
 
       expect(
         result.env!._GENERALTRANSLATION_LOCALE_ROUTING_ENABLED_COOKIE_NAME
       ).toBe('site-routing');
+      expect(result.env!._GENERALTRANSLATION_RESET_LOCALE_COOKIE_NAME).toBe(
+        'site-reset'
+      );
       expect(
         parseConfigParams(result).headersAndCookies
           .localeRoutingEnabledCookieName

@@ -42,6 +42,19 @@ describe('BrowserConditionStore routing locale', () => {
     vi.unstubAllGlobals();
   });
 
+  it('marks the configured reset cookie for a routed request', () => {
+    const store = new BrowserConditionStore({
+      locale: 'en',
+      _reload: vi.fn(),
+      _getRoutingLocaleCookieName: () => routingLocaleCookieName,
+      _resetLocaleCookieName: 'site-reset',
+    });
+    store.setLocale('fr');
+    expect(cookieValues.get('site-reset')).toBe(routingLocaleCookieName);
+    expect(cookieValues.get(defaultResetLocaleCookieName)).toBeUndefined();
+    expect(cookieValues.get(currentLocaleCookieName)).toBe('en');
+  });
+
   it('keeps the rendered locale while requesting a routed locale', () => {
     const reload = vi.fn();
     const store = new BrowserConditionStore({
@@ -57,7 +70,9 @@ describe('BrowserConditionStore routing locale', () => {
 
     expect(cookieValues.get(currentLocaleCookieName)).toBe('en');
     expect(cookieValues.get(routingLocaleCookieName)).toBe('fr');
-    expect(cookieValues.get(defaultResetLocaleCookieName)).toBe('true');
+    expect(cookieValues.get(defaultResetLocaleCookieName)).toBe(
+      routingLocaleCookieName
+    );
     expect(store.getLocale()).toBe('en');
     expect(setCookieValue).not.toHaveBeenCalledWith({
       cookieName: currentLocaleCookieName,
@@ -159,6 +174,7 @@ describe('BrowserConditionStore routing locale', () => {
     expect(cookieValues.get(currentLocaleCookieName)).toBe('es');
     expect(cookieValues.get(routingLocaleCookieName)).toBe('fr');
     expect(store.getLocale()).toBe('es');
+    expect(cookieValues.get(defaultResetLocaleCookieName)).toBe('true');
     expect(reload).toHaveBeenLastCalledWith({
       locale: 'es',
       region: undefined,

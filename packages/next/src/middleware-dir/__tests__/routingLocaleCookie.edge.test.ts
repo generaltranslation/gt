@@ -50,11 +50,66 @@ function request(
   req.cookies.set(defaultReferrerLocaleCookieName, 'es');
   if (requested)
     req.cookies.set(defaultRoutingFetchLocaleCookieName, requested);
-  if (reset) req.cookies.set(defaultResetLocaleCookieName, 'true');
+  if (reset)
+    req.cookies.set(
+      defaultResetLocaleCookieName,
+      defaultRoutingFetchLocaleCookieName
+    );
   return req;
 }
 
 describe('requested routing locale', () => {
+  it('honors and consumes a routed reset using the configured cookie name', () => {
+    vi.stubEnv(
+      '_GENERALTRANSLATION_I18N_CONFIG_PARAMS',
+      JSON.stringify({
+        defaultLocale: 'en',
+        locales: ['en', 'fr', 'es'],
+        headersAndCookies: { resetLocaleCookieName: 'site-reset' },
+      })
+    );
+    const middleware = createNextMiddleware();
+    const req = request('/blog', { reset: false });
+    req.cookies.set('site-reset', defaultRoutingFetchLocaleCookieName);
+    expect(middleware(req).headers.get('location')).toBe(
+      origin + '/fr/blog' + query
+    );
+    const terminalReq = request('/fr/blog', { reset: false });
+    terminalReq.cookies.set('site-reset', defaultRoutingFetchLocaleCookieName);
+    const terminal = middleware(terminalReq);
+    expect(terminal.headers.get(defaultLocaleHeaderName)).toBe('fr');
+    expect(terminal.cookies.get('site-reset')?.value).toBe('');
+  });
+  it.each([undefined, 'true'])(
+    'does not let a stale request cookie override a later legacy choice (reset=%s)',
+    (reset) => {
+      const middleware = createNextMiddleware();
+      const req = request('/blog', {
+        current: 'es',
+        requested: 'fr',
+        reset: false,
+      });
+      if (reset) req.cookies.set(defaultResetLocaleCookieName, reset);
+      const response = middleware(req);
+      expect(response.headers.get('location')).toBe(
+        origin + '/es/blog' + query
+      );
+      expect(response.headers.get(defaultLocaleHeaderName)).toBe('es');
+    }
+  );
+
+  it('uses the current locale after a denied routed reset has been consumed', () => {
+    const middleware = createNextMiddleware({
+      localeRoutes: { fr: ['/blog'] },
+    });
+    const response = middleware(request('/careers'));
+    expect(response.headers.get(defaultLocaleHeaderName)).toBe('en');
+    expect(response.cookies.get(defaultResetLocaleCookieName)?.value).toBe('');
+    const nextResponse = middleware(request('/blog', { reset: false }));
+    expect(nextResponse.headers.get(defaultLocaleHeaderName)).toBe('en');
+    expect(nextResponse.headers.get('location')).toBeNull();
+  });
+
   it.each(['/blog', '/en/blog', '/es/blog'])(
     'uses the requested locale for an explicit switch from %s',
     (path) => {
