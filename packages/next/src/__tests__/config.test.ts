@@ -302,6 +302,14 @@ describe('withGTConfig', () => {
       ).toBe('site-routing');
     });
 
+    it('exposes Next basePath for app-relative client routing checks', async () => {
+      const withGTConfig = await getWithGTConfig();
+      const result = withGTConfig({ basePath: '/docs' });
+
+      expect(result.env!._GENERALTRANSLATION_BASE_PATH).toBe('/docs');
+      expect(result.basePath).toBe('/docs');
+    });
+
     it('sets all expected _GENERALTRANSLATION_* env vars as strings', async () => {
       const withGTConfig = await getWithGTConfig();
       const result = withGTConfig();

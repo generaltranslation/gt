@@ -67,6 +67,7 @@ describe('Client_GTProvider', () => {
     delete process.env._GENERALTRANSLATION_PATH_REGEX;
     delete process.env._GENERALTRANSLATION_LOCALE_ROUTING_ENABLED_COOKIE_NAME;
     delete process.env._GENERALTRANSLATION_RESET_LOCALE_COOKIE_NAME;
+    delete process.env._GENERALTRANSLATION_BASE_PATH;
     document.cookie =
       'generaltranslation.locale-routing-enabled=;max-age=0;path=/';
     document.cookie = 'custom-routing-enabled=;max-age=0;path=/';
@@ -227,6 +228,76 @@ describe('Client_GTProvider', () => {
       mockGTProvider.mock.calls.at(-1)?.[0]._getRoutingLocaleCookieName;
 
     expect(secondCallback).toBe(firstCallback);
+
+    await act(async () => root.unmount());
+  });
+
+  it.each([
+    ['/docs/routed/page', '^/routed(?:/|$)', true],
+    ['/docs/excluded/page', '^/routed(?:/|$)', false],
+    ['/docs-copy/routed/page', '^/docs-copy/', true],
+    ['/docs/docs/routed/page', '^/docs/routed/', true],
+    ['/docs', '^/$', true],
+    ['/docs/', '^/$', true],
+  ])(
+    'checks the app-relative pathname with basePath: %s',
+    async (pathname, pathRegex, routed) => {
+      process.env._GENERALTRANSLATION_BASE_PATH = '/docs';
+      process.env._GENERALTRANSLATION_PATH_REGEX = pathRegex;
+      mockPathname.mockReturnValue('/routed/page');
+      vi.stubGlobal('location', {
+        pathname,
+        reload: mockReloadBrowserPage,
+      });
+      const { Client_GTProvider } = await import('../client-boundary');
+      const root = createRoot(document.createElement('div'));
+
+      await act(async () => {
+        root.render(
+          <Client_GTProvider dictionaries={{}} locale='en' translations={{}}>
+            content
+          </Client_GTProvider>
+        );
+      });
+
+      expect(
+        mockGTProvider.mock.calls.at(-1)?.[0]._getRoutingLocaleCookieName()
+      ).toBe(routed ? 'generaltranslation.routing-fetch-locale' : undefined);
+
+      await act(async () => root.unmount());
+    }
+  );
+
+  it('recognizes a prefixed locale below basePath when switching to the default', async () => {
+    process.env._GENERALTRANSLATION_BASE_PATH = '/docs';
+    process.env._GENERALTRANSLATION_PATH_REGEX = '^/(?:fr/)?routed/';
+    mockPathname.mockReturnValue('/fr/routed/page');
+    vi.stubGlobal('location', {
+      pathname: '/docs/fr/routed/page',
+      reload: mockReloadBrowserPage,
+    });
+    mockGetI18nConfig.mockReturnValue({
+      determineLocale: ([locale]: string[]) =>
+        ['en', 'fr'].includes(locale) ? locale : undefined,
+      getDefaultLocale: () => 'en',
+      getLocales: () => ['en', 'fr'],
+      isGTServicesEnabled: () => false,
+      resolveAliasLocale: (locale: string) => locale,
+      standardizeLocale: (locale: string) => locale,
+    });
+    const { Client_GTProvider } = await import('../client-boundary');
+    const root = createRoot(document.createElement('div'));
+    await act(async () => {
+      root.render(
+        <Client_GTProvider dictionaries={{}} locale='fr' translations={{}}>
+          content
+        </Client_GTProvider>
+      );
+    });
+
+    mockGTProvider.mock.calls.at(-1)?.[0]._reload({ locale: 'en' });
+    expect(mockReloadBrowserPage).toHaveBeenCalledOnce();
+    expect(mockRefreshServerComponents).not.toHaveBeenCalled();
 
     await act(async () => root.unmount());
   });
