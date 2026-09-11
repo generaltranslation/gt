@@ -36,25 +36,22 @@ function request(
     requested = 'fr',
     reset = true,
     localeCookieName = defaultLocaleCookieName,
+    requestedCookieName = defaultRoutingFetchLocaleCookieName,
     headers = {},
   }: {
     current?: string;
     requested?: string;
     reset?: boolean;
     localeCookieName?: string;
+    requestedCookieName?: string;
     headers?: Record<string, string>;
   } = {}
 ) {
   const req = new NextRequest(origin + path + query, { headers });
   req.cookies.set(localeCookieName, current);
   req.cookies.set(defaultReferrerLocaleCookieName, 'es');
-  if (requested)
-    req.cookies.set(defaultRoutingFetchLocaleCookieName, requested);
-  if (reset)
-    req.cookies.set(
-      defaultResetLocaleCookieName,
-      defaultRoutingFetchLocaleCookieName
-    );
+  if (requested) req.cookies.set(requestedCookieName, requested);
+  if (reset) req.cookies.set(defaultResetLocaleCookieName, requestedCookieName);
   return req;
 }
 
@@ -210,11 +207,63 @@ describe('requested routing locale', () => {
           current: 'es',
           requested,
           localeCookieName: 'site-locale',
+          requestedCookieName: 'site-locale.routing-fetch',
         })
       );
       expect(response.headers.get('location')).toBe(
         origin + `/${requested || 'es'}/blog` + query
       );
+    }
+  );
+
+  it('isolates custom locale cookies from another app pending a locale switch', () => {
+    vi.stubEnv(
+      '_GENERALTRANSLATION_I18N_CONFIG_PARAMS',
+      JSON.stringify({
+        defaultLocale: 'en',
+        locales: ['en', 'fr'],
+        headersAndCookies: {
+          localeCookieName: 'app-b-current',
+          resetLocaleCookieName: 'app-b-reset',
+          localeRoutingEnabledCookieName: 'app-b-enabled',
+        },
+      })
+    );
+    const req = new NextRequest(origin + '/blog' + query);
+    req.cookies.set('app-b-current', 'en');
+    req.cookies.set(defaultRoutingFetchLocaleCookieName, 'fr');
+    const response = createNextMiddleware()(req);
+    expect(response.headers.get('location')).toBeNull();
+    expect(response.headers.get(defaultLocaleHeaderName)).toBe('en');
+    expect(response.headers.get('x-middleware-rewrite')).toBe(
+      origin + '/en/blog' + query
+    );
+  });
+
+  it.each([false, true])(
+    'uses an app-specific pending locale before and after reset consumption (reset=%s)',
+    (reset) => {
+      vi.stubEnv(
+        '_GENERALTRANSLATION_I18N_CONFIG_PARAMS',
+        JSON.stringify({
+          defaultLocale: 'en',
+          locales: ['en', 'fr', 'es'],
+          headersAndCookies: {
+            localeCookieName: 'app-b-current',
+            resetLocaleCookieName: 'app-b-reset',
+          },
+        })
+      );
+      const req = new NextRequest(origin + '/blog' + query);
+      req.cookies.set('app-b-current', 'en');
+      req.cookies.set(defaultRoutingFetchLocaleCookieName, 'es');
+      req.cookies.set('app-b-current.routing-fetch', 'fr');
+      if (reset) req.cookies.set('app-b-reset', 'app-b-current.routing-fetch');
+      const response = createNextMiddleware()(req);
+      expect(response.headers.get('location')).toBe(
+        origin + '/fr/blog' + query
+      );
+      expect(response.headers.get(defaultLocaleHeaderName)).toBe('fr');
     }
   );
 

@@ -2,6 +2,7 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { defaultLocaleCookieName } from 'gt-i18n/internal/cookies';
 
 const {
   mockGetI18nConfig,
@@ -55,6 +56,7 @@ describe('Client_GTProvider', () => {
     mockGetI18nConfig.mockReturnValue({
       determineLocale: vi.fn(),
       getDefaultLocale: () => 'en',
+      getLocaleCookieName: () => defaultLocaleCookieName,
       getLocales: () => ['en', 'en-GB', 'fr'],
       isGTServicesEnabled: () => false,
       resolveAliasLocale: (locale: string) => locale,
@@ -113,6 +115,30 @@ describe('Client_GTProvider', () => {
 
     await act(async () => root.unmount());
   });
+
+  it.each([
+    ['app-b-current', 'app-b-current.routing-fetch'],
+    ['NEXT_LOCALE', 'NEXT_LOCALE.routing-fetch'],
+  ])(
+    'keeps the pending locale in the configured %s namespace',
+    async (currentCookie, requestedCookie) => {
+      mockGetI18nConfig.mockReturnValue({
+        ...mockGetI18nConfig(),
+        getLocaleCookieName: () => currentCookie,
+      });
+      const { Client_GTProvider } = await import('../client-boundary');
+      const root = createRoot(document.createElement('div'));
+      await act(async () => {
+        root.render(
+          <Client_GTProvider dictionaries={{}} locale='en' translations={{}} />
+        );
+      });
+      expect(
+        mockGTProvider.mock.calls.at(-1)?.[0]._localeRouting.cookieName
+      ).toBe(requestedCookie);
+      await act(async () => root.unmount());
+    }
+  );
 
   it('uses the configured locale-routing enabled flag name', async () => {
     process.env._GENERALTRANSLATION_PATH_REGEX = '.*';
