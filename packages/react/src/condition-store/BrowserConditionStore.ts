@@ -27,7 +27,10 @@ export type BrowserConditionStoreParams = WritableConditionStoreParams & {
   _getRegion?: GetRegion;
   _getEnableI18n?: GetEnableI18n;
   _reload?: ReloadType;
-  _getRoutingLocaleCookieName?: () => string | undefined;
+  _localeRouting?: {
+    cookieName: string;
+    isEnabled: () => boolean;
+  };
   _resetLocaleCookieName?: string;
 };
 
@@ -39,7 +42,7 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
   private customGetLocale?: GetLocale;
   private customGetRegion?: GetRegion;
   private customGetEnableI18n?: GetEnableI18n;
-  private customGetRoutingLocaleCookieName?: () => string | undefined;
+  private localeRouting?: BrowserConditionStoreParams['_localeRouting'];
   private resetLocaleCookieName: string;
 
   constructor(config: BrowserConditionStoreParams) {
@@ -51,7 +54,7 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
     this.customGetLocale = config._getLocale;
     this.customGetRegion = config._getRegion;
     this.customGetEnableI18n = config._getEnableI18n;
-    this.customGetRoutingLocaleCookieName = config._getRoutingLocaleCookieName;
+    this.localeRouting = config._localeRouting;
     this.resetLocaleCookieName =
       config._resetLocaleCookieName ?? defaultResetLocaleCookieName;
     this.updateLocale(config.locale);
@@ -70,7 +73,9 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
 
   setLocale = (locale: LocaleCandidates): void => {
     const resolvedLocale = getI18nConfig().resolveSupportedLocale(locale);
-    const routingLocaleCookieName = this.customGetRoutingLocaleCookieName?.();
+    const routingLocaleCookieName = this.localeRouting?.isEnabled()
+      ? this.localeRouting.cookieName
+      : undefined;
     if (routingLocaleCookieName) {
       // Keep the rendered locale until the server accepts the requested route.
       setCookieValue({
@@ -84,7 +89,7 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
       cookieName: this.resetLocaleCookieName,
       value: routingLocaleCookieName ?? 'true',
     });
-    this.reload(resolvedLocale);
+    this.reload(routingLocaleCookieName ? resolvedLocale : undefined);
   };
 
   getRegion = (): string | undefined => {
@@ -125,11 +130,16 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
       cookieName: i18nConfig.getLocaleCookieName(),
       value: resolvedLocale,
     });
-    const routingLocaleCookieName = this.customGetRoutingLocaleCookieName?.();
-    if (routingLocaleCookieName) {
+    const routingLocaleCookieName = this.localeRouting?.cookieName;
+    // Retire the pending request when a server locale or non-routed choice
+    // applies. An older HTTP response could otherwise erase a newer selection.
+    if (
+      routingLocaleCookieName &&
+      getCookieValue({ cookieName: routingLocaleCookieName })
+    ) {
       setCookieValue({
         cookieName: routingLocaleCookieName,
-        value: resolvedLocale,
+        value: '',
       });
     }
   };

@@ -44,14 +44,19 @@ function getAppPathname(): string {
     : pathname;
 }
 
-function getRoutingLocaleCookieName(): string | undefined {
-  return typeof window !== 'undefined' &&
+function isLocaleRoutingEnabled(): boolean {
+  return (
+    typeof window !== 'undefined' &&
     getCookieValue(document.cookie, localeRoutingEnabledCookieName) ===
       'true' &&
     pathnameMatchesRegex(getAppPathname(), pathRegex)
-    ? defaultRoutingFetchLocaleCookieName
-    : undefined;
+  );
 }
+
+const localeRouting = {
+  cookieName: defaultRoutingFetchLocaleCookieName,
+  isEnabled: isLocaleRoutingEnabled,
+};
 
 /**
  * Only need to initalize client. We know server was already
@@ -81,7 +86,7 @@ export function Client_GTProvider(props: SharedGTProviderProps) {
       const defaultLocale = i18nConfig.getDefaultLocale();
       const locales = i18nConfig.getLocales();
       const currentPathname = getAppPathname();
-      const localeRoutingApplies = !!getRoutingLocaleCookieName();
+      const localeRoutingApplies = isLocaleRoutingEnabled();
       if (localeRoutingApplies && locale === defaultLocale) {
         const currentPathLocale = resolvePathLocale(
           currentPathname,
@@ -109,7 +114,7 @@ export function Client_GTProvider(props: SharedGTProviderProps) {
     <GTProvider
       {...props}
       _reload={syncServerContent}
-      _getRoutingLocaleCookieName={getRoutingLocaleCookieName}
+      _localeRouting={localeRouting}
       _resetLocaleCookieName={resetLocaleCookieName}
     />
   );
