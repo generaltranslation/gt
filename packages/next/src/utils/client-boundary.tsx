@@ -33,12 +33,22 @@ const localeRoutingEnabledCookieName =
 const resetLocaleCookieName =
   process.env._GENERALTRANSLATION_RESET_LOCALE_COOKIE_NAME ||
   defaultResetLocaleCookieName;
+const basePath = process.env._GENERALTRANSLATION_BASE_PATH || '';
+
+function getAppPathname(): string {
+  const pathname = globalThis.location.pathname;
+  // NextURL and usePathname exclude basePath; location.pathname includes it.
+  return basePath &&
+    (pathname === basePath || pathname.startsWith(`${basePath}/`))
+    ? pathname.slice(basePath.length) || '/'
+    : pathname;
+}
 
 function getRoutingLocaleCookieName(): string | undefined {
   return typeof window !== 'undefined' &&
     getCookieValue(document.cookie, localeRoutingEnabledCookieName) ===
       'true' &&
-    pathnameMatchesRegex(globalThis.location.pathname, pathRegex)
+    pathnameMatchesRegex(getAppPathname(), pathRegex)
     ? defaultRoutingFetchLocaleCookieName
     : undefined;
 }
@@ -70,7 +80,7 @@ export function Client_GTProvider(props: SharedGTProviderProps) {
       const i18nConfig = getI18nConfig();
       const defaultLocale = i18nConfig.getDefaultLocale();
       const locales = i18nConfig.getLocales();
-      const currentPathname = globalThis.location.pathname;
+      const currentPathname = getAppPathname();
       const localeRoutingApplies = !!getRoutingLocaleCookieName();
       if (localeRoutingApplies && locale === defaultLocale) {
         const currentPathLocale = resolvePathLocale(
