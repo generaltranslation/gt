@@ -190,7 +190,7 @@ export function createNextMiddleware({
         ? Object.fromEntries(
             locales.map((locale) => [
               gtServicesEnabled ? standardizeLocale(locale) : locale,
-              localizedPath,
+              localizedPath === '' ? '/' : localizedPath,
             ])
           )
         : localizedPath,
