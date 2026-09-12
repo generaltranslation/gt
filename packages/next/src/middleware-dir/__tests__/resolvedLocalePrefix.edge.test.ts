@@ -147,8 +147,8 @@ describe('resolved locale prefixes', () => {
     expectRoute(
       createNextMiddleware()(request('/pricing')),
       'rewrite',
-      'en-US',
-      '/en-US/pricing'
+      'en-us',
+      '/en-us/pricing'
     );
   });
 
@@ -294,25 +294,25 @@ describe('resolved locale prefixes', () => {
     });
     const middleware = createNextMiddleware({
       prefixDefaultLocale: true,
-      localeRoutes: { 'en-GB': [], 'en-US': [] },
+      localeRoutes: { 'en-GB': [], 'en-us': [] },
     });
 
     expectRoute(
       middleware(request('/en-GB/careers', 'cookie')),
       'redirect',
-      'en-US',
+      'en-us',
       '/en-us/careers'
     );
     expectRoute(
       middleware(request('/en-us/careers', 'cookie')),
-      'redirect',
-      'en-US',
-      '/en-US/careers'
+      'next',
+      'en-us'
     );
     expectRoute(
       middleware(request('/en-US/careers', 'cookie')),
-      'next',
-      'en-US'
+      'redirect',
+      'en-us',
+      '/en-us/careers'
     );
   });
 });

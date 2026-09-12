@@ -79,6 +79,22 @@ describe('I18nCache', () => {
 
   // ===== NEW BEHAVIOR TESTS ===== //
 
+  it('uses approved locale spelling for translation loader and cache keys', async () => {
+    const loadTranslations = vi
+      .fn()
+      .mockResolvedValue({ [expectedHash]: translatedString });
+    const cache = createCache({ locales: ['en', 'fr-fr'], loadTranslations });
+
+    expect(await cache.loadTranslations('fr-FR')).toEqual({
+      [expectedHash]: translatedString,
+    });
+    expect(await cache.loadTranslations('fr-fr')).toEqual({
+      [expectedHash]: translatedString,
+    });
+    expect(loadTranslations).toHaveBeenCalledTimes(1);
+    expect(loadTranslations.mock.calls[0][0]).toBe('fr-fr');
+  });
+
   it('loadTranslations() returns Record<Hash, Translation>', async () => {
     const cache = createCache();
 
