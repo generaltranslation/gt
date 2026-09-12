@@ -28,6 +28,27 @@ export type FileFormat =
   | 'DOT_STRINGSDICT'
   | 'ANDROID_STRINGS';
 
+export type Branch = {
+  id: string;
+  name: string;
+};
+
+export type JsonObject = {
+  [key: string]: JsonValue;
+};
+
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | Array<JsonValue | null>
+  | {
+      [key: string]: JsonValue | null;
+    };
+
+export type ModelProvider = 'ANTHROPIC' | 'OPENAI' | 'XAI' | 'GOOGLE';
+
 export type RuntimeTranslationResponse = {
   [key: string]:
     | {
@@ -42,16 +63,6 @@ export type RuntimeTranslationResponse = {
         code: number;
       };
 };
-
-export type JsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | Array<JsonValue | null>
-  | {
-      [key: string]: JsonValue | null;
-    };
 
 export type RuntimeTranslationRequest = {
   requests: {
@@ -79,17 +90,6 @@ export type RuntimeTranslationRequest = {
   metadata: {
     modelProvider?: ModelProvider;
   };
-};
-
-export type ModelProvider = 'ANTHROPIC' | 'OPENAI' | 'XAI' | 'GOOGLE';
-
-export type Branch = {
-  id: string;
-  name: string;
-};
-
-export type JsonObject = {
-  [key: string]: JsonValue;
 };
 
 export type CreateCliWizardSessionResponse = {
@@ -121,235 +121,360 @@ export type DeleteCliWizardSessionResponse = {
   message: string;
 };
 
-export type CreateProjectData = {
-  body: {
-    name: string;
-    defaultLocale: string;
-    cdnEnabled?: boolean;
+export type WorkspacePluginInfoData = {
+  body?: {
+    fileId?: string;
+    hostApp?: 'DOCS' | 'SLIDES';
   };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?:
-      | '2025-01-01.v0'
-      | '2025-11-03.v1'
-      | '2026-02-18.v1'
-      | '2026-03-06.v1';
-  };
-  path: {
-    orgId: string;
-  };
+  path?: never;
   query?: never;
-  url: '/v2/orgs/{orgId}/projects';
+  url: '/v1/integrations/workspace-plugin/info';
 };
 
-export type CreateProjectErrors = {
+export type WorkspacePluginInfoErrors = {
   /**
    * Request error
    */
-  400: ErrorResponse;
+  400: {
+    error: string;
+    errors?: Array<string>;
+    linked?: boolean;
+  };
   /**
    * Request error
    */
-  401: ErrorResponse;
+  401: {
+    error: string;
+    errors?: Array<string>;
+    linked?: boolean;
+  };
   /**
    * Request error
    */
-  403: ErrorResponse;
+  403: {
+    error: string;
+    errors?: Array<string>;
+    linked?: boolean;
+  };
   /**
    * Request error
    */
-  409: ErrorResponse;
+  404: {
+    error: string;
+    errors?: Array<string>;
+    linked?: boolean;
+  };
   /**
    * Request error
    */
-  413: ErrorResponse;
+  413: {
+    error: string;
+    errors?: Array<string>;
+    linked?: boolean;
+  };
   /**
    * Request error
    */
-  429: ErrorResponse;
+  429: {
+    error: string;
+    errors?: Array<string>;
+    linked?: boolean;
+  };
   /**
    * Request error
    */
-  500: ErrorResponse;
+  500: {
+    error: string;
+    errors?: Array<string>;
+    linked?: boolean;
+  };
+  /**
+   * Request error
+   */
+  502: {
+    error: string;
+    errors?: Array<string>;
+    linked?: boolean;
+  };
 };
 
-export type CreateProjectError = CreateProjectErrors[keyof CreateProjectErrors];
+export type WorkspacePluginInfoError =
+  WorkspacePluginInfoErrors[keyof WorkspacePluginInfoErrors];
 
-export type CreateProjectResponses = {
+export type WorkspacePluginInfoResponses = {
   /**
-   * Project created
+   * Workspace plugin result
    */
-  201: {
-    project: {
-      id: string;
-      name: string;
-      orgId: string;
-      defaultLocale: string;
+  200: {
+    linked: boolean;
+    user: {
+      email: string | null;
     };
-  };
-};
-
-export type CreateProjectResponse =
-  CreateProjectResponses[keyof CreateProjectResponses];
-
-export type CreateProjectApiKeyData = {
-  body: {
-    name: string;
-    type?: 'production' | 'development';
-  };
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?:
-      | '2025-01-01.v0'
-      | '2025-11-03.v1'
-      | '2026-02-18.v1'
-      | '2026-03-06.v1';
-  };
-  path: {
-    projectId: string;
-  };
-  query?: never;
-  url: '/v2/projects/{projectId}/api-keys';
-};
-
-export type CreateProjectApiKeyErrors = {
-  /**
-   * Request error
-   */
-  400: ErrorResponse;
-  /**
-   * Request error
-   */
-  401: ErrorResponse;
-  /**
-   * Request error
-   */
-  403: ErrorResponse;
-  /**
-   * Request error
-   */
-  404: ErrorResponse;
-  /**
-   * Request error
-   */
-  413: ErrorResponse;
-  /**
-   * Request error
-   */
-  429: ErrorResponse;
-  /**
-   * Request error
-   */
-  500: ErrorResponse;
-};
-
-export type CreateProjectApiKeyError =
-  CreateProjectApiKeyErrors[keyof CreateProjectApiKeyErrors];
-
-export type CreateProjectApiKeyResponses = {
-  /**
-   * Project API key created
-   */
-  201: {
-    apiKey: {
-      id: string;
+    supportedLocales: Array<{
+      code: string;
       name: string;
-      key: string;
-      projectId: string;
-      type: 'production' | 'development';
-    };
-  };
-};
-
-export type CreateProjectApiKeyResponse =
-  CreateProjectApiKeyResponses[keyof CreateProjectApiKeyResponses];
-
-export type UploadTranslationsData = {
-  body: {
-    data: Array<{
-      source: {
-        content: string;
-        fileName: string;
-        fileFormat:
-          | 'GTJSON'
-          | 'MDX'
-          | 'JSON'
-          | 'YAML'
-          | 'MD'
-          | 'TS'
-          | 'JS'
-          | 'HTML'
-          | 'TXT'
-          | 'PO'
-          | 'POT'
-          | 'TWILIO_CONTENT_JSON'
-          | 'LOTTIE'
-          | 'SVG'
-          | 'XCSTRINGS'
-          | 'DOT_STRINGS'
-          | 'DOT_STRINGSDICT'
-          | 'ANDROID_STRINGS';
-        dataFormat?: string;
-        locale: string;
-        fileId?: string;
-        versionId?: string;
-        branchId?: string;
-        checkedOutBranchId?: string;
-        incomingBranchId?: string;
-        formatMetadata?: {
-          [key: string]: unknown;
-        };
-      };
-      translations: Array<{
-        content: string;
-        fileName: string;
-        fileFormat:
-          | 'GTJSON'
-          | 'MDX'
-          | 'JSON'
-          | 'YAML'
-          | 'MD'
-          | 'TS'
-          | 'JS'
-          | 'HTML'
-          | 'TXT'
-          | 'PO'
-          | 'POT'
-          | 'TWILIO_CONTENT_JSON'
-          | 'LOTTIE'
-          | 'SVG'
-          | 'XCSTRINGS'
-          | 'DOT_STRINGS'
-          | 'DOT_STRINGSDICT'
-          | 'ANDROID_STRINGS';
-        dataFormat?: string;
-        locale: string;
-        transformFormat?:
-          | 'GTJSON'
-          | 'MDX'
-          | 'JSON'
-          | 'YAML'
-          | 'MD'
-          | 'TS'
-          | 'JS'
-          | 'HTML'
-          | 'TXT'
-          | 'PO'
-          | 'POT'
-          | 'TWILIO_CONTENT_JSON'
-          | 'LOTTIE'
-          | 'SVG'
-          | 'XCSTRINGS'
-          | 'DOT_STRINGS'
-          | 'DOT_STRINGSDICT'
-          | 'ANDROID_STRINGS';
-      }>;
+      emoji: string;
     }>;
+    projects: Array<{
+      id: string;
+      name: string;
+      orgName: string | null;
+      sourceLocale: {
+        code: string;
+        name: string;
+        emoji: string;
+      };
+      currentLocales: Array<{
+        code: string;
+        name: string;
+        emoji: string;
+      }>;
+      localeWhitelist: Array<{
+        code: string;
+        name: string;
+        emoji: string;
+      }>;
+      integrationConnected: boolean;
+      integrationId: string;
+      linkedFile: {
+        sourceLocale: {
+          code: string;
+          name: string;
+          emoji: string;
+        };
+      } | null;
+      translatedCopy: {
+        sourceName: string;
+        sourceResourceId: string;
+        sourceLocale: {
+          code: string;
+          name: string;
+          emoji: string;
+        };
+        targetLocale: {
+          code: string;
+          name: string;
+          emoji: string;
+        };
+      } | null;
+    }>;
+  };
+};
+
+export type WorkspacePluginInfoResponse =
+  WorkspacePluginInfoResponses[keyof WorkspacePluginInfoResponses];
+
+export type WorkspacePluginTranslateData = {
+  body?: {
+    projectId: string;
+    fileId: string;
+    hostApp: 'DOCS' | 'SLIDES';
+    targetLocales: Array<string>;
     sourceLocale?: string;
+    force?: boolean;
+  };
+  path?: never;
+  query?: never;
+  url: '/v1/integrations/workspace-plugin/translate';
+};
+
+export type WorkspacePluginTranslateErrors = {
+  /**
+   * Request error
+   */
+  400: {
+    error: string;
+    errors?: Array<string>;
+    linked?: boolean;
+  };
+  /**
+   * Request error
+   */
+  401: {
+    error: string;
+    errors?: Array<string>;
+    linked?: boolean;
+  };
+  /**
+   * Request error
+   */
+  403: {
+    error: string;
+    errors?: Array<string>;
+    linked?: boolean;
+  };
+  /**
+   * Request error
+   */
+  404: {
+    error: string;
+    errors?: Array<string>;
+    linked?: boolean;
+  };
+  /**
+   * Request error
+   */
+  413: {
+    error: string;
+    errors?: Array<string>;
+    linked?: boolean;
+  };
+  /**
+   * Request error
+   */
+  429: {
+    error: string;
+    errors?: Array<string>;
+    linked?: boolean;
+  };
+  /**
+   * Request error
+   */
+  500: {
+    error: string;
+    errors?: Array<string>;
+    linked?: boolean;
+  };
+  /**
+   * Request error
+   */
+  502: {
+    error: string;
+    errors?: Array<string>;
+    linked?: boolean;
+  };
+};
+
+export type WorkspacePluginTranslateError =
+  WorkspacePluginTranslateErrors[keyof WorkspacePluginTranslateErrors];
+
+export type WorkspacePluginTranslateResponses = {
+  /**
+   * Workspace plugin result
+   */
+  200: {
+    accepted: boolean;
+    sourceLocale: string;
+    targetLocales: Array<string>;
+    enqueued: number;
+    failed: number;
+    errors: Array<string>;
+  };
+};
+
+export type WorkspacePluginTranslateResponse =
+  WorkspacePluginTranslateResponses[keyof WorkspacePluginTranslateResponses];
+
+export type WorkspacePluginStatusData = {
+  body?: {
+    projectId: string;
+    fileId: string;
+    hostApp: 'DOCS' | 'SLIDES';
+  };
+  path?: never;
+  query?: never;
+  url: '/v1/integrations/workspace-plugin/status';
+};
+
+export type WorkspacePluginStatusErrors = {
+  /**
+   * Request error
+   */
+  400: {
+    error: string;
+    errors?: Array<string>;
+    linked?: boolean;
+  };
+  /**
+   * Request error
+   */
+  401: {
+    error: string;
+    errors?: Array<string>;
+    linked?: boolean;
+  };
+  /**
+   * Request error
+   */
+  403: {
+    error: string;
+    errors?: Array<string>;
+    linked?: boolean;
+  };
+  /**
+   * Request error
+   */
+  404: {
+    error: string;
+    errors?: Array<string>;
+    linked?: boolean;
+  };
+  /**
+   * Request error
+   */
+  413: {
+    error: string;
+    errors?: Array<string>;
+    linked?: boolean;
+  };
+  /**
+   * Request error
+   */
+  429: {
+    error: string;
+    errors?: Array<string>;
+    linked?: boolean;
+  };
+  /**
+   * Request error
+   */
+  500: {
+    error: string;
+    errors?: Array<string>;
+    linked?: boolean;
+  };
+  /**
+   * Request error
+   */
+  502: {
+    error: string;
+    errors?: Array<string>;
+    linked?: boolean;
+  };
+};
+
+export type WorkspacePluginStatusError =
+  WorkspacePluginStatusErrors[keyof WorkspacePluginStatusErrors];
+
+export type WorkspacePluginStatusResponses = {
+  /**
+   * Workspace plugin result
+   */
+  200: {
+    locales: Array<{
+      targetLocale: string;
+      locale: {
+        code: string;
+        name: string;
+        emoji: string;
+      };
+      translationProgress: number | null;
+      layoutProgress: number | null;
+      done: boolean;
+      targetCopy?: {
+        fileId: string;
+        url: string;
+      };
+    }>;
+  };
+};
+
+export type WorkspacePluginStatusResponse =
+  WorkspacePluginStatusResponses[keyof WorkspacePluginStatusResponses];
+
+export type FigmaPluginInfoData = {
+  body: {
+    figmaFileName: string;
   };
   headers?: {
     /**
@@ -367,10 +492,10 @@ export type UploadTranslationsData = {
   };
   path?: never;
   query?: never;
-  url: '/v2/project/files/upload-translations';
+  url: '/v1/integrations/figma-plugin/info';
 };
 
-export type UploadTranslationsErrors = {
+export type FigmaPluginInfoErrors = {
   /**
    * Request error
    */
@@ -390,7 +515,15 @@ export type UploadTranslationsErrors = {
   /**
    * Request error
    */
+  409: ErrorResponse;
+  /**
+   * Request error
+   */
   413: ErrorResponse;
+  /**
+   * Request error
+   */
+  423: ErrorResponse;
   /**
    * Request error
    */
@@ -399,36 +532,562 @@ export type UploadTranslationsErrors = {
    * Request error
    */
   500: ErrorResponse;
-  /**
-   * Request error
-   */
-  503: ErrorResponse;
 };
 
-export type UploadTranslationsError =
-  UploadTranslationsErrors[keyof UploadTranslationsErrors];
+export type FigmaPluginInfoError =
+  FigmaPluginInfoErrors[keyof FigmaPluginInfoErrors];
 
-export type UploadTranslationsResponses = {
+export type FigmaPluginInfoResponses = {
   /**
-   * Uploaded translation files
+   * Figma plugin result
    */
-  201: {
-    uploadedFiles: Array<{
-      branchId?: string;
+  200: {
+    project: {
+      id: string;
+      name: string;
+      integrationId: string;
+      sourceLocale: {
+        code: string;
+        name: string;
+        emoji: string;
+      };
+      currentLocales: Array<{
+        code: string;
+        name: string;
+        emoji: string;
+      }>;
+      localeWhitelist: Array<{
+        code: string;
+        name: string;
+        emoji: string;
+      }>;
+    };
+    supportedLocales: Array<{
+      code: string;
+      name: string;
+      emoji: string;
+    }>;
+    linkedPages: Array<{
+      pageName: string;
       fileId: string;
       versionId: string;
-      fileName: string;
-      fileFormat: FileFormat;
-      dataFormat?: string;
-      locale?: string;
+      sourceLocale: {
+        code: string;
+        name: string;
+        emoji: string;
+      };
+      locales: Array<{
+        code: string;
+        name: string;
+        emoji: string;
+      }>;
+      updatedAt: string;
+      skippedCount: number;
+      skipped: Array<{
+        nodeId: string;
+        displayPath: Array<string>;
+        reason:
+          | 'not_text_node'
+          | 'empty_text'
+          | 'hidden_layer'
+          | 'missing_characters'
+          | 'in_component_master';
+        details?: {
+          [key: string]: string | number | boolean | null;
+        };
+        pathKey: string;
+      }>;
     }>;
-    count: number;
-    message: string;
   };
 };
 
-export type UploadTranslationsResponse =
-  UploadTranslationsResponses[keyof UploadTranslationsResponses];
+export type FigmaPluginInfoResponse =
+  FigmaPluginInfoResponses[keyof FigmaPluginInfoResponses];
+
+export type FigmaPluginSyncData = {
+  body: {
+    figmaFileName: string;
+    pageName: string;
+    sourceLocale?: string;
+    units: Array<{
+      nodeId: string;
+      structuralPath: string;
+      value: string;
+      displayPath: Array<string>;
+      layout?: {
+        boxId: string;
+        frameId?: string;
+        rect?: {
+          x: number;
+          y: number;
+          width: number;
+          height: number;
+        };
+        autoResize?: 'NONE' | 'HEIGHT' | 'WIDTH_AND_HEIGHT' | 'TRUNCATE';
+        baseFontPt?: number;
+        equivClass?: string;
+        sizeRank?: number;
+      };
+      styleRuns?: Array<{
+        start: number;
+        end: number;
+        fontName?: {
+          family: string;
+          style: string;
+        };
+        fontSize?: number;
+        textDecoration?: string;
+        textCase?: string;
+        letterSpacing?: {
+          value: number;
+          unit: string;
+        };
+        lineHeight?: {
+          value?: number;
+          unit: string;
+        };
+        fills?: Array<{
+          [key: string]: unknown;
+        }>;
+        hyperlink?: {
+          [key: string]: unknown;
+        } | null;
+      }>;
+      instanceTextOrigin?: 'inherited' | 'overridden';
+    }>;
+    skipped?: Array<{
+      nodeId: string;
+      structuralPath: string;
+      displayPath: Array<string>;
+      reason:
+        | 'not_text_node'
+        | 'empty_text'
+        | 'hidden_layer'
+        | 'missing_characters'
+        | 'in_component_master';
+      details?: {
+        [key: string]: string | number | boolean | null;
+      };
+    }>;
+    allPageNames?: Array<string>;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?:
+      | '2025-01-01.v0'
+      | '2025-11-03.v1'
+      | '2026-02-18.v1'
+      | '2026-03-06.v1';
+    /**
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     */
+    'gt-project-id'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v1/integrations/figma-plugin/sync';
+};
+
+export type FigmaPluginSyncErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  409: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  423: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type FigmaPluginSyncError =
+  FigmaPluginSyncErrors[keyof FigmaPluginSyncErrors];
+
+export type FigmaPluginSyncResponses = {
+  /**
+   * Figma plugin result
+   */
+  200: {
+    fileId: string;
+    versionId: string;
+    sourceLocale: string;
+    unitCount: number;
+    skippedCount: number;
+    movedFrom?: string;
+  };
+};
+
+export type FigmaPluginSyncResponse =
+  FigmaPluginSyncResponses[keyof FigmaPluginSyncResponses];
+
+export type FigmaPluginImportTranslationsData = {
+  body: {
+    figmaFileName: string;
+    pageName: string;
+    locale: string;
+    versionId: string;
+    translations: {
+      [key: string]: string;
+    };
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?:
+      | '2025-01-01.v0'
+      | '2025-11-03.v1'
+      | '2026-02-18.v1'
+      | '2026-03-06.v1';
+    /**
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     */
+    'gt-project-id'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v1/integrations/figma-plugin/import-translations';
+};
+
+export type FigmaPluginImportTranslationsErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  409: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  423: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type FigmaPluginImportTranslationsError =
+  FigmaPluginImportTranslationsErrors[keyof FigmaPluginImportTranslationsErrors];
+
+export type FigmaPluginImportTranslationsResponses = {
+  /**
+   * Figma plugin result
+   */
+  200: {
+    saved: boolean;
+    versionId: string;
+    importedCount: number;
+    unmatchedCount: number;
+  };
+};
+
+export type FigmaPluginImportTranslationsResponse =
+  FigmaPluginImportTranslationsResponses[keyof FigmaPluginImportTranslationsResponses];
+
+export type FigmaPluginEnqueueData = {
+  body: {
+    figmaFileName: string;
+    pageName: string;
+    targetLocales: Array<string>;
+    sourceLocale?: string;
+    force?: boolean;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?:
+      | '2025-01-01.v0'
+      | '2025-11-03.v1'
+      | '2026-02-18.v1'
+      | '2026-03-06.v1';
+    /**
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     */
+    'gt-project-id'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v1/integrations/figma-plugin/enqueue';
+};
+
+export type FigmaPluginEnqueueErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  409: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  423: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type FigmaPluginEnqueueError =
+  FigmaPluginEnqueueErrors[keyof FigmaPluginEnqueueErrors];
+
+export type FigmaPluginEnqueueResponses = {
+  /**
+   * Figma plugin result
+   */
+  200: {
+    accepted: boolean;
+    sourceLocale: string;
+    targetLocales: Array<string>;
+    versionId: string;
+  };
+};
+
+export type FigmaPluginEnqueueResponse =
+  FigmaPluginEnqueueResponses[keyof FigmaPluginEnqueueResponses];
+
+export type FigmaPluginStatusData = {
+  body: {
+    figmaFileName: string;
+    pageName: string;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?:
+      | '2025-01-01.v0'
+      | '2025-11-03.v1'
+      | '2026-02-18.v1'
+      | '2026-03-06.v1';
+    /**
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     */
+    'gt-project-id'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v1/integrations/figma-plugin/status';
+};
+
+export type FigmaPluginStatusErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  409: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  423: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type FigmaPluginStatusError =
+  FigmaPluginStatusErrors[keyof FigmaPluginStatusErrors];
+
+export type FigmaPluginStatusResponses = {
+  /**
+   * Figma plugin result
+   */
+  200: {
+    versionId: string;
+    locales: Array<{
+      locale: {
+        code: string;
+        name: string;
+        emoji: string;
+      };
+      translationProgress: number | null;
+      done: boolean;
+    }>;
+  };
+};
+
+export type FigmaPluginStatusResponse =
+  FigmaPluginStatusResponses[keyof FigmaPluginStatusResponses];
+
+export type FigmaPluginDownloadData = {
+  body: {
+    figmaFileName: string;
+    pageName: string;
+    locale: string;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?:
+      | '2025-01-01.v0'
+      | '2025-11-03.v1'
+      | '2026-02-18.v1'
+      | '2026-03-06.v1';
+    /**
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     */
+    'gt-project-id'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v1/integrations/figma-plugin/download';
+};
+
+export type FigmaPluginDownloadErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  409: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  423: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type FigmaPluginDownloadError =
+  FigmaPluginDownloadErrors[keyof FigmaPluginDownloadErrors];
+
+export type FigmaPluginDownloadResponses = {
+  /**
+   * Figma plugin result
+   */
+  200: {
+    versionId: string;
+    locale: string;
+    translations: {
+      [key: string]: string;
+    };
+  };
+};
+
+export type FigmaPluginDownloadResponse =
+  FigmaPluginDownloadResponses[keyof FigmaPluginDownloadResponses];
 
 export type GetProjectInfoData = {
   body?: never;
@@ -571,77 +1230,6 @@ export type UpdateProjectInfoResponses = {
 
 export type UpdateProjectInfoResponse =
   UpdateProjectInfoResponses[keyof UpdateProjectInfoResponses];
-
-export type TranslateData = {
-  body: RuntimeTranslationRequest;
-  headers?: {
-    /**
-     * API contract version. Defaults to the oldest supported version.
-     */
-    'gt-api-version'?:
-      | '2025-01-01.v0'
-      | '2025-11-03.v1'
-      | '2026-02-18.v1'
-      | '2026-03-06.v1';
-    /**
-     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
-     */
-    'gt-project-id'?: string;
-  };
-  path?: never;
-  query?: never;
-  url: '/v2/translate';
-};
-
-export type TranslateErrors = {
-  /**
-   * Request error
-   */
-  400: ErrorResponse;
-  /**
-   * Request error
-   */
-  401: ErrorResponse;
-  /**
-   * Request error
-   */
-  402: ErrorResponse;
-  /**
-   * Request error
-   */
-  403: ErrorResponse;
-  /**
-   * Request error
-   */
-  404: ErrorResponse;
-  /**
-   * Request error
-   */
-  413: ErrorResponse;
-  /**
-   * Request error
-   */
-  429: ErrorResponse;
-  /**
-   * Request error
-   */
-  500: ErrorResponse;
-};
-
-export type TranslateError = TranslateErrors[keyof TranslateErrors];
-
-export type TranslateResponses = {
-  /**
-   * All translations were served from cache
-   */
-  200: RuntimeTranslationResponse;
-  /**
-   * Translations completed
-   */
-  201: RuntimeTranslationResponse;
-};
-
-export type TranslateResponse = TranslateResponses[keyof TranslateResponses];
 
 export type GetTranslationStatusData = {
   body?: never;
@@ -2039,6 +2627,386 @@ export type EnqueueFileTranslationsResponses = {
 
 export type EnqueueFileTranslationsResponse =
   EnqueueFileTranslationsResponses[keyof EnqueueFileTranslationsResponses];
+
+export type TranslateData = {
+  body: RuntimeTranslationRequest;
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?:
+      | '2025-01-01.v0'
+      | '2025-11-03.v1'
+      | '2026-02-18.v1'
+      | '2026-03-06.v1';
+    /**
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     */
+    'gt-project-id'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v2/translate';
+};
+
+export type TranslateErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  402: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type TranslateError = TranslateErrors[keyof TranslateErrors];
+
+export type TranslateResponses = {
+  /**
+   * All translations were served from cache
+   */
+  200: RuntimeTranslationResponse;
+  /**
+   * Translations completed
+   */
+  201: RuntimeTranslationResponse;
+};
+
+export type TranslateResponse = TranslateResponses[keyof TranslateResponses];
+
+export type UploadTranslationsData = {
+  body: {
+    data: Array<{
+      source: {
+        content: string;
+        fileName: string;
+        fileFormat:
+          | 'GTJSON'
+          | 'MDX'
+          | 'JSON'
+          | 'YAML'
+          | 'MD'
+          | 'TS'
+          | 'JS'
+          | 'HTML'
+          | 'TXT'
+          | 'PO'
+          | 'POT'
+          | 'TWILIO_CONTENT_JSON'
+          | 'LOTTIE'
+          | 'SVG'
+          | 'XCSTRINGS'
+          | 'DOT_STRINGS'
+          | 'DOT_STRINGSDICT'
+          | 'ANDROID_STRINGS';
+        dataFormat?: string;
+        locale: string;
+        fileId?: string;
+        versionId?: string;
+        branchId?: string;
+        checkedOutBranchId?: string;
+        incomingBranchId?: string;
+        formatMetadata?: {
+          [key: string]: unknown;
+        };
+      };
+      translations: Array<{
+        content: string;
+        fileName: string;
+        fileFormat:
+          | 'GTJSON'
+          | 'MDX'
+          | 'JSON'
+          | 'YAML'
+          | 'MD'
+          | 'TS'
+          | 'JS'
+          | 'HTML'
+          | 'TXT'
+          | 'PO'
+          | 'POT'
+          | 'TWILIO_CONTENT_JSON'
+          | 'LOTTIE'
+          | 'SVG'
+          | 'XCSTRINGS'
+          | 'DOT_STRINGS'
+          | 'DOT_STRINGSDICT'
+          | 'ANDROID_STRINGS';
+        dataFormat?: string;
+        locale: string;
+        transformFormat?:
+          | 'GTJSON'
+          | 'MDX'
+          | 'JSON'
+          | 'YAML'
+          | 'MD'
+          | 'TS'
+          | 'JS'
+          | 'HTML'
+          | 'TXT'
+          | 'PO'
+          | 'POT'
+          | 'TWILIO_CONTENT_JSON'
+          | 'LOTTIE'
+          | 'SVG'
+          | 'XCSTRINGS'
+          | 'DOT_STRINGS'
+          | 'DOT_STRINGSDICT'
+          | 'ANDROID_STRINGS';
+      }>;
+    }>;
+    sourceLocale?: string;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?:
+      | '2025-01-01.v0'
+      | '2025-11-03.v1'
+      | '2026-02-18.v1'
+      | '2026-03-06.v1';
+    /**
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     */
+    'gt-project-id'?: string;
+  };
+  path?: never;
+  query?: never;
+  url: '/v2/project/files/upload-translations';
+};
+
+export type UploadTranslationsErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+  /**
+   * Request error
+   */
+  503: ErrorResponse;
+};
+
+export type UploadTranslationsError =
+  UploadTranslationsErrors[keyof UploadTranslationsErrors];
+
+export type UploadTranslationsResponses = {
+  /**
+   * Uploaded translation files
+   */
+  201: {
+    uploadedFiles: Array<{
+      branchId?: string;
+      fileId: string;
+      versionId: string;
+      fileName: string;
+      fileFormat: FileFormat;
+      dataFormat?: string;
+      locale?: string;
+    }>;
+    count: number;
+    message: string;
+  };
+};
+
+export type UploadTranslationsResponse =
+  UploadTranslationsResponses[keyof UploadTranslationsResponses];
+
+export type CreateProjectApiKeyData = {
+  body: {
+    name: string;
+    type?: 'production' | 'development';
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?:
+      | '2025-01-01.v0'
+      | '2025-11-03.v1'
+      | '2026-02-18.v1'
+      | '2026-03-06.v1';
+  };
+  path: {
+    projectId: string;
+  };
+  query?: never;
+  url: '/v2/projects/{projectId}/api-keys';
+};
+
+export type CreateProjectApiKeyErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type CreateProjectApiKeyError =
+  CreateProjectApiKeyErrors[keyof CreateProjectApiKeyErrors];
+
+export type CreateProjectApiKeyResponses = {
+  /**
+   * Project API key created
+   */
+  201: {
+    apiKey: {
+      id: string;
+      name: string;
+      key: string;
+      projectId: string;
+      type: 'production' | 'development';
+    };
+  };
+};
+
+export type CreateProjectApiKeyResponse =
+  CreateProjectApiKeyResponses[keyof CreateProjectApiKeyResponses];
+
+export type CreateProjectData = {
+  body: {
+    name: string;
+    defaultLocale: string;
+    cdnEnabled?: boolean;
+  };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?:
+      | '2025-01-01.v0'
+      | '2025-11-03.v1'
+      | '2026-02-18.v1'
+      | '2026-03-06.v1';
+  };
+  path: {
+    orgId: string;
+  };
+  query?: never;
+  url: '/v2/orgs/{orgId}/projects';
+};
+
+export type CreateProjectErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  409: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type CreateProjectError = CreateProjectErrors[keyof CreateProjectErrors];
+
+export type CreateProjectResponses = {
+  /**
+   * Project created
+   */
+  201: {
+    project: {
+      id: string;
+      name: string;
+      orgId: string;
+      defaultLocale: string;
+    };
+  };
+};
+
+export type CreateProjectResponse =
+  CreateProjectResponses[keyof CreateProjectResponses];
 
 export type CreateCliWizardSessionData = {
   body: CreateCliWizardSessionRequest;

@@ -70,9 +70,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "error"
-        ]
+        "required": ["error"]
       },
       "FileFormat": {
         "type": "string",
@@ -107,10 +105,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "name"
-        ]
+        "required": ["id", "name"]
       },
       "JsonObject": {
         "type": "object",
@@ -162,12 +157,7 @@
       },
       "ModelProvider": {
         "type": "string",
-        "enum": [
-          "ANTHROPIC",
-          "OPENAI",
-          "XAI",
-          "GOOGLE"
-        ]
+        "enum": ["ANTHROPIC", "OPENAI", "XAI", "GOOGLE"]
       },
       "RuntimeTranslationResponse": {
         "type": "object",
@@ -178,40 +168,27 @@
               "properties": {
                 "success": {
                   "type": "boolean",
-                  "enum": [
-                    true
-                  ]
+                  "enum": [true]
                 },
                 "translation": {
                   "$ref": "#/components/schemas/JsonValue"
                 },
                 "dataFormat": {
                   "type": "string",
-                  "enum": [
-                    "JSX",
-                    "ICU",
-                    "I18NEXT",
-                    "STRING"
-                  ]
+                  "enum": ["JSX", "ICU", "I18NEXT", "STRING"]
                 },
                 "locale": {
                   "type": "string"
                 }
               },
-              "required": [
-                "success",
-                "dataFormat",
-                "locale"
-              ]
+              "required": ["success", "dataFormat", "locale"]
             },
             {
               "type": "object",
               "properties": {
                 "success": {
                   "type": "boolean",
-                  "enum": [
-                    false
-                  ]
+                  "enum": [false]
                 },
                 "error": {
                   "type": "string"
@@ -220,11 +197,7 @@
                   "type": "number"
                 }
               },
-              "required": [
-                "success",
-                "error",
-                "code"
-              ]
+              "required": ["success", "error", "code"]
             }
           ]
         }
@@ -255,20 +228,12 @@
                     },
                     "dataFormat": {
                       "type": "string",
-                      "enum": [
-                        "JSX",
-                        "ICU",
-                        "I18NEXT",
-                        "STRING"
-                      ],
+                      "enum": ["JSX", "ICU", "I18NEXT", "STRING"],
                       "default": "STRING"
                     },
                     "actionType": {
                       "type": "string",
-                      "enum": [
-                        "fast",
-                        "standard"
-                      ],
+                      "enum": ["fast", "standard"],
                       "default": "fast"
                     },
                     "sourceCode": {
@@ -288,11 +253,7 @@
                               "type": "string"
                             }
                           },
-                          "required": [
-                            "before",
-                            "target",
-                            "after"
-                          ]
+                          "required": ["before", "target", "after"]
                         }
                       }
                     }
@@ -322,12 +283,7 @@
             }
           }
         },
-        "required": [
-          "requests",
-          "targetLocale",
-          "sourceLocale",
-          "metadata"
-        ]
+        "required": ["requests", "targetLocale", "sourceLocale", "metadata"]
       },
       "CreateCliWizardSessionResponse": {
         "type": "object",
@@ -336,20 +292,14 @@
             "type": "string"
           }
         },
-        "required": [
-          "sessionId"
-        ]
+        "required": ["sessionId"]
       },
       "CreateCliWizardSessionRequest": {
         "type": "object",
         "properties": {
           "keyType": {
             "type": "string",
-            "enum": [
-              "development",
-              "production",
-              "all"
-            ],
+            "enum": ["development", "production", "all"],
             "default": "production"
           }
         }
@@ -369,26 +319,17 @@
                     },
                     "type": {
                       "type": "string",
-                      "enum": [
-                        "development",
-                        "production"
-                      ]
+                      "enum": ["development", "production"]
                     }
                   },
-                  "required": [
-                    "key",
-                    "type"
-                  ]
+                  "required": ["key", "type"]
                 }
               },
               "projectId": {
                 "type": "string"
               }
             },
-            "required": [
-              "apiKeys",
-              "projectId"
-            ]
+            "required": ["apiKeys", "projectId"]
           },
           {
             "type": "object",
@@ -400,10 +341,7 @@
                 "type": "string"
               }
             },
-            "required": [
-              "apiKey",
-              "projectId"
-            ]
+            "required": ["apiKey", "projectId"]
           }
         ]
       },
@@ -414,9 +352,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "message"
-        ]
+        "required": ["message"]
       },
       "DeleteCliWizardSessionResponse": {
         "type": "object",
@@ -425,9 +361,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "message"
-        ]
+        "required": ["message"]
       }
     },
     "parameters": {}
@@ -439,9 +373,7 @@
         "x-internal": true,
         "summary": "Workspace plugin info",
         "description": "Run the Google Drive Workspace plugin info command.",
-        "tags": [
-          "Integrations"
-        ],
+        "tags": ["Integrations"],
         "security": [
           {
             "GoogleIdentityToken": []
@@ -460,10 +392,7 @@
                   },
                   "hostApp": {
                     "type": "string",
-                    "enum": [
-                      "DOCS",
-                      "SLIDES"
-                    ]
+                    "enum": ["DOCS", "SLIDES"]
                   }
                 }
               }
@@ -485,15 +414,10 @@
                       "type": "object",
                       "properties": {
                         "email": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
+                          "type": ["string", "null"]
                         }
                       },
-                      "required": [
-                        "email"
-                      ]
+                      "required": ["email"]
                     },
                     "supportedLocales": {
                       "type": "array",
@@ -510,11 +434,7 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "code",
-                          "name",
-                          "emoji"
-                        ]
+                        "required": ["code", "name", "emoji"]
                       }
                     },
                     "projects": {
@@ -529,10 +449,7 @@
                             "type": "string"
                           },
                           "orgName": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
+                            "type": ["string", "null"]
                           },
                           "sourceLocale": {
                             "type": "object",
@@ -547,11 +464,7 @@
                                 "type": "string"
                               }
                             },
-                            "required": [
-                              "code",
-                              "name",
-                              "emoji"
-                            ]
+                            "required": ["code", "name", "emoji"]
                           },
                           "currentLocales": {
                             "type": "array",
@@ -568,11 +481,7 @@
                                   "type": "string"
                                 }
                               },
-                              "required": [
-                                "code",
-                                "name",
-                                "emoji"
-                              ]
+                              "required": ["code", "name", "emoji"]
                             }
                           },
                           "localeWhitelist": {
@@ -590,11 +499,7 @@
                                   "type": "string"
                                 }
                               },
-                              "required": [
-                                "code",
-                                "name",
-                                "emoji"
-                              ]
+                              "required": ["code", "name", "emoji"]
                             }
                           },
                           "integrationConnected": {
@@ -604,10 +509,7 @@
                             "type": "string"
                           },
                           "linkedFile": {
-                            "type": [
-                              "object",
-                              "null"
-                            ],
+                            "type": ["object", "null"],
                             "properties": {
                               "sourceLocale": {
                                 "type": "object",
@@ -622,22 +524,13 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "code",
-                                  "name",
-                                  "emoji"
-                                ]
+                                "required": ["code", "name", "emoji"]
                               }
                             },
-                            "required": [
-                              "sourceLocale"
-                            ]
+                            "required": ["sourceLocale"]
                           },
                           "translatedCopy": {
-                            "type": [
-                              "object",
-                              "null"
-                            ],
+                            "type": ["object", "null"],
                             "properties": {
                               "sourceName": {
                                 "type": "string"
@@ -658,11 +551,7 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "code",
-                                  "name",
-                                  "emoji"
-                                ]
+                                "required": ["code", "name", "emoji"]
                               },
                               "targetLocale": {
                                 "type": "object",
@@ -677,11 +566,7 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "code",
-                                  "name",
-                                  "emoji"
-                                ]
+                                "required": ["code", "name", "emoji"]
                               }
                             },
                             "required": [
@@ -707,12 +592,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "linked",
-                    "user",
-                    "supportedLocales",
-                    "projects"
-                  ]
+                  "required": ["linked", "user", "supportedLocales", "projects"]
                 }
               }
             }
@@ -737,9 +617,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -764,9 +642,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -791,9 +667,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -818,9 +692,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -845,9 +717,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -872,9 +742,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -899,9 +767,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -926,9 +792,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -942,9 +806,7 @@
         "x-internal": true,
         "summary": "Workspace plugin translate",
         "description": "Run the Google Drive Workspace plugin translate command.",
-        "tags": [
-          "Integrations"
-        ],
+        "tags": ["Integrations"],
         "security": [
           {
             "GoogleIdentityToken": []
@@ -967,10 +829,7 @@
                   },
                   "hostApp": {
                     "type": "string",
-                    "enum": [
-                      "DOCS",
-                      "SLIDES"
-                    ]
+                    "enum": ["DOCS", "SLIDES"]
                   },
                   "targetLocales": {
                     "type": "array",
@@ -989,12 +848,7 @@
                     "type": "boolean"
                   }
                 },
-                "required": [
-                  "projectId",
-                  "fileId",
-                  "hostApp",
-                  "targetLocales"
-                ]
+                "required": ["projectId", "fileId", "hostApp", "targetLocales"]
               }
             }
           }
@@ -1064,9 +918,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1091,9 +943,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1118,9 +968,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1145,9 +993,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1172,9 +1018,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1199,9 +1043,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1226,9 +1068,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1253,9 +1093,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1269,9 +1107,7 @@
         "x-internal": true,
         "summary": "Workspace plugin status",
         "description": "Run the Google Drive Workspace plugin status command.",
-        "tags": [
-          "Integrations"
-        ],
+        "tags": ["Integrations"],
         "security": [
           {
             "GoogleIdentityToken": []
@@ -1294,17 +1130,10 @@
                   },
                   "hostApp": {
                     "type": "string",
-                    "enum": [
-                      "DOCS",
-                      "SLIDES"
-                    ]
+                    "enum": ["DOCS", "SLIDES"]
                   }
                 },
-                "required": [
-                  "projectId",
-                  "fileId",
-                  "hostApp"
-                ]
+                "required": ["projectId", "fileId", "hostApp"]
               }
             }
           }
@@ -1338,23 +1167,13 @@
                                 "type": "string"
                               }
                             },
-                            "required": [
-                              "code",
-                              "name",
-                              "emoji"
-                            ]
+                            "required": ["code", "name", "emoji"]
                           },
                           "translationProgress": {
-                            "type": [
-                              "number",
-                              "null"
-                            ]
+                            "type": ["number", "null"]
                           },
                           "layoutProgress": {
-                            "type": [
-                              "number",
-                              "null"
-                            ]
+                            "type": ["number", "null"]
                           },
                           "done": {
                             "type": "boolean"
@@ -1369,10 +1188,7 @@
                                 "type": "string"
                               }
                             },
-                            "required": [
-                              "fileId",
-                              "url"
-                            ]
+                            "required": ["fileId", "url"]
                           }
                         },
                         "required": [
@@ -1385,9 +1201,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "locales"
-                  ]
+                  "required": ["locales"]
                 }
               }
             }
@@ -1412,9 +1226,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1439,9 +1251,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1466,9 +1276,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1493,9 +1301,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1520,9 +1326,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1547,9 +1351,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1574,9 +1376,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1601,9 +1401,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1617,9 +1415,7 @@
         "x-internal": true,
         "summary": "Figma plugin info",
         "description": "Run the Figma plugin info command.",
-        "tags": [
-          "Integrations"
-        ],
+        "tags": ["Integrations"],
         "security": [
           {
             "BearerAuth": []
@@ -1669,9 +1465,7 @@
                     "maxLength": 255
                   }
                 },
-                "required": [
-                  "figmaFileName"
-                ],
+                "required": ["figmaFileName"],
                 "additionalProperties": false
               }
             }
@@ -1710,11 +1504,7 @@
                               "type": "string"
                             }
                           },
-                          "required": [
-                            "code",
-                            "name",
-                            "emoji"
-                          ]
+                          "required": ["code", "name", "emoji"]
                         },
                         "currentLocales": {
                           "type": "array",
@@ -1731,11 +1521,7 @@
                                 "type": "string"
                               }
                             },
-                            "required": [
-                              "code",
-                              "name",
-                              "emoji"
-                            ]
+                            "required": ["code", "name", "emoji"]
                           }
                         },
                         "localeWhitelist": {
@@ -1753,11 +1539,7 @@
                                 "type": "string"
                               }
                             },
-                            "required": [
-                              "code",
-                              "name",
-                              "emoji"
-                            ]
+                            "required": ["code", "name", "emoji"]
                           }
                         }
                       },
@@ -1785,11 +1567,7 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "code",
-                          "name",
-                          "emoji"
-                        ]
+                        "required": ["code", "name", "emoji"]
                       }
                     },
                     "linkedPages": {
@@ -1819,11 +1597,7 @@
                                 "type": "string"
                               }
                             },
-                            "required": [
-                              "code",
-                              "name",
-                              "emoji"
-                            ]
+                            "required": ["code", "name", "emoji"]
                           },
                           "locales": {
                             "type": "array",
@@ -1840,11 +1614,7 @@
                                   "type": "string"
                                 }
                               },
-                              "required": [
-                                "code",
-                                "name",
-                                "emoji"
-                              ]
+                              "required": ["code", "name", "emoji"]
                             }
                           },
                           "updatedAt": {
@@ -1926,11 +1696,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "project",
-                    "supportedLocales",
-                    "linkedPages"
-                  ]
+                  "required": ["project", "supportedLocales", "linkedPages"]
                 }
               }
             }
@@ -2079,9 +1845,7 @@
         "x-internal": true,
         "summary": "Figma plugin sync",
         "description": "Run the Figma plugin sync command.",
-        "tags": [
-          "Integrations"
-        ],
+        "tags": ["Integrations"],
         "security": [
           {
             "BearerAuth": []
@@ -2194,12 +1958,7 @@
                                   "type": "number"
                                 }
                               },
-                              "required": [
-                                "x",
-                                "y",
-                                "width",
-                                "height"
-                              ]
+                              "required": ["x", "y", "width", "height"]
                             },
                             "autoResize": {
                               "type": "string",
@@ -2221,9 +1980,7 @@
                               "type": "number"
                             }
                           },
-                          "required": [
-                            "boxId"
-                          ],
+                          "required": ["boxId"],
                           "additionalProperties": false
                         },
                         "styleRuns": {
@@ -2249,10 +2006,7 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "family",
-                                  "style"
-                                ],
+                                "required": ["family", "style"],
                                 "additionalProperties": false
                               },
                               "fontSize": {
@@ -2274,10 +2028,7 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "value",
-                                  "unit"
-                                ],
+                                "required": ["value", "unit"],
                                 "additionalProperties": false
                               },
                               "lineHeight": {
@@ -2290,9 +2041,7 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "unit"
-                                ],
+                                "required": ["unit"],
                                 "additionalProperties": false
                               },
                               "fills": {
@@ -2303,27 +2052,18 @@
                                 }
                               },
                               "hyperlink": {
-                                "type": [
-                                  "object",
-                                  "null"
-                                ],
+                                "type": ["object", "null"],
                                 "additionalProperties": {}
                               }
                             },
-                            "required": [
-                              "start",
-                              "end"
-                            ],
+                            "required": ["start", "end"],
                             "additionalProperties": false
                           },
                           "maxItems": 512
                         },
                         "instanceTextOrigin": {
                           "type": "string",
-                          "enum": [
-                            "inherited",
-                            "overridden"
-                          ]
+                          "enum": ["inherited", "overridden"]
                         }
                       },
                       "required": [
@@ -2408,11 +2148,7 @@
                     "maxItems": 500
                   }
                 },
-                "required": [
-                  "figmaFileName",
-                  "pageName",
-                  "units"
-                ],
+                "required": ["figmaFileName", "pageName", "units"],
                 "additionalProperties": false
               }
             }
@@ -2600,9 +2336,7 @@
         "x-internal": true,
         "summary": "Figma plugin import-translations",
         "description": "Run the Figma plugin import-translations command.",
-        "tags": [
-          "Integrations"
-        ],
+        "tags": ["Integrations"],
         "security": [
           {
             "BearerAuth": []
@@ -2860,9 +2594,7 @@
         "x-internal": true,
         "summary": "Figma plugin enqueue",
         "description": "Run the Figma plugin enqueue command.",
-        "tags": [
-          "Integrations"
-        ],
+        "tags": ["Integrations"],
         "security": [
           {
             "BearerAuth": []
@@ -2935,11 +2667,7 @@
                     "type": "boolean"
                   }
                 },
-                "required": [
-                  "figmaFileName",
-                  "pageName",
-                  "targetLocales"
-                ],
+                "required": ["figmaFileName", "pageName", "targetLocales"],
                 "additionalProperties": false
               }
             }
@@ -3123,9 +2851,7 @@
         "x-internal": true,
         "summary": "Figma plugin status",
         "description": "Run the Figma plugin status command.",
-        "tags": [
-          "Integrations"
-        ],
+        "tags": ["Integrations"],
         "security": [
           {
             "BearerAuth": []
@@ -3180,10 +2906,7 @@
                     "maxLength": 255
                   }
                 },
-                "required": [
-                  "figmaFileName",
-                  "pageName"
-                ],
+                "required": ["figmaFileName", "pageName"],
                 "additionalProperties": false
               }
             }
@@ -3218,34 +2941,20 @@
                                 "type": "string"
                               }
                             },
-                            "required": [
-                              "code",
-                              "name",
-                              "emoji"
-                            ]
+                            "required": ["code", "name", "emoji"]
                           },
                           "translationProgress": {
-                            "type": [
-                              "number",
-                              "null"
-                            ]
+                            "type": ["number", "null"]
                           },
                           "done": {
                             "type": "boolean"
                           }
                         },
-                        "required": [
-                          "locale",
-                          "translationProgress",
-                          "done"
-                        ]
+                        "required": ["locale", "translationProgress", "done"]
                       }
                     }
                   },
-                  "required": [
-                    "versionId",
-                    "locales"
-                  ]
+                  "required": ["versionId", "locales"]
                 }
               }
             }
@@ -3394,9 +3103,7 @@
         "x-internal": true,
         "summary": "Figma plugin download",
         "description": "Run the Figma plugin download command.",
-        "tags": [
-          "Integrations"
-        ],
+        "tags": ["Integrations"],
         "security": [
           {
             "BearerAuth": []
@@ -3456,11 +3163,7 @@
                     "maxLength": 16
                   }
                 },
-                "required": [
-                  "figmaFileName",
-                  "pageName",
-                  "locale"
-                ],
+                "required": ["figmaFileName", "pageName", "locale"],
                 "additionalProperties": false
               }
             }
@@ -3487,11 +3190,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "versionId",
-                    "locale",
-                    "translations"
-                  ]
+                  "required": ["versionId", "locale", "translations"]
                 }
               }
             }
@@ -3702,10 +3401,7 @@
                       "type": "string"
                     },
                     "defaultLocale": {
-                      "type": [
-                        "string",
-                        "null"
-                      ]
+                      "type": ["string", "null"]
                     },
                     "currentLocales": {
                       "type": "array",
@@ -3820,9 +3516,7 @@
             }
           }
         },
-        "tags": [
-          "Project"
-        ]
+        "tags": ["Project"]
       },
       "post": {
         "operationId": "updateProjectInfo",
@@ -3901,14 +3595,10 @@
                   "properties": {
                     "success": {
                       "type": "boolean",
-                      "enum": [
-                        true
-                      ]
+                      "enum": [true]
                     }
                   },
-                  "required": [
-                    "success"
-                  ]
+                  "required": ["success"]
                 }
               }
             }
@@ -4019,9 +3709,7 @@
             }
           }
         },
-        "tags": [
-          "Project"
-        ]
+        "tags": ["Project"]
       }
     },
     "/v2/project/translations/files/status/{fileId}": {
@@ -4107,38 +3795,23 @@
                             "type": "string"
                           },
                           "completedAt": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
+                            "type": ["string", "null"],
                             "format": "date-time"
                           },
                           "approvedAt": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
+                            "type": ["string", "null"],
                             "format": "date-time"
                           },
                           "publishedAt": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
+                            "type": ["string", "null"],
                             "format": "date-time"
                           },
                           "createdAt": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
+                            "type": ["string", "null"],
                             "format": "date-time"
                           },
                           "updatedAt": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
+                            "type": ["string", "null"],
                             "format": "date-time"
                           }
                         },
@@ -4177,10 +3850,7 @@
                           "$ref": "#/components/schemas/FileFormat"
                         },
                         "dataFormat": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
+                          "type": ["string", "null"]
                         },
                         "createdAt": {
                           "type": "string",
@@ -4212,10 +3882,7 @@
                       ]
                     }
                   },
-                  "required": [
-                    "translations",
-                    "sourceFile"
-                  ]
+                  "required": ["translations", "sourceFile"]
                 }
               }
             }
@@ -4311,9 +3978,7 @@
             }
           }
         },
-        "tags": [
-          "Files"
-        ]
+        "tags": ["Files"]
       }
     },
     "/v2/project/branches/info": {
@@ -4396,18 +4061,12 @@
                           "$ref": "#/components/schemas/Branch"
                         },
                         {
-                          "type": [
-                            "object",
-                            "null"
-                          ]
+                          "type": ["object", "null"]
                         }
                       ]
                     }
                   },
-                  "required": [
-                    "branches",
-                    "defaultBranch"
-                  ]
+                  "required": ["branches", "defaultBranch"]
                 }
               }
             }
@@ -4503,9 +4162,7 @@
             }
           }
         },
-        "tags": [
-          "Project"
-        ]
+        "tags": ["Project"]
       }
     },
     "/v2/project/branches/create": {
@@ -4565,9 +4222,7 @@
                     "default": false
                   }
                 },
-                "required": [
-                  "branchName"
-                ]
+                "required": ["branchName"]
               }
             }
           }
@@ -4584,9 +4239,7 @@
                       "$ref": "#/components/schemas/Branch"
                     }
                   },
-                  "required": [
-                    "branch"
-                  ]
+                  "required": ["branch"]
                 }
               }
             }
@@ -4697,9 +4350,7 @@
             }
           }
         },
-        "tags": [
-          "Project"
-        ]
+        "tags": ["Project"]
       }
     },
     "/v2/project/tags/create": {
@@ -4773,11 +4424,7 @@
                           "minLength": 1
                         }
                       },
-                      "required": [
-                        "fileId",
-                        "versionId",
-                        "branchId"
-                      ]
+                      "required": ["fileId", "versionId", "branchId"]
                     },
                     "minItems": 1
                   },
@@ -4786,10 +4433,7 @@
                     "maxLength": 255
                   }
                 },
-                "required": [
-                  "tagId",
-                  "files"
-                ]
+                "required": ["tagId", "files"]
               }
             }
           }
@@ -4812,10 +4456,7 @@
                           "type": "string"
                         },
                         "message": {
-                          "type": [
-                            "string",
-                            "null"
-                          ]
+                          "type": ["string", "null"]
                         },
                         "createdAt": {
                           "type": "string",
@@ -4835,9 +4476,7 @@
                       ]
                     }
                   },
-                  "required": [
-                    "tag"
-                  ]
+                  "required": ["tag"]
                 }
               }
             }
@@ -4933,9 +4572,7 @@
             }
           }
         },
-        "tags": [
-          "Project"
-        ]
+        "tags": ["Project"]
       }
     },
     "/v2/project/assets": {
@@ -4993,9 +4630,7 @@
                       "properties": {
                         "assetType": {
                           "type": "string",
-                          "enum": [
-                            "FONT"
-                          ]
+                          "enum": ["FONT"]
                         },
                         "content": {
                           "type": "string",
@@ -5018,19 +4653,13 @@
                           "maxLength": 100
                         }
                       },
-                      "required": [
-                        "assetType",
-                        "content",
-                        "fileName"
-                      ]
+                      "required": ["assetType", "content", "fileName"]
                     },
                     "minItems": 1,
                     "maxItems": 50
                   }
                 },
-                "required": [
-                  "assets"
-                ]
+                "required": ["assets"]
               }
             }
           }
@@ -5058,11 +4687,7 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "id",
-                          "assetKey",
-                          "fileName"
-                        ]
+                        "required": ["id", "assetKey", "fileName"]
                       }
                     },
                     "count": {
@@ -5070,10 +4695,7 @@
                       "minimum": 0
                     }
                   },
-                  "required": [
-                    "assets",
-                    "count"
-                  ]
+                  "required": ["assets", "count"]
                 }
               }
             }
@@ -5184,9 +4806,7 @@
             }
           }
         },
-        "tags": [
-          "Project"
-        ]
+        "tags": ["Project"]
       }
     },
     "/v2/project/files/diffs": {
@@ -5279,9 +4899,7 @@
                     "minItems": 1
                   }
                 },
-                "required": [
-                  "diffs"
-                ]
+                "required": ["diffs"]
               }
             }
           }
@@ -5306,11 +4924,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "filesProcessed",
-                    "entriesReceived",
-                    "message"
-                  ]
+                  "required": ["filesProcessed", "entriesReceived", "message"]
                 }
               }
             }
@@ -5406,9 +5020,7 @@
             }
           }
         },
-        "tags": [
-          "Files"
-        ]
+        "tags": ["Files"]
       }
     },
     "/v2/project/files/moves": {
@@ -5480,17 +5092,11 @@
                           "minLength": 1
                         }
                       },
-                      "required": [
-                        "oldFileId",
-                        "newFileId",
-                        "newFileName"
-                      ]
+                      "required": ["oldFileId", "newFileId", "newFileName"]
                     }
                   }
                 },
-                "required": [
-                  "moves"
-                ]
+                "required": ["moves"]
               }
             }
           }
@@ -5527,11 +5133,7 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "oldFileId",
-                          "newFileId",
-                          "success"
-                        ]
+                        "required": ["oldFileId", "newFileId", "success"]
                       }
                     },
                     "summary": {
@@ -5550,16 +5152,10 @@
                           "minimum": 0
                         }
                       },
-                      "required": [
-                        "total",
-                        "succeeded",
-                        "failed"
-                      ]
+                      "required": ["total", "succeeded", "failed"]
                     }
                   },
-                  "required": [
-                    "results"
-                  ]
+                  "required": ["results"]
                 }
               }
             }
@@ -5670,9 +5266,7 @@
             }
           }
         },
-        "tags": [
-          "Files"
-        ]
+        "tags": ["Files"]
       }
     },
     "/v2/project/files/orphaned": {
@@ -5735,9 +5329,7 @@
                     "default": []
                   }
                 },
-                "required": [
-                  "branchId"
-                ]
+                "required": ["branchId"]
               }
             }
           }
@@ -5765,17 +5357,11 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "fileId",
-                          "versionId",
-                          "fileName"
-                        ]
+                        "required": ["fileId", "versionId", "fileName"]
                       }
                     }
                   },
-                  "required": [
-                    "orphanedFiles"
-                  ]
+                  "required": ["orphanedFiles"]
                 }
               }
             }
@@ -5886,9 +5472,7 @@
             }
           }
         },
-        "tags": [
-          "Files"
-        ]
+        "tags": ["Files"]
       }
     },
     "/v2/project/files/info": {
@@ -5957,11 +5541,7 @@
                           "minLength": 1
                         }
                       },
-                      "required": [
-                        "fileId",
-                        "versionId",
-                        "branchId"
-                      ]
+                      "required": ["fileId", "versionId", "branchId"]
                     }
                   },
                   "translatedFiles": {
@@ -5986,12 +5566,7 @@
                           "minLength": 1
                         }
                       },
-                      "required": [
-                        "fileId",
-                        "versionId",
-                        "branchId",
-                        "locale"
-                      ]
+                      "required": ["fileId", "versionId", "branchId", "locale"]
                     }
                   }
                 }
@@ -6028,10 +5603,7 @@
                             "$ref": "#/components/schemas/FileFormat"
                           },
                           "dataFormat": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
+                            "type": ["string", "null"]
                           },
                           "createdAt": {
                             "type": "string",
@@ -6042,10 +5614,7 @@
                             "format": "date-time"
                           },
                           "publishedAt": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
+                            "type": ["string", "null"],
                             "format": "date-time"
                           },
                           "locales": {
@@ -6091,10 +5660,7 @@
                             "$ref": "#/components/schemas/FileFormat"
                           },
                           "dataFormat": {
-                            "type": [
-                              "string",
-                              "null"
-                            ]
+                            "type": ["string", "null"]
                           },
                           "createdAt": {
                             "type": "string",
@@ -6105,24 +5671,15 @@
                             "format": "date-time"
                           },
                           "approvedAt": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
+                            "type": ["string", "null"],
                             "format": "date-time"
                           },
                           "publishedAt": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
+                            "type": ["string", "null"],
                             "format": "date-time"
                           },
                           "completedAt": {
-                            "type": [
-                              "string",
-                              "null"
-                            ],
+                            "type": ["string", "null"],
                             "format": "date-time"
                           },
                           "locale": {
@@ -6145,10 +5702,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "sourceFiles",
-                    "translatedFiles"
-                  ]
+                  "required": ["sourceFiles", "translatedFiles"]
                 }
               }
             }
@@ -6244,9 +5798,7 @@
             }
           }
         },
-        "tags": [
-          "Files"
-        ]
+        "tags": ["Files"]
       }
     },
     "/v2/project/files/download": {
@@ -6319,9 +5871,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "fileId"
-                  ]
+                  "required": ["fileId"]
                 },
                 "minItems": 1,
                 "maxItems": 100
@@ -6411,10 +5961,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "files",
-                    "count"
-                  ]
+                  "required": ["files", "count"]
                 }
               }
             }
@@ -6510,9 +6057,7 @@
             }
           }
         },
-        "tags": [
-          "Files"
-        ]
+        "tags": ["Files"]
       }
     },
     "/v2/project/files/download/{fileId}": {
@@ -6602,9 +6147,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "data"
-                  ]
+                  "required": ["data"]
                 }
               }
             }
@@ -6678,18 +6221,13 @@
                   "properties": {
                     "status": {
                       "type": "string",
-                      "enum": [
-                        "processing"
-                      ]
+                      "enum": ["processing"]
                     },
                     "message": {
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "status",
-                    "message"
-                  ]
+                  "required": ["status", "message"]
                 }
               }
             }
@@ -6725,9 +6263,7 @@
             }
           }
         },
-        "tags": [
-          "Files"
-        ]
+        "tags": ["Files"]
       }
     },
     "/v2/project/jobs/info": {
@@ -6787,9 +6323,7 @@
                     "minItems": 1
                   }
                 },
-                "required": [
-                  "jobIds"
-                ]
+                "required": ["jobIds"]
               }
             }
           }
@@ -6808,45 +6342,33 @@
                         "properties": {
                           "status": {
                             "type": "string",
-                            "enum": [
-                              "queued"
-                            ]
+                            "enum": ["queued"]
                           },
                           "jobId": {
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "status",
-                          "jobId"
-                        ]
+                        "required": ["status", "jobId"]
                       },
                       {
                         "type": "object",
                         "properties": {
                           "status": {
                             "type": "string",
-                            "enum": [
-                              "processing"
-                            ]
+                            "enum": ["processing"]
                           },
                           "jobId": {
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "status",
-                          "jobId"
-                        ]
+                        "required": ["status", "jobId"]
                       },
                       {
                         "type": "object",
                         "properties": {
                           "status": {
                             "type": "string",
-                            "enum": [
-                              "failed"
-                            ]
+                            "enum": ["failed"]
                           },
                           "jobId": {
                             "type": "string"
@@ -6855,58 +6377,39 @@
                             "type": "object",
                             "properties": {
                               "message": {
-                                "type": [
-                                  "string",
-                                  "null"
-                                ]
+                                "type": ["string", "null"]
                               }
                             },
-                            "required": [
-                              "message"
-                            ]
+                            "required": ["message"]
                           }
                         },
-                        "required": [
-                          "status",
-                          "jobId",
-                          "error"
-                        ]
+                        "required": ["status", "jobId", "error"]
                       },
                       {
                         "type": "object",
                         "properties": {
                           "status": {
                             "type": "string",
-                            "enum": [
-                              "completed"
-                            ]
+                            "enum": ["completed"]
                           },
                           "jobId": {
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "status",
-                          "jobId"
-                        ]
+                        "required": ["status", "jobId"]
                       },
                       {
                         "type": "object",
                         "properties": {
                           "status": {
                             "type": "string",
-                            "enum": [
-                              "unknown"
-                            ]
+                            "enum": ["unknown"]
                           },
                           "jobId": {
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "status",
-                          "jobId"
-                        ]
+                        "required": ["status", "jobId"]
                       }
                     ]
                   }
@@ -7020,9 +6523,7 @@
             }
           }
         },
-        "tags": [
-          "Translation"
-        ]
+        "tags": ["Translation"]
       }
     },
     "/v2/project/setup/generate": {
@@ -7091,10 +6592,7 @@
                           "minLength": 1
                         }
                       },
-                      "required": [
-                        "fileId",
-                        "versionId"
-                      ]
+                      "required": ["fileId", "versionId"]
                     },
                     "minItems": 1
                   },
@@ -7109,9 +6607,7 @@
                     "default": false
                   }
                 },
-                "required": [
-                  "files"
-                ]
+                "required": ["files"]
               }
             }
           }
@@ -7128,14 +6624,10 @@
                       "properties": {
                         "status": {
                           "type": "string",
-                          "enum": [
-                            "completed"
-                          ]
+                          "enum": ["completed"]
                         }
                       },
-                      "required": [
-                        "status"
-                      ]
+                      "required": ["status"]
                     },
                     {
                       "type": "object",
@@ -7145,15 +6637,10 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": [
-                            "queued"
-                          ]
+                          "enum": ["queued"]
                         }
                       },
-                      "required": [
-                        "setupJobId",
-                        "status"
-                      ]
+                      "required": ["setupJobId", "status"]
                     }
                   ]
                 }
@@ -7266,9 +6753,7 @@
             }
           }
         },
-        "tags": [
-          "Context"
-        ]
+        "tags": ["Context"]
       }
     },
     "/v2/project/files/publish": {
@@ -7340,18 +6825,12 @@
                           "type": "boolean"
                         }
                       },
-                      "required": [
-                        "fileId",
-                        "versionId",
-                        "publish"
-                      ]
+                      "required": ["fileId", "versionId", "publish"]
                     },
                     "minItems": 1
                   }
                 },
-                "required": [
-                  "files"
-                ]
+                "required": ["files"]
               }
             }
           }
@@ -7397,9 +6876,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "results"
-                  ]
+                  "required": ["results"]
                 }
               }
             }
@@ -7510,9 +6987,7 @@
             }
           }
         },
-        "tags": [
-          "Files"
-        ]
+        "tags": ["Files"]
       }
     },
     "/v2/project/files/upload-files": {
@@ -7641,9 +7116,7 @@
                           ]
                         }
                       },
-                      "required": [
-                        "source"
-                      ]
+                      "required": ["source"]
                     },
                     "minItems": 1,
                     "maxItems": 100
@@ -7652,9 +7125,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "data"
-                ]
+                "required": ["data"]
               }
             }
           }
@@ -7709,11 +7180,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "uploadedFiles",
-                    "count",
-                    "message"
-                  ]
+                  "required": ["uploadedFiles", "count", "message"]
                 }
               }
             }
@@ -7839,9 +7306,7 @@
             }
           }
         },
-        "tags": [
-          "Files"
-        ]
+        "tags": ["Files"]
       }
     },
     "/v2/project/translations/enqueue": {
@@ -7936,10 +7401,7 @@
                           ]
                         }
                       },
-                      "required": [
-                        "fileId",
-                        "versionId"
-                      ]
+                      "required": ["fileId", "versionId"]
                     },
                     "minItems": 1,
                     "maxItems": 100
@@ -7964,9 +7426,7 @@
                     "type": "boolean"
                   }
                 },
-                "required": [
-                  "files"
-                ]
+                "required": ["files"]
               }
             }
           }
@@ -7988,9 +7448,7 @@
                             "properties": {
                               "kind": {
                                 "type": "string",
-                                "enum": [
-                                  "file_translation"
-                                ]
+                                "enum": ["file_translation"]
                               },
                               "sourceFileId": {
                                 "type": "string"
@@ -8036,17 +7494,13 @@
                                 "properties": {
                                   "kind": {
                                     "type": "string",
-                                    "enum": [
-                                      "google_drive_apply"
-                                    ]
+                                    "enum": ["google_drive_apply"]
                                   },
                                   "userId": {
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "kind"
-                                ]
+                                "required": ["kind"]
                               }
                             },
                             "required": [
@@ -8071,11 +7525,7 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "jobData",
-                        "locales",
-                        "message"
-                      ]
+                      "required": ["jobData", "locales", "message"]
                     },
                     {
                       "type": "object",
@@ -8135,10 +7585,7 @@
                                 "type": "string"
                               }
                             },
-                            "required": [
-                              "fileName",
-                              "versionId"
-                            ]
+                            "required": ["fileName", "versionId"]
                           }
                         },
                         "locales": {
@@ -8151,12 +7598,7 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "translations",
-                        "data",
-                        "locales",
-                        "message"
-                      ]
+                      "required": ["translations", "data", "locales", "message"]
                     }
                   ]
                 }
@@ -8190,21 +7632,14 @@
                                 "type": "string"
                               }
                             },
-                            "required": [
-                              "fileId",
-                              "versionId"
-                            ]
+                            "required": ["fileId", "versionId"]
                           }
                         },
                         "count": {
                           "type": "number"
                         }
                       },
-                      "required": [
-                        "error",
-                        "missing",
-                        "count"
-                      ]
+                      "required": ["error", "missing", "count"]
                     }
                   ]
                 }
@@ -8322,9 +7757,7 @@
             }
           }
         },
-        "tags": [
-          "Translation"
-        ]
+        "tags": ["Translation"]
       }
     },
     "/v2/translate": {
@@ -8520,9 +7953,7 @@
             }
           }
         },
-        "tags": [
-          "Translation"
-        ]
+        "tags": ["Translation"]
       }
     },
     "/v2/project/files/upload-translations": {
@@ -8726,10 +8157,7 @@
                           "minItems": 1
                         }
                       },
-                      "required": [
-                        "source",
-                        "translations"
-                      ]
+                      "required": ["source", "translations"]
                     },
                     "minItems": 1,
                     "maxItems": 100
@@ -8738,9 +8166,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "data"
-                ]
+                "required": ["data"]
               }
             }
           }
@@ -8795,11 +8221,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "uploadedFiles",
-                    "count",
-                    "message"
-                  ]
+                  "required": ["uploadedFiles", "count", "message"]
                 }
               }
             }
@@ -8925,9 +8347,7 @@
             }
           }
         },
-        "tags": [
-          "Files"
-        ]
+        "tags": ["Files"]
       }
     },
     "/v2/projects/{projectId}/api-keys": {
@@ -8984,16 +8404,11 @@
                   },
                   "type": {
                     "type": "string",
-                    "enum": [
-                      "production",
-                      "development"
-                    ],
+                    "enum": ["production", "development"],
                     "default": "production"
                   }
                 },
-                "required": [
-                  "name"
-                ],
+                "required": ["name"],
                 "additionalProperties": false
               }
             }
@@ -9024,24 +8439,13 @@
                         },
                         "type": {
                           "type": "string",
-                          "enum": [
-                            "production",
-                            "development"
-                          ]
+                          "enum": ["production", "development"]
                         }
                       },
-                      "required": [
-                        "id",
-                        "name",
-                        "key",
-                        "projectId",
-                        "type"
-                      ]
+                      "required": ["id", "name", "key", "projectId", "type"]
                     }
                   },
-                  "required": [
-                    "apiKey"
-                  ]
+                  "required": ["apiKey"]
                 }
               }
             }
@@ -9152,9 +8556,7 @@
             }
           }
         },
-        "tags": [
-          "Project"
-        ]
+        "tags": ["Project"]
       }
     },
     "/v2/orgs/{orgId}/projects": {
@@ -9214,10 +8616,7 @@
                     "type": "boolean"
                   }
                 },
-                "required": [
-                  "name",
-                  "defaultLocale"
-                ],
+                "required": ["name", "defaultLocale"],
                 "additionalProperties": false
               }
             }
@@ -9247,17 +8646,10 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "id",
-                        "name",
-                        "orgId",
-                        "defaultLocale"
-                      ]
+                      "required": ["id", "name", "orgId", "defaultLocale"]
                     }
                   },
-                  "required": [
-                    "project"
-                  ]
+                  "required": ["project"]
                 }
               }
             }
@@ -9368,9 +8760,7 @@
             }
           }
         },
-        "tags": [
-          "Project"
-        ]
+        "tags": ["Project"]
       }
     },
     "/cli/wizard/session": {
@@ -9379,9 +8769,7 @@
         "x-internal": true,
         "summary": "Create a CLI wizard session",
         "description": "Create a temporary session for CLI browser authentication.",
-        "tags": [
-          "CLI Wizard"
-        ],
+        "tags": ["CLI Wizard"],
         "parameters": [
           {
             "schema": {
@@ -9490,9 +8878,7 @@
         "x-internal": true,
         "summary": "Get a CLI wizard session",
         "description": "Get credentials for a completed CLI wizard session or its current waiting status.",
-        "tags": [
-          "CLI Wizard"
-        ],
+        "tags": ["CLI Wizard"],
         "parameters": [
           {
             "schema": {
@@ -9623,9 +9009,7 @@
         "x-internal": true,
         "summary": "Delete a CLI wizard session",
         "description": "Delete a completed or abandoned CLI wizard session.",
-        "tags": [
-          "CLI Wizard"
-        ],
+        "tags": ["CLI Wizard"],
         "parameters": [
           {
             "schema": {
