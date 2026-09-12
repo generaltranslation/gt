@@ -5,7 +5,6 @@
 
 import {
   LocaleConfig,
-  determineLocale as _determineLocale,
   getRegionProperties as _getRegionProperties,
   isValidLocale as _isValidLocale,
   requiresTranslation as _requiresTranslation,
@@ -820,7 +819,10 @@ export class GTRuntime {
     if (customMapping === this.customMapping) {
       return this.localeConfig.determineLocale(locales, approvedLocales ?? []);
     }
-    return _determineLocale(locales, approvedLocales, customMapping);
+    return new LocaleConfig({ customMapping }).determineLocale(
+      locales,
+      approvedLocales ?? []
+    );
   }
 
   /**

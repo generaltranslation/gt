@@ -342,9 +342,18 @@ export class LocaleConfig {
       this.customMapping
     );
     if (!resolvedLocale) return undefined;
-    const approvedLocale = approvedLocalePairs.find(
-      ({ canonicalLocale }) => canonicalLocale === resolvedLocale
-    );
+    // Matching standardizes codes, but callers key their configuration by the
+    // approved spelling. Preserve exact-match precedence before falling back
+    // to equivalent spellings (e.g. en-US matched against approved en-us).
+    const approvedLocale =
+      approvedLocalePairs.find(
+        ({ canonicalLocale }) => canonicalLocale === resolvedLocale
+      ) ??
+      approvedLocalePairs.find(
+        ({ canonicalLocale }) =>
+          _standardizeLocale(canonicalLocale) ===
+          _standardizeLocale(resolvedLocale)
+      );
     return approvedLocale?.locale ?? this.resolveAliasLocale(resolvedLocale);
   }
 

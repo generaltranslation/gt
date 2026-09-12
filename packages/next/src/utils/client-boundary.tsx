@@ -41,7 +41,7 @@ if (typeof window !== 'undefined') {
 export function Client_GTProvider(props: SharedGTProviderProps) {
   const router = useRouter();
   const refreshServerComponents = useCallback(() => {
-    router.refresh();
+    window.location.reload();
   }, [router]);
   const reloadBrowserPage = useCallback(() => {
     globalThis.location.reload();
@@ -127,10 +127,12 @@ function usePathCheck({
         locales
       );
 
+      // Equivalent spellings (en-us/en-US) must not reload on every mount.
       if (
         currentPathLocale &&
         locales.includes(currentPathLocale) &&
-        currentPathLocale !== locale
+        i18nConfig.standardizeLocale(currentPathLocale) !==
+          i18nConfig.standardizeLocale(locale)
       ) {
         // clear cookie (avoids infinite loop when there is no middleware)
         document.cookie = `${localeRoutingEnabledCookieName}=;path=/`;
