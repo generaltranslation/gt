@@ -34,6 +34,10 @@
       "description": "Create and manage projects, assets, branches, and file version tags."
     },
     {
+      "name": "Integrations",
+      "description": "Internal Figma and Google Drive plugin operations."
+    },
+    {
       "name": "CLI Wizard",
       "description": "Create and manage internal CLI wizard sessions."
     }
@@ -50,6 +54,12 @@
         "scheme": "bearer",
         "bearerFormat": "JWT",
         "description": "OAuth 2.1 user access token."
+      },
+      "GoogleIdentityToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Google identity token for the Workspace plugin."
       }
     },
     "schemas": {
@@ -85,47 +95,22 @@
           "ANDROID_STRINGS"
         ]
       },
-      "RuntimeTranslationResponse": {
+      "Branch": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "name"]
+      },
+      "JsonObject": {
         "type": "object",
         "additionalProperties": {
-          "oneOf": [
-            {
-              "type": "object",
-              "properties": {
-                "success": {
-                  "type": "boolean",
-                  "enum": [true]
-                },
-                "translation": {
-                  "$ref": "#/components/schemas/JsonValue"
-                },
-                "dataFormat": {
-                  "type": "string",
-                  "enum": ["JSX", "ICU", "I18NEXT", "STRING"]
-                },
-                "locale": {
-                  "type": "string"
-                }
-              },
-              "required": ["success", "dataFormat", "locale"]
-            },
-            {
-              "type": "object",
-              "properties": {
-                "success": {
-                  "type": "boolean",
-                  "enum": [false]
-                },
-                "error": {
-                  "type": "string"
-                },
-                "code": {
-                  "type": "number"
-                }
-              },
-              "required": ["success", "error", "code"]
-            }
-          ]
+          "$ref": "#/components/schemas/JsonValue"
         }
       },
       "JsonValue": {
@@ -169,6 +154,53 @@
             }
           }
         ]
+      },
+      "ModelProvider": {
+        "type": "string",
+        "enum": ["ANTHROPIC", "OPENAI", "XAI", "GOOGLE"]
+      },
+      "RuntimeTranslationResponse": {
+        "type": "object",
+        "additionalProperties": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "enum": [true]
+                },
+                "translation": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "dataFormat": {
+                  "type": "string",
+                  "enum": ["JSX", "ICU", "I18NEXT", "STRING"]
+                },
+                "locale": {
+                  "type": "string"
+                }
+              },
+              "required": ["success", "dataFormat", "locale"]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean",
+                  "enum": [false]
+                },
+                "error": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "number"
+                }
+              },
+              "required": ["success", "error", "code"]
+            }
+          ]
+        }
       },
       "RuntimeTranslationRequest": {
         "type": "object",
@@ -253,28 +285,6 @@
         },
         "required": ["requests", "targetLocale", "sourceLocale", "metadata"]
       },
-      "ModelProvider": {
-        "type": "string",
-        "enum": ["ANTHROPIC", "OPENAI", "XAI", "GOOGLE"]
-      },
-      "Branch": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          }
-        },
-        "required": ["id", "name"]
-      },
-      "JsonObject": {
-        "type": "object",
-        "additionalProperties": {
-          "$ref": "#/components/schemas/JsonValue"
-        }
-      },
       "CreateCliWizardSessionResponse": {
         "type": "object",
         "properties": {
@@ -357,11 +367,1055 @@
     "parameters": {}
   },
   "paths": {
-    "/v2/orgs/{orgId}/projects": {
+    "/v1/integrations/workspace-plugin/info": {
       "post": {
-        "operationId": "createProject",
-        "summary": "Create a Project",
-        "description": "Create a Project in the Organization selected by the orgId path parameter. Requires org:projects:create. Enabling CDN delivery also requires project:write.",
+        "operationId": "workspacePluginInfo",
+        "x-internal": true,
+        "summary": "Workspace plugin info",
+        "description": "Run the Google Drive Workspace plugin info command.",
+        "tags": ["Integrations"],
+        "security": [
+          {
+            "GoogleIdentityToken": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fileId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "hostApp": {
+                    "type": "string",
+                    "enum": ["DOCS", "SLIDES"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Workspace plugin result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "linked": {
+                      "type": "boolean"
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "email": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": ["email"]
+                    },
+                    "supportedLocales": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "emoji": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["code", "name", "emoji"]
+                      }
+                    },
+                    "projects": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "orgName": {
+                            "type": ["string", "null"]
+                          },
+                          "sourceLocale": {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "emoji": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["code", "name", "emoji"]
+                          },
+                          "currentLocales": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "code": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "emoji": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["code", "name", "emoji"]
+                            }
+                          },
+                          "localeWhitelist": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "code": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "emoji": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["code", "name", "emoji"]
+                            }
+                          },
+                          "integrationConnected": {
+                            "type": "boolean"
+                          },
+                          "integrationId": {
+                            "type": "string"
+                          },
+                          "linkedFile": {
+                            "type": ["object", "null"],
+                            "properties": {
+                              "sourceLocale": {
+                                "type": "object",
+                                "properties": {
+                                  "code": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "emoji": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["code", "name", "emoji"]
+                              }
+                            },
+                            "required": ["sourceLocale"]
+                          },
+                          "translatedCopy": {
+                            "type": ["object", "null"],
+                            "properties": {
+                              "sourceName": {
+                                "type": "string"
+                              },
+                              "sourceResourceId": {
+                                "type": "string"
+                              },
+                              "sourceLocale": {
+                                "type": "object",
+                                "properties": {
+                                  "code": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "emoji": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["code", "name", "emoji"]
+                              },
+                              "targetLocale": {
+                                "type": "object",
+                                "properties": {
+                                  "code": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "emoji": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["code", "name", "emoji"]
+                              }
+                            },
+                            "required": [
+                              "sourceName",
+                              "sourceResourceId",
+                              "sourceLocale",
+                              "targetLocale"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "orgName",
+                          "sourceLocale",
+                          "currentLocales",
+                          "localeWhitelist",
+                          "integrationConnected",
+                          "integrationId",
+                          "linkedFile",
+                          "translatedCopy"
+                        ]
+                      }
+                    }
+                  },
+                  "required": ["linked", "user", "supportedLocales", "projects"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "linked": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "linked": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "linked": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "linked": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "linked": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "linked": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "linked": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "linked": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/integrations/workspace-plugin/translate": {
+      "post": {
+        "operationId": "workspacePluginTranslate",
+        "x-internal": true,
+        "summary": "Workspace plugin translate",
+        "description": "Run the Google Drive Workspace plugin translate command.",
+        "tags": ["Integrations"],
+        "security": [
+          {
+            "GoogleIdentityToken": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "projectId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "fileId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "hostApp": {
+                    "type": "string",
+                    "enum": ["DOCS", "SLIDES"]
+                  },
+                  "targetLocales": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "minItems": 1,
+                    "maxItems": 100
+                  },
+                  "sourceLocale": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "force": {
+                    "type": "boolean"
+                  }
+                },
+                "required": ["projectId", "fileId", "hostApp", "targetLocales"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Workspace plugin result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accepted": {
+                      "type": "boolean"
+                    },
+                    "sourceLocale": {
+                      "type": "string"
+                    },
+                    "targetLocales": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "enqueued": {
+                      "type": "number"
+                    },
+                    "failed": {
+                      "type": "number"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "accepted",
+                    "sourceLocale",
+                    "targetLocales",
+                    "enqueued",
+                    "failed",
+                    "errors"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "linked": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "linked": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "linked": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "linked": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "linked": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "linked": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "linked": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "linked": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/integrations/workspace-plugin/status": {
+      "post": {
+        "operationId": "workspacePluginStatus",
+        "x-internal": true,
+        "summary": "Workspace plugin status",
+        "description": "Run the Google Drive Workspace plugin status command.",
+        "tags": ["Integrations"],
+        "security": [
+          {
+            "GoogleIdentityToken": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "projectId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "fileId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "hostApp": {
+                    "type": "string",
+                    "enum": ["DOCS", "SLIDES"]
+                  }
+                },
+                "required": ["projectId", "fileId", "hostApp"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Workspace plugin result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "locales": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "targetLocale": {
+                            "type": "string"
+                          },
+                          "locale": {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "emoji": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["code", "name", "emoji"]
+                          },
+                          "translationProgress": {
+                            "type": ["number", "null"]
+                          },
+                          "layoutProgress": {
+                            "type": ["number", "null"]
+                          },
+                          "done": {
+                            "type": "boolean"
+                          },
+                          "targetCopy": {
+                            "type": "object",
+                            "properties": {
+                              "fileId": {
+                                "type": "string"
+                              },
+                              "url": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["fileId", "url"]
+                          }
+                        },
+                        "required": [
+                          "targetLocale",
+                          "locale",
+                          "translationProgress",
+                          "layoutProgress",
+                          "done"
+                        ]
+                      }
+                    }
+                  },
+                  "required": ["locales"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "linked": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "linked": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "linked": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "linked": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "linked": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "linked": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "linked": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "linked": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/integrations/figma-plugin/info": {
+      "post": {
+        "operationId": "figmaPluginInfo",
+        "x-internal": true,
+        "summary": "Figma plugin info",
+        "description": "Run the Figma plugin info command.",
+        "tags": ["Integrations"],
         "security": [
           {
             "BearerAuth": []
@@ -371,15 +1425,6 @@
           }
         ],
         "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            },
-            "required": true,
-            "name": "orgId",
-            "in": "path"
-          },
           {
             "schema": {
               "type": "string",
@@ -395,6 +1440,16 @@
             "description": "API contract version. Defaults to the oldest supported version.",
             "name": "gt-api-version",
             "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project."
+            },
+            "required": false,
+            "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.",
+            "name": "gt-project-id",
+            "in": "header"
           }
         ],
         "requestBody": {
@@ -404,25 +1459,21 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "name": {
-                    "type": "string"
-                  },
-                  "defaultLocale": {
-                    "type": "string"
-                  },
-                  "cdnEnabled": {
-                    "type": "boolean"
+                  "figmaFileName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
                   }
                 },
-                "required": ["name", "defaultLocale"],
+                "required": ["figmaFileName"],
                 "additionalProperties": false
               }
             }
           }
         },
         "responses": {
-          "201": {
-            "description": "Project created",
+          "200": {
+            "description": "Figma plugin result",
             "content": {
               "application/json": {
                 "schema": {
@@ -437,17 +1488,215 @@
                         "name": {
                           "type": "string"
                         },
-                        "orgId": {
+                        "integrationId": {
                           "type": "string"
                         },
-                        "defaultLocale": {
-                          "type": "string"
+                        "sourceLocale": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "emoji": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["code", "name", "emoji"]
+                        },
+                        "currentLocales": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "emoji": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["code", "name", "emoji"]
+                          }
+                        },
+                        "localeWhitelist": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "emoji": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["code", "name", "emoji"]
+                          }
                         }
                       },
-                      "required": ["id", "name", "orgId", "defaultLocale"]
+                      "required": [
+                        "id",
+                        "name",
+                        "integrationId",
+                        "sourceLocale",
+                        "currentLocales",
+                        "localeWhitelist"
+                      ]
+                    },
+                    "supportedLocales": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "emoji": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["code", "name", "emoji"]
+                      }
+                    },
+                    "linkedPages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "pageName": {
+                            "type": "string"
+                          },
+                          "fileId": {
+                            "type": "string"
+                          },
+                          "versionId": {
+                            "type": "string"
+                          },
+                          "sourceLocale": {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "emoji": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["code", "name", "emoji"]
+                          },
+                          "locales": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "code": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "emoji": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["code", "name", "emoji"]
+                            }
+                          },
+                          "updatedAt": {
+                            "type": "string"
+                          },
+                          "skippedCount": {
+                            "type": "number"
+                          },
+                          "skipped": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "nodeId": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 255
+                                },
+                                "displayPath": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "maxItems": 64
+                                },
+                                "reason": {
+                                  "type": "string",
+                                  "enum": [
+                                    "not_text_node",
+                                    "empty_text",
+                                    "hidden_layer",
+                                    "missing_characters",
+                                    "in_component_master"
+                                  ]
+                                },
+                                "details": {
+                                  "type": "object",
+                                  "additionalProperties": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "number"
+                                      },
+                                      {
+                                        "type": "boolean"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "pathKey": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "nodeId",
+                                "displayPath",
+                                "reason",
+                                "pathKey"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "pageName",
+                          "fileId",
+                          "versionId",
+                          "sourceLocale",
+                          "locales",
+                          "updatedAt",
+                          "skippedCount",
+                          "skipped"
+                        ]
+                      }
                     }
                   },
-                  "required": ["project"]
+                  "required": ["project", "supportedLocales", "linkedPages"]
                 }
               }
             }
@@ -483,6 +1732,21 @@
             }
           },
           "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
             "description": "Request error",
             "content": {
               "application/json": {
@@ -527,201 +1791,7 @@
               }
             }
           },
-          "429": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        },
-        "tags": ["Project"]
-      }
-    },
-    "/v2/projects/{projectId}/api-keys": {
-      "post": {
-        "operationId": "createProjectApiKey",
-        "summary": "Create a Project API Key",
-        "description": "Create an API key for the selected Project. Requires project:api_keys:write and delegates only Project permissions held by the request identity.",
-        "security": [
-          {
-            "BearerAuth": []
-          },
-          {
-            "UserBearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            },
-            "required": true,
-            "name": "projectId",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "enum": [
-                "2025-01-01.v0",
-                "2025-11-03.v1",
-                "2026-02-18.v1",
-                "2026-03-06.v1"
-              ],
-              "description": "API contract version. Defaults to the oldest supported version."
-            },
-            "required": false,
-            "description": "API contract version. Defaults to the oldest supported version.",
-            "name": "gt-api-version",
-            "in": "header"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 255
-                  },
-                  "type": {
-                    "type": "string",
-                    "enum": ["production", "development"],
-                    "default": "production"
-                  }
-                },
-                "required": ["name"],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Project API key created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "apiKey": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        },
-                        "name": {
-                          "type": "string"
-                        },
-                        "key": {
-                          "type": "string"
-                        },
-                        "projectId": {
-                          "type": "string"
-                        },
-                        "type": {
-                          "type": "string",
-                          "enum": ["production", "development"]
-                        }
-                      },
-                      "required": ["id", "name", "key", "projectId", "type"]
-                    }
-                  },
-                  "required": ["apiKey"]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "413": {
+          "423": {
             "description": "Request error",
             "content": {
               "application/json": {
@@ -766,15 +1836,16 @@
               }
             }
           }
-        },
-        "tags": ["Project"]
+        }
       }
     },
-    "/v2/project/files/upload-translations": {
+    "/v1/integrations/figma-plugin/sync": {
       "post": {
-        "operationId": "uploadTranslations",
-        "summary": "Upload translated files",
-        "description": "Upload translated files linked to their source files. Max 100 files per request.",
+        "operationId": "figmaPluginSync",
+        "x-internal": true,
+        "summary": "Figma plugin sync",
+        "description": "Run the Figma plugin sync command.",
+        "tags": ["Integrations"],
         "security": [
           {
             "BearerAuth": []
@@ -818,224 +1889,305 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "data": {
+                  "figmaFileName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
+                  "pageName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
+                  "sourceLocale": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 16
+                  },
+                  "units": {
                     "type": "array",
                     "items": {
                       "type": "object",
                       "properties": {
-                        "source": {
+                        "nodeId": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 255
+                        },
+                        "structuralPath": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 1024
+                        },
+                        "value": {
+                          "type": "string"
+                        },
+                        "displayPath": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "maxItems": 64
+                        },
+                        "layout": {
                           "type": "object",
                           "properties": {
-                            "content": {
-                              "type": "string"
-                            },
-                            "fileName": {
+                            "boxId": {
                               "type": "string",
-                              "minLength": 1
+                              "minLength": 1,
+                              "maxLength": 255
                             },
-                            "fileFormat": {
+                            "frameId": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 255
+                            },
+                            "rect": {
+                              "type": "object",
+                              "properties": {
+                                "x": {
+                                  "type": "number"
+                                },
+                                "y": {
+                                  "type": "number"
+                                },
+                                "width": {
+                                  "type": "number"
+                                },
+                                "height": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": ["x", "y", "width", "height"]
+                            },
+                            "autoResize": {
                               "type": "string",
                               "enum": [
-                                "GTJSON",
-                                "MDX",
-                                "JSON",
-                                "YAML",
-                                "MD",
-                                "TS",
-                                "JS",
-                                "HTML",
-                                "TXT",
-                                "PO",
-                                "POT",
-                                "TWILIO_CONTENT_JSON",
-                                "LOTTIE",
-                                "SVG",
-                                "XCSTRINGS",
-                                "DOT_STRINGS",
-                                "DOT_STRINGSDICT",
-                                "ANDROID_STRINGS"
+                                "NONE",
+                                "HEIGHT",
+                                "WIDTH_AND_HEIGHT",
+                                "TRUNCATE"
                               ]
                             },
-                            "dataFormat": {
-                              "type": "string"
+                            "baseFontPt": {
+                              "type": "number"
                             },
-                            "locale": {
+                            "equivClass": {
                               "type": "string",
-                              "minLength": 1
+                              "maxLength": 255
                             },
-                            "fileId": {
-                              "type": "string",
-                              "minLength": 1
-                            },
-                            "versionId": {
-                              "type": "string",
-                              "minLength": 1
-                            },
-                            "branchId": {
-                              "type": "string",
-                              "minLength": 1
-                            },
-                            "checkedOutBranchId": {
-                              "type": "string",
-                              "minLength": 1
-                            },
-                            "incomingBranchId": {
-                              "type": "string",
-                              "minLength": 1
-                            },
-                            "formatMetadata": {
-                              "type": "object",
-                              "additionalProperties": {}
+                            "sizeRank": {
+                              "type": "number"
                             }
                           },
-                          "required": [
-                            "content",
-                            "fileName",
-                            "fileFormat",
-                            "locale"
-                          ]
+                          "required": ["boxId"],
+                          "additionalProperties": false
                         },
-                        "translations": {
+                        "styleRuns": {
                           "type": "array",
                           "items": {
                             "type": "object",
                             "properties": {
-                              "content": {
+                              "start": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "end": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "fontName": {
+                                "type": "object",
+                                "properties": {
+                                  "family": {
+                                    "type": "string"
+                                  },
+                                  "style": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["family", "style"],
+                                "additionalProperties": false
+                              },
+                              "fontSize": {
+                                "type": "number"
+                              },
+                              "textDecoration": {
                                 "type": "string"
                               },
-                              "fileName": {
-                                "type": "string",
-                                "minLength": 1
-                              },
-                              "fileFormat": {
-                                "type": "string",
-                                "enum": [
-                                  "GTJSON",
-                                  "MDX",
-                                  "JSON",
-                                  "YAML",
-                                  "MD",
-                                  "TS",
-                                  "JS",
-                                  "HTML",
-                                  "TXT",
-                                  "PO",
-                                  "POT",
-                                  "TWILIO_CONTENT_JSON",
-                                  "LOTTIE",
-                                  "SVG",
-                                  "XCSTRINGS",
-                                  "DOT_STRINGS",
-                                  "DOT_STRINGSDICT",
-                                  "ANDROID_STRINGS"
-                                ]
-                              },
-                              "dataFormat": {
+                              "textCase": {
                                 "type": "string"
                               },
-                              "locale": {
-                                "type": "string",
-                                "minLength": 1
+                              "letterSpacing": {
+                                "type": "object",
+                                "properties": {
+                                  "value": {
+                                    "type": "number"
+                                  },
+                                  "unit": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["value", "unit"],
+                                "additionalProperties": false
                               },
-                              "transformFormat": {
-                                "type": "string",
-                                "enum": [
-                                  "GTJSON",
-                                  "MDX",
-                                  "JSON",
-                                  "YAML",
-                                  "MD",
-                                  "TS",
-                                  "JS",
-                                  "HTML",
-                                  "TXT",
-                                  "PO",
-                                  "POT",
-                                  "TWILIO_CONTENT_JSON",
-                                  "LOTTIE",
-                                  "SVG",
-                                  "XCSTRINGS",
-                                  "DOT_STRINGS",
-                                  "DOT_STRINGSDICT",
-                                  "ANDROID_STRINGS"
-                                ]
+                              "lineHeight": {
+                                "type": "object",
+                                "properties": {
+                                  "value": {
+                                    "type": "number"
+                                  },
+                                  "unit": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["unit"],
+                                "additionalProperties": false
+                              },
+                              "fills": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "additionalProperties": {}
+                                }
+                              },
+                              "hyperlink": {
+                                "type": ["object", "null"],
+                                "additionalProperties": {}
                               }
                             },
-                            "required": [
-                              "content",
-                              "fileName",
-                              "fileFormat",
-                              "locale"
-                            ]
+                            "required": ["start", "end"],
+                            "additionalProperties": false
                           },
-                          "minItems": 1
+                          "maxItems": 512
+                        },
+                        "instanceTextOrigin": {
+                          "type": "string",
+                          "enum": ["inherited", "overridden"]
                         }
                       },
-                      "required": ["source", "translations"]
+                      "required": [
+                        "nodeId",
+                        "structuralPath",
+                        "value",
+                        "displayPath"
+                      ],
+                      "additionalProperties": false
                     },
-                    "minItems": 1,
-                    "maxItems": 100
+                    "maxItems": 20000
                   },
-                  "sourceLocale": {
-                    "type": "string"
+                  "skipped": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "nodeId": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 255
+                        },
+                        "structuralPath": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 1024
+                        },
+                        "displayPath": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "maxItems": 64
+                        },
+                        "reason": {
+                          "type": "string",
+                          "enum": [
+                            "not_text_node",
+                            "empty_text",
+                            "hidden_layer",
+                            "missing_characters",
+                            "in_component_master"
+                          ]
+                        },
+                        "details": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "boolean"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "nodeId",
+                        "structuralPath",
+                        "displayPath",
+                        "reason"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 20000
+                  },
+                  "allPageNames": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 255
+                    },
+                    "maxItems": 500
                   }
                 },
-                "required": ["data"]
+                "required": ["figmaFileName", "pageName", "units"],
+                "additionalProperties": false
               }
             }
           }
         },
         "responses": {
-          "201": {
-            "description": "Uploaded translation files",
+          "200": {
+            "description": "Figma plugin result",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "uploadedFiles": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "branchId": {
-                            "type": "string"
-                          },
-                          "fileId": {
-                            "type": "string"
-                          },
-                          "versionId": {
-                            "type": "string"
-                          },
-                          "fileName": {
-                            "type": "string"
-                          },
-                          "fileFormat": {
-                            "$ref": "#/components/schemas/FileFormat"
-                          },
-                          "dataFormat": {
-                            "type": "string"
-                          },
-                          "locale": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "fileId",
-                          "versionId",
-                          "fileName",
-                          "fileFormat"
-                        ]
-                      }
+                    "fileId": {
+                      "type": "string"
                     },
-                    "count": {
+                    "versionId": {
+                      "type": "string"
+                    },
+                    "sourceLocale": {
+                      "type": "string"
+                    },
+                    "unitCount": {
                       "type": "number"
                     },
-                    "message": {
+                    "skippedCount": {
+                      "type": "number"
+                    },
+                    "movedFrom": {
                       "type": "string"
                     }
                   },
-                  "required": ["uploadedFiles", "count", "message"]
+                  "required": [
+                    "fileId",
+                    "versionId",
+                    "sourceLocale",
+                    "unitCount",
+                    "skippedCount"
+                  ]
                 }
               }
             }
@@ -1100,7 +2252,37 @@
               }
             }
           },
+          "409": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
           "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "423": {
             "description": "Request error",
             "content": {
               "application/json": {
@@ -1144,8 +2326,1181 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/v1/integrations/figma-plugin/import-translations": {
+      "post": {
+        "operationId": "figmaPluginImportTranslations",
+        "x-internal": true,
+        "summary": "Figma plugin import-translations",
+        "description": "Run the Figma plugin import-translations command.",
+        "tags": ["Integrations"],
+        "security": [
+          {
+            "BearerAuth": []
           },
-          "503": {
+          {
+            "UserBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project."
+            },
+            "required": false,
+            "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.",
+            "name": "gt-project-id",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "figmaFileName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
+                  "pageName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
+                  "locale": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 16
+                  },
+                  "versionId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
+                  "translations": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "figmaFileName",
+                  "pageName",
+                  "locale",
+                  "versionId",
+                  "translations"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Figma plugin result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "saved": {
+                      "type": "boolean"
+                    },
+                    "versionId": {
+                      "type": "string"
+                    },
+                    "importedCount": {
+                      "type": "number"
+                    },
+                    "unmatchedCount": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "saved",
+                    "versionId",
+                    "importedCount",
+                    "unmatchedCount"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "423": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/integrations/figma-plugin/enqueue": {
+      "post": {
+        "operationId": "figmaPluginEnqueue",
+        "x-internal": true,
+        "summary": "Figma plugin enqueue",
+        "description": "Run the Figma plugin enqueue command.",
+        "tags": ["Integrations"],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "UserBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project."
+            },
+            "required": false,
+            "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.",
+            "name": "gt-project-id",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "figmaFileName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
+                  "pageName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
+                  "targetLocales": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 2,
+                      "maxLength": 16
+                    },
+                    "minItems": 1,
+                    "maxItems": 64
+                  },
+                  "sourceLocale": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 16
+                  },
+                  "force": {
+                    "type": "boolean"
+                  }
+                },
+                "required": ["figmaFileName", "pageName", "targetLocales"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Figma plugin result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accepted": {
+                      "type": "boolean"
+                    },
+                    "sourceLocale": {
+                      "type": "string"
+                    },
+                    "targetLocales": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "versionId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "accepted",
+                    "sourceLocale",
+                    "targetLocales",
+                    "versionId"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "423": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/integrations/figma-plugin/status": {
+      "post": {
+        "operationId": "figmaPluginStatus",
+        "x-internal": true,
+        "summary": "Figma plugin status",
+        "description": "Run the Figma plugin status command.",
+        "tags": ["Integrations"],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "UserBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project."
+            },
+            "required": false,
+            "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.",
+            "name": "gt-project-id",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "figmaFileName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
+                  "pageName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  }
+                },
+                "required": ["figmaFileName", "pageName"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Figma plugin result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "versionId": {
+                      "type": "string"
+                    },
+                    "locales": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "locale": {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "emoji": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["code", "name", "emoji"]
+                          },
+                          "translationProgress": {
+                            "type": ["number", "null"]
+                          },
+                          "done": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": ["locale", "translationProgress", "done"]
+                      }
+                    }
+                  },
+                  "required": ["versionId", "locales"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "423": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/integrations/figma-plugin/download": {
+      "post": {
+        "operationId": "figmaPluginDownload",
+        "x-internal": true,
+        "summary": "Figma plugin download",
+        "description": "Run the Figma plugin download command.",
+        "tags": ["Integrations"],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "UserBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project."
+            },
+            "required": false,
+            "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.",
+            "name": "gt-project-id",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "figmaFileName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
+                  "pageName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
+                  "locale": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 16
+                  }
+                },
+                "required": ["figmaFileName", "pageName", "locale"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Figma plugin result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "versionId": {
+                      "type": "string"
+                    },
+                    "locale": {
+                      "type": "string"
+                    },
+                    "translations": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": ["versionId", "locale", "translations"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "423": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/project/info/{projectId}": {
+      "get": {
+        "operationId": "getProjectInfo",
+        "summary": "Get Project information",
+        "description": "Read the authenticated Project's name, Organization ID, locale settings, and auto-approval setting.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "UserBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "projectId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project."
+            },
+            "required": false,
+            "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.",
+            "name": "gt-project-id",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Project information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "orgId": {
+                      "type": "string"
+                    },
+                    "defaultLocale": {
+                      "type": ["string", "null"]
+                    },
+                    "currentLocales": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "autoApprove": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "orgId",
+                    "defaultLocale",
+                    "currentLocales",
+                    "autoApprove"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
             "description": "Request error",
             "content": {
               "application/json": {
@@ -1161,10 +3516,8 @@
             }
           }
         },
-        "tags": ["Files"]
-      }
-    },
-    "/v2/project/info/{projectId}": {
+        "tags": ["Project"]
+      },
       "post": {
         "operationId": "updateProjectInfo",
         "summary": "Update Project information",
@@ -1357,386 +3710,6 @@
           }
         },
         "tags": ["Project"]
-      },
-      "get": {
-        "operationId": "getProjectInfo",
-        "summary": "Get Project information",
-        "description": "Read the authenticated Project's name, Organization ID, locale settings, and auto-approval setting.",
-        "security": [
-          {
-            "BearerAuth": []
-          },
-          {
-            "UserBearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            },
-            "required": true,
-            "name": "projectId",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "enum": [
-                "2025-01-01.v0",
-                "2025-11-03.v1",
-                "2026-02-18.v1",
-                "2026-03-06.v1"
-              ],
-              "description": "API contract version. Defaults to the oldest supported version."
-            },
-            "required": false,
-            "description": "API contract version. Defaults to the oldest supported version.",
-            "name": "gt-api-version",
-            "in": "header"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project."
-            },
-            "required": false,
-            "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.",
-            "name": "gt-project-id",
-            "in": "header"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Project information",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string"
-                    },
-                    "name": {
-                      "type": "string"
-                    },
-                    "orgId": {
-                      "type": "string"
-                    },
-                    "defaultLocale": {
-                      "type": ["string", "null"]
-                    },
-                    "currentLocales": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    },
-                    "autoApprove": {
-                      "type": "boolean"
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "name",
-                    "orgId",
-                    "defaultLocale",
-                    "currentLocales",
-                    "autoApprove"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        },
-        "tags": ["Project"]
-      }
-    },
-    "/v2/translate": {
-      "post": {
-        "operationId": "translate",
-        "summary": "Translate content at runtime",
-        "description": "Translate one or more strings or structured content entries with caching and memoization. Development API keys are accepted for this endpoint.",
-        "security": [
-          {
-            "BearerAuth": []
-          },
-          {
-            "UserBearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "enum": [
-                "2025-01-01.v0",
-                "2025-11-03.v1",
-                "2026-02-18.v1",
-                "2026-03-06.v1"
-              ],
-              "description": "API contract version. Defaults to the oldest supported version."
-            },
-            "required": false,
-            "description": "API contract version. Defaults to the oldest supported version.",
-            "name": "gt-api-version",
-            "in": "header"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project."
-            },
-            "required": false,
-            "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.",
-            "name": "gt-project-id",
-            "in": "header"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RuntimeTranslationRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "All translations were served from cache",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RuntimeTranslationResponse"
-                }
-              }
-            }
-          },
-          "201": {
-            "description": "Translations completed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RuntimeTranslationResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "402": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "413": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Request error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              },
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        },
-        "tags": ["Translation"]
       }
     },
     "/v2/project/translations/files/status/{fileId}": {
@@ -5785,6 +7758,1009 @@
           }
         },
         "tags": ["Translation"]
+      }
+    },
+    "/v2/translate": {
+      "post": {
+        "operationId": "translate",
+        "summary": "Translate content at runtime",
+        "description": "Translate one or more strings or structured content entries with caching and memoization. Development API keys are accepted for this endpoint.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "UserBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project."
+            },
+            "required": false,
+            "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.",
+            "name": "gt-project-id",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RuntimeTranslationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "All translations were served from cache",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuntimeTranslationResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Translations completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuntimeTranslationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Translation"]
+      }
+    },
+    "/v2/project/files/upload-translations": {
+      "post": {
+        "operationId": "uploadTranslations",
+        "summary": "Upload translated files",
+        "description": "Upload translated files linked to their source files. Max 100 files per request.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "UserBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project."
+            },
+            "required": false,
+            "description": "Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.",
+            "name": "gt-project-id",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "data": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "source": {
+                          "type": "object",
+                          "properties": {
+                            "content": {
+                              "type": "string"
+                            },
+                            "fileName": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "fileFormat": {
+                              "type": "string",
+                              "enum": [
+                                "GTJSON",
+                                "MDX",
+                                "JSON",
+                                "YAML",
+                                "MD",
+                                "TS",
+                                "JS",
+                                "HTML",
+                                "TXT",
+                                "PO",
+                                "POT",
+                                "TWILIO_CONTENT_JSON",
+                                "LOTTIE",
+                                "SVG",
+                                "XCSTRINGS",
+                                "DOT_STRINGS",
+                                "DOT_STRINGSDICT",
+                                "ANDROID_STRINGS"
+                              ]
+                            },
+                            "dataFormat": {
+                              "type": "string"
+                            },
+                            "locale": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "fileId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "versionId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "branchId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "checkedOutBranchId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "incomingBranchId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "formatMetadata": {
+                              "type": "object",
+                              "additionalProperties": {}
+                            }
+                          },
+                          "required": [
+                            "content",
+                            "fileName",
+                            "fileFormat",
+                            "locale"
+                          ]
+                        },
+                        "translations": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "content": {
+                                "type": "string"
+                              },
+                              "fileName": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "fileFormat": {
+                                "type": "string",
+                                "enum": [
+                                  "GTJSON",
+                                  "MDX",
+                                  "JSON",
+                                  "YAML",
+                                  "MD",
+                                  "TS",
+                                  "JS",
+                                  "HTML",
+                                  "TXT",
+                                  "PO",
+                                  "POT",
+                                  "TWILIO_CONTENT_JSON",
+                                  "LOTTIE",
+                                  "SVG",
+                                  "XCSTRINGS",
+                                  "DOT_STRINGS",
+                                  "DOT_STRINGSDICT",
+                                  "ANDROID_STRINGS"
+                                ]
+                              },
+                              "dataFormat": {
+                                "type": "string"
+                              },
+                              "locale": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "transformFormat": {
+                                "type": "string",
+                                "enum": [
+                                  "GTJSON",
+                                  "MDX",
+                                  "JSON",
+                                  "YAML",
+                                  "MD",
+                                  "TS",
+                                  "JS",
+                                  "HTML",
+                                  "TXT",
+                                  "PO",
+                                  "POT",
+                                  "TWILIO_CONTENT_JSON",
+                                  "LOTTIE",
+                                  "SVG",
+                                  "XCSTRINGS",
+                                  "DOT_STRINGS",
+                                  "DOT_STRINGSDICT",
+                                  "ANDROID_STRINGS"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "content",
+                              "fileName",
+                              "fileFormat",
+                              "locale"
+                            ]
+                          },
+                          "minItems": 1
+                        }
+                      },
+                      "required": ["source", "translations"]
+                    },
+                    "minItems": 1,
+                    "maxItems": 100
+                  },
+                  "sourceLocale": {
+                    "type": "string"
+                  }
+                },
+                "required": ["data"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Uploaded translation files",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "uploadedFiles": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "branchId": {
+                            "type": "string"
+                          },
+                          "fileId": {
+                            "type": "string"
+                          },
+                          "versionId": {
+                            "type": "string"
+                          },
+                          "fileName": {
+                            "type": "string"
+                          },
+                          "fileFormat": {
+                            "$ref": "#/components/schemas/FileFormat"
+                          },
+                          "dataFormat": {
+                            "type": "string"
+                          },
+                          "locale": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "fileId",
+                          "versionId",
+                          "fileName",
+                          "fileFormat"
+                        ]
+                      }
+                    },
+                    "count": {
+                      "type": "number"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["uploadedFiles", "count", "message"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Files"]
+      }
+    },
+    "/v2/projects/{projectId}/api-keys": {
+      "post": {
+        "operationId": "createProjectApiKey",
+        "summary": "Create a Project API Key",
+        "description": "Create an API key for the selected Project. Requires project:api_keys:write and delegates only Project permissions held by the request identity.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "UserBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "projectId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": ["production", "development"],
+                    "default": "production"
+                  }
+                },
+                "required": ["name"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Project API key created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "apiKey": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "key": {
+                          "type": "string"
+                        },
+                        "projectId": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": ["production", "development"]
+                        }
+                      },
+                      "required": ["id", "name", "key", "projectId", "type"]
+                    }
+                  },
+                  "required": ["apiKey"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Project"]
+      }
+    },
+    "/v2/orgs/{orgId}/projects": {
+      "post": {
+        "operationId": "createProject",
+        "summary": "Create a Project",
+        "description": "Create a Project in the Organization selected by the orgId path parameter, optionally enabling CDN delivery. Requires org:projects:create.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "UserBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "orgId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-01-01.v0",
+                "2025-11-03.v1",
+                "2026-02-18.v1",
+                "2026-03-06.v1"
+              ],
+              "description": "API contract version. Defaults to the oldest supported version."
+            },
+            "required": false,
+            "description": "API contract version. Defaults to the oldest supported version.",
+            "name": "gt-api-version",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "defaultLocale": {
+                    "type": "string"
+                  },
+                  "cdnEnabled": {
+                    "type": "boolean"
+                  }
+                },
+                "required": ["name", "defaultLocale"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Project created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "project": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "orgId": {
+                          "type": "string"
+                        },
+                        "defaultLocale": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id", "name", "orgId", "defaultLocale"]
+                    }
+                  },
+                  "required": ["project"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Project"]
       }
     },
     "/cli/wizard/session": {
