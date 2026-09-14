@@ -1,9 +1,11 @@
+import { createDiagnosticMessage } from 'generaltranslation/internal';
 import { GTFile, TranslationFunctionContext } from '../types';
 import { pluginConfig } from '../adapter/core';
 import { importDocument } from '../translation/importDocument';
 import { getPublishedId } from './documentIds';
 
 export interface BatchProcessorOptions<T = unknown, R = unknown> {
+  /** Positive safe integer limiting the number of items in each batch. */
   batchSize?: number;
   getConcurrencyKey?: (item: T) => string | undefined;
   onProgress?: (current: number, total: number) => void;
@@ -18,6 +20,14 @@ export interface ImportBatchItem {
   translationContext: TranslationFunctionContext;
   key: string;
 }
+
+const invalidBatchSizeDiagnostic = createDiagnosticMessage({
+  source: 'gt-sanity',
+  severity: 'Error',
+  whatHappened: 'Cannot process the batch',
+  why: 'batchSize must be a positive safe integer',
+  fix: 'Set batchSize to a positive safe integer',
+});
 
 export async function processBatch<T, R = unknown>(
   items: T[],
@@ -36,6 +46,10 @@ export async function processBatch<T, R = unknown>(
     onItemSuccess,
     onItemFailure,
   } = options;
+
+  if (!Number.isSafeInteger(batchSize) || batchSize <= 0) {
+    throw new RangeError(invalidBatchSizeDiagnostic);
+  }
 
   let successCount = 0;
   let failureCount = 0;
