@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { LocaleConfig } from '../LocaleConfig';
 import type { CustomMapping } from '../types';
 
@@ -51,6 +51,38 @@ describe('LocaleConfig', () => {
 });
 
 describe('determineLocale approved spelling', () => {
+  it('does not restandardize the approved list on warmed spelling lookups', () => {
+    const config = new LocaleConfig({
+      locales: ['en-us', 'fr-fr', 'de-de', 'es-es', 'pt-br'],
+    });
+    expect(config.determineLocale('pt-BR')).toBe('pt-br');
+
+    const standardize = vi.spyOn(Intl, 'getCanonicalLocales');
+    try {
+      for (let index = 0; index < 10; index++) {
+        expect(config.determineLocale('pt-BR')).toBe('pt-br');
+      }
+      // Allow candidate/result normalization, but not another pass over the
+      // configured list on every call (the performance regression in #2067).
+      expect(standardize.mock.calls.length).toBeLessThanOrEqual(30);
+    } finally {
+      standardize.mockRestore();
+    }
+  });
+
+  it('refreshes equivalent spellings after a mapped code changes', () => {
+    const mapping = { code: 'en-gb' };
+    const config = new LocaleConfig({
+      locales: ['brand'],
+      customMapping: { brand: mapping },
+    });
+    expect(config.determineLocale('en-GB')).toBe('brand');
+
+    mapping.code = 'fr-fr';
+    expect(config.determineLocale('en-GB')).toBeUndefined();
+    expect(config.determineLocale('fr-FR')).toBe('brand');
+  });
+
   it.each([
     ['en-US', ['en-us', 'fr'], 'en-us'],
     [['de', 'en-GB'], ['en-gb', 'fr'], 'en-gb'],
@@ -89,6 +121,7 @@ describe('determineLocale approved spelling', () => {
     });
     expect(config.determineLocale('en-GB')).toBe('brand');
     expect(config.determineLocale('en-GB', ['other'])).toBe('other');
+    expect(config.determineLocale('en-GB')).toBe('brand');
   });
 
   it('keeps exact mapped-code precedence over equivalent spellings', () => {

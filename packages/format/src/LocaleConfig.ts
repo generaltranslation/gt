@@ -49,7 +49,11 @@ type WithLocales<T = object> = T & LocalesOption;
  * indexed scope built from them.
  */
 type LocaleResolutionScope = {
-  approvedLocalePairs: { locale: string; canonicalLocale: string }[];
+  approvedLocalePairs: {
+    locale: string;
+    canonicalLocale: string;
+    standardizedLocale: string;
+  }[];
   canonicalMappingCodes: (string | undefined)[];
   approved: ApprovedLocales;
 };
@@ -107,10 +111,16 @@ export class LocaleConfig {
   private buildResolutionScope(
     approvedLocales: string[]
   ): LocaleResolutionScope {
-    const approvedLocalePairs = approvedLocales.map((locale) => ({
-      locale,
-      canonicalLocale: this.resolveCanonicalLocale(locale),
-    }));
+    const approvedLocalePairs = approvedLocales.map((locale) => {
+      const canonicalLocale = this.resolveCanonicalLocale(locale);
+      return {
+        locale,
+        canonicalLocale,
+        // Normalize once with the prepared scope, not during every fallback
+        // lookup over the configured list (the regression in #2067).
+        standardizedLocale: _standardizeLocale(canonicalLocale),
+      };
+    });
     return {
       approvedLocalePairs,
       canonicalMappingCodes: approvedLocalePairs.map(({ canonicalLocale }) =>
@@ -350,9 +360,7 @@ export class LocaleConfig {
         ({ canonicalLocale }) => canonicalLocale === resolvedLocale
       ) ??
       approvedLocalePairs.find(
-        ({ canonicalLocale }) =>
-          _standardizeLocale(canonicalLocale) ===
-          _standardizeLocale(resolvedLocale)
+        ({ standardizedLocale }) => standardizedLocale === resolvedLocale
       );
     return approvedLocale?.locale ?? this.resolveAliasLocale(resolvedLocale);
   }
