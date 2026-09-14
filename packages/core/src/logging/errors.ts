@@ -67,6 +67,31 @@ export const noApiKeyProvidedError = (functionName: string) =>
     fix: `Pass an API key to \`${functionName}\` or specify apiKey in the GT constructor`,
   });
 
+export const projectMissingDefaultLocaleError = (
+  functionName: string,
+  projectId: string
+) =>
+  createDiagnosticMessage({
+    source: GT_SOURCE,
+    severity: 'Error',
+    whatHappened: `\`${functionName}\` returned a project without a default locale`,
+    why: 'The published result type requires defaultLocale, but the API reported none for this project',
+    fix: 'Set a default locale for the project in the General Translation dashboard',
+    details: [`Project ID: ${projectId}`],
+  });
+
+export const uploadedFileMissingBranchError = (
+  functionName: string,
+  fileName: string
+) =>
+  createDiagnosticMessage({
+    source: GT_SOURCE,
+    severity: 'Error',
+    whatHappened: `\`${functionName}\` returned an uploaded file without a branch ID`,
+    why: 'The published upload result requires branchId on every uploaded file',
+    details: [`File: ${fileName}`],
+  });
+
 export const invalidLocaleError = (locale: string) =>
   createDiagnosticMessage({
     source: GT_SOURCE,

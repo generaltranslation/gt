@@ -4,17 +4,21 @@
 // ----- IMPORTS ----- //
 
 import {
+  DataFormat,
   EnqueueFilesResult,
   CheckFileTranslationsOptions,
   DownloadFileBatchOptions,
   DownloadFileBatchResult,
   DownloadFileOptions,
 } from './types';
+import { DataFormat as GeneratedDataFormat } from '@generaltranslation/api';
 import { libraryDefaultLocale } from './settings/settings';
 import { defaultBaseUrl } from './settings/settingsUrls';
 import {
   noSourceLocaleProvidedError,
   noTargetLocaleProvidedError,
+  projectMissingDefaultLocaleError,
+  uploadedFileMissingBranchError,
 } from './logging/errors';
 import { gtInstanceLogger } from './logging/logger';
 import type {
@@ -107,6 +111,14 @@ export {
 // ============================================================ //
 //                        Core Class                            //
 // ============================================================ //
+
+const generatedDataFormats = new Set<string>(
+  Object.values(GeneratedDataFormat)
+);
+
+function isDataFormat(value: string | undefined): value is DataFormat {
+  return value !== undefined && generatedDataFormats.has(value);
+}
 
 /**
  * GT is the core driver for the General Translation library.
@@ -387,8 +399,7 @@ export class GT extends GTRuntime {
       undefined,
       options.timeout
     );
-    // The published result predates the nullable defaultLocale in OpenAPI.
-    return result as ProjectInfoResult;
+    return this._requireDefaultLocale('getProjectInfo', result);
   }
 
   async queryFileData(
@@ -447,11 +458,59 @@ export class GT extends GTRuntime {
     // Validation
     this._validateAuth('getProjectData');
 
-    // The published result predates the nullable defaultLocale in OpenAPI.
-    return (await this._getApiAdapter().getProjectInfo(
-      projectId,
-      options.timeout
-    )) as ProjectData;
+    const { autoApprove: _autoApprove, ...project } =
+      this._requireDefaultLocale(
+        'getProjectData',
+        await this._getApiAdapter().getProjectInfo(projectId, options.timeout)
+      );
+    return project;
+  }
+
+  /**
+   * The published project types predate the nullable defaultLocale in the
+   * OpenAPI contract; enforce the non-null guarantee instead of asserting it.
+   */
+  private _requireDefaultLocale<
+    T extends { id: string; defaultLocale: string | null },
+  >(functionName: string, project: T): T & { defaultLocale: string } {
+    const { defaultLocale } = project;
+    if (defaultLocale === null) {
+      const error = projectMissingDefaultLocaleError(functionName, project.id);
+      gtInstanceLogger.error(error);
+      throw new Error(error);
+    }
+    return { ...project, defaultLocale };
+  }
+
+  /**
+   * The published upload result requires branchId and a typed dataFormat on
+   * every file while the generated response marks branchId optional and types
+   * dataFormat as a plain string; enforce both at runtime instead of casting.
+   */
+  private _requireUploadedBranchIds<
+    T extends { branchId?: string; fileName: string; dataFormat?: string },
+  >(
+    functionName: string,
+    uploadedFiles: T[]
+  ): (Omit<T, 'branchId' | 'dataFormat'> & {
+    branchId: string;
+    dataFormat?: DataFormat;
+  })[] {
+    return uploadedFiles.map(({ branchId, dataFormat, ...file }) => {
+      if (branchId === undefined) {
+        const error = uploadedFileMissingBranchError(
+          functionName,
+          file.fileName
+        );
+        gtInstanceLogger.error(error);
+        throw new Error(error);
+      }
+      return {
+        ...file,
+        branchId,
+        dataFormat: isDataFormat(dataFormat) ? dataFormat : undefined,
+      };
+    });
   }
 
   /**
@@ -560,10 +619,10 @@ export class GT extends GTRuntime {
       mergedOptions
     );
 
-    // The published upload result requires branchId, which the generated
-    // response still marks optional although successful uploads return it.
-    const uploadedFiles =
-      result.uploadedFiles as UploadFilesResponse['uploadedFiles'];
+    const uploadedFiles = this._requireUploadedBranchIds(
+      'uploadSourceFiles',
+      result.uploadedFiles
+    );
     return {
       uploadedFiles,
       count: uploadedFiles.length,
@@ -631,10 +690,10 @@ export class GT extends GTRuntime {
       mergedOptions
     );
 
-    // The published upload result requires branchId, which the generated
-    // response still marks optional although successful uploads return it.
-    const uploadedFiles =
-      result.uploadedFiles as UploadFilesResponse['uploadedFiles'];
+    const uploadedFiles = this._requireUploadedBranchIds(
+      'uploadTranslations',
+      result.uploadedFiles
+    );
     return {
       uploadedFiles,
       count: uploadedFiles.length,
