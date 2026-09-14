@@ -1,5 +1,16 @@
 # generaltranslation
 
+## 9.4.0
+
+### Minor Changes
+
+- [#2215](https://github.com/generaltranslation/gt/pull/2215) [`5f5843b`](https://github.com/generaltranslation/gt/commit/5f5843b94066d9ee9c0703722105a189d2a4e3d5) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Consolidate base64, file-content, locale-mapping, and job-polling seams in `generaltranslation/internal`, remove the generated API package's workspace dependency surface, and reuse the core helpers in the CLI and Sanity integration. `encodeBase64`, `decodeBase64`, `encodeFileContent`, and `decodeFileContent` are removed from `@generaltranslation/api` (and therefore `generaltranslation/api`); import the `generaltranslation/internal` equivalents instead.
+
+### Patch Changes
+
+- Updated dependencies [[`01658bd`](https://github.com/generaltranslation/gt/commit/01658bd018a337a9f2fb8f058195c7ea3d6f534e), [`5f5843b`](https://github.com/generaltranslation/gt/commit/5f5843b94066d9ee9c0703722105a189d2a4e3d5)]:
+  - @generaltranslation/api@0.3.0
+
 ## 9.3.1
 
 ### Patch Changes

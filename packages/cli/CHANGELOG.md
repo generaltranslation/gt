@@ -1,5 +1,17 @@
 # gtx-cli
 
+## 2.21.2
+
+### Patch Changes
+
+- [#2215](https://github.com/generaltranslation/gt/pull/2215) [`5f5843b`](https://github.com/generaltranslation/gt/commit/5f5843b94066d9ee9c0703722105a189d2a4e3d5) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Consolidate base64, file-content, locale-mapping, and job-polling seams in `generaltranslation/internal`, remove the generated API package's workspace dependency surface, and reuse the core helpers in the CLI and Sanity integration. `encodeBase64`, `decodeBase64`, `encodeFileContent`, and `decodeFileContent` are removed from `@generaltranslation/api` (and therefore `generaltranslation/api`); import the `generaltranslation/internal` equivalents instead.
+
+- Updated dependencies [[`5f5843b`](https://github.com/generaltranslation/gt/commit/5f5843b94066d9ee9c0703722105a189d2a4e3d5)]:
+  - generaltranslation@9.4.0
+  - @generaltranslation/python-extractor@0.2.50
+  - @generaltranslation/supported-locales@2.1.30
+  - @generaltranslation/vue-extractor@0.1.10
+
 ## 2.21.1
 
 ### Patch Changes
