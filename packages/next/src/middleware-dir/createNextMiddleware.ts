@@ -381,7 +381,14 @@ export function createNextMiddleware({
 
       // ----- CASE: localized path exists ----- //
 
-      if (!prefixDefaultLocale && isSameDialect(userLocale, defaultLocale)) {
+      // Regional aliases need a prefix; only default-locale aliases are
+      // registered unprefixed. Shared paths retain their dialect behavior.
+      if (
+        !prefixDefaultLocale &&
+        isSameDialect(userLocale, defaultLocale) &&
+        (userLocale === defaultLocale ||
+          localizedPathWithParameters === sharedPathWithParameters)
+      ) {
         // --- CASE: remove defaultLocale prefix --- //
 
         if (pathnameLocale) {
