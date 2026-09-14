@@ -2,6 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GT, LocaleConfig } from '../index';
 import { _translateMany } from '../translate/translateMany';
 import {
+  _createProject,
+  type CreateProjectResult,
+} from '../projects/createProject';
+import { libraryDefaultLocale } from '../settings/settings';
+import {
   TranslationResult,
   TranslateManyResult,
   Content,
@@ -12,6 +17,9 @@ import {
 // Mock the internal translate function
 vi.mock('../translate/translateMany', () => ({
   _translateMany: vi.fn(),
+}));
+vi.mock('../projects/createProject', () => ({
+  _createProject: vi.fn(),
 }));
 
 const numberValue = 1234.56;
@@ -741,6 +749,72 @@ describe.sequential('GT Translation Methods', () => {
       const result = gt.resolveAliasLocale('zh-CN');
       expect(result).toBe('zh-CN');
     });
+  });
+});
+
+describe.sequential('GT Project Methods', () => {
+  const createProjectResult: CreateProjectResult = {
+    project: {
+      id: 'project-123',
+      name: 'Customer Portal',
+      orgId: 'org-123',
+      defaultLocale: libraryDefaultLocale,
+    },
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(_createProject).mockResolvedValue(createProjectResult);
+  });
+
+  it('should create a project with the library default locale', async () => {
+    const gt = new GT({
+      orgApiKey: 'gtx-org-test-key',
+      baseUrl: 'https://api.test.com',
+    });
+
+    const result = await gt.createProject('Customer Portal');
+
+    expect(_createProject).toHaveBeenCalledWith(
+      'Customer Portal',
+      libraryDefaultLocale,
+      {
+        baseUrl: 'https://api.test.com',
+        apiKey: 'gtx-org-test-key',
+      }
+    );
+    expect(result).toEqual(createProjectResult);
+  });
+
+  it('should canonicalize an explicit default locale and use the selected key', async () => {
+    const gt = new GT({
+      apiKey: 'test-api-key',
+      devApiKey: 'gtx-dev-test-key',
+      orgApiKey: 'gtx-org-test-key',
+      projectId: 'test-project',
+      customMapping: {
+        'brand-french': {
+          code: 'fr-FR',
+          name: 'Brand French',
+        },
+      },
+    });
+
+    await gt.createProject('Customer Portal', 'brand-french');
+
+    expect(_createProject).toHaveBeenCalledWith('Customer Portal', 'fr-FR', {
+      baseUrl: undefined,
+      apiKey: 'test-api-key',
+    });
+  });
+
+  it('should require an API key', async () => {
+    const gt = new GT();
+
+    await expect(gt.createProject('Customer Portal')).rejects.toThrow(
+      'GT Error: Cannot call `createProject` without a specified API key.'
+    );
+    expect(_createProject).not.toHaveBeenCalled();
   });
 });
 
