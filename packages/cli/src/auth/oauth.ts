@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import {
   chmod,
   mkdir,
@@ -12,12 +12,41 @@ import path from 'node:path';
 import open from 'open';
 import { defaultBaseUrl } from 'generaltranslation/internal';
 import { GT_DASHBOARD_URL } from '../utils/constants.js';
+import {
+  parseAuthorizationCallback,
+  startLoopbackServer,
+  type AuthorizationCallback,
+} from './loopback.js';
 
-export const OAUTH_CLIENT_ID = 'gt-cli';
-export const OAUTH_SCOPES = 'openid profile offline_access api:read api:write';
-const TOKEN_REFRESH_BUFFER_MS = 60_000;
-const DEFAULT_POLL_INTERVAL_SECONDS = 5;
-const SLOW_DOWN_INCREMENT_SECONDS = 5;
+export const OAUTH_CLIENT_NAME = 'General Translation CLI';
+
+/**
+ * Scopes requested by `gt login`. The provider rejects unknown scopes, so each
+ * entry must exist in gt-cloud's oauthProviderConfig. Permission scopes map to
+ * the CLI commands that call operations requiring them:
+ */
+export const OAUTH_SCOPES = [
+  'openid', // identity for `gt whoami`
+  'profile', // name/email for `gt whoami`
+  'offline_access', // refresh tokens so logins outlive the 1h access token
+  'project:files:read', // stage/download/status polling, project + branch + file info, orphaned files
+  'project:files:write', // upload sources/translations, branches, tags, publish, moves, user-edit diffs, fonts
+  'project:translations:enqueue', // translate/enqueue
+  'project:translations:generate', // runtime `POST /v2/translate` used by `gt api` and dev workflows
+  'project:context:write', // `gt setup`'s project context generation
+  'org:projects:create', // `gt project create`
+] as const;
+export const OAUTH_SCOPE = OAUTH_SCOPES.join(' ');
+
+/**
+ * Registered once per authorization server; the provider matches loopback
+ * redirect URIs ignoring the port (RFC 8252 §7.3), so the ephemeral port
+ * chosen at login does not need to be re-registered.
+ */
+const REGISTERED_REDIRECT_URI = 'http://127.0.0.1/callback';
+// Distinct from defaultTimeout on purpose: refresh slightly before expiry so
+// an in-flight request never carries a token that expires mid-request.
+const TOKEN_REFRESH_BUFFER_MS = 30_000;
 
 export type OAuthTokens = {
   accessToken: string;
@@ -25,6 +54,11 @@ export type OAuthTokens = {
   refreshToken: string;
   scope: string;
   tokenType: string;
+};
+
+export type OAuthClient = {
+  clientId: string;
+  redirectUri: string;
 };
 
 type StoredOAuthTokens = {
@@ -35,18 +69,20 @@ type StoredOAuthTokens = {
   token_type: string;
 };
 
-type StoredCredentials = {
-  tokens: StoredOAuthTokens;
-  version: 1;
+type StoredOAuthClient = {
+  client_id: string;
+  redirect_uri: string;
 };
 
-export type DeviceCode = {
-  deviceCode: string;
-  expiresIn: number;
-  interval: number;
-  userCode: string;
-  verificationUri: string;
-  verificationUriComplete?: string;
+type StoredServerCredentials = {
+  client?: StoredOAuthClient;
+  tokens?: StoredOAuthTokens;
+};
+
+type StoredCredentials = {
+  version: 2;
+  /** Keyed by authorization server base URL so dev and prod logins coexist. */
+  servers: Record<string, StoredServerCredentials>;
 };
 
 export type UserInfo = {
@@ -60,20 +96,24 @@ type OAuthRequestOptions = {
   fetch?: typeof fetch;
 };
 
-type PollDeviceTokenOptions = OAuthRequestOptions & {
-  deviceCode: DeviceCode;
-  now?: () => number;
-  sleep?: (milliseconds: number) => Promise<void>;
-};
-
 type OpenBrowser = (url: string) => Promise<unknown>;
 
-type LoginOptions = OAuthRequestOptions & {
+export type LoginOptions = OAuthRequestOptions & {
   apiResource?: string;
-  onDeviceCode?: (deviceCode: DeviceCode) => void;
+  /** Skip opening a browser; the URL is still reported through onAuthorizationUrl. */
+  noBrowser?: boolean;
+  onAuthorizationUrl?: (url: string) => void;
   openBrowser?: OpenBrowser;
-  sleep?: (milliseconds: number) => Promise<void>;
+  /**
+   * Headless fallback: called when the loopback listener cannot receive the
+   * redirect (bind failure, remote shell, or --no-browser). Should return the
+   * full redirect URL or the bare authorization code the user pasted.
+   */
+  promptForCallback?: () => Promise<string>;
+  timeoutMs?: number;
 };
+
+export type PkcePair = { codeVerifier: string; codeChallenge: string };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -116,9 +156,9 @@ async function getOAuthErrorMessage(
   try {
     const value: unknown = await response.json();
     if (isRecord(value)) {
-      return (
-        optionalStringField(value, 'error_description') ??
-        optionalStringField(value, 'error') ??
+      return describeOAuthError(
+        optionalStringField(value, 'error'),
+        optionalStringField(value, 'error_description'),
         fallback
       );
     }
@@ -126,6 +166,25 @@ async function getOAuthErrorMessage(
     // OAuth servers may return an empty or non-JSON error response.
   }
   return fallback;
+}
+
+function describeOAuthError(
+  error: string | undefined,
+  description: string | undefined,
+  fallback: string
+): string {
+  switch (error) {
+    case 'access_denied':
+      return 'Sign in was denied in the browser';
+    case 'invalid_scope':
+      return `The authorization server rejected the requested scopes${description ? `: ${description}` : ''}`;
+    case 'invalid_grant':
+      return 'The sign-in code expired or was already used. Run `gt login` again';
+    case 'invalid_client':
+      return 'The CLI client registration is no longer valid. Run `gt logout` and `gt login` again';
+    default:
+      return description ?? error ?? fallback;
+  }
 }
 
 function parseTokens(
@@ -155,8 +214,9 @@ export function getAuthBaseUrl(): string {
   );
 }
 
+/** The API resource identifier is the API origin serialized as a URL href (trailing slash). */
 export function getApiResource(): string {
-  return (process.env.GT_API_URL ?? defaultBaseUrl).replace(/\/$/, '');
+  return new URL(process.env.GT_API_URL ?? defaultBaseUrl).href;
 }
 
 export function getCredentialsPath(): string {
@@ -165,27 +225,52 @@ export function getCredentialsPath(): string {
   return path.join(configHome, 'gt', 'credentials.json');
 }
 
-export async function readOAuthTokens(): Promise<OAuthTokens | undefined> {
+// ---------------------------------------------------------------------------
+// Credentials file
+// ---------------------------------------------------------------------------
+
+async function readCredentialsFile(): Promise<StoredCredentials> {
   let contents: string;
   try {
     contents = await readFile(getCredentialsPath(), 'utf8');
   } catch (error) {
-    if (isRecord(error) && error.code === 'ENOENT') return undefined;
+    if (isRecord(error) && error.code === 'ENOENT') {
+      return { version: 2, servers: {} };
+    }
     throw error;
   }
 
   try {
     const parsed: unknown = JSON.parse(contents);
-    if (!isRecord(parsed) || parsed.version !== 1 || !isRecord(parsed.tokens)) {
-      throw new Error('expected version 1 with a tokens object');
+    if (
+      !isRecord(parsed) ||
+      parsed.version !== 2 ||
+      !isRecord(parsed.servers)
+    ) {
+      throw new Error('expected version 2 with a servers object');
     }
-    return {
-      accessToken: stringField(parsed.tokens, 'access_token'),
-      expiresAt: numberField(parsed.tokens, 'expires_at'),
-      refreshToken: stringField(parsed.tokens, 'refresh_token'),
-      scope: stringField(parsed.tokens, 'scope'),
-      tokenType: stringField(parsed.tokens, 'token_type'),
-    };
+    const servers: Record<string, StoredServerCredentials> = {};
+    for (const [authBaseUrl, entry] of Object.entries(parsed.servers)) {
+      if (!isRecord(entry)) throw new Error(`invalid entry for ${authBaseUrl}`);
+      const server: StoredServerCredentials = {};
+      if (isRecord(entry.client)) {
+        server.client = {
+          client_id: stringField(entry.client, 'client_id'),
+          redirect_uri: stringField(entry.client, 'redirect_uri'),
+        };
+      }
+      if (isRecord(entry.tokens)) {
+        server.tokens = {
+          access_token: stringField(entry.tokens, 'access_token'),
+          expires_at: numberField(entry.tokens, 'expires_at'),
+          refresh_token: stringField(entry.tokens, 'refresh_token'),
+          scope: stringField(entry.tokens, 'scope'),
+          token_type: stringField(entry.tokens, 'token_type'),
+        };
+      }
+      servers[authBaseUrl] = server;
+    }
+    return { version: 2, servers };
   } catch (error) {
     const detail = error instanceof Error ? error.message : 'unknown error';
     throw new Error(`Stored OAuth credentials are invalid: ${detail}`, {
@@ -194,23 +279,15 @@ export async function readOAuthTokens(): Promise<OAuthTokens | undefined> {
   }
 }
 
-export async function writeOAuthTokens(tokens: OAuthTokens): Promise<void> {
+async function writeCredentialsFile(
+  credentials: StoredCredentials
+): Promise<void> {
   const credentialsPath = getCredentialsPath();
   const directory = path.dirname(credentialsPath);
   const temporaryPath = path.join(
     directory,
     `.credentials-${randomUUID()}.tmp`
   );
-  const credentials: StoredCredentials = {
-    version: 1,
-    tokens: {
-      access_token: tokens.accessToken,
-      expires_at: tokens.expiresAt,
-      refresh_token: tokens.refreshToken,
-      scope: tokens.scope,
-      token_type: tokens.tokenType,
-    },
-  };
 
   await mkdir(directory, { recursive: true, mode: 0o700 });
   await writeFile(temporaryPath, `${JSON.stringify(credentials, null, 2)}\n`, {
@@ -226,128 +303,333 @@ export async function writeOAuthTokens(tokens: OAuthTokens): Promise<void> {
   }
 }
 
-export async function deleteOAuthTokens(): Promise<void> {
-  await rm(getCredentialsPath(), { force: true });
+async function updateServerCredentials(
+  authBaseUrl: string,
+  update: (current: StoredServerCredentials) => StoredServerCredentials | null
+): Promise<void> {
+  const credentials = await readCredentialsFile();
+  const next = update(credentials.servers[authBaseUrl] ?? {});
+  if (next === null || (!next.client && !next.tokens)) {
+    delete credentials.servers[authBaseUrl];
+  } else {
+    credentials.servers[authBaseUrl] = next;
+  }
+  if (Object.keys(credentials.servers).length === 0) {
+    await rm(getCredentialsPath(), { force: true });
+    return;
+  }
+  await writeCredentialsFile(credentials);
 }
 
-export async function requestDeviceCode({
+export async function readOAuthTokens(
+  authBaseUrl = getAuthBaseUrl()
+): Promise<OAuthTokens | undefined> {
+  const stored = (await readCredentialsFile()).servers[authBaseUrl]?.tokens;
+  if (!stored) return undefined;
+  return {
+    accessToken: stored.access_token,
+    expiresAt: stored.expires_at,
+    refreshToken: stored.refresh_token,
+    scope: stored.scope,
+    tokenType: stored.token_type,
+  };
+}
+
+export async function writeOAuthTokens(
+  tokens: OAuthTokens,
+  authBaseUrl = getAuthBaseUrl()
+): Promise<void> {
+  await updateServerCredentials(authBaseUrl, (current) => ({
+    ...current,
+    tokens: {
+      access_token: tokens.accessToken,
+      expires_at: tokens.expiresAt,
+      refresh_token: tokens.refreshToken,
+      scope: tokens.scope,
+      token_type: tokens.tokenType,
+    },
+  }));
+}
+
+/** Removes stored tokens; the client registration is kept for the next login. */
+export async function deleteOAuthTokens(
+  authBaseUrl = getAuthBaseUrl()
+): Promise<void> {
+  await updateServerCredentials(authBaseUrl, ({ client }) =>
+    client ? { client } : null
+  );
+}
+
+export async function readOAuthClient(
+  authBaseUrl = getAuthBaseUrl()
+): Promise<OAuthClient | undefined> {
+  const stored = (await readCredentialsFile()).servers[authBaseUrl]?.client;
+  if (!stored) return undefined;
+  return { clientId: stored.client_id, redirectUri: stored.redirect_uri };
+}
+
+export async function writeOAuthClient(
+  client: OAuthClient,
+  authBaseUrl = getAuthBaseUrl()
+): Promise<void> {
+  await updateServerCredentials(authBaseUrl, (current) => ({
+    ...current,
+    client: { client_id: client.clientId, redirect_uri: client.redirectUri },
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// PKCE
+// ---------------------------------------------------------------------------
+
+export function createPkcePair(
+  codeVerifier = randomBytes(32).toString('base64url')
+): PkcePair {
+  return {
+    codeVerifier,
+    codeChallenge: createHash('sha256')
+      .update(codeVerifier)
+      .digest('base64url'),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Dynamic client registration
+// ---------------------------------------------------------------------------
+
+export async function registerOAuthClient({
   authBaseUrl = getAuthBaseUrl(),
-  apiResource = getApiResource(),
   fetch: fetchImplementation = globalThis.fetch,
-}: LoginOptions = {}): Promise<DeviceCode> {
-  const response = await fetchImplementation(`${authBaseUrl}/device/code`, {
+}: OAuthRequestOptions = {}): Promise<OAuthClient> {
+  const response = await fetchImplementation(`${authBaseUrl}/oauth2/register`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: OAUTH_CLIENT_ID,
-      resource: apiResource,
-      scope: OAUTH_SCOPES,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      client_name: OAUTH_CLIENT_NAME,
+      // Registration defaults application_type to "web", which rejects http
+      // loopback redirects; native permits http://127.0.0.1 on any port.
+      application_type: 'native',
+      redirect_uris: [REGISTERED_REDIRECT_URI],
+      grant_types: ['authorization_code', 'refresh_token'],
+      response_types: ['code'],
+      token_endpoint_auth_method: 'none',
+      scope: OAUTH_SCOPE,
     }),
   });
   if (!response.ok) {
     throw new Error(
-      await getOAuthErrorMessage(
-        response,
-        'Could not start device authorization'
-      )
+      await getOAuthErrorMessage(response, 'Could not register the CLI client')
     );
   }
   const value = await readJson(response);
-  return {
-    deviceCode: stringField(value, 'device_code'),
-    expiresIn: numberField(value, 'expires_in'),
-    interval:
-      typeof value.interval === 'number'
-        ? value.interval
-        : DEFAULT_POLL_INTERVAL_SECONDS,
-    userCode: stringField(value, 'user_code'),
-    verificationUri: stringField(value, 'verification_uri'),
-    verificationUriComplete: optionalStringField(
-      value,
-      'verification_uri_complete'
-    ),
+  const client = {
+    clientId: stringField(value, 'client_id'),
+    redirectUri: REGISTERED_REDIRECT_URI,
   };
+  await writeOAuthClient(client, authBaseUrl);
+  return client;
 }
 
-export async function pollDeviceToken({
+async function getOrRegisterOAuthClient(
+  options: OAuthRequestOptions
+): Promise<OAuthClient> {
+  return (
+    (await readOAuthClient(options.authBaseUrl)) ??
+    (await registerOAuthClient(options))
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Authorization code + PKCE
+// ---------------------------------------------------------------------------
+
+export function buildAuthorizationUrl({
+  authBaseUrl,
+  clientId,
+  redirectUri,
+  codeChallenge,
+  state,
+  apiResource,
+}: {
+  authBaseUrl: string;
+  clientId: string;
+  redirectUri: string;
+  codeChallenge: string;
+  state: string;
+  apiResource: string;
+}): string {
+  const url = new URL(`${authBaseUrl}/oauth2/authorize`);
+  url.search = new URLSearchParams({
+    response_type: 'code',
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    scope: OAUTH_SCOPE,
+    state,
+    code_challenge: codeChallenge,
+    code_challenge_method: 'S256',
+    resource: apiResource,
+  }).toString();
+  return url.toString();
+}
+
+export async function exchangeAuthorizationCode({
   authBaseUrl = getAuthBaseUrl(),
-  deviceCode,
   fetch: fetchImplementation = globalThis.fetch,
-  now = Date.now,
-  sleep = (milliseconds) =>
-    new Promise((resolve) => setTimeout(resolve, milliseconds)),
-}: PollDeviceTokenOptions): Promise<OAuthTokens> {
-  const deadline = now() + deviceCode.expiresIn * 1000;
-  let intervalSeconds = deviceCode.interval;
-
-  while (now() < deadline) {
-    await sleep(intervalSeconds * 1000);
-    if (now() >= deadline) break;
-
-    const response = await fetchImplementation(`${authBaseUrl}/oauth2/token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: OAUTH_CLIENT_ID,
-        device_code: deviceCode.deviceCode,
-        grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
-      }),
-    });
-    if (response.ok) {
-      return parseTokens(await readJson(response), undefined, now());
-    }
-
-    let value: Record<string, unknown> | undefined;
-    try {
-      const parsed: unknown = await response.json();
-      if (isRecord(parsed)) value = parsed;
-    } catch {
-      // Fall through to the stable device-authorization error below.
-    }
-    const oauthError = value && optionalStringField(value, 'error');
-    if (oauthError === 'authorization_pending') continue;
-    if (oauthError === 'slow_down') {
-      intervalSeconds += SLOW_DOWN_INCREMENT_SECONDS;
-      continue;
-    }
+  clientId,
+  code,
+  codeVerifier,
+  redirectUri,
+  apiResource,
+}: OAuthRequestOptions & {
+  clientId: string;
+  code: string;
+  codeVerifier: string;
+  redirectUri: string;
+  apiResource: string;
+}): Promise<OAuthTokens> {
+  const response = await fetchImplementation(`${authBaseUrl}/oauth2/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'authorization_code',
+      client_id: clientId,
+      code,
+      code_verifier: codeVerifier,
+      redirect_uri: redirectUri,
+      resource: apiResource,
+    }),
+  });
+  if (!response.ok) {
     throw new Error(
-      (value && optionalStringField(value, 'error_description')) ??
-        oauthError ??
-        'Device authorization failed'
+      await getOAuthErrorMessage(response, 'Could not complete sign in')
     );
   }
+  return parseTokens(await readJson(response));
+}
 
-  throw new Error('Device authorization expired before it was approved');
+/**
+ * Accepts either the full redirect URL or a bare authorization code pasted by
+ * the user when the loopback redirect cannot reach this process.
+ */
+export function parsePastedCallback(input: string): AuthorizationCallback {
+  const trimmed = input.trim();
+  if (!trimmed) return {};
+  if (/^https?:\/\//i.test(trimmed)) {
+    return parseAuthorizationCallback(trimmed);
+  }
+  return { code: trimmed };
+}
+
+function assertCallback(
+  callback: AuthorizationCallback,
+  expectedState: string,
+  stateRequired: boolean
+): string {
+  if (callback.error) {
+    throw new Error(
+      describeOAuthError(
+        callback.error,
+        callback.errorDescription,
+        'Sign in failed'
+      )
+    );
+  }
+  if (
+    (stateRequired || callback.state !== undefined) &&
+    callback.state !== expectedState
+  ) {
+    throw new Error(
+      'Sign in response did not match this login attempt (state mismatch). Run `gt login` again'
+    );
+  }
+  if (!callback.code) {
+    throw new Error('Sign in response did not include an authorization code');
+  }
+  return callback.code;
 }
 
 export async function login(options: LoginOptions = {}): Promise<OAuthTokens> {
-  const deviceCode = await requestDeviceCode(options);
-  options.onDeviceCode?.(deviceCode);
-  await (options.openBrowser ?? open)(
-    deviceCode.verificationUriComplete ?? deviceCode.verificationUri
-  ).catch(() => undefined);
-  const tokens = await pollDeviceToken({
-    authBaseUrl: options.authBaseUrl,
-    deviceCode,
-    fetch: options.fetch,
-    sleep: options.sleep,
+  const authBaseUrl = options.authBaseUrl ?? getAuthBaseUrl();
+  const apiResource = options.apiResource ?? getApiResource();
+  const requestOptions = { authBaseUrl, fetch: options.fetch };
+  const client = await getOrRegisterOAuthClient(requestOptions);
+  const { codeVerifier, codeChallenge } = createPkcePair();
+  const state = randomBytes(16).toString('base64url');
+
+  let loopback: Awaited<ReturnType<typeof startLoopbackServer>> | undefined;
+  if (!options.noBrowser) {
+    try {
+      loopback = await startLoopbackServer();
+    } catch {
+      // Fall through to the paste-the-code flow below.
+    }
+  }
+  const redirectUri = loopback?.redirectUri ?? client.redirectUri;
+
+  const authorizationUrl = buildAuthorizationUrl({
+    authBaseUrl,
+    clientId: client.clientId,
+    redirectUri,
+    codeChallenge,
+    state,
+    apiResource,
   });
-  await writeOAuthTokens(tokens);
+  options.onAuthorizationUrl?.(authorizationUrl);
+  if (!options.noBrowser) {
+    await (options.openBrowser ?? open)(authorizationUrl).catch(
+      () => undefined
+    );
+  }
+
+  let code: string;
+  try {
+    if (loopback) {
+      const callback = await loopback.waitForCallback(options.timeoutMs);
+      code = assertCallback(callback, state, true);
+    } else {
+      if (!options.promptForCallback) {
+        throw new Error(
+          'No browser is available and no way to receive the sign-in code was provided'
+        );
+      }
+      const pasted = parsePastedCallback(await options.promptForCallback());
+      code = assertCallback(pasted, state, false);
+    }
+  } finally {
+    loopback?.close();
+  }
+
+  const tokens = await exchangeAuthorizationCode({
+    ...requestOptions,
+    clientId: client.clientId,
+    code,
+    codeVerifier,
+    redirectUri,
+    apiResource,
+  });
+  await writeOAuthTokens(tokens, authBaseUrl);
   return tokens;
 }
+
+// ---------------------------------------------------------------------------
+// Refresh / logout / userinfo
+// ---------------------------------------------------------------------------
 
 export async function refreshOAuthTokens({
   authBaseUrl = getAuthBaseUrl(),
   fetch: fetchImplementation = globalThis.fetch,
 }: OAuthRequestOptions = {}): Promise<OAuthTokens> {
-  const current = await readOAuthTokens();
-  if (!current?.refreshToken) throw new Error('Run `gt login` to sign in');
+  const current = await readOAuthTokens(authBaseUrl);
+  const client = await readOAuthClient(authBaseUrl);
+  if (!current?.refreshToken || !client) {
+    throw new Error('Run `gt login` to sign in');
+  }
 
   const response = await fetchImplementation(`${authBaseUrl}/oauth2/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
-      client_id: OAUTH_CLIENT_ID,
+      client_id: client.clientId,
       grant_type: 'refresh_token',
       refresh_token: current.refreshToken,
     }),
@@ -356,40 +638,42 @@ export async function refreshOAuthTokens({
     throw new Error('Your login expired. Run `gt login` to sign in again');
   }
   const tokens = parseTokens(await readJson(response), current);
-  await writeOAuthTokens(tokens);
+  await writeOAuthTokens(tokens, authBaseUrl);
   return tokens;
 }
 
 export async function getValidAccessToken(
   options: OAuthRequestOptions = {}
 ): Promise<string | undefined> {
-  const tokens = await readOAuthTokens();
+  const authBaseUrl = options.authBaseUrl ?? getAuthBaseUrl();
+  const tokens = await readOAuthTokens(authBaseUrl);
   if (!tokens) return undefined;
   if (tokens.expiresAt > Date.now() + TOKEN_REFRESH_BUFFER_MS) {
     return tokens.accessToken;
   }
-  return (await refreshOAuthTokens(options)).accessToken;
+  return (await refreshOAuthTokens({ ...options, authBaseUrl })).accessToken;
 }
 
 export async function logout({
   authBaseUrl = getAuthBaseUrl(),
   fetch: fetchImplementation = globalThis.fetch,
 }: OAuthRequestOptions = {}): Promise<void> {
-  const tokens = await readOAuthTokens();
+  const tokens = await readOAuthTokens(authBaseUrl);
+  const client = await readOAuthClient(authBaseUrl);
   try {
-    if (tokens?.refreshToken) {
+    if (tokens?.refreshToken && client) {
       await fetchImplementation(`${authBaseUrl}/oauth2/revoke`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
-          client_id: OAUTH_CLIENT_ID,
+          client_id: client.clientId,
           token: tokens.refreshToken,
           token_type_hint: 'refresh_token',
         }),
       });
     }
   } finally {
-    await deleteOAuthTokens();
+    await deleteOAuthTokens(authBaseUrl);
   }
 }
 
