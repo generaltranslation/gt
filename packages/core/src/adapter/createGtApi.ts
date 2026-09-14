@@ -307,8 +307,20 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
     },
 
     async publishFiles(files: PublishFilesData['body']['files']) {
+      // Compatibility callers pass entries carrying fileName; map only the
+      // contract fields so nothing outside the generated body reaches the wire.
       return unwrapApiResult(
-        await publishFiles({ body: { files }, client: getClient() })
+        await publishFiles({
+          body: {
+            files: files.map(({ fileId, versionId, branchId, publish }) => ({
+              fileId,
+              versionId,
+              branchId,
+              publish,
+            })),
+          },
+          client: getClient(),
+        })
       );
     },
 
@@ -321,10 +333,23 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
           await submitUserEditDiffs({
             body: {
               projectId: body.projectId,
-              diffs: diffs.map((diff) => ({
-                ...diff,
-                locale: resolveCanonicalLocale(diff.locale, customMapping),
-              })),
+              diffs: diffs.map(
+                ({
+                  diff,
+                  branchId,
+                  versionId,
+                  fileId,
+                  localContent,
+                  locale,
+                }) => ({
+                  diff,
+                  branchId,
+                  versionId,
+                  fileId,
+                  localContent,
+                  locale: resolveCanonicalLocale(locale, customMapping),
+                })
+              ),
             },
             client: getClient(options.timeout),
           })

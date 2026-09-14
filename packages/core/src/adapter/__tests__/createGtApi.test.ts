@@ -2,7 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   getFileInfo,
   getOrphanedFiles,
+  publishFiles,
+  submitUserEditDiffs,
   uploadTranslations,
+} from '@generaltranslation/api';
+import type {
+  PublishFilesData,
+  SubmitUserEditDiffsData,
 } from '@generaltranslation/api';
 import { createGtApiAdapter } from '../createGtApi';
 
@@ -10,6 +16,8 @@ vi.mock('@generaltranslation/api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@generaltranslation/api')>()),
   getFileInfo: vi.fn(),
   getOrphanedFiles: vi.fn(),
+  publishFiles: vi.fn(),
+  submitUserEditDiffs: vi.fn(),
   uploadTranslations: vi.fn(),
 }));
 
@@ -121,6 +129,60 @@ describe('createGtApiAdapter', () => {
     expect(response.orphanedFiles).toEqual([
       { fileId: 'orphan', versionId: 'v2', fileName: 'orphan.json' },
     ]);
+  });
+
+  it('sends only contract fields for publish and user-edit diffs', async () => {
+    vi.mocked(publishFiles).mockResolvedValue(result({ results: [] }));
+    vi.mocked(submitUserEditDiffs).mockResolvedValue(
+      result({ filesProcessed: 1, entriesReceived: 1, message: 'ok' })
+    );
+    const adapter = createGtApiAdapter();
+    adapter.configure({
+      baseUrl: 'https://api.example.com',
+      projectId: 'project-id',
+      customMapping,
+    });
+
+    await adapter.publishFiles([
+      {
+        fileId: 'file-id',
+        versionId: 'version-id',
+        branchId: 'branch-id',
+        publish: true,
+        fileName: 'document.json',
+      } as PublishFilesData['body']['files'][number],
+    ]);
+    await adapter.submitUserEditDiffs({
+      projectId: 'project-id',
+      diffs: [
+        {
+          fileName: 'document.json',
+          locale: 'target',
+          diff: '@@',
+          branchId: 'branch-id',
+          versionId: 'version-id',
+          fileId: 'file-id',
+          localContent: '{}',
+        } as SubmitUserEditDiffsData['body']['diffs'][number],
+      ],
+    });
+
+    const publishBody = vi.mocked(publishFiles).mock.calls[0][0]!.body;
+    expect(publishBody.files[0]).toEqual({
+      fileId: 'file-id',
+      versionId: 'version-id',
+      branchId: 'branch-id',
+      publish: true,
+    });
+    const diffBody = vi.mocked(submitUserEditDiffs).mock.calls[0][0]!.body;
+    expect(diffBody.diffs[0]).toEqual({
+      diff: '@@',
+      branchId: 'branch-id',
+      versionId: 'version-id',
+      fileId: 'file-id',
+      localContent: '{}',
+      locale: 'es-ES',
+    });
   });
 
   it('maps file-info locales in both directions', async () => {
