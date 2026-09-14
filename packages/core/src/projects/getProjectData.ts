@@ -1,5 +1,5 @@
 import { defaultBaseUrl } from '../settings/settingsUrls';
-import { fetchWithTimeout } from '../translate/utils/fetchWithTimeout';
+import { fetchAuthenticated } from '../translate/utils/fetchAuthenticated';
 import { defaultTimeout } from '../settings/settings';
 import { validateResponse } from '../translate/utils/validateResponse';
 import { handleFetchError } from '../translate/utils/handleFetchError';
@@ -27,7 +27,8 @@ export async function _getProjectData(
   // Get the project data
   let response;
   try {
-    response = await fetchWithTimeout(
+    response = await fetchAuthenticated(
+      config,
       url,
       {
         method: 'GET',

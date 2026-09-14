@@ -83,6 +83,7 @@ import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/internal';
+import { login, logout, whoAmI } from '../auth/oauth.js';
 import { setupViteSPA } from '../setup/setupViteSPA.js';
 import { manifestDirectlyDeclaresGTVue } from '@generaltranslation/vue-extractor/integration';
 import { api } from '../utils/api.js';
@@ -123,6 +124,16 @@ const electronSetupError = createDiagnosticMessage({
     'The automatic setup wizard is not ready for Electron applications',
   docsUrl: 'https://generaltranslation.com/docs/react',
 });
+
+function createUserAuthError(whatHappened: string, error: unknown): string {
+  return createDiagnosticMessage({
+    source: 'gt',
+    severity: 'Error',
+    whatHappened,
+    details: formatDiagnosticErrorDetails(error),
+    fix: 'Run `gt login` and try again',
+  });
+}
 
 async function exitIfUnsupportedSetupTarget(): Promise<void> {
   const packageJson = await searchForPackageJson();
@@ -215,6 +226,7 @@ export class BaseCLI {
     this.setupConfigureCommand();
     this.setupUploadCommand();
     this.setupLoginCommand();
+    this.setupUserAuthCommands();
     this.setupSendDiffsCommand();
     this.setupApiCommand();
     this.setupProjectCommands();
@@ -650,6 +662,68 @@ export class BaseCLI {
       await this.handleUploadCommand(options);
       logger.endCommand('Done!');
     });
+  }
+
+  protected setupUserAuthCommands(): void {
+    this.program
+      .command('login')
+      .description('Sign in to your General Translation account')
+      .option(
+        '--no-browser',
+        'Print the sign-in URL instead of opening a browser, then paste the redirect URL or code back'
+      )
+      .action(async (options: { browser: boolean }) => {
+        displayHeader('Signing in to General Translation...');
+        try {
+          await login({
+            noBrowser: !options.browser,
+            onAuthorizationUrl: (url) => {
+              logger.message(
+                options.browser
+                  ? `Opening your browser to sign in. If it does not open, visit:\n${chalk.cyan(url)}`
+                  : `Visit this URL to sign in:\n${chalk.cyan(url)}`
+              );
+            },
+            promptForCallback: () =>
+              promptText({
+                message:
+                  'Paste the URL your browser was redirected to (or just the code)',
+                validate: (value) =>
+                  value.trim().length > 0 ||
+                  'A redirect URL or code is required',
+              }),
+          });
+          logger.endCommand('Signed in successfully.');
+        } catch (error) {
+          logErrorAndExit(createUserAuthError('Sign in failed', error));
+        }
+      });
+
+    this.program
+      .command('logout')
+      .description('Sign out of your General Translation account')
+      .action(async () => {
+        try {
+          await logout();
+          logger.endCommand('Signed out successfully.');
+        } catch (error) {
+          logErrorAndExit(createUserAuthError('Sign out failed', error));
+        }
+      });
+
+    this.program
+      .command('whoami')
+      .description('Show the signed-in General Translation account')
+      .action(async () => {
+        try {
+          const user = await whoAmI();
+          logger.message(user.email ?? user.name ?? user.sub);
+        } catch (error) {
+          logErrorAndExit(
+            createUserAuthError('Could not load your account', error)
+          );
+        }
+      });
   }
 
   protected setupLoginCommand(): void {
