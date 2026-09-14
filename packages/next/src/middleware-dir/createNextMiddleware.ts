@@ -146,6 +146,7 @@ export function createNextMiddleware({
         : determinedAlias;
     return resolvedAlias === locale ? alias : locale;
   };
+  const defaultRoutingLocale = getRoutingLocale(resolvedDefaultLocale);
 
   // cookies and header names
   const headersAndCookies = envParams?.headersAndCookies || {};
@@ -390,7 +391,6 @@ export function createNextMiddleware({
                   sharedPathMatch.pathTemplate
                 )
               : `/${defaultLocale}${sharedPagePath === '/' ? '' : sharedPagePath}`;
-          const defaultRoutingLocale = getRoutingLocale(resolvedDefaultLocale);
           const publicFallbackPath = applyTrailingSlash(
             standardizedPathname,
             prefixDefaultLocale
