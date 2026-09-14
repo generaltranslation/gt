@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getFileInfo, uploadTranslations } from '@generaltranslation/api';
-import { createGtApiAdapter } from './createGtApi';
+import { createGtApiAdapter } from '../createGtApi';
 
 vi.mock('@generaltranslation/api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@generaltranslation/api')>()),

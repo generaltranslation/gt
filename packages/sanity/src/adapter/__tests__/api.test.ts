@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { downloadFile, getTranslationStatus } from 'generaltranslation/api';
 import { ApiError } from 'generaltranslation/errors';
 
-import { api, configureApiClient } from './api';
+import { api, configureApiClient } from '../api';
 
 vi.mock('generaltranslation/api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('generaltranslation/api')>()),
