@@ -245,10 +245,14 @@ export function createNextMiddleware({
   // Compile availability separately from aliases and overrides so it cannot
   // change route precedence. An empty list deliberately matches nothing.
   const localeRoutePathMaps = new Map(
-    Object.entries(localeRoutes).map(([locale, paths]) => [
-      gtServicesEnabled ? standardizeLocale(locale) : locale,
-      createPathMatcher(paths.map((path) => [path, path])),
-    ])
+    Object.entries(localeRoutes).map(([locale, paths]) => {
+      // Match request resolution so equivalent spellings use the same map key.
+      const resolvedLocale = gt.determineLocale(locale, locales) ?? locale;
+      return [
+        gtServicesEnabled ? standardizeLocale(resolvedLocale) : resolvedLocale,
+        createPathMatcher(paths.map((path) => [path, path])),
+      ];
+    })
   );
 
   /**
