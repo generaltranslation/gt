@@ -42,7 +42,6 @@ Visit [https://generaltranslation.com/docs](https://generaltranslation.com/docs)
 | [locadex](packages/locadex)                                         | AI agent for automating i18n in complex codebases |
 | [generaltranslation](packages/core)                                 | Core TypeScript library (internal)                |
 | [@generaltranslation/compiler](packages/compiler)                   | Build plugin for webpack, Vite, Rollup, esbuild   |
-| [@generaltranslation/mcp](packages/mcp)                             | MCP server for General Translation                |
 | [@generaltranslation/react-core-linter](packages/react-core-linter) | ESLint plugin for React Core integration          |
 
 ## Quick Start
