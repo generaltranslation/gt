@@ -23,6 +23,7 @@ vi.mock('@generaltranslation/react-core/pure', () => ({
       const resolved = Array.isArray(locale) ? locale[0] : locale;
       return resolved || 'en';
     },
+    resolveAliasLocale: (locale: string) => locale,
     getLocaleCookieName: () => mockCookieNames.locale,
     getRegionCookieName: () => mockCookieNames.region,
     getEnableI18nCookieName: () => mockCookieNames.enableI18n,

@@ -49,7 +49,9 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
     this.customGetEnableI18n = config._getEnableI18n;
     setCookieValue({
       cookieName: i18nConfig.getLocaleCookieName(),
-      value: i18nConfig.resolveSupportedLocale(config.locale),
+      value: i18nConfig.resolveAliasLocale(
+        i18nConfig.resolveSupportedLocale(config.locale)
+      ),
     });
     if (config.region !== undefined) {
       setCookieValue({
@@ -108,7 +110,9 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
     const i18nConfig = getI18nConfig();
     setCookieValue({
       cookieName: i18nConfig.getLocaleCookieName(),
-      value: i18nConfig.resolveSupportedLocale(locale),
+      value: i18nConfig.resolveAliasLocale(
+        i18nConfig.resolveSupportedLocale(locale)
+      ),
     });
   };
 
@@ -151,5 +155,10 @@ function getBrowserLocale(getLocale?: GetLocale): string {
   const i18nConfig = getI18nConfig();
   const candidates = readBrowserLocale(i18nConfig.getLocaleCookieName());
   if (getLocale) candidates.push(getLocale());
-  return i18nConfig.resolveSupportedLocale(candidates);
+  // Expose the configured alias, matching the server's getLocale(), even when
+  // services-enabled config uses canonical codes in the supported locale list.
+  // Reuse the existing resolution; alias conversion needs no extra negotiation.
+  return i18nConfig.resolveAliasLocale(
+    i18nConfig.resolveSupportedLocale(candidates)
+  );
 }
