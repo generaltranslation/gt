@@ -29,6 +29,24 @@ import type {
   EnqueueFileTranslationsData,
   EnqueueFileTranslationsErrors,
   EnqueueFileTranslationsResponses,
+  FigmaPluginDownloadData,
+  FigmaPluginDownloadErrors,
+  FigmaPluginDownloadResponses,
+  FigmaPluginEnqueueData,
+  FigmaPluginEnqueueErrors,
+  FigmaPluginEnqueueResponses,
+  FigmaPluginImportTranslationsData,
+  FigmaPluginImportTranslationsErrors,
+  FigmaPluginImportTranslationsResponses,
+  FigmaPluginInfoData,
+  FigmaPluginInfoErrors,
+  FigmaPluginInfoResponses,
+  FigmaPluginStatusData,
+  FigmaPluginStatusErrors,
+  FigmaPluginStatusResponses,
+  FigmaPluginSyncData,
+  FigmaPluginSyncErrors,
+  FigmaPluginSyncResponses,
   GenerateProjectContextData,
   GenerateProjectContextErrors,
   GenerateProjectContextResponses,
@@ -77,6 +95,15 @@ import type {
   UploadTranslationsData,
   UploadTranslationsErrors,
   UploadTranslationsResponses,
+  WorkspacePluginInfoData,
+  WorkspacePluginInfoErrors,
+  WorkspacePluginInfoResponses,
+  WorkspacePluginStatusData,
+  WorkspacePluginStatusErrors,
+  WorkspacePluginStatusResponses,
+  WorkspacePluginTranslateData,
+  WorkspacePluginTranslateErrors,
+  WorkspacePluginTranslateResponses,
 } from './types.gen';
 
 export type Options<
@@ -97,23 +124,20 @@ export type Options<
 };
 
 /**
- * Create a Project
+ * Workspace plugin info
  *
- * Create a Project in the Organization selected by the orgId path parameter. Requires org:projects:create. Enabling CDN delivery also requires project:write.
+ * Run the Google Drive Workspace plugin info command.
  */
-export const createProject = <ThrowOnError extends boolean = false>(
-  options: Options<CreateProjectData, ThrowOnError>
+export const workspacePluginInfo = <ThrowOnError extends boolean = false>(
+  options: Options<WorkspacePluginInfoData, ThrowOnError>
 ) =>
   options.client.post<
-    CreateProjectResponses,
-    CreateProjectErrors,
+    WorkspacePluginInfoResponses,
+    WorkspacePluginInfoErrors,
     ThrowOnError
   >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/orgs/{orgId}/projects',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v1/integrations/workspace-plugin/info',
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -122,23 +146,20 @@ export const createProject = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Create a Project API Key
+ * Workspace plugin translate
  *
- * Create an API key for the selected Project. Requires project:api_keys:write and delegates only Project permissions held by the request identity.
+ * Run the Google Drive Workspace plugin translate command.
  */
-export const createProjectApiKey = <ThrowOnError extends boolean = false>(
-  options: Options<CreateProjectApiKeyData, ThrowOnError>
+export const workspacePluginTranslate = <ThrowOnError extends boolean = false>(
+  options: Options<WorkspacePluginTranslateData, ThrowOnError>
 ) =>
   options.client.post<
-    CreateProjectApiKeyResponses,
-    CreateProjectApiKeyErrors,
+    WorkspacePluginTranslateResponses,
+    WorkspacePluginTranslateErrors,
     ThrowOnError
   >({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/projects/{projectId}/api-keys',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v1/integrations/workspace-plugin/translate',
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -147,23 +168,172 @@ export const createProjectApiKey = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Upload translated files
+ * Workspace plugin status
  *
- * Upload translated files linked to their source files. Max 100 files per request.
+ * Run the Google Drive Workspace plugin status command.
  */
-export const uploadTranslations = <ThrowOnError extends boolean = false>(
-  options: Options<UploadTranslationsData, ThrowOnError>
+export const workspacePluginStatus = <ThrowOnError extends boolean = false>(
+  options: Options<WorkspacePluginStatusData, ThrowOnError>
 ) =>
   options.client.post<
-    UploadTranslationsResponses,
-    UploadTranslationsErrors,
+    WorkspacePluginStatusResponses,
+    WorkspacePluginStatusErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v1/integrations/workspace-plugin/status',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Figma plugin info
+ *
+ * Run the Figma plugin info command.
+ */
+export const figmaPluginInfo = <ThrowOnError extends boolean = false>(
+  options: Options<FigmaPluginInfoData, ThrowOnError>
+) =>
+  options.client.post<
+    FigmaPluginInfoResponses,
+    FigmaPluginInfoErrors,
     ThrowOnError
   >({
     security: [
       { scheme: 'bearer', type: 'http' },
       { scheme: 'bearer', type: 'http' },
     ],
-    url: '/v2/project/files/upload-translations',
+    url: '/v1/integrations/figma-plugin/info',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Figma plugin sync
+ *
+ * Run the Figma plugin sync command.
+ */
+export const figmaPluginSync = <ThrowOnError extends boolean = false>(
+  options: Options<FigmaPluginSyncData, ThrowOnError>
+) =>
+  options.client.post<
+    FigmaPluginSyncResponses,
+    FigmaPluginSyncErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v1/integrations/figma-plugin/sync',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Figma plugin import-translations
+ *
+ * Run the Figma plugin import-translations command.
+ */
+export const figmaPluginImportTranslations = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<FigmaPluginImportTranslationsData, ThrowOnError>
+) =>
+  options.client.post<
+    FigmaPluginImportTranslationsResponses,
+    FigmaPluginImportTranslationsErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v1/integrations/figma-plugin/import-translations',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Figma plugin enqueue
+ *
+ * Run the Figma plugin enqueue command.
+ */
+export const figmaPluginEnqueue = <ThrowOnError extends boolean = false>(
+  options: Options<FigmaPluginEnqueueData, ThrowOnError>
+) =>
+  options.client.post<
+    FigmaPluginEnqueueResponses,
+    FigmaPluginEnqueueErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v1/integrations/figma-plugin/enqueue',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Figma plugin status
+ *
+ * Run the Figma plugin status command.
+ */
+export const figmaPluginStatus = <ThrowOnError extends boolean = false>(
+  options: Options<FigmaPluginStatusData, ThrowOnError>
+) =>
+  options.client.post<
+    FigmaPluginStatusResponses,
+    FigmaPluginStatusErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v1/integrations/figma-plugin/status',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Figma plugin download
+ *
+ * Run the Figma plugin download command.
+ */
+export const figmaPluginDownload = <ThrowOnError extends boolean = false>(
+  options: Options<FigmaPluginDownloadData, ThrowOnError>
+) =>
+  options.client.post<
+    FigmaPluginDownloadResponses,
+    FigmaPluginDownloadErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v1/integrations/figma-plugin/download',
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -210,27 +380,6 @@ export const updateProjectInfo = <ThrowOnError extends boolean = false>(
       { scheme: 'bearer', type: 'http' },
     ],
     url: '/v2/project/info/{projectId}',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-/**
- * Translate content at runtime
- *
- * Translate one or more strings or structured content entries with caching and memoization. Development API keys are accepted for this endpoint.
- */
-export const translate = <ThrowOnError extends boolean = false>(
-  options: Options<TranslateData, ThrowOnError>
-) =>
-  options.client.post<TranslateResponses, TranslateErrors, ThrowOnError>({
-    security: [
-      { scheme: 'bearer', type: 'http' },
-      { scheme: 'bearer', type: 'http' },
-    ],
-    url: '/v2/translate',
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -601,6 +750,102 @@ export const enqueueFileTranslations = <ThrowOnError extends boolean = false>(
       { scheme: 'bearer', type: 'http' },
     ],
     url: '/v2/project/translations/enqueue',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Translate content at runtime
+ *
+ * Translate one or more strings or structured content entries with caching and memoization. Development API keys are accepted for this endpoint.
+ */
+export const translate = <ThrowOnError extends boolean = false>(
+  options: Options<TranslateData, ThrowOnError>
+) =>
+  options.client.post<TranslateResponses, TranslateErrors, ThrowOnError>({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/translate',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Upload translated files
+ *
+ * Upload translated files linked to their source files. Max 100 files per request.
+ */
+export const uploadTranslations = <ThrowOnError extends boolean = false>(
+  options: Options<UploadTranslationsData, ThrowOnError>
+) =>
+  options.client.post<
+    UploadTranslationsResponses,
+    UploadTranslationsErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/project/files/upload-translations',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Create a Project API Key
+ *
+ * Create an API key for the selected Project. Requires project:api_keys:write and delegates only Project permissions held by the request identity.
+ */
+export const createProjectApiKey = <ThrowOnError extends boolean = false>(
+  options: Options<CreateProjectApiKeyData, ThrowOnError>
+) =>
+  options.client.post<
+    CreateProjectApiKeyResponses,
+    CreateProjectApiKeyErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects/{projectId}/api-keys',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Create a Project
+ *
+ * Create a Project in the Organization selected by the orgId path parameter, optionally enabling CDN delivery. Requires org:projects:create.
+ */
+export const createProject = <ThrowOnError extends boolean = false>(
+  options: Options<CreateProjectData, ThrowOnError>
+) =>
+  options.client.post<
+    CreateProjectResponses,
+    CreateProjectErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/orgs/{orgId}/projects',
     ...options,
     headers: {
       'Content-Type': 'application/json',
