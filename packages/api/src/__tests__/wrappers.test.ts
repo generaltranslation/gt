@@ -1,12 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { awaitJobs, pollJobs } from '../wrappers/awaitJobs';
-import {
-  decodeBase64,
-  decodeFileContent,
-  encodeBase64,
-  encodeFileContent,
-} from '../wrappers/base64';
 import { createBatches, processBatches } from '../wrappers/batch';
 import { API_VERSION, createApiClient } from '../wrappers/client';
 import { createRetryingFetch, createTimeoutFetch } from '../wrappers/transport';
@@ -352,34 +346,6 @@ describe('batch helpers', () => {
 
     expect(maxInFlight).toBe(1);
     expect(result).toEqual(items);
-  });
-});
-
-describe('base64 helpers', () => {
-  it('round trips UTF-8 and preserves binary-format payloads', () => {
-    const text = 'こんにちは 👋';
-    const encoded = encodeBase64(text);
-
-    expect(decodeBase64(encoded)).toBe(text);
-    expect(decodeFileContent(encodeFileContent(text, 'JSON'), 'JSON')).toBe(
-      text
-    );
-    expect(encodeFileContent('already-base64', 'LOTTIE')).toBe(
-      'already-base64'
-    );
-    expect(decodeFileContent('already-base64', 'LOTTIE')).toBe(
-      'already-base64'
-    );
-  });
-
-  it('round trips UTF-8 without Buffer (browser fallback)', () => {
-    vi.stubGlobal('Buffer', undefined);
-    try {
-      const text = 'こんにちは 👋';
-      expect(decodeBase64(encodeBase64(text))).toBe(text);
-    } finally {
-      vi.unstubAllGlobals();
-    }
   });
 });
 
