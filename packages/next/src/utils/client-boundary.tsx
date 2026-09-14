@@ -41,6 +41,25 @@ if (typeof window !== 'undefined') {
 export function Client_GTProvider(props: SharedGTProviderProps) {
   const router = useRouter();
   const refreshServerComponents = useCallback(() => {
+    // Temporary workaround until server-rendered apps reliably reconcile the
+    // client's locale state with the locale accepted by the server, even when
+    // that server-provided locale has not changed between renders.
+    //
+    // For example, a user on /en/careers calls setLocale('fr'), but localeRoutes
+    // excludes /careers for French. The client has already switched its condition
+    // store to 'fr'; middleware rejects that route/locale combination and the
+    // server renders English again. router.refresh() preserves client state, so
+    // BrowserGTProvider still receives props.locale === 'en', just as before.
+    // If its other useMemo dependencies (region, enableI18n, _reload) are also
+    // unchanged, createOrUpdateBrowserConditionStore() does not run and never
+    // calls updateLocale('en'). Server content is then English while the client
+    // still believes the locale is French.
+    //
+    // A full reload discards the browser condition store and remounts the
+    // provider, initializing it from the server's accepted locale. It also
+    // follows middleware redirects as a document navigation. Once the server
+    // dictates the client's locale state reliably, we can revisit using
+    // router.refresh() to avoid reloading the entire page.
     window.location.reload();
   }, [router]);
   const reloadBrowserPage = useCallback(() => {
