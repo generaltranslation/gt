@@ -95,6 +95,27 @@ describe('I18nCache', () => {
     expect(loadTranslations.mock.calls[0][0]).toBe('fr-fr');
   });
 
+  it('loads lowercase alias files with canonical supported locales', async () => {
+    const loadTranslations = vi.fn(async (locale: string) => {
+      if (locale !== 'en-gb') throw new Error(`No file for ${locale}`);
+      return { [expectedHash]: translatedString };
+    });
+    const cache = createCache({
+      defaultLocale: 'fr',
+      locales: ['fr', 'en-GB'],
+      customMapping: { 'en-gb': { code: 'en-GB' } },
+      loadTranslations,
+    });
+
+    expect(await cache.loadTranslations('en-GB')).toEqual({
+      [expectedHash]: translatedString,
+    });
+    expect(await cache.loadTranslations('en-gb')).toEqual({
+      [expectedHash]: translatedString,
+    });
+    expect(loadTranslations).toHaveBeenCalledExactlyOnceWith('en-gb');
+  });
+
   it('loadTranslations() returns Record<Hash, Translation>', async () => {
     const cache = createCache();
 
@@ -1200,7 +1221,7 @@ describe('I18nCache', () => {
     );
   });
 
-  it('normalizes custom aliases before loading and reading locale caches', async () => {
+  it('passes aliases to custom loaders while sharing canonical cache entries', async () => {
     const loadTranslations = vi
       .fn()
       .mockResolvedValue({ [expectedHash]: translatedString });
@@ -1217,7 +1238,8 @@ describe('I18nCache', () => {
     await cache.loadTranslations('brand-french');
 
     expect(loadTranslations).toHaveBeenCalledTimes(1);
-    expect(loadTranslations).toHaveBeenCalledWith('fr');
+    expect(loadTranslations).toHaveBeenCalledWith('brand-french');
+    await cache.loadTranslations('fr');
     expect(
       cache.lookupTranslation('brand-french', message, lookupOptions)
     ).toBe(translatedString);
