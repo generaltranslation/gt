@@ -2,6 +2,8 @@ import {
   downloadFile,
   getTranslationStatus,
   type ApiClientConfig,
+  type DownloadFileData,
+  type GetTranslationStatusData,
 } from 'generaltranslation/api';
 import {
   createGtApiAdapter,
@@ -30,11 +32,10 @@ export function configureApiClient(
 export const api = {
   ...sharedApi,
 
-  async querySourceFile(query: {
-    fileId: string;
-    versionId?: string;
-    branchId?: string;
-  }) {
+  async querySourceFile(
+    query: GetTranslationStatusData['path'] &
+      NonNullable<GetTranslationStatusData['query']>
+  ) {
     const { fileId, ...queryParams } = query;
     const result = unwrapApiResult(
       await getTranslationStatus({
@@ -61,12 +62,9 @@ export const api = {
     };
   },
 
-  async downloadFile(query: {
-    fileId: string;
-    versionId?: string;
-    branchId?: string;
-    locale?: string;
-  }) {
+  async downloadFile(
+    query: DownloadFileData['path'] & NonNullable<DownloadFileData['query']>
+  ) {
     const { fileId, locale, ...queryParams } = query;
     const response = unwrapApiResult(
       await downloadFile({
