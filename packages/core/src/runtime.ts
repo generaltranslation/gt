@@ -183,7 +183,7 @@ export class GTRuntime {
       const invalidLocales: string[] = [];
       locales.forEach((locale) => {
         const standardizedLocale = _standardizeLocale(locale);
-        if (_isValidLocale(standardizedLocale)) {
+        if (_isValidLocale(standardizedLocale, customMapping)) {
           result.push(standardizedLocale);
         } else {
           invalidLocales.push(locale);
