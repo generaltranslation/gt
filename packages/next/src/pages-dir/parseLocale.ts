@@ -7,7 +7,10 @@ import {
   noLocalesCouldBeDeterminedWarning,
 } from '../errors/ssg';
 import { defaultLocaleHeaderName } from '../utils/headers';
-import { resolveLocaleOrDefault } from '../request/localeValidation';
+import {
+  isLocaleSupported,
+  resolveLocaleOrDefault,
+} from '../request/localeValidation';
 
 type HeaderValue = string | string[] | undefined;
 
@@ -25,6 +28,7 @@ export function parseLocale<
   Preview extends PreviewData = PreviewData,
 >(context: GetServerSidePropsContext<Params, Preview>): string {
   if (context.locale !== undefined) {
+    if (isLocaleSupported(context.locale)) return context.locale;
     return resolveLocaleOrDefault(context.locale);
   }
 
@@ -35,7 +39,9 @@ export function resolvePagesRouterLocale(
   context: PagesRouterLocaleContext
 ): string {
   const requestedLocale = context.locale ?? context.defaultLocale;
-  const locale = resolveLocaleOrDefault(requestedLocale);
+  const locale = isLocaleSupported(requestedLocale)
+    ? requestedLocale
+    : resolveLocaleOrDefault(requestedLocale);
 
   if (context.locale === undefined) {
     console.warn(createMissingPagesRouterLocaleWarning(locale));
