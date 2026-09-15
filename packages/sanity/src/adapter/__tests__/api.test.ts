@@ -10,7 +10,7 @@ import {
   uploadTranslations,
 } from 'generaltranslation/api';
 
-import { api, configureApiClient } from './api';
+import { api, configureApiClient } from '../api';
 
 vi.mock('generaltranslation/api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('generaltranslation/api')>()),
