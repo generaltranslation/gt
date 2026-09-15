@@ -315,6 +315,40 @@ describe('localeRoutes', () => {
     expectTarget(middleware(request('/en-GB/careers')), 'location', '/careers');
   });
 
+  it.each([false, true])(
+    'resolves locale route keys to the approved spelling (custom alias=%s)',
+    (customAlias) => {
+      vi.stubEnv(
+        '_GENERALTRANSLATION_I18N_CONFIG_PARAMS',
+        JSON.stringify({
+          defaultLocale: 'fr',
+          locales: ['fr', 'en-gb'],
+          customMapping: customAlias
+            ? { 'en-GB': { code: 'en-gb' } }
+            : undefined,
+        })
+      );
+      const middleware = createNextMiddleware({
+        localeRoutes: { 'en-GB': ['/allowed'] },
+      });
+
+      expectTarget(
+        middleware(request('/en-GB/careers')),
+        'location',
+        '/careers'
+      );
+      const fallback = middleware(request('/careers'));
+      expect(fallback.headers.get('location')).toBeNull();
+      expect(fallback.headers.get(defaultLocaleHeaderName)).toBe('fr');
+      expectTarget(fallback, 'x-middleware-rewrite', '/fr/careers');
+
+      const routingLocale = 'en-gb';
+      const allowed = middleware(request(`/${routingLocale}/allowed`));
+      expect(allowed.headers.get('location')).toBeNull();
+      expect(allowed.headers.get(defaultLocaleHeaderName)).toBe('en-gb');
+    }
+  );
+
   it('does not treat an encoded slash as an allowed path boundary', () => {
     const middleware = createNextMiddleware({
       localeRoutes: { 'en-GB': ['/pricing'] },

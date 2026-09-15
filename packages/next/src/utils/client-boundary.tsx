@@ -38,9 +38,21 @@ if (typeof window !== 'undefined') {
 /**
  * Small wrapper to embed nextjs app router behavior
  */
-export function Client_GTProvider(props: SharedGTProviderProps) {
+export function Client_GTProvider({
+  conditions,
+  ...props
+}: Omit<
+  SharedGTProviderProps,
+  'locale' | 'region' | 'enableI18n' | '_serverConditions'
+> & {
+  conditions: NonNullable<SharedGTProviderProps['_serverConditions']>;
+}) {
   const router = useRouter();
   const refreshServerComponents = useCallback(() => {
+    // The server supplies a fresh conditions object even when its accepted
+    // locale is unchanged. For example, switching /en/careers to excluded 'fr'
+    // returns another 'en' snapshot, which resets the browser store to 'en'
+    // without discarding client state through a document reload.
     router.refresh();
   }, [router]);
   const reloadBrowserPage = useCallback(() => {
@@ -82,9 +94,16 @@ export function Client_GTProvider(props: SharedGTProviderProps) {
   usePathCheck({
     reloadBrowserPage,
     refreshServerComponents,
-    locale: props.locale,
+    locale: conditions.locale,
   });
-  return <GTProvider {...props} _reload={syncServerContent} />;
+  return (
+    <GTProvider
+      {...props}
+      {...conditions}
+      _serverConditions={conditions}
+      _reload={syncServerContent}
+    />
+  );
 }
 
 /**
@@ -110,7 +129,7 @@ function usePathCheck({
   useEffect(() => {
     // Track the referrer locale for middleware
     const i18nConfig = getI18nConfig();
-    document.cookie = `${referrerLocaleCookieName}=${i18nConfig.resolveAliasLocale(locale)};path=/`;
+    document.cookie = `${referrerLocaleCookieName}=${locale};path=/`;
 
     // Synchronize server content if the pathname changes
     const locales = i18nConfig.getLocales();
@@ -127,6 +146,7 @@ function usePathCheck({
         locales
       );
 
+      // Both values are resolved to configured identities before comparison.
       if (
         currentPathLocale &&
         locales.includes(currentPathLocale) &&
@@ -160,28 +180,16 @@ function resolvePathLocale(
   defaultLocale: string,
   locales: string[]
 ): string {
-  const extractedLocale = extractLocale(pathname, i18nConfig);
+  const extractedLocale = extractLocale(pathname);
   if (!extractedLocale) {
     return defaultLocale;
   }
 
-  const currentPathLocale = i18nConfig.determineLocale(
-    [
-      i18nConfig.isGTServicesEnabled()
-        ? i18nConfig.standardizeLocale(extractedLocale)
-        : extractedLocale,
-    ],
-    locales
+  return (
+    i18nConfig.determineLocale([extractedLocale], locales) ?? defaultLocale
   );
-  return currentPathLocale
-    ? i18nConfig.resolveAliasLocale(currentPathLocale)
-    : defaultLocale;
 }
 
-function extractLocale(
-  pathname: string,
-  i18nConfig: I18nConfig
-): string | null {
-  const matches = pathname.match(/^\/([^/]+)(?:\/|$)/);
-  return matches ? i18nConfig.resolveAliasLocale(matches[1]) : null;
+function extractLocale(pathname: string): string | null {
+  return pathname.match(/^\/([^/]+)(?:\/|$)/)?.[1] ?? null;
 }

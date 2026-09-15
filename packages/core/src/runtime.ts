@@ -5,7 +5,6 @@
 
 import {
   LocaleConfig,
-  determineLocale as _determineLocale,
   getRegionProperties as _getRegionProperties,
   isValidLocale as _isValidLocale,
   requiresTranslation as _requiresTranslation,
@@ -157,24 +156,26 @@ export class GTRuntime {
     customMapping,
     baseUrl,
   }: GTConstructorParams) {
+    const effectiveCustomMapping = customMapping ?? this.customMapping;
+
     // ----- Environment properties ----- //
     if (apiKey) this.apiKey = apiKey;
     if (devApiKey) this.devApiKey = devApiKey;
     if (projectId) this.projectId = projectId;
 
-    // ----- Standardize locales ----- //
+    // ----- Validate configured locale identities ----- //
 
     // source locale
     if (sourceLocale) {
-      this.sourceLocale = _standardizeLocale(sourceLocale);
-      if (!_isValidLocale(this.sourceLocale, customMapping))
+      this.sourceLocale = sourceLocale;
+      if (!_isValidLocale(this.sourceLocale, effectiveCustomMapping))
         throw new Error(invalidLocaleError(this.sourceLocale));
     }
 
     // target locale
     if (targetLocale) {
-      this.targetLocale = _standardizeLocale(targetLocale);
-      if (!_isValidLocale(this.targetLocale, customMapping))
+      this.targetLocale = targetLocale;
+      if (!_isValidLocale(this.targetLocale, effectiveCustomMapping))
         throw new Error(invalidLocaleError(this.targetLocale));
     }
 
@@ -183,9 +184,8 @@ export class GTRuntime {
       const result: string[] = [];
       const invalidLocales: string[] = [];
       locales.forEach((locale) => {
-        const standardizedLocale = _standardizeLocale(locale);
-        if (_isValidLocale(standardizedLocale)) {
-          result.push(standardizedLocale);
+        if (_isValidLocale(locale, effectiveCustomMapping)) {
+          result.push(locale);
         } else {
           invalidLocales.push(locale);
         }
@@ -216,6 +216,32 @@ export class GTRuntime {
   }
 
   // -------------- Private Methods -------------- //
+
+  /** Convert app identity only where a GT service expects a language code. */
+  protected resolveServiceLocale(locale: string): string {
+    return this.standardizeLocale(this.resolveCanonicalLocale(locale));
+  }
+
+  /**
+   * Recover configured spelling without negotiating an unrelated dialect.
+   * When several identities use the same service code and there is no request
+   * context to disambiguate them, the first configured identity wins.
+   */
+  protected resolveServiceResponseLocale(locale: string): string {
+    const canonical = this.standardizeLocale(locale);
+    const configured = [
+      ...(this.locales ?? []),
+      this.sourceLocale,
+      this.targetLocale,
+      ...Object.keys(this.customMapping ?? {}),
+    ];
+    return (
+      configured.find(
+        (candidate) =>
+          candidate && this.resolveServiceLocale(candidate) === canonical
+      ) ?? locale
+    );
+  }
 
   protected _getTranslationConfig(): TranslationRequestConfig {
     return {
@@ -280,9 +306,9 @@ export class GTRuntime {
     }
 
     // Replace target locale with canonical locale
-    targetLocale = this.resolveCanonicalLocale(targetLocale);
+    targetLocale = this.resolveServiceLocale(targetLocale);
 
-    const sourceLocale = this.resolveCanonicalLocale(
+    const sourceLocale = this.resolveServiceLocale(
       options?.sourceLocale || this.sourceLocale || libraryDefaultLocale
     );
 
@@ -358,9 +384,9 @@ export class GTRuntime {
     }
 
     // Replace target locale with canonical locale
-    targetLocale = this.resolveCanonicalLocale(targetLocale);
+    targetLocale = this.resolveServiceLocale(targetLocale);
 
-    const sourceLocale = this.resolveCanonicalLocale(
+    const sourceLocale = this.resolveServiceLocale(
       options?.sourceLocale || this.sourceLocale || libraryDefaultLocale
     );
 
@@ -820,7 +846,10 @@ export class GTRuntime {
     if (customMapping === this.customMapping) {
       return this.localeConfig.determineLocale(locales, approvedLocales ?? []);
     }
-    return _determineLocale(locales, approvedLocales, customMapping);
+    return new LocaleConfig({ customMapping }).determineLocale(
+      locales,
+      approvedLocales ?? []
+    );
   }
 
   /**

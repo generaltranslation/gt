@@ -258,7 +258,7 @@ export class GT extends GTRuntime {
     options = {
       ...options,
       locales: options?.locales?.map((locale) =>
-        this.resolveCanonicalLocale(locale)
+        this.resolveServiceLocale(locale)
       ),
     };
     return await _setupProject(files, this._getTranslationConfig(), options);
@@ -352,19 +352,29 @@ export class GT extends GTRuntime {
       throw new Error(error);
     }
 
-    // Replace target locales with canonical locales
+    // The low-level helper synthesizes result.locales from targetLocales, so
+    // retain the caller's identities before converting the request to service
+    // language codes.
+    const targetLocaleIdentities = [...mergedOptions.targetLocales];
+
+    // Convert configured identities at the service boundary.
     mergedOptions = {
       ...mergedOptions,
+      sourceLocale: this.resolveServiceLocale(mergedOptions.sourceLocale),
       targetLocales: mergedOptions.targetLocales.map((locale) =>
-        this.resolveCanonicalLocale(locale)
+        this.resolveServiceLocale(locale)
       ),
     };
 
-    return await _enqueueFiles(
+    const result = await _enqueueFiles(
       files,
       mergedOptions,
       this._getTranslationConfig()
     );
+    return {
+      ...result,
+      locales: targetLocaleIdentities,
+    };
   }
 
   /**
@@ -387,7 +397,15 @@ export class GT extends GTRuntime {
    */
   async publishFiles(files: PublishFileEntry[]): Promise<PublishFilesResult> {
     this._validateAuth('publishFiles');
-    return await _publishFiles(files, this._getTranslationConfig());
+    const result = await _publishFiles(files, this._getTranslationConfig());
+    return {
+      results: result.results.map((item) => ({
+        ...item,
+        ...(item.locale && {
+          locale: this.resolveServiceResponseLocale(item.locale),
+        }),
+      })),
+    };
   }
 
   /**
@@ -405,7 +423,7 @@ export class GT extends GTRuntime {
       ...payload,
       diffs: (payload.diffs || []).map((d) => ({
         ...d,
-        locale: this.resolveCanonicalLocale(d.locale),
+        locale: this.resolveServiceLocale(d.locale),
       })),
     };
     await _submitUserEditDiffs(normalized, this._getTranslationConfig());
@@ -441,7 +459,14 @@ export class GT extends GTRuntime {
     options: GetProjectInfoOptions = {}
   ): Promise<ProjectInfoResult> {
     this._validateAuth('getProjectInfo');
-    return await _getProjectInfo(options, this._getTranslationConfig());
+    const result = await _getProjectInfo(options, this._getTranslationConfig());
+    return {
+      ...result,
+      defaultLocale: this.resolveServiceResponseLocale(result.defaultLocale),
+      currentLocales: result.currentLocales.map((locale) =>
+        this.resolveServiceResponseLocale(locale)
+      ),
+    };
   }
 
   async queryFileData(
@@ -454,7 +479,7 @@ export class GT extends GTRuntime {
     // Replace target locales with canonical locales
     data.translatedFiles = data.translatedFiles?.map((item) => ({
       ...item,
-      locale: this.resolveCanonicalLocale(item.locale),
+      locale: this.resolveServiceLocale(item.locale),
     }));
 
     // Request the file translation status
@@ -467,14 +492,18 @@ export class GT extends GTRuntime {
     // Resolve canonical locales
     result.translatedFiles = result.translatedFiles?.map((item) => ({
       ...item,
-      ...(item.locale && { locale: this.resolveAliasLocale(item.locale) }),
+      ...(item.locale && {
+        locale: this.resolveServiceResponseLocale(item.locale),
+      }),
     }));
     result.sourceFiles = result.sourceFiles?.map((item) => ({
       ...item,
       ...(item.sourceLocale && {
-        sourceLocale: this.resolveAliasLocale(item.sourceLocale),
+        sourceLocale: this.resolveServiceResponseLocale(item.sourceLocale),
       }),
-      locales: item.locales.map((locale) => this.resolveAliasLocale(locale)),
+      locales: item.locales.map((locale) =>
+        this.resolveServiceResponseLocale(locale)
+      ),
     }));
     return result;
   }
@@ -506,16 +535,18 @@ export class GT extends GTRuntime {
       options,
       this._getTranslationConfig()
     );
-    // Replace locales with canonical locales
+    // Restore configured identities from service language codes.
     result.translations = result.translations.map((item) => ({
       ...item,
-      ...(item.locale && { locale: this.resolveAliasLocale(item.locale) }),
+      ...(item.locale && {
+        locale: this.resolveServiceResponseLocale(item.locale),
+      }),
     }));
     result.sourceFile.locales = result.sourceFile.locales.map((locale) =>
-      this.resolveAliasLocale(locale)
+      this.resolveServiceResponseLocale(locale)
     );
     if (result.sourceFile.sourceLocale) {
-      result.sourceFile.sourceLocale = this.resolveAliasLocale(
+      result.sourceFile.sourceLocale = this.resolveServiceResponseLocale(
         result.sourceFile.sourceLocale
       );
     }
@@ -546,11 +577,13 @@ export class GT extends GTRuntime {
       options,
       this._getTranslationConfig()
     );
-    // Replace locales with canonical locales
+    // Restore configured identities from service language codes.
     result.currentLocales = result.currentLocales.map((item) =>
-      this.resolveAliasLocale(item)
+      this.resolveServiceResponseLocale(item)
     );
-    result.defaultLocale = this.resolveAliasLocale(result.defaultLocale);
+    result.defaultLocale = this.resolveServiceResponseLocale(
+      result.defaultLocale
+    );
     return result;
   }
 
@@ -594,7 +627,7 @@ export class GT extends GTRuntime {
           fileId: file.fileId,
           branchId: file.branchId,
           locale: file.locale
-            ? this.resolveCanonicalLocale(file.locale)
+            ? this.resolveServiceLocale(file.locale)
             : undefined,
           versionId: file.versionId,
           useLatestAvailableVersion: file.useLatestAvailableVersion,
@@ -629,12 +662,19 @@ export class GT extends GTRuntime {
     // Validation
     this._validateAuth('downloadFileBatch');
 
-    requests = requests.map((request) => ({
-      ...request,
-      locale: request.locale
-        ? this.resolveCanonicalLocale(request.locale)
-        : undefined,
-    }));
+    const requestedFiles = new Map<string, DownloadFileBatchRequest>();
+    requests = requests.map((request) => {
+      const locale = request.locale
+        ? this.resolveServiceLocale(request.locale)
+        : undefined;
+      if (locale) {
+        const key = JSON.stringify([request.fileId, locale]);
+        const group = requestedFiles.get(key) ?? [];
+        group.push(request);
+        requestedFiles.set(key, group);
+      }
+      return { ...request, locale };
+    });
 
     // Request the batch download.
     const result = await _downloadFileBatch(
@@ -644,12 +684,24 @@ export class GT extends GTRuntime {
     );
 
     return {
-      files: result.data.map((file) => ({
-        ...file,
-        ...(file.locale && {
-          locale: this.resolveAliasLocale(file.locale),
-        }),
-      })),
+      files: result.data.map((file) => {
+        if (!file.locale) return file;
+        const serviceLocale = this.standardizeLocale(file.locale);
+        const matchingRequests = (
+          requestedFiles.get(JSON.stringify([file.fileId, serviceLocale])) ?? []
+        ).filter(
+          (request) =>
+            (!request.branchId || request.branchId === file.branchId) &&
+            (!request.versionId || request.versionId === file.versionId)
+        );
+        return {
+          ...file,
+          locale:
+            matchingRequests.length === 1
+              ? matchingRequests[0].locale
+              : this.resolveServiceResponseLocale(file.locale),
+        };
+      }),
       count: result.count,
     };
   }
@@ -676,7 +728,7 @@ export class GT extends GTRuntime {
     // Merge instance settings with options.
     const mergedOptions: UploadFilesOptions = {
       ...options,
-      sourceLocale: this.resolveCanonicalLocale(
+      sourceLocale: this.resolveServiceLocale(
         options.sourceLocale ?? this.sourceLocale ?? libraryDefaultLocale
       ),
     };
@@ -686,7 +738,7 @@ export class GT extends GTRuntime {
       ...f,
       source: {
         ...f.source,
-        locale: this.resolveCanonicalLocale(f.source.locale),
+        locale: this.resolveServiceLocale(f.source.locale),
       },
     }));
 
@@ -764,16 +816,20 @@ export class GT extends GTRuntime {
       throw new Error(error);
     }
 
-    mergedOptions.sourceLocale = this.resolveCanonicalLocale(
+    mergedOptions.sourceLocale = this.resolveServiceLocale(
       mergedOptions.sourceLocale
     );
 
-    // Ensure all translation locales use canonical locales
+    // Ensure all file locales use canonical locales
     const targetFiles = files.map((f) => ({
       ...f,
+      source: {
+        ...f.source,
+        locale: this.resolveServiceLocale(f.source.locale),
+      },
       translations: f.translations.map((t) => ({
         ...t,
-        locale: this.resolveCanonicalLocale(t.locale),
+        locale: this.resolveServiceLocale(t.locale),
       })),
     }));
 

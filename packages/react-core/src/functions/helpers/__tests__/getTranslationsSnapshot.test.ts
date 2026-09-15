@@ -24,6 +24,35 @@ function setup(loadTranslations: (locale: string) => Promise<unknown>) {
 }
 
 describe('getTranslationsSnapshot', () => {
+  it('keys a configured alias by the identity used during hydration', async () => {
+    initializeI18nConfig(
+      {
+        defaultLocale: 'en-us',
+        locales: ['en-us', 'en-gb'],
+      },
+      'SPA'
+    );
+    const loadTranslations = vi.fn(async () => ({ hash: 'British text' }));
+    setReactI18nCache(new ReactI18nCache({ loadTranslations }));
+
+    await expect(getTranslationsSnapshot('en-gb')).resolves.toEqual({
+      'en-gb': { hash: 'British text' },
+    });
+    expect(loadTranslations).toHaveBeenCalledWith('en-gb');
+  });
+  it('preserves explicit dialect loading outside supported app locales', async () => {
+    initializeI18nConfig(
+      { defaultLocale: 'en-US', locales: ['en-US', 'en'] },
+      'SPA'
+    );
+    const loadTranslations = vi.fn(async () => ({ hash: 'British text' }));
+    setReactI18nCache(new ReactI18nCache({ loadTranslations }));
+
+    await expect(getTranslationsSnapshot('en-GB')).resolves.toEqual({
+      'en-GB': { hash: 'British text' },
+    });
+    expect(loadTranslations).toHaveBeenCalledWith('en-GB');
+  });
   let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {

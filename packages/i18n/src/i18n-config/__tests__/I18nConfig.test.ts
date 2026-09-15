@@ -11,6 +11,25 @@ describe('I18nConfig', () => {
     vi.unstubAllEnvs();
   });
 
+  it.each([
+    { services: false, expected: 'en-us' },
+    { services: true, expected: 'en-us' },
+  ])(
+    'preserves the configured locale identity with services=$services',
+    ({ services, expected }) => {
+      const config = new I18nConfig({
+        defaultLocale: 'en-us',
+        locales: ['en-us', 'fr'],
+        ...(services
+          ? { projectId: 'test-project' }
+          : { cacheUrl: null, runtimeUrl: null }),
+      });
+      // I18nConfig preserves supplied keys; framework configuration owns normalization.
+      expect(config.determineSupportedLocale('en-US')).toBe(expected);
+      expect(config.resolveSupportedLocale('en-US')).toBe(expected);
+    }
+  );
+
   it('defaults missing locale settings', () => {
     const config = new I18nConfig();
 

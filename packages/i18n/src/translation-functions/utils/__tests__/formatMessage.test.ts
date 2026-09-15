@@ -1,7 +1,24 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { formatMessage } from '../formatMessage';
+import { initializeI18nConfig } from '../../../i18n-config/singleton-operations';
 
 describe('formatMessage', () => {
+  afterEach(() => Reflect.deleteProperty(globalThis, '__generaltranslation'));
+
+  it('uses the mapped language for custom locale plural rules', () => {
+    initializeI18nConfig({
+      defaultLocale: 'brand-arabic',
+      locales: ['brand-arabic'],
+      customMapping: { 'brand-arabic': { code: 'ar' } },
+    });
+    expect(
+      formatMessage(
+        '{count, plural, zero {zero} one {one} two {two} few {few} many {many} other {other}}',
+        { count: '3' },
+        'brand-arabic'
+      )
+    ).toBe('few');
+  });
   it.each([
     ['2', 'exact'],
     ['02', '2 items'],

@@ -133,9 +133,6 @@ export const APIKeyMissingWarn = createGtNextPluginDiagnostic({
   fix: 'Find your development API key at generaltranslation.com/dashboard, or set runtimeUrl to an empty string to disable runtime translation',
 });
 
-export const standardizedLocalesWarning = (locales: string[]) =>
-  `gt-next: The following locales were standardized: ${locales.join(', ')}. Use the standardized codes in your config to avoid this warning.`;
-
 export const standardizedCanonicalLocalesWarning = (locales: string[]) =>
   `gt-next: The following canonical locales were standardized: ${locales.join(', ')}. Use the standardized codes in your config to avoid this warning.`;
 

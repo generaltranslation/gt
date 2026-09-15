@@ -24,13 +24,13 @@ export function resolveLocaleOrDefault(locale: unknown): string {
       ? i18nConfig.determineSupportedLocale(locale)
       : undefined;
 
-  if (supportedLocale) return i18nConfig.resolveAliasLocale(supportedLocale);
+  if (supportedLocale) return supportedLocale;
 
   if (typeof locale === 'string' && locale.length > 0) {
     warnInvalidLocale(locale, defaultLocale);
   }
 
-  return i18nConfig.resolveAliasLocale(defaultLocale);
+  return defaultLocale;
 }
 
 /**

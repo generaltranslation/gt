@@ -79,6 +79,43 @@ describe('I18nCache', () => {
 
   // ===== NEW BEHAVIOR TESTS ===== //
 
+  it('uses approved locale spelling for translation loader and cache keys', async () => {
+    const loadTranslations = vi
+      .fn()
+      .mockResolvedValue({ [expectedHash]: translatedString });
+    const cache = createCache({ locales: ['en', 'fr-fr'], loadTranslations });
+
+    expect(await cache.loadTranslations('fr-FR')).toEqual({
+      [expectedHash]: translatedString,
+    });
+    expect(await cache.loadTranslations('fr-fr')).toEqual({
+      [expectedHash]: translatedString,
+    });
+    expect(loadTranslations).toHaveBeenCalledTimes(1);
+    expect(loadTranslations.mock.calls[0][0]).toBe('fr-fr');
+  });
+
+  it('loads configured lowercase files for equivalent canonical requests', async () => {
+    const loadTranslations = vi.fn(async (locale: string) => {
+      if (locale !== 'en-gb') throw new Error(`No file for ${locale}`);
+      return { [expectedHash]: translatedString };
+    });
+    const cache = createCache({
+      defaultLocale: 'fr',
+      locales: ['fr', 'en-gb'],
+      customMapping: { 'en-gb': { code: 'en-GB' } },
+      loadTranslations,
+    });
+
+    expect(await cache.loadTranslations('en-GB')).toEqual({
+      [expectedHash]: translatedString,
+    });
+    expect(await cache.loadTranslations('en-gb')).toEqual({
+      [expectedHash]: translatedString,
+    });
+    expect(loadTranslations).toHaveBeenCalledExactlyOnceWith('en-gb');
+  });
+
   it('loadTranslations() returns Record<Hash, Translation>', async () => {
     const cache = createCache();
 
@@ -1184,12 +1221,13 @@ describe('I18nCache', () => {
     );
   });
 
-  it('normalizes custom aliases before loading and reading locale caches', async () => {
+  it('shares configured cache entries across alias and canonical requests', async () => {
     const loadTranslations = vi
       .fn()
       .mockResolvedValue({ [expectedHash]: translatedString });
     const cache = createCache({
       loadTranslations,
+      locales: ['en', 'brand-french', 'es'],
       customMapping: {
         'brand-french': {
           code: 'fr',
@@ -1201,7 +1239,8 @@ describe('I18nCache', () => {
     await cache.loadTranslations('brand-french');
 
     expect(loadTranslations).toHaveBeenCalledTimes(1);
-    expect(loadTranslations).toHaveBeenCalledWith('fr');
+    expect(loadTranslations).toHaveBeenCalledWith('brand-french');
+    await cache.loadTranslations('fr');
     expect(
       cache.lookupTranslation('brand-french', message, lookupOptions)
     ).toBe(translatedString);
