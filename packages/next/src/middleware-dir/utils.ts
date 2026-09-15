@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { standardizeLocale } from '@generaltranslation/format';
 import { GTRuntime } from 'generaltranslation/runtime';
 import { NextURL } from 'next/dist/server/web/next-url';
 import { parseAcceptLanguage } from 'gt-i18n/internal';
@@ -217,7 +216,6 @@ export function getLocaleFromRequest(
   defaultLocale: string,
   approvedLocales: string[],
   localeRouting: boolean,
-  gtServicesEnabled: boolean,
   prefixDefaultLocale: boolean,
   defaultLocalePaths: PathMatcher,
   referrerLocaleCookieName: string,
@@ -239,23 +237,15 @@ export function getLocaleFromRequest(
   let pathnameLocale, unstandardizedPathnameLocale;
   if (localeRouting) {
     unstandardizedPathnameLocale = extractLocale(pathname);
-    const extractedLocale = gtServicesEnabled
-      ? standardizeLocale(unstandardizedPathnameLocale || '')
-      : unstandardizedPathnameLocale;
-
     if (
-      extractedLocale &&
-      gt.isValidLocale(extractedLocale) &&
-      gt.determineLocale([extractedLocale], approvedLocales)
+      unstandardizedPathnameLocale &&
+      gt.isValidLocale(unstandardizedPathnameLocale)
     ) {
-      const determinedLocale = gt.determineLocale(
-        [extractedLocale],
+      pathnameLocale = gt.determineLocale(
+        unstandardizedPathnameLocale,
         approvedLocales
       );
-      if (determinedLocale) {
-        pathnameLocale = gt.resolveAliasLocale(determinedLocale);
-        candidates.push(pathnameLocale);
-      }
+      if (pathnameLocale) candidates.push(pathnameLocale);
     }
   }
 
@@ -307,14 +297,11 @@ export function getLocaleFromRequest(
   candidates.push(defaultLocale);
 
   // determine userLocale
-  const unstandardizedUserLocale =
+  const userLocale =
     gt.determineLocale(
       candidates.filter((locale) => gt.isValidLocale(locale)),
       approvedLocales
     ) || defaultLocale;
-  const userLocale = gtServicesEnabled
-    ? standardizeLocale(unstandardizedUserLocale)
-    : unstandardizedUserLocale;
 
   return {
     userLocale,

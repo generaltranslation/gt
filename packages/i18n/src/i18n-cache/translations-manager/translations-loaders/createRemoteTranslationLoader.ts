@@ -1,4 +1,7 @@
-import { resolveCanonicalLocale } from '@generaltranslation/format';
+import {
+  resolveCanonicalLocale,
+  standardizeLocale,
+} from '@generaltranslation/format';
 import { TranslationsLoader } from './types';
 import { defaultCacheUrl } from 'generaltranslation/internal';
 import { Translation } from '../utils/types/translation-data';
@@ -35,7 +38,9 @@ export function createRemoteTranslationLoader(
   // define loader function (error handled by wrapper)
   const loader: TranslationsLoader = async (locale: string) => {
     // Standardize locale
-    locale = resolveCanonicalLocale(locale, params.customMapping);
+    locale = standardizeLocale(
+      resolveCanonicalLocale(locale, params.customMapping)
+    );
     const url = unlocalizedUrl.replace('[locale]', locale);
     const response = await fetch(url);
     if (!response.ok) {
