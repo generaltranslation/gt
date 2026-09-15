@@ -83,9 +83,7 @@ describe('GTProvider', () => {
             greeting: 'Bonjour',
           },
         },
-        enableI18n: true,
-        locale: 'fr',
-        region: undefined,
+        conditions: { enableI18n: true, locale: 'fr', region: undefined },
         translations: {
           fr: {
             hash: 'Salut',
@@ -93,6 +91,14 @@ describe('GTProvider', () => {
         },
       },
     });
+  });
+
+  it('creates a fresh conditions snapshot when the server values are unchanged', async () => {
+    const { GTProvider } = await import('../GTProvider');
+    const first = await GTProvider({ children: 'content' });
+    const second = await GTProvider({ children: 'content' });
+    expect(second.props.conditions).toEqual(first.props.conditions);
+    expect(second.props.conditions).not.toBe(first.props.conditions);
   });
 
   it('uses the request locale and skips cached translations when translation is not required', async () => {
@@ -128,9 +134,7 @@ describe('GTProvider', () => {
             greeting: 'Bonjour',
           },
         },
-        enableI18n: false,
-        locale: 'en',
-        region: 'US',
+        conditions: { enableI18n: false, locale: 'en', region: 'US' },
         translations: {
           en: {},
         },

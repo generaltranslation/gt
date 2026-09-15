@@ -156,6 +156,8 @@ export class GTRuntime {
     customMapping,
     baseUrl,
   }: GTConstructorParams) {
+    const effectiveCustomMapping = customMapping ?? this.customMapping;
+
     // ----- Environment properties ----- //
     if (apiKey) this.apiKey = apiKey;
     if (devApiKey) this.devApiKey = devApiKey;
@@ -166,14 +168,14 @@ export class GTRuntime {
     // source locale
     if (sourceLocale) {
       this.sourceLocale = sourceLocale;
-      if (!_isValidLocale(this.sourceLocale, customMapping))
+      if (!_isValidLocale(this.sourceLocale, effectiveCustomMapping))
         throw new Error(invalidLocaleError(this.sourceLocale));
     }
 
     // target locale
     if (targetLocale) {
       this.targetLocale = targetLocale;
-      if (!_isValidLocale(this.targetLocale, customMapping))
+      if (!_isValidLocale(this.targetLocale, effectiveCustomMapping))
         throw new Error(invalidLocaleError(this.targetLocale));
     }
 
@@ -182,7 +184,7 @@ export class GTRuntime {
       const result: string[] = [];
       const invalidLocales: string[] = [];
       locales.forEach((locale) => {
-        if (_isValidLocale(locale, customMapping)) {
+        if (_isValidLocale(locale, effectiveCustomMapping)) {
           result.push(locale);
         } else {
           invalidLocales.push(locale);

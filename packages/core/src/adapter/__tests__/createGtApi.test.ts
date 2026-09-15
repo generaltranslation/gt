@@ -21,7 +21,7 @@ const customMapping = {
   target: { code: 'es-ES' },
 };
 
-describe('createGtApiAdapter', () => {
+describe.sequential('createGtApiAdapter', () => {
   beforeEach(() => {
     vi.resetAllMocks();
   });
@@ -39,51 +39,65 @@ describe('createGtApiAdapter', () => {
     adapter.configure({ baseUrl: 'https://api.example.com', customMapping });
 
     expect(adapter.resolveCanonicalLocale('target')).toBe('es-ES');
+    expect(adapter.resolveCanonicalLocale('en-us')).toBe('en-US');
     expect(adapter.resolveAliasLocale('es-ES')).toBe('target');
   });
 
-  it('canonicalizes upload locales at the shared boundary', async () => {
-    vi.mocked(uploadTranslations).mockResolvedValue(
-      result({ uploadedFiles: [], count: 0, message: 'Uploaded files' })
-    );
-    const adapter = createGtApiAdapter();
-    adapter.configure({ baseUrl: 'https://api.example.com', customMapping });
+  it.each([
+    ['source', 'target'],
+    ['en-us', 'es-es'],
+  ])(
+    'canonicalizes upload locales %s / %s',
+    async (sourceLocale, targetLocale) => {
+      vi.mocked(uploadTranslations).mockResolvedValue(
+        result({ uploadedFiles: [], count: 0, message: 'Uploaded files' })
+      );
+      const adapter = createGtApiAdapter();
+      adapter.configure({
+        baseUrl: 'https://api.example.com',
+        customMapping: {
+          source: { code: 'en-US' },
+          target: { code: 'es-ES' },
+        },
+      });
 
-    await adapter.uploadTranslations(
-      [
-        {
-          source: {
-            content: 'source',
-            fileName: 'document.html',
-            fileFormat: 'HTML',
-            locale: 'source',
-          },
-          translations: [
-            {
-              content: 'translation',
+      await adapter.uploadTranslations(
+        [
+          {
+            source: {
+              content: 'source',
               fileName: 'document.html',
               fileFormat: 'HTML',
-              locale: 'target',
+              locale: sourceLocale,
             },
-          ],
-        },
-      ],
-      { sourceLocale: 'source' }
-    );
+            translations: [
+              {
+                content: 'translation',
+                fileName: 'document.html',
+                fileFormat: 'HTML',
+                locale: targetLocale,
+              },
+            ],
+          },
+        ],
+        { sourceLocale }
+      );
 
-    expect(uploadTranslations).toHaveBeenCalledWith(
-      expect.objectContaining({
-        body: expect.objectContaining({
-          sourceLocale: 'en-US',
-          data: [
-            expect.objectContaining({
-              translations: [expect.objectContaining({ locale: 'es-ES' })],
-            }),
-          ],
-        }),
-      })
-    );
-  });
+      expect(uploadTranslations).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: expect.objectContaining({
+            sourceLocale: 'en-US',
+            data: [
+              expect.objectContaining({
+                source: expect.objectContaining({ locale: 'en-US' }),
+                translations: [expect.objectContaining({ locale: 'es-ES' })],
+              }),
+            ],
+          }),
+        })
+      );
+    }
+  );
 
   it('maps file-info locales in both directions', async () => {
     vi.mocked(getFileInfo).mockResolvedValue(

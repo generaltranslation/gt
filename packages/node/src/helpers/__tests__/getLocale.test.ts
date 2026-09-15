@@ -78,4 +78,36 @@ describe('getLocale', () => {
 
     expect(getRequestLocale(request)).toBe('brand-french');
   });
+
+  it.each([
+    {
+      locales: ['en-US', 'brand-french'],
+      header: 'fr,en-US;q=0.8',
+      expected: 'brand-french',
+    },
+    {
+      locales: ['en-US', 'brand-french'],
+      header: 'fr-FR,fr;q=0.9,en-US;q=0.8',
+      expected: 'brand-french',
+    },
+    {
+      locales: ['en-US', 'fr', 'brand-french'],
+      header: 'fr,en-US;q=0.8',
+      expected: 'fr',
+    },
+  ])(
+    'resolves browser header $header to configured $expected',
+    ({ locales, header, expected }) => {
+      resetGTGlobals();
+      initializeGT({
+        defaultLocale: 'en-US',
+        locales,
+        customMapping: { 'brand-french': { code: 'fr' } },
+      });
+
+      expect(getRequestLocale({ headers: { 'accept-language': header } })).toBe(
+        expected
+      );
+    }
+  );
 });

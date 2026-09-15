@@ -820,9 +820,13 @@ export class GT extends GTRuntime {
       mergedOptions.sourceLocale
     );
 
-    // Ensure all translation locales use canonical locales
+    // Ensure all file locales use canonical locales
     const targetFiles = files.map((f) => ({
       ...f,
+      source: {
+        ...f.source,
+        locale: this.resolveServiceLocale(f.source.locale),
+      },
       translations: f.translations.map((t) => ({
         ...t,
         locale: this.resolveServiceLocale(t.locale),
