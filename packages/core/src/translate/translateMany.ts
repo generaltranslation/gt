@@ -80,6 +80,7 @@ export async function _translateMany(
         source,
         ...(metadata?.context && { context: metadata.context }),
         ...(metadata?.maxChars != null && { maxChars: metadata.maxChars }),
+        ...(metadata?.fileFormat && { fileFormat: metadata.fileFormat }),
         dataFormat: metadata?.dataFormat ?? 'STRING',
       });
     hashOrder?.push(hash);

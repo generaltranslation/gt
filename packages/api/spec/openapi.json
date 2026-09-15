@@ -267,6 +267,9 @@
                           "required": ["before", "target", "after"]
                         }
                       }
+                    },
+                    "fileFormat": {
+                      "$ref": "#/components/schemas/RuntimeFileFormat"
                     }
                   },
                   "default": {
@@ -379,6 +382,10 @@
           }
         },
         "required": ["message"]
+      },
+      "RuntimeFileFormat": {
+        "type": "string",
+        "enum": ["MD", "MDX"]
       }
     },
     "parameters": {}

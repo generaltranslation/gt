@@ -1,3 +1,4 @@
+import type { RuntimeFileFormat } from '@generaltranslation/api';
 import { Content, DataFormat } from '../../types';
 
 /**
@@ -14,6 +15,7 @@ export type ActionType = 'fast'; // TODO: Add standard action type when availabl
  * @param id - The ID of the request.
  * @param maxChars - The maxChars of the request.
  * @param hash - The hash of the request.
+ * @param fileFormat - Set when the source is a markdown or MDX document. Requires the STRING data format.
  */
 export type EntryMetadata = {
   id?: string;
@@ -21,6 +23,7 @@ export type EntryMetadata = {
   context?: string;
   maxChars?: number;
   dataFormat?: DataFormat;
+  fileFormat?: RuntimeFileFormat;
   actionType?: ActionType;
 };
 

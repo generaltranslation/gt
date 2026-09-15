@@ -1,4 +1,5 @@
 import type { DataFormat } from '@generaltranslation/format/types';
+import type { RuntimeFileFormat } from '@generaltranslation/api';
 
 export type HashMetadata = {
   context?: string;
@@ -11,4 +12,5 @@ export type HashMetadata = {
   maxChars?: number;
   requiresReview?: boolean;
   dataFormat?: DataFormat;
+  fileFormat?: RuntimeFileFormat;
 };
