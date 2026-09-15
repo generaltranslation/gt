@@ -25,9 +25,9 @@ export type {
 export type {
   ActionType as EntryActionType,
   EntryMetadata,
-  RuntimeFileFormat,
   TranslateManyEntry,
 } from './types-dir/api/entry';
+export type { RuntimeFileFormat } from '@generaltranslation/api';
 export type { HashMetadata } from './id/types';
 export type {
   GTConfig,

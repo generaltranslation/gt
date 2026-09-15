@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { defaultRuntimeApiUrl } from '../../settings/settingsUrls';
 import { TranslationRequestConfig } from '../../types';
 import { SharedMetadata, TranslateManyEntry } from '../../types-dir/api/entry';
+import { hashSource } from '../../id/hashSource';
 import { _translateMany } from '../translateMany';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 import { validateResponse } from '../utils/validateResponse';
@@ -223,6 +224,27 @@ describe.sequential('_translateMany', () => {
     expect(key).not.toBe('custom-id');
     expect(body.requests[key].source).toBe('Hello');
     expect(body.requests[key].metadata).toMatchObject({ id: 'custom-id' });
+  });
+
+  it('sends document requests with their file format and a format-aware key', async () => {
+    const source = '# Hello\n\nA short document.';
+
+    await _translateMany(
+      [{ source, metadata: { fileFormat: 'MDX' } }],
+      globalMetadata,
+      mockConfig
+    );
+
+    const body = vi.mocked(translate).mock.calls[0][0].body;
+    const [key] = Object.keys(body.requests);
+    expect(body.requests[key]).toEqual({
+      source,
+      metadata: { fileFormat: 'MDX' },
+    });
+    expect(key).toBe(
+      hashSource({ source, dataFormat: 'STRING', fileFormat: 'MDX' })
+    );
+    expect(key).not.toBe(hashSource({ source, dataFormat: 'STRING' }));
   });
 
   it('uses explicit hash keys before calculating a hash', async () => {

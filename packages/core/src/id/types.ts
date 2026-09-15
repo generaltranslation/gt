@@ -1,5 +1,5 @@
 import type { DataFormat } from '@generaltranslation/format/types';
-import type { RuntimeFileFormat } from '../types-dir/api/entry';
+import type { RuntimeFileFormat } from '@generaltranslation/api';
 
 export type HashMetadata = {
   context?: string;

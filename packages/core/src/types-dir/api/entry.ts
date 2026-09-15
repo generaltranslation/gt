@@ -1,3 +1,4 @@
+import type { RuntimeFileFormat } from '@generaltranslation/api';
 import { Content, DataFormat } from '../../types';
 
 /**
@@ -6,12 +7,6 @@ import { Content, DataFormat } from '../../types';
  * @param fast - The fast action type (mini model).
  */
 export type ActionType = 'fast'; // TODO: Add standard action type when available in the API
-
-/**
- * RuntimeFileFormat marks a request whose source is a whole document rather
- * than a string, so it is translated with that format's file pipeline.
- */
-export type RuntimeFileFormat = 'MD' | 'MDX';
 
 /**
  * EntryMetadata is the metadata for a GTRequest.
