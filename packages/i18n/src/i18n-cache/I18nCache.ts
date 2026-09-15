@@ -646,6 +646,8 @@ class I18nCache<TranslationValue extends Translation = Translation> {
       return resolvedLocale;
     }
 
+    // Explicit translation lookups may request a dialect outside the supported
+    // app locales. Preserve that existing fallback independently of routing.
     const aliasLocale = i18nConfig.resolveAliasLocale(
       i18nConfig.standardizeLocale(locale)
     );

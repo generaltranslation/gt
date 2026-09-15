@@ -17,5 +17,6 @@ import {
  */
 export function useLocaleSelector(locales?: string[]) {
   const setLocale = useSetLocale();
-  return { setLocale, ...useInternalLocaleSelector(locales) };
+  const selector = useInternalLocaleSelector(locales);
+  return { ...selector, setLocale };
 }

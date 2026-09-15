@@ -47,7 +47,6 @@ function callGetLocaleFromRequest(
     defaultLocale?: string;
     approvedLocales?: string[];
     localeRouting?: boolean;
-    gtServicesEnabled?: boolean;
     prefixDefaultLocale?: boolean;
     defaultLocalePaths?: PathMatcher;
   } = {}
@@ -58,7 +57,6 @@ function callGetLocaleFromRequest(
     overrides.defaultLocale ?? DEFAULT_LOCALE,
     overrides.approvedLocales ?? APPROVED_LOCALES,
     overrides.localeRouting ?? true,
-    overrides.gtServicesEnabled ?? false,
     overrides.prefixDefaultLocale ?? false,
     overrides.defaultLocalePaths ?? createPathMatcher([]),
     REFERRER_COOKIE,
