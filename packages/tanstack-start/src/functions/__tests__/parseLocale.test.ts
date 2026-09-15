@@ -64,7 +64,7 @@ function createRequest({
 
 const localeConfig = {
   defaultLocale: 'en',
-  locales: ['en', 'fr', 'es', 'brand-french'],
+  locales: ['en', 'es', 'brand-french'],
   customMapping: {
     'brand-french': {
       code: 'fr',
@@ -224,7 +224,7 @@ describe.sequential('parseLocale', () => {
       },
     });
 
-    expect(determineLocaleClient(localeConfig)).toBe('fr');
+    expect(determineLocaleClient(localeConfig)).toBe('brand-french');
   });
 
   it('resolves a custom locale cookie during client initialization', () => {
@@ -240,7 +240,7 @@ describe.sequential('parseLocale', () => {
       },
     });
 
-    expect(determineLocaleClient(localeConfig)).toBe('fr');
+    expect(determineLocaleClient(localeConfig)).toBe('brand-french');
   });
 
   it('falls back to the default locale during client initialization', () => {

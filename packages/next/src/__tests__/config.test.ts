@@ -1119,7 +1119,7 @@ describe('withGTConfig', () => {
       expect(enCount).toBe(1);
     });
 
-    it('locales standardized via standardizeLocale() when GT services enabled', async () => {
+    it('preserves configured locale spellings when GT services are enabled', async () => {
       const withGTConfig = await getWithGTConfig();
       process.env.GT_PROJECT_ID = 'proj';
       process.env.GT_DEV_API_KEY = 'gt-dev-abc';
@@ -1131,10 +1131,9 @@ describe('withGTConfig', () => {
       );
       const params = parseConfigParams(result);
 
-      // standardizeLocale should normalize these
-      // en-us -> en-US, fr-fr -> fr-FR (BCP-47 standardization)
-      expect(params.locales).toContain('en-US');
-      expect(params.locales).toContain('fr-FR');
+      // Runtime identities retain the same spelling as routes and local files.
+      expect(params.locales).toContain('en-us');
+      expect(params.locales).toContain('fr-fr');
     });
 
     it('locales NOT standardized when GT services disabled', async () => {

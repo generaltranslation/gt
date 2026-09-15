@@ -54,11 +54,7 @@ export function routeCreateTranslationLoader({
         customMapping: getI18nConfig().getCustomMapping(),
       });
     case LoadTranslationsType.CUSTOM:
-      // Custom loaders use configured aliases, including CLI-generated filenames
-      // such as en-gb.json. Keep canonical cache keys and remote-loader behavior
-      // unchanged by converting only the argument passed to the custom loader.
-      return (locale) =>
-        loadTranslations!(getI18nConfig().resolveAliasLocale(locale));
+      return loadTranslations!;
     case LoadTranslationsType.DISABLED:
       // cacheUrl: null is an explicit opt-out of translation loading
       if (cacheUrl === null) {

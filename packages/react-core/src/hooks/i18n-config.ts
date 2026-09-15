@@ -11,14 +11,5 @@ export function useDefaultLocale(): string {
 }
 
 export function useLocales(): readonly string[] {
-  return useMemo(() => {
-    const config = getI18nConfig();
-    // Public options must use the same aliases as useLocale(). Keep the
-    // internal locale list unchanged for resolution and translation caches.
-    return [
-      ...new Set(
-        config.getLocales().map((locale) => config.resolveAliasLocale(locale))
-      ),
-    ];
-  }, []);
+  return useMemo(() => getI18nConfig().getLocales(), []);
 }

@@ -129,7 +129,7 @@ function usePathCheck({
   useEffect(() => {
     // Track the referrer locale for middleware
     const i18nConfig = getI18nConfig();
-    document.cookie = `${referrerLocaleCookieName}=${i18nConfig.resolveAliasLocale(locale)};path=/`;
+    document.cookie = `${referrerLocaleCookieName}=${locale};path=/`;
 
     // Synchronize server content if the pathname changes
     const locales = i18nConfig.getLocales();
@@ -146,12 +146,11 @@ function usePathCheck({
         locales
       );
 
-      // Equivalent spellings (en-us/en-US) must not reload on every mount.
+      // Both values are resolved to configured identities before comparison.
       if (
         currentPathLocale &&
         locales.includes(currentPathLocale) &&
-        i18nConfig.standardizeLocale(currentPathLocale) !==
-          i18nConfig.standardizeLocale(locale)
+        currentPathLocale !== locale
       ) {
         // clear cookie (avoids infinite loop when there is no middleware)
         document.cookie = `${localeRoutingEnabledCookieName}=;path=/`;
@@ -181,28 +180,16 @@ function resolvePathLocale(
   defaultLocale: string,
   locales: string[]
 ): string {
-  const extractedLocale = extractLocale(pathname, i18nConfig);
+  const extractedLocale = extractLocale(pathname);
   if (!extractedLocale) {
     return defaultLocale;
   }
 
-  const currentPathLocale = i18nConfig.determineLocale(
-    [
-      i18nConfig.isGTServicesEnabled()
-        ? i18nConfig.standardizeLocale(extractedLocale)
-        : extractedLocale,
-    ],
-    locales
+  return (
+    i18nConfig.determineLocale([extractedLocale], locales) ?? defaultLocale
   );
-  return currentPathLocale
-    ? i18nConfig.resolveAliasLocale(currentPathLocale)
-    : defaultLocale;
 }
 
-function extractLocale(
-  pathname: string,
-  i18nConfig: I18nConfig
-): string | null {
-  const matches = pathname.match(/^\/([^/]+)(?:\/|$)/);
-  return matches ? i18nConfig.resolveAliasLocale(matches[1]) : null;
+function extractLocale(pathname: string): string | null {
+  return pathname.match(/^\/([^/]+)(?:\/|$)/)?.[1] ?? null;
 }

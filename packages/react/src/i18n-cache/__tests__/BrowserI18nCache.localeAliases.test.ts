@@ -34,7 +34,7 @@ describe('BrowserI18nCache locale persistence', () => {
     async (aliases) => {
       initializeI18nConfig({
         defaultLocale: 'en-US',
-        locales: ['en-US', 'en-GB'],
+        locales: ['en-US', aliases ? 'en-gb' : 'en-GB'],
         customMapping: aliases ? { 'en-gb': { code: 'en-GB' } } : {},
         projectId: 'test-project',
         devApiKey: 'test-key',
@@ -47,7 +47,11 @@ describe('BrowserI18nCache locale persistence', () => {
       });
 
       // The internal resource cache emits its resolved supported locale.
-      cache.receiveRuntimeTranslation('en-GB', 'runtime', 'Runtime text');
+      cache.receiveRuntimeTranslation(
+        aliases ? 'en-gb' : 'en-GB',
+        'runtime',
+        'Runtime text'
+      );
       await vi.advanceTimersByTimeAsync(600);
 
       const reloadedCache = new RuntimeTranslationCache({ loadTranslations });

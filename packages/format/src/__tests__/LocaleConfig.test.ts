@@ -89,6 +89,10 @@ describe('determineLocale approved spelling', () => {
     ['en-GB', ['en', 'fr'], 'en'],
     ['en-GB', ['en', 'en-gb'], 'en-gb'],
     ['iw', ['iw'], 'iw'],
+    ['sh', ['sh'], 'sh'],
+    ['sr-Latn', ['sh'], 'sh'],
+    ['cnr', ['cnr'], 'cnr'],
+    ['sr-ME', ['cnr'], 'cnr'],
     ['qbr', ['qbr', 'fr'], 'qbr'],
     ['de', ['en-us', 'fr'], undefined],
     ['en', [], undefined],
@@ -104,9 +108,9 @@ describe('determineLocale approved spelling', () => {
   it.each([
     ['en-gb', 'en-GB'],
     ['en-GB', 'en-gb'],
-  ])('preserves exact canonical match precedence for %j', (...locales) => {
+  ])('preserves exact configured identity for %j', (...locales) => {
     const config = new LocaleConfig({ locales });
-    expect(config.determineLocale('en-gb')).toBe('en-GB');
+    expect(config.determineLocale('en-gb')).toBe('en-gb');
   });
 
   it('uses the first equivalent approved spelling when no exact match exists', () => {
@@ -122,6 +126,16 @@ describe('determineLocale approved spelling', () => {
     expect(config.determineLocale('en-GB')).toBe('brand');
     expect(config.determineLocale('en-GB', ['other'])).toBe('other');
     expect(config.determineLocale('en-GB')).toBe('brand');
+  });
+
+  it('preserves an exact alias without changing candidate priority', () => {
+    const config = new LocaleConfig({
+      locales: ['en', 'brand', 'partner'],
+      customMapping: { brand: { code: 'en-GB' }, partner: { code: 'en-GB' } },
+    });
+    expect(config.determineLocale('partner')).toBe('partner');
+    expect(config.determineLocale(['de', 'partner'])).toBe('partner');
+    expect(config.determineLocale(['en-AU', 'partner'])).toBe('en');
   });
 
   it('keeps exact mapped-code precedence over equivalent spellings', () => {

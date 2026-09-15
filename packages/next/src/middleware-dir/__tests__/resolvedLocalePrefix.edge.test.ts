@@ -129,14 +129,14 @@ describe('resolved locale prefixes', () => {
     }
   );
 
-  it('canonicalizes a configured default before applying no-prefix routing', () => {
+  it('preserves a configured default when applying no-prefix routing', () => {
     configure({ defaultLocale: 'EN-gb', locales: ['EN-gb', 'fr'] });
 
     expectRoute(
       createNextMiddleware()(request('/pricing')),
       'rewrite',
-      'en-GB',
-      '/en-GB/pricing'
+      'EN-gb',
+      '/EN-gb/pricing'
     );
   });
 
@@ -164,14 +164,14 @@ describe('resolved locale prefixes', () => {
   ] satisfies Array<{
     name: string;
     pathConfig: MiddlewareOptions['pathConfig'];
-  }>)('assigns a $name to a canonicalized default', ({ pathConfig }) => {
+  }>)('assigns a $name to a configured default', ({ pathConfig }) => {
     configure({ defaultLocale: 'en-us', locales: ['en-us', 'fr'] });
 
     expectRoute(
       createNextMiddleware({ pathConfig })(request('/plans')),
       'rewrite',
-      'en-US',
-      '/en-US/pricing'
+      'en-us',
+      '/en-us/pricing'
     );
   });
 
@@ -210,7 +210,7 @@ describe('resolved locale prefixes', () => {
     }
   );
 
-  it('uses the canonical locale behind a custom default alias with no signal', () => {
+  it('uses the configured default alias with no signal', () => {
     configure({
       defaultLocale: 'EN',
       locales: ['en', 'fr'],
@@ -220,8 +220,8 @@ describe('resolved locale prefixes', () => {
     expectRoute(
       createNextMiddleware()(request('/pricing')),
       'rewrite',
-      'fr',
-      '/fr/pricing'
+      'EN',
+      '/EN/pricing'
     );
   });
 

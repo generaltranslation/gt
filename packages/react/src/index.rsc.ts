@@ -61,18 +61,13 @@ export function useMessages() {
   return use(getMessages());
 }
 export function useLocale() {
-  return getI18nConfig().resolveAliasLocale(getLocale());
+  return getLocale();
 }
 export function useRegion() {
   return getRegion();
 }
 export function useLocales() {
-  const config = getI18nConfig();
-  return [
-    ...new Set(
-      config.getLocales().map((locale) => config.resolveAliasLocale(locale))
-    ),
-  ];
+  return getI18nConfig().getLocales();
 }
 export function useLocaleDirection(locale: string) {
   return getI18nConfig().getGTClass().getLocaleDirection(locale);

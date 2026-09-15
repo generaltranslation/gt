@@ -72,14 +72,14 @@ describe('Client_GTProvider', () => {
   });
 
   it.each([false, true])(
-    'does not reload equivalent default spellings after remounts (GT services: %s)',
+    'does not reload the configured default locale after remounts (GT services: %s)',
     async (gtServicesEnabled) => {
       process.env._GENERALTRANSLATION_PATH_REGEX = '.*';
       mockPathname.mockReturnValue('/pricing');
       const { I18nConfig } = await import('gt-i18n/internal');
       const config = new I18nConfig({
         defaultLocale: 'en-us',
-        locales: gtServicesEnabled ? ['en-US', 'fr'] : ['en-us', 'fr'],
+        locales: ['en-us', 'fr'],
         projectId: gtServicesEnabled ? 'locale-comparison-test' : undefined,
         runtimeUrl: gtServicesEnabled ? undefined : null,
         cacheUrl: gtServicesEnabled ? undefined : null,
@@ -98,7 +98,7 @@ describe('Client_GTProvider', () => {
             root.render(
               <Client_GTProvider
                 dictionaries={{}}
-                locale='en-US'
+                locale='en-us'
                 translations={{}}
               >
                 content

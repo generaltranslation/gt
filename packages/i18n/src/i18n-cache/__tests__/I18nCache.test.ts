@@ -95,14 +95,14 @@ describe('I18nCache', () => {
     expect(loadTranslations.mock.calls[0][0]).toBe('fr-fr');
   });
 
-  it('loads lowercase alias files with canonical supported locales', async () => {
+  it('loads configured lowercase files for equivalent canonical requests', async () => {
     const loadTranslations = vi.fn(async (locale: string) => {
       if (locale !== 'en-gb') throw new Error(`No file for ${locale}`);
       return { [expectedHash]: translatedString };
     });
     const cache = createCache({
       defaultLocale: 'fr',
-      locales: ['fr', 'en-GB'],
+      locales: ['fr', 'en-gb'],
       customMapping: { 'en-gb': { code: 'en-GB' } },
       loadTranslations,
     });
@@ -1221,12 +1221,13 @@ describe('I18nCache', () => {
     );
   });
 
-  it('passes aliases to custom loaders while sharing canonical cache entries', async () => {
+  it('shares configured cache entries across alias and canonical requests', async () => {
     const loadTranslations = vi
       .fn()
       .mockResolvedValue({ [expectedHash]: translatedString });
     const cache = createCache({
       loadTranslations,
+      locales: ['en', 'brand-french', 'es'],
       customMapping: {
         'brand-french': {
           code: 'fr',

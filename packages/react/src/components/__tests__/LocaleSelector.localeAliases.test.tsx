@@ -15,7 +15,7 @@ function resetConfig() {
 function configureAliases() {
   initializeI18nConfig({
     defaultLocale: 'en-us',
-    locales: ['en-US', 'en-GB', 'fr-FR'],
+    locales: ['en-us', 'en-gb', 'fr-fr'],
     customMapping: {
       'en-us': { code: 'en-US' },
       'en-gb': { code: 'en-GB' },

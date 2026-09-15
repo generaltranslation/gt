@@ -45,16 +45,13 @@ export function resolveRequestConditions(
     console.warn(noLocaleCandidatesWarning);
   }
 
-  // Expose and persist the same alias as the browser condition store.
-  const locale = i18nConfig.resolveAliasLocale(
-    i18nConfig.resolveSupportedLocale(
-      localeCandidates,
-      localeConfig ?? {
-        defaultLocale: i18nConfig.getDefaultLocale(),
-        locales: i18nConfig.getLocales(),
-        customMapping: i18nConfig.getCustomMapping(),
-      }
-    )
+  const locale = i18nConfig.resolveSupportedLocale(
+    localeCandidates,
+    localeConfig ?? {
+      defaultLocale: i18nConfig.getDefaultLocale(),
+      locales: i18nConfig.getLocales(),
+      customMapping: i18nConfig.getCustomMapping(),
+    }
   );
 
   setCookie(i18nConfig.getLocaleCookieName(), locale, localeCookieOptions);

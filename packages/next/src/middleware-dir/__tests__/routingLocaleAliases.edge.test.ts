@@ -10,7 +10,7 @@ function configure(defaultLocale = 'en', alias = 'en-gb', code = 'en-GB') {
     '_GENERALTRANSLATION_I18N_CONFIG_PARAMS',
     JSON.stringify({
       defaultLocale,
-      locales: [...new Set(['en', alias === 'en-gb' ? code : alias, 'fr'])],
+      locales: [...new Set(['en', alias, 'fr'])],
       customMapping: { [alias]: { code } },
     })
   );

@@ -62,9 +62,7 @@ export class BrowserI18nCache extends I18nCache<Translation> {
     if (devHotReloadEnabled) {
       this.onTranslationsCacheMiss = ({ locale, hash, translation }) => {
         void getOrCreateLocalStorageCache(localStorageCaches, {
-          // The custom loader reads localStorage using the configured alias.
-          // Use the same key when persisting runtime translations for reloads.
-          locale: i18nConfig.resolveAliasLocale(locale),
+          locale,
           projectId,
         }).then((cache) => cache.write(hash, translation));
       };

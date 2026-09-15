@@ -1,5 +1,4 @@
 import { applyTrailingSlash } from './pathname';
-import { standardizeLocale } from '@generaltranslation/format';
 import { GTRuntime } from 'generaltranslation/runtime';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { createUnsupportedLocalesWarning } from '../errors/middleware';
@@ -96,57 +95,18 @@ export function createNextMiddleware({
     customMapping: envParams?.customMapping,
   });
 
-  // using gt services
-  const gtServicesEnabled =
-    process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED === 'true';
-
-  // i18n config
-  const configuredDefaultLocale: string =
+  // Configured spellings are the identity used by routes, cookies and caches.
+  const defaultLocale: string =
     envParams?.defaultLocale || libraryDefaultLocale;
-  // Match the normalization used by localized-path configuration keys.
-  const defaultLocale = gtServicesEnabled
-    ? standardizeLocale(configuredDefaultLocale)
-    : configuredDefaultLocale;
-  const locales: string[] = envParams?.locales || [defaultLocale];
-
-  // add canonical locales
-  const canonicalLocales = Object.values(envParams?.customMapping || {})
-    .filter(
-      (locale): locale is { code: string } =>
-        typeof locale === 'object' &&
-        locale !== null &&
-        'code' in locale &&
-        typeof locale.code === 'string' &&
-        locale.code.length > 0
-    )
-    .map((locale) => locale.code);
-  locales.push(...canonicalLocales);
-
-  // Resolve default identity just as request locales are resolved. A supported
-  // regional locale remains distinct, while equivalent spellings and aliases
-  // still identify the configured default, including without GT services.
-  const determinedDefaultLocale =
-    gt.determineLocale([configuredDefaultLocale], locales) || defaultLocale;
-  const resolvedDefaultLocale = gtServicesEnabled
-    ? standardizeLocale(determinedDefaultLocale)
-    : determinedDefaultLocale;
-
-  const getRoutingLocale = (locale: string): string => {
-    const alias = gt.resolveAliasLocale(locale);
-    // Emit an alias only when request normalization resolves it back to this
-    // locale. For example, en-gb can represent en-GB, but EN mapped to French
-    // would be read as English after services-enabled normalization.
-    const normalizedAlias = gtServicesEnabled
-      ? standardizeLocale(alias)
-      : alias;
-    const determinedAlias = gt.determineLocale(normalizedAlias, locales);
-    const resolvedAlias =
-      determinedAlias && gtServicesEnabled
-        ? standardizeLocale(determinedAlias)
-        : determinedAlias;
-    return resolvedAlias === locale ? alias : locale;
-  };
-  const defaultRoutingLocale = getRoutingLocale(resolvedDefaultLocale);
+  const locales = Array.from(
+    new Set([defaultLocale, ...(envParams?.locales || [])])
+  );
+  const resolveConfiguredLocale = (locale: string) =>
+    gt.determineLocale(locale, locales) ?? locale;
+  const resolvePathConfigLocale =
+    process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED === 'true'
+      ? resolveConfiguredLocale
+      : (locale: string) => locale;
 
   // cookies and header names
   const headersAndCookies = envParams?.headersAndCookies || {};
@@ -175,7 +135,7 @@ export function createNextMiddleware({
   // ---------- PRE-PROCESSING PATHS ---------- //
 
   // --- localized routes --- //
-  // Standardize pathConfig paths
+  // Resolve pathConfig keys to the configured locale spelling.
   pathConfig = Object.entries(pathConfig).reduce<PathConfig>(
     (acc, [sharedPath, localizedPath]) => {
       if (typeof localizedPath === 'string') {
@@ -184,8 +144,7 @@ export function createNextMiddleware({
         acc[sharedPath] = Object.entries(localizedPath).reduce<{
           [key: string]: string;
         }>((acc, [locale, localizedPath]) => {
-          acc[gtServicesEnabled ? standardizeLocale(locale) : locale] =
-            localizedPath;
+          acc[resolvePathConfigLocale(locale)] = localizedPath;
           return acc;
         }, {});
       }
@@ -202,7 +161,7 @@ export function createNextMiddleware({
       typeof localizedPath === 'string'
         ? Object.fromEntries(
             locales.map((locale) => [
-              gtServicesEnabled ? standardizeLocale(locale) : locale,
+              resolveConfiguredLocale(locale),
               localizedPath,
             ])
           )
@@ -218,10 +177,10 @@ export function createNextMiddleware({
   );
 
   // --- route overrides --- //
-  // Standardize routeOverrides locales
+  // Resolve routeOverrides keys to the configured locale spelling.
   routeOverrides = Object.entries(routeOverrides).reduce<RouteOverrides>(
     (acc, [locale, paths]) => {
-      acc[gtServicesEnabled ? standardizeLocale(locale) : locale] = paths;
+      acc[resolvePathConfigLocale(locale)] = paths;
       return acc;
     },
     {}
@@ -250,7 +209,7 @@ export function createNextMiddleware({
       // Match request resolution so equivalent spellings use the same map key.
       const resolvedLocale = gt.determineLocale(locale, locales) ?? locale;
       return [
-        gtServicesEnabled ? standardizeLocale(resolvedLocale) : resolvedLocale,
+        resolvedLocale,
         createPathMatcher(paths.map((path) => [path, path])),
       ];
     })
@@ -291,10 +250,9 @@ export function createNextMiddleware({
       clearResetCookie,
     } = getLocaleFromRequest(
       req,
-      resolvedDefaultLocale,
+      defaultLocale,
       locales,
       localeRouting,
-      gtServicesEnabled,
       prefixDefaultLocale,
       defaultLocalePaths,
       referrerLocaleCookieName,
@@ -303,16 +261,8 @@ export function createNextMiddleware({
       gt
     );
 
-    // Keep normalized map keys separate from the alias used in route URLs.
     let userLocale = requestedLocale;
-    let routingLocale = getRoutingLocale(userLocale);
-    const determinedPathnameLocale = pathnameRoutingLocale
-      ? gt.determineLocale(pathnameRoutingLocale, locales)
-      : undefined;
-    const pathnameLocale =
-      determinedPathnameLocale && gtServicesEnabled
-        ? standardizeLocale(determinedPathnameLocale)
-        : determinedPathnameLocale;
+    const pathnameLocale = pathnameRoutingLocale;
     const headerList = new Headers(req.headers);
 
     const responseConfig: Omit<ResponseConfig, 'type'> = {
@@ -360,7 +310,7 @@ export function createNextMiddleware({
 
       // Return early for a locale route that does not exist
       const localeRoutePathMap = localeRoutePathMaps.get(userLocale);
-      if (userLocale !== resolvedDefaultLocale && localeRoutePathMap) {
+      if (userLocale !== defaultLocale && localeRoutePathMap) {
         // Resolve the shared page path without a locale prefix (e.g. /blog/hello).
         // Strip the URL's locale, which may differ from the newly selected locale.
         const sharedPagePath = sharedPathMatch
@@ -394,15 +344,14 @@ export function createNextMiddleware({
           const publicFallbackPath = applyTrailingSlash(
             standardizedPathname,
             prefixDefaultLocale
-              ? `/${defaultRoutingLocale}${fallbackPath.slice(defaultLocale.length + 1)}`
+              ? fallbackPath
               : fallbackPath.slice(defaultLocale.length + 1) || '/'
           );
 
           // The default locale is terminal, even if the preference/reset cookie
           // still requests an unavailable locale on the redirected request.
-          userLocale = resolvedDefaultLocale;
-          routingLocale = defaultRoutingLocale;
-          responseConfig.userLocale = resolvedDefaultLocale;
+          userLocale = defaultLocale;
+          responseConfig.userLocale = defaultLocale;
           const fallbackUrl = new URL(req.nextUrl);
           fallbackUrl.pathname = publicFallbackPath;
           if (fallbackUrl.pathname !== pathname) {
@@ -420,7 +369,7 @@ export function createNextMiddleware({
               standardizedPathname,
               replaceDynamicSegments(
                 sharedPathMatch.matchedPathname,
-                `/${routingLocale}${sharedPath}`,
+                `/${userLocale}${sharedPath}`,
                 sharedPathMatch.pathTemplate
               )
             )
@@ -439,14 +388,14 @@ export function createNextMiddleware({
               standardizedPathname,
               replaceDynamicSegments(
                 sharedPathMatch.matchedPathname,
-                `/${routingLocale}${localizedPath.slice(userLocale.length + 1)}`,
+                localizedPath,
                 sharedPathMatch.pathTemplate
               )
             )
           : undefined;
 
       const pagePath =
-        (sharedPathWithParameters?.slice(routingLocale.length + 1) ??
+        (sharedPathWithParameters?.slice(userLocale.length + 1) ??
           (pathnameLocale
             ? standardizedPathname.slice(pathnameLocale.length + 1)
             : standardizedPathname)) ||
@@ -459,7 +408,7 @@ export function createNextMiddleware({
         routeOverrideMatch !== undefined
           ? applyTrailingSlash(
               standardizedPathname,
-              `/${routingLocale}/${routingLocale}${pagePath === '/' ? '' : pagePath}`
+              `/${userLocale}/${userLocale}${pagePath === '/' ? '' : pagePath}`
             )
           : undefined;
 
@@ -470,7 +419,7 @@ export function createNextMiddleware({
       if (localizedPathWithParameters === undefined) {
         // --- CASE: remove defaultLocale prefix --- //
 
-        if (!prefixDefaultLocale && userLocale === resolvedDefaultLocale) {
+        if (!prefixDefaultLocale && userLocale === defaultLocale) {
           if (pathnameLocale) {
             // REDIRECT CASE: used setLocale (/fr/customers -> /customers) (/en/customers -> /customers)
             if (clearResetCookie) {
@@ -484,7 +433,7 @@ export function createNextMiddleware({
           } else {
             // REWRITE CASE: no pathnameLocale (/customers -> /en/customers)
             return getRewriteResponse(
-              routeOverridePath || `/${routingLocale}${pathname}`
+              routeOverridePath || `/${userLocale}${pathname}`
             );
           }
         }
@@ -492,15 +441,15 @@ export function createNextMiddleware({
         // --- CASE: defaultLocale prefix --- //
         // REDIRECT CASE: no pathnameLocale (ie, /customers -> /fr/customers)
         else if (!pathnameLocale) {
-          return getRedirectResponse(`/${routingLocale}${pathname}`);
+          return getRedirectResponse(`/${userLocale}${pathname}`);
         }
 
         // REDIRECT CASE: wrong pathnameLocale (ie, /fr/customers -> /en/customers) (this usually happens after a locale switch)
-        if (pathnameLocale && routingLocale !== unstandardizedPathnameLocale) {
+        if (pathnameLocale && userLocale !== unstandardizedPathnameLocale) {
           return getRedirectResponse(
             pathname.replace(
               new RegExp(`^/${unstandardizedPathnameLocale}`),
-              `/${routingLocale}`
+              `/${userLocale}`
             )
           );
         }
@@ -514,7 +463,7 @@ export function createNextMiddleware({
 
       // ----- CASE: localized path exists ----- //
 
-      if (!prefixDefaultLocale && userLocale === resolvedDefaultLocale) {
+      if (!prefixDefaultLocale && userLocale === defaultLocale) {
         // --- CASE: remove defaultLocale prefix --- //
 
         if (pathnameLocale) {
@@ -522,7 +471,7 @@ export function createNextMiddleware({
           if (clearResetCookie) {
             return getRedirectResponse(
               localizedPathWithParameters.replace(
-                new RegExp(`^/${routingLocale}`),
+                new RegExp(`^/${userLocale}`),
                 ``
               ) || '/'
             );
@@ -530,7 +479,7 @@ export function createNextMiddleware({
         } else {
           const localizedPublicPath =
             localizedPathWithParameters.replace(
-              new RegExp(`^/${routingLocale}`),
+              new RegExp(`^/${userLocale}`),
               ''
             ) || '/';
 

@@ -2,8 +2,6 @@ import {
   useInternalLocaleSelector,
   useSetLocale,
 } from '@generaltranslation/react-core/hooks';
-import { getI18nConfig } from '@generaltranslation/react-core/pure';
-import { useMemo } from 'react';
 
 /**
  * Gets the list of properties for using a locale selector.
@@ -20,19 +18,5 @@ import { useMemo } from 'react';
 export function useLocaleSelector(locales?: string[]) {
   const setLocale = useSetLocale();
   const selector = useInternalLocaleSelector(locales);
-  const options = useMemo(
-    () =>
-      locales ??
-        // Match useLocale() even when services-enabled config contains canonical
-        // codes. The default locale and its canonical code may share one alias.
-        [
-          ...new Set(
-            selector.locales.map((locale) =>
-              getI18nConfig().resolveAliasLocale(locale)
-            )
-          ),
-        ],
-    [locales, selector.locales]
-  );
-  return { ...selector, locales: options, setLocale };
+  return { ...selector, setLocale };
 }

@@ -7,12 +7,12 @@ import {
 import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
 
 describe('gt-react react-server surface', () => {
-  it('exposes unique locale aliases without changing the internal list', async () => {
+  it('exposes configured locale spellings without changing the internal list', async () => {
     const { useLocale, useLocales } = await import('../index.rsc');
     try {
       initializeI18nConfig({
         defaultLocale: 'en-us',
-        locales: ['en-US', 'en-GB'],
+        locales: ['en-us', 'en-gb'],
         customMapping: {
           'en-us': { code: 'en-US' },
           'en-gb': { code: 'en-GB' },
@@ -23,12 +23,12 @@ describe('gt-react react-server surface', () => {
           'Test condition store is not initialized'
         );
       setConditionStore({
-        getLocale: () => 'en-GB',
+        getLocale: () => 'en-gb',
         getEnableI18n: () => true,
       });
       expect(useLocale()).toBe('en-gb');
       expect(useLocales()).toEqual(['en-us', 'en-gb']);
-      expect(getI18nConfig().getLocales()).toEqual(['en-us', 'en-US', 'en-GB']);
+      expect(getI18nConfig().getLocales()).toEqual(['en-us', 'en-gb']);
     } finally {
       const registry = Reflect.get(globalThis, '__generaltranslation');
       if (registry) Reflect.deleteProperty(registry, 'i18n');

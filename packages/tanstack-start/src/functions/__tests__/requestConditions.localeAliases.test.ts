@@ -8,8 +8,8 @@ vi.mock('@tanstack/react-start/server', () => ({
 }));
 
 const config = {
-  defaultLocale: 'en-US',
-  locales: ['en-US', 'en-GB'],
+  defaultLocale: 'en-us',
+  locales: ['en-us', 'en-gb'],
   customMapping: {
     'en-us': { code: 'en-US' },
     'en-gb': { code: 'en-GB' },

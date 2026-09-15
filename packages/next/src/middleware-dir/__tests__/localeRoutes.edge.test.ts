@@ -342,7 +342,7 @@ describe('localeRoutes', () => {
       expect(fallback.headers.get(defaultLocaleHeaderName)).toBe('fr');
       expectTarget(fallback, 'x-middleware-rewrite', '/fr/careers');
 
-      const routingLocale = customAlias ? 'en-GB' : 'en-gb';
+      const routingLocale = 'en-gb';
       const allowed = middleware(request(`/${routingLocale}/allowed`));
       expect(allowed.headers.get('location')).toBeNull();
       expect(allowed.headers.get(defaultLocaleHeaderName)).toBe('en-gb');

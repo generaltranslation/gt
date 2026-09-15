@@ -19,10 +19,10 @@ describe('useLocales', () => {
   beforeEach(resetConfig);
   afterEach(resetConfig);
 
-  it('returns unique aliases in configured order without changing the internal list', () => {
+  it('returns configured spellings without rewriting the internal list', () => {
     initializeI18nConfig({
       defaultLocale: 'en-us',
-      locales: ['en-US', 'en-GB', 'fr-FR'],
+      locales: ['en-us', 'en-gb', 'fr-fr'],
       customMapping: {
         'en-us': { code: 'en-US' },
         'en-gb': { code: 'en-GB' },
@@ -32,17 +32,17 @@ describe('useLocales', () => {
     const internalLocales = getI18nConfig().getLocales();
     const originalLocales = [...internalLocales];
     const conditionStore = {
-      getLocale: () => 'en-GB',
+      getLocale: () => 'en-gb',
       getEnableI18n: () => true,
     };
     setReadonlyConditionStore(conditionStore);
 
     expect(useLocale()).toBe('en-gb');
     expect(useLocales()).toEqual(['en-us', 'en-gb', 'fr-fr']);
-    expect(conditionStore.getLocale()).toBe('en-GB');
+    expect(conditionStore.getLocale()).toBe('en-gb');
     expect(getI18nConfig().getLocales()).toBe(internalLocales);
     expect(internalLocales).toEqual(originalLocales);
-    expect(getI18nConfig().determineLocale('en-gb')).toBe('en-GB');
+    expect(getI18nConfig().determineLocale('en-gb')).toBe('en-gb');
   });
 
   it('preserves locale spelling when there is no custom mapping', () => {

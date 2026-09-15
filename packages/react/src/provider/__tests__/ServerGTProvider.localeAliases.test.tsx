@@ -28,8 +28,8 @@ describe('ServerGTProvider locale aliases', () => {
     ['en-US', 'en-us'],
   ])('renders %s as %s before hydration', (locale, expected) => {
     initializeI18nConfig({
-      defaultLocale: 'en-US',
-      locales: ['en-US', 'en-GB'],
+      defaultLocale: 'en-us',
+      locales: ['en-us', 'en-gb'],
       customMapping: {
         'en-us': { code: 'en-US' },
         'en-gb': { code: 'en-GB' },

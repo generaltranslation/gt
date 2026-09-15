@@ -18,10 +18,10 @@ vi.mock('../cookies', () => ({
 }));
 
 function configureAliases() {
-  // Match the canonical supported list emitted by services-enabled withGTConfig.
+  // Match the configured spelling retained by services-enabled withGTConfig.
   return initializeI18nConfig({
-    defaultLocale: 'en-US',
-    locales: ['en-US', 'en-GB'],
+    defaultLocale: 'en-us',
+    locales: ['en-us', 'en-gb'],
     customMapping: {
       'en-us': { code: 'en-US' },
       'en-gb': { code: 'en-GB' },

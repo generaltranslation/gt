@@ -71,7 +71,7 @@ describe('routeCreateTranslationLoader', () => {
   });
 
   it.each(['en-GB', 'en-gb'])(
-    'passes the configured alias to a custom loader for %s',
+    'passes resolved cache identity unchanged to a custom loader: %s',
     async (locale) => {
       initializeI18nConfig({
         defaultLocale: 'en-US',
@@ -86,7 +86,7 @@ describe('routeCreateTranslationLoader', () => {
       });
 
       expect(await loader(locale)).toEqual({ hash: 'British translation' });
-      expect(custom).toHaveBeenCalledExactlyOnceWith('en-gb');
+      expect(custom).toHaveBeenCalledExactlyOnceWith(locale);
     }
   );
 

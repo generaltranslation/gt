@@ -35,7 +35,7 @@ describe('parseLocale(request)', () => {
       'accept-language': 'es,en;q=0.8',
     });
 
-    expect(parseLocale(request)).toBe('fr');
+    expect(parseLocale(request)).toBe('brand-french');
   });
 
   it('uses the configured locale cookie name', () => {
@@ -66,7 +66,7 @@ describe('parseLocale(request)', () => {
       cookie: 'generaltranslation.locale=brand%2Dfrench',
     });
 
-    expect(parseLocale(request)).toBe('fr');
+    expect(parseLocale(request)).toBe('brand-french');
   });
 
   it('falls back to the configured default locale', () => {
