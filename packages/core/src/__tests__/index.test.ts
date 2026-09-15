@@ -642,6 +642,40 @@ describe('LocaleConfig', () => {
 });
 
 describe('GT LocaleConfig delegation', () => {
+  it.each(['sourceLocale', 'targetLocale', 'locales'] as const)(
+    'validates a partial %s update with the retained custom mapping',
+    (field) => {
+      const gt = new GT({ customMapping: brandFrenchMapping });
+      const value = field === 'locales' ? ['brand-french'] : 'brand-french';
+
+      expect(() => gt.setConfig({ [field]: value })).not.toThrow();
+      expect(gt[field]).toEqual(value);
+      expect(gt.resolveCanonicalLocale('brand-french')).toBe('fr-FR');
+      expect(
+        gt.localeConfig.formatCurrency(numberValue, 'EUR', 'brand-french')
+      ).toBe(formatCurrencyWithIntl('fr-FR'));
+    }
+  );
+
+  it('uses a replacement mapping when validating and resolving a locale update', () => {
+    const gt = new GT({ customMapping: brandFrenchMapping });
+    gt.setConfig({
+      targetLocale: 'brand-german',
+      customMapping: { 'brand-german': { code: 'de-DE' } },
+    });
+
+    expect(gt.resolveCanonicalLocale('brand-german')).toBe('de-DE');
+    expect(gt.isValidLocale('brand-french')).toBe(false);
+  });
+
+  it('does not validate against the retained mapping when it is explicitly cleared', () => {
+    const gt = new GT({ customMapping: brandFrenchMapping });
+
+    expect(() =>
+      gt.setConfig({ targetLocale: 'brand-french', customMapping: {} })
+    ).toThrow();
+  });
+
   it('formats with a custom target locale alias through LocaleConfig', () => {
     const gt = new GT({
       sourceLocale: 'en-US',

@@ -22,7 +22,11 @@ import {
   type UploadSourceFilesData,
   type UploadTranslationsData,
 } from 'generaltranslation/api';
-import { resolveAliasLocale, resolveCanonicalLocale } from 'generaltranslation';
+import {
+  resolveAliasLocale,
+  resolveCanonicalLocale,
+  standardizeLocale,
+} from 'generaltranslation';
 import {
   decode as decodeBase64,
   defaultBaseUrl,
@@ -32,6 +36,10 @@ import type { CustomMapping, DownloadedFile } from 'generaltranslation/types';
 
 let client = createApiClient({ baseUrl: defaultBaseUrl });
 let customMapping: CustomMapping | undefined;
+
+function resolveServiceLocale(locale: string): string {
+  return standardizeLocale(resolveCanonicalLocale(locale, customMapping));
+}
 
 export function configureApiClient(
   config: Omit<ApiClientConfig, 'baseUrl'> & {
@@ -54,10 +62,7 @@ export const api = {
     }>,
     options: { sourceLocale: string }
   ) {
-    const sourceLocale = resolveCanonicalLocale(
-      options.sourceLocale,
-      customMapping
-    );
+    const sourceLocale = resolveServiceLocale(options.sourceLocale);
     const result = await processBatches(files, async (batch) => {
       const response = unwrapApiResult(
         await uploadSourceFiles({
@@ -66,7 +71,7 @@ export const api = {
               source: {
                 ...source,
                 content: encodeFileContent(source.content, source.fileFormat),
-                locale: resolveCanonicalLocale(source.locale, customMapping),
+                locale: resolveServiceLocale(source.locale),
               },
             })),
             sourceLocale,
@@ -91,6 +96,7 @@ export const api = {
               source: {
                 ...source,
                 content: encodeFileContent(source.content, source.fileFormat),
+                locale: resolveServiceLocale(source.locale),
               },
               translations: translations.map((translation) => ({
                 ...translation,
@@ -98,16 +104,10 @@ export const api = {
                   translation.content,
                   translation.fileFormat
                 ),
-                locale: resolveCanonicalLocale(
-                  translation.locale,
-                  customMapping
-                ),
+                locale: resolveServiceLocale(translation.locale),
               })),
             })),
-            sourceLocale: resolveCanonicalLocale(
-              options.sourceLocale,
-              customMapping
-            ),
+            sourceLocale: resolveServiceLocale(options.sourceLocale),
           },
           client,
         })
@@ -126,11 +126,9 @@ export const api = {
     }
   ) {
     const sourceLocale = options.sourceLocale
-      ? resolveCanonicalLocale(options.sourceLocale, customMapping)
+      ? resolveServiceLocale(options.sourceLocale)
       : undefined;
-    const targetLocales = options.targetLocales.map((locale) =>
-      resolveCanonicalLocale(locale, customMapping)
-    );
+    const targetLocales = options.targetLocales.map(resolveServiceLocale);
     const result = await processBatches(files, async (batch) => {
       const response = unwrapApiResult(
         await enqueueFileTranslations({
@@ -194,9 +192,7 @@ export const api = {
         path: { fileId },
         query: {
           ...queryParams,
-          locale: locale
-            ? resolveCanonicalLocale(locale, customMapping)
-            : undefined,
+          locale: locale ? resolveServiceLocale(locale) : undefined,
         },
         client,
       })
@@ -214,9 +210,7 @@ export const api = {
         await downloadFiles({
           body: batch.map((file) => ({
             ...file,
-            locale: file.locale
-              ? resolveCanonicalLocale(file.locale, customMapping)
-              : undefined,
+            locale: file.locale ? resolveServiceLocale(file.locale) : undefined,
           })),
           client,
         })
@@ -246,7 +240,14 @@ export const api = {
     options: Omit<GenerateProjectContextData['body'], 'files'> = {}
   ) {
     return unwrapApiResult(
-      await generateProjectContext({ body: { files, ...options }, client })
+      await generateProjectContext({
+        body: {
+          ...options,
+          files,
+          locales: options.locales?.map(resolveServiceLocale),
+        },
+        client,
+      })
     );
   },
 
@@ -264,7 +265,7 @@ export const api = {
           ...body,
           translatedFiles: body.translatedFiles?.map((file) => ({
             ...file,
-            locale: resolveCanonicalLocale(file.locale, customMapping),
+            locale: resolveServiceLocale(file.locale),
           })),
         },
         client,

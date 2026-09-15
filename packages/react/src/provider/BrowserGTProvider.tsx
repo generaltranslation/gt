@@ -13,7 +13,15 @@ import { createOrUpdateBrowserConditionStore } from '../condition-store/createBr
 export function BrowserGTProvider(props: SharedGTProviderProps) {
   const conditionStore = useMemo(() => {
     return createOrUpdateBrowserConditionStore(props);
-  }, [props.locale, props.region, props.enableI18n, props._reload]);
+  }, [
+    props.locale,
+    props.region,
+    props.enableI18n,
+    props._reload,
+    // A rejected App Router locale switch can return the same locale as before.
+    // Reconcile that new server result, but leave client-only rerenders alone.
+    props._serverConditions,
+  ]);
 
   const i18nStoreRef = useRef<I18nStore | null>(null);
   if (i18nStoreRef.current == null) {

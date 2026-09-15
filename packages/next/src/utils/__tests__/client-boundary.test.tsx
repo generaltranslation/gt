@@ -98,7 +98,7 @@ describe('Client_GTProvider', () => {
             root.render(
               <Client_GTProvider
                 dictionaries={{}}
-                locale='en-us'
+                conditions={{ locale: 'en-us' }}
                 translations={{}}
               >
                 content
@@ -118,7 +118,7 @@ describe('Client_GTProvider', () => {
     }
   );
 
-  it('still reloads when the path and provider have different supported regional locales', async () => {
+  it('refreshes when the path and provider have different supported regional locales', async () => {
     process.env._GENERALTRANSLATION_PATH_REGEX = '.*';
     mockPathname.mockReturnValue('/pricing');
     const { I18nConfig } = await import('gt-i18n/internal');
@@ -135,13 +135,17 @@ describe('Client_GTProvider', () => {
     try {
       await act(async () => {
         root.render(
-          <Client_GTProvider dictionaries={{}} locale='en-GB' translations={{}}>
+          <Client_GTProvider
+            dictionaries={{}}
+            conditions={{ locale: 'en-GB' }}
+            translations={{}}
+          >
             content
           </Client_GTProvider>
         );
       });
-      expect(mockReloadBrowserPage).toHaveBeenCalledOnce();
-      expect(mockRefreshServerComponents).not.toHaveBeenCalled();
+      expect(mockReloadBrowserPage).not.toHaveBeenCalled();
+      expect(mockRefreshServerComponents).toHaveBeenCalledOnce();
     } finally {
       await act(async () => root.unmount());
     }
@@ -154,7 +158,11 @@ describe('Client_GTProvider', () => {
 
     await act(async () => {
       root.render(
-        <Client_GTProvider dictionaries={{}} locale='en-GB' translations={{}}>
+        <Client_GTProvider
+          dictionaries={{}}
+          conditions={{ locale: 'en-GB' }}
+          translations={{}}
+        >
           content
         </Client_GTProvider>
       );
@@ -187,7 +195,11 @@ describe('Client_GTProvider', () => {
 
     await act(async () => {
       root.render(
-        <Client_GTProvider dictionaries={{}} locale='pt-BR' translations={{}}>
+        <Client_GTProvider
+          dictionaries={{}}
+          conditions={{ locale: 'pt-BR' }}
+          translations={{}}
+        >
           content
         </Client_GTProvider>
       );
@@ -202,7 +214,7 @@ describe('Client_GTProvider', () => {
     await act(async () => root.unmount());
   });
 
-  it('reloads the browser when reselecting the default locale on an unprefixed path', async () => {
+  it('refreshes when reselecting the default locale on an unprefixed path', async () => {
     process.env._GENERALTRANSLATION_PATH_REGEX = '.*';
     mockPathname.mockReturnValue('/dashboard');
     vi.stubGlobal('location', {
@@ -225,7 +237,11 @@ describe('Client_GTProvider', () => {
 
     await act(async () => {
       root.render(
-        <Client_GTProvider dictionaries={{}} locale='en' translations={{}}>
+        <Client_GTProvider
+          dictionaries={{}}
+          conditions={{ locale: 'en' }}
+          translations={{}}
+        >
           content
         </Client_GTProvider>
       );
@@ -234,8 +250,8 @@ describe('Client_GTProvider', () => {
     const syncServerContent = mockGTProvider.mock.calls.at(-1)?.[0]._reload;
     syncServerContent({ enableI18n: true, locale: 'en', region: undefined });
 
-    expect(mockReloadBrowserPage).toHaveBeenCalledOnce();
-    expect(mockRefreshServerComponents).not.toHaveBeenCalled();
+    expect(mockReloadBrowserPage).not.toHaveBeenCalled();
+    expect(mockRefreshServerComponents).toHaveBeenCalledOnce();
 
     await act(async () => root.unmount());
   });
@@ -262,7 +278,11 @@ describe('Client_GTProvider', () => {
 
     await act(async () => {
       root.render(
-        <Client_GTProvider dictionaries={{}} locale='en' translations={{}}>
+        <Client_GTProvider
+          dictionaries={{}}
+          conditions={{ locale: 'en' }}
+          translations={{}}
+        >
           content
         </Client_GTProvider>
       );
@@ -277,7 +297,7 @@ describe('Client_GTProvider', () => {
     await act(async () => root.unmount());
   });
 
-  it('reloads the browser on excluded paths', async () => {
+  it('refreshes server content on excluded paths', async () => {
     process.env._GENERALTRANSLATION_PATH_REGEX =
       '^/(?!fr/favicon\\.ico(?:/|$)).*';
     mockPathname.mockReturnValue('/fr/favicon.ico');
@@ -299,7 +319,11 @@ describe('Client_GTProvider', () => {
 
     await act(async () => {
       root.render(
-        <Client_GTProvider dictionaries={{}} locale='fr' translations={{}}>
+        <Client_GTProvider
+          dictionaries={{}}
+          conditions={{ locale: 'fr' }}
+          translations={{}}
+        >
           content
         </Client_GTProvider>
       );
@@ -308,13 +332,13 @@ describe('Client_GTProvider', () => {
     const syncServerContent = mockGTProvider.mock.calls.at(-1)?.[0]._reload;
     syncServerContent({ enableI18n: true, locale: 'en', region: undefined });
 
-    expect(mockReloadBrowserPage).toHaveBeenCalledOnce();
-    expect(mockRefreshServerComponents).not.toHaveBeenCalled();
+    expect(mockReloadBrowserPage).not.toHaveBeenCalled();
+    expect(mockRefreshServerComponents).toHaveBeenCalledOnce();
 
     await act(async () => root.unmount());
   });
 
-  it('reloads the browser without locale routing', async () => {
+  it('refreshes server content without locale routing', async () => {
     document.cookie =
       'generaltranslation.locale-routing-enabled=;max-age=0;path=/';
     const { Client_GTProvider } = await import('../client-boundary');
@@ -323,7 +347,11 @@ describe('Client_GTProvider', () => {
 
     await act(async () => {
       root.render(
-        <Client_GTProvider dictionaries={{}} locale='fr' translations={{}}>
+        <Client_GTProvider
+          dictionaries={{}}
+          conditions={{ locale: 'fr' }}
+          translations={{}}
+        >
           content
         </Client_GTProvider>
       );
@@ -332,8 +360,8 @@ describe('Client_GTProvider', () => {
     const syncServerContent = mockGTProvider.mock.calls.at(-1)?.[0]._reload;
     syncServerContent({ enableI18n: true, locale: 'en', region: undefined });
 
-    expect(mockReloadBrowserPage).toHaveBeenCalledOnce();
-    expect(mockRefreshServerComponents).not.toHaveBeenCalled();
+    expect(mockReloadBrowserPage).not.toHaveBeenCalled();
+    expect(mockRefreshServerComponents).toHaveBeenCalledOnce();
 
     await act(async () => root.unmount());
   });

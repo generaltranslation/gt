@@ -1,6 +1,7 @@
 import {
   resolveAliasLocale,
   resolveCanonicalLocale,
+  standardizeLocale,
 } from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import {
@@ -47,6 +48,10 @@ import { unwrapApiResult } from 'generaltranslation/internal';
 let client: ReturnType<typeof createApiClient> | undefined;
 let configuredClientConfig: ApiClientConfig | undefined;
 let customMapping: CustomMapping | undefined;
+
+function resolveServiceLocale(locale: string): string {
+  return standardizeLocale(resolveCanonicalLocale(locale, customMapping));
+}
 
 function getConfiguredClient(): {
   client: ReturnType<typeof createApiClient>;
@@ -95,7 +100,7 @@ export const api = {
           ...body,
           translatedFiles: body.translatedFiles?.map((file) => ({
             ...file,
-            locale: resolveCanonicalLocale(file.locale, customMapping),
+            locale: resolveServiceLocale(file.locale),
           })),
         },
         client: getClient(),
@@ -152,9 +157,7 @@ export const api = {
         await downloadFiles({
           body: batch.map((file) => ({
             ...file,
-            locale: file.locale
-              ? resolveCanonicalLocale(file.locale, customMapping)
-              : undefined,
+            locale: file.locale ? resolveServiceLocale(file.locale) : undefined,
           })),
           client: getClient(),
         })
@@ -191,7 +194,7 @@ export const api = {
             projectId: body.projectId,
             diffs: diffs.map((diff) => ({
               ...diff,
-              locale: resolveCanonicalLocale(diff.locale, customMapping),
+              locale: resolveServiceLocale(diff.locale),
             })),
           },
           client: getClient(),
@@ -213,10 +216,7 @@ export const api = {
         path: { orgId },
         body: {
           ...body,
-          defaultLocale: resolveCanonicalLocale(
-            body.defaultLocale,
-            customMapping
-          ),
+          defaultLocale: resolveServiceLocale(body.defaultLocale),
         },
         client: getClient(),
       })
@@ -290,9 +290,7 @@ export const api = {
             fileId,
             versionId,
           })),
-          locales: options.locales?.map((locale) =>
-            resolveCanonicalLocale(locale, customMapping)
-          ),
+          locales: options.locales?.map(resolveServiceLocale),
           force: options.force,
         },
         client: getClient(),
@@ -326,9 +324,7 @@ export const api = {
       force?: boolean;
     }
   ) {
-    const targetLocales = options.targetLocales.map((locale) =>
-      resolveCanonicalLocale(locale, customMapping)
-    );
+    const targetLocales = options.targetLocales.map(resolveServiceLocale);
     const result = await processBatches(files, async (batch) => {
       const response = unwrapApiResult(
         await enqueueFileTranslations({
@@ -344,7 +340,7 @@ export const api = {
             ),
             targetLocales,
             sourceLocale: options.sourceLocale
-              ? resolveCanonicalLocale(options.sourceLocale, customMapping)
+              ? resolveServiceLocale(options.sourceLocale)
               : undefined,
             // The CLI intentionally accepts custom model-provider strings beyond
             // the OpenAPI ANTHROPIC|OPENAI|XAI|GOOGLE enum; preserve wire behavior.
@@ -372,10 +368,7 @@ export const api = {
     }>,
     options: { sourceLocale: string }
   ) {
-    const sourceLocale = resolveCanonicalLocale(
-      options.sourceLocale,
-      customMapping
-    );
+    const sourceLocale = resolveServiceLocale(options.sourceLocale);
     const result = await processBatches(files, async (batch) => {
       const response = unwrapApiResult(
         await uploadSourceFiles({
@@ -384,7 +377,7 @@ export const api = {
               source: {
                 ...source,
                 content: encodeFileContent(source.content, source.fileFormat),
-                locale: resolveCanonicalLocale(source.locale, customMapping),
+                locale: resolveServiceLocale(source.locale),
               },
             })),
             sourceLocale,
@@ -410,23 +403,18 @@ export const api = {
               source: {
                 ...source,
                 content: encodeFileContent(source.content, source.fileFormat),
+                locale: resolveServiceLocale(source.locale),
               },
               translations: translations.map((translation) => ({
                 ...translation,
-                locale: resolveCanonicalLocale(
-                  translation.locale,
-                  customMapping
-                ),
+                locale: resolveServiceLocale(translation.locale),
                 content: encodeFileContent(
                   translation.content,
                   translation.fileFormat
                 ),
               })),
             })),
-            sourceLocale: resolveCanonicalLocale(
-              options.sourceLocale,
-              customMapping
-            ),
+            sourceLocale: resolveServiceLocale(options.sourceLocale),
           },
           client: getClient(),
         })

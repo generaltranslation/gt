@@ -3,8 +3,10 @@ import {
   downloadFile,
   downloadFiles,
   enqueueFileTranslations,
+  generateProjectContext,
   getFileInfo,
   getTranslationStatus,
+  uploadSourceFiles,
   uploadTranslations,
 } from 'generaltranslation/api';
 
@@ -15,8 +17,10 @@ vi.mock('generaltranslation/api', async (importOriginal) => ({
   downloadFile: vi.fn(),
   downloadFiles: vi.fn(),
   enqueueFileTranslations: vi.fn(),
+  generateProjectContext: vi.fn(),
   getFileInfo: vi.fn(),
   getTranslationStatus: vi.fn(),
+  uploadSourceFiles: vi.fn(),
   uploadTranslations: vi.fn(),
 }));
 
@@ -74,8 +78,8 @@ describe('Sanity API adapter', () => {
     );
 
     await api.enqueueFiles([{ fileId: 'file-id', versionId: 'version-id' }], {
-      sourceLocale: 'source',
-      targetLocales: ['target'],
+      sourceLocale: 'en-us',
+      targetLocales: ['es-es'],
     });
 
     expect(enqueueFileTranslations).toHaveBeenCalledWith(
@@ -107,7 +111,7 @@ describe('Sanity API adapter', () => {
               content: 'translation',
               fileName: 'document.html',
               fileFormat: 'HTML',
-              locale: 'target',
+              locale: 'es-es',
             },
           ],
         },
@@ -121,10 +125,57 @@ describe('Sanity API adapter', () => {
           sourceLocale: 'en-US',
           data: [
             expect.objectContaining({
+              source: expect.objectContaining({ locale: 'en-US' }),
               translations: [expect.objectContaining({ locale: 'es-ES' })],
             }),
           ],
         }),
+      })
+    );
+  });
+
+  it('canonicalizes source upload locales without mutating input', async () => {
+    vi.mocked(uploadSourceFiles).mockResolvedValue(
+      result({ uploadedFiles: [], count: 0, message: 'Uploaded files' })
+    );
+    const files = [
+      {
+        source: {
+          content: 'source',
+          fileName: 'document.html',
+          fileFormat: 'HTML' as const,
+          locale: 'en-us',
+        },
+      },
+    ];
+
+    await api.uploadSourceFiles(files, { sourceLocale: 'en-us' });
+
+    expect(uploadSourceFiles).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: expect.objectContaining({
+          sourceLocale: 'en-US',
+          data: [
+            expect.objectContaining({
+              source: expect.objectContaining({ locale: 'en-US' }),
+            }),
+          ],
+        }),
+      })
+    );
+    expect(files[0].source.locale).toBe('en-us');
+  });
+
+  it('canonicalizes project setup locales', async () => {
+    vi.mocked(generateProjectContext).mockResolvedValue(
+      result({ status: 'completed' })
+    );
+
+    await api.setupProject([], { locales: ['source', 'es-es'] });
+
+    expect(generateProjectContext).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: expect.objectContaining({ locales: ['en-US', 'es-ES'] }),
       })
     );
   });
@@ -166,7 +217,7 @@ describe('Sanity API adapter', () => {
     );
 
     const response = await api.downloadFileBatch([
-      { fileId: 'file-id', locale: 'target' },
+      { fileId: 'file-id', locale: 'es-es' },
     ]);
 
     expect(downloadFiles).toHaveBeenCalledWith(

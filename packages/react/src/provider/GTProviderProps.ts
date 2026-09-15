@@ -13,4 +13,10 @@ export type SharedGTProviderProps = Omit<
 > &
   Omit<BrowserConditionStoreParams, 'locale'> & {
     locale: string;
+    /** Internal App Router snapshot; a new object represents a new server result. */
+    _serverConditions?: {
+      locale: string;
+      region?: string;
+      enableI18n?: boolean;
+    };
   };
