@@ -138,7 +138,13 @@ export type DeleteCliWizardSessionResponse = {
 
 export type WorkspacePluginInfoData = {
   body?: {
+    /**
+     * File ID assigned by Google Drive, found in the Google Docs or Slides URL after /d/. This is not a GT database file ID. May identify a source file or a GT-managed translated copy. Supply hostApp with fileId for file-specific context; omit both to list connected projects.
+     */
     fileId?: string;
+    /**
+     * Google editor for the file: DOCS for Google Docs or SLIDES for Google Slides. Supply fileId with hostApp for file-specific context.
+     */
     hostApp?: 'DOCS' | 'SLIDES';
   };
   path?: never;
@@ -281,11 +287,29 @@ export type WorkspacePluginInfoResponse =
 
 export type WorkspacePluginTranslateData = {
   body?: {
+    /**
+     * GT project ID returned by get_google_drive_context. The project must have a Google Drive integration connected in the GT dashboard.
+     */
     projectId: string;
+    /**
+     * File ID assigned by Google Drive, found in the Google Docs or Slides URL after /d/. This is not a GT database file ID. May identify a source file or a GT-managed translated copy.
+     */
     fileId: string;
+    /**
+     * Google editor for the file: DOCS for Google Docs or SLIDES for Google Slides.
+     */
     hostApp: 'DOCS' | 'SLIDES';
+    /**
+     * One to 100 supported target locale codes, such as fr or es-MX. Must respect the project locale whitelist. For a GT-managed translated copy, only that copy’s target locale is used.
+     */
     targetLocales: Array<string>;
+    /**
+     * Optional source locale code, such as en. Defaults to the file’s stored source locale, then the project default. Ignored for a GT-managed translated copy, whose original source locale is used.
+     */
     sourceLocale?: string;
+    /**
+     * Whether to force retranslation of existing translations. Defaults to false. Retranslation may incur additional translation charges.
+     */
     force?: boolean;
   };
   path?: never;
@@ -382,8 +406,17 @@ export type WorkspacePluginTranslateResponse =
 
 export type WorkspacePluginStatusData = {
   body?: {
+    /**
+     * GT project ID returned by get_google_drive_context. The project must have a Google Drive integration connected in the GT dashboard.
+     */
     projectId: string;
+    /**
+     * File ID assigned by Google Drive, found in the Google Docs or Slides URL after /d/. This is not a GT database file ID. May identify a source file or a GT-managed translated copy.
+     */
     fileId: string;
+    /**
+     * Google editor for the file: DOCS for Google Docs or SLIDES for Google Slides.
+     */
     hostApp: 'DOCS' | 'SLIDES';
   };
   path?: never;
@@ -634,7 +667,20 @@ export type FigmaPluginSyncData = {
           width: number;
           height: number;
         };
+        render?: {
+          x: number;
+          y: number;
+          width: number;
+          height: number;
+        };
+        room?: {
+          left: number;
+          right: number;
+          up: number;
+          down: number;
+        };
         autoResize?: 'NONE' | 'HEIGHT' | 'WIDTH_AND_HEIGHT' | 'TRUNCATE';
+        textAlignHorizontal?: 'LEFT' | 'CENTER' | 'RIGHT' | 'JUSTIFIED';
         baseFontPt?: number;
         equivClass?: string;
         sizeRank?: number;

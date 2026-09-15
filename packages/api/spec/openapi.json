@@ -405,11 +405,13 @@
                 "properties": {
                   "fileId": {
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "description": "File ID assigned by Google Drive, found in the Google Docs or Slides URL after /d/. This is not a GT database file ID. May identify a source file or a GT-managed translated copy. Supply hostApp with fileId for file-specific context; omit both to list connected projects."
                   },
                   "hostApp": {
                     "type": "string",
-                    "enum": ["DOCS", "SLIDES"]
+                    "enum": ["DOCS", "SLIDES"],
+                    "description": "Google editor for the file: DOCS for Google Docs or SLIDES for Google Slides. Supply fileId with hostApp for file-specific context."
                   }
                 }
               }
@@ -838,15 +840,18 @@
                 "properties": {
                   "projectId": {
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "description": "GT project ID returned by get_google_drive_context. The project must have a Google Drive integration connected in the GT dashboard."
                   },
                   "fileId": {
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "description": "File ID assigned by Google Drive, found in the Google Docs or Slides URL after /d/. This is not a GT database file ID. May identify a source file or a GT-managed translated copy."
                   },
                   "hostApp": {
                     "type": "string",
-                    "enum": ["DOCS", "SLIDES"]
+                    "enum": ["DOCS", "SLIDES"],
+                    "description": "Google editor for the file: DOCS for Google Docs or SLIDES for Google Slides."
                   },
                   "targetLocales": {
                     "type": "array",
@@ -855,14 +860,17 @@
                       "minLength": 1
                     },
                     "minItems": 1,
-                    "maxItems": 100
+                    "maxItems": 100,
+                    "description": "One to 100 supported target locale codes, such as fr or es-MX. Must respect the project locale whitelist. For a GT-managed translated copy, only that copy’s target locale is used."
                   },
                   "sourceLocale": {
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "description": "Optional source locale code, such as en. Defaults to the file’s stored source locale, then the project default. Ignored for a GT-managed translated copy, whose original source locale is used."
                   },
                   "force": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "Whether to force retranslation of existing translations. Defaults to false. Retranslation may incur additional translation charges."
                   }
                 },
                 "required": ["projectId", "fileId", "hostApp", "targetLocales"]
@@ -1139,15 +1147,18 @@
                 "properties": {
                   "projectId": {
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "description": "GT project ID returned by get_google_drive_context. The project must have a Google Drive integration connected in the GT dashboard."
                   },
                   "fileId": {
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "description": "File ID assigned by Google Drive, found in the Google Docs or Slides URL after /d/. This is not a GT database file ID. May identify a source file or a GT-managed translated copy."
                   },
                   "hostApp": {
                     "type": "string",
-                    "enum": ["DOCS", "SLIDES"]
+                    "enum": ["DOCS", "SLIDES"],
+                    "description": "Google editor for the file: DOCS for Google Docs or SLIDES for Google Slides."
                   }
                 },
                 "required": ["projectId", "fileId", "hostApp"]
@@ -1961,7 +1972,50 @@
                                   "type": "number"
                                 }
                               },
-                              "required": ["x", "y", "width", "height"]
+                              "required": ["x", "y", "width", "height"],
+                              "additionalProperties": false
+                            },
+                            "render": {
+                              "type": "object",
+                              "properties": {
+                                "x": {
+                                  "type": "number"
+                                },
+                                "y": {
+                                  "type": "number"
+                                },
+                                "width": {
+                                  "type": "number"
+                                },
+                                "height": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": ["x", "y", "width", "height"],
+                              "additionalProperties": false
+                            },
+                            "room": {
+                              "type": "object",
+                              "properties": {
+                                "left": {
+                                  "type": "number",
+                                  "minimum": 0
+                                },
+                                "right": {
+                                  "type": "number",
+                                  "minimum": 0
+                                },
+                                "up": {
+                                  "type": "number",
+                                  "minimum": 0
+                                },
+                                "down": {
+                                  "type": "number",
+                                  "minimum": 0
+                                }
+                              },
+                              "required": ["left", "right", "up", "down"],
+                              "additionalProperties": false
                             },
                             "autoResize": {
                               "type": "string",
@@ -1971,6 +2025,10 @@
                                 "WIDTH_AND_HEIGHT",
                                 "TRUNCATE"
                               ]
+                            },
+                            "textAlignHorizontal": {
+                              "type": "string",
+                              "enum": ["LEFT", "CENTER", "RIGHT", "JUSTIFIED"]
                             },
                             "baseFontPt": {
                               "type": "number"
