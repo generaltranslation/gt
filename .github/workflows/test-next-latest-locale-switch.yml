@@ -1,6 +1,11 @@
 name: Latest Next.js - Locale Switching
 
 on:
+  pull_request:
+    paths:
+      - '.github/workflows/test-next-latest-locale-switch.yml'
+      - 'tests/apps/next-latest-locale-switch-no-routing/**'
+      - 'tests/apps/next-latest-locale-switch-routing/**'
   schedule:
     # Run daily at 07:00 UTC, after the general test-app browser checks.
     - cron: '0 7 * * *'
@@ -53,20 +58,23 @@ jobs:
       - name: Build local GT packages
         run: pnpm exec turbo build --filter='@generaltranslation/format' --filter='@generaltranslation/compiler' --filter=generaltranslation --filter=gt-i18n --filter='@generaltranslation/react-core' --filter=gt-react --filter=gt-next
 
-      - name: Install local gt-next with next@latest
+      - name: Install next@latest for local GT workspace apps
         id: versions
         run: |
-          mkdir -p .turbo/next-latest-package
-          pnpm --filter gt-next pack --pack-destination .turbo/next-latest-package
-          GT_NEXT_TARBALL="$(find "$(pwd)/.turbo/next-latest-package" -name '*.tgz' -print -quit)"
           LATEST_NEXT_VERSION="$(pnpm view next@latest version)"
-          pnpm --filter gt-test-next-latest-locale-switch-no-routing add "${GT_NEXT_TARBALL}" "next@${LATEST_NEXT_VERSION}" --save-exact --lockfile=false
-          pnpm --filter gt-test-next-latest-locale-switch-routing add "${GT_NEXT_TARBALL}" "next@${LATEST_NEXT_VERSION}" --save-exact --lockfile=false
+          # Keep the workspace links so cross-package changes are tested together.
+          # Packing only gt-next would resolve its dependencies from the registry.
+          pnpm --filter gt-test-next-latest-locale-switch-no-routing add "next@${LATEST_NEXT_VERSION}" --save-exact --lockfile=false
+          pnpm --filter gt-test-next-latest-locale-switch-routing add "next@${LATEST_NEXT_VERSION}" --save-exact --lockfile=false
           NO_ROUTING_NEXT_VERSION="$(pnpm --filter gt-test-next-latest-locale-switch-no-routing exec next --version)"
           ROUTING_NEXT_VERSION="$(pnpm --filter gt-test-next-latest-locale-switch-routing exec next --version)"
+          NO_ROUTING_GT_NEXT_PATH="$(pnpm --filter gt-test-next-latest-locale-switch-no-routing exec node -p 'require.resolve("gt-next")')"
+          ROUTING_GT_NEXT_PATH="$(pnpm --filter gt-test-next-latest-locale-switch-routing exec node -p 'require.resolve("gt-next")')"
           GT_NEXT_VERSION="$(pnpm --filter gt-next exec node -p "require('./package.json').version")"
           test "${NO_ROUTING_NEXT_VERSION}" = "Next.js v${LATEST_NEXT_VERSION}"
           test "${ROUTING_NEXT_VERSION}" = "Next.js v${LATEST_NEXT_VERSION}"
+          test "${NO_ROUTING_GT_NEXT_PATH#$(pwd)/packages/next/}" != "${NO_ROUTING_GT_NEXT_PATH}"
+          test "${ROUTING_GT_NEXT_PATH#$(pwd)/packages/next/}" != "${ROUTING_GT_NEXT_PATH}"
           echo "next-version=${NO_ROUTING_NEXT_VERSION}" >> "$GITHUB_OUTPUT"
           echo "gt-next-version=${GT_NEXT_VERSION}" >> "$GITHUB_OUTPUT"
           echo "### Compatibility versions" >> "$GITHUB_STEP_SUMMARY"

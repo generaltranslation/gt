@@ -9,6 +9,9 @@ The production matrix covers:
 - `prefixDefaultLocale: false` and `prefixDefaultLocale: true`;
 - default to nondefault, nondefault to another nondefault, and nondefault to
   default locale switches;
+- lowercase configured aliases mapped to canonical BCP 47 locale codes;
+- a locale rejected by `localeRoutes` reconciling to the server locale without
+  a document reload or loss of client state;
 - root and nested routes;
 - agreement between the URL, server locale/content, client locale/content, and
   selector value.
