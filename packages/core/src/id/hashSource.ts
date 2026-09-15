@@ -29,6 +29,7 @@ export function hashString(string: string): string {
  * backward compatibility, but will be removed in the next major version.
  * @param {number} [maxChars] - The maxChars limit for the JSX children object.
  * @param {string} [dataFormat] - The data format of the sources.
+ * @param {string} [fileFormat] - The file format when the source is a whole document.
  * @param {function} [hashFunction] - Custom hash function.
  * @returns {string} - The unique hash of the children.
  */
@@ -40,6 +41,7 @@ export function hashSource(
     maxChars,
     requiresReview,
     dataFormat,
+    fileFormat,
   }: {
     source: JsxChildren | string;
   } & HashMetadata,
@@ -62,6 +64,7 @@ export function hashSource(
     // pre-requiresReview versions so existing projects keep their hashes
     ...(requiresReview === true && { requiresReview: true }),
     ...(dataFormat && { dataFormat }),
+    ...(fileFormat && { fileFormat }),
   };
   const stringifiedData = stringify(sanitizedData);
   return hashFunction(stringifiedData);
