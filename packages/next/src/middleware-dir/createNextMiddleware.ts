@@ -101,11 +101,19 @@ export function createNextMiddleware({
   const locales = Array.from(
     new Set([defaultLocale, ...(envParams?.locales || [])])
   );
-  const resolveConfiguredLocale = (locale: string) =>
-    gt.determineLocale(locale, locales) ?? locale;
+  // Route entries repeat locale keys. Resolve each key once per factory instead
+  // of rebuilding the full locale-resolution index for every route/locale pair.
+  const resolvedConfigLocales = new Map<string, string>();
+  const determineLocaleWithCache = (locale: string) => {
+    const cached = resolvedConfigLocales.get(locale);
+    if (cached !== undefined) return cached;
+    const resolved = gt.determineLocale(locale, locales) ?? locale;
+    resolvedConfigLocales.set(locale, resolved);
+    return resolved;
+  };
   const resolvePathConfigLocale =
     process.env._GENERALTRANSLATION_GT_SERVICES_ENABLED === 'true'
-      ? resolveConfiguredLocale
+      ? determineLocaleWithCache
       : (locale: string) => locale;
 
   // cookies and header names
@@ -161,7 +169,7 @@ export function createNextMiddleware({
       typeof localizedPath === 'string'
         ? Object.fromEntries(
             locales.map((locale) => [
-              resolveConfiguredLocale(locale),
+              determineLocaleWithCache(locale),
               localizedPath === '' ? '/' : localizedPath,
             ])
           )
@@ -207,7 +215,7 @@ export function createNextMiddleware({
   const localeRoutePathMaps = new Map(
     Object.entries(localeRoutes).map(([locale, paths]) => {
       // Match request resolution so equivalent spellings use the same map key.
-      const resolvedLocale = gt.determineLocale(locale, locales) ?? locale;
+      const resolvedLocale = determineLocaleWithCache(locale);
       return [
         resolvedLocale,
         createPathMatcher(paths.map((path) => [path, path])),
