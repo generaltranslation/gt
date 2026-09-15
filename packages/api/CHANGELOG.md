@@ -1,5 +1,17 @@
 # @generaltranslation/api
 
+## 0.3.0
+
+### Minor Changes
+
+- [#2215](https://github.com/generaltranslation/gt/pull/2215) [`5f5843b`](https://github.com/generaltranslation/gt/commit/5f5843b94066d9ee9c0703722105a189d2a4e3d5) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Consolidate base64, file-content, locale-mapping, and job-polling seams in `generaltranslation/internal`, remove the generated API package's workspace dependency surface, and reuse the core helpers in the CLI and Sanity integration. `encodeBase64`, `decodeBase64`, `encodeFileContent`, and `decodeFileContent` are removed from `@generaltranslation/api` (and therefore `generaltranslation/api`); import the `generaltranslation/internal` equivalents instead.
+
+### Patch Changes
+
+- [#2299](https://github.com/generaltranslation/gt/pull/2299) [`50098c6`](https://github.com/generaltranslation/gt/commit/50098c68e33b13585dde418e227cfca1cef3bf7e) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Accept whole markdown and MDX documents on the runtime translate endpoint via the new `fileFormat` entry metadata (`MD` or `MDX`).
+
+- [#2287](https://github.com/generaltranslation/gt/pull/2287) [`01658bd`](https://github.com/generaltranslation/gt/commit/01658bd018a337a9f2fb8f058195c7ea3d6f534e) Thanks [@internal-gt-public-api-sync](https://github.com/apps/internal-gt-public-api-sync)! - Sync the GT API OpenAPI contract and regenerate the SDK.
+
 ## 0.2.1
 
 ### Patch Changes
