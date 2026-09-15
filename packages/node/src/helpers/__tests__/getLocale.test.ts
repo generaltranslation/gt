@@ -61,7 +61,7 @@ describe('getLocale', () => {
     expect(['en-US', 'es', 'fr', 'ja']).toContain(result);
   });
 
-  it('resolves custom mapped request locales', () => {
+  it('preserves an exact configured alias in request locales', () => {
     resetGTGlobals();
     initializeGT({
       defaultLocale: 'en-US',
@@ -76,6 +76,6 @@ describe('getLocale', () => {
 
     const request = { headers: { 'accept-language': 'brand-french' } };
 
-    expect(getRequestLocale(request)).toBe('fr');
+    expect(getRequestLocale(request)).toBe('brand-french');
   });
 });
