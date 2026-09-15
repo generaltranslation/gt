@@ -27,6 +27,12 @@ export type BrowserConditionStoreParams = WritableConditionStoreParams & {
   _getRegion?: GetRegion;
   _getEnableI18n?: GetEnableI18n;
   _reload?: ReloadType;
+  /** App Router only: authoritative conditions supplied by this server render. */
+  _serverConditions?: {
+    locale: string;
+    region?: string;
+    enableI18n?: boolean;
+  };
 };
 
 /**
@@ -37,6 +43,8 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
   private customGetLocale?: GetLocale;
   private customGetRegion?: GetRegion;
   private customGetEnableI18n?: GetEnableI18n;
+  private serverConditions?: BrowserConditionStoreParams['_serverConditions'];
+  private pending: Partial<SerializedBrowserConditionStoreState> = {};
 
   constructor(config: BrowserConditionStoreParams) {
     const i18nConfig = getI18nConfig();
@@ -47,6 +55,7 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
     this.customGetLocale = config._getLocale;
     this.customGetRegion = config._getRegion;
     this.customGetEnableI18n = config._getEnableI18n;
+    this.serverConditions = config._serverConditions;
     setCookieValue({
       cookieName: i18nConfig.getLocaleCookieName(),
       value: i18nConfig.resolveSupportedLocale(config.locale),
@@ -61,10 +70,16 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
   }
 
   getLocale = (): string => {
+    if (this.serverConditions !== undefined)
+      return this.serverConditions.locale;
     return getBrowserLocale(this.customGetLocale);
   };
 
   setLocale = (locale: LocaleCandidates): void => {
+    if (this.serverConditions !== undefined) {
+      locale = getI18nConfig().resolveSupportedLocale(locale);
+      this.pending.locale = locale;
+    }
     this.updateLocale(locale);
     setCookieValue({
       cookieName: defaultResetLocaleCookieName,
@@ -74,6 +89,8 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
   };
 
   getRegion = (): string | undefined => {
+    if (this.serverConditions !== undefined)
+      return this.serverConditions.region;
     const cookieRegion = getCookieValue({
       cookieName: getI18nConfig().getRegionCookieName(),
     });
@@ -82,11 +99,14 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
   };
 
   setRegion = (region: string | undefined): void => {
+    if (this.serverConditions !== undefined) this.pending.region = region;
     this.updateRegion(region);
     this.reload();
   };
 
   getEnableI18n = (): boolean => {
+    // App Router does not resolve this preference on the server yet, so retain
+    // its existing client behavior rather than accepting the server's true.
     const cookieEnableI18n = getCookieValue({
       cookieName: getI18nConfig().getEnableI18nCookieName(),
     });
@@ -97,6 +117,8 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
   };
 
   setEnableI18n = (enableI18n: boolean): void => {
+    if (this.serverConditions !== undefined)
+      this.pending.enableI18n = enableI18n;
     this.updateEnableI18n(enableI18n);
     this.reload();
   };
@@ -143,7 +165,11 @@ export class BrowserConditionStore implements WritableConditionStoreInterface {
       region: this.getRegion(),
       enableI18n: this.getEnableI18n(),
     };
-    this.customReload(state);
+    this.customReload(
+      this.serverConditions !== undefined
+        ? { ...state, ...this.pending }
+        : state
+    );
   };
 }
 
