@@ -130,3 +130,24 @@ describe('hashSource id compatibility', () => {
     expect(withSecondId).toBe('8220228ac45bb5ee');
   });
 });
+
+describe('hashSource fileFormat', () => {
+  const source = '# Hello\n\nA short document.';
+
+  it('hashes a document differently from the identical plain string', () => {
+    const plain = hashSource({ source, dataFormat: 'STRING' });
+    const md = hashSource({ source, dataFormat: 'STRING', fileFormat: 'MD' });
+    const mdx = hashSource({ source, dataFormat: 'STRING', fileFormat: 'MDX' });
+    expect(new Set([plain, md, mdx]).size).toBe(3);
+  });
+
+  it('leaves existing hashes untouched when fileFormat is absent', () => {
+    expect(hashSource({ source: 'Hello world', dataFormat: 'ICU' })).toBe(
+      hashSource({
+        source: 'Hello world',
+        dataFormat: 'ICU',
+        fileFormat: undefined,
+      })
+    );
+  });
+});

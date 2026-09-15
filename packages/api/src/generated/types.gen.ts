@@ -71,6 +71,7 @@ export type RuntimeTranslationRequest = {
             after: string;
           }>;
         };
+        fileFormat?: RuntimeFileFormat;
       };
     };
   };
@@ -120,6 +121,8 @@ export type CliWizardSessionWaitingResponse = {
 export type DeleteCliWizardSessionResponse = {
   message: string;
 };
+
+export type RuntimeFileFormat = 'MD' | 'MDX';
 
 export type CreateProjectData = {
   body: {

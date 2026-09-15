@@ -8,12 +8,19 @@ import { Content, DataFormat } from '../../types';
 export type ActionType = 'fast'; // TODO: Add standard action type when available in the API
 
 /**
+ * RuntimeFileFormat marks a request whose source is a whole document rather
+ * than a string, so it is translated with that format's file pipeline.
+ */
+export type RuntimeFileFormat = 'MD' | 'MDX';
+
+/**
  * EntryMetadata is the metadata for a GTRequest.
  *
  * @param context - The context of the request.
  * @param id - The ID of the request.
  * @param maxChars - The maxChars of the request.
  * @param hash - The hash of the request.
+ * @param fileFormat - Set when the source is a markdown or MDX document. Requires the STRING data format.
  */
 export type EntryMetadata = {
   id?: string;
@@ -21,6 +28,7 @@ export type EntryMetadata = {
   context?: string;
   maxChars?: number;
   dataFormat?: DataFormat;
+  fileFormat?: RuntimeFileFormat;
   actionType?: ActionType;
 };
 

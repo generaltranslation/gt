@@ -25,6 +25,7 @@ export type {
 export type {
   ActionType as EntryActionType,
   EntryMetadata,
+  RuntimeFileFormat,
   TranslateManyEntry,
 } from './types-dir/api/entry';
 export type { HashMetadata } from './id/types';
