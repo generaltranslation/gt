@@ -1,6 +1,9 @@
 import { createNextMiddleware } from 'gt-next/middleware';
 
 export default createNextMiddleware({
+  localeRoutes: {
+    'en-gb': ['/allowed'],
+  },
   prefixDefaultLocale: process.env.GT_PREFIX_DEFAULT_LOCALE === 'true',
 });
 

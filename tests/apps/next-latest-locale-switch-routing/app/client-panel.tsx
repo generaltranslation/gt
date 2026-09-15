@@ -11,6 +11,10 @@ export function ClientPanel() {
       <h2>Client component</h2>
       <p>Client locale: {locale}</p>
       <p>Client content: {getContent(locale)}</p>
+      <label>
+        Client state
+        <input aria-label='Client state' />
+      </label>
       <LocaleSelector />
     </section>
   );

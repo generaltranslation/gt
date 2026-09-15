@@ -1,7 +1,8 @@
 export const contentByLocale = {
-  en: 'English content',
-  fr: 'Contenu français',
-  de: 'Deutscher Inhalt',
+  'en-us': 'American English content',
+  'en-gb': 'British English content',
+  'fr-fr': 'Contenu français',
+  'de-de': 'Deutscher Inhalt',
 } as const;
 
 export function getContent(locale: string) {

@@ -1,4 +1,10 @@
 {
-  "defaultLocale": "en",
-  "locales": ["fr", "de"]
+  "defaultLocale": "en-us",
+  "locales": ["en-gb", "fr-fr", "de-de"],
+  "customMapping": {
+    "en-us": { "code": "en-US" },
+    "en-gb": { "code": "en-GB" },
+    "fr-fr": { "code": "fr-FR" },
+    "de-de": { "code": "de-DE" }
+  }
 }
