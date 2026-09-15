@@ -13,8 +13,8 @@ import type {
 } from 'gt-i18n/types';
 import { useDefaultLocale } from './i18n-config';
 import { useShouldTranslate } from './utils';
-import { useTrackedDictionaryResolver } from './external-store/useTrackedDictionaryResolver';
-import { useTrackedDictionaryObjResolver } from './external-store/useTrackedDictionaryObjResolver';
+import { useDictionaryEntryResolver } from './external-store/useTrackedDictionaryResolver';
+import { useDictionaryObjectResolver } from './external-store/useTrackedDictionaryObjResolver';
 
 // ===== Hook ===== //
 
@@ -23,7 +23,7 @@ export function useTranslations(rootId?: string): UseTranslationsFunction {
   const defaultLocale = useDefaultLocale();
   const shouldTranslate = useShouldTranslate();
   const gt = useGT();
-  const resolveDictionaryEntry = useTrackedDictionaryResolver();
+  const resolveDictionaryEntry = useDictionaryEntryResolver();
   const translateObject = useTranslationsObj(rootId);
 
   const translateEntry = useCallback(
@@ -78,7 +78,7 @@ function useTranslationsObj(rootId?: string): UseTranslationsObjFunction {
   const defaultLocale = useDefaultLocale();
   const shouldTranslate = useShouldTranslate();
   const gt = useGT();
-  const resolveDictionaryObject = useTrackedDictionaryObjResolver();
+  const resolveDictionaryObject = useDictionaryObjectResolver();
 
   return useCallback(
     (suffix: string) => {

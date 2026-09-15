@@ -14,10 +14,10 @@ export function useTranslationsSnapshot(): Record<
   Record<Hash, Translation>
 > {
   const context = useGTContext();
-  return context?.translationsSnapshot || {};
+  return context?.translationsSnapshot ?? {};
 }
 
 export function useDictionariesSnapshot(): Record<Locale, Dictionary> {
   const context = useGTContext();
-  return context?.dictionariesSnapshot || {};
+  return context?.dictionariesSnapshot ?? {};
 }

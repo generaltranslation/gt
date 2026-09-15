@@ -1,4 +1,4 @@
-import { internalInitializeGTSRA } from '@generaltranslation/react-core/pure';
+import { initializeGT as initializeReactGT } from 'gt-react';
 import { getParams } from './shared';
 import type { NextSetupI18nConfigParams } from './shared';
 import type { NextI18nCacheParams } from '../i18n-cache/NextI18nCache';
@@ -15,7 +15,7 @@ export function initializeGTClient(
     nextI18nCacheParams: NextI18nCacheParams;
   } = getParams()
 ): void {
-  internalInitializeGTSRA({
+  initializeReactGT({
     ...i18nConfigParams,
     ...nextI18nCacheParams,
     /**

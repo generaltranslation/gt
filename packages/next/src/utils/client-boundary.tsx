@@ -12,7 +12,7 @@
 export { LocaleSelector as Client_LocaleSelector } from 'gt-react';
 export { RegionSelector as Client_RegionSelector } from 'gt-react';
 
-import { getCookieValue, getI18nConfig, I18nConfig } from 'gt-i18n/internal';
+import { getCookieValue, getI18nConfig } from 'gt-i18n/internal';
 import { GTProvider, type SharedGTProviderProps } from 'gt-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect } from 'react';
@@ -25,6 +25,7 @@ import { compilePathRegex, pathnameMatchesRegex } from './pathRegex';
 
 // withGTConfig exposes this build-time value to both middleware and client code.
 const pathRegex = compilePathRegex(process.env._GENERALTRANSLATION_PATH_REGEX);
+type I18nConfig = ReturnType<typeof getI18nConfig>;
 
 /**
  * Only need to initalize client. We know server was already

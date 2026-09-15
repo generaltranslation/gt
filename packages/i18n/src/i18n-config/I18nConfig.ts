@@ -137,6 +137,14 @@ export class I18nConfig extends LocaleConfig {
     return resolvedLocale;
   }
 
+  resolveTranslationLocale(locale: string): string | undefined {
+    const resolvedLocale = this.resolveLocale(locale);
+    if (this.requiresTranslation(resolvedLocale)) return resolvedLocale;
+
+    const aliasLocale = this.resolveAliasLocale(this.standardizeLocale(locale));
+    return this.requiresTranslation(aliasLocale) ? aliasLocale : undefined;
+  }
+
   /**
    * Returns true when development hot reload runtime translation requests can run.
    */

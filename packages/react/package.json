@@ -17,6 +17,7 @@
     "react-dom": ">=18.0.0"
   },
   "dependencies": {
+    "@generaltranslation/format": "workspace:*",
     "generaltranslation": "workspace:*",
     "@generaltranslation/react-core": "workspace:*",
     "gt-i18n": "workspace:*"
@@ -88,6 +89,28 @@
         "default": "./dist/index.server.mjs"
       },
       "browser": {
+        "development": {
+          "require": {
+            "types": "./dist/index.types.d.cts",
+            "default": "./dist/index.client.cjs"
+          },
+          "import": {
+            "types": "./dist/index.types.d.mts",
+            "default": "./dist/index.client.mjs"
+          },
+          "default": "./dist/index.client.mjs"
+        },
+        "production": {
+          "require": {
+            "types": "./dist/index.types.d.cts",
+            "default": "./dist/index.client.prod.cjs"
+          },
+          "import": {
+            "types": "./dist/index.types.d.mts",
+            "default": "./dist/index.client.prod.mjs"
+          },
+          "default": "./dist/index.client.prod.mjs"
+        },
         "require": {
           "types": "./dist/index.types.d.cts",
           "default": "./dist/index.client.cjs"

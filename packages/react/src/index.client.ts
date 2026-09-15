@@ -2,6 +2,15 @@
 
 import type { ReactNode } from 'react';
 import type { TxProps } from './utils/TxProps';
+import {
+  getReactI18nCache as getRuntimeReactI18nCache,
+  ReactI18nCache as RuntimeReactI18nCache,
+  setReactI18nCache as setRuntimeReactI18nCache,
+} from '@generaltranslation/react-core/pure';
+import {
+  GtInternalRuntimeTranslateJsx as runtimeTranslateJsx,
+  GtInternalRuntimeTranslateString as runtimeTranslateString,
+} from 'gt-i18n/internal';
 
 export { initializeGTSPA } from './setup/initializeGTSPA';
 export { initializeGTSRAClient as initializeGT } from './setup/initializeGTSRAClient';
@@ -68,13 +77,32 @@ export {
   getLocaleProperties,
   getLocales,
   resolveCanonicalLocale,
-  getReactI18nCache,
-  getTranslationsSnapshot,
   getVersionId,
   createRenderPipeline,
-  setReactI18nCache,
+  getTranslationsSnapshot,
   t,
 } from '@generaltranslation/react-core/pure';
+
+// TODO: Move ReactI18nCache and its get/set helpers to a gt-react internal
+// subpath, then remove their root exports from every runtime entrypoint.
+export const getReactI18nCache =
+  process.env.NODE_ENV === 'production'
+    ? unavailableInProductionBrowser
+    : getRuntimeReactI18nCache;
+export const setReactI18nCache =
+  process.env.NODE_ENV === 'production'
+    ? unavailableInProductionBrowser
+    : setRuntimeReactI18nCache;
+export const ReactI18nCache =
+  process.env.NODE_ENV === 'production'
+    ? unavailableInProductionBrowser
+    : RuntimeReactI18nCache;
+
+function unavailableInProductionBrowser(): never {
+  throw new Error(
+    'I18nCache is not available in production browser builds. Use the translations provided to GTProvider instead.'
+  );
+}
 
 export type {
   RenderPipeline,
@@ -82,10 +110,15 @@ export type {
 } from '@generaltranslation/react-core/pure';
 
 export type { SharedGTProviderProps } from './provider/GTProviderProps';
-export {
-  GtInternalRuntimeTranslateJsx,
-  GtInternalRuntimeTranslateString,
-} from 'gt-i18n/internal';
+const skipRuntimeTranslation = () => {};
+export const GtInternalRuntimeTranslateJsx =
+  process.env.NODE_ENV === 'production'
+    ? skipRuntimeTranslation
+    : runtimeTranslateJsx;
+export const GtInternalRuntimeTranslateString =
+  process.env.NODE_ENV === 'production'
+    ? skipRuntimeTranslation
+    : runtimeTranslateString;
 export type {
   GTTranslationOptions,
   RuntimeTranslationOptions,
@@ -95,8 +128,4 @@ export type {
   SyncResolutionFunctionWithFallback,
 } from 'gt-i18n/types';
 
-// ===== Singletons ===== //
-export {
-  ReactI18nCache,
-  type ReactI18nCacheParams,
-} from '@generaltranslation/react-core/pure';
+export type { ReactI18nCacheParams } from '@generaltranslation/react-core/pure';

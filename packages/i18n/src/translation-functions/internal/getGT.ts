@@ -1,4 +1,5 @@
 import { getI18nCache } from '../../i18n-cache/singleton-operations';
+import { getI18nRuntime } from '../../i18n-cache/runtime-operations';
 import { getI18nConfig } from '../../i18n-config/singleton-operations';
 import { GTTranslationOptions, TranslationMetadata } from '../types/options';
 import { GTFunctionType } from '../types/functions';
@@ -40,14 +41,14 @@ export async function getGTInternal(
   _messages?: Message[]
 ): Promise<GTFunctionType> {
   // Get the translation resolver
-  const i18nCache = getI18nCache();
+  const i18nRuntime = getI18nRuntime();
   const sourceLocale = getI18nConfig().getDefaultLocale();
   // Statically gated so bundlers can drop dev hot-reload work from
   // production builds.
   const devHotReloadEnabled =
     process.env.NODE_ENV !== 'production' &&
     getI18nConfig().isDevHotReloadEnabled();
-  const lookupTranslation = await i18nCache.getLookupTranslation(
+  const lookupTranslation = await i18nRuntime.getLookupTranslation(
     enableI18n ? locale : sourceLocale
   );
 
@@ -86,19 +87,19 @@ export async function getGTInternal(
   ) => {
     const targetLocale = enableI18n
       ? (options.$locale ?? locale)
-      : getI18nConfig().getDefaultLocale();
+      : sourceLocale;
     const lookupOptions = createLookupOptions<StringFormat>(
       targetLocale,
       options,
       'ICU'
     );
 
-    // Lookup translation
-    const translation = lookupTranslation(message, lookupOptions);
+    const translation = lookupTranslation(message, lookupOptions) as
+      | string
+      | undefined;
 
-    // Dev hot reload (fire and forget, will be available in a later lookup)
     if (devHotReloadEnabled && translation == null) {
-      void i18nCache
+      void getI18nCache()
         .lookupTranslationWithFallback(
           lookupOptions.$locale,
           message,
