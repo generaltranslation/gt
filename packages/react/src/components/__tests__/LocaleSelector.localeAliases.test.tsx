@@ -2,6 +2,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
+import { useLocales } from '@generaltranslation/react-core/hooks';
 import { LocaleSelector } from '../LocaleSelector';
 import { ServerGTProvider } from '../../provider/ServerGTProvider';
 
@@ -55,6 +56,21 @@ describe('LocaleSelector configured aliases', () => {
     expect(html.indexOf('value="fr-fr"')).toBeLessThan(
       html.indexOf('value="en-gb"')
     );
+  });
+
+  it('selects the current locale with an explicit list from useLocales()', () => {
+    configureAliases();
+    function ConfiguredSelector() {
+      return <LocaleSelector locales={[...useLocales()]} />;
+    }
+    const html = renderToStaticMarkup(
+      <ServerGTProvider locale='en-gb' translations={{}}>
+        <ConfiguredSelector />
+      </ServerGTProvider>
+    );
+
+    expect(html).toContain('value="en-gb" selected=""');
+    expect(html.match(/<option /g)).toHaveLength(3);
   });
 
   it('keeps canonical options when no aliases are configured', () => {

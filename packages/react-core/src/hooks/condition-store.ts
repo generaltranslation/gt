@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal/types';
 import { getReadonlyConditionStore } from '../condition-store/singleton-operations';
 import { useGTContext } from '../context/context';
+import { getI18nConfig } from 'gt-i18n/internal';
 
 export function useConditionStore(): ReadonlyConditionStoreInterface {
   const context = useGTContext();
@@ -12,7 +13,7 @@ export function useConditionStore(): ReadonlyConditionStoreInterface {
  * Returns the current locale.
  */
 export function useLocale(): string {
-  return useConditionStore().getLocale();
+  return getI18nConfig().resolveAliasLocale(useConditionStore().getLocale());
 }
 
 /**

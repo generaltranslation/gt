@@ -117,10 +117,10 @@ describe.sequential('parseLocale', () => {
           server: (config: typeof localeConfig) => string;
         }
       ).server(localeConfig)
-    ).toBe('fr');
+    ).toBe('brand-french');
     expect(mockSetCookie).toHaveBeenCalledWith(
       'generaltranslation.locale',
-      'fr',
+      'brand-french',
       {
         path: '/',
         sameSite: 'lax',
@@ -169,7 +169,7 @@ describe.sequential('parseLocale', () => {
       }
     );
 
-    expect(locale).toBe('fr');
+    expect(locale).toBe('brand-french');
     expect(mockRequest).not.toHaveBeenCalled();
     expect(mockSetCookie).not.toHaveBeenCalled();
   });
@@ -204,12 +204,16 @@ describe.sequential('parseLocale', () => {
           server: (config: typeof localeConfig) => string;
         }
       ).server(localeConfig)
-    ).toBe('fr');
-    expect(mockSetCookie).toHaveBeenCalledWith('custom-locale', 'fr', {
-      path: '/',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 365,
-    });
+    ).toBe('brand-french');
+    expect(mockSetCookie).toHaveBeenCalledWith(
+      'custom-locale',
+      'brand-french',
+      {
+        path: '/',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 365,
+      }
+    );
   });
 
   it('resolves the default locale cookie during client initialization', () => {
