@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789011033035,
+  "lastUpdate": 1789516262287,
   "repoUrl": "https://github.com/generaltranslation/gt",
   "entries": {
     "Middleware Benchmarks": [
@@ -10324,6 +10324,122 @@ window.BENCHMARK_DATA = {
             "value": 83,
             "unit": "ms",
             "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.2.0\"\n}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Ernest McCarter",
+            "username": "eoinest",
+            "email": "ernest@generaltranslation.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "2b060d5745315a5118dd03cac3984e95bcfa52c8",
+          "message": "[ci] release (#2292)\n\nThis PR was opened by the [Changesets\nrelease](https://github.com/changesets/action) GitHub action. When\nyou're ready to do a release, you can merge this and the packages will\nbe published to npm automatically. If you're not ready to do a release\nyet, that's fine, whenever you add more changesets to main, this PR will\nbe updated.\n\n\n# Releases\n## @generaltranslation/api@0.3.0\n\n### Minor Changes\n\n- [#2215](https://github.com/generaltranslation/gt/pull/2215)\n[`5f5843b`](https://github.com/generaltranslation/gt/commit/5f5843b94066d9ee9c0703722105a189d2a4e3d5)\nThanks [@chenxin-yan](https://github.com/chenxin-yan)! - Consolidate\nbase64, file-content, locale-mapping, and job-polling seams in\n`generaltranslation/internal`, remove the generated API package's\nworkspace dependency surface, and reuse the core helpers in the CLI and\nSanity integration. `encodeBase64`, `decodeBase64`, `encodeFileContent`,\nand `decodeFileContent` are removed from `@generaltranslation/api` (and\ntherefore `generaltranslation/api`); import the\n`generaltranslation/internal` equivalents instead.\n\n### Patch Changes\n\n- [#2299](https://github.com/generaltranslation/gt/pull/2299)\n[`50098c6`](https://github.com/generaltranslation/gt/commit/50098c68e33b13585dde418e227cfca1cef3bf7e)\nThanks [@fernando-aviles](https://github.com/fernando-aviles)! - Accept\nwhole markdown and MDX documents on the runtime translate endpoint via\nthe new `fileFormat` entry metadata (`MD` or `MDX`).\n\n- [#2287](https://github.com/generaltranslation/gt/pull/2287)\n[`01658bd`](https://github.com/generaltranslation/gt/commit/01658bd018a337a9f2fb8f058195c7ea3d6f534e)\nThanks\n[@internal-gt-public-api-sync](https://github.com/apps/internal-gt-public-api-sync)!\n- Sync the GT API OpenAPI contract and regenerate the SDK.\n## generaltranslation@9.4.0\n\n### Minor Changes\n\n- [#2215](https://github.com/generaltranslation/gt/pull/2215)\n[`5f5843b`](https://github.com/generaltranslation/gt/commit/5f5843b94066d9ee9c0703722105a189d2a4e3d5)\nThanks [@chenxin-yan](https://github.com/chenxin-yan)! - Consolidate\nbase64, file-content, locale-mapping, and job-polling seams in\n`generaltranslation/internal`, remove the generated API package's\nworkspace dependency surface, and reuse the core helpers in the CLI and\nSanity integration. `encodeBase64`, `decodeBase64`, `encodeFileContent`,\nand `decodeFileContent` are removed from `@generaltranslation/api` (and\ntherefore `generaltranslation/api`); import the\n`generaltranslation/internal` equivalents instead.\n\n### Patch Changes\n\n- [#2299](https://github.com/generaltranslation/gt/pull/2299)\n[`50098c6`](https://github.com/generaltranslation/gt/commit/50098c68e33b13585dde418e227cfca1cef3bf7e)\nThanks [@fernando-aviles](https://github.com/fernando-aviles)! - Accept\nwhole markdown and MDX documents on the runtime translate endpoint via\nthe new `fileFormat` entry metadata (`MD` or `MDX`).\n\n- Updated dependencies\n[[`50098c6`](https://github.com/generaltranslation/gt/commit/50098c68e33b13585dde418e227cfca1cef3bf7e),\n[`01658bd`](https://github.com/generaltranslation/gt/commit/01658bd018a337a9f2fb8f058195c7ea3d6f534e),\n[`5f5843b`](https://github.com/generaltranslation/gt/commit/5f5843b94066d9ee9c0703722105a189d2a4e3d5)]:\n  - @generaltranslation/api@0.3.0\n## gt@2.21.2\n\n### Patch Changes\n\n- [#2215](https://github.com/generaltranslation/gt/pull/2215)\n[`5f5843b`](https://github.com/generaltranslation/gt/commit/5f5843b94066d9ee9c0703722105a189d2a4e3d5)\nThanks [@chenxin-yan](https://github.com/chenxin-yan)! - Consolidate\nbase64, file-content, locale-mapping, and job-polling seams in\n`generaltranslation/internal`, remove the generated API package's\nworkspace dependency surface, and reuse the core helpers in the CLI and\nSanity integration. `encodeBase64`, `decodeBase64`, `encodeFileContent`,\nand `decodeFileContent` are removed from `@generaltranslation/api` (and\ntherefore `generaltranslation/api`); import the\n`generaltranslation/internal` equivalents instead.\n\n- Updated dependencies\n[[`50098c6`](https://github.com/generaltranslation/gt/commit/50098c68e33b13585dde418e227cfca1cef3bf7e),\n[`5f5843b`](https://github.com/generaltranslation/gt/commit/5f5843b94066d9ee9c0703722105a189d2a4e3d5)]:\n  - generaltranslation@9.4.0\n  - @generaltranslation/python-extractor@0.2.50\n  - @generaltranslation/supported-locales@2.1.30\n  - @generaltranslation/vue-extractor@0.1.10\n## @generaltranslation/compiler@1.3.52\n\n### Patch Changes\n\n- Updated dependencies\n[[`50098c6`](https://github.com/generaltranslation/gt/commit/50098c68e33b13585dde418e227cfca1cef3bf7e),\n[`5f5843b`](https://github.com/generaltranslation/gt/commit/5f5843b94066d9ee9c0703722105a189d2a4e3d5)]:\n  - generaltranslation@9.4.0\n## gtx-cli@2.21.2\n\n### Patch Changes\n\n- Updated dependencies\n[[`5f5843b`](https://github.com/generaltranslation/gt/commit/5f5843b94066d9ee9c0703722105a189d2a4e3d5)]:\n  - gt@2.21.2\n## gt-i18n@1.0.27\n\n### Patch Changes\n\n- Updated dependencies\n[[`50098c6`](https://github.com/generaltranslation/gt/commit/50098c68e33b13585dde418e227cfca1cef3bf7e),\n[`5f5843b`](https://github.com/generaltranslation/gt/commit/5f5843b94066d9ee9c0703722105a189d2a4e3d5)]:\n  - generaltranslation@9.4.0\n## locadex@1.0.226\n\n### Patch Changes\n\n- Updated dependencies\n[[`5f5843b`](https://github.com/generaltranslation/gt/commit/5f5843b94066d9ee9c0703722105a189d2a4e3d5)]:\n  - gt@2.21.2\n## gt-next@11.2.1\n\n### Patch Changes\n\n- Updated dependencies\n[[`50098c6`](https://github.com/generaltranslation/gt/commit/50098c68e33b13585dde418e227cfca1cef3bf7e),\n[`5f5843b`](https://github.com/generaltranslation/gt/commit/5f5843b94066d9ee9c0703722105a189d2a4e3d5)]:\n  - generaltranslation@9.4.0\n  - @generaltranslation/compiler@1.3.52\n  - gt-i18n@1.0.27\n  - gt-react@11.2.1\n  - @generaltranslation/react-core@11.2.1\n## gt-node@1.0.28\n\n### Patch Changes\n\n- Updated dependencies\n[[`50098c6`](https://github.com/generaltranslation/gt/commit/50098c68e33b13585dde418e227cfca1cef3bf7e),\n[`5f5843b`](https://github.com/generaltranslation/gt/commit/5f5843b94066d9ee9c0703722105a189d2a4e3d5)]:\n  - generaltranslation@9.4.0\n  - gt-i18n@1.0.27\n## @generaltranslation/python-extractor@0.2.50\n\n### Patch Changes\n\n- Updated dependencies\n[[`50098c6`](https://github.com/generaltranslation/gt/commit/50098c68e33b13585dde418e227cfca1cef3bf7e),\n[`5f5843b`](https://github.com/generaltranslation/gt/commit/5f5843b94066d9ee9c0703722105a189d2a4e3d5)]:\n  - generaltranslation@9.4.0\n## gt-react@11.2.1\n\n### Patch Changes\n\n- Updated dependencies\n[[`50098c6`](https://github.com/generaltranslation/gt/commit/50098c68e33b13585dde418e227cfca1cef3bf7e),\n[`5f5843b`](https://github.com/generaltranslation/gt/commit/5f5843b94066d9ee9c0703722105a189d2a4e3d5)]:\n  - generaltranslation@9.4.0\n  - gt-i18n@1.0.27\n  - @generaltranslation/react-core@11.2.1\n## @generaltranslation/react-core@11.2.1\n\n### Patch Changes\n\n- Updated dependencies\n[[`50098c6`](https://github.com/generaltranslation/gt/commit/50098c68e33b13585dde418e227cfca1cef3bf7e),\n[`5f5843b`](https://github.com/generaltranslation/gt/commit/5f5843b94066d9ee9c0703722105a189d2a4e3d5)]:\n  - generaltranslation@9.4.0\n  - gt-i18n@1.0.27\n## gt-react-native@11.2.1\n\n### Patch Changes\n\n- Updated dependencies\n[[`50098c6`](https://github.com/generaltranslation/gt/commit/50098c68e33b13585dde418e227cfca1cef3bf7e),\n[`5f5843b`](https://github.com/generaltranslation/gt/commit/5f5843b94066d9ee9c0703722105a189d2a4e3d5)]:\n  - generaltranslation@9.4.0\n  - gt-i18n@1.0.27\n  - @generaltranslation/react-core@11.2.1\n  - @generaltranslation/supported-locales@2.1.30\n## gt-sanity@4.0.15\n\n### Patch Changes\n\n- [#2215](https://github.com/generaltranslation/gt/pull/2215)\n[`5f5843b`](https://github.com/generaltranslation/gt/commit/5f5843b94066d9ee9c0703722105a189d2a4e3d5)\nThanks [@chenxin-yan](https://github.com/chenxin-yan)! - Consolidate\nbase64, file-content, locale-mapping, and job-polling seams in\n`generaltranslation/internal`, remove the generated API package's\nworkspace dependency surface, and reuse the core helpers in the CLI and\nSanity integration. `encodeBase64`, `decodeBase64`, `encodeFileContent`,\nand `decodeFileContent` are removed from `@generaltranslation/api` (and\ntherefore `generaltranslation/api`); import the\n`generaltranslation/internal` equivalents instead.\n\n- Updated dependencies\n[[`50098c6`](https://github.com/generaltranslation/gt/commit/50098c68e33b13585dde418e227cfca1cef3bf7e),\n[`5f5843b`](https://github.com/generaltranslation/gt/commit/5f5843b94066d9ee9c0703722105a189d2a4e3d5)]:\n  - generaltranslation@9.4.0\n## @generaltranslation/supported-locales@2.1.30\n\n### Patch Changes\n\n- Updated dependencies\n[[`50098c6`](https://github.com/generaltranslation/gt/commit/50098c68e33b13585dde418e227cfca1cef3bf7e),\n[`5f5843b`](https://github.com/generaltranslation/gt/commit/5f5843b94066d9ee9c0703722105a189d2a4e3d5)]:\n  - generaltranslation@9.4.0\n## gt-tanstack-start@11.2.1\n\n### Patch Changes\n\n- Updated dependencies\n[[`50098c6`](https://github.com/generaltranslation/gt/commit/50098c68e33b13585dde418e227cfca1cef3bf7e),\n[`5f5843b`](https://github.com/generaltranslation/gt/commit/5f5843b94066d9ee9c0703722105a189d2a4e3d5)]:\n  - generaltranslation@9.4.0\n  - gt-i18n@1.0.27\n  - gt-react@11.2.1\n  - @generaltranslation/react-core@11.2.1\n## gt-vue@0.1.11\n\n### Patch Changes\n\n- Updated dependencies\n[[`50098c6`](https://github.com/generaltranslation/gt/commit/50098c68e33b13585dde418e227cfca1cef3bf7e),\n[`5f5843b`](https://github.com/generaltranslation/gt/commit/5f5843b94066d9ee9c0703722105a189d2a4e3d5)]:\n  - generaltranslation@9.4.0\n  - gt-i18n@1.0.27\n## @generaltranslation/vue-extractor@0.1.10\n\n### Patch Changes\n\n- Updated dependencies\n[[`50098c6`](https://github.com/generaltranslation/gt/commit/50098c68e33b13585dde418e227cfca1cef3bf7e),\n[`5f5843b`](https://github.com/generaltranslation/gt/commit/5f5843b94066d9ee9c0703722105a189d2a4e3d5)]:\n  - generaltranslation@9.4.0",
+          "timestamp": "2026-09-15T23:43:05Z",
+          "url": "https://github.com/generaltranslation/gt/commit/2b060d5745315a5118dd03cac3984e95bcfa52c8"
+        },
+        "date": 1789516261405,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "gt-next > unit > middleware: factory creation latency > createNextMiddleware() (mean)",
+            "value": 0.019551644052554117,
+            "range": "±0.0141",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.2.1\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > default locale request (/) (mean)",
+            "value": 0.05649598745904371,
+            "range": "±0.0517",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.2.1\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > non-default locale request (/fr) (mean)",
+            "value": 0.09308794452717763,
+            "range": "±0.1319",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.2.1\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > nested route (/fr/about) (mean)",
+            "value": 0.08753220917206445,
+            "range": "±0.053",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.2.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > ttfb",
+            "value": 91.79999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.2.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > domContentLoaded",
+            "value": 127.20000000001164,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.2.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > load",
+            "value": 175.70000000001164,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.2.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > elapsed",
+            "value": 88,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.2.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > ttfb",
+            "value": 13.299999999988358,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.2.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > domContentLoaded",
+            "value": 19.599999999976717,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.2.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > load",
+            "value": 82,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.2.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: locale-switch-en-to-fr > elapsed",
+            "value": 585,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.2.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > ttfb",
+            "value": 8.599999999976717,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.2.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > domContentLoaded",
+            "value": 15.299999999988358,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.2.1\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > load",
+            "value": 77.5,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.2.1\"\n}"
           }
         ]
       }
