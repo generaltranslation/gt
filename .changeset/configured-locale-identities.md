@@ -1,19 +1,19 @@
 ---
-"@generaltranslation/format": minor
-"generaltranslation": minor
-"gt-i18n": minor
-"@generaltranslation/react-core": minor
-"gt-react": minor
-"gt-react-native": minor
-"gt-next": minor
-"gt-node": minor
-"gt-tanstack-start": minor
+'@generaltranslation/format': patch
+'generaltranslation': patch
+'gt-i18n': patch
+'@generaltranslation/react-core': patch
+'gt-react': patch
+'gt-react-native': patch
+'gt-next': patch
+'gt-node': patch
+'gt-tanstack-start': patch
 ---
 
-Preserve configured locale spellings as application identities, including when GT services are enabled. For example, configuring `en-gb` now keeps `en-gb` in generated routes, locale hooks, cookies, custom translation loader arguments, and cache keys. GT service requests still use canonical language codes, and formatting resolves custom aliases to language codes.
+Keep configured locale identities consistent across locale negotiation, routing, hooks, cookies, translation loaders, and caches, including when GT services are enabled. For example, configuring `en-gb` preserves that spelling in application-facing values while GT service requests and formatting use the corresponding language code.
 
-`customMapping` describes how configured aliases map to language codes; it no longer renames a separately configured canonical locale in hooks or loaders. List the desired alias in `locales` (and `defaultLocale` when applicable), and use that same identity in routes, selectors, and local translation filenames. Applications that rely on canonical spelling should configure `en-GB` rather than `en-gb`.
+Locale negotiation accepts equivalent spellings but returns a configured identity. Exact configured aliases remain distinct even when they map to the same language. This also applies to `gt-node`'s `getRequestLocale()`: an `Accept-Language` preference of `fr` can resolve to a configured `brand-french` alias. If both identities are configured, an exact match keeps the requested identity. Preserve support for legacy tags such as `sh` and `cnr`.
 
-In `gt-node`, `getRequestLocale()` returns a configured locale identity when resolving `Accept-Language`. For example, a browser preference of `fr` resolves to `brand-french` when that is the configured French locale. If both `fr` and `brand-french` are configured, an exact `fr` preference remains `fr`, while an exact `brand-french` preference remains `brand-french`.
+Align React and TanStack Start server/browser locale values, and return the configured locale list from `useLocales()`. In Next.js, use configured identities for localized paths, route overrides, and locale availability; resolve unsupported preferences before deciding whether to prefix the default locale. Reuse locale resolutions during middleware initialization to avoid repeated work for large path configurations.
 
-Retain previously accepted legacy tags such as `sh` and `cnr` while validating their parsed language tags. Locale negotiation accepts equivalent spellings while returning a configured identifier. Exact configured aliases remain distinct during application locale negotiation even when they share a canonical language. GT services still store translations by canonical language; aliases of the same code share remote translations. Service metadata without a corresponding requested alias uses the first matching configured locale.
+Translation loaders and local filenames should use the configured identity: a loader for configured `en-gb` receives `en-gb`, not `en-GB`. Put the desired identity in `locales` and `defaultLocale`, and use `customMapping` to associate aliases with language codes. A separately configured canonical identity is not renamed merely because another alias maps to it. Applications that require canonical spelling should configure `en-GB` instead. Aliases for the same language share remote translations; service metadata without a corresponding requested alias uses the first matching configured locale.
