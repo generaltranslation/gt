@@ -221,7 +221,8 @@ export function getLocaleFromRequest(
   referrerLocaleCookieName: string,
   localeCookieName: string,
   resetLocaleCookieName: string,
-  gt: GTRuntime
+  gt: GTRuntime,
+  enableSmartRouting = true
 ): {
   userLocale: string;
   pathnameLocale: string | undefined;
@@ -249,18 +250,25 @@ export function getLocaleFromRequest(
     }
   }
 
+  const cookieLocale = req.cookies.get(localeCookieName);
+  const preferDefaultLocale =
+    !enableSmartRouting && localeRouting && !prefixDefaultLocale;
+  // With smart routing disabled, returning visitors choose the default locale
+  // by visiting an unprefixed URL.
+  // First visits still negotiate their language; explicit resets override below.
   // Check pathname for a customized unprefixed default locale path (e.g. /en-about , /en-dashboard/1/en-custom)
   if (
     localeRouting &&
     !prefixDefaultLocale &&
     !pathnameLocale &&
-    inDefaultLocalePaths(pathname, defaultLocalePaths)
+    (preferDefaultLocale
+      ? Boolean(cookieLocale?.value) // skip this condition when preferDefaultLocale is true and first request (no cookieLocale)
+      : inDefaultLocalePaths(pathname, defaultLocalePaths))
   ) {
     candidates.push(defaultLocale); // will override other candidates
   }
 
   // Check cookie locale
-  const cookieLocale = req.cookies.get(localeCookieName);
   if (cookieLocale?.value && gt.isValidLocale(cookieLocale?.value)) {
     const resetCookie = req.cookies.get(resetLocaleCookieName);
     if (resetCookie?.value) {
@@ -280,7 +288,8 @@ export function getLocaleFromRequest(
   if (
     referrerLocaleCookie?.value &&
     gt.isValidLocale(referrerLocaleCookie.value) &&
-    !clearResetCookie
+    !clearResetCookie &&
+    (!preferDefaultLocale || cookieLocale?.value) // skip this condition when preferDefaultLocale is true and first request (no cookieLocale)
   ) {
     const referrerLocale = referrerLocaleCookie.value;
     if (gt.determineLocale([referrerLocale], approvedLocales)) {

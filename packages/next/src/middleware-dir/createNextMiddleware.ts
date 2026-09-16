@@ -53,6 +53,7 @@ export type LocaleRoutes = Record<string, readonly string[]>;
  *
  * @param {boolean} [config.localeRouting=true] - Flag to enable or disable automatic locale-based routing.
  * @param {boolean} [config.prefixDefaultLocale=false] - Flag to enable or disable prefixing the default locale to the pathname, i.e., /en/about -> /about
+ * @param {boolean} [config.enableSmartRouting=true] - Keep automatic locale negotiation. Disable to treat returning visitors' unprefixed URLs as default-locale routes.
  * @param {boolean} [config.ignoreSourceMaps=true] - Flag to enable or disable ignoring source maps
  * @param {PathConfig} [config.pathConfig] - Path configuration for locale routing
  * @param {RouteOverrides} [config.routeOverrides] - Locale-relative paths to rewrite from /{locale}/{path} to /{locale}/{locale}/{path}
@@ -62,6 +63,7 @@ export type LocaleRoutes = Record<string, readonly string[]>;
 export function createNextMiddleware({
   localeRouting = true,
   prefixDefaultLocale = false,
+  enableSmartRouting = true,
   ignoreSourceMaps = true,
   pathConfig = {},
   routeOverrides = {},
@@ -69,6 +71,7 @@ export function createNextMiddleware({
 }: {
   localeRouting?: boolean;
   prefixDefaultLocale?: boolean;
+  enableSmartRouting?: boolean;
   ignoreSourceMaps?: boolean;
   pathConfig?: PathConfig;
   routeOverrides?: RouteOverrides;
@@ -266,7 +269,8 @@ export function createNextMiddleware({
       referrerLocaleCookieName,
       localeCookieName,
       resetLocaleCookieName,
-      gt
+      gt,
+      enableSmartRouting
     );
 
     let userLocale = requestedLocale;
@@ -287,8 +291,26 @@ export function createNextMiddleware({
     const getRewriteResponse = (responsePath: string) =>
       getResponse({ responsePath, type: 'rewrite', ...responseConfig });
 
-    const getRedirectResponse = (responsePath: string) =>
-      getResponse({ responsePath, type: 'redirect', ...responseConfig });
+    const getRedirectResponse = (responsePath: string) => {
+      const response = getResponse({
+        responsePath,
+        type: 'redirect',
+        ...responseConfig,
+      });
+      if (
+        !enableSmartRouting &&
+        !prefixDefaultLocale &&
+        pathnameLocale === defaultLocale &&
+        userLocale === defaultLocale &&
+        req.headers.get('sec-fetch-dest') === 'document' &&
+        !req.cookies.has(localeCookieName)
+      ) {
+        // Preserve explicit /en intent across a first document redirect.
+        // Background fetches and returning visits must not change the cookie.
+        response.cookies.set(localeCookieName, defaultLocale);
+      }
+      return response;
+    };
 
     const getNextResponse = () =>
       getResponse({ type: 'next', ...responseConfig });
@@ -429,12 +451,11 @@ export function createNextMiddleware({
 
         if (!prefixDefaultLocale && userLocale === defaultLocale) {
           if (pathnameLocale) {
-            // REDIRECT CASE: used setLocale (/fr/customers -> /customers) (/en/customers -> /customers)
-            if (clearResetCookie) {
+            // REDIRECT CASE: explicit default locale or setLocale (/en/customers -> /customers)
+            if (clearResetCookie || !enableSmartRouting) {
               return getRedirectResponse(
-                pathname.replace(
-                  new RegExp(`^/${unstandardizedPathnameLocale}`),
-                  ``
+                pathname.slice(
+                  (unstandardizedPathnameLocale as string).length + 1
                 ) || '/'
               );
             }
@@ -475,21 +496,15 @@ export function createNextMiddleware({
         // --- CASE: remove defaultLocale prefix --- //
 
         if (pathnameLocale) {
-          // REDIRECT CASE: remove locale prefix when setLocale is used (/en/blog -> /blog) (/fr/fr-about -> /en-about)
-          if (clearResetCookie) {
+          // REDIRECT CASE: explicit default locale or setLocale (/en/blog -> /blog)
+          if (clearResetCookie || !enableSmartRouting) {
             return getRedirectResponse(
-              localizedPathWithParameters.replace(
-                new RegExp(`^/${userLocale}`),
-                ``
-              ) || '/'
+              localizedPathWithParameters.slice(userLocale.length + 1) || '/'
             );
           }
         } else {
           const localizedPublicPath =
-            localizedPathWithParameters.replace(
-              new RegExp(`^/${userLocale}`),
-              ''
-            ) || '/';
+            localizedPathWithParameters.slice(userLocale.length + 1) || '/';
 
           // REDIRECT CASE: unprefixed pathname is wrong (/about -> /en-about)
           if (
