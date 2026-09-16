@@ -40,21 +40,28 @@ if (typeof window !== 'undefined') {
  */
 export function Client_GTProvider({
   conditions,
+  supportsLocaleRefresh,
   ...props
 }: Omit<
   SharedGTProviderProps,
   'locale' | 'region' | 'enableI18n' | '_serverConditions'
 > & {
   conditions: NonNullable<SharedGTProviderProps['_serverConditions']>;
+  supportsLocaleRefresh: boolean;
 }) {
   const router = useRouter();
   const refreshServerComponents = useCallback(() => {
+    // Older Next versions can retain a stale layout/provider after a redirect.
+    if (!supportsLocaleRefresh) {
+      globalThis.location.reload();
+      return;
+    }
     // The server supplies a fresh conditions object even when its accepted
     // locale is unchanged. For example, switching /en/careers to excluded 'fr'
     // returns another 'en' snapshot, which resets the browser store to 'en'
     // without discarding client state through a document reload.
     router.refresh();
-  }, [router]);
+  }, [router, supportsLocaleRefresh]);
   const reloadBrowserPage = useCallback(() => {
     globalThis.location.reload();
   }, []);

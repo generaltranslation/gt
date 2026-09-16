@@ -31,6 +31,7 @@ import {
 } from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import {
+  localeRefreshSupported,
   rootParamStability,
   turboConfigStable,
 } from './plugin/getStableNextVersionInfo';
@@ -725,6 +726,8 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     ),
     env: {
       ...internalNextConfig.env,
+      _GENERALTRANSLATION_LOCALE_REFRESH_SUPPORTED:
+        localeRefreshSupported.toString(),
       _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams,
       NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS: JSON.stringify(
         clientI18NConfigParams

@@ -4,6 +4,7 @@ import {
 } from '../errors/createErrors';
 import {
   BABEL_PLUGIN_SUPPORT,
+  LOCALE_REFRESH_SUPPORT,
   ROOT_PARAM_STABILITY,
   STABLE_TURBO_CONFIG_VERSION,
   SWC_PLUGIN_SUPPORT,
@@ -116,4 +117,11 @@ export const swcPluginCompatible = comparePackageVersion(
 export const babelPluginCompatible = comparePackageVersion(
   getReactVersion(),
   BABEL_PLUGIN_SUPPORT
+);
+
+// Older refresh reducers can retain a stale layout after middleware redirects.
+// Related refresh/redirect issue: https://github.com/vercel/next.js/issues/65970
+export const localeRefreshSupported = comparePackageVersion(
+  getNextVersion(),
+  LOCALE_REFRESH_SUPPORT
 );

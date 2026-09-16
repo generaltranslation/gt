@@ -1,5 +1,5 @@
 import React from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   mockGetI18nConfig,
@@ -47,6 +47,7 @@ vi.mock('../../utils/client-boundary', () => ({
 }));
 
 describe('GTProvider', () => {
+  afterEach(() => vi.unstubAllEnvs());
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetLocale.mockResolvedValue('fr');
@@ -92,6 +93,23 @@ describe('GTProvider', () => {
       },
     });
   });
+
+  it.each([
+    ['true', true],
+    ['false', false],
+    [undefined, false],
+  ])(
+    'passes build-time locale refresh support %s as boolean %s',
+    async (value, expected) => {
+      vi.stubEnv(
+        '_GENERALTRANSLATION_LOCALE_REFRESH_SUPPORTED',
+        value as string | undefined
+      );
+      const { GTProvider } = await import('../GTProvider');
+      const element = await GTProvider({ children: 'content' });
+      expect(element.props.supportsLocaleRefresh).toBe(expected);
+    }
+  );
 
   it('creates a fresh conditions snapshot when the server values are unchanged', async () => {
     const { GTProvider } = await import('../GTProvider');

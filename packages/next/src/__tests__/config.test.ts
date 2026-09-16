@@ -17,6 +17,7 @@ vi.mock('fs', () => ({
 const mockVersionInfo = vi.hoisted(() => ({
   rootParamStability: 'experimental',
   turboConfigStable: true,
+  localeRefreshSupported: true,
   swcPluginCompatible: true,
   babelPluginCompatible: true,
 }));
@@ -66,6 +67,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockVersionInfo.rootParamStability = 'experimental';
   mockVersionInfo.turboConfigStable = true;
+  mockVersionInfo.localeRefreshSupported = true;
   mockVersionInfo.swcPluginCompatible = true;
   mockVersionInfo.babelPluginCompatible = true;
   vi.mocked(fs.existsSync).mockReturnValue(false);
@@ -84,6 +86,17 @@ describe('withGTConfig', () => {
     const mod = await import('../config');
     return mod.withGTConfig;
   }
+
+  it.each([false, true])(
+    'exports locale refresh support (%s) from the detected Next version',
+    async (supported) => {
+      mockVersionInfo.localeRefreshSupported = supported;
+      const withGTConfig = await getWithGTConfig();
+      expect(
+        withGTConfig().env?._GENERALTRANSLATION_LOCALE_REFRESH_SUPPORTED
+      ).toBe(String(supported));
+    }
+  );
 
   // ==============================
   // 1. Default behavior

@@ -29,6 +29,9 @@ export async function GTProvider({ children }: GTProviderProps) {
 
   return (
     <Client_GTProvider
+      supportsLocaleRefresh={
+        process.env._GENERALTRANSLATION_LOCALE_REFRESH_SUPPORTED === 'true'
+      }
       conditions={{ locale, region, enableI18n }}
       translations={translationsSnapshot}
       dictionaries={dictionariesSnapshot}
