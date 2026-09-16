@@ -14,7 +14,10 @@ import { runUploadFilesWorkflow } from '../../workflows/upload.js';
 import { existsSync } from 'node:fs';
 import { createFileMapping } from '../../formats/files/fileMapping.js';
 import type { FileToUpload } from 'generaltranslation/types';
-import { hasValidCredentials } from './utils/validation.js';
+import {
+  hasValidCredentials,
+  hasValidServiceLocales,
+} from './utils/validation.js';
 import { runPublishWorkflow } from '../../workflows/publish.js';
 import { aggregateFiles } from '../../formats/files/aggregateFiles.js';
 import { recordWarning } from '../../state/translateWarnings.js';
@@ -95,7 +98,8 @@ export async function upload(
   if (!settings.defaultLocale) {
     return logErrorAndExit(noDefaultLocaleError);
   }
-  if (!hasValidCredentials(settings)) return exitSync(1);
+  if (!hasValidCredentials(settings) || !hasValidServiceLocales(settings))
+    return exitSync(1);
 
   const locales = settings.locales || [];
   // Create file mapping for all file types

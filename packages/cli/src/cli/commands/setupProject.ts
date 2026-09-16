@@ -19,7 +19,8 @@ export async function handleSetupProject(
   fileVersionData: FileTranslationData | undefined;
   branchData: BranchData | undefined;
 } | null> {
-  if (!hasValidLocales(settings)) return exitSync(1);
+  if (!hasValidLocales(settings, { forApi: !options.dryRun }))
+    return exitSync(1);
   // Validate credentials if not in dry run
   if (!options.dryRun && !hasValidCredentials(settings)) return exitSync(1);
 
