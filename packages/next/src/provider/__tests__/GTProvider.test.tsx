@@ -1,5 +1,5 @@
 import React from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   mockGetI18nConfig,
@@ -47,6 +47,7 @@ vi.mock('../../utils/client-boundary', () => ({
 }));
 
 describe('GTProvider', () => {
+  afterEach(() => vi.unstubAllEnvs());
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetLocale.mockResolvedValue('fr');
@@ -83,9 +84,7 @@ describe('GTProvider', () => {
             greeting: 'Bonjour',
           },
         },
-        enableI18n: true,
-        locale: 'fr',
-        region: undefined,
+        conditions: { enableI18n: true, locale: 'fr', region: undefined },
         translations: {
           fr: {
             hash: 'Salut',
@@ -93,6 +92,31 @@ describe('GTProvider', () => {
         },
       },
     });
+  });
+
+  it.each([
+    ['true', true],
+    ['false', false],
+    [undefined, false],
+  ])(
+    'passes build-time locale refresh support %s as boolean %s',
+    async (value, expected) => {
+      vi.stubEnv(
+        '_GENERALTRANSLATION_LOCALE_REFRESH_SUPPORTED',
+        value as string | undefined
+      );
+      const { GTProvider } = await import('../GTProvider');
+      const element = await GTProvider({ children: 'content' });
+      expect(element.props.supportsLocaleRefresh).toBe(expected);
+    }
+  );
+
+  it('creates a fresh conditions snapshot when the server values are unchanged', async () => {
+    const { GTProvider } = await import('../GTProvider');
+    const first = await GTProvider({ children: 'content' });
+    const second = await GTProvider({ children: 'content' });
+    expect(second.props.conditions).toEqual(first.props.conditions);
+    expect(second.props.conditions).not.toBe(first.props.conditions);
   });
 
   it('uses the request locale and skips cached translations when translation is not required', async () => {
@@ -128,9 +152,7 @@ describe('GTProvider', () => {
             greeting: 'Bonjour',
           },
         },
-        enableI18n: false,
-        locale: 'en',
-        region: 'US',
+        conditions: { enableI18n: false, locale: 'en', region: 'US' },
         translations: {
           en: {},
         },

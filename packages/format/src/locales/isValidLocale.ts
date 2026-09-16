@@ -31,9 +31,16 @@ export const _isValidLocale = (
   locale = getCustomLocaleCode(customMapping, locale) || locale;
 
   try {
-    const { language, region, script } = intlCache.get('Locale', locale);
+    const localeObject = intlCache.get('Locale', locale);
+    const { language, region, script } = localeObject;
     const partCount = 1 + Number(Boolean(region)) + Number(Boolean(script));
-    if (locale.split('-').length !== partCount) return false;
+    // Legacy tags can expand subtags (sh -> sr-Latn, cnr -> sr-ME). Validate
+    // the parsed shape without changing the application's configured identity.
+    if (
+      locale.split('-').length !== partCount &&
+      localeObject.toString().split('-').length !== partCount
+    )
+      return false;
     const displayLanguageNames = intlCache.get(
       'DisplayNames',
       [libraryDefaultLocale],

@@ -79,6 +79,27 @@ describe('CLI API client', () => {
     expect(result.sourceFiles[0].locales).toEqual(['brand-english', 'es']);
   });
 
+  it('standardizes lowercase file query locales for the service', async () => {
+    fetchMock.mockImplementation(async (request) => {
+      const body = JSON.parse(await request.text()) as {
+        translatedFiles: Array<{ locale: string }>;
+      };
+      expect(body.translatedFiles[0].locale).toBe('en-US');
+      return Response.json({ translatedFiles: [], sourceFiles: [] });
+    });
+
+    await api.queryFileData({
+      translatedFiles: [
+        {
+          branchId: 'branch-id',
+          fileId: 'file-id',
+          versionId: 'version-id',
+          locale: 'en-us',
+        },
+      ],
+    });
+  });
+
   it('preserves HTTP status on API errors', async () => {
     fetchMock.mockResolvedValue(
       Response.json({ error: 'branching unavailable' }, { status: 403 })
@@ -132,7 +153,7 @@ describe('CLI API client', () => {
   it('creates a project in the selected organization with a canonical default locale', async () => {
     configure({
       projectId: undefined,
-      customMapping: { 'brand-english': { code: 'en-US' } },
+      customMapping: { 'brand-english': { code: 'en-us' } },
     });
     fetchMock.mockImplementation(async (request) => {
       expect(new URL(request.url).pathname).toBe('/v2/orgs/org-id/projects');
@@ -231,11 +252,13 @@ describe('CLI API client', () => {
 
   it('base64-encodes and uploads source files in batches of 100', async () => {
     const requestBodies: Array<{
-      data: Array<{ source: { content: string } }>;
+      data: Array<{ source: { content: string; locale: string } }>;
+      sourceLocale: string;
     }> = [];
     fetchMock.mockImplementation(async (request) => {
       const body = JSON.parse(await request.text()) as {
-        data: Array<{ source: { content: string } }>;
+        data: Array<{ source: { content: string; locale: string } }>;
+        sourceLocale: string;
       };
       requestBodies.push(body);
       return Response.json(
@@ -254,16 +277,33 @@ describe('CLI API client', () => {
           content: `message-${index}`,
           fileName: `messages-${index}.json`,
           fileFormat: 'JSON',
-          locale: 'en',
+          locale: 'en-us',
         },
       })),
-      { sourceLocale: 'en' }
+      { sourceLocale: 'en-us' }
     );
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(requestBodies[0].data).toHaveLength(100);
     expect(requestBodies[0].data[0].source.content).toBe('bWVzc2FnZS0w');
+    expect(requestBodies[0].data[0].source.locale).toBe('en-US');
+    expect(requestBodies[0].sourceLocale).toBe('en-US');
     expect(result.uploadedFiles).toHaveLength(101);
+  });
+
+  it('canonicalizes project setup locales', async () => {
+    configure({
+      customMapping: { 'brand-english': { code: 'en-us' } },
+    });
+    fetchMock.mockImplementation(async (request) => {
+      const body = JSON.parse(await request.text()) as { locales: string[] };
+      expect(body.locales).toEqual(['en-US', 'es-ES']);
+      return Response.json({ status: 'completed' });
+    });
+
+    await api.setupProject([], {
+      locales: ['brand-english', 'es-es'],
+    });
   });
 
   it('base64-encodes and uploads translation files through the SDK', async () => {
@@ -309,13 +349,22 @@ describe('CLI API client', () => {
 
   it('canonicalizes uploaded translation locales', async () => {
     configure({
-      customMapping: { 'brand-english': { code: 'en-US' } },
+      customMapping: {
+        'brand-english': { code: 'en-us' },
+        'brand-spanish': { code: 'es-es' },
+      },
     });
     fetchMock.mockImplementation(async (request) => {
       const body = JSON.parse(await request.text()) as {
-        data: Array<{ translations: Array<{ locale: string }> }>;
+        data: Array<{
+          source: { locale: string };
+          translations: Array<{ locale: string }>;
+        }>;
+        sourceLocale: string;
       };
-      expect(body.data[0].translations[0].locale).toBe('en-US');
+      expect(body.sourceLocale).toBe('en-US');
+      expect(body.data[0].source.locale).toBe('en-US');
+      expect(body.data[0].translations[0].locale).toBe('es-ES');
       return Response.json({
         uploadedFiles: [uploadedFile],
         count: 1,
@@ -323,27 +372,30 @@ describe('CLI API client', () => {
       });
     });
 
-    await api.uploadTranslations(
-      [
-        {
-          source: {
-            content: 'source',
-            fileName: 'messages.json',
-            fileFormat: 'JSON',
-            locale: 'en',
-          },
-          translations: [
-            {
-              content: 'translation',
-              fileName: 'en/messages.json',
-              fileFormat: 'JSON',
-              locale: 'brand-english',
-            },
-          ],
+    const files = [
+      {
+        source: {
+          content: 'source',
+          fileName: 'messages.json',
+          fileFormat: 'JSON' as const,
+          locale: 'brand-english',
         },
-      ],
-      { sourceLocale: 'en' }
-    );
+        translations: [
+          {
+            content: 'translation',
+            fileName: 'en/messages.json',
+            fileFormat: 'JSON' as const,
+            locale: 'brand-spanish',
+          },
+        ],
+      },
+    ];
+    await api.uploadTranslations(files, {
+      sourceLocale: 'brand-english',
+    });
+
+    expect(files[0].source.locale).toBe('brand-english');
+    expect(files[0].translations[0].locale).toBe('brand-spanish');
   });
 
   it('decodes text downloads and preserves binary downloads', async () => {

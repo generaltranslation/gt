@@ -49,7 +49,12 @@ type WithLocales<T = object> = T & LocalesOption;
  * indexed scope built from them.
  */
 type LocaleResolutionScope = {
-  approvedLocalePairs: { locale: string; canonicalLocale: string }[];
+  configuredLocales: Set<string>;
+  approvedLocalePairs: {
+    locale: string;
+    canonicalLocale: string;
+    standardizedLocale: string;
+  }[];
   canonicalMappingCodes: (string | undefined)[];
   approved: ApprovedLocales;
 };
@@ -107,19 +112,40 @@ export class LocaleConfig {
   private buildResolutionScope(
     approvedLocales: string[]
   ): LocaleResolutionScope {
-    const approvedLocalePairs = approvedLocales.map((locale) => ({
-      locale,
-      canonicalLocale: this.resolveCanonicalLocale(locale),
-    }));
+    const approvedLocalePairs = approvedLocales.map((locale) => {
+      const canonicalLocale = this.resolveCanonicalLocale(locale);
+      return {
+        locale,
+        canonicalLocale,
+        // Normalize once with the prepared scope, not during every fallback
+        // lookup over the configured list (the regression in #2067).
+        standardizedLocale: _standardizeLocale(canonicalLocale),
+      };
+    });
+    const approved = _prepareApprovedLocales(
+      approvedLocalePairs.map(({ canonicalLocale }) => canonicalLocale),
+      this.customMapping
+    );
+    // Reuse validation from the prepared scope instead of validating the entire
+    // list again when callers supply a separate approved-locale array.
+    const validCodes = new Set(
+      Array.from(approved.byLanguage.values()).flatMap((codes) =>
+        Array.from(codes)
+      )
+    );
     return {
+      configuredLocales: new Set(
+        approvedLocalePairs
+          .filter(({ standardizedLocale }) =>
+            validCodes.has(standardizedLocale)
+          )
+          .map(({ locale }) => locale)
+      ),
       approvedLocalePairs,
       canonicalMappingCodes: approvedLocalePairs.map(({ canonicalLocale }) =>
         getCustomLocaleCode(this.customMapping, canonicalLocale)
       ),
-      approved: _prepareApprovedLocales(
-        approvedLocalePairs.map(({ canonicalLocale }) => canonicalLocale),
-        this.customMapping
-      ),
+      approved,
     };
   }
 
@@ -330,22 +356,30 @@ export class LocaleConfig {
     locales: string | string[],
     approvedLocales: string[] = this.locales
   ) {
-    const { approvedLocalePairs, approved } =
+    const { configuredLocales, approvedLocalePairs, approved } =
       approvedLocales === this.locales
         ? this.getResolutionScope()
         : this.buildResolutionScope(approvedLocales);
-    const resolvedLocale = _determineLocaleWithIndex(
-      Array.isArray(locales)
-        ? locales.map((locale) => this.resolveCanonicalLocale(locale))
-        : this.resolveCanonicalLocale(locales),
-      approved,
-      this.customMapping
-    );
-    if (!resolvedLocale) return undefined;
-    const approvedLocale = approvedLocalePairs.find(
-      ({ canonicalLocale }) => canonicalLocale === resolvedLocale
-    );
-    return approvedLocale?.locale ?? this.resolveAliasLocale(resolvedLocale);
+    for (const candidate of Array.isArray(locales) ? locales : [locales]) {
+      // Distinct configured aliases may share a canonical language. Preserve
+      // an exact requested identity before negotiating equivalent spellings.
+      if (configuredLocales.has(candidate)) return candidate;
+      const resolvedLocale = _determineLocaleWithIndex(
+        this.resolveCanonicalLocale(candidate),
+        approved,
+        this.customMapping
+      );
+      if (!resolvedLocale) continue;
+      const approvedLocale =
+        approvedLocalePairs.find(
+          ({ canonicalLocale }) => canonicalLocale === resolvedLocale
+        ) ??
+        approvedLocalePairs.find(
+          ({ standardizedLocale }) => standardizedLocale === resolvedLocale
+        );
+      return approvedLocale?.locale ?? this.resolveAliasLocale(resolvedLocale);
+    }
+    return undefined;
   }
 
   getLocaleDirection(locale: string) {

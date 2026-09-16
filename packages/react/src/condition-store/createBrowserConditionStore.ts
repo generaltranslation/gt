@@ -34,6 +34,15 @@ export type CreateBrowserConditionStoreParams = Omit<
 export function createOrUpdateBrowserConditionStore(
   config: CreateBrowserConditionStoreParams
 ) {
+  if (config._serverConditions !== undefined) {
+    const conditionStore = new BrowserConditionStore({
+      ...config,
+      locale: config._serverConditions.locale,
+    });
+    setBrowserConditionStore(conditionStore);
+    return conditionStore;
+  }
+
   const locale = determineLocale(config);
   const region = determineRegion(config);
   const enableI18n = determineEnableI18n(config);

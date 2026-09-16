@@ -63,6 +63,7 @@ import { saveLocalEdits } from '../api/saveLocalEdits.js';
 import {
   hasValidApiKey,
   hasValidCredentials,
+  hasValidServiceLocales,
 } from './commands/utils/validation.js';
 import processSharedStaticAssets, {
   mirrorAssetsToLocales,
@@ -326,7 +327,8 @@ export class BaseCLI {
         const settings = await generateSettings(initOptions, undefined, {
           requireConfig: true,
         });
-        if (!hasValidCredentials(settings)) return exitSync(1);
+        if (!hasValidCredentials(settings) || !hasValidServiceLocales(settings))
+          return exitSync(1);
         await saveLocalEdits(settings);
         logger.endCommand('Saved local edits');
       });
@@ -373,7 +375,8 @@ export class BaseCLI {
       try {
         const settings = await generateSettings(options);
         // Project creation uses an organization key before a project ID exists.
-        if (!hasValidApiKey(settings)) return exitSync(1);
+        if (!hasValidApiKey(settings) || !hasValidServiceLocales(settings))
+          return exitSync(1);
         const { project } = await api.createProject(options.orgId, {
           name: options.name,
           defaultLocale: options.defaultLocale,

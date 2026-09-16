@@ -44,6 +44,15 @@ function createContext({
 }
 
 describe('parseLocale', () => {
+  it('preserves the configured Next.js route locale spelling', () => {
+    resetGTGlobals();
+    initializeI18nConfig({
+      defaultLocale: 'en-us',
+      locales: ['en-us', 'en-gb'],
+    });
+    expect(parseLocale(createContext({ locale: 'en-gb' }))).toBe('en-gb');
+    expect(resolvePagesRouterLocale({ locale: 'en-gb' })).toBe('en-gb');
+  });
   let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
@@ -95,7 +104,7 @@ describe('parseLocale', () => {
       },
     });
 
-    expect(parseLocale(context)).toBe('fr');
+    expect(parseLocale(context)).toBe('brand-french');
     expect(consoleWarnSpy).not.toHaveBeenCalled();
   });
 

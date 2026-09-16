@@ -166,13 +166,7 @@ export class I18nConfig extends LocaleConfig {
     return new GTRuntime({
       sourceLocale: this.getDefaultLocale(),
       targetLocale: locale,
-      // GT validates approved locales before constructing its LocaleConfig, so
-      // pass canonical locales here while preserving alias target locales.
-      locales: Array.from(
-        new Set(
-          this.getLocales().map((locale) => this.resolveCanonicalLocale(locale))
-        )
-      ),
+      locales: this.getLocales(),
       customMapping: this.getCustomMapping(),
       projectId: this.runtimeConfig.projectId,
       baseUrl: this.runtimeConfig.runtimeUrl || undefined,

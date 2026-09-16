@@ -24,6 +24,7 @@ import {
 import {
   resolveAliasLocale,
   resolveCanonicalLocale,
+  standardizeLocale,
 } from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import type { DownloadedFile } from '../types-dir/api/downloadFileBatch';
@@ -38,6 +39,12 @@ export function createGtApiAdapter(defaultConfig?: ApiClientConfig) {
   let client = defaultConfig ? createApiClient(defaultConfig) : undefined;
   let configuredClientConfig = defaultConfig;
   let customMapping: CustomMapping | undefined;
+
+  // Mapping resolves aliases; standardization also canonicalizes configured
+  // spellings such as en-us before they cross the service boundary.
+  function resolveServiceLocale(locale: string): string {
+    return standardizeLocale(resolveCanonicalLocale(locale, customMapping));
+  }
 
   function getClient(): ReturnType<typeof createApiClient> {
     if (!client) {
@@ -74,7 +81,7 @@ export function createGtApiAdapter(defaultConfig?: ApiClientConfig) {
     },
 
     resolveCanonicalLocale(locale: string) {
-      return resolveCanonicalLocale(locale, customMapping);
+      return resolveServiceLocale(locale);
     },
 
     async createBranch(body: CreateBranchData['body']) {
@@ -88,7 +95,7 @@ export function createGtApiAdapter(defaultConfig?: ApiClientConfig) {
             ...body,
             translatedFiles: body.translatedFiles?.map((file) => ({
               ...file,
-              locale: resolveCanonicalLocale(file.locale, customMapping),
+              locale: resolveServiceLocale(file.locale),
             })),
           },
           client: getClient(),
@@ -117,7 +124,7 @@ export function createGtApiAdapter(defaultConfig?: ApiClientConfig) {
             body: batch.map((file) => ({
               ...file,
               locale: file.locale
-                ? resolveCanonicalLocale(file.locale, customMapping)
+                ? resolveServiceLocale(file.locale)
                 : undefined,
             })),
             client: getClient(),
@@ -159,7 +166,7 @@ export function createGtApiAdapter(defaultConfig?: ApiClientConfig) {
               versionId,
             })),
             locales: options.locales?.map((locale) =>
-              resolveCanonicalLocale(locale, customMapping)
+              resolveServiceLocale(locale)
             ),
             force: options.force,
           },
@@ -178,7 +185,7 @@ export function createGtApiAdapter(defaultConfig?: ApiClientConfig) {
       }
     ) {
       const targetLocales = options.targetLocales.map((locale) =>
-        resolveCanonicalLocale(locale, customMapping)
+        resolveServiceLocale(locale)
       );
       const result = await processBatches(files, async (batch) => {
         const response = unwrapApiResult(
@@ -201,7 +208,7 @@ export function createGtApiAdapter(defaultConfig?: ApiClientConfig) {
               ),
               targetLocales,
               sourceLocale: options.sourceLocale
-                ? resolveCanonicalLocale(options.sourceLocale, customMapping)
+                ? resolveServiceLocale(options.sourceLocale)
                 : undefined,
               // Consumers intentionally accept custom model-provider strings beyond
               // the OpenAPI enum; preserve the existing wire behavior at this boundary.
@@ -230,10 +237,7 @@ export function createGtApiAdapter(defaultConfig?: ApiClientConfig) {
       }>,
       options: { sourceLocale: string }
     ) {
-      const sourceLocale = resolveCanonicalLocale(
-        options.sourceLocale,
-        customMapping
-      );
+      const sourceLocale = resolveServiceLocale(options.sourceLocale);
       const result = await processBatches(files, async (batch) => {
         const response = unwrapApiResult(
           await uploadSourceFiles({
@@ -242,7 +246,7 @@ export function createGtApiAdapter(defaultConfig?: ApiClientConfig) {
                 source: {
                   ...source,
                   content: encodeFileContent(source.content, source.fileFormat),
-                  locale: resolveCanonicalLocale(source.locale, customMapping),
+                  locale: resolveServiceLocale(source.locale),
                 },
               })),
               sourceLocale,
@@ -283,23 +287,18 @@ export function createGtApiAdapter(defaultConfig?: ApiClientConfig) {
                 source: {
                   ...source,
                   content: encodeFileContent(source.content, source.fileFormat),
+                  locale: resolveServiceLocale(source.locale),
                 },
                 translations: translations.map((translation) => ({
                   ...translation,
-                  locale: resolveCanonicalLocale(
-                    translation.locale,
-                    customMapping
-                  ),
+                  locale: resolveServiceLocale(translation.locale),
                   content: encodeFileContent(
                     translation.content,
                     translation.fileFormat
                   ),
                 })),
               })),
-              sourceLocale: resolveCanonicalLocale(
-                options.sourceLocale,
-                customMapping
-              ),
+              sourceLocale: resolveServiceLocale(options.sourceLocale),
             },
             client: getClient(),
           })

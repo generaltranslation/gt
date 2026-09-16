@@ -17,6 +17,7 @@ vi.mock('fs', () => ({
 const mockVersionInfo = vi.hoisted(() => ({
   rootParamStability: 'experimental',
   turboConfigStable: true,
+  localeRefreshSupported: true,
   swcPluginCompatible: true,
   babelPluginCompatible: true,
 }));
@@ -66,6 +67,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockVersionInfo.rootParamStability = 'experimental';
   mockVersionInfo.turboConfigStable = true;
+  mockVersionInfo.localeRefreshSupported = true;
   mockVersionInfo.swcPluginCompatible = true;
   mockVersionInfo.babelPluginCompatible = true;
   vi.mocked(fs.existsSync).mockReturnValue(false);
@@ -84,6 +86,17 @@ describe('withGTConfig', () => {
     const mod = await import('../config');
     return mod.withGTConfig;
   }
+
+  it.each([false, true])(
+    'exports locale refresh support (%s) from the detected Next version',
+    async (supported) => {
+      mockVersionInfo.localeRefreshSupported = supported;
+      const withGTConfig = await getWithGTConfig();
+      expect(
+        withGTConfig().env?._GENERALTRANSLATION_LOCALE_REFRESH_SUPPORTED
+      ).toBe(String(supported));
+    }
+  );
 
   // ==============================
   // 1. Default behavior
@@ -1119,7 +1132,7 @@ describe('withGTConfig', () => {
       expect(enCount).toBe(1);
     });
 
-    it('locales standardized via standardizeLocale() when GT services enabled', async () => {
+    it('preserves configured locale spellings when GT services are enabled', async () => {
       const withGTConfig = await getWithGTConfig();
       process.env.GT_PROJECT_ID = 'proj';
       process.env.GT_DEV_API_KEY = 'gt-dev-abc';
@@ -1131,10 +1144,9 @@ describe('withGTConfig', () => {
       );
       const params = parseConfigParams(result);
 
-      // standardizeLocale should normalize these
-      // en-us -> en-US, fr-fr -> fr-FR (BCP-47 standardization)
-      expect(params.locales).toContain('en-US');
-      expect(params.locales).toContain('fr-FR');
+      // Runtime identities retain the same spelling as routes and local files.
+      expect(params.locales).toContain('en-us');
+      expect(params.locales).toContain('fr-fr');
     });
 
     it('locales NOT standardized when GT services disabled', async () => {

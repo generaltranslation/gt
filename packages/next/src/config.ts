@@ -20,7 +20,6 @@ import {
   invalidLocalesError,
   projectIdMissingWarn,
   standardizedCanonicalLocalesWarning,
-  standardizedLocalesWarning,
   unresolvedLoadDictionaryBuildError,
   unresolvedLoadTranslationsBuildError,
 } from './errors/createErrors';
@@ -32,6 +31,7 @@ import {
 } from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import {
+  localeRefreshSupported,
   rootParamStability,
   turboConfigStable,
 } from './plugin/getStableNextVersionInfo';
@@ -487,18 +487,7 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   if (mergedConfig.locales && mergedConfig.defaultLocale) {
     mergedConfig.locales.unshift(mergedConfig.defaultLocale);
   }
-  const updatedLocales: string[] = [];
-  mergedConfig.locales = Array.from(new Set(mergedConfig.locales)).map(
-    (locale) => {
-      const updatedLocale = gtServicesEnabled
-        ? standardizeLocale(locale)
-        : locale;
-      if (updatedLocale !== locale) {
-        updatedLocales.push(`${locale} -> ${updatedLocale}`);
-      }
-      return updatedLocale;
-    }
-  );
+  mergedConfig.locales = Array.from(new Set(mergedConfig.locales));
 
   // Standardize canonical locales
   const updatedCanonicalLocales: string[] = [];
@@ -640,11 +629,6 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
 
   // Check: if using GT infrastructure, warn about unsupported locales
   if (gtServicesEnabled) {
-    // Warn about standardized locales
-    if (updatedLocales.length) {
-      console.warn(standardizedLocalesWarning(updatedLocales));
-    }
-
     // Warn about standardized canonical locales
     if (updatedCanonicalLocales.length) {
       console.warn(
@@ -742,6 +726,8 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     ),
     env: {
       ...internalNextConfig.env,
+      _GENERALTRANSLATION_LOCALE_REFRESH_SUPPORTED:
+        localeRefreshSupported.toString(),
       _GENERALTRANSLATION_I18N_CONFIG_PARAMS: I18NConfigParams,
       NEXT_PUBLIC_GENERALTRANSLATION_I18N_CONFIG_PARAMS: JSON.stringify(
         clientI18NConfigParams
