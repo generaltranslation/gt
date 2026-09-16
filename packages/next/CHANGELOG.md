@@ -1,5 +1,33 @@
 # gt-next
 
+## 11.3.0
+
+### Minor Changes
+
+- [#2288](https://github.com/generaltranslation/gt/pull/2288) [`dc4b49a`](https://github.com/generaltranslation/gt/commit/dc4b49a6c17ea6822eb7c646f5217515d9400269) Thanks [@eoinest](https://github.com/eoinest)! - Add `localeRoutes` to `createNextMiddleware` to enable selected shared paths per locale, for example `localeRoutes: { 'en-GB': ['/pricing', '/blog/[[...slug]]'] }`. Locales omitted from this option remain unrestricted; an empty list allows no pages for that locale. Unavailable paths fall back to the corresponding default-locale URL, including configured aliases and route overrides. The default locale is always the terminal fallback, and missing pages use the application's normal Next.js 404 handling. This option controls routing availability; it does not check whether CMS content exists.
+
+### Patch Changes
+
+- [#2288](https://github.com/generaltranslation/gt/pull/2288) [`90109bf`](https://github.com/generaltranslation/gt/commit/90109bf9ec4900819023176320629a5069fd7b51) Thanks [@eoinest](https://github.com/eoinest)! - Preserve configured locale identities across negotiation, routing, hooks, cookies, translation loaders, and caches, including when GT services are enabled. For example, configuring `en-gb` keeps that spelling in application-facing values while GT service requests and formatting use `en-GB`.
+
+  Locale negotiation accepts equivalent spellings and returns a configured identity, preserving exact matches between distinct aliases for the same language. This also applies to request-header negotiation: an `Accept-Language` preference of `fr` can resolve to a configured `brand-french` alias. Preserve support for legacy tags such as `sh` and `cnr`, and retain existing custom mappings when validating partial `setConfig()` updates.
+
+  Translation loaders and local filenames must use the configured identity: a loader for configured `en-gb` receives `en-gb`, not `en-GB`. Configure canonical spelling instead if the application requires it. Custom mapping `code` values must use canonical spelling, for example `'en-gb': { code: 'en-GB' }`. Canonicalize locales at GT service boundaries, including nested source-file locales in translation uploads and requests through the shared CLI/Sanity adapter. Require canonical locale codes or explicit custom mappings for CLI commands that use GT translation services. For example, using `en-us` with the API requires `customMapping: { "en-us": { "code": "en-US" } }`; otherwise the command exits with guidance before running the translation workflow. Local-only commands and dry runs retain their existing validation. Restore configured identities in service metadata; without a corresponding requested identity, use the first matching configured locale.
+
+  Align server/browser locale values and expose the configured locale list through `useLocales()`. In Next.js, preserve configured identities in localized paths, route overrides, and locale availability. Resolve unsupported locale preferences before deciding whether to prefix the default locale, and cache locale resolution during middleware initialization.
+
+  For Next.js App Router, read locale and region from server-provided conditions. Setters write request cookies and retain pending values for the refresh callback; hooks keep reading the current server conditions until a new snapshot arrives, including when a locale switch is rejected. Use `router.refresh()` on Next.js 16.1 and newer and a document reload on older versions to avoid stale layout/provider snapshots after middleware redirects. Detect this capability at build time, retain the existing document reload when returning to the default locale, and leave other React integrations' cookie-backed behavior unchanged. This adds no request-time cookie reads and does not change App Router's existing `enableI18n` behavior.
+
+- [#2288](https://github.com/generaltranslation/gt/pull/2288) [`fe5b33d`](https://github.com/generaltranslation/gt/commit/fe5b33d49e2463a8dfa15cd8dcc2aaf13d823237) Thanks [@eoinest](https://github.com/eoinest)! - Fix string-valued `pathConfig` aliases so localized URLs rewrite to their shared pages, including dynamic and catch-all routes. String aliases now participate in default-locale URL detection just like equivalent per-locale objects, so an unprefixed default-locale alias takes precedence over an ordinary locale cookie.
+
+- Updated dependencies [[`90109bf`](https://github.com/generaltranslation/gt/commit/90109bf9ec4900819023176320629a5069fd7b51)]:
+  - @generaltranslation/format@0.1.9
+  - generaltranslation@9.4.1
+  - gt-i18n@1.0.28
+  - gt-react@11.3.0
+  - @generaltranslation/compiler@1.3.53
+  - @generaltranslation/react-core@11.3.0
+
 ## 11.2.1
 
 ### Patch Changes
