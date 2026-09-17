@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789576693326,
+  "lastUpdate": 1789605431536,
   "repoUrl": "https://github.com/generaltranslation/gt",
   "entries": {
     "Middleware Benchmarks": [
@@ -10556,6 +10556,122 @@ window.BENCHMARK_DATA = {
             "value": 82.20000000001164,
             "unit": "ms",
             "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.3.0\"\n}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Ernest McCarter",
+            "username": "eoinest",
+            "email": "ernest@generaltranslation.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "2f9256fbdc48cb6b55a823b96ac8dc6162bcdd67",
+          "message": "[ci] release (#2304)\n\nThis PR was opened by the [Changesets\nrelease](https://github.com/changesets/action) GitHub action. When\nyou're ready to do a release, you can merge this and the packages will\nbe published to npm automatically. If you're not ready to do a release\nyet, that's fine, whenever you add more changesets to main, this PR will\nbe updated.\n\n\n# Releases\n## gt-next@11.4.0\n\n### Minor Changes\n\n- [#2303](https://github.com/generaltranslation/gt/pull/2303)\n[`c552090`](https://github.com/generaltranslation/gt/commit/c55209015fbf4b79f19ffe8193dee995ed9bdf36)\nThanks [@eoinest](https://github.com/eoinest)! - Add\n`enableSmartRouting` to `createNextMiddleware`. It defaults to `true`,\npreserving existing locale negotiation and default-alias behavior.\n\nWith `enableSmartRouting: false` and `prefixDefaultLocale: false`, an\nunprefixed URL selects the default locale for visitors who already have\na locale cookie. First visits still use browser language preferences,\nand explicit `setLocale()` requests override the URL. Explicit\ndefault-locale prefixes redirect to the unprefixed URL. On document\nrequests without a locale cookie, this redirect sets the default-locale\ncookie to preserve that choice; background fetches and existing locale\ncookies are left untouched. Routing with `prefixDefaultLocale: true` or\n`localeRouting: false` is unchanged.\n\n### Patch Changes\n\n- Updated dependencies []:\n  - @generaltranslation/react-core@11.4.0\n  - gt-react@11.4.0\n## gt-react@11.4.0\n\n### Patch Changes\n\n- Updated dependencies []:\n  - @generaltranslation/react-core@11.4.0\n## gt-react-native@11.4.0\n\n### Patch Changes\n\n- Updated dependencies []:\n  - @generaltranslation/react-core@11.4.0\n## gt-tanstack-start@11.4.0\n\n### Patch Changes\n\n- Updated dependencies []:\n  - @generaltranslation/react-core@11.4.0\n  - gt-react@11.4.0\n## @generaltranslation/react-core@11.4.0",
+          "timestamp": "2026-09-17T00:30:15Z",
+          "url": "https://github.com/generaltranslation/gt/commit/2f9256fbdc48cb6b55a823b96ac8dc6162bcdd67"
+        },
+        "date": 1789605430887,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "gt-next > unit > middleware: factory creation latency > createNextMiddleware() (mean)",
+            "value": 0.04722966112580275,
+            "range": "±0.0264",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.0\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > default locale request (/) (mean)",
+            "value": 0.1499467529976028,
+            "range": "±0.0595",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.0\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > non-default locale request (/fr) (mean)",
+            "value": 0.18309503954595419,
+            "range": "±0.0697",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.0\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > nested route (/fr/about) (mean)",
+            "value": 0.17811758440170597,
+            "range": "±0.1172",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.0\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > ttfb",
+            "value": 128.30000000001746,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.0\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > domContentLoaded",
+            "value": 138.20000000001164,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.0\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > load",
+            "value": 207.20000000001164,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.0\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > elapsed",
+            "value": 119,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.0\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > ttfb",
+            "value": 16.79999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.0\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > domContentLoaded",
+            "value": 26,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.0\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > load",
+            "value": 110.29999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.0\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: locale-switch-en-to-fr > elapsed",
+            "value": 612,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.0\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > ttfb",
+            "value": 10,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.0\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > domContentLoaded",
+            "value": 18.699999999982538,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.0\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > load",
+            "value": 80,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.0\"\n}"
           }
         ]
       }
