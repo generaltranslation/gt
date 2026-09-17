@@ -760,7 +760,7 @@ export const enqueueFileTranslations = <ThrowOnError extends boolean = false>(
 /**
  * Translate content at runtime
  *
- * Translate one or more strings or structured content entries with caching and memoization. Development API keys are accepted for this endpoint.
+ * Translate one or more strings, structured content entries, or markdown documents with caching and memoization. Markdown and MDX documents are sent as strings with `fileFormat` set to MD or MDX. Development API keys are accepted for this endpoint.
  */
 export const translate = <ThrowOnError extends boolean = false>(
   options: Options<TranslateData, ThrowOnError>
