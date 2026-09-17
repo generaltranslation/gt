@@ -1,5 +1,19 @@
 # gt-next
 
+## 11.4.0
+
+### Minor Changes
+
+- [#2303](https://github.com/generaltranslation/gt/pull/2303) [`c552090`](https://github.com/generaltranslation/gt/commit/c55209015fbf4b79f19ffe8193dee995ed9bdf36) Thanks [@eoinest](https://github.com/eoinest)! - Add `enableSmartRouting` to `createNextMiddleware`. It defaults to `true`, preserving existing locale negotiation and default-alias behavior.
+
+  With `enableSmartRouting: false` and `prefixDefaultLocale: false`, an unprefixed URL selects the default locale for visitors who already have a locale cookie. First visits still use browser language preferences, and explicit `setLocale()` requests override the URL. Explicit default-locale prefixes redirect to the unprefixed URL. On document requests without a locale cookie, this redirect sets the default-locale cookie to preserve that choice; background fetches and existing locale cookies are left untouched. Routing with `prefixDefaultLocale: true` or `localeRouting: false` is unchanged.
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @generaltranslation/react-core@11.4.0
+  - gt-react@11.4.0
+
 ## 11.3.0
 
 ### Minor Changes
