@@ -171,6 +171,88 @@ describe.sequential('file response locale aliases', () => {
         expect(result.uploadedFiles).toEqual(uploadedFiles);
         expect(result.uploadedFiles[0]).not.toHaveProperty('locale');
       });
+
+      it.each(localeCases)(
+        'round-trips enqueue job locale $locale',
+        async ({ locale, customMapping }) => {
+          const job = {
+            sourceFileId: 'source-file-id',
+            fileId: 'file-id',
+            versionId: 'version-id',
+            branchId: 'branch-id',
+            targetLocale: 'en-GB',
+            projectId: 'test-project',
+            orgId: 'test-org',
+            force: false,
+          };
+          const frenchJob = { ...job, targetLocale: 'fr' };
+          const requests = mockResponse({
+            jobData: { british: job, french: frenchJob },
+            locales: ['en-GB', 'fr'],
+            message: 'Enqueued',
+          });
+          const options = {
+            sourceLocale: 'fr',
+            targetLocales: [locale, 'fr'],
+          };
+
+          const result = await create(customMapping).enqueueFiles(
+            [uploadedFile],
+            options
+          );
+
+          expect(requests).toHaveLength(1);
+          expect(new URL(requests[0].url).pathname).toBe(
+            '/v2/project/translations/enqueue'
+          );
+          expect(await requests[0].json()).toMatchObject({
+            sourceLocale: 'fr',
+            targetLocales: ['en-GB', 'fr'],
+          });
+          expect(result.locales).toEqual([locale, 'fr']);
+          expect(result.jobData).toEqual({
+            british: { ...job, targetLocale: locale },
+            french: frenchJob,
+          });
+          expect(options.targetLocales).toEqual([locale, 'fr']);
+        }
+      );
+
+      it('preserves empty enqueue results', async () => {
+        const requests = mockResponse({});
+        const result = await create({
+          'en-gb': { code: 'en-GB' },
+        }).enqueueFiles([], { sourceLocale: 'fr', targetLocales: ['en-gb'] });
+
+        expect(requests).toHaveLength(0);
+        expect(result.jobData).toEqual({});
+        expect(result.locales).toEqual(['en-gb']);
+      });
     });
   }
+
+  it('preserves legacy adapter enqueue data without target locales', async () => {
+    const data = {
+      'job-id': { fileName: 'messages.json', versionId: 'version-id' },
+    };
+    mockResponse({
+      data,
+      translations: [],
+      locales: ['en-GB'],
+      message: 'Enqueued',
+    });
+    const adapter = createGtApiAdapter();
+    adapter.configure({
+      ...config,
+      customMapping: { 'en-gb': { code: 'en-GB' } },
+    });
+
+    const result = await adapter.enqueueFiles([uploadedFile], {
+      sourceLocale: 'fr',
+      targetLocales: ['en-gb'],
+    });
+
+    expect(result.jobData).toEqual(data);
+    expect(result.locales).toEqual(['en-gb']);
+  });
 });

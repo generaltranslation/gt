@@ -221,12 +221,28 @@ export function createGtApiAdapter(defaultConfig?: ApiClientConfig) {
         );
         const jobData =
           'jobData' in response ? response.jobData : response.data;
-        return Object.entries(jobData);
+        return Object.entries(jobData).map(
+          ([jobId, job]) =>
+            [
+              jobId,
+              'targetLocale' in job
+                ? {
+                    ...job,
+                    targetLocale: resolveAliasLocale(
+                      job.targetLocale,
+                      customMapping
+                    ),
+                  }
+                : job,
+            ] as const
+        );
       });
 
       return {
         jobData: Object.fromEntries(result),
-        locales: targetLocales,
+        locales: targetLocales.map((locale) =>
+          resolveAliasLocale(locale, customMapping)
+        ),
         message: `Successfully enqueued ${result.length} file translation jobs in ${Math.ceil(files.length / DEFAULT_BATCH_SIZE)} batch(es)`,
       };
     },
