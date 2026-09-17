@@ -109,6 +109,68 @@ describe.sequential('file response locale aliases', () => {
         expect(result.uploadedFiles).toEqual(uploadedFiles);
         expect(result.uploadedFiles[0]).not.toHaveProperty('locale');
       });
+
+      it.each(localeCases)(
+        'round-trips translation upload locale $locale',
+        async ({ locale, customMapping }) => {
+          const requests = mockResponse({
+            uploadedFiles: [{ ...uploadedFile, locale: 'en-GB' }],
+            count: 1,
+            message: 'Uploaded',
+          });
+          const files = [
+            {
+              source: { ...uploadedFile, content: '{}', locale: 'fr' },
+              translations: [{ ...uploadedFile, content: '{}', locale }],
+            },
+          ];
+
+          const result = await create(customMapping).uploadTranslations(files, {
+            sourceLocale: 'fr',
+          });
+
+          expect(requests).toHaveLength(1);
+          expect(new URL(requests[0].url).pathname).toBe(
+            '/v2/project/files/upload-translations'
+          );
+          expect(await requests[0].json()).toMatchObject({
+            sourceLocale: 'fr',
+            data: [
+              {
+                source: { locale: 'fr' },
+                translations: [{ locale: 'en-GB' }],
+              },
+            ],
+          });
+          expect(result.uploadedFiles).toEqual([{ ...uploadedFile, locale }]);
+          expect(files[0].translations[0].locale).toBe(locale);
+        }
+      );
+
+      it('preserves absent and unmapped translation upload locales', async () => {
+        const uploadedFiles = [
+          uploadedFile,
+          { ...uploadedFile, fileId: 'french-file', locale: 'fr' },
+        ];
+        mockResponse({ uploadedFiles, count: 2, message: 'Uploaded' });
+        const client = create({ 'en-gb': { code: 'en-GB' } });
+        const result = await client.uploadTranslations(
+          [
+            {
+              source: { ...uploadedFile, content: '{}', locale: 'en-gb' },
+              translations: uploadedFiles.map((file) => ({
+                ...file,
+                content: '{}',
+                locale: 'fr',
+              })),
+            },
+          ],
+          { sourceLocale: 'en-gb' }
+        );
+
+        expect(result.uploadedFiles).toEqual(uploadedFiles);
+        expect(result.uploadedFiles[0]).not.toHaveProperty('locale');
+      });
     });
   }
 });
