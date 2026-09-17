@@ -149,7 +149,12 @@ export function createGtApiAdapter(defaultConfig?: ApiClientConfig) {
           )
         ),
         count: responses.reduce((count, response) => count + response.count, 0),
-        pending: responses.flatMap((response) => response.pending ?? []),
+        pending: responses.flatMap((response) =>
+          (response.pending ?? []).map((file) => ({
+            ...file,
+            locale: resolveAliasLocale(file.locale, customMapping),
+          }))
+        ),
       };
     },
 

@@ -255,4 +255,62 @@ describe.sequential('file response locale aliases', () => {
     expect(result.jobData).toEqual(data);
     expect(result.locales).toEqual(['en-gb']);
   });
+
+  it.each(localeCases)(
+    'round-trips completed and pending download locale $locale',
+    async ({ locale, customMapping }) => {
+      const pending = {
+        branchId: 'branch-id',
+        fileId: 'pending-file',
+        versionId: 'version-id',
+        locale: 'en-GB',
+      };
+      const requests = mockResponse({
+        files: [
+          {
+            ...uploadedFile,
+            id: 'translation-id',
+            locale: 'en-GB',
+            data: 'e30=',
+            metadata: {},
+          },
+        ],
+        pending: [pending, { ...pending, fileId: 'french-file', locale: 'fr' }],
+        count: 1,
+      });
+      const adapter = createGtApiAdapter();
+      adapter.configure({ ...config, customMapping });
+
+      const result = await adapter.downloadFileBatch([
+        { ...uploadedFile, locale },
+        { ...pending, locale },
+        { ...pending, fileId: 'french-file', locale: 'fr' },
+      ]);
+
+      expect(await requests[0].json()).toMatchObject([
+        { locale: 'en-GB' },
+        { locale: 'en-GB' },
+        { locale: 'fr' },
+      ]);
+      expect(result.files[0]).toMatchObject({ locale, data: '{}' });
+      expect(result.count).toBe(1);
+      expect(result.pending).toEqual([
+        { ...pending, locale },
+        { ...pending, fileId: 'french-file', locale: 'fr' },
+      ]);
+    }
+  );
+
+  it('preserves download responses without pending files', async () => {
+    mockResponse({ files: [], count: 0 });
+    const adapter = createGtApiAdapter();
+    adapter.configure({
+      ...config,
+      customMapping: { 'en-gb': { code: 'en-GB' } },
+    });
+
+    expect(
+      await adapter.downloadFileBatch([{ ...uploadedFile, locale: 'en-gb' }])
+    ).toEqual({ files: [], pending: [], count: 0 });
+  });
 });
