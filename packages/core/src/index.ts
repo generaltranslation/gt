@@ -373,6 +373,12 @@ export class GT extends GTRuntime {
     );
     return {
       ...result,
+      jobData: Object.fromEntries(
+        Object.entries(result.jobData).map(([jobId, job]) => [
+          jobId,
+          { ...job, targetLocale: this.resolveAliasLocale(job.targetLocale) },
+        ])
+      ),
       locales: targetLocaleIdentities,
     };
   }
