@@ -254,7 +254,12 @@ export function createGtApiAdapter(defaultConfig?: ApiClientConfig) {
             client: getClient(),
           })
         );
-        return response.uploadedFiles;
+        return response.uploadedFiles.map((file) => ({
+          ...file,
+          ...(file.locale && {
+            locale: resolveAliasLocale(file.locale, customMapping),
+          }),
+        }));
       });
 
       return { uploadedFiles: result };
