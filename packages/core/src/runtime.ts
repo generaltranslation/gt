@@ -48,6 +48,7 @@ import { TranslateOptions } from './types-dir/api/entry';
  * @typedef {Object} GTConstructorParams
  * @property {string} [apiKey] - The API key for accessing the translation service
  * @property {string} [devApiKey] - The development API key for accessing the translation service
+ * @property {string} [orgApiKey] - The organization API key for accessing the translation service
  * @property {string} [sourceLocale] - The default source locale for translations
  * @property {string} [targetLocale] - The default target locale for translations
  * @property {string[]} [locales] - Array of supported locales
@@ -58,6 +59,7 @@ import { TranslateOptions } from './types-dir/api/entry';
 export type GTConstructorParams = {
   apiKey?: string;
   devApiKey?: string;
+  orgApiKey?: string;
   sourceLocale?: string;
   targetLocale?: string;
   locales?: string[];
@@ -90,9 +92,6 @@ export class GTRuntime {
 
   /** API key for accessing the translation service */
   apiKey?: string;
-
-  /** Development API key for accessing the translation service */
-  devApiKey?: string;
 
   /** Source locale for translations */
   sourceLocale?: string;
@@ -138,8 +137,10 @@ export class GTRuntime {
   constructor(params: GTConstructorParams = {}) {
     // Read environment
     if (typeof process !== 'undefined') {
-      this.apiKey ||= process.env?.GT_API_KEY;
-      this.devApiKey ||= process.env?.GT_DEV_API_KEY;
+      this.apiKey ||=
+        process.env?.GT_API_KEY ||
+        process.env?.GT_DEV_API_KEY ||
+        process.env?.GT_ORG_API_KEY;
       this.projectId ||= process.env?.GT_PROJECT_ID;
     }
     // Set up config
@@ -149,6 +150,7 @@ export class GTRuntime {
   setConfig({
     apiKey,
     devApiKey,
+    orgApiKey,
     sourceLocale,
     targetLocale,
     locales,
@@ -159,8 +161,7 @@ export class GTRuntime {
     const effectiveCustomMapping = customMapping ?? this.customMapping;
 
     // ----- Environment properties ----- //
-    if (apiKey) this.apiKey = apiKey;
-    if (devApiKey) this.devApiKey = devApiKey;
+    this.apiKey = apiKey || devApiKey || orgApiKey || this.apiKey;
     if (projectId) this.projectId = projectId;
 
     // ----- Validate configured locale identities ----- //
@@ -246,14 +247,14 @@ export class GTRuntime {
   protected _getTranslationConfig(): TranslationRequestConfig {
     return {
       baseUrl: this.baseUrl,
-      apiKey: this.apiKey || this.devApiKey,
+      apiKey: this.apiKey,
       projectId: this.projectId || '',
     };
   }
 
   protected _validateAuth(functionName: string) {
     const errors: string[] = [];
-    if (!this.apiKey && !this.devApiKey) {
+    if (!this.apiKey) {
       const error = noApiKeyProvidedError(functionName);
       errors.push(error);
     }
