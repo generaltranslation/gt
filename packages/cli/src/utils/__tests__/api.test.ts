@@ -297,18 +297,17 @@ describe('CLI API client', () => {
       });
     });
 
-    await api.submitUserEditDiffs({
-      diffs: [
-        {
-          fileName: 'messages.json',
-          locale: 'brand-english',
-          diff: 'diff',
-          versionId: 'version-id',
-          fileId: 'file-id',
-          localContent: 'content',
-        } as Parameters<typeof api.submitUserEditDiffs>[0]['diffs'][number],
-      ],
-    });
+    const diffs = [
+      {
+        fileName: 'messages.json',
+        locale: 'brand-english',
+        diff: 'diff',
+        versionId: 'version-id',
+        fileId: 'file-id',
+        localContent: 'content',
+      },
+    ];
+    await api.submitUserEditDiffs({ diffs });
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 

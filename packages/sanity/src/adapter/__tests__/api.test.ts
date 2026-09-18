@@ -313,19 +313,7 @@ describe('Sanity API adapter', () => {
             updatedAt: null,
           },
         ],
-        sourceFile: {
-          id: 'id',
-          branchId: 'branch-id',
-          fileId: 'file-id',
-          versionId: 'version-id',
-          fileName: 'document.html',
-          sourceLocale: 'en-US',
-          fileFormat: 'HTML',
-          dataFormat: null,
-          createdAt: '2026-01-01',
-          updatedAt: '2026-01-01',
-          locales: ['es-ES'],
-        },
+        sourceFile: { ...sourceFile, id: 'id' },
       });
     });
 
