@@ -672,13 +672,27 @@ export class BaseCLI {
     this.program
       .command('login')
       .description('Sign in to your General Translation account')
-      .action(async () => {
+      .option(
+        '--no-browser',
+        'Do not open a browser; show a sign-in URL to use on any device instead'
+      )
+      .action(async (options: { browser: boolean }) => {
         displayHeader('Signing in to General Translation...');
         try {
           // Tokens are bound to one API resource, so log in to the configured one.
           const baseUrl = resolveConfig(process.cwd())?.config.baseUrl;
           await login({
             baseUrl: typeof baseUrl === 'string' ? baseUrl : undefined,
+            noBrowser: !options.browser,
+            onDeviceCode: ({
+              userCode,
+              verificationUri,
+              verificationUriComplete,
+            }) => {
+              logger.message(
+                `${options.browser ? 'Opening your browser. If it does not open, on any device visit' : 'On any device, visit'} ${chalk.cyan(verificationUriComplete ?? verificationUri)} and ${verificationUriComplete ? 'confirm' : 'enter'} the code ${chalk.bold(userCode)}\nWaiting for approval...`
+              );
+            },
             onAuthorizationUrl: (url) => {
               logger.message(
                 `Opening your browser to sign in. If it does not open, visit:\n${chalk.cyan(url)}`

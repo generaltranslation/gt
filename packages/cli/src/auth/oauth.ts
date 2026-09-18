@@ -23,6 +23,11 @@ const OAUTH_SCOPE = 'openid profile offline_access gt:*';
 // Refresh before expiry so an in-flight request does not carry an expired token.
 const TOKEN_REFRESH_BUFFER_MS = 30_000;
 
+export type DeviceCode = {
+  userCode: string;
+  verificationUri: string;
+  verificationUriComplete?: string;
+};
 export type UserInfo = { email?: string; name?: string; sub: string };
 type OAuthRequestOptions = { authBaseUrl?: string; fetch?: typeof fetch };
 export type UserTokenProviderOptions = OAuthRequestOptions & {
@@ -32,6 +37,9 @@ export type UserTokenProviderOptions = OAuthRequestOptions & {
 export type LoginOptions = OAuthRequestOptions & {
   /** API the token is issued for; GT_API_URL overrides, then the public API. */
   baseUrl?: string;
+  noBrowser?: boolean;
+  onDeviceCode?: (deviceCode: DeviceCode) => void;
+  signal?: AbortSignal;
   onAuthorizationUrl?: (url: string) => void;
   openBrowser?: (url: string) => Promise<unknown>;
   timeoutMs?: number;
@@ -105,10 +113,13 @@ function assertEndpoint(url: URL, issuer: URL): void {
   }
 }
 
-async function configuration({
-  authBaseUrl = getAuthBaseUrl(),
-  fetch: fetchImplementation = globalThis.fetch,
-}: OAuthRequestOptions): Promise<oidc.Configuration> {
+async function configuration(
+  {
+    authBaseUrl = getAuthBaseUrl(),
+    fetch: fetchImplementation = globalThis.fetch,
+  }: OAuthRequestOptions,
+  signal?: AbortSignal
+): Promise<oidc.Configuration> {
   const issuer = new URL(authBaseUrl);
   const local =
     issuer.hostname === 'localhost' ||
@@ -136,6 +147,10 @@ async function configuration({
       assertEndpoint(new URL(url), issuer);
       return fetchImplementation(url, {
         ...init,
+        // Include operation cancellation in JWKS fetches as well as token requests.
+        signal: signal
+          ? AbortSignal.any([signal, ...(init.signal ? [init.signal] : [])])
+          : init.signal,
         body:
           init.body instanceof Uint8Array
             ? new Uint8Array(init.body)
@@ -188,18 +203,95 @@ function toApiResource(baseUrl: string): string {
   return new URL(baseUrl).href;
 }
 
-/** Browser authorization code + S256, with the complete callback validated by OIDC. */
-export async function login(options: LoginOptions = {}): Promise<OAuthTokens> {
-  const authBaseUrl = options.authBaseUrl ?? getAuthBaseUrl();
-  const resource = toApiResource(
+function loginResource(options: LoginOptions): string {
+  return toApiResource(
     process.env.GT_API_URL ?? options.baseUrl ?? defaultBaseUrl
   );
+}
+
+async function loginWithDeviceCode(
+  options: LoginOptions
+): Promise<OAuthTokens> {
+  if (options.noBrowser && !options.onDeviceCode) {
+    throw oauthFailure(
+      'Device login needs a way to display the verification code',
+      'Provide onDeviceCode when using noBrowser'
+    );
+  }
+  const authBaseUrl = options.authBaseUrl ?? getAuthBaseUrl();
+  const resource = loginResource(options);
+  const lifetime = new AbortController();
+  const signal = options.signal
+    ? AbortSignal.any([options.signal, lifetime.signal])
+    : lifetime.signal;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let result: oidc.TokenEndpointResponse & oidc.TokenEndpointResponseHelpers;
+  try {
+    signal.throwIfAborted();
+    const config = await configuration({ ...options, authBaseUrl }, signal);
+    const started = Date.now();
+    const response = await oidc.initiateDeviceAuthorization(config, {
+      scope: OAUTH_SCOPE,
+      resource,
+    });
+    const deadline = started + response.expires_in * 1000;
+    const checkLifetime = () => {
+      if (Date.now() >= deadline)
+        lifetime.abort(new DOMException('Device code expired', 'TimeoutError'));
+      signal.throwIfAborted();
+    };
+    checkLifetime();
+    timer = setTimeout(
+      () =>
+        lifetime.abort(new DOMException('Device code expired', 'TimeoutError')),
+      deadline - Date.now()
+    );
+    assertEndpoint(new URL(response.verification_uri), new URL(authBaseUrl));
+    if (response.verification_uri_complete)
+      assertEndpoint(
+        new URL(response.verification_uri_complete),
+        new URL(authBaseUrl)
+      );
+    options.onDeviceCode?.({
+      userCode: response.user_code,
+      verificationUri: response.verification_uri,
+      verificationUriComplete: response.verification_uri_complete,
+    });
+    checkLifetime();
+    if (!options.noBrowser) {
+      void (options.openBrowser ?? open)(
+        response.verification_uri_complete ?? response.verification_uri
+      ).catch(() => undefined);
+    }
+    result = await oidc.pollDeviceAuthorizationGrant(
+      config,
+      response,
+      { resource },
+      { signal }
+    );
+    checkLifetime();
+  } catch (error) {
+    throw oauthError(error, 'Could not complete device sign in');
+  } finally {
+    clearTimeout(timer);
+  }
+  const tokens = { ...parseTokens(result), resource };
+  await writeOAuthTokens(tokens, authBaseUrl);
+  return tokens;
+}
+
+/** Browser S256/loopback, or device login for --no-browser and bind failure. */
+export async function login(options: LoginOptions = {}): Promise<OAuthTokens> {
+  if (options.noBrowser) return loginWithDeviceCode(options);
+  const authBaseUrl = options.authBaseUrl ?? getAuthBaseUrl();
+  const resource = loginResource(options);
   const config = await configuration({ ...options, authBaseUrl }).catch(
     (error: unknown) => {
       throw oauthError(error, 'Could not discover the authorization server');
     }
   );
-  const loopback = await startLoopbackServer();
+  const loopback = await startLoopbackServer().catch(() => undefined);
+  if (!loopback) return loginWithDeviceCode(options);
   let result: oidc.TokenEndpointResponse & oidc.TokenEndpointResponseHelpers;
   try {
     const codeVerifier = oidc.randomPKCECodeVerifier();

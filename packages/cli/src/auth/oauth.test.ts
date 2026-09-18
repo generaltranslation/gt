@@ -91,6 +91,7 @@ function metadata(issuer = authBaseUrl): Record<string, unknown> {
     issuer,
     authorization_endpoint: `${issuer}/oauth2/authorize`,
     token_endpoint: `${issuer}/oauth2/token`,
+    device_authorization_endpoint: `${issuer}/device/code`,
     userinfo_endpoint: `${issuer}/oauth2/userinfo`,
     revocation_endpoint: `${issuer}/oauth2/revoke`,
     jwks_uri: `${issuer}/jwks`,
@@ -105,7 +106,8 @@ function provider(
   options: {
     issuer?: string;
     metadata?: Record<string, unknown>;
-    token?: () => Promise<Response>;
+    token?: (init?: RequestInit) => Promise<Response>;
+    device?: () => Promise<Response>;
     jwks?: (init?: RequestInit) => Promise<Response>;
     user?: string;
   } = {}
@@ -121,9 +123,11 @@ function provider(
         : json({
             keys: [{ ...jwk, kid: 'test-key', alg: 'EdDSA', use: 'sig' }],
           });
+    if (url === `${issuer}/device/code`)
+      return options.device ? options.device() : json(deviceResponse());
     if (url === `${issuer}/oauth2/token`)
       return options.token
-        ? options.token()
+        ? options.token(init)
         : json(tokenResponse(await idToken({ iss: issuer })));
     if (url === `${issuer}/oauth2/revoke`)
       return new Response(null, { status: 200 });
@@ -568,6 +572,268 @@ describe('discovery and browser authorization', () => {
       })
     ).rejects.toThrow();
   });
+});
+
+function deviceResponse(): Record<string, unknown> {
+  return {
+    device_code: 'device-1',
+    user_code: 'ABCD-EFGH',
+    verification_uri: 'https://auth.example/device',
+    verification_uri_complete:
+      'https://auth.example/device?user_code=ABCD-EFGH',
+    expires_in: 900,
+  };
+}
+function deviceLogin(options: LoginOptions = {}) {
+  return login({
+    authBaseUrl,
+    baseUrl: apiBaseUrl,
+    noBrowser: true,
+    onDeviceCode: () => undefined,
+    fetch: provider(),
+    ...options,
+  });
+}
+async function startDevice(
+  fetcher: ReturnType<typeof provider>,
+  options: LoginOptions = {}
+) {
+  const onDeviceCode = vi.fn();
+  const pending = deviceLogin({ fetch: fetcher, onDeviceCode, ...options });
+  pending.catch(() => undefined);
+  await vi.waitFor(() => expect(onDeviceCode).toHaveBeenCalled());
+  return { pending, onDeviceCode };
+}
+
+describe('library-managed device authorization', () => {
+  it('requires a display channel before any request for no-browser login', async () => {
+    const fetcher = provider();
+    const openBrowser = vi.fn();
+    await expect(
+      deviceLogin({ fetch: fetcher, onDeviceCode: undefined, openBrowser })
+    ).rejects.toThrow('display');
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(openBrowser).not.toHaveBeenCalled();
+    expect(await readOAuthTokens(authBaseUrl)).toBeUndefined();
+  });
+  it('displays the code, defaults omitted interval to five seconds, and sends client/scope/resource on both requests', async () => {
+    vi.useFakeTimers();
+    const fetcher = provider();
+    const openBrowser = vi.fn();
+    const { pending, onDeviceCode } = await startDevice(fetcher, {
+      openBrowser,
+    });
+    expect(forms(fetcher)).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(4900);
+    expect(forms(fetcher)).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(100);
+    const result = await pending;
+    expect(result.subject).toBe('user-1');
+    expect(await readOAuthTokens(authBaseUrl)).toEqual(result);
+    expect(openBrowser).not.toHaveBeenCalled();
+    expect(onDeviceCode).toHaveBeenCalledWith({
+      userCode: 'ABCD-EFGH',
+      verificationUri: 'https://auth.example/device',
+      verificationUriComplete:
+        'https://auth.example/device?user_code=ABCD-EFGH',
+    });
+    const [, init] = fetcher.mock.calls.find(([url]) =>
+      String(url).endsWith('/device/code')
+    )!;
+    expect(Object.fromEntries(new URLSearchParams(String(init?.body)))).toEqual(
+      { client_id: OAUTH_CLIENT_ID, scope: OAUTH_SCOPE, resource: apiResource }
+    );
+    expect(Object.fromEntries(forms(fetcher)[0])).toEqual({
+      client_id: OAUTH_CLIENT_ID,
+      grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
+      device_code: 'device-1',
+      resource: apiResource,
+    });
+  });
+  it('falls back on bind failure, opens the complete verification URI without waiting for the launcher', async () => {
+    const loopback = await import('./loopback.js');
+    vi.spyOn(loopback, 'startLoopbackServer').mockRejectedValueOnce(
+      new Error('EADDRINUSE')
+    );
+    vi.useFakeTimers();
+    const openBrowser = vi.fn(async () => new Promise(() => {}));
+    const { pending } = await startDevice(provider(), {
+      noBrowser: false,
+      openBrowser,
+    });
+    await vi.advanceTimersByTimeAsync(5000);
+    await pending;
+    expect(openBrowser).toHaveBeenCalledWith(
+      'https://auth.example/device?user_code=ABCD-EFGH'
+    );
+  });
+  it('honors pending and permanent slow_down without a custom retry loop', async () => {
+    vi.useFakeTimers();
+    const times: number[] = [];
+    const id = await idToken();
+    const fetcher = provider({
+      token: async () => {
+        times.push(Date.now());
+        return times.length < 4
+          ? json(
+              {
+                error:
+                  times.length === 2 ? 'slow_down' : 'authorization_pending',
+              },
+              400
+            )
+          : json(tokenResponse(id));
+      },
+    });
+    const { pending } = await startDevice(fetcher);
+    await vi.advanceTimersByTimeAsync(30_000);
+    await pending;
+    expect(times.slice(1).map((time, i) => time - times[i])).toEqual([
+      5000, 10000, 10000,
+    ]);
+  });
+  it.each(['network', '500', '503'])(
+    'stops after one %s failure instead of blanket retries',
+    async (kind) => {
+      vi.useFakeTimers();
+      const fetcher = provider({
+        token: async () => {
+          if (kind === 'network') throw new Error('offline');
+          return new Response('<html>', { status: Number(kind) });
+        },
+      });
+      const { pending } = await startDevice(fetcher);
+      const rejected = expect(pending).rejects.toThrow('device sign in');
+      await vi.advanceTimersByTimeAsync(5000);
+      await rejected;
+      expect(forms(fetcher)).toHaveLength(1);
+      expect(await readOAuthTokens(authBaseUrl)).toBeUndefined();
+    }
+  );
+  it.each(['access_denied', 'expired_token'])(
+    'stops on terminal %s',
+    async (error) => {
+      vi.useFakeTimers();
+      const fetcher = provider({ token: async () => json({ error }, 400) });
+      const { pending } = await startDevice(fetcher);
+      const rejected = expect(pending).rejects.toThrow(
+        error === 'access_denied' ? 'denied' : 'expired'
+      );
+      await vi.advanceTimersByTimeAsync(5000);
+      await rejected;
+      expect(forms(fetcher)).toHaveLength(1);
+      expect(await readOAuthTokens(authBaseUrl)).toBeUndefined();
+    }
+  );
+  it.each(['seconds', 'date', 'invalid'])(
+    'follows the library 503 Retry-After policy (%s)',
+    async (kind) => {
+      vi.useFakeTimers();
+      let attempts = 0;
+      const id = await idToken();
+      const fetcher = provider({
+        token: async () =>
+          ++attempts === 1
+            ? new Response(null, {
+                status: 503,
+                headers: {
+                  'Retry-After':
+                    kind === 'seconds'
+                      ? '2'
+                      : kind === 'date'
+                        ? new Date(Date.now() + 2000).toUTCString()
+                        : 'invalid',
+                },
+              })
+            : json(tokenResponse(id)),
+      });
+      const { pending } = await startDevice(fetcher);
+      const expectation =
+        kind === 'invalid'
+          ? expect(pending).rejects.toThrow()
+          : expect(pending).resolves.toMatchObject({ subject: 'user-1' });
+      await vi.advanceTimersByTimeAsync(12000);
+      await expectation;
+      expect(attempts).toBe(kind === 'invalid' ? 1 : 2);
+    }
+  );
+  it('requires a validated subject even though the library allows device responses without ID tokens', async () => {
+    vi.useFakeTimers();
+    const { pending } = await startDevice(
+      provider({ token: async () => json(tokenResponse()) })
+    );
+    const rejected = expect(pending).rejects.toThrow(
+      'expected account identity'
+    );
+    await vi.advanceTimersByTimeAsync(5000);
+    await rejected;
+    expect(await readOAuthTokens(authBaseUrl)).toBeUndefined();
+  });
+  it('includes time spent displaying approval in the deadline', async () => {
+    vi.useFakeTimers();
+    const fetcher = provider({
+      device: async () => json({ ...deviceResponse(), expires_in: 1 }),
+    });
+    await expect(
+      deviceLogin({
+        fetch: fetcher,
+        onDeviceCode: () => vi.setSystemTime(Date.now() + 2000),
+      })
+    ).rejects.toThrow('timed out');
+    expect(forms(fetcher)).toHaveLength(0);
+    expect(await readOAuthTokens(authBaseUrl)).toBeUndefined();
+  });
+  it('aborts expired pending grants and never stores a session', async () => {
+    vi.useFakeTimers();
+    const fetcher = provider({
+      device: async () => json({ ...deviceResponse(), expires_in: 6 }),
+      token: async () => json({ error: 'authorization_pending' }, 400),
+    });
+    const { pending } = await startDevice(fetcher);
+    const rejected = expect(pending).rejects.toThrow();
+    await vi.advanceTimersByTimeAsync(10000);
+    await rejected;
+    expect(forms(fetcher)).toHaveLength(1);
+    expect(await readOAuthTokens(authBaseUrl)).toBeUndefined();
+  });
+  it.each(['before', 'wait', 'token', 'jwks'])(
+    'cancels %s without persisting (including JWKS signature verification)',
+    async (stage) => {
+      vi.useFakeTimers();
+      const controller = new AbortController();
+      const abortingResponse = async (init?: RequestInit) => {
+        controller.abort();
+        expect(init?.signal?.aborted).toBe(true);
+        init?.signal?.throwIfAborted();
+        return json({});
+      };
+      const fetcher = provider({
+        ...(stage === 'token' ? { token: abortingResponse } : {}),
+        ...(stage === 'jwks' ? { jwks: abortingResponse } : {}),
+      });
+      if (stage === 'before') controller.abort();
+      const pending = deviceLogin({
+        fetch: fetcher,
+        signal: controller.signal,
+      });
+      const rejected = expect(pending).rejects.toThrow();
+      if (stage !== 'before') {
+        await vi.waitFor(() =>
+          expect(
+            fetcher.mock.calls.some(([url]) =>
+              String(url).endsWith('/device/code')
+            )
+          ).toBe(true)
+        );
+        if (stage === 'wait') controller.abort();
+        await vi.advanceTimersByTimeAsync(5000);
+      }
+      await rejected;
+      expect(await readOAuthTokens(authBaseUrl)).toBeUndefined();
+      if (stage === 'before' || stage === 'wait')
+        expect(forms(fetcher)).toHaveLength(0);
+    }
+  );
 });
 
 describe('OAuth session operations', () => {
