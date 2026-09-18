@@ -1,27 +1,12 @@
+import type { CreateTagData, CreateTagResponse } from '@generaltranslation/api';
 import { TranslationRequestConfig } from '../types';
 import { apiRequest } from './utils/apiRequest';
 
-export type CreateTagFileReference = {
-  fileId: string;
-  versionId: string;
-  branchId: string;
-};
+export type CreateTagFileReference = CreateTagData['body']['files'][number];
 
-export type CreateTagOptions = {
-  tagId: string;
-  files: CreateTagFileReference[];
-  message?: string;
-};
+export type CreateTagOptions = CreateTagData['body'];
 
-export type CreateTagResult = {
-  tag: {
-    id: string;
-    tagId: string;
-    message: string | null;
-    createdAt: string;
-    updatedAt: string;
-  };
-};
+export type CreateTagResult = CreateTagResponse;
 
 /**
  * @internal

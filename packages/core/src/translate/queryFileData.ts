@@ -1,21 +1,12 @@
+import type { GetFileInfoData } from '@generaltranslation/api';
 import { TranslationRequestConfig } from '../types';
 import { CheckFileTranslationsOptions } from '../types-dir/api/checkFileTranslations';
 import { apiRequest } from './utils/apiRequest';
 
-export type FileDataQuery = {
-  sourceFiles?: {
-    fileId: string;
-    versionId: string;
-    branchId: string;
-  }[];
-  translatedFiles?: {
-    fileId: string;
-    versionId: string;
-    branchId: string;
-    locale: string;
-  }[];
-};
+export type FileDataQuery = GetFileInfoData['body'];
 
+// Compatibility response: the published arrays remain optional while the
+// generated response requires both arrays.
 export type FileDataResult = {
   sourceFiles?: {
     branchId: string;
