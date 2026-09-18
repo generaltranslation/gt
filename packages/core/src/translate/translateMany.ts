@@ -200,6 +200,7 @@ export async function _translateMany(
 
   const client = createApiClient({
     apiKey: config.apiKey,
+    userTokenProvider: config.userTokenProvider,
     baseUrl: config.baseUrl || defaultRuntimeApiUrl,
     fetch: (input, init) => fetchWithTimeout(input, init ?? {}, timeout),
     projectId: config.projectId,

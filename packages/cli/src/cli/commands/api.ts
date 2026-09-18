@@ -10,6 +10,7 @@ import {
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/diagnostics';
 import { defaultBaseUrl } from 'generaltranslation/internal';
+import { createUserTokenProvider } from '../../auth/oauth.js';
 import { resolveConfig } from '../../config/resolveConfig.js';
 import { exitSync } from '../../console/logging.js';
 import { loadConfig } from '../../fs/config/loadConfig.js';
@@ -230,6 +231,7 @@ export async function handleApiCommand(
     : (resolveConfig(process.cwd())?.config ?? {});
   const client = createApiClient({
     apiKey: options.apiKey ?? process.env.GT_API_KEY,
+    userTokenProvider: createUserTokenProvider(),
     baseUrl:
       typeof config.baseUrl === 'string' ? config.baseUrl : defaultBaseUrl,
     fetch: dependencies.fetch,
