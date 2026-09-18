@@ -7,9 +7,9 @@ import {
 import openApiSpec from 'generaltranslation/api/openapi.json' with { type: 'json' };
 import {
   createDiagnosticMessage,
-  defaultBaseUrl,
   formatDiagnosticErrorDetails,
-} from 'generaltranslation/internal';
+} from 'generaltranslation/diagnostics';
+import { defaultBaseUrl } from 'generaltranslation/internal';
 import { resolveConfig } from '../../config/resolveConfig.js';
 import { exitSync } from '../../console/logging.js';
 import { loadConfig } from '../../fs/config/loadConfig.js';

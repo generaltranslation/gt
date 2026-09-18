@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { generateRequestHeaders } from '../generateRequestHeaders';
 import { TranslationRequestConfig } from '../../../types';
-import { API_VERSION } from '../../api';
+import { API_VERSION } from '@generaltranslation/api';
 
 describe('generateRequestHeaders', () => {
   it('should return headers with Content-Type and project ID', () => {
