@@ -2434,7 +2434,7 @@ export type UploadSourceFilesResponses = {
    */
   201: {
     uploadedFiles: Array<{
-      branchId?: string;
+      branchId: string;
       fileId: string;
       versionId: string;
       fileName: string;
@@ -2810,7 +2810,7 @@ export type UploadTranslationsResponses = {
    */
   201: {
     uploadedFiles: Array<{
-      branchId?: string;
+      branchId: string;
       fileId: string;
       versionId: string;
       fileName: string;
