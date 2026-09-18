@@ -217,6 +217,22 @@ describe('CLI API client', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it('honors an explicit zero project information timeout', async () => {
+    configure({ retryPolicy: 'none' });
+    fetchMock.mockImplementation(
+      (request) =>
+        new Promise<Response>((_resolve, reject) => {
+          request.signal.addEventListener('abort', () =>
+            reject(request.signal.reason)
+          );
+        })
+    );
+
+    await expect(api.getProjectInfo(0)).rejects.toThrow(
+      'Request timed out after 0ms'
+    );
+  });
+
   it('checks job status through the job info endpoint', async () => {
     fetchMock.mockImplementation(async (request) => {
       expect(new URL(request.url).pathname).toBe('/v2/project/jobs/info');

@@ -88,7 +88,7 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
         'API client not configured — call configureApiClient first'
       );
     }
-    return timeoutMs
+    return timeoutMs !== undefined
       ? createApiClient({ ...getClientConfig(), timeoutMs })
       : client;
   }
