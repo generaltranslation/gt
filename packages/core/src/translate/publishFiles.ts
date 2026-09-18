@@ -1,12 +1,11 @@
-import type { PublishFilesResponse } from '@generaltranslation/api';
+import type {
+  PublishFilesData,
+  PublishFilesResponse,
+} from '@generaltranslation/api';
 
 // Compatibility input: fileName is retained for published callers even though
 // the generated request ignores it.
-export type PublishFileEntry = {
-  fileId: string;
-  versionId: string;
-  branchId?: string;
-  publish: boolean;
+export type PublishFileEntry = PublishFilesData['body']['files'][number] & {
   fileName?: string;
 };
 
