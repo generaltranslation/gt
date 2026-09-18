@@ -67,6 +67,18 @@ export const noApiKeyProvidedError = (functionName: string) =>
     fix: `Pass an API key to \`${functionName}\` or specify apiKey in the GT constructor`,
   });
 
+export const uploadedFileMissingBranchError = (
+  functionName: string,
+  fileName: string
+) =>
+  createDiagnosticMessage({
+    source: GT_SOURCE,
+    severity: 'Error',
+    whatHappened: `\`${functionName}\` returned an uploaded file without a branch ID`,
+    why: 'The published upload result requires branchId on every uploaded file',
+    details: [`File: ${fileName}`],
+  });
+
 export const invalidLocaleError = (locale: string) =>
   createDiagnosticMessage({
     source: GT_SOURCE,

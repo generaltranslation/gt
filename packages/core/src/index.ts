@@ -15,6 +15,7 @@ import { defaultBaseUrl } from './settings/settingsUrls';
 import {
   noSourceLocaleProvidedError,
   noTargetLocaleProvidedError,
+  uploadedFileMissingBranchError,
 } from './logging/errors';
 import { gtInstanceLogger } from './logging/logger';
 import type {
@@ -539,18 +540,40 @@ export class GT extends GTRuntime {
     // Validation
     this._validateAuth('getProjectData');
 
-    const result = await this._getApiAdapter().getProjectInfo(
-      projectId,
-      options.timeout
-    );
+    const { autoApprove: _autoApprove, ...project } =
+      await this._getApiAdapter().getProjectInfo(projectId, options.timeout);
     // Restore configured identities from service language codes.
-    result.currentLocales = result.currentLocales.map((item) =>
-      this.resolveServiceResponseLocale(item)
-    );
-    result.defaultLocale = this.resolveServiceResponseLocale(
-      result.defaultLocale
-    );
-    return result;
+    return {
+      ...project,
+      defaultLocale: this.resolveServiceResponseLocale(project.defaultLocale),
+      currentLocales: project.currentLocales.map((item) =>
+        this.resolveServiceResponseLocale(item)
+      ),
+    };
+  }
+
+  /**
+   * The published upload result requires branchId on every file while the
+   * generated response still marks it optional; enforce it at runtime instead
+   * of casting.
+   */
+  private _requireUploadedBranchIds<
+    T extends { branchId?: string; fileName: string },
+  >(
+    functionName: string,
+    uploadedFiles: T[]
+  ): (Omit<T, 'branchId'> & { branchId: string })[] {
+    return uploadedFiles.map(({ branchId, ...file }) => {
+      if (branchId === undefined) {
+        const error = uploadedFileMissingBranchError(
+          functionName,
+          file.fileName
+        );
+        gtInstanceLogger.error(error);
+        throw new Error(error);
+      }
+      return { ...file, branchId };
+    });
   }
 
   /**
@@ -711,10 +734,10 @@ export class GT extends GTRuntime {
       mergedOptions
     );
 
-    // The published upload result requires fields that the generated response
-    // still marks optional, although successful uploads return them.
-    const uploadedFiles =
-      result.uploadedFiles as UploadFilesResponse['uploadedFiles'];
+    const uploadedFiles = this._requireUploadedBranchIds(
+      'uploadSourceFiles',
+      result.uploadedFiles
+    );
     return {
       uploadedFiles,
       count: uploadedFiles.length,
@@ -799,10 +822,10 @@ export class GT extends GTRuntime {
       mergedOptions
     );
 
-    // The published upload result requires fields that the generated response
-    // still marks optional, although successful uploads return them.
-    const uploadedFiles =
-      result.uploadedFiles as UploadFilesResponse['uploadedFiles'];
+    const uploadedFiles = this._requireUploadedBranchIds(
+      'uploadTranslations',
+      result.uploadedFiles
+    );
     return {
       uploadedFiles,
       count: uploadedFiles.length,

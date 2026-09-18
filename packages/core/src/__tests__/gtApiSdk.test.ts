@@ -1,11 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createTag, uploadAssets } from '@generaltranslation/api';
+import {
+  createTag,
+  getProjectInfo,
+  uploadAssets,
+  uploadSourceFiles,
+} from '@generaltranslation/api';
 import { GT } from '../index';
 
 vi.mock('@generaltranslation/api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@generaltranslation/api')>()),
   createTag: vi.fn(),
+  getProjectInfo: vi.fn(),
   uploadAssets: vi.fn(),
+  uploadSourceFiles: vi.fn(),
 }));
 
 function result<T>(data: T) {
@@ -51,6 +58,67 @@ describe('GT generated SDK transport', () => {
         body: expect.objectContaining({ tagId: 'release' }),
       })
     );
+  });
+
+  it('strips autoApprove from getProjectData to match the published shape', async () => {
+    vi.mocked(getProjectInfo).mockResolvedValue(
+      result({
+        id: 'project-id',
+        name: 'Project',
+        orgId: 'org-id',
+        defaultLocale: 'en',
+        currentLocales: ['es'],
+        autoApprove: false,
+      })
+    );
+    await expect(gt.getProjectData('project-id')).resolves.toEqual({
+      id: 'project-id',
+      name: 'Project',
+      orgId: 'org-id',
+      defaultLocale: 'en',
+      currentLocales: ['es'],
+    });
+  });
+
+  it('enforces branchId on uploaded files', async () => {
+    const uploaded = {
+      fileId: 'file-id',
+      versionId: 'version-id',
+      fileName: 'doc.json',
+      fileFormat: 'JSON' as const,
+    };
+    const file = {
+      source: {
+        content: '{}',
+        fileName: 'doc.json',
+        fileFormat: 'JSON' as const,
+        locale: 'en',
+      },
+    };
+    vi.mocked(uploadSourceFiles).mockResolvedValue(
+      result({ uploadedFiles: [uploaded], count: 1, message: 'ok' })
+    );
+
+    await expect(
+      gt.uploadSourceFiles([file], { sourceLocale: 'en' })
+    ).rejects.toThrow('without a branch ID');
+
+    vi.mocked(uploadSourceFiles).mockResolvedValue(
+      result({
+        uploadedFiles: [
+          { ...uploaded, branchId: 'branch-id', dataFormat: 'ICU' },
+        ],
+        count: 1,
+        message: 'ok',
+      })
+    );
+
+    const response = await gt.uploadSourceFiles([file], {
+      sourceLocale: 'en',
+    });
+    expect(response.uploadedFiles).toEqual([
+      { ...uploaded, branchId: 'branch-id', dataFormat: 'ICU' },
+    ]);
   });
 
   it('returns the generated font asset shape without a deduped field', async () => {
