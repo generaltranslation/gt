@@ -1,5 +1,5 @@
 import { createServer, type Server } from 'node:http';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { renderCallbackPage } from './callbackPage.js';
 
 export const LOOPBACK_CALLBACK_PATH = '/callback';

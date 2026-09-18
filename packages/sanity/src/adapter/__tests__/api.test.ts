@@ -1,23 +1,9 @@
 // @vitest-environment node
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { downloadFile } from 'generaltranslation/api';
 import { ApiError } from 'generaltranslation/errors';
 
 import { api, configureApiClient } from '../api';
-
-vi.mock('generaltranslation/api', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('generaltranslation/api')>()),
-  downloadFile: vi.fn(),
-}));
-
-function result<T>(data: T) {
-  return {
-    data,
-    request: new Request('https://api.example.com'),
-    response: new Response(),
-  };
-}
 
 const sourceFile = {
   branchId: 'branch-id',
@@ -182,24 +168,6 @@ describe('Sanity API adapter', () => {
 
     expect(fetchMock).toHaveBeenCalledOnce();
   });
-
-  it.each(['target', 'es-es'])(
-    'canonicalizes single download locale %s',
-    async (locale) => {
-      vi.mocked(downloadFile).mockResolvedValue(
-        result({ data: Buffer.from('translated').toString('base64') })
-      );
-
-      await expect(
-        api.downloadFile({ fileId: 'file-id', locale })
-      ).resolves.toBe('translated');
-      expect(downloadFile).toHaveBeenCalledWith(
-        expect.objectContaining({
-          query: expect.objectContaining({ locale: 'es-ES' }),
-        })
-      );
-    }
-  );
 
   it.each(['target', 'es-es'])(
     'maps batch-download locale %s in both directions',

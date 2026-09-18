@@ -31,7 +31,7 @@ export {
   encodeFileContent,
 } from './utils/base64';
 export { isSupportedFileFormatTransform } from './utils/isSupportedFileFormatTransform';
-export { API_VERSION } from './translate/api';
+export { API_VERSION } from '@generaltranslation/api';
 export {
   isErrorResult,
   unwrapApiResult,

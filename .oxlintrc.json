@@ -144,24 +144,6 @@
       }
     },
     {
-      "files": ["packages/sanity/src/adapter/api.ts"],
-      "rules": {
-        "no-restricted-imports": [
-          "error",
-          {
-            "paths": [
-              {
-                "name": "generaltranslation/api",
-                "allowTypeImports": true,
-                "allowImportNames": ["downloadFile"],
-                "message": "The Sanity adapter keeps only the single-file downloadFile GET as a compatibility exception. Add other requests to createGtApiAdapter in packages/core/src/adapter/createGtApi.ts."
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
       "files": [
         "packages/cli/src/cli/commands/api.ts",
         "packages/cli/src/utils/credentials.ts",

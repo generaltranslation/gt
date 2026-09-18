@@ -12,10 +12,8 @@ import path from 'node:path';
 import open from 'open';
 import * as oidc from 'openid-client';
 import type { UserTokenProvider } from 'generaltranslation/api';
-import {
-  createDiagnosticMessage,
-  defaultBaseUrl,
-} from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
+import { defaultBaseUrl } from 'generaltranslation/internal';
 import { GT_DASHBOARD_URL } from '../utils/constants.js';
 import { logger } from '../console/logger.js';
 import { startLoopbackServer } from './loopback.js';

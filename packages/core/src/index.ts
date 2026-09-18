@@ -9,6 +9,9 @@ import {
   DownloadFileBatchOptions,
   DownloadFileBatchResult,
   DownloadFileOptions,
+  CreateTagOptions,
+  CreateTagResult,
+  GetOrphanedFilesResult,
 } from './types';
 import { libraryDefaultLocale } from './settings/settings';
 import { defaultBaseUrl } from './settings/settingsUrls';
@@ -24,7 +27,6 @@ import type {
   SetupProjectFileReference,
 } from './translate/setupProject';
 import type { EnqueueFilesOptions } from './translate/enqueueFiles';
-import type { CreateTagOptions, CreateTagResult } from './translate/createTag';
 import type {
   FileQuery,
   FileQueryResult,
@@ -61,7 +63,6 @@ import type {
   ProcessMovesResponse,
   ProcessMovesOptions,
 } from './translate/processFileMoves';
-import type { GetOrphanedFilesResult } from './translate/getOrphanedFiles';
 import type {
   PublishFileEntry,
   PublishFilesResult,
@@ -525,6 +526,9 @@ export class GT extends GTRuntime {
   /**
    * Get project data for a given project ID.
    *
+   * @deprecated Use `getProjectInfo()` on a `GT` instance configured with the
+   * target `projectId`; it reads the same resource and also returns
+   * `autoApprove`. This method will be removed in the next major version.
    * @param {string} projectId - The ID of the project to get the data for.
    * @returns {Promise<ProjectData>} The project data.
    *

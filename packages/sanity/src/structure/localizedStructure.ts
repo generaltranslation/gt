@@ -1,5 +1,5 @@
 import { getLocaleProperties } from 'generaltranslation';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import type {
   ListItemBuilder,
   StructureBuilder,

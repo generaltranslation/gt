@@ -49,7 +49,10 @@ export type {
 } from './types-dir/api/downloadFileBatch';
 export type { EnqueueFilesOptions } from './translate/enqueueFiles';
 export type { EnqueueFilesResult, Updates } from './types-dir/api/enqueueFiles';
-export type { CreateTagOptions, CreateTagResult } from './translate/createTag';
+export type CreateTagOptions =
+  import('@generaltranslation/api').CreateTagData['body'];
+export type CreateTagResult =
+  import('@generaltranslation/api').CreateTagResponse;
 export type { SetupProjectFileReference } from './translate/setupProject';
 export type { FileToUpload } from './types-dir/api/file';
 export type { FileUpload } from './types-dir/api/uploadFiles';
@@ -71,10 +74,10 @@ export type {
 export type { BranchDataResult } from './types-dir/api/branch';
 export type { BranchQuery } from './translate/queryBranchData';
 export type { FileDataQuery, FileDataResult } from './translate/queryFileData';
-export type {
-  OrphanedFile,
-  GetOrphanedFilesResult,
-} from './translate/getOrphanedFiles';
+export type OrphanedFile =
+  import('@generaltranslation/api').GetOrphanedFilesResponse['orphanedFiles'][number];
+export type GetOrphanedFilesResult =
+  import('@generaltranslation/api').GetOrphanedFilesResponse;
 export type {
   MoveMapping,
   MoveResult,

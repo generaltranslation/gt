@@ -2,7 +2,7 @@ import {
   resolveCanonicalLocale,
   standardizeLocale,
 } from '@generaltranslation/format';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import {
   noDefaultLocaleError,
   noLocalesError,
