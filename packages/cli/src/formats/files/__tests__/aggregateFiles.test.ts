@@ -10,7 +10,7 @@ import sanitizeFileContent from '../../../utils/sanitizeFileContent.js';
 import { determineLibrary } from '../../../fs/determineFramework/index.js';
 import { isValidMdx } from '../../../utils/validateMdx.js';
 import { hashStringSync, hashVersionId } from '../../../utils/hash.js';
-import { gt } from '../../../utils/gt.js';
+import { configureApiClient } from '../../../utils/api.js';
 import type { Settings } from '../../../types/index.js';
 
 const aggregateTestFiles = (settings: Partial<Settings>) =>
@@ -930,7 +930,10 @@ describe('aggregateFiles - Apple .xcstrings catalogs', () => {
   });
 
   afterEach(() => {
-    gt.setConfig({ customMapping: {} });
+    configureApiClient({
+      baseUrl: 'https://api.example.com',
+      customMapping: {},
+    });
   });
 
   it('stops the run before anything is uploaded when a catalog sourceLanguage does not match defaultLocale', async () => {
@@ -953,7 +956,10 @@ describe('aggregateFiles - Apple .xcstrings catalogs', () => {
   });
 
   it('accepts a defaultLocale alias whose canonical tag is the catalog sourceLanguage', async () => {
-    gt.setConfig({ customMapping: { french: { code: 'fr' } } });
+    configureApiClient({
+      baseUrl: 'https://api.example.com',
+      customMapping: { french: { code: 'fr' } },
+    });
     const settings = settingsFor(
       { '/full/path/App/Localizable.xcstrings': catalog('fr') },
       'french'

@@ -84,13 +84,6 @@ export const defaultGroups = [
     ],
     exceptions: [
       {
-        path: 'packages/core/src/translate/utils/apiRequest.ts',
-        reason:
-          'The matching duration is a rate-limit retry delay, not a request timeout default.',
-        matches: isWithinVariableDeclaration('RATE_LIMIT_RETRY_DELAY_MS'),
-        expectedMatches: 1,
-      },
-      {
         path: 'packages/api/src/wrappers/transport.ts',
         reason:
           'The matching duration is a rate-limit retry delay, not a request timeout default.',

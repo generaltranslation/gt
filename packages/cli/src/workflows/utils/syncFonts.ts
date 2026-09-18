@@ -1,6 +1,6 @@
 import { logger } from '../../console/logger.js';
 import { Settings } from '../../types/index.js';
-import { gt } from '../../utils/gt.js';
+import { api } from '../../utils/api.js';
 import { collectFonts } from '../../formats/files/collectFonts.js';
 
 /**
@@ -14,7 +14,7 @@ export async function syncFonts(settings: Settings): Promise<void> {
   const fonts = await collectFonts(settings);
   if (fonts.length === 0) return;
   try {
-    const result = await gt.uploadFonts(fonts);
+    const result = await api.uploadFonts(fonts);
     logger.success(`Synced ${result.count} font(s)`);
   } catch (error) {
     logger.warn(

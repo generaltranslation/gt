@@ -1,7 +1,4 @@
 import type { GetFileInfoData } from '@generaltranslation/api';
-import { TranslationRequestConfig } from '../types';
-import { CheckFileTranslationsOptions } from '../types-dir/api/checkFileTranslations';
-import { apiRequest } from './utils/apiRequest';
 
 export type FileDataQuery = GetFileInfoData['body'];
 
@@ -35,36 +32,3 @@ export type FileDataResult = {
     locale: string;
   }[];
 };
-
-/**
- * @internal
- * Queries data about one or more source or translation files.
- * @param data - Object mapping source or translation file information
- * @param options - The options for the API call.
- * @param config - The configuration for the API call.
- * @returns The file data.
- */
-export async function _queryFileData(
-  data: FileDataQuery,
-  options: CheckFileTranslationsOptions = {},
-  config: TranslationRequestConfig
-): Promise<FileDataResult> {
-  const body = {
-    sourceFiles: data.sourceFiles?.map((item) => ({
-      fileId: item.fileId,
-      versionId: item.versionId,
-      branchId: item.branchId,
-    })),
-    translatedFiles: data.translatedFiles?.map((item) => ({
-      fileId: item.fileId,
-      versionId: item.versionId,
-      branchId: item.branchId,
-      locale: item.locale,
-    })),
-  };
-
-  return apiRequest<FileDataResult>(config, '/v2/project/files/info', {
-    body,
-    timeout: options.timeout,
-  });
-}

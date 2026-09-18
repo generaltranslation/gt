@@ -1,5 +1,5 @@
 import type { FileFormat } from 'generaltranslation/types';
-import { gt } from '../../utils/gt.js';
+import { api } from '../../utils/api.js';
 import {
   parseXcstringsCatalog,
   serializeXcstringsSlice,
@@ -23,7 +23,7 @@ export function localeContent(
   if (fileFormat !== 'XCSTRINGS') return content;
   const slice = sliceTranslationCatalog(
     parseXcstringsCatalog(content),
-    gt.resolveCanonicalLocale(locale)
+    api.resolveCanonicalLocale(locale)
   );
   return slice === undefined ? undefined : serializeXcstringsSlice(slice);
 }
