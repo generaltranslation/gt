@@ -559,6 +559,56 @@ async function startDevice(
   return { pending, onDeviceCode };
 }
 
+describe('requested scope contract', () => {
+  it.each([
+    'browser callback',
+    'browser exchange',
+    'device initiation',
+    'device exchange',
+  ])(
+    'reports invalid_scope at %s without a false-success session',
+    async (stage) => {
+      const detail = 'The gt-cli client does not allow the requested scope';
+      const scopeError = async () =>
+        json({ error: 'invalid_scope', error_description: detail }, 400);
+      const fetcher = provider({
+        ...(stage.endsWith('exchange') ? { token: scopeError } : {}),
+        ...(stage === 'device initiation' ? { device: scopeError } : {}),
+      });
+      let pending: Promise<OAuthTokens>;
+      if (stage === 'device exchange') {
+        vi.useFakeTimers();
+        ({ pending } = await startDevice(fetcher));
+      } else if (stage === 'device initiation') {
+        pending = deviceLogin({ fetch: fetcher });
+      } else {
+        pending = browserLogin({
+          fetch: fetcher,
+          ...(stage === 'browser callback'
+            ? {
+                openBrowser: (url: string) =>
+                  callback(url, (params) => {
+                    params.delete('code');
+                    params.set('error', 'invalid_scope');
+                    params.set('error_description', detail);
+                  }),
+              }
+            : {}),
+        });
+      }
+      const rejected = expect(pending).rejects.toThrow(`requested scopes`);
+      const contextual = expect(pending).rejects.toThrow(detail);
+      if (stage === 'device exchange') await vi.advanceTimersByTimeAsync(5000);
+      await rejected;
+      await contextual;
+      expect(await readOAuthTokens(authBaseUrl)).toBeUndefined();
+      await expect(stat(getCredentialsPath())).rejects.toMatchObject({
+        code: 'ENOENT',
+      });
+    }
+  );
+});
+
 describe('library-managed device authorization', () => {
   it('requires a display channel before any request for no-browser login', async () => {
     const fetcher = provider();
