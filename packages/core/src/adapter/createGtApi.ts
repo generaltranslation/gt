@@ -1,6 +1,7 @@
 import {
   createApiClient,
   createBranch,
+  createProject,
   createTag,
   DEFAULT_BATCH_SIZE,
   downloadFiles,
@@ -23,6 +24,7 @@ import {
   type ApiClientConfig,
   type AwaitJobsOptions,
   type CreateBranchData,
+  type CreateProjectData,
   type CreateTagData,
   type DownloadFilesData,
   type EnqueueFileTranslationsData,
@@ -86,7 +88,7 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
         'API client not configured — call configureApiClient first'
       );
     }
-    return timeoutMs
+    return timeoutMs !== undefined
       ? createApiClient({ ...getClientConfig(), timeoutMs })
       : client;
   }
@@ -108,6 +110,34 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
   }
 
   if (defaultConfig) configure(defaultConfig);
+
+  // Raw service responses; the normalized adapter methods build on these and
+  // compatibility facades (CLI) expose them unchanged.
+  async function loadJobStatuses(
+    jobIds: readonly string[],
+    options: { signal?: AbortSignal; timeoutMs?: number } = {}
+  ): Promise<GetTranslationJobInfoResponse> {
+    return unwrapApiResult(
+      await getTranslationJobInfo({
+        body: { jobIds: [...jobIds] },
+        client: getClient(options.timeoutMs),
+        signal: options.signal,
+      })
+    );
+  }
+
+  async function loadProjectInfo(projectId?: string, timeoutMs?: number) {
+    const resolvedProjectId = projectId ?? getClientConfig().projectId;
+    if (!resolvedProjectId) {
+      throw new Error('Project ID is required to fetch project information');
+    }
+    return unwrapApiResult(
+      await getProjectInfo({
+        client: getClient(timeoutMs),
+        path: { projectId: resolvedProjectId },
+      })
+    );
+  }
 
   return {
     configure,
@@ -214,27 +244,17 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
       );
     },
 
+    loadJobStatuses,
+
     async checkJobStatus(jobIds: string[], timeoutMs?: number) {
-      const statuses = unwrapApiResult(
-        await getTranslationJobInfo({
-          body: { jobIds },
-          client: getClient(timeoutMs),
-        })
-      );
+      const statuses = await loadJobStatuses(jobIds, { timeoutMs });
       return statuses.map(normalizeJobStatus);
     },
 
     async awaitJobs(jobIds: readonly string[], options?: AwaitJobsOptions) {
       const result = await pollJobs(
         jobIds,
-        async (pendingJobIds, signal) =>
-          unwrapApiResult(
-            await getTranslationJobInfo({
-              body: { jobIds: pendingJobIds },
-              client: getClient(),
-              signal,
-            })
-          ),
+        (pendingJobIds, signal) => loadJobStatuses(pendingJobIds, { signal }),
         options
       );
       return {
@@ -364,17 +384,26 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
       ]);
     },
 
-    async getProjectInfo(projectId?: string, timeoutMs?: number) {
-      const resolvedProjectId = projectId ?? getClientConfig().projectId;
-      if (!resolvedProjectId) {
-        throw new Error('Project ID is required to fetch project information');
-      }
-      const result = unwrapApiResult(
-        await getProjectInfo({
-          client: getClient(timeoutMs),
-          path: { projectId: resolvedProjectId },
+    async createProject(
+      orgId: CreateProjectData['path']['orgId'],
+      body: CreateProjectData['body']
+    ) {
+      return unwrapApiResult(
+        await createProject({
+          path: { orgId },
+          body: {
+            ...body,
+            defaultLocale: resolveServiceLocale(body.defaultLocale),
+          },
+          client: getClient(),
         })
       );
+    },
+
+    loadProjectInfo,
+
+    async getProjectInfo(projectId?: string, timeoutMs?: number) {
+      const result = await loadProjectInfo(projectId, timeoutMs);
       return {
         ...result,
         defaultLocale: resolveAliasLocale(result.defaultLocale, customMapping),

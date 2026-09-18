@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from 'generaltranslation/errors';
+import type { PublishFileEntry } from 'generaltranslation/types';
 import { api, configureApiClient } from '../api.js';
 
 const uploadedFile = {
@@ -181,21 +182,54 @@ describe('CLI API client', () => {
     });
   });
 
-  it('fetches project information through the SDK adapter', async () => {
+  it('fetches raw project information through the SDK adapter', async () => {
+    configure({
+      customMapping: { 'brand-english': { code: 'en-US' } },
+    });
     fetchMock.mockImplementation(async (request) => {
       expect(new URL(request.url).pathname).toBe('/v2/project/info/project-id');
       return Response.json({
         id: 'project-id',
         name: 'Project',
         orgId: 'org-id',
-        defaultLocale: 'en',
-        currentLocales: ['en', 'es'],
+        defaultLocale: 'en-US',
+        currentLocales: ['en-US', 'es'],
         autoApprove: false,
       });
     });
 
     await expect(api.getProjectInfo(10_000)).resolves.toEqual(
-      expect.objectContaining({ id: 'project-id', autoApprove: false })
+      expect.objectContaining({
+        id: 'project-id',
+        autoApprove: false,
+        defaultLocale: 'en-US',
+        currentLocales: ['en-US', 'es'],
+      })
+    );
+  });
+
+  it('requires a project ID to fetch project information', async () => {
+    configure({ projectId: undefined });
+
+    await expect(api.getProjectInfo(10_000)).rejects.toThrow(
+      'Project ID is required to fetch project information'
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('honors an explicit zero project information timeout', async () => {
+    configure({ retryPolicy: 'none' });
+    fetchMock.mockImplementation(
+      (request) =>
+        new Promise<Response>((_resolve, reject) => {
+          request.signal.addEventListener('abort', () =>
+            reject(request.signal.reason)
+          );
+        })
+    );
+
+    await expect(api.getProjectInfo(0)).rejects.toThrow(
+      'Request timed out after 0ms'
     );
   });
 
@@ -204,20 +238,12 @@ describe('CLI API client', () => {
       expect(new URL(request.url).pathname).toBe('/v2/project/jobs/info');
       await expect(request.json()).resolves.toEqual({ jobIds: ['setup-job'] });
       return Response.json([
-        {
-          jobId: 'setup-job',
-          status: 'failed',
-          error: { message: 'Context generation failed' },
-        },
+        { jobId: 'setup-job', status: 'failed', error: { message: null } },
       ]);
     });
 
     await expect(api.checkJobStatus(['setup-job'])).resolves.toEqual([
-      {
-        jobId: 'setup-job',
-        status: 'failed',
-        error: { message: 'Context generation failed' },
-      },
+      { jobId: 'setup-job', status: 'failed', error: { message: null } },
     ]);
   });
 
@@ -247,7 +273,7 @@ describe('CLI API client', () => {
     expect(requestSignal?.aborted).toBe(true);
   });
 
-  it('canonicalizes user edit diff locales', async () => {
+  it('canonicalizes user edit diff locales and sends only contract fields', async () => {
     configure({
       customMapping: { 'brand-english': { code: 'en-US' } },
     });
@@ -255,7 +281,15 @@ describe('CLI API client', () => {
       const body = JSON.parse(await request.text()) as {
         diffs: Array<{ locale: string }>;
       };
-      expect(body.diffs[0].locale).toBe('en-US');
+      expect(body.diffs).toEqual([
+        {
+          locale: 'en-US',
+          diff: 'diff',
+          versionId: 'version-id',
+          fileId: 'file-id',
+          localContent: 'content',
+        },
+      ]);
       return Response.json({
         filesProcessed: 1,
         entriesReceived: 1,
@@ -263,17 +297,47 @@ describe('CLI API client', () => {
       });
     });
 
-    await api.submitUserEditDiffs({
-      diffs: [
-        {
-          locale: 'brand-english',
-          diff: 'diff',
-          versionId: 'version-id',
-          fileId: 'file-id',
-          localContent: 'content',
-        },
-      ],
+    const diffs = [
+      {
+        fileName: 'messages.json',
+        locale: 'brand-english',
+        diff: 'diff',
+        versionId: 'version-id',
+        fileId: 'file-id',
+        localContent: 'content',
+      },
+    ];
+    await api.submitUserEditDiffs({ diffs });
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it('publishes only contract fields for CDN entries', async () => {
+    fetchMock.mockImplementation(async (request) => {
+      expect(new URL(request.url).pathname).toBe('/v2/project/files/publish');
+      await expect(request.json()).resolves.toEqual({
+        files: [
+          {
+            fileId: 'file-id',
+            versionId: 'version-id',
+            branchId: 'branch-id',
+            publish: true,
+          },
+        ],
+      });
+      return Response.json({ results: [] });
     });
+
+    const entries: PublishFileEntry[] = [
+      {
+        fileId: 'file-id',
+        versionId: 'version-id',
+        branchId: 'branch-id',
+        publish: true,
+        fileName: 'messages.json',
+      },
+    ];
+    await api.publishFiles(entries);
+    expect(fetchMock).toHaveBeenCalledOnce();
   });
 
   it('base64-encodes and uploads source files in batches of 100', async () => {
