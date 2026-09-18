@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { writeOAuthTokens } from '../../../auth/oauth.js';
 import { handleApiCommand } from '../api.js';
 
 const temporaryDirectories: string[] = [];
@@ -22,6 +23,7 @@ function writeInput(content: string): string {
 }
 
 afterEach(() => {
+  vi.unstubAllEnvs();
   for (const directory of temporaryDirectories.splice(0)) {
     fs.rmSync(directory, { force: true, recursive: true });
   }
@@ -67,6 +69,37 @@ describe('gt api', () => {
 
     expect(fetchMock).toHaveBeenCalledOnce();
     expect(outputText(stdout)).toBe(responseBody);
+  });
+
+  it('sends the signed-in user token when no API key is configured', async () => {
+    const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-api-auth-'));
+    temporaryDirectories.push(configHome);
+    vi.stubEnv('GT_API_KEY', undefined);
+    vi.stubEnv('XDG_CONFIG_HOME', configHome);
+    await writeOAuthTokens({
+      accessToken: 'user-access-token',
+      expiresAt: Date.now() + 3_600_000,
+      refreshToken: 'refresh-1',
+      scope: 'openid',
+      tokenType: 'Bearer',
+      subject: 'user-1',
+    });
+    const fetchMock = vi.fn<typeof fetch>(async (request) => {
+      expect(new Request(request).headers.get('authorization')).toBe(
+        'Bearer user-access-token'
+      );
+      return new Response('{}', {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+
+    await handleApiCommand(
+      'v2/example',
+      { method: 'get', projectId: 'project-id' },
+      { fetch: fetchMock, writeStdout: () => undefined }
+    );
+
+    expect(fetchMock).toHaveBeenCalledOnce();
   });
 
   it('does not validate translation settings for raw API requests', async () => {
