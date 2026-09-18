@@ -10,6 +10,23 @@ function jsonResponse(body: unknown): Response {
   });
 }
 
+/** The generated client calls fetch(Request); the body is on the request. */
+async function readRequest(
+  input: string | URL | Request,
+  init?: RequestInit
+): Promise<{ pathname: string; body: unknown }> {
+  const url = new URL(
+    typeof input === 'string'
+      ? input
+      : input instanceof URL
+        ? input.href
+        : input.url
+  );
+  const raw =
+    input instanceof Request ? await input.text() : String(init?.body ?? '');
+  return { pathname: url.pathname, body: raw ? JSON.parse(raw) : undefined };
+}
+
 describe.sequential('GT service locale egress', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -25,8 +42,8 @@ describe.sequential('GT service locale egress', () => {
       const requests: unknown[] = [];
       vi.stubGlobal(
         'fetch',
-        vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
-          requests.push(JSON.parse(String(init?.body)));
+        vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+          requests.push((await readRequest(input, init)).body);
           return jsonResponse({ uploadedFiles: [] });
         })
       );
@@ -85,17 +102,9 @@ describe.sequential('GT service locale egress', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
-        const url = new URL(
-          typeof input === 'string'
-            ? input
-            : input instanceof URL
-              ? input.href
-              : input.url
-        );
-        requests.push({
-          pathname: url.pathname,
-          body: init?.body ? JSON.parse(String(init.body)) : undefined,
-        });
+        const request = await readRequest(input, init);
+        requests.push(request);
+        const url = new URL(request.pathname, baseUrl);
 
         if (url.pathname.endsWith('/setup/generate')) {
           return jsonResponse({ status: 'completed' });

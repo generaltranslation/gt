@@ -1,18 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { uploadTranslations } from '@generaltranslation/api';
 import { GT } from '../index';
-import { _uploadTranslations } from '../translate/uploadTranslations';
 
-vi.mock('../translate/uploadTranslations', () => ({
-  _uploadTranslations: vi.fn(),
+vi.mock('@generaltranslation/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@generaltranslation/api')>()),
+  uploadTranslations: vi.fn(),
 }));
 
 describe('GT.uploadTranslations', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(_uploadTranslations).mockResolvedValue({
-      data: [],
-      count: 0,
-      batchCount: 0,
+    vi.mocked(uploadTranslations).mockResolvedValue({
+      data: { uploadedFiles: [], count: 0, message: 'Uploaded files' },
+      request: new Request('https://api.example.com'),
+      response: new Response(),
     });
   });
 
@@ -49,10 +50,10 @@ describe('GT.uploadTranslations', () => {
 
     await gt.uploadTranslations(files, { sourceLocale: 'brand-english' });
 
-    expect(_uploadTranslations).toHaveBeenCalledWith(
-      expect.any(Array),
-      { sourceLocale: 'en-US' },
-      expect.any(Object)
+    expect(uploadTranslations).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: expect.objectContaining({ sourceLocale: 'en-US' }),
+      })
     );
   });
 });

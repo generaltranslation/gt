@@ -1,6 +1,8 @@
 import { TranslationRequestConfig } from '../types';
 import { apiRequest } from './utils/apiRequest';
 
+// Compatibility input: fileName is retained for published callers even though
+// the generated request ignores it.
 export type PublishFileEntry = {
   fileId: string;
   versionId: string;
@@ -9,16 +11,8 @@ export type PublishFileEntry = {
   fileName?: string;
 };
 
-export type PublishFilesResult = {
-  results: {
-    fileId: string;
-    versionId: string;
-    locale?: string; // if locale is provided, it means this result is for a translation. Else it is for a source file.
-    branchId: string;
-    success: boolean;
-    error?: string;
-  }[];
-};
+export type PublishFilesResult =
+  import('@generaltranslation/api').PublishFilesResponse;
 
 /**
  * @internal

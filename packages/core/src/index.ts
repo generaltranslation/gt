@@ -11,41 +11,26 @@ import {
   DownloadFileOptions,
 } from './types';
 import { libraryDefaultLocale } from './settings/settings';
+import { defaultBaseUrl } from './settings/settingsUrls';
 import {
   noSourceLocaleProvidedError,
   noTargetLocaleProvidedError,
 } from './logging/errors';
 import { gtInstanceLogger } from './logging/logger';
-import {
-  _setupProject,
+import type {
   SetupProjectResult,
   SetupProjectOptions,
-  type SetupProjectFileReference,
+  SetupProjectFileReference,
 } from './translate/setupProject';
-import {
-  _enqueueFiles,
-  type EnqueueFilesOptions,
-} from './translate/enqueueFiles';
-import {
-  _createTag,
-  CreateTagOptions,
-  CreateTagResult,
-} from './translate/createTag';
-import { _downloadFileBatch } from './translate/downloadFileBatch';
-import {
+import type { EnqueueFilesOptions } from './translate/enqueueFiles';
+import type { CreateTagOptions, CreateTagResult } from './translate/createTag';
+import type {
   FileQuery,
   FileQueryResult,
 } from './types-dir/api/checkFileTranslations';
-import {
-  _submitUserEditDiffs,
-  SubmitUserEditDiffsPayload,
-} from './translate/submitUserEditDiffs';
-import { _uploadSourceFiles } from './translate/uploadSourceFiles';
-import { _uploadFonts } from './translate/uploadFonts';
-import { _uploadTranslations } from './translate/uploadTranslations';
-import {
+import type { SubmitUserEditDiffsPayload } from './translate/submitUserEditDiffs';
+import type {
   FileUpload,
-  RequiredUploadFilesOptions,
   UploadFilesOptions,
   UploadFilesResponse,
 } from './types-dir/api/uploadFiles';
@@ -54,50 +39,33 @@ import type {
   UploadAssetsOptions,
   UploadAssetsResponse,
 } from './types-dir/api/uploadAssets';
-import { _querySourceFile } from './translate/querySourceFile';
-import { ProjectData } from './types-dir/api/project';
-import { _getProjectData } from './projects/getProjectData';
-import { DownloadFileBatchRequest } from './types-dir/api/downloadFileBatch';
-import {
-  _checkJobStatus,
-  CheckJobStatusResult,
-} from './translate/checkJobStatus';
-import {
-  _awaitJobIds,
-  AwaitJobsOptions,
-  AwaitJobsResult,
-} from './translate/awaitJobs';
+import type { ProjectData } from './types-dir/api/project';
+import type { DownloadFileBatchRequest } from './types-dir/api/downloadFileBatch';
+import type { CheckJobStatusResult } from './translate/checkJobStatus';
+import type { AwaitJobsOptions, AwaitJobsResult } from './translate/awaitJobs';
 import type { FileDataQuery, FileDataResult } from './translate/queryFileData';
-import { _queryFileData } from './translate/queryFileData';
 import type {
   GetProjectInfoOptions,
   ProjectInfoResult,
 } from './translate/getProjectInfo';
-import { _getProjectInfo } from './translate/getProjectInfo';
 import type { BranchQuery } from './translate/queryBranchData';
 import type { BranchDataResult } from './types-dir/api/branch';
-import { _queryBranchData } from './translate/queryBranchData';
 import type {
   CreateBranchQuery,
   CreateBranchResult,
 } from './translate/createBranch';
-import { _createBranch } from './translate/createBranch';
 import type { FileReferenceIds } from './types-dir/api/file';
-import {
-  _processFileMoves,
-  type MoveMapping,
-  type ProcessMovesResponse,
-  type ProcessMovesOptions,
+import type {
+  MoveMapping,
+  ProcessMovesResponse,
+  ProcessMovesOptions,
 } from './translate/processFileMoves';
-import {
-  _getOrphanedFiles,
-  type GetOrphanedFilesResult,
-} from './translate/getOrphanedFiles';
-import {
-  _publishFiles,
-  type PublishFileEntry,
-  type PublishFilesResult,
+import type { GetOrphanedFilesResult } from './translate/getOrphanedFiles';
+import type {
+  PublishFileEntry,
+  PublishFilesResult,
 } from './translate/publishFiles';
+import { createGtApiAdapter } from './adapter/createGtApi';
 import { GTRuntime } from './runtime';
 
 export { GTRuntime, type GTConstructorParams } from './runtime';
@@ -160,6 +128,15 @@ export {
  * });
  */
 export class GT extends GTRuntime {
+  private _getApiAdapter() {
+    return createGtApiAdapter({
+      apiKey: this.apiKey || this.devApiKey,
+      baseUrl: this.baseUrl || defaultBaseUrl,
+      projectId: this.projectId,
+      customMapping: this.customMapping,
+    });
+  }
+
   // -------------- Branch Methods -------------- //
 
   /**
@@ -170,7 +147,7 @@ export class GT extends GTRuntime {
    */
   async queryBranchData(query: BranchQuery): Promise<BranchDataResult> {
     this._validateAuth('queryBranchData');
-    return await _queryBranchData(query, this._getTranslationConfig());
+    return await this._getApiAdapter().queryBranchData(query);
   }
 
   /**
@@ -181,7 +158,7 @@ export class GT extends GTRuntime {
    */
   async createBranch(query: CreateBranchQuery): Promise<CreateBranchResult> {
     this._validateAuth('createBranch');
-    return await _createBranch(query, this._getTranslationConfig());
+    return await this._getApiAdapter().createBranch(query);
   }
 
   /**
@@ -202,11 +179,7 @@ export class GT extends GTRuntime {
     options: ProcessMovesOptions = {}
   ): Promise<ProcessMovesResponse> {
     this._validateAuth('processFileMoves');
-    return await _processFileMoves(
-      moves,
-      options,
-      this._getTranslationConfig()
-    );
+    return await this._getApiAdapter().processFileMoves(moves, options);
   }
 
   /**
@@ -228,11 +201,10 @@ export class GT extends GTRuntime {
     options: { timeout?: number } = {}
   ): Promise<GetOrphanedFilesResult> {
     this._validateAuth('getOrphanedFiles');
-    return await _getOrphanedFiles(
+    return await this._getApiAdapter().getOrphanedFiles(
       branchId,
       fileIds,
-      options,
-      this._getTranslationConfig()
+      options
     );
   }
 
@@ -261,7 +233,7 @@ export class GT extends GTRuntime {
         this.resolveServiceLocale(locale)
       ),
     };
-    return await _setupProject(files, this._getTranslationConfig(), options);
+    return await this._getApiAdapter().setupProject(files, options);
   }
 
   /**
@@ -285,11 +257,7 @@ export class GT extends GTRuntime {
     timeoutMs?: number
   ): Promise<CheckJobStatusResult> {
     this._validateAuth('checkJobStatus');
-    return await _checkJobStatus(
-      jobIds,
-      this._getTranslationConfig(),
-      timeoutMs
-    );
+    return await this._getApiAdapter().checkJobStatus(jobIds, timeoutMs);
   }
 
   /**
@@ -305,7 +273,7 @@ export class GT extends GTRuntime {
   ): Promise<AwaitJobsResult> {
     this._validateAuth('awaitJobs');
     const jobIds = Array.isArray(jobs) ? jobs : Object.keys(jobs.jobData);
-    return await _awaitJobIds(jobIds, options, this._getTranslationConfig());
+    return await this._getApiAdapter().awaitJobs(jobIds, options);
   }
 
   /**
@@ -352,8 +320,8 @@ export class GT extends GTRuntime {
       throw new Error(error);
     }
 
-    // The low-level helper synthesizes result.locales from targetLocales, so
-    // retain the caller's identities before converting the request to service
+    // The adapter synthesizes result.locales from targetLocales, so retain
+    // the caller's identities before converting the request to service
     // language codes.
     const targetLocaleIdentities = [...mergedOptions.targetLocales];
 
@@ -366,10 +334,9 @@ export class GT extends GTRuntime {
       ),
     };
 
-    const result = await _enqueueFiles(
+    const result = await this._getApiAdapter().enqueueFiles(
       files,
-      mergedOptions,
-      this._getTranslationConfig()
+      mergedOptions
     );
     return {
       ...result,
@@ -386,7 +353,7 @@ export class GT extends GTRuntime {
    */
   async createTag(options: CreateTagOptions): Promise<CreateTagResult> {
     this._validateAuth('createTag');
-    return await _createTag(options, this._getTranslationConfig());
+    return await this._getApiAdapter().createTag(options);
   }
 
   /**
@@ -397,7 +364,7 @@ export class GT extends GTRuntime {
    */
   async publishFiles(files: PublishFileEntry[]): Promise<PublishFilesResult> {
     this._validateAuth('publishFiles');
-    const result = await _publishFiles(files, this._getTranslationConfig());
+    const result = await this._getApiAdapter().publishFiles(files);
     return {
       results: result.results.map((item) => ({
         ...item,
@@ -426,7 +393,7 @@ export class GT extends GTRuntime {
         locale: this.resolveServiceLocale(d.locale),
       })),
     };
-    await _submitUserEditDiffs(normalized, this._getTranslationConfig());
+    await this._getApiAdapter().submitUserEditDiffs(normalized);
   }
 
   /**
@@ -459,7 +426,10 @@ export class GT extends GTRuntime {
     options: GetProjectInfoOptions = {}
   ): Promise<ProjectInfoResult> {
     this._validateAuth('getProjectInfo');
-    const result = await _getProjectInfo(options, this._getTranslationConfig());
+    const result = await this._getApiAdapter().getProjectInfo(
+      undefined,
+      options.timeout
+    );
     return {
       ...result,
       defaultLocale: this.resolveServiceResponseLocale(result.defaultLocale),
@@ -483,13 +453,12 @@ export class GT extends GTRuntime {
     }));
 
     // Request the file translation status
-    const result = await _queryFileData(
+    const result = await this._getApiAdapter().queryFileData(
       data,
-      options,
-      this._getTranslationConfig()
+      options.timeout
     );
 
-    // Resolve canonical locales
+    // Restore configured identities from service language codes.
     result.translatedFiles = result.translatedFiles?.map((item) => ({
       ...item,
       ...(item.locale && {
@@ -529,11 +498,10 @@ export class GT extends GTRuntime {
     // Validation
     this._validateAuth('querySourceFile');
 
-    // Request the file translation status
-    const result = await _querySourceFile(
-      data,
-      options,
-      this._getTranslationConfig()
+    const result = await this._getApiAdapter().querySourceFile(
+      { fileId: data.fileId },
+      { branchId: data.branchId, versionId: data.versionId },
+      options.timeout
     );
     // Restore configured identities from service language codes.
     result.translations = result.translations.map((item) => ({
@@ -571,11 +539,9 @@ export class GT extends GTRuntime {
     // Validation
     this._validateAuth('getProjectData');
 
-    // Request the file translation status
-    const result = await _getProjectData(
+    const result = await this._getApiAdapter().getProjectInfo(
       projectId,
-      options,
-      this._getTranslationConfig()
+      options.timeout
     );
     // Restore configured identities from service language codes.
     result.currentLocales = result.currentLocales.map((item) =>
@@ -621,22 +587,18 @@ export class GT extends GTRuntime {
     // Validation
     this._validateAuth('downloadTranslatedFile');
 
-    const result = await _downloadFileBatch(
+    const result = await this._getApiAdapter().downloadFileBatch(
       [
         {
-          fileId: file.fileId,
-          branchId: file.branchId,
+          ...file,
           locale: file.locale
             ? this.resolveServiceLocale(file.locale)
             : undefined,
-          versionId: file.versionId,
-          useLatestAvailableVersion: file.useLatestAvailableVersion,
         },
       ],
-      options,
-      this._getTranslationConfig()
+      options
     );
-    return result.data?.[0]?.data ?? '';
+    return result.files[0]?.data ?? '';
   }
 
   /**
@@ -677,16 +639,17 @@ export class GT extends GTRuntime {
     });
 
     // Request the batch download.
-    const result = await _downloadFileBatch(
+    const result = await this._getApiAdapter().downloadFileBatch(
       requests,
-      options,
-      this._getTranslationConfig()
+      options
     );
 
     return {
-      files: result.data.map((file) => {
+      files: result.files.map((file) => {
         if (!file.locale) return file;
-        const serviceLocale = this.standardizeLocale(file.locale);
+        // The adapter may already have restored an alias; canonicalize before
+        // matching against the service codes the requests were keyed by.
+        const serviceLocale = this.resolveServiceLocale(file.locale);
         const matchingRequests = (
           requestedFiles.get(JSON.stringify([file.fileId, serviceLocale])) ?? []
         ).filter(
@@ -743,16 +706,19 @@ export class GT extends GTRuntime {
     }));
 
     // Process files in batches and convert result to UploadFilesResponse
-    const result = await _uploadSourceFiles(
+    const result = await this._getApiAdapter().uploadSourceFiles(
       files,
-      mergedOptions as RequiredUploadFilesOptions,
-      this._getTranslationConfig()
+      mergedOptions
     );
 
+    // The published upload result requires fields that the generated response
+    // still marks optional, although successful uploads return them.
+    const uploadedFiles =
+      result.uploadedFiles as UploadFilesResponse['uploadedFiles'];
     return {
-      uploadedFiles: result.data,
-      count: result.count,
-      message: `Successfully uploaded ${result.count} files in ${result.batchCount} batch(es)`,
+      uploadedFiles,
+      count: uploadedFiles.length,
+      message: `Successfully uploaded ${uploadedFiles.length} files in ${Math.ceil(files.length / 100)} batch(es)`,
     };
   }
 
@@ -762,7 +728,7 @@ export class GT extends GTRuntime {
    * re-running only stores new fonts.
    * @param {AssetUpload[]} fonts - Fonts to upload (`content` base64-encoded).
    * @param {UploadAssetsOptions} options - Optional settings (e.g. timeout).
-   * @returns {Promise<UploadAssetsResponse>} The stored/deduped assets.
+   * @returns {Promise<UploadAssetsResponse>} The stored assets.
    */
   async uploadFonts(
     fonts: AssetUpload[],
@@ -770,13 +736,7 @@ export class GT extends GTRuntime {
   ): Promise<UploadAssetsResponse> {
     this._validateAuth('uploadFonts');
 
-    const result = await _uploadFonts(
-      fonts,
-      options,
-      this._getTranslationConfig()
-    );
-
-    return { assets: result.data, count: result.count };
+    return await this._getApiAdapter().uploadFonts(fonts, options);
   }
 
   /**
@@ -834,16 +794,19 @@ export class GT extends GTRuntime {
     }));
 
     // Process files in batches and convert result to UploadFilesResponse
-    const result = await _uploadTranslations(
+    const result = await this._getApiAdapter().uploadTranslations(
       targetFiles,
-      mergedOptions as RequiredUploadFilesOptions,
-      this._getTranslationConfig()
+      mergedOptions
     );
 
+    // The published upload result requires fields that the generated response
+    // still marks optional, although successful uploads return them.
+    const uploadedFiles =
+      result.uploadedFiles as UploadFilesResponse['uploadedFiles'];
     return {
-      uploadedFiles: result.data,
-      count: result.count,
-      message: `Successfully uploaded ${result.count} files in ${result.batchCount} batch(es)`,
+      uploadedFiles,
+      count: uploadedFiles.length,
+      message: `Successfully uploaded ${uploadedFiles.length} files in ${Math.ceil(files.length / 100)} batch(es)`,
     };
   }
 }
