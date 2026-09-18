@@ -123,6 +123,40 @@
       }
     },
     {
+      "files": [
+        "packages/cli/src/**/*.ts",
+        "packages/sanity/src/**/*.{ts,tsx}"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "generaltranslation/api",
+                "allowTypeImports": true,
+                "allowImportNames": ["FileFormat"],
+                "message": "CLI and Sanity must not issue generated API requests directly. Add the request to createGtApiAdapter in packages/core/src/adapter/createGtApi.ts and call it through the shared adapter."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "packages/cli/src/cli/commands/api.ts",
+        "packages/cli/src/utils/credentials.ts",
+        "packages/cli/src/**/__tests__/**",
+        "packages/sanity/src/**/__tests__/**",
+        "packages/cli/src/**/*.test.ts",
+        "packages/sanity/src/**/*.test.{ts,tsx}"
+      ],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    },
+    {
       "files": ["packages/locadex/**/*.{ts,tsx}", "packages/mcp/**/*.{ts,tsx}"],
       "rules": {
         "no-console": [

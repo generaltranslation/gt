@@ -1,32 +1,13 @@
 import type { CustomMapping } from '@generaltranslation/format/types';
-import {
-  createApiClient,
-  createProject,
-  createTag,
-  getBranchInfo,
-  getProjectInfo,
-  getTranslationJobInfo,
-  processBatches,
-  processFileMoves,
-  publishFiles,
-  submitUserEditDiffs,
-  type ApiClientConfig,
-  type CreateProjectData,
-  type CreateTagData,
-  type GetBranchInfoData,
-  type ProcessFileMovesData,
-  type PublishFilesData,
-  type SubmitUserEditDiffsData,
-} from 'generaltranslation/api';
-import {
-  createGtApiAdapter,
-  unwrapApiResult,
-} from 'generaltranslation/internal';
+import type { ApiClientConfig } from 'generaltranslation/api';
+import { createGtApiAdapter } from 'generaltranslation/internal';
 
 const {
   configure: configureSharedApi,
-  getClient,
-  getClientConfig,
+  getClient: _getClient,
+  getClientConfig: _getClientConfig,
+  loadJobStatuses,
+  loadProjectInfo,
   ...sharedApi
 } = createGtApiAdapter();
 
@@ -36,102 +17,17 @@ export function configureApiClient(
   configureSharedApi(config);
 }
 
+// CLI keeps the raw service views: unaliased project locales and nullable
+// job errors, plus per-request cancellation for polling.
 export const api = {
   ...sharedApi,
-  async queryBranchData(body: GetBranchInfoData['body']) {
-    return unwrapApiResult(await getBranchInfo({ body, client: getClient() }));
-  },
 
   async checkJobStatus(jobIds: string[], signal?: AbortSignal) {
-    return unwrapApiResult(
-      await getTranslationJobInfo({
-        body: { jobIds },
-        client: getClient(),
-        signal,
-      })
-    );
+    return loadJobStatuses(jobIds, { signal });
   },
 
   async getProjectInfo(timeoutMs: number) {
-    const config = getClientConfig();
-    if (!config.projectId) {
-      throw new Error('Project ID is required to fetch project information');
-    }
-    const projectInfoClient = createApiClient({ ...config, timeoutMs });
-    return unwrapApiResult(
-      await getProjectInfo({
-        client: projectInfoClient,
-        path: { projectId: config.projectId },
-      })
-    );
-  },
-
-  async publishFiles(files: PublishFilesData['body']['files']) {
-    return unwrapApiResult(
-      await publishFiles({ body: { files }, client: getClient() })
-    );
-  },
-
-  async submitUserEditDiffs(body: SubmitUserEditDiffsData['body']) {
-    return processBatches(body.diffs, async (diffs) => [
-      unwrapApiResult(
-        await submitUserEditDiffs({
-          body: {
-            projectId: body.projectId,
-            diffs: diffs.map((diff) => ({
-              ...diff,
-              locale: sharedApi.resolveCanonicalLocale(diff.locale),
-            })),
-          },
-          client: getClient(),
-        })
-      ),
-    ]);
-  },
-
-  async createTag(body: CreateTagData['body']) {
-    return unwrapApiResult(await createTag({ body, client: getClient() }));
-  },
-
-  async createProject(
-    orgId: CreateProjectData['path']['orgId'],
-    body: CreateProjectData['body']
-  ) {
-    return unwrapApiResult(
-      await createProject({
-        path: { orgId },
-        body: {
-          ...body,
-          defaultLocale: sharedApi.resolveCanonicalLocale(body.defaultLocale),
-        },
-        client: getClient(),
-      })
-    );
-  },
-
-  async processFileMoves(
-    moves: ProcessFileMovesData['body']['moves'],
-    options: Pick<ProcessFileMovesData['body'], 'branchId'>
-  ) {
-    const result = await processBatches(moves, async (batch) => {
-      const response = unwrapApiResult(
-        await processFileMoves({
-          body: { branchId: options.branchId, moves: batch },
-          client: getClient(),
-        })
-      );
-      return response.results;
-    });
-    const succeeded = result.filter(({ success }) => success).length;
-
-    return {
-      results: result,
-      summary: {
-        total: moves.length,
-        succeeded,
-        failed: result.length - succeeded,
-      },
-    };
+    return loadProjectInfo(undefined, timeoutMs);
   },
 };
 
