@@ -1,5 +1,3 @@
-import { TranslationRequestConfig } from '../types';
-import { apiRequest } from './utils/apiRequest';
 import type { FileReference } from '../types-dir/api/file';
 
 // Compatibility input: branchId stays required for published callers while
@@ -17,30 +15,3 @@ export type SetupProjectOptions = {
   locales?: string[];
   timeoutMs?: number;
 };
-
-/**
- * @internal
- * Enqueues files for project setup the General Translation API.
- * @param files - References of files to translate (file content already uploaded)
- * @param config - The configuration for the API call.
- * @param timeoutMS - The timeout in milliseconds
- * @returns The result of the API call.
- */
-export async function _setupProject(
-  files: SetupProjectFileReference[],
-  config: TranslationRequestConfig,
-  options?: SetupProjectOptions
-): Promise<SetupProjectResult> {
-  return apiRequest<SetupProjectResult>(config, '/v2/project/setup/generate', {
-    body: {
-      files: files.map((f) => ({
-        branchId: f.branchId,
-        fileId: f.fileId,
-        versionId: f.versionId,
-      })),
-      locales: options?.locales,
-      force: options?.force,
-    },
-    timeout: options?.timeoutMs,
-  });
-}
