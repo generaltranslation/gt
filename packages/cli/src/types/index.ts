@@ -1,4 +1,5 @@
 import type { CustomMapping } from '@generaltranslation/format/types';
+import type { UserTokenProvider } from 'generaltranslation/api';
 import type { ModelProvider } from 'generaltranslation/internal';
 import type { FileFormat } from 'generaltranslation/types';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
@@ -237,6 +238,7 @@ export type Settings = {
   baseUrl: string;
   dashboardUrl: string;
   apiKey?: string;
+  userTokenProvider?: UserTokenProvider;
   projectId?: string;
   defaultLocale: string;
   locales: string[];

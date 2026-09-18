@@ -1,3 +1,4 @@
+import type { UserTokenProvider } from '@generaltranslation/api';
 import type { DataFormat as FormatDataFormat } from '@generaltranslation/format/types';
 export { HTML_CONTENT_PROPS } from '@generaltranslation/format/types';
 export type {
@@ -130,4 +131,5 @@ export type TranslationRequestConfig = {
   projectId: string;
   baseUrl?: string;
   apiKey?: string;
+  userTokenProvider?: UserTokenProvider;
 };

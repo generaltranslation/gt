@@ -132,6 +132,7 @@ export class GT extends GTRuntime {
   private _getApiAdapter() {
     return createGtApiAdapter({
       apiKey: this.apiKey || this.devApiKey,
+      userTokenProvider: this.userTokenProvider,
       baseUrl: this.baseUrl || defaultBaseUrl,
       projectId: this.projectId,
       customMapping: this.customMapping,
