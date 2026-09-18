@@ -20,6 +20,7 @@ import {
   warnNestedInternalTComponent,
   warnDeriveNonConstVariableSync,
   warnDeriveDestructuringSync,
+  warnDeriveWithStaticLookupSync,
 } from '../../../../console/index.js';
 import { isAcceptedPluralForm } from 'generaltranslation/internal';
 import { isStaticExpression } from '../../evaluateJsx.js';
@@ -838,6 +839,25 @@ function parseJSXElement({
     });
     if (contextNode) {
       contextVariants = nodeToStrings(contextNode);
+    }
+  }
+
+  // Warn when an explicit id or hash prop is combined with derived variants:
+  // the static lookup key pins the component to a single variant at runtime
+  const variantCount = minifiedTress.length * (contextVariants?.length ?? 1);
+  if (variantCount > 1) {
+    const staticLookupProp = (['id', 'hash', '_hash', '$_hash'] as const).find(
+      (prop) => metadata[prop]
+    );
+    if (staticLookupProp) {
+      output.warnings.add(
+        warnDeriveWithStaticLookupSync(
+          config.file,
+          staticLookupProp,
+          metadata.id,
+          `${node.loc?.start?.line}:${node.loc?.start?.column}`
+        )
+      );
     }
   }
 
