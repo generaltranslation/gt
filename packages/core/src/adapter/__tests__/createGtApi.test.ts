@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  createProject,
   getFileInfo,
   getOrphanedFiles,
+  getTranslationJobInfo,
   publishFiles,
   submitUserEditDiffs,
   uploadTranslations,
@@ -14,8 +16,10 @@ import { createGtApiAdapter } from '../createGtApi';
 
 vi.mock('@generaltranslation/api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@generaltranslation/api')>()),
+  createProject: vi.fn(),
   getFileInfo: vi.fn(),
   getOrphanedFiles: vi.fn(),
+  getTranslationJobInfo: vi.fn(),
   publishFiles: vi.fn(),
   submitUserEditDiffs: vi.fn(),
   uploadTranslations: vi.fn(),
@@ -143,6 +147,63 @@ describe.sequential('createGtApiAdapter', () => {
     expect(response.orphanedFiles).toEqual([
       { fileId: 'orphan', versionId: 'v2', fileName: 'orphan.json' },
     ]);
+  });
+
+  it('creates a project under the organization with a canonical default locale', async () => {
+    vi.mocked(createProject).mockResolvedValue(
+      result({
+        project: {
+          id: 'project-id',
+          name: 'Project',
+          orgId: 'org-id',
+          defaultLocale: 'en-US',
+        },
+      })
+    );
+    const adapter = createGtApiAdapter({
+      baseUrl: 'https://api.example.com',
+      customMapping,
+    });
+
+    await adapter.createProject('org-id', {
+      name: 'Project',
+      defaultLocale: 'source',
+    });
+
+    expect(createProject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: { orgId: 'org-id' },
+        body: { name: 'Project', defaultLocale: 'en-US' },
+      })
+    );
+  });
+
+  it('exposes raw job statuses alongside the normalized view', async () => {
+    vi.mocked(getTranslationJobInfo).mockResolvedValue(
+      result([{ jobId: 'job-id', status: 'failed', error: { message: null } }])
+    );
+    const adapter = createGtApiAdapter({
+      baseUrl: 'https://api.example.com',
+    });
+    const controller = new AbortController();
+
+    const raw = await adapter.loadJobStatuses(['job-id'], {
+      signal: controller.signal,
+    });
+    const normalized = await adapter.checkJobStatus(['job-id']);
+
+    expect(raw).toEqual([
+      { jobId: 'job-id', status: 'failed', error: { message: null } },
+    ]);
+    expect(normalized).toEqual([
+      { jobId: 'job-id', status: 'failed', error: { message: '' } },
+    ]);
+    expect(getTranslationJobInfo).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: { jobIds: ['job-id'] },
+        signal: controller.signal,
+      })
+    );
   });
 
   it('sends only contract fields for publish and user-edit diffs', async () => {

@@ -1,6 +1,5 @@
 import {
   downloadFile,
-  getTranslationStatus,
   type ApiClientConfig,
   type DownloadFileData,
   type GetTranslationStatusData,
@@ -37,29 +36,7 @@ export const api = {
       NonNullable<GetTranslationStatusData['query']>
   ) {
     const { fileId, ...queryParams } = query;
-    const result = unwrapApiResult(
-      await getTranslationStatus({
-        path: { fileId },
-        query: queryParams,
-        client: getClient(),
-      })
-    );
-    return {
-      ...result,
-      translations: result.translations.map((translation) => ({
-        ...translation,
-        locale: sharedApi.resolveAliasLocale(translation.locale),
-      })),
-      sourceFile: {
-        ...result.sourceFile,
-        sourceLocale: sharedApi.resolveAliasLocale(
-          result.sourceFile.sourceLocale
-        ),
-        locales: result.sourceFile.locales.map((locale) =>
-          sharedApi.resolveAliasLocale(locale)
-        ),
-      },
-    };
+    return sharedApi.querySourceFile({ fileId }, queryParams);
   },
 
   async downloadFile(
@@ -79,13 +56,5 @@ export const api = {
     // The single-file response omits fileFormat; Sanity downloads serialized
     // document translations here, which are always base64 text (never LOTTIE).
     return decodeBase64(response.data);
-  },
-
-  async downloadFileBatch(
-    files: Parameters<typeof sharedApi.downloadFileBatch>[0]
-  ) {
-    const { pending: _pending, ...result } =
-      await sharedApi.downloadFileBatch(files);
-    return result;
   },
 };

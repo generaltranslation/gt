@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { downloadFile, getTranslationStatus } from 'generaltranslation/api';
+import { downloadFile } from 'generaltranslation/api';
 import { ApiError } from 'generaltranslation/errors';
 
 import { api, configureApiClient } from '../api';
@@ -9,7 +9,6 @@ import { api, configureApiClient } from '../api';
 vi.mock('generaltranslation/api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('generaltranslation/api')>()),
   downloadFile: vi.fn(),
-  getTranslationStatus: vi.fn(),
 }));
 
 function result<T>(data: T) {
@@ -242,6 +241,7 @@ describe('Sanity API adapter', () => {
     await expect(api.downloadFileBatch([])).resolves.toEqual({
       files: [],
       count: 0,
+      pending: [],
     });
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -296,8 +296,13 @@ describe('Sanity API adapter', () => {
   });
 
   it('alias-resolves translation-status locales', async () => {
-    vi.mocked(getTranslationStatus).mockResolvedValue(
-      result({
+    fetchMock.mockImplementation(async (request) => {
+      const url = new URL(new Request(request).url);
+      expect(url.pathname).toBe(
+        '/v2/project/translations/files/status/file-id'
+      );
+      expect(url.searchParams.get('branchId')).toBe('branch-id');
+      return Response.json({
         translations: [
           {
             locale: 'es-ES',
@@ -321,10 +326,15 @@ describe('Sanity API adapter', () => {
           updatedAt: '2026-01-01',
           locales: ['es-ES'],
         },
-      })
-    );
+      });
+    });
 
-    const response = await api.querySourceFile({ fileId: 'file-id' });
+    const response = await api.querySourceFile({
+      fileId: 'file-id',
+      branchId: 'branch-id',
+    });
+
+    expect(fetchMock).toHaveBeenCalledOnce();
 
     expect(response.translations[0].locale).toBe('target');
     expect(response.sourceFile).toMatchObject({
