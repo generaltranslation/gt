@@ -1,4 +1,5 @@
 import type { CustomMapping } from '@generaltranslation/format/types';
+import type { ModelProvider } from 'generaltranslation/internal';
 import type { FileFormat } from 'generaltranslation/types';
 import { SUPPORTED_FILE_EXTENSIONS } from '../formats/files/supportedFiles.js';
 import {
@@ -271,7 +272,7 @@ export type Settings = {
   fonts?: FontsConfig; // fonts to sync to the API before translating
   framework?: SupportedFrameworks;
   options?: AdditionalOptions;
-  modelProvider?: string;
+  modelProvider?: ModelProvider;
   tag?: string;
   tagMessage?: string;
   parsingOptions: ParsingConfigOptions;

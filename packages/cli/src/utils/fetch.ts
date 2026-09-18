@@ -1,4 +1,4 @@
-import { API_VERSION } from 'generaltranslation/internal';
+import { API_VERSION } from 'generaltranslation/api';
 
 /**
  * @internal

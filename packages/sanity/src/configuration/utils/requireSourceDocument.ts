@@ -1,5 +1,5 @@
 import { SanityClient, SanityDocument } from 'sanity';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { findLatestDraft } from './findLatestDraft';
 import { findDocumentAtRevision } from './findDocumentAtRevision';
 

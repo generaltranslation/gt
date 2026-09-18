@@ -31,13 +31,18 @@ export {
   encodeFileContent,
 } from './utils/base64';
 export { isSupportedFileFormatTransform } from './utils/isSupportedFileFormatTransform';
-export { API_VERSION } from './translate/api';
+export { API_VERSION } from '@generaltranslation/api';
 export {
   isErrorResult,
   unwrapApiResult,
 } from './translate/utils/unwrapApiResult';
 export { createGtApiAdapter } from './adapter/createGtApi';
 export type { GtApiAdapter, GtApiAdapterConfig } from './adapter/createGtApi';
+export {
+  isModelProvider,
+  supportedModelProviders,
+} from './adapter/modelProvider';
+export type { ModelProvider } from './adapter/modelProvider';
 
 // derive
 export { decodeVars } from './derive/decodeVars';
