@@ -25,6 +25,7 @@ vi.mock('../../utils/api.js', () => ({
     queryFileData: vi.fn(),
     downloadFileBatch: vi.fn(),
     submitUserEditDiffs: vi.fn(),
+    resolveCanonicalLocale: vi.fn((locale: string) => locale),
   },
 }));
 

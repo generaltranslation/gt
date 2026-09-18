@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { gt } from '../../../utils/gt.js';
+import { configureApiClient } from '../../../utils/api.js';
 import { emptyLocaleContent, localeContent } from '../localeContent.js';
 
 const unit = (value: string) => ({
@@ -43,7 +43,10 @@ const deSlice =
 
 describe('localeContent', () => {
   afterEach(() => {
-    gt.setConfig({ customMapping: {} });
+    configureApiClient({
+      baseUrl: 'https://api.example.com',
+      customMapping: {},
+    });
   });
 
   it('is the content itself for a file that holds one locale', () => {
@@ -75,7 +78,10 @@ describe('localeContent', () => {
   });
 
   it('slices by the canonical tag a custom mapping gives an alias locale', () => {
-    gt.setConfig({ customMapping: { french: { code: 'fr' } } });
+    configureApiClient({
+      baseUrl: 'https://api.example.com',
+      customMapping: { french: { code: 'fr' } },
+    });
     const slice = localeContent(catalog, 'XCSTRINGS', 'french');
     expect(slice).toBeDefined();
     const strings = (

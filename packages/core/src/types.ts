@@ -1,3 +1,8 @@
+import type {
+  CreateTagData,
+  CreateTagResponse,
+  GetOrphanedFilesResponse,
+} from '@generaltranslation/api';
 import type { DataFormat as FormatDataFormat } from '@generaltranslation/format/types';
 export { HTML_CONTENT_PROPS } from '@generaltranslation/format/types';
 export type {
@@ -48,7 +53,8 @@ export type {
 } from './types-dir/api/downloadFileBatch';
 export type { EnqueueFilesOptions } from './translate/enqueueFiles';
 export type { EnqueueFilesResult, Updates } from './types-dir/api/enqueueFiles';
-export type { CreateTagOptions, CreateTagResult } from './translate/createTag';
+export type CreateTagOptions = CreateTagData['body'];
+export type CreateTagResult = CreateTagResponse;
 export type { SetupProjectFileReference } from './translate/setupProject';
 export type { FileToUpload } from './types-dir/api/file';
 export type { FileUpload } from './types-dir/api/uploadFiles';
@@ -70,10 +76,8 @@ export type {
 export type { BranchDataResult } from './types-dir/api/branch';
 export type { BranchQuery } from './translate/queryBranchData';
 export type { FileDataQuery, FileDataResult } from './translate/queryFileData';
-export type {
-  OrphanedFile,
-  GetOrphanedFilesResult,
-} from './translate/getOrphanedFiles';
+export type OrphanedFile = GetOrphanedFilesResponse['orphanedFiles'][number];
+export type GetOrphanedFilesResult = GetOrphanedFilesResponse;
 export type {
   MoveMapping,
   MoveResult,

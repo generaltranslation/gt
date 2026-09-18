@@ -9,6 +9,9 @@ import {
   DownloadFileBatchOptions,
   DownloadFileBatchResult,
   DownloadFileOptions,
+  CreateTagOptions,
+  CreateTagResult,
+  GetOrphanedFilesResult,
 } from './types';
 import { libraryDefaultLocale } from './settings/settings';
 import { defaultBaseUrl } from './settings/settingsUrls';
@@ -23,7 +26,6 @@ import type {
   SetupProjectFileReference,
 } from './translate/setupProject';
 import type { EnqueueFilesOptions } from './translate/enqueueFiles';
-import type { CreateTagOptions, CreateTagResult } from './translate/createTag';
 import type {
   FileQuery,
   FileQueryResult,
@@ -60,7 +62,6 @@ import type {
   ProcessMovesResponse,
   ProcessMovesOptions,
 } from './translate/processFileMoves';
-import type { GetOrphanedFilesResult } from './translate/getOrphanedFiles';
 import type {
   PublishFileEntry,
   PublishFilesResult,
