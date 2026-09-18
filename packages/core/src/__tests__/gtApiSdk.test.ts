@@ -1,10 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createTag, uploadAssets } from '@generaltranslation/api';
+import {
+  createTag,
+  getProjectInfo,
+  uploadAssets,
+} from '@generaltranslation/api';
 import { GT } from '../index';
 
 vi.mock('@generaltranslation/api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@generaltranslation/api')>()),
   createTag: vi.fn(),
+  getProjectInfo: vi.fn(),
   uploadAssets: vi.fn(),
 }));
 
@@ -68,6 +73,26 @@ describe('GT generated SDK transport', () => {
         body: expect.objectContaining({ tagId: 'release' }),
       })
     );
+  });
+
+  it('strips autoApprove from getProjectData to match the published shape', async () => {
+    vi.mocked(getProjectInfo).mockResolvedValue(
+      result({
+        id: 'project-id',
+        name: 'Project',
+        orgId: 'org-id',
+        defaultLocale: 'en',
+        currentLocales: ['es'],
+        autoApprove: false,
+      })
+    );
+    await expect(gt.getProjectData('project-id')).resolves.toEqual({
+      id: 'project-id',
+      name: 'Project',
+      orgId: 'org-id',
+      defaultLocale: 'en',
+      currentLocales: ['es'],
+    });
   });
 
   it('returns the generated font asset shape without a deduped field', async () => {

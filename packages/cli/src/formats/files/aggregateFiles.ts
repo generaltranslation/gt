@@ -14,7 +14,7 @@ import {
 } from '../../fs/findFilepath.js';
 import { readFileContent } from '../../fs/fileContent.js';
 import { Settings } from '../../types/index.js';
-import type { FileFormat, DataFormat, FileToUpload } from '../../types/data.js';
+import type { DataFormat, FileToUpload } from '../../types/data.js';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
 import { parseJson } from '../json/parseJson.js';
 import {
@@ -42,7 +42,10 @@ import {
   type KeyedMetadata,
 } from '../parseKeyedMetadata.js';
 import { buildPublishMap } from '../../utils/resolvePublish.js';
-import { getTransformFormatProperty } from './transformFormat.js';
+import {
+  CONFIG_FILE_TYPE_TO_FILE_FORMAT,
+  getTransformFormatProperty,
+} from './transformFormat.js';
 
 /**
  * Checks if a file path is a metadata companion file (e.g. foo.metadata.json)
@@ -556,7 +559,7 @@ export async function aggregateFiles(
           return {
             content: processed,
             fileName: relativePath,
-            fileFormat: fileType.toUpperCase() as FileFormat,
+            fileFormat: CONFIG_FILE_TYPE_TO_FILE_FORMAT[fileType],
             ...getTransformFormatProperty(settings, fileType),
             fileId: hashStringSync(relativePath),
             versionId: hashVersionId(
