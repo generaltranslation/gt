@@ -671,10 +671,20 @@ export class BaseCLI {
     this.program
       .command('login')
       .description('Sign in to your General Translation account')
-      .action(async () => {
+      .option(
+        '--no-browser',
+        'Do not open a browser; show a code to enter on any device instead'
+      )
+      .action(async (options: { browser: boolean }) => {
         displayHeader('Signing in to General Translation...');
         try {
           await login({
+            noBrowser: !options.browser,
+            onDeviceCode: ({ userCode, verificationUri }) => {
+              logger.message(
+                `${options.browser ? 'Opening your browser. If it does not open, on any device visit' : 'On any device, visit'} ${chalk.cyan(verificationUri)} and enter the code ${chalk.bold(userCode)}\nWaiting for approval...`
+              );
+            },
             onAuthorizationUrl: (url) => {
               logger.message(
                 `Opening your browser to sign in. If it does not open, visit:\n${chalk.cyan(url)}`
