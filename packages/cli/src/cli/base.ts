@@ -61,7 +61,6 @@ import { loadConfig } from '../fs/config/loadConfig.js';
 import { createLoadTranslationsFile } from '../fs/createLoadTranslationsFile.js';
 import { saveLocalEdits } from '../api/saveLocalEdits.js';
 import {
-  hasValidApiKey,
   hasValidCredentials,
   hasValidServiceLocales,
 } from './commands/utils/validation.js';
@@ -84,6 +83,9 @@ import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/diagnostics';
+import { login, logout, whoAmI } from '../auth/oauth.js';
+import { UserAuthError } from '../auth/errors.js';
+import { resolveConfig } from '../config/resolveConfig.js';
 import { setupViteSPA } from '../setup/setupViteSPA.js';
 import { manifestDirectlyDeclaresGTVue } from '@generaltranslation/vue-extractor/integration';
 import { api } from '../utils/api.js';
@@ -124,6 +126,17 @@ const electronSetupError = createDiagnosticMessage({
     'The automatic setup wizard is not ready for Electron applications',
   docsUrl: 'https://generaltranslation.com/docs/react',
 });
+
+function createUserAuthError(whatHappened: string, error: unknown): string {
+  if (error instanceof UserAuthError) return error.message;
+  return createDiagnosticMessage({
+    source: 'gt',
+    severity: 'Error',
+    whatHappened,
+    details: formatDiagnosticErrorDetails(error),
+    fix: 'Run `gt login` and try again',
+  });
+}
 
 async function exitIfUnsupportedSetupTarget(): Promise<void> {
   const packageJson = await searchForPackageJson();
@@ -216,6 +229,7 @@ export class BaseCLI {
     this.setupConfigureCommand();
     this.setupUploadCommand();
     this.setupLoginCommand();
+    this.setupUserAuthCommands();
     this.setupSendDiffsCommand();
     this.setupApiCommand();
     this.setupProjectCommands();
@@ -374,9 +388,8 @@ export class BaseCLI {
     ).action(async (options) => {
       try {
         const settings = await generateSettings(options);
-        // Project creation uses an organization key before a project ID exists.
-        if (!hasValidApiKey(settings) || !hasValidServiceLocales(settings))
-          return exitSync(1);
+        // Project creation happens before a project ID exists.
+        if (!hasValidServiceLocales(settings)) return exitSync(1);
         const { project } = await api.createProject(options.orgId, {
           name: options.name,
           defaultLocale: options.defaultLocale,
@@ -653,6 +666,56 @@ export class BaseCLI {
       await this.handleUploadCommand(options);
       logger.endCommand('Done!');
     });
+  }
+
+  protected setupUserAuthCommands(): void {
+    this.program
+      .command('login')
+      .description('Sign in to your General Translation account')
+      .action(async () => {
+        displayHeader('Signing in to General Translation...');
+        try {
+          // Tokens are bound to one API resource, so log in to the configured one.
+          const baseUrl = resolveConfig(process.cwd())?.config.baseUrl;
+          await login({
+            baseUrl: typeof baseUrl === 'string' ? baseUrl : undefined,
+            onAuthorizationUrl: (url) => {
+              logger.message(
+                `Opening your browser to sign in. If it does not open, visit:\n${chalk.cyan(url)}`
+              );
+            },
+          });
+          logger.endCommand('Signed in successfully.');
+        } catch (error) {
+          logErrorAndExit(createUserAuthError('Sign in failed', error));
+        }
+      });
+
+    this.program
+      .command('logout')
+      .description('Sign out of your General Translation account')
+      .action(async () => {
+        try {
+          await logout();
+          logger.endCommand('Signed out successfully.');
+        } catch (error) {
+          logErrorAndExit(createUserAuthError('Sign out failed', error));
+        }
+      });
+
+    this.program
+      .command('whoami')
+      .description('Show the signed-in General Translation account')
+      .action(async () => {
+        try {
+          const user = await whoAmI();
+          logger.message(user.email ?? user.name ?? user.sub);
+        } catch (error) {
+          logErrorAndExit(
+            createUserAuthError('Could not load your account', error)
+          );
+        }
+      });
   }
 
   protected setupLoginCommand(): void {

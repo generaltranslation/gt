@@ -290,6 +290,170 @@ describe('createApiClient', () => {
     expect(request?.headers.get('gt-api-version')).toBe(API_VERSION);
   });
 
+  it('uses a user token when no explicit API key is configured', async () => {
+    let request: Request | undefined;
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockImplementation(async (input) => {
+        request = new Request(input);
+        return new Response('{}', {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      });
+    const client = createApiClient({
+      baseUrl: 'https://example.com',
+      fetch: fetchMock,
+      userTokenProvider: {
+        getAccessToken: async () => 'user-access-token',
+        refreshAccessToken: vi.fn(),
+      },
+    });
+
+    await client.get({ url: '/test' });
+
+    expect(request?.headers.get('Authorization')).toBe(
+      'Bearer user-access-token'
+    );
+  });
+
+  it('keeps explicit API keys ahead of user tokens', async () => {
+    let request: Request | undefined;
+    const getAccessToken = vi.fn().mockReturnValue('user-access-token');
+    const client = createApiClient({
+      apiKey: 'api-key',
+      baseUrl: 'https://example.com',
+      fetch: vi.fn<typeof fetch>().mockImplementation(async (input) => {
+        request = new Request(input);
+        return new Response('{}', {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }),
+      userTokenProvider: {
+        getAccessToken,
+        refreshAccessToken: vi.fn(),
+      },
+    });
+
+    await client.get({ url: '/test' });
+
+    expect(request?.headers.get('Authorization')).toBe('Bearer api-key');
+    expect(getAccessToken).not.toHaveBeenCalled();
+  });
+
+  it('leaves a per-request Authorization header alone, even on a 401', async () => {
+    const authorizationHeaders: Array<string | null> = [];
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockImplementation(async (input) => {
+        authorizationHeaders.push(
+          new Request(input).headers.get('Authorization')
+        );
+        return new Response('unauthorized', { status: 401 });
+      });
+    const getAccessToken = vi.fn().mockReturnValue('user-access-token');
+    const refreshAccessToken = vi.fn().mockResolvedValue('refreshed-token');
+    const client = createApiClient({
+      baseUrl: 'https://example.com',
+      fetch: fetchMock,
+      retryPolicy: 'none',
+      userTokenProvider: { getAccessToken, refreshAccessToken },
+    });
+
+    const result = await client.get({
+      url: '/test',
+      headers: { Authorization: 'Bearer per-request-key' },
+    });
+
+    expect(result.response.status).toBe(401);
+    expect(authorizationHeaders).toEqual(['Bearer per-request-key']);
+    expect(getAccessToken).not.toHaveBeenCalled();
+    expect(refreshAccessToken).not.toHaveBeenCalled();
+  });
+
+  it('refreshes a user token and retries once after a 401', async () => {
+    const authorizationHeaders: Array<string | null> = [];
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockImplementation(async (input) => {
+        authorizationHeaders.push(
+          new Request(input).headers.get('Authorization')
+        );
+        return authorizationHeaders.length === 1
+          ? new Response('unauthorized', { status: 401 })
+          : new Response('{}', {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            });
+      });
+    const refreshAccessToken = vi.fn().mockResolvedValue('refreshed-token');
+    const client = createApiClient({
+      baseUrl: 'https://example.com',
+      fetch: fetchMock,
+      retryPolicy: 'none',
+      userTokenProvider: {
+        getAccessToken: async () => 'expired-token',
+        refreshAccessToken,
+      },
+    });
+
+    const result = await client.get({ url: '/test' });
+
+    expect(result.response.status).toBe(200);
+    expect(authorizationHeaders).toEqual([
+      'Bearer expired-token',
+      'Bearer refreshed-token',
+    ]);
+    expect(refreshAccessToken).toHaveBeenCalledOnce();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('preserves POST method/body and stops after a second 401', async () => {
+    const attempts: {
+      method: string;
+      body: string;
+      authorization: string | null;
+    }[] = [];
+    const refreshAccessToken = vi.fn().mockResolvedValue('refreshed-token');
+    const client = createApiClient({
+      baseUrl: 'https://example.com',
+      retryPolicy: 'none',
+      fetch: async (input) => {
+        const request = new Request(input);
+        attempts.push({
+          method: request.method,
+          body: await request.text(),
+          authorization: request.headers.get('Authorization'),
+        });
+        return new Response('unauthorized', { status: 401 });
+      },
+      userTokenProvider: {
+        getAccessToken: async () => 'expired-token',
+        refreshAccessToken,
+      },
+    });
+    const result = await client.post({
+      url: '/test',
+      body: { value: 'preserved' },
+      headers: { 'Content-Type': 'application/json' },
+    });
+    expect(result.response.status).toBe(401);
+    expect(attempts).toEqual([
+      {
+        method: 'POST',
+        body: '{"value":"preserved"}',
+        authorization: 'Bearer expired-token',
+      },
+      {
+        method: 'POST',
+        body: '{"value":"preserved"}',
+        authorization: 'Bearer refreshed-token',
+      },
+    ]);
+    expect(refreshAccessToken).toHaveBeenCalledOnce();
+  });
+
   it('times out requests after the configured timeoutMs', async () => {
     vi.useFakeTimers();
     const fetchMock = vi.fn<typeof fetch>().mockImplementation(

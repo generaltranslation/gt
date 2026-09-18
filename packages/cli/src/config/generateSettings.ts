@@ -18,6 +18,7 @@ import {
   GT_DASHBOARD_URL,
 } from '../utils/constants.js';
 import { resolveProjectId } from '../fs/utils.js';
+import { createUserTokenProvider } from '../auth/oauth.js';
 import crypto from 'node:crypto';
 import { execSync } from 'node:child_process';
 import path from 'node:path';
@@ -205,14 +206,17 @@ export async function generateSettings(
     (locale) => locale !== mergedOptions.defaultLocale
   );
 
-  // Add apiKey if not provided
-  mergedOptions.apiKey = mergedOptions.apiKey || process.env.GT_API_KEY;
-
   // Add projectId if not provided
   mergedOptions.projectId = mergedOptions.projectId || resolveProjectId();
 
   // Add baseUrl if not provided
   mergedOptions.baseUrl = mergedOptions.baseUrl || defaultBaseUrl;
+
+  // The API client prefers apiKey when both are set; the provider is lazy.
+  mergedOptions.apiKey = mergedOptions.apiKey || process.env.GT_API_KEY;
+  mergedOptions.userTokenProvider = createUserTokenProvider({
+    baseUrl: mergedOptions.baseUrl,
+  });
 
   // Add dashboardUrl if not provided
   mergedOptions.dashboardUrl = mergedOptions.dashboardUrl || GT_DASHBOARD_URL;
@@ -426,6 +430,7 @@ export async function generateSettings(
   configureApiClient({
     projectId: mergedOptions.projectId,
     apiKey: mergedOptions.apiKey,
+    userTokenProvider: mergedOptions.userTokenProvider,
     baseUrl: mergedOptions.baseUrl,
     customMapping: mergedOptions.customMapping,
   });

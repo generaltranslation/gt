@@ -2,6 +2,7 @@ import type {
   CreateTagData,
   CreateTagResponse,
   GetOrphanedFilesResponse,
+  UserTokenProvider,
 } from '@generaltranslation/api';
 import type { DataFormat as FormatDataFormat } from '@generaltranslation/format/types';
 export { HTML_CONTENT_PROPS } from '@generaltranslation/format/types';
@@ -134,4 +135,5 @@ export type TranslationRequestConfig = {
   projectId: string;
   baseUrl?: string;
   apiKey?: string;
+  userTokenProvider?: UserTokenProvider;
 };

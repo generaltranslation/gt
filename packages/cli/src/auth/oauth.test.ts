@@ -1,0 +1,742 @@
+import {
+  chmod,
+  mkdtemp,
+  readdir,
+  readFile,
+  rm,
+  stat,
+  writeFile,
+} from 'node:fs/promises';
+import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
+import { logger } from '../console/logger.js';
+import {
+  deleteOAuthTokens,
+  getCredentialsPath,
+  readOAuthTokens,
+  writeOAuthTokens,
+  type OAuthTokens,
+} from './credentialStore.js';
+import {
+  createUserTokenProvider,
+  login,
+  logout,
+  whoAmI,
+  type LoginOptions,
+  type UserTokenProviderOptions,
+} from './oauth.js';
+
+vi.mock('node:fs/promises', { spy: true });
+vi.mock('node:os', { spy: true });
+
+const OAUTH_CLIENT_ID = 'gt-cli';
+const OAUTH_SCOPE = 'openid profile offline_access gt:*';
+const authBaseUrl = 'https://auth.example/api/auth';
+const apiBaseUrl = 'https://api.example';
+const apiResource = 'https://api.example/';
+const tokens: OAuthTokens = {
+  accessToken: 'access-1',
+  expiresAt: Date.now() + 3_600_000,
+  refreshToken: 'refresh-1',
+  resource: apiResource,
+  scope: OAUTH_SCOPE,
+  tokenType: 'bearer',
+  subject: 'user-1',
+};
+let keys: CryptoKeyPair;
+let jwk: JsonWebKey;
+beforeAll(async () => {
+  keys = await crypto.subtle.generateKey('Ed25519', true, ['sign', 'verify']);
+  jwk = await crypto.subtle.exportKey('jwk', keys.publicKey);
+});
+function json(value: unknown, status = 200): Response {
+  return new Response(JSON.stringify(value), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+async function idToken(
+  claims: Record<string, unknown> = {},
+  signingKey?: CryptoKey
+): Promise<string> {
+  const encoded = (v: unknown) =>
+    Buffer.from(JSON.stringify(v)).toString('base64url');
+  const now = Math.floor(Date.now() / 1000);
+  const payload = `${encoded({ alg: 'EdDSA', kid: 'test-key' })}.${encoded({ iss: authBaseUrl, aud: OAUTH_CLIENT_ID, sub: 'user-1', iat: now, exp: now + 3600, ...claims })}`;
+  return `${payload}.${Buffer.from(await crypto.subtle.sign('Ed25519', signingKey ?? keys.privateKey, new TextEncoder().encode(payload))).toString('base64url')}`;
+}
+function tokenResponse(id?: string): Record<string, unknown> {
+  return {
+    access_token: 'access-2',
+    refresh_token: 'refresh-2',
+    expires_in: 3600,
+    token_type: 'Bearer',
+    scope: OAUTH_SCOPE,
+    ...(id ? { id_token: id } : {}),
+  };
+}
+function metadata(issuer = authBaseUrl): Record<string, unknown> {
+  return {
+    issuer,
+    authorization_endpoint: `${issuer}/oauth2/authorize`,
+    token_endpoint: `${issuer}/oauth2/token`,
+    userinfo_endpoint: `${issuer}/oauth2/userinfo`,
+    revocation_endpoint: `${issuer}/oauth2/revoke`,
+    jwks_uri: `${issuer}/jwks`,
+    response_types_supported: ['code'],
+    grant_types_supported: ['authorization_code', 'refresh_token'],
+    subject_types_supported: ['public'],
+    id_token_signing_alg_values_supported: ['EdDSA'],
+    authorization_response_iss_parameter_supported: true,
+  };
+}
+function provider(
+  options: {
+    issuer?: string;
+    metadata?: Record<string, unknown>;
+    token?: () => Promise<Response>;
+    jwks?: (init?: RequestInit) => Promise<Response>;
+    user?: string;
+  } = {}
+) {
+  const issuer = options.issuer ?? authBaseUrl;
+  return vi.fn<typeof fetch>(async (input, init) => {
+    const url = String(input);
+    if (url === `${issuer}/.well-known/openid-configuration`)
+      return json(options.metadata ?? metadata(issuer));
+    if (url === `${issuer}/jwks`)
+      return options.jwks
+        ? options.jwks(init)
+        : json({
+            keys: [{ ...jwk, kid: 'test-key', alg: 'EdDSA', use: 'sig' }],
+          });
+    if (url === `${issuer}/oauth2/token`)
+      return options.token
+        ? options.token()
+        : json(tokenResponse(await idToken({ iss: issuer })));
+    if (url === `${issuer}/oauth2/revoke`)
+      return new Response(null, { status: 200 });
+    if (url === `${issuer}/oauth2/userinfo`)
+      return json({
+        sub: options.user ?? 'user-1',
+        name: 'Dev',
+        email: 'dev@example.com',
+      });
+    throw new Error(`Unexpected fixture request: ${url}`);
+  });
+}
+const networkFetch = globalThis.fetch;
+async function callback(
+  url: string,
+  change?: (params: URLSearchParams) => void
+): Promise<void> {
+  const authorize = new URL(url);
+  const redirect = new URL(authorize.searchParams.get('redirect_uri')!);
+  redirect.searchParams.set('code', 'code-1');
+  redirect.searchParams.set('state', authorize.searchParams.get('state')!);
+  redirect.searchParams.set('iss', authorize.origin + '/api/auth');
+  change?.(redirect.searchParams);
+  const response = await networkFetch(redirect);
+  expect(await response.text()).toContain('check whether sign in completed');
+}
+function browserLogin(options: LoginOptions = {}) {
+  return login({
+    authBaseUrl,
+    baseUrl: apiBaseUrl,
+    fetch: provider(),
+    openBrowser: callback,
+    timeoutMs: 1000,
+    ...options,
+  });
+}
+/** Exercises stored tokens through the provider the API client uses. */
+function session(options: Partial<UserTokenProviderOptions> = {}) {
+  return createUserTokenProvider({
+    baseUrl: apiBaseUrl,
+    authBaseUrl,
+    ...options,
+  });
+}
+function forms(fetcher: ReturnType<typeof provider>) {
+  return fetcher.mock.calls
+    .filter(([url]) => String(url).endsWith('/oauth2/token'))
+    .map(([, init]) => new URLSearchParams(String(init?.body)));
+}
+let stateHome: string;
+beforeEach(async () => {
+  stateHome = await mkdtemp(path.join(tmpdir(), 'gt-oauth-test-'));
+  vi.stubEnv('XDG_STATE_HOME', stateHome);
+  vi.stubEnv('XDG_CONFIG_HOME', path.join(stateHome, 'config'));
+  vi.spyOn(os, 'homedir').mockReturnValue(path.join(stateHome, 'home'));
+  // All provider traffic must use the explicit synthetic transport.
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(() => {
+      throw new Error('Unexpected network request');
+    })
+  );
+});
+afterEach(async () => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+  vi.useRealTimers();
+  await rm(stateHome, { recursive: true, force: true });
+});
+async function rawFile(servers: Record<string, unknown>) {
+  await writeOAuthTokens(tokens, authBaseUrl);
+  await writeFile(
+    getCredentialsPath(),
+    JSON.stringify({ version: 2, servers })
+  );
+}
+
+describe('OAuth credential storage', () => {
+  it('stores credentials under an absolute XDG_STATE_HOME', () => {
+    expect(getCredentialsPath()).toBe(
+      path.join(stateHome, 'gt', 'credentials.json')
+    );
+  });
+  it.each([undefined, '', 'relative/state'])(
+    'defaults to ~/.local/state when XDG_STATE_HOME is %j',
+    (value) => {
+      vi.stubEnv('XDG_STATE_HOME', value);
+      expect(getCredentialsPath()).toBe(
+        path.join(
+          stateHome,
+          'home',
+          '.local',
+          'state',
+          'gt',
+          'credentials.json'
+        )
+      );
+    }
+  );
+  it('writes owner-only files and directories, atomically replaces rotation, and removes the last entry', async () => {
+    await writeOAuthTokens(tokens, authBaseUrl);
+    if (process.platform !== 'win32') {
+      expect((await stat(getCredentialsPath())).mode & 0o777).toBe(0o600);
+      expect(
+        (await stat(path.dirname(getCredentialsPath()))).mode & 0o777
+      ).toBe(0o700);
+    }
+    const old = await fs.open(getCredentialsPath());
+    await writeOAuthTokens({ ...tokens, refreshToken: 'rotated' }, authBaseUrl);
+    expect(
+      JSON.parse(await old.readFile('utf8')).servers[authBaseUrl].refreshToken
+    ).toBe('refresh-1');
+    await old.close();
+    expect((await readOAuthTokens(authBaseUrl))?.refreshToken).toBe('rotated');
+    await deleteOAuthTokens(authBaseUrl);
+    await expect(stat(getCredentialsPath())).rejects.toMatchObject({
+      code: 'ENOENT',
+    });
+  });
+  it.each([
+    { ...tokens, subject: undefined },
+    { client: { clientId: 'old' }, tokens },
+    { ...tokens, expiresAt: 'bad' },
+    null,
+  ])(
+    'requires a fresh login for obsolete or invalid v2 entries (%j), preserving siblings',
+    async (obsolete) => {
+      const servers: Record<string, unknown> = {
+        [authBaseUrl]: obsolete,
+        'https://other.example/api/auth': tokens,
+        'https://old.example/api/auth': { accessToken: 'old' },
+      };
+      await rawFile(servers);
+      const fetcher = provider();
+      await expect(
+        session({ fetch: fetcher }).getAccessToken()
+      ).rejects.toThrow(/gt login/);
+      expect(fetcher).not.toHaveBeenCalled();
+      expect(
+        JSON.parse(await readFile(getCredentialsPath(), 'utf8')).servers
+      ).toEqual(servers);
+      await browserLogin();
+      expect((await readOAuthTokens(authBaseUrl))?.subject).toBe('user-1');
+      await logout({ authBaseUrl, fetch: fetcher });
+      delete servers[authBaseUrl];
+      expect(
+        JSON.parse(await readFile(getCredentialsPath(), 'utf8')).servers
+      ).toEqual(servers);
+    }
+  );
+  it('logs out an obsolete selected entry without sending its tokens', async () => {
+    await rawFile({
+      [authBaseUrl]: { ...tokens, subject: undefined },
+      other: tokens,
+    });
+    const fetcher = provider();
+    vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+    await logout({ authBaseUrl, fetch: fetcher });
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(
+      JSON.parse(await readFile(getCredentialsPath(), 'utf8')).servers
+    ).toEqual({ other: tokens });
+  });
+  it.each([
+    '{not json',
+    JSON.stringify({ version: 1, tokens: {} }),
+    JSON.stringify({ version: 2, servers: [] }),
+  ])('backs up malformed envelopes and can replace them', async (contents) => {
+    vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+    await writeOAuthTokens(tokens, authBaseUrl);
+    await writeFile(getCredentialsPath(), contents);
+    await browserLogin();
+    const [backup] = (await readdir(path.dirname(getCredentialsPath()))).filter(
+      (name) => name.includes('.corrupt-')
+    );
+    expect(
+      await readFile(
+        path.join(path.dirname(getCredentialsPath()), backup),
+        'utf8'
+      )
+    ).toBe(contents);
+    expect((await readOAuthTokens(authBaseUrl))?.accessToken).toBe('access-2');
+  });
+  it('propagates filesystem errors rather than resetting the file', async () => {
+    if (process.platform === 'win32' || process.getuid?.() === 0) return;
+    await writeOAuthTokens(tokens, authBaseUrl);
+    await chmod(getCredentialsPath(), 0o000);
+    await expect(writeOAuthTokens(tokens, authBaseUrl)).rejects.toThrow(
+      /EACCES|EPERM/
+    );
+    expect(await readdir(path.dirname(getCredentialsPath()))).toEqual([
+      'credentials.json',
+    ]);
+  });
+  it('keeps the old file and cleans the temporary file if atomic rename fails', async () => {
+    await writeOAuthTokens(tokens, authBaseUrl);
+    vi.spyOn(fs, 'rename').mockRejectedValueOnce(new Error('rename failed'));
+    await expect(
+      writeOAuthTokens({ ...tokens, refreshToken: 'rotated' }, authBaseUrl)
+    ).rejects.toThrow('rename failed');
+    expect(await readOAuthTokens(authBaseUrl)).toEqual(tokens);
+    expect(await readdir(path.dirname(getCredentialsPath()))).toEqual([
+      'credentials.json',
+    ]);
+  });
+});
+
+describe('discovery and browser authorization', () => {
+  it('uses seeded public client, S256, exact redirect/resource/scope and validates a signed subject', async () => {
+    const fetcher = provider();
+    let authorize!: URL;
+    const result = await browserLogin({
+      fetch: fetcher,
+      openBrowser: async (url) => {
+        authorize = new URL(url);
+        await callback(url);
+      },
+    });
+    expect(result.subject).toBe('user-1');
+    expect(await readOAuthTokens(authBaseUrl)).toEqual(result);
+    expect(authorize.searchParams.get('client_id')).toBe('gt-cli');
+    expect(authorize.searchParams.get('resource')).toBe(apiResource);
+    expect(authorize.searchParams.get('scope')).toBe(OAUTH_SCOPE);
+    expect(authorize.searchParams.get('code_challenge_method')).toBe('S256');
+    const [form] = forms(fetcher);
+    expect(Object.fromEntries(form)).toMatchObject({
+      client_id: 'gt-cli',
+      grant_type: 'authorization_code',
+      code: 'code-1',
+      redirect_uri: authorize.searchParams.get('redirect_uri'),
+      resource: apiResource,
+    });
+    expect(form.has('client_secret')).toBe(false);
+    expect(
+      Buffer.from(
+        await crypto.subtle.digest(
+          'SHA-256',
+          new TextEncoder().encode(form.get('code_verifier')!)
+        )
+      ).toString('base64url')
+    ).toBe(authorize.searchParams.get('code_challenge'));
+    expect(fetcher.mock.calls.map(([url]) => String(url))).toEqual([
+      `${authBaseUrl}/.well-known/openid-configuration`,
+      `${authBaseUrl}/oauth2/token`,
+      `${authBaseUrl}/jwks`,
+    ]);
+    expect(
+      fetcher.mock.calls.every(([, init]) => init?.redirect === 'manual')
+    ).toBe(true);
+  });
+  it('requests a token for the configured API, letting GT_API_URL override it', async () => {
+    const resources: (string | null)[] = [];
+    const record = async (url: string) => {
+      resources.push(new URL(url).searchParams.get('resource'));
+      await callback(url);
+    };
+    await browserLogin({
+      baseUrl: 'https://other.example/',
+      openBrowser: record,
+    });
+    vi.stubEnv('GT_API_URL', apiBaseUrl);
+    await browserLogin({
+      baseUrl: 'https://other.example/',
+      openBrowser: record,
+    });
+    expect(resources).toEqual(['https://other.example/', apiResource]);
+    expect((await readOAuthTokens(authBaseUrl))?.resource).toBe(apiResource);
+  });
+  it.each(['state', 'code', 'iss'])(
+    'rejects missing and duplicate %s before exchange',
+    async (name) => {
+      for (const mode of ['missing', 'duplicate']) {
+        const fetcher = provider();
+        await expect(
+          browserLogin({
+            fetch: fetcher,
+            openBrowser: (url) =>
+              callback(url, (params) => {
+                if (mode === 'missing') params.delete(name);
+                else params.append(name, params.get(name)!);
+              }),
+          })
+        ).rejects.toThrow();
+        expect(forms(fetcher)).toHaveLength(0);
+        expect(await readOAuthTokens(authBaseUrl)).toBeUndefined();
+      }
+    }
+  );
+  it.each(['state', 'iss'])('rejects mismatched %s', async (name) => {
+    await expect(
+      browserLogin({
+        openBrowser: (url) =>
+          callback(url, (params) => params.set(name, 'forged')),
+      })
+    ).rejects.toThrow();
+    expect(await readOAuthTokens(authBaseUrl)).toBeUndefined();
+  });
+  it('reports validated consent denial', async () => {
+    await expect(
+      browserLogin({
+        openBrowser: (url) =>
+          callback(url, (params) => {
+            params.delete('code');
+            params.set('error', 'access_denied');
+          }),
+      })
+    ).rejects.toThrow('Sign in was denied');
+  });
+  it.each([
+    { aud: apiResource },
+    { iss: 'https://wrong.example' },
+    { sub: '' },
+    { sub: undefined },
+    { exp: 1 },
+  ])('rejects invalid signed claims %j', async (claims) => {
+    const fetcher = provider({
+      token: async () => json(tokenResponse(await idToken(claims))),
+    });
+    await expect(browserLogin({ fetch: fetcher })).rejects.toThrow();
+    expect(await readOAuthTokens(authBaseUrl)).toBeUndefined();
+  });
+  it('rejects a bad signature and an absent ID token', async () => {
+    const other = await crypto.subtle.generateKey('Ed25519', true, [
+      'sign',
+      'verify',
+    ]);
+    for (const id of [undefined, await idToken({}, other.privateKey)]) {
+      await expect(
+        browserLogin({
+          fetch: provider({ token: async () => json(tokenResponse(id)) }),
+        })
+      ).rejects.toThrow();
+      expect(await readOAuthTokens(authBaseUrl)).toBeUndefined();
+    }
+  });
+  it('accepts omitted scope/refresh token but not a missing lifetime or non-bearer token', async () => {
+    const value = tokenResponse(await idToken());
+    delete value.scope;
+    delete value.refresh_token;
+    const result = await browserLogin({
+      fetch: provider({ token: async () => json(value) }),
+    });
+    expect(result).toMatchObject({ scope: OAUTH_SCOPE, refreshToken: '' });
+    for (const invalid of [
+      { ...value, expires_in: undefined },
+      { ...value, token_type: 'DPoP' },
+    ]) {
+      await expect(
+        browserLogin({ fetch: provider({ token: async () => json(invalid) }) })
+      ).rejects.toThrow();
+      expect(await readOAuthTokens(authBaseUrl)).toEqual(result);
+    }
+  });
+  it('keeps a callback arriving before a launcher finishes and does not wait for a hanging launcher', async () => {
+    await browserLogin({
+      openBrowser: async (url) => {
+        await callback(url);
+        await new Promise(() => {});
+      },
+    });
+  });
+  it('times out even if browser opening fails', async () => {
+    await expect(
+      browserLogin({
+        openBrowser: async () => {
+          throw new Error('no browser');
+        },
+        timeoutMs: 20,
+      })
+    ).rejects.toThrow('Timed out');
+  });
+  it('closes the listener when publishing fails', async () => {
+    let redirect = '';
+    await expect(
+      browserLogin({
+        onAuthorizationUrl: (url) => {
+          redirect = new URL(url).searchParams.get('redirect_uri')!;
+          throw new Error('cannot print');
+        },
+      })
+    ).rejects.toThrow('cannot print');
+    await expect(networkFetch(redirect)).rejects.toThrow();
+  });
+  it.each([
+    'http://remote.example/api/auth',
+    'http://localhost.evil/api/auth',
+    'https://user:secret@auth.example/api/auth',
+    `${authBaseUrl}?x=1`,
+    `${authBaseUrl}#x`,
+  ])('rejects untrusted issuer %s without requests', async (issuer) => {
+    const fetcher = provider();
+    await expect(
+      browserLogin({ authBaseUrl: issuer, fetch: fetcher })
+    ).rejects.toThrow();
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+  it('validates discovered issuer and signing metadata', async () => {
+    for (const data of [
+      { ...metadata(), issuer: 'https://wrong.example' },
+      { ...metadata(), id_token_signing_alg_values_supported: undefined },
+    ]) {
+      await expect(
+        browserLogin({ fetch: provider({ metadata: data }) })
+      ).rejects.toThrow();
+      expect(await readOAuthTokens(authBaseUrl)).toBeUndefined();
+    }
+  });
+  it('allows local HTTP but rejects cross-origin HTTP endpoints and redirects', async () => {
+    const issuer = 'http://dashboard.test.localhost:1355/api/auth';
+    await browserLogin({ authBaseUrl: issuer, fetch: provider({ issuer }) });
+    for (const endpoint of [
+      'authorization_endpoint',
+      'token_endpoint',
+      'jwks_uri',
+    ]) {
+      const fetcher = provider({
+        issuer,
+        metadata: {
+          ...metadata(issuer),
+          [endpoint]: 'http://remote.example/unsafe',
+        },
+      });
+      await expect(
+        browserLogin({ authBaseUrl: issuer, fetch: fetcher })
+      ).rejects.toThrow();
+      expect(
+        fetcher.mock.calls.some(([url]) =>
+          String(url).includes('remote.example')
+        )
+      ).toBe(false);
+    }
+    await expect(
+      browserLogin({
+        fetch: provider({
+          token: async () =>
+            new Response(null, {
+              status: 302,
+              headers: { location: 'https://elsewhere.example' },
+            }),
+        }),
+      })
+    ).rejects.toThrow();
+  });
+});
+
+describe('OAuth session operations', () => {
+  it.each(['invalid_grant', 'invalid_client'])(
+    'diagnoses %s without deleting credentials',
+    async (error) => {
+      await writeOAuthTokens(tokens, authBaseUrl);
+      await expect(
+        session({
+          fetch: provider({
+            token: async () =>
+              json({ error }, error === 'invalid_client' ? 401 : 400),
+          }),
+        }).refreshAccessToken()
+      ).rejects.toThrow(
+        error === 'invalid_client' ? 'does not recognize' : 'expired'
+      );
+      expect(await readOAuthTokens(authBaseUrl)).toEqual(tokens);
+    }
+  );
+  it('reports HTTP outage status without resetting credentials', async () => {
+    await writeOAuthTokens(tokens, authBaseUrl);
+    await expect(
+      session({
+        fetch: provider({
+          token: async () => new Response('<html>', { status: 503 }),
+        }),
+      }).refreshAccessToken()
+    ).rejects.toThrow('HTTP 503');
+    expect(await readOAuthTokens(authBaseUrl)).toEqual(tokens);
+  });
+  it('shares refresh in process, clears failed work and persists rotation before returning', async () => {
+    await writeOAuthTokens({ ...tokens, expiresAt: 0 }, authBaseUrl);
+    await expect(
+      session({
+        fetch: provider({
+          token: async () => {
+            throw new Error('offline');
+          },
+        }),
+      }).refreshAccessToken()
+    ).rejects.toThrow();
+    let release!: (value: Response) => void;
+    const fetcher = provider({
+      token: () =>
+        new Promise((resolve) => {
+          release = resolve;
+        }),
+    });
+    const pending = Promise.all([
+      session({ fetch: fetcher }).getAccessToken(),
+      session({ fetch: fetcher }).refreshAccessToken(),
+      session({ fetch: fetcher }).getAccessToken(),
+    ]);
+    await vi.waitFor(() => expect(forms(fetcher)).toHaveLength(1));
+    expect((await readOAuthTokens(authBaseUrl))?.refreshToken).toBe(
+      'refresh-1'
+    );
+    release(json(tokenResponse()));
+    expect(await pending).toEqual(['access-2', 'access-2', 'access-2']);
+    expect((await readOAuthTokens(authBaseUrl))?.refreshToken).toBe(
+      'refresh-2'
+    );
+    expect(Object.fromEntries(forms(fetcher)[0])).toEqual({
+      client_id: 'gt-cli',
+      grant_type: 'refresh_token',
+      refresh_token: 'refresh-1',
+    });
+  });
+  it('retains validated subject, refresh token and scope when refresh omits them', async () => {
+    await writeOAuthTokens(tokens, authBaseUrl);
+    const value = tokenResponse();
+    delete value.refresh_token;
+    delete value.scope;
+    await session({
+      fetch: provider({ token: async () => json(value) }),
+    }).refreshAccessToken();
+    expect(await readOAuthTokens(authBaseUrl)).toMatchObject({
+      subject: tokens.subject,
+      refreshToken: tokens.refreshToken,
+      scope: tokens.scope,
+    });
+  });
+  it('checks a newly signed refresh subject before writing rotation', async () => {
+    await writeOAuthTokens(tokens, authBaseUrl);
+    await expect(
+      session({
+        fetch: provider({
+          token: async () =>
+            json(tokenResponse(await idToken({ sub: 'other' }))),
+        }),
+      }).refreshAccessToken()
+    ).rejects.toThrow('expected account identity');
+    expect(await readOAuthTokens(authBaseUrl)).toEqual(tokens);
+    await session({ fetch: provider() }).refreshAccessToken();
+    expect((await readOAuthTokens(authBaseUrl))?.subject).toBe(tokens.subject);
+  });
+  it('constructs the provider lazily and returns fresh tokens without discovery', async () => {
+    vi.stubEnv('GT_AUTH_URL', authBaseUrl);
+    const tokenProvider = createUserTokenProvider({ baseUrl: apiBaseUrl });
+    await expect(tokenProvider.getAccessToken()).rejects.toThrow('gt login');
+    await writeOAuthTokens(tokens, authBaseUrl);
+    expect(await tokenProvider.getAccessToken()).toBe('access-1');
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+  it('refuses a login issued for a different API without refreshing it', async () => {
+    await writeOAuthTokens({ ...tokens, expiresAt: 0 }, authBaseUrl);
+    const fetcher = provider();
+    await expect(
+      session({
+        baseUrl: 'https://other.example',
+        fetch: fetcher,
+      }).getAccessToken()
+    ).rejects.toThrow(
+      'signed in to https://api.example/, but this project uses https://other.example/'
+    );
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(await readOAuthTokens(authBaseUrl)).toEqual({
+      ...tokens,
+      expiresAt: 0,
+    });
+  });
+  it('refreshes within the 30-second buffer', async () => {
+    await writeOAuthTokens(
+      { ...tokens, expiresAt: Date.now() + 29_000 },
+      authBaseUrl
+    );
+    expect(
+      await session({
+        fetch: provider({ token: async () => json(tokenResponse()) }),
+      }).getAccessToken()
+    ).toBe('access-2');
+  });
+  it('revokes as a public client and always deletes locally on discovery/revoke/network failures', async () => {
+    const fetcher = provider();
+    await writeOAuthTokens(tokens, authBaseUrl);
+    await logout({ authBaseUrl, fetch: fetcher });
+    const [, init] = fetcher.mock.calls.find(([url]) =>
+      String(url).endsWith('/revoke')
+    )!;
+    expect(Object.fromEntries(new URLSearchParams(String(init?.body)))).toEqual(
+      {
+        client_id: 'gt-cli',
+        token: 'refresh-1',
+        token_type_hint: 'refresh_token',
+      }
+    );
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+    for (const badFetch of [
+      vi.fn<typeof fetch>().mockRejectedValue(new Error('offline')),
+      vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(new Response('<html>', { status: 500 })),
+    ]) {
+      await writeOAuthTokens(tokens, authBaseUrl);
+      await logout({ authBaseUrl, fetch: badFetch });
+      expect(await readOAuthTokens(authBaseUrl)).toBeUndefined();
+    }
+    expect(warn).toHaveBeenCalledTimes(2);
+  });
+  it('uses refreshed identity for userinfo and rejects mismatched subjects', async () => {
+    await writeOAuthTokens({ ...tokens, expiresAt: 0 }, authBaseUrl);
+    expect(await whoAmI({ authBaseUrl, fetch: provider() })).toEqual({
+      sub: 'user-1',
+      name: 'Dev',
+      email: 'dev@example.com',
+    });
+    await expect(
+      whoAmI({ authBaseUrl, fetch: provider({ user: 'other' }) })
+    ).rejects.toThrow('account identity');
+  });
+});
