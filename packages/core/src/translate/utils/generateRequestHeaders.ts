@@ -1,13 +1,13 @@
-import { TranslationRequestConfig } from '../../types';
+import { ApiRequestConfig } from '../../types';
 import { API_VERSION } from '../api';
 
 export function generateRequestHeaders(
-  config: TranslationRequestConfig,
+  config: ApiRequestConfig,
   excludeContentType = false
 ) {
   const authHeaders: Record<string, string> = {
     ...(!excludeContentType && { 'Content-Type': 'application/json' }),
-    'gt-project-id': config.projectId,
+    ...(config.projectId && { 'gt-project-id': config.projectId }),
   };
 
   if (config.apiKey) {
