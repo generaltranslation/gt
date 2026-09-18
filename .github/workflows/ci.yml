@@ -404,8 +404,15 @@ jobs:
           windows_verbatim_arguments: false
 
   run-tests:
+    if: ${{ always() }}
     needs:
       [lint, tests, test-builds, test-vue-versions, test-cli-binaries, size]
     runs-on: ubuntu-latest
     steps:
-      - run: echo "All tests passed"
+      - name: Fail if a required job did not pass
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped') }}
+        run: |
+          echo '::error title=Required CI did not pass::At least one required CI job failed, was cancelled, or was skipped.'
+          exit 1
+
+      - run: echo 'All tests passed'
