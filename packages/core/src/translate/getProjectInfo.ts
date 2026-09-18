@@ -1,11 +1,7 @@
-// Compatibility response: defaultLocale remains non-null and autoApprove
-// optional on the published API, unlike the generated wire contract.
-export type ProjectInfoResult = {
-  id: string;
-  name: string;
-  orgId: string;
-  defaultLocale: string;
-  currentLocales: string[];
+import type { GetProjectInfoResponse } from '@generaltranslation/api';
+
+// Compatibility response: autoApprove stays optional on the published API.
+export type ProjectInfoResult = Omit<GetProjectInfoResponse, 'autoApprove'> & {
   autoApprove?: boolean;
 };
 

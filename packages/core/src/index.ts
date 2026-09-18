@@ -559,18 +559,16 @@ export class GT extends GTRuntime {
     // Validation
     this._validateAuth('getProjectData');
 
-    const result = await this._getApiAdapter().getProjectInfo(
-      projectId,
-      options.timeout
-    );
+    const { autoApprove: _autoApprove, ...project } =
+      await this._getApiAdapter().getProjectInfo(projectId, options.timeout);
     // Restore configured identities from service language codes.
-    result.currentLocales = result.currentLocales.map((item) =>
-      this.resolveServiceResponseLocale(item)
-    );
-    result.defaultLocale = this.resolveServiceResponseLocale(
-      result.defaultLocale
-    );
-    return result;
+    return {
+      ...project,
+      defaultLocale: this.resolveServiceResponseLocale(project.defaultLocale),
+      currentLocales: project.currentLocales.map((item) =>
+        this.resolveServiceResponseLocale(item)
+      ),
+    };
   }
 
   /**
