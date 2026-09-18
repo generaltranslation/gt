@@ -750,7 +750,10 @@ export class GT extends GTRuntime {
     );
 
     return {
-      uploadedFiles: result.data,
+      uploadedFiles: result.data.map((file) => ({
+        ...file,
+        ...(file.locale && { locale: this.resolveAliasLocale(file.locale) }),
+      })),
       count: result.count,
       message: `Successfully uploaded ${result.count} files in ${result.batchCount} batch(es)`,
     };
