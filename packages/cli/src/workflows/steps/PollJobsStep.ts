@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { pollJobs, type JobResult } from 'generaltranslation/api';
+import type { JobResult } from 'generaltranslation/api';
 import { logger } from '../../console/logger.js';
 import type { ApiClient } from '../../utils/api.js';
 import { EnqueueFilesResult } from 'generaltranslation/types';
@@ -154,7 +154,11 @@ export class PollTranslationJobsStep {
       timeoutDuration - (Date.now() - startTime) / 1000
     );
 
-    const updateJobStatuses = (statuses: readonly JobResult[]) => {
+    // onPoll receives raw statuses and result.jobs normalized ones; only the
+    // shared fields are read here.
+    const updateJobStatuses = (
+      statuses: readonly Pick<JobResult, 'jobId' | 'status'>[]
+    ) => {
       for (const job of statuses) {
         const jobFileProperties = jobFileMap.get(job.jobId);
         if (!jobFileProperties) continue;
@@ -179,15 +183,11 @@ export class PollTranslationJobsStep {
     };
 
     try {
-      const result = await pollJobs(
-        [...jobFileMap.keys()],
-        (jobIds, signal) => this.api.checkJobStatus(jobIds, signal),
-        {
-          pollingIntervalSeconds: 5,
-          timeoutSeconds,
-          onPoll: updateJobStatuses,
-        }
-      );
+      const result = await this.api.awaitJobs([...jobFileMap.keys()], {
+        pollingIntervalSeconds: 5,
+        timeoutSeconds,
+        onPoll: updateJobStatuses,
+      });
       if (result.complete) updateJobStatuses(result.jobs);
     } catch (error) {
       this.spinner.stop(chalk.red('Error checking translation job status'));
