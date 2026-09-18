@@ -1,5 +1,15 @@
 # gt-tanstack-start
 
+## 11.4.1
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.4.2
+  - gt-i18n@1.0.29
+  - gt-react@11.4.1
+  - @generaltranslation/react-core@11.4.1
+
 ## 11.4.0
 
 ### Patch Changes
