@@ -1,5 +1,5 @@
 import { TranslationRequestConfig } from '../../types';
-import { API_VERSION } from '../api';
+import { API_VERSION } from '@generaltranslation/api';
 
 export function generateRequestHeaders(
   config: TranslationRequestConfig,
