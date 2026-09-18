@@ -1,5 +1,13 @@
 # gt-vue
 
+## 0.1.13
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.4.2
+  - gt-i18n@1.0.29
+
 ## 0.1.12
 
 ### Patch Changes
