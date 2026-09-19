@@ -58,23 +58,17 @@ pnpm --filter generaltranslation test
 
 `src/__tests__/package-artifacts.test.ts` packs core and its workspace dependencies,
 executes ESM/CJS consumers, typechecks both declaration formats under NodeNext,
-and fully bundles live ESM consumers. It inspects every emitted chunk and rejects
-unexpected externals. Named-only consumers exclude GT/GTRuntime and management;
-GTRuntime consumers retain their class but exclude management. Raw `translate`
-and `createTag` consumers retain only their respective endpoint. The full adapter
-is a positive control: its unused methods are **not** promised to disappear.
-Neither are classes requested by another entry in the same split bundle.
-CJS loading is supported, not CJS per-method tree-shaking.
+and walks the published `generaltranslation/runtime` dependency graph in both
+formats to confirm it never reaches the management adapter or its endpoints.
 
-The test asserts byte ceilings per live consumer (see `limits` in the test);
-current measurements appear in the size-limit report on every pull request, which
-also gates named imports such as `{ libraryDefaultLocale }` and `{ translateMany }`
-with the same conservative bundler used for downstream packages. The full
+Byte gates live in `.size-limit.cjs`, measured with the same conservative
+bundler downstream packages use. Whole-entry budgets are unchanged; named-import
+entries such as `{ libraryDefaultLocale }` and `{ translateMany }` assert that a
+consumer of one symbol does not pay for the tooling facade or the class runtime
+that share its chunk. Top-level initializers shared across chunks (loggers,
+precomputed diagnostics) carry `/* @__PURE__ */` for that reason. The full
 adapter deliberately grows because it carries translation preparation, hashing
-and transport. Top-level initializers shared across chunks (loggers, precomputed
-diagnostics) carry `/* @__PURE__ */` so a consumer of one constant does not
-retain them. The test also verifies that a temporary live management import
-fails isolation. Turbo's test task builds prerequisites, and CI's existing test
-job runs this package test; no separate opt-in artifact command is required.
+and transport; its unused methods are **not** promised to disappear, and CJS
+loading is supported, not CJS per-method tree-shaking.
 
 See the [full documentation](https://generaltranslation.com/docs) for guides and API reference.
