@@ -158,7 +158,10 @@ describe.sequential('_translateMany', () => {
   });
 
   it('forwards long timeouts without the SDK applying its own cap', async () => {
-    await _translateMany([], globalMetadata, mockConfig, 99_999);
+    await _translateMany([], globalMetadata, {
+      ...mockConfig,
+      timeoutMs: 99_999,
+    });
 
     const clientConfig = vi.mocked(createApiClient).mock.calls[0][0];
     const fetchImplementation = clientConfig.fetch;
@@ -167,10 +170,52 @@ describe.sequential('_translateMany', () => {
     });
 
     expect(clientConfig.timeoutMs).toBe(false);
+    expect(clientConfig.retryPolicy).toBe('none');
     expect(fetchWithTimeout).toHaveBeenCalledWith(
       'https://api.test.com/v2/translate',
       { method: 'POST' },
-      99_999
+      99_999,
+      undefined
+    );
+  });
+
+  it.each([
+    ['omitted', undefined],
+    ['zero', 0],
+    ['false', false],
+  ] as const)(
+    'passes an %s timeoutMs and the custom fetch through to fetchWithTimeout',
+    async (_label, timeoutMs) => {
+      const customFetch = vi.fn<typeof fetch>();
+
+      await _translateMany([], globalMetadata, {
+        ...mockConfig,
+        fetch: customFetch,
+        timeoutMs,
+      });
+
+      const clientConfig = vi.mocked(createApiClient).mock.calls[0][0];
+      await clientConfig.fetch?.('https://api.test.com/v2/translate', {
+        method: 'POST',
+      });
+
+      expect(fetchWithTimeout).toHaveBeenCalledWith(
+        'https://api.test.com/v2/translate',
+        { method: 'POST' },
+        timeoutMs,
+        customFetch
+      );
+    }
+  );
+
+  it('forwards an explicit API version to the API client', async () => {
+    await _translateMany([], globalMetadata, {
+      ...mockConfig,
+      apiVersion: '2026-03-06.v1',
+    });
+
+    expect(createApiClient).toHaveBeenCalledWith(
+      expect.objectContaining({ apiVersion: '2026-03-06.v1' })
     );
   });
 

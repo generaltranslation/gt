@@ -78,8 +78,7 @@ describe.sequential('GT Translation Methods', () => {
           baseUrl: 'https://api.test.com',
           apiKey: 'test-api-key',
           projectId: 'test-project',
-        },
-        undefined
+        }
       );
       expect(result).toEqual(mockTranslationResult);
     });
@@ -127,8 +126,7 @@ describe.sequential('GT Translation Methods', () => {
           baseUrl: 'https://api.test.com',
           apiKey: 'test-api-key',
           projectId: 'test-project',
-        },
-        undefined
+        }
       );
     });
 
@@ -161,8 +159,7 @@ describe.sequential('GT Translation Methods', () => {
           baseUrl: 'https://api.test.com',
           apiKey: 'test-api-key',
           projectId: 'test-project',
-        },
-        undefined
+        }
       );
     });
 
@@ -189,8 +186,7 @@ describe.sequential('GT Translation Methods', () => {
           baseUrl: 'https://api.test.com',
           apiKey: 'test-api-key',
           projectId: 'test-project',
-        },
-        undefined
+        }
       );
 
       // Test JSX format
@@ -213,8 +209,7 @@ describe.sequential('GT Translation Methods', () => {
           baseUrl: 'https://api.test.com',
           apiKey: 'test-api-key',
           projectId: 'test-project',
-        },
-        undefined
+        }
       );
     });
 
@@ -247,8 +242,7 @@ describe.sequential('GT Translation Methods', () => {
           baseUrl: 'https://api.test.com',
           apiKey: 'test-api-key',
           projectId: 'test-project',
-        },
-        undefined
+        }
       );
     });
 
@@ -325,8 +319,7 @@ describe.sequential('GT Translation Methods', () => {
           baseUrl: 'https://api.test.com',
           apiKey: 'test-api-key',
           projectId: 'test-project',
-        },
-        undefined
+        }
       );
       expect(result).toEqual(mockTranslateManyResult);
     });
@@ -354,8 +347,7 @@ describe.sequential('GT Translation Methods', () => {
           baseUrl: 'https://api.test.com',
           apiKey: 'test-api-key',
           projectId: 'test-project',
-        },
-        undefined
+        }
       );
       expect(result).toEqual(mockTranslateManyResult);
     });
@@ -434,8 +426,7 @@ describe.sequential('GT Translation Methods', () => {
           baseUrl: 'https://api.test.com',
           apiKey: 'test-api-key',
           projectId: 'test-project',
-        },
-        undefined
+        }
       );
     });
 

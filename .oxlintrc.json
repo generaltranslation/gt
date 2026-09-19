@@ -50,6 +50,34 @@
       }
     },
     {
+      "files": [
+        "packages/core/src/runtime.ts",
+        "packages/core/src/translate/**/*.ts"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "generaltranslation/internal",
+                "importNames": ["createGtApiAdapter"],
+                "allowTypeImports": true,
+                "message": "Runtime translation must not depend on the management facade."
+              }
+            ],
+            "patterns": [
+              {
+                "group": ["**/adapter/createGtApi", "**/adapter/createGtApi.*"],
+                "allowTypeImports": true,
+                "message": "Runtime translation must not depend on the management factory; leaf helpers such as modelProvider are allowed."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "files": ["packages/next/src/**/*.{ts,tsx}"],
       "rules": {
         "no-restricted-imports": [

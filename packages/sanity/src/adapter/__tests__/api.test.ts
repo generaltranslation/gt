@@ -232,6 +232,46 @@ describe('Sanity API adapter', () => {
     expect(api).not.toHaveProperty('getClientConfig');
   });
 
+  it('translates through the shared adapter with canonical configured locales', async () => {
+    configureApiClient({
+      baseUrl: 'https://api.example.com',
+      apiKey: 'api-key',
+      projectId: 'project-id',
+      fetch: fetchMock,
+      customMapping: { source: { code: 'en-US' }, target: { code: 'es-ES' } },
+    });
+    fetchMock.mockImplementation(async (request) => {
+      const parsed = new Request(request);
+      expect(new URL(parsed.url).pathname).toBe('/v2/translate');
+      const body = JSON.parse(await parsed.text()) as {
+        requests: Record<string, unknown>;
+        sourceLocale: string;
+        targetLocale: string;
+      };
+      expect(body).toMatchObject({
+        sourceLocale: 'en-US',
+        targetLocale: 'es-ES',
+      });
+      return Response.json(
+        Object.fromEntries(
+          Object.keys(body.requests).map((hash) => [
+            hash,
+            {
+              success: true,
+              translation: 'Hola',
+              locale: 'es-ES',
+              dataFormat: 'STRING',
+            },
+          ])
+        )
+      );
+    });
+
+    await expect(
+      api.translate('Hello', { targetLocale: 'target', sourceLocale: 'source' })
+    ).resolves.toMatchObject({ success: true, locale: 'es-ES' });
+  });
+
   it('maps file-info locales in both directions', async () => {
     fetchMock.mockImplementation(async (request) => {
       const body = JSON.parse(await new Request(request).text()) as {
