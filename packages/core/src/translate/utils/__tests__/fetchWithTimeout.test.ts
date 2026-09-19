@@ -45,6 +45,20 @@ describe.sequential('fetchWithTimeout', () => {
     return error;
   };
 
+  // A fetch that never resolves and rejects with the composed signal's reason
+  // once it aborts, optionally after a delay like a slow custom fetch.
+  const mockSignalDrivenFetch = (rejectDelayMs?: number) =>
+    mockFetch.mockImplementation(
+      (_url, init) =>
+        new Promise<Response>((_resolve, reject) => {
+          init.signal.addEventListener('abort', () => {
+            const rejectWithReason = () => reject(init.signal.reason);
+            if (rejectDelayMs === undefined) rejectWithReason();
+            else setTimeout(rejectWithReason, rejectDelayMs);
+          });
+        })
+    );
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockTranslationTimeoutError.mockReturnValue('Mocked timeout error');
@@ -147,25 +161,68 @@ describe.sequential('fetchWithTimeout', () => {
       expect(result).toBe(mockResponse);
     });
 
-    it('should handle AbortError and throw translationTimeoutError', async () => {
-      const abortError = createAbortError();
-      mockFetch.mockRejectedValue(abortError);
+    it('throws translationTimeoutError when the numeric timer aborts the fetch', async () => {
+      vi.useFakeTimers();
+      mockSignalDrivenFetch();
 
-      try {
-        await fetchWithTimeout(
+      const rejection = expect(
+        fetchWithTimeout(
           'https://api.example.com/test',
           { method: 'GET' },
           3000
-        );
-      } catch (error) {
-        expect(error).toBe('Mocked timeout error');
-      }
+        )
+      ).rejects.toBe('Mocked timeout error');
+      await vi.advanceTimersByTimeAsync(3000);
 
+      await rejection;
       expect(mockTranslationTimeoutError).toHaveBeenCalledWith(3000);
-      expect(mockFetch).toHaveBeenCalledWith('https://api.example.com/test', {
-        method: 'GET',
-        signal: expect.any(AbortSignal),
-      });
+    });
+
+    it('throws translationTimeoutError when the default timer aborts the fetch', async () => {
+      vi.useFakeTimers();
+      mockSignalDrivenFetch();
+
+      const rejection = expect(
+        fetchWithTimeout('https://api.example.com/test', { method: 'GET' })
+      ).rejects.toBe('Mocked timeout error');
+      await vi.advanceTimersByTimeAsync(defaultTimeout);
+
+      await rejection;
+      expect(mockTranslationTimeoutError).toHaveBeenCalledWith(defaultTimeout);
+    });
+
+    it('propagates a fetch-owned AbortError untouched when the timer has not fired', async () => {
+      const abortError = createAbortError();
+      mockFetch.mockRejectedValue(abortError);
+
+      await expect(
+        fetchWithTimeout(
+          'https://api.example.com/test',
+          { method: 'GET' },
+          3000
+        )
+      ).rejects.toBe(abortError);
+      expect(mockTranslationTimeoutError).not.toHaveBeenCalled();
+    });
+
+    it('propagates a caller abort untouched when the fetch rejects only after the timer fires', async () => {
+      vi.useFakeTimers();
+      mockSignalDrivenFetch(5000);
+      const callerController = new AbortController();
+      const callerError = createAbortError();
+
+      const rejection = expect(
+        fetchWithTimeout(
+          'https://api.example.com/test',
+          { method: 'GET', signal: callerController.signal },
+          3000
+        )
+      ).rejects.toBe(callerError);
+      callerController.abort(callerError);
+      await vi.advanceTimersByTimeAsync(5000);
+
+      await rejection;
+      expect(mockTranslationTimeoutError).not.toHaveBeenCalled();
     });
   });
 
@@ -275,17 +332,81 @@ describe.sequential('fetchWithTimeout', () => {
   });
 
   describe('edge cases', () => {
-    it('should handle timeout value of 0', async () => {
+    it('treats an explicit timeout of 0 as a literal zero, not the default', async () => {
+      vi.useFakeTimers();
+      mockFetch.mockImplementation(
+        (_url, init) =>
+          new Promise<Response>((_resolve, reject) => {
+            init.signal.addEventListener('abort', () =>
+              reject(createAbortError())
+            );
+          })
+      );
+
+      const rejection = expect(
+        fetchWithTimeout('https://api.example.com/test', { method: 'GET' }, 0)
+      ).rejects.toBe('Mocked timeout error');
+      await vi.advanceTimersByTimeAsync(0);
+
+      await rejection;
+      expect(mockTranslationTimeoutError).toHaveBeenCalledWith(0);
+    });
+
+    it('does not start a timer when the timeout is false', async () => {
+      vi.useFakeTimers();
       const mockResponse = createMockResponse();
-      mockFetch.mockResolvedValue(mockResponse);
+      mockFetch.mockImplementation(
+        (_url, init) =>
+          new Promise<Response>((resolve, reject) => {
+            init.signal.addEventListener('abort', () =>
+              reject(createAbortError())
+            );
+            setTimeout(() => resolve(mockResponse), defaultTimeout * 2);
+          })
+      );
+
+      const pending = fetchWithTimeout(
+        'https://api.example.com/test',
+        { method: 'GET' },
+        false
+      );
+      await vi.advanceTimersByTimeAsync(defaultTimeout * 2);
+
+      await expect(pending).resolves.toBe(mockResponse);
+      expect(mockTranslationTimeoutError).not.toHaveBeenCalled();
+    });
+
+    it('propagates caller cancellation untouched when the timeout is false', async () => {
+      const abortError = createAbortError();
+      mockFetch.mockRejectedValue(abortError);
+
+      await expect(
+        fetchWithTimeout(
+          'https://api.example.com/test',
+          { method: 'GET' },
+          false
+        )
+      ).rejects.toBe(abortError);
+      expect(mockTranslationTimeoutError).not.toHaveBeenCalled();
+    });
+
+    it('calls a custom fetch implementation instead of the global fetch', async () => {
+      const mockResponse = createMockResponse();
+      const customFetch = vi.fn<typeof fetch>().mockResolvedValue(mockResponse);
 
       const result = await fetchWithTimeout(
         'https://api.example.com/test',
         { method: 'GET' },
-        0
+        undefined,
+        customFetch
       );
 
       expect(result).toBe(mockResponse);
+      expect(customFetch).toHaveBeenCalledWith('https://api.example.com/test', {
+        method: 'GET',
+        signal: expect.any(AbortSignal),
+      });
+      expect(mockFetch).not.toHaveBeenCalled();
     });
 
     it('should handle negative timeout values', async () => {

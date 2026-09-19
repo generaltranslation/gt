@@ -54,8 +54,7 @@ describe.sequential('configured locales at GT service boundaries', () => {
     expect(_translateMany).toHaveBeenLastCalledWith(
       ['Hello'],
       expect.objectContaining({ sourceLocale: 'en-US', targetLocale: 'en-GB' }),
-      expect.any(Object),
-      undefined
+      expect.any(Object)
     );
     await gt.translate('Hello', {
       sourceLocale: 'en-us',
@@ -64,8 +63,7 @@ describe.sequential('configured locales at GT service boundaries', () => {
     expect(_translateMany).toHaveBeenLastCalledWith(
       ['Hello'],
       expect.objectContaining({ sourceLocale: 'en-US', targetLocale: 'en-GB' }),
-      expect.any(Object),
-      undefined
+      expect.any(Object)
     );
   });
 

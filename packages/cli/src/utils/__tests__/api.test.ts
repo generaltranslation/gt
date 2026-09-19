@@ -41,6 +41,59 @@ describe('CLI API client', () => {
     );
   });
 
+  it('exposes runtime translation through the shared adapter with the configured transport', async () => {
+    configure({
+      customMapping: { 'brand-english': { code: 'en-US' } },
+      retryPolicy: 'exponential',
+    });
+    const bodies: Array<{ sourceLocale: string; targetLocale: string }> = [];
+    fetchMock.mockImplementation(async (request) => {
+      expect(new URL(request.url).pathname).toBe('/v2/translate');
+      expect(request.headers.get('authorization')).toBe('Bearer api-key');
+      expect(request.headers.get('gt-project-id')).toBe('project-id');
+      const body = JSON.parse(await request.text()) as {
+        requests: Record<string, unknown>;
+        sourceLocale: string;
+        targetLocale: string;
+      };
+      bodies.push(body);
+      return Response.json(
+        Object.fromEntries(
+          Object.keys(body.requests).map((hash) => [
+            hash,
+            {
+              success: true,
+              translation: 'Hola',
+              locale: 'es',
+              dataFormat: 'STRING',
+            },
+          ])
+        )
+      );
+    });
+
+    await expect(
+      api.translateMany(['Hello'], {
+        targetLocale: 'es',
+        sourceLocale: 'brand-english',
+      })
+    ).resolves.toEqual([
+      {
+        success: true,
+        translation: 'Hola',
+        locale: 'es',
+        dataFormat: 'STRING',
+      },
+    ]);
+    await expect(api.translate('Hello', 'es', 10_000)).resolves.toMatchObject({
+      translation: 'Hola',
+    });
+    expect(bodies).toEqual([
+      expect.objectContaining({ sourceLocale: 'en-US', targetLocale: 'es' }),
+      expect.objectContaining({ sourceLocale: 'en', targetLocale: 'es' }),
+    ]);
+  });
+
   it('maps canonical server locales back to configured aliases', () => {
     configure({
       customMapping: { 'brand-english': { code: 'en-US' } },

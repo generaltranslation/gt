@@ -28,7 +28,7 @@ export const apiError = (status: number, statusText: string, error: string) =>
     details: error,
   });
 
-export const invalidAuthError = createDiagnosticMessage({
+export const invalidAuthError = /* @__PURE__ */ createDiagnosticMessage({
   source: GT_SOURCE,
   severity: 'Error',
   whatHappened: 'Authentication failed',

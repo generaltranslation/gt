@@ -28,18 +28,22 @@ import {
   TranslationResult,
   TranslateManyEntry,
 } from './types';
-import { libraryDefaultLocale } from './settings/settings';
 import {
   noSourceLocaleProvidedError,
   noTargetLocaleProvidedError,
   invalidLocaleError,
   invalidLocalesError,
-  noProjectIdProvidedError,
-  noApiKeyProvidedError,
 } from './logging/errors';
-import { gtInstanceLogger } from './logging/logger';
 import { _translateMany } from './translate/translateMany';
+import {
+  prepareTranslation,
+  validateTranslationAuth,
+} from './translate/runtimeTranslate';
 import { TranslateOptions } from './types-dir/api/entry';
+
+// Named helpers share the class preparation and wire path without a class instance.
+export { translate, translateMany } from './translate/runtimeTranslate';
+export type { TranslateConfig } from './types';
 
 // ============================================================ //
 //                       Runtime Class                          //
@@ -260,18 +264,28 @@ export class GTRuntime {
   }
 
   protected _validateAuth(functionName: string) {
-    const errors: string[] = [];
-    if (!this.apiKey && !this.devApiKey && !this.userTokenProvider) {
-      const error = noApiKeyProvidedError(functionName);
-      errors.push(error);
-    }
-    if (!this.projectId) {
-      const error = noProjectIdProvidedError(functionName);
-      errors.push(error);
-    }
-    if (errors.length) {
-      throw new Error(errors.join('\n'));
-    }
+    validateTranslationAuth(functionName, this._getTranslationConfig());
+  }
+
+  /**
+   * Shares preparation with the named helpers while keeping instance defaults
+   * and the legacy positional timeout, where `0`/omitted select the default.
+   */
+  private _prepareTranslation(
+    functionName: 'translate' | 'translateMany',
+    options: string | TranslateOptions,
+    timeout?: number
+  ) {
+    return prepareTranslation(
+      functionName,
+      options,
+      {
+        ...this._getTranslationConfig(),
+        customMapping: this.customMapping,
+        timeoutMs: timeout || undefined,
+      },
+      { sourceLocale: this.sourceLocale, targetLocale: this.targetLocale }
+    );
   }
 
   /**
@@ -297,39 +311,11 @@ export class GTRuntime {
     options: string | TranslateOptions,
     timeout?: number
   ): Promise<TranslationResult | TranslationError> {
-    // Normalize string shorthand to options object
-    if (typeof options === 'string') {
-      options = { targetLocale: options };
-    }
-
-    // Validation
-    this._validateAuth('translate');
-
-    // Require target locale
-    let targetLocale = options?.targetLocale || this.targetLocale;
-    if (!targetLocale) {
-      const error = noTargetLocaleProvidedError('translate');
-      gtInstanceLogger.error(error);
-      throw new Error(error);
-    }
-
-    // Replace target locale with canonical locale
-    targetLocale = this.resolveServiceLocale(targetLocale);
-
-    const sourceLocale = this.resolveServiceLocale(
-      options?.sourceLocale || this.sourceLocale || libraryDefaultLocale
-    );
-
-    // Request the translation.
+    const prepared = this._prepareTranslation('translate', options, timeout);
     const results = await _translateMany(
       [source],
-      {
-        ...options,
-        targetLocale,
-        sourceLocale,
-      },
-      this._getTranslationConfig(),
-      timeout
+      prepared.options,
+      prepared.config
     );
     return results[0];
   }
@@ -375,40 +361,12 @@ export class GTRuntime {
     options: string | TranslateOptions,
     timeout?: number
   ): Promise<TranslateManyResult | Record<string, TranslationResult>> {
-    // Normalize string shorthand to options object
-    if (typeof options === 'string') {
-      options = { targetLocale: options };
-    }
-
-    // Validation
-    this._validateAuth('translateMany');
-
-    // Require target locale
-    let targetLocale = options?.targetLocale || this.targetLocale;
-    if (!targetLocale) {
-      const error = noTargetLocaleProvidedError('translateMany');
-      gtInstanceLogger.error(error);
-      throw new Error(error);
-    }
-
-    // Replace target locale with canonical locale
-    targetLocale = this.resolveServiceLocale(targetLocale);
-
-    const sourceLocale = this.resolveServiceLocale(
-      options?.sourceLocale || this.sourceLocale || libraryDefaultLocale
-    );
-
-    // Request the translation.
-    return await _translateMany(
-      sources,
-      {
-        ...options,
-        targetLocale,
-        sourceLocale,
-      },
-      this._getTranslationConfig(),
+    const prepared = this._prepareTranslation(
+      'translateMany',
+      options,
       timeout
     );
+    return await _translateMany(sources, prepared.options, prepared.config);
   }
 
   // -------------- Formatting -------------- //

@@ -21,4 +21,54 @@ Core library for General Translation. Used internally by `gt-react` and `gt-next
 npm install generaltranslation
 ```
 
+## Runtime translation without a class
+
+`generaltranslation/runtime` exports `translate` and `translateMany` for server or
+tooling code that only needs translation. They share the `GT`/`GTRuntime`
+implementation but do not read credentials from the environment, so pass the
+configuration explicitly:
+
+```ts
+import { translateMany } from 'generaltranslation/runtime';
+
+const results = await translateMany(['Hello', 'Goodbye'], 'es', {
+  projectId: 'project_123',
+  apiKey: process.env.GT_API_KEY,
+  timeoutMs: 10_000, // omitted: runtime default; 0: literal zero; false: no runtime timer
+});
+```
+
+A target locale is required; the source locale defaults to `en`. Optional
+`fetch`, `apiVersion`, `userTokenProvider` and `customMapping` are honored.
+Translation never applies generic retries. The `GT`/`GTRuntime` class signatures,
+defaults, and positional `timeout` behavior are unchanged. Caller or custom-fetch
+cancellation preserves its original `AbortError`; only an abort caused by the
+runtime timer produces the SDK timeout diagnostic.
+
+The shared tooling adapter also exposes `translate` and `translateMany`, bound to
+its current configuration. Its optional third `timeoutMs` argument overrides the
+configured timeout; management retry policy does not apply to translation.
+
+## Built-package isolation checks
+
+```sh
+pnpm exec turbo run build --filter=generaltranslation...
+pnpm --filter generaltranslation test
+```
+
+`src/__tests__/package-artifacts.test.ts` packs core and its workspace dependencies,
+executes ESM/CJS consumers, typechecks both declaration formats under NodeNext,
+and walks the published `generaltranslation/runtime` dependency graph in both
+formats to confirm it never reaches the management adapter or its endpoints.
+
+Byte gates live in `.size-limit.cjs`, measured with the same conservative
+bundler downstream packages use. Whole-entry budgets are unchanged; named-import
+entries such as `{ libraryDefaultLocale }` and `{ translateMany }` assert that a
+consumer of one symbol does not pay for the tooling facade or the class runtime
+that share its chunk. Top-level initializers shared across chunks (loggers,
+precomputed diagnostics) carry `/* @__PURE__ */` for that reason. The full
+adapter deliberately grows because it carries translation preparation, hashing
+and transport; its unused methods are **not** promised to disappear, and CJS
+loading is supported, not CJS per-method tree-shaking.
+
 See the [full documentation](https://generaltranslation.com/docs) for guides and API reference.

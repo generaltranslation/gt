@@ -122,7 +122,7 @@ function toTranslationResult(
  *
  * @param requests - The entries to translate. Can be an array (entries are hashed and results returned in order) or a record keyed by hash (skips hash calculation, returns a record).
  * @param globalMetadata - The metadata for the translation.
- * @param config - The configuration for the translation.
+ * @param config - The configuration for the translation, including transport settings such as `fetch`, `apiVersion` and `timeoutMs`.
  * @returns The results of the translation. An array if requests was an array, a record if requests was a record.
  */
 export async function _translateMany<
@@ -133,8 +133,7 @@ export async function _translateMany<
     targetLocale: string;
     sourceLocale: string;
   } & TranslateOptions,
-  config: TranslationRequestConfig,
-  timeout?: number
+  config: TranslationRequestConfig
 ): Promise<
   T extends TranslateManyEntry[]
     ? TranslateManyResult
@@ -146,8 +145,7 @@ export async function _translateMany(
     targetLocale: string;
     sourceLocale: string;
   } & TranslateOptions,
-  config: TranslationRequestConfig,
-  timeout?: number
+  config: TranslationRequestConfig
 ): Promise<TranslateManyResult | Record<string, TranslationResult>> {
   const isArray = Array.isArray(requests);
 
@@ -198,11 +196,15 @@ export async function _translateMany(
     );
   }
 
+  // Translation deliberately has no generic network/5xx/429 retries and owns
+  // its timeout through fetchWithTimeout, so the SDK timer is disabled.
   const client = createApiClient({
     apiKey: config.apiKey,
+    apiVersion: config.apiVersion,
     userTokenProvider: config.userTokenProvider,
     baseUrl: config.baseUrl || defaultRuntimeApiUrl,
-    fetch: (input, init) => fetchWithTimeout(input, init ?? {}, timeout),
+    fetch: (input, init) =>
+      fetchWithTimeout(input, init ?? {}, config.timeoutMs, config.fetch),
     projectId: config.projectId,
     retryPolicy: 'none',
     timeoutMs: false,
