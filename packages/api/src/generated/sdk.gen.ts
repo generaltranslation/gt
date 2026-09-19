@@ -29,24 +29,6 @@ import type {
   EnqueueFileTranslationsData,
   EnqueueFileTranslationsErrors,
   EnqueueFileTranslationsResponses,
-  FigmaPluginDownloadData,
-  FigmaPluginDownloadErrors,
-  FigmaPluginDownloadResponses,
-  FigmaPluginEnqueueData,
-  FigmaPluginEnqueueErrors,
-  FigmaPluginEnqueueResponses,
-  FigmaPluginImportTranslationsData,
-  FigmaPluginImportTranslationsErrors,
-  FigmaPluginImportTranslationsResponses,
-  FigmaPluginInfoData,
-  FigmaPluginInfoErrors,
-  FigmaPluginInfoResponses,
-  FigmaPluginStatusData,
-  FigmaPluginStatusErrors,
-  FigmaPluginStatusResponses,
-  FigmaPluginSyncData,
-  FigmaPluginSyncErrors,
-  FigmaPluginSyncResponses,
   GenerateProjectContextData,
   GenerateProjectContextErrors,
   GenerateProjectContextResponses,
@@ -71,6 +53,24 @@ import type {
   GetTranslationStatusData,
   GetTranslationStatusErrors,
   GetTranslationStatusResponses,
+  PluginDownloadData,
+  PluginDownloadErrors,
+  PluginDownloadResponses,
+  PluginEnqueueData,
+  PluginEnqueueErrors,
+  PluginEnqueueResponses,
+  PluginImportTranslationsData,
+  PluginImportTranslationsErrors,
+  PluginImportTranslationsResponses,
+  PluginInfoData,
+  PluginInfoErrors,
+  PluginInfoResponses,
+  PluginStatusData,
+  PluginStatusErrors,
+  PluginStatusResponses,
+  PluginSyncData,
+  PluginSyncErrors,
+  PluginSyncResponses,
   ProcessFileMovesData,
   ProcessFileMovesErrors,
   ProcessFileMovesResponses,
@@ -190,23 +190,19 @@ export const workspacePluginStatus = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Figma plugin info
+ * Plugin info
  *
- * Run the Figma plugin info command.
+ * Run the info command for a design-tool plugin.
  */
-export const figmaPluginInfo = <ThrowOnError extends boolean = false>(
-  options: Options<FigmaPluginInfoData, ThrowOnError>
+export const pluginInfo = <ThrowOnError extends boolean = false>(
+  options: Options<PluginInfoData, ThrowOnError>
 ) =>
-  options.client.post<
-    FigmaPluginInfoResponses,
-    FigmaPluginInfoErrors,
-    ThrowOnError
-  >({
+  options.client.post<PluginInfoResponses, PluginInfoErrors, ThrowOnError>({
     security: [
       { scheme: 'bearer', type: 'http' },
       { scheme: 'bearer', type: 'http' },
     ],
-    url: '/v1/integrations/figma-plugin/info',
+    url: '/v1/integrations/plugins/{provider}/info',
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -215,23 +211,19 @@ export const figmaPluginInfo = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Figma plugin sync
+ * Plugin sync
  *
- * Run the Figma plugin sync command.
+ * Run the sync command for a design-tool plugin.
  */
-export const figmaPluginSync = <ThrowOnError extends boolean = false>(
-  options: Options<FigmaPluginSyncData, ThrowOnError>
+export const pluginSync = <ThrowOnError extends boolean = false>(
+  options: Options<PluginSyncData, ThrowOnError>
 ) =>
-  options.client.post<
-    FigmaPluginSyncResponses,
-    FigmaPluginSyncErrors,
-    ThrowOnError
-  >({
+  options.client.post<PluginSyncResponses, PluginSyncErrors, ThrowOnError>({
     security: [
       { scheme: 'bearer', type: 'http' },
       { scheme: 'bearer', type: 'http' },
     ],
-    url: '/v1/integrations/figma-plugin/sync',
+    url: '/v1/integrations/plugins/{provider}/sync',
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -240,25 +232,23 @@ export const figmaPluginSync = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Figma plugin import-translations
+ * Plugin import-translations
  *
- * Run the Figma plugin import-translations command.
+ * Run the import-translations command for a design-tool plugin.
  */
-export const figmaPluginImportTranslations = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<FigmaPluginImportTranslationsData, ThrowOnError>
+export const pluginImportTranslations = <ThrowOnError extends boolean = false>(
+  options: Options<PluginImportTranslationsData, ThrowOnError>
 ) =>
   options.client.post<
-    FigmaPluginImportTranslationsResponses,
-    FigmaPluginImportTranslationsErrors,
+    PluginImportTranslationsResponses,
+    PluginImportTranslationsErrors,
     ThrowOnError
   >({
     security: [
       { scheme: 'bearer', type: 'http' },
       { scheme: 'bearer', type: 'http' },
     ],
-    url: '/v1/integrations/figma-plugin/import-translations',
+    url: '/v1/integrations/plugins/{provider}/import-translations',
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -267,23 +257,23 @@ export const figmaPluginImportTranslations = <
   });
 
 /**
- * Figma plugin enqueue
+ * Plugin enqueue
  *
- * Run the Figma plugin enqueue command.
+ * Run the enqueue command for a design-tool plugin.
  */
-export const figmaPluginEnqueue = <ThrowOnError extends boolean = false>(
-  options: Options<FigmaPluginEnqueueData, ThrowOnError>
+export const pluginEnqueue = <ThrowOnError extends boolean = false>(
+  options: Options<PluginEnqueueData, ThrowOnError>
 ) =>
   options.client.post<
-    FigmaPluginEnqueueResponses,
-    FigmaPluginEnqueueErrors,
+    PluginEnqueueResponses,
+    PluginEnqueueErrors,
     ThrowOnError
   >({
     security: [
       { scheme: 'bearer', type: 'http' },
       { scheme: 'bearer', type: 'http' },
     ],
-    url: '/v1/integrations/figma-plugin/enqueue',
+    url: '/v1/integrations/plugins/{provider}/enqueue',
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -292,23 +282,19 @@ export const figmaPluginEnqueue = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Figma plugin status
+ * Plugin status
  *
- * Run the Figma plugin status command.
+ * Run the status command for a design-tool plugin.
  */
-export const figmaPluginStatus = <ThrowOnError extends boolean = false>(
-  options: Options<FigmaPluginStatusData, ThrowOnError>
+export const pluginStatus = <ThrowOnError extends boolean = false>(
+  options: Options<PluginStatusData, ThrowOnError>
 ) =>
-  options.client.post<
-    FigmaPluginStatusResponses,
-    FigmaPluginStatusErrors,
-    ThrowOnError
-  >({
+  options.client.post<PluginStatusResponses, PluginStatusErrors, ThrowOnError>({
     security: [
       { scheme: 'bearer', type: 'http' },
       { scheme: 'bearer', type: 'http' },
     ],
-    url: '/v1/integrations/figma-plugin/status',
+    url: '/v1/integrations/plugins/{provider}/status',
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -317,23 +303,23 @@ export const figmaPluginStatus = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Figma plugin download
+ * Plugin download
  *
- * Run the Figma plugin download command.
+ * Run the download command for a design-tool plugin.
  */
-export const figmaPluginDownload = <ThrowOnError extends boolean = false>(
-  options: Options<FigmaPluginDownloadData, ThrowOnError>
+export const pluginDownload = <ThrowOnError extends boolean = false>(
+  options: Options<PluginDownloadData, ThrowOnError>
 ) =>
   options.client.post<
-    FigmaPluginDownloadResponses,
-    FigmaPluginDownloadErrors,
+    PluginDownloadResponses,
+    PluginDownloadErrors,
     ThrowOnError
   >({
     security: [
       { scheme: 'bearer', type: 'http' },
       { scheme: 'bearer', type: 'http' },
     ],
-    url: '/v1/integrations/figma-plugin/download',
+    url: '/v1/integrations/plugins/{provider}/download',
     ...options,
     headers: {
       'Content-Type': 'application/json',
