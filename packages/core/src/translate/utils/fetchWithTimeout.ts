@@ -4,17 +4,20 @@ import { defaultTimeout } from '../../settings/settings';
 /**
  * @internal
  *
- * Wraps the fetch function with a timeout.
+ * Wraps a fetch implementation with the runtime translation timeout.
  *
  * @param url - The URL to fetch.
  * @param options - The options to pass to the fetch function.
- * @param timeout - The timeout in milliseconds.
+ * @param timeoutMs - The timeout in milliseconds. Omitted selects `defaultTimeout`,
+ * `0` is a literal zero, and `false` disables the runtime-owned timer.
+ * @param fetchImplementation - The fetch implementation to call. Defaults to global fetch.
  * @returns The response from the fetch function.
  */
 export async function fetchWithTimeout(
   url: string | URL | globalThis.Request,
   options: RequestInit,
-  timeout?: number
+  timeoutMs: number | false = defaultTimeout,
+  fetchImplementation: typeof fetch = globalThis.fetch
 ) {
   const controller = new AbortController();
   const signals = [controller.signal];
@@ -22,17 +25,21 @@ export async function fetchWithTimeout(
   if (url instanceof Request) signals.push(url.signal);
   const signal = AbortSignal.any(signals);
 
-  timeout = timeout ? timeout : defaultTimeout;
-  const timeoutId = timeout
-    ? setTimeout(() => controller.abort(), timeout)
-    : null;
+  const timeoutId =
+    timeoutMs === false
+      ? null
+      : setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const response = await fetch(url, { ...options, signal });
+    const response = await fetchImplementation(url, { ...options, signal });
     return response;
   } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw translationTimeoutError(timeout);
+    if (
+      timeoutMs !== false &&
+      error instanceof Error &&
+      error.name === 'AbortError'
+    ) {
+      throw translationTimeoutError(timeoutMs);
     }
     throw error;
   } finally {

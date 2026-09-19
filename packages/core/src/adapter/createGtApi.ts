@@ -47,7 +47,20 @@ import {
 } from '@generaltranslation/format';
 import type { CustomMapping } from '@generaltranslation/format/types';
 import type { DownloadedFile } from '../types-dir/api/downloadFileBatch';
+import type {
+  TranslateManyEntry,
+  TranslateOptions,
+} from '../types-dir/api/entry';
+import type {
+  TranslateConfig,
+  TranslateManyResult,
+  TranslationResult,
+} from '../types';
 import { createDiagnosticMessage } from '../logging/diagnostics';
+import {
+  translate as translateWithConfig,
+  translateMany as translateManyWithConfig,
+} from '../translate/runtimeTranslate';
 import { decodeFileContent, encodeFileContent } from '../utils/base64';
 import { unwrapApiResult } from '../translate/utils/unwrapApiResult';
 import { validateFileFormatTransforms } from '../translate/utils/validateFileFormatTransform';
@@ -117,6 +130,48 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
     customMapping = mapping;
   }
 
+  // Translation reads the latest configuration at call time. Its timeout is
+  // per-call override → configured timeoutMs → runtime default, and the
+  // management retryPolicy never applies to it.
+  function getTranslateConfig(timeoutMs?: number | false): TranslateConfig {
+    const { retryPolicy: _retryPolicy, ...clientConfig } = getClientConfig();
+    return {
+      ...clientConfig,
+      timeoutMs: timeoutMs ?? clientConfig.timeoutMs,
+      customMapping,
+    };
+  }
+
+  async function translate(
+    source: TranslateManyEntry,
+    options: string | TranslateOptions,
+    timeoutMs?: number | false
+  ) {
+    return translateWithConfig(source, options, getTranslateConfig(timeoutMs));
+  }
+
+  function translateMany(
+    sources: TranslateManyEntry[],
+    options: string | TranslateOptions,
+    timeoutMs?: number | false
+  ): Promise<TranslateManyResult>;
+  function translateMany(
+    sources: Record<string, TranslateManyEntry>,
+    options: string | TranslateOptions,
+    timeoutMs?: number | false
+  ): Promise<Record<string, TranslationResult>>;
+  async function translateMany(
+    sources: TranslateManyEntry[] | Record<string, TranslateManyEntry>,
+    options: string | TranslateOptions,
+    timeoutMs?: number | false
+  ): Promise<TranslateManyResult | Record<string, TranslationResult>> {
+    return translateManyWithConfig(
+      sources,
+      options,
+      getTranslateConfig(timeoutMs)
+    );
+  }
+
   if (defaultConfig) configure(defaultConfig);
 
   // Raw service responses; the normalized adapter methods build on these and
@@ -159,6 +214,9 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
     resolveCanonicalLocale(locale: string) {
       return resolveServiceLocale(locale);
     },
+
+    translate,
+    translateMany,
 
     async queryBranchData(body: GetBranchInfoData['body']) {
       return unwrapApiResult(
