@@ -66,27 +66,15 @@ is a positive control: its unused methods are **not** promised to disappear.
 Neither are classes requested by another entry in the same split bundle.
 CJS loading is supported, not CJS per-method tree-shaking.
 
-Measured with tsdown 0.21.10, Node 24.13.0 and `brotliCompressSync`, fully bundled,
-minified, no source maps. Values are total JS / Brotli bytes across all chunks;
-baseline is `cac721bee`. After measurements are from
-`a920557970fe8bbaf743fef351326012ec3fe865`, including the cancellation diagnostic fix.
-Focused ceilings are reviewed independently of the unchanged `.size-limit.cjs`
-whole-entry budgets.
-
-| Live consumer       |   Baseline bytes |     After bytes |   Ceiling bytes |
-| ------------------- | ---------------: | --------------: | --------------: |
-| GTRuntime           |  66,339 / 20,160 | 66,372 / 20,333 | 70,000 / 22,000 |
-| Named translateMany | N/A (new export) | 30,234 / 10,803 | 33,000 / 12,000 |
-| Locale constant     |          34 / 38 |         34 / 38 |       100 / 100 |
-| Raw translate       |   11,793 / 4,103 |  11,793 / 4,103 |  13,000 / 4,500 |
-| Raw createTag       |   11,742 / 4,087 |  11,742 / 4,087 |  13,000 / 4,500 |
-| Full adapter        |   26,782 / 8,051 | 41,764 / 13,247 | 45,000 / 15,000 |
-
-The full adapter's growth carries translation preparation, hashing and transport.
-Two-entry named-only and runtime-only fixtures each emit three chunks, measured
-at 30,482 / 11,089 and 66,603 / 20,526 bytes respectively, under the same ceilings.
-The test also verifies that a temporary live management import fails isolation.
-Turbo's test task builds prerequisites, and CI's existing test job runs this
-package test; no separate opt-in artifact command is required.
+The test asserts byte ceilings per live consumer (see `limits` in the test);
+current measurements appear in the size-limit report on every pull request, which
+also gates named imports such as `{ libraryDefaultLocale }` and `{ translateMany }`
+with the same conservative bundler used for downstream packages. The full
+adapter deliberately grows because it carries translation preparation, hashing
+and transport. Top-level initializers shared across chunks (loggers, precomputed
+diagnostics) carry `/* @__PURE__ */` so a consumer of one constant does not
+retain them. The test also verifies that a temporary live management import
+fails isolation. Turbo's test task builds prerequisites, and CI's existing test
+job runs this package test; no separate opt-in artifact command is required.
 
 See the [full documentation](https://generaltranslation.com/docs) for guides and API reference.
