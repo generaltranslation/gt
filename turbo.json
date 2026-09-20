@@ -1,5 +1,11 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [
+    "tsdown.preset.mts",
+    "tsconfig.base.json",
+    "scripts/emit-types.sh",
+    "scripts/clean.sh"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
