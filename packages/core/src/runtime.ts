@@ -34,9 +34,9 @@ import {
   invalidLocaleError,
   invalidLocalesError,
 } from './logging/errors';
-import { _translateMany } from './translate/translateMany';
 import {
-  prepareTranslation,
+  translate as translateWithConfig,
+  translateMany as translateManyWithConfig,
   validateTranslationAuth,
 } from './translate/runtimeTranslate';
 import { TranslateOptions } from './types-dir/api/entry';
@@ -265,25 +265,13 @@ export class GTRuntime {
     validateTranslationAuth(functionName, this._getTranslationConfig());
   }
 
-  /**
-   * Shares preparation with the tooling adapter while keeping instance defaults
-   * and the legacy positional timeout, where `0`/omitted select the default.
-   */
-  private _prepareTranslation(
-    functionName: 'translate' | 'translateMany',
-    options: string | TranslateOptions,
-    timeout?: number
-  ) {
-    return prepareTranslation(
-      functionName,
-      options,
-      {
-        ...this._getTranslationConfig(),
-        customMapping: this.customMapping,
-        timeoutMs: timeout || undefined,
-      },
-      { sourceLocale: this.sourceLocale, targetLocale: this.targetLocale }
-    );
+  /** The legacy positional timeout treats `0`/omitted as the default. */
+  private _getTranslateConfig(timeout?: number) {
+    return {
+      ...this._getTranslationConfig(),
+      customMapping: this.customMapping,
+      timeoutMs: timeout || undefined,
+    };
   }
 
   /**
@@ -309,13 +297,12 @@ export class GTRuntime {
     options: string | TranslateOptions,
     timeout?: number
   ): Promise<TranslationResult | TranslationError> {
-    const prepared = this._prepareTranslation('translate', options, timeout);
-    const results = await _translateMany(
-      [source],
-      prepared.options,
-      prepared.config
+    return translateWithConfig(
+      source,
+      options,
+      this._getTranslateConfig(timeout),
+      this
     );
-    return results[0];
   }
 
   /**
@@ -359,12 +346,12 @@ export class GTRuntime {
     options: string | TranslateOptions,
     timeout?: number
   ): Promise<TranslateManyResult | Record<string, TranslationResult>> {
-    const prepared = this._prepareTranslation(
-      'translateMany',
+    return translateManyWithConfig(
+      sources,
       options,
-      timeout
+      this._getTranslateConfig(timeout),
+      this
     );
-    return await _translateMany(sources, prepared.options, prepared.config);
   }
 
   // -------------- Formatting -------------- //

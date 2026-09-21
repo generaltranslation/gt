@@ -23,6 +23,9 @@ import { gtInstanceLogger } from '../logging/logger';
 import { _translateMany } from './translateMany';
 
 type TranslateFunctionName = 'translate' | 'translateMany';
+type TranslateDefaults = Partial<
+  Pick<TranslateOptions, 'sourceLocale' | 'targetLocale'>
+>;
 
 /**
  * @internal
@@ -56,11 +59,11 @@ export function validateTranslationAuth<
  *
  * @param defaults - Instance defaults supplied by GT/GTRuntime. Facade calls pass none.
  */
-export function prepareTranslation(
+function prepareTranslation(
   functionName: TranslateFunctionName,
   options: string | TranslateOptions,
   config: TranslateConfig,
-  defaults: { sourceLocale?: string; targetLocale?: string } = {}
+  defaults: TranslateDefaults = {}
 ): {
   options: TranslateOptions & { sourceLocale: string };
   config: TranslationRequestConfig;
@@ -98,15 +101,15 @@ export function prepareTranslation(
 
 /**
  * @internal
- * Translates a single entry with explicit configuration; the tooling adapter
- * binds this to its current client configuration.
+ * Translates a single entry with explicit configuration and optional locale defaults.
  */
 export async function translate(
   source: TranslateManyEntry,
   options: string | TranslateOptions,
-  config: TranslateConfig
+  config: TranslateConfig,
+  defaults?: TranslateDefaults
 ): Promise<TranslationResult | TranslationError> {
-  const prepared = prepareTranslation('translate', options, config);
+  const prepared = prepareTranslation('translate', options, config, defaults);
   const results = await _translateMany(
     [source],
     prepared.options,
@@ -123,23 +126,32 @@ export async function translate(
 export async function translateMany(
   sources: TranslateManyEntry[],
   options: string | TranslateOptions,
-  config: TranslateConfig
+  config: TranslateConfig,
+  defaults?: TranslateDefaults
 ): Promise<TranslateManyResult>;
 export async function translateMany(
   sources: Record<string, TranslateManyEntry>,
   options: string | TranslateOptions,
-  config: TranslateConfig
+  config: TranslateConfig,
+  defaults?: TranslateDefaults
 ): Promise<Record<string, TranslationResult>>;
 export async function translateMany(
   sources: TranslateManyEntry[] | Record<string, TranslateManyEntry>,
   options: string | TranslateOptions,
-  config: TranslateConfig
+  config: TranslateConfig,
+  defaults?: TranslateDefaults
 ): Promise<TranslateManyResult | Record<string, TranslationResult>>;
 export async function translateMany(
   sources: TranslateManyEntry[] | Record<string, TranslateManyEntry>,
   options: string | TranslateOptions,
-  config: TranslateConfig
+  config: TranslateConfig,
+  defaults?: TranslateDefaults
 ): Promise<TranslateManyResult | Record<string, TranslationResult>> {
-  const prepared = prepareTranslation('translateMany', options, config);
+  const prepared = prepareTranslation(
+    'translateMany',
+    options,
+    config,
+    defaults
+  );
   return await _translateMany(sources, prepared.options, prepared.config);
 }

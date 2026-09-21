@@ -95,6 +95,38 @@ describe.sequential('runtime translate helpers', () => {
       expect(fromRuntime[0]).toMatchObject({ success: true, locale: 'es-ES' });
     });
 
+    it('shares configured locale defaults across single and batch translation', async () => {
+      const defaults = { sourceLocale: 'fr-fr', targetLocale: 'british' };
+      const mappedConfig = {
+        ...config,
+        customMapping: { british: { code: 'en-gb' } },
+      };
+      const sources = { greeting: 'Hello' };
+      const options = { targetLocale: '', sourceLocale: '' };
+      const single = await translate('Hello', '', mappedConfig, defaults);
+      const batch = await translateMany(
+        sources,
+        options,
+        mappedConfig,
+        defaults
+      );
+
+      for (const client of [
+        new GTRuntime({ ...mappedConfig, ...defaults }),
+        new GT({ ...mappedConfig, ...defaults }),
+      ]) {
+        expect(await client.translate('Hello', '')).toEqual(single);
+        expect(await client.translateMany(sources, options)).toEqual(batch);
+      }
+      expect(requests).toHaveLength(6);
+      for (const request of requests) {
+        expect(request.body).toMatchObject({
+          sourceLocale: 'fr-FR',
+          targetLocale: 'en-GB',
+        });
+      }
+    });
+
     it('keeps record keys, array order and string shorthand in the shared helpers', async () => {
       const record = await translateMany(
         { first: 'Hello', second: 'Goodbye' },
