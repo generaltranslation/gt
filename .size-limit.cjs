@@ -95,15 +95,6 @@ module.exports = [
   ),
   core('generaltranslation/types', 'types'),
   core('generaltranslation/errors', 'errors'),
-  // Named-import gate with the same conservative bundler downstream packages
-  // are measured with: one constant must not pay for the tooling facade or the
-  // class runtime that share its chunk.
-  entry(
-    'generaltranslation/internal { libraryDefaultLocale }',
-    'packages/core/dist/internal.mjs',
-    '200 B',
-    { import: '{ libraryDefaultLocale }' }
-  ),
 
   format('@generaltranslation/format', 'index'),
   format('@generaltranslation/format/types', 'types'),
