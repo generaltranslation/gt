@@ -80,6 +80,14 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
     return standardizeLocale(resolveCanonicalLocale(locale, customMapping));
   }
 
+  // Upload responses echo the canonical locale; callers key lockfile entries
+  // by the configured alias, so map it back before it leaves the adapter.
+  function aliasUploadedFileLocale<T extends { locale?: string }>(file: T): T {
+    return file.locale
+      ? { ...file, locale: resolveAliasLocale(file.locale, customMapping) }
+      : file;
+  }
+
   function getClient(timeoutMs?: number): ReturnType<typeof createApiClient> {
     if (!client) {
       throw new Error(
@@ -477,7 +485,12 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
           )
         ),
         count: responses.reduce((count, response) => count + response.count, 0),
-        pending: responses.flatMap((response) => response.pending ?? []),
+        pending: responses.flatMap((response) =>
+          (response.pending ?? []).map((file) => ({
+            ...file,
+            locale: resolveAliasLocale(file.locale, customMapping),
+          }))
+        ),
       };
     },
 
@@ -504,7 +517,7 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
             client: getClient(options.timeout),
           })
         );
-        return response.uploadedFiles;
+        return response.uploadedFiles.map(aliasUploadedFileLocale);
       });
 
       return { uploadedFiles: result };
@@ -559,7 +572,7 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
             client: getClient(options.timeout),
           })
         );
-        return response.uploadedFiles;
+        return response.uploadedFiles.map(aliasUploadedFileLocale);
       });
 
       return { uploadedFiles: result };

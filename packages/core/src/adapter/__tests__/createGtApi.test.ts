@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  downloadFiles,
   getFileInfo,
   getOrphanedFiles,
   publishFiles,
@@ -14,6 +15,7 @@ import { createGtApiAdapter } from '../createGtApi';
 
 vi.mock('@generaltranslation/api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@generaltranslation/api')>()),
+  downloadFiles: vi.fn(),
   getFileInfo: vi.fn(),
   getOrphanedFiles: vi.fn(),
   publishFiles: vi.fn(),
@@ -62,8 +64,22 @@ describe.sequential('createGtApiAdapter', () => {
   ])(
     'canonicalizes upload locales %s / %s',
     async (sourceLocale, targetLocale) => {
+      const uploadedFile = {
+        branchId: 'branch-id',
+        fileId: 'file-id',
+        versionId: 'version-id',
+        fileName: 'document.html',
+        fileFormat: 'HTML' as const,
+      };
       vi.mocked(uploadTranslations).mockResolvedValue(
-        result({ uploadedFiles: [], count: 0, message: 'Uploaded files' })
+        result({
+          uploadedFiles: [
+            { ...uploadedFile, locale: 'en-US' },
+            { ...uploadedFile, locale: 'es-ES' },
+          ],
+          count: 2,
+          message: 'Uploaded files',
+        })
       );
       const adapter = createGtApiAdapter();
       adapter.configure({
@@ -74,7 +90,7 @@ describe.sequential('createGtApiAdapter', () => {
         },
       });
 
-      await adapter.uploadTranslations(
+      const response = await adapter.uploadTranslations(
         [
           {
             source: {
@@ -109,8 +125,35 @@ describe.sequential('createGtApiAdapter', () => {
           }),
         })
       );
+      expect(response.uploadedFiles.map((file) => file.locale)).toEqual([
+        'source',
+        'target',
+      ]);
     }
   );
+
+  it('maps pending download locales back to configured aliases', async () => {
+    const pending = {
+      branchId: 'branch-id',
+      fileId: 'file-id',
+      versionId: 'version-id',
+    };
+    vi.mocked(downloadFiles).mockResolvedValue(
+      result({
+        files: [],
+        count: 0,
+        pending: [{ ...pending, locale: 'es-ES' }],
+      })
+    );
+    const adapter = createGtApiAdapter();
+    adapter.configure({ baseUrl: 'https://api.example.com', customMapping });
+
+    const response = await adapter.downloadFileBatch([
+      { ...pending, locale: 'target' },
+    ]);
+
+    expect(response.pending).toEqual([{ ...pending, locale: 'target' }]);
+  });
 
   it('intersects orphaned files returned across request batches', async () => {
     vi.mocked(getOrphanedFiles)
