@@ -757,7 +757,7 @@ export class BaseCLI {
         displayHeader('Authenticating with General Translation...');
         await this.handleLoginCommand(options);
         logger.endCommand(
-          'Done! Your project ID and hot-reload API key have been saved to your .env.local file.'
+          'Done! Your project ID and API key for development have been saved to your .env.local file.'
         );
       });
   }
