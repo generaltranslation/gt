@@ -12,6 +12,7 @@ import { InputBox, PromptFrame } from './inkLayout.js';
 import { runPrompt } from './inkSession.js';
 import { useTerminalSize } from './inkTerminal.js';
 import { parseTypedLocale } from './promptParsing.js';
+import type { CustomMapping } from 'generaltranslation/types';
 import type {
   ConfirmPromptProps,
   EditableTextPromptProps,
@@ -39,13 +40,15 @@ function resolveLocaleChoice({
   query,
   highlightedLocale,
   preferHighlightedLocale,
+  customMapping,
 }: {
   query: string;
   highlightedLocale?: string;
   preferHighlightedLocale: boolean;
+  customMapping?: CustomMapping;
 }) {
   if (preferHighlightedLocale) return highlightedLocale;
-  return parseTypedLocale(query) ?? highlightedLocale;
+  return parseTypedLocale(query, customMapping) ?? highlightedLocale;
 }
 
 function TextPrompt({
@@ -97,6 +100,7 @@ function TextPrompt({
 function LocalePrompt({
   message,
   defaultValue,
+  customMapping,
   onComplete,
 }: LocalePromptProps) {
   const { columns, rows } = useTerminalSize();
@@ -150,6 +154,7 @@ function LocalePrompt({
         query,
         highlightedLocale: filteredOptions[activeIndex]?.code,
         preferHighlightedLocale,
+        customMapping,
       });
       if (!finalLocale) {
         setError('Enter a valid locale (e.g., en)');
@@ -191,6 +196,7 @@ function LocaleMultiPrompt({
   message,
   defaultValue = [],
   required,
+  customMapping,
   onComplete,
 }: LocaleMultiPromptProps) {
   const { columns, rows } = useTerminalSize();
@@ -236,6 +242,7 @@ function LocaleMultiPrompt({
       query,
       highlightedLocale: filteredOptions[activeOptionIndex]?.code,
       preferHighlightedLocale,
+      customMapping,
     });
     if (!selectedLocale) {
       setError('Enter a valid locale (e.g., es fr de)');
