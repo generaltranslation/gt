@@ -1,5 +1,16 @@
 # gt-next
 
+## 11.4.1
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.4.2
+  - @generaltranslation/compiler@1.3.54
+  - gt-i18n@1.0.29
+  - gt-react@11.4.1
+  - @generaltranslation/react-core@11.4.1
+
 ## 11.4.0
 
 ### Minor Changes

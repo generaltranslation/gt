@@ -1,5 +1,14 @@
 # gt-sanity
 
+## 4.0.17
+
+### Patch Changes
+
+- [#2320](https://github.com/generaltranslation/gt/pull/2320) [`0cccb3e`](https://github.com/generaltranslation/gt/commit/0cccb3e6b84914e73ff73f5968d8dfc8f3e465c4) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Upload Sanity documents under readable file names (`sanity/<type>/<title>`, using the document's `title`, `name`, or `slug`) instead of the raw document id, so they are recognizable in the General Translation dashboard. File identity is unchanged, so existing translations are reused and files are simply renamed on the next upload.
+
+- Updated dependencies []:
+  - generaltranslation@9.4.2
+
 ## 4.0.16
 
 ### Patch Changes
