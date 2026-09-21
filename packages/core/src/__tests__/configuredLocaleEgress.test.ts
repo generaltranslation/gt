@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   downloadFiles,
   enqueueFileTranslations,
@@ -8,11 +8,6 @@ import {
 } from '@generaltranslation/api';
 import { GTRuntime } from '../runtime';
 import { GT } from '../index';
-import { _translateMany } from '../translate/translateMany';
-
-vi.mock('../translate/translateMany', () => ({
-  _translateMany: vi.fn(async () => []),
-}));
 
 vi.mock('@generaltranslation/api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@generaltranslation/api')>()),
@@ -45,26 +40,26 @@ const config = {
 
 describe.sequential('configured locales at GT service boundaries', () => {
   beforeEach(() => vi.clearAllMocks());
+  afterEach(() => vi.unstubAllGlobals());
 
   it('preserves configured identity while sending canonical runtime codes', async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => Response.json({}));
+    vi.stubGlobal('fetch', fetchMock);
     const gt = new GTRuntime(config);
     expect(gt.sourceLocale).toBe('en-us');
     expect(gt.locales).toEqual(['en-us', 'british', 'partner-uk']);
     await gt.translateMany(['Hello'], { targetLocale: 'british' });
-    expect(_translateMany).toHaveBeenLastCalledWith(
-      ['Hello'],
-      expect.objectContaining({ sourceLocale: 'en-US', targetLocale: 'en-GB' }),
-      expect.any(Object)
-    );
     await gt.translate('Hello', {
       sourceLocale: 'en-us',
       targetLocale: 'en-gb',
     });
-    expect(_translateMany).toHaveBeenLastCalledWith(
-      ['Hello'],
-      expect.objectContaining({ sourceLocale: 'en-US', targetLocale: 'en-GB' }),
-      expect.any(Object)
-    );
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    for (const [input, init] of fetchMock.mock.calls) {
+      expect(await new Request(input, init).json()).toMatchObject({
+        sourceLocale: 'en-US',
+        targetLocale: 'en-GB',
+      });
+    }
   });
 
   it('restores configured identities from service responses without dialect fallback', async () => {
