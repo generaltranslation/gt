@@ -149,10 +149,10 @@ export type TranslationRequestConfig = Pick<
 };
 
 /**
- * TranslateConfig is the explicit configuration for the named `translate` and
- * `translateMany` helpers exported from `generaltranslation/runtime`. Nothing is
- * read from the environment; a missing API key/provider or project ID fails
- * before any request is sent.
+ * TranslateConfig is the explicit configuration the shared translation helpers
+ * receive from the class and the tooling adapter. Nothing is read from the
+ * environment; a missing API key/provider or project ID fails before any
+ * request is sent.
  *
  * @param customMapping - Custom locale mapping used to canonicalize request locales.
  */

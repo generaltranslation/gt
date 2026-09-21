@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { API_VERSION } from '@generaltranslation/api';
 import { GT } from '../index';
-import { GTRuntime, translate, translateMany } from '../runtime';
+import { GTRuntime } from '../runtime';
+import { translate, translateMany } from '../translate/runtimeTranslate';
 import { createGtApiAdapter } from '../adapter/createGtApi';
 import { defaultRuntimeApiUrl } from '../settings/settingsUrls';
 import { defaultTimeout } from '../settings/settings';
@@ -57,7 +58,7 @@ describe.sequential('runtime translate helpers', () => {
       vi.stubGlobal('fetch', sharedFetch);
     });
 
-    it('sends the same wire payload from the class, named helper and adapter', async () => {
+    it('sends the same wire payload from the class, shared helper and adapter', async () => {
       const sources = [{ source: 'Hello', metadata: { context: 'greeting' } }];
       const options = { targetLocale: 'es-es', sourceLocale: 'en-us' };
 
@@ -94,7 +95,7 @@ describe.sequential('runtime translate helpers', () => {
       expect(fromRuntime[0]).toMatchObject({ success: true, locale: 'es-ES' });
     });
 
-    it('keeps record keys, array order and string shorthand in the named helpers', async () => {
+    it('keeps record keys, array order and string shorthand in the shared helpers', async () => {
       const record = await translateMany(
         { first: 'Hello', second: 'Goodbye' },
         'fr',

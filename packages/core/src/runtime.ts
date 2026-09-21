@@ -41,10 +41,6 @@ import {
 } from './translate/runtimeTranslate';
 import { TranslateOptions } from './types-dir/api/entry';
 
-// Named helpers share the class preparation and wire path without a class instance.
-export { translate, translateMany } from './translate/runtimeTranslate';
-export type { TranslateConfig } from './types';
-
 // ============================================================ //
 //                       Runtime Class                          //
 // ============================================================ //
@@ -270,7 +266,7 @@ export class GTRuntime {
   }
 
   /**
-   * Shares preparation with the named helpers while keeping instance defaults
+   * Shares preparation with the tooling adapter while keeping instance defaults
    * and the legacy positional timeout, where `0`/omitted select the default.
    */
   private _prepareTranslation(

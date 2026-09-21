@@ -133,8 +133,6 @@ it('loads packed ESM/CJS, typechecks NodeNext declarations and keeps the publish
       const { GT } = LOAD('generaltranslation');
       const { createGtApiAdapter } = LOAD('generaltranslation/internal');
       for (const result of [
-        await runtime.translate('Hello', 'es', config),
-        (await runtime.translateMany(['Hello'], 'es', config))[0],
         (await new runtime.GTRuntime(config).translateMany(['Hello'], 'es'))[0],
         await new GT(config).translate('Hello', 'es'),
         await createGtApiAdapter(config).translate('Hello', 'es'),
@@ -153,22 +151,21 @@ it('loads packed ESM/CJS, typechecks NodeNext declarations and keeps the publish
 
     const types = `
       import { GT } from 'generaltranslation';
-      import { GTRuntime, translate, translateMany, type TranslateConfig } from 'generaltranslation/runtime';
+      import { GTRuntime } from 'generaltranslation/runtime';
       import { createGtApiAdapter } from 'generaltranslation/internal';
       import type { TranslateManyResult, TranslateOptions, TranslationResult } from 'generaltranslation/types';
-      import { API_VERSION } from 'generaltranslation/api';
-      const config = { projectId: 'project', apiKey: 'key', baseUrl: 'https://example.test', timeoutMs: false, fetch, apiVersion: API_VERSION } satisfies TranslateConfig;
+      import { API_VERSION, type ApiClientConfig } from 'generaltranslation/api';
+      const config = { projectId: 'project', apiKey: 'key', baseUrl: 'https://example.test', timeoutMs: false, fetch, apiVersion: API_VERSION } satisfies ApiClientConfig;
       const options = { targetLocale: 'es' } satisfies TranslateOptions;
-      const array: Promise<TranslateManyResult> = translateMany(['Hello'], options, config);
-      const record: Promise<Record<string, TranslationResult>> = translateMany({ hello: 'Hello' }, 'es', config);
       const adapter = createGtApiAdapter(config);
-      const bound: Promise<Record<string, TranslationResult>> = adapter.translateMany({ hello: 'Hello' }, 'es', false);
-      translate('Hello', 'es', config);
+      const array: Promise<TranslateManyResult> = adapter.translateMany(['Hello'], options);
+      const record: Promise<Record<string, TranslationResult>> = adapter.translateMany({ hello: 'Hello' }, 'es', false);
+      adapter.translate('Hello', 'es', 0);
       new GT().translate('Hello', 'es', 0);
       new GTRuntime().translateMany(['Hello'], 'es', 0);
-      // @ts-expect-error timeoutMs is the only new timeout configuration spelling.
-      translate('Hello', 'es', { timeout: 10 });
-      void [array, record, bound];
+      // @ts-expect-error the adapter timeout is a number or false, not an options object.
+      adapter.translate('Hello', 'es', { timeout: 10 });
+      void [array, record];
     `;
     for (const extension of ['mts', 'cts']) {
       writeFileSync(join(fixture, `consumer.${extension}`), types);

@@ -1,6 +1,6 @@
-import type { translateMany, TranslateConfig } from '../../runtime.js';
 import type { createGtApiAdapter } from '../../adapter/createGtApi.js';
 import type {
+  TranslateConfig,
   TranslateManyResult,
   TranslationRequestConfig,
   TranslationResult,
@@ -14,20 +14,9 @@ type Equal<Left, Right> =
     : false;
 type Expect<Value extends true> = Value;
 
-declare const namedTranslateMany: typeof translateMany;
 declare const adapter: ReturnType<typeof createGtApiAdapter>;
-declare const config: TranslateConfig;
 
 // Array input infers an ordered array; record input infers a keyed record.
-const arrayResult = namedTranslateMany(['Hello'], 'es', config);
-const recordResult = namedTranslateMany({ key: 'Hello' }, 'es', config);
-type _ArrayInference = Expect<
-  Equal<Awaited<typeof arrayResult>, TranslateManyResult>
->;
-type _RecordInference = Expect<
-  Equal<Awaited<typeof recordResult>, Record<string, TranslationResult>>
->;
-
 const adapterArray = adapter.translateMany(['Hello'], { targetLocale: 'es' });
 const adapterRecord = adapter.translateMany({ key: 'Hello' }, 'es', false);
 type _AdapterArrayInference = Expect<

@@ -50,11 +50,11 @@ export function validateTranslationAuth<
 /**
  * @internal
  *
- * Shared preparation for every translation surface (named helpers, classes and
- * the tooling facade): normalize the string shorthand, validate auth, require a
- * target locale, default the source locale and canonicalize both for the wire.
+ * Shared preparation for every translation surface (classes and the tooling
+ * facade): normalize the string shorthand, validate auth, require a target
+ * locale, default the source locale and canonicalize both for the wire.
  *
- * @param defaults - Instance defaults supplied by GT/GTRuntime. Named and facade calls pass none.
+ * @param defaults - Instance defaults supplied by GT/GTRuntime. Facade calls pass none.
  */
 export function prepareTranslation(
   functionName: TranslateFunctionName,
@@ -97,15 +97,9 @@ export function prepareTranslation(
 }
 
 /**
- * Translates a single entry without constructing a GT instance.
- * Configuration is explicit: nothing is read from the environment.
- *
- * @example
- * const result = await translate('Hello', 'es', {
- *   projectId: 'project_123',
- *   apiKey: process.env.GT_API_KEY,
- *   timeoutMs: 10_000,
- * });
+ * @internal
+ * Translates a single entry with explicit configuration; the tooling adapter
+ * binds this to its current client configuration.
  */
 export async function translate(
   source: TranslateManyEntry,
@@ -122,15 +116,9 @@ export async function translate(
 }
 
 /**
- * Translates multiple entries in one request without constructing a GT instance.
+ * @internal
+ * Translates multiple entries in one request with explicit configuration.
  * Returns an array for array input and a record for record input.
- * Configuration is explicit: nothing is read from the environment.
- *
- * @example
- * const results = await translateMany(['Hello', 'Goodbye'], { targetLocale: 'es' }, {
- *   projectId: 'project_123',
- *   apiKey: process.env.GT_API_KEY,
- * });
  */
 export async function translateMany(
   sources: TranslateManyEntry[],
