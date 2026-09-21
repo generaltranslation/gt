@@ -3,6 +3,7 @@ import { api, gt, overrideConfig } from '../adapter/core';
 import { libraryDefaultLocale } from 'generaltranslation/internal';
 import type { SerializedDocument } from '../serialization/types';
 import type { ExistingTranslation } from './collectExistingTranslations';
+import { resolveFileName } from '../utils/fileNames';
 
 /**
  * Upload translations that already exist in Sanity for previously serialized
@@ -34,7 +35,7 @@ export async function uploadTranslations(
     withTranslations.map(({ info, serializedDocument, translations }) => ({
       source: {
         content: serializedDocument.content,
-        fileName: `sanity/${info.documentId}`,
+        fileName: resolveFileName(info),
         fileId: info.documentId,
         fileFormat: 'HTML' as const,
         locale: sourceLocale,
@@ -42,7 +43,7 @@ export async function uploadTranslations(
       },
       translations: translations.map(({ locale, content }) => ({
         content,
-        fileName: `sanity/${info.documentId}`,
+        fileName: resolveFileName(info),
         fileId: info.documentId,
         fileFormat: 'HTML' as const,
         locale,

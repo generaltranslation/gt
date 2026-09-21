@@ -42,6 +42,7 @@ export type WorkflowIdentifiers = {
 export type GTFile = {
   documentId: string;
   versionId?: string;
+  fileName?: string;
 };
 
 export interface Adapter {

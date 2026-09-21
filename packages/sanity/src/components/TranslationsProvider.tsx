@@ -53,6 +53,7 @@ import {
   getDocumentPublishedId,
   getPublishedId,
 } from '../utils/documentIds';
+import { getDocumentFileName } from '../utils/fileNames';
 import {
   getPreferencesStorageKey,
   readPreferences,
@@ -444,6 +445,7 @@ export const TranslationsProvider: React.FC<TranslationsProviderProps> = ({
               info: {
                 documentId: getDocumentPublishedId(doc),
                 versionId: doc._rev,
+                fileName: getDocumentFileName(doc),
               },
               serializedDocument: strategy.serialize(
                 cleanDoc as typeof doc,
