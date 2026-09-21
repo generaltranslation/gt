@@ -48,7 +48,7 @@ import { TranslateOptions } from './types-dir/api/entry';
  * Type representing the constructor parameters for the GT and GTRuntime classes.
  * @typedef {Object} GTConstructorParams
  * @property {string} [apiKey] - The API key for accessing the translation service
- * @property {string} [devApiKey] - The development API key for accessing the translation service
+ * @property {string} [devApiKey] - Deprecated alias for apiKey
  * @property {string} [sourceLocale] - The default source locale for translations
  * @property {string} [targetLocale] - The default target locale for translations
  * @property {string[]} [locales] - Array of supported locales
@@ -58,6 +58,7 @@ import { TranslateOptions } from './types-dir/api/entry';
  */
 export type GTConstructorParams = {
   apiKey?: string;
+  /** @deprecated Pass the key as `apiKey`; there is one kind of API key. */
   devApiKey?: string;
   sourceLocale?: string;
   targetLocale?: string;
@@ -93,7 +94,7 @@ export class GTRuntime {
   /** API key for accessing the translation service */
   apiKey?: string;
 
-  /** Development API key for accessing the translation service */
+  /** @deprecated Pass the key as `apiKey`; there is one kind of API key. */
   devApiKey?: string;
 
   /** User-token provider used when no API key is configured */
@@ -144,6 +145,7 @@ export class GTRuntime {
     // Read environment
     if (typeof process !== 'undefined') {
       this.apiKey ||= process.env?.GT_API_KEY;
+      // Deprecated with devApiKey; frameworks resolve the hot-reload key themselves.
       this.devApiKey ||= process.env?.GT_DEV_API_KEY;
       this.projectId ||= process.env?.GT_PROJECT_ID;
     }

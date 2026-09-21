@@ -9,23 +9,18 @@ import {
   createCliWizardSession,
   deleteCliWizardSession,
   getCliWizardSession,
-  type CliWizardSessionReadyResponse,
   type GetCliWizardSessionResponse,
 } from 'generaltranslation/api';
 import { unwrapApiResult } from 'generaltranslation/internal';
 
-type Credentials = Extract<CliWizardSessionReadyResponse, { apiKeys: unknown }>;
+type Credentials = { apiKey: string; projectId: string };
 
 // Fetches project ID and API key by opening the dashboard in the browser
 export async function retrieveCredentials(
-  settings: Settings,
-  keyType: 'development' | 'production' | 'all'
+  settings: Settings
 ): Promise<Credentials> {
   // Generate a session ID
-  const { sessionId } = await generateCredentialsSession(
-    settings.baseUrl,
-    keyType
-  );
+  const { sessionId } = await generateCredentialsSession(settings.baseUrl);
 
   const urlToOpen = `${settings.dashboardUrl}/cli/wizard/${sessionId}`;
   await import('open').then((open) =>
@@ -58,7 +53,7 @@ export async function retrieveCredentials(
 
         let credentials: Credentials;
         try {
-          credentials = normalizeCredentials(unwrapApiResult(result), keyType);
+          credentials = normalizeCredentials(unwrapApiResult(result));
         } catch (error) {
           clearInterval(interval);
           clearTimeout(timeout);
@@ -90,16 +85,13 @@ export async function retrieveCredentials(
   return credentials;
 }
 
-export async function generateCredentialsSession(
-  url: string,
-  keyType: 'development' | 'production' | 'all'
-): Promise<{
+export async function generateCredentialsSession(url: string): Promise<{
   sessionId: string;
 }> {
   try {
     return unwrapApiResult(
       await createCliWizardSession({
-        body: { keyType },
+        body: {},
         client: createApiClient({ baseUrl: url, retryPolicy: 'none' }),
       })
     );
@@ -108,18 +100,21 @@ export async function generateCredentialsSession(
   }
 }
 
+// The wizard issues one key; older servers repeat it per requested slot.
 function normalizeCredentials(
-  response: GetCliWizardSessionResponse,
-  keyType: 'development' | 'production' | 'all'
+  response: GetCliWizardSessionResponse
 ): Credentials {
-  if ('apiKeys' in response) return response;
-  if ('apiKey' in response && keyType !== 'all') {
-    return {
-      apiKeys: [{ key: response.apiKey, type: keyType }],
-      projectId: response.projectId,
-    };
-  }
-  throw new Error('The dashboard returned an unsupported credentials response');
+  const apiKey =
+    'apiKey' in response
+      ? response.apiKey
+      : 'apiKeys' in response
+        ? response.apiKeys[0]?.key
+        : undefined;
+  if (!apiKey || !('projectId' in response))
+    throw new Error(
+      'The dashboard returned an unsupported credentials response'
+    );
+  return { apiKey, projectId: response.projectId };
 }
 
 // Checks if the credentials are set in the environment variables
@@ -177,15 +172,10 @@ export async function setCredentials(
     prefix = 'REDWOOD_ENV_';
   }
 
+  // Only the hot-reload key: the CLI itself acts as the signed-in user, and
+  // CI keys are created deliberately rather than dropped into .env.local.
   envContent += `\n${prefix}GT_PROJECT_ID=${credentials.projectId}\n`;
-
-  for (const apiKey of credentials.apiKeys) {
-    if (apiKey.type === 'development') {
-      envContent += `${prefix || ''}GT_DEV_API_KEY=${apiKey.key}\n`;
-    } else {
-      envContent += `GT_API_KEY=${apiKey.key}\n`;
-    }
-  }
+  envContent += `${prefix}GT_DEV_API_KEY=${credentials.apiKey}\n`;
 
   // Ensure we don't have excessive newlines
   envContent = envContent.replace(/\n{3,}/g, '\n\n').trim() + '\n';

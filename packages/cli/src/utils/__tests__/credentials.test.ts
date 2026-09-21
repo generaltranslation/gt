@@ -15,23 +15,16 @@ describe('setCredentials', () => {
     fs.rmSync(appDirectory, { recursive: true, force: true });
   });
 
-  it('only exposes browser-safe Vite credentials', async () => {
+  it('writes only the project ID and the prefixed hot-reload key', async () => {
     await setCredentials(
-      {
-        projectId: 'project-id',
-        apiKeys: [
-          { type: 'development', key: 'gtx-dev-key' },
-          { type: 'production', key: 'gtx-api-key' },
-        ],
-      },
+      { projectId: 'project-id', apiKey: 'gtx-api-key' },
       'vite',
       appDirectory
     );
 
     const env = fs.readFileSync(path.join(appDirectory, '.env.local'), 'utf8');
     expect(env).toContain('VITE_GT_PROJECT_ID=project-id');
-    expect(env).toContain('VITE_GT_DEV_API_KEY=gtx-dev-key');
-    expect(env).toContain('GT_API_KEY=gtx-api-key');
-    expect(env).not.toContain('VITE_GT_API_KEY');
+    expect(env).toContain('VITE_GT_DEV_API_KEY=gtx-api-key');
+    expect(env).not.toContain('GT_API_KEY=');
   });
 });

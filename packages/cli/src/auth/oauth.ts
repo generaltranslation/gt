@@ -377,6 +377,14 @@ async function validTokens(
   return refreshTokens(options);
 }
 
+/** Whether a stored login exists for this API; does not refresh or contact the server. */
+export async function hasLogin(
+  options: UserTokenProviderOptions
+): Promise<boolean> {
+  const tokens = await readOAuthTokens(options.authBaseUrl ?? getAuthBaseUrl());
+  return tokens?.resource === toApiResource(options.baseUrl);
+}
+
 /** Construction is deliberately free of auth/storage/discovery I/O. */
 export function createUserTokenProvider(
   options: UserTokenProviderOptions

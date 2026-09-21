@@ -83,7 +83,7 @@ import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/diagnostics';
-import { login, logout, whoAmI } from '../auth/oauth.js';
+import { hasLogin, login, logout, whoAmI } from '../auth/oauth.js';
 import { UserAuthError } from '../auth/errors.js';
 import { resolveConfig } from '../config/resolveConfig.js';
 import { setupViteSPA } from '../setup/setupViteSPA.js';
@@ -127,6 +127,31 @@ const electronSetupError = createDiagnosticMessage({
   docsUrl: 'https://generaltranslation.com/docs/react',
 });
 
+/** .env.local never reaches production; the runtime key there is set on the host. */
+function productionRuntimeKeyGuidance(dashboardUrl: string): string {
+  return `${chalk.dim('For runtime translation in production, create an API key in the dashboard')} ${chalk.cyan(dashboardUrl)} ${chalk.dim('and set GT_API_KEY and GT_PROJECT_ID in your hosting environment.')}`;
+}
+
+async function loginInteractively(
+  baseUrl: string | undefined,
+  useBrowser = true
+): Promise<void> {
+  await login({
+    baseUrl,
+    noBrowser: !useBrowser,
+    onDeviceCode: ({ userCode, verificationUri, verificationUriComplete }) => {
+      logger.message(
+        `${useBrowser ? 'Opening your browser. If it does not open, on any device visit' : 'On any device, visit'} ${chalk.cyan(verificationUriComplete ?? verificationUri)} and ${verificationUriComplete ? 'confirm' : 'enter'} the code ${chalk.bold(userCode)}\nWaiting for approval...`
+      );
+    },
+    onAuthorizationUrl: (url) => {
+      logger.message(
+        `Opening your browser to sign in. If it does not open, visit:\n${chalk.cyan(url)}`
+      );
+    },
+  });
+}
+
 function createUserAuthError(whatHappened: string, error: unknown): string {
   if (error instanceof UserAuthError) return error.message;
   return createDiagnosticMessage({
@@ -160,7 +185,6 @@ export type UploadOptions = {
 
 export type LoginOptions = {
   config?: string;
-  keyType?: 'development' | 'production' | 'all';
 };
 
 export type GitSetupOptions = {
@@ -681,24 +705,10 @@ export class BaseCLI {
         try {
           // Tokens are bound to one API resource, so log in to the configured one.
           const baseUrl = resolveConfig(process.cwd())?.config.baseUrl;
-          await login({
-            baseUrl: typeof baseUrl === 'string' ? baseUrl : undefined,
-            noBrowser: !options.browser,
-            onDeviceCode: ({
-              userCode,
-              verificationUri,
-              verificationUriComplete,
-            }) => {
-              logger.message(
-                `${options.browser ? 'Opening your browser. If it does not open, on any device visit' : 'On any device, visit'} ${chalk.cyan(verificationUriComplete ?? verificationUri)} and ${verificationUriComplete ? 'confirm' : 'enter'} the code ${chalk.bold(userCode)}\nWaiting for approval...`
-              );
-            },
-            onAuthorizationUrl: (url) => {
-              logger.message(
-                `Opening your browser to sign in. If it does not open, visit:\n${chalk.cyan(url)}`
-              );
-            },
-          });
+          await loginInteractively(
+            typeof baseUrl === 'string' ? baseUrl : undefined,
+            options.browser
+          );
           logger.endCommand('Signed in successfully.');
         } catch (error) {
           logErrorAndExit(createUserAuthError('Sign in failed', error));
@@ -735,44 +745,19 @@ export class BaseCLI {
   protected setupLoginCommand(): void {
     this.program
       .command('auth')
-      .description('Generate General Translation API keys and project ID')
+      .description(
+        'Set up this project: save its project ID and a hot-reload API key to .env.local'
+      )
       .option(
         '-c, --config <path>',
         'Filepath to config file, by default gt.config.json',
         findFilepath(['gt.config.json'])
       )
-      .option(
-        '-t, --key-type <type>',
-        'Type of key to generate, production | development | all'
-      )
       .action(async (options: LoginOptions) => {
         displayHeader('Authenticating with General Translation...');
-        if (!options.keyType) {
-          options.keyType = await promptSelect<
-            'development' | 'production' | 'all'
-          >({
-            message: 'What type of API key would you like to generate?',
-            options: [
-              { value: 'development', label: 'Development' },
-              { value: 'production', label: 'Production' },
-              { value: 'all', label: 'Both' },
-            ],
-            defaultValue: 'all',
-          });
-        } else {
-          if (
-            options.keyType !== 'development' &&
-            options.keyType !== 'production' &&
-            options.keyType !== 'all'
-          ) {
-            logErrorAndExit(
-              'Invalid key type, must be development, production, or all'
-            );
-          }
-        }
         await this.handleLoginCommand(options);
         logger.endCommand(
-          `Done! ${options.keyType} keys have been generated and saved to your .env.local file.`
+          'Done! Your project ID and hot-reload API key have been saved to your .env.local file.'
         );
       });
   }
@@ -1170,36 +1155,45 @@ See https://www.npmjs.com/package/gt-vue`);
     }
 
     // Set credentials
-    if ((!isVite || !isUsingGT || usingCDN) && !areCredentialsSet()) {
-      const loginQuestion = useDefaults
-        ? true
-        : await promptConfirm({
-            message:
-              'Would you like the wizard to automatically generate API keys and a project ID for you?',
-            defaultValue: true,
-          });
-      if (loginQuestion) {
-        const settings = await generateSettings({});
-        const keyType = useDefaults
-          ? 'all'
-          : await promptSelect<'development' | 'production' | 'all'>({
-              message: 'What type of API key would you like to generate?',
-              options: [
-                { value: 'development', label: 'Development' },
-                { value: 'production', label: 'Production' },
-                { value: 'all', label: 'Both' },
-              ],
-              defaultValue: 'all',
+    if (!isVite || !isUsingGT || usingCDN) {
+      const settings = await generateSettings({});
+      // The CLI translates as the signed-in user; an API key in the
+      // environment takes precedence and needs no login. Signing in first also
+      // gives the dashboard wizard below an active session.
+      if (
+        !settings.apiKey &&
+        !(await hasLogin({ baseUrl: settings.baseUrl }))
+      ) {
+        try {
+          await loginInteractively(settings.baseUrl);
+          logger.message('Signed in successfully.');
+        } catch (error) {
+          logErrorAndExit(createUserAuthError('Sign in failed', error));
+        }
+      }
+      if (!areCredentialsSet()) {
+        const loginQuestion = useDefaults
+          ? true
+          : await promptConfirm({
+              message:
+                'Would you like the dashboard wizard to set up a project ID and hot-reload key for you?',
+              defaultValue: true,
             });
-        const credentials = await retrieveCredentials(settings, keyType);
-        await setCredentials(credentials, isVite ? 'vite' : settings.framework);
+        if (loginQuestion) {
+          const credentials = await retrieveCredentials(settings);
+          await setCredentials(
+            credentials,
+            isVite ? 'vite' : settings.framework
+          );
+          logger.message(productionRuntimeKeyGuidance(settings.dashboardUrl));
+        }
       }
     }
   }
   protected async handleLoginCommand(options: LoginOptions): Promise<void> {
     const settings = await generateSettings({ config: options.config });
-    const keyType = options.keyType || 'all';
-    const credentials = await retrieveCredentials(settings, keyType);
+    const credentials = await retrieveCredentials(settings);
     await setCredentials(credentials, settings.framework);
+    logger.message(productionRuntimeKeyGuidance(settings.dashboardUrl));
   }
 }

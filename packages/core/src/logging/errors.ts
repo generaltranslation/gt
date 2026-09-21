@@ -28,13 +28,6 @@ export const apiError = (status: number, statusText: string, error: string) =>
     details: error,
   });
 
-export const invalidAuthError = createDiagnosticMessage({
-  source: GT_SOURCE,
-  severity: 'Error',
-  whatHappened: 'Authentication failed',
-  fix: 'Check that your API key and project ID are correct',
-});
-
 export const noTargetLocaleProvidedError = (functionName: string) =>
   createDiagnosticMessage({
     source: GT_SOURCE,

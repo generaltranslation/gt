@@ -30,6 +30,7 @@ import {
 } from './credentialStore.js';
 import {
   createUserTokenProvider,
+  hasLogin,
   login,
   logout,
   whoAmI,
@@ -987,6 +988,15 @@ describe('OAuth session operations', () => {
     await expect(tokenProvider.getAccessToken()).rejects.toThrow('gt login');
     await writeOAuthTokens(tokens, authBaseUrl);
     expect(await tokenProvider.getAccessToken()).toBe('access-1');
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+  it('reports a stored login only for the API it was issued for, without network', async () => {
+    expect(await hasLogin({ baseUrl: apiBaseUrl, authBaseUrl })).toBe(false);
+    await writeOAuthTokens({ ...tokens, expiresAt: 0 }, authBaseUrl);
+    expect(await hasLogin({ baseUrl: apiBaseUrl, authBaseUrl })).toBe(true);
+    expect(
+      await hasLogin({ baseUrl: 'https://other.example', authBaseUrl })
+    ).toBe(false);
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
   it('refuses a login issued for a different API without refreshing it', async () => {
