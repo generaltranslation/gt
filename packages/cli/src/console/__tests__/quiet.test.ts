@@ -134,7 +134,6 @@ describe('quiet flag: clack chatter gating (default format)', () => {
 
   it('routes clack output to stderr and back to its default per setConsoleOutput()', async () => {
     const { logger } = await import('../logger.js');
-    expect(logger.getConsoleOutput()).toBe('stdout');
     logger.setConsoleOutput('stderr');
 
     logger.info('an info');
@@ -150,7 +149,6 @@ describe('quiet flag: clack chatter gating (default format)', () => {
 
     logger.setConsoleOutput('stdout');
     logger.info('back to default');
-    expect(logger.getConsoleOutput()).toBe('stdout');
     expect(clack.log.info).toHaveBeenLastCalledWith(
       'back to default',
       undefined

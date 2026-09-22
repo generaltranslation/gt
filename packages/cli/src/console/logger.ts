@@ -46,11 +46,6 @@ export type LogFormat = 'default' | 'json';
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 export type ConsoleOutput = 'stdout' | 'stderr';
 
-const CONSOLE_OUTPUT_FD: Record<ConsoleOutput, 1 | 2> = {
-  stdout: 1,
-  stderr: 2,
-};
-
 // Numeric ordering used to decide the quiet floor without lowering an
 // already-more-restrictive level chosen via GT_LOG_LEVEL.
 const LOG_LEVEL_RANK: Record<LogLevel, number> = {
@@ -183,10 +178,7 @@ class Logger {
     // Console output (stdout) - only for JSON format
     // For 'default' format, we use @clack/prompts directly
     if (format === 'json') {
-      this.pinoLogger = this.createPinoLogger(
-        CONSOLE_OUTPUT_FD.stdout,
-        logLevel
-      );
+      this.pinoLogger = this.createPinoLogger(process.stdout.fd, logLevel);
       this.consoleLoggers.stdout = this.pinoLogger;
     }
 
@@ -231,15 +223,11 @@ class Logger {
       this.pinoLogger.flush();
       const next =
         this.consoleLoggers[output] ??
-        this.createPinoLogger(CONSOLE_OUTPUT_FD[output], this.pinoLogger.level);
+        this.createPinoLogger(process[output].fd, this.pinoLogger.level);
       next.level = this.pinoLogger.level;
       this.consoleLoggers[output] = next;
       this.pinoLogger = next;
     }
-  }
-
-  getConsoleOutput(): ConsoleOutput {
-    return this.consoleOutput;
   }
 
   /**
