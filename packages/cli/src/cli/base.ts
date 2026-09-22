@@ -23,6 +23,7 @@ import fs from 'node:fs';
 import {
   FilesOptions,
   Settings,
+  SupportedFrameworks,
   SupportedLibraries,
   SetupOptions,
   TranslateFlags,
@@ -39,8 +40,12 @@ import {
 import { getDesiredLocales } from '../setup/userInput.js';
 import { installPackage } from '../utils/installPackage.js';
 import { getPackageManager } from '../utils/packageManager.js';
-import { retrieveCredentials, setCredentials } from '../utils/credentials.js';
-import { areCredentialsSet } from '../utils/credentials.js';
+import {
+  areCredentialsSet,
+  retrieveCredentials,
+  setCredentials,
+} from '../utils/credentials.js';
+import { provisionDevelopmentCredentials } from '../setup/developmentCredentials.js';
 import { upload } from './commands/upload.js';
 import { attachSharedFlags, attachTranslateFlags } from './flags.js';
 import { handleStage } from './commands/stage.js';
@@ -870,7 +875,9 @@ export class BaseCLI {
           await this.handleInitCommand(
             ranReactSetup,
             useDefaults,
-            framework.name === 'vite'
+            framework.name === 'vite',
+            options,
+            framework.name
           );
 
           logger.endCommand(
@@ -988,7 +995,8 @@ See https://www.npmjs.com/package/gt-vue`);
     ranReactSetup: boolean,
     useDefaults: boolean = false,
     isVite: boolean = false,
-    options?: SetupOptions
+    options?: SetupOptions,
+    framework?: SupportedFrameworks
   ): Promise<void> {
     const configFilepath =
       options?.config ||
@@ -1156,10 +1164,11 @@ See https://www.npmjs.com/package/gt-vue`);
 
     // Set credentials
     if (!isVite || !isUsingGT || usingCDN) {
-      const settings = await generateSettings({});
+      const settings = await generateSettings({ config: configFilepath });
+      const envFramework = framework ?? (isVite ? 'vite' : settings.framework);
       // The CLI translates as the signed-in user; an API key in the
-      // environment takes precedence and needs no login. Signing in first also
-      // gives the dashboard wizard below an active session.
+      // environment takes precedence and needs no login. A development key in
+      // .env.local is runtime-only and never stands in for either.
       if (
         !settings.apiKey &&
         !(await hasLogin({ baseUrl: settings.baseUrl }))
@@ -1171,20 +1180,27 @@ See https://www.npmjs.com/package/gt-vue`);
           logErrorAndExit(createUserAuthError('Sign in failed', error));
         }
       }
-      if (!areCredentialsSet()) {
-        const loginQuestion = useDefaults
+      if (!areCredentialsSet(settings, envFramework)) {
+        const provision = useDefaults
           ? true
           : await promptConfirm({
               message:
-                'Would you like the dashboard wizard to set up a project ID and hot-reload key for you?',
+                'Would you like to set up a project ID and hot-reload key in .env.local?',
               defaultValue: true,
             });
-        if (loginQuestion) {
-          const credentials = await retrieveCredentials(settings);
-          await setCredentials(
-            credentials,
-            isVite ? 'vite' : settings.framework
-          );
+        if (provision) {
+          try {
+            await provisionDevelopmentCredentials(settings, envFramework);
+          } catch (error) {
+            logErrorAndExit(
+              error instanceof UserAuthError
+                ? error.message
+                : createProjectCommandError(
+                    'Failed to set up the development credentials',
+                    error
+                  )
+            );
+          }
           logger.message(productionRuntimeKeyGuidance(settings.dashboardUrl));
         }
       }

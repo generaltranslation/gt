@@ -13,7 +13,27 @@ import {
 } from 'generaltranslation/api';
 import { unwrapApiResult } from 'generaltranslation/internal';
 
-type Credentials = { apiKey: string; projectId: string };
+export type Credentials = { apiKey: string; projectId: string };
+
+// Client-side frameworks only expose variables carrying their public prefix.
+const FRAMEWORK_ENV_PREFIXES: Partial<
+  Record<NonNullable<SupportedFrameworks>, string>
+> = {
+  'next-pages': 'NEXT_PUBLIC_',
+  vite: 'VITE_',
+  gatsby: 'GATSBY_',
+  react: 'REACT_APP_',
+  redwood: 'REDWOOD_ENV_',
+};
+
+/** Names of the runtime variables init writes for this framework. */
+export function getDevelopmentEnvNames(framework?: SupportedFrameworks) {
+  const prefix = (framework && FRAMEWORK_ENV_PREFIXES[framework]) ?? '';
+  return {
+    projectId: `${prefix}GT_PROJECT_ID`,
+    devApiKey: `${prefix}GT_DEV_API_KEY`,
+  };
+}
 
 // Fetches project ID and API key by opening the dashboard in the browser
 export async function retrieveCredentials(
@@ -117,12 +137,40 @@ function normalizeCredentials(
   return { apiKey, projectId: response.projectId };
 }
 
-// Checks if the credentials are set in the environment variables
-export function areCredentialsSet() {
-  return (
-    process.env.GT_PROJECT_ID &&
-    (process.env.GT_API_KEY || process.env.GT_DEV_API_KEY)
+/**
+ * Whether the project already has a runtime key: the framework's development
+ * key or an explicit production key. `settings.projectId` already resolves
+ * every framework prefix. This is not tooling auth; login is checked separately.
+ */
+export function areCredentialsSet(
+  settings: Pick<Settings, 'projectId' | 'apiKey'>,
+  framework?: SupportedFrameworks
+): boolean {
+  const { devApiKey } = getDevelopmentEnvNames(framework);
+  return Boolean(
+    settings.projectId && (settings.apiKey || process.env[devApiKey])
   );
+}
+
+// ponytail: line-oriented; multi-line quoted dotenv values are not handled.
+function upsertEnvAssignment(
+  content: string,
+  name: string,
+  value: string
+): string {
+  const assignsName = (line: string) =>
+    /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=/.exec(line)?.[1] === name;
+  const lines = content.split('\n');
+  const first = lines.findIndex(assignsName);
+  if (first === -1) {
+    const separator = content && !content.endsWith('\n') ? '\n' : '';
+    return `${content}${separator}${name}=${value}\n`;
+  }
+  // Replace the first assignment in place and drop stale duplicates.
+  return lines
+    .map((line, index) => (index === first ? `${name}=${value}` : line))
+    .filter((line, index) => index === first || !assignsName(line))
+    .join('\n');
 }
 
 // Sets the credentials in .env.local file
@@ -136,9 +184,6 @@ export async function setCredentials(
 
   // Check if .env.local exists, create it if it doesn't
   if (!fs.existsSync(envFile)) {
-    // File doesn't exist, create it
-    await fs.promises.writeFile(envFile, '', 'utf8');
-
     // Add .env.local to .gitignore if it exists
     const gitignoreFile = path.join(cwd, '.gitignore');
     if (fs.existsSync(gitignoreFile)) {
@@ -158,28 +203,20 @@ export async function setCredentials(
     envContent = await fs.promises.readFile(envFile, 'utf8');
   }
 
-  // Always append the credentials to the file
-  let prefix = '';
-  if (framework === 'next-pages') {
-    prefix = 'NEXT_PUBLIC_';
-  } else if (framework === 'vite') {
-    prefix = 'VITE_';
-  } else if (framework === 'gatsby') {
-    prefix = 'GATSBY_';
-  } else if (framework === 'react') {
-    prefix = 'REACT_APP_';
-  } else if (framework === 'redwood') {
-    prefix = 'REDWOOD_ENV_';
-  }
-
   // Only the hot-reload key: the CLI itself acts as the signed-in user, and
   // CI keys are created deliberately rather than dropped into .env.local.
-  envContent += `\n${prefix}GT_PROJECT_ID=${credentials.projectId}\n`;
-  envContent += `${prefix}GT_DEV_API_KEY=${credentials.apiKey}\n`;
+  // Other lines, comments, and any GT_API_KEY are left untouched.
+  const names = getDevelopmentEnvNames(framework);
+  envContent = upsertEnvAssignment(
+    envContent,
+    names.projectId,
+    credentials.projectId
+  );
+  envContent = upsertEnvAssignment(
+    envContent,
+    names.devApiKey,
+    credentials.apiKey
+  );
 
-  // Ensure we don't have excessive newlines
-  envContent = envContent.replace(/\n{3,}/g, '\n\n').trim() + '\n';
-
-  // Write the updated content back to the file
   await fs.promises.writeFile(envFile, envContent, 'utf8');
 }

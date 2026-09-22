@@ -2,6 +2,7 @@ import {
   createApiClient,
   createBranch,
   createProject,
+  createProjectApiKey,
   createTag,
   DEFAULT_BATCH_SIZE,
   downloadFiles,
@@ -13,6 +14,8 @@ import {
   getProjectInfo,
   getTranslationJobInfo,
   getTranslationStatus,
+  listOrgs,
+  listProjects,
   pollJobs,
   processBatches,
   processFileMoves,
@@ -24,6 +27,7 @@ import {
   type ApiClientConfig,
   type AwaitJobsOptions,
   type CreateBranchData,
+  type CreateProjectApiKeyData,
   type CreateProjectData,
   type CreateTagData,
   type DownloadFilesData,
@@ -61,6 +65,22 @@ import { decodeFileContent, encodeFileContent } from '../utils/base64';
 import { unwrapApiResult } from '../translate/utils/unwrapApiResult';
 import { validateFileFormatTransforms } from '../translate/utils/validateFileFormatTransform';
 import { isModelProvider, supportedModelProviders } from './modelProvider';
+
+// Follows nextCursor until the service reports the last page.
+async function collectPages<T>(
+  loadPage: (
+    cursor: string | undefined
+  ) => Promise<{ items: T[]; nextCursor: string | null }>
+): Promise<T[]> {
+  const items: T[] = [];
+  let cursor: string | undefined;
+  do {
+    const page = await loadPage(cursor);
+    items.push(...page.items);
+    cursor = page.nextCursor ?? undefined;
+  } while (cursor);
+  return items;
+}
 
 function normalizeJobStatus(job: GetTranslationJobInfoResponse[number]): {
   jobId: string;
@@ -442,6 +462,45 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
             ...body,
             defaultLocale: resolveServiceLocale(body.defaultLocale),
           },
+          client: getClient(),
+        })
+      );
+    },
+
+    /** Every project the configured credentials can read. */
+    async listProjects() {
+      return collectPages(async (cursor) => {
+        const { projects, nextCursor } = unwrapApiResult(
+          await listProjects({
+            query: cursor ? { cursor } : undefined,
+            client: getClient(),
+          })
+        );
+        return { items: projects, nextCursor };
+      });
+    },
+
+    /** Organizations where the signed-in user can create projects; user tokens only. */
+    async listOrgs() {
+      return collectPages(async (cursor) => {
+        const { orgs, nextCursor } = unwrapApiResult(
+          await listOrgs({
+            query: cursor ? { cursor } : undefined,
+            client: getClient(),
+          })
+        );
+        return { items: orgs, nextCursor };
+      });
+    },
+
+    async createProjectApiKey(
+      projectId: CreateProjectApiKeyData['path']['projectId'],
+      body: CreateProjectApiKeyData['body']
+    ) {
+      return unwrapApiResult(
+        await createProjectApiKey({
+          path: { projectId },
+          body,
           client: getClient(),
         })
       );

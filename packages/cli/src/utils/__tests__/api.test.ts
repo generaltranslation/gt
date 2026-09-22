@@ -728,4 +728,100 @@ describe('CLI API client', () => {
     expect(batchSizes).toEqual([100, 1]);
     expect(Object.keys(result.jobData)).toEqual(['job-1', 'job-2']);
   });
+
+  it('lists projects across every cursor page', async () => {
+    const cursors: Array<string | null> = [];
+    fetchMock.mockImplementation(async (request) => {
+      const url = new URL(request.url);
+      expect(url.pathname).toBe('/v2/projects');
+      cursors.push(url.searchParams.get('cursor'));
+      const page = cursors.length;
+      return Response.json({
+        projects: [
+          {
+            id: `p${page}`,
+            name: `Project ${page}`,
+            orgId: 'o',
+            orgName: 'Org',
+          },
+        ],
+        nextCursor: page < 3 ? `cursor-${page}` : null,
+      });
+    });
+
+    const projects = await api.listProjects();
+
+    expect(cursors).toEqual([null, 'cursor-1', 'cursor-2']);
+    expect(projects.map((project) => project.id)).toEqual(['p1', 'p2', 'p3']);
+  });
+
+  it('lists organizations across every cursor page', async () => {
+    const cursors: Array<string | null> = [];
+    fetchMock.mockImplementation(async (request) => {
+      const url = new URL(request.url);
+      expect(url.pathname).toBe('/v2/orgs');
+      cursors.push(url.searchParams.get('cursor'));
+      return Response.json({
+        orgs: [{ id: `o${cursors.length}`, name: 'Org' }],
+        nextCursor: cursors.length === 1 ? 'next' : null,
+      });
+    });
+
+    const orgs = await api.listOrgs();
+
+    expect(cursors).toEqual([null, 'next']);
+    expect(orgs.map((org) => org.id)).toEqual(['o1', 'o2']);
+  });
+
+  it('creates a project key with exactly the requested permissions', async () => {
+    let body: unknown;
+    fetchMock.mockImplementation(async (request) => {
+      expect(new URL(request.url).pathname).toBe('/v2/projects/p1/api-keys');
+      body = JSON.parse(await request.text());
+      return Response.json(
+        {
+          apiKey: {
+            id: 'key-id',
+            name: 'Dev',
+            key: 'gtx-secret',
+            projectId: 'p1',
+            type: 'production',
+          },
+        },
+        { status: 201 }
+      );
+    });
+
+    const result = await api.createProjectApiKey('p1', {
+      name: 'Dev',
+      permissions: ['project:translations:generate'],
+    });
+
+    expect(body).toEqual({
+      name: 'Dev',
+      permissions: ['project:translations:generate'],
+    });
+    expect(result.apiKey.key).toBe('gtx-secret');
+  });
+
+  it('surfaces a forbidden key creation as an ApiError', async () => {
+    fetchMock.mockResolvedValue(
+      Response.json(
+        { error: 'missing project:api_keys:write' },
+        { status: 403 }
+      )
+    );
+
+    await expect(
+      api.createProjectApiKey('p1', {
+        name: 'Dev',
+        permissions: ['project:translations:generate'],
+      })
+    ).rejects.toEqual(
+      expect.objectContaining<ApiError>({
+        code: 403,
+        message: 'missing project:api_keys:write',
+      })
+    );
+  });
 });

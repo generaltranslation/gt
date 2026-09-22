@@ -1,10 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createProject,
+  createProjectApiKey,
   downloadFiles,
   getFileInfo,
   getOrphanedFiles,
   getTranslationJobInfo,
+  listOrgs,
+  listProjects,
   publishFiles,
   submitUserEditDiffs,
   uploadTranslations,
@@ -18,10 +21,13 @@ import { createGtApiAdapter } from '../createGtApi';
 vi.mock('@generaltranslation/api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@generaltranslation/api')>()),
   createProject: vi.fn(),
+  createProjectApiKey: vi.fn(),
   downloadFiles: vi.fn(),
   getFileInfo: vi.fn(),
   getOrphanedFiles: vi.fn(),
   getTranslationJobInfo: vi.fn(),
+  listOrgs: vi.fn(),
+  listProjects: vi.fn(),
   publishFiles: vi.fn(),
   submitUserEditDiffs: vi.fn(),
   uploadTranslations: vi.fn(),
@@ -254,6 +260,85 @@ describe.sequential('createGtApiAdapter', () => {
       expect.objectContaining({
         path: { orgId: 'org-id' },
         body: { name: 'Project', defaultLocale: 'en-US' },
+      })
+    );
+  });
+
+  it('lists projects across every cursor page', async () => {
+    const project = (id: string) => ({
+      id,
+      name: id,
+      orgId: 'org-id',
+      orgName: 'Org',
+    });
+    vi.mocked(listProjects)
+      .mockResolvedValueOnce(
+        result({ projects: [project('p1')], nextCursor: 'cursor-1' })
+      )
+      .mockResolvedValueOnce(
+        result({ projects: [project('p2')], nextCursor: 'cursor-2' })
+      )
+      .mockResolvedValueOnce(
+        result({ projects: [project('p3')], nextCursor: null })
+      );
+    const adapter = createGtApiAdapter({
+      baseUrl: 'https://api.example.com',
+    });
+
+    const projects = await adapter.listProjects();
+
+    expect(projects.map((entry) => entry.id)).toEqual(['p1', 'p2', 'p3']);
+    expect(
+      vi.mocked(listProjects).mock.calls.map(([options]) => options.query)
+    ).toEqual([undefined, { cursor: 'cursor-1' }, { cursor: 'cursor-2' }]);
+  });
+
+  it('lists organizations across every cursor page', async () => {
+    vi.mocked(listOrgs)
+      .mockResolvedValueOnce(
+        result({ orgs: [{ id: 'o1', name: 'Org 1' }], nextCursor: 'next' })
+      )
+      .mockResolvedValueOnce(
+        result({ orgs: [{ id: 'o2', name: 'Org 2' }], nextCursor: null })
+      );
+    const adapter = createGtApiAdapter({
+      baseUrl: 'https://api.example.com',
+    });
+
+    const orgs = await adapter.listOrgs();
+
+    expect(orgs.map((org) => org.id)).toEqual(['o1', 'o2']);
+    expect(
+      vi.mocked(listOrgs).mock.calls.map(([options]) => options.query)
+    ).toEqual([undefined, { cursor: 'next' }]);
+  });
+
+  it('creates a project API key with exactly the requested permissions', async () => {
+    vi.mocked(createProjectApiKey).mockResolvedValue(
+      result({
+        apiKey: {
+          id: 'key-id',
+          name: 'Dev',
+          key: 'gtx-secret',
+          projectId: 'project-id',
+          type: 'production' as const,
+        },
+      })
+    );
+    const adapter = createGtApiAdapter({
+      baseUrl: 'https://api.example.com',
+    });
+
+    const { apiKey } = await adapter.createProjectApiKey('project-id', {
+      name: 'Dev',
+      permissions: ['project:translations:generate'],
+    });
+
+    expect(apiKey.key).toBe('gtx-secret');
+    expect(createProjectApiKey).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: { projectId: 'project-id' },
+        body: { name: 'Dev', permissions: ['project:translations:generate'] },
       })
     );
   });
