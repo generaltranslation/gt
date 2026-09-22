@@ -37,7 +37,7 @@ function json(status: number, body: unknown): Response {
 function fakeApi(handler: (request: Request) => Response) {
   return vi.fn<typeof fetch>(async (input, init) => {
     const request = new Request(input, init);
-    if (!request.url.startsWith(BASE_URL))
+    if (new URL(request.url).origin !== new URL(BASE_URL).origin)
       throw new Error(`Unexpected network request: ${request.url}`);
     return handler(request);
   });
@@ -151,6 +151,12 @@ describe('api-key create stdout isolation', () => {
     new ReactCLI(program, 'react');
     await program.parseAsync(args, { from: 'user' });
   }
+
+  it('rejects lookalike hosts in the offline HTTP stub', async () => {
+    await expect(
+      fetch('http://gt.invalid.attacker.invalid/v2/projects')
+    ).rejects.toThrow('Unexpected network request');
+  });
 
   it('prints exactly the secret on stdout and the settings chatter on stderr', async () => {
     await run();
