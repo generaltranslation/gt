@@ -2950,6 +2950,18 @@ describe('localizeStaticUrls links to pages outside translation scope', () => {
     expect(written).toBeUndefined();
   });
 
+  it('resolves folder links through index pages', async () => {
+    const written = await runWithFiles(
+      '[Products](/products/)',
+      ['products/index.mdx'],
+      {},
+      { docsUrlPattern: '/[locale]', experimentalHideDefaultLocale: true }
+    );
+
+    // The only candidate link is left alone, so nothing is written.
+    expect(written).toBeUndefined();
+  });
+
   it('localizes links whose translation lives at a transformed output path', async () => {
     // Docusaurus stores translations outside a locale-prefixed copy of the URL.
     const output = 'i18n/ja/docusaurus-plugin-content-docs/current/guide.mdx';

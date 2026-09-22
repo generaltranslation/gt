@@ -772,7 +772,7 @@
               "properties": {
                 "skipUntranslatedPages": {
                   "type": "boolean",
-                  "description": "Keep links to source pages that have no translation on the default locale, for sites where a missing localized page returns a 404 (such as Mintlify).",
+                  "description": "Keep links to source pages that have no translation on the default locale. Assumes URLs mirror source file paths and missing localized pages return a 404, as on Mintlify. Leave off for sites that serve untranslated pages at the localized URL, such as Docusaurus.",
                   "default": false
                 }
               },

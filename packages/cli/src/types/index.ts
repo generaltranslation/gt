@@ -331,8 +331,7 @@ export type AdditionalOptions = {
   experimentalLocalizeStaticUrls?:
     | boolean
     | {
-        // Keep links to source pages that have no translation on the default
-        // locale
+        // Keep links to source pages that have no translation
         skipUntranslatedPages?: boolean;
       };
   experimentalLocalizeRelativeAssets?: boolean; // Rewrites relative asset URLs in translated md/mdx files to valid paths
