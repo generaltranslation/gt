@@ -54,6 +54,7 @@ vi.mock('../../console/logger.js', () => ({
     flush: vi.fn(),
     info: vi.fn(),
     message: vi.fn(),
+    setConsoleOutput: vi.fn(),
     setQuiet: vi.fn(),
     startCommand: vi.fn(),
     step: vi.fn(),

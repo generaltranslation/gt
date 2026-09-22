@@ -236,11 +236,15 @@ export class BaseCLI {
       '-q, --quiet',
       'Suppress informational output; only warnings and errors are shown'
     );
-    // `gt api-key create` prints the new secret on stdout, so move every
-    // console diagnostic to stderr first: root hooks run before subclass
-    // hooks (version checks) and the action's settings resolution.
+    // Select console routing for this command before anything else logs:
+    // root hooks run before subclass hooks (version checks) and the action's
+    // settings resolution. `gt api-key create` prints the new secret on
+    // stdout, so its diagnostics go to stderr; every other command gets the
+    // historical default back (main() routes startup output to stderr).
     this.program.hook('preAction', (_thisCommand, actionCommand) => {
-      if (actionCommand.parent?.name() === 'api-key') logger.useStderr();
+      logger.setConsoleOutput(
+        actionCommand.parent?.name() === 'api-key' ? 'stderr' : 'stdout'
+      );
     });
     // Apply --quiet before any other hook or command action runs so the
     // singleton logger is muted for the rest of the invocation. The flag is a

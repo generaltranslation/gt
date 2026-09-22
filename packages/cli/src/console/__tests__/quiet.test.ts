@@ -132,9 +132,10 @@ describe('quiet flag: clack chatter gating (default format)', () => {
     expect(clack.log.success).toHaveBeenCalledWith('a success', undefined);
   });
 
-  it('routes clack output to stderr after useStderr()', async () => {
+  it('routes clack output to stderr and back to its default per setConsoleOutput()', async () => {
     const { logger } = await import('../logger.js');
-    logger.useStderr();
+    expect(logger.getConsoleOutput()).toBe('stdout');
+    logger.setConsoleOutput('stderr');
 
     logger.info('an info');
     logger.warn('a warning');
@@ -146,6 +147,14 @@ describe('quiet flag: clack chatter gating (default format)', () => {
     expect(clack.log.warn).toHaveBeenCalledWith('a warning', stderr);
     expect(clack.intro).toHaveBeenCalledWith(expect.any(String), stderr);
     expect(clack.spinner).toHaveBeenCalledWith(expect.objectContaining(stderr));
+
+    logger.setConsoleOutput('stdout');
+    logger.info('back to default');
+    expect(logger.getConsoleOutput()).toBe('stdout');
+    expect(clack.log.info).toHaveBeenLastCalledWith(
+      'back to default',
+      undefined
+    );
   });
 
   it('returns a silent spinner that emits nothing under quiet', async () => {
@@ -264,19 +273,34 @@ describe('quiet flag: pino level gating (json format)', () => {
     expect(pinoState.instances[0]?.level).toBe('error');
   });
 
-  it('recreates the console logger on stderr at the same level after useStderr()', async () => {
+  it('switches the console logger between stderr and stdout, keeping level and reusing instances', async () => {
     vi.stubEnv('GT_LOG_LEVEL', 'debug');
     const { logger } = await import('../logger.js');
     expect(pinoMock.destination).toHaveBeenLastCalledWith(1);
+    const [stdoutLogger] = pinoState.instances;
 
-    logger.useStderr();
+    logger.setConsoleOutput('stderr');
+    logger.setConsoleOutput('stderr');
     logger.warn('a warning');
 
-    expect(pinoState.instances[0]?.flush).toHaveBeenCalledOnce();
+    expect(stdoutLogger?.flush).toHaveBeenCalledOnce();
     expect(pinoMock.destination).toHaveBeenLastCalledWith(2);
-    expect(pinoState.instances[1]?.level).toBe('debug');
-    expect(pinoState.instances[1]?.warn).toHaveBeenCalledWith('a warning');
-    expect(pinoState.instances[0]?.warn).not.toHaveBeenCalled();
+    expect(pinoState.instances).toHaveLength(2);
+    const stderrLogger = pinoState.instances[1];
+    expect(stderrLogger?.level).toBe('debug');
+    expect(stderrLogger?.warn).toHaveBeenCalledWith('a warning');
+    expect(stdoutLogger?.warn).not.toHaveBeenCalled();
+
+    // Quiet raised the level while on stderr; the level follows the switch
+    // back and the original stdout logger is reused rather than recreated.
+    logger.setQuiet(true);
+    logger.setConsoleOutput('stdout');
+    logger.warn('back on stdout');
+    expect(pinoState.instances).toHaveLength(2);
+    expect(stderrLogger?.flush).toHaveBeenCalledOnce();
+    expect(stdoutLogger?.level).toBe('warn');
+    expect(stdoutLogger?.warn).toHaveBeenCalledWith('back on stdout');
+    expect(stderrLogger?.warn).toHaveBeenCalledTimes(1);
   });
 
   it('still routes warnings and errors to pino under quiet', async () => {

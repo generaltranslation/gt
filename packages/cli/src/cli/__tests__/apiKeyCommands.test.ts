@@ -38,7 +38,7 @@ vi.mock('../../console/logger.js', () => ({
     message: vi.fn(),
     success: vi.fn(),
     setQuiet: vi.fn(),
-    useStderr: vi.fn(),
+    setConsoleOutput: vi.fn(),
   },
 }));
 
@@ -125,8 +125,9 @@ describe('api-key create', () => {
     expect(stdout).toHaveBeenCalledTimes(1);
     expect(stdout).toHaveBeenCalledWith(`${SECRET}\n`);
     // Console diagnostics move to stderr before settings can log anything.
+    expect(logger.setConsoleOutput).toHaveBeenCalledWith('stderr');
     expect(
-      vi.mocked(logger.useStderr).mock.invocationCallOrder[0]
+      vi.mocked(logger.setConsoleOutput).mock.invocationCallOrder[0]
     ).toBeLessThan(vi.mocked(generateSettings).mock.invocationCallOrder[0]);
     // The secret never goes through the logger (and so never into a log file).
     for (const call of Object.values(logger)) {

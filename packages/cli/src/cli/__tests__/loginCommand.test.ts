@@ -16,7 +16,12 @@ vi.mock('../../console/logging.js', () => ({
   }),
 }));
 vi.mock('../../console/logger.js', () => ({
-  logger: { message: vi.fn(), endCommand: vi.fn(), setQuiet: vi.fn() },
+  logger: {
+    message: vi.fn(),
+    endCommand: vi.fn(),
+    setConsoleOutput: vi.fn(),
+    setQuiet: vi.fn(),
+  },
 }));
 
 import { login } from '../../auth/oauth.js';
