@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const distInitGTServerPath = join(packageRoot, 'dist/setup/initGT.server.mjs');
 const distClientPath = join(packageRoot, 'dist/index.client.mjs');
+const distSwcPluginPath = join(packageRoot, 'dist/gt_swc_plugin.wasm');
 
 function runNode(args: string[]): void {
   const result = spawnSync(process.execPath, args, {
@@ -125,6 +126,13 @@ describe('gt-next package exports', () => {
 
   const distIt = existsSync(distInitGTServerPath) ? it : it.skip;
   const distClientIt = existsSync(distClientPath) ? it : it.skip;
+  // Local JS-only builds (`build:no-swc-plugin`) need not ship the WASM, but
+  // full CI builds must, so this is gated on CI rather than on dist contents.
+  const swcPluginIt = process.env.CI ? it : it.skip;
+
+  swcPluginIt('ships the SWC plugin WASM alongside the built config', () => {
+    expect(existsSync(distSwcPluginPath)).toBe(true);
+  });
 
   distIt('keeps custom request functions visible to bundler aliases', () => {
     const serverBuild = readFileSync(distInitGTServerPath, 'utf8');

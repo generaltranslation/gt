@@ -29,24 +29,6 @@ import type {
   EnqueueFileTranslationsData,
   EnqueueFileTranslationsErrors,
   EnqueueFileTranslationsResponses,
-  FigmaPluginDownloadData,
-  FigmaPluginDownloadErrors,
-  FigmaPluginDownloadResponses,
-  FigmaPluginEnqueueData,
-  FigmaPluginEnqueueErrors,
-  FigmaPluginEnqueueResponses,
-  FigmaPluginImportTranslationsData,
-  FigmaPluginImportTranslationsErrors,
-  FigmaPluginImportTranslationsResponses,
-  FigmaPluginInfoData,
-  FigmaPluginInfoErrors,
-  FigmaPluginInfoResponses,
-  FigmaPluginStatusData,
-  FigmaPluginStatusErrors,
-  FigmaPluginStatusResponses,
-  FigmaPluginSyncData,
-  FigmaPluginSyncErrors,
-  FigmaPluginSyncResponses,
   GenerateProjectContextData,
   GenerateProjectContextErrors,
   GenerateProjectContextResponses,
@@ -71,6 +53,30 @@ import type {
   GetTranslationStatusData,
   GetTranslationStatusErrors,
   GetTranslationStatusResponses,
+  ListOrgsData,
+  ListOrgsErrors,
+  ListOrgsResponses,
+  ListProjectsData,
+  ListProjectsErrors,
+  ListProjectsResponses,
+  PluginDownloadData,
+  PluginDownloadErrors,
+  PluginDownloadResponses,
+  PluginEnqueueData,
+  PluginEnqueueErrors,
+  PluginEnqueueResponses,
+  PluginImportTranslationsData,
+  PluginImportTranslationsErrors,
+  PluginImportTranslationsResponses,
+  PluginInfoData,
+  PluginInfoErrors,
+  PluginInfoResponses,
+  PluginStatusData,
+  PluginStatusErrors,
+  PluginStatusResponses,
+  PluginSyncData,
+  PluginSyncErrors,
+  PluginSyncResponses,
   ProcessFileMovesData,
   ProcessFileMovesErrors,
   ProcessFileMovesResponses,
@@ -190,23 +196,19 @@ export const workspacePluginStatus = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Figma plugin info
+ * Plugin info
  *
- * Run the Figma plugin info command.
+ * Run the info command for a design-tool plugin.
  */
-export const figmaPluginInfo = <ThrowOnError extends boolean = false>(
-  options: Options<FigmaPluginInfoData, ThrowOnError>
+export const pluginInfo = <ThrowOnError extends boolean = false>(
+  options: Options<PluginInfoData, ThrowOnError>
 ) =>
-  options.client.post<
-    FigmaPluginInfoResponses,
-    FigmaPluginInfoErrors,
-    ThrowOnError
-  >({
+  options.client.post<PluginInfoResponses, PluginInfoErrors, ThrowOnError>({
     security: [
       { scheme: 'bearer', type: 'http' },
       { scheme: 'bearer', type: 'http' },
     ],
-    url: '/v1/integrations/figma-plugin/info',
+    url: '/v1/integrations/plugins/{provider}/info',
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -215,23 +217,19 @@ export const figmaPluginInfo = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Figma plugin sync
+ * Plugin sync
  *
- * Run the Figma plugin sync command.
+ * Run the sync command for a design-tool plugin.
  */
-export const figmaPluginSync = <ThrowOnError extends boolean = false>(
-  options: Options<FigmaPluginSyncData, ThrowOnError>
+export const pluginSync = <ThrowOnError extends boolean = false>(
+  options: Options<PluginSyncData, ThrowOnError>
 ) =>
-  options.client.post<
-    FigmaPluginSyncResponses,
-    FigmaPluginSyncErrors,
-    ThrowOnError
-  >({
+  options.client.post<PluginSyncResponses, PluginSyncErrors, ThrowOnError>({
     security: [
       { scheme: 'bearer', type: 'http' },
       { scheme: 'bearer', type: 'http' },
     ],
-    url: '/v1/integrations/figma-plugin/sync',
+    url: '/v1/integrations/plugins/{provider}/sync',
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -240,25 +238,23 @@ export const figmaPluginSync = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Figma plugin import-translations
+ * Plugin import-translations
  *
- * Run the Figma plugin import-translations command.
+ * Run the import-translations command for a design-tool plugin.
  */
-export const figmaPluginImportTranslations = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<FigmaPluginImportTranslationsData, ThrowOnError>
+export const pluginImportTranslations = <ThrowOnError extends boolean = false>(
+  options: Options<PluginImportTranslationsData, ThrowOnError>
 ) =>
   options.client.post<
-    FigmaPluginImportTranslationsResponses,
-    FigmaPluginImportTranslationsErrors,
+    PluginImportTranslationsResponses,
+    PluginImportTranslationsErrors,
     ThrowOnError
   >({
     security: [
       { scheme: 'bearer', type: 'http' },
       { scheme: 'bearer', type: 'http' },
     ],
-    url: '/v1/integrations/figma-plugin/import-translations',
+    url: '/v1/integrations/plugins/{provider}/import-translations',
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -267,23 +263,23 @@ export const figmaPluginImportTranslations = <
   });
 
 /**
- * Figma plugin enqueue
+ * Plugin enqueue
  *
- * Run the Figma plugin enqueue command.
+ * Run the enqueue command for a design-tool plugin.
  */
-export const figmaPluginEnqueue = <ThrowOnError extends boolean = false>(
-  options: Options<FigmaPluginEnqueueData, ThrowOnError>
+export const pluginEnqueue = <ThrowOnError extends boolean = false>(
+  options: Options<PluginEnqueueData, ThrowOnError>
 ) =>
   options.client.post<
-    FigmaPluginEnqueueResponses,
-    FigmaPluginEnqueueErrors,
+    PluginEnqueueResponses,
+    PluginEnqueueErrors,
     ThrowOnError
   >({
     security: [
       { scheme: 'bearer', type: 'http' },
       { scheme: 'bearer', type: 'http' },
     ],
-    url: '/v1/integrations/figma-plugin/enqueue',
+    url: '/v1/integrations/plugins/{provider}/enqueue',
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -292,23 +288,19 @@ export const figmaPluginEnqueue = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Figma plugin status
+ * Plugin status
  *
- * Run the Figma plugin status command.
+ * Run the status command for a design-tool plugin.
  */
-export const figmaPluginStatus = <ThrowOnError extends boolean = false>(
-  options: Options<FigmaPluginStatusData, ThrowOnError>
+export const pluginStatus = <ThrowOnError extends boolean = false>(
+  options: Options<PluginStatusData, ThrowOnError>
 ) =>
-  options.client.post<
-    FigmaPluginStatusResponses,
-    FigmaPluginStatusErrors,
-    ThrowOnError
-  >({
+  options.client.post<PluginStatusResponses, PluginStatusErrors, ThrowOnError>({
     security: [
       { scheme: 'bearer', type: 'http' },
       { scheme: 'bearer', type: 'http' },
     ],
-    url: '/v1/integrations/figma-plugin/status',
+    url: '/v1/integrations/plugins/{provider}/status',
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -317,23 +309,23 @@ export const figmaPluginStatus = <ThrowOnError extends boolean = false>(
   });
 
 /**
- * Figma plugin download
+ * Plugin download
  *
- * Run the Figma plugin download command.
+ * Run the download command for a design-tool plugin.
  */
-export const figmaPluginDownload = <ThrowOnError extends boolean = false>(
-  options: Options<FigmaPluginDownloadData, ThrowOnError>
+export const pluginDownload = <ThrowOnError extends boolean = false>(
+  options: Options<PluginDownloadData, ThrowOnError>
 ) =>
   options.client.post<
-    FigmaPluginDownloadResponses,
-    FigmaPluginDownloadErrors,
+    PluginDownloadResponses,
+    PluginDownloadErrors,
     ThrowOnError
   >({
     security: [
       { scheme: 'bearer', type: 'http' },
       { scheme: 'bearer', type: 'http' },
     ],
-    url: '/v1/integrations/figma-plugin/download',
+    url: '/v1/integrations/plugins/{provider}/download',
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -806,7 +798,7 @@ export const uploadTranslations = <ThrowOnError extends boolean = false>(
 /**
  * Create a Project API Key
  *
- * Create an API key for the selected Project. Requires project:api_keys:write and delegates only Project permissions held by the request identity.
+ * Create an API key for the selected Project. Requires project:api_keys:write. Select permissions to limit the key, or omit them to delegate all grantable Project permissions held by the request identity. Unavailable selections are rejected.
  */
 export const createProjectApiKey = <ThrowOnError extends boolean = false>(
   options: Options<CreateProjectApiKeyData, ThrowOnError>
@@ -826,6 +818,23 @@ export const createProjectApiKey = <ThrowOnError extends boolean = false>(
       'Content-Type': 'application/json',
       ...options.headers,
     },
+  });
+
+/**
+ * List Projects
+ *
+ * List Projects the request identity can read, ordered by ID. Requires project:files:read. Pass nextCursor as cursor to fetch the next page.
+ */
+export const listProjects = <ThrowOnError extends boolean = false>(
+  options: Options<ListProjectsData, ThrowOnError>
+) =>
+  options.client.get<ListProjectsResponses, ListProjectsErrors, ThrowOnError>({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/projects',
+    ...options,
   });
 
 /**
@@ -854,9 +863,25 @@ export const createProject = <ThrowOnError extends boolean = false>(
   });
 
 /**
+ * List Organizations
+ *
+ * List Organizations where the signed-in user can create Projects, ordered by ID. Accepts user tokens only and requires org:projects:create. Pass nextCursor as cursor to fetch the next page.
+ */
+export const listOrgs = <ThrowOnError extends boolean = false>(
+  options: Options<ListOrgsData, ThrowOnError>
+) =>
+  options.client.get<ListOrgsResponses, ListOrgsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/v2/orgs',
+    ...options,
+  });
+
+/**
  * Create a CLI wizard session
  *
  * Create a temporary session for CLI browser authentication.
+ *
+ * @deprecated
  */
 export const createCliWizardSession = <ThrowOnError extends boolean = false>(
   options: Options<CreateCliWizardSessionData, ThrowOnError>
@@ -878,6 +903,8 @@ export const createCliWizardSession = <ThrowOnError extends boolean = false>(
  * Delete a CLI wizard session
  *
  * Delete a completed or abandoned CLI wizard session.
+ *
+ * @deprecated
  */
 export const deleteCliWizardSession = <ThrowOnError extends boolean = false>(
   options: Options<DeleteCliWizardSessionData, ThrowOnError>
@@ -892,6 +919,8 @@ export const deleteCliWizardSession = <ThrowOnError extends boolean = false>(
  * Get a CLI wizard session
  *
  * Get credentials for a completed CLI wizard session or its current waiting status.
+ *
+ * @deprecated
  */
 export const getCliWizardSession = <ThrowOnError extends boolean = false>(
   options: Options<GetCliWizardSessionData, ThrowOnError>
