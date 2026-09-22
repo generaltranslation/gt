@@ -226,7 +226,10 @@ async function resolveEnvFile(
   });
   if (!entry) return undefined;
   // stat follows the link and fails on a dangling one.
-  const stat = await fs.promises.stat(envFile).catch(() => undefined);
+  const stat = await fs.promises.stat(envFile).catch((error) => {
+    if (error.code === 'ENOENT') return undefined;
+    throw error;
+  });
   if (!stat?.isFile()) throw new Error(unwritableEnvFileError(envFile));
   return {
     target: entry.isSymbolicLink()
@@ -250,6 +253,7 @@ async function writeEnvFileAtomically(
   try {
     await fs.promises.writeFile(temporaryPath, content, {
       encoding: 'utf8',
+      flag: 'wx',
       mode,
     });
     await fs.promises.chmod(temporaryPath, mode);

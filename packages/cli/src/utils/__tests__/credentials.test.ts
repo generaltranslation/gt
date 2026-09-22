@@ -210,10 +210,22 @@ describe('setCredentials', () => {
       expect(temporaryFiles()).toEqual([]);
     });
 
+    it('preserves filesystem errors while resolving an existing file', async () => {
+      fs.writeFileSync(envPath(), existing);
+      const error = Object.assign(new Error('EACCES: permission denied'), {
+        code: 'EACCES',
+      });
+      vi.spyOn(fs.promises, 'stat').mockRejectedValueOnce(error);
+
+      await expect(write()).rejects.toBe(error);
+      expect(readEnv()).toBe(existing);
+      expect(temporaryFiles()).toEqual([]);
+    });
+
     it('creates a new file readable only by the owner', async () => {
       await write();
 
-      expect(mode(envPath())).toBe(0o600);
+      if (process.platform !== 'win32') expect(mode(envPath())).toBe(0o600);
       expect(temporaryFiles()).toEqual([]);
     });
 
@@ -222,7 +234,7 @@ describe('setCredentials', () => {
 
       await write();
 
-      expect(mode(envPath())).toBe(0o644);
+      if (process.platform !== 'win32') expect(mode(envPath())).toBe(0o644);
       expect(readEnv()).toContain('KEEP=1\n');
     });
 
@@ -240,7 +252,7 @@ describe('setCredentials', () => {
       expect(fs.readFileSync(referent, 'utf8')).toBe(
         `${existing}VITE_GT_PROJECT_ID=project-id\nVITE_GT_DEV_API_KEY=gtx-api-key\n`
       );
-      expect(mode(referent)).toBe(0o640);
+      if (process.platform !== 'win32') expect(mode(referent)).toBe(0o640);
       expect(fs.readdirSync(sharedDirectory)).toEqual(['.env']);
       expect(fs.existsSync(path.join(appDirectory, '.gitignore'))).toBe(false);
     });
