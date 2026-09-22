@@ -2879,7 +2879,6 @@ describe('localizeStaticUrls links to pages outside translation scope', () => {
 
     await localizeStaticUrls(
       createSettings({
-        config: '/site/gt.config.json',
         files: {
           placeholderPaths: { mdx: ['/site/[locale]/test.mdx'] },
           resolvedPaths: {},
@@ -2889,7 +2888,9 @@ describe('localizeStaticUrls links to pages outside translation scope', () => {
         locales: ['ja'],
         options: options as StaticUrlSettings['options'],
       }),
-      ['ja']
+      ['ja'],
+      undefined,
+      '/site'
     );
     return written;
   };
@@ -2940,19 +2941,5 @@ describe('localizeStaticUrls links to pages outside translation scope', () => {
     );
 
     expect(written).toContain('[Create key](/ja/api-reference/create-key)');
-  });
-
-  it('treats a URL pattern prefix as a site base path when resolving pages', async () => {
-    const written = await runWithFiles(
-      '[Sandbox](/docs/products/sandbox) and [Guide](/docs/guide)',
-      ['/site/products/sandbox.mdx', '/site/guide.mdx', '/site/ja/guide.mdx'],
-      {
-        docsUrlPattern: '/docs/[locale]',
-        experimentalHideDefaultLocale: true,
-      }
-    );
-
-    expect(written).toContain('[Sandbox](/docs/products/sandbox)');
-    expect(written).toContain('[Guide](/docs/ja/guide)');
   });
 });

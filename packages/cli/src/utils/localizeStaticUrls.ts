@@ -27,61 +27,25 @@ const LOCALIZABLE_URL_ATTRIBUTES = new Set(['href']);
 const PAGE_EXTENSIONS = ['.mdx', '.md'];
 
 /**
- * Whether a root-relative docs URL resolves to a page file under `docsRoot`.
- * `/a/b#x` matches `a/b.mdx`, `a/b.md`, `a/b/index.mdx`, or `a/b/index.md`.
- * When the URL pattern has a prefix before `[locale]` (e.g. `/docs/[locale]`),
- * the path is also tried with that prefix removed, since it is often a site
- * base path rather than a directory.
+ * A link to an existing default-locale page whose localized page does not
+ * exist points outside translation scope, so it keeps the default locale.
+ * Links with no page file on either side, such as pages Mintlify generates
+ * from an OpenAPI spec, are still localized.
  */
-function urlResolvesToPage(
-  urlPath: string,
-  docsRoot: string,
-  patternHead: string
+function isUntranslatedPage(
+  originalUrl: string,
+  localizedUrl: string,
+  docsRoot: string
 ): boolean {
-  let clean = urlPath.split(/[?#]/)[0];
-  try {
-    clean = decodeURI(clean);
-  } catch {
-    // Keep the raw path when it is not valid URI encoding.
-  }
-  clean = clean.replace(/^\/+/, '').replace(/\/+$/, '');
-
-  const bases = [clean];
-  const prefix = patternHead.replace(/^\/+/, '').replace(/\/+$/, '');
-  if (prefix && (clean === prefix || clean.startsWith(`${prefix}/`))) {
-    bases.push(clean.slice(prefix.length).replace(/^\/+/, ''));
-  }
-
-  return bases.some((base) => {
-    if (PAGE_EXTENSIONS.includes(path.extname(base))) {
-      return fs.existsSync(path.join(docsRoot, base));
-    }
-    const candidates = PAGE_EXTENSIONS.flatMap((ext) => [
-      base ? `${base}${ext}` : `index${ext}`,
-      path.join(base, `index${ext}`),
-    ]);
-    return candidates.some((candidate) =>
-      fs.existsSync(path.join(docsRoot, candidate))
+  const isPage = (url: string) => {
+    const base = url.split(/[?#]/)[0].replace(/\/+$/, '');
+    return PAGE_EXTENSIONS.some(
+      (ext) =>
+        fs.existsSync(path.join(docsRoot, `${base}${ext}`)) ||
+        fs.existsSync(path.join(docsRoot, base, `index${ext}`))
     );
-  });
-}
-
-/**
- * A link keeps pointing at the default-locale page when that page exists but
- * its localized counterpart does not (the page is out of translation scope).
- * Links whose source cannot be resolved to a file, such as pages Mintlify
- * generates from an OpenAPI spec, keep the default localization behavior.
- */
-function isUntranslatedPageLink(
-  originalPath: string,
-  localizedPath: string,
-  docsRoot: string,
-  patternHead: string
-): boolean {
-  return (
-    urlResolvesToPage(originalPath, docsRoot, patternHead) &&
-    !urlResolvesToPage(localizedPath, docsRoot, patternHead)
-  );
+  };
+  return isPage(originalUrl) && !isPage(localizedUrl);
 }
 
 /**
@@ -239,7 +203,8 @@ export type StaticUrlSettings = StaticLocalizationSettings;
 export default async function localizeStaticUrls(
   settings: StaticUrlSettings,
   targetLocales?: string[],
-  includeFiles?: Set<string>
+  includeFiles?: Set<string>,
+  docsRoot?: string
 ) {
   if (
     !settings.files ||
@@ -249,10 +214,6 @@ export default async function localizeStaticUrls(
     return;
   }
   const { resolvedPaths: sourceFiles } = settings.files;
-  // Page paths in docs URLs are relative to the docs root, where the config lives.
-  const docsRoot = settings.config
-    ? path.dirname(path.resolve(settings.config))
-    : process.cwd();
 
   // Use filtered locales if provided, otherwise use all locales
   const locales = targetLocales || settings.locales;
@@ -323,7 +284,7 @@ export default async function localizeStaticUrls(
       // Get all files that are md or mdx
       const targetFiles = Object.values(filesMap).filter(
         (p) =>
-          (p.endsWith('.md') || p.endsWith('.mdx')) &&
+          PAGE_EXTENSIONS.some((ext) => p.endsWith(ext)) &&
           (!includeFiles || includeFiles.has(p))
       );
 
@@ -627,12 +588,7 @@ function transformMdxUrls(
       }
       if (
         docsRoot &&
-        isUntranslatedPageLink(
-          afterDomain,
-          transformedPath,
-          docsRoot,
-          patternHead
-        )
+        isUntranslatedPage(afterDomain, transformedPath, docsRoot)
       ) {
         return null;
       }
@@ -667,10 +623,7 @@ function transformMdxUrls(
       return null;
     }
 
-    if (
-      docsRoot &&
-      isUntranslatedPageLink(originalUrl, newUrl, docsRoot, patternHead)
-    ) {
+    if (docsRoot && isUntranslatedPage(originalUrl, newUrl, docsRoot)) {
       return null;
     }
 

@@ -289,10 +289,9 @@ export type StaticLocalizationFiles = Pick<
 export type StaticLocalizationSettings = Pick<
   Settings,
   'defaultLocale' | 'locales' | 'options'
-> &
-  Partial<Pick<Settings, 'config'>> & {
-    files?: StaticLocalizationFiles | null;
-  };
+> & {
+  files?: StaticLocalizationFiles | null;
+};
 
 export type BranchOptions = {
   currentBranch?: string;
