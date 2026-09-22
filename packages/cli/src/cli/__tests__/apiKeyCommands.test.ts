@@ -38,6 +38,7 @@ vi.mock('../../console/logger.js', () => ({
     message: vi.fn(),
     success: vi.fn(),
     setQuiet: vi.fn(),
+    useStderr: vi.fn(),
   },
 }));
 
@@ -123,6 +124,10 @@ describe('api-key create', () => {
     });
     expect(stdout).toHaveBeenCalledTimes(1);
     expect(stdout).toHaveBeenCalledWith(`${SECRET}\n`);
+    // Console diagnostics move to stderr before settings can log anything.
+    expect(
+      vi.mocked(logger.useStderr).mock.invocationCallOrder[0]
+    ).toBeLessThan(vi.mocked(generateSettings).mock.invocationCallOrder[0]);
     // The secret never goes through the logger (and so never into a log file).
     for (const call of Object.values(logger)) {
       expect(JSON.stringify(vi.mocked(call).mock.calls)).not.toContain(SECRET);
@@ -162,7 +167,7 @@ describe('api-key create', () => {
     ],
     [
       ['--name', 'CI', '--permission', 'project:files:read', 'org:admin'],
-      /argument 'org:admin' is invalid\. Expected one of: project:write, .*project:translations:enqueue\./,
+      /argument 'org:admin' is invalid\. Allowed choices are project:write, .*project:translations:enqueue\./,
     ],
   ])('rejects %j before any request', async (args, message) => {
     await expect(run(args)).rejects.toThrow(message);

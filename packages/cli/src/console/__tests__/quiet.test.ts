@@ -116,8 +116,8 @@ describe('quiet flag: clack chatter gating (default format)', () => {
     logger.warn('a warning');
     logger.error('an error');
 
-    expect(clack.log.warn).toHaveBeenCalledWith('a warning');
-    expect(clack.log.error).toHaveBeenCalledWith('an error');
+    expect(clack.log.warn).toHaveBeenCalledWith('a warning', undefined);
+    expect(clack.log.error).toHaveBeenCalledWith('an error', undefined);
   });
 
   it('emits chatter normally when not quiet', async () => {
@@ -127,9 +127,25 @@ describe('quiet flag: clack chatter gating (default format)', () => {
     logger.step('a step');
     logger.success('a success');
 
-    expect(clack.log.info).toHaveBeenCalledWith('an info');
-    expect(clack.log.step).toHaveBeenCalledWith('a step');
-    expect(clack.log.success).toHaveBeenCalledWith('a success');
+    expect(clack.log.info).toHaveBeenCalledWith('an info', undefined);
+    expect(clack.log.step).toHaveBeenCalledWith('a step', undefined);
+    expect(clack.log.success).toHaveBeenCalledWith('a success', undefined);
+  });
+
+  it('routes clack output to stderr after useStderr()', async () => {
+    const { logger } = await import('../logger.js');
+    logger.useStderr();
+
+    logger.info('an info');
+    logger.warn('a warning');
+    logger.startCommand('start');
+    logger.createSpinner();
+
+    const stderr = { output: process.stderr };
+    expect(clack.log.info).toHaveBeenCalledWith('an info', stderr);
+    expect(clack.log.warn).toHaveBeenCalledWith('a warning', stderr);
+    expect(clack.intro).toHaveBeenCalledWith(expect.any(String), stderr);
+    expect(clack.spinner).toHaveBeenCalledWith(expect.objectContaining(stderr));
   });
 
   it('returns a silent spinner that emits nothing under quiet', async () => {
@@ -246,6 +262,21 @@ describe('quiet flag: pino level gating (json format)', () => {
     const { logger } = await import('../logger.js');
     logger.setQuiet(true);
     expect(pinoState.instances[0]?.level).toBe('error');
+  });
+
+  it('recreates the console logger on stderr at the same level after useStderr()', async () => {
+    vi.stubEnv('GT_LOG_LEVEL', 'debug');
+    const { logger } = await import('../logger.js');
+    expect(pinoMock.destination).toHaveBeenLastCalledWith(1);
+
+    logger.useStderr();
+    logger.warn('a warning');
+
+    expect(pinoState.instances[0]?.flush).toHaveBeenCalledOnce();
+    expect(pinoMock.destination).toHaveBeenLastCalledWith(2);
+    expect(pinoState.instances[1]?.level).toBe('debug');
+    expect(pinoState.instances[1]?.warn).toHaveBeenCalledWith('a warning');
+    expect(pinoState.instances[0]?.warn).not.toHaveBeenCalled();
   });
 
   it('still routes warnings and errors to pino under quiet', async () => {

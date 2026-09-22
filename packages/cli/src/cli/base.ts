@@ -1,4 +1,4 @@
-import { Command, InvalidArgumentError } from 'commander';
+import { Command, InvalidArgumentError, Option } from 'commander';
 import { ProjectApiKeyPermission } from 'generaltranslation/api';
 import {
   DEFAULT_TRANSLATIONS_DIR,
@@ -121,26 +121,10 @@ function createProjectCommandError(
   });
 }
 
-const API_KEY_PERMISSIONS = Object.values(ProjectApiKeyPermission);
-
 function parseApiKeyName(value: string): string {
   const name = value.trim();
   if (!name) throw new InvalidArgumentError('The key name cannot be empty.');
   return name;
-}
-
-// Permissions are validated before any request; the server then grants the
-// requested set all-or-nothing, so omitting them would delegate everything.
-function parseApiKeyPermission(
-  value: string,
-  previous: ProjectApiKeyPermission[] = []
-): ProjectApiKeyPermission[] {
-  if (!API_KEY_PERMISSIONS.includes(value as ProjectApiKeyPermission)) {
-    throw new InvalidArgumentError(
-      `Expected one of: ${API_KEY_PERMISSIONS.join(', ')}.`
-    );
-  }
-  return [...previous, value as ProjectApiKeyPermission];
 }
 
 const electronSetupError = createDiagnosticMessage({
@@ -252,6 +236,12 @@ export class BaseCLI {
       '-q, --quiet',
       'Suppress informational output; only warnings and errors are shown'
     );
+    // `gt api-key create` prints the new secret on stdout, so move every
+    // console diagnostic to stderr first: root hooks run before subclass
+    // hooks (version checks) and the action's settings resolution.
+    this.program.hook('preAction', (_thisCommand, actionCommand) => {
+      if (actionCommand.parent?.name() === 'api-key') logger.useStderr();
+    });
     // Apply --quiet before any other hook or command action runs so the
     // singleton logger is muted for the rest of the invocation. The flag is a
     // global root option, so commander resolves it in any position and for
@@ -481,10 +471,12 @@ export class BaseCLI {
           'Create a project API key with the requested permissions and print it once'
         )
         .requiredOption('--name <name>', 'Key name', parseApiKeyName)
-        .requiredOption(
-          '--permission <permissions...>',
-          `Permissions to grant (${API_KEY_PERMISSIONS.join(', ')})`,
-          parseApiKeyPermission
+        // Validated before any request; the server grants the requested set
+        // all-or-nothing, so omitting permissions would delegate everything.
+        .addOption(
+          new Option('--permission <permissions...>', 'Permissions to grant')
+            .choices(Object.values(ProjectApiKeyPermission))
+            .makeOptionMandatory()
         )
     ).action(
       async (
