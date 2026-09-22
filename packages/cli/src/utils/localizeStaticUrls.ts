@@ -1,5 +1,4 @@
 import * as fs from 'fs';
-import * as path from 'path';
 import type { StaticLocalizationSettings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import micromatch from 'micromatch';
@@ -27,25 +26,30 @@ const LOCALIZABLE_URL_ATTRIBUTES = new Set(['href']);
 const PAGE_EXTENSIONS = ['.mdx', '.md'];
 
 /**
- * A link to an existing default-locale page whose localized page does not
- * exist points outside translation scope, so it keeps the default locale.
- * Links with no page file on either side, such as pages Mintlify generates
- * from an OpenAPI spec, are still localized.
+ * The page file a root-relative docs URL points to, relative to the working
+ * directory like file mapping keys: `/a/b#x` -> `a/b.mdx` or `a/b.md`.
  */
-function isUntranslatedPage(
-  originalUrl: string,
+function findPage(url: string): string | undefined {
+  const base = url.split(/[?#]/)[0].replace(/^\/+|\/+$/g, '');
+  return PAGE_EXTENSIONS.map((ext) => `${base}${ext}`).find((page) =>
+    fs.existsSync(page)
+  );
+}
+
+/**
+ * Whether a URL points to a source page with no translation on disk, either at
+ * its mapped output path or at the localized URL. URLs with no source page,
+ * such as pages generated from an OpenAPI spec, are not missing a translation.
+ */
+function translationMissing(
+  url: string,
   localizedUrl: string,
-  docsRoot: string
+  localizedFiles: Record<string, string>
 ): boolean {
-  const isPage = (url: string) => {
-    const base = url.split(/[?#]/)[0].replace(/\/+$/, '');
-    return PAGE_EXTENSIONS.some(
-      (ext) =>
-        fs.existsSync(path.join(docsRoot, `${base}${ext}`)) ||
-        fs.existsSync(path.join(docsRoot, base, `index${ext}`))
-    );
-  };
-  return isPage(originalUrl) && !isPage(localizedUrl);
+  const sourcePage = findPage(url);
+  if (!sourcePage) return false;
+  const mappedPage = localizedFiles[sourcePage];
+  return !(mappedPage && fs.existsSync(mappedPage)) && !findPage(localizedUrl);
 }
 
 /**
@@ -203,8 +207,7 @@ export type StaticUrlSettings = StaticLocalizationSettings;
 export default async function localizeStaticUrls(
   settings: StaticUrlSettings,
   targetLocales?: string[],
-  includeFiles?: Set<string>,
-  docsRoot?: string
+  includeFiles?: Set<string>
 ) {
   if (
     !settings.files ||
@@ -306,7 +309,7 @@ export default async function localizeStaticUrls(
             settings.options?.docsUrlPattern,
             settings.options?.excludeStaticUrls,
             settings.options?.baseDomain,
-            docsRoot
+            filesMap
           );
           // Only write the file if there were changes
           if (result.hasChanges) {
@@ -487,7 +490,7 @@ function transformMdxUrls(
   pattern: string = '/[locale]',
   exclude: string[] = [],
   baseDomain?: string,
-  docsRoot?: string
+  localizedFiles?: Record<string, string>
 ): UrlTransformResult {
   const transformedUrls: Array<{
     originalPath: string;
@@ -587,8 +590,8 @@ function transformMdxUrls(
         return null;
       }
       if (
-        docsRoot &&
-        isUntranslatedPage(afterDomain, transformedPath, docsRoot)
+        localizedFiles &&
+        translationMissing(afterDomain, transformedPath, localizedFiles)
       ) {
         return null;
       }
@@ -623,7 +626,11 @@ function transformMdxUrls(
       return null;
     }
 
-    if (docsRoot && isUntranslatedPage(originalUrl, newUrl, docsRoot)) {
+    // Links to pages with no translation keep the default locale.
+    if (
+      localizedFiles &&
+      translationMissing(originalUrl, newUrl, localizedFiles)
+    ) {
       return null;
     }
 
@@ -817,7 +824,7 @@ function localizeStaticUrlsForFile(
   pattern: string = '/[locale]', // eg /docs/[locale] or /[locale]
   exclude: string[] = [],
   baseDomain?: string,
-  docsRoot?: string
+  localizedFiles?: Record<string, string>
 ): UrlTransformResult {
   // Use AST-based transformation for MDX files
   return transformMdxUrls(
@@ -828,7 +835,7 @@ function localizeStaticUrlsForFile(
     pattern,
     exclude,
     baseDomain || '',
-    docsRoot
+    localizedFiles
   );
 }
 

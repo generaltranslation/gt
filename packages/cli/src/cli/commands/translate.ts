@@ -1,4 +1,3 @@
-import path from 'node:path';
 import { EnqueueFilesResult } from 'generaltranslation/types';
 import { TranslateFlags } from '../../types/index.js';
 import { Settings } from '../../types/index.js';
@@ -103,8 +102,7 @@ export async function postProcessTranslations(
       await localizeStaticUrls(
         settings,
         nonDefaultLocales,
-        postProcessIncludes,
-        path.dirname(settings.config)
+        postProcessIncludes
       );
     }
   }

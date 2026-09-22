@@ -2860,12 +2860,14 @@ describe('localizeStaticUrls links to pages outside translation scope', () => {
     vi.clearAllMocks();
   });
 
+  // Paths are relative to the working directory, like file mapping entries.
   const runWithFiles = async (
     fileContent: string,
     existingFiles: string[],
+    mapping: Record<string, string>,
     options: Record<string, unknown>
   ): Promise<string | undefined> => {
-    const existing = new Set(['/site/ja/test.mdx', ...existingFiles]);
+    const existing = new Set(['ja/test.mdx', ...existingFiles]);
     vi.mocked(fs.existsSync).mockImplementation((p) => existing.has(String(p)));
     vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
     let written: string | undefined;
@@ -2874,13 +2876,13 @@ describe('localizeStaticUrls links to pages outside translation scope', () => {
       return Promise.resolve();
     });
     vi.mocked(createFileMapping).mockReturnValue({
-      ja: { 'test.mdx': '/site/ja/test.mdx' },
+      ja: { 'test.mdx': 'ja/test.mdx', ...mapping },
     });
 
     await localizeStaticUrls(
       createSettings({
         files: {
-          placeholderPaths: { mdx: ['/site/[locale]/test.mdx'] },
+          placeholderPaths: { mdx: ['[locale]/test.mdx'] },
           resolvedPaths: {},
           transformPaths: {},
         },
@@ -2888,9 +2890,7 @@ describe('localizeStaticUrls links to pages outside translation scope', () => {
         locales: ['ja'],
         options: options as StaticUrlSettings['options'],
       }),
-      ['ja'],
-      undefined,
-      '/site'
+      ['ja']
     );
     return written;
   };
@@ -2898,7 +2898,8 @@ describe('localizeStaticUrls links to pages outside translation scope', () => {
   it('keeps links to untranslated pages on the default locale when the default locale is hidden', async () => {
     const written = await runWithFiles(
       '[Sandbox](/products/sandbox#write_file) <Card href="/products/sandbox">x</Card> [Guide](/guide)',
-      ['/site/products/sandbox.mdx', '/site/guide.mdx', '/site/ja/guide.mdx'],
+      ['products/sandbox.mdx', 'guide.mdx', 'ja/guide.mdx'],
+      { 'guide.mdx': 'ja/guide.mdx' },
       { docsUrlPattern: '/[locale]', experimentalHideDefaultLocale: true }
     );
 
@@ -2910,11 +2911,8 @@ describe('localizeStaticUrls links to pages outside translation scope', () => {
   it('keeps links to untranslated pages on the default locale when the default locale is shown', async () => {
     const written = await runWithFiles(
       '[Sandbox](/en/products/sandbox) and [Guide](/en/guide)',
-      [
-        '/site/en/products/sandbox.mdx',
-        '/site/en/guide.mdx',
-        '/site/ja/guide.md',
-      ],
+      ['en/products/sandbox.mdx', 'en/guide.mdx', 'ja/guide.md'],
+      { 'en/guide.mdx': 'ja/guide.md' },
       { docsUrlPattern: '/[locale]' }
     );
 
@@ -2922,10 +2920,11 @@ describe('localizeStaticUrls links to pages outside translation scope', () => {
     expect(written).toContain('[Guide](/ja/guide)');
   });
 
-  it('resolves directory links through index pages', async () => {
+  it('keeps links to pages whose translation has not been written yet', async () => {
     const written = await runWithFiles(
-      '[Products](/products/)',
-      ['/site/products/index.mdx'],
+      '[Guide](/guide)',
+      ['guide.mdx'],
+      { 'guide.mdx': 'ja/guide.mdx' },
       { docsUrlPattern: '/[locale]', experimentalHideDefaultLocale: true }
     );
 
@@ -2933,10 +2932,35 @@ describe('localizeStaticUrls links to pages outside translation scope', () => {
     expect(written).toBeUndefined();
   });
 
+  it('localizes links whose translation lives at a transformed output path', async () => {
+    // Docusaurus stores translations outside a locale-prefixed copy of the URL.
+    const output = 'i18n/ja/docusaurus-plugin-content-docs/current/guide.mdx';
+    const written = await runWithFiles(
+      '[Guide](/docs/guide)',
+      ['docs/guide.mdx', output],
+      { 'docs/guide.mdx': output },
+      { docsUrlPattern: '/[locale]', experimentalHideDefaultLocale: true }
+    );
+
+    expect(written).toContain('[Guide](/ja/docs/guide)');
+  });
+
+  it('localizes links to translations that exist outside the file mapping', async () => {
+    const written = await runWithFiles(
+      '[Guide](/guide)',
+      ['guide.mdx', 'ja/guide.mdx'],
+      {},
+      { docsUrlPattern: '/[locale]', experimentalHideDefaultLocale: true }
+    );
+
+    expect(written).toContain('[Guide](/ja/guide)');
+  });
+
   it('still localizes links whose source is not a page file, such as generated OpenAPI pages', async () => {
     const written = await runWithFiles(
       '[Create key](/api-reference/create-key)',
       [],
+      {},
       { docsUrlPattern: '/[locale]', experimentalHideDefaultLocale: true }
     );
 
