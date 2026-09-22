@@ -82,10 +82,10 @@ export default (_env, argv) => {
         // Production serves the committed translation files, so it inlines
         // empty strings and never embeds a key in the bundle.
         'process.env.GT_PROJECT_ID': JSON.stringify(
-          isProduction ? '' : (process.env.GT_PROJECT_ID ?? '')
+          isProduction ? '' : (process.env.REACT_APP_GT_PROJECT_ID ?? '')
         ),
         'process.env.GT_DEV_API_KEY': JSON.stringify(
-          isProduction ? '' : (process.env.GT_DEV_API_KEY ?? '')
+          isProduction ? '' : (process.env.REACT_APP_GT_DEV_API_KEY ?? '')
         ),
       }),
     ],
