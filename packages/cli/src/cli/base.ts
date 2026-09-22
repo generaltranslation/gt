@@ -1162,8 +1162,15 @@ See https://www.npmjs.com/package/gt-vue`);
       spinner.stop(chalk.green('Installed gt.'));
     }
 
-    // Set credentials
-    if (!isVite || !isUsingGT || usingCDN) {
+    const localVite = isVite && isUsingGT && !usingCDN;
+    const enableLiveTranslations =
+      localVite &&
+      (await promptConfirm({
+        message:
+          'Would you like to set up live development translations? This requires signing in or an API key.',
+        defaultValue: false,
+      }));
+    if (!localVite || enableLiveTranslations) {
       const settings = await generateSettings({ config: configFilepath });
       const envFramework = framework ?? (isVite ? 'vite' : settings.framework);
       // The CLI translates as the signed-in user; an API key in the
@@ -1181,13 +1188,14 @@ See https://www.npmjs.com/package/gt-vue`);
         }
       }
       if (!areCredentialsSet(settings, envFramework)) {
-        const provision = useDefaults
-          ? true
-          : await promptConfirm({
-              message:
-                'Would you like to set up a project ID and hot-reload key in .env.local?',
-              defaultValue: true,
-            });
+        const provision =
+          useDefaults || enableLiveTranslations
+            ? true
+            : await promptConfirm({
+                message:
+                  'Would you like to set up a project ID and hot-reload key in .env.local?',
+                defaultValue: true,
+              });
         if (provision) {
           try {
             await provisionDevelopmentCredentials(settings, envFramework);

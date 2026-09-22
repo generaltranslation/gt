@@ -2,6 +2,7 @@ import { logErrorAndExit } from '../console/logging.js';
 import { logger } from '../console/logger.js';
 import path from 'node:path';
 import fs from 'node:fs';
+import dotenv from 'dotenv';
 import { Settings, SupportedFrameworks } from '../types/index.js';
 import chalk from 'chalk';
 import {
@@ -11,7 +12,16 @@ import {
   getCliWizardSession,
   type GetCliWizardSessionResponse,
 } from 'generaltranslation/api';
-import { unwrapApiResult } from 'generaltranslation/internal';
+import {
+  createDiagnosticMessage,
+  unwrapApiResult,
+} from 'generaltranslation/internal';
+
+const unsafeCredentialsEnvError = createDiagnosticMessage({
+  whatHappened: 'Cannot safely update .env.local',
+  reassurance: 'The existing .env.local file was not changed',
+  fix: 'Move multiline values away from project/key assignments or set the development credentials manually, then retry',
+});
 
 export type Credentials = { apiKey: string; projectId: string };
 
@@ -152,7 +162,6 @@ export function areCredentialsSet(
   );
 }
 
-// ponytail: line-oriented; multi-line quoted dotenv values are not handled.
 function upsertEnvAssignment(
   content: string,
   name: string,
@@ -207,6 +216,12 @@ export async function setCredentials(
   // CI keys are created deliberately rather than dropped into .env.local.
   // Other lines, comments, and any GT_API_KEY are left untouched.
   const names = getDevelopmentEnvNames(framework);
+  const original = dotenv.parse(envContent);
+  const expected = {
+    ...original,
+    [names.projectId]: credentials.projectId,
+    [names.devApiKey]: credentials.apiKey,
+  };
   envContent = upsertEnvAssignment(
     envContent,
     names.projectId,
@@ -217,6 +232,15 @@ export async function setCredentials(
     names.devApiKey,
     credentials.apiKey
   );
+
+  const updated = dotenv.parse(envContent);
+  if (
+    Object.values(names).some((name) => original[name]?.includes('\n')) ||
+    Object.keys(updated).length !== Object.keys(expected).length ||
+    Object.entries(expected).some(([name, value]) => updated[name] !== value)
+  ) {
+    throw new Error(unsafeCredentialsEnvError);
+  }
 
   await fs.promises.writeFile(envFile, envContent, 'utf8');
 }

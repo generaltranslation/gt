@@ -114,6 +114,41 @@ describe('setCredentials', () => {
     );
   });
 
+  it.each([
+    'OTHER="first\nGT_PROJECT_ID=embedded\nlast"\n',
+    'OTHER="first\nGT_DEV_API_KEY=embedded\nlast"\n',
+    'GT_PROJECT_ID="old\nproject"\n',
+  ])(
+    'rejects unsafe multiline edits without changing the file: %j',
+    async (existing) => {
+      fs.writeFileSync(envPath(), existing);
+
+      await expect(
+        setCredentials(
+          { projectId: 'project-id', apiKey: 'gtx-api-key' },
+          undefined,
+          appDirectory
+        )
+      ).rejects.toThrow('Cannot safely update .env.local');
+      expect(readEnv()).toBe(existing);
+    }
+  );
+
+  it('preserves unrelated multiline values when appending credentials', async () => {
+    const existing = 'OTHER="first\nlast"\n';
+    fs.writeFileSync(envPath(), existing);
+
+    await setCredentials(
+      { projectId: 'project-id', apiKey: 'gtx-api-key' },
+      undefined,
+      appDirectory
+    );
+
+    expect(readEnv()).toBe(
+      `${existing}GT_PROJECT_ID=project-id\nGT_DEV_API_KEY=gtx-api-key\n`
+    );
+  });
+
   it('rejects and leaves the file alone when the write fails', async () => {
     fs.writeFileSync(envPath(), 'KEEP=1\n');
     vi.spyOn(fs.promises, 'writeFile').mockRejectedValueOnce(

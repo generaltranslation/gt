@@ -93,6 +93,7 @@ const GT_ENV = [
   'NEXT_PUBLIC_GT_PROJECT_ID',
   'NEXT_PUBLIC_GT_DEV_API_KEY',
   'VITE_GT_PROJECT_ID',
+  'VITE_GT_DEV_API_KEY',
 ];
 
 async function runInit(...args: string[]): Promise<void> {
@@ -330,6 +331,64 @@ describe('init development credentials', () => {
     await expect(runInit()).rejects.toThrow('exit 0');
     expect(api.createProjectApiKey).not.toHaveBeenCalled();
     expect(fs.existsSync(envPath())).toBe(false);
+  });
+
+  it.each([true, false])(
+    'offers live credentials for local Vite without requiring them: %s',
+    async (enableLiveTranslations) => {
+      fs.writeFileSync(
+        path.join(appDirectory, 'package.json'),
+        JSON.stringify({
+          name: 'vite-app',
+          dependencies: { 'gt-react': '*' },
+          devDependencies: { gt: '*' },
+        })
+      );
+      vi.mocked(detectFramework).mockResolvedValue({
+        name: 'vite',
+        type: 'react',
+      });
+      vi.mocked(hasLogin).mockResolvedValue(false);
+      vi.mocked(promptConfirm).mockImplementation(async ({ message }) =>
+        message.includes('live development translations')
+          ? enableLiveTranslations
+          : false
+      );
+      vi.mocked(promptSelect)
+        .mockResolvedValueOnce('local')
+        .mockResolvedValueOnce(projects[0]);
+      vi.mocked(promptText).mockResolvedValueOnce('src/_gt');
+
+      await runInit();
+
+      expect(promptConfirm).toHaveBeenCalledWith({
+        message: expect.stringContaining('live development translations'),
+        defaultValue: false,
+      });
+      expect(login).toHaveBeenCalledTimes(enableLiveTranslations ? 1 : 0);
+      expect(api.createProjectApiKey).toHaveBeenCalledTimes(
+        enableLiveTranslations ? 1 : 0
+      );
+      if (enableLiveTranslations) {
+        expect(fs.readFileSync(envPath(), 'utf8')).toBe(
+          'VITE_GT_PROJECT_ID=p1\nVITE_GT_DEV_API_KEY=gtx-secret-development-key\n'
+        );
+      } else {
+        expect(api.listProjects).not.toHaveBeenCalled();
+        expect(fs.existsSync(envPath())).toBe(false);
+      }
+    }
+  );
+
+  it('does not report saved credentials after an unsafe multiline edit', async () => {
+    const existing = 'OTHER="first\nGT_PROJECT_ID=embedded\nlast"\n';
+    fs.writeFileSync(envPath(), existing);
+    vi.mocked(promptSelect).mockResolvedValueOnce(projects[0]);
+
+    await expect(runInit()).rejects.toThrow('Cannot safely update .env.local');
+    expect(fs.readFileSync(envPath(), 'utf8')).toBe(existing);
+    expect(logger.endCommand).not.toHaveBeenCalled();
+    expect(loggedOutput()).not.toContain('gtx-secret-development-key');
   });
 
   it('fails without claiming success when .env.local cannot be written', async () => {
