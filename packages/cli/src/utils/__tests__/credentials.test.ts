@@ -118,6 +118,11 @@ describe('setCredentials', () => {
     'OTHER="first\nGT_PROJECT_ID=embedded\nlast"\n',
     'OTHER="first\nGT_DEV_API_KEY=embedded\nlast"\n',
     'GT_PROJECT_ID="old\nproject"\n',
+    // A later duplicate hides the multiline value from dotenv's parsed map.
+    'GT_PROJECT_ID="old\nproject"\nGT_PROJECT_ID=stale\n',
+    'GT_DEV_API_KEY="old\nkey"\nGT_DEV_API_KEY=stale\n',
+    "GT_PROJECT_ID='old\nproject'\nGT_PROJECT_ID=stale\n",
+    'GT_PROJECT_ID="a\\"\nGT_PROJECT_ID=b\nc"\nGT_PROJECT_ID=stale\n',
   ])(
     'rejects unsafe multiline edits without changing the file: %j',
     async (existing) => {
@@ -149,21 +154,113 @@ describe('setCredentials', () => {
     );
   });
 
-  it('rejects and leaves the file alone when the write fails', async () => {
-    fs.writeFileSync(envPath(), 'KEEP=1\n');
-    vi.spyOn(fs.promises, 'writeFile').mockRejectedValueOnce(
-      new Error('EACCES: permission denied')
+  it('replaces a quoted single-line value that escapes its own quote', async () => {
+    fs.writeFileSync(envPath(), 'GT_PROJECT_ID="old \\" project"\nKEEP=1\n');
+
+    await setCredentials(
+      { projectId: 'project-id', apiKey: 'gtx-api-key' },
+      undefined,
+      appDirectory
     );
 
-    await expect(
+    expect(readEnv()).toBe(
+      'GT_PROJECT_ID=project-id\nKEEP=1\nGT_DEV_API_KEY=gtx-api-key\n'
+    );
+  });
+
+  describe('persistence', () => {
+    const existing = 'KEEP=1\nDATABASE_URL=postgres://localhost/app\n';
+    const write = () =>
       setCredentials(
         { projectId: 'project-id', apiKey: 'gtx-api-key' },
         'vite',
         appDirectory
-      )
-    ).rejects.toThrow('EACCES');
-    expect(readEnv()).toBe('KEEP=1\n');
-    vi.restoreAllMocks();
+      );
+    const temporaryFiles = () =>
+      fs.readdirSync(appDirectory).filter((name) => name.endsWith('.tmp'));
+    const mode = (file: string) => fs.statSync(file).mode & 0o777;
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('keeps the original bytes and cleans up after a partial write', async () => {
+      fs.writeFileSync(envPath(), existing);
+      const realWriteFile = fs.promises.writeFile;
+      vi.spyOn(fs.promises, 'writeFile').mockImplementationOnce(
+        async (file, data, options) => {
+          await realWriteFile(file, String(data).slice(0, 5), options);
+          throw new Error('ENOSPC: no space left on device');
+        }
+      );
+
+      await expect(write()).rejects.toThrow('ENOSPC');
+      expect(readEnv()).toBe(existing);
+      expect(temporaryFiles()).toEqual([]);
+    });
+
+    it('keeps the original bytes and cleans up when the rename fails', async () => {
+      fs.writeFileSync(envPath(), existing);
+      vi.spyOn(fs.promises, 'rename').mockRejectedValueOnce(
+        new Error('EPERM: operation not permitted')
+      );
+
+      await expect(write()).rejects.toThrow('EPERM');
+      expect(readEnv()).toBe(existing);
+      expect(temporaryFiles()).toEqual([]);
+    });
+
+    it('creates a new file readable only by the owner', async () => {
+      await write();
+
+      expect(mode(envPath())).toBe(0o600);
+      expect(temporaryFiles()).toEqual([]);
+    });
+
+    it('preserves the permissions of an existing file', async () => {
+      fs.writeFileSync(envPath(), existing, { mode: 0o644 });
+
+      await write();
+
+      expect(mode(envPath())).toBe(0o644);
+      expect(readEnv()).toContain('KEEP=1\n');
+    });
+
+    it('updates the referent of a symlinked .env.local, not the link', async () => {
+      const sharedDirectory = path.join(appDirectory, 'shared');
+      const referent = path.join(sharedDirectory, '.env');
+      fs.mkdirSync(sharedDirectory);
+      fs.writeFileSync(referent, existing, { mode: 0o640 });
+      fs.symlinkSync(referent, envPath());
+
+      await write();
+
+      expect(fs.lstatSync(envPath()).isSymbolicLink()).toBe(true);
+      expect(fs.readlinkSync(envPath())).toBe(referent);
+      expect(fs.readFileSync(referent, 'utf8')).toBe(
+        `${existing}VITE_GT_PROJECT_ID=project-id\nVITE_GT_DEV_API_KEY=gtx-api-key\n`
+      );
+      expect(mode(referent)).toBe(0o640);
+      expect(fs.readdirSync(sharedDirectory)).toEqual(['.env']);
+      expect(fs.existsSync(path.join(appDirectory, '.gitignore'))).toBe(false);
+    });
+
+    it('fails closed on a dangling symlink without writing anything', async () => {
+      fs.symlinkSync(path.join(appDirectory, 'missing.env'), envPath());
+
+      await expect(write()).rejects.toThrow('is not a regular file');
+      expect(fs.existsSync(path.join(appDirectory, 'missing.env'))).toBe(false);
+      expect(fs.existsSync(path.join(appDirectory, '.gitignore'))).toBe(false);
+      expect(temporaryFiles()).toEqual([]);
+    });
+
+    it('fails closed when .env.local is a directory', async () => {
+      fs.mkdirSync(envPath());
+
+      await expect(write()).rejects.toThrow('is not a regular file');
+      expect(fs.readdirSync(envPath())).toEqual([]);
+      expect(fs.existsSync(path.join(appDirectory, '.gitignore'))).toBe(false);
+    });
   });
 });
 
@@ -191,11 +288,29 @@ describe('areCredentialsSet', () => {
     );
   });
 
-  it('is complete with a project and an explicit production key', () => {
-    expect(
-      areCredentialsSet({ projectId: 'project-id', apiKey: 'gtx-prod' }, 'vite')
-    ).toBe(true);
-  });
+  it.each(['next-app', undefined] as const)(
+    'is complete with a project and an explicit server key for %s',
+    (framework) => {
+      expect(
+        areCredentialsSet(
+          { projectId: 'project-id', apiKey: 'gtx-prod' },
+          framework
+        )
+      ).toBe(true);
+    }
+  );
+
+  it.each(['vite', 'next-pages', 'gatsby', 'react', 'redwood'] as const)(
+    'treats the tooling key as no browser runtime key for %s',
+    (framework) => {
+      expect(
+        areCredentialsSet(
+          { projectId: 'project-id', apiKey: 'gtx-tooling' },
+          framework
+        )
+      ).toBe(false);
+    }
+  );
 
   it('is incomplete without a project ID even when a key exists', () => {
     vi.stubEnv('GT_DEV_API_KEY', 'gtx-dev');

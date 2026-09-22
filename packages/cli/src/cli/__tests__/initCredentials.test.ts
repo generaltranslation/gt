@@ -333,31 +333,35 @@ describe('init development credentials', () => {
     expect(fs.existsSync(envPath())).toBe(false);
   });
 
+  function setUpLocalVite(enableLiveTranslations: boolean): void {
+    fs.writeFileSync(
+      path.join(appDirectory, 'package.json'),
+      JSON.stringify({
+        name: 'vite-app',
+        dependencies: { 'gt-react': '*' },
+        devDependencies: { gt: '*' },
+      })
+    );
+    vi.mocked(detectFramework).mockResolvedValue({
+      name: 'vite',
+      type: 'react',
+    });
+    vi.mocked(hasLogin).mockResolvedValue(false);
+    vi.mocked(promptConfirm).mockImplementation(async ({ message }) =>
+      message.includes('live development translations')
+        ? enableLiveTranslations
+        : false
+    );
+    vi.mocked(promptSelect)
+      .mockResolvedValueOnce('local')
+      .mockResolvedValueOnce(projects[0]);
+    vi.mocked(promptText).mockResolvedValueOnce('src/_gt');
+  }
+
   it.each([true, false])(
     'offers live credentials for local Vite without requiring them: %s',
     async (enableLiveTranslations) => {
-      fs.writeFileSync(
-        path.join(appDirectory, 'package.json'),
-        JSON.stringify({
-          name: 'vite-app',
-          dependencies: { 'gt-react': '*' },
-          devDependencies: { gt: '*' },
-        })
-      );
-      vi.mocked(detectFramework).mockResolvedValue({
-        name: 'vite',
-        type: 'react',
-      });
-      vi.mocked(hasLogin).mockResolvedValue(false);
-      vi.mocked(promptConfirm).mockImplementation(async ({ message }) =>
-        message.includes('live development translations')
-          ? enableLiveTranslations
-          : false
-      );
-      vi.mocked(promptSelect)
-        .mockResolvedValueOnce('local')
-        .mockResolvedValueOnce(projects[0]);
-      vi.mocked(promptText).mockResolvedValueOnce('src/_gt');
+      setUpLocalVite(enableLiveTranslations);
 
       await runInit();
 
@@ -379,6 +383,47 @@ describe('init development credentials', () => {
       }
     }
   );
+
+  it('mints a browser key for local Vite when only the tooling key and project are configured', async () => {
+    setUpLocalVite(true);
+    vi.stubEnv('GT_API_KEY', 'gtx-tooling-key');
+    fs.writeFileSync(
+      path.join(appDirectory, 'gt.config.json'),
+      JSON.stringify({ projectId: 'configured-project', defaultLocale: 'en' })
+    );
+
+    await runInit();
+
+    expect(login).not.toHaveBeenCalled();
+    expect(api.listProjects).not.toHaveBeenCalled();
+    expect(api.createProjectApiKey).toHaveBeenCalledTimes(1);
+    expect(api.createProjectApiKey).toHaveBeenCalledWith('configured-project', {
+      name: 'Development key (gt init)',
+      permissions: ['project:translations:generate'],
+    });
+    expect(fs.readFileSync(envPath(), 'utf8')).toBe(
+      'VITE_GT_PROJECT_ID=configured-project\nVITE_GT_DEV_API_KEY=gtx-secret-development-key\n'
+    );
+    expect(process.env.GT_API_KEY).toBe('gtx-tooling-key');
+    expect(loggedOutput()).not.toContain('gtx-secret-development-key');
+  });
+
+  it('surfaces a failed mint through the tooling key without falling back to login', async () => {
+    setUpLocalVite(true);
+    vi.stubEnv('GT_API_KEY', 'gtx-tooling-key');
+    vi.stubEnv('VITE_GT_PROJECT_ID', 'configured-project');
+    vi.mocked(api.createProjectApiKey).mockRejectedValue(
+      new Error('insufficient permissions (403)')
+    );
+
+    await expect(runInit()).rejects.toThrow(
+      /Failed to set up the development credentials[\s\S]*insufficient permissions/
+    );
+    expect(login).not.toHaveBeenCalled();
+    expect(api.createProjectApiKey).toHaveBeenCalledTimes(1);
+    expect(fs.existsSync(envPath())).toBe(false);
+    expect(logger.endCommand).not.toHaveBeenCalled();
+  });
 
   it('does not report saved credentials after an unsafe multiline edit', async () => {
     const existing = 'OTHER="first\nGT_PROJECT_ID=embedded\nlast"\n';

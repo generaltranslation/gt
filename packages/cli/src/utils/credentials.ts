@@ -1,5 +1,6 @@
 import { logErrorAndExit } from '../console/logging.js';
 import { logger } from '../console/logger.js';
+import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
 import dotenv from 'dotenv';
@@ -22,6 +23,14 @@ const unsafeCredentialsEnvError = createDiagnosticMessage({
   reassurance: 'The existing .env.local file was not changed',
   fix: 'Move multiline values away from project/key assignments or set the development credentials manually, then retry',
 });
+
+function unwritableEnvFileError(envFile: string): string {
+  return createDiagnosticMessage({
+    whatHappened: `${envFile} is not a regular file`,
+    reassurance: 'Nothing was changed',
+    fix: 'Replace it with a regular file or a symlink to one, or set the development credentials manually, then retry',
+  });
+}
 
 export type Credentials = { apiKey: string; projectId: string };
 
@@ -149,16 +158,38 @@ function normalizeCredentials(
 
 /**
  * Whether the project already has a runtime key: the framework's development
- * key or an explicit production key. `settings.projectId` already resolves
- * every framework prefix. This is not tooling auth; login is checked separately.
+ * key, or an explicit production key for server runtimes (gt-next, gt-node).
+ * Browser frameworks only read their prefixed key, so there `settings.apiKey`
+ * is tooling auth alone. `settings.projectId` already resolves every
+ * framework prefix. Login is checked separately.
  */
 export function areCredentialsSet(
   settings: Pick<Settings, 'projectId' | 'apiKey'>,
   framework?: SupportedFrameworks
 ): boolean {
   const { devApiKey } = getDevelopmentEnvNames(framework);
+  const browserOnly = Boolean(framework && FRAMEWORK_ENV_PREFIXES[framework]);
   return Boolean(
-    settings.projectId && (settings.apiKey || process.env[devApiKey])
+    settings.projectId &&
+    (process.env[devApiKey] || (!browserOnly && settings.apiKey))
+  );
+}
+
+function assignedName(line: string): string | undefined {
+  return /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=/.exec(line)?.[1];
+}
+
+/**
+ * dotenv continues a quoted value onto later lines until its closing quote.
+ * Replacing such a line would orphan the continuation, even when a later
+ * duplicate hides the multiline value from dotenv's effective values.
+ */
+function opensMultilineValue(line: string): boolean {
+  const value = line.slice(line.indexOf('=') + 1).trim();
+  const quote = value[0];
+  return (
+    ['"', "'", '`'].includes(quote) &&
+    !value.slice(1).replaceAll(`\\${quote}`, '').includes(quote)
   );
 }
 
@@ -167,8 +198,7 @@ function upsertEnvAssignment(
   name: string,
   value: string
 ): string {
-  const assignsName = (line: string) =>
-    /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=/.exec(line)?.[1] === name;
+  const assignsName = (line: string) => assignedName(line) === name;
   const lines = content.split('\n');
   const first = lines.findIndex(assignsName);
   if (first === -1) {
@@ -182,6 +212,54 @@ function upsertEnvAssignment(
     .join('\n');
 }
 
+/**
+ * Where .env.local content lives and its mode. Follows an existing symlink so
+ * its referent is replaced, never the link itself; anything but a regular
+ * file (dangling link, directory) fails before any write.
+ */
+async function resolveEnvFile(
+  envFile: string
+): Promise<{ target: string; mode: number } | undefined> {
+  const entry = await fs.promises.lstat(envFile).catch((error) => {
+    if (error.code === 'ENOENT') return undefined;
+    throw error;
+  });
+  if (!entry) return undefined;
+  // stat follows the link and fails on a dangling one.
+  const stat = await fs.promises.stat(envFile).catch(() => undefined);
+  if (!stat?.isFile()) throw new Error(unwritableEnvFileError(envFile));
+  return {
+    target: entry.isSymbolicLink()
+      ? await fs.promises.realpath(envFile)
+      : envFile,
+    mode: stat.mode & 0o777,
+  };
+}
+
+// Same-directory temporary file and rename, as in auth/credentialStore.ts:
+// a failed write never truncates the existing file.
+async function writeEnvFileAtomically(
+  target: string,
+  content: string,
+  mode: number
+): Promise<void> {
+  const temporaryPath = path.join(
+    path.dirname(target),
+    `.env.local.${randomUUID()}.tmp`
+  );
+  try {
+    await fs.promises.writeFile(temporaryPath, content, {
+      encoding: 'utf8',
+      mode,
+    });
+    await fs.promises.chmod(temporaryPath, mode);
+    await fs.promises.rename(temporaryPath, target);
+  } catch (error) {
+    await fs.promises.rm(temporaryPath, { force: true });
+    throw error;
+  }
+}
+
 // Sets the credentials in .env.local file
 export async function setCredentials(
   credentials: Credentials,
@@ -189,10 +267,11 @@ export async function setCredentials(
   cwd: string = process.cwd()
 ) {
   const envFile = path.join(cwd, '.env.local');
+  const existingEnvFile = await resolveEnvFile(envFile);
   let envContent = '';
 
   // Check if .env.local exists, create it if it doesn't
-  if (!fs.existsSync(envFile)) {
+  if (!existingEnvFile) {
     // Add .env.local to .gitignore if it exists
     const gitignoreFile = path.join(cwd, '.gitignore');
     if (fs.existsSync(gitignoreFile)) {
@@ -209,13 +288,21 @@ export async function setCredentials(
     }
   } else {
     // Read existing content
-    envContent = await fs.promises.readFile(envFile, 'utf8');
+    envContent = await fs.promises.readFile(existingEnvFile.target, 'utf8');
   }
 
   // Only the hot-reload key: the CLI itself acts as the signed-in user, and
   // CI keys are created deliberately rather than dropped into .env.local.
   // Other lines, comments, and any GT_API_KEY are left untouched.
   const names = getDevelopmentEnvNames(framework);
+  const targetNames = Object.values(names);
+  const targetOpensMultiline = envContent
+    .split('\n')
+    .some(
+      (line) =>
+        targetNames.includes(assignedName(line) ?? '') &&
+        opensMultilineValue(line)
+    );
   const original = dotenv.parse(envContent);
   const expected = {
     ...original,
@@ -235,12 +322,17 @@ export async function setCredentials(
 
   const updated = dotenv.parse(envContent);
   if (
-    Object.values(names).some((name) => original[name]?.includes('\n')) ||
+    targetOpensMultiline ||
+    targetNames.some((name) => original[name]?.includes('\n')) ||
     Object.keys(updated).length !== Object.keys(expected).length ||
     Object.entries(expected).some(([name, value]) => updated[name] !== value)
   ) {
     throw new Error(unsafeCredentialsEnvError);
   }
 
-  await fs.promises.writeFile(envFile, envContent, 'utf8');
+  await writeEnvFileAtomically(
+    existingEnvFile?.target ?? envFile,
+    envContent,
+    existingEnvFile?.mode ?? 0o600
+  );
 }
