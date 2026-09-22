@@ -1260,13 +1260,13 @@ import { LocalT } from '@gt';
         'init',
         'configure',
         'upload',
-        'auth',
         'login',
         'logout',
         'whoami',
         'save-local',
         'api',
         'project',
+        'api-key',
         'git',
       ];
       const baseCommands = [

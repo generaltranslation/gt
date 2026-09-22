@@ -38,7 +38,7 @@ pnpm build
 pnpm preview
 ```
 
-`pnpm build` builds offline from the committed translation files, so it needs no account or API key. To regenerate the translation files after changing source content, run `pnpm translate` with a production `GT_API_KEY` and `GT_PROJECT_ID` (create them with `npx gt auth`; a `gtx-dev-` key is not accepted), then build.
+`pnpm build` builds offline from the committed translation files, so it needs no account or API key. To regenerate the translation files after changing source content, run `pnpm translate` with a production `GT_API_KEY` and `GT_PROJECT_ID` (create them with `npx gt api-key create`; a `gtx-dev-` key is not accepted), then build.
 
 ## How it works
 
@@ -52,14 +52,14 @@ When the user picks a language, `gt-react` saves the choice to the `generaltrans
 
 ## Translation files
 
-The files in `src/_gt/` are hand-written in this example so language switching works with no account or API key. **In a real project you do not write these by hand.** Authenticate once with `npx gt auth`, then run `npx gt translate` to generate a file per locale from your source content. Re-run it whenever your source content changes. See [Storing translations](https://generaltranslation.com/docs/react/guides/storing-translations) for details. The fixtures are keyed by content hashes, so editing any translated source text orphans its committed entry and that string renders in the source language until the files are regenerated with `npx gt translate` or updated by hand.
+The files in `src/_gt/` are hand-written in this example so language switching works with no account or API key. **In a real project you do not write these by hand.** Sign in once with `npx gt login`, then run `npx gt translate` to generate a file per locale from your source content. Re-run it whenever your source content changes. See [Storing translations](https://generaltranslation.com/docs/react/guides/storing-translations) for details. The fixtures are keyed by content hashes, so editing any translated source text orphans its committed entry and that string renders in the source language until the files are regenerated with `npx gt translate` or updated by hand.
 
 ## Developing with live translations
 
 To preview translations as you edit (instead of relying on the committed files), follow [Developing with SPA translations](https://generaltranslation.com/docs/react/guides/developing-spa-translations). In short:
 
 1. The GT compiler is already wired into `vite.config.ts` with `vite as gtCompiler` from `@generaltranslation/compiler`.
-2. Copy `.env.example` to `.env.local` and add a project ID and a development API key (one that starts with `gtx-dev-`). Get them at [dash.generaltranslation.com](https://dash.generaltranslation.com/signup) or with `npx gt auth`. `src/index.ts` already forwards `VITE_GT_PROJECT_ID` and `VITE_GT_DEV_API_KEY` to `initializeGTSPA`.
+2. Copy `.env.example` to `.env.local` and add a project ID and a development API key (one that starts with `gtx-dev-`). Get them at [dash.generaltranslation.com](https://dash.generaltranslation.com/signup) or with `npx gt init`. `src/index.ts` already forwards `VITE_GT_PROJECT_ID` and `VITE_GT_DEV_API_KEY` to `initializeGTSPA`.
 3. Run `pnpm dev` and switch to a non-default locale. When you edit translatable content, the compiler registers the change and `gt-react` requests an updated development translation.
 
 Never expose a production key (`gtx-api-`) in browser code, and do not commit `.env.local`.

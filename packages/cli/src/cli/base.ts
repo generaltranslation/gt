@@ -1,4 +1,5 @@
-import { Command } from 'commander';
+import { Command, InvalidArgumentError } from 'commander';
+import { ProjectApiKeyPermission } from 'generaltranslation/api';
 import {
   DEFAULT_TRANSLATIONS_DIR,
   DEFAULT_VITE_TRANSLATIONS_DIR,
@@ -40,12 +41,7 @@ import {
 import { getDesiredLocales } from '../setup/userInput.js';
 import { installPackage } from '../utils/installPackage.js';
 import { getPackageManager } from '../utils/packageManager.js';
-import {
-  areCredentialsSet,
-  inspectCredentialsEnvFile,
-  retrieveCredentials,
-  setCredentials,
-} from '../utils/credentials.js';
+import { areCredentialsSet } from '../utils/credentials.js';
 import { provisionDevelopmentCredentials } from '../setup/developmentCredentials.js';
 import { upload } from './commands/upload.js';
 import { attachSharedFlags, attachTranslateFlags } from './flags.js';
@@ -125,6 +121,28 @@ function createProjectCommandError(
   });
 }
 
+const API_KEY_PERMISSIONS = Object.values(ProjectApiKeyPermission);
+
+function parseApiKeyName(value: string): string {
+  const name = value.trim();
+  if (!name) throw new InvalidArgumentError('The key name cannot be empty.');
+  return name;
+}
+
+// Permissions are validated before any request; the server then grants the
+// requested set all-or-nothing, so omitting them would delegate everything.
+function parseApiKeyPermission(
+  value: string,
+  previous: ProjectApiKeyPermission[] = []
+): ProjectApiKeyPermission[] {
+  if (!API_KEY_PERMISSIONS.includes(value as ProjectApiKeyPermission)) {
+    throw new InvalidArgumentError(
+      `Expected one of: ${API_KEY_PERMISSIONS.join(', ')}.`
+    );
+  }
+  return [...previous, value as ProjectApiKeyPermission];
+}
+
 const electronSetupError = createDiagnosticMessage({
   source: 'gt',
   severity: 'Error',
@@ -187,10 +205,6 @@ export type UploadOptions = {
   apiKey?: string;
   projectId?: string;
   defaultLocale?: string;
-};
-
-export type LoginOptions = {
-  config?: string;
 };
 
 export type GitSetupOptions = {
@@ -258,11 +272,11 @@ export class BaseCLI {
     this.setupInitCommand();
     this.setupConfigureCommand();
     this.setupUploadCommand();
-    this.setupLoginCommand();
     this.setupUserAuthCommands();
     this.setupSendDiffsCommand();
     this.setupApiCommand();
     this.setupProjectCommands();
+    this.setupApiKeyCommands();
     this.setupGitCommand();
   }
   // Init is never called in a child class
@@ -453,6 +467,50 @@ export class BaseCLI {
         );
       }
     });
+  }
+
+  protected setupApiKeyCommands(): void {
+    const apiKeyCommand = this.program
+      .command('api-key')
+      .description('Manage API keys for the configured project');
+
+    attachSharedFlags(
+      apiKeyCommand
+        .command('create')
+        .description(
+          'Create a project API key with the requested permissions and print it once'
+        )
+        .requiredOption('--name <name>', 'Key name', parseApiKeyName)
+        .requiredOption(
+          '--permission <permissions...>',
+          `Permissions to grant (${API_KEY_PERMISSIONS.join(', ')})`,
+          parseApiKeyPermission
+        )
+    ).action(
+      async (
+        options: SharedFlags & {
+          name: string;
+          permission: ProjectApiKeyPermission[];
+        }
+      ) => {
+        try {
+          const settings = await generateSettings(options);
+          if (!hasValidCredentials(settings)) return exitSync(1);
+          const { apiKey } = await api.createProjectApiKey(settings.projectId, {
+            name: options.name,
+            permissions: options.permission,
+          });
+          // Raw stdout: the secret is shown once and never reaches the log file.
+          process.stdout.write(`${apiKey.key}\n`);
+        } catch (error) {
+          return logErrorAndExit(
+            error instanceof UserAuthError
+              ? error.message
+              : createProjectCommandError('Failed to create the API key', error)
+          );
+        }
+      }
+    );
   }
 
   protected setupGitCommand(): void {
@@ -745,26 +803,6 @@ export class BaseCLI {
             createUserAuthError('Could not load your account', error)
           );
         }
-      });
-  }
-
-  protected setupLoginCommand(): void {
-    this.program
-      .command('auth')
-      .description(
-        'Set up this project: save its project ID and a hot-reload API key to .env.local'
-      )
-      .option(
-        '-c, --config <path>',
-        'Filepath to config file, by default gt.config.json',
-        findFilepath(['gt.config.json'])
-      )
-      .action(async (options: LoginOptions) => {
-        displayHeader('Authenticating with General Translation...');
-        await this.handleLoginCommand(options);
-        logger.endCommand(
-          'Done! Your project ID and API key for development have been saved to your .env.local file.'
-        );
       });
   }
 
@@ -1214,13 +1252,5 @@ See https://www.npmjs.com/package/gt-vue`);
         }
       }
     }
-  }
-  protected async handleLoginCommand(options: LoginOptions): Promise<void> {
-    const settings = await generateSettings({ config: options.config });
-    // Fail on a tracked or unwritable .env.local before the dashboard issues a key.
-    await inspectCredentialsEnvFile();
-    const credentials = await retrieveCredentials(settings);
-    await setCredentials(credentials, settings.framework);
-    logger.message(productionRuntimeKeyGuidance(settings.dashboardUrl));
   }
 }

@@ -38,7 +38,7 @@ pnpm preview
 
 `pnpm build` works offline: it bundles the app from the translation files already committed in `src/_gt` and never calls the General Translation API. Run `pnpm typecheck` to check types separately, since the build itself uses ts-loader in `transpileOnly` mode and surfaces no type errors.
 
-To regenerate translations after you change source text, run `pnpm translate` with a production `GT_PROJECT_ID` and `GT_API_KEY` (create them with `npx gt auth`). Development keys (`gtx-dev-`) drive the live dev workflow only and are rejected by the CLI.
+To regenerate translations after you change source text, run `pnpm translate` with a production `GT_PROJECT_ID` and `GT_API_KEY` (create them with `npx gt api-key create`). Development keys (`gtx-dev-`) drive the live dev workflow only and are rejected by the CLI.
 
 ## Deploy
 
@@ -73,7 +73,7 @@ GT_PROJECT_ID="your-project-id"
 GT_DEV_API_KEY="gtx-dev-your-development-key"
 ```
 
-Get these by running `npx gt auth` or from the [dashboard](https://dash.generaltranslation.com). Use a development key that starts with `gtx-dev-`. Never put a production key (`gtx-api-`) in a client-side app. Both values are optional: without them the app still runs and switches between the languages that already have files in `src/_gt`.
+Get these by running `npx gt init` or from the [dashboard](https://dash.generaltranslation.com). Use a development key that starts with `gtx-dev-`. Never put a production key (`gtx-api-`) in a client-side app. Both values are optional: without them the app still runs and switches between the languages that already have files in `src/_gt`.
 
 These values are inlined only in development. A production build (`pnpm build`) always inlines empty strings, so it never embeds your credentials in the bundle.
 

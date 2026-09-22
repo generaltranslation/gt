@@ -60,7 +60,9 @@ export function hasValidServiceLocales(settings: Settings): boolean {
  * @param settings - The settings to validate
  * @returns True if a project ID is configured
  */
-export function hasValidCredentials(settings: Settings): boolean {
+export function hasValidCredentials(
+  settings: Settings
+): settings is Settings & { projectId: string } {
   if (!settings.projectId) {
     logger.error(noProjectIdError);
     return false;

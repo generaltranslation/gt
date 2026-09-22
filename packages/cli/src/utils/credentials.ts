@@ -1,5 +1,3 @@
-import { logErrorAndExit } from '../console/logging.js';
-import { logger } from '../console/logger.js';
 import { execFile } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
@@ -7,18 +5,9 @@ import fs from 'node:fs';
 import { promisify } from 'node:util';
 import dotenv from 'dotenv';
 import { Settings, SupportedFrameworks } from '../types/index.js';
-import chalk from 'chalk';
-import {
-  createApiClient,
-  createCliWizardSession,
-  deleteCliWizardSession,
-  getCliWizardSession,
-  type GetCliWizardSessionResponse,
-} from 'generaltranslation/api';
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
-  unwrapApiResult,
 } from 'generaltranslation/internal';
 
 const execFileAsync = promisify(execFile);
@@ -111,108 +100,6 @@ export function getDevelopmentEnvNames(framework?: SupportedFrameworks) {
     projectId: `${prefix}GT_PROJECT_ID`,
     devApiKey: `${prefix}GT_DEV_API_KEY`,
   };
-}
-
-// Fetches project ID and API key by opening the dashboard in the browser
-export async function retrieveCredentials(
-  settings: Settings
-): Promise<Credentials> {
-  // Generate a session ID
-  const { sessionId } = await generateCredentialsSession(settings.baseUrl);
-
-  const urlToOpen = `${settings.dashboardUrl}/cli/wizard/${sessionId}`;
-  await import('open').then((open) =>
-    open.default(urlToOpen, {
-      wait: false,
-    })
-  );
-
-  logger.message(
-    `${chalk.dim(
-      `If the browser window didn't open automatically, please open the following link:`
-    )}\n\n${chalk.cyan(urlToOpen)}`
-  );
-
-  const spinner = logger.createSpinner('dots');
-  spinner.start('Waiting for response from dashboard...');
-
-  const client = createApiClient({
-    baseUrl: settings.baseUrl,
-    retryPolicy: 'none',
-  });
-  const credentials = await new Promise<Credentials>((resolve, reject) => {
-    const interval = setInterval(async () => {
-      try {
-        const result = await getCliWizardSession({
-          client,
-          path: { sessionId },
-        });
-        if (result.response.status !== 200) return;
-
-        let credentials: Credentials;
-        try {
-          credentials = normalizeCredentials(unwrapApiResult(result));
-        } catch (error) {
-          clearInterval(interval);
-          clearTimeout(timeout);
-          reject(error);
-          return;
-        }
-        resolve(credentials);
-        clearInterval(interval);
-        clearTimeout(timeout);
-        void deleteCliWizardSession({
-          client,
-          path: { sessionId },
-        }).catch(console.error);
-      } catch (err) {
-        console.error(err);
-      }
-    }, 2000);
-    // timeout after 1 hour
-    const timeout = setTimeout(
-      () => {
-        spinner.stop('Timed out');
-        clearInterval(interval);
-        logErrorAndExit('Timed out waiting for response from dashboard');
-      },
-      1000 * 60 * 60
-    );
-  });
-  spinner.stop('Received credentials');
-  return credentials;
-}
-
-export async function generateCredentialsSession(url: string): Promise<{
-  sessionId: string;
-}> {
-  try {
-    return unwrapApiResult(
-      await createCliWizardSession({
-        body: {},
-        client: createApiClient({ baseUrl: url, retryPolicy: 'none' }),
-      })
-    );
-  } catch {
-    logErrorAndExit('Failed to generate credentials session');
-  }
-}
-
-// The wizard issues one key; older servers repeat it per requested slot.
-function normalizeCredentials(
-  response: GetCliWizardSessionResponse
-): Credentials {
-  const apiKey =
-    'apiKey' in response
-      ? response.apiKey
-      : 'apiKeys' in response
-        ? response.apiKeys[0]?.key
-        : undefined;
-  if (!apiKey || !('projectId' in response))
-    throw new Error(
-      'The dashboard returned an unsupported credentials response'
-    );
-  return { apiKey, projectId: response.projectId };
 }
 
 /**

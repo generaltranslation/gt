@@ -146,7 +146,6 @@
     {
       "files": [
         "packages/cli/src/cli/commands/api.ts",
-        "packages/cli/src/utils/credentials.ts",
         "packages/cli/src/**/__tests__/**",
         "packages/sanity/src/**/__tests__/**",
         "packages/cli/src/**/*.test.ts",
