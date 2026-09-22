@@ -185,6 +185,12 @@ function collectDocsJsonTargets(
     seen.set(canonicalPath, locales);
   };
 
+  const sourceJsonPaths = new Set(
+    (settings.files?.resolvedPaths.json ?? []).map((filePath) =>
+      path.resolve(filePath)
+    )
+  );
+
   if (!includeFiles && settings.files?.resolvedPaths.json) {
     for (const filePath of settings.files.resolvedPaths.json) {
       addTarget(filePath, settings.defaultLocale);
@@ -194,7 +200,12 @@ function collectDocsJsonTargets(
   for (const [locale, filesMap] of Object.entries(fileMapping)) {
     for (const filePath of Object.values(filesMap)) {
       if (!filePath.endsWith('.json')) continue;
-      addTarget(filePath, locale);
+      // A file that maps back onto a source path is translated in place
+      // (composite docs.json). It holds every locale, so a single target
+      // locale must not become its hint: registrations outside a `language`
+      // block would be rewritten to that locale, replacing the default ones.
+      const isInPlace = sourceJsonPaths.has(path.resolve(filePath));
+      addTarget(filePath, isInPlace ? settings.defaultLocale : locale);
     }
   }
 

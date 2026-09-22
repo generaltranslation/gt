@@ -2854,3 +2854,105 @@ describe('transformUrlPath', () => {
     });
   });
 });
+
+describe('localizeStaticUrls links to pages outside translation scope', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const runWithFiles = async (
+    fileContent: string,
+    existingFiles: string[],
+    options: Record<string, unknown>
+  ): Promise<string | undefined> => {
+    const existing = new Set(['/site/ja/test.mdx', ...existingFiles]);
+    vi.mocked(fs.existsSync).mockImplementation((p) => existing.has(String(p)));
+    vi.mocked(fs.promises.readFile).mockResolvedValue(fileContent);
+    let written: string | undefined;
+    vi.mocked(fs.promises.writeFile).mockImplementation((_p, content) => {
+      written = String(content);
+      return Promise.resolve();
+    });
+    vi.mocked(createFileMapping).mockReturnValue({
+      ja: { 'test.mdx': '/site/ja/test.mdx' },
+    });
+
+    await localizeStaticUrls(
+      createSettings({
+        config: '/site/gt.config.json',
+        files: {
+          placeholderPaths: { mdx: ['/site/[locale]/test.mdx'] },
+          resolvedPaths: {},
+          transformPaths: {},
+        },
+        defaultLocale: 'en',
+        locales: ['ja'],
+        options: options as StaticUrlSettings['options'],
+      }),
+      ['ja']
+    );
+    return written;
+  };
+
+  it('keeps links to untranslated pages on the default locale when the default locale is hidden', async () => {
+    const written = await runWithFiles(
+      '[Sandbox](/products/sandbox#write_file) <Card href="/products/sandbox">x</Card> [Guide](/guide)',
+      ['/site/products/sandbox.mdx', '/site/guide.mdx', '/site/ja/guide.mdx'],
+      { docsUrlPattern: '/[locale]', experimentalHideDefaultLocale: true }
+    );
+
+    expect(written).toContain('[Sandbox](/products/sandbox#write_file)');
+    expect(written).toContain('href="/products/sandbox"');
+    expect(written).toContain('[Guide](/ja/guide)');
+  });
+
+  it('keeps links to untranslated pages on the default locale when the default locale is shown', async () => {
+    const written = await runWithFiles(
+      '[Sandbox](/en/products/sandbox) and [Guide](/en/guide)',
+      [
+        '/site/en/products/sandbox.mdx',
+        '/site/en/guide.mdx',
+        '/site/ja/guide.md',
+      ],
+      { docsUrlPattern: '/[locale]' }
+    );
+
+    expect(written).toContain('[Sandbox](/en/products/sandbox)');
+    expect(written).toContain('[Guide](/ja/guide)');
+  });
+
+  it('resolves directory links through index pages', async () => {
+    const written = await runWithFiles(
+      '[Products](/products/)',
+      ['/site/products/index.mdx'],
+      { docsUrlPattern: '/[locale]', experimentalHideDefaultLocale: true }
+    );
+
+    // The only candidate link is left alone, so nothing is written.
+    expect(written).toBeUndefined();
+  });
+
+  it('still localizes links whose source is not a page file, such as generated OpenAPI pages', async () => {
+    const written = await runWithFiles(
+      '[Create key](/api-reference/create-key)',
+      [],
+      { docsUrlPattern: '/[locale]', experimentalHideDefaultLocale: true }
+    );
+
+    expect(written).toContain('[Create key](/ja/api-reference/create-key)');
+  });
+
+  it('treats a URL pattern prefix as a site base path when resolving pages', async () => {
+    const written = await runWithFiles(
+      '[Sandbox](/docs/products/sandbox) and [Guide](/docs/guide)',
+      ['/site/products/sandbox.mdx', '/site/guide.mdx', '/site/ja/guide.mdx'],
+      {
+        docsUrlPattern: '/docs/[locale]',
+        experimentalHideDefaultLocale: true,
+      }
+    );
+
+    expect(written).toContain('[Sandbox](/docs/products/sandbox)');
+    expect(written).toContain('[Guide](/docs/ja/guide)');
+  });
+});
