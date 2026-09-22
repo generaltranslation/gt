@@ -2888,7 +2888,10 @@ describe('localizeStaticUrls links to pages outside translation scope', () => {
         },
         defaultLocale: 'en',
         locales: ['ja'],
-        options: options as StaticUrlSettings['options'],
+        options: {
+          experimentalLocalizeStaticUrls: { skipUntranslatedPages: true },
+          ...options,
+        } as StaticUrlSettings['options'],
       }),
       ['ja']
     );
@@ -2906,6 +2909,21 @@ describe('localizeStaticUrls links to pages outside translation scope', () => {
     expect(written).toContain('[Sandbox](/products/sandbox#write_file)');
     expect(written).toContain('href="/products/sandbox"');
     expect(written).toContain('[Guide](/ja/guide)');
+  });
+
+  it('still prefixes links to untranslated pages unless skipUntranslatedPages is set', async () => {
+    const written = await runWithFiles(
+      '[Sandbox](/products/sandbox)',
+      ['products/sandbox.mdx'],
+      {},
+      {
+        docsUrlPattern: '/[locale]',
+        experimentalHideDefaultLocale: true,
+        experimentalLocalizeStaticUrls: true,
+      }
+    );
+
+    expect(written).toContain('[Sandbox](/ja/products/sandbox)');
   });
 
   it('keeps links to untranslated pages on the default locale when the default locale is shown', async () => {

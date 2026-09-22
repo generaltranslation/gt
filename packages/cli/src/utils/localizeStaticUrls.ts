@@ -217,6 +217,10 @@ export default async function localizeStaticUrls(
     return;
   }
   const { resolvedPaths: sourceFiles } = settings.files;
+  const localizeOptions = settings.options?.experimentalLocalizeStaticUrls;
+  const skipUntranslatedPages =
+    typeof localizeOptions === 'object' &&
+    localizeOptions.skipUntranslatedPages === true;
 
   // Use filtered locales if provided, otherwise use all locales
   const locales = targetLocales || settings.locales;
@@ -309,7 +313,7 @@ export default async function localizeStaticUrls(
             settings.options?.docsUrlPattern,
             settings.options?.excludeStaticUrls,
             settings.options?.baseDomain,
-            filesMap
+            skipUntranslatedPages ? filesMap : undefined
           );
           // Only write the file if there were changes
           if (result.hasChanges) {

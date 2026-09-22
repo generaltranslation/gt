@@ -763,9 +763,22 @@
           "default": false
         },
         "experimentalLocalizeStaticUrls": {
-          "type": "boolean",
-          "description": "Inserts locale in static url paths in md/mdx files",
-          "default": false
+          "description": "Inserts locale in static url paths in md/mdx files. Use the object form to enable it with extra behavior.",
+          "default": false,
+          "oneOf": [
+            { "type": "boolean" },
+            {
+              "type": "object",
+              "properties": {
+                "skipUntranslatedPages": {
+                  "type": "boolean",
+                  "description": "Keep links to source pages that have no translation on the default locale, for sites where a missing localized page returns a 404 (such as Mintlify).",
+                  "default": false
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
         },
         "experimentalLocalizeRelativeAssets": {
           "type": "boolean",
