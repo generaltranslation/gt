@@ -13,6 +13,7 @@ vi.mock('../../../settings/settings.js', () => ({
 }));
 
 // Mock global fetch
+const nativeFetch = globalThis.fetch;
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
@@ -178,6 +179,22 @@ describe.sequential('fetchWithTimeout', () => {
       expect(mockTranslationTimeoutError).toHaveBeenCalledWith(3000);
     });
 
+    it('converts the SDK abort reason from native fetch into a timeout', async () => {
+      vi.useFakeTimers();
+      const pending = fetchWithTimeout(
+        'data:text/plain,hello',
+        {},
+        3000,
+        nativeFetch
+      );
+      const rejection = expect(pending).rejects.toBe('Mocked timeout error');
+      // Abort before native fetch's response microtask settles the data URL.
+      vi.advanceTimersByTime(3000);
+
+      await rejection;
+      expect(mockTranslationTimeoutError).toHaveBeenCalledWith(3000);
+    });
+
     it('throws translationTimeoutError when the default timer aborts the fetch', async () => {
       vi.useFakeTimers();
       mockSignalDrivenFetch();
@@ -202,6 +219,38 @@ describe.sequential('fetchWithTimeout', () => {
           3000
         )
       ).rejects.toBe(abortError);
+      expect(mockTranslationTimeoutError).not.toHaveBeenCalled();
+    });
+
+    it('preserves a private native cancellation through cleanup past the SDK deadline', async () => {
+      vi.useFakeTimers();
+      const privateController = new AbortController();
+      const customFetch: typeof fetch = async (input, init) => {
+        const pending = nativeFetch(input, {
+          ...init,
+          signal: AbortSignal.any([
+            privateController.signal,
+            new Request(input, init).signal,
+          ]),
+        });
+        privateController.abort();
+        try {
+          return await pending;
+        } finally {
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+        }
+      };
+
+      const pending = fetchWithTimeout(
+        'data:text/plain,hello',
+        {},
+        3000,
+        customFetch
+      );
+      await Promise.all([
+        expect(pending).rejects.toBe(privateController.signal.reason),
+        vi.advanceTimersByTimeAsync(5000),
+      ]);
       expect(mockTranslationTimeoutError).not.toHaveBeenCalled();
     });
 
@@ -334,14 +383,7 @@ describe.sequential('fetchWithTimeout', () => {
   describe('edge cases', () => {
     it('treats an explicit timeout of 0 as a literal zero, not the default', async () => {
       vi.useFakeTimers();
-      mockFetch.mockImplementation(
-        (_url, init) =>
-          new Promise<Response>((_resolve, reject) => {
-            init.signal.addEventListener('abort', () =>
-              reject(createAbortError())
-            );
-          })
-      );
+      mockSignalDrivenFetch();
 
       const rejection = expect(
         fetchWithTimeout('https://api.example.com/test', { method: 'GET' }, 0)
@@ -359,7 +401,7 @@ describe.sequential('fetchWithTimeout', () => {
         (_url, init) =>
           new Promise<Response>((resolve, reject) => {
             init.signal.addEventListener('abort', () =>
-              reject(createAbortError())
+              reject(init.signal.reason)
             );
             setTimeout(() => resolve(mockResponse), defaultTimeout * 2);
           })

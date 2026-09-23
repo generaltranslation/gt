@@ -115,9 +115,10 @@ describe.sequential('runtime translation requests', () => {
     fetchMock.mockImplementation(
       async (input, init) =>
         new Promise((_resolve, reject) => {
-          new Request(input, init).signal.addEventListener('abort', () => {
+          const { signal } = new Request(input, init);
+          signal.addEventListener('abort', () => {
             aborted();
-            reject(new DOMException('Aborted', 'AbortError'));
+            reject(signal.reason);
           });
         })
     );

@@ -279,9 +279,8 @@ describe.sequential('runtime translate helpers', () => {
       vi.useFakeTimers();
       const fetchImplementation: typeof fetch = (input, init) =>
         new Promise((_resolve, reject) => {
-          new Request(input, init).signal.addEventListener('abort', () =>
-            reject(Object.assign(new Error('aborted'), { name: 'AbortError' }))
-          );
+          const { signal } = new Request(input, init);
+          signal.addEventListener('abort', () => reject(signal.reason));
         });
       const adapter = createGtApiAdapter({
         ...config,
@@ -313,9 +312,8 @@ describe.sequential('runtime translate helpers', () => {
       let resolveResponse: (() => void) | undefined;
       const fetchImplementation: typeof fetch = (input, init) =>
         new Promise((resolve, reject) => {
-          new Request(input, init).signal.addEventListener('abort', () =>
-            reject(Object.assign(new Error('aborted'), { name: 'AbortError' }))
-          );
+          const { signal } = new Request(input, init);
+          signal.addEventListener('abort', () => reject(signal.reason));
           resolveResponse = () => resolve(Response.json({}));
         });
 
@@ -346,11 +344,8 @@ describe.sequential('runtime translate helpers', () => {
         vi.fn<typeof fetch>(
           (input, init) =>
             new Promise((_resolve, reject) => {
-              new Request(input, init).signal.addEventListener('abort', () =>
-                reject(
-                  Object.assign(new Error('aborted'), { name: 'AbortError' })
-                )
-              );
+              const { signal } = new Request(input, init);
+              signal.addEventListener('abort', () => reject(signal.reason));
             })
         )
       );
