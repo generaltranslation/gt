@@ -130,9 +130,6 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
     customMapping = mapping;
   }
 
-  // Translation reads the latest configuration at call time. Its timeout is
-  // per-call override → configured timeoutMs → runtime default, and the
-  // management retryPolicy never applies to it.
   function getTranslateConfig(timeoutMs?: number | false): TranslateConfig {
     const { retryPolicy: _retryPolicy, ...clientConfig } = getClientConfig();
     return {
