@@ -111,11 +111,12 @@ function run(entry: string, format: string, args = CREATE_ARGS) {
         },
       },
       (error, stdout, stderr) => {
-        if (error && typeof error.code !== 'number') {
+        const status = error ? error.code : 0;
+        if (typeof status !== 'number') {
           reject(error);
           return;
         }
-        resolve({ status: error?.code ?? 0, error: undefined, stdout, stderr });
+        resolve({ status, error: undefined, stdout, stderr });
       }
     );
   });
