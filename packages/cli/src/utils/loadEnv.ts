@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 export function loadEnv(): void {
   /* eslint-disable no-console -- dotenv 16's vault warnings bypass quiet via console.log. */
   const log = console.log;
-  // Keep this routing synchronous and scoped to dotenv, not command execution.
+  // Keep this override synchronous; remove it when dotenv supports stderr diagnostics.
   console.log = console.error;
   try {
     dotenv.config({ path: '.env' });

@@ -1,4 +1,4 @@
-import { execFile, spawnSync } from 'node:child_process';
+import { exec, spawnSync } from 'node:child_process';
 import { createCipheriv, randomBytes } from 'node:crypto';
 import fs from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -15,7 +15,7 @@ import {
   it,
 } from 'vitest';
 
-const execFileAsync = promisify(execFile);
+const execAsync = promisify(exec);
 const packagesRoot = fileURLToPath(new URL('../..', import.meta.url));
 const SECRET = 'gtx-api-fake-created-key';
 const VAULT_KEY = 'a'.repeat(64);
@@ -37,18 +37,16 @@ let preload: string;
 beforeAll(async () => {
   buildSandbox = fs.mkdtempSync(path.join(tmpdir(), 'gt-bootstrap-build-'));
   if (process.env.TURBO_HASH) return;
-  await execFileAsync(
-    'pnpm',
-    ['-r', '--filter', 'gt', '--filter', 'gtx-cli', 'run', 'build'],
-    {
-      cwd: path.dirname(packagesRoot),
-      env: {
-        ...process.env,
-        XDG_CONFIG_HOME: path.join(buildSandbox, 'config'),
-        XDG_STATE_HOME: path.join(buildSandbox, 'state'),
-      },
-    }
-  );
+  await execAsync('pnpm -r --filter gt --filter gtx-cli run build', {
+    cwd: path.dirname(packagesRoot),
+    timeout: 110_000,
+    killSignal: 'SIGKILL',
+    env: {
+      ...process.env,
+      XDG_CONFIG_HOME: path.join(buildSandbox, 'config'),
+      XDG_STATE_HOME: path.join(buildSandbox, 'state'),
+    },
+  });
 }, 120_000);
 
 afterAll(() => fs.rmSync(buildSandbox, { recursive: true, force: true }));
@@ -97,6 +95,8 @@ function run(entry: string, format: string, args = CREATE_ARGS) {
     {
       cwd: app,
       encoding: 'utf8',
+      timeout: 30_000,
+      killSignal: 'SIGKILL',
       env: {
         PATH: process.env.PATH,
         HOME: path.join(sandbox, 'home'),
