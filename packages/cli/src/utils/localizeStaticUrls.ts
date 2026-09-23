@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import * as path from 'path';
 import type { StaticLocalizationSettings } from '../types/index.js';
 import { createFileMapping } from '../formats/files/fileMapping.js';
 import micromatch from 'micromatch';
@@ -22,6 +23,40 @@ const { isMatch } = micromatch;
  * locale prefix were added. Extend deliberately.
  */
 const LOCALIZABLE_URL_ATTRIBUTES = new Set(['href']);
+
+// Docs routing conventions: page file formats, and the file that serves a
+// folder URL (`/a/` -> `a/index.mdx`).
+const PAGE_EXTENSIONS = ['.mdx', '.md'];
+const INDEX_PAGE = 'index';
+
+/**
+ * The page file a root-relative docs URL points to, relative to the working
+ * directory like file mapping keys: `/a/b#x` -> `a/b.mdx`, `a/b.md`, or
+ * `a/b/index.mdx`.
+ */
+function findPage(url: string): string | undefined {
+  const base = url.split(/[?#]/)[0].replace(/^\/+|\/+$/g, '');
+  return PAGE_EXTENSIONS.flatMap((ext) => [
+    `${base}${ext}`,
+    path.join(base, `${INDEX_PAGE}${ext}`),
+  ]).find((page) => fs.existsSync(page));
+}
+
+/**
+ * Whether a URL points to a source page with no translation on disk, either at
+ * its mapped output path or at the localized URL. URLs with no source page,
+ * such as pages generated from an OpenAPI spec, are not missing a translation.
+ */
+function translationMissing(
+  url: string,
+  localizedUrl: string,
+  localizedFiles: Record<string, string>
+): boolean {
+  const sourcePage = findPage(url);
+  if (!sourcePage) return false;
+  const mappedPage = localizedFiles[sourcePage];
+  return !(mappedPage && fs.existsSync(mappedPage)) && !findPage(localizedUrl);
+}
 
 /**
  * Localize URL string literals that live inside an MDX expression's raw source.
@@ -188,6 +223,10 @@ export default async function localizeStaticUrls(
     return;
   }
   const { resolvedPaths: sourceFiles } = settings.files;
+  const localizeOptions = settings.options?.experimentalLocalizeStaticUrls;
+  const skipUntranslatedPages =
+    typeof localizeOptions === 'object' &&
+    localizeOptions.skipUntranslatedPages === true;
 
   // Use filtered locales if provided, otherwise use all locales
   const locales = targetLocales || settings.locales;
@@ -258,7 +297,7 @@ export default async function localizeStaticUrls(
       // Get all files that are md or mdx
       const targetFiles = Object.values(filesMap).filter(
         (p) =>
-          (p.endsWith('.md') || p.endsWith('.mdx')) &&
+          PAGE_EXTENSIONS.some((ext) => p.endsWith(ext)) &&
           (!includeFiles || includeFiles.has(p))
       );
 
@@ -279,7 +318,8 @@ export default async function localizeStaticUrls(
             settings.options?.experimentalHideDefaultLocale || false,
             settings.options?.docsUrlPattern,
             settings.options?.excludeStaticUrls,
-            settings.options?.baseDomain
+            settings.options?.baseDomain,
+            skipUntranslatedPages ? filesMap : undefined
           );
           // Only write the file if there were changes
           if (result.hasChanges) {
@@ -459,7 +499,8 @@ function transformMdxUrls(
   hideDefaultLocale: boolean,
   pattern: string = '/[locale]',
   exclude: string[] = [],
-  baseDomain?: string
+  baseDomain?: string,
+  localizedFiles?: Record<string, string>
 ): UrlTransformResult {
   const transformedUrls: Array<{
     originalPath: string;
@@ -558,6 +599,12 @@ function transformMdxUrls(
       if (!transformedPath) {
         return null;
       }
+      if (
+        localizedFiles &&
+        translationMissing(afterDomain, transformedPath, localizedFiles)
+      ) {
+        return null;
+      }
       transformedUrls.push({
         originalPath: originalUrl,
         newPath: transformedPath,
@@ -586,6 +633,14 @@ function transformMdxUrls(
 
     // Check exclusions
     if (isUrlExcluded(originalUrl, exclude, defaultLocale)) {
+      return null;
+    }
+
+    // Links to pages with no translation keep the default locale.
+    if (
+      localizedFiles &&
+      translationMissing(originalUrl, newUrl, localizedFiles)
+    ) {
       return null;
     }
 
@@ -778,7 +833,8 @@ function localizeStaticUrlsForFile(
   hideDefaultLocale: boolean,
   pattern: string = '/[locale]', // eg /docs/[locale] or /[locale]
   exclude: string[] = [],
-  baseDomain?: string
+  baseDomain?: string,
+  localizedFiles?: Record<string, string>
 ): UrlTransformResult {
   // Use AST-based transformation for MDX files
   return transformMdxUrls(
@@ -788,7 +844,8 @@ function localizeStaticUrlsForFile(
     hideDefaultLocale,
     pattern,
     exclude,
-    baseDomain || ''
+    baseDomain || '',
+    localizedFiles
   );
 }
 

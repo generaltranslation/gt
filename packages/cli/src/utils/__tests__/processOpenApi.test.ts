@@ -221,6 +221,89 @@ describe('processOpenApi', () => {
     expect(repeatedEsGroup.openapi.directory).toBe('es/api');
   });
 
+  it('keeps default-locale docs.json registrations outside language blocks when only a target locale was downloaded', async () => {
+    const spec = { openapi: '3.0.0', paths: { '/foo': { get: {} } } };
+    const specPath = path.join(tmpDir, 'openapi.json');
+    fs.writeFileSync(specPath, JSON.stringify(spec));
+    const translatedSpecPath = path.join(tmpDir, 'es', 'openapi.json');
+    fs.mkdirSync(path.dirname(translatedSpecPath), { recursive: true });
+    fs.writeFileSync(translatedSpecPath, JSON.stringify(spec));
+
+    const docsJsonPath = path.join(tmpDir, 'docs.json');
+    fs.writeFileSync(
+      docsJsonPath,
+      JSON.stringify(
+        {
+          $schema: 'https://mintlify.com/docs.json',
+          api: {
+            openapi: { source: 'openapi.json', directory: 'api-reference' },
+          },
+          navigation: {
+            groups: [
+              {
+                group: 'Shared API',
+                openapi: { source: 'openapi.json', directory: 'shared-api' },
+              },
+            ],
+            languages: [
+              {
+                language: 'en',
+                groups: [
+                  {
+                    group: 'API',
+                    openapi: { source: 'openapi.json', directory: 'en/api' },
+                  },
+                ],
+              },
+              {
+                language: 'es',
+                groups: [
+                  {
+                    group: 'API',
+                    openapi: { source: 'openapi.json', directory: 'es/api' },
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        null,
+        2
+      )
+    );
+
+    // Locadex writes target locales only, and a translate run postprocesses
+    // just the files it downloaded: the composite docs.json itself.
+    const settings = createSettings(tmpDir, ['./openapi.json']);
+    settings.files = {
+      resolvedPaths: { json: [specPath, docsJsonPath] },
+      placeholderPaths: { json: [specPath, docsJsonPath] },
+      transformPaths: {
+        json: { match: 'openapi.json$', replace: '{locale}/openapi.json' },
+      },
+    };
+
+    await processOpenApi(settings, new Set([docsJsonPath]));
+
+    const updatedDocs = JSON.parse(fs.readFileSync(docsJsonPath, 'utf8'));
+    expect(updatedDocs.api.openapi).toEqual({
+      source: 'openapi.json',
+      directory: 'api-reference',
+    });
+    expect(updatedDocs.navigation.groups[0].openapi).toEqual({
+      source: 'openapi.json',
+      directory: 'shared-api',
+    });
+    expect(updatedDocs.navigation.languages[0].groups[0].openapi).toEqual({
+      source: 'openapi.json',
+      directory: 'en/api',
+    });
+    expect(updatedDocs.navigation.languages[1].groups[0].openapi).toEqual({
+      source: 'es/openapi.json',
+      directory: 'es/api',
+    });
+  });
+
   it('rewrites docs.json string openapi field with locale-specific spec path', async () => {
     const spec = { openapi: '3.0.0', paths: { '/foo': { get: {} } } };
     const specPath = path.join(tmpDir, 'openapi.json');

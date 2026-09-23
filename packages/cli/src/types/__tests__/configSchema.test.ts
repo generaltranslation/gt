@@ -97,3 +97,16 @@ describe('GT config schema parsing flags', () => {
     });
   });
 });
+
+describe('GT config schema static url options', () => {
+  it('accepts the boolean and object forms of experimentalLocalizeStaticUrls', () => {
+    const validate = new Ajv({ strict: false }).compile(
+      schema.properties?.options?.properties?.experimentalLocalizeStaticUrls ??
+        {}
+    );
+
+    expect(validate(true)).toBe(true);
+    expect(validate({ skipUntranslatedPages: true })).toBe(true);
+    expect(validate({ unknownOption: true })).toBe(false);
+  });
+});

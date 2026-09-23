@@ -192,9 +192,13 @@ function collectDocsJsonTargets(
   }
 
   for (const [locale, filesMap] of Object.entries(fileMapping)) {
-    for (const filePath of Object.values(filesMap)) {
+    for (const [sourcePath, filePath] of Object.entries(filesMap)) {
       if (!filePath.endsWith('.json')) continue;
-      addTarget(filePath, locale);
+      // Composite docs.json is translated in place and holds every locale.
+      addTarget(
+        filePath,
+        sourcePath === filePath ? settings.defaultLocale : locale
+      );
     }
   }
 

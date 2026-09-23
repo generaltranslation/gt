@@ -326,7 +326,14 @@ export type AdditionalOptions = {
   experimentalClearLocaleDirs?: boolean; // if true, clear locale directories before writing translations (default: false)
   clearLocaleDirsExclude?: string[]; // array of glob patterns with [locale] or [locales] placeholder to exclude from clearing (e.g., "./snippets/[locale]/preserved/**" or "./[locales]/static/**")
   experimentalLocalizeStaticImports?: boolean; // Inserts locale in static import paths in md/mdx files
-  experimentalLocalizeStaticUrls?: boolean; // Inserts locale in static url paths in md/mdx files and adds anchor IDs to preserve navigation
+  // Inserts locale in static url paths in md/mdx files and adds anchor IDs to
+  // preserve navigation. The object form enables it with extra behavior.
+  experimentalLocalizeStaticUrls?:
+    | boolean
+    | {
+        // Keep links to source pages that have no translation
+        skipUntranslatedPages?: boolean;
+      };
   experimentalLocalizeRelativeAssets?: boolean; // Rewrites relative asset URLs in translated md/mdx files to valid paths
   experimentalAddHeaderAnchorIds?: 'mintlify' | 'default'; // Format for anchor IDs: 'mintlify' for Mintlify's native {#id} on every heading, 'default' or undefined for escaped inline \{#id\}. Can run independently of static url localization
   experimentalHideDefaultLocale?: boolean; // Hides the default locale in the import path
