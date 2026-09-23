@@ -1,4 +1,4 @@
-import { exec, spawnSync } from 'node:child_process';
+import { exec, execFile, type SpawnSyncReturns } from 'node:child_process';
 import { createCipheriv, randomBytes } from 'node:crypto';
 import fs from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -89,25 +89,36 @@ beforeEach(() => {
 afterEach(() => fs.rmSync(sandbox, { recursive: true, force: true }));
 
 function run(entry: string, format: string, args = CREATE_ARGS) {
-  return spawnSync(
-    process.execPath,
-    ['--import', preload, path.join(packagesRoot, entry), ...args],
-    {
-      cwd: app,
-      encoding: 'utf8',
-      timeout: 30_000,
-      killSignal: 'SIGKILL',
-      env: {
-        PATH: process.env.PATH,
-        HOME: path.join(sandbox, 'home'),
-        XDG_CONFIG_HOME: path.join(sandbox, 'config'),
-        XDG_STATE_HOME: path.join(sandbox, 'state'),
-        GT_LOG_FORMAT: format,
-        DOTENV_KEY: `dotenv://:${VAULT_KEY}@dotenv.invalid/vault/.env.vault?environment=test`,
-        GT_BOOTSTRAP_SHELL: 'shell',
+  return new Promise<
+    Pick<SpawnSyncReturns<string>, 'status' | 'error' | 'stdout' | 'stderr'>
+  >((resolve, reject) => {
+    execFile(
+      process.execPath,
+      ['--import', preload, path.join(packagesRoot, entry), ...args],
+      {
+        cwd: app,
+        encoding: 'utf8',
+        timeout: 30_000,
+        killSignal: 'SIGKILL',
+        env: {
+          PATH: process.env.PATH,
+          HOME: path.join(sandbox, 'home'),
+          XDG_CONFIG_HOME: path.join(sandbox, 'config'),
+          XDG_STATE_HOME: path.join(sandbox, 'state'),
+          GT_LOG_FORMAT: format,
+          DOTENV_KEY: `dotenv://:${VAULT_KEY}@dotenv.invalid/vault/.env.vault?environment=test`,
+          GT_BOOTSTRAP_SHELL: 'shell',
+        },
       },
-    }
-  );
+      (error, stdout, stderr) => {
+        if (error && typeof error.code !== 'number') {
+          reject(error);
+          return;
+        }
+        resolve({ status: error?.code ?? 0, error: undefined, stdout, stderr });
+      }
+    );
+  });
 }
 
 describe.each([
@@ -118,8 +129,8 @@ describe.each([
 ])('%s executable bootstrap', (entry) => {
   it.each(['default', 'json'])(
     'keeps dotenv warnings off captured keys in %s mode',
-    (format) => {
-      const result = run(entry, format);
+    async (format) => {
+      const result = await run(entry, format);
       expect(result.error).toBeUndefined();
       expect(result.status, result.stderr).toBe(0);
       expect(result.stdout).toBe(`${SECRET}\n`);
@@ -137,8 +148,8 @@ describe.each([
 
   it.each(['default', 'json'])(
     'leaves stdout empty on validation failure in %s mode',
-    (format) => {
-      const result = run(
+    async (format) => {
+      const result = await run(
         entry,
         format,
         CREATE_ARGS.filter((_, index) => index !== 2 && index !== 3)
@@ -154,8 +165,8 @@ describe.each([
 
   it.each(['default', 'json'])(
     'preserves ordinary command stdout in %s mode',
-    (format) => {
-      const result = run(entry, format, ['logout']);
+    async (format) => {
+      const result = await run(entry, format, ['logout']);
       expect(result.status, result.stderr).toBe(0);
       expect(result.stdout).toContain('Signed out successfully.');
       expect(result.stdout).not.toContain('[dotenv');
@@ -165,7 +176,7 @@ describe.each([
     }
   );
 
-  it('restores console routing when the vault loader throws', () => {
+  it('restores console routing when the vault loader throws', async () => {
     fs.writeFileSync(
       path.join(app, '.env.vault'),
       'DOTENV_VAULT_OTHER=unused\n'
@@ -180,7 +191,7 @@ describe.each([
       });
     `
     );
-    const result = run(entry, 'default');
+    const result = await run(entry, 'default');
     expect(result.status).toBe(1);
     expect(result.stdout).toBe('loader routing restored\n');
     expect(result.stderr).toContain('NOT_FOUND_DOTENV_ENVIRONMENT');
@@ -190,7 +201,7 @@ describe.each([
 
   it.each(['plaintext', 'vault'])(
     'preserves shell and file precedence for %s loading',
-    (mode) => {
+    async (mode) => {
       const files = {
         '.env':
           'GT_BOOTSTRAP_SHELL=base\nGT_BOOTSTRAP_BASE=base\nGT_BOOTSTRAP_LOCAL=base\nGT_BOOTSTRAP_PRODUCTION=base\n',
@@ -231,7 +242,7 @@ describe.each([
       });
     `
       );
-      const result = run(entry, 'default', ['logout']);
+      const result = await run(entry, 'default', ['logout']);
       expect(result.status, result.stderr).toBe(0);
       expect(result.stdout).toContain('Signed out successfully.');
       expect(result.stdout).not.toContain('[dotenv');
