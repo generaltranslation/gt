@@ -32,7 +32,6 @@ export function generatePreset(
                 '$..dropdown',
                 '$..product',
                 '$..description',
-                // Footer and navbar text in per-language navigation entries
                 '$..header',
                 '$..label',
               ],
@@ -83,7 +82,6 @@ export function generatePreset(
                 '$..dropdown',
                 '$..product',
                 '$..description',
-                // Footer and navbar text in per-language navigation entries
                 '$..header',
                 '$..label',
               ],
