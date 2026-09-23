@@ -51,11 +51,7 @@ import type {
   TranslateManyEntry,
   TranslateOptions,
 } from '../types-dir/api/entry';
-import type {
-  TranslateConfig,
-  TranslateManyResult,
-  TranslationResult,
-} from '../types';
+import type { TranslateManyResult, TranslationResult } from '../types';
 import { createDiagnosticMessage } from '../logging/diagnostics';
 import {
   translate as translateWithConfig,
@@ -86,57 +82,44 @@ export type GtApiAdapterConfig = ApiClientConfig & {
 
 export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
   let client: ReturnType<typeof createApiClient> | undefined;
-  let configuredClientConfig: ApiClientConfig | undefined;
-  let customMapping: CustomMapping | undefined;
+  let config: GtApiAdapterConfig | undefined;
 
   // Mapping resolves aliases; standardization also canonicalizes configured
   // spellings such as en-us before they cross the service boundary.
   function resolveServiceLocale(locale: string): string {
-    return standardizeLocale(resolveCanonicalLocale(locale, customMapping));
+    return standardizeLocale(
+      resolveCanonicalLocale(locale, config?.customMapping)
+    );
   }
 
   // Upload responses echo the canonical locale; callers key lockfile entries
   // by the configured alias, so map it back before it leaves the adapter.
   function aliasUploadedFileLocale<T extends { locale?: string }>(file: T): T {
     return file.locale
-      ? { ...file, locale: resolveAliasLocale(file.locale, customMapping) }
+      ? {
+          ...file,
+          locale: resolveAliasLocale(file.locale, config?.customMapping),
+        }
       : file;
   }
 
+  function getConfig(timeoutMs?: number | false): GtApiAdapterConfig {
+    if (!config) {
+      throw new Error(
+        'API client not configured — call configureApiClient first'
+      );
+    }
+    return timeoutMs === undefined ? config : { ...config, timeoutMs };
+  }
+
   function getClient(timeoutMs?: number): ReturnType<typeof createApiClient> {
-    if (!client) {
-      throw new Error(
-        'API client not configured — call configureApiClient first'
-      );
-    }
-    return timeoutMs !== undefined
-      ? createApiClient({ ...getClientConfig(), timeoutMs })
-      : client;
+    if (timeoutMs === undefined && client) return client;
+    return createApiClient(getConfig(timeoutMs));
   }
 
-  function getClientConfig(): ApiClientConfig {
-    if (!configuredClientConfig) {
-      throw new Error(
-        'API client not configured — call configureApiClient first'
-      );
-    }
-    return configuredClientConfig;
-  }
-
-  function configure(config: GtApiAdapterConfig): void {
-    const { customMapping: mapping, ...clientConfig } = config;
-    client = createApiClient(clientConfig);
-    configuredClientConfig = clientConfig;
-    customMapping = mapping;
-  }
-
-  function getTranslateConfig(timeoutMs?: number | false): TranslateConfig {
-    const { retryPolicy: _retryPolicy, ...clientConfig } = getClientConfig();
-    return {
-      ...clientConfig,
-      timeoutMs: timeoutMs ?? clientConfig.timeoutMs,
-      customMapping,
-    };
+  function configure(nextConfig: GtApiAdapterConfig): void {
+    client = createApiClient(nextConfig);
+    config = { ...nextConfig };
   }
 
   async function translate(
@@ -144,7 +127,7 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
     options: string | TranslateOptions,
     timeoutMs?: number | false
   ) {
-    return translateWithConfig(source, options, getTranslateConfig(timeoutMs));
+    return translateWithConfig(source, options, getConfig(timeoutMs));
   }
 
   function translateMany(
@@ -162,11 +145,7 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
     options: string | TranslateOptions,
     timeoutMs?: number | false
   ): Promise<TranslateManyResult | Record<string, TranslationResult>> {
-    return translateManyWithConfig(
-      sources,
-      options,
-      getTranslateConfig(timeoutMs)
-    );
+    return translateManyWithConfig(sources, options, getConfig(timeoutMs));
   }
 
   if (defaultConfig) configure(defaultConfig);
@@ -187,7 +166,7 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
   }
 
   async function loadProjectInfo(projectId?: string, timeoutMs?: number) {
-    const resolvedProjectId = projectId ?? getClientConfig().projectId;
+    const resolvedProjectId = projectId ?? getConfig().projectId;
     if (!resolvedProjectId) {
       throw new Error('Project ID is required to fetch project information');
     }
@@ -202,10 +181,9 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
   return {
     configure,
     getClient,
-    getClientConfig,
 
     resolveAliasLocale(locale: string) {
-      return resolveAliasLocale(locale, customMapping);
+      return resolveAliasLocale(locale, config?.customMapping);
     },
 
     resolveCanonicalLocale(locale: string) {
@@ -469,9 +447,12 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
       const result = await loadProjectInfo(projectId, timeoutMs);
       return {
         ...result,
-        defaultLocale: resolveAliasLocale(result.defaultLocale, customMapping),
+        defaultLocale: resolveAliasLocale(
+          result.defaultLocale,
+          config?.customMapping
+        ),
         currentLocales: result.currentLocales.map((locale) =>
-          resolveAliasLocale(locale, customMapping)
+          resolveAliasLocale(locale, config?.customMapping)
         ),
       };
     },
@@ -493,13 +474,16 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
         ...result,
         translatedFiles: result.translatedFiles.map((file) => ({
           ...file,
-          locale: resolveAliasLocale(file.locale, customMapping),
+          locale: resolveAliasLocale(file.locale, config?.customMapping),
         })),
         sourceFiles: result.sourceFiles.map((file) => ({
           ...file,
-          sourceLocale: resolveAliasLocale(file.sourceLocale, customMapping),
+          sourceLocale: resolveAliasLocale(
+            file.sourceLocale,
+            config?.customMapping
+          ),
           locales: file.locales.map((locale) =>
-            resolveAliasLocale(locale, customMapping)
+            resolveAliasLocale(locale, config?.customMapping)
           ),
         })),
       };
@@ -521,16 +505,16 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
         ...result,
         translations: result.translations.map((translation) => ({
           ...translation,
-          locale: resolveAliasLocale(translation.locale, customMapping),
+          locale: resolveAliasLocale(translation.locale, config?.customMapping),
         })),
         sourceFile: {
           ...result.sourceFile,
           sourceLocale: resolveAliasLocale(
             result.sourceFile.sourceLocale,
-            customMapping
+            config?.customMapping
           ),
           locales: result.sourceFile.locales.map((locale) =>
-            resolveAliasLocale(locale, customMapping)
+            resolveAliasLocale(locale, config?.customMapping)
           ),
         },
       };
@@ -561,7 +545,7 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
             (file): DownloadedFile => ({
               ...file,
               ...(file.locale && {
-                locale: resolveAliasLocale(file.locale, customMapping),
+                locale: resolveAliasLocale(file.locale, config?.customMapping),
               }),
               data: decodeFileContent(file.data, file.fileFormat),
               metadata: file.metadata,
@@ -572,7 +556,7 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
         pending: responses.flatMap((response) =>
           (response.pending ?? []).map((file) => ({
             ...file,
-            locale: resolveAliasLocale(file.locale, customMapping),
+            locale: resolveAliasLocale(file.locale, config?.customMapping),
           }))
         ),
       };

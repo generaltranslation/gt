@@ -11,7 +11,6 @@ import type { CustomMapping } from 'generaltranslation/types';
 const {
   configure: configureSharedApi,
   getClient: _getClient,
-  getClientConfig: _getClientConfig,
   ...sharedApi
 } = createGtApiAdapter({ baseUrl: defaultBaseUrl });
 

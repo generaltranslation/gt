@@ -307,35 +307,42 @@ describe.sequential('runtime translate helpers', () => {
       await runtimeDefault;
     });
 
-    it('treats 0 as a literal zero and false as no runtime timer', async () => {
-      vi.useFakeTimers();
-      let resolveResponse: (() => void) | undefined;
-      const fetchImplementation: typeof fetch = (input, init) =>
-        new Promise((resolve, reject) => {
-          const { signal } = new Request(input, init);
-          signal.addEventListener('abort', () => reject(signal.reason));
-          resolveResponse = () => resolve(Response.json({}));
-        });
+    it.each(['helper', 'adapter'] as const)(
+      'treats 0 as a literal zero and false as no runtime timer through %s',
+      async (surface) => {
+        vi.useFakeTimers();
+        let resolveResponse: (() => void) | undefined;
+        const fetchImplementation: typeof fetch = (input, init) =>
+          new Promise((resolve, reject) => {
+            const { signal } = new Request(input, init);
+            signal.addEventListener('abort', () => reject(signal.reason));
+            resolveResponse = () => resolve(Response.json({}));
+          });
 
-      const zero = expect(
-        translate('Hello', 'es', {
+        const adapter = createGtApiAdapter({
           ...config,
           fetch: fetchImplementation,
-          timeoutMs: 0,
-        })
-      ).rejects.toThrow('timed out after 0ms');
-      await vi.advanceTimersByTimeAsync(0);
-      await zero;
+          timeoutMs: 5_000,
+        });
+        const run = (timeoutMs: number | false) =>
+          surface === 'adapter'
+            ? adapter.translate('Hello', 'es', timeoutMs)
+            : translate('Hello', 'es', {
+                ...config,
+                fetch: fetchImplementation,
+                timeoutMs,
+              });
 
-      const disabled = translate('Hello', 'es', {
-        ...config,
-        fetch: fetchImplementation,
-        timeoutMs: false,
-      });
-      await vi.advanceTimersByTimeAsync(defaultTimeout * 10);
-      resolveResponse?.();
-      await expect(disabled).resolves.toMatchObject({ success: false });
-    });
+        const zero = expect(run(0)).rejects.toThrow('timed out after 0ms');
+        await vi.advanceTimersByTimeAsync(0);
+        await zero;
+
+        const disabled = run(false);
+        await vi.advanceTimersByTimeAsync(defaultTimeout * 10);
+        resolveResponse?.();
+        await expect(disabled).resolves.toMatchObject({ success: false });
+      }
+    );
 
     it('keeps the legacy class zero timeout selecting the default', async () => {
       vi.useFakeTimers();

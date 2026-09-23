@@ -51,6 +51,12 @@ describe.sequential('createGtApiAdapter', () => {
     await expect(adapter.createBranch({ branchName: 'main' })).rejects.toThrow(
       'API client not configured'
     );
+    await expect(adapter.translate('Hello', 'es')).rejects.toThrow(
+      'API client not configured'
+    );
+    await expect(adapter.translateMany(['Hello'], 'es')).rejects.toThrow(
+      'API client not configured'
+    );
   });
 
   it('resolves configured locales in both directions', () => {
@@ -60,6 +66,37 @@ describe.sequential('createGtApiAdapter', () => {
     expect(adapter.resolveCanonicalLocale('target')).toBe('es-ES');
     expect(adapter.resolveCanonicalLocale('en-us')).toBe('en-US');
     expect(adapter.resolveAliasLocale('es-ES')).toBe('target');
+  });
+
+  it('refreshes management requests and clears omitted locale mappings on reconfiguration', async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () =>
+      Response.json({ branchId: 'branch-id' })
+    );
+    const adapter = createGtApiAdapter({
+      baseUrl: 'https://api.example.com',
+      apiKey: 'old-key',
+      projectId: 'old-project',
+      customMapping,
+      fetch: fetchMock,
+    });
+    await adapter.createBranch({ branchName: 'main' });
+    expect(adapter.resolveAliasLocale('es-ES')).toBe('target');
+
+    adapter.configure({
+      baseUrl: 'https://reconfigured.example.com',
+      apiKey: 'new-key',
+      projectId: 'new-project',
+      fetch: fetchMock,
+    });
+    await adapter.createBranch({ branchName: 'main' });
+
+    const request = new Request(...fetchMock.mock.calls[1]);
+    expect(new URL(request.url).origin).toBe(
+      'https://reconfigured.example.com'
+    );
+    expect(request.headers.get('authorization')).toBe('Bearer new-key');
+    expect(request.headers.get('gt-project-id')).toBe('new-project');
+    expect(adapter.resolveAliasLocale('es-ES')).toBe('es-ES');
   });
 
   it.each([

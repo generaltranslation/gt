@@ -5,7 +5,6 @@ import { createGtApiAdapter } from 'generaltranslation/internal';
 const {
   configure: configureSharedApi,
   getClient: _getClient,
-  getClientConfig: _getClientConfig,
   loadJobStatuses,
   loadProjectInfo,
   ...sharedApi
