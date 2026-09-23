@@ -121,9 +121,14 @@ function createProjectCommandError(
   });
 }
 
+const emptyApiKeyNameError = createDiagnosticMessage({
+  whatHappened: 'The key name cannot be empty',
+  fix: 'Pass a non-empty value with --name',
+});
+
 function parseApiKeyName(value: string): string {
   const name = value.trim();
-  if (!name) throw new InvalidArgumentError('The key name cannot be empty.');
+  if (!name) throw new InvalidArgumentError(emptyApiKeyNameError);
   return name;
 }
 

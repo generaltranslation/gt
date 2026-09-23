@@ -164,7 +164,7 @@ describe('api-key create', () => {
     ],
     [
       ['--name', '   ', '--permission', 'project:files:read'],
-      'The key name cannot be empty',
+      'The key name cannot be empty. Pass a non-empty value with --name.',
     ],
     [
       ['--name', 'CI', '--permission', 'project:files:read', 'org:admin'],
