@@ -37,7 +37,6 @@ import {
 import {
   translate as translateWithConfig,
   translateMany as translateManyWithConfig,
-  validateTranslationAuth,
 } from './translate/runtimeTranslate';
 import { TranslateOptions } from './types-dir/api/entry';
 
@@ -259,10 +258,6 @@ export class GTRuntime {
       projectId: this.projectId || '',
       userTokenProvider: this.userTokenProvider,
     };
-  }
-
-  protected _validateAuth(functionName: string) {
-    validateTranslationAuth(functionName, this._getTranslationConfig());
   }
 
   /** The legacy positional timeout treats `0`/omitted as the default. */

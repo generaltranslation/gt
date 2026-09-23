@@ -68,6 +68,7 @@ import type {
 } from './translate/publishFiles';
 import { createGtApiAdapter, type GtApiAdapter } from './adapter/createGtApi';
 import { GTRuntime, type GTConstructorParams } from './runtime';
+import { validateAuth } from './translate/runtimeTranslate';
 
 export { GTRuntime, type GTConstructorParams } from './runtime';
 export { decodeVars } from './derive/decodeVars';
@@ -164,7 +165,7 @@ export class GT extends GTRuntime {
    * @returns {Promise<BranchDataResult>} The branch information.
    */
   async queryBranchData(query: BranchQuery): Promise<BranchDataResult> {
-    this._validateAuth('queryBranchData');
+    validateAuth('queryBranchData', this._getTranslationConfig());
     return await this._getApiAdapter().queryBranchData(query);
   }
 
@@ -175,7 +176,7 @@ export class GT extends GTRuntime {
    * @returns {Promise<CreateBranchResult>} The created branch information.
    */
   async createBranch(query: CreateBranchQuery): Promise<CreateBranchResult> {
-    this._validateAuth('createBranch');
+    validateAuth('createBranch', this._getTranslationConfig());
     return await this._getApiAdapter().createBranch(query);
   }
 
@@ -196,7 +197,7 @@ export class GT extends GTRuntime {
     moves: MoveMapping[],
     options: ProcessMovesOptions = {}
   ): Promise<ProcessMovesResponse> {
-    this._validateAuth('processFileMoves');
+    validateAuth('processFileMoves', this._getTranslationConfig());
     return await this._getApiAdapter().processFileMoves(moves, options);
   }
 
@@ -218,7 +219,7 @@ export class GT extends GTRuntime {
     fileIds: string[],
     options: { timeout?: number } = {}
   ): Promise<GetOrphanedFilesResult> {
-    this._validateAuth('getOrphanedFiles');
+    validateAuth('getOrphanedFiles', this._getTranslationConfig());
     return await this._getApiAdapter().getOrphanedFiles(
       branchId,
       fileIds,
@@ -244,7 +245,7 @@ export class GT extends GTRuntime {
     files: SetupProjectFileReference[],
     options?: SetupProjectOptions
   ): Promise<SetupProjectResult> {
-    this._validateAuth('setupProject');
+    validateAuth('setupProject', this._getTranslationConfig());
     options = {
       ...options,
       locales: options?.locales?.map((locale) =>
@@ -274,7 +275,7 @@ export class GT extends GTRuntime {
     jobIds: string[],
     timeoutMs?: number
   ): Promise<CheckJobStatusResult> {
-    this._validateAuth('checkJobStatus');
+    validateAuth('checkJobStatus', this._getTranslationConfig());
     return await this._getApiAdapter().checkJobStatus(jobIds, timeoutMs);
   }
 
@@ -289,7 +290,7 @@ export class GT extends GTRuntime {
     jobs: EnqueueFilesResult | string[],
     options?: AwaitJobsOptions
   ): Promise<AwaitJobsResult> {
-    this._validateAuth('awaitJobs');
+    validateAuth('awaitJobs', this._getTranslationConfig());
     const jobIds = Array.isArray(jobs) ? jobs : Object.keys(jobs.jobData);
     return await this._getApiAdapter().awaitJobs(jobIds, options);
   }
@@ -312,7 +313,7 @@ export class GT extends GTRuntime {
     options: EnqueueFilesOptions
   ): Promise<EnqueueFilesResult> {
     // Validation
-    this._validateAuth('enqueueFiles');
+    validateAuth('enqueueFiles', this._getTranslationConfig());
 
     // Merge instance settings with options.
     let mergedOptions: EnqueueFilesOptions = {
@@ -370,7 +371,7 @@ export class GT extends GTRuntime {
    * @returns {Promise<CreateTagResult>} The created or updated tag.
    */
   async createTag(options: CreateTagOptions): Promise<CreateTagResult> {
-    this._validateAuth('createTag');
+    validateAuth('createTag', this._getTranslationConfig());
     return await this._getApiAdapter().createTag(options);
   }
 
@@ -381,7 +382,7 @@ export class GT extends GTRuntime {
    * @returns {Promise<PublishFilesResult>} Result containing per-file success/failure
    */
   async publishFiles(files: PublishFileEntry[]): Promise<PublishFilesResult> {
-    this._validateAuth('publishFiles');
+    validateAuth('publishFiles', this._getTranslationConfig());
     const result = await this._getApiAdapter().publishFiles(files);
     return {
       results: result.results.map((item) => ({
@@ -402,7 +403,7 @@ export class GT extends GTRuntime {
   async submitUserEditDiffs(
     payload: SubmitUserEditDiffsPayload
   ): Promise<void> {
-    this._validateAuth('submitUserEditDiffs');
+    validateAuth('submitUserEditDiffs', this._getTranslationConfig());
     // Normalize locales to canonical form before submission.
     const normalized: SubmitUserEditDiffsPayload = {
       ...payload,
@@ -443,7 +444,7 @@ export class GT extends GTRuntime {
   async getProjectInfo(
     options: GetProjectInfoOptions = {}
   ): Promise<ProjectInfoResult> {
-    this._validateAuth('getProjectInfo');
+    validateAuth('getProjectInfo', this._getTranslationConfig());
     const result = await this._getApiAdapter().getProjectInfo(
       undefined,
       options.timeout
@@ -462,7 +463,7 @@ export class GT extends GTRuntime {
     options: CheckFileTranslationsOptions = {}
   ): Promise<FileDataResult> {
     // Validation
-    this._validateAuth('queryFileData');
+    validateAuth('queryFileData', this._getTranslationConfig());
 
     // Replace target locales with canonical locales
     data.translatedFiles = data.translatedFiles?.map((item) => ({
@@ -514,7 +515,7 @@ export class GT extends GTRuntime {
     options: CheckFileTranslationsOptions = {}
   ): Promise<FileQueryResult> {
     // Validation
-    this._validateAuth('querySourceFile');
+    validateAuth('querySourceFile', this._getTranslationConfig());
 
     const result = await this._getApiAdapter().querySourceFile(
       { fileId: data.fileId },
@@ -558,7 +559,7 @@ export class GT extends GTRuntime {
     options: { timeout?: number } = {}
   ): Promise<ProjectData> {
     // Validation
-    this._validateAuth('getProjectData');
+    validateAuth('getProjectData', this._getTranslationConfig());
 
     const { autoApprove: _autoApprove, ...project } =
       await this._getApiAdapter().getProjectInfo(projectId, options.timeout);
@@ -604,7 +605,7 @@ export class GT extends GTRuntime {
     options: DownloadFileOptions = {}
   ): Promise<string> {
     // Validation
-    this._validateAuth('downloadTranslatedFile');
+    validateAuth('downloadTranslatedFile', this._getTranslationConfig());
 
     const result = await this._getApiAdapter().downloadFileBatch(
       [
@@ -641,7 +642,7 @@ export class GT extends GTRuntime {
     options: DownloadFileBatchOptions = {}
   ): Promise<DownloadFileBatchResult> {
     // Validation
-    this._validateAuth('downloadFileBatch');
+    validateAuth('downloadFileBatch', this._getTranslationConfig());
 
     const requestedFiles = new Map<string, DownloadFileBatchRequest>();
     requests = requests.map((request) => {
@@ -705,7 +706,7 @@ export class GT extends GTRuntime {
     options: UploadFilesOptions
   ): Promise<UploadFilesResponse> {
     // Validation
-    this._validateAuth('uploadSourceFiles');
+    validateAuth('uploadSourceFiles', this._getTranslationConfig());
 
     // Merge instance settings with options.
     const mergedOptions: UploadFilesOptions = {
@@ -750,7 +751,7 @@ export class GT extends GTRuntime {
     fonts: AssetUpload[],
     options: UploadAssetsOptions = {}
   ): Promise<UploadAssetsResponse> {
-    this._validateAuth('uploadFonts');
+    validateAuth('uploadFonts', this._getTranslationConfig());
 
     return await this._getApiAdapter().uploadFonts(fonts, options);
   }
@@ -777,7 +778,7 @@ export class GT extends GTRuntime {
     options: UploadFilesOptions
   ): Promise<UploadFilesResponse> {
     // Validation
-    this._validateAuth('uploadTranslations');
+    validateAuth('uploadTranslations', this._getTranslationConfig());
 
     // Merge instance settings with options.
     const mergedOptions: UploadFilesOptions = {

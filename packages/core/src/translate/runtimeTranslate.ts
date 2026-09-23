@@ -56,7 +56,7 @@ type TranslateDefaults = Partial<
  * Credential/provider errors are reported before the project error, and both
  * before any locale validation. GT/GTRuntime share this ordering.
  */
-export function validateTranslationAuth<
+export function validateAuth<
   T extends Pick<TranslateConfig, 'apiKey' | 'userTokenProvider' | 'projectId'>,
 >(
   functionName: string,
@@ -96,7 +96,7 @@ function prepareTranslation(
     options = { targetLocale: options };
   }
 
-  validateTranslationAuth(functionName, config);
+  validateAuth(functionName, config);
 
   const targetLocale = options?.targetLocale || defaults.targetLocale;
   if (!targetLocale) {
