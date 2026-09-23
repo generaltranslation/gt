@@ -1,5 +1,19 @@
 # gtx-cli
 
+## 2.21.5
+
+### Patch Changes
+
+- [#2329](https://github.com/generaltranslation/gt/pull/2329) [`c3b0483`](https://github.com/generaltranslation/gt/commit/c3b048335fa15edd3c0957d7c7c99f4232d00a40) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Fix Mintlify postprocessing that broke default-locale content:
+  - Add `experimentalLocalizeStaticUrls: { skipUntranslatedPages: true }` to keep links to pages without a translation on the default locale instead of prefixing a locale that has no page. `true` keeps the existing behavior.
+  - Stop rewriting docs.json OpenAPI registrations outside `navigation.languages` to a target locale when only one locale was downloaded, which removed the default-locale API reference.
+
+- Updated dependencies []:
+  - generaltranslation@9.4.3
+  - @generaltranslation/python-extractor@0.2.53
+  - @generaltranslation/supported-locales@2.1.33
+  - @generaltranslation/vue-extractor@0.1.13
+
 ## 2.21.4
 
 ### Patch Changes
