@@ -103,18 +103,18 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
       : file;
   }
 
-  function getConfig(timeoutMs?: number | false): GtApiAdapterConfig {
+  function getConfig(): GtApiAdapterConfig {
     if (!config) {
       throw new Error(
         'API client not configured — call configureApiClient first'
       );
     }
-    return timeoutMs === undefined ? config : { ...config, timeoutMs };
+    return config;
   }
 
   function getClient(timeoutMs?: number): ReturnType<typeof createApiClient> {
     if (timeoutMs === undefined && client) return client;
-    return createApiClient(getConfig(timeoutMs));
+    return createApiClient({ ...getConfig(), timeoutMs });
   }
 
   function configure(nextConfig: GtApiAdapterConfig): void {
@@ -127,7 +127,10 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
     options: string | TranslateOptions,
     timeoutMs?: number | false
   ) {
-    return translateWithConfig(source, options, getConfig(timeoutMs));
+    return translateWithConfig(source, options, {
+      ...getConfig(),
+      ...(timeoutMs !== undefined && { timeoutMs }),
+    });
   }
 
   function translateMany(
@@ -145,7 +148,10 @@ export function createGtApiAdapter(defaultConfig?: GtApiAdapterConfig) {
     options: string | TranslateOptions,
     timeoutMs?: number | false
   ): Promise<TranslateManyResult | Record<string, TranslationResult>> {
-    return translateManyWithConfig(sources, options, getConfig(timeoutMs));
+    return translateManyWithConfig(sources, options, {
+      ...getConfig(),
+      ...(timeoutMs !== undefined && { timeoutMs }),
+    });
   }
 
   if (defaultConfig) configure(defaultConfig);

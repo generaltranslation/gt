@@ -260,21 +260,13 @@ export class GTRuntime {
     };
   }
 
-  /** The legacy positional timeout treats `0`/omitted as the default. */
-  private _getTranslateConfig(timeout?: number) {
-    return {
-      ...this._getTranslationConfig(),
-      customMapping: this.customMapping,
-      timeoutMs: timeout || undefined,
-    };
-  }
-
   /**
    * Translates a single source string to the target locale.
    * Routes through {@link translateMany} under the hood.
    *
    * @param {string} source - The source string to translate.
    * @param {object} options - Translation options including targetLocale and optional entry metadata.
+   * @param {number} [timeout] - Timeout in milliseconds; 0 or omitted selects the runtime default.
    * @returns {Promise<TranslationResult | TranslationError>} The translated content.
    *
    * @example
@@ -295,7 +287,11 @@ export class GTRuntime {
     return translateWithConfig(
       source,
       options,
-      this._getTranslateConfig(timeout),
+      {
+        ...this._getTranslationConfig(),
+        customMapping: this.customMapping,
+        timeoutMs: timeout || undefined,
+      },
       this
     );
   }
@@ -306,6 +302,7 @@ export class GTRuntime {
    *
    * @param {TranslateManyEntry[] | Record<string, TranslateManyEntry>} sources - The source entries to translate. Can be an array or a record keyed by hash.
    * @param {object} options - Translation options including targetLocale.
+   * @param {number} [timeout] - Timeout in milliseconds; 0 or omitted selects the runtime default.
    * @returns {Promise<TranslateManyResult | Record<string, TranslationResult>>} The translated contents. An array if sources was an array, a record if sources was a record.
    *
    * @example
@@ -344,7 +341,11 @@ export class GTRuntime {
     return translateManyWithConfig(
       sources,
       options,
-      this._getTranslateConfig(timeout),
+      {
+        ...this._getTranslationConfig(),
+        customMapping: this.customMapping,
+        timeoutMs: timeout || undefined,
+      },
       this
     );
   }
