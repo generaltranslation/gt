@@ -32,10 +32,17 @@ export function generatePreset(
                 '$..dropdown',
                 '$..product',
                 '$..description',
+                // Footer and navbar text in per-language navigation entries
+                '$..header',
+                '$..label',
               ],
               omitProperties: ['default'],
               transform: {
                 '$..pages[*]': {
+                  match: '^{locale}/(.*)$',
+                  replace: '{locale}/$1',
+                },
+                '$..root': {
                   match: '^{locale}/(.*)$',
                   replace: '{locale}/$1',
                 },
@@ -76,6 +83,9 @@ export function generatePreset(
                 '$..dropdown',
                 '$..product',
                 '$..description',
+                // Footer and navbar text in per-language navigation entries
+                '$..header',
+                '$..label',
               ],
               omitProperties: ['default'],
               transform: {
