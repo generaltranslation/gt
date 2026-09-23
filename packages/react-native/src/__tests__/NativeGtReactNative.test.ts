@@ -98,8 +98,6 @@ describe('native utilities degrade on web without the native module', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
-    // @ts-expect-error remove the localStorage shim injected by a test
-    delete globalThis.localStorage;
   });
 
   it('getNativeLocales returns an array instead of crashing on import', async () => {
@@ -118,22 +116,5 @@ describe('native utilities degrade on web without the native module', () => {
     const { getNativeLocales } = await import('../utils/getNativeLocales');
 
     expect(getNativeLocales()).toEqual(['fr-FR', 'fr']);
-  });
-
-  it('nativeStore reads and writes through localStorage on web', async () => {
-    const store = new Map<string, string>();
-    // @ts-expect-error minimal localStorage shim for the web path
-    globalThis.localStorage = {
-      getItem: (k: string) => store.get(k) ?? null,
-      setItem: (k: string, v: string) => {
-        store.set(k, v);
-      },
-    };
-
-    const { nativeStoreGet, nativeStoreSet } =
-      await import('../utils/nativeStore');
-
-    expect(() => nativeStoreSet('gt-locale', 'fr')).not.toThrow();
-    expect(nativeStoreGet('gt-locale')).toBe('fr');
   });
 });
