@@ -1,6 +1,6 @@
 import type { LocaleProperties } from '@generaltranslation/format/types';
 import { useMemo } from 'react';
-import { useConditionStore, useEnableI18n, useLocale } from './condition-store';
+import { useEnableI18n, useLocale } from './condition-store';
 import { getFormatLocales } from './utils/getFormatLocales';
 import { getI18nConfig } from 'gt-i18n/internal';
 
@@ -37,9 +37,8 @@ export function useTranslationConditions(): {
   locale: string;
   shouldTranslate: boolean;
 } {
-  const conditionStore = useConditionStore();
-  const locale = conditionStore.getLocale();
-  const enableI18n = conditionStore.getEnableI18n();
+  const locale = useLocale();
+  const enableI18n = useEnableI18n();
   return {
     locale,
     shouldTranslate: enableI18n && getI18nConfig().requiresTranslation(locale),

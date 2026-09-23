@@ -39,14 +39,9 @@ if (typeof window !== 'undefined') {
  * Small wrapper to embed nextjs app router behavior
  */
 export function Client_GTProvider({
-  conditions,
   supportsLocaleRefresh,
   ...props
-}: Omit<
-  SharedGTProviderProps,
-  'locale' | 'region' | 'enableI18n' | '_serverConditions'
-> & {
-  conditions: NonNullable<SharedGTProviderProps['_serverConditions']>;
+}: SharedGTProviderProps & {
   supportsLocaleRefresh: boolean;
 }) {
   const router = useRouter();
@@ -56,10 +51,6 @@ export function Client_GTProvider({
       globalThis.location.reload();
       return;
     }
-    // The server supplies a fresh conditions object even when its accepted
-    // locale is unchanged. For example, switching /en/careers to excluded 'fr'
-    // returns another 'en' snapshot, which resets the browser store to 'en'
-    // without discarding client state through a document reload.
     router.refresh();
   }, [router, supportsLocaleRefresh]);
   const reloadBrowserPage = useCallback(() => {
@@ -101,16 +92,9 @@ export function Client_GTProvider({
   usePathCheck({
     reloadBrowserPage,
     refreshServerComponents,
-    locale: conditions.locale,
+    locale: props.locale,
   });
-  return (
-    <GTProvider
-      {...props}
-      {...conditions}
-      _serverConditions={conditions}
-      _reload={syncServerContent}
-    />
-  );
+  return <GTProvider {...props} _reload={syncServerContent} />;
 }
 
 /**
