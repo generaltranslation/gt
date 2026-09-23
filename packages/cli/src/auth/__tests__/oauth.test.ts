@@ -20,14 +20,14 @@ import {
   it,
   vi,
 } from 'vitest';
-import { logger } from '../console/logger.js';
+import { logger } from '../../console/logger.js';
 import {
   deleteOAuthTokens,
   getCredentialsPath,
   readOAuthTokens,
   writeOAuthTokens,
   type OAuthTokens,
-} from './credentialStore.js';
+} from '../credentialStore.js';
 import {
   createUserTokenProvider,
   hasLogin,
@@ -36,7 +36,7 @@ import {
   whoAmI,
   type LoginOptions,
   type UserTokenProviderOptions,
-} from './oauth.js';
+} from '../oauth.js';
 
 vi.mock('node:fs/promises', { spy: true });
 vi.mock('node:os', { spy: true });
@@ -702,7 +702,7 @@ describe('library-managed device authorization', () => {
     });
   });
   it('falls back on bind failure, opens the complete verification URI without waiting for the launcher', async () => {
-    const loopback = await import('./loopback.js');
+    const loopback = await import('../loopback.js');
     vi.spyOn(loopback, 'startLoopbackServer').mockRejectedValueOnce(
       new Error('EADDRINUSE')
     );
