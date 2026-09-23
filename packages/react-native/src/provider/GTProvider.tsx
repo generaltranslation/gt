@@ -21,7 +21,14 @@ import {
 
 export type GTProviderProps = Omit<
   InternalGTProviderProps,
-  'i18nStore' | 'translations' | 'setLocale' | 'setRegion' | 'setEnableI18n'
+  | 'i18nStore'
+  | 'translations'
+  | 'locale'
+  | 'region'
+  | 'enableI18n'
+  | 'setLocale'
+  | 'setRegion'
+  | 'setEnableI18n'
 > &
   Omit<NativeConditionStoreParams, 'locale' | '_reload'> & {
     children?: ReactNode;
