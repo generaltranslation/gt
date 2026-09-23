@@ -1,5 +1,12 @@
 # @generaltranslation/vue-extractor
 
+## 0.1.13
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.4.3
+
 ## 0.1.12
 
 ### Patch Changes

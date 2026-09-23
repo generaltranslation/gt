@@ -1,5 +1,12 @@
 # gt-i18n
 
+## 1.0.30
+
+### Patch Changes
+
+- Updated dependencies []:
+  - generaltranslation@9.4.3
+
 ## 1.0.29
 
 ### Patch Changes

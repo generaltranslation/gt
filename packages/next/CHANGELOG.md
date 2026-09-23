@@ -1,5 +1,18 @@
 # gt-next
 
+## 11.4.2
+
+### Patch Changes
+
+- [#2318](https://github.com/generaltranslation/gt/pull/2318) [`ed03265`](https://github.com/generaltranslation/gt/commit/ed03265288c609670aef507cef12b54d90eb03c5) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Restore the SWC plugin `gt_swc_plugin.wasm` file to the published package. The `build` script now transpiles before building the SWC plugin, so tsdown's output cleaning no longer removes the plugin from `dist`.
+
+- Updated dependencies []:
+  - generaltranslation@9.4.3
+  - @generaltranslation/compiler@1.3.55
+  - gt-i18n@1.0.30
+  - gt-react@11.4.2
+  - @generaltranslation/react-core@11.4.2
+
 ## 11.4.1
 
 ### Patch Changes
