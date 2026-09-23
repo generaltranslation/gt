@@ -42,6 +42,7 @@ import { installPackage } from '../utils/installPackage.js';
 import { getPackageManager } from '../utils/packageManager.js';
 import {
   areCredentialsSet,
+  inspectCredentialsEnvFile,
   retrieveCredentials,
   setCredentials,
 } from '../utils/credentials.js';
@@ -1216,6 +1217,8 @@ See https://www.npmjs.com/package/gt-vue`);
   }
   protected async handleLoginCommand(options: LoginOptions): Promise<void> {
     const settings = await generateSettings({ config: options.config });
+    // Fail on a tracked or unwritable .env.local before the dashboard issues a key.
+    await inspectCredentialsEnvFile();
     const credentials = await retrieveCredentials(settings);
     await setCredentials(credentials, settings.framework);
     logger.message(productionRuntimeKeyGuidance(settings.dashboardUrl));

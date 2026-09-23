@@ -1,5 +1,6 @@
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
-import { tmpdir } from 'node:os';
+import { devNull, tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -72,7 +73,10 @@ describe('setCredentials', () => {
     expect(readEnv()).toBe(
       '# app settings\n\n\nDATABASE_URL=postgres://localhost/app\nexport GT_API_KEY=gtx-production-key\nGT_PROJECT_ID=new-project\nOTHER="quoted value" # trailing comment\nGT_DEV_API_KEY=gtx-dev-key\n'
     );
-    expect(fs.existsSync(path.join(appDirectory, '.gitignore'))).toBe(false);
+    // Outside a repository the existing file is seeded into .gitignore too.
+    expect(fs.readFileSync(path.join(appDirectory, '.gitignore'), 'utf8')).toBe(
+      '.env.local\n'
+    );
   });
 
   it('replaces stale duplicates so a rerun leaves exactly one assignment each', async () => {
@@ -254,7 +258,9 @@ describe('setCredentials', () => {
       );
       if (process.platform !== 'win32') expect(mode(referent)).toBe(0o640);
       expect(fs.readdirSync(sharedDirectory)).toEqual(['.env']);
-      expect(fs.existsSync(path.join(appDirectory, '.gitignore'))).toBe(false);
+      expect(
+        fs.readFileSync(path.join(appDirectory, '.gitignore'), 'utf8')
+      ).toBe('.env.local\n');
     });
 
     it('fails closed on a dangling symlink without writing anything', async () => {
@@ -273,6 +279,227 @@ describe('setCredentials', () => {
       expect(fs.readdirSync(envPath())).toEqual([]);
       expect(fs.existsSync(path.join(appDirectory, '.gitignore'))).toBe(false);
     });
+  });
+
+  describe('in a Git repository', () => {
+    const existing = 'KEEP=1\n';
+    const written = `${existing}GT_PROJECT_ID=project-id\nGT_DEV_API_KEY=gtx-api-key\n`;
+    const gitignorePath = () => path.join(appDirectory, '.gitignore');
+    const write = () =>
+      setCredentials(
+        { projectId: 'project-id', apiKey: 'gtx-api-key' },
+        undefined,
+        appDirectory
+      );
+    const git = (cwd: string, ...args: string[]) =>
+      execFileSync(
+        'git',
+        ['-c', 'user.name=test', '-c', 'user.email=test@example.com', ...args],
+        { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
+      ).trim();
+    const gitExitCode = (cwd: string, ...args: string[]) => {
+      try {
+        git(cwd, ...args);
+        return 0;
+      } catch (error) {
+        return (error as { status: number }).status;
+      }
+    };
+    const isIgnored = (file: string) =>
+      gitExitCode(path.dirname(file), 'check-ignore', '-q', '--', file) === 0;
+    const commit = (cwd: string, ...files: string[]) => {
+      git(cwd, 'add', '--', ...files);
+      git(cwd, 'commit', '-q', '-m', 'add');
+    };
+
+    beforeEach(() => {
+      // The user's global excludes or hooks must not affect these repositories.
+      vi.stubEnv('GIT_CONFIG_GLOBAL', devNull);
+      vi.stubEnv('GIT_CONFIG_SYSTEM', devNull);
+      git(appDirectory, 'init', '-q');
+    });
+
+    afterEach(() => {
+      vi.unstubAllEnvs();
+    });
+
+    it('ignores a new .env.local and verifies the rule with Git', async () => {
+      await write();
+
+      expect(fs.readFileSync(gitignorePath(), 'utf8')).toBe('.env.local\n');
+      expect(isIgnored(envPath())).toBe(true);
+    });
+
+    it('ignores an existing untracked .env.local that comments and negations leave exposed', async () => {
+      fs.writeFileSync(envPath(), existing);
+      fs.writeFileSync(
+        gitignorePath(),
+        '# .env.local\n.env.local\n!.env.local'
+      );
+      expect(isIgnored(envPath())).toBe(false);
+
+      await write();
+
+      expect(readEnv()).toBe(written);
+      expect(fs.readFileSync(gitignorePath(), 'utf8')).toBe(
+        '# .env.local\n.env.local\n!.env.local\n.env.local\n'
+      );
+      expect(isIgnored(envPath())).toBe(true);
+    });
+
+    it('leaves .gitignore alone when a broader rule already ignores .env.local', async () => {
+      fs.writeFileSync(gitignorePath(), '*.local\n');
+
+      await write();
+
+      expect(fs.readFileSync(gitignorePath(), 'utf8')).toBe('*.local\n');
+      expect(isIgnored(envPath())).toBe(true);
+    });
+
+    it('refuses a tracked .env.local without changing anything', async () => {
+      fs.writeFileSync(envPath(), existing);
+      commit(appDirectory, '.env.local');
+
+      await expect(write()).rejects.toThrow('.env.local is tracked by Git');
+      expect(readEnv()).toBe(existing);
+      expect(fs.existsSync(gitignorePath())).toBe(false);
+    });
+
+    it('checks the actual tracked file when cwd is relative', async () => {
+      fs.writeFileSync(envPath(), existing);
+      commit(appDirectory, '.env.local');
+      const previousCwd = process.cwd();
+      process.chdir(path.dirname(appDirectory));
+      try {
+        await expect(
+          setCredentials(
+            { projectId: 'project-id', apiKey: 'gtx-api-key' },
+            undefined,
+            path.basename(appDirectory)
+          )
+        ).rejects.toThrow('.env.local is tracked by Git');
+        expect(readEnv()).toBe(existing);
+        expect(fs.existsSync(gitignorePath())).toBe(false);
+      } finally {
+        process.chdir(previousCwd);
+      }
+    });
+
+    it('refuses a symlink to a tracked referent', async () => {
+      const referent = path.join(appDirectory, 'shared.env');
+      fs.writeFileSync(referent, existing);
+      commit(appDirectory, 'shared.env');
+      fs.symlinkSync(referent, envPath());
+
+      await expect(write()).rejects.toThrow('shared.env is tracked by Git');
+      expect(fs.readFileSync(referent, 'utf8')).toBe(existing);
+      expect(fs.existsSync(gitignorePath())).toBe(false);
+    });
+
+    it('refuses a symlink to an unignored referent instead of editing its rules', async () => {
+      const referent = path.join(appDirectory, 'shared', '.env');
+      fs.mkdirSync(path.dirname(referent));
+      fs.writeFileSync(referent, existing);
+      fs.writeFileSync(gitignorePath(), '.env.local\n');
+      fs.symlinkSync(referent, envPath());
+
+      await expect(write()).rejects.toThrow('which Git does not ignore');
+      expect(fs.readFileSync(referent, 'utf8')).toBe(existing);
+      expect(fs.readFileSync(gitignorePath(), 'utf8')).toBe('.env.local\n');
+    });
+
+    it('refuses a symlink to a referent tracked in another repository', async () => {
+      const otherRepository = fs.mkdtempSync(
+        path.join(tmpdir(), 'gt-credentials-other-')
+      );
+      try {
+        git(otherRepository, 'init', '-q');
+        const referent = path.join(otherRepository, '.env');
+        fs.writeFileSync(referent, existing);
+        commit(otherRepository, '.env');
+        fs.writeFileSync(gitignorePath(), '.env.local\n');
+        fs.symlinkSync(referent, envPath());
+
+        await expect(write()).rejects.toThrow('is tracked by Git');
+        expect(fs.readFileSync(referent, 'utf8')).toBe(existing);
+      } finally {
+        fs.rmSync(otherRepository, { recursive: true, force: true });
+      }
+    });
+
+    it('writes through a symlink once the link and its referent are both ignored', async () => {
+      const referent = path.join(appDirectory, 'shared', '.env');
+      fs.mkdirSync(path.dirname(referent));
+      fs.writeFileSync(referent, existing);
+      fs.writeFileSync(gitignorePath(), 'shared/\n');
+      fs.symlinkSync(referent, envPath());
+
+      await write();
+
+      expect(fs.readFileSync(referent, 'utf8')).toBe(written);
+      expect(fs.readFileSync(gitignorePath(), 'utf8')).toBe(
+        'shared/\n.env.local\n'
+      );
+      expect(isIgnored(envPath())).toBe(true);
+    });
+
+    it('fails closed when Git cannot run', async () => {
+      const emptyPath = path.join(appDirectory, 'empty-bin');
+      fs.mkdirSync(emptyPath);
+      vi.stubEnv('PATH', emptyPath);
+
+      await expect(write()).rejects.toThrow('Could not run Git');
+      expect(fs.existsSync(envPath())).toBe(false);
+      expect(fs.existsSync(gitignorePath())).toBe(false);
+    });
+
+    it('fails closed on a Git error other than a missing repository', async () => {
+      fs.rmSync(path.join(appDirectory, '.git'), { recursive: true });
+      fs.writeFileSync(path.join(appDirectory, '.git'), 'not a gitfile\n');
+
+      await expect(write()).rejects.toThrow('Git could not check');
+      expect(fs.existsSync(envPath())).toBe(false);
+      expect(fs.existsSync(gitignorePath())).toBe(false);
+    });
+
+    // Each value would otherwise make a tracked file look untracked or
+    // outside any repository.
+    it.each([
+      ['GIT_DIR', 'missing.git'],
+      ['GIT_INDEX_FILE', 'missing-index'],
+      ['GIT_WORK_TREE', 'elsewhere'],
+      ['GIT_COMMON_DIR', 'missing-common'],
+      ['GIT_CEILING_DIRECTORIES', '.'],
+    ])(
+      'fails closed on an inherited %s override instead of trusting its view of a tracked file',
+      async (name, relativeValue) => {
+        fs.writeFileSync(envPath(), existing);
+        commit(appDirectory, '.env.local');
+        vi.stubEnv(name, path.join(appDirectory, relativeValue));
+
+        await expect(write()).rejects.toThrow(name);
+        expect(readEnv()).toBe(existing);
+        expect(fs.existsSync(gitignorePath())).toBe(false);
+      }
+    );
+
+    it.each(['node_modules', '.env.local\n!.env.local', ' .env.local'])(
+      'seeds a final ignore rule outside a repository after %j',
+      async (initialRules) => {
+        fs.rmSync(path.join(appDirectory, '.git'), { recursive: true });
+        fs.writeFileSync(envPath(), existing);
+        fs.writeFileSync(gitignorePath(), initialRules);
+
+        await write();
+
+        expect(readEnv()).toBe(written);
+        expect(fs.readFileSync(gitignorePath(), 'utf8')).toBe(
+          `${initialRules}\n.env.local\n`
+        );
+        git(appDirectory, 'init', '-q');
+        expect(isIgnored(envPath())).toBe(true);
+      }
+    );
   });
 });
 

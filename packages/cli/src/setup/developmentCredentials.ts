@@ -10,7 +10,10 @@ import {
 } from '../console/logging.js';
 import type { Settings, SupportedFrameworks } from '../types/index.js';
 import { api } from '../utils/api.js';
-import { setCredentials } from '../utils/credentials.js';
+import {
+  inspectCredentialsEnvFile,
+  setCredentials,
+} from '../utils/credentials.js';
 
 const DEVELOPMENT_KEY_NAME = 'Development key (gt init)';
 
@@ -75,14 +78,16 @@ async function selectProject(settings: Settings, cwd: string) {
 
 /**
  * Picks or creates the project, mints a development key limited to runtime
- * translation, and saves both to .env.local. Every service call completes
- * before anything is written; the key is never printed.
+ * translation, and saves both to .env.local. The file is checked before any
+ * key exists, every service call completes before anything is written, and
+ * the key is never printed.
  */
 export async function provisionDevelopmentCredentials(
   settings: Settings,
   framework: SupportedFrameworks | undefined,
   cwd: string = process.cwd()
 ): Promise<void> {
+  await inspectCredentialsEnvFile(cwd);
   const projectId = settings.projectId || (await selectProject(settings, cwd));
   const { apiKey } = await api.createProjectApiKey(projectId, {
     name: DEVELOPMENT_KEY_NAME,

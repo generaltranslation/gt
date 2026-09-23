@@ -1,6 +1,7 @@
 import { Command } from 'commander';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
-import { tmpdir } from 'node:os';
+import { devNull, tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -116,6 +117,9 @@ describe('init development credentials', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Drop once-queued answers left by tests that stopped before a prompt.
+    vi.mocked(promptSelect).mockReset();
+    vi.mocked(promptText).mockReset();
     for (const name of GT_ENV) vi.stubEnv(name, undefined);
     appDirectory = fs.mkdtempSync(path.join(tmpdir(), 'gt-init-credentials-'));
     // oauth.js is fully mocked; sandbox the credential store anyway so no
@@ -436,15 +440,81 @@ describe('init development credentials', () => {
     expect(loggedOutput()).not.toContain('gtx-secret-development-key');
   });
 
-  it('fails without claiming success when .env.local cannot be written', async () => {
+  it('fails before minting a key when .env.local cannot be written', async () => {
     fs.mkdirSync(envPath()); // a directory where the file should be
-    vi.mocked(promptSelect).mockResolvedValueOnce(projects[0]);
 
     await expect(runInit()).rejects.toThrow(
-      'Failed to set up the development credentials'
+      /Failed to set up the development credentials[\s\S]*is not a regular file/
     );
-    expect(api.createProjectApiKey).toHaveBeenCalledTimes(1);
+    expect(api.createProjectApiKey).not.toHaveBeenCalled();
     expect(logger.endCommand).not.toHaveBeenCalled();
     expect(loggedOutput()).not.toContain('gtx-secret-development-key');
+  });
+
+  describe('in a Git repository', () => {
+    const git = (...args: string[]) =>
+      execFileSync(
+        'git',
+        ['-c', 'user.name=test', '-c', 'user.email=test@example.com', ...args],
+        {
+          cwd: appDirectory,
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'pipe'],
+        }
+      );
+
+    beforeEach(() => {
+      vi.stubEnv('GIT_CONFIG_GLOBAL', devNull);
+      vi.stubEnv('GIT_CONFIG_SYSTEM', devNull);
+      git('init', '-q');
+    });
+
+    it('fails before minting a key when .env.local is tracked', async () => {
+      const existing = 'KEEP=1\n';
+      fs.writeFileSync(envPath(), existing);
+      git('add', '.env.local');
+      git('commit', '-q', '-m', 'add env');
+
+      await expect(runInit()).rejects.toThrow(
+        /Failed to set up the development credentials[\s\S]*\.env\.local is tracked by Git/
+      );
+      expect(api.listProjects).not.toHaveBeenCalled();
+      expect(api.createProjectApiKey).not.toHaveBeenCalled();
+      expect(fs.readFileSync(envPath(), 'utf8')).toBe(existing);
+      expect(fs.existsSync(path.join(appDirectory, '.gitignore'))).toBe(false);
+      expect(logger.endCommand).not.toHaveBeenCalled();
+    });
+
+    it('fails before minting a key when an inherited GIT_DIR hides that .env.local is tracked', async () => {
+      const existing = 'KEEP=1\n';
+      fs.writeFileSync(envPath(), existing);
+      git('add', '.env.local');
+      git('commit', '-q', '-m', 'add env');
+      vi.stubEnv('GIT_DIR', path.join(appDirectory, 'missing.git'));
+
+      await expect(runInit()).rejects.toThrow(
+        /Failed to set up the development credentials[\s\S]*GIT_DIR/
+      );
+      expect(api.createProjectApiKey).not.toHaveBeenCalled();
+      expect(fs.readFileSync(envPath(), 'utf8')).toBe(existing);
+      expect(fs.existsSync(path.join(appDirectory, '.gitignore'))).toBe(false);
+      expect(logger.endCommand).not.toHaveBeenCalled();
+    });
+
+    it('ignores an existing untracked .env.local before saving the key', async () => {
+      fs.writeFileSync(envPath(), 'KEEP=1\n');
+      vi.mocked(promptSelect).mockResolvedValueOnce(projects[1]);
+
+      await runInit();
+
+      expect(fs.readFileSync(envPath(), 'utf8')).toBe(
+        'KEEP=1\nGT_PROJECT_ID=p2\nGT_DEV_API_KEY=gtx-secret-development-key\n'
+      );
+      expect(
+        fs.readFileSync(path.join(appDirectory, '.gitignore'), 'utf8')
+      ).toBe('.env.local\n');
+      expect(() => git('check-ignore', '-q', '.env.local')).not.toThrow();
+      expect(git('status', '--porcelain', '--', '.env.local')).toBe('');
+    });
   });
 });
