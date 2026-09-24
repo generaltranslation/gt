@@ -299,7 +299,6 @@ export async function login(options: LoginOptions = {}): Promise<OAuthTokens> {
   );
   const loopback = await startLoopbackServer().catch(() => undefined);
   if (!loopback) return loginWithDeviceCode(options);
-  let result: oidc.TokenEndpointResponse & oidc.TokenEndpointResponseHelpers;
   try {
     const codeVerifier = oidc.randomPKCECodeVerifier();
     const state = oidc.randomState();
@@ -312,34 +311,35 @@ export async function login(options: LoginOptions = {}): Promise<OAuthTokens> {
       code_challenge_method: 'S256',
     });
     assertEndpoint(authorizationUrl, new URL(authBaseUrl));
-    const callback = loopback.waitForCallback(options.timeoutMs);
+    const callback = loopback.waitForCallback(async (callbackUrl) => {
+      const result = await oidc
+        .authorizationCodeGrant(
+          config,
+          callbackUrl,
+          {
+            pkceCodeVerifier: codeVerifier,
+            expectedState: state,
+            idTokenExpected: true,
+          },
+          { resource }
+        )
+        .catch((error: unknown) => {
+          throw oauthError(error, 'Failed to authenticate via web browser');
+        });
+      const tokens = { ...parseTokens(result), resource };
+      await writeOAuthTokens(tokens, authBaseUrl);
+      return tokens;
+    }, options.timeoutMs);
     // Printing/launching may fail before we await the listener.
     callback.catch(() => undefined);
     options.onAuthorizationUrl?.(authorizationUrl.href);
     void (options.openBrowser ?? open)(authorizationUrl.href).catch(
       () => undefined
     );
-    const callbackUrl = await callback;
-    result = await oidc
-      .authorizationCodeGrant(
-        config,
-        callbackUrl,
-        {
-          pkceCodeVerifier: codeVerifier,
-          expectedState: state,
-          idTokenExpected: true,
-        },
-        { resource }
-      )
-      .catch((error: unknown) => {
-        throw oauthError(error, 'Could not validate the sign-in response');
-      });
+    return await callback;
   } finally {
     loopback.close();
   }
-  const tokens = { ...parseTokens(result), resource };
-  await writeOAuthTokens(tokens, authBaseUrl);
-  return tokens;
 }
 
 const pendingRefreshes = new Map<string, Promise<OAuthTokens>>();

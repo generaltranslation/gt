@@ -67,6 +67,10 @@ describe('login device prompt', () => {
       expect(logger.message).not.toHaveBeenCalledWith(
         expect.stringContaining('Opening your browser')
       );
+      expect(logger.message).toHaveBeenCalledWith(
+        expect.stringContaining('Waiting for authentication...')
+      );
+      expect(logger.endCommand).toHaveBeenCalledWith('You are now signed in.');
     }
   );
 

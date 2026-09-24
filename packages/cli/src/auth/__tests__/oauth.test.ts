@@ -145,7 +145,7 @@ const networkFetch = globalThis.fetch;
 async function callback(
   url: string,
   change?: (params: URLSearchParams) => void
-): Promise<void> {
+): Promise<string> {
   const authorize = new URL(url);
   const redirect = new URL(authorize.searchParams.get('redirect_uri')!);
   redirect.searchParams.set('code', 'code-1');
@@ -153,9 +153,7 @@ async function callback(
   redirect.searchParams.set('iss', authorize.origin + '/api/auth');
   change?.(redirect.searchParams);
   const response = await networkFetch(redirect);
-  expect(await response.text()).toContain(
-    'Check your terminal for the sign-in result.'
-  );
+  return response.text();
 }
 function browserLogin(options: LoginOptions = {}) {
   return login({
@@ -343,6 +341,55 @@ describe('OAuth credential storage', () => {
 });
 
 describe('discovery and browser authorization', () => {
+  it.each(['success', 'denied', 'invalid token', 'storage failure'])(
+    'shows the confirmed browser result for %s',
+    async (outcome) => {
+      if (outcome === 'storage failure') {
+        vi.spyOn(fs, 'rename').mockRejectedValueOnce(new Error('Disk full'));
+      }
+      let page!: Promise<string>;
+      const pending = browserLogin({
+        fetch:
+          outcome === 'invalid token'
+            ? provider({ token: async () => json(tokenResponse()) })
+            : provider(),
+        openBrowser: (url) => {
+          page = callback(url, (params) => {
+            if (outcome === 'denied') {
+              params.delete('code');
+              params.set('error', 'access_denied');
+            }
+          }).then(async (html) => {
+            if (outcome === 'success') {
+              expect(await readOAuthTokens(authBaseUrl)).toMatchObject({
+                subject: 'user-1',
+              });
+            }
+            return html;
+          });
+          return page;
+        },
+      });
+      if (outcome === 'success') {
+        await expect(pending).resolves.toMatchObject({ subject: 'user-1' });
+      } else {
+        await expect(pending).rejects.toThrow();
+      }
+      const html = await page;
+      expect(html).toContain(
+        outcome === 'success'
+          ? '<h1>Successfully authenticated gt CLI</h1>'
+          : '<h1>Authentication failed</h1>'
+      );
+      expect(html).toContain(
+        'You may now close this tab and return to the terminal.'
+      );
+      if (outcome !== 'success') {
+        expect(html).not.toContain('Successfully authenticated');
+        expect(html).not.toContain('Disk full');
+      }
+    }
+  );
   it('uses seeded public client, S256, exact redirect/resource/scope and validates a signed subject', async () => {
     const fetcher = provider();
     let authorize!: URL;

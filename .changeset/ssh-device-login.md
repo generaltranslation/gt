@@ -2,4 +2,4 @@
 'gt': patch
 ---
 
-Automatically use device-code login in SSH sessions, display the verification URL on its own line, and clarify the browser callback page's return-to-terminal instructions.
+Automatically use device-code login in SSH sessions and display the verification URL on its own line. Clarify login prompts and show browser success or failure only after authentication and credential storage complete.

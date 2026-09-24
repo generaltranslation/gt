@@ -9,7 +9,7 @@ describe('loopback authorization server', () => {
     expect(url.hostname).toBe('127.0.0.1');
     expect(url.pathname).toBe(LOOPBACK_CALLBACK_PATH);
     expect(Number(url.port)).toBeGreaterThan(0);
-    const pending = server.waitForCallback(5000);
+    const pending = server.waitForCallback(async (url) => url, 5000);
     const callback = `${server.redirectUri}?code=abc&code=other&state=xyz&iss=https%3A%2F%2Fissuer.example`;
     const response = await fetch(callback);
     expect(response.status).toBe(200);
@@ -18,25 +18,34 @@ describe('loopback authorization server', () => {
       "default-src 'none'"
     );
     const page = await response.text();
-    expect(page).toContain('<h1>Return to your terminal</h1>');
-    expect(page).toContain('Check your terminal for the sign-in result.');
+    expect(page).toContain('<h1>Successfully authenticated gt CLI</h1>');
+    expect(page).toContain(
+      'You may now close this tab and return to the terminal.'
+    );
     expect((await pending).href).toBe(callback);
   });
-  it('uses the same neutral return-to-terminal page for provider errors', async () => {
+  it('shows failure without exposing callback errors', async () => {
     const server = await startLoopbackServer();
-    const pending = server.waitForCallback(5000);
+    const error = new Error('Sensitive callback details');
+    const pending = server.waitForCallback(async (url) => {
+      expect(url.searchParams.get('error')).toBe('access_denied');
+      throw error;
+    }, 5000);
+    const rejected = expect(pending).rejects.toBe(error);
     const response = await fetch(
       `${server.redirectUri}?error=access_denied&state=xyz`
     );
     expect(response.status).toBe(200);
     const page = await response.text();
-    expect(page).toContain('<h1>Return to your terminal</h1>');
-    expect(page).not.toContain("You're signed in");
-    expect((await pending).searchParams.get('error')).toBe('access_denied');
+    expect(page).toContain('<h1>Authentication failed</h1>');
+    expect(page).toContain('class="error"');
+    expect(page).not.toContain('Successfully authenticated');
+    expect(page).not.toContain(error.message);
+    await rejected;
   });
   it('ignores unrelated paths, methods and absolute targets with another origin', async () => {
     const server = await startLoopbackServer();
-    const pending = server.waitForCallback(5000);
+    const pending = server.waitForCallback(async (url) => url, 5000);
     const url = new URL(server.redirectUri);
     expect((await fetch(`${url.origin}/favicon.ico`)).status).toBe(404);
     expect((await fetch(server.redirectUri, { method: 'POST' })).status).toBe(
@@ -64,9 +73,9 @@ describe('loopback authorization server', () => {
   });
   it('rejects and closes when the callback times out', async () => {
     const server = await startLoopbackServer();
-    await expect(server.waitForCallback(20)).rejects.toThrow(
-      'Timed out waiting for the browser to sign in'
-    );
+    await expect(
+      server.waitForCallback(async (url) => url, 20)
+    ).rejects.toThrow('Timed out waiting for authentication');
     await expect(fetch(server.redirectUri)).rejects.toThrow();
   });
 });

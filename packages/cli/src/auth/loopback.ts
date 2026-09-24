@@ -8,8 +8,11 @@ const DEFAULT_CALLBACK_TIMEOUT_MS = 5 * 60 * 1000;
 export type LoopbackServer = {
   /** Loopback redirect URI bound to an ephemeral port, e.g. http://127.0.0.1:53211/callback */
   redirectUri: string;
-  /** Resolves with the raw callback parameters of the first request to the callback path. */
-  waitForCallback: (timeoutMs?: number) => Promise<URL>;
+  /** Shows the result page only after the callback has been validated and saved. */
+  waitForCallback: <T>(
+    onCallback: (url: URL) => Promise<T>,
+    timeoutMs?: number
+  ) => Promise<T>;
   close: () => void;
 };
 
@@ -45,8 +48,11 @@ export async function startLoopbackServer(): Promise<LoopbackServer> {
 
   return {
     redirectUri: `${origin}${LOOPBACK_CALLBACK_PATH}`,
-    waitForCallback(timeoutMs = DEFAULT_CALLBACK_TIMEOUT_MS) {
-      return new Promise((resolve, reject) => {
+    waitForCallback<T>(
+      onCallback: (url: URL) => Promise<T>,
+      timeoutMs = DEFAULT_CALLBACK_TIMEOUT_MS
+    ) {
+      return new Promise<T>((resolve, reject) => {
         let settled = false;
         timeout = setTimeout(() => {
           settled = true;
@@ -54,14 +60,14 @@ export async function startLoopbackServer(): Promise<LoopbackServer> {
           reject(
             new Error(
               createDiagnosticMessage({
-                whatHappened: 'Timed out waiting for the browser to sign in',
+                whatHappened: 'Timed out waiting for authentication',
                 fix: 'Run `gt login` again',
               })
             )
           );
         }, timeoutMs);
 
-        server.on('request', (request, response) => {
+        server.on('request', async (request, response) => {
           const target = request.url ?? '/';
           const url = URL.canParse(target, origin)
             ? new URL(target, origin)
@@ -90,9 +96,16 @@ export async function startLoopbackServer(): Promise<LoopbackServer> {
             'content-type': 'text/html; charset=utf-8',
             'x-content-type-options': 'nosniff',
           });
-          response.end(renderCallbackPage());
-          server.close();
-          resolve(url);
+          try {
+            const result = await onCallback(url);
+            response.end(renderCallbackPage(true));
+            resolve(result);
+          } catch (error) {
+            response.end(renderCallbackPage(false));
+            reject(error);
+          } finally {
+            server.close();
+          }
         });
       });
     },
