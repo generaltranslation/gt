@@ -9,43 +9,30 @@ import {
   DownloadFileBatchOptions,
   DownloadFileBatchResult,
   DownloadFileOptions,
+  CreateTagOptions,
+  CreateTagResult,
+  GetOrphanedFilesResult,
 } from './types';
 import { libraryDefaultLocale } from './settings/settings';
+import { defaultBaseUrl } from './settings/settingsUrls';
 import {
   noSourceLocaleProvidedError,
   noTargetLocaleProvidedError,
 } from './logging/errors';
 import { gtInstanceLogger } from './logging/logger';
-import {
-  _setupProject,
+import type {
   SetupProjectResult,
   SetupProjectOptions,
-  type SetupProjectFileReference,
+  SetupProjectFileReference,
 } from './translate/setupProject';
-import {
-  _enqueueFiles,
-  type EnqueueFilesOptions,
-} from './translate/enqueueFiles';
-import {
-  _createTag,
-  CreateTagOptions,
-  CreateTagResult,
-} from './translate/createTag';
-import { _downloadFileBatch } from './translate/downloadFileBatch';
-import {
+import type { EnqueueFilesOptions } from './translate/enqueueFiles';
+import type {
   FileQuery,
   FileQueryResult,
 } from './types-dir/api/checkFileTranslations';
-import {
-  _submitUserEditDiffs,
-  SubmitUserEditDiffsPayload,
-} from './translate/submitUserEditDiffs';
-import { _uploadSourceFiles } from './translate/uploadSourceFiles';
-import { _uploadFonts } from './translate/uploadFonts';
-import { _uploadTranslations } from './translate/uploadTranslations';
-import {
+import type { SubmitUserEditDiffsPayload } from './translate/submitUserEditDiffs';
+import type {
   FileUpload,
-  RequiredUploadFilesOptions,
   UploadFilesOptions,
   UploadFilesResponse,
 } from './types-dir/api/uploadFiles';
@@ -54,51 +41,34 @@ import type {
   UploadAssetsOptions,
   UploadAssetsResponse,
 } from './types-dir/api/uploadAssets';
-import { _querySourceFile } from './translate/querySourceFile';
-import { ProjectData } from './types-dir/api/project';
-import { _getProjectData } from './projects/getProjectData';
-import { DownloadFileBatchRequest } from './types-dir/api/downloadFileBatch';
-import {
-  _checkJobStatus,
-  CheckJobStatusResult,
-} from './translate/checkJobStatus';
-import {
-  _awaitJobIds,
-  AwaitJobsOptions,
-  AwaitJobsResult,
-} from './translate/awaitJobs';
+import type { ProjectData } from './types-dir/api/project';
+import type { DownloadFileBatchRequest } from './types-dir/api/downloadFileBatch';
+import type { CheckJobStatusResult } from './translate/checkJobStatus';
+import type { AwaitJobsOptions, AwaitJobsResult } from './translate/awaitJobs';
 import type { FileDataQuery, FileDataResult } from './translate/queryFileData';
-import { _queryFileData } from './translate/queryFileData';
 import type {
   GetProjectInfoOptions,
   ProjectInfoResult,
 } from './translate/getProjectInfo';
-import { _getProjectInfo } from './translate/getProjectInfo';
 import type { BranchQuery } from './translate/queryBranchData';
 import type { BranchDataResult } from './types-dir/api/branch';
-import { _queryBranchData } from './translate/queryBranchData';
 import type {
   CreateBranchQuery,
   CreateBranchResult,
 } from './translate/createBranch';
-import { _createBranch } from './translate/createBranch';
 import type { FileReferenceIds } from './types-dir/api/file';
-import {
-  _processFileMoves,
-  type MoveMapping,
-  type ProcessMovesResponse,
-  type ProcessMovesOptions,
+import type {
+  MoveMapping,
+  ProcessMovesResponse,
+  ProcessMovesOptions,
 } from './translate/processFileMoves';
-import {
-  _getOrphanedFiles,
-  type GetOrphanedFilesResult,
-} from './translate/getOrphanedFiles';
-import {
-  _publishFiles,
-  type PublishFileEntry,
-  type PublishFilesResult,
+import type {
+  PublishFileEntry,
+  PublishFilesResult,
 } from './translate/publishFiles';
-import { GTRuntime } from './runtime';
+import { createGtApiAdapter, type GtApiAdapter } from './adapter/createGtApi';
+import { GTRuntime, type GTConstructorParams } from './runtime';
+import { validateAuth } from './translate/runtimeTranslate';
 
 export { GTRuntime, type GTConstructorParams } from './runtime';
 export { decodeVars } from './derive/decodeVars';
@@ -160,6 +130,32 @@ export {
  * });
  */
 export class GT extends GTRuntime {
+  // Built lazily from the current config. `setConfig` is the only supported
+  // way to change those fields after construction, so it is the only place the
+  // cache is dropped; assigning `gt.apiKey` etc. directly does not rebuild it.
+  private _apiAdapter?: GtApiAdapter;
+
+  setConfig(params: GTConstructorParams) {
+    // GTRuntime writes credentials before it validates locales, so drop the
+    // cache even when validation throws.
+    try {
+      super.setConfig(params);
+    } finally {
+      this._apiAdapter = undefined;
+    }
+  }
+
+  private _getApiAdapter(): GtApiAdapter {
+    this._apiAdapter ??= createGtApiAdapter({
+      apiKey: this.apiKey || this.devApiKey,
+      userTokenProvider: this.userTokenProvider,
+      baseUrl: this.baseUrl || defaultBaseUrl,
+      projectId: this.projectId,
+      customMapping: this.customMapping,
+    });
+    return this._apiAdapter;
+  }
+
   // -------------- Branch Methods -------------- //
 
   /**
@@ -169,8 +165,8 @@ export class GT extends GTRuntime {
    * @returns {Promise<BranchDataResult>} The branch information.
    */
   async queryBranchData(query: BranchQuery): Promise<BranchDataResult> {
-    this._validateAuth('queryBranchData');
-    return await _queryBranchData(query, this._getTranslationConfig());
+    validateAuth('queryBranchData', this._getTranslationConfig());
+    return await this._getApiAdapter().queryBranchData(query);
   }
 
   /**
@@ -180,8 +176,8 @@ export class GT extends GTRuntime {
    * @returns {Promise<CreateBranchResult>} The created branch information.
    */
   async createBranch(query: CreateBranchQuery): Promise<CreateBranchResult> {
-    this._validateAuth('createBranch');
-    return await _createBranch(query, this._getTranslationConfig());
+    validateAuth('createBranch', this._getTranslationConfig());
+    return await this._getApiAdapter().createBranch(query);
   }
 
   /**
@@ -201,12 +197,8 @@ export class GT extends GTRuntime {
     moves: MoveMapping[],
     options: ProcessMovesOptions = {}
   ): Promise<ProcessMovesResponse> {
-    this._validateAuth('processFileMoves');
-    return await _processFileMoves(
-      moves,
-      options,
-      this._getTranslationConfig()
-    );
+    validateAuth('processFileMoves', this._getTranslationConfig());
+    return await this._getApiAdapter().processFileMoves(moves, options);
   }
 
   /**
@@ -227,12 +219,11 @@ export class GT extends GTRuntime {
     fileIds: string[],
     options: { timeout?: number } = {}
   ): Promise<GetOrphanedFilesResult> {
-    this._validateAuth('getOrphanedFiles');
-    return await _getOrphanedFiles(
+    validateAuth('getOrphanedFiles', this._getTranslationConfig());
+    return await this._getApiAdapter().getOrphanedFiles(
       branchId,
       fileIds,
-      options,
-      this._getTranslationConfig()
+      options
     );
   }
 
@@ -254,14 +245,14 @@ export class GT extends GTRuntime {
     files: SetupProjectFileReference[],
     options?: SetupProjectOptions
   ): Promise<SetupProjectResult> {
-    this._validateAuth('setupProject');
+    validateAuth('setupProject', this._getTranslationConfig());
     options = {
       ...options,
       locales: options?.locales?.map((locale) =>
         this.resolveServiceLocale(locale)
       ),
     };
-    return await _setupProject(files, this._getTranslationConfig(), options);
+    return await this._getApiAdapter().setupProject(files, options);
   }
 
   /**
@@ -284,12 +275,8 @@ export class GT extends GTRuntime {
     jobIds: string[],
     timeoutMs?: number
   ): Promise<CheckJobStatusResult> {
-    this._validateAuth('checkJobStatus');
-    return await _checkJobStatus(
-      jobIds,
-      this._getTranslationConfig(),
-      timeoutMs
-    );
+    validateAuth('checkJobStatus', this._getTranslationConfig());
+    return await this._getApiAdapter().checkJobStatus(jobIds, timeoutMs);
   }
 
   /**
@@ -303,9 +290,9 @@ export class GT extends GTRuntime {
     jobs: EnqueueFilesResult | string[],
     options?: AwaitJobsOptions
   ): Promise<AwaitJobsResult> {
-    this._validateAuth('awaitJobs');
+    validateAuth('awaitJobs', this._getTranslationConfig());
     const jobIds = Array.isArray(jobs) ? jobs : Object.keys(jobs.jobData);
-    return await _awaitJobIds(jobIds, options, this._getTranslationConfig());
+    return await this._getApiAdapter().awaitJobs(jobIds, options);
   }
 
   /**
@@ -326,7 +313,7 @@ export class GT extends GTRuntime {
     options: EnqueueFilesOptions
   ): Promise<EnqueueFilesResult> {
     // Validation
-    this._validateAuth('enqueueFiles');
+    validateAuth('enqueueFiles', this._getTranslationConfig());
 
     // Merge instance settings with options.
     let mergedOptions: EnqueueFilesOptions = {
@@ -352,8 +339,8 @@ export class GT extends GTRuntime {
       throw new Error(error);
     }
 
-    // The low-level helper synthesizes result.locales from targetLocales, so
-    // retain the caller's identities before converting the request to service
+    // The adapter synthesizes result.locales from targetLocales, so retain
+    // the caller's identities before converting the request to service
     // language codes.
     const targetLocaleIdentities = [...mergedOptions.targetLocales];
 
@@ -366,10 +353,9 @@ export class GT extends GTRuntime {
       ),
     };
 
-    const result = await _enqueueFiles(
+    const result = await this._getApiAdapter().enqueueFiles(
       files,
-      mergedOptions,
-      this._getTranslationConfig()
+      mergedOptions
     );
     return {
       ...result,
@@ -385,8 +371,8 @@ export class GT extends GTRuntime {
    * @returns {Promise<CreateTagResult>} The created or updated tag.
    */
   async createTag(options: CreateTagOptions): Promise<CreateTagResult> {
-    this._validateAuth('createTag');
-    return await _createTag(options, this._getTranslationConfig());
+    validateAuth('createTag', this._getTranslationConfig());
+    return await this._getApiAdapter().createTag(options);
   }
 
   /**
@@ -396,8 +382,8 @@ export class GT extends GTRuntime {
    * @returns {Promise<PublishFilesResult>} Result containing per-file success/failure
    */
   async publishFiles(files: PublishFileEntry[]): Promise<PublishFilesResult> {
-    this._validateAuth('publishFiles');
-    const result = await _publishFiles(files, this._getTranslationConfig());
+    validateAuth('publishFiles', this._getTranslationConfig());
+    const result = await this._getApiAdapter().publishFiles(files);
     return {
       results: result.results.map((item) => ({
         ...item,
@@ -417,7 +403,7 @@ export class GT extends GTRuntime {
   async submitUserEditDiffs(
     payload: SubmitUserEditDiffsPayload
   ): Promise<void> {
-    this._validateAuth('submitUserEditDiffs');
+    validateAuth('submitUserEditDiffs', this._getTranslationConfig());
     // Normalize locales to canonical form before submission.
     const normalized: SubmitUserEditDiffsPayload = {
       ...payload,
@@ -426,7 +412,7 @@ export class GT extends GTRuntime {
         locale: this.resolveServiceLocale(d.locale),
       })),
     };
-    await _submitUserEditDiffs(normalized, this._getTranslationConfig());
+    await this._getApiAdapter().submitUserEditDiffs(normalized);
   }
 
   /**
@@ -458,8 +444,11 @@ export class GT extends GTRuntime {
   async getProjectInfo(
     options: GetProjectInfoOptions = {}
   ): Promise<ProjectInfoResult> {
-    this._validateAuth('getProjectInfo');
-    const result = await _getProjectInfo(options, this._getTranslationConfig());
+    validateAuth('getProjectInfo', this._getTranslationConfig());
+    const result = await this._getApiAdapter().getProjectInfo(
+      undefined,
+      options.timeout
+    );
     return {
       ...result,
       defaultLocale: this.resolveServiceResponseLocale(result.defaultLocale),
@@ -474,7 +463,7 @@ export class GT extends GTRuntime {
     options: CheckFileTranslationsOptions = {}
   ): Promise<FileDataResult> {
     // Validation
-    this._validateAuth('queryFileData');
+    validateAuth('queryFileData', this._getTranslationConfig());
 
     // Replace target locales with canonical locales
     data.translatedFiles = data.translatedFiles?.map((item) => ({
@@ -483,13 +472,12 @@ export class GT extends GTRuntime {
     }));
 
     // Request the file translation status
-    const result = await _queryFileData(
+    const result = await this._getApiAdapter().queryFileData(
       data,
-      options,
-      this._getTranslationConfig()
+      options.timeout
     );
 
-    // Resolve canonical locales
+    // Restore configured identities from service language codes.
     result.translatedFiles = result.translatedFiles?.map((item) => ({
       ...item,
       ...(item.locale && {
@@ -527,13 +515,12 @@ export class GT extends GTRuntime {
     options: CheckFileTranslationsOptions = {}
   ): Promise<FileQueryResult> {
     // Validation
-    this._validateAuth('querySourceFile');
+    validateAuth('querySourceFile', this._getTranslationConfig());
 
-    // Request the file translation status
-    const result = await _querySourceFile(
-      data,
-      options,
-      this._getTranslationConfig()
+    const result = await this._getApiAdapter().querySourceFile(
+      { fileId: data.fileId },
+      { branchId: data.branchId, versionId: data.versionId },
+      options.timeout
     );
     // Restore configured identities from service language codes.
     result.translations = result.translations.map((item) => ({
@@ -555,6 +542,9 @@ export class GT extends GTRuntime {
   /**
    * Get project data for a given project ID.
    *
+   * @deprecated Use `getProjectInfo()` on a `GT` instance configured with the
+   * target `projectId`; it reads the same resource and also returns
+   * `autoApprove`. This method will be removed in the next major version.
    * @param {string} projectId - The ID of the project to get the data for.
    * @returns {Promise<ProjectData>} The project data.
    *
@@ -569,22 +559,18 @@ export class GT extends GTRuntime {
     options: { timeout?: number } = {}
   ): Promise<ProjectData> {
     // Validation
-    this._validateAuth('getProjectData');
+    validateAuth('getProjectData', this._getTranslationConfig());
 
-    // Request the file translation status
-    const result = await _getProjectData(
-      projectId,
-      options,
-      this._getTranslationConfig()
-    );
+    const { autoApprove: _autoApprove, ...project } =
+      await this._getApiAdapter().getProjectInfo(projectId, options.timeout);
     // Restore configured identities from service language codes.
-    result.currentLocales = result.currentLocales.map((item) =>
-      this.resolveServiceResponseLocale(item)
-    );
-    result.defaultLocale = this.resolveServiceResponseLocale(
-      result.defaultLocale
-    );
-    return result;
+    return {
+      ...project,
+      defaultLocale: this.resolveServiceResponseLocale(project.defaultLocale),
+      currentLocales: project.currentLocales.map((item) =>
+        this.resolveServiceResponseLocale(item)
+      ),
+    };
   }
 
   /**
@@ -619,24 +605,20 @@ export class GT extends GTRuntime {
     options: DownloadFileOptions = {}
   ): Promise<string> {
     // Validation
-    this._validateAuth('downloadTranslatedFile');
+    validateAuth('downloadTranslatedFile', this._getTranslationConfig());
 
-    const result = await _downloadFileBatch(
+    const result = await this._getApiAdapter().downloadFileBatch(
       [
         {
-          fileId: file.fileId,
-          branchId: file.branchId,
+          ...file,
           locale: file.locale
             ? this.resolveServiceLocale(file.locale)
             : undefined,
-          versionId: file.versionId,
-          useLatestAvailableVersion: file.useLatestAvailableVersion,
         },
       ],
-      options,
-      this._getTranslationConfig()
+      options
     );
-    return result.data?.[0]?.data ?? '';
+    return result.files[0]?.data ?? '';
   }
 
   /**
@@ -660,7 +642,7 @@ export class GT extends GTRuntime {
     options: DownloadFileBatchOptions = {}
   ): Promise<DownloadFileBatchResult> {
     // Validation
-    this._validateAuth('downloadFileBatch');
+    validateAuth('downloadFileBatch', this._getTranslationConfig());
 
     const requestedFiles = new Map<string, DownloadFileBatchRequest>();
     requests = requests.map((request) => {
@@ -677,16 +659,17 @@ export class GT extends GTRuntime {
     });
 
     // Request the batch download.
-    const result = await _downloadFileBatch(
+    const result = await this._getApiAdapter().downloadFileBatch(
       requests,
-      options,
-      this._getTranslationConfig()
+      options
     );
 
     return {
-      files: result.data.map((file) => {
+      files: result.files.map((file) => {
         if (!file.locale) return file;
-        const serviceLocale = this.standardizeLocale(file.locale);
+        // The adapter may already have restored an alias; canonicalize before
+        // matching against the service codes the requests were keyed by.
+        const serviceLocale = this.resolveServiceLocale(file.locale);
         const matchingRequests = (
           requestedFiles.get(JSON.stringify([file.fileId, serviceLocale])) ?? []
         ).filter(
@@ -723,7 +706,7 @@ export class GT extends GTRuntime {
     options: UploadFilesOptions
   ): Promise<UploadFilesResponse> {
     // Validation
-    this._validateAuth('uploadSourceFiles');
+    validateAuth('uploadSourceFiles', this._getTranslationConfig());
 
     // Merge instance settings with options.
     const mergedOptions: UploadFilesOptions = {
@@ -743,16 +726,16 @@ export class GT extends GTRuntime {
     }));
 
     // Process files in batches and convert result to UploadFilesResponse
-    const result = await _uploadSourceFiles(
+    const result = await this._getApiAdapter().uploadSourceFiles(
       files,
-      mergedOptions as RequiredUploadFilesOptions,
-      this._getTranslationConfig()
+      mergedOptions
     );
 
+    const { uploadedFiles } = result;
     return {
-      uploadedFiles: result.data,
-      count: result.count,
-      message: `Successfully uploaded ${result.count} files in ${result.batchCount} batch(es)`,
+      uploadedFiles,
+      count: uploadedFiles.length,
+      message: `Successfully uploaded ${uploadedFiles.length} files in ${Math.ceil(files.length / 100)} batch(es)`,
     };
   }
 
@@ -762,21 +745,15 @@ export class GT extends GTRuntime {
    * re-running only stores new fonts.
    * @param {AssetUpload[]} fonts - Fonts to upload (`content` base64-encoded).
    * @param {UploadAssetsOptions} options - Optional settings (e.g. timeout).
-   * @returns {Promise<UploadAssetsResponse>} The stored/deduped assets.
+   * @returns {Promise<UploadAssetsResponse>} The stored assets.
    */
   async uploadFonts(
     fonts: AssetUpload[],
     options: UploadAssetsOptions = {}
   ): Promise<UploadAssetsResponse> {
-    this._validateAuth('uploadFonts');
+    validateAuth('uploadFonts', this._getTranslationConfig());
 
-    const result = await _uploadFonts(
-      fonts,
-      options,
-      this._getTranslationConfig()
-    );
-
-    return { assets: result.data, count: result.count };
+    return await this._getApiAdapter().uploadFonts(fonts, options);
   }
 
   /**
@@ -801,7 +778,7 @@ export class GT extends GTRuntime {
     options: UploadFilesOptions
   ): Promise<UploadFilesResponse> {
     // Validation
-    this._validateAuth('uploadTranslations');
+    validateAuth('uploadTranslations', this._getTranslationConfig());
 
     // Merge instance settings with options.
     const mergedOptions: UploadFilesOptions = {
@@ -834,16 +811,16 @@ export class GT extends GTRuntime {
     }));
 
     // Process files in batches and convert result to UploadFilesResponse
-    const result = await _uploadTranslations(
+    const result = await this._getApiAdapter().uploadTranslations(
       targetFiles,
-      mergedOptions as RequiredUploadFilesOptions,
-      this._getTranslationConfig()
+      mergedOptions
     );
 
+    const { uploadedFiles } = result;
     return {
-      uploadedFiles: result.data,
-      count: result.count,
-      message: `Successfully uploaded ${result.count} files in ${result.batchCount} batch(es)`,
+      uploadedFiles,
+      count: uploadedFiles.length,
+      message: `Successfully uploaded ${uploadedFiles.length} files in ${Math.ceil(files.length / 100)} batch(es)`,
     };
   }
 }

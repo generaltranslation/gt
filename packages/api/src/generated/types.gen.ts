@@ -11,31 +11,40 @@ export type ErrorResponse = {
 /**
  * API contract version. Defaults to the oldest supported version.
  */
-export type ApiVersion =
-  | '2025-01-01.v0'
-  | '2025-11-03.v1'
-  | '2026-02-18.v1'
-  | '2026-03-06.v1';
+export const ApiVersion = {
+  '2025_01_01_V0': '2025-01-01.v0',
+  '2025_11_03_V1': '2025-11-03.v1',
+  '2026_02_18_V1': '2026-02-18.v1',
+  '2026_03_06_V1': '2026-03-06.v1',
+} as const;
 
-export type FileFormat =
-  | 'GTJSON'
-  | 'MDX'
-  | 'JSON'
-  | 'YAML'
-  | 'MD'
-  | 'TS'
-  | 'JS'
-  | 'HTML'
-  | 'TXT'
-  | 'PO'
-  | 'POT'
-  | 'TWILIO_CONTENT_JSON'
-  | 'LOTTIE'
-  | 'SVG'
-  | 'XCSTRINGS'
-  | 'DOT_STRINGS'
-  | 'DOT_STRINGSDICT'
-  | 'ANDROID_STRINGS';
+/**
+ * API contract version. Defaults to the oldest supported version.
+ */
+export type ApiVersion = (typeof ApiVersion)[keyof typeof ApiVersion];
+
+export const FileFormat = {
+  GTJSON: 'GTJSON',
+  MDX: 'MDX',
+  JSON: 'JSON',
+  YAML: 'YAML',
+  MD: 'MD',
+  TS: 'TS',
+  JS: 'JS',
+  HTML: 'HTML',
+  TXT: 'TXT',
+  PO: 'PO',
+  POT: 'POT',
+  TWILIO_CONTENT_JSON: 'TWILIO_CONTENT_JSON',
+  LOTTIE: 'LOTTIE',
+  SVG: 'SVG',
+  XCSTRINGS: 'XCSTRINGS',
+  DOT_STRINGS: 'DOT_STRINGS',
+  DOT_STRINGSDICT: 'DOT_STRINGSDICT',
+  ANDROID_STRINGS: 'ANDROID_STRINGS',
+} as const;
+
+export type FileFormat = (typeof FileFormat)[keyof typeof FileFormat];
 
 export type Branch = {
   id: string;
@@ -56,9 +65,23 @@ export type JsonValue =
       [key: string]: JsonValue | null;
     };
 
-export type DataFormat = 'JSX' | 'ICU' | 'I18NEXT' | 'STRING';
+export const DataFormat = {
+  JSX: 'JSX',
+  ICU: 'ICU',
+  I18NEXT: 'I18NEXT',
+  STRING: 'STRING',
+} as const;
 
-export type ModelProvider = 'ANTHROPIC' | 'OPENAI' | 'XAI' | 'GOOGLE';
+export type DataFormat = (typeof DataFormat)[keyof typeof DataFormat];
+
+export const ModelProvider = {
+  ANTHROPIC: 'ANTHROPIC',
+  OPENAI: 'OPENAI',
+  XAI: 'XAI',
+  GOOGLE: 'GOOGLE',
+} as const;
+
+export type ModelProvider = (typeof ModelProvider)[keyof typeof ModelProvider];
 
 export type RuntimeTranslationResponse = {
   [key: string]:
@@ -104,16 +127,23 @@ export type RuntimeTranslationRequest = {
   };
 };
 
-export type RuntimeFileFormat = 'MD' | 'MDX';
+export const RuntimeFileFormat = { MD: 'MD', MDX: 'MDX' } as const;
+
+export type RuntimeFileFormat =
+  (typeof RuntimeFileFormat)[keyof typeof RuntimeFileFormat];
+
+export const ProjectApiKeyPermission = {
+  'PROJECT:WRITE': 'project:write',
+  'PROJECT:CONTEXT:READ': 'project:context:read',
+  'PROJECT:CONTEXT:WRITE': 'project:context:write',
+  'PROJECT:FILES:READ': 'project:files:read',
+  'PROJECT:FILES:WRITE': 'project:files:write',
+  'PROJECT:TRANSLATIONS:GENERATE': 'project:translations:generate',
+  'PROJECT:TRANSLATIONS:ENQUEUE': 'project:translations:enqueue',
+} as const;
 
 export type ProjectApiKeyPermission =
-  | 'project:write'
-  | 'project:context:read'
-  | 'project:context:write'
-  | 'project:files:read'
-  | 'project:files:write'
-  | 'project:translations:generate'
-  | 'project:translations:enqueue';
+  (typeof ProjectApiKeyPermission)[keyof typeof ProjectApiKeyPermission];
 
 export type CreateCliWizardSessionResponse = {
   sessionId: string;
@@ -128,7 +158,18 @@ export type CreateCliWizardSessionRequest = {
  *
  * @deprecated
  */
-export type CliKeyType = 'development' | 'production' | 'all';
+export const CliKeyType = {
+  DEVELOPMENT: 'development',
+  PRODUCTION: 'production',
+  ALL: 'all',
+} as const;
+
+/**
+ * Deprecated: the wizard creates one project API key and returns it in each requested slot.
+ *
+ * @deprecated
+ */
+export type CliKeyType = (typeof CliKeyType)[keyof typeof CliKeyType];
 
 export type CliWizardSessionReadyResponse =
   | {
@@ -143,7 +184,12 @@ export type CliWizardSessionReadyResponse =
       projectId: string;
     };
 
-export type ApiKeyType = 'development' | 'production';
+export const ApiKeyType = {
+  DEVELOPMENT: 'development',
+  PRODUCTION: 'production',
+} as const;
+
+export type ApiKeyType = (typeof ApiKeyType)[keyof typeof ApiKeyType];
 
 export type CliWizardSessionWaitingResponse = {
   message: string;

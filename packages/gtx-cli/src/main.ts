@@ -1,12 +1,10 @@
 #!/usr/bin/env node
 
 import { main } from 'gt';
-import dotenv from 'dotenv';
+import { loadEnv } from 'gt/utils/loadEnv';
 import { program } from 'commander';
 
-dotenv.config({ path: '.env' });
-dotenv.config({ path: '.env.local', override: true });
-dotenv.config({ path: '.env.production', override: true });
+loadEnv();
 
 main(program);
 program.name('gtx-cli');

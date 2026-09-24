@@ -1,4 +1,13 @@
-import type { DataFormat as FormatDataFormat } from '@generaltranslation/format/types';
+import type {
+  ApiClientConfig,
+  CreateTagData,
+  CreateTagResponse,
+  GetOrphanedFilesResponse,
+} from '@generaltranslation/api';
+import type {
+  CustomMapping as FormatCustomMapping,
+  DataFormat as FormatDataFormat,
+} from '@generaltranslation/format/types';
 export { HTML_CONTENT_PROPS } from '@generaltranslation/format/types';
 export type {
   Content,
@@ -26,6 +35,7 @@ export type {
   ActionType as EntryActionType,
   EntryMetadata,
   TranslateManyEntry,
+  TranslateOptions,
 } from './types-dir/api/entry';
 export type { RuntimeFileFormat } from '@generaltranslation/api';
 export type { HashMetadata } from './id/types';
@@ -48,7 +58,8 @@ export type {
 } from './types-dir/api/downloadFileBatch';
 export type { EnqueueFilesOptions } from './translate/enqueueFiles';
 export type { EnqueueFilesResult, Updates } from './types-dir/api/enqueueFiles';
-export type { CreateTagOptions, CreateTagResult } from './translate/createTag';
+export type CreateTagOptions = CreateTagData['body'];
+export type CreateTagResult = CreateTagResponse;
 export type { SetupProjectFileReference } from './translate/setupProject';
 export type { FileToUpload } from './types-dir/api/file';
 export type { FileUpload } from './types-dir/api/uploadFiles';
@@ -70,10 +81,8 @@ export type {
 export type { BranchDataResult } from './types-dir/api/branch';
 export type { BranchQuery } from './translate/queryBranchData';
 export type { FileDataQuery, FileDataResult } from './translate/queryFileData';
-export type {
-  OrphanedFile,
-  GetOrphanedFilesResult,
-} from './translate/getOrphanedFiles';
+export type OrphanedFile = GetOrphanedFilesResponse['orphanedFiles'][number];
+export type GetOrphanedFilesResult = GetOrphanedFilesResponse;
 export type {
   MoveMapping,
   MoveResult,
@@ -123,11 +132,31 @@ export type Metadata = {
  * TranslationRequestConfig is used to configure the translation request.
  *
  * @param projectId - The project ID of the translation request.
- * @param baseUrl - The base URL of the translation request.
+ * @param baseUrl - The base URL of the translation request. Defaults to the runtime API URL.
  * @param apiKey - The API key of the translation request.
+ * @param apiVersion - The `gt-api-version` header value. Defaults to the SDK's current version.
+ * @param fetch - A custom fetch implementation. Timeout and error adaptation still wrap it.
+ * @param timeoutMs - Request timeout. Omitted selects the runtime default, `0` is a
+ * literal zero, and `false` disables the runtime-owned timer (a custom fetch may still cancel).
+ * @param userTokenProvider - Lazily supplies a user access token when no API key is set.
  */
-export type TranslationRequestConfig = {
+export type TranslationRequestConfig = Pick<
+  ApiClientConfig,
+  'apiKey' | 'apiVersion' | 'fetch' | 'timeoutMs' | 'userTokenProvider'
+> & {
   projectId: string;
   baseUrl?: string;
-  apiKey?: string;
+};
+
+/**
+ * TranslateConfig is the explicit configuration the shared translation helpers
+ * receive from the class and the tooling adapter. Nothing is read from the
+ * environment; a missing API key/provider or project ID fails before any
+ * request is sent.
+ *
+ * @param customMapping - Custom locale mapping used to canonicalize request locales.
+ */
+export type TranslateConfig = Omit<TranslationRequestConfig, 'projectId'> & {
+  projectId?: string;
+  customMapping?: FormatCustomMapping;
 };

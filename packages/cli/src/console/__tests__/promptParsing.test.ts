@@ -24,6 +24,14 @@ describe('prompt parsing', () => {
     );
   });
 
+  it('accepts configured alias locales when given a custom mapping', () => {
+    const customMapping = { french: { code: 'fr' } };
+    expect(validateLocale('french')).not.toBe(true);
+    expect(validateLocale('french', customMapping)).toBe(true);
+    expect(validateLocaleList('es french', customMapping)).toBe(true);
+    expect(parseTypedLocale('french', customMapping)).toBe('french');
+  });
+
   it('parses typed locale tags without remapping them', () => {
     expect(parseTypedLocale(' zh-Hans-CN ')).toBe('zh-Hans-CN');
     expect(parseTypedLocale('')).toBeNull();

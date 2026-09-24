@@ -14,7 +14,7 @@ import {
 } from '../../fs/findFilepath.js';
 import { readFileContent } from '../../fs/fileContent.js';
 import { Settings } from '../../types/index.js';
-import type { FileFormat, DataFormat, FileToUpload } from '../../types/data.js';
+import type { DataFormat, FileToUpload } from '../../types/data.js';
 import { SUPPORTED_FILE_EXTENSIONS } from './supportedFiles.js';
 import { parseJson } from '../json/parseJson.js';
 import {
@@ -35,14 +35,17 @@ import type { JSONObject } from '../../types/data/json.js';
 import YAML from 'yaml';
 import { determineLibrary } from '../../fs/determineFramework/index.js';
 import { hashStringSync, hashVersionId } from '../../utils/hash.js';
-import { gt } from '../../utils/gt.js';
+import { api } from '../../utils/api.js';
 import { preprocessContent } from './preprocessContent.js';
 import {
   parseKeyedMetadata,
   type KeyedMetadata,
 } from '../parseKeyedMetadata.js';
 import { buildPublishMap } from '../../utils/resolvePublish.js';
-import { getTransformFormatProperty } from './transformFormat.js';
+import {
+  CONFIG_FILE_TYPE_TO_FILE_FORMAT,
+  getTransformFormatProperty,
+} from './transformFormat.js';
 
 /**
  * Checks if a file path is a metadata companion file (e.g. foo.metadata.json)
@@ -484,8 +487,8 @@ export async function aggregateFiles(
         // rather than a skipped file. The configured locale may be a custom
         // alias, so canonical forms are compared.
         if (
-          gt.resolveCanonicalLocale(catalog.sourceLanguage) !==
-          gt.resolveCanonicalLocale(settings.defaultLocale)
+          api.resolveCanonicalLocale(catalog.sourceLanguage) !==
+          api.resolveCanonicalLocale(settings.defaultLocale)
         ) {
           sourceLanguageMismatches.push({
             file: relativePath,
@@ -556,7 +559,7 @@ export async function aggregateFiles(
           return {
             content: processed,
             fileName: relativePath,
-            fileFormat: fileType.toUpperCase() as FileFormat,
+            fileFormat: CONFIG_FILE_TYPE_TO_FILE_FORMAT[fileType],
             ...getTransformFormatProperty(settings, fileType),
             fileId: hashStringSync(relativePath),
             versionId: hashVersionId(

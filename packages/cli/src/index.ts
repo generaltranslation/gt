@@ -7,10 +7,15 @@ import { Command } from 'commander';
 import { NodeCLI } from './cli/node.js';
 import { Libraries, isPythonLibrary } from './types/libraries.js';
 import { VueCLI } from './cli/vue.js';
+import { logger } from './console/logger.js';
 
 export function main(program: Command) {
   program.name('gt');
 
+  // Framework detection can log before the command is known, so keep startup
+  // diagnostics off stdout; the first BaseCLI preAction hook then selects the
+  // command's own routing.
+  logger.setConsoleOutput('stderr');
   const { library, additionalModules, directlyDeclaresVue } =
     determineLibraryForCLI();
   let cli: BaseCLI;

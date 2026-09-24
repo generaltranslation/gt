@@ -1,14 +1,9 @@
+import type { DownloadFilesData } from '@generaltranslation/api';
 import { FileFormat } from './file';
 import type { JsonObject } from './json';
 // Types for the downloadFileBatch function
 
-export type DownloadFileBatchRequest = {
-  fileId: string;
-  branchId?: string; // if not provided, will use the default branch
-  versionId?: string; // if not provided, will use the latest version
-  locale?: string; // if not provided, will download the source file
-  useLatestAvailableVersion?: boolean; // if true and versionId is not found, falls back to the latest available version
-}[];
+export type DownloadFileBatchRequest = DownloadFilesData['body'];
 
 export type DownloadFileBatchOptions = {
   timeout?: number;
@@ -23,6 +18,7 @@ export type BatchDownloadResult = {
   error?: string;
 };
 
+// Compatibility type: data is decoded from the generated base64 wire response.
 export type DownloadedFile = {
   id: string;
   branchId: string;

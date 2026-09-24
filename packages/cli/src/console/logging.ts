@@ -11,7 +11,7 @@ import chalk from 'chalk';
 import { getCLIVersion } from '../utils/packageJson.js';
 import { logger } from './logger.js';
 import { TEMPLATE_FILE_NAME } from '../utils/constants.js';
-import { FileToUpload } from 'generaltranslation/types';
+import type { CustomMapping, FileToUpload } from 'generaltranslation/types';
 import { endTerminalSession, shouldUseInkPrompts } from './terminalSession.js';
 import {
   parseLocaleList,
@@ -175,14 +175,16 @@ export async function promptText({
 export async function promptLocale({
   message,
   defaultValue,
+  customMapping,
 }: {
   message: string;
   defaultValue?: string;
+  customMapping?: CustomMapping;
 }) {
   if (shouldUseInkPrompts()) {
     return (
       (await runInkPrompt<string>((prompts) =>
-        prompts.inkPromptLocale({ message, defaultValue })
+        prompts.inkPromptLocale({ message, defaultValue, customMapping })
       )) ?? ''
     );
   }
@@ -190,7 +192,7 @@ export async function promptLocale({
   return promptText({
     message,
     defaultValue,
-    validate: validateLocale,
+    validate: (value) => validateLocale(value, customMapping),
   });
 }
 
@@ -198,10 +200,12 @@ export async function promptLocaleList({
   message,
   defaultValue,
   required = true,
+  customMapping,
 }: {
   message: string;
   defaultValue?: string[];
   required?: boolean;
+  customMapping?: CustomMapping;
 }) {
   if (shouldUseInkPrompts()) {
     return (
@@ -210,6 +214,7 @@ export async function promptLocaleList({
           message,
           defaultValue,
           required,
+          customMapping,
         })
       )) ?? []
     );
@@ -218,7 +223,7 @@ export async function promptLocaleList({
   return promptText({
     message,
     defaultValue: defaultValue?.join(' '),
-    validate: validateLocaleList,
+    validate: (value) => validateLocaleList(value, customMapping),
   }).then(parseLocaleList);
 }
 

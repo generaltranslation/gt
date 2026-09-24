@@ -7,7 +7,7 @@ import {
   validateJsonSchema,
 } from './utils.js';
 import { flattenJsonWithStringFilter } from './flattenJson.js';
-import { gt } from '../../utils/gt.js';
+import { api } from '../../utils/api.js';
 import { applyStructuralTransforms } from './transformJson.js';
 import type { JSONObject, JSONValue } from '../../types/data/json.js';
 
@@ -48,10 +48,10 @@ export function extractJson(
   const useCanonicalLocaleKeys =
     options?.experimentalCanonicalLocaleKeys ?? false;
   const canonicalTargetLocale = useCanonicalLocaleKeys
-    ? gt.resolveCanonicalLocale(targetLocale)
+    ? api.resolveCanonicalLocale(targetLocale)
     : targetLocale;
   const canonicalDefaultLocale = useCanonicalLocaleKeys
-    ? gt.resolveCanonicalLocale(defaultLocale)
+    ? api.resolveCanonicalLocale(defaultLocale)
     : defaultLocale;
 
   if (jsonSchema.structuralTransform && jsonSchema.composite) {

@@ -2,12 +2,10 @@
 
 // Non-binary router - directly runs main.ts
 import { main } from './index.js';
-import dotenv from 'dotenv';
+import { loadEnv } from './utils/loadEnv.js';
 import { program } from 'commander';
 
-dotenv.config({ path: '.env' });
-dotenv.config({ path: '.env.local', override: true });
-dotenv.config({ path: '.env.production', override: true });
+loadEnv();
 
 main(program);
 program.parse();
