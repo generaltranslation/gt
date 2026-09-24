@@ -18,6 +18,7 @@ const PACKED_INSTALL_ARGS = [
 const RESTORE_INSTALL_ARGS = [...INSTALL_ARGS, ...FORCE_INSTALL_ARGS];
 
 const PACKED_WORKSPACE_DEPENDENCIES = [
+  ['@generaltranslation/api', 'packages/api'],
   ['@generaltranslation/compiler', 'packages/compiler'],
   ['@generaltranslation/format', 'packages/format'],
   ['generaltranslation', 'packages/core'],
