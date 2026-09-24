@@ -54,6 +54,7 @@ vi.mock('../../console/logger.js', () => ({
     flush: vi.fn(),
     info: vi.fn(),
     message: vi.fn(),
+    setAnimatedProgress: vi.fn(),
     setConsoleOutput: vi.fn(),
     setQuiet: vi.fn(),
     startCommand: vi.fn(),
@@ -104,6 +105,19 @@ async function runInit(...args: string[]): Promise<void> {
   await program.parseAsync(['init', ...args], { from: 'user' });
 }
 
+const originalTerminal = {
+  stdin: process.stdin.isTTY,
+  stdout: process.stdout.isTTY,
+};
+function setTerminal(isTTY: boolean): void {
+  process.stdin.isTTY = isTTY;
+  process.stdout.isTTY = isTTY;
+}
+function restoreTerminal(): void {
+  process.stdin.isTTY = originalTerminal.stdin;
+  process.stdout.isTTY = originalTerminal.stdout;
+}
+
 function loggedOutput(): string {
   return [
     ...Object.values(logger).flatMap((fn) => vi.mocked(fn).mock.calls.flat()),
@@ -118,6 +132,8 @@ describe('init development credentials', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // These cases answer prompts, which setup only shows in a terminal.
+    setTerminal(true);
     // Drop once-queued answers left by tests that stopped before a prompt.
     vi.mocked(promptSelect).mockReset();
     vi.mocked(promptText).mockReset();
@@ -141,6 +157,7 @@ describe('init development credentials', () => {
   });
 
   afterEach(() => {
+    restoreTerminal();
     process.chdir(originalCwd);
     vi.unstubAllEnvs();
     fs.rmSync(appDirectory, { recursive: true, force: true });
@@ -207,14 +224,15 @@ describe('init development credentials', () => {
     );
   });
 
-  it('still signs in when only a development runtime key is configured, then skips provisioning', async () => {
+  it('reuses a configured development runtime key without signing in', async () => {
     vi.stubEnv('GT_PROJECT_ID', 'p1');
     vi.stubEnv('GT_DEV_API_KEY', 'gtx-existing-dev-key');
     vi.mocked(hasLogin).mockResolvedValue(false);
 
     await runInit();
 
-    expect(login).toHaveBeenCalledTimes(1);
+    // Setup creates nothing remotely here, so it needs no GT sign-in.
+    expect(login).not.toHaveBeenCalled();
     expect(api.listProjects).not.toHaveBeenCalled();
     expect(api.createProjectApiKey).not.toHaveBeenCalled();
     expect(fs.existsSync(envPath())).toBe(false);
@@ -430,12 +448,17 @@ describe('init development credentials', () => {
     expect(logger.endCommand).not.toHaveBeenCalled();
   });
 
-  it('does not report saved credentials after an unsafe multiline edit', async () => {
+  it('stops before any change or key when .env.local cannot be edited safely', async () => {
     const existing = 'OTHER="first\nGT_PROJECT_ID=embedded\nlast"\n';
     fs.writeFileSync(envPath(), existing);
     vi.mocked(promptSelect).mockResolvedValueOnce(projects[0]);
 
     await expect(runInit()).rejects.toThrow('Cannot safely update .env.local');
+    expect(api.listProjects).not.toHaveBeenCalled();
+    expect(api.createProjectApiKey).not.toHaveBeenCalled();
+    expect(fs.existsSync(path.join(appDirectory, 'gt.config.json'))).toBe(
+      false
+    );
     expect(fs.readFileSync(envPath(), 'utf8')).toBe(existing);
     expect(logger.endCommand).not.toHaveBeenCalled();
     expect(loggedOutput()).not.toContain('gtx-secret-development-key');

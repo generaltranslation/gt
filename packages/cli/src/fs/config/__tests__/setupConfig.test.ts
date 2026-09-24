@@ -60,4 +60,27 @@ describe('createOrUpdateConfig', () => {
       framework: 'vite',
     });
   });
+
+  it('replaces the configured locale list', async () => {
+    testDirectory = fs.mkdtempSync(path.join(tmpdir(), 'gt-config-'));
+    const configPath = path.join(testDirectory, 'gt.config.json');
+    fs.writeFileSync(configPath, JSON.stringify({ locales: ['fr', 'de'] }));
+
+    await createOrUpdateConfig(configPath, { locales: ['ja'] });
+
+    expect(JSON.parse(fs.readFileSync(configPath, 'utf8')).locales).toEqual([
+      'ja',
+    ]);
+  });
+
+  it('fails instead of overwriting an unreadable config', async () => {
+    testDirectory = fs.mkdtempSync(path.join(tmpdir(), 'gt-config-'));
+    const configPath = path.join(testDirectory, 'gt.config.json');
+    fs.writeFileSync(configPath, '[]');
+
+    await expect(
+      createOrUpdateConfig(configPath, { locales: ['ja'] })
+    ).rejects.toThrow('does not contain a JSON object');
+    expect(fs.readFileSync(configPath, 'utf8')).toBe('[]');
+  });
 });

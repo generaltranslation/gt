@@ -87,12 +87,16 @@ function hasConfiguredTranslationFiles(files: unknown): boolean {
  * @param cwd - The current working directory
  * @param options - Additional options
  * @param options.requireConfig - If true, exit with an error when no config file is found
+ * @param options.resolvedConfig - Config content to validate instead of the file, e.g. what setup is about to write
  * @returns The generated settings
  */
 export async function generateSettings(
   flags: GenerateSettingsInput,
   cwd: string = process.cwd(),
-  options?: { requireConfig?: boolean }
+  options?: {
+    requireConfig?: boolean;
+    resolvedConfig?: Record<string, unknown>;
+  }
 ): Promise<Settings> {
   // Load config file
   let gtConfig: GenerateSettingsInput = {};
@@ -100,7 +104,9 @@ export async function generateSettings(
   if (flags.config && !flags.config.endsWith('.json')) {
     flags.config = `${flags.config}.json`;
   }
-  if (flags.config) {
+  if (options?.resolvedConfig) {
+    gtConfig = options.resolvedConfig as GenerateSettingsInput;
+  } else if (flags.config) {
     gtConfig = loadConfig(flags.config);
   } else {
     const config = resolveConfig(cwd);

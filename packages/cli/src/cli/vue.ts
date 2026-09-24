@@ -1,15 +1,14 @@
 import type { Command } from 'commander';
-import type {
-  SetupOptions,
-  SupportedLibraries,
-  TranslateFlags,
-} from '../types/index.js';
+import type { SupportedLibraries, TranslateFlags } from '../types/index.js';
 import { Libraries } from '../types/libraries.js';
-import findFilepath from '../fs/findFilepath.js';
 import { displayHeader } from '../console/logging.js';
 import { logger } from '../console/logger.js';
 import { attachInlineTranslateFlags, attachTranslateFlags } from './flags.js';
 import { InlineCLI } from './inline.js';
+import {
+  attachConfigureFlags,
+  type ConfigureOptions,
+} from '../setup/onboarding.js';
 
 const VUE_SOURCE_HELP =
   "Space-separated list of glob patterns containing the app's Vue source code; defaults cover root SFCs and conventional Vue and Nuxt directories";
@@ -41,18 +40,16 @@ export class VueCLI extends InlineCLI {
 
   /** Configure Vue without entering the React application setup wizard. */
   protected override setupInitCommand(): void {
-    this.program
-      .command('init')
-      .description(
-        'Configure a gt-vue project for General Translation without modifying application source'
-      )
-      .option('--src <paths...>', VUE_SOURCE_HELP)
-      .option(
-        '-c, --config <path>',
-        'Filepath to config file, by default gt.config.json',
-        findFilepath(['gt.config.json'])
-      )
-      .action((options: SetupOptions) => this.handleConfigureCommand(options));
+    attachConfigureFlags(
+      this.program
+        .command('init')
+        .description(
+          'Configure a gt-vue project for General Translation without modifying application source. Flags answer its questions; unanswered ones are asked, or listed as missing with --non-interactive'
+        ),
+      VUE_SOURCE_HELP
+    ).action((options: ConfigureOptions) =>
+      this.handleConfigureCommand(options, 'init')
+    );
   }
 
   /** Uploads Vue inline sources with the same targeting flags as extraction. */

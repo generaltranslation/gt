@@ -1,0 +1,5 @@
+---
+'gt': minor
+---
+
+`gt init` and `gt configure` accept a flag for every setup question, so scripts and agents can run the same onboarding as the interactive wizard. Flags prefill answers; interactive runs only ask what is left, and `--non-interactive` (automatic without a terminal) lists missing options before changing anything. `--defaults` accepts the recommended local choices without creating projects or keys, `--json` writes sign-in, handoff and result events to stdout, and noninteractive sign-in uses a device code. Setup validates the configuration it is about to write, signs in only when it creates a project or key (before changing files), replaces the configured locale list and file formats with explicit selections, keeps an explicit CDN choice on reruns, stops on an invalid `gt.config.json`, and reports completed steps when a later step fails. Argument errors under `--json` also produce a JSON result. The Ink prompts were replaced by Clack prompts with searchable locale selection.

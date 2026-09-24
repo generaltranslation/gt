@@ -113,7 +113,7 @@ describe('built Vue CLI', () => {
         assert.equal(vueCommands.includes('validate'), true);
         assert.deepEqual(
           commandOptions(VueCLI, 'init'),
-          commandOptions(BaseCLI, 'init', 'base')
+          commandOptions(BaseCLI, 'configure', 'base')
         );
         assert.deepEqual(
           commandOptions(VueCLI, 'setup'),
@@ -187,8 +187,8 @@ describe('built Vue CLI', () => {
           class InitProbe extends VueCLI {
             calls = [];
 
-            async handleInitCommand(...args) {
-              this.calls.push(args);
+            async handleConfigureCommand(options, command) {
+              this.calls.push([options.src, options.config, command]);
             }
           }
 
@@ -209,15 +209,9 @@ describe('built Vue CLI', () => {
             ],
             { from: 'user' }
           );
-          assert.deepEqual(cli.calls, [[
-            false,
-            false,
-            true,
-            {
-              src: ['src/**/*.vue'],
-              config: 'custom.gt.config.json',
-            },
-          ]]);
+          assert.deepEqual(cli.calls, [
+            [['src/**/*.vue'], 'custom.gt.config.json', 'init'],
+          ]);
         `,
         projectRoot
       );
@@ -290,8 +284,8 @@ describe('built Vue CLI', () => {
         class ConfigurationProbeCLI extends VueCLI {
           calls = [];
 
-          async handleInitCommand(...args) {
-            this.calls.push(args);
+          async handleInitCommand(session, options, setup) {
+            this.calls.push([session.command, options.src, setup]);
           }
         }
 
@@ -315,11 +309,28 @@ describe('built Vue CLI', () => {
           assert.deepEqual(
             cli.calls,
             commandName === 'init'
-              ? [[false, false, true, {
-                  src: ['src/**/*.vue'],
-                  config: 'custom.gt.config.json',
-                }]]
-              : [[false, false, true, undefined]]
+              ? [
+                  [
+                    'init',
+                    ['src/**/*.vue'],
+                    {
+                      configFilepath: 'custom.gt.config.json',
+                      isVite: true,
+                      framework: 'vite',
+                    },
+                  ],
+                ]
+              : [
+                  [
+                    'configure',
+                    undefined,
+                    {
+                      configFilepath: 'gt.config.json',
+                      isVite: true,
+                      framework: 'vite',
+                    },
+                  ],
+                ]
           );
         }
       `,
@@ -421,8 +432,10 @@ describe('built Vue CLI', () => {
           }
 
           configure() {
-            return this.handleInitCommand(false, true, false, {
+            return this.handleConfigureCommand({
               config: 'gt.config.json',
+              defaults: true,
+              nonInteractive: true,
             });
           }
         }
@@ -552,8 +565,10 @@ describe('built Vue CLI', () => {
             }
 
             configure() {
-              return this.handleInitCommand(false, true, false, {
+              return this.handleConfigureCommand({
                 config: 'gt.config.json',
+                defaults: true,
+                nonInteractive: true,
               });
             }
           }
@@ -650,8 +665,10 @@ describe('built Vue CLI', () => {
             }
 
             configure() {
-              return this.handleInitCommand(false, true, false, {
+              return this.handleConfigureCommand({
                 config: 'gt.config.json',
+                defaults: true,
+                nonInteractive: true,
               });
             }
           }
@@ -740,8 +757,10 @@ describe('built Vue CLI', () => {
           }
 
           configure() {
-            return this.handleInitCommand(false, true, false, {
+            return this.handleConfigureCommand({
               config: 'gt.config.json',
+              defaults: true,
+              nonInteractive: true,
             });
           }
         }
@@ -775,7 +794,7 @@ describe('built Vue CLI', () => {
     );
   });
 
-  it('preserves historical pure React publish merging', async () => {
+  it('keeps configured pure React CDN storage under defaults', async () => {
     const projectRoot = createProject({
       dependencies: {
         'gt-react': '*',
@@ -802,8 +821,10 @@ describe('built Vue CLI', () => {
 
         class ReactConfigProbe extends ReactCLI {
           configure() {
-            return this.handleInitCommand(false, true, false, {
+            return this.handleConfigureCommand({
               config: 'gt.config.json',
+              defaults: true,
+              nonInteractive: true,
             });
           }
         }
@@ -812,7 +833,7 @@ describe('built Vue CLI', () => {
         await cli.configure();
         const config = JSON.parse(fs.readFileSync('gt.config.json', 'utf8'));
         assert.equal(config.publish, true);
-        assert.equal(config.files.gt.output, 'public/_gt/[locale].json');
+        assert.equal(config.files?.gt, undefined);
       `,
       projectRoot,
       {
@@ -1302,6 +1323,152 @@ import { LocalT } from '@gt';
     `);
   });
 });
+
+describe('built setup commands', () => {
+  const setupEnv = (projectRoot: string) => ({
+    GT_API_KEY: '',
+    GT_PROJECT_ID: '',
+    GT_DEV_API_KEY: '',
+    VITE_GT_DEV_API_KEY: '',
+    XDG_CONFIG_HOME: path.join(projectRoot, 'xdg-config'),
+    XDG_STATE_HOME: path.join(projectRoot, 'xdg-state'),
+  });
+  const jsonLines = (stdout: string) =>
+    stdout
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line) as Record<string, unknown>);
+
+  it.each([
+    [
+      ['init', '--json', '--storage', 'invalid'],
+      "argument 'invalid' is invalid",
+    ],
+    [['configure', '--json', '--nope'], "unknown option '--nope'"],
+    [
+      ['init', '--json', '--locales'],
+      "option '--locales <locales...>' argument missing",
+    ],
+  ])('reports %j argument errors as one JSON result', async (args, message) => {
+    const projectRoot = createProject({ devDependencies: { gt: '*' } });
+
+    const result = await runBuiltProcess(
+      args,
+      projectRoot,
+      setupEnv(projectRoot)
+    );
+
+    expect(result.code).toBe(1);
+    expect(jsonLines(result.stdout)).toEqual([
+      {
+        type: 'result',
+        command: args[0],
+        outcome: 'failed',
+        completedSteps: [],
+        error: expect.stringContaining(message),
+      },
+    ]);
+    expect(result.stderr).toContain(message);
+  });
+
+  it('keeps text-only argument errors and help output without --json', async () => {
+    const projectRoot = createProject({ devDependencies: { gt: '*' } });
+
+    const invalid = await runBuiltProcess(
+      ['init', '--storage', 'invalid'],
+      projectRoot,
+      setupEnv(projectRoot)
+    );
+    expect(invalid.code).toBe(1);
+    expect(invalid.stdout).toBe('');
+    expect(invalid.stderr).toContain("argument 'invalid' is invalid");
+
+    const help = await runBuiltProcess(
+      ['configure', '--json', '--help'],
+      projectRoot,
+      setupEnv(projectRoot)
+    );
+    expect(help.code).toBe(0);
+    expect(help.stdout).toContain('Usage:');
+    expect(help.stdout).not.toContain('"type":"result"');
+  });
+
+  it.each([
+    [
+      'gt-vue Vite',
+      {
+        dependencies: { 'gt-vue': '*', vite: '*' },
+        devDependencies: { gt: '*' },
+      },
+      ['init', '--json', '--defaults', '--locales', 'fr'],
+    ],
+    [
+      'React',
+      {
+        dependencies: { 'gt-react': '*', react: '*' },
+        devDependencies: { gt: '*' },
+      },
+      [
+        'init',
+        '--json',
+        '--defaults',
+        '--locales',
+        'fr',
+        '--no-dev-credentials',
+      ],
+    ],
+  ])(
+    'writes only JSON events to stdout for a %s setup',
+    async (_name, manifest, args) => {
+      const projectRoot = createProject(manifest);
+      writeProjectFiles(projectRoot, { 'src/.gitkeep': '' });
+
+      const result = await runBuiltProcess(
+        args,
+        projectRoot,
+        setupEnv(projectRoot)
+      );
+
+      expect(result.code).toBe(0);
+      const events = jsonLines(result.stdout);
+      expect(events).toHaveLength(1);
+      expect(events[0]).toMatchObject({ type: 'result', outcome: 'success' });
+      expect(result.stderr).toContain('gt.config.json');
+      expect(
+        JSON.parse(
+          fs.readFileSync(path.join(projectRoot, 'gt.config.json'), 'utf8')
+        )
+      ).toMatchObject({ locales: ['fr'] });
+    }
+  );
+});
+
+async function runBuiltProcess(
+  args: string[],
+  cwd: string,
+  environment: Record<string, string>
+): Promise<{ code: number; stdout: string; stderr: string }> {
+  try {
+    const { stdout, stderr } = await execFileAsync(
+      process.execPath,
+      [cliBinPath, ...args],
+      {
+        cwd,
+        encoding: 'utf8',
+        env: { ...process.env, NO_COLOR: '1', ...environment },
+        timeout: 30_000,
+      }
+    );
+    return { code: 0, stdout, stderr };
+  } catch (error) {
+    const result = error as { code?: number; stdout?: string; stderr?: string };
+    return {
+      code: typeof result.code === 'number' ? result.code : -1,
+      stdout: result.stdout ?? '',
+      stderr: result.stderr ?? '',
+    };
+  }
+}
 
 function createProject(manifest: Record<string, unknown>): string {
   const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-vue-cli-'));

@@ -1,54 +1,88 @@
-import { detectFormatter } from '../hooks/postProcess.js';
-import { promptSelect } from '../console/logging.js';
-import { logger } from '../console/logger.js';
 import chalk from 'chalk';
-import { promptConfirm } from '../console/logging.js';
-import { SetupOptions, SupportedReactFrameworks } from '../types/index.js';
+import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { detectFormatter, formatFiles } from '../hooks/postProcess.js';
+import type { Formatter } from '../hooks/postProcess.js';
+import { exitSync, promptConfirm, promptSelect } from '../console/logging.js';
+import { logger } from '../console/logger.js';
+import type {
+  ReactFrameworkObject,
+  SupportedReactFrameworks,
+} from '../types/index.js';
 import findFilepath from '../fs/findFilepath.js';
-import { formatFiles } from '../hooks/postProcess.js';
 import { handleInitGT } from '../next/parse/handleInitGT.js';
 import { getPackageJson, isPackageInstalled } from '../utils/packageJson.js';
 import { wrapContentNext } from '../next/parse/wrapContent.js';
-import { getPackageManager } from '../utils/packageManager.js';
-import { installPackage } from '../utils/installPackage.js';
-import { createOrUpdateConfig } from '../fs/config/setupConfig.js';
 import { loadConfig } from '../fs/config/loadConfig.js';
-import { exitSync } from '../console/logging.js';
-import { ReactFrameworkObject } from '../types/index.js';
-import { getFrameworkDisplayName } from './frameworkUtils.js';
+import {
+  getFrameworkDisplayName,
+  getReactFrameworkLibrary,
+} from './frameworkUtils.js';
 import { Libraries } from '../types/libraries.js';
+import type { InitOptions, OnboardingSession } from './onboarding.js';
 
-export async function handleSetupReactCommand(
-  options: SetupOptions,
-  frameworkObject: ReactFrameworkObject,
-  useDefaults: boolean = false
-): Promise<void> {
-  const frameworkDisplayName = getFrameworkDisplayName(frameworkObject);
+/** Everything the React application setup will do, resolved before changes. */
+export type ReactSetupPlan = {
+  framework: SupportedReactFrameworks;
+  packageJson: Record<string, unknown>;
+  /** GT library to install, when it is not installed yet. */
+  install?: string;
+  nextConfigPath?: string;
+  formatter?: Formatter;
+};
 
-  // Ask user for confirmation using inquirer
-  if (!useDefaults) {
+const cancelledMessage =
+  'Operation cancelled. You can re-run this wizard with: npx gt init';
+
+/**
+ * Resolves whether and how to set up the React application. Returns
+ * undefined when the setup is declined or an answer is still missing.
+ */
+export async function resolveReactSetup(
+  session: OnboardingSession,
+  options: InitOptions,
+  detected: ReactFrameworkObject,
+  configuredFramework?: SupportedReactFrameworks
+): Promise<ReactSetupPlan | undefined> {
+  const library = getReactFrameworkLibrary(detected);
+  const setupApp = await session.answer('--react-setup', {
+    explicit: options.reactSetup,
+    recommended: true,
+    ask: () =>
+      promptConfirm({
+        message:
+          detected.name === 'vite'
+            ? `Would you like to install ${library} and configure initializeGTSPA? See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`
+            : `Would you like to install ${library} and add the GTProvider? See the docs for more information: https://generaltranslation.com/docs/react/tutorials/quickstart`,
+        defaultValue: true,
+      }),
+  });
+  if (!setupApp) return undefined;
+
+  // A prompted opt-in gets a last warning; flags and defaults already chose.
+  if (!session.defaults && options.reactSetup === undefined) {
     const answer = await promptConfirm({
       message: chalk.yellow(
-        `This wizard will configure your ${frameworkDisplayName} project for internationalization with GT. If your project is already using a different i18n library, this wizard may cause issues.
+        `This wizard will configure your ${getFrameworkDisplayName(detected)} project for internationalization with GT. If your project is already using a different i18n library, this wizard may cause issues.
 
 Make sure you have committed or stashed any changes. Do you want to continue?`
       ),
       defaultValue: true,
-      cancelMessage:
-        'Operation cancelled. You can re-run this wizard with: npx gt setup',
+      cancelMessage: cancelledMessage,
     });
     if (!answer) {
-      logger.info(
-        'Operation cancelled. You can re-run this wizard with: npx gt setup'
-      );
-      exitSync(0);
+      logger.info(cancelledMessage);
+      return exitSync(0);
     }
   }
 
-  const frameworkType =
-    useDefaults && frameworkObject?.name
-      ? frameworkObject.name
-      : await promptSelect<SupportedReactFrameworks | 'other'>({
+  const framework = await session.answer<SupportedReactFrameworks | 'other'>(
+    '--framework',
+    {
+      explicit: options.framework,
+      configured: configuredFramework,
+      recommended: detected.name,
+      ask: () =>
+        promptSelect<SupportedReactFrameworks | 'other'>({
           message: 'Which framework are you using?',
           options: [
             { value: 'next-app', label: chalk.blue('Next.js App Router') },
@@ -59,121 +93,107 @@ Make sure you have committed or stashed any changes. Do you want to continue?`
             { value: 'redwood', label: chalk.red('RedwoodJS') },
             { value: 'other', label: chalk.dim('Other') },
           ],
-          defaultValue: frameworkObject?.name || 'other',
-        });
-  if (frameworkType === 'other') {
+          defaultValue: detected.name,
+        }),
+    }
+  );
+  if (framework === 'other') {
     logger.error(
       `Sorry, the wizard doesn't currently support other React frameworks.
 Please let us know what you would like to see added at https://github.com/generaltranslation/gt/issues`
     );
-    exitSync(0);
+    return exitSync(0);
   }
-
-  // Vite setup writes its complete config after locales are collected.
-  if (frameworkType !== 'vite') {
-    await createOrUpdateConfig(options.config || 'gt.config.json', {
-      framework: frameworkType as SupportedReactFrameworks,
-    });
-  }
+  if (!framework) return undefined;
 
   const packageJson = await getPackageJson();
   if (!packageJson) {
-    logger.error(
-      chalk.red(
-        'No package.json found in the current directory. Run this command from the root of your project.'
-      )
+    session.reject(
+      'No package.json found in the current directory. Run this command from the root of your project'
     );
-    exitSync(1);
+    return undefined;
   }
-  // Check if gt-next or gt-react is installed
-  if (
-    frameworkType === 'next-app' &&
-    !isPackageInstalled(Libraries.GT_NEXT, packageJson)
-  ) {
-    const packageManager = await getPackageManager();
-    const spinner = logger.createSpinner('timer');
-    spinner.start(
-      `Installing ${Libraries.GT_NEXT} with ${packageManager.name}...`
-    );
-    await installPackage(Libraries.GT_NEXT, packageManager);
-    spinner.stop(chalk.green(`Automatically installed ${Libraries.GT_NEXT}.`));
-  } else if (
-    ['next-pages', 'react', 'redwood', 'vite', 'gatsby'].includes(
-      frameworkType
-    ) &&
-    !isPackageInstalled(Libraries.GT_REACT, packageJson)
-  ) {
-    const packageManager = await getPackageManager();
-    const spinner = logger.createSpinner('timer');
-    spinner.start(
-      `Installing ${Libraries.GT_REACT} with ${packageManager.name}...`
-    );
-    await installPackage(Libraries.GT_REACT, packageManager);
-    spinner.stop(chalk.green(`Automatically installed ${Libraries.GT_REACT}.`));
-  }
+  const install =
+    framework === 'next-app' ? Libraries.GT_NEXT : Libraries.GT_REACT;
+  const plan: ReactSetupPlan = {
+    framework,
+    packageJson,
+    install: isPackageInstalled(install, packageJson) ? undefined : install,
+  };
 
-  const errors: string[] = [];
-  const warnings: string[] = [];
-  let filesUpdated: string[] = [];
-
-  // Read tsconfig.json if it exists
-  const tsconfigPath = findFilepath(['tsconfig.json']);
-  const tsconfigJson = tsconfigPath ? loadConfig(tsconfigPath) : undefined;
-
-  if (frameworkType === 'next-app') {
-    // Check if they have a next.config.js file
-    const nextConfigPath = findFilepath([
+  if (framework === 'next-app') {
+    plan.nextConfigPath = findFilepath([
       './next.config.js',
       './next.config.ts',
       './next.config.mjs',
       './next.config.mts',
     ]);
-    if (!nextConfigPath) {
-      logger.error('No next.config.[js|ts|mjs|mts] file found.');
-      exitSync(1);
+    if (!plan.nextConfigPath) {
+      session.reject('No next.config.[js|ts|mjs|mts] file found');
     }
+    const formatter = await detectFormatter();
+    if (
+      formatter &&
+      (await session.answer('--format', {
+        explicit: options.format,
+        recommended: true,
+        ask: () =>
+          promptConfirm({
+            message: `Would you like the wizard to auto-format the modified files? ${chalk.dim(
+              `(${formatter})`
+            )}`,
+            defaultValue: true,
+          }),
+      }))
+    ) {
+      plan.formatter = formatter;
+    }
+  }
+  return plan;
+}
 
-    const mergeOptions = {
+/** Wraps Next.js App Router content and adds withGTConfig(); installs happen first. */
+export async function executeReactSetup(
+  session: OnboardingSession,
+  plan: ReactSetupPlan,
+  options: InitOptions
+): Promise<void> {
+  if (plan.framework !== 'next-app' || !plan.nextConfigPath) return;
+
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const spinner = logger.createSpinner();
+  spinner.start('Wrapping JSX content with <T> tags...');
+  // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
+  const { filesUpdated } = await wrapContentNext(
+    {
       ...options,
       disableIds: true,
       disableFormatting: true,
       skipTs: true,
       addGTProvider: true,
-    };
-    const spinner = logger.createSpinner();
-    spinner.start('Wrapping JSX content with <T> tags...');
-    // Wrap all JSX elements in the src directory with a <T> tag, with unique ids
-    const { filesUpdated: filesUpdatedNext } = await wrapContentNext(
-      mergeOptions,
-      Libraries.GT_NEXT,
-      errors,
-      warnings
-    );
-    filesUpdated = [...filesUpdated, ...filesUpdatedNext];
+    },
+    Libraries.GT_NEXT,
+    errors,
+    warnings
+  );
+  spinner.stop(
+    chalk.green(
+      `Success! Updated ${chalk.bold.cyan(filesUpdated.length)} files:\n`
+    ) + filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
+  );
+  if (filesUpdated.length > 0) session.step('wrapped JSX content');
 
-    spinner.stop(
-      chalk.green(
-        `Success! Updated ${chalk.bold.cyan(filesUpdated.length)} files:\n`
-      ) + filesUpdated.map((file) => `${chalk.green('-')} ${file}`).join('\n')
-    );
-
-    // Add the withGTConfig() function to the next.config.js file
-    await handleInitGT(
-      nextConfigPath,
-      errors,
-      warnings,
-      filesUpdated,
-      packageJson,
-      tsconfigJson
-    );
-    logger.step(
-      chalk.green(`Added withGTConfig() to your ${nextConfigPath} file.`)
-    );
-  }
-
-  if (errors.length > 0) {
-    logger.error(chalk.red('Failed to write files:\n') + errors.join('\n'));
-  }
+  // Add the withGTConfig() function to the next.config.js file
+  const tsconfigPath = findFilepath(['tsconfig.json']);
+  await handleInitGT(
+    plan.nextConfigPath,
+    errors,
+    warnings,
+    filesUpdated,
+    plan.packageJson,
+    tsconfigPath ? loadConfig(tsconfigPath) : undefined
+  );
 
   if (warnings.length > 0) {
     logger.warn(
@@ -182,21 +202,21 @@ Please let us know what you would like to see added at https://github.com/genera
         warnings.map((warning) => `${chalk.yellow('-')} ${warning}`).join('\n')
     );
   }
-
-  const formatter = await detectFormatter();
-
-  if (!formatter || filesUpdated.length === 0) {
-    return;
+  if (errors.length > 0) {
+    throw new Error(
+      createDiagnosticMessage({
+        source: 'gt',
+        severity: 'Error',
+        whatHappened: 'Setup could not update some application files',
+        details: errors,
+        fix: 'Fix the reported files, then rerun `npx gt init`',
+      })
+    );
   }
+  logger.step(
+    chalk.green(`Added withGTConfig() to your ${plan.nextConfigPath} file.`)
+  );
+  session.step(`added withGTConfig() to ${plan.nextConfigPath}`);
 
-  const applyFormatting = useDefaults
-    ? true
-    : await promptConfirm({
-        message: `Would you like the wizard to auto-format the modified files? ${chalk.dim(
-          `(${formatter})`
-        )}`,
-        defaultValue: true,
-      });
-  // Format updated files if formatters are available
-  if (applyFormatting) await formatFiles(filesUpdated, formatter);
+  if (plan.formatter) await formatFiles(filesUpdated, plan.formatter);
 }

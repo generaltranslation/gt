@@ -87,13 +87,11 @@ function getModuleEntry(indexHtml: string): {
   );
 }
 
-export async function setupViteSPA({
-  appDirectory,
-  configFilepath,
-  defaultLocale,
-  locales,
-  translationsDir,
-}: SetupViteSPAOptions): Promise<void> {
+/**
+ * Reads the Vite entry and bootstrap without writing, so setup can report an
+ * unsupported layout before changing any file.
+ */
+export async function inspectViteSPA(appDirectory: string) {
   const indexHtmlPath = path.join(appDirectory, 'index.html');
   const sourceDirectory = path.join(appDirectory, 'src');
   const indexHtml = await fs.promises.readFile(indexHtmlPath, 'utf8');
@@ -135,6 +133,37 @@ export async function setupViteSPA({
       })
     );
   }
+  return {
+    indexHtmlPath,
+    sourceDirectory,
+    indexHtml,
+    script,
+    source,
+    isAlreadyConfigured,
+    bootstrapFilename,
+    bootstrapPath,
+    entryImport,
+  };
+}
+
+export async function setupViteSPA({
+  appDirectory,
+  configFilepath,
+  defaultLocale,
+  locales,
+  translationsDir,
+}: SetupViteSPAOptions): Promise<void> {
+  const {
+    indexHtmlPath,
+    sourceDirectory,
+    indexHtml,
+    script,
+    source,
+    isAlreadyConfigured,
+    bootstrapFilename,
+    bootstrapPath,
+    entryImport,
+  } = await inspectViteSPA(appDirectory);
 
   await fs.promises.mkdir(sourceDirectory, { recursive: true });
 
