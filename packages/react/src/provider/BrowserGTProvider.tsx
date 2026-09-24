@@ -10,11 +10,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import type { SharedGTProviderProps } from './GTProviderProps';
 import { setCookieValue } from '../condition-store/cookies';
 
-type Conditions = {
-  locale: string;
-  region: string | undefined;
-  enableI18n: boolean;
-};
+type Conditions = Parameters<NonNullable<SharedGTProviderProps['_reload']>>[0];
 
 /** Client-side provider for server-rendered applications. */
 export function BrowserGTProvider(props: SharedGTProviderProps) {
