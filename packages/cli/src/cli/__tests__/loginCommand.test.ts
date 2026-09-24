@@ -1,3 +1,4 @@
+import chalk from 'chalk';
 import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -58,11 +59,18 @@ describe('login device prompt', () => {
         expect.objectContaining({ noBrowser: !browser })
       );
       expect(logger.message).toHaveBeenCalledWith(
-        expect.stringContaining(verificationUriComplete)
+        expect.stringContaining(`\n${chalk.cyan(verificationUriComplete)}\n`)
+      );
+      expect(logger.message).toHaveBeenCalledWith(
+        expect.stringContaining('confirm the code')
       );
       expect(logger.message).not.toHaveBeenCalledWith(
-        expect.stringContaining('enter the code')
+        expect.stringContaining('Opening your browser')
       );
+      expect(logger.message).toHaveBeenCalledWith(
+        expect.stringContaining('Waiting for authentication...')
+      );
+      expect(logger.endCommand).toHaveBeenCalledWith('You are now signed in.');
     }
   );
 
@@ -74,7 +82,7 @@ describe('login device prompt', () => {
     new BaseCLI(program, 'base');
     await program.parseAsync(['login', '--no-browser'], { from: 'user' });
     expect(logger.message).toHaveBeenCalledWith(
-      expect.stringContaining(verificationUri)
+      expect.stringContaining(`\n${chalk.cyan(verificationUri)}\n`)
     );
     expect(logger.message).toHaveBeenCalledWith(
       expect.stringContaining('enter the code')

@@ -10,6 +10,7 @@ const STYLES = `
     --foreground: #09090b;
     --muted-foreground: #71717a;
     --success: #1cca5b;
+    --error: #dc2626;
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -17,6 +18,7 @@ const STYLES = `
       --foreground: #fafafa;
       --muted-foreground: #a1a1aa;
       --success: #387836;
+      --error: #f87171;
     }
   }
   * { box-sizing: border-box; margin: 0; }
@@ -43,6 +45,7 @@ const STYLES = `
     margin: 0 auto 16px;
   }
   .success { color: var(--success); }
+  .error { color: var(--error); }
   h1 {
     font-size: 18px;
     line-height: 28px;
@@ -55,26 +58,26 @@ const STYLES = `
 
 const CIRCLE_CHECK =
   '<svg class="success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>';
-const page = {
-  title: 'Sign-in response received',
-  icon: CIRCLE_CHECK,
-  body: 'Return to your terminal to check whether sign in completed. You can close this window.',
-};
+const CIRCLE_X =
+  '<svg class="error" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6m0-6 6 6"/></svg>';
 
-export function renderCallbackPage(): string {
+export function renderCallbackPage(success: boolean): string {
+  const title = success
+    ? 'Successfully authenticated gt CLI'
+    : 'Authentication failed';
   return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${page.title}</title>
+<title>${title}</title>
 <style>${STYLES}</style>
 </head>
 <body>
 <main>
-${page.icon}
-<h1>${page.title}</h1>
-<p>${page.body}</p>
+${success ? CIRCLE_CHECK : CIRCLE_X}
+<h1>${title}</h1>
+<p>You may now close this tab and return to the terminal.</p>
 </main>
 </body>
 </html>`;

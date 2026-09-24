@@ -1,5 +1,14 @@
 # gt-react
 
+## 11.4.3
+
+### Patch Changes
+
+- Updated dependencies [[`87fa5b1`](https://github.com/generaltranslation/gt/commit/87fa5b17cc2dcd265bc96ab77259e4bc4a6c987f), [`78e3a57`](https://github.com/generaltranslation/gt/commit/78e3a57c19caffe8fbce2e9bc74e573071d662e8), [`0e87e42`](https://github.com/generaltranslation/gt/commit/0e87e42ac5d93a1c9ee1f5993d074d4c9a4ae387), [`370c31f`](https://github.com/generaltranslation/gt/commit/370c31f975cd1d2bfa9609ea1827c2900f812665), [`c734b08`](https://github.com/generaltranslation/gt/commit/c734b084f0a50d1b2787c86ec790403f88803650), [`322e927`](https://github.com/generaltranslation/gt/commit/322e9279b7efb17faf220e626a5a3696efc5d863), [`052d499`](https://github.com/generaltranslation/gt/commit/052d499556f3dcf7c6801d2ba91399783608e70b), [`d5649a4`](https://github.com/generaltranslation/gt/commit/d5649a4d9711c3f752a1706348398935bf44e8e1), [`abc7fea`](https://github.com/generaltranslation/gt/commit/abc7feaeb8be41709178d34db550d7af36c809af)]:
+  - generaltranslation@9.5.0
+  - gt-i18n@1.0.31
+  - @generaltranslation/react-core@11.4.3
+
 ## 11.4.2
 
 ### Patch Changes

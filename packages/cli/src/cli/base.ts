@@ -154,7 +154,7 @@ async function loginInteractively(
     noBrowser: !useBrowser,
     onDeviceCode: ({ userCode, verificationUri, verificationUriComplete }) => {
       logger.message(
-        `${useBrowser ? 'Opening your browser. If it does not open, on any device visit' : 'On any device, visit'} ${chalk.cyan(verificationUriComplete ?? verificationUri)} and ${verificationUriComplete ? 'confirm' : 'enter'} the code ${chalk.bold(userCode)}\nWaiting for approval...`
+        `Visit:\n\n${chalk.cyan(verificationUriComplete ?? verificationUri)}\n\nThen ${verificationUriComplete ? 'confirm' : 'enter'} the code ${chalk.bold(userCode)}.\nWaiting for authentication...`
       );
     },
     onAuthorizationUrl: (url) => {
@@ -774,7 +774,7 @@ export class BaseCLI {
             typeof baseUrl === 'string' ? baseUrl : undefined,
             options.browser
           );
-          logger.endCommand('Signed in successfully.');
+          logger.endCommand('You are now signed in.');
         } catch (error) {
           logErrorAndExit(createUserAuthError('Sign in failed', error));
         }
@@ -1222,7 +1222,7 @@ See https://www.npmjs.com/package/gt-vue`);
       ) {
         try {
           await loginInteractively(settings.baseUrl);
-          logger.message('Signed in successfully.');
+          logger.message('You are now signed in.');
         } catch (error) {
           logErrorAndExit(createUserAuthError('Sign in failed', error));
         }

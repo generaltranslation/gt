@@ -1,5 +1,18 @@
 # gt-sanity
 
+## 4.0.19
+
+### Patch Changes
+
+- [#2205](https://github.com/generaltranslation/gt/pull/2205) [`78e3a57`](https://github.com/generaltranslation/gt/commit/78e3a57c19caffe8fbce2e9bc74e573071d662e8) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Expose diagnostics through the public `generaltranslation/diagnostics` subpath and fail fast with a diagnostic when an unsupported model provider would otherwise be forwarded and rejected by the server. Migrate the CLI to the diagnostics subpath and API version export, and report invalid model-provider settings with the validation diagnostic.
+
+- [#2205](https://github.com/generaltranslation/gt/pull/2205) [`08e6d82`](https://github.com/generaltranslation/gt/commit/08e6d82df8f02045f43bfcc87b35e9a4ae4a9f69) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Expose successful job-poll responses through an `onPoll` hook. Route CLI font and wizard requests through the generated SDK, use the shared sequential job poller, and remove the retired hand-written HTTP client implementations.
+
+- [#2205](https://github.com/generaltranslation/gt/pull/2205) [`abc7fea`](https://github.com/generaltranslation/gt/commit/abc7feaeb8be41709178d34db550d7af36c809af) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Consolidate CLI and Sanity request construction on the shared core API adapter, which now owns `createProject` and exposes raw project-info and job-status loaders for compatibility facades.
+
+- Updated dependencies [[`87fa5b1`](https://github.com/generaltranslation/gt/commit/87fa5b17cc2dcd265bc96ab77259e4bc4a6c987f), [`78e3a57`](https://github.com/generaltranslation/gt/commit/78e3a57c19caffe8fbce2e9bc74e573071d662e8), [`0e87e42`](https://github.com/generaltranslation/gt/commit/0e87e42ac5d93a1c9ee1f5993d074d4c9a4ae387), [`370c31f`](https://github.com/generaltranslation/gt/commit/370c31f975cd1d2bfa9609ea1827c2900f812665), [`c734b08`](https://github.com/generaltranslation/gt/commit/c734b084f0a50d1b2787c86ec790403f88803650), [`322e927`](https://github.com/generaltranslation/gt/commit/322e9279b7efb17faf220e626a5a3696efc5d863), [`052d499`](https://github.com/generaltranslation/gt/commit/052d499556f3dcf7c6801d2ba91399783608e70b), [`d5649a4`](https://github.com/generaltranslation/gt/commit/d5649a4d9711c3f752a1706348398935bf44e8e1), [`abc7fea`](https://github.com/generaltranslation/gt/commit/abc7feaeb8be41709178d34db550d7af36c809af)]:
+  - generaltranslation@9.5.0
+
 ## 4.0.18
 
 ### Patch Changes

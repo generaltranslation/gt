@@ -11,6 +11,9 @@ import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import chalk from 'chalk';
+import { Command } from 'commander';
+import open from 'open';
 import {
   afterEach,
   beforeAll,
@@ -20,7 +23,10 @@ import {
   it,
   vi,
 } from 'vitest';
+import { BaseCLI } from '../../cli/base.js';
+import * as config from '../../config/resolveConfig.js';
 import { logger } from '../../console/logger.js';
+import * as logging from '../../console/logging.js';
 import {
   deleteOAuthTokens,
   getCredentialsPath,
@@ -40,6 +46,7 @@ import {
 
 vi.mock('node:fs/promises', { spy: true });
 vi.mock('node:os', { spy: true });
+vi.mock('open', () => ({ default: vi.fn() }));
 
 const OAUTH_CLIENT_ID = 'gt-cli';
 const OAUTH_SCOPE = 'openid profile offline_access gt:*';
@@ -145,7 +152,7 @@ const networkFetch = globalThis.fetch;
 async function callback(
   url: string,
   change?: (params: URLSearchParams) => void
-): Promise<void> {
+): Promise<string> {
   const authorize = new URL(url);
   const redirect = new URL(authorize.searchParams.get('redirect_uri')!);
   redirect.searchParams.set('code', 'code-1');
@@ -153,7 +160,7 @@ async function callback(
   redirect.searchParams.set('iss', authorize.origin + '/api/auth');
   change?.(redirect.searchParams);
   const response = await networkFetch(redirect);
-  expect(await response.text()).toContain('check whether sign in completed');
+  return response.text();
 }
 function browserLogin(options: LoginOptions = {}) {
   return login({
@@ -181,6 +188,9 @@ function forms(fetcher: ReturnType<typeof provider>) {
 let stateHome: string;
 beforeEach(async () => {
   stateHome = await mkdtemp(path.join(tmpdir(), 'gt-oauth-test-'));
+  vi.stubEnv('SSH_CONNECTION', '');
+  vi.stubEnv('SSH_CLIENT', '');
+  vi.stubEnv('SSH_TTY', '');
   vi.stubEnv('XDG_STATE_HOME', stateHome);
   vi.stubEnv('XDG_CONFIG_HOME', path.join(stateHome, 'config'));
   vi.spyOn(os, 'homedir').mockReturnValue(path.join(stateHome, 'home'));
@@ -338,6 +348,55 @@ describe('OAuth credential storage', () => {
 });
 
 describe('discovery and browser authorization', () => {
+  it.each(['success', 'denied', 'invalid token', 'storage failure'])(
+    'shows the confirmed browser result for %s',
+    async (outcome) => {
+      if (outcome === 'storage failure') {
+        vi.spyOn(fs, 'rename').mockRejectedValueOnce(new Error('Disk full'));
+      }
+      let page!: Promise<string>;
+      const pending = browserLogin({
+        fetch:
+          outcome === 'invalid token'
+            ? provider({ token: async () => json(tokenResponse()) })
+            : provider(),
+        openBrowser: (url) => {
+          page = callback(url, (params) => {
+            if (outcome === 'denied') {
+              params.delete('code');
+              params.set('error', 'access_denied');
+            }
+          }).then(async (html) => {
+            if (outcome === 'success') {
+              expect(await readOAuthTokens(authBaseUrl)).toMatchObject({
+                subject: 'user-1',
+              });
+            }
+            return html;
+          });
+          return page;
+        },
+      });
+      if (outcome === 'success') {
+        await expect(pending).resolves.toMatchObject({ subject: 'user-1' });
+      } else {
+        await expect(pending).rejects.toThrow();
+      }
+      const html = await page;
+      expect(html).toContain(
+        outcome === 'success'
+          ? '<h1>Successfully authenticated gt CLI</h1>'
+          : '<h1>Authentication failed</h1>'
+      );
+      expect(html).toContain(
+        'You may now close this tab and return to the terminal.'
+      );
+      if (outcome !== 'success') {
+        expect(html).not.toContain('Successfully authenticated');
+        expect(html).not.toContain('Disk full');
+      }
+    }
+  );
   it('uses seeded public client, S256, exact redirect/resource/scope and validates a signed subject', async () => {
     const fetcher = provider();
     let authorize!: URL;
@@ -657,6 +716,58 @@ describe('requested scope contract', () => {
 });
 
 describe('library-managed device authorization', () => {
+  it.each(['SSH_CONNECTION', 'SSH_CLIENT', 'SSH_TTY'])(
+    'gt login prints device instructions without a listener or browser when %s is set',
+    async (variable) => {
+      vi.stubEnv(variable, 'ssh-session');
+      vi.stubEnv('GT_AUTH_URL', authBaseUrl);
+      vi.stubEnv('GT_API_URL', apiBaseUrl);
+      vi.stubGlobal('fetch', provider());
+      vi.spyOn(config, 'resolveConfig').mockReturnValue(null);
+      vi.spyOn(logging, 'displayHeader').mockImplementation(() => {});
+      vi.spyOn(logging, 'logErrorAndExit').mockImplementation((message) => {
+        throw new Error(message);
+      });
+      vi.spyOn(logger, 'setConsoleOutput').mockImplementation(() => {});
+      vi.spyOn(logger, 'setQuiet').mockImplementation(() => {});
+      const message = vi.spyOn(logger, 'message').mockImplementation(() => {});
+      const endCommand = vi
+        .spyOn(logger, 'endCommand')
+        .mockImplementation(() => {});
+      const loopback = await import('../loopback.js');
+      const startLoopback = vi
+        .spyOn(loopback, 'startLoopbackServer')
+        .mockRejectedValueOnce(new Error('Unexpected loopback listener'));
+      const openBrowser = vi
+        .mocked(open)
+        .mockReset()
+        .mockRejectedValue(new Error('Unexpected browser launch'));
+      vi.useFakeTimers();
+      const program = new Command().exitOverride();
+      new BaseCLI(program, 'base');
+      const pending = program.parseAsync(['login'], { from: 'user' });
+      pending.catch(() => undefined);
+      await vi.waitFor(() => expect(message).toHaveBeenCalled());
+      await vi.advanceTimersByTimeAsync(5000);
+      await pending;
+      const instructions = String(message.mock.calls[0][0]);
+      expect(instructions.split('\n')).toContain(
+        chalk.cyan(String(deviceResponse().verification_uri_complete))
+      );
+      expect(instructions).toContain('confirm the code');
+      expect(instructions).toContain('ABCD-EFGH');
+      expect(instructions).toContain('Waiting for authentication...');
+      expect(message).not.toHaveBeenCalledWith(
+        expect.stringContaining('Opening your browser')
+      );
+      expect(endCommand).toHaveBeenCalledWith('You are now signed in.');
+      expect(await readOAuthTokens(authBaseUrl)).toMatchObject({
+        subject: 'user-1',
+      });
+      expect(startLoopback).not.toHaveBeenCalled();
+      expect(openBrowser).not.toHaveBeenCalled();
+    }
+  );
   it('requires a display channel before any request for no-browser login', async () => {
     const fetcher = provider();
     const openBrowser = vi.fn();
