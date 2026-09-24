@@ -154,7 +154,7 @@ async function loginInteractively(
     noBrowser: !useBrowser,
     onDeviceCode: ({ userCode, verificationUri, verificationUriComplete }) => {
       logger.message(
-        `${useBrowser ? 'Opening your browser. If it does not open, on any device visit' : 'On any device, visit'} ${chalk.cyan(verificationUriComplete ?? verificationUri)} and ${verificationUriComplete ? 'confirm' : 'enter'} the code ${chalk.bold(userCode)}\nWaiting for approval...`
+        `On any device, visit:\n\n${chalk.cyan(verificationUriComplete ?? verificationUri)}\n\nThen ${verificationUriComplete ? 'confirm' : 'enter'} the code ${chalk.bold(userCode)}.\nWaiting for approval...`
       );
     },
     onAuthorizationUrl: (url) => {

@@ -153,7 +153,9 @@ async function callback(
   redirect.searchParams.set('iss', authorize.origin + '/api/auth');
   change?.(redirect.searchParams);
   const response = await networkFetch(redirect);
-  expect(await response.text()).toContain('check whether sign in completed');
+  expect(await response.text()).toContain(
+    'Check your terminal for the sign-in result.'
+  );
 }
 function browserLogin(options: LoginOptions = {}) {
   return login({
@@ -181,6 +183,9 @@ function forms(fetcher: ReturnType<typeof provider>) {
 let stateHome: string;
 beforeEach(async () => {
   stateHome = await mkdtemp(path.join(tmpdir(), 'gt-oauth-test-'));
+  vi.stubEnv('SSH_CONNECTION', '');
+  vi.stubEnv('SSH_CLIENT', '');
+  vi.stubEnv('SSH_TTY', '');
   vi.stubEnv('XDG_STATE_HOME', stateHome);
   vi.stubEnv('XDG_CONFIG_HOME', path.join(stateHome, 'config'));
   vi.spyOn(os, 'homedir').mockReturnValue(path.join(stateHome, 'home'));
@@ -657,6 +662,26 @@ describe('requested scope contract', () => {
 });
 
 describe('library-managed device authorization', () => {
+  it.each(['SSH_CONNECTION', 'SSH_CLIENT', 'SSH_TTY'])(
+    'uses device login without a listener or browser when %s is set',
+    async (variable) => {
+      vi.stubEnv(variable, 'ssh-session');
+      const loopback = await import('../loopback.js');
+      const startLoopback = vi
+        .spyOn(loopback, 'startLoopbackServer')
+        .mockRejectedValueOnce(new Error('Unexpected loopback listener'));
+      vi.useFakeTimers();
+      const openBrowser = vi.fn(async () => undefined);
+      const { pending } = await startDevice(provider(), {
+        noBrowser: false,
+        openBrowser,
+      });
+      await vi.advanceTimersByTimeAsync(5000);
+      expect((await pending).subject).toBe('user-1');
+      expect(startLoopback).not.toHaveBeenCalled();
+      expect(openBrowser).not.toHaveBeenCalled();
+    }
+  );
   it('requires a display channel before any request for no-browser login', async () => {
     const fetcher = provider();
     const openBrowser = vi.fn();

@@ -280,9 +280,16 @@ async function loginWithDeviceCode(
   return tokens;
 }
 
-/** Browser S256/loopback, or device login for --no-browser and bind failure. */
+/** Browser S256/loopback, or device login for SSH, --no-browser and bind failure. */
 export async function login(options: LoginOptions = {}): Promise<OAuthTokens> {
-  if (options.noBrowser) return loginWithDeviceCode(options);
+  if (
+    options.noBrowser ||
+    process.env.SSH_CONNECTION ||
+    process.env.SSH_CLIENT ||
+    process.env.SSH_TTY
+  ) {
+    return loginWithDeviceCode({ ...options, noBrowser: true });
+  }
   const authBaseUrl = options.authBaseUrl ?? getAuthBaseUrl();
   const resource = loginResource(options);
   const config = await configuration({ ...options, authBaseUrl }).catch(

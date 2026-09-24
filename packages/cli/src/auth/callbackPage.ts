@@ -56,9 +56,9 @@ const STYLES = `
 const CIRCLE_CHECK =
   '<svg class="success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>';
 const page = {
-  title: 'Sign-in response received',
+  title: 'Return to your terminal',
   icon: CIRCLE_CHECK,
-  body: 'Return to your terminal to check whether sign in completed. You can close this window.',
+  body: 'You can close this window. Check your terminal for the sign-in result.',
 };
 
 export function renderCallbackPage(): string {

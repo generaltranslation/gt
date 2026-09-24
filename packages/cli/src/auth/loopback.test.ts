@@ -17,17 +17,21 @@ describe('loopback authorization server', () => {
     expect(response.headers.get('content-security-policy')).toContain(
       "default-src 'none'"
     );
-    expect(await response.text()).toContain('check whether sign in completed');
+    const page = await response.text();
+    expect(page).toContain('<h1>Return to your terminal</h1>');
+    expect(page).toContain('Check your terminal for the sign-in result.');
     expect((await pending).href).toBe(callback);
   });
-  it('uses the same neutral received page for provider errors', async () => {
+  it('uses the same neutral return-to-terminal page for provider errors', async () => {
     const server = await startLoopbackServer();
     const pending = server.waitForCallback(5000);
     const response = await fetch(
       `${server.redirectUri}?error=access_denied&state=xyz`
     );
     expect(response.status).toBe(200);
-    expect(await response.text()).not.toContain("You're signed in");
+    const page = await response.text();
+    expect(page).toContain('<h1>Return to your terminal</h1>');
+    expect(page).not.toContain("You're signed in");
     expect((await pending).searchParams.get('error')).toBe('access_denied');
   });
   it('ignores unrelated paths, methods and absolute targets with another origin', async () => {
