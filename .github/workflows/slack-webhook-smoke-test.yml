@@ -1,0 +1,35 @@
+name: Slack Webhook Smoke Test
+
+on:
+  pull_request:
+    types:
+      - opened
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    name: Notify libraries pager
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Send Slack test notification
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "Libraries pager webhook smoke test",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "🧪 *Libraries pager webhook smoke test passed through GitHub Actions.*\n\n• Repository: `${{ github.repository }}`\n• Triggered by: `${{ github.actor }}`\n• Pull request: <${{ github.event.pull_request.html_url }}|#${{ github.event.pull_request.number }}>\n\nThis is a temporary test; no action is required."
+                  }
+                }
+              ]
+            }
