@@ -3,9 +3,12 @@ name: CI - Run Tests
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
 
 env:
   CI: true
+  CHANGE_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
   CARGO_HTTP_MULTIPLEXING: false
   CARGO_NET_RETRY: 10
 permissions:
@@ -43,7 +46,7 @@ jobs:
         run: pnpm install
 
       - name: Rebuild packages
-        run: pnpm rebuild --filter='...[origin/${{ github.base_ref }}]'
+        run: pnpm rebuild --filter="...[$CHANGE_BASE]"
 
       - name: Run lint
         run: pnpm lint
@@ -79,13 +82,13 @@ jobs:
         run: pnpm install
 
       - name: Rebuild packages
-        run: pnpm rebuild --filter='...[origin/${{ github.base_ref }}]'
+        run: pnpm rebuild --filter="...[$CHANGE_BASE]"
 
       - name: Build packages
-        run: pnpm exec turbo build --filter='...[origin/${{ github.base_ref }}]' --filter='!gt-next-middleware-e2e' --filter='!./examples/*'
+        run: pnpm exec turbo build --filter="...[$CHANGE_BASE]" --filter='!gt-next-middleware-e2e' --filter='!./examples/*'
 
       - name: Run tests
-        run: pnpm exec turbo test --filter='...[origin/${{ github.base_ref }}]' --filter='!gt-next-middleware-e2e' --filter='!./examples/*'
+        run: pnpm exec turbo test --filter="...[$CHANGE_BASE]" --filter='!gt-next-middleware-e2e' --filter='!./examples/*'
 
   test-builds:
     strategy:
@@ -135,10 +138,10 @@ jobs:
         id: gt_next_changed
         shell: bash
         run: |
-          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "^packages/next/"; then
-            echo "changed=true" >> $GITHUB_OUTPUT
+          if git diff --name-only "$CHANGE_BASE"...HEAD | grep -q "^packages/next/"; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           else
-            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
       - name: Setup Rust
         if: steps.gt_next_changed.outputs.changed == 'true'
@@ -200,10 +203,10 @@ jobs:
         id: gt_vue_changed
         shell: bash
         run: |
-          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -qE "^packages/(vue|vue-extractor)/"; then
-            echo "changed=true" >> $GITHUB_OUTPUT
+          if git diff --name-only "$CHANGE_BASE"...HEAD | grep -qE "^packages/(vue|vue-extractor)/"; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           else
-            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Setup development tools
@@ -280,10 +283,10 @@ jobs:
         id: gt_cli_changed
         shell: bash
         run: |
-          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -qE "^packages/(cli|python-extractor|vue-extractor)/"; then
-            echo "changed=true" >> $GITHUB_OUTPUT
+          if git diff --name-only "$CHANGE_BASE"...HEAD | grep -qE "^packages/(cli|python-extractor|vue-extractor)/"; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           else
-            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Setup Rust
@@ -369,7 +372,7 @@ jobs:
         id: bundle_inputs
         shell: bash
         run: |
-          if git diff --quiet origin/${{ github.base_ref }}...HEAD -- \
+          if git diff --quiet "$CHANGE_BASE"...HEAD -- \
             .size-limit.cjs \
             package.json \
             pnpm-lock.yaml \
@@ -393,8 +396,15 @@ jobs:
         with:
           cache: true
 
+      - name: Check bundle sizes on main
+        if: github.event_name == 'push' && steps.bundle_inputs.outputs.changed == 'true'
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run build
+          pnpm exec size-limit --json
+
       - uses: andresz1/size-limit-action@94bc357df29c36c8f8d50ea497c3e225c3c95d1d # v1.8.0
-        if: steps.bundle_inputs.outputs.changed == 'true'
+        if: github.event_name == 'pull_request' && steps.bundle_inputs.outputs.changed == 'true'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           package_manager: pnpm
@@ -409,3 +419,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: echo "All tests passed"
+
+  preview:
+    needs: run-tests
+    uses: ./.github/workflows/preview.yml
