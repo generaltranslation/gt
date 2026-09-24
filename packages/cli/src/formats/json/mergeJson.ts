@@ -1,4 +1,9 @@
-import { AdditionalOptions, SourceObjectOptions } from '../../types/index.js';
+import type { LocaleProperties } from '@generaltranslation/format/types';
+import {
+  AdditionalOptions,
+  SourceObjectOptions,
+  TransformOption,
+} from '../../types/index.js';
 import { exitSync } from '../../console/logging.js';
 import { logger } from '../../console/logger.js';
 import {
@@ -582,36 +587,40 @@ export function applyTransformations(
       if (typeof result.value !== 'string') {
         return;
       }
-      // Replace locale placeholders in the replace string
-      let replaceString = transformOptions.replace;
-
-      // Replace all locale property placeholders
-      replaceString = replaceLocalePlaceholders(
-        replaceString,
-        targetLocaleProperties
+      result.value = transformValue(
+        result.value,
+        transformOptions,
+        targetLocaleProperties,
+        defaultLocaleProperties
       );
-
-      if (
-        transformOptions.match &&
-        typeof transformOptions.match === 'string'
-      ) {
-        // Replace locale placeholders in the match string using defaultLocale properties
-        let matchString = transformOptions.match;
-        matchString = replaceLocalePlaceholders(
-          matchString,
-          defaultLocaleProperties
-        );
-
-        result.value = result.value.replace(
-          new RegExp(matchString, 'g'),
-          replaceString
-        );
-      } else {
-        result.value = replaceString;
-      }
 
       // Update the actual sourceItem using JSONPointer
       setJSONPointerValue(sourceItem, result.pointer, result.value);
     });
   }
+}
+
+/**
+ * Apply one transform to a string value. Locale placeholders in `replace`
+ * take the target locale's properties; those in `match` take the default
+ * locale's. Without `match`, the value is replaced outright.
+ */
+export function transformValue(
+  value: string,
+  transformOptions: TransformOption,
+  targetLocaleProperties: LocaleProperties,
+  defaultLocaleProperties: LocaleProperties
+): string {
+  const replaceString = replaceLocalePlaceholders(
+    transformOptions.replace,
+    targetLocaleProperties
+  );
+  if (!transformOptions.match || typeof transformOptions.match !== 'string') {
+    return replaceString;
+  }
+  const matchString = replaceLocalePlaceholders(
+    transformOptions.match,
+    defaultLocaleProperties
+  );
+  return value.replace(new RegExp(matchString, 'g'), replaceString);
 }

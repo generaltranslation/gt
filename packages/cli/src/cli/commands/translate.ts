@@ -13,6 +13,7 @@ import localizeRelativeAssets from '../../utils/localizeRelativeAssets.js';
 import processAnchorIds from '../../utils/processAnchorIds.js';
 import localizeStaticImports from '../../utils/localizeStaticImports.js';
 import { postprocessMintlify } from '../../formats/files/postprocess/mintlify.js';
+import { keepUntranslatedPagePaths } from '../../formats/files/postprocess/keepUntranslatedPagePaths.js';
 import { BranchData } from '../../types/branch.js';
 import { getDownloadedMeta } from '../../state/recentDownloads.js';
 import { persistPostProcessHashes } from '../../utils/persistPostprocessHashes.js';
@@ -106,6 +107,10 @@ export async function postProcessTranslations(
       );
     }
   }
+
+  // Point transformed page paths (e.g. docs navigation) at the default-locale
+  // page when the localized page was not translated
+  keepUntranslatedPagePaths(settings, postProcessIncludes);
 
   // Rewrite relative asset URLs in translated md/mdx files
   if (settings.options?.experimentalLocalizeRelativeAssets) {
