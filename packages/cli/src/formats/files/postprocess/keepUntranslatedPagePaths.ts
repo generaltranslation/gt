@@ -13,6 +13,11 @@ import {
 } from '../../json/jsonPointer.js';
 import { transformValue } from '../../json/mergeJson.js';
 import {
+  applyStructuralTransforms,
+  unapplyStructuralTransforms,
+} from '../../json/transformJson.js';
+import { api } from '../../../utils/api.js';
+import {
   findMatchingItemArray,
   findMatchingItemObject,
   generateSourceObjectPointers,
@@ -56,6 +61,19 @@ export function keepUntranslatedPagePaths(
     if (!schema?.composite || !isIncluded(filePath)) continue;
     const json = JSON.parse(fs.readFileSync(filePath, 'utf8')) as JSONValue;
     const dir = path.dirname(filePath);
+    // Match entries the way mergeJson wrote them: same structural transforms
+    // and the same locale keys.
+    if (schema.structuralTransform) {
+      applyStructuralTransforms(
+        json,
+        schema.structuralTransform,
+        schema.composite
+      );
+    }
+    const localeKey = (locale: string) =>
+      options.experimentalCanonicalLocaleKeys
+        ? api.resolveCanonicalLocale(locale)
+        : locale;
     let changed = false;
     const sourceObjects = generateSourceObjectPointers(schema.composite, json);
     for (const [
@@ -63,40 +81,56 @@ export function keepUntranslatedPagePaths(
       { sourceObjectValue, sourceObjectOptions },
     ] of Object.entries(sourceObjects)) {
       if (!sourceObjectOptions.transform) continue;
-      const entryFor = (locale: string): JSONValue | undefined =>
-        Array.isArray(sourceObjectValue)
-          ? Object.values(
-              findMatchingItemArray(
-                locale,
-                sourceObjectOptions,
-                pointer,
-                sourceObjectValue
-              )
-            )[0]?.sourceItem
-          : findMatchingItemObject(
-              locale,
-              pointer,
+      // Every entry for a locale, in order. mergeJson builds one target entry
+      // per default-locale entry in the same order, so they pair by position.
+      const entriesFor = (locale: string): JSONValue[] => {
+        if (Array.isArray(sourceObjectValue)) {
+          return Object.values(
+            findMatchingItemArray(
+              localeKey(locale),
               sourceObjectOptions,
-              sourceObjectValue as Record<string, JSONValue>
-            ).sourceItem;
-      const source = entryFor(defaultLocale);
-      if (!source) continue;
-      for (const locale of targetLocales) {
-        const target = entryFor(locale);
-        if (!target) continue;
-        const restored = restorePagePaths(
-          source,
-          target,
-          sourceObjectOptions.transform,
-          locale,
-          defaultLocale,
-          dir,
-          dir
+              pointer,
+              sourceObjectValue
+            )
+          )
+            .sort((a, b) => a.index - b.index)
+            .map(({ sourceItem }) => sourceItem);
+        }
+        const { sourceItem } = findMatchingItemObject(
+          localeKey(locale),
+          pointer,
+          sourceObjectOptions,
+          sourceObjectValue as Record<string, JSONValue>
         );
-        changed = restored || changed;
+        return sourceItem === undefined ? [] : [sourceItem];
+      };
+      const sources = entriesFor(defaultLocale);
+      for (const locale of targetLocales) {
+        entriesFor(locale).forEach((target, i) => {
+          if (sources[i] === undefined) return;
+          changed =
+            restorePagePaths(
+              sources[i],
+              target,
+              sourceObjectOptions.transform!,
+              locale,
+              defaultLocale,
+              dir,
+              dir
+            ) || changed;
+        });
       }
     }
-    if (changed) fs.writeFileSync(filePath, JSON.stringify(json, null, 2));
+    if (changed) {
+      if (schema.structuralTransform) {
+        unapplyStructuralTransforms(
+          json,
+          schema.structuralTransform,
+          schema.composite
+        );
+      }
+      fs.writeFileSync(filePath, JSON.stringify(json, null, 2));
+    }
   }
 
   // YAML: each locale has its own output file, mapped from the source file.

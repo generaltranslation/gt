@@ -164,6 +164,85 @@ describe('keepUntranslatedPagePaths', () => {
     expect(ja.logo).toBe('./ja/logo.png');
   });
 
+  it('fixes every entry when a locale has several, such as redirects', async () => {
+    write('en/terms.mdx', '# Terms\n');
+    write('en/privacy.mdx', '# Privacy\n');
+    writeJson('docs.json', {
+      navigation: { languages: [{ language: 'en', pages: [] }] },
+      redirects: [
+        { language: 'en', source: '/en/old-terms', destination: '/en/terms' },
+        {
+          language: 'en',
+          source: '/en/old-privacy',
+          destination: '/en/privacy',
+        },
+        { language: 'ja', source: '/ja/old-terms', destination: '/ja/terms' },
+        {
+          language: 'ja',
+          source: '/ja/old-privacy',
+          destination: '/ja/privacy',
+        },
+      ],
+    });
+
+    await run(mintlifyConfig('mintlify'));
+
+    const redirects = readJson('docs.json').redirects;
+    expect(
+      redirects
+        .filter((r: { language: string }) => r.language === 'ja')
+        .map((r: { destination: string }) => r.destination)
+    ).toEqual(['/en/terms', '/en/privacy']);
+  });
+
+  it('finds entries written with canonical locale keys', async () => {
+    write('terms.mdx', '# Terms\n');
+    writeJson('docs.json', {
+      navigation: {
+        languages: [
+          { language: 'en', pages: ['terms'] },
+          { language: 'fr-CA', pages: ['fr-ca/terms'] },
+        ],
+      },
+    });
+
+    const config = mintlifyConfig('mintlify-hide-default');
+    await run({
+      ...config,
+      locales: ['fr-ca'],
+      options: { ...config.options, experimentalCanonicalLocaleKeys: true },
+    });
+
+    const [, fr] = readJson('docs.json').navigation.languages;
+    expect(fr.pages).toEqual(['terms']);
+  });
+
+  it('is a no-op on a second run', async () => {
+    write('guide.mdx', '# Guide\n');
+    write('ja/guide.mdx', '# Guide\n');
+    write('terms.mdx', '# Terms\n');
+    writeJson('docs.json', {
+      navigation: {
+        languages: [
+          { language: 'en', pages: ['guide', 'terms'] },
+          { language: 'ja', pages: ['ja/guide', 'ja/terms'] },
+        ],
+      },
+    });
+
+    await run(mintlifyConfig('mintlify-hide-default'));
+    const afterFirst = fs.readFileSync(path.join(dir, 'docs.json'), 'utf8');
+    await run(mintlifyConfig('mintlify-hide-default'));
+
+    expect(fs.readFileSync(path.join(dir, 'docs.json'), 'utf8')).toBe(
+      afterFirst
+    );
+    expect(readJson('docs.json').navigation.languages[1].pages).toEqual([
+      'ja/guide',
+      'terms',
+    ]);
+  });
+
   it('changes nothing unless skipUntranslatedPages is set', async () => {
     write('terms.mdx', '# Page\n');
     const docs = {
