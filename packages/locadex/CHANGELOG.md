@@ -1,5 +1,12 @@
 # locadex
 
+## 1.0.230
+
+### Patch Changes
+
+- Updated dependencies [[`5382de5`](https://github.com/generaltranslation/gt/commit/5382de503a626beb394e01cad92882b78c2a0aa8), [`87fa5b1`](https://github.com/generaltranslation/gt/commit/87fa5b17cc2dcd265bc96ab77259e4bc4a6c987f), [`78e3a57`](https://github.com/generaltranslation/gt/commit/78e3a57c19caffe8fbce2e9bc74e573071d662e8), [`370c31f`](https://github.com/generaltranslation/gt/commit/370c31f975cd1d2bfa9609ea1827c2900f812665), [`c734b08`](https://github.com/generaltranslation/gt/commit/c734b084f0a50d1b2787c86ec790403f88803650), [`f6d1bae`](https://github.com/generaltranslation/gt/commit/f6d1bae8489ef37377bd45ec27f60e05e1f152d3), [`052d499`](https://github.com/generaltranslation/gt/commit/052d499556f3dcf7c6801d2ba91399783608e70b), [`08e6d82`](https://github.com/generaltranslation/gt/commit/08e6d82df8f02045f43bfcc87b35e9a4ae4a9f69), [`abc7fea`](https://github.com/generaltranslation/gt/commit/abc7feaeb8be41709178d34db550d7af36c809af)]:
+  - gt@2.22.0
+
 ## 1.0.229
 
 ### Patch Changes
