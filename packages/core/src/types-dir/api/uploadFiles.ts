@@ -45,7 +45,7 @@ export type UploadFilesOptions = {
 };
 
 export type UploadFilesResponse = {
-  uploadedFiles: FileReference[];
+  uploadedFiles: (FileReference & { locale?: string })[];
   count: number;
   message: string;
 };
