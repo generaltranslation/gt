@@ -307,8 +307,9 @@ export class ContextLogger {
   }
 }
 
-// Default logger instance.
-export const defaultLogger = new Logger({
+// Default logger instance. Pure annotations let bundlers drop the logger from
+// consumers that only import constants from the same chunk.
+export const defaultLogger = /* @__PURE__ */ new Logger({
   level: getConfiguredLogLevel(),
   includeTimestamp: true,
   includeContext: true,
@@ -341,8 +342,9 @@ export const error = (
 ) => defaultLogger.error(message, context, metadata);
 
 // Create context-specific loggers for different parts of the system
-export const fetchLogger = defaultLogger.child('fetch');
-export const gtInstanceLogger = defaultLogger.child('GT instance');
+export const fetchLogger = /* @__PURE__ */ defaultLogger.child('fetch');
+export const gtInstanceLogger =
+  /* @__PURE__ */ defaultLogger.child('GT instance');
 
 // Export types and classes
 export { Logger as GTLogger };

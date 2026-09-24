@@ -918,6 +918,9 @@ importers:
       yaml:
         specifier: ^2.8.0
         version: 2.8.1
+      openid-client:
+        specifier: 6.8.8
+        version: 6.8.8
     devDependencies:
       '@types/babel__generator':
         specifier: ^7.27.0
@@ -21463,6 +21466,12 @@ packages:
 
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
+  openid-client@6.8.8:
+    resolution: {integrity: sha512-ZsucJA5Ad04Uv7YN4ql+s4GXNmb9uAYQwyJTsJx7CH/MX3JZioLE2pVKi1SC+YrbSLA4Px3Gi30dMjgOZtb6pA==}
+  oauth4webapi@3.8.8:
+    resolution: {integrity: sha512-8N28E+a/oxfXWBgOMt+ZP/JUf/XR+IFbvkAEPP3gznXOMv9BpAAwiIj0TFNz3tGTPc0ZQ8zmWBNgN1nAys0gng==}
+  jose@6.2.12:
+    resolution: {integrity: sha512-9NiFmJEex0sy2Dk58j2UGBSHgUs2ypF9eZSu4L6vjOX3Dp96Sw1F3uL+H+D1sx02jZZdzUT0HgvCy59CuvXcWw==}
 
 snapshots:
 
@@ -45550,3 +45559,9 @@ snapshots:
       use-sync-external-store: 1.6.0(react@19.2.3)
 
   zwitch@2.0.4: {}
+  openid-client@6.8.8:
+    dependencies:
+      jose: 6.2.12
+      oauth4webapi: 3.8.8
+  oauth4webapi@3.8.8: {}
+  jose@6.2.12: {}

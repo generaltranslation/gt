@@ -1,9 +1,7 @@
 import type { PortableTextHtmlComponents } from '@portabletext/to-html';
 import { getLocaleProperties } from 'generaltranslation';
-import {
-  createDiagnosticMessage,
-  libraryDefaultLocale,
-} from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
+import { libraryDefaultLocale } from 'generaltranslation/internal';
 import { formatLocalePropertiesLabel } from './utils/localeDisplay';
 import { definePlugin } from 'sanity';
 import { route } from 'sanity/router';

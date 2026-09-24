@@ -12,6 +12,7 @@ import { endTerminalSession } from './terminalSession.js';
 
 import type { Logger as PinoLogger } from 'pino';
 import type { SpinnerResult, ProgressResult } from '@clack/prompts';
+import type { Writable } from 'node:stream';
 
 function wrapTerminalSessionAware<T extends SpinnerResult | ProgressResult>(
   target: T
@@ -43,6 +44,7 @@ function wrapTerminalSessionAware<T extends SpinnerResult | ProgressResult>(
 
 export type LogFormat = 'default' | 'json';
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+export type ConsoleOutput = 'stdout' | 'stderr';
 
 // Numeric ordering used to decide the quiet floor without lowering an
 // already-more-restrictive level chosen via GT_LOG_LEVEL.
@@ -140,6 +142,13 @@ class Logger {
   private logFormat: LogFormat;
   private logLevel: LogLevel;
   private quiet = false;
+  private consoleOutput: ConsoleOutput = 'stdout';
+  // One JSON console logger per stream so switching direction within a
+  // process reuses the existing SonicBoom instead of recreating it.
+  private consoleLoggers: Partial<Record<ConsoleOutput, PinoLogger>> = {};
+  // Clack writes to stdout unless told otherwise; unset keeps its default so
+  // ordinary commands are untouched while stderr routing redirects it.
+  private clackOutput: { output: Writable } | undefined;
 
   private constructor() {
     // Read configuration from environment variables
@@ -169,29 +178,26 @@ class Logger {
     // Console output (stdout) - only for JSON format
     // For 'default' format, we use @clack/prompts directly
     if (format === 'json') {
-      this.pinoLogger = pino(
-        {
-          level: logLevel,
-          mixin: () => ({
-            logId: randomUUID(),
-          }),
-        },
-        destination(1)
-      );
+      this.pinoLogger = this.createPinoLogger(process.stdout.fd, logLevel);
+      this.consoleLoggers.stdout = this.pinoLogger;
     }
 
     // File output (if specified) - always JSON format
     if (logFile) {
-      this.fileLogger = pino(
-        {
-          level: logLevel,
-          mixin: () => ({
-            logId: randomUUID(),
-          }),
-        },
-        destination(logFile)
-      );
+      this.fileLogger = this.createPinoLogger(logFile, logLevel);
     }
+  }
+
+  private createPinoLogger(dest: number | string, level: string): PinoLogger {
+    return pino(
+      {
+        level,
+        mixin: () => ({
+          logId: randomUUID(),
+        }),
+      },
+      destination(dest)
+    );
   }
 
   static getInstance(): Logger {
@@ -199,6 +205,29 @@ class Logger {
       Logger.instance = new Logger();
     }
     return Logger.instance;
+  }
+
+  /**
+   * Route console output (Clack chatter and the JSON console logger) to
+   * stdout (the historical default) or stderr, so a command whose stdout is
+   * machine-readable can keep diagnostics off it. Reversible per invocation;
+   * a no-op when the direction is unchanged. The JSON logger keeps its
+   * current level and is flushed before switching. File logging is unaffected.
+   */
+  setConsoleOutput(output: ConsoleOutput): void {
+    if (output === this.consoleOutput) return;
+    this.consoleOutput = output;
+    this.clackOutput =
+      output === 'stderr' ? { output: process.stderr } : undefined;
+    if (this.pinoLogger) {
+      this.pinoLogger.flush();
+      const next =
+        this.consoleLoggers[output] ??
+        this.createPinoLogger(process[output].fd, this.pinoLogger.level);
+      next.level = this.pinoLogger.level;
+      this.consoleLoggers[output] = next;
+      this.pinoLogger = next;
+    }
   }
 
   /**
@@ -230,7 +259,10 @@ class Logger {
       if (this.logFormat === 'default') {
         endTerminalSession();
         // @clack/prompts doesn't have trace, use message
-        clackLog.message(message, { symbol: chalk.dim('•') });
+        clackLog.message(message, {
+          symbol: chalk.dim('•'),
+          ...this.clackOutput,
+        });
       } else {
         this.pinoLogger?.trace(message);
       }
@@ -243,7 +275,10 @@ class Logger {
       if (this.logFormat === 'default') {
         endTerminalSession();
         // @clack/prompts doesn't have debug, use message
-        clackLog.message(message, { symbol: chalk.dim('◆') });
+        clackLog.message(message, {
+          symbol: chalk.dim('◆'),
+          ...this.clackOutput,
+        });
       } else {
         this.pinoLogger?.debug(message);
       }
@@ -255,7 +290,7 @@ class Logger {
     if (!this.quiet) {
       if (this.logFormat === 'default') {
         endTerminalSession();
-        clackLog.info(message);
+        clackLog.info(message, this.clackOutput);
       } else {
         this.pinoLogger?.info(message);
       }
@@ -266,7 +301,7 @@ class Logger {
   warn(message: string): void {
     if (this.logFormat === 'default') {
       endTerminalSession();
-      clackLog.warn(message);
+      clackLog.warn(message, this.clackOutput);
     } else {
       this.pinoLogger?.warn(message);
     }
@@ -276,7 +311,7 @@ class Logger {
   error(message: string): void {
     if (this.logFormat === 'default') {
       endTerminalSession();
-      clackLog.error(message);
+      clackLog.error(message, this.clackOutput);
     } else {
       this.pinoLogger?.error(message);
     }
@@ -286,7 +321,8 @@ class Logger {
   fatal(message: string): void {
     if (this.logFormat === 'default') {
       endTerminalSession();
-      clackLog.error(message); // @clack/prompts doesn't have fatal, use error
+      // @clack/prompts doesn't have fatal, use error
+      clackLog.error(message, this.clackOutput);
     } else {
       this.pinoLogger?.fatal(message);
     }
@@ -303,7 +339,7 @@ class Logger {
     if (!this.quiet) {
       if (this.logFormat === 'default') {
         endTerminalSession();
-        clackLog.success(message);
+        clackLog.success(message, this.clackOutput);
       } else {
         this.pinoLogger?.info(message); // Map to info for non-default formats
       }
@@ -315,7 +351,7 @@ class Logger {
     if (!this.quiet) {
       if (this.logFormat === 'default') {
         endTerminalSession();
-        clackLog.step(message);
+        clackLog.step(message, this.clackOutput);
       } else {
         this.pinoLogger?.info(message); // Map to info for non-default formats
       }
@@ -327,7 +363,10 @@ class Logger {
     if (!this.quiet) {
       if (this.logFormat === 'default') {
         endTerminalSession();
-        clackLog.message(message, symbol ? { symbol } : undefined);
+        clackLog.message(
+          message,
+          symbol ? { symbol, ...this.clackOutput } : this.clackOutput
+        );
       } else {
         this.pinoLogger?.info(message); // Map to info for non-default formats
       }
@@ -343,7 +382,9 @@ class Logger {
       return new MockSpinner(this);
     }
     if (this.logFormat === 'default') {
-      return wrapTerminalSessionAware(spinner({ indicator }));
+      return wrapTerminalSessionAware(
+        spinner({ indicator, ...this.clackOutput })
+      );
     } else {
       return new MockSpinner(this);
     }
@@ -355,7 +396,9 @@ class Logger {
       return new MockProgress(total, this);
     }
     if (this.logFormat === 'default') {
-      return wrapTerminalSessionAware(progress({ max: total }));
+      return wrapTerminalSessionAware(
+        progress({ max: total, ...this.clackOutput })
+      );
     } else {
       return new MockProgress(total, this);
     }
@@ -366,7 +409,7 @@ class Logger {
     if (!this.quiet) {
       if (this.logFormat === 'default') {
         endTerminalSession();
-        intro(chalk.cyan(message));
+        intro(chalk.cyan(message), this.clackOutput);
       } else {
         this.info(`╭─ ${message}`);
       }
@@ -378,7 +421,7 @@ class Logger {
     if (!this.quiet) {
       if (this.logFormat === 'default') {
         endTerminalSession();
-        outro(chalk.cyan(message));
+        outro(chalk.cyan(message), this.clackOutput);
       } else {
         this.info(`╰─ ${message}`);
       }

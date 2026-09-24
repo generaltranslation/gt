@@ -53,6 +53,7 @@ export type GTConfig = {
   localeRouting?: boolean;
 
   projectId?: string;
+  /** @deprecated Pass the key as `apiKey`; there is one kind of API key. */
   devApiKey?: string;
   apiKey?: string;
   _versionId?: string;

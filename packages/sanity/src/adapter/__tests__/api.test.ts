@@ -1,24 +1,9 @@
 // @vitest-environment node
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { downloadFile, getTranslationStatus } from 'generaltranslation/api';
 import { ApiError } from 'generaltranslation/errors';
 
 import { api, configureApiClient } from '../api';
-
-vi.mock('generaltranslation/api', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('generaltranslation/api')>()),
-  downloadFile: vi.fn(),
-  getTranslationStatus: vi.fn(),
-}));
-
-function result<T>(data: T) {
-  return {
-    data,
-    request: new Request('https://api.example.com'),
-    response: new Response(),
-  };
-}
 
 const sourceFile = {
   branchId: 'branch-id',
@@ -185,24 +170,6 @@ describe('Sanity API adapter', () => {
   });
 
   it.each(['target', 'es-es'])(
-    'canonicalizes single download locale %s',
-    async (locale) => {
-      vi.mocked(downloadFile).mockResolvedValue(
-        result({ data: Buffer.from('translated').toString('base64') })
-      );
-
-      await expect(
-        api.downloadFile({ fileId: 'file-id', locale })
-      ).resolves.toBe('translated');
-      expect(downloadFile).toHaveBeenCalledWith(
-        expect.objectContaining({
-          query: expect.objectContaining({ locale: 'es-ES' }),
-        })
-      );
-    }
-  );
-
-  it.each(['target', 'es-es'])(
     'maps batch-download locale %s in both directions',
     async (locale) => {
       fetchMock.mockImplementation(async (request) => {
@@ -242,6 +209,7 @@ describe('Sanity API adapter', () => {
     await expect(api.downloadFileBatch([])).resolves.toEqual({
       files: [],
       count: 0,
+      pending: [],
     });
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -262,6 +230,46 @@ describe('Sanity API adapter', () => {
 
   it('does not expose shared adapter configuration internals', () => {
     expect(api).not.toHaveProperty('getClientConfig');
+  });
+
+  it('translates through the shared adapter with canonical configured locales', async () => {
+    configureApiClient({
+      baseUrl: 'https://api.example.com',
+      apiKey: 'api-key',
+      projectId: 'project-id',
+      fetch: fetchMock,
+      customMapping: { source: { code: 'en-US' }, target: { code: 'es-ES' } },
+    });
+    fetchMock.mockImplementation(async (request) => {
+      const parsed = new Request(request);
+      expect(new URL(parsed.url).pathname).toBe('/v2/translate');
+      const body = JSON.parse(await parsed.text()) as {
+        requests: Record<string, unknown>;
+        sourceLocale: string;
+        targetLocale: string;
+      };
+      expect(body).toMatchObject({
+        sourceLocale: 'en-US',
+        targetLocale: 'es-ES',
+      });
+      return Response.json(
+        Object.fromEntries(
+          Object.keys(body.requests).map((hash) => [
+            hash,
+            {
+              success: true,
+              translation: 'Hola',
+              locale: 'es-ES',
+              dataFormat: 'STRING',
+            },
+          ])
+        )
+      );
+    });
+
+    await expect(
+      api.translate('Hello', { targetLocale: 'target', sourceLocale: 'source' })
+    ).resolves.toMatchObject({ success: true, locale: 'es-ES' });
   });
 
   it('maps file-info locales in both directions', async () => {
@@ -296,8 +304,13 @@ describe('Sanity API adapter', () => {
   });
 
   it('alias-resolves translation-status locales', async () => {
-    vi.mocked(getTranslationStatus).mockResolvedValue(
-      result({
+    fetchMock.mockImplementation(async (request) => {
+      const url = new URL(new Request(request).url);
+      expect(url.pathname).toBe(
+        '/v2/project/translations/files/status/file-id'
+      );
+      expect(url.searchParams.get('branchId')).toBe('branch-id');
+      return Response.json({
         translations: [
           {
             locale: 'es-ES',
@@ -308,23 +321,16 @@ describe('Sanity API adapter', () => {
             updatedAt: null,
           },
         ],
-        sourceFile: {
-          id: 'id',
-          branchId: 'branch-id',
-          fileId: 'file-id',
-          versionId: 'version-id',
-          fileName: 'document.html',
-          sourceLocale: 'en-US',
-          fileFormat: 'HTML',
-          dataFormat: null,
-          createdAt: '2026-01-01',
-          updatedAt: '2026-01-01',
-          locales: ['es-ES'],
-        },
-      })
-    );
+        sourceFile: { ...sourceFile, id: 'id' },
+      });
+    });
 
-    const response = await api.querySourceFile({ fileId: 'file-id' });
+    const response = await api.querySourceFile({
+      fileId: 'file-id',
+      branchId: 'branch-id',
+    });
+
+    expect(fetchMock).toHaveBeenCalledOnce();
 
     expect(response.translations[0].locale).toBe('target');
     expect(response.sourceFile).toMatchObject({

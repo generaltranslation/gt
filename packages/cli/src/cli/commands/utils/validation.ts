@@ -2,12 +2,10 @@ import {
   resolveCanonicalLocale,
   standardizeLocale,
 } from '@generaltranslation/format';
-import { createDiagnosticMessage } from 'generaltranslation/internal';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import {
   noDefaultLocaleError,
   noLocalesError,
-  noApiKeyError,
-  devApiKeyError,
   noProjectIdError,
 } from '../../../console/index.js';
 import { logger } from '../../../console/logger.js';
@@ -56,27 +54,15 @@ export function hasValidServiceLocales(settings: Settings): boolean {
 }
 
 /**
- * Validate an API key without requiring an existing project.
- */
-export function hasValidApiKey(settings: Settings): boolean {
-  if (!settings.apiKey) {
-    logger.error(noApiKeyError);
-    return false;
-  }
-  if (settings.apiKey.startsWith('gtx-dev-')) {
-    logger.error(devApiKeyError);
-    return false;
-  }
-  return true;
-}
-
-/**
- * Validate credentials
+ * Validate credentials. Authentication itself is not checked here: the API
+ * client uses the API key when set and otherwise the signed-in user, which
+ * reports `gt login` at the first request.
  * @param settings - The settings to validate
- * @returns True if has API key, project ID, and does not have a development API key
+ * @returns True if a project ID is configured
  */
-export function hasValidCredentials(settings: Settings): boolean {
-  if (!hasValidApiKey(settings)) return false;
+export function hasValidCredentials(
+  settings: Settings
+): settings is Settings & { projectId: string } {
   if (!settings.projectId) {
     logger.error(noProjectIdError);
     return false;

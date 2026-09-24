@@ -38,7 +38,7 @@ pnpm preview
 
 `pnpm build` works offline: it bundles the app from the translation files already committed in `src/_gt` and never calls the General Translation API. Run `pnpm typecheck` to check types separately, since the build itself uses ts-loader in `transpileOnly` mode and surfaces no type errors.
 
-To regenerate translations after you change source text, run `pnpm translate` with a production `GT_PROJECT_ID` and `GT_API_KEY` (create them with `npx gt auth`). Development keys (`gtx-dev-`) drive the live dev workflow only and are rejected by the CLI.
+To regenerate translations after you change source text, sign in with `npx gt login`, then run `pnpm translate --project-id <your-project-id>`. The CLI uses your account login, not the browser's runtime key.
 
 ## Deploy
 
@@ -66,14 +66,23 @@ The compiler prepares your `<T>` and `t()` content at build time. When you suppl
 
 ### Credentials via environment
 
-webpack has no `import.meta.env`, so this example reads a local env file with `dotenv` and injects the values with `DefinePlugin` (see `webpack.config.mjs`). Copy `.env.example` to `.env.local` and fill in your values:
+webpack has no `import.meta.env`, so this example reads a local env file with `dotenv` and injects the values with `DefinePlugin` (see `webpack.config.mjs`). This example is already configured (`gt.config.json`, the translations in `src/_gt`, and `src/loadTranslations.ts`), so skip `npx gt init`. Sign in and create a generate-only runtime key for your project:
 
-```bash title=".env.local"
-GT_PROJECT_ID="your-project-id"
-GT_DEV_API_KEY="gtx-dev-your-development-key"
+```bash
+npx gt login
+npx gt api-key create --project-id <your-project-id> --name "Local development" --permission project:translations:generate
 ```
 
-Get these by running `npx gt auth` or from the [dashboard](https://dash.generaltranslation.com). Use a development key that starts with `gtx-dev-`. Never put a production key (`gtx-api-`) in a client-side app. Both values are optional: without them the app still runs and switches between the languages that already have files in `src/_gt`.
+Copy `.env.example` to `.env.local` and set the project ID and the printed key:
+
+```bash title=".env.local"
+REACT_APP_GT_PROJECT_ID="your-project-id"
+REACT_APP_GT_DEV_API_KEY="your-generate-only-runtime-key"
+```
+
+If your `.env.local` predates this version of the example, rename `GT_PROJECT_ID` to `REACT_APP_GT_PROJECT_ID` and `GT_DEV_API_KEY` to `REACT_APP_GT_DEV_API_KEY`: `webpack.config.mjs` reads only the `REACT_APP_` names.
+
+Only expose generate-only runtime keys in browser code; never expose keys with management or file permissions, and do not commit `.env.local`. Both values are optional: without them the app still runs and switches between the languages that already have files in `src/_gt`.
 
 These values are inlined only in development. A production build (`pnpm build`) always inlines empty strings, so it never embeds your credentials in the bundle.
 

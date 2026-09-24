@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { CustomMapping } from 'generaltranslation/types';
 
 export type PromptOption<T> = {
   value: T;
@@ -29,6 +30,7 @@ export type LocaleOption = {
 export type LocalePromptProps = {
   message: string;
   defaultValue?: string;
+  customMapping?: CustomMapping;
   onComplete: (result: PromptResult<string>) => void;
 };
 
@@ -36,6 +38,7 @@ export type LocaleMultiPromptProps = {
   message: string;
   defaultValue?: string[];
   required: boolean;
+  customMapping?: CustomMapping;
   onComplete: (result: PromptResult<string[]>) => void;
 };
 

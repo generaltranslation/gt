@@ -13,7 +13,8 @@
 
 # generaltranslation
 
-Core library for General Translation. Used internally by `gt-react` and `gt-next`.
+Core translation, locale, and formatting library for General Translation. Used by
+`gt-react`, `gt-next`, and other GT integrations.
 
 ## Installation
 

@@ -4,6 +4,8 @@ import { resolveFiles } from '../../fs/config/parseFilesConfig';
 import { determineLibrary } from '../../fs/determineFramework/index.js';
 import { logger } from '../../console/logger.js';
 import { resolveConfig } from '../resolveConfig.js';
+import { createUserTokenProvider } from '../../auth/oauth.js';
+import { configureApiClient } from '../../utils/api.js';
 
 // Mock resolveFiles
 vi.mock('../../fs/config/parseFilesConfig', () => ({
@@ -60,10 +62,15 @@ vi.mock('../../fs/utils.js', () => ({
   resolveProjectId: vi.fn().mockReturnValue('test-project-id'),
 }));
 
-vi.mock('../../utils/gt.js', () => ({
-  gt: {
-    setConfig: vi.fn(),
-  },
+vi.mock('../../utils/api.js', () => ({
+  configureApiClient: vi.fn(),
+}));
+
+vi.mock('../../auth/oauth.js', () => ({
+  createUserTokenProvider: vi.fn(() => ({
+    getAccessToken: vi.fn(),
+    refreshAccessToken: vi.fn(),
+  })),
 }));
 
 vi.mock('../optionPresets.js', () => ({
@@ -370,6 +377,30 @@ describe('generateSettings - composite patterns', () => {
       ['json-composite-1'],
       false
     );
+  });
+
+  it('configures a lazy user token provider alongside any explicit API key', async () => {
+    const userSettings = await generateSettings({}, '/test/cwd');
+    const keySettings = await generateSettings(
+      { apiKey: 'explicit-api-key' },
+      '/test/cwd'
+    );
+
+    expect(userSettings.apiKey).toBeUndefined();
+    expect(userSettings.userTokenProvider).toBe(
+      vi.mocked(createUserTokenProvider).mock.results[0].value
+    );
+    expect(
+      userSettings.userTokenProvider!.getAccessToken
+    ).not.toHaveBeenCalled();
+    expect(vi.mocked(configureApiClient).mock.calls[0][0]).toMatchObject({
+      apiKey: undefined,
+      userTokenProvider: userSettings.userTokenProvider,
+    });
+    expect(keySettings.apiKey).toBe('explicit-api-key');
+    expect(vi.mocked(configureApiClient).mock.calls[1][0]).toMatchObject({
+      apiKey: 'explicit-api-key',
+    });
   });
 
   it('should not call resolveFiles when files are not provided', async () => {

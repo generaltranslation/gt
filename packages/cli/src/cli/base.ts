@@ -1,4 +1,5 @@
-import { Command } from 'commander';
+import { Command, InvalidArgumentError, Option } from 'commander';
+import { ProjectApiKeyPermission } from 'generaltranslation/api';
 import {
   DEFAULT_TRANSLATIONS_DIR,
   DEFAULT_VITE_TRANSLATIONS_DIR,
@@ -23,6 +24,7 @@ import fs from 'node:fs';
 import {
   FilesOptions,
   Settings,
+  SupportedFrameworks,
   SupportedLibraries,
   SetupOptions,
   TranslateFlags,
@@ -39,8 +41,8 @@ import {
 import { getDesiredLocales } from '../setup/userInput.js';
 import { installPackage } from '../utils/installPackage.js';
 import { getPackageManager } from '../utils/packageManager.js';
-import { retrieveCredentials, setCredentials } from '../utils/credentials.js';
 import { areCredentialsSet } from '../utils/credentials.js';
+import { provisionDevelopmentCredentials } from '../setup/developmentCredentials.js';
 import { upload } from './commands/upload.js';
 import { attachSharedFlags, attachTranslateFlags } from './flags.js';
 import { handleStage } from './commands/stage.js';
@@ -61,7 +63,6 @@ import { loadConfig } from '../fs/config/loadConfig.js';
 import { createLoadTranslationsFile } from '../fs/createLoadTranslationsFile.js';
 import { saveLocalEdits } from '../api/saveLocalEdits.js';
 import {
-  hasValidApiKey,
   hasValidCredentials,
   hasValidServiceLocales,
 } from './commands/utils/validation.js';
@@ -83,7 +84,10 @@ import { warnReactPackageCompatibility } from '../utils/reactPackageCompatibilit
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
-} from 'generaltranslation/internal';
+} from 'generaltranslation/diagnostics';
+import { hasLogin, login, logout, whoAmI } from '../auth/oauth.js';
+import { UserAuthError } from '../auth/errors.js';
+import { resolveConfig } from '../config/resolveConfig.js';
 import { setupViteSPA } from '../setup/setupViteSPA.js';
 import { manifestDirectlyDeclaresGTVue } from '@generaltranslation/vue-extractor/integration';
 import { api } from '../utils/api.js';
@@ -117,6 +121,17 @@ function createProjectCommandError(
   });
 }
 
+const emptyApiKeyNameError = createDiagnosticMessage({
+  whatHappened: 'The key name cannot be empty',
+  fix: 'Pass a non-empty value with --name',
+});
+
+function parseApiKeyName(value: string): string {
+  const name = value.trim();
+  if (!name) throw new InvalidArgumentError(emptyApiKeyNameError);
+  return name;
+}
+
 const electronSetupError = createDiagnosticMessage({
   source: 'gt',
   severity: 'Error',
@@ -124,6 +139,42 @@ const electronSetupError = createDiagnosticMessage({
     'The automatic setup wizard is not ready for Electron applications',
   docsUrl: 'https://generaltranslation.com/docs/react',
 });
+
+/** .env.local never reaches production; the runtime key there is set on the host. */
+function productionRuntimeKeyGuidance(dashboardUrl: string): string {
+  return `${chalk.dim('For runtime translation in production, create an API key in the dashboard')} ${chalk.cyan(dashboardUrl)} ${chalk.dim('and set GT_API_KEY and GT_PROJECT_ID in your hosting environment.')}`;
+}
+
+async function loginInteractively(
+  baseUrl: string | undefined,
+  useBrowser = true
+): Promise<void> {
+  await login({
+    baseUrl,
+    noBrowser: !useBrowser,
+    onDeviceCode: ({ userCode, verificationUri, verificationUriComplete }) => {
+      logger.message(
+        `Visit:\n\n${chalk.cyan(verificationUriComplete ?? verificationUri)}\n\nThen ${verificationUriComplete ? 'confirm' : 'enter'} the code ${chalk.bold(userCode)}.\nWaiting for authentication...`
+      );
+    },
+    onAuthorizationUrl: (url) => {
+      logger.message(
+        `Opening your browser to sign in. If it does not open, visit:\n${chalk.cyan(url)}`
+      );
+    },
+  });
+}
+
+function createUserAuthError(whatHappened: string, error: unknown): string {
+  if (error instanceof UserAuthError) return error.message;
+  return createDiagnosticMessage({
+    source: 'gt',
+    severity: 'Error',
+    whatHappened,
+    details: formatDiagnosticErrorDetails(error),
+    fix: 'Run `gt login` and try again',
+  });
+}
 
 async function exitIfUnsupportedSetupTarget(): Promise<void> {
   const packageJson = await searchForPackageJson();
@@ -143,11 +194,6 @@ export type UploadOptions = {
   apiKey?: string;
   projectId?: string;
   defaultLocale?: string;
-};
-
-export type LoginOptions = {
-  config?: string;
-  keyType?: 'development' | 'production' | 'all';
 };
 
 export type GitSetupOptions = {
@@ -195,6 +241,16 @@ export class BaseCLI {
       '-q, --quiet',
       'Suppress informational output; only warnings and errors are shown'
     );
+    // Select console routing for this command before anything else logs:
+    // root hooks run before subclass hooks (version checks) and the action's
+    // settings resolution. `gt api-key create` prints the new secret on
+    // stdout, so its diagnostics go to stderr; every other command gets the
+    // historical default back (main() routes startup output to stderr).
+    this.program.hook('preAction', (_thisCommand, actionCommand) => {
+      logger.setConsoleOutput(
+        actionCommand.parent?.name() === 'api-key' ? 'stderr' : 'stdout'
+      );
+    });
     // Apply --quiet before any other hook or command action runs so the
     // singleton logger is muted for the rest of the invocation. The flag is a
     // global root option, so commander resolves it in any position and for
@@ -215,10 +271,11 @@ export class BaseCLI {
     this.setupInitCommand();
     this.setupConfigureCommand();
     this.setupUploadCommand();
-    this.setupLoginCommand();
+    this.setupUserAuthCommands();
     this.setupSendDiffsCommand();
     this.setupApiCommand();
     this.setupProjectCommands();
+    this.setupApiKeyCommands();
     this.setupGitCommand();
   }
   // Init is never called in a child class
@@ -374,9 +431,8 @@ export class BaseCLI {
     ).action(async (options) => {
       try {
         const settings = await generateSettings(options);
-        // Project creation uses an organization key before a project ID exists.
-        if (!hasValidApiKey(settings) || !hasValidServiceLocales(settings))
-          return exitSync(1);
+        // Project creation happens before a project ID exists.
+        if (!hasValidServiceLocales(settings)) return exitSync(1);
         const { project } = await api.createProject(options.orgId, {
           name: options.name,
           defaultLocale: options.defaultLocale,
@@ -410,6 +466,52 @@ export class BaseCLI {
         );
       }
     });
+  }
+
+  protected setupApiKeyCommands(): void {
+    const apiKeyCommand = this.program
+      .command('api-key')
+      .description('Manage API keys for the configured project');
+
+    attachSharedFlags(
+      apiKeyCommand
+        .command('create')
+        .description(
+          'Create a project API key with the requested permissions and print it once'
+        )
+        .requiredOption('--name <name>', 'Key name', parseApiKeyName)
+        // Validated before any request; the server grants the requested set
+        // all-or-nothing, so omitting permissions would delegate everything.
+        .addOption(
+          new Option('--permission <permissions...>', 'Permissions to grant')
+            .choices(Object.values(ProjectApiKeyPermission))
+            .makeOptionMandatory()
+        )
+    ).action(
+      async (
+        options: SharedFlags & {
+          name: string;
+          permission: ProjectApiKeyPermission[];
+        }
+      ) => {
+        try {
+          const settings = await generateSettings(options);
+          if (!hasValidCredentials(settings)) return exitSync(1);
+          const { apiKey } = await api.createProjectApiKey(settings.projectId, {
+            name: options.name,
+            permissions: options.permission,
+          });
+          // Raw stdout: the secret is shown once and never reaches the log file.
+          process.stdout.write(`${apiKey.key}\n`);
+        } catch (error) {
+          return logErrorAndExit(
+            error instanceof UserAuthError
+              ? error.message
+              : createProjectCommandError('Failed to create the API key', error)
+          );
+        }
+      }
+    );
   }
 
   protected setupGitCommand(): void {
@@ -655,48 +757,53 @@ export class BaseCLI {
     });
   }
 
-  protected setupLoginCommand(): void {
+  protected setupUserAuthCommands(): void {
     this.program
-      .command('auth')
-      .description('Generate General Translation API keys and project ID')
+      .command('login')
+      .description('Sign in to your General Translation account')
       .option(
-        '-c, --config <path>',
-        'Filepath to config file, by default gt.config.json',
-        findFilepath(['gt.config.json'])
+        '--no-browser',
+        'Do not open a browser; show a sign-in URL to use on any device instead'
       )
-      .option(
-        '-t, --key-type <type>',
-        'Type of key to generate, production | development | all'
-      )
-      .action(async (options: LoginOptions) => {
-        displayHeader('Authenticating with General Translation...');
-        if (!options.keyType) {
-          options.keyType = await promptSelect<
-            'development' | 'production' | 'all'
-          >({
-            message: 'What type of API key would you like to generate?',
-            options: [
-              { value: 'development', label: 'Development' },
-              { value: 'production', label: 'Production' },
-              { value: 'all', label: 'Both' },
-            ],
-            defaultValue: 'all',
-          });
-        } else {
-          if (
-            options.keyType !== 'development' &&
-            options.keyType !== 'production' &&
-            options.keyType !== 'all'
-          ) {
-            logErrorAndExit(
-              'Invalid key type, must be development, production, or all'
-            );
-          }
+      .action(async (options: { browser: boolean }) => {
+        displayHeader('Signing in to General Translation...');
+        try {
+          // Tokens are bound to one API resource, so log in to the configured one.
+          const baseUrl = resolveConfig(process.cwd())?.config.baseUrl;
+          await loginInteractively(
+            typeof baseUrl === 'string' ? baseUrl : undefined,
+            options.browser
+          );
+          logger.endCommand('You are now signed in.');
+        } catch (error) {
+          logErrorAndExit(createUserAuthError('Sign in failed', error));
         }
-        await this.handleLoginCommand(options);
-        logger.endCommand(
-          `Done! ${options.keyType} keys have been generated and saved to your .env.local file.`
-        );
+      });
+
+    this.program
+      .command('logout')
+      .description('Sign out of your General Translation account')
+      .action(async () => {
+        try {
+          await logout();
+          logger.endCommand('Signed out successfully.');
+        } catch (error) {
+          logErrorAndExit(createUserAuthError('Sign out failed', error));
+        }
+      });
+
+    this.program
+      .command('whoami')
+      .description('Show the signed-in General Translation account')
+      .action(async () => {
+        try {
+          const user = await whoAmI();
+          logger.message(user.email ?? user.name ?? user.sub);
+        } catch (error) {
+          logErrorAndExit(
+            createUserAuthError('Could not load your account', error)
+          );
+        }
       });
   }
 
@@ -808,7 +915,9 @@ export class BaseCLI {
           await this.handleInitCommand(
             ranReactSetup,
             useDefaults,
-            framework.name === 'vite'
+            framework.name === 'vite',
+            options,
+            framework.name
           );
 
           logger.endCommand(
@@ -926,7 +1035,8 @@ See https://www.npmjs.com/package/gt-vue`);
     ranReactSetup: boolean,
     useDefaults: boolean = false,
     isVite: boolean = false,
-    options?: SetupOptions
+    options?: SetupOptions,
+    framework?: SupportedFrameworks
   ): Promise<void> {
     const configFilepath =
       options?.config ||
@@ -1092,37 +1202,56 @@ See https://www.npmjs.com/package/gt-vue`);
       spinner.stop(chalk.green('Installed gt.'));
     }
 
-    // Set credentials
-    if ((!isVite || !isUsingGT || usingCDN) && !areCredentialsSet()) {
-      const loginQuestion = useDefaults
-        ? true
-        : await promptConfirm({
-            message:
-              'Would you like the wizard to automatically generate API keys and a project ID for you?',
-            defaultValue: true,
-          });
-      if (loginQuestion) {
-        const settings = await generateSettings({});
-        const keyType = useDefaults
-          ? 'all'
-          : await promptSelect<'development' | 'production' | 'all'>({
-              message: 'What type of API key would you like to generate?',
-              options: [
-                { value: 'development', label: 'Development' },
-                { value: 'production', label: 'Production' },
-                { value: 'all', label: 'Both' },
-              ],
-              defaultValue: 'all',
-            });
-        const credentials = await retrieveCredentials(settings, keyType);
-        await setCredentials(credentials, isVite ? 'vite' : settings.framework);
+    const localVite = isVite && isUsingGT && !usingCDN;
+    const enableLiveTranslations =
+      localVite &&
+      (await promptConfirm({
+        message:
+          'Would you like to set up live development translations? This requires signing in or an API key.',
+        defaultValue: false,
+      }));
+    if (!localVite || enableLiveTranslations) {
+      const settings = await generateSettings({ config: configFilepath });
+      const envFramework = framework ?? (isVite ? 'vite' : settings.framework);
+      // The CLI translates as the signed-in user; an API key in the
+      // environment takes precedence and needs no login. A development key in
+      // .env.local is runtime-only and never stands in for either.
+      if (
+        !settings.apiKey &&
+        !(await hasLogin({ baseUrl: settings.baseUrl }))
+      ) {
+        try {
+          await loginInteractively(settings.baseUrl);
+          logger.message('You are now signed in.');
+        } catch (error) {
+          logErrorAndExit(createUserAuthError('Sign in failed', error));
+        }
+      }
+      if (!areCredentialsSet(settings, envFramework)) {
+        const provision =
+          useDefaults || enableLiveTranslations
+            ? true
+            : await promptConfirm({
+                message:
+                  'Would you like to set up a project ID and hot-reload key in .env.local?',
+                defaultValue: true,
+              });
+        if (provision) {
+          try {
+            await provisionDevelopmentCredentials(settings, envFramework);
+          } catch (error) {
+            logErrorAndExit(
+              error instanceof UserAuthError
+                ? error.message
+                : createProjectCommandError(
+                    'Failed to set up the development credentials',
+                    error
+                  )
+            );
+          }
+          logger.message(productionRuntimeKeyGuidance(settings.dashboardUrl));
+        }
       }
     }
-  }
-  protected async handleLoginCommand(options: LoginOptions): Promise<void> {
-    const settings = await generateSettings({ config: options.config });
-    const keyType = options.keyType || 'all';
-    const credentials = await retrieveCredentials(settings, keyType);
-    await setCredentials(credentials, settings.framework);
   }
 }

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from 'generaltranslation/errors';
+import type { PublishFileEntry } from 'generaltranslation/types';
 import { api, configureApiClient } from '../api.js';
 
 const uploadedFile = {
@@ -38,6 +39,59 @@ describe('CLI API client', () => {
     ).rejects.toThrow(
       'API client not configured — call configureApiClient first'
     );
+  });
+
+  it('exposes runtime translation through the shared adapter with the configured transport', async () => {
+    configure({
+      customMapping: { 'brand-english': { code: 'en-US' } },
+      retryPolicy: 'exponential',
+    });
+    const bodies: Array<{ sourceLocale: string; targetLocale: string }> = [];
+    fetchMock.mockImplementation(async (request) => {
+      expect(new URL(request.url).pathname).toBe('/v2/translate');
+      expect(request.headers.get('authorization')).toBe('Bearer api-key');
+      expect(request.headers.get('gt-project-id')).toBe('project-id');
+      const body = JSON.parse(await request.text()) as {
+        requests: Record<string, unknown>;
+        sourceLocale: string;
+        targetLocale: string;
+      };
+      bodies.push(body);
+      return Response.json(
+        Object.fromEntries(
+          Object.keys(body.requests).map((hash) => [
+            hash,
+            {
+              success: true,
+              translation: 'Hola',
+              locale: 'es',
+              dataFormat: 'STRING',
+            },
+          ])
+        )
+      );
+    });
+
+    await expect(
+      api.translateMany(['Hello'], {
+        targetLocale: 'es',
+        sourceLocale: 'brand-english',
+      })
+    ).resolves.toEqual([
+      {
+        success: true,
+        translation: 'Hola',
+        locale: 'es',
+        dataFormat: 'STRING',
+      },
+    ]);
+    await expect(api.translate('Hello', 'es', 10_000)).resolves.toMatchObject({
+      translation: 'Hola',
+    });
+    expect(bodies).toEqual([
+      expect.objectContaining({ sourceLocale: 'en-US', targetLocale: 'es' }),
+      expect.objectContaining({ sourceLocale: 'en', targetLocale: 'es' }),
+    ]);
   });
 
   it('maps canonical server locales back to configured aliases', () => {
@@ -181,21 +235,54 @@ describe('CLI API client', () => {
     });
   });
 
-  it('fetches project information through the SDK adapter', async () => {
+  it('fetches raw project information through the SDK adapter', async () => {
+    configure({
+      customMapping: { 'brand-english': { code: 'en-US' } },
+    });
     fetchMock.mockImplementation(async (request) => {
       expect(new URL(request.url).pathname).toBe('/v2/project/info/project-id');
       return Response.json({
         id: 'project-id',
         name: 'Project',
         orgId: 'org-id',
-        defaultLocale: 'en',
-        currentLocales: ['en', 'es'],
+        defaultLocale: 'en-US',
+        currentLocales: ['en-US', 'es'],
         autoApprove: false,
       });
     });
 
     await expect(api.getProjectInfo(10_000)).resolves.toEqual(
-      expect.objectContaining({ id: 'project-id', autoApprove: false })
+      expect.objectContaining({
+        id: 'project-id',
+        autoApprove: false,
+        defaultLocale: 'en-US',
+        currentLocales: ['en-US', 'es'],
+      })
+    );
+  });
+
+  it('requires a project ID to fetch project information', async () => {
+    configure({ projectId: undefined });
+
+    await expect(api.getProjectInfo(10_000)).rejects.toThrow(
+      'Project ID is required to fetch project information'
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('honors an explicit zero project information timeout', async () => {
+    configure({ retryPolicy: 'none' });
+    fetchMock.mockImplementation(
+      (request) =>
+        new Promise<Response>((_resolve, reject) => {
+          request.signal.addEventListener('abort', () =>
+            reject(request.signal.reason)
+          );
+        })
+    );
+
+    await expect(api.getProjectInfo(0)).rejects.toThrow(
+      'Request timed out after 0ms'
     );
   });
 
@@ -204,24 +291,42 @@ describe('CLI API client', () => {
       expect(new URL(request.url).pathname).toBe('/v2/project/jobs/info');
       await expect(request.json()).resolves.toEqual({ jobIds: ['setup-job'] });
       return Response.json([
-        {
-          jobId: 'setup-job',
-          status: 'failed',
-          error: { message: 'Context generation failed' },
-        },
+        { jobId: 'setup-job', status: 'failed', error: { message: null } },
       ]);
     });
 
     await expect(api.checkJobStatus(['setup-job'])).resolves.toEqual([
-      {
-        jobId: 'setup-job',
-        status: 'failed',
-        error: { message: 'Context generation failed' },
-      },
+      { jobId: 'setup-job', status: 'failed', error: { message: null } },
     ]);
   });
 
-  it('canonicalizes user edit diff locales', async () => {
+  it('forwards abort signals to in-flight job status requests', async () => {
+    configure({ retryPolicy: 'none' });
+    let requestSignal: AbortSignal | undefined;
+    fetchMock.mockImplementation(
+      (request) =>
+        new Promise<Response>((_resolve, reject) => {
+          requestSignal = request.signal;
+          const rejectOnAbort = () => reject(request.signal.reason);
+          if (request.signal.aborted) rejectOnAbort();
+          else request.signal.addEventListener('abort', rejectOnAbort);
+        })
+    );
+
+    const controller = new AbortController();
+    const pendingRequest = api.checkJobStatus(['setup-job'], controller.signal);
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    const rejection = expect(pendingRequest).rejects.toThrow(
+      'poll deadline exceeded'
+    );
+
+    controller.abort(new Error('poll deadline exceeded'));
+
+    await rejection;
+    expect(requestSignal?.aborted).toBe(true);
+  });
+
+  it('canonicalizes user edit diff locales and sends only contract fields', async () => {
     configure({
       customMapping: { 'brand-english': { code: 'en-US' } },
     });
@@ -229,7 +334,15 @@ describe('CLI API client', () => {
       const body = JSON.parse(await request.text()) as {
         diffs: Array<{ locale: string }>;
       };
-      expect(body.diffs[0].locale).toBe('en-US');
+      expect(body.diffs).toEqual([
+        {
+          locale: 'en-US',
+          diff: 'diff',
+          versionId: 'version-id',
+          fileId: 'file-id',
+          localContent: 'content',
+        },
+      ]);
       return Response.json({
         filesProcessed: 1,
         entriesReceived: 1,
@@ -237,17 +350,47 @@ describe('CLI API client', () => {
       });
     });
 
-    await api.submitUserEditDiffs({
-      diffs: [
-        {
-          locale: 'brand-english',
-          diff: 'diff',
-          versionId: 'version-id',
-          fileId: 'file-id',
-          localContent: 'content',
-        },
-      ],
+    const diffs = [
+      {
+        fileName: 'messages.json',
+        locale: 'brand-english',
+        diff: 'diff',
+        versionId: 'version-id',
+        fileId: 'file-id',
+        localContent: 'content',
+      },
+    ];
+    await api.submitUserEditDiffs({ diffs });
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it('publishes only contract fields for CDN entries', async () => {
+    fetchMock.mockImplementation(async (request) => {
+      expect(new URL(request.url).pathname).toBe('/v2/project/files/publish');
+      await expect(request.json()).resolves.toEqual({
+        files: [
+          {
+            fileId: 'file-id',
+            versionId: 'version-id',
+            branchId: 'branch-id',
+            publish: true,
+          },
+        ],
+      });
+      return Response.json({ results: [] });
     });
+
+    const entries: PublishFileEntry[] = [
+      {
+        fileId: 'file-id',
+        versionId: 'version-id',
+        branchId: 'branch-id',
+        publish: true,
+        fileName: 'messages.json',
+      },
+    ];
+    await api.publishFiles(entries);
+    expect(fetchMock).toHaveBeenCalledOnce();
   });
 
   it('base64-encodes and uploads source files in batches of 100', async () => {
@@ -584,5 +727,101 @@ describe('CLI API client', () => {
 
     expect(batchSizes).toEqual([100, 1]);
     expect(Object.keys(result.jobData)).toEqual(['job-1', 'job-2']);
+  });
+
+  it('lists projects across every cursor page', async () => {
+    const cursors: Array<string | null> = [];
+    fetchMock.mockImplementation(async (request) => {
+      const url = new URL(request.url);
+      expect(url.pathname).toBe('/v2/projects');
+      cursors.push(url.searchParams.get('cursor'));
+      const page = cursors.length;
+      return Response.json({
+        projects: [
+          {
+            id: `p${page}`,
+            name: `Project ${page}`,
+            orgId: 'o',
+            orgName: 'Org',
+          },
+        ],
+        nextCursor: page < 3 ? `cursor-${page}` : null,
+      });
+    });
+
+    const projects = await api.listProjects();
+
+    expect(cursors).toEqual([null, 'cursor-1', 'cursor-2']);
+    expect(projects.map((project) => project.id)).toEqual(['p1', 'p2', 'p3']);
+  });
+
+  it('lists organizations across every cursor page', async () => {
+    const cursors: Array<string | null> = [];
+    fetchMock.mockImplementation(async (request) => {
+      const url = new URL(request.url);
+      expect(url.pathname).toBe('/v2/orgs');
+      cursors.push(url.searchParams.get('cursor'));
+      return Response.json({
+        orgs: [{ id: `o${cursors.length}`, name: 'Org' }],
+        nextCursor: cursors.length === 1 ? 'next' : null,
+      });
+    });
+
+    const orgs = await api.listOrgs();
+
+    expect(cursors).toEqual([null, 'next']);
+    expect(orgs.map((org) => org.id)).toEqual(['o1', 'o2']);
+  });
+
+  it('creates a project key with exactly the requested permissions', async () => {
+    let body: unknown;
+    fetchMock.mockImplementation(async (request) => {
+      expect(new URL(request.url).pathname).toBe('/v2/projects/p1/api-keys');
+      body = JSON.parse(await request.text());
+      return Response.json(
+        {
+          apiKey: {
+            id: 'key-id',
+            name: 'Dev',
+            key: 'gtx-secret',
+            projectId: 'p1',
+            type: 'production',
+          },
+        },
+        { status: 201 }
+      );
+    });
+
+    const result = await api.createProjectApiKey('p1', {
+      name: 'Dev',
+      permissions: ['project:translations:generate'],
+    });
+
+    expect(body).toEqual({
+      name: 'Dev',
+      permissions: ['project:translations:generate'],
+    });
+    expect(result.apiKey.key).toBe('gtx-secret');
+  });
+
+  it('surfaces a forbidden key creation as an ApiError', async () => {
+    fetchMock.mockResolvedValue(
+      Response.json(
+        { error: 'missing project:api_keys:write' },
+        { status: 403 }
+      )
+    );
+
+    await expect(
+      api.createProjectApiKey('p1', {
+        name: 'Dev',
+        permissions: ['project:translations:generate'],
+      })
+    ).rejects.toEqual(
+      expect.objectContaining<ApiError>({
+        code: 403,
+        message: 'missing project:api_keys:write',
+      })
+    );
   });
 });
