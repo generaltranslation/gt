@@ -11,6 +11,9 @@ import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import chalk from 'chalk';
+import { Command } from 'commander';
+import open from 'open';
 import {
   afterEach,
   beforeAll,
@@ -20,7 +23,10 @@ import {
   it,
   vi,
 } from 'vitest';
+import { BaseCLI } from '../../cli/base.js';
+import * as config from '../../config/resolveConfig.js';
 import { logger } from '../../console/logger.js';
+import * as logging from '../../console/logging.js';
 import {
   deleteOAuthTokens,
   getCredentialsPath,
@@ -40,6 +46,7 @@ import {
 
 vi.mock('node:fs/promises', { spy: true });
 vi.mock('node:os', { spy: true });
+vi.mock('open', () => ({ default: vi.fn() }));
 
 const OAUTH_CLIENT_ID = 'gt-cli';
 const OAUTH_SCOPE = 'openid profile offline_access gt:*';
@@ -710,21 +717,53 @@ describe('requested scope contract', () => {
 
 describe('library-managed device authorization', () => {
   it.each(['SSH_CONNECTION', 'SSH_CLIENT', 'SSH_TTY'])(
-    'uses device login without a listener or browser when %s is set',
+    'gt login prints device instructions without a listener or browser when %s is set',
     async (variable) => {
       vi.stubEnv(variable, 'ssh-session');
+      vi.stubEnv('GT_AUTH_URL', authBaseUrl);
+      vi.stubEnv('GT_API_URL', apiBaseUrl);
+      vi.stubGlobal('fetch', provider());
+      vi.spyOn(config, 'resolveConfig').mockReturnValue(null);
+      vi.spyOn(logging, 'displayHeader').mockImplementation(() => {});
+      vi.spyOn(logging, 'logErrorAndExit').mockImplementation((message) => {
+        throw new Error(message);
+      });
+      vi.spyOn(logger, 'setConsoleOutput').mockImplementation(() => {});
+      vi.spyOn(logger, 'setQuiet').mockImplementation(() => {});
+      const message = vi.spyOn(logger, 'message').mockImplementation(() => {});
+      const endCommand = vi
+        .spyOn(logger, 'endCommand')
+        .mockImplementation(() => {});
       const loopback = await import('../loopback.js');
       const startLoopback = vi
         .spyOn(loopback, 'startLoopbackServer')
         .mockRejectedValueOnce(new Error('Unexpected loopback listener'));
+      const openBrowser = vi
+        .mocked(open)
+        .mockReset()
+        .mockRejectedValue(new Error('Unexpected browser launch'));
       vi.useFakeTimers();
-      const openBrowser = vi.fn(async () => undefined);
-      const { pending } = await startDevice(provider(), {
-        noBrowser: false,
-        openBrowser,
-      });
+      const program = new Command().exitOverride();
+      new BaseCLI(program, 'base');
+      const pending = program.parseAsync(['login'], { from: 'user' });
+      pending.catch(() => undefined);
+      await vi.waitFor(() => expect(message).toHaveBeenCalled());
       await vi.advanceTimersByTimeAsync(5000);
-      expect((await pending).subject).toBe('user-1');
+      await pending;
+      const instructions = String(message.mock.calls[0][0]);
+      expect(instructions.split('\n')).toContain(
+        chalk.cyan(String(deviceResponse().verification_uri_complete))
+      );
+      expect(instructions).toContain('confirm the code');
+      expect(instructions).toContain('ABCD-EFGH');
+      expect(instructions).toContain('Waiting for authentication...');
+      expect(message).not.toHaveBeenCalledWith(
+        expect.stringContaining('Opening your browser')
+      );
+      expect(endCommand).toHaveBeenCalledWith('You are now signed in.');
+      expect(await readOAuthTokens(authBaseUrl)).toMatchObject({
+        subject: 'user-1',
+      });
       expect(startLoopback).not.toHaveBeenCalled();
       expect(openBrowser).not.toHaveBeenCalled();
     }
