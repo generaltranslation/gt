@@ -261,10 +261,19 @@ type CredentialsEnvFile = {
  * .env.local itself gets an ignore rule added, by setCredentials.
  */
 export async function inspectCredentialsEnvFile(
-  cwd: string = process.cwd()
+  cwd: string = process.cwd(),
+  /** Also checks that the framework's credentials can be saved safely. */
+  contentCheck?: { framework?: SupportedFrameworks }
 ): Promise<CredentialsEnvFile> {
   const envFile = path.resolve(cwd, '.env.local');
   const existing = await resolveEnvFile(envFile);
+  if (existing && contentCheck) {
+    updateCredentialsEnvContent(
+      await fs.promises.readFile(existing.target, 'utf8'),
+      { projectId: 'gt-preflight', apiKey: 'gt-preflight' },
+      contentCheck.framework
+    );
+  }
   const exposure = await inspectGitExposure(envFile);
   if (exposure === 'tracked') throw new Error(trackedEnvFileError(envFile));
   if (existing && existing.target !== envFile) {
@@ -320,6 +329,56 @@ async function writeEnvFileAtomically(
   }
 }
 
+/**
+ * .env.local content with the runtime credentials set. Only the hot-reload
+ * key: the CLI itself acts as the signed-in user, and CI keys are created
+ * deliberately rather than dropped into .env.local. Other lines, comments,
+ * and any GT_API_KEY are left untouched. Throws when the edit could corrupt
+ * a multiline value.
+ */
+function updateCredentialsEnvContent(
+  envContent: string,
+  credentials: Credentials,
+  framework?: SupportedFrameworks
+): string {
+  const names = getDevelopmentEnvNames(framework);
+  const targetNames = Object.values(names);
+  const targetOpensMultiline = envContent
+    .split('\n')
+    .some(
+      (line) =>
+        targetNames.includes(assignedName(line) ?? '') &&
+        opensMultilineValue(line)
+    );
+  const original = dotenv.parse(envContent);
+  const expected = {
+    ...original,
+    [names.projectId]: credentials.projectId,
+    [names.devApiKey]: credentials.apiKey,
+  };
+  let updatedContent = upsertEnvAssignment(
+    envContent,
+    names.projectId,
+    credentials.projectId
+  );
+  updatedContent = upsertEnvAssignment(
+    updatedContent,
+    names.devApiKey,
+    credentials.apiKey
+  );
+
+  const updated = dotenv.parse(updatedContent);
+  if (
+    targetOpensMultiline ||
+    targetNames.some((name) => original[name]?.includes('\n')) ||
+    Object.keys(updated).length !== Object.keys(expected).length ||
+    Object.entries(expected).some(([name, value]) => updated[name] !== value)
+  ) {
+    throw new Error(unsafeCredentialsEnvError);
+  }
+  return updatedContent;
+}
+
 // Sets the credentials in .env.local file
 export async function setCredentials(
   credentials: Credentials,
@@ -331,6 +390,14 @@ export async function setCredentials(
     existing: existingEnvFile,
     exposure,
   } = await inspectCredentialsEnvFile(cwd);
+  // Rechecked here: the file may have changed since the setup preflight.
+  const envContent = updateCredentialsEnvContent(
+    existingEnvFile
+      ? await fs.promises.readFile(existingEnvFile.target, 'utf8')
+      : '',
+    credentials,
+    framework
+  );
 
   if (exposure === 'unignored') {
     // A rule appended to the same-directory .gitignore is the last match at
@@ -352,49 +419,6 @@ export async function setCredentials(
     ) {
       await appendGitignoreRule(cwd);
     }
-  }
-
-  let envContent = existingEnvFile
-    ? await fs.promises.readFile(existingEnvFile.target, 'utf8')
-    : '';
-
-  // Only the hot-reload key: the CLI itself acts as the signed-in user, and
-  // CI keys are created deliberately rather than dropped into .env.local.
-  // Other lines, comments, and any GT_API_KEY are left untouched.
-  const names = getDevelopmentEnvNames(framework);
-  const targetNames = Object.values(names);
-  const targetOpensMultiline = envContent
-    .split('\n')
-    .some(
-      (line) =>
-        targetNames.includes(assignedName(line) ?? '') &&
-        opensMultilineValue(line)
-    );
-  const original = dotenv.parse(envContent);
-  const expected = {
-    ...original,
-    [names.projectId]: credentials.projectId,
-    [names.devApiKey]: credentials.apiKey,
-  };
-  envContent = upsertEnvAssignment(
-    envContent,
-    names.projectId,
-    credentials.projectId
-  );
-  envContent = upsertEnvAssignment(
-    envContent,
-    names.devApiKey,
-    credentials.apiKey
-  );
-
-  const updated = dotenv.parse(envContent);
-  if (
-    targetOpensMultiline ||
-    targetNames.some((name) => original[name]?.includes('\n')) ||
-    Object.keys(updated).length !== Object.keys(expected).length ||
-    Object.entries(expected).some(([name, value]) => updated[name] !== value)
-  ) {
-    throw new Error(unsafeCredentialsEnvError);
   }
 
   await writeEnvFileAtomically(

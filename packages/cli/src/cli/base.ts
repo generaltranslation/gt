@@ -1178,13 +1178,23 @@ See https://www.npmjs.com/package/gt-vue`);
     );
 
     if (ranReactSetup && isVite) {
-      await setupViteSPA({
+      const result = await setupViteSPA({
         appDirectory: process.cwd(),
         configFilepath,
         defaultLocale,
         locales,
         translationsDir: usingCDN ? undefined : finalTranslationsDir,
       });
+      if (result.manualAction) {
+        logger.warn(
+          createDiagnosticMessage({
+            source: 'gt',
+            severity: 'Warning',
+            whatHappened: 'The existing Vite setup needs a manual review',
+            fix: result.manualAction,
+          })
+        );
+      }
     }
 
     // Install gt if not installed
