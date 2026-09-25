@@ -435,7 +435,7 @@ describe('built Vue CLI', () => {
             return this.handleConfigureCommand({
               config: 'gt.config.json',
               defaults: true,
-              nonInteractive: true,
+              interactive: false,
             });
           }
         }
@@ -568,7 +568,7 @@ describe('built Vue CLI', () => {
               return this.handleConfigureCommand({
                 config: 'gt.config.json',
                 defaults: true,
-                nonInteractive: true,
+                interactive: false,
               });
             }
           }
@@ -668,7 +668,7 @@ describe('built Vue CLI', () => {
               return this.handleConfigureCommand({
                 config: 'gt.config.json',
                 defaults: true,
-                nonInteractive: true,
+                interactive: false,
               });
             }
           }
@@ -760,7 +760,7 @@ describe('built Vue CLI', () => {
             return this.handleConfigureCommand({
               config: 'gt.config.json',
               defaults: true,
-              nonInteractive: true,
+              interactive: false,
             });
           }
         }
@@ -824,7 +824,7 @@ describe('built Vue CLI', () => {
             return this.handleConfigureCommand({
               config: 'gt.config.json',
               defaults: true,
-              nonInteractive: true,
+              interactive: false,
             });
           }
         }

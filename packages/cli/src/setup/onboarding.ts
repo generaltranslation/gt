@@ -44,7 +44,7 @@ export const SETUP_REACT_FRAMEWORKS: SupportedReactFrameworks[] = [
 export type ConfigureOptions = {
   config: string;
   src?: string[];
-  nonInteractive?: boolean;
+  interactive?: boolean;
   json?: boolean;
   defaults?: boolean;
   defaultLocale?: string;
@@ -83,12 +83,12 @@ export function attachConfigureFlags(
       findFilepath(['gt.config.json'])
     )
     .option(
-      '--non-interactive',
+      '--no-interactive',
       'Never prompt; fail listing the options still needed. Automatic when stdin or stdout is not a terminal'
     )
     .option(
       '--json',
-      'Write JSON events (sign-in, handoff, result) to stdout and all other output to stderr; implies --non-interactive'
+      'Write JSON events (sign-in, handoff, result) to stdout and all other output to stderr; implies --no-interactive'
     )
     .option(
       '--defaults',
@@ -252,11 +252,11 @@ export class OnboardingSession {
 
   constructor(
     readonly command: string,
-    options: Pick<ConfigureOptions, 'json' | 'nonInteractive'>
+    options: Pick<ConfigureOptions, 'json' | 'interactive'>
   ) {
     this.json = options.json === true;
     this.interactive =
-      !options.nonInteractive && !this.json && isInteractiveTerminal();
+      options.interactive !== false && !this.json && isInteractiveTerminal();
   }
 
   /**
@@ -360,7 +360,7 @@ function partialSetupWarning(session: OnboardingSession): string {
  */
 export async function runOnboarding(
   command: string,
-  options: Pick<ConfigureOptions, 'json' | 'nonInteractive'>,
+  options: Pick<ConfigureOptions, 'json' | 'interactive'>,
   run: (session: OnboardingSession) => Promise<OnboardingOutcome>
 ): Promise<void> {
   const session = new OnboardingSession(command, options);

@@ -938,7 +938,7 @@ export class BaseCLI {
       this.program
         .command('init')
         .description(
-          'Run the setup wizard to configure your project for General Translation. Flags answer its questions; unanswered ones are asked, or listed as missing with --non-interactive'
+          'Run the setup wizard to configure your project for General Translation. Flags answer its questions; unanswered ones are asked, or listed as missing with --no-interactive'
         ),
       INIT_SOURCE_HELP
     ).action((options: InitOptions) => this.handleInitWizard(options));
@@ -1044,7 +1044,7 @@ export class BaseCLI {
       this.program
         .command('configure')
         .description(
-          'Configure your project for General Translation. This will create a gt.config.json file in your codebase. Flags answer its questions; unanswered ones are asked, or listed as missing with --non-interactive'
+          'Configure your project for General Translation. This will create a gt.config.json file in your codebase. Flags answer its questions; unanswered ones are asked, or listed as missing with --no-interactive'
         ),
       INIT_SOURCE_HELP
     ).action((options: ConfigureOptions) =>

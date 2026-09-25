@@ -44,7 +44,7 @@ export class VueCLI extends InlineCLI {
       this.program
         .command('init')
         .description(
-          'Configure a gt-vue project for General Translation without modifying application source. Flags answer its questions; unanswered ones are asked, or listed as missing with --non-interactive'
+          'Configure a gt-vue project for General Translation without modifying application source. Flags answer its questions; unanswered ones are asked, or listed as missing with --no-interactive'
         ),
       VUE_SOURCE_HELP
     ).action((options: ConfigureOptions) =>

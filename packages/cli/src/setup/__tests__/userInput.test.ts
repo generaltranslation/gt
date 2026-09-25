@@ -13,8 +13,7 @@ describe('getDesiredLocales', () => {
     vi.clearAllMocks();
   });
 
-  const headless = () =>
-    new OnboardingSession('init', { nonInteractive: true });
+  const headless = () => new OnboardingSession('init', { interactive: false });
 
   it('preserves configured locales without prompting', async () => {
     await expect(

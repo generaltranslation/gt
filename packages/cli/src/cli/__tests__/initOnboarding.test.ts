@@ -240,7 +240,7 @@ describe('init and configure onboarding', () => {
   });
 
   it.each([
-    ['with --non-interactive in a terminal', true, ['--non-interactive']],
+    ['with --no-interactive in a terminal', true, ['--no-interactive']],
     ['without a terminal', false, []],
   ])(
     'never prompts %s and lists missing options before any change',
@@ -267,7 +267,7 @@ describe('init and configure onboarding', () => {
         files: { json: { include: ['a/[locale].json'], exclude: ['x'] } },
       })
     );
-    const common = ['--non-interactive', '--no-dev-credentials'];
+    const common = ['--no-interactive', '--no-dev-credentials'];
 
     await run('configure', ...common, '--defaults');
     expect(readConfig()).toMatchObject({
@@ -320,12 +320,7 @@ describe('init and configure onboarding', () => {
       JSON.stringify({ defaultLocale: 'en', locales: ['fr'], ...existing })
     );
 
-    await run(
-      'configure',
-      '--non-interactive',
-      '--no-dev-credentials',
-      ...args
-    );
+    await run('configure', '--no-interactive', '--no-dev-credentials', ...args);
 
     const config = readConfig();
     expect(config.publish).toBe(publish ? true : undefined);
@@ -342,7 +337,7 @@ describe('init and configure onboarding', () => {
 
     await run(
       'init',
-      '--non-interactive',
+      '--no-interactive',
       '--defaults',
       '--react-setup',
       '--framework',
@@ -365,7 +360,7 @@ describe('init and configure onboarding', () => {
   });
 
   it('requires explicit consent and inputs for remote projects and keys', async () => {
-    const base = ['init', '--non-interactive', '--defaults', '--locales', 'fr'];
+    const base = ['init', '--no-interactive', '--defaults', '--locales', 'fr'];
     await expect(run(...base)).rejects.toThrow(
       'Setup needs these options: --dev-credentials'
     );
@@ -503,7 +498,7 @@ describe('init and configure onboarding', () => {
 
     await run(
       'init',
-      '--non-interactive',
+      '--no-interactive',
       '--defaults',
       '--locales',
       'fr',
@@ -518,7 +513,7 @@ describe('init and configure onboarding', () => {
     fs.writeFileSync(file('gt.config.json'), '{bad');
 
     await expect(
-      run('configure', '--non-interactive', '--defaults')
+      run('configure', '--no-interactive', '--defaults')
     ).rejects.toThrow('gt.config.json is not a valid JSON config');
 
     expect(fs.readFileSync(file('gt.config.json'), 'utf8')).toBe('{bad');
@@ -526,7 +521,7 @@ describe('init and configure onboarding', () => {
   });
 
   describe('review regressions', () => {
-    const local = ['--non-interactive', '--defaults'];
+    const local = ['--no-interactive', '--defaults'];
     const writeConfig = (config: Record<string, unknown>) =>
       fs.writeFileSync(file('gt.config.json'), JSON.stringify(config));
 
