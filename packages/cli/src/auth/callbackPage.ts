@@ -1,29 +1,25 @@
 // The page the loopback server shows once `gt login` has finished. It is
 // served from 127.0.0.1 under `default-src 'none'; style-src 'unsafe-inline'`,
-// so everything is inline: the brand tokens (paper/ink with a
-// prefers-color-scheme swap, one hairline, the status hues), the GT mark and
-// the Heroicons 20/solid status glyph. Nothing loads from the network and no
-// webfont is requested; Inter is used when it is installed.
+// so everything is inline: the brand deck's tokens (paper and ink with a
+// prefers-color-scheme swap, ink-2 for the sentence, the status hues), the
+// GT mark and the Heroicons 20/solid status glyph. No box and no rule: the
+// page is one column of type on paper, the way the deck sets a statement.
+// Nothing loads from the network and no webfont is requested; Inter is used
+// when it is installed.
 const STYLES = `
   :root {
     color-scheme: light dark;
     --ink: #070707;
-    --ink-2: rgba(7, 7, 7, 0.63);
+    --ink-2: #3a3d44;
     --paper: #ffffff;
-    --plate: #ffffff;
-    --hairline: rgba(138, 143, 152, 0.26);
-    --cross: rgba(10, 11, 13, 0.38);
     --success: #12a37a;
     --danger: #e5484d;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --ink: #ffffff;
-      --ink-2: rgba(255, 255, 255, 0.66);
+      --ink: #f2f2f0;
+      --ink-2: #b9bcc3;
       --paper: #070707;
-      --plate: #101010;
-      --hairline: rgba(138, 143, 152, 0.5);
-      --cross: rgba(255, 255, 255, 0.34);
     }
   }
   * { box-sizing: border-box; margin: 0; }
@@ -35,43 +31,30 @@ const STYLES = `
     padding: 48px 24px;
     background: var(--paper);
     color: var(--ink);
-    font: 14px/1.6 Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+    font: 15px/1.55 Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
   main {
-    position: relative;
     width: 100%;
-    max-width: 420px;
-    padding: 28px;
-    border: 1px solid var(--hairline);
-    border-radius: 6px;
-    background: var(--plate);
+    max-width: 440px;
   }
-  /* Registration crosses: 9px arms, 1px, centred on each corner of the plate. */
-  .reg { position: absolute; width: 0; height: 0; }
-  .reg::before, .reg::after { content: ''; position: absolute; background: var(--cross); }
-  .reg::before { left: -4px; top: 0; width: 9px; height: 1px; }
-  .reg::after { left: 0; top: -4px; width: 1px; height: 9px; }
-  .tl { top: -1px; left: -1px; }
-  .tr { top: -1px; right: 0; }
-  .bl { bottom: 0; left: -1px; }
-  .br { bottom: 0; right: 0; }
   svg { display: block; }
-  .mark { width: 25px; height: 16px; margin-bottom: 36px; }
+  .mark { width: 25px; height: 16px; margin-bottom: 40px; }
   .success, .error { width: 20px; height: 20px; margin-bottom: 14px; }
   .success { color: var(--success); }
   .error { color: var(--danger); }
   h1 {
-    font-size: 20px;
-    line-height: 1.25;
+    font-size: 22px;
+    line-height: 1.2;
     font-weight: 500;
-    letter-spacing: -0.02em;
-    margin-bottom: 6px;
+    letter-spacing: -0.018em;
+    margin-bottom: 8px;
   }
   p { color: var(--ink-2); }
   .hint { margin-top: 12px; }
   code {
-    font: 13px/1.6 "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font: 13.5px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color: var(--ink);
   }
 `;
 
@@ -84,9 +67,6 @@ const CHECK_CIRCLE =
   '<svg class="success" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"/></svg>';
 const X_CIRCLE =
   '<svg class="error" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z"/></svg>';
-
-const REGISTRATION_CROSSES =
-  '<i class="reg tl"></i><i class="reg tr"></i><i class="reg bl"></i><i class="reg br"></i>';
 
 export function renderCallbackPage(success: boolean): string {
   const title = success
@@ -105,7 +85,6 @@ export function renderCallbackPage(success: boolean): string {
 </head>
 <body>
 <main>
-${REGISTRATION_CROSSES}
 ${GT_MARK}
 ${success ? CHECK_CIRCLE : X_CIRCLE}
 <h1>${title}</h1>
