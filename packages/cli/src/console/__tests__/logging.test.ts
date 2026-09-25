@@ -57,7 +57,10 @@ describe('logging prompts', () => {
       userInput: 'fr',
       selectedValues: [],
     });
-    expect(options[0]).toMatchObject({ value: 'fr' });
+    // Clack hides options whose label does not match the search.
+    expect(
+      options.find((option: { label: string }) => option.label.includes('fr'))
+    ).toMatchObject({ value: 'fr' });
     expect(
       prompt.options
         .call({ userInput: 'fren', selectedValues: [] })
@@ -89,37 +92,89 @@ describe('logging prompts', () => {
     expect(values('', ['zh-Hans-CN'])).toContain('zh-Hans-CN');
   });
 
-  it('keeps the real single-locale prompt open until a locale is selected', async () => {
+  // Drives the real Clack prompt through injected streams.
+  async function withRealClack(
+    prompt: 'text' | 'autocomplete' | 'autocompleteMultiselect'
+  ) {
     const actual =
       await vi.importActual<typeof import('@clack/prompts')>('@clack/prompts');
     const input = new PassThrough();
     const output = new PassThrough();
     let rendered = '';
     output.on('data', (chunk) => (rendered += chunk));
-    clack.autocomplete.mockImplementationOnce((options) =>
-      actual.autocomplete({ ...options, input, output })
+    clack[prompt].mockImplementationOnce((options: never) =>
+      (actual[prompt] as (options: object) => unknown)({
+        ...(options as object),
+        input,
+        output,
+      })
     );
+    const type = async (keys: string) => {
+      input.write(keys);
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    };
+    return { type, rendered: () => rendered };
+  }
+
+  it('keeps the real single-locale prompt open until a locale is selected', async () => {
+    const { type, rendered } = await withRealClack('autocomplete');
     const { promptLocale } = await import('../logging.js');
     let submitted: unknown = 'pending';
     const answer = promptLocale({ message: 'Default?' }).then((value) => {
       submitted = value;
       return value;
     });
-    const type = async (keys: string) => {
-      input.write(keys);
-      await new Promise((resolve) => setTimeout(resolve, 20));
-    };
 
     // No option matches, so Enter submits nothing.
     await type('not_a_locale');
     await type('\r');
     expect(submitted).toBe('pending');
-    expect(rendered).toContain('No locale matches the search.');
+    expect(rendered()).toContain('No locale matches the search.');
 
     await type('\x15'); // Ctrl+U clears the search
     await type('french');
     await type('\r');
     await expect(answer).resolves.toBe('fr');
+  });
+
+  it('focuses the exact locale code after the search changes', async () => {
+    // `af  Afrikaans` is focused first and also matches `f` and `fr`.
+    const single = await withRealClack('autocomplete');
+    const { promptLocale, promptLocaleList } = await import('../logging.js');
+    const locale = promptLocale({ message: 'Default?' });
+    await single.type('fr');
+    await single.type('\r');
+    await expect(locale).resolves.toBe('fr');
+
+    const multi = await withRealClack('autocompleteMultiselect');
+    const locales = promptLocaleList({ message: 'Locales?' });
+    await multi.type('fr');
+    await multi.type('\t');
+    await multi.type('\r');
+    await expect(locales).resolves.toEqual(['fr']);
+  });
+
+  it('preselects custom locale defaults in the real multiselect', async () => {
+    const { type } = await withRealClack('autocompleteMultiselect');
+    const { promptLocaleList } = await import('../logging.js');
+    const locales = promptLocaleList({
+      message: 'Locales?',
+      defaultValue: ['es', 'zh-Hans-CN'],
+    });
+    await type('\r');
+    await expect(locales).resolves.toEqual(['es', 'zh-Hans-CN']);
+  });
+
+  it('accepts the suggested text default when Enter is pressed', async () => {
+    const { type } = await withRealClack('text');
+    const { promptText } = await import('../logging.js');
+    const name = promptText({
+      message: 'Project name?',
+      defaultValue: 'my-app',
+      validate: (value) => (value.trim() ? true : 'Enter a project name'),
+    });
+    await type('\r');
+    await expect(name).resolves.toBe('my-app');
   });
 
   it('refuses to prompt once prompts are disabled', async () => {

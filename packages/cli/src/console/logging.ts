@@ -171,7 +171,8 @@ export async function promptText({
     defaultValue,
     validate: validate
       ? (value) => {
-          const validation = validate(value || '');
+          // Clack applies defaultValue after validation; check what Enter returns.
+          const validation = validate(value || defaultValue || '');
           return validation === true ? undefined : validation.toString();
         }
       : undefined,
@@ -182,7 +183,27 @@ export async function promptText({
 type LocalePromptContext = {
   userInput: string;
   selectedValues: string[];
+  focusedValue?: string;
 };
+
+/**
+ * Clack keeps the focused option while it still matches a new search, so
+ * typing `fr` could leave `af` (Afrikaans) focused. Refocus the top-ranked
+ * option whenever the search changes.
+ */
+function searchableLocaleOptions(
+  getOptions: (query: string, selected: string[]) => Option<string>[]
+) {
+  let lastQuery = '';
+  return function (this: LocalePromptContext) {
+    const query = this.userInput ?? '';
+    if (query !== lastQuery) {
+      lastQuery = query;
+      this.focusedValue = undefined;
+    }
+    return getOptions(query, this.selectedValues ?? []);
+  };
+}
 
 /**
  * Searchable locale options: supported locales ranked by the query, the
@@ -240,9 +261,9 @@ export async function promptLocale({
     message,
     placeholder: 'Type to search locales',
     initialValue: defaultValue,
-    options: function (this: LocalePromptContext) {
-      return getLocalePromptOptions(this.userInput ?? '', [], customMapping);
-    },
+    options: searchableLocaleOptions((query) =>
+      getLocalePromptOptions(query, [], customMapping)
+    ),
     // Enter with no matching option submits nothing; keep asking.
     validate: (value) => (value ? undefined : noLocaleSelectedError),
   });
@@ -266,13 +287,15 @@ export async function promptLocaleList({
     placeholder: 'Type to search, Tab or Space to select',
     initialValues: defaultValue,
     required,
-    options: function (this: LocalePromptContext) {
-      return getLocalePromptOptions(
-        this.userInput ?? '',
-        this.selectedValues ?? [],
+    // Clack only preselects defaults present in the first options list, so
+    // keep custom default tags listed even before they are selected.
+    options: searchableLocaleOptions((query, selected) =>
+      getLocalePromptOptions(
+        query,
+        [...(defaultValue ?? []), ...selected],
         customMapping
-      );
-    },
+      )
+    ),
   });
   return exitIfCancelled(result);
 }
@@ -287,12 +310,7 @@ export async function promptGlobPatterns({
   defaultValue?: string;
   validate?: (value: string) => boolean | string;
 }) {
-  return promptText({
-    message,
-    defaultValue,
-    // Clack validates the typed text before applying the default.
-    validate: validate && ((value) => validate(value || defaultValue || '')),
-  });
+  return promptText({ message, defaultValue, validate });
 }
 
 export async function promptSelect<T>({
