@@ -52,5 +52,8 @@ describe('transformFormat - Android strings.xml', () => {
 
   it('writes translated files with the matching extension', () => {
     expect(getFileExtensionForFormat('ANDROID_STRINGS')).toBe('xml');
+    expect(CONFIG_FILE_TYPE_TO_FILE_FORMAT.srt).toBe('SRT');
+    expect(FILE_FORMAT_TO_CONFIG_FILE_TYPE.SRT).toBe('srt');
+    expect(getFileExtensionForFormat('SRT')).toBe('srt');
   });
 });
