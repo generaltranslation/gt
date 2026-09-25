@@ -1,5 +1,17 @@
 # gtx-cli
 
+## 2.22.2
+
+### Patch Changes
+
+- [#2340](https://github.com/generaltranslation/gt/pull/2340) [`5d75eb4`](https://github.com/generaltranslation/gt/commit/5d75eb475a9e36a61845f0368566a9d40466251c) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add SubRip (`.srt`) subtitle files as a supported file type, uploaded verbatim under the `SRT` format
+
+- Updated dependencies [[`5d75eb4`](https://github.com/generaltranslation/gt/commit/5d75eb475a9e36a61845f0368566a9d40466251c)]:
+  - generaltranslation@9.5.1
+  - @generaltranslation/python-extractor@0.2.55
+  - @generaltranslation/supported-locales@2.1.35
+  - @generaltranslation/vue-extractor@0.1.15
+
 ## 2.22.1
 
 ### Patch Changes
