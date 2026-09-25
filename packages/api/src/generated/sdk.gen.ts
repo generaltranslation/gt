@@ -71,6 +71,9 @@ import type {
   PluginInfoData,
   PluginInfoErrors,
   PluginInfoResponses,
+  PluginLayoutData,
+  PluginLayoutErrors,
+  PluginLayoutResponses,
   PluginStatusData,
   PluginStatusErrors,
   PluginStatusResponses,
@@ -217,6 +220,27 @@ export const pluginInfo = <ThrowOnError extends boolean = false>(
   });
 
 /**
+ * Plugin layout
+ *
+ * Run the layout command for a design-tool plugin.
+ */
+export const pluginLayout = <ThrowOnError extends boolean = false>(
+  options: Options<PluginLayoutData, ThrowOnError>
+) =>
+  options.client.post<PluginLayoutResponses, PluginLayoutErrors, ThrowOnError>({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v1/integrations/plugins/{provider}/layout',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
  * Plugin sync
  *
  * Run the sync command for a design-tool plugin.
@@ -336,7 +360,7 @@ export const pluginDownload = <ThrowOnError extends boolean = false>(
 /**
  * Get Project information
  *
- * Read the authenticated Project's name, Organization ID, locale settings, and auto-approval setting.
+ * Get a project's ID, name, Organization, locales, and auto-approval setting. Requires `project:files:read`.
  */
 export const getProjectInfo = <ThrowOnError extends boolean = false>(
   options: Options<GetProjectInfoData, ThrowOnError>
@@ -357,7 +381,7 @@ export const getProjectInfo = <ThrowOnError extends boolean = false>(
 /**
  * Update Project information
  *
- * Update the Project's default locale or CDN delivery setting.
+ * Update a project's default locale or CDN delivery setting. Requires `project:write`. Omitted settings remain unchanged.
  */
 export const updateProjectInfo = <ThrowOnError extends boolean = false>(
   options: Options<UpdateProjectInfoData, ThrowOnError>
@@ -449,7 +473,7 @@ export const createBranch = <ThrowOnError extends boolean = false>(
 /**
  * Create or update a tag
  *
- * Create or upsert a tag that points at a set of file versions.
+ * Create or update a tag for a set of file versions.
  */
 export const createTag = <ThrowOnError extends boolean = false>(
   options: Options<CreateTagData, ThrowOnError>
@@ -470,7 +494,7 @@ export const createTag = <ThrowOnError extends boolean = false>(
 /**
  * Upload Project assets
  *
- * Upload OpenType or TrueType fonts through a Project and make them available to Lottie translation workflows across its Organization. Each font is keyed by a normalized identity derived from its family, weight, and italic style (from the supplied `family` and `style`, or from the font metadata and file name). Re-uploading the same identity overwrites the existing asset, so complete retries after a `500` response are safe.
+ * Upload OpenType or TrueType fonts for Lottie translations across your Organization. Uploading the same font family, weight, and italic style replaces the existing font. You can safely retry the full upload after a `500` response.
  */
 export const uploadAssets = <ThrowOnError extends boolean = false>(
   options: Options<UploadAssetsData, ThrowOnError>
@@ -631,7 +655,7 @@ export const downloadFile = <ThrowOnError extends boolean = false>(
 /**
  * Get translation job status
  *
- * Return normalized status information for one or more queued translation or context generation jobs.
+ * Get the status of one or more translation or context generation jobs.
  */
 export const getTranslationJobInfo = <ThrowOnError extends boolean = false>(
   options: Options<GetTranslationJobInfoData, ThrowOnError>
@@ -752,7 +776,7 @@ export const enqueueFileTranslations = <ThrowOnError extends boolean = false>(
 /**
  * Translate content at runtime
  *
- * Translate one or more strings, structured content entries, or markdown documents with caching and memoization. Markdown and MDX documents are sent as strings with `fileFormat` set to MD or MDX. Development API keys are accepted for this endpoint.
+ * Translate strings, structured content, or Markdown and MDX documents. Send documents as strings with `fileFormat` set to `MD` or `MDX`. Requires `project:translations:generate`. Existing development API keys are also accepted.
  */
 export const translate = <ThrowOnError extends boolean = false>(
   options: Options<TranslateData, ThrowOnError>
@@ -798,7 +822,7 @@ export const uploadTranslations = <ThrowOnError extends boolean = false>(
 /**
  * Create a Project API Key
  *
- * Create an API key for the selected Project. Requires project:api_keys:write. Select permissions to limit the key, or omit them to delegate all grantable Project permissions held by the request identity. Unavailable selections are rejected.
+ * Create a project API key. Requires `project:api_keys:write`; project keys cannot create other keys. If you cannot grant a selected permission, the request returns `403` without creating a key. Each successful request creates a new key. Store the returned secret securely.
  */
 export const createProjectApiKey = <ThrowOnError extends boolean = false>(
   options: Options<CreateProjectApiKeyData, ThrowOnError>
@@ -823,7 +847,7 @@ export const createProjectApiKey = <ThrowOnError extends boolean = false>(
 /**
  * List Projects
  *
- * List Projects the request identity can read, ordered by ID. Requires project:files:read. Pass nextCursor as cursor to fetch the next page.
+ * List projects you can access, ordered by ID. Requires `project:files:read`. No `gt-project-id` header is needed. Pass `nextCursor` as `cursor` for the next page; `null` ends pagination.
  */
 export const listProjects = <ThrowOnError extends boolean = false>(
   options: Options<ListProjectsData, ThrowOnError>
@@ -840,7 +864,7 @@ export const listProjects = <ThrowOnError extends boolean = false>(
 /**
  * Create a Project
  *
- * Create a Project in the Organization selected by the orgId path parameter, optionally enabling CDN delivery. Requires org:projects:create.
+ * Create a project in the specified Organization. Requires `org:projects:create`. Returns `409` if your plan's project limit has been reached. Each successful request creates a new project.
  */
 export const createProject = <ThrowOnError extends boolean = false>(
   options: Options<CreateProjectData, ThrowOnError>
@@ -865,13 +889,16 @@ export const createProject = <ThrowOnError extends boolean = false>(
 /**
  * List Organizations
  *
- * List Organizations where the signed-in user can create Projects, ordered by ID. Accepts user tokens only and requires org:projects:create. Pass nextCursor as cursor to fetch the next page.
+ * List Organizations accessible to your API key, ordered by ID. Organization and Project keys each return only their own Organization. No project ID or project-creation permission is required. Pass `nextCursor` as `cursor` for the next page; `null` ends pagination.
  */
 export const listOrgs = <ThrowOnError extends boolean = false>(
   options: Options<ListOrgsData, ThrowOnError>
 ) =>
   options.client.get<ListOrgsResponses, ListOrgsErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
     url: '/v2/orgs',
     ...options,
   });

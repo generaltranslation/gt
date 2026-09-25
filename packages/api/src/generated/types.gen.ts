@@ -706,8 +706,7 @@ export type PluginInfoResponses = {
               | 'not_text_node'
               | 'empty_text'
               | 'hidden_layer'
-              | 'missing_characters'
-              | 'in_component_master';
+              | 'missing_characters';
             details?: {
               [key: string]: string | number | boolean | null;
             };
@@ -776,6 +775,120 @@ export type PluginInfoResponses = {
 
 export type PluginInfoResponse = PluginInfoResponses[keyof PluginInfoResponses];
 
+export type PluginLayoutData = {
+  body:
+    | {
+        fileName: string;
+        pageId: string;
+        locale: string;
+        frames: Array<{
+          frameId: string;
+          frameName?: string;
+          before: {
+            mediaType: 'image/png' | 'image/jpeg' | 'image/webp';
+            base64: string;
+          };
+          after: {
+            mediaType: 'image/png' | 'image/jpeg' | 'image/webp';
+            base64: string;
+          };
+          nodes: Array<{
+            nodeId: string;
+            rect: {
+              x: number;
+              y: number;
+              width: number;
+              height: number;
+            };
+            text: string;
+            measuredOverflow?: boolean;
+            measuredCollision?: boolean;
+          }>;
+        }>;
+      }
+    | {
+        [key: string]: unknown;
+      };
+  headers?: {
+    /**
+     * API contract version. Defaults to the oldest supported version.
+     */
+    'gt-api-version'?: ApiVersion;
+    /**
+     * Target project ID when no project ID is present in the path. Project API keys default to their bound project. If supplied, the header must match both the path target and the key’s bound project.
+     */
+    'gt-project-id'?: string;
+  };
+  path: {
+    provider: 'figma' | 'after-effects';
+  };
+  query?: never;
+  url: '/v1/integrations/plugins/{provider}/layout';
+};
+
+export type PluginLayoutErrors = {
+  /**
+   * Request error
+   */
+  400: ErrorResponse;
+  /**
+   * Request error
+   */
+  401: ErrorResponse;
+  /**
+   * Request error
+   */
+  403: ErrorResponse;
+  /**
+   * Request error
+   */
+  404: ErrorResponse;
+  /**
+   * Request error
+   */
+  409: ErrorResponse;
+  /**
+   * Request error
+   */
+  413: ErrorResponse;
+  /**
+   * Request error
+   */
+  423: ErrorResponse;
+  /**
+   * Request error
+   */
+  429: ErrorResponse;
+  /**
+   * Request error
+   */
+  500: ErrorResponse;
+};
+
+export type PluginLayoutError = PluginLayoutErrors[keyof PluginLayoutErrors];
+
+export type PluginLayoutResponses = {
+  /**
+   * Plugin command result
+   */
+  200:
+    | {
+        frames: Array<{
+          frameId: string;
+          remedies: Array<{
+            nodeId: string;
+            rephrase: string;
+          }>;
+        }>;
+      }
+    | {
+        [key: string]: never;
+      };
+};
+
+export type PluginLayoutResponse =
+  PluginLayoutResponses[keyof PluginLayoutResponses];
+
 export type PluginSyncData = {
   body:
     | {
@@ -818,27 +931,29 @@ export type PluginSyncData = {
           styleRuns?: Array<{
             start: number;
             end: number;
-            fontName?: {
-              family: string;
-              style: string;
+            style: {
+              fontName?: {
+                family: string;
+                style: string;
+              };
+              fontSize?: number;
+              textDecoration?: string;
+              textCase?: string;
+              letterSpacing?: {
+                value: number;
+                unit: string;
+              };
+              lineHeight?: {
+                value?: number;
+                unit: string;
+              };
+              fills?: Array<{
+                [key: string]: unknown;
+              }>;
+              hyperlink?: {
+                [key: string]: unknown;
+              } | null;
             };
-            fontSize?: number;
-            textDecoration?: string;
-            textCase?: string;
-            letterSpacing?: {
-              value: number;
-              unit: string;
-            };
-            lineHeight?: {
-              value?: number;
-              unit: string;
-            };
-            fills?: Array<{
-              [key: string]: unknown;
-            }>;
-            hyperlink?: {
-              [key: string]: unknown;
-            } | null;
           }>;
           instanceTextOrigin?: 'inherited' | 'overridden';
         }>;
@@ -850,8 +965,7 @@ export type PluginSyncData = {
             | 'not_text_node'
             | 'empty_text'
             | 'hidden_layer'
-            | 'missing_characters'
-            | 'in_component_master';
+            | 'missing_characters';
           details?: {
             [key: string]: string | number | boolean | null;
           };
@@ -996,7 +1110,36 @@ export type PluginImportTranslationsData = {
         locale: string;
         versionId: string;
         translations: {
-          [key: string]: string;
+          [key: string]: {
+            text: string;
+            styleRuns?: Array<{
+              start: number;
+              end: number;
+              style: {
+                fontName?: {
+                  family: string;
+                  style: string;
+                };
+                fontSize?: number;
+                textDecoration?: string;
+                textCase?: string;
+                letterSpacing?: {
+                  value: number;
+                  unit: string;
+                };
+                lineHeight?: {
+                  value?: number;
+                  unit: string;
+                };
+                fills?: Array<{
+                  [key: string]: unknown;
+                }>;
+                hyperlink?: {
+                  [key: string]: unknown;
+                } | null;
+              };
+            }>;
+          };
         };
       }
     | {
@@ -1395,7 +1538,59 @@ export type PluginDownloadResponses = {
         versionId: string;
         locale: string;
         translations: {
-          [key: string]: string;
+          [key: string]: {
+            text: string;
+            baseStyle?: {
+              fontName?: {
+                family: string;
+                style: string;
+              };
+              fontSize?: number;
+              textDecoration?: string;
+              textCase?: string;
+              letterSpacing?: {
+                value: number;
+                unit: string;
+              };
+              lineHeight?: {
+                value?: number;
+                unit: string;
+              };
+              fills?: Array<{
+                [key: string]: unknown;
+              }>;
+              hyperlink?: {
+                [key: string]: unknown;
+              } | null;
+            };
+            styleRuns: Array<{
+              start: number;
+              end: number;
+              style: {
+                fontName?: {
+                  family: string;
+                  style: string;
+                };
+                fontSize?: number;
+                textDecoration?: string;
+                textCase?: string;
+                letterSpacing?: {
+                  value: number;
+                  unit: string;
+                };
+                lineHeight?: {
+                  value?: number;
+                  unit: string;
+                };
+                fills?: Array<{
+                  [key: string]: unknown;
+                }>;
+                hyperlink?: {
+                  [key: string]: unknown;
+                } | null;
+              };
+            }>;
+          };
         };
         warnings: Array<{
           key: string;
@@ -3149,9 +3344,12 @@ export type UploadTranslationsResponse =
 
 export type CreateProjectApiKeyData = {
   body: {
+    /**
+     * Key name, 1–255 characters after trimming.
+     */
     name: string;
     /**
-     * Project permissions to grant. Omit to grant all delegable project permissions held by the caller. Every selected permission must be held by the caller; duplicates are ignored.
+     * Project permissions to grant. Select at least one, or omit to grant all project permissions you can delegate. You must hold every selected permission. Duplicates are ignored. Write permissions do not include Read.
      */
     permissions?: Array<ProjectApiKeyPermission>;
     /**
@@ -3241,7 +3439,13 @@ export type ListProjectsData = {
   };
   path?: never;
   query?: {
+    /**
+     * The nextCursor from the previous page. Omit for the first page.
+     */
     cursor?: string;
+    /**
+     * Maximum number of results to return.
+     */
     limit?: number;
   };
   url: '/v2/projects';
@@ -3292,8 +3496,17 @@ export type ListProjectsResponse =
 
 export type CreateProjectData = {
   body: {
+    /**
+     * Trimmed Project name, 1–64 characters. Accepts ASCII letters, digits, spaces, dashes, underscores, apostrophes, parentheses, and periods.
+     */
     name: string;
+    /**
+     * Source locale for the project.
+     */
     defaultLocale: string;
+    /**
+     * Enable CDN delivery. Defaults to false when omitted.
+     */
     cdnEnabled?: boolean;
   };
   headers?: {
@@ -3369,7 +3582,13 @@ export type ListOrgsData = {
   };
   path?: never;
   query?: {
+    /**
+     * The nextCursor from the previous page. Omit for the first page.
+     */
     cursor?: string;
+    /**
+     * Maximum number of results to return.
+     */
     limit?: number;
   };
   url: '/v2/orgs';
