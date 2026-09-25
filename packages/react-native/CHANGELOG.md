@@ -1,5 +1,17 @@
 # gt-react-native
 
+## 11.4.4
+
+### Patch Changes
+
+- [#2330](https://github.com/generaltranslation/gt/pull/2330) [`9ee7dc3`](https://github.com/generaltranslation/gt/commit/9ee7dc3ae792cd81ce7edb5c6e43c963f7055261) Thanks [@eoinest](https://github.com/eoinest)! - Use server-provided locale and condition props as the only rendered state in server-rendered apps. Condition setters write cookies for middleware and request a reload; provider-free SPA apps keep their cookie-backed behavior.
+
+- Updated dependencies [[`5d75eb4`](https://github.com/generaltranslation/gt/commit/5d75eb475a9e36a61845f0368566a9d40466251c), [`9ee7dc3`](https://github.com/generaltranslation/gt/commit/9ee7dc3ae792cd81ce7edb5c6e43c963f7055261)]:
+  - generaltranslation@9.5.1
+  - @generaltranslation/react-core@11.4.4
+  - gt-i18n@1.0.32
+  - @generaltranslation/supported-locales@2.1.35
+
 ## 11.4.3
 
 ### Patch Changes
