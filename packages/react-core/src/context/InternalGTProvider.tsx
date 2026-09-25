@@ -1,11 +1,7 @@
 import { useEffect, useMemo, type ReactNode } from 'react';
 import { I18nStore } from '../i18n-store/I18nStore';
 import type { Dictionary, Translation } from 'gt-i18n/types';
-import type {
-  Locale,
-  Hash,
-  WritableConditionStoreInterface,
-} from 'gt-i18n/internal/types';
+import type { Locale, Hash } from 'gt-i18n/internal/types';
 import { getGTContext } from './context';
 import type {
   OnMissingDictionaryEntry,
@@ -18,8 +14,12 @@ export type InternalGTProviderProps = {
   // For streaming translations to server
   translations: Record<Locale, Record<Hash, Translation>>;
   dictionaries?: Record<Locale, Dictionary>;
-  // Declared upstream dependent on environment
-  conditionStore: WritableConditionStoreInterface;
+  locale: string;
+  region: string | undefined;
+  enableI18n: boolean;
+  setLocale: (locale: string) => void;
+  setRegion: (region: string | undefined) => void;
+  setEnableI18n: (enabled: boolean) => void;
   i18nStore: I18nStore;
   // Custom override missing translation behavior for dev hot reload
   onMissingTranslation?: OnMissingTranslation;
@@ -41,7 +41,12 @@ export function InternalGTProvider({
   children,
   translations,
   dictionaries,
-  conditionStore,
+  locale,
+  region,
+  enableI18n,
+  setLocale,
+  setRegion,
+  setEnableI18n,
   i18nStore,
   onMissingTranslation,
   onMissingDictionaryEntry,
@@ -52,7 +57,12 @@ export function InternalGTProvider({
       translationsSnapshot: translations,
       dictionariesSnapshot: dictionaries ?? {},
       i18nStore,
-      conditionStore,
+      locale,
+      region,
+      enableI18n,
+      setLocale,
+      setRegion,
+      setEnableI18n,
       onMissingTranslation,
       onMissingDictionaryEntry,
       onMissingDictionaryObj,
@@ -61,7 +71,12 @@ export function InternalGTProvider({
       translations,
       dictionaries,
       i18nStore,
-      conditionStore,
+      locale,
+      region,
+      enableI18n,
+      setLocale,
+      setRegion,
+      setEnableI18n,
       onMissingTranslation,
       onMissingDictionaryEntry,
       onMissingDictionaryObj,

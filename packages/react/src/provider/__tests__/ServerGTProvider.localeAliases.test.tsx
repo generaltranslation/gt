@@ -9,7 +9,7 @@ function LocaleProbe() {
   return <span>{useLocale()}</span>;
 }
 
-describe('ServerGTProvider locale aliases', () => {
+describe('ServerGTProvider locale identity', () => {
   beforeEach(() => {
     const registry = Reflect.get(globalThis, '__generaltranslation');
     // Preserve the React context captured when InternalGTProvider was imported.
@@ -23,10 +23,10 @@ describe('ServerGTProvider locale aliases', () => {
   });
 
   it.each([
-    ['en-GB', 'en-gb'],
+    ['en-GB', 'en-GB'],
     ['en-gb', 'en-gb'],
-    ['en-US', 'en-us'],
-  ])('renders %s as %s before hydration', (locale, expected) => {
+    ['en-US', 'en-US'],
+  ])('passes %s through unchanged before hydration', (locale, expected) => {
     initializeI18nConfig({
       defaultLocale: 'en-us',
       locales: ['en-us', 'en-gb'],

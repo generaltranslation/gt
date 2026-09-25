@@ -93,7 +93,7 @@ describe('Client_GTProvider', () => {
           root.render(
             <Client_GTProvider
               supportsLocaleRefresh={supportsLocaleRefresh}
-              conditions={conditions}
+              {...conditions}
               dictionaries={{}}
               translations={{}}
             >
@@ -103,7 +103,7 @@ describe('Client_GTProvider', () => {
         );
         const providerProps = mockGTProvider.mock.calls.at(-1)?.[0];
         expect(providerProps).not.toHaveProperty('supportsLocaleRefresh');
-        expect(providerProps._serverConditions).toBe(conditions);
+        expect(providerProps).toMatchObject(conditions);
         // The client cannot know whether middleware will accept or reject German.
         providerProps._reload({ ...conditions, locale: 'de-DE' });
         expect(mockRefreshServerComponents).toHaveBeenCalledTimes(
@@ -155,7 +155,7 @@ describe('Client_GTProvider', () => {
               <Client_GTProvider
                 supportsLocaleRefresh={true}
                 dictionaries={{}}
-                conditions={{ locale: 'en-us' }}
+                locale='en-us'
                 translations={{}}
               >
                 content
@@ -197,7 +197,7 @@ describe('Client_GTProvider', () => {
             <Client_GTProvider
               supportsLocaleRefresh={supportsLocaleRefresh}
               dictionaries={{}}
-              conditions={{ locale: 'en-GB' }}
+              locale='en-GB'
               translations={{}}
             >
               content
@@ -226,7 +226,7 @@ describe('Client_GTProvider', () => {
         <Client_GTProvider
           supportsLocaleRefresh={true}
           dictionaries={{}}
-          conditions={{ locale: 'en-GB' }}
+          locale='en-GB'
           translations={{}}
         >
           content
@@ -264,7 +264,7 @@ describe('Client_GTProvider', () => {
         <Client_GTProvider
           supportsLocaleRefresh={true}
           dictionaries={{}}
-          conditions={{ locale: 'pt-BR' }}
+          locale='pt-BR'
           translations={{}}
         >
           content
@@ -307,7 +307,7 @@ describe('Client_GTProvider', () => {
         <Client_GTProvider
           supportsLocaleRefresh={true}
           dictionaries={{}}
-          conditions={{ locale: 'en' }}
+          locale='en'
           translations={{}}
         >
           content
@@ -349,7 +349,7 @@ describe('Client_GTProvider', () => {
         <Client_GTProvider
           supportsLocaleRefresh={true}
           dictionaries={{}}
-          conditions={{ locale: 'en' }}
+          locale='en'
           translations={{}}
         >
           content
@@ -391,7 +391,7 @@ describe('Client_GTProvider', () => {
         <Client_GTProvider
           supportsLocaleRefresh={true}
           dictionaries={{}}
-          conditions={{ locale: 'fr' }}
+          locale='fr'
           translations={{}}
         >
           content
@@ -420,7 +420,7 @@ describe('Client_GTProvider', () => {
         <Client_GTProvider
           supportsLocaleRefresh={true}
           dictionaries={{}}
-          conditions={{ locale: 'fr' }}
+          locale='fr'
           translations={{}}
         >
           content
