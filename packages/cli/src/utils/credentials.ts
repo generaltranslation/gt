@@ -261,19 +261,10 @@ type CredentialsEnvFile = {
  * .env.local itself gets an ignore rule added, by setCredentials.
  */
 export async function inspectCredentialsEnvFile(
-  cwd: string = process.cwd(),
-  /** Also checks that the framework's credentials can be saved safely. */
-  contentCheck?: { framework?: SupportedFrameworks }
+  cwd: string = process.cwd()
 ): Promise<CredentialsEnvFile> {
   const envFile = path.resolve(cwd, '.env.local');
   const existing = await resolveEnvFile(envFile);
-  if (existing && contentCheck) {
-    updateCredentialsEnvContent(
-      await fs.promises.readFile(existing.target, 'utf8'),
-      { projectId: 'gt-preflight', apiKey: 'gt-preflight' },
-      contentCheck.framework
-    );
-  }
   const exposure = await inspectGitExposure(envFile);
   if (exposure === 'tracked') throw new Error(trackedEnvFileError(envFile));
   if (existing && existing.target !== envFile) {
@@ -390,7 +381,7 @@ export async function setCredentials(
     existing: existingEnvFile,
     exposure,
   } = await inspectCredentialsEnvFile(cwd);
-  // Rechecked here: the file may have changed since the setup preflight.
+  // Checked before .gitignore changes so an unsafe file leaves nothing edited.
   const envContent = updateCredentialsEnvContent(
     existingEnvFile
       ? await fs.promises.readFile(existingEnvFile.target, 'utf8')

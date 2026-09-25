@@ -18,10 +18,6 @@ export type SetupConfigUpdate = {
   publish?: boolean;
   /** Removes stale global CDN intent when the selected runtime forbids it. */
   clearPublish?: boolean;
-  /** File format entries deselected by an explicit format list. */
-  removeFiles?: string[];
-  /** Drops files.gt.output after an explicit switch to CDN storage. */
-  clearGtOutput?: boolean;
 };
 
 function asObject(value: unknown): Record<string, unknown> {
@@ -59,14 +55,12 @@ export function mergeSetupConfig(
 
   // Preserve unrelated file configuration and nested GT options when setup
   // only needs to add or update a translation output path.
-  if (options.files || options.removeFiles?.length || options.clearGtOutput) {
+  if (options.files) {
     const oldFiles = asObject(oldContent.files);
     const files: Record<string, unknown> = { ...oldFiles, ...options.files };
     const gt = { ...asObject(oldFiles.gt), ...options.files?.gt };
-    if (options.clearGtOutput) delete gt.output;
     if (Object.keys(gt).length > 0) files.gt = gt;
     else delete files.gt;
-    for (const format of options.removeFiles ?? []) delete files[format];
     if (Object.keys(files).length > 0) mergedContent.files = files;
     else delete mergedContent.files;
   }
