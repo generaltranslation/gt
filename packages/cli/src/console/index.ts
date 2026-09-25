@@ -83,6 +83,32 @@ export const warnHasUnwrappedExpressionSync = (
     location
   );
 
+export const warnDeriveWithStaticLookupSync = (
+  file: string,
+  propName: string,
+  id?: string,
+  location?: string
+): string =>
+  withLocation(
+    file,
+    createDiagnosticMessage({
+      whatHappened: `A ${colorizeComponent('<T>')} component${
+        id ? ` with id ${colorizeIdString(id)}` : ''
+      } has an explicit ${colorizeIdString(propName)} prop but contains ${colorizeComponent(
+        '<Derive>'
+      )} content`,
+      why: `the ${colorizeIdString(
+        propName
+      )} overrides the lookup behavior for ${colorizeComponent(
+        '<Derive>'
+      )}, so at runtime the component is stuck with one hard-coded option instead of translating every variant`,
+      fix: `Remove the ${colorizeIdString(propName)} prop from this ${colorizeComponent(
+        '<T>'
+      )} component`,
+    }),
+    location
+  );
+
 export const warnFailedToConstructJsxTreeSync = (
   file: string,
   code: string,
