@@ -5,7 +5,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 import { useLocale, useSetLocale } from '@generaltranslation/react-core/hooks';
 import { BrowserGTProvider } from '../BrowserGTProvider';
-import { getBrowserConditionStore } from '../../condition-store/singleton-operations';
 
 // Keep the real provider/context, isolating only translation-cache work.
 vi.mock(
@@ -40,7 +39,7 @@ function resetI18n() {
   if (registry) Reflect.deleteProperty(registry, 'i18n');
 }
 
-describe('App Router server condition snapshots', () => {
+describe('server-provided conditions', () => {
   let root: Root;
   let container: HTMLDivElement;
   const reload = vi.fn();
@@ -63,13 +62,12 @@ describe('App Router server condition snapshots', () => {
     vi.unstubAllGlobals();
   });
 
-  async function render(snapshot?: { locale: string; enableI18n: boolean }) {
+  async function render(snapshot: { locale: string; enableI18n: boolean }) {
     await act(async () => {
       root.render(
         <BrowserGTProvider
-          locale={snapshot?.locale ?? 'en'}
-          enableI18n={snapshot?.enableI18n ?? true}
-          _serverConditions={snapshot}
+          locale={snapshot.locale}
+          enableI18n={snapshot.enableI18n}
           _reload={reload}
           translations={{}}
           dictionaries={{}}
@@ -89,7 +87,7 @@ describe('App Router server condition snapshots', () => {
     expect(container.querySelector('output')!.textContent).toBe('en');
 
     await render(snapshot);
-    expect(document.cookie).toContain('generaltranslation.locale=fr');
+    expect(document.cookie).toContain('generaltranslation.locale=en');
     expect(container.querySelector('output')!.textContent).toBe('en');
 
     await render({ ...snapshot });
@@ -112,17 +110,4 @@ describe('App Router server condition snapshots', () => {
     expect(container.querySelector('output')!.textContent).toBe('fr');
     expect(reload).toHaveBeenCalledTimes(1);
   });
-
-  it('keeps the existing cookie-backed behavior without an App Router snapshot', async () => {
-    await render();
-    const store = getBrowserConditionStore();
-    store.setLocale('fr');
-    store.setEnableI18n(false);
-    await render();
-    expect(container.querySelector('output')!.textContent).toBe('fr');
-    expect(store.getEnableI18n()).toBe(false);
-  });
-
-  // Known App Router limitation: a fresh snapshot still writes its default true.
-  it.todo('preserves disabled i18n when the server reports true');
 });

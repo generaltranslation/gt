@@ -15,6 +15,7 @@ const {
 vi.mock('gt-react', () => ({
   createOrUpdateBrowserConditionStore: mockCreateOrUpdateBrowserConditionStore,
   initializeGT: mockInitializeReactGT,
+  GTProvider: () => null,
 }));
 
 vi.mock('../../functions/parseLocale', () => ({
@@ -25,7 +26,8 @@ vi.mock('../../functions/localeRouting', () => ({
   getPathnameForLocale: mockGetPathnameForLocale,
 }));
 
-import { initializeGT } from '../initializeGT.client';
+import { getClientReload, initializeGT } from '../initializeGT.client';
+import { GTProvider } from '../../provider/GTProvider.client';
 
 describe('initializeGT client', () => {
   beforeEach(() => {
@@ -61,6 +63,45 @@ describe('initializeGT client', () => {
     expect(mockGetPathnameForLocale).toHaveBeenCalledWith('/ar/about', 'fr');
     expect(assign).toHaveBeenCalledWith(
       'https://example.com/fr/about?view=full#bio'
+    );
+  });
+
+  it('passes the initialized route reload to the provider without overriding a prop', () => {
+    const assign = vi.fn();
+    vi.stubGlobal('window', {
+      location: {
+        href: 'https://example.com/fr/products?view=full#details',
+        pathname: '/fr/products',
+        assign,
+      },
+    });
+    initializeGT({
+      defaultLocale: 'en',
+      locales: ['en', 'fr', 'de'],
+      localeRouting: true,
+    });
+
+    const browserConfig =
+      mockCreateOrUpdateBrowserConditionStore.mock.calls.at(-1)![0];
+    const props = { locale: 'fr', translations: {} };
+    const provider = GTProvider(props);
+    expect(getClientReload()).toBe(browserConfig._reload);
+    expect(provider.props._reload).toBe(browserConfig._reload);
+
+    mockGetPathnameForLocale.mockReturnValueOnce('/de/products');
+    provider.props._reload({
+      locale: 'de',
+      region: undefined,
+      enableI18n: true,
+    });
+    expect(mockGetPathnameForLocale).toHaveBeenCalledWith('/fr/products', 'de');
+    expect(assign).toHaveBeenCalledWith(
+      'https://example.com/de/products?view=full#details'
+    );
+
+    const customReload = vi.fn();
+    expect(GTProvider({ ...props, _reload: customReload }).props._reload).toBe(
+      customReload
     );
   });
 
