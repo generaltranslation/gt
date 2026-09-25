@@ -1,3 +1,4 @@
+import { PassThrough } from 'node:stream';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const clack = vi.hoisted(() => ({
@@ -5,6 +6,8 @@ const clack = vi.hoisted(() => ({
   select: vi.fn(),
   confirm: vi.fn(),
   multiselect: vi.fn(),
+  autocomplete: vi.fn(),
+  autocompleteMultiselect: vi.fn(),
   isCancel: vi.fn(() => false),
   cancel: vi.fn(),
   log: {
@@ -34,45 +37,144 @@ const clack = vi.hoisted(() => ({
 
 vi.mock('@clack/prompts', () => clack);
 
-describe('logging prompt fallback', () => {
+describe('logging prompts', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
-    process.env.GT_INK = '0';
   });
 
-  it('uses clack and validates locale multi-select input when Ink is disabled', async () => {
-    clack.text.mockResolvedValueOnce('es\tfr\n de');
+  it('searches locales through Clack autocomplete, ranking exact codes first', async () => {
+    clack.autocompleteMultiselect.mockResolvedValueOnce(['es', 'fr']);
     const { promptLocaleList } = await import('../logging.js');
 
     await expect(
-      promptLocaleList({
-        message: 'Locales?',
-        defaultValue: ['es'],
-      })
-    ).resolves.toEqual(['es', 'fr', 'de']);
+      promptLocaleList({ message: 'Locales?', defaultValue: ['es'] })
+    ).resolves.toEqual(['es', 'fr']);
 
-    const validate = clack.text.mock.calls[0]?.[0].validate;
-    expect(validate('es fr')).toBeUndefined();
-    expect(validate('es not_a_locale')).toBe(
-      'Enter a valid locale (e.g., es fr de)'
-    );
+    const prompt = clack.autocompleteMultiselect.mock.calls[0]?.[0];
+    expect(prompt).toMatchObject({ initialValues: ['es'], required: true });
+    const options = prompt.options.call({
+      userInput: 'fr',
+      selectedValues: [],
+    });
+    // Clack hides options whose label does not match the search.
+    expect(
+      options.find((option: { label: string }) => option.label.includes('fr'))
+    ).toMatchObject({ value: 'fr' });
+    expect(
+      prompt.options
+        .call({ userInput: 'fren', selectedValues: [] })
+        .some((option: { value: string }) => option.value === 'fr')
+    ).toBe(true);
   });
 
-  it('uses clack and validates default locale input when Ink is disabled', async () => {
-    clack.text.mockResolvedValueOnce('en');
-    const { promptLocale } = await import('../logging.js');
+  it('keeps customMapping aliases and typed or selected locale tags selectable', async () => {
+    clack.autocomplete.mockResolvedValueOnce('french');
+    const { promptLocale, getLocalePromptOptions } =
+      await import('../logging.js');
+    const customMapping = { french: { code: 'fr' } };
 
     await expect(
-      promptLocale({
-        message: 'Default locale?',
-        defaultValue: 'en',
-      })
-    ).resolves.toBe('en');
+      promptLocale({ message: 'Default?', defaultValue: 'en', customMapping })
+    ).resolves.toBe('french');
 
-    const validate = clack.text.mock.calls[0]?.[0].validate;
-    expect(validate('en')).toBeUndefined();
-    expect(validate('not_a_locale')).toBe('Enter a valid locale (e.g., en)');
+    const prompt = clack.autocomplete.mock.calls[0]?.[0];
+    expect(prompt.initialValue).toBe('en');
+    expect(prompt.options.call({ userInput: 'fren' })[0]).toMatchObject({
+      value: 'french',
+    });
+    const values = (query: string, selected: string[] = []) =>
+      getLocalePromptOptions(query, selected, customMapping).map(
+        (option) => option.value
+      );
+    expect(values('zh-Hans-CN')).toContain('zh-Hans-CN');
+    expect(values('not_a_locale')).not.toContain('not_a_locale');
+    expect(values('', ['zh-Hans-CN'])).toContain('zh-Hans-CN');
+  });
+
+  // Drives the real Clack prompt through injected streams.
+  async function withRealClack(
+    prompt: 'text' | 'autocomplete' | 'autocompleteMultiselect'
+  ) {
+    const actual =
+      await vi.importActual<typeof import('@clack/prompts')>('@clack/prompts');
+    const input = new PassThrough();
+    const output = new PassThrough();
+    let rendered = '';
+    output.on('data', (chunk) => (rendered += chunk));
+    clack[prompt].mockImplementationOnce((options: never) =>
+      (actual[prompt] as (options: object) => unknown)({
+        ...(options as object),
+        input,
+        output,
+      })
+    );
+    const type = async (keys: string) => {
+      input.write(keys);
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    };
+    return { type, rendered: () => rendered };
+  }
+
+  it('keeps the real single-locale prompt open until a locale is selected', async () => {
+    const { type, rendered } = await withRealClack('autocomplete');
+    const { promptLocale } = await import('../logging.js');
+    let submitted: unknown = 'pending';
+    const answer = promptLocale({ message: 'Default?' }).then((value) => {
+      submitted = value;
+      return value;
+    });
+
+    // No option matches, so Enter submits nothing.
+    await type('not_a_locale');
+    await type('\r');
+    expect(submitted).toBe('pending');
+    expect(rendered()).toContain('No locale matches the search.');
+
+    await type('\x15'); // Ctrl+U clears the search
+    await type('french');
+    await type('\r');
+    await expect(answer).resolves.toBe('fr');
+  });
+
+  it('focuses the exact locale code after the search changes', async () => {
+    // `af  Afrikaans` is focused first and also matches `f` and `fr`.
+    const single = await withRealClack('autocomplete');
+    const { promptLocale, promptLocaleList } = await import('../logging.js');
+    const locale = promptLocale({ message: 'Default?' });
+    await single.type('fr');
+    await single.type('\r');
+    await expect(locale).resolves.toBe('fr');
+
+    const multi = await withRealClack('autocompleteMultiselect');
+    const locales = promptLocaleList({ message: 'Locales?' });
+    await multi.type('fr');
+    await multi.type('\t');
+    await multi.type('\r');
+    await expect(locales).resolves.toEqual(['fr']);
+  });
+
+  it('preselects custom locale defaults in the real multiselect', async () => {
+    const { type } = await withRealClack('autocompleteMultiselect');
+    const { promptLocaleList } = await import('../logging.js');
+    const locales = promptLocaleList({
+      message: 'Locales?',
+      defaultValue: ['es', 'zh-Hans-CN'],
+    });
+    await type('\r');
+    await expect(locales).resolves.toEqual(['es', 'zh-Hans-CN']);
+  });
+
+  it('accepts the suggested text default when Enter is pressed', async () => {
+    const { type } = await withRealClack('text');
+    const { promptText } = await import('../logging.js');
+    const name = promptText({
+      message: 'Project name?',
+      defaultValue: 'my-app',
+      validate: (value) => (value.trim() ? true : 'Enter a project name'),
+    });
+    await type('\r');
+    await expect(name).resolves.toBe('my-app');
   });
 
   it('labels Vue and React inline catalogs without conflating frameworks', async () => {

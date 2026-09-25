@@ -8,39 +8,9 @@ import {
   intro,
   outro,
 } from '@clack/prompts';
-import { endTerminalSession } from './terminalSession.js';
-
 import type { Logger as PinoLogger } from 'pino';
 import type { SpinnerResult, ProgressResult } from '@clack/prompts';
 import type { Writable } from 'node:stream';
-
-function wrapTerminalSessionAware<T extends SpinnerResult | ProgressResult>(
-  target: T
-): T {
-  const start = target.start.bind(target);
-  const stop = target.stop.bind(target);
-  const message = target.message.bind(target);
-  target.start = (msg?: string) => {
-    endTerminalSession();
-    return start(msg);
-  };
-  target.stop = (msg?: string, code?: number) => {
-    endTerminalSession();
-    return (stop as (m?: string, c?: number) => void)(msg, code);
-  };
-  target.message = (msg?: string) => {
-    endTerminalSession();
-    return message(msg);
-  };
-  if ('advance' in target) {
-    const advance = target.advance.bind(target);
-    target.advance = (amount: number, msg?: string) => {
-      endTerminalSession();
-      return advance(amount, msg);
-    };
-  }
-  return target;
-}
 
 export type LogFormat = 'default' | 'json';
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
@@ -257,7 +227,6 @@ class Logger {
   trace(message: string): void {
     if (!this.quiet) {
       if (this.logFormat === 'default') {
-        endTerminalSession();
         // @clack/prompts doesn't have trace, use message
         clackLog.message(message, {
           symbol: chalk.dim('•'),
@@ -273,7 +242,6 @@ class Logger {
   debug(message: string): void {
     if (!this.quiet) {
       if (this.logFormat === 'default') {
-        endTerminalSession();
         // @clack/prompts doesn't have debug, use message
         clackLog.message(message, {
           symbol: chalk.dim('◆'),
@@ -289,7 +257,6 @@ class Logger {
   info(message: string): void {
     if (!this.quiet) {
       if (this.logFormat === 'default') {
-        endTerminalSession();
         clackLog.info(message, this.clackOutput);
       } else {
         this.pinoLogger?.info(message);
@@ -300,7 +267,6 @@ class Logger {
 
   warn(message: string): void {
     if (this.logFormat === 'default') {
-      endTerminalSession();
       clackLog.warn(message, this.clackOutput);
     } else {
       this.pinoLogger?.warn(message);
@@ -310,7 +276,6 @@ class Logger {
 
   error(message: string): void {
     if (this.logFormat === 'default') {
-      endTerminalSession();
       clackLog.error(message, this.clackOutput);
     } else {
       this.pinoLogger?.error(message);
@@ -320,7 +285,6 @@ class Logger {
 
   fatal(message: string): void {
     if (this.logFormat === 'default') {
-      endTerminalSession();
       // @clack/prompts doesn't have fatal, use error
       clackLog.error(message, this.clackOutput);
     } else {
@@ -338,7 +302,6 @@ class Logger {
   success(message: string): void {
     if (!this.quiet) {
       if (this.logFormat === 'default') {
-        endTerminalSession();
         clackLog.success(message, this.clackOutput);
       } else {
         this.pinoLogger?.info(message); // Map to info for non-default formats
@@ -350,7 +313,6 @@ class Logger {
   step(message: string): void {
     if (!this.quiet) {
       if (this.logFormat === 'default') {
-        endTerminalSession();
         clackLog.step(message, this.clackOutput);
       } else {
         this.pinoLogger?.info(message); // Map to info for non-default formats
@@ -362,7 +324,6 @@ class Logger {
   message(message: string, symbol?: string): void {
     if (!this.quiet) {
       if (this.logFormat === 'default') {
-        endTerminalSession();
         clackLog.message(
           message,
           symbol ? { symbol, ...this.clackOutput } : this.clackOutput
@@ -382,9 +343,7 @@ class Logger {
       return new MockSpinner(this);
     }
     if (this.logFormat === 'default') {
-      return wrapTerminalSessionAware(
-        spinner({ indicator, ...this.clackOutput })
-      );
+      return spinner({ indicator, ...this.clackOutput });
     } else {
       return new MockSpinner(this);
     }
@@ -396,9 +355,7 @@ class Logger {
       return new MockProgress(total, this);
     }
     if (this.logFormat === 'default') {
-      return wrapTerminalSessionAware(
-        progress({ max: total, ...this.clackOutput })
-      );
+      return progress({ max: total, ...this.clackOutput });
     } else {
       return new MockProgress(total, this);
     }
@@ -408,7 +365,6 @@ class Logger {
   startCommand(message: string): void {
     if (!this.quiet) {
       if (this.logFormat === 'default') {
-        endTerminalSession();
         intro(chalk.cyan(message), this.clackOutput);
       } else {
         this.info(`╭─ ${message}`);
@@ -420,7 +376,6 @@ class Logger {
   endCommand(message: string): void {
     if (!this.quiet) {
       if (this.logFormat === 'default') {
-        endTerminalSession();
         outro(chalk.cyan(message), this.clackOutput);
       } else {
         this.info(`╰─ ${message}`);

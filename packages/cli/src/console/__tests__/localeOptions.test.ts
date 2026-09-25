@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { getFilteredLocaleOptions } from '../inkLocaleData.js';
+import { getFilteredLocaleOptions } from '../localeOptions.js';
 
-describe('ink locale data', () => {
+describe('locale options', () => {
   it('prioritizes exact locale code matches over substring matches', () => {
     const options = getFilteredLocaleOptions('fr');
 
