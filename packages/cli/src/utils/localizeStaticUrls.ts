@@ -26,7 +26,7 @@ const LOCALIZABLE_URL_ATTRIBUTES = new Set(['href']);
 
 // Docs routing conventions: page file formats, and the file that serves a
 // folder URL (`/a/` -> `a/index.mdx`).
-const PAGE_EXTENSIONS = ['.mdx', '.md'];
+export const PAGE_EXTENSIONS = ['.mdx', '.md'];
 const INDEX_PAGE = 'index';
 
 /**
