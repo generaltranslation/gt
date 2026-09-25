@@ -22,31 +22,6 @@ import {
   type InlineLibrary,
 } from '../types/libraries.js';
 
-let promptsDisabled = false;
-
-/**
- * Noninteractive commands disable prompts so a stray question fails instead
- * of waiting. Returns the previous mode so a run can restore it.
- */
-export function setPromptsDisabled(disabled: boolean): boolean {
-  const previous = promptsDisabled;
-  promptsDisabled = disabled;
-  return previous;
-}
-
-function assertPromptAllowed(message: string): void {
-  if (!promptsDisabled) return;
-  throw new Error(
-    createDiagnosticMessage({
-      source: 'gt',
-      severity: 'Error',
-      whatHappened: 'A question needs an answer, but prompts are disabled',
-      details: stripAnsi(message).split('\n')[0],
-      fix: 'Pass the matching option (see --help) or rerun in an interactive terminal',
-    })
-  );
-}
-
 function exitIfCancelled<T>(
   result: T | symbol,
   message = 'Operation cancelled'
@@ -66,15 +41,7 @@ export function stripAnsi(str: string): string {
   return str.replace(/\x1B\[[0-9;]*m/g, '');
 }
 
-let lastExitError: string | undefined;
-
-/** The message of the last logErrorAndExit call, for exit-time reporting. */
-export function getLastExitError(): string | undefined {
-  return lastExitError;
-}
-
 export function logErrorAndExit(message: string): never {
-  lastExitError = message;
   logger.error(message);
   return exitSync(1);
 }
@@ -164,14 +131,14 @@ export async function promptText({
   defaultValue?: string;
   validate?: (value: string) => boolean | string;
 }) {
-  assertPromptAllowed(message);
   const result = await text({
     message,
     placeholder: defaultValue,
     defaultValue,
     validate: validate
       ? (value) => {
-          const validation = validate(value || '');
+          // Clack applies defaultValue after validation; check what Enter returns.
+          const validation = validate(value || defaultValue || '');
           return validation === true ? undefined : validation.toString();
         }
       : undefined,
@@ -182,7 +149,27 @@ export async function promptText({
 type LocalePromptContext = {
   userInput: string;
   selectedValues: string[];
+  focusedValue?: string;
 };
+
+/**
+ * Clack keeps the focused option while it still matches a new search, so
+ * typing `fr` could leave `af` (Afrikaans) focused. Refocus the top-ranked
+ * option whenever the search changes.
+ */
+function searchableLocaleOptions(
+  getOptions: (query: string, selected: string[]) => Option<string>[]
+) {
+  let lastQuery = '';
+  return function (this: LocalePromptContext) {
+    const query = this.userInput ?? '';
+    if (query !== lastQuery) {
+      lastQuery = query;
+      this.focusedValue = undefined;
+    }
+    return getOptions(query, this.selectedValues ?? []);
+  };
+}
 
 /**
  * Searchable locale options: supported locales ranked by the query, the
@@ -235,14 +222,13 @@ export async function promptLocale({
   defaultValue?: string;
   customMapping?: CustomMapping;
 }) {
-  assertPromptAllowed(message);
   const result = await autocomplete<string>({
     message,
     placeholder: 'Type to search locales',
     initialValue: defaultValue,
-    options: function (this: LocalePromptContext) {
-      return getLocalePromptOptions(this.userInput ?? '', [], customMapping);
-    },
+    options: searchableLocaleOptions((query) =>
+      getLocalePromptOptions(query, [], customMapping)
+    ),
     // Enter with no matching option submits nothing; keep asking.
     validate: (value) => (value ? undefined : noLocaleSelectedError),
   });
@@ -260,19 +246,20 @@ export async function promptLocaleList({
   required?: boolean;
   customMapping?: CustomMapping;
 }) {
-  assertPromptAllowed(message);
   const result = await autocompleteMultiselect<string>({
     message,
     placeholder: 'Type to search, Tab or Space to select',
     initialValues: defaultValue,
     required,
-    options: function (this: LocalePromptContext) {
-      return getLocalePromptOptions(
-        this.userInput ?? '',
-        this.selectedValues ?? [],
+    // Clack only preselects defaults present in the first options list, so
+    // keep custom default tags listed even before they are selected.
+    options: searchableLocaleOptions((query, selected) =>
+      getLocalePromptOptions(
+        query,
+        [...(defaultValue ?? []), ...selected],
         customMapping
-      );
-    },
+      )
+    ),
   });
   return exitIfCancelled(result);
 }
@@ -287,12 +274,7 @@ export async function promptGlobPatterns({
   defaultValue?: string;
   validate?: (value: string) => boolean | string;
 }) {
-  return promptText({
-    message,
-    defaultValue,
-    // Clack validates the typed text before applying the default.
-    validate: validate && ((value) => validate(value || defaultValue || '')),
-  });
+  return promptText({ message, defaultValue, validate });
 }
 
 export async function promptSelect<T>({
@@ -304,7 +286,6 @@ export async function promptSelect<T>({
   options: Array<{ value: T; label: string; hint?: string }>;
   defaultValue?: T;
 }) {
-  assertPromptAllowed(message);
   const result = await select({
     message,
     options: options as Option<T>[],
@@ -322,7 +303,6 @@ export async function promptMultiSelect<T extends string>({
   options: Array<{ value: T; label: string; hint?: string }>;
   required?: boolean;
 }) {
-  assertPromptAllowed(message);
   const result = await multiselect({
     message,
     options: options as Option<T>[],
@@ -340,7 +320,6 @@ export async function promptConfirm({
   defaultValue?: boolean;
   cancelMessage?: string;
 }) {
-  assertPromptAllowed(message);
   const result = await confirm({
     message,
     initialValue: defaultValue,
