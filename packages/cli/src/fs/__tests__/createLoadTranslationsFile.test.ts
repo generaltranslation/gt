@@ -130,6 +130,20 @@ describe('createLoadTranslationsFile', () => {
     expect(content).toBe('// custom content');
   });
 
+  it('keeps a generated loader whose import path was customized', async () => {
+    await createLoadTranslationsFile(tmpDir, DEFAULT_TRANSLATIONS_DIR, ['es']);
+    const filePath = path.join(tmpDir, 'loadTranslations.js');
+    const custom = fs
+      .readFileSync(filePath, 'utf-8')
+      .replace('./public/_gt/', './public/_gt/${import.meta.env.VITE_BRAND}/');
+    fs.writeFileSync(filePath, custom);
+
+    await expect(
+      createLoadTranslationsFile(tmpDir, 'public/translations', ['es'])
+    ).resolves.toBe('custom');
+    expect(fs.readFileSync(filePath, 'utf-8')).toBe(custom);
+  });
+
   it('does not overwrite existing locale JSON files', async () => {
     const translationsPath = path.resolve(tmpDir, DEFAULT_TRANSLATIONS_DIR);
     fs.mkdirSync(translationsPath, { recursive: true });

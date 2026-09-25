@@ -34,9 +34,27 @@ function getLoaderContent(translationsImport: string): string {
 }
 
 function isGeneratedLoader(content: string): boolean {
-  return /^export default async function loadTranslations\(locale: string\) \{\r?\n  const translations = await import\(`[^`]+\/\$\{locale\}\.json`\);\r?\n  return translations\.default;\r?\n\}\r?\n?$/.test(
+  return /^export default async function loadTranslations\(locale: string\) \{\r?\n  const translations = await import\(`[^`$]+\/\$\{locale\}\.json`\);\r?\n  return translations\.default;\r?\n\}\r?\n?$/.test(
     content
   );
+}
+
+/**
+ * Top-level statements, or undefined for syntax this inspector cannot parse
+ * but Vite may accept, such as decorators.
+ */
+function parseModule(content: string, filename: string) {
+  try {
+    return parse(content, {
+      sourceType: 'module',
+      // JSX would reject `<T>x` assertions, which .ts files may use.
+      plugins: /\.[cm]?ts$/i.test(filename)
+        ? ['typescript']
+        : ['typescript', 'jsx'],
+    }).program.body;
+  } catch {
+    return undefined;
+  }
 }
 
 function toRelativeImport(fromDirectory: string, toPath: string): string {
@@ -112,22 +130,25 @@ export async function inspectViteSPA(appDirectory: string) {
   let customBootstrap: string | undefined;
   if (!configuredBootstrap && fs.existsSync(declaredEntryPath)) {
     const entry = await fs.promises.readFile(declaredEntryPath, 'utf8');
-    const importsInitializer = parse(entry, {
-      sourceType: 'module',
-      plugins: ['typescript', 'jsx'],
-    }).program.body.some(
-      (statement) =>
-        statement.type === 'ImportDeclaration' &&
-        statement.source.value === 'gt-react' &&
-        statement.importKind !== 'type' &&
-        statement.specifiers.some(
-          (specifier) =>
-            specifier.type === 'ImportSpecifier' &&
-            specifier.importKind !== 'type' &&
-            specifier.imported.type === 'Identifier' &&
-            specifier.imported.name === 'initializeGTSPA'
-        )
-    );
+    const mentionsInitializer = entry.includes('initializeGTSPA');
+    // Unparseable entries fall back to the text check: a false positive only
+    // asks for manual review, while a miss would initialize GT twice.
+    const importsInitializer =
+      parseModule(entry, declaredEntryPath)?.some(
+        (statement) =>
+          statement.type === 'ImportDeclaration' &&
+          statement.source.value === 'gt-react' &&
+          statement.importKind !== 'type' &&
+          statement.specifiers.some(
+            (specifier) =>
+              (specifier.type === 'ImportNamespaceSpecifier' &&
+                mentionsInitializer) ||
+              (specifier.type === 'ImportSpecifier' &&
+                specifier.importKind !== 'type' &&
+                specifier.imported.type === 'Identifier' &&
+                specifier.imported.name === 'initializeGTSPA')
+          )
+      ) ?? mentionsInitializer;
     if (importsInitializer) {
       customBootstrap = path.relative(appDirectory, declaredEntryPath);
     }
@@ -221,13 +242,17 @@ export async function writeViteLoader({
 function getLoaderExport(
   content: string
 ): 'default' | 'loadTranslations' | undefined {
-  const statements = parse(content, {
-    sourceType: 'module',
-    plugins: ['typescript'],
-  }).program.body;
+  const statements = parseModule(content, 'loadTranslations.ts');
+  if (!statements) return undefined;
   const names = new Set<string>();
   for (const statement of statements) {
-    if (statement.type === 'ExportDefaultDeclaration') names.add('default');
+    // @babel/types omits the interface form the parser emits, which is erased
+    // at compile time and leaves no runtime default export.
+    if (
+      statement.type === 'ExportDefaultDeclaration' &&
+      (statement.declaration.type as string) !== 'TSInterfaceDeclaration'
+    )
+      names.add('default');
     if (
       statement.type !== 'ExportNamedDeclaration' ||
       statement.exportKind === 'type'

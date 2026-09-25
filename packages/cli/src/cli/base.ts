@@ -1097,26 +1097,6 @@ See https://www.npmjs.com/package/gt-vue`);
     const finalTranslationsDir =
       translationsDir?.trim() || defaultTranslationsDir;
 
-    if (isUsingGT && !usingCDN) {
-      const generatedLoader = this.shouldGenerateLocalTranslationLoader(
-        isVite,
-        runtimeSetup
-      );
-      if (generatedLoader) {
-        await createLoadTranslationsFile(
-          process.cwd(),
-          finalTranslationsDir,
-          locales
-        );
-      }
-      const guidance = this.getLocalTranslationGuidance({
-        generatedLoader,
-        runtimeSetup,
-        translationsDir: finalTranslationsDir,
-      });
-      if (guidance) logger.message(guidance);
-    }
-
     const message = !isUsingGT
       ? 'What is the format of your language resource files? Select as many as applicable.\nAdditionally, you can translate any other files you have in your project.'
       : `Do you have any additional files in this project to translate? For example, Markdown files for docs. ${chalk.dim(
@@ -1170,6 +1150,28 @@ See https://www.npmjs.com/package/gt-vue`);
       publish: isUsingGT && usingCDN,
       clearPublish: runtimeSetup.hasVueRuntime && !usingCDN,
     });
+
+    // After every prompt and the config write, so cancelling setup cannot
+    // leave the loader pointing somewhere the config does not.
+    if (isUsingGT && !usingCDN) {
+      const generatedLoader = this.shouldGenerateLocalTranslationLoader(
+        isVite,
+        runtimeSetup
+      );
+      if (generatedLoader) {
+        await createLoadTranslationsFile(
+          process.cwd(),
+          finalTranslationsDir,
+          locales
+        );
+      }
+      const guidance = this.getLocalTranslationGuidance({
+        generatedLoader,
+        runtimeSetup,
+        translationsDir: finalTranslationsDir,
+      });
+      if (guidance) logger.message(guidance);
+    }
 
     logger.success(
       `Edit ${chalk.cyan(

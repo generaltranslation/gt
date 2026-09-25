@@ -41,10 +41,11 @@ export default async function loadTranslations(locale) {
 
 // The same template with its two variable parts matched, so any loader this
 // CLI generated (the template has not changed) is recognized and updatable.
+// Excluding `$` makes an edited `${...}` import path count as custom.
 const GENERATED_LOADER = new RegExp(
   `^${getLoaderContent('\0', '\0')
     .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    .replaceAll('\0', '[^\\n`]*')}$`
+    .replaceAll('\0', () => '[^$\\n`]*')}$`
 );
 
 export type LoadTranslationsFileResult =
