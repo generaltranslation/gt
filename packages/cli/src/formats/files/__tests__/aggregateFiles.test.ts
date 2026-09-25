@@ -705,6 +705,71 @@ describe('aggregateFiles - Empty File Handling', () => {
     });
   });
 
+  describe('SubRip .srt files', () => {
+    // Timing lines, CRLF line endings and the byte order mark are load-bearing:
+    // the API splices translated text into this exact content.
+    const srtContent =
+      '\uFEFF1\r\n00:00:01,000 --> 00:00:02,500\r\n<i>Hello</i>, and welcome back.\r\n\r\n2\r\n00:00:03,000 --> 00:00:04,000\r\n- Where were we?\r\n- You were about to leave.\r\n';
+
+    beforeEach(() => {
+      mockSanitizeFileContent.mockImplementation((content) =>
+        content.replace(/\r/g, '')
+      );
+    });
+
+    it('uploads .srt files verbatim with the SRT format', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            srt: ['/full/path/subs/film.en.srt'],
+          },
+          placeholderPaths: {},
+        },
+        options: {},
+        defaultLocale: 'en',
+      };
+
+      mockReadFileContent.mockReturnValueOnce(srtContent);
+
+      const { files: result } = await aggregateTestFiles(settings);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        fileName: 'subs/film.en.srt',
+        fileFormat: 'SRT',
+        locale: 'en',
+      });
+      expect(result[0].content).toBe(srtContent);
+      expect(result[0].fileId).toBe(hashStringSync('subs/film.en.srt'));
+      expect(result[0].versionId).toBe(hashVersionId(srtContent, false));
+    });
+
+    it('skips an empty .srt file and logs a warning', async () => {
+      const settings = {
+        files: {
+          resolvedPaths: {
+            srt: ['/full/path/empty.srt', '/full/path/subs/film.en.srt'],
+          },
+          placeholderPaths: {},
+        },
+        options: {},
+        defaultLocale: 'en',
+      };
+
+      mockReadFileContent
+        .mockReturnValueOnce('   \n')
+        .mockReturnValueOnce(srtContent);
+
+      const { files: result } = await aggregateTestFiles(settings);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].fileName).toBe('subs/film.en.srt');
+      expect(mockLogWarning).toHaveBeenCalledWith(
+        expect.stringContaining('empty.srt')
+      );
+    });
+  });
+
   describe('Android strings.xml files', () => {
     // The escapes below are load-bearing: AAPT requires \' and \", and the
     // API relies on receiving them exactly as authored.

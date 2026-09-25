@@ -20,6 +20,7 @@ describe('isSupportedFileFormatTransform', () => {
     'DOT_STRINGS',
     'DOT_STRINGSDICT',
     'ANDROID_STRINGS',
+    'SRT',
     'XCSTRINGS',
   ];
 

@@ -197,7 +197,7 @@ describe('readFileContent / encodeFileContent', () => {
     return filePath;
   }
 
-  it.each(['DOT_STRINGS', 'DOT_STRINGSDICT'] as const)(
+  it.each(['DOT_STRINGS', 'DOT_STRINGSDICT', 'SRT'] as const)(
     'decodes a %s file by its byte order mark',
     (fileFormat) => {
       const filePath = write(

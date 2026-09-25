@@ -33,6 +33,7 @@ export const CONFIG_FILE_TYPE_TO_FILE_FORMAT = {
   dotStringsdict: 'DOT_STRINGSDICT',
   androidStrings: 'ANDROID_STRINGS',
   xcstrings: 'XCSTRINGS',
+  srt: 'SRT',
 } as const satisfies Record<SupportedFileExtension, FileFormat>;
 
 /**
@@ -54,6 +55,7 @@ export const FILE_FORMAT_TO_CONFIG_FILE_TYPE = {
   DOT_STRINGSDICT: 'dotStringsdict',
   ANDROID_STRINGS: 'androidStrings',
   XCSTRINGS: 'xcstrings',
+  SRT: 'srt',
 } as const satisfies Partial<Record<FileFormat, SupportedFileExtension>>;
 
 /**
@@ -78,6 +80,7 @@ const FILE_FORMAT_EXTENSIONS = {
   DOT_STRINGSDICT: 'stringsdict',
   ANDROID_STRINGS: 'xml',
   XCSTRINGS: 'xcstrings',
+  SRT: 'srt',
 } as const satisfies Record<FileFormat, string>;
 
 /**
