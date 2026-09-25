@@ -68,6 +68,7 @@ import open from 'open';
 import { hasLogin, login } from '../../auth/oauth.js';
 import { logger } from '../../console/logger.js';
 import * as logging from '../../console/logging.js';
+import { createLoadTranslationsFile } from '../../fs/createLoadTranslationsFile.js';
 import { detectFramework } from '../../setup/detectFramework.js';
 import { api } from '../../utils/api.js';
 import { installPackage } from '../../utils/installPackage.js';
@@ -257,6 +258,31 @@ describe('init and configure onboarding', () => {
       expect(fs.readdirSync(appDirectory)).toEqual(['package.json']);
     }
   );
+
+  it('leaves the loader and config unchanged when a later prompt is cancelled', async () => {
+    fs.writeFileSync(
+      file('gt.config.json'),
+      JSON.stringify({
+        defaultLocale: 'en',
+        locales: ['fr'],
+        files: { gt: { output: 'public/old/[locale].json' } },
+      })
+    );
+    await createLoadTranslationsFile(appDirectory, 'public/old', ['fr']);
+    const loader = fs.readFileSync(file('loadTranslations.js'), 'utf8');
+    const config = fs.readFileSync(file('gt.config.json'), 'utf8');
+    vi.mocked(logging.promptMultiSelect).mockRejectedValue(
+      new Error('cancelled')
+    );
+
+    await expect(
+      run('configure', '--translations-dir', 'public/new')
+    ).rejects.toThrow('cancelled');
+
+    expect(logging.promptMultiSelect).toHaveBeenCalledOnce();
+    expect(fs.readFileSync(file('loadTranslations.js'), 'utf8')).toBe(loader);
+    expect(fs.readFileSync(file('gt.config.json'), 'utf8')).toBe(config);
+  });
 
   it('keeps configured values under --defaults and lets flags replace them', async () => {
     fs.writeFileSync(
