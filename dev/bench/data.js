@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1790270110138,
+  "lastUpdate": 1790316464223,
   "repoUrl": "https://github.com/generaltranslation/gt",
   "entries": {
     "Middleware Benchmarks": [
@@ -11020,6 +11020,122 @@ window.BENCHMARK_DATA = {
             "value": 111.89999999999418,
             "unit": "ms",
             "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.3\"\n}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "0e03b9683d8f5effad4927860b8eb94b9fb2cea1",
+          "message": "[ci] release (#2339)\n\nThis PR was opened by the [Changesets\nrelease](https://github.com/changesets/action) GitHub action. When\nyou're ready to do a release, you can merge this and the packages will\nbe published to npm automatically. If you're not ready to do a release\nyet, that's fine, whenever you add more changesets to main, this PR will\nbe updated.\n\n\n# Releases\n## @generaltranslation/api@0.4.1\n\n### Patch Changes\n\n- [#2340](https://github.com/generaltranslation/gt/pull/2340)\n[`5d75eb4`](https://github.com/generaltranslation/gt/commit/5d75eb475a9e36a61845f0368566a9d40466251c)\nThanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add\nSubRip (`.srt`) subtitle files as a supported file type, uploaded\nverbatim under the `SRT` format\n## gt@2.22.2\n\n### Patch Changes\n\n- [#2340](https://github.com/generaltranslation/gt/pull/2340)\n[`5d75eb4`](https://github.com/generaltranslation/gt/commit/5d75eb475a9e36a61845f0368566a9d40466251c)\nThanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add\nSubRip (`.srt`) subtitle files as a supported file type, uploaded\nverbatim under the `SRT` format\n\n- Updated dependencies\n[[`5d75eb4`](https://github.com/generaltranslation/gt/commit/5d75eb475a9e36a61845f0368566a9d40466251c)]:\n  - generaltranslation@9.5.1\n  - @generaltranslation/python-extractor@0.2.55\n  - @generaltranslation/supported-locales@2.1.35\n  - @generaltranslation/vue-extractor@0.1.15\n## @generaltranslation/compiler@1.3.57\n\n### Patch Changes\n\n- Updated dependencies\n[[`5d75eb4`](https://github.com/generaltranslation/gt/commit/5d75eb475a9e36a61845f0368566a9d40466251c)]:\n  - generaltranslation@9.5.1\n## generaltranslation@9.5.1\n\n### Patch Changes\n\n- [#2340](https://github.com/generaltranslation/gt/pull/2340)\n[`5d75eb4`](https://github.com/generaltranslation/gt/commit/5d75eb475a9e36a61845f0368566a9d40466251c)\nThanks [@fernando-aviles](https://github.com/fernando-aviles)! - Add\nSubRip (`.srt`) subtitle files as a supported file type, uploaded\nverbatim under the `SRT` format\n\n- Updated dependencies\n[[`5d75eb4`](https://github.com/generaltranslation/gt/commit/5d75eb475a9e36a61845f0368566a9d40466251c)]:\n  - @generaltranslation/api@0.4.1\n## gtx-cli@2.22.2\n\n### Patch Changes\n\n- Updated dependencies\n[[`5d75eb4`](https://github.com/generaltranslation/gt/commit/5d75eb475a9e36a61845f0368566a9d40466251c)]:\n  - gt@2.22.2\n## gt-i18n@1.0.32\n\n### Patch Changes\n\n- Updated dependencies\n[[`5d75eb4`](https://github.com/generaltranslation/gt/commit/5d75eb475a9e36a61845f0368566a9d40466251c)]:\n  - generaltranslation@9.5.1\n## locadex@1.0.232\n\n### Patch Changes\n\n- Updated dependencies\n[[`5d75eb4`](https://github.com/generaltranslation/gt/commit/5d75eb475a9e36a61845f0368566a9d40466251c)]:\n  - gt@2.22.2\n## gt-next@11.4.4\n\n### Patch Changes\n\n- [#2330](https://github.com/generaltranslation/gt/pull/2330)\n[`9ee7dc3`](https://github.com/generaltranslation/gt/commit/9ee7dc3ae792cd81ce7edb5c6e43c963f7055261)\nThanks [@eoinest](https://github.com/eoinest)! - Use server-provided\nlocale and condition props as the only rendered state in server-rendered\napps. Condition setters write cookies for middleware and request a\nreload; provider-free SPA apps keep their cookie-backed behavior.\n\n- Updated dependencies\n[[`5d75eb4`](https://github.com/generaltranslation/gt/commit/5d75eb475a9e36a61845f0368566a9d40466251c),\n[`9ee7dc3`](https://github.com/generaltranslation/gt/commit/9ee7dc3ae792cd81ce7edb5c6e43c963f7055261)]:\n  - generaltranslation@9.5.1\n  - @generaltranslation/react-core@11.4.4\n  - gt-react@11.4.4\n  - @generaltranslation/compiler@1.3.57\n  - gt-i18n@1.0.32\n## gt-node@1.0.33\n\n### Patch Changes\n\n- Updated dependencies\n[[`5d75eb4`](https://github.com/generaltranslation/gt/commit/5d75eb475a9e36a61845f0368566a9d40466251c)]:\n  - generaltranslation@9.5.1\n  - gt-i18n@1.0.32\n## @generaltranslation/python-extractor@0.2.55\n\n### Patch Changes\n\n- Updated dependencies\n[[`5d75eb4`](https://github.com/generaltranslation/gt/commit/5d75eb475a9e36a61845f0368566a9d40466251c)]:\n  - generaltranslation@9.5.1\n## gt-react@11.4.4\n\n### Patch Changes\n\n- [#2330](https://github.com/generaltranslation/gt/pull/2330)\n[`9ee7dc3`](https://github.com/generaltranslation/gt/commit/9ee7dc3ae792cd81ce7edb5c6e43c963f7055261)\nThanks [@eoinest](https://github.com/eoinest)! - Use server-provided\nlocale and condition props as the only rendered state in server-rendered\napps. Condition setters write cookies for middleware and request a\nreload; provider-free SPA apps keep their cookie-backed behavior.\n\n- Updated dependencies\n[[`5d75eb4`](https://github.com/generaltranslation/gt/commit/5d75eb475a9e36a61845f0368566a9d40466251c),\n[`9ee7dc3`](https://github.com/generaltranslation/gt/commit/9ee7dc3ae792cd81ce7edb5c6e43c963f7055261)]:\n  - generaltranslation@9.5.1\n  - @generaltranslation/react-core@11.4.4\n  - gt-i18n@1.0.32\n## @generaltranslation/react-core@11.4.4\n\n### Patch Changes\n\n- [#2330](https://github.com/generaltranslation/gt/pull/2330)\n[`9ee7dc3`](https://github.com/generaltranslation/gt/commit/9ee7dc3ae792cd81ce7edb5c6e43c963f7055261)\nThanks [@eoinest](https://github.com/eoinest)! - Use server-provided\nlocale and condition props as the only rendered state in server-rendered\napps. Condition setters write cookies for middleware and request a\nreload; provider-free SPA apps keep their cookie-backed behavior.\n\n- Updated dependencies\n[[`5d75eb4`](https://github.com/generaltranslation/gt/commit/5d75eb475a9e36a61845f0368566a9d40466251c)]:\n  - generaltranslation@9.5.1\n  - gt-i18n@1.0.32\n## gt-react-native@11.4.4\n\n### Patch Changes\n\n- [#2330](https://github.com/generaltranslation/gt/pull/2330)\n[`9ee7dc3`](https://github.com/generaltranslation/gt/commit/9ee7dc3ae792cd81ce7edb5c6e43c963f7055261)\nThanks [@eoinest](https://github.com/eoinest)! - Use server-provided\nlocale and condition props as the only rendered state in server-rendered\napps. Condition setters write cookies for middleware and request a\nreload; provider-free SPA apps keep their cookie-backed behavior.\n\n- Updated dependencies\n[[`5d75eb4`](https://github.com/generaltranslation/gt/commit/5d75eb475a9e36a61845f0368566a9d40466251c),\n[`9ee7dc3`](https://github.com/generaltranslation/gt/commit/9ee7dc3ae792cd81ce7edb5c6e43c963f7055261)]:\n  - generaltranslation@9.5.1\n  - @generaltranslation/react-core@11.4.4\n  - gt-i18n@1.0.32\n  - @generaltranslation/supported-locales@2.1.35\n## gt-sanity@4.0.20\n\n### Patch Changes\n\n- Updated dependencies\n[[`5d75eb4`](https://github.com/generaltranslation/gt/commit/5d75eb475a9e36a61845f0368566a9d40466251c)]:\n  - generaltranslation@9.5.1\n## @generaltranslation/supported-locales@2.1.35\n\n### Patch Changes\n\n- Updated dependencies\n[[`5d75eb4`](https://github.com/generaltranslation/gt/commit/5d75eb475a9e36a61845f0368566a9d40466251c)]:\n  - generaltranslation@9.5.1\n## gt-tanstack-start@11.4.4\n\n### Patch Changes\n\n- [#2330](https://github.com/generaltranslation/gt/pull/2330)\n[`9ee7dc3`](https://github.com/generaltranslation/gt/commit/9ee7dc3ae792cd81ce7edb5c6e43c963f7055261)\nThanks [@eoinest](https://github.com/eoinest)! - Use server-provided\nlocale and condition props as the only rendered state in server-rendered\napps. Condition setters write cookies for middleware and request a\nreload; provider-free SPA apps keep their cookie-backed behavior.\n\n- Updated dependencies\n[[`5d75eb4`](https://github.com/generaltranslation/gt/commit/5d75eb475a9e36a61845f0368566a9d40466251c),\n[`9ee7dc3`](https://github.com/generaltranslation/gt/commit/9ee7dc3ae792cd81ce7edb5c6e43c963f7055261)]:\n  - generaltranslation@9.5.1\n  - @generaltranslation/react-core@11.4.4\n  - gt-react@11.4.4\n  - gt-i18n@1.0.32\n## gt-vue@0.1.16\n\n### Patch Changes\n\n- Updated dependencies\n[[`5d75eb4`](https://github.com/generaltranslation/gt/commit/5d75eb475a9e36a61845f0368566a9d40466251c)]:\n  - generaltranslation@9.5.1\n  - gt-i18n@1.0.32\n## @generaltranslation/vue-extractor@0.1.15\n\n### Patch Changes\n\n- Updated dependencies\n[[`5d75eb4`](https://github.com/generaltranslation/gt/commit/5d75eb475a9e36a61845f0368566a9d40466251c)]:\n  - generaltranslation@9.5.1\n\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+          "timestamp": "2026-09-25T05:59:21Z",
+          "url": "https://github.com/generaltranslation/gt/commit/0e03b9683d8f5effad4927860b8eb94b9fb2cea1"
+        },
+        "date": 1790316462980,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "gt-next > unit > middleware: factory creation latency > createNextMiddleware() (mean)",
+            "value": 0.04784011795656741,
+            "range": "±0.0284",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.4\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > default locale request (/) (mean)",
+            "value": 0.15078697466827415,
+            "range": "±0.0561",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.4\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > non-default locale request (/fr) (mean)",
+            "value": 0.18342696331621763,
+            "range": "±0.0691",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.4\"\n}"
+          },
+          {
+            "name": "gt-next > unit > middleware: per-request execution latency > nested route (/fr/about) (mean)",
+            "value": 0.17574964885764088,
+            "range": "±0.0694",
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.4\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > ttfb",
+            "value": 138.89999999999418,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.4\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > domContentLoaded",
+            "value": 150.69999999998254,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.4\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-home > load",
+            "value": 244.79999999998836,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.4\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > elapsed",
+            "value": 104,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.4\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > ttfb",
+            "value": 17.60000000000582,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.4\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > domContentLoaded",
+            "value": 29,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.4\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: redirect-chain-fr-about > load",
+            "value": 95.39999999999418,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.4\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: locale-switch-en-to-fr > elapsed",
+            "value": 613,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.4\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > ttfb",
+            "value": 10,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.4\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > domContentLoaded",
+            "value": 20.5,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.4\"\n}"
+          },
+          {
+            "name": "gt-next > e2e > middleware: cold-navigation-about > load",
+            "value": 82.5,
+            "unit": "ms",
+            "extra": "{\n  \"package\": \"gt-next\",\n  \"version\": \"11.4.4\"\n}"
           }
         ]
       }
