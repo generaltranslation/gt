@@ -1,5 +1,13 @@
 # gtx-cli
 
+## 2.22.1
+
+### Patch Changes
+
+- [#2337](https://github.com/generaltranslation/gt/pull/2337) [`61c78cc`](https://github.com/generaltranslation/gt/commit/61c78ccf818f801ed8aa87ee3901b583c7c101e0) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Skip untranslated file paths when localizing static URLs in postprocessing
+
+- [#2334](https://github.com/generaltranslation/gt/pull/2334) [`a9d5143`](https://github.com/generaltranslation/gt/commit/a9d51435cdfb05a98253838aa78ffbfa2703fa16) Thanks [@chenxin-yan](https://github.com/chenxin-yan)! - Automatically use device-code login in SSH sessions and display the verification URL on its own line. Clarify login prompts and show browser success or failure only after authentication and credential storage complete.
+
 ## 2.22.0
 
 ### Minor Changes
